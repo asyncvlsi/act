@@ -1,0 +1,4 @@
+pint N = 5;
+
+pint M = N * 17;
+

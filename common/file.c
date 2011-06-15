@@ -180,7 +180,7 @@ int file_addtoken (LFILE *l, const char *s)
       REALLOC (l->toks, char *, l->maxtoks);
     }
   }
-  l->toks[l->ntoks] = Strdup (s);
+  l->toks[l->ntoks++] = Strdup (s);
   old_k = lex_addtoken (l->l->l, s);
 
   for (m=l->l; m; m = m->next) {
@@ -191,6 +191,22 @@ int file_addtoken (LFILE *l, const char *s)
     }
   }
   return k;
+}
+
+void file_deltoken (LFILE *l, const char *s)
+{
+  flist *m;
+
+  Assert (l->ntoks > 0, "What?");
+  if (strcmp (l->toks[l->ntoks-1], s) != 0) {
+    fprintf (stderr, "deltoken error!");
+    except_throw (EXC_NULL_EXCEPTION, NULL);
+  }
+  FREE (l->toks[l->ntoks-1]);
+  l->ntoks--;
+  for (m=l->l; m; m = m->next) {
+    lex_deltokens (m->l, 1);
+  }
 }
 
 int file_istoken (LFILE *l, const char *s)

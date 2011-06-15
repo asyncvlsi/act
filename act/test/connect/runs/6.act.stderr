@@ -1,0 +1,2 @@
+ERROR: File `6.act', line 6, col 17
+	Mismatch in array dimensions (1 v/s 2): M[0]

@@ -1,0 +1,7 @@
+template <pint D>
+deftype bar_type <: bool (bool a[3]) {}
+
+template <pint A, B, W>
+defproc foo_type(bar_type<W> bar) {}
+
+foo_type<2,2> foo;

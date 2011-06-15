@@ -1,0 +1,7 @@
+import "9.ai";
+
+open baz;
+
+bar q;
+
+foo f;

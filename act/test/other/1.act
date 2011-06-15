@@ -1,0 +1,9 @@
+defproc bar(bool a) { }
+defproc foo(bool a, b, c) {
+        bool bar[5];
+        //a = xbar[5].a;
+        a[2] = b;
+
+}
+
+foo f;

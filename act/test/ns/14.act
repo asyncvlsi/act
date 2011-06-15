@@ -1,0 +1,12 @@
+namespace baz {
+
+defproc foo(bool a, b) ;
+
+export defproc bar(bool p, q);
+
+}
+
+
+baz::bar q;
+
+baz::foo f;

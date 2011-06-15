@@ -777,6 +777,10 @@ static bool_t *_bool_maketrue (BOOL_T *B, bool_t *b, bool_t *v)
     return b->l;
   }
   else {
+    if (b1 = thash_locate (pairvisited, b, v)) {
+       INC_REF (b1);
+       return b1;
+    }
     if (l = thash_locate (pairvisited, b->l, v)) {
       INC_REF (l);
     }
@@ -841,6 +845,10 @@ static bool_t *_bool_makefalse (BOOL_T *B, bool_t *b, bool_t *v)
     return b->r;
   }
   else {
+    if (b1 = thash_locate (pairvisited, b, v)) {
+       INC_REF (b1);
+       return b1;
+    }
     if (l = thash_locate (pairvisited, b->l, v)) {
       INC_REF (l);
     }

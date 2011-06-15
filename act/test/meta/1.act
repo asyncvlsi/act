@@ -1,0 +1,11 @@
+template<preal w>
+defproc foo(bool a, b)
+{
+  prs {
+    a <2.5*w> -> b-
+   ~a <1.3*w> -> b+
+  }
+}
+
+
+foo<4.0> f;

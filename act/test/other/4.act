@@ -1,0 +1,10 @@
+defproc foo(bool a, b, c) {
+        prs { a & b -> c- }
+
+}
+
+
+bool x, y, z;
+foo f[5];
+
+f(x, y, z);

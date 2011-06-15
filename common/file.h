@@ -37,6 +37,7 @@ LFILE *file_open (const char *);
 void file_push (LFILE *, const char *);
 
 int file_addtoken (LFILE *, const char *);
+void file_deltoken (LFILE *, const char *);
 int file_istoken (LFILE *, const char *);
 
 unsigned int file_flags (LFILE *);

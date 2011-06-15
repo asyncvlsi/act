@@ -1,0 +1,6 @@
+template<pint x>
+defproc foo (bool b)
+{
+  [ x > 0 -> foo w; ]
+  [ x > 0 -> foo w; ]
+}

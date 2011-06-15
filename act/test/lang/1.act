@@ -1,0 +1,18 @@
+defproc foo(bool x, y)
+{
+  bool a, b, c, d, e;
+
+  bool w[10];
+
+  prs<x> {
+   w[0] -> x-
+
+  (:i:4: w[i] -> x- )
+   tree {
+ 	a & b -> c-
+	d -> @l+
+	~ @l & e -> d-
+   }
+   passn(x,x,y)
+  }
+}

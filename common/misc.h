@@ -16,22 +16,61 @@ extern "C" {
 
 #ifndef MALLOC
 
-#define MALLOC(var,type,size) do { if (size == 0) { fprintf (stderr, "FATAL: allocating zero-length block.\n\tFile %s, line %d\n", __FILE__, __LINE__); exit (2); } else { var = (type *) malloc (sizeof(type)*(size)); if (!var) { fprintf (stderr, "FATAL: malloc of size %ld failed!\n\tFile %s, line %d\n", sizeof(type)*(size), __FILE__, __LINE__); fflush(stderr); exit (1); } } } while (0)
+#ifdef MEM_DEBUG
+#define MEM_LOG(s) mem_log s
 
-#define REALLOC(var,type,size) do { if (size == 0) { fprintf (stderr, "FATAL: allocating zero-length block.\n\tFile %s, line %d\n", __FILE__, __LINE__); exit (2); } else { var = (type *) realloc (var, sizeof(type)*(size)); if (!var) { fprintf (stderr, "FATAL: realloc of size %ld failed!\n\tFile %s, line %d\n", sizeof(type)*(size), __FILE__, __LINE__); exit (1); } } } while (0)
+void mem_log (const char *s, ...);
+
+#else
+#define MEM_LOG(s)  
+#endif
+
+#define MALLOC(var,type,size)						\
+  do {									\
+  if (size == 0) {							\
+    fprintf (stderr, "FATAL: allocating zero-length block.\n\tFile %s, line %d\n", __FILE__, __LINE__); \
+    exit (2);								\
+  } else {								\
+    var = (type *) malloc (sizeof(type)*(size));			\
+    if (!var) {								\
+      fprintf (stderr, "FATAL: malloc of size %lu failed!\n\tFile %s, line %d\n", sizeof(type)*(size), __FILE__, __LINE__); \
+      fflush(stderr);							\
+      exit (1);								\
+    } else {								\
+      MEM_LOG (("alloc'ed %x (%lu bytes) @ %s:%d", var, sizeof (type)*(size), __FILE__, __LINE__)); \
+    }									\
+  }									\
+ } while (0)
+
+#define REALLOC(var,type,size)						\
+  do {									\
+    if (size == 0) {							\
+      fprintf (stderr, "FATAL: allocating zero-length block.\n\tFile %s, line %d\n", __FILE__, __LINE__); \
+      exit (2);								\
+    } else {								\
+      MEM_LOG (("dealloc'ed %x @ %s:%d", var, __FILE__, __LINE__)); \
+      var = (type *) realloc (var, sizeof(type)*(size));		\
+      if (!var) {							\
+	fprintf (stderr, "FATAL: realloc of size %lu failed!\n\tFile %s, line %d\n", sizeof(type)*(size), __FILE__, __LINE__); \
+	exit (1);							\
+      } else {								\
+	MEM_LOG (("alloc'ed %x (%lu bytes) @ %s:%d", var, sizeof (type)*(size), __FILE__, __LINE__)); \
+      }									\
+    }									\
+  } while (0)
 
 #ifdef NEW
 #undef NEW
 #endif
 #define NEW(var,type) MALLOC(var,type,1)
-#define FREE(var)   free(var)
+#define FREE(var)   do { MEM_LOG (("dealloc'ed %x @ %s:%d", var, __FILE__, __LINE__)); free(var); } while (0)
 
 #endif /* MALLOC */
 
 #define Max(a,b) ( ((a) > (b)) ? (a) : (b) )
 
-void fatal_error (char *s, ...);
-void warning (char *s, ...);
+void fatal_error (const char *s, ...);
+void warning (const char *s, ...);
 char *Strdup (const char *);
 
 #define Assert(a,b) do { if (!(a)) { fprintf (stderr, "Assertion failed, file %s, line %d\n", __FILE__, __LINE__); fprintf (stderr, "Assertion: " #a "\n"); fprintf (stderr, "ERR: " b "\n"); exit (4); } } while (0)

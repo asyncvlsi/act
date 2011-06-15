@@ -1,0 +1,2 @@
+template <pint x>
+defchan foo <: chan(int<x>) (bool b) ;

@@ -1,0 +1,33 @@
+namespace foo {
+
+  export namespace bar { 
+
+  }
+
+  namespace baz {
+ 
+  }
+
+  export namespace bar {
+    namespace xyq {
+ 
+    }
+    namespace pqrt {
+
+   }
+   export defproc bar (bool p) { } 
+   defproc barpriv (bool p) { } 
+  }
+
+  namespace four {
+
+  }
+
+}
+
+
+namespace bazz {
+
+
+}
+

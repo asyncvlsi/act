@@ -1,0 +1,16 @@
+
+
+namespace test {
+
+pint x;
+
+defproc ckt(bool x)
+{
+  prs {
+   x -> x-
+  }
+}
+
+ckt c;
+
+}

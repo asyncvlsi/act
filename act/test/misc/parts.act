@@ -1,0 +1,207 @@
+// parts.act -- 2p and 4p parts for fpga
+
+deftype globals <: int<4>(bool Vdd, GND, Reset, _Reset) {  }
+
+defchan e1of1 <: chan(bool)(bool d, e) { }
+
+// free c-elements (timing info is accounted for elsewhere)
+template<pint N>
+defproc ld_logic(globals g; e1of1 l[N]; bool ld)
+{
+  bool _ld;
+
+  prs{
+    [after=0]            (&:i:N:~l[i].d) | ~g._Reset -> _ld+
+    [after=0] g._Reset & (&:i:N: l[i].d)             -> _ld-
+  
+    [after=0] _ld => ld-
+  }
+}
+
+template<pint N>
+defproc re_logic(globals g; e1of1 r[N]; bool re)
+{
+  bool _re;
+
+  prs{
+    [after=0] ~g.Reset & (&:i:N:~r[i].e)           -> _re+
+    [after=0]            (&:i:N: r[i].e) | g.Reset -> _re-
+
+    [after=0] _re => re-
+  }
+}
+
+// 2 or 4 phase source
+template<pint Lf, N>
+defproc src(globals g; e1of1 r[N]; bool c)
+{
+  bool _r, re, rd;
+
+  c = rd;
+  (;i:N:r[i].d=rd;)
+  re_logic<N> re_logic0; //(g,r,re); 
+  re_logic0.g = g;
+  re_logic0.r = r;
+  re_logic0.re = re;
+  prs{
+    [after=0]  re => _r-
+    [after=Lf] _r => rd-
+  }
+}
+
+// 2 or 4 phase bucket
+template<pint Lb, N>
+defproc bkt(globals g; e1of1 l[N]; bool c)
+{
+  bool __le, _le, le, ld;
+
+  c = le;
+  (;i:N:l[i].e=le;)
+  ld_logic<N> ld_logic0(g,l,ld);
+  prs{
+    [after=0]  ld   => __le-
+    [after=0]  __le => _le-
+    [after=Lb] _le  => le-
+  }
+}
+
+// 4-phase half buffer
+template<pint Lf, Lb, N, M>
+defproc fphb(globals g; e1of1 l[N], r[M])
+{
+  bool _rd, rd, re, _le, le, ld;
+
+  ld_logic<N> ld_logic0(g,l,ld);
+  re_logic<M> re_logic0(g,r,re);
+
+  (;i:N:l[i].e=le;)
+  (;i:M:r[i].d=rd;)
+
+  prs{
+    [after=0]            ~re & ~ld | ~g._Reset -> _rd+
+    [after=0] g._Reset &  re &  ld             -> _rd-
+
+    [after=Lf] _rd => rd-
+    [after=0]  _rd => _le-
+    [after=Lb] _le => le-
+  }
+}
+
+// 4-phase half buffer with initial token
+template<pint Lf, Lb, N, M>
+defproc fphbi(globals g; e1of1 l[N], r[M])
+{
+  bool _rd, rd, re, _le, le, ld;
+
+  ld_logic<N> ld_logic0(g,l,ld);
+  re_logic<M> re_logic0(g,r,re);
+
+  (;i:N:l[i].e=le;)
+  (;i:M:r[i].d=rd;)
+
+  prs{
+    [after=0] ~g.Reset & ~re & ~ld            -> _rd+
+    [after=0]             re &  ld | g.Reset  -> _rd-
+
+    [after=Lf] _rd => rd-
+    [after=0]  _rd => _le-
+    [after=Lb] _le => le-
+  }
+}
+
+// 2-phase full buffer
+template<pint Lf, Lb, N, M>
+defproc tpfb(globals g; e1of1 l[N], r[M])
+{
+  bool _rd, rd, re, _le, le, ld;
+
+  ld_logic<N> ld_logic0(g,l,ld);
+  re_logic<M> re_logic0(g,r,re);
+
+  (;i:N:l[i].e=le;)
+  (;i:M:r[i].d=rd;)
+
+  prs{
+    [after=0]            ~re & ~ld | ~g._Reset -> _rd+
+    [after=0] g._Reset &  re &  ld             -> _rd-
+
+    [after=Lf] _rd => rd-
+    [after=0]  _rd => _le-
+    [after=Lb] _le => le-
+  }
+}
+
+// 2-phase full buffer with initial token
+template<pint Lf, Lb, N, M>
+defproc tpfbi(globals g; e1of1 l[N], r[M])
+{
+  bool _rd, rd, re, __le, _le, le, _ld, ld;
+
+  ld_logic<N> ld_logic0(g,l,_ld);
+  re_logic<M> re_logic0(g,r,re);
+
+  (;i:N:l[i].e=le;)
+  (;i:M:r[i].d=rd;)
+
+  prs{
+    [after=0] ~g.Reset & ~re & ~ld           -> _rd+
+    [after=0]             re &  ld | g.Reset -> _rd-
+
+    [after=Lf] _rd => rd-
+    [after=0]  _ld => ld-
+    [after=0]  _rd => __le-
+    [after=0]  __le => _le-
+    [after=Lb] _le => le-
+  }
+}
+
+
+// array of fphb
+template<pint Lf, Lb, N>
+defproc fphb_array(globals g; e1of1 l, r)
+{
+  fphb<Lf,Lb,1,1> fphbs[N];
+
+  fphbs[0](g,,);
+  fphbs[0].l[0].d = l.d;
+  fphbs[0].l[0].e = l.e;
+
+  fphbs[N-1](g,,);
+  fphbs[N-1].r[0].d = r.d;
+  fphbs[N-1].r[0].e = r.e;
+
+  (;i:1..N-1:
+    fphbs[i](g,fphbs[i-1].r,);
+  )  
+}
+
+// array of tpfb
+template<pint Lf, Lb, N>
+defproc tpfb_array(globals g; e1of1 l, r)
+{
+  tpfb<Lf,Lb,1,1> tpfbs[N];
+
+  tpfbs[0](g,,);
+  tpfbs[0].l[0].d = l.d;
+  tpfbs[0].l[0].e = l.e;
+
+  tpfbs[N-1](g,,);
+  tpfbs[N-1].r[0].d = r.d;
+  tpfbs[N-1].r[0].e = r.e;
+
+  (;i:1..N-1:
+    tpfbs[i](g,tpfbs[i-1].r,);
+  )  
+}
+
+
+
+//globals g;
+//e1of1 l[1], r[1];
+
+//pint Lf = 60;
+//pint Lb = 90;
+//tpfb_array<Lf,Lb,6> arr;
+
+//fphbi fphb0;
+//fphbi<60,90,1,1> fphb0(g,l,r);

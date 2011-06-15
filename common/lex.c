@@ -159,7 +159,12 @@ static void addws (LEX_T *l, char c)
  *-----------------------------------------------------------------------*/
 static void addtok (LEX_T *l, char c)
 {
+  int d;
+  d = l->token_len;
   realloc_string (&l->token, &l->token_loc, &l->token_len);
+  if (d != l->token_len) {
+    REALLOC (l->tokprev, char, l->token_len);
+  }
   l->token[l->token_loc++] = c;
   l->token[l->token_loc] = '\0';
   if (l->saving) {
@@ -424,7 +429,7 @@ extern LEX_T *lex_file (FILE *fp)
 /*-------------------------------------------------------------------------
  *  start lexical analysis on file
  *-----------------------------------------------------------------------*/
-extern LEX_T *lex_fopen (char *name)
+extern LEX_T *lex_fopen (const char *name)
 {
   LEX_T *l;
   FILE *fp;
@@ -444,7 +449,7 @@ extern LEX_T *lex_fopen (char *name)
 /*-------------------------------------------------------------------------
  *  start lexical analysis on file
  *-----------------------------------------------------------------------*/
-extern LEX_T *lex_zfopen (char *name)
+extern LEX_T *lex_zfopen (const char *name)
 {
   LEX_T *l;
   FILE *fp;
@@ -496,7 +501,7 @@ extern LEX_T *lex_restring (LEX_T *l, char *s)
 /*-------------------------------------------------------------------------
  * add a token to the list of currently recognized tokens
  *-----------------------------------------------------------------------*/
-extern int lex_addtoken (LEX_T *l, char *s)
+extern int lex_addtoken (LEX_T *l, const char *s)
 {
   int i, j;
 
@@ -614,15 +619,17 @@ extern int lex_getsym (LEX_T *l)
 
       /* I haven't found a match yet */
 
-      if (lex_eof (l))
+      if (lex_eof (l)) {
 	if (oldi >= 0) {
 	  found = 1;
 	  break;
 	}
-	else
+	else {
 	  /* no match */
 	  return l->sym = l_eof;
-      if (i != j)
+	}
+      }
+      if (i != j) {
 	/* do a binary search for character at this depth */
 	while ((i+1) != j) {
 	  m = (i+j)/2;
@@ -631,6 +638,7 @@ extern int lex_getsym (LEX_T *l)
 	  else
 	    j = m;
 	}
+      }
       /* check if character was found */
       if (l->tokens[i][depth] != l->ch)
 	if (l->tokens[j][depth] != l->ch) {
@@ -939,7 +947,7 @@ extern void lex_free (LEX_T *l)
 /*-------------------------------------------------------------------------
  * adds array of tokens
  *-----------------------------------------------------------------------*/
-extern void lex_addtokenarray (LEX_T *l, char **s, int *tok)
+extern void lex_addtokenarray (LEX_T *l, const char **s, int *tok)
 {
   int i;
 

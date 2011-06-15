@@ -26,8 +26,8 @@ extern "C" {
 
 /**** Compressed I/O Routine Declarations ****/
 
-FILE *c_fopen_r (char *s);
-FILE *c_fopen_w (char *s);
+FILE *c_fopen_r (const char *s);
+FILE *c_fopen_w (const char *s);
 void c_fclose (FILE *fp);
 
 int c_fwrite (char *buf, int sz, int n, FILE *fp);
