@@ -1,0 +1,10 @@
+bool x;
+ 
+defproc foo(bool b)
+{
+ int x, xx;
+
+}
+ 
+foo xx;
+

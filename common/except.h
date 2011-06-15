@@ -16,6 +16,10 @@
 #include <stdio.h>
 #include <setjmp.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _except_ except_t;
 
 void except_init (void);
@@ -108,5 +112,8 @@ struct _except_ {
 
 #define EXC_NULL_EXCEPTION   1
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __EXCEPT_H__ */

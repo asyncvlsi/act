@@ -1,0 +1,3 @@
+template<pbool b> defproc foo (bool x, y, z);
+
+foo<true> x;

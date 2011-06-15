@@ -30,6 +30,7 @@ bitset_t *bitset_alloc (unsigned int w)
   NEW (b, bitset_t);
   b->sz = (w+31)/32;
   MALLOC (b->x, ulong_t, b->sz);
+
   return b;
 }
 
@@ -158,7 +159,7 @@ bitset_t *bitset_copy (bitset_t *b)
   bitset_t *r;
   int i;
 
-  r = bitset_alloc (b->sz);
+  r = bitset_alloc (b->sz*32);
 
   for (i=0; i < b->sz; i++) {
     r->x[i] = b->x[i];

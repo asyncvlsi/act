@@ -1,0 +1,13 @@
+template <pint x | pint y>
+defproc foo (bool a, b)
+{
+  bool c[x];
+  bool d[y];
+
+  prs {
+   a => b-
+  }
+}
+
+
+foo<4> f[3] @ [type=0];

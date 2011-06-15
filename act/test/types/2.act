@@ -1,0 +1,6 @@
+template <pint x>
+deftype foo <: int<5> (bool b) 
+{ }
+
+
+foo<4> x;

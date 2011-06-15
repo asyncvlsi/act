@@ -8,6 +8,10 @@
 #ifndef __AVL_H__
 #define __AVL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
   AVL Trees
 */
@@ -24,5 +28,9 @@ void avl_insert (avl_t *, int, void *);
 void *avl_search (avl_t *, int);
 void avl_free (avl_t *);
 int avl_height (avl_t *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

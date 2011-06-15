@@ -1,0 +1,2 @@
+ERROR: File `5.act', line 15, col 19
+	Parameter `p': port parameter for a process cannot be a process

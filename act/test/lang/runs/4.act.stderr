@@ -1,0 +1,2 @@
+ERROR: File `4.act', line 12, col 6
+	Array reference (1 dims) for a non-arrayed identifier: f.x[0]

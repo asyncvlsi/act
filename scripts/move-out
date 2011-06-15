@@ -1,0 +1,37 @@
+#!/bin/sh
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2011 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+
+ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
+OS=`$VLSI_TOOLS_SRC/scripts/getos`
+
+EXT=${ARCH}_${OS}
+
+#
+# Move .o and .so files into build sub-directory
+#
+
+if [ ! -d $EXT ]
+then 
+	mkdir $EXT
+fi
+
+objs=`echo *.o`
+if [ "$objs" = \*.o ]
+then
+	:
+else
+	mv -f *.o $EXT
+fi
+
+objs=`echo *.os`
+if [ "$objs" = \*.os ]
+then
+	:
+else
+	mv -f *.os $EXT
+fi

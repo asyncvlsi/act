@@ -1,0 +1,11 @@
+namespace test1 {
+
+   defproc foo (bool a, b) ;
+   
+   namespace test2 {
+      defproc bar (bool p, q) {
+        foo f;
+      }
+   }
+
+}

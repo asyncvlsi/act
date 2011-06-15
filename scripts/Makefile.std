@@ -8,15 +8,15 @@
 # Standard makefile rules
 #
 #
-ifndef VLSITOOLS
-VLSITOOLS=$(HOME)/VLSI/newtools
+ifndef VLSI_TOOLS_SRC
+VLSI_TOOLS_SRC=$(HOME)/VLSI/newtools
 endif
 
 ifndef LEVEL
 LEVEL=0
 endif
 
-include $(VLSITOOLS)/scripts/config
+include $(VLSI_TOOLS_SRC)/scripts/config
 
 .SUFFIXES: .os
 
@@ -32,7 +32,7 @@ LIBCOMMON=-L$(INSTALLLIB) -lvlsilib
 LIBACT=-L$(INSTALLLIB) -lact -lvlsilib
 
 LIBDEPEND=$(INSTALLLIB)/libvlsilib.a
-ACTDEPEND=$(INSTALLLIB)/libact.a
+ACTDEPEND=$(INSTALLLIB)/libact.a $(LIBDEPEND)
 
 CC=$(C_COMPILER_NAME)
 CXX=$(CXX_COMPILER_NAME)
@@ -100,7 +100,7 @@ realclean: clean
 		done
 
 depend:
-	-$(VLSITOOLS)/scripts/mymakedepend $(DFLAGS) $(DEPEND_FLAGS)
+	-$(VLSI_TOOLS_SRC)/scripts/mymakedepend "$(SRCS)" $(DFLAGS) $(DEPEND_FLAGS)
 	@for i in dummy_bad_name $(SUBDIRS); \
 		do \
                 if [ $$i != "dummy_bad_name" ]; \
@@ -118,7 +118,7 @@ depend:
 		done
 
 install: move-in install_bin install_lib install_inc move-out
-	-@for i in dummy_bad_name $(SUBDIRS); \
+	@for i in dummy_bad_name $(SUBDIRS); \
 		do \
                 if [ $$i != "dummy_bad_name" ]; \
                 then \
@@ -135,7 +135,7 @@ install: move-in install_bin install_lib install_inc move-out
 		done
 
 install_bin: $(TARGETS)
-        -@for i in dummy_bad_name $(TARGETS); \
+	@for i in dummy_bad_name $(TARGETS); \
                 do \
                 if [ $$i != "dummy_bad_name" ]; \
                 then \
@@ -146,13 +146,13 @@ install_bin: $(TARGETS)
                                 then \
                                         tgt=$$i; \
                                 fi; \
-                                $(VLSITOOLS)/scripts/install $$i $(INSTALLBIN)/$$tgt; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLBIN)/$$tgt; \
                         fi; \
                 fi; \
                 done
 
 install_lib: $(TARGETLIBS)
-	-@for i in dummy_bad_name $(TARGETLIBS); \
+	@for i in dummy_bad_name $(TARGETLIBS); \
 	do \
 		if [ $$i != "dummy_bad_name" ]; \
                 then \
@@ -171,33 +171,39 @@ install_lib: $(TARGETLIBS)
                                 else \
                                         tgt=$${tgt}.a; \
                                 fi; \
-                                $(VLSITOOLS)/scripts/install $$i $(INSTALLLIB)/$$tgt; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLLIB)/$$tgt; \
                         fi; \
                 fi; \
                 done
 
 install_inc: $(TARGETINCS)
-	-@for i in dummy_bad_name $(TARGETINCS); \
+	@for i in dummy_bad_name $(TARGETINCS); \
                 do \
                 if [ $$i != "dummy_bad_name" ]; \
                 then \
                         if [ -d $(INSTALLINC) ]; \
                         then \
+				if [ "x$(TARGETINCSUBDIR)" = "x" ]; \
+				then \
                                 tgt=$$i; \
-                                $(VLSITOOLS)/scripts/install $$i $(INSTALLINC)/$$tgt; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLINC)/$$tgt; \
+				else \
+					if [ ! -d $(INSTALLINC)/$(TARGETINCSUBDIR) ]; \
+					then \
+					mkdir $(INSTALLINC)/$(TARGETINCSUBDIR); \
+					fi; \
+                                tgt=$$i; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLINC)/$(TARGETINCSUBDIR)/$$tgt; \
+				fi; \
                         fi; \
                 fi; \
                 done
 
 move-in:
-	@-if [ ! -d $(EXT) ]; then mkdir $(EXT); fi
-	@-mv -f $(EXT)/*.o . 2>&1 >/dev/null
-	@-mv -f $(EXT)/*.os . 2>&1 >/dev/null
+	@$(VLSI_TOOLS_SRC)/scripts/move-in
 
 move-out:
-	@-if [ ! -d $(EXT) ]; then mkdir $(EXT); fi
-	@-mv -f *.o $(EXT) 2>&1 > /dev/null
-	@-mv -f *.os $(EXT) 2>&1 > /dev/null
+	@$(VLSI_TOOLS_SRC)/scripts/move-out
 
 .c.o:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $<

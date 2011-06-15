@@ -1,0 +1,5 @@
+defproc foo(bool a, b) ;
+
+bool p, s;
+
+foo f[3](p,s);

@@ -11,6 +11,10 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /******************************************************************************
  * #defines that you might want to modify.
  *
@@ -22,12 +26,16 @@
 
 /**** Compressed I/O Routine Declarations ****/
 
-FILE *c_fopen_r (char *s);
-FILE *c_fopen_w (char *s);
+FILE *c_fopen_r (const char *s);
+FILE *c_fopen_w (const char *s);
 void c_fclose (FILE *fp);
 
 int c_fwrite (char *buf, int sz, int n, FILE *fp);
 int c_fread (char *buf, int sz, int n, FILE *fp);
 char *c_fgets (char *buf, int len, FILE *fp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __LZW_H__ */

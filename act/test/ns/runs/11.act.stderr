@@ -1,0 +1,2 @@
+ERROR: File `11.act', line 4, col 9
+	Array instance for `a': cannot extend a port array

@@ -46,6 +46,19 @@ Heap *heap_new (int sz)
   return h;
 }
 
+void heap_free (Heap *h, void (*free_element)(void *))
+{
+  int i;
+
+  for (i=0; i < h->sz; i++) {
+    (*free_element) (h->value[i]);
+  }
+  FREE (h->value);
+  FREE (h->key);
+  FREE (h);
+  return;
+}
+
 void heap_insert (Heap *h, heap_key_t key, void *v)
 {
   int i, j, k;
@@ -202,3 +215,35 @@ void heap_insert_random (Heap *h, void *v)
     heap_insert (h, h->key[(random()%h->sz)]+1, v);
 }
 
+
+void heap_save (Heap *h, FILE *fp, void (*save_element)(FILE *, void *))
+{
+  int i;
+  fprintf (fp, "%d ", h->sz);
+  for (i=0; i < h->sz; i++) {
+    fprintf (fp, "%llu ", h->key[i]);
+    (*save_element) (fp, h->value[i]);
+    fprintf (fp, "\n");
+  }
+}
+
+Heap *heap_restore (FILE *fp, void *(restore_element)(FILE *))
+{
+  int i;
+  int sz;
+  Heap *h;
+  heap_key_t key;
+  void *value;
+
+  if (fscanf (fp, "%d", &sz) != 1) Assert (0, "Checkpoint read error");
+  Assert (sz >= 0, "Hmm");
+
+  h = heap_new (sz);
+
+  for (i=0; i < sz; i++) {
+    if (fscanf (fp, "%llu", &key) != 1) Assert (0, "Checkpoint read error");
+    value = (*restore_element) (fp);
+    heap_insert (h, key, value);
+  }
+  return h;
+}

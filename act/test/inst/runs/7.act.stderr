@@ -1,0 +1,3 @@
+Array de-reference for identifier `N[9]' out of range.
+Current dims: [0..7] + [14..17];  de-ref: [9]
+	File `7.act', line: 11, col: 2

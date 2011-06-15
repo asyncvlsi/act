@@ -124,8 +124,8 @@ extern LEX_T *lex_file (FILE *fp);
      Returns a LEX_T structure that should be used to refer to this file.
    */
 
-extern LEX_T *lex_fopen (char *name);
-extern LEX_T *lex_zfopen (char *name);
+extern LEX_T *lex_fopen (const char *name);
+extern LEX_T *lex_zfopen (const char *name);
    /*
      Used to start lexical analysis on file "name".
      Returns a LEX_T structure that should be used to refer to this file.
@@ -143,12 +143,12 @@ extern LEX_T *lex_restring (LEX_T *, char *s);
      that should be used to refer to this string.
    */
 
-extern int lex_addtoken (LEX_T *l, char *s);
+extern int lex_addtoken (LEX_T *l, const char *s);
    /*
      Adds string "s" as a reserved word to the lexical analyzer.
    */
 
-extern void lex_addtokenarray (LEX_T *l, char **s, int *i);
+extern void lex_addtokenarray (LEX_T *l, const char **s, int *i);
    /*
      Adds strings from array s[], and assigns token values to corresponding
      elements of array i[]. The array s[] must be NULL terminated.

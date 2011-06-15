@@ -8,6 +8,10 @@
 #ifndef __BITSET_H__
 #define __BITSET_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned long ulong_t;
 
 typedef struct bitset {
@@ -32,5 +36,9 @@ bitset_t *bitset_copy (bitset_t *b);
 int bitset_equal (bitset_t *a, bitset_t *b);
 
 void bitset_expand (bitset_t *b, unsigned int w2);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __BITSET_H__ */

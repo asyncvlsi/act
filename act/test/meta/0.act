@@ -1,0 +1,9 @@
+pint x = 3+5;
+
+preal y = 3.0/x;
+
+bool a, b;
+
+prs {
+ (i:x: a<i+y>-> b-)
+}
