@@ -8,6 +8,10 @@
 #ifndef __NAMES_H__
 #define __NAMES_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* 
    Names file database. Keeps the names on disk in tables, caching
    names as and when necessary.
@@ -84,7 +88,8 @@ IDX_TYPE names_newname (NAMES_T *, char *str);
 void names_addalias (NAMES_T *, IDX_TYPE idx1, IDX_TYPE idx2);
 void names_close (NAMES_T *);
 
-
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __NAMES_H__ */

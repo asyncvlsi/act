@@ -10,6 +10,10 @@
 
 #include "hash.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * "aspice" trace format
  *
@@ -221,5 +225,9 @@ void atrace_alias (atrace *, name_t *, name_t *);
 void atrace_flush (atrace *);
 
 void atrace_close (atrace *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __ATRACE_H__ */
