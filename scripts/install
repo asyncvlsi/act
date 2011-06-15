@@ -1,0 +1,39 @@
+#!/bin/sh
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2011 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+
+#
+#
+# Basic install script: copy file over if it changes
+#
+#
+
+if [ $# -ne 2 ]
+then
+        echo "Usage: `basename $0` source dest"
+        exit 1
+fi
+
+src=$1
+dest=$2
+
+if [ -r $src ]
+then
+   if cmp -s $src $dest
+   then
+        echo "[Unchanged $src]"
+   else
+        if [ -f $dest ]
+        then
+                mv $dest ${dest}.old
+        fi
+        echo "[Installing $src]"
+        cp $src $dest
+   fi
+else
+   echo "$src is unreadable"
+fi

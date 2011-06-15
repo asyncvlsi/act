@@ -1,0 +1,35 @@
+#!/bin/sh
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2011 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+
+#
+# Script that replaces makedepend, which has bugs on some platforms.
+#
+
+LINE="# DO NOT DELETE THIS LINE -- make depend depends on it."
+
+echo $LINE >> Makefile.deps
+
+file=*.c 
+cfiles=`echo *.c`
+
+if [ "x$cfiles" = "x$file" ]
+then
+        :
+else
+        gcc -MM $@ *.c >> Makefile.deps
+fi
+
+file=*.C
+cfiles=`echo *.C`
+
+if [ "x$cfiles" = "x$file" ]
+then
+        :
+else
+        g++ -MM $@ *.C >> Makefile.deps
+fi

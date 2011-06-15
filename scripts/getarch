@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+#  Figure out what kind of machine you're on.
+#
+
+found=0
+for i in `echo $PATH | sed 's/:/ /g'`
+do
+  if [ -f $i/arch ]
+  then
+      found=1
+  fi
+done
+
+if [ $found -eq 1 ] 
+then
+    ARCH=`arch`
+else
+    ARCH=`uname -m`
+fi
+
+echo $ARCH

@@ -1,0 +1,19 @@
+#
+# generated files
+#
+atrace2.c
+atrace2.h
+hash2.c
+hash2.h
+
+#
+# Targets
+libALINT*
+libvlsilib*
+
+# working directories
+i386_*
+
+# fix this later
+view.c
+view.h

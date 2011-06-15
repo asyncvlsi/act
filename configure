@@ -1,0 +1,77 @@
+#!/bin/sh
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2011 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+#
+# Create the "config" file in the scripts/ directory that contains
+# standard definitions
+#
+
+first_char=`echo $0 | sed 's/^\(.\).*$/\1/g'`
+
+if [ x$first_char = "x/" ]
+then
+	full_pathname=./`dirname $0`
+else
+	full_pathname=`pwd`/`dirname $0`
+fi
+
+arch=`$full_pathname/scripts/getarch`;
+os=`$full_pathname/scripts/getos`;
+baseos=`$full_pathname/scripts/getbaseos`;
+
+installdir=/usr/local/cad
+
+if [ $# -eq 1 ]
+then
+      installdir=$1
+fi
+
+if [ ! -d $installdir ]
+then
+     echo "Missing install directory [$installdir]."
+     exit 1
+fi
+
+echo "Configuring for [$arch] architecture, os [${os}]"
+echo "Install directory: [$installdir]"
+
+if [ ! -d $installdir/bin ]
+then
+    mkdir $installdir/bin
+fi
+
+if [ ! -d $installdir/lib ]
+then
+    mkdir $installdir/lib ]
+fi
+
+if [ ! -d $installdir/include ]
+then
+    mkdir $installdir/include
+fi
+
+c_compiler_name=gcc
+cxx_compiler_name=g++
+c_compiler_flags=-O2
+make_program=gmake
+myranlib=ranlib
+
+cat <<EOF > $full_pathname/scripts/config
+#
+# This file is auto-generated, don't edit it!
+#
+ARCH=$arch
+OS=$os
+BASEOS=$baseos
+RANLIB=$myranlib
+INSTALLDIR=$installdir
+C_COMPILER_NAME=$c_compiler_name
+CXX_COMPILER_NAME=$cxx_compiler_name
+C_COMPILER_FLAGS=$c_compiler_flags
+SH_BUILD_OPTIONS=-shared -DPIC -fPIC
+SH_LINK_OPTIONS=-shared -Wl,-x 
+EOF

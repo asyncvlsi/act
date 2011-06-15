@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+#  Figure out what kind of machine you're on.
+#
+
+#
+# Note: append OS release if relevant
+#
+
+minor=`uname -r | sed 's/\..*//'`
+case `uname -s` in
+    IRIX64|IRIX) BASEOS=irix;;
+    SunOS) if [ $minor -eq 5 ]; then BASEOS=solaris; else BASEOS=sunos; fi;;
+    OSF1) BASEOS=osf1;;
+    NetBSD) BASEOS=netbsd;;
+    FreeBSD) BASEOS=freebsd;;
+    Linux) BASEOS=linux;;
+    AIX) BASEOS=aix;;
+    HP-UX) BASEOS=hpux;;
+    Darwin) BASEOS=darwin;;
+    *) BASEOS=unknown;;
+esac
+
+REL=`uname -r`
+REL=`expr ${REL} : '[^0-9]*\([0-9\.]*\)' | sed 's/\./_/g'`
+
+echo ${BASEOS}${REL}
