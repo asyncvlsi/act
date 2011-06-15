@@ -1,0 +1,18 @@
+template <pint x | pint y>
+defproc foo (bool a, b, c)
+{
+  [ x > 3 ->
+  prs {
+   (:i:y: a => b- )
+  }
+  ]
+}
+
+
+foo<4,3> f[3];
+
+foo<4,4> g[4..5];
+
+g[5] = g[4];
+
+f[2] = g[4];

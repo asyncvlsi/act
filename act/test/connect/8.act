@@ -1,0 +1,19 @@
+bool gl;
+
+
+defproc foo(bool x)
+{
+  x = gl;
+}
+
+defproc bar(bool w)
+{
+  w = gl;
+}
+
+
+foo f;
+bar h;
+
+
+bar xx[9];

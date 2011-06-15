@@ -1,0 +1,3 @@
+ERROR: File `7.act', line 3, col 5
+	Connection specifier used for instance `b' whose root type is `bool'
+	(not a user-defined type)

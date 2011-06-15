@@ -1,0 +1,5 @@
+template <pint x>
+defproc foo(bool a[x], b) ;
+
+deftype foo <: int<3> (bool q) ;
+

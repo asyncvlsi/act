@@ -1,0 +1,2 @@
+ERROR: File `9.act', line 7, col 5
+	Type is not exported up the namespace hierarchy: foo

@@ -1,6 +1,8 @@
 /*************************************************************************
  *
- *  Copyright (c) 2004 Rajit Manohar
+ *  Copyright (c) 2004 Cornell University
+ *  Computer Systems Laboratory
+ *  Cornell University, Ithaca, NY 14853
  *  All Rights Reserved
  *
  **************************************************************************
@@ -9,17 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "atrace.h"
-
-
-#define Assert(a,b) do { if (!(a)) { fprintf (stderr, "Assertion failed, file %s, line %d\n", __FILE__, __LINE__); fprintf (stderr, "Assertion: " #a "\n"); fprintf (stderr, "ERR: " b "\n"); exit (4); } } while (0)
-
-#define MALLOC(var,type,size) do { if (size == 0) { fprintf (stderr, "FATAL: allocating zero-length block.\n\tFile %s, line %d\n", __FILE__, __LINE__); exit (2); } else { var = (type *) malloc (sizeof(type)*(size)); if (!var) { fprintf (stderr, "FATAL: malloc of size %ld failed!\n\tFile %s, line %d\n", sizeof(type)*(size), __FILE__, __LINE__); fflush(stderr); exit (1); } } } while (0)
-
-#ifdef NEW
-#undef NEW
-#endif
-#define NEW(var,type) MALLOC(var,type,1)
-#define FREE(var)   free(var)
+#include "misc.h"
 
 #define ENDIAN_SIGNATURE 0xffff0000
 #define ENDIAN_SIGNATURE_SWIZZLED 0x0000ffff
@@ -40,6 +32,7 @@ atrace *atrace_create (char *s, int fmt, float stop_time, float dt)
 
   a->H = hash_new (32);
   a->N = NULL;
+  a->hd_chglist = NULL;
 
   l = strlen (s);
   MALLOC (a->file, char, l+1);
@@ -74,11 +67,7 @@ atrace *atrace_create (char *s, int fmt, float stop_time, float dt)
 
   a->bufsz = 10240;
   a->bufpos = 0;
-  a->buffer = (int *)malloc (sizeof (int)*a->bufsz);
-  if (!a->buffer) {
-    fprintf (stderr, "FATAL: Could not allocate output buffer!\n");
-    exit (1);
-  }
+  MALLOC (a->buffer, int, a->bufsz);
   a->fpos = 0;
   a->fnum = 0;
   a->used = 0;
@@ -204,6 +193,8 @@ static void seek_after_header (atrace *a, int offset)
       if (!a->tr) {
 	fatal_error ("Could not open trace file `%s'", a->tfile);
       }
+      fseek (a->tr, 0, SEEK_END);
+      a->fend = ftell (a->tr);
     }
     fseek (a->tr, 6 * sizeof (int) + offset, SEEK_SET);
     a->fpos = 6*sizeof(int)+offset;
@@ -229,6 +220,7 @@ static void read_header (atrace *a)
 
   fseek (a->tr, 0, SEEK_END);
   a->fend = ftell (a->tr);
+  a->fpos = 0;
   a->endianness = 0;
 
  retry:
@@ -606,6 +598,9 @@ atrace *atrace_open (char *s)
 
   a->H = hash_new (32);
   a->N = NULL;
+  a->fnum = 0;
+  a->fpos = 0;
+  a->hd_chglist = NULL;
 
   l = strlen (s);
   MALLOC (a->file, char, l+1);
@@ -764,17 +759,26 @@ static float _read_record (atrace *a, float t)
   int idx;
   float v;
   int c;
+  name_t *prev;
 
   if (feof (a->tr)) return -1;
 
   fread_int (a, &idx);
+  a->hd_chglist = NULL;
 
   if (idx < 0) {
     /* EOF marker */
     return -1;
   }
-
+  prev = NULL;
   while (idx != -1) {
+    if (prev) {
+      prev->chg_next = a->N[idx];
+    }
+    else {
+      a->hd_chglist = a->N[idx];
+    }
+    a->N[idx]->chg_next = NULL;
     fread_float (a, &v);
     if (idx < 0 || idx >= a->Nnodes) {
       fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", idx);
@@ -782,7 +786,6 @@ static float _read_record (atrace *a, float t)
       exit (1);
     }
     a->N[idx]->v = v;
-
     if (a->fmt == ATRACE_DELTA_CAUSE) {
       fread_int (a, &c);
       if (c < 0 || c >= a->Nnodes) {
@@ -795,6 +798,7 @@ static float _read_record (atrace *a, float t)
     else {
       a->N[idx]->cause = 0;
     }
+    prev = a->N[idx];
     fread_int (a, &idx);
   }
   fread_float (a, &v);
@@ -1290,12 +1294,15 @@ void atrace_init_time (atrace *a)
       fread_float (a, &a->N[n]->v);
     }
     a->curt = 0;
+    a->curstep = 0;
     break;
 
   case ATRACE_DELTA:
   case ATRACE_DELTA_CAUSE:
     a->N[0]->v = 0;
-    a->curt = _read_record (a, 0);
+    fread_float (a, &a->curt);
+    a->nextt = _read_record (a, 0);
+    a->curstep = 0;
     break;
   default:
     Assert (0, "Unimplemented format");
@@ -1319,6 +1326,7 @@ void atrace_advance_time (atrace *a, int nsteps)
     break;
 
   case ATRACE_TIME_ORDER:
+    fatal_error ("Not tested");
     nv = VSTEP(a,a->curt);
     for (i=ISTEP(a,a->curt); i < a->Nsteps; i++) {
       if (a->vdt == a->dt) {
@@ -1338,6 +1346,13 @@ void atrace_advance_time (atrace *a, int nsteps)
 
   case ATRACE_DELTA:
   case ATRACE_DELTA_CAUSE:
+    a->curstep += nsteps;
+    while (a->nextt >= 0 && a->curt >= 0 && (a->nextt < a->curstep*a->vdt)) {
+      a->curt = a->nextt;
+      a->N[0]->v = a->curt;
+      a->nextt = _read_record (a, a->curt);
+    }
+#if 0    
     nv = VSTEP (a, a->curt);
     for (i=ISTEP (a, a->curt); i < a->Nsteps; i++) {
       if (a->vdt == a->dt) {
@@ -1350,9 +1365,12 @@ void atrace_advance_time (atrace *a, int nsteps)
 	break;
       a->N[0]->v = i*a->dt;
     }
-    while (a->curt < (nv+nsteps)*a->vdt) {
-      a->curt = _read_record (a, 0);
+    while ((a->curt >= 0 && a->nextt >= 0) && (a->curt < (nv+nsteps)*a->vdt)) {
+      a->curt = a->nextt;
+      a->nextt = _read_record (a, a->curt);
+      printf ("Got record @ %g, next is %g\n", a->curt*1e9, a->nextt*1e9);
     }
+#endif
     break;
   default:
     Assert (0, "Unimplemented format");
@@ -1397,6 +1415,7 @@ name_t *atrace_create_node (atrace *a, char *s)
   n->idx = -1;
   n->chg = 0;
   n->type = 0;
+  n->chg_next = NULL;
 
   b->v = (void *) n;
 

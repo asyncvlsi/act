@@ -1,0 +1,4 @@
+Typechecking failed during connection.
+Type 1: defproc <4,3> (bool a; bool b; bool c)
+Type 2: defproc <4,4> (bool a; bool b; bool c)
+	File `7.act', line: 18, col: 2

@@ -191,7 +191,7 @@ IDX_TYPE names_newname (NAMES_T *N, char *str)
 
   if (N->mode != NAMES_WRITE) {
     warning ("names_newname: ignored, since not in write mode");
-    return;
+    return 0;
   }
 
   /* 

@@ -1,0 +1,15 @@
+template <pint x>
+defproc foo(bool a, b[3]);
+
+template <pint x>
+defproc foo(bool a, b[3]);
+
+template <pint x>
+defproc foo(bool a, b[3])
+{
+  a = b[1];
+}
+
+
+
+foo<4> x;

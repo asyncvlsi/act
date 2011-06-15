@@ -1,0 +1,24 @@
+
+pint b[3][7..8];
+pint b[2][4..5];
+pint b[2][2];
+
+pint c[3][7..8];
+pint c[2][2];
+pint c[2][4..5];
+
+pint d[2][4..5];
+pint d[3][7..8];
+pint d[2][2];
+
+pint e[2][4..5];
+pint e[2][2];
+pint e[3][7..8];
+
+pint f[2][2];
+pint f[2][4..5];
+pint f[3][7..8];
+
+pint g[2][2];
+pint g[3][7..8];
+pint g[2][4..5];

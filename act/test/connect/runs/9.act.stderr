@@ -1,0 +1,2 @@
+ERROR: File `9.act', line 3, col 3
+	Identifier `c' not found in current scope

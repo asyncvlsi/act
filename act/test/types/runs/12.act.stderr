@@ -1,0 +1,2 @@
+ERROR: File `12.act', line 1, col 24
+	Duplicate meta-parameter name in port list: `x'

@@ -12,24 +12,14 @@
 
 LINE="# DO NOT DELETE THIS LINE -- make depend depends on it."
 
-echo $LINE >> Makefile.deps
+srcs=$1
+shift
 
-file=*.c 
-cfiles=`echo *.c`
+echo $LINE > Makefile.deps
 
-if [ "x$cfiles" = "x$file" ]
+if [ "x$srcs" = "x" ]
 then
         :
 else
-        gcc -MM $@ *.c >> Makefile.deps
-fi
-
-file=*.C
-cfiles=`echo *.C`
-
-if [ "x$cfiles" = "x$file" ]
-then
-        :
-else
-        g++ -MM $@ *.C >> Makefile.deps
+        g++ -MM $@ $srcs >> Makefile.deps
 fi

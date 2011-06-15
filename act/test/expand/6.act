@@ -1,0 +1,21 @@
+
+pint j = 1;
+
+template <pint i>
+defproc bar (bool w[i])
+{
+  prs {
+   w[0] -> w[1]-
+  }
+}
+
+template <pint i>
+defproc foo (bool x[i]; bool y[i]; bool z[j+i])
+{
+  prs {
+   (:k:i: x[k] => y[k]-)
+  }
+  bar<2+i> b;
+}
+
+foo<3> x;

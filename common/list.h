@@ -33,7 +33,7 @@ void *list_delete_tail (list_t *);
 void list_reverse (list_t *);
 
 void list_free (list_t *);
-
+void list_cleanup (void);
 
 list_t *list_map (list_t *l, void *(*f)(void *));
 /*

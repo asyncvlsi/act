@@ -1,0 +1,21 @@
+
+bool x[5][3], y[5][4];
+
+pint j = 2;
+
+prs {
+
+ (:i:5: x[i][j] -> y[i][j]-)
+
+}
+
+bool en;
+bool a,b,c,d,pchg;
+
+prs {
+  tree {
+   en<2*j> &{+pchg<j>} b & c -> d-
+   en & a & c -> d-
+  }
+  ~en & ~a -> d+
+}

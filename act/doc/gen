@@ -1,0 +1,4 @@
+#!/bin/sh
+
+texi2pdf act.texinfo
+makeinfo act.texinfo

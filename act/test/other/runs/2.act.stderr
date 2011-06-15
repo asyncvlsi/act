@@ -1,0 +1,3 @@
+ERROR: File `2.act', line 3, col 2
+	Type-checking failed on expression!
+	Array dereference for a non-arrayed type

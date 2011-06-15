@@ -79,6 +79,8 @@ typedef struct name_struct {
 				   1 = digital
 				   2 = bit-channel
 				 */
+
+  struct name_struct *chg_next;	/* change-list for reading */
 } name_t;
 
 typedef struct atrace_struct {
@@ -115,7 +117,9 @@ typedef struct atrace_struct {
 				*/
 
   /* internal state for new atrace API */
-  float curt;
+  float curt;			/* record's current time */
+  float nextt;			/* next time */
+  int curstep;			/* current time step for API */
 
   /* internal */
   unsigned long curtime;  /* in ticks; this is the current update
@@ -144,6 +148,9 @@ typedef struct atrace_struct {
   int bufpos;			/* current utilization */
   int *buffer;			/* i/o buffer */
 
+
+  /* for reading incremental files */
+  name_t *hd_chglist;
 
 } atrace;
 

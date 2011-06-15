@@ -124,7 +124,7 @@ static void initialize_func (void)
  
 /*------------------------------------------------------------------------*/
 /*------------------------------------------------------------------------*/
-FILE *c_fopen_r (char *s)
+FILE *c_fopen_r (const char *s)
 {
   int i, j;
 
@@ -138,7 +138,7 @@ FILE *c_fopen_r (char *s)
   used[i] = True;
   cbuf[i] = (Table *)malloc(sizeof(Table));
   if (!cbuf[i]) {
-	printf ("MALLOC FAILED. size=%d\n", sizeof(Table));
+	printf ("MALLOC FAILED. size=%lu\n", sizeof(Table));
 	exit (1);
   }
   if (!(cbuf[i]->fp = fopen(s, "rb"))) {
@@ -169,7 +169,7 @@ FILE *c_fopen_r (char *s)
 
 /*------------------------------------------------------------------------*/
 /*------------------------------------------------------------------------*/
-FILE *c_fopen_w (char *s)
+FILE *c_fopen_w (const char *s)
 {
   int i, j;
 
@@ -183,7 +183,7 @@ FILE *c_fopen_w (char *s)
   used[i] = True;
   cbuf[i] = (Table *)malloc(sizeof(Table));
   if (!cbuf[i]) {
-	printf ("MALLOC FAILED. size=%d\n", sizeof(Table));
+	printf ("MALLOC FAILED. size=%lu\n", sizeof(Table));
 	exit (1);
   }
   if (!(cbuf[i]->fp = fopen(s, "wb"))) {

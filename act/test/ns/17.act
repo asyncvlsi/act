@@ -1,0 +1,10 @@
+namespace foo {
+
+/* empty namespace */
+
+}
+
+namespace foo {
+
+/* more stuff */
+}

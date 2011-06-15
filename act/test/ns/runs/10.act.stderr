@@ -1,0 +1,2 @@
+ERROR: File `10.act', line 5, col 5
+	Type is not exported up the namespace hierarchy: baz::foo

@@ -1,0 +1,3 @@
+ERROR: File `4.act', line 10, col 2
+	Can't have connections for an array instance.
+	Type is: -global-::foo[5]

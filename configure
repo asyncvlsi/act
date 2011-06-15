@@ -10,6 +10,13 @@
 # standard definitions
 #
 
+if [ x$VLSI_TOOLS_SRC = "x" ]
+then
+	echo "Environment variable VLSI_TOOLS_SRC undefined."
+	echo "It sholud be set to the root of the tools source tree."
+	exit 1
+fi
+
 first_char=`echo $0 | sed 's/^\(.\).*$/\1/g'`
 
 if [ x$first_char = "x/" ]

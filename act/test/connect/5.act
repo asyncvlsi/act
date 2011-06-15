@@ -1,0 +1,10 @@
+defproc blah(bool b[4])
+{
+  bool zw;
+
+  zw = b[3];
+}
+
+bool w[9];
+
+blah b(w[0..3]);

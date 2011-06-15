@@ -1,0 +1,66 @@
+@noindent
+We use the following conventions in writing the BNF.
+
+@itemize @bullet
+@item @{ @var{S} @}* is zero or more occurrences of @var{S}
+@item [ @var{S} ]  is an optional @var{S}
+@item parenthesis are used for grouping
+@item @var{S} | @var{T} is either @var{S} or @var{T}
+@end itemize
+
+@quotation
+
+@var{body} ::= @{ @var{body_item} @}*
+
+@var{body_item} ::= @var{loop} | @var{selection} | @var{import} | @code{@{} @var{body} @code{@}} | @var{define} | @var{inst} | @var{connect} | @var{spec}
+
+@var{loop} ::= @code{<} @var{ID} @code{:} @var{range} @code{:} @var{body} @code{>}
+
+@var{selection} ::= @code{[} @var{expr} @code{->} @var{body} @code{]}
+
+@var{import} ::= @code{import} @var{STRING} @code{;}
+
+@var{define} ::= @var{declaration} | @var{definition} 
+
+@var{spec} ::= @code{name @{} spec_body @code{@}}
+
+@var{inst} ::= @var{type} @var{inst_id} @{ @code{,} @var{inst_id} @}* @code{;}
+
+@var{connect} ::= @var{cast_id} @code{=} @var{c_expr} @{ @code{,} @var{c_expr} @}* @code{;}
+
+@var{declaration} ::= @var{header} @code{;}
+
+@var{definition} ::= @var{header} @code{@{} @var{body} @code{@}}
+
+@var{header} ::= @code{define} @var{ID} @code{(} @var{param_list} @code{)}
+              @code{(} @var{param_list} @code{)}
+
+@var{param_list} ::= [ @var{param} @{ @code{;} @var{param} @}* ]
+
+@var{param} ::= @var{type} @var{ID} @{ @code{,} @var{ID} @}*
+
+@var{inst_id} ::= (@var{ID} [ @code{[} @var{array_spec} @code{]} ] [ @code{(} @var{c_expr_list} @code{)} ]  | @code{(} @var{c_expr_list} @code{)}) [ @code{=} @var{c_expr} ]
+
+@var{cast_id} ::= @var{ID} [ @code{[} @var{array_spec} @code{]} ] @{ @code{.} @var{ID} [ @code{[} @var{array_spec} @code{]} ] @}*
+
+@var{type} ::= ( @var{user_typepath} | @code{int} | @code{float} | @code{bool} | @code{node} ) [ @code{[} @var{array_spec} @code{]} ]
+
+@var{user_typepath} ::= @var{ID} @{ @code{.} @var{ID} @}* [ @code{(} @var{c_expr_list} @code{)} ]
+
+@var{array_spec} ::= @var{range} @{ @code{,} @var{range} @}*
+
+@var{range} ::= @var{expr} | @var{expr} @code{..} @var{expr}
+
+@var{c_expr} ::= @var{expr} | @var{ID} [ @code{[} @var{array_spec} @code{]} ] | @code{@{} @var{expr_list} @code{@}}
+
+@var{c_expr_list} ::= @var{c_expr} @{ @code{,} @var{c_expr} @}*
+
+@var{expr_list} ::= @var{expr} @{ @code{,} @var{expr} @}*
+@end quotation
+
+@noindent
+Expressions have the usual syntax. Identifiers are C-style, with the
+addition of identifiers that begin with numbers. Integers can be used as
+node type identifiers as well. Strings are treated as identifiers, and
+have a name that corresponds to the string with the quotes stripped. 
+Both C and C++ style comments are ignored.
