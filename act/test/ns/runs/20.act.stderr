@@ -1,0 +1,2 @@
+ERROR: File `20.act', line 14, col 5
+	Cannot instantiate processes within a namespace

@@ -1,0 +1,13 @@
+
+defproc foo(bool x, y[2])
+{
+
+}
+
+foo f;
+
+bool x, y[2];
+
+prs {
+   f.x[0] -> f.y[1]-
+}

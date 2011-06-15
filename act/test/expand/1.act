@@ -1,0 +1,12 @@
+
+
+template <pint i>
+defproc foo (bool x[i]; bool y[i])
+{
+  prs {
+   (:k:i: x[k] => y[k]-)
+  }
+}
+
+
+foo<3> x;

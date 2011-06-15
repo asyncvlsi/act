@@ -1,0 +1,9 @@
+defchan e1of2 <: chan(bool) (bool t, f, e)
+{
+ 
+}
+
+defproc foo (e1of2? l; e1of2! r)
+{
+  
+}

@@ -1,0 +1,4 @@
+template <pint x>
+defproc foo(bool a, b);
+
+foo<4,3> x;

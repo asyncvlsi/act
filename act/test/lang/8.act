@@ -1,0 +1,8 @@
+defproc testme (chan(int) l, r)
+{
+  int x;
+
+  chp {
+    *[ l?x; r!x ]
+  }
+}

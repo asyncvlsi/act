@@ -487,6 +487,12 @@ int ALINT_CloseWaveFile (void *file)
   return alint_CloseOutputFile (file);
 }
 
+int ALINT_FlushWaveFile (void *file)
+{
+  alint *a = (alint *) file;
+  atrace_flush (a->a);
+  return 0;
+}
 
 /*
   Nanosim function: memory buffer size := default * scale_factor

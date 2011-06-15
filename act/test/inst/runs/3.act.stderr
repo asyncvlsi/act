@@ -1,0 +1,4 @@
+ERROR: File `3.act', line 5, col 6
+	Mismatch in number of port parameters (1 v/s actual 2)
+	Instance type: -global-::foo
+	Prototype is: defproc <> (bool a; bool b)

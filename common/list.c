@@ -20,10 +20,13 @@ static listitem_t *allocitem (void)
 
   if (!freelist) {
     int i;
-    MALLOC (freelist, listitem_t, 1024);
-    for (i=0; i < 1023; i++)
-      freelist[i].next = &freelist[i+1];
-    freelist[1023].next = NULL;
+    
+    l = NULL;
+    for (i=0; i < 1024; i++) {
+      NEW (freelist, listitem_t);
+      freelist->next = l;
+      l = freelist;
+    }
   }
   l = freelist;
   freelist = freelist->next;
@@ -264,4 +267,23 @@ void list_reverse (list_t *l)
   tmp = l->hd;
   l->hd = l->tl;
   l->tl = tmp;
+}
+
+
+/*------------------------------------------------------------------------
+ *
+ *  list_cleanup --
+ *
+ *  Release ancillary storage
+ *
+ *------------------------------------------------------------------------
+ */
+void list_cleanup (void)
+{
+  listitem_t *l;
+  while (freelist) {
+    l = freelist;
+    freelist = freelist->next;
+    FREE (l);
+  }
 }

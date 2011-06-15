@@ -1,0 +1,6 @@
+template <pint p | pint x>
+defproc foo(bool a[p+x], b)
+{
+  bool s[x+p];
+}
+

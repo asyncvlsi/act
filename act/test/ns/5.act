@@ -1,0 +1,5 @@
+import "2.act";
+
+open foo;
+
+bar::bar x;

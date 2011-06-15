@@ -12,16 +12,18 @@ TARGETLIBS=$(LIB1) $(LIB2)
 
 TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
-	names.h
+	names.h mstring.h
 
 OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
-	heap.o except.o pp.o list.o bool.o names.o
+	heap.o except.o pp.o list.o bool.o names.o mstring.o
 OBJS2=hash2.os atrace2.os ns.os misc.os
+
+SRCS=$(OBJS1:.o=.c) ns.c
 
 OBJS=$(OBJS1) $(OBJS2)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h
 
-include $(VLSITOOLS)/scripts/Makefile.std
+include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 hash2.c: hash.c
 	sed 's/hash_/myhash_/g' $< | sed 's/myhash_bucket/hash_bucket/g' | sed 's/hash\.h/hash2.h/' > hash2.c

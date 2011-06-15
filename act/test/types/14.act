@@ -1,0 +1,10 @@
+
+defenum MyEnum;
+
+
+defenum MyEnum { RED, GREEN, BLUE };
+
+
+MyEnum w;
+
+enum<5> x;

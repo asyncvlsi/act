@@ -1,0 +1,2 @@
+ERROR: File `4.act', line 7, col 3
+	Type is not exported up the namespace hierarchy: ::bar::barpriv

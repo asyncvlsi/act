@@ -1,0 +1,7 @@
+pint X = 3;
+
+template <pint n>
+defproc foo (bool a) ;
+
+
+foo<X> x;

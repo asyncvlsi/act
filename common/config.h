@@ -8,6 +8,9 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* append to config search path; the last call contains the path with
    the highest priority */
@@ -43,5 +46,9 @@ void config_clear (void);
 
 /* check if variable exists */
 int config_exists (char *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __CONFIG_H__ */

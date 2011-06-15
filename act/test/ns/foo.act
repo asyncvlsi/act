@@ -1,0 +1,4 @@
+namespace foo {
+
+ export defproc baz (bool x) { }
+}
