@@ -1,0 +1,210 @@
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2011 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+#
+# Standard makefile rules
+#
+#
+ifndef VLSITOOLS
+VLSITOOLS=$(HOME)/VLSI/newtools
+endif
+
+ifndef LEVEL
+LEVEL=0
+endif
+
+include $(VLSITOOLS)/scripts/config
+
+.SUFFIXES: .os
+
+INSTALLBIN=$(INSTALLDIR)/bin
+INSTALLLIB=$(INSTALLDIR)/lib
+INSTALLINC=$(INSTALLDIR)/include
+INSTALLMAN=$(INSTALLDIR)/man
+INSTALLINFO=$(INSTALLDIR)/info
+
+EXT=$(ARCH)_$(OS)
+
+LIBCOMMON=-L$(INSTALLLIB) -lvlsilib
+LIBACT=-L$(INSTALLLIB) -lact -lvlsilib
+
+LIBDEPEND=$(INSTALLLIB)/libvlsilib.a
+ACTDEPEND=$(INSTALLLIB)/libact.a
+
+CC=$(C_COMPILER_NAME)
+CXX=$(CXX_COMPILER_NAME)
+
+DFLAGS=-DARCH_$(ARCH) -DOS_$(OS) -DBASEOS_$(BASEOS) -I$(INSTALLINC)
+ifndef DEPEND_FLAGS
+DEPEND_FLAGS=-I.
+endif
+CFLAGS=$(C_COMPILER_FLAGS)
+
+all: allsub move-in $(TARGETLIBS) $(TARGETS) $(EXTRA) move-out
+
+allsub:
+	@for i in dummy_bad_name $(SUBDIRS); \
+		do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+			echo ; \
+			echo [Building in $$i, depth $(LEVEL)]; \
+			echo ; \
+			if [ -d $$i ]; \
+			then \
+			(cd $$i; $(MAKE) all LEVEL=`expr $(LEVEL) + 1` "CFLAGS=$(CFLAGS)"); \
+			fi; \
+			echo ; \
+			echo [Done]; \
+		fi; \
+		done
+
+clean: move-in
+	-/bin/rm $(OBJS) *~ Makefile.deps $(CLEAN)
+	-rmdir $(EXT)
+	@for i in dummy_bad_name $(SUBDIRS); \
+		do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+			echo ; \
+			echo [Cleaning $$i, depth $(LEVEL)]; \
+			echo ; \
+			if [ -d $$i ]; \
+			then \
+			(cd $$i; $(MAKE) clean LEVEL=`expr $(LEVEL) + 1`); \
+			fi; \
+			echo ; \
+			echo [Done]; \
+		fi; \
+		done
+
+realclean: clean
+	-/bin/rm $(TARGETS) $(TARGETLIBS)
+	@for i in dummy_bad_name $(SUBDIRS); \
+		do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+			echo ; \
+			echo [Really cleaning $$i, depth $(LEVEL)]; \
+			echo ; \
+			if [ -d $$i ]; \
+			then \
+			(cd $$i; $(MAKE) realclean LEVEL=`expr $(LEVEL) + 1`); \
+			fi; \
+			echo ; \
+			echo [Done]; \
+		fi; \
+		done
+
+depend:
+	-$(VLSITOOLS)/scripts/mymakedepend $(DFLAGS) $(DEPEND_FLAGS)
+	@for i in dummy_bad_name $(SUBDIRS); \
+		do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+			echo ; \
+			echo [Depend in $$i, depth $(LEVEL)]; \
+			echo ; \
+			if [ -d $$i ]; \
+			then \
+			(cd $$i; $(MAKE) depend LEVEL=`expr $(LEVEL) + 1`); \
+			fi ;\
+			echo ; \
+			echo [Done]; \
+		fi; \
+		done
+
+install: move-in install_bin install_lib install_inc move-out
+	-@for i in dummy_bad_name $(SUBDIRS); \
+		do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+			echo ; \
+			echo [Install in $$i, depth $(LEVEL)]; \
+			echo ; \
+			if [ -d $$i ]; \
+			then \
+			(cd $$i; $(MAKE) install LEVEL=`expr $(LEVEL) + 1`); \
+			fi ;\
+			echo ; \
+			echo [Done]; \
+		fi; \
+		done
+
+install_bin: $(TARGETS)
+        -@for i in dummy_bad_name $(TARGETS); \
+                do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+                        if [ -d $(INSTALLBIN) ]; \
+                        then \
+                                tgt=`expr $$i : '\(.*\)\.$(EXT)$$'`; \
+                                if [ "x$$tgt" = "x" ]; \
+                                then \
+                                        tgt=$$i; \
+                                fi; \
+                                $(VLSITOOLS)/scripts/install $$i $(INSTALLBIN)/$$tgt; \
+                        fi; \
+                fi; \
+                done
+
+install_lib: $(TARGETLIBS)
+	-@for i in dummy_bad_name $(TARGETLIBS); \
+	do \
+		if [ $$i != "dummy_bad_name" ]; \
+                then \
+                        if [ -d $(INSTALLLIB) ]; \
+                        then \
+                                tgt=`expr $$i : '\(.*\)_$(EXT).a$$'`; \
+                                if [ "x$$tgt" = "x" ]; \
+                                then \
+				tgt=`expr $$i : '\(.*\)_$(EXT).so$$'`; \
+					if [ "x$$tgt" = "x" ]; \
+					then \
+						tgt=$$i; \
+					else \
+						tgt=$${tgt}.so; \
+					fi; \
+                                else \
+                                        tgt=$${tgt}.a; \
+                                fi; \
+                                $(VLSITOOLS)/scripts/install $$i $(INSTALLLIB)/$$tgt; \
+                        fi; \
+                fi; \
+                done
+
+install_inc: $(TARGETINCS)
+	-@for i in dummy_bad_name $(TARGETINCS); \
+                do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+                        if [ -d $(INSTALLINC) ]; \
+                        then \
+                                tgt=$$i; \
+                                $(VLSITOOLS)/scripts/install $$i $(INSTALLINC)/$$tgt; \
+                        fi; \
+                fi; \
+                done
+
+move-in:
+	@-if [ ! -d $(EXT) ]; then mkdir $(EXT); fi
+	@-mv -f $(EXT)/*.o . 2>&1 >/dev/null
+	@-mv -f $(EXT)/*.os . 2>&1 >/dev/null
+
+move-out:
+	@-if [ ! -d $(EXT) ]; then mkdir $(EXT); fi
+	@-mv -f *.o $(EXT) 2>&1 > /dev/null
+	@-mv -f *.os $(EXT) 2>&1 > /dev/null
+
+.c.o:
+	$(CC) -c $(CFLAGS) $(DFLAGS) $<
+
+.C.o:
+	$(CXX) -c $(CFLAGS) $(DFLAGS) $<
+
+.c.os:
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
+
