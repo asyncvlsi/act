@@ -8,6 +8,10 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _listDATA_ list_t;
 typedef struct _list_ listitem_t;
 
@@ -49,5 +53,9 @@ typedef void *(*LISTMAPFNCOOKIE)(void *, void *);
 
 void stack_push (list_t *l, void *item);
 void *stack_pop (list_t *l);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __LIST_H__ */

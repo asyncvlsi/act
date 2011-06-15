@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include "lex.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define f_err l_err
 #define f_eof l_eof
@@ -61,5 +64,9 @@ int file_sym (LFILE *);
 char *file_prev (LFILE *);
 int file_integer (LFILE *);
 double file_real (LFILE *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __FILE_H__ */

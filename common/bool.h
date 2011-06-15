@@ -9,6 +9,10 @@
 #ifndef __BOOL_H__
 #define __BOOL_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef unsigned long bool_var_t;
 
 typedef struct bool_t {
@@ -140,5 +144,9 @@ extern void bool_info (BOOL_T *B);
 extern int bool_isleaf (bool_t *b);
 
 #define bool_topvar(b) ((b)->id)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
