@@ -52,6 +52,11 @@ Type *ActBody_Inst::BaseType ()
 
 /*------------------------------------------------------------------------*/
 
+/*
+ * ns = the current namespace. Namespaces get expanded in place, since
+ * there's no notion of a parameterized namespace.
+ * s = the *fresh*, new scope for expansion
+ */
 void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 {
   InstType *x;

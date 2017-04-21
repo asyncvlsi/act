@@ -19,6 +19,7 @@
 
 class ActNamespace;
 class ActBody;
+struct act_chp_lang;
 union inst_param;
 
 /**
@@ -323,6 +324,23 @@ class Process : public UserDef {
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
 };
 
+/**
+ *
+ * Functions
+ *
+ *  Looks like a process. The ActBody consists of a chp body,
+ *  nothing else.
+ *
+ */
+class Function : public UserDef {
+ public:
+  Function (UserDef *u);
+  ~Function ();
+  
+ private:
+  InstType *ret_type;
+};
+
 
 /**
  *
@@ -337,14 +355,14 @@ class Data : public UserDef {
   void MkEnum () { is_enum = 1; }
   int isEnum () { return is_enum; }
 
-  void setMethodset (ActBody *h) { set = h; }
-  ActBody *getMethodset () { return set; }
-  void setMethodget (ActBody *h) { get = h; }
-  ActBody *getMethodget () { return get; }
+  void setMethodset (struct act_chp_lang *h) { set = h; }
+  struct act_chp_lang *getMethodset () { return set; }
+  void setMethodget (struct act_chp_lang *h) { get = h; }
+  struct act_chp_lang *getMethodget () { return get; }
  
  private:
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
-  ActBody *set, *get;   /**< set and get methods for this data type */
+  struct act_chp_lang *set, *get;   /**< set and get methods for this data type */
 };
 
 class Channel : public UserDef {
@@ -352,14 +370,14 @@ class Channel : public UserDef {
   Channel (UserDef *u);
   ~Channel();
   
-  void setMethodsend (ActBody *h) { send = h; }
-  ActBody *getMethodsend() { return send; }
+  void setMethodsend (act_chp_lang *h) { send = h; }
+  act_chp_lang *getMethodsend() { return send; }
 
-  void setMethodrecv (ActBody *h) { recv = h; }
-  ActBody *getMethodrecv() { return recv; }
+  void setMethodrecv (act_chp_lang *h) { recv = h; }
+  act_chp_lang *getMethodrecv() { return recv; }
 
  private:
-  ActBody *send, *recv;
+  act_chp_lang *send, *recv;
 };
 
 class TypeFactory {

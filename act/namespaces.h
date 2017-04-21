@@ -250,6 +250,15 @@ class ActNamespace {
   Scope *I;
 
   /**
+   *  hash table of all expanded instance types in this namespace
+   *  When a type foo in the namespace is expanded to foo<x,y,z>, then
+   *  the expanded version is stored in this hash table.
+   *
+   *  The Global:: namespace contains expanded built-in types.
+   */
+  struct Hashtable *xT;
+
+  /**
    * namespace body. Should be empty except for the global namespace.
    */
   ActBody *B;			
