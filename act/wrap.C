@@ -72,6 +72,9 @@ GENERIC_WRAP(Array_p, Array *, array, R_ARRAY)
 GENERIC_WRAP(ActId_p, ActId *, id, R_ID)
 GENERIC_WRAP(act_attr_t_p, act_attr_t *, attr, R_ATTR)
 GENERIC_WRAP(act_prs_lang_t_p, act_prs_lang_t *, prs, R_PRS_LANG)
+GENERIC_WRAP(act_chp_lang_t_p, act_chp_lang_t *, chp, R_CHP_LANG)
+GENERIC_WRAP(act_chp_gc_t_p, act_chp_gc *, gc, R_CHP_GC)
+GENERIC_WRAP(act_func_arguments_t_p, act_func_arguments_t *, func, R_CHP_FUNC)
 GENERIC_WRAP(ActBody_p, ActBody *,body,R_ACT_BODY)
 
 /* special case for built-in expression type wrapping */

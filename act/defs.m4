@@ -440,7 +440,8 @@ is_a physical_inst_type
 }}
 data_body
 {{X:
-    /* XXX: body of data type */
+    /* body of data type: this gets updated in the actions for
+       data_body */
     $0->u_d = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;
@@ -764,11 +765,26 @@ bare_id_list[list_t *]: { ID "," }*
  *
  *------------------------------------------------------------------------
  */
-deffunc: "function" ID "(" { param_inst ";" }* ")" ":" param_type 
+deffunc: "function" ID "(" { param_inst ";" }* ")" [ ":" param_type ]
 func_body
 ;
 
-func_body: ";" | "{" "}" ;
+func_body[ActBody *]: ";" | "{" [ chp_body ] "}"
+{{X:
+    ActRet *r;
+
+    if (OPT_EMPTY ($2)) {
+      return NULL;
+    }
+    else {
+      r = OPT_VALUE ($2);
+      /* XXX: here */
+      $A(0);
+      FREE (r);
+      return NULL;
+    }
+}}
+;
 
 
 /*------------------------------------------------------------------------

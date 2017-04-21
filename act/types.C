@@ -1945,6 +1945,6 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   printf ("Here2\n");
 
   xit = new InstType (NULL, xt, 0);
-  
+
   return xit;
 }

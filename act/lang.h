@@ -9,6 +9,8 @@
 #define __LANG_H__
 
 #include "expr.h"
+#include <mstring.h>
+#include <list.h>
 
 /*------------------------------------------------------------------------
  *
@@ -133,6 +135,59 @@ struct act_prs {
 
 
 /**
+ * CHP
+ */
+enum act_chp_lang_type {
+  ACT_CHP_COMMA, ACT_CHP_SEMI, ACT_CHP_SELECT, ACT_CHP_LOOP, ACT_CHP_SKIP,
+  ACT_CHP_ASSIGN, ACT_CHP_SEND, ACT_CHP_RECV, ACT_CHP_FUNC
+};
+
+struct act_chp_lang;
+
+typedef struct act_chp_gc {
+  Expr *g;			/* guard */
+  struct act_chp_lang *s;	/* statement */
+  struct act_chp_gc *next;
+} act_chp_gc_t ;
+
+typedef struct act_chp_lang {
+  int type;
+  union {
+    struct {
+      ActId *id;
+      Expr *e;
+    } assign;
+    struct {
+      ActId *chan;
+      list_t *rhs;		/* expression list or ID list for
+				   send vs recv */
+    } comm;
+    struct {
+      mstring_t *name;		/* function name */
+      list_t *rhs;		/* arguments */
+    } func;
+    struct {
+      list_t *cmd;
+    } semi_comma;
+    act_chp_gc_t *gc;			/* loop or select */
+  } u;
+} act_chp_lang_t;
+
+typedef struct act_func_arguments {
+  unsigned int isstring:1;	/* true if string, false otherwise */
+  union {
+    mstring_t *s;
+    Expr *e;
+  } u;
+} act_func_arguments_t;
+  
+
+struct act_chp {
+  ActId *vdd, *gnd, *psc, *nsc;
+  act_chp_lang_t *c;
+};
+
+/**
  * XXX: Handshaking expansions
  */
 struct act_hse_lang;
@@ -149,14 +204,25 @@ class ActBody_Lang : public ActBody {
     t = LANG_PRS;
     lang = p;
   }
+  ActBody_Lang (act_chp *c, int ishse = 0) {
+    if (ishse) {
+      t = LANG_HSE;
+    }
+    else {
+      t = LANG_CHP;
+    }
+    lang = c;
+  }
  private:
   enum {
-    LANG_PRS
+    LANG_PRS,
+    LANG_CHP,
+    LANG_HSE,
+    LANG_SPCE,
+    LANG_SIZE
   } t;
   void *lang;
 };
-
-
 
 #endif /* __LANG_H__ */
 

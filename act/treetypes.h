@@ -30,6 +30,9 @@ enum act_ret_type_type {
   R_ID,
   R_ATTR,
   R_PRS_LANG,
+  R_CHP_LANG,
+  R_CHP_GC,
+  R_CHP_FUNC,
   R_ACT_BODY
 };
 
@@ -47,6 +50,9 @@ typedef struct {
     ActId *id;
     act_attr_t *attr;
     act_prs_lang_t *prs;
+    act_chp_lang_t *chp;
+    act_chp_gc *gc;
+    act_func_arguments_t *func;
     ActBody *body;
   } u;
 } ActRet;
