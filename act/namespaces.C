@@ -55,6 +55,7 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
     parent = ns;
   }
   T = hash_new (4);
+  xT = hash_new (4);
   if (creating_global) {
     I = new Scope  (NULL);
   }
