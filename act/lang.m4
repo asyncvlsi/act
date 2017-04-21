@@ -56,25 +56,73 @@ supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
 }}
 ;
 
-lang_chp: "chp" [ supply_spec ] "{" [ chp_body ] "}"
+lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
 {{X:
+    ActBody *b;
+    act_chp *chp;
+
+    b = NULL;
+    chp = NULL;
+    if (!OPT_EMPTY ($4)) {
+      ActRet *r;
+      
+      r = OPT_VALUE ($4);
+      $A(r->type == R_CHP_LANG);
+      NEW (chp, act_chp);
+      chp->c = r->u.chp;
+      FREE (r);
+      chp->vdd = $0->supply.vdd;
+      chp->gnd = $0->supply.gnd;
+      chp->nsc = $0->supply.nsc;
+      chp->psc = $0->supply.psc;
+    }
+    
+    if (chp) {
+      b = new ActBody_Lang (chp);
+    }
+      
     $0->supply.vdd = NULL;
     $0->supply.gnd = NULL;
     $0->supply.psc = NULL;
     $0->supply.nsc = NULL;
     OPT_FREE ($2);
-    return NULL;
+
+    return b;
 }}
 ;
 
-lang_hse: "hse" [ supply_spec ] "{" [ hse_body ] "}" 
+lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}" 
 {{X:
+    ActBody *b;
+    act_chp *chp;
+
+    b = NULL;
+    chp = NULL;
+    if (!OPT_EMPTY ($4)) {
+      ActRet *r;
+      
+      r = OPT_VALUE ($4);
+      $A(r->type == R_CHP_LANG);
+      NEW (chp, act_chp);
+      chp->c = r->u.chp;
+      FREE (r);
+      chp->vdd = $0->supply.vdd;
+      chp->gnd = $0->supply.gnd;
+      chp->nsc = $0->supply.nsc;
+      chp->psc = $0->supply.psc;
+    }
+    
+    if (chp) {
+      b = new ActBody_Lang (chp, 1);
+    }
+      
     $0->supply.vdd = NULL;
     $0->supply.gnd = NULL;
     $0->supply.psc = NULL;
     $0->supply.nsc = NULL;
     OPT_FREE ($2);
-    return NULL;
+
+    return b;
 }}
 ;
 
@@ -113,84 +161,315 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{" [ prs_body ] "}"
 lang_spec[ActBody *]: "spec" "{" [ spec_body ] "}"
 ;
 
-chp_body: { chp_comma_list ";" }*
+chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
+{{X:
+    act_chp_lang_t *c;
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SEMI;
+    c->u.semi_comma.cmd = $1;
+    return c;
+}}
 ;
 
-chp_comma_list: { chp_body_item "," }*
+chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
+{{X:
+    act_chp_lang_t *c;
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_COMMA;
+    c->u.semi_comma.cmd = $1;
+    return c;
+}}
 ;
 
-chp_body_item: base_stmt
+chp_body_item[act_chp_lang_t *]: base_stmt
+{{X:
+    return $1;
+}}
 | select_stmt
+{{X:
+    return $1;
+}}
 | loop_stmt
+{{X:
+    return $1;
+}}
 ;
 
-base_stmt: send_stmt
+base_stmt[act_chp_lang_t *]: send_stmt
+{{X:
+    return $1;
+}}
     | recv_stmt
+    {{X:
+	return $1;
+    }}
     | assign_stmt
+    {{X:
+	return $1;
+    }}
     | "skip" 
+    {{X:
+	act_chp_lang_t *c;
+	NEW (c, act_chp_lang_t);
+	c->type = ACT_CHP_SKIP;
+	return c;
+    }}
     | "(" chp_body ")"
+    {{X:
+	return $2;
+    }}
     | ID "(" { chp_log_item "," }* ")" /* log */
+    {{X:
+	act_chp_lang_t *c;
+	NEW (c, act_chp_lang_t);
+	c->type = ACT_CHP_FUNC;
+	c->u.func.name = string_create ($1);
+	c->u.func.rhs = $3;
+	return c;
+    }}
 ;
 
 
-chp_log_item: expr_id
+chp_log_item[act_func_arguments_t *]: w_expr
+{{X:
+    act_func_arguments_t *arg;
+    NEW (arg, struct act_func_arguments);
+    arg->isstring = 0;
+    arg->u.e = $1;
+    return arg;
+}}
 |  STRING
+{{X:
+    act_func_arguments_t *arg;
+    NEW (arg, struct act_func_arguments);
+    arg->isstring = 1;
+    arg->u.s = string_create ($1);
+    return arg;
+}}
 ;
 
-send_stmt: expr_id "!" send_data
+send_stmt[act_chp_lang_t *]: expr_id "!" send_data
+{{X:
+    $3->u.comm.chan = $1;
+    return $3;
+}}
+    
 ;
 
-send_data: w_expr 
+send_data[act_chp_lang_t *]: w_expr 
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SEND;
+    c->u.comm.chan = NULL;
+    c->u.comm.rhs = list_new ();
+    list_append (c->u.comm.rhs, $1);
+    return c;
+}}
 | "(" { w_expr "," }* ")" 
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SEND;
+    c->u.comm.chan = NULL;
+    c->u.comm.rhs = $2;
+    return c;
+}}
 ;
 
-recv_stmt: expr_id "?" recv_id
+recv_stmt[act_chp_lang_t *]: expr_id "?" recv_id
+{{X:
+    $3->u.comm.chan = $1;
+    return $3;
+}}
 ;
 
-recv_id: expr_id
-| "(" { expr_id "," }** ")" 
+recv_id[act_chp_lang_t *]: expr_id
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_RECV;
+    c->u.comm.chan = NULL;
+    c->u.comm.rhs = list_new ();
+    list_append (c->u.comm.rhs, $1);
+    return c;
+}}
+| "(" { expr_id "," }* ")" 
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_RECV;
+    c->u.comm.chan = NULL;
+    c->u.comm.rhs = $2;
+    return c;
+}}
 ;
 
-assign_stmt: expr_id ":=" w_expr
+assign_stmt[act_chp_lang_t *]: expr_id ":=" w_expr
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_ASSIGN;
+    c->u.assign.id = $1;
+    c->u.assign.e = $3;
+    return c;
+}}
 | expr_id dir
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_ASSIGN;
+    c->u.assign.id = $1;
+    NEW (c->u.assign.e, Expr);
+    if ($2) {
+      c->u.assign.e->type = E_TRUE;
+    }
+    else {
+      c->u.assign.e->type = E_FALSE;
+    }
+    return c;
+}}
 ;
 
-select_stmt: "[" { guarded_cmd "[]" }* "]"
+select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
+{{X:
+    act_chp_lang_t *c;
+    act_chp_gc_t *gc;
+    listitem_t *li;
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SELECT;
+    c->u.gc = NULL;
+    for (li = list_first ($2); li; li = list_next (li)) {
+      gc = (act_chp_gc_t *) list_value (li);
+      if (!c->u.gc) {
+	c->u.gc = gc;
+      }
+      if (list_next (li)) {
+	gc->next = (act_chp_gc_t *)list_value (list_next (li));
+      }
+      else {
+	gc->next = NULL;
+      }
+    }
+    list_free ($2);
+    return c;
+}}
 | "[" wbool_expr "]" 
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SELECT;
+    NEW (c->u.gc, struct act_chp_gc);
+    c->u.gc->g = $2;
+    c->u.gc->s = NULL;
+    c->u.gc->next = NULL;
+    return c;
+}}
 ;
 
 
-guarded_cmd: wbool_expr "->" chp_body 
+guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
+{{X:
+    act_chp_gc_t *gc;
+    NEW (gc, act_chp_gc_t);
+    gc->g = $1;
+    gc->s = $3;
+    gc->next = NULL;
+    return gc;
+}}
 | "else" "->" chp_body
+{{X:
+    act_chp_gc_t *gc;
+    NEW (gc, act_chp_gc_t);
+    gc->g = NULL;
+    gc->s = $3;
+    gc->next = NULL;
+    return gc;
+}}
 ;
 
-loop_stmt: "*[" chp_body "]"
+loop_stmt[act_chp_lang_t *]: "*[" chp_body "]"
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_LOOP;
+    NEW (c->u.gc, act_chp_gc_t);
+    c->u.gc->next = NULL;
+    c->u.gc->g = NULL;
+    c->u.gc->s = $2;
+    return c;
+}}
 | "*[" { guarded_cmd "[]" }* "]"
+{{X:
+    return apply_X_select_stmt_opt0 ($0, $2);
+}}
 ;
 
-hse_body[ActBody *]: { hse_body_item ";" }*
+hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
+{{X:
+    return apply_X_chp_body_opt0 ($0, $1);
+}}
 ;
 
-hse_body_item: { hse_assign_stmt "," }* 
+hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }* 
+{{X:
+    return apply_X_chp_comma_list_opt0 ($0, $1);
+}}
 | hse_loop_stmt
+{{X:
+    return $1;
+}}
 | hse_select_stmt
+{{X:
+    return $1;
+}}
 | "skip"
+{{X:
+    return apply_X_base_stmt_opt3 ($0);
+}}
 | "(" hse_body ")"
+{{X:
+    return $2;
+}}
 ;
 
-hse_assign_stmt: expr_id dir 
+hse_assign_stmt[act_chp_lang_t *]: expr_id dir 
+{{X:
+    return apply_X_assign_stmt_opt1 ($0, $1, $2);
+}}
 ;
 
-hse_select_stmt: "[" { hse_guarded_cmd "[]" }* "]"
+hse_select_stmt[act_chp_lang_t *]: "[" { hse_guarded_cmd "[]" }* "]"
+{{X:
+    return apply_X_select_stmt_opt0 ($0, $2);
+}}
 | "[" wbool_expr "]" 
+{{X:
+    return apply_X_select_stmt_opt1 ($0, $2);
+}}
 ;
 
-hse_guarded_cmd: wbool_expr "->" hse_body
+hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
+{{X:
+    return apply_X_guarded_cmd_opt0 ($0, $1, $3);
+}}
 | "else" "->" hse_body
+{{X:
+    return apply_X_guarded_cmd_opt1 ($0, $3);
+}}
 ;
 
-hse_loop_stmt: "*[" hse_body "]"
+hse_loop_stmt[act_chp_lang_t *]: "*[" hse_body "]"
+{{X:
+    return apply_X_loop_stmt_opt0 ($0, $2);
+}}
 | "*[" { hse_guarded_cmd "[]" }* "]"
+{{X:
+    return apply_X_loop_stmt_opt1 ($0, $2);
+}}
 ;
 
 prs_body[act_prs_lang_t *]: [ attr_list ] 
@@ -550,7 +829,10 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
 }}
 |  /* empty */
 ;
-  
+
+/*
+  Specification body
+*/
 spec_body: spec_body_item spec_body 
 | spec_body_item 
 ;
