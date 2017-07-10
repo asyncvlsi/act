@@ -276,6 +276,14 @@ int TypeFactory::isPBoolType (Type *t)
   return 0;
 }
 
+int TypeFactory::isPRealType (Type *t)
+{
+  if (t == TypeFactory::preal->BaseType ()) {
+    return 1;
+  }
+  return 0;
+}
+
 
 int TypeFactory::isChanType (Type *t)
 {
@@ -294,6 +302,15 @@ int TypeFactory::isProcessType (Type *t)
 {
   Process *tmp_p = dynamic_cast<Process *>(t);
   if (tmp_p) {
+    return 1;
+  }
+  return 0;
+}
+
+int TypeFactory::isFuncType (Type *t)
+{
+  Function *tmp_f = dynamic_cast<Function *>(t);
+  if (tmp_f) {
     return 1;
   }
   return 0;
@@ -855,7 +872,6 @@ InstType::~InstType ()
   printf ("\n");
   fflush (stdout);
   */
-  
 
   if (nt > 0) {
     for (i=0; i < nt; i++) {
@@ -1113,6 +1129,24 @@ Process::~Process ()
   }
 }
 
+Function::Function (UserDef *u) : UserDef (*u)
+{
+  b = NULL;
+  ret_type = NULL;
+
+  /* copy over userdef */
+  MkCopy (u);
+}
+
+Function::~Function ()
+{
+  if (b) {
+    delete b;
+  }
+}
+
+
+
 void UserDef::SetParent (InstType *t, unsigned int eq)
 {
   parent = t;
@@ -1350,7 +1384,7 @@ int AExpr::isEqual (AExpr *a)
   if ((l && !a->l) || (!l && a->l)) return 0;
   if ((r && !a->r) || (!r && a->r)) return 0;
   
-  if (t == AExpr::SUBRANGE) {
+  if (0/*t == AExpr::SUBRANGE*/) {
     return _id_equal ((ActId *)l, (ActId *)a->l);
   }
   else if (t == AExpr::EXPR) {
@@ -1395,7 +1429,7 @@ AExpr::AExpr (AExpr::type typ, AExpr *inl, AExpr *inr)
 
 AExpr::~AExpr ()
 {
-  if (t != AExpr::SUBRANGE && t != AExpr::EXPR) {
+  if (/*t != AExpr::SUBRANGE &&*/ t != AExpr::EXPR) {
     if (l) {
       delete l;
     }
@@ -1403,9 +1437,11 @@ AExpr::~AExpr ()
       delete r;
     }
   }
+#if 0
   else if (t == AExpr::SUBRANGE) {
     delete ((ActId *)l);
   }
+#endif
   else if (t == AExpr::EXPR) {
     /* hmm... expression memory management */
   }
@@ -1443,7 +1479,9 @@ void AExpr::Print (FILE *fp)
     fprintf (fp, "}");
     break;
 
+#if 0
   case AExpr::SUBRANGE:
+#endif
   default:
     fatal_error ("Blah, or unimpl %x", this);
     break;
@@ -1867,11 +1905,11 @@ AExpr *AExpr::Clone()
   newl = NULL;
   newr = NULL;
   if (l) {
-    if (t != AExpr::EXPR && t != AExpr::SUBRANGE) {
+    if (t != AExpr::EXPR /*&& t != AExpr::SUBRANGE*/) {
       newl = l->Clone ();
     }
     else {
-      if (t == AExpr::SUBRANGE) {
+      if (0/*t == AExpr::SUBRANGE*/) {
 	newl = (AExpr *) ((ActId *)l)->Clone ();
       }
       else {
@@ -1896,7 +1934,12 @@ AExpr *AExpr::Clone()
  */
 Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
-  printf ("Hello!\n");
+  printf ("Hello, expand userdef!\n");
+  /* nt = # of specified parameters
+     u = expanded instance paramters
+  */
+  printf ("Expanding userdef, nt=%d\n", nt);
+
   return NULL;
 }
 
@@ -1914,10 +1957,9 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
      NOTE:: An expanded instance type has a NULL scope for variable
      evaluation, since there aren't any variables to evaluate!
   */
-
   Assert (t, "Missing parent type?");
 
-  printf ("Here!\n");
+  act_error_push (t->getName(), NULL, 0);
 
   /* Expand the core type using template parameters, if any */
 
@@ -1942,9 +1984,9 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
     expanded version of this in place!
   */
 
-  printf ("Here2\n");
-
   xit = new InstType (NULL, xt, 0);
+  xit->expanded = 1;
 
+  act_error_pop ();
   return xit;
 }

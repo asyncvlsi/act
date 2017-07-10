@@ -17,7 +17,8 @@ language_body[ActBody *]: lang_chp
     return $1;
 }}
 | lang_spec 
-| lang_size ;
+| lang_size 
+;
 
 supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
                  [ "|" bool_expr_id "," bool_expr_id ] 

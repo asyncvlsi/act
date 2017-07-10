@@ -61,28 +61,28 @@ class Type {
 
 class PInt : public Type {
   const char *getName() { return "pint"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) { 
+  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
 };
 
 class PInts : public Type {
   const char *getName() { return "pints"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) { 
+  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
 };
 
 class PBool : public Type { 
   const char *getName() { return "pbool"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) { 
+  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
 };
 
 class PReal : public Type {
   const char *getName() { return "preal"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) { 
+  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
 };
@@ -111,7 +111,7 @@ class Int : public Type {
 class Ints : public Type {
   const char *getName() { return "ints"; }
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    return this;
+     return this;
   }
 };
 
@@ -128,7 +128,7 @@ class Enum : public Type {
 class Chan : public Type {
   const char *getName () { return "chan"; }
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    return this;
+     return this;
   }
 };
 
@@ -336,6 +336,9 @@ class Function : public UserDef {
  public:
   Function (UserDef *u);
   ~Function ();
+
+  void setRetType (InstType *i) { ret_type = i; }
+  InstType *getRetType () { return ret_type; }
   
  private:
   InstType *ret_type;
@@ -529,6 +532,8 @@ class TypeFactory {
   static int isBoolType (Type *t);
   static int isPBoolType (Type *t);
 
+  static int isPRealType (Type *t);
+
   static int isUserType (Type *t);
 
   /**
@@ -546,6 +551,14 @@ class TypeFactory {
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
   static int isProcessType (Type *t);
+
+  /**
+   * Determines if the specified type is a function type or not
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid function, 0 otherwise
+   */
+  static int isFuncType (Type *t);
 
   /**
    * Determines if the specified type is a ptype or not
@@ -672,10 +685,10 @@ class AExpr {
  public:
   /**
    * An array expression is either a basic expression, a concatenation,
-   * a comma, or a subrange 
+   * or a comma
    */
   enum type {
-    CONCAT, COMMA, SUBRANGE, EXPR
+    CONCAT, COMMA, /*SUBRANGE,*/ EXPR
   };
   
   AExpr (ActId *e);
@@ -764,6 +777,7 @@ union inst_param {
 				   could be a single expression for
 				   int<>;
 				*/
+
   InstType *tt;			/**< could be types themselves, for
 				   channels; can also be a type
 				   signature for ptypes
@@ -772,7 +786,7 @@ union inst_param {
   long xi;			/**< expanded integer or boolean
 				   value, or index for more complex
 				   objects */
-  double xd;			/**< expanded real value  */
+
   InstType *xt;			/**< expanded type value */
 };
 
@@ -941,5 +955,15 @@ const char *act_type_errmsg (void);
 
 void print_expr (FILE *fp, Expr *e);
 void type_set_position (int l, int c, char *n);
+
+/*
+  Push expansion context 
+*/
+void act_error_push (const char *s, const char *file, int line);
+void act_error_update (const char *file, int line); // set file to
+						    // NULL to keep
+						    // the file name
+void act_error_pop ();
+void act_error_ctxt (FILE *);
 
 #endif /* __ACT_TYPES_H__ */
