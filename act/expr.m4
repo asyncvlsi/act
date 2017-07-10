@@ -133,7 +133,7 @@ expr_id[ActId *]: { base_id "." }*
 
     s = $0->scope;
     /* step 1: check that ret exists in the current scope */
-    it = s->Lookup (cur);
+    it = s->FullLookup (cur->getName());
     if (!it) {
       $E("The identifier ``%s'' does not exist in the current scope", cur->getName());
     }
