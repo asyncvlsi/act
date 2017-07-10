@@ -33,6 +33,7 @@ enum act_ret_type_type {
   R_CHP_LANG,
   R_CHP_GC,
   R_CHP_FUNC,
+  R_INST_TYPE,
   R_ACT_BODY
 };
 
@@ -53,6 +54,7 @@ typedef struct {
     act_chp_lang_t *chp;
     act_chp_gc *gc;
     act_func_arguments_t *func;
+    InstType *inst;
     ActBody *body;
   } u;
 } ActRet;
@@ -90,6 +92,7 @@ typedef struct {
   Process *u_p;			/* process */
   Data *u_d;			/* data */
   Channel *u_c;			/* user-defined channel */
+  Function *u_f;		/* function */
 
   InstType *t;			/* for instances */
 

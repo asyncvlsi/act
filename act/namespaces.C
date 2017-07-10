@@ -534,6 +534,13 @@ void ActNamespace::Expand ()
   ActNamespace *ns;
   hash_bucket_t *bkt;
 
+  if (this == global) {
+    act_error_push ("::<Global>", NULL, 0);
+  }
+  else {
+    act_error_push (getName(), NULL, 0);
+  }
+
   Assert (I, "No scope?");
 
   /* flush the scope, and re-create it! */
@@ -551,4 +558,6 @@ void ActNamespace::Expand ()
   for (b = B; b; b = b->Next ()) {
     b->Expand (this, I);
   }
+
+  act_error_pop ();
 }
