@@ -50,10 +50,16 @@ int act_type_var (Scope *s, ActId *id)
 
   Assert (s, "Scope?");
   Assert (id, "Identifier?");
-  it = s->Lookup (id, 0);
+  it = s->Lookup (id->getName());
+  if (!it) {
+    it = s->FullLookup (id->getName());
+    is_strict = T_STRICT;
+  }
+  else {
+    is_strict = 0;
+  }
   Assert (it, "This should have been caught during parsing!");
 
-  is_strict = 0;
   if (id->Rest ()) {
     while (id->Rest()) {
       u = dynamic_cast<UserDef *>(it->BaseType ());
@@ -82,6 +88,9 @@ int act_type_var (Scope *s, ActId *id)
   if (TypeFactory::isPBoolType (t)) {
     return T_BOOL|T_PARAM|is_strict;
   }
+  if (TypeFactory::isPRealType (t)) {
+    return T_REAL|T_PARAM|is_strict;
+  }
   if (TypeFactory::isIntType (t)) {
     return T_INT;
   }
@@ -95,7 +104,7 @@ int act_type_var (Scope *s, ActId *id)
     if (TypeFactory::isProcessType (t)) {
       return T_PROC;
     }
-    typecheck_err ("Identifier `%s..' is not a data type", id->getName ());
+    typecheck_err ("Identifier `%s' is not a data type", id->getName ());
     return T_ERR;
   }
   d = dynamic_cast<Data *>(t);
@@ -514,10 +523,13 @@ InstType *AExpr::getInstType (Scope *s)
     break;
   case AExpr::EXPR:
     return act_expr_insttype (s, (Expr *)l);
+    break;
 
+#if 0
   case AExpr::SUBRANGE:
     fatal_error ("Should not be here");
     return actual_insttype (s, (ActId *)l);
+#endif
 
   default:
     fatal_error ("Unimplemented?, %d", t);

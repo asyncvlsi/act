@@ -182,12 +182,12 @@ int parse_token (LEX_T *l)
     return 1;
   }
   else if (lex_have (l, EXTERN)) {
-    int idx;
+    int xx;
     curTOKEN->type = T_EXTERN;
     lex_mustbe (l, LBRACK);
     lex_mustbe (l, l_id);
-    idx = extern_add (lex_prev (l));
-    curTOKEN->toks = EXTERN_P[idx];
+    xx = extern_add (lex_prev (l));
+    curTOKEN->toks = EXTERN_P[xx];
     lex_mustbe (l, RBRACK);
     return 1;
   }

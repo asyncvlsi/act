@@ -52,6 +52,7 @@ Act::Act (const char *s)
   tr.u_p = NULL;
   tr.u_d = NULL;
   tr.u_c = NULL;
+  tr.u_f = NULL;
   tr.t = NULL;
 
   tr.t_inst = NULL;
@@ -83,6 +84,5 @@ void Act::Expand ()
 {
   Assert (gns, "Expand() called without an object?");
   /* expand each namespace! */
-
   gns->Expand ();
 }

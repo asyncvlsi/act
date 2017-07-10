@@ -48,4 +48,6 @@ class Act {
   ActNamespace *gns;		/* global namespace */
 };
 
+
+
 #endif /* __ACT_H__ */

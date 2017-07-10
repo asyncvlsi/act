@@ -65,9 +65,11 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
      duplicate dereference issues
   */
 
+#if 0
   printf ("Expand inst: ");
   t->Print (stdout);
   printf (" : id = %s\n", id);
+#endif
 
   /* 
      expand instance type!
@@ -77,7 +79,8 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
   x = s->Lookup (id);
   if (x) {
     /* sparse array */
-    printf ("Sparse array!\n");
+    act_error_ctxt (stderr);
+    warning ("Sparse array--FIXME, skipping right now!\n");
   }
   else {
     Assert (s->Add (id, t), "Should succeed; what happened?!");

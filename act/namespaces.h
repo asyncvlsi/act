@@ -74,7 +74,8 @@ class Scope {
   UserDef *getUserDef () { return u; }
 
  private:
-  struct Hashtable *H;
+  struct Hashtable *H;		/* maps names to InstTypes, if
+				   unexpanded; maps to ValueIdx if expanded. */
   Scope *up;
   UserDef *u;			/* if it is a user-defined type */
   unsigned int expanded:1;	/* if it is an expanded scope */

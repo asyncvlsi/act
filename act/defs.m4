@@ -183,6 +183,44 @@ def_or_proc ID
     /*printf ("Orig scope: %x\n", $0->scope);*/
     $0->scope = $0->u_p->CurScope ();
 }}
+[ is_a ID ]
+{{X:
+    if (!OPT_EMPTY ($4)) {
+      ActRet *r;
+      void *v1, *v2;
+      listitem_t *li;
+      int v;
+      const char *id;
+
+      r = OPT_VALUE ($4);
+      $A(r->type == R_LIST);
+      
+      li = list_first (r->u.l);
+      $A(li);
+      v1 = list_value (li);
+
+      $A(list_next (li));
+      li = list_next (li);
+      v2 = list_value (li);
+      
+      $A(list_next (li) == NULL);
+      list_free (r->u.l);
+      FREE (r);
+
+      r = (ActRet *) v1;
+      $A(r->type == R_INT);
+      v = r->u.ival;
+      FREE (r);
+      
+      r = (ActRet *)v2;
+      $A(r->type == R_STRING);
+      id = r->u.str;
+      FREE (r);
+
+      /* XXX: inheritence type v, parent id */
+    }
+    OPT_FREE ($4);
+}}
 [ "(" port_formal_list ")" ] 
 {{X:
     /* Create type here */
@@ -202,7 +240,7 @@ def_or_proc ID
     else {
       $A($0->curns->CreateType ($3, $0->u_p));
     }
-    OPT_FREE ($4);
+    OPT_FREE ($5);
     $0->scope = $0->u_p->CurScope ();
     $0->strict_checking = 0;
 }}
@@ -276,6 +314,24 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
       if (err) {
 	r = (ActRet *) list_value (list_first ($3));
 	$A(r->type == R_STRING);
+	$E("Parameter ``%s'': port parameter for a function cannot be a %s",
+	   r->u.str, err);
+      }
+    }
+    else if ($0->u_f) {
+      /* This is a user-defined function */
+      u = $0->u_f;
+      const char *err = NULL;
+
+      if (TypeFactory::isProcessType ($2->BaseType())) {
+	err = "process";
+      }
+      else if (TypeFactory::isChanType ($2->BaseType())) {
+	err = "channel";
+      }
+      if (err) {
+	r = (ActRet *) list_value (list_first ($3));
+	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a data-type cannot be a %s",
 	   r->u.str, err);
       }
@@ -325,13 +381,23 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
       list_free (m);
 
       if (u->AddPort (it, id_name) != 1) {
-	/* XXX: migt be an override */
+	/* XXX: might be an override */
 	if (is_override) {
-	  $W("Could be an override, so fix it!\n");
+	  $E("Could be an override, so fix it!\n");
 	}
-	$E("Duplicate parameter name in port list: ``%s''", id_name);
+	else {
+	  if ($0->u_f) {
+	    $E("Duplicate parameter name in argument list: ``%s''", id_name);
+	  }
+	  else {
+	    $E("Duplicate parameter name in port list: ``%s''", id_name);
+	  }
+	}
       }
       else {
+	if (is_override && $0->u_f) {
+	  $E("Overrides not permitted for function definitions");
+	}
 	if (is_override) {
 	  $E("Override specified, but parameter ``%s'' does not exist!", 
 	     id_name);
@@ -418,7 +484,7 @@ is_a physical_inst_type
     }
     $0->u_d->SetParent ($5, $4);
 }}
-[ "("  port_formal_list ")" ] 
+[ "("  port_formal_list ")" ]
 {{X:
     UserDef *u;
 
@@ -765,27 +831,152 @@ bare_id_list[list_t *]: { ID "," }*
  *
  *------------------------------------------------------------------------
  */
-deffunc: "function" ID "(" { param_inst ";" }* ")" [ ":" param_type ]
+deffunc: [ "export" ] "function"
+{{X:
+    $0->u = new UserDef ($0->curns);
+    if (!OPT_EMPTY ($1)) {
+      $0->u->MkExported();
+    }
+    OPT_FREE ($1);
+}}
+ID 
+{{X:
+    Function *f;
+    UserDef *u;
+
+    f = new Function ($0->u);
+    delete $0->u;
+    $0->u = NULL;
+    
+    switch ($0->curns->findName ($3)) {
+    case 0:
+      /* ok! */
+      break;
+    case 1:
+      $A(u = $0->curns->findType ($3));
+      if (TypeFactory::isFuncType (u)) {
+	/* hope */
+      }
+      else {
+	$E("Name ``%s'' already used in a previous type definition", $3);
+      }
+      break;
+    case 2:
+      $E("Name ``%s'' already used as a namespace", $3);
+      break;
+    case 3:
+      $E("Name ``%s'' already used as an instance", $3);
+      break;
+    default:
+      $E("Should not be here ");
+      break;
+    }
+    $0->u_f = f;
+    $0->scope = $0->u_f->CurScope ();
+}}
+"(" port_formal_list ")" [ ":" param_type ] 
+{{X:
+    UserDef *u;
+    /* let's check to see if this matches any previous definition */
+
+    if (u = $0->curns->findType ($3)) {
+      if (u->isEqual ($0->u_f)) {
+	delete $0->u_f;
+	$0->u_f = dynamic_cast<Function *>(u);
+	$A($0->u_f);
+      }
+      else {
+	$E("Name ``%s'' previously defined as a different type", $3);
+      }
+    }
+    else {
+      $A($0->curns->CreateType($3, $0->u_f));
+    }
+
+    if (!OPT_EMPTY ($7)) {
+      ActRet *r;
+      r = OPT_VALUE ($7);
+      $A(r->type == R_INST_TYPE);
+      $0->u_f->setRetType (r->u.inst);
+      FREE (r);
+    }
+    else {
+      $0->u_f->setRetType (NULL);
+    }
+    OPT_FREE ($7);
+ 
+    $0->strict_checking = 0;
+}}
 func_body
+{{X:
+    $0->u_f->setBody ($8);
+    $0->u_f = NULL;
+    $0->scope = $0->curns->CurScope();
+}}
 ;
 
-func_body[ActBody *]: ";" | "{" [ chp_body ] "}"
+func_body[ActBody *]: ";" 
+{{X:
+    return NULL;
+}}
+| "{" [ func_body_items ] "}"
 {{X:
     ActRet *r;
+    ActBody *b;
+
+    $A($0->u_f);
+    if ($0->u_f->isDefined ()) {
+      $E("Function ``%s'' previously defined with same type signature", 
+	 $0->u->getName ());
+    }
 
     if (OPT_EMPTY ($2)) {
+      OPT_FREE ($2);
       return NULL;
     }
     else {
       r = OPT_VALUE ($2);
-      /* XXX: here */
-      $A(0);
+      $A(r->type == R_ACT_BODY);
+
+      b = r->u.body;
+      
       FREE (r);
-      return NULL;
+      OPT_FREE ($2);
+
+      $0->u_f->MkDefined ();
+
+      return b;
     }
 }}
 ;
 
+func_body_items[ActBody *]: { alias_or_inst ";" }* lang_chp
+{{X:
+    listitem_t *li;
+    ActBody *b, *tmp, *tl;
+
+    b = (ActBody *)list_value (list_first ($1));
+    tl = b;
+    for (li = list_next (list_first ($1)); li; li = list_next (li)) {
+      tmp = (ActBody *)list_value (li);
+      tl->Append (tmp);
+      tl = tmp;
+    }
+    list_free ($1);
+    tl->Append ($2);
+    return b;
+}}
+;
+
+alias_or_inst[ActBody *]: alias
+{{X:
+    return $1;
+}}
+| instance
+{{X:
+    return $1;
+}}
+;
 
 /*------------------------------------------------------------------------
  *
