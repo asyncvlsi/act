@@ -11,6 +11,7 @@
 #include "hash.h"
 #include "array.h"
 #include "list.h"
+#include "bitset.h"
 
 class ActBody;
 class UserDef;
@@ -20,9 +21,39 @@ class ActId;
 
 struct ValueIdx {
   InstType *t;
-  unsigned int init:1;	   /**< Has this been allocated? */
+  unsigned int init:1;	   /**< Has this been allocated? 
+			         0 = no allocation
+				 1 = allocated
+			    */
   long idx;		   /**< Base index for allocated storage */
 };
+
+class ValueStoreInst {
+ public:
+  /* allocation of data and channel values
+     int, ints, bool, enum, chan
+     enums are treated as just another int
+   */
+  ValueStoreInst() {
+    A_INIT (vchan);
+    A_INIT (vint);
+    A_INIT (vints);
+    vbool = NULL;
+  }
+  ~ValueStoreInst() {
+    A_FREE (vchan);
+    A_FREE (vint);
+    A_FREE (vints);
+    if (vbool) { bitset_free (vbool); }
+  }
+
+ private:
+  A_DECL (void, vchan);
+  A_DECL (unsigned int, vint);
+  A_DECL (int, vints);
+  bitset_t *vbool;
+};  
+
 
 class Scope {
  public:
@@ -33,6 +64,13 @@ class Scope {
   InstType *Lookup (const char *s);
   InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
 						id; default report an error */
+
+  /* 
+     only for expanded scopes
+     returns ValueIdx information for identifier
+  */
+  ValueIdx *LookupVal (const char *s);
+
 
   InstType *FullLookup (const char *s); /**< return full lookup,
 					   including in parent scopes */
@@ -73,12 +111,56 @@ class Scope {
   void setUserDef (UserDef *_u) { u = _u; }
   UserDef *getUserDef () { return u; }
 
+
+
+  unsigned long AllocPInt(int count = 1);
+  void setPInt(unsigned long id, unsigned long val);
+  int issetPInt (unsigned long id);
+  unsigned long getPInt(unsigned long id);
+
+  unsigned long AllocPInts(int count = 1);
+  int issetPInts (unsigned long id);
+  long getPInts(unsigned long id);
+  void setPInts(unsigned long id, long val);
+
+  unsigned long AllocPReal(int count = 1);
+  int issetPReal (unsigned long id);
+  double getPReal(unsigned long id);
+  void setPReal(unsigned long id, double val);
+
+  unsigned long AllocPBool(int count = 1);
+  int issetPBool (unsigned long id);
+  int getPBool(unsigned long id);
+  void setPBool(unsigned long id, int val);
+
+  unsigned long AllocPType(int count = 1);
+  int issetPType (unsigned long id);
+  InstType *getPType(unsigned long id);
+  void setPType(unsigned long id, InstType *val);
+
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if
 				   unexpanded; maps to ValueIdx if expanded. */
   Scope *up;
   UserDef *u;			/* if it is a user-defined type */
   unsigned int expanded:1;	/* if it is an expanded scope */
+
+  /* values that are per scope, rather than per instance */
+  A_DECL (unsigned long, vpint);
+  bitset_t *vpint_set;
+
+  A_DECL (long, vpints);
+  bitset_t *vpints_set;
+
+  A_DECL (double, vpreal);
+  bitset_t *vpreal_set;
+
+  A_DECL (InstType *, vptype);
+  bitset_t *vptype_set;
+
+  unsigned long vpbool_len;
+  bitset_t *vpbool;
+  bitset_t *vpbool_set;
 };
 
 /**
