@@ -450,8 +450,17 @@ int type_connectivity_check (InstType *lhs, InstType *rhs)
   fflush (stdout);
 #endif
 
-  if (lhs->isEqual (rhs, 1)) {
-    return 1;
+  if (lhs->isExpanded ()) {
+    /* the connectivity check is now strict */
+    if (lhs->isEqual (rhs, 2)) {
+      return 1;
+    }
+  }
+  else {
+    /* check dim compatibility */
+    if (lhs->isEqual (rhs, 1)) {
+      return 1;
+    }
   }
 
   p.l = stype_line_no;
@@ -521,6 +530,7 @@ InstType *AExpr::getInstType (Scope *s)
       return tmp;
     }
     break;
+
   case AExpr::EXPR:
     return act_expr_insttype (s, (Expr *)l);
     break;

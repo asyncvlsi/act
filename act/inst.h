@@ -70,6 +70,7 @@ class InstType {
    * Set direction flags
    */
   void SetDir (Type::direction d) { dir = d; }
+  Type::direction getDir () { return dir; }
 
   void MkCached () { temp_type = 0; }
   int isTemp() { return temp_type; }

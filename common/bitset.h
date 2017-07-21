@@ -16,7 +16,7 @@ typedef unsigned long ulong_t;
 
 typedef struct bitset {
   ulong_t *x;
-  int sz;
+  unsigned int sz;
 } bitset_t;
 
 void bitset_clear (bitset_t *b);
@@ -36,6 +36,7 @@ bitset_t *bitset_copy (bitset_t *b);
 int bitset_equal (bitset_t *a, bitset_t *b);
 
 void bitset_expand (bitset_t *b, unsigned int w2);
+unsigned int bitset_size (bitset_t *b);
 
 #ifdef __cplusplus
 }

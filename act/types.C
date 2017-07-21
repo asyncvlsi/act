@@ -227,6 +227,10 @@ int TypeFactory::isDataType (Type *t)
   if (tmp_i) {
     return 1;
   }
+  Ints *tmp_is = dynamic_cast<Ints *>(t);
+  if (tmp_is) {
+    return 1;
+  }
   Enum *tmp_e = dynamic_cast<Enum *>(t);
   if (tmp_e) {
     return 1;
@@ -251,9 +255,26 @@ int TypeFactory::isIntType (Type *t)
   return 0;
 }
 
+int TypeFactory::isIntsType (Type *t)
+{
+  Ints *tmp_i = dynamic_cast<Ints *>(t);
+  if (tmp_i) {
+    return 1;
+  }
+  return 0;
+}
+
 int TypeFactory::isPIntType (Type *t)
 {
   if (t == TypeFactory::pint->BaseType ()) {
+    return 1;
+  }
+  return 0;
+}
+
+int TypeFactory::isPIntsType (Type *t)
+{
+  if (t == TypeFactory::pints->BaseType ()) {
     return 1;
   }
   return 0;
@@ -283,7 +304,6 @@ int TypeFactory::isPRealType (Type *t)
   }
   return 0;
 }
-
 
 int TypeFactory::isChanType (Type *t)
 {
@@ -326,6 +346,19 @@ int TypeFactory::isPtypeType (Type *t)
     return 0;
   }
 }
+
+int TypeFactory::isParamType (Type *t)
+{
+  if (isPtypeType (t) ||
+      isPIntType (t) ||
+      isPIntsType (t) ||
+      isPBoolType (t) ||
+      isPRealType (t)) {
+    return 1;
+  }
+  return 0;
+}
+
 
 
 /**
@@ -937,6 +970,8 @@ int UserDef::AddMetaParam (InstType *t, const char *id, int opt)
   return 1;
 }
 
+
+
 const char *UserDef::getPortName (int pos)
 {
   if (pos < 0) {
@@ -1238,8 +1273,15 @@ int UserDef::isEqual (UserDef *u)
 /*------------------------------------------------------------------------
  * Compare two instance types
  *
- * @param weak : if set to 1, then it checks that arrays are
- * compatible in terms of # of dimensions, rather than equal.
+ * @param weak : this parameter only matters for array types. All
+ *               cases check that the # of dimensions match.
+ *               0 = check that the arrays are in fact equal and have
+ *               the same index ranges (and range expressions)
+ *               1 = checks that arrays are compatible in terms of #
+ *               of dimensions, rather than equal
+ *               2 = check that array ranges have the same size; they
+ *               could have different index ranges 
+ *
  *------------------------------------------------------------------------
  */
 int InstType::isEqual (InstType *it, int weak)
@@ -1249,8 +1291,8 @@ int InstType::isEqual (InstType *it, int weak)
 
   if ((a && !it->a) || (!a && it->a)) return 0;
 
-  if (!weak) {
-    if (a && !a->isEqual (it->a)) return 0;
+  if (weak != 1) {
+    if (a && !a->isEqual (it->a, weak == 0 ? 1 : 0)) return 0;
   }
   else {
     if (a && !a->isDimCompatible (it->a)) return 0;
@@ -1323,7 +1365,7 @@ void InstType::Print (FILE *fp)
  * Compare two arrays
  *------------------------------------------------------------------------
  */
-int Array::isEqual (Array *a)
+int Array::isEqual (Array *a, int strict) 
 {
   struct range *r1, *r2;
   int i;
@@ -1336,6 +1378,7 @@ int Array::isEqual (Array *a)
   r2 = a->r;
 
   if (!expanded) {
+    /* no distinction between strict and non-strict */
     for (i=0; i < dims; i++) {
       if ((r1[i].u.ue.lo && !r2[i].u.ue.lo) || (!r1[i].u.ue.lo && r2[i].u.ue.lo))
 	return 0;
@@ -1345,12 +1388,18 @@ int Array::isEqual (Array *a)
   }
   else {
     for (i=0; i < dims; i++) {
-      if ((r1[i].u.ex.lo != r2[i].u.ex.lo) || (r1[i].u.ex.hi != r2[i].u.ex.hi))
-	return 0;
+      if (strict) {
+	if ((r1[i].u.ex.lo != r2[i].u.ex.lo) || (r1[i].u.ex.hi != r2[i].u.ex.hi))
+	  return 0;
+      }
+      else {
+	if ((r1[i].u.ex.hi - r1[i].u.ex.lo) != (r2[i].u.ex.hi - r2[i].u.ex.lo))
+	  return 0;
+      }
     }
   }
   if (next) {
-    return next->isEqual (a->next);
+    return next->isEqual (a->next, strict);
   }
   return 1;
 }
@@ -1724,6 +1773,31 @@ int Array::effDims()
   return count;
 }
 
+/*
+ * @return number of elements in the array
+ */
+int Array::size()
+{
+  int i;
+  int count = 1;
+  struct Array *a;
+
+  Assert (expanded, "Only applicable to expanded arrays");
+  for (i=0; i < dims; i++) {
+    if (r[i].u.ex.hi < r[i].u.ex.lo) {
+      count = 0;
+      break;
+    }
+    else {
+      count = count*(r[i].u.ex.hi-r[i].u.ex.lo+1);
+    }
+  }
+  if (next) {
+    count += next->size();
+  }
+  return count;
+}
+
 
 
 /*
@@ -1934,11 +2008,214 @@ AExpr *AExpr::Clone()
  */
 Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
+  UserDef *ux;
+  int k, sz, len;
+  InstType *x, *p;  
+  Array *xa;
+
   printf ("Hello, expand userdef!\n");
   /* nt = # of specified parameters
      u = expanded instance paramters
   */
   printf ("Expanding userdef, nt=%d\n", nt);
+
+  /* create a new userdef type */
+  ux = new UserDef (ns);
+
+  /* set its scope to "expanded" mode */
+  ux->I->FlushExpand();
+  
+#if 0
+  if (nt > 0) {
+    MALLOC (xu, inst_param, nt);
+    for (int i=0; i < nt; i++) {
+      xu[i].tp = NULL;
+    }
+  }
+  for (int i=0; i < nt; i++) {
+    if (isParamAType (i)) {
+      xu[i].xt = u[i].tt->Expand (ns, s);
+    }
+    else {
+      /* XXX: typecheck here */
+      xu[i].xi = u[i].tp->Expand (ns, s);
+    }
+  }
+#endif
+
+  /* create bindings for type parameters */
+  for (int i=0; i < nt; i++) {
+    p = getPortType (-(i+1));
+
+    x = p->Expand (_ns, ux->I); // this is the real type of the
+				// parameter
+
+    /* add parameter to the scope */
+    ux->AddMetaParam (x, pn[i], (i < mt ? 0 : 1));
+
+    /* get the ValueIdx for the parameter */
+    ValueIdx *vx = ux->I->LookupVal (pn[i]);
+    vx->init = 1;
+
+    /* allocate space and bind it to a value */
+    if (TypeFactory::isPtypeType (p->BaseType())) {
+      /* recall: no ptype arrays */
+      Assert (!x->arrayInfo(), "No ptype arrays?");
+      
+      /* alloc */
+      vx->idx = ux->I->AllocPType();
+      x = u[i].tt->Expand (ns, s);
+      Assert (ux->I->issetPType (vx->idx) == 0, "Huh?");
+      ux->I->setPType (vx->idx, x);
+      Assert (ux->I->getPType (vx->idx) == x, "Huh?!");
+    }
+    else {
+      unsigned int len;
+      xa = x->arrayInfo();
+      if (xa) {
+	len = xa->size();
+      }
+      else {
+	len = 1;
+      }
+
+      /* x = expanded type of port parameter
+	 xa = expanded array field
+      */
+      if (TypeFactory::isPIntType (x->BaseType())) {
+	/* expand the array expression */
+
+	/*unsigned long val = u[i].tp->Expand (_ns, ux->I);*/
+	/* get the value */
+	/* bind */
+      }
+      else if (TypeFactory::isPIntsType (x->BaseType())) {
+	vx->idx = ux->I->AllocPInts(len);
+	/* get the value */
+	/* bind */
+      }
+      else if (TypeFactory::isPRealType (x->BaseType())) {
+	vx->idx = ux->I->AllocPReal(len);
+	/* get the value */
+	/* bind */
+      }
+      else if (TypeFactory::isPBoolType (x->BaseType())) {
+	vx->idx = ux->I->AllocPBool(len);
+	/* get the value */
+	/* bind */
+      }
+      else {
+	fatal_error ("Should not be here: meta params only");
+      }
+	
+    }
+
+  }
+  
+
+  /*
+    Bind template parameters to the ones passed in
+  */
+  
+
+  /*
+     create a name for it!
+     (old name)"<"string-from-types">"
+
+     create a fresh scope
+
+     expand out the body of the type
+
+     insert the new type into the namespace into the xt table
+  */
+  act_error_ctxt (stderr);
+  warning ("Need to actually expand the type");
+
+  sz = 0;
+
+  /* type< , , , ... , > + end-of-string */
+  sz = strlen (getName()) + 3 + nt;
+
+  for (int i=0; i < nt; i++) {
+    InstType *x;
+    Array *xa;
+
+    x = getPortType (-(i+1));
+    xa = x->arrayInfo();
+    if (TypeFactory::isPtypeType (x->BaseType())) {
+      if (xa) {
+	act_error_ctxt (stderr);
+	fatal_error ("ptype array parameters not supported");
+      }
+
+      x = u[i].xt;
+      /* x is now the value of the parameter */
+      sz += strlen (x->BaseType()->getName())  + 2;
+      /* might have directions, upto 2 characters worth */
+    }
+    else {
+      /* check array info */
+      if (xa) {
+	Assert (xa->isExpanded(), "Array info is not expanded");
+	sz += 16*xa->size()+2;
+      }
+      else {
+	sz += 16;
+      }
+    }
+  }
+  
+  char *buf;
+  MALLOC (buf, char, sz);
+  k = 0;
+  buf[k] = '\0';
+  snprintf (buf+k, sz, "%s<", getName());
+  len = strlen (buf+k);
+  k += len;
+  sz -= len;
+
+  for (int i=0; i < nt; i++) {
+    if (i != 0) {
+      snprintf (buf+k, sz, ",");
+      len = strlen (buf+k); k += len; sz -= len;
+    }
+    Assert (sz > 0, "Check");
+    x = getPortType (-(i+1));
+    xa = x->arrayInfo();
+    if (TypeFactory::isPtypeType (x->BaseType())) {
+      x = u[i].xt;
+      snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
+		Type::dirstring (x->getDir()));
+      len = strlen (buf+k); k += len; sz -= len;
+    }
+    else {
+      if (xa) {
+	snprintf (buf+k, sz, "{");
+	k++; sz--;
+	/* add code here */
+	snprintf (buf+k, sz, "}");
+	k++; sz--;
+	fatal_error ("XXX: fix this array");
+      }
+      else {
+	/* XXX: ok, need to set up value tables */
+	if (TypeFactory::isPIntsType (x->BaseType())) {
+	  
+	}
+	else if (TypeFactory::isPIntType (x->BaseType())) {
+
+	}
+	else if (TypeFactory::isPBoolType (x->BaseType())) {
+	  
+	}
+	else if (TypeFactory::isPRealType (x->BaseType())) {
+	  
+	}
+      }
+    }
+    
+  }
+
 
   return NULL;
 }
@@ -1949,7 +2226,6 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 {
   InstType *xit = NULL;
   Type *xt = NULL;
-  inst_param *xu = NULL;
 
   /* copy in my scope and parent base type. But it must be an expanded
      scope.
@@ -1962,28 +2238,11 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   act_error_push (t->getName(), NULL, 0);
 
   /* Expand the core type using template parameters, if any */
-
-  if (nt > 0) {
-    MALLOC (xu, inst_param, nt);
-    for (int i=0; i < nt; i++) {
-      xu[i].tp = NULL;
-    }
-  }
-  for (int i=0; i < nt; i++) {
-    if (isParamAType (i)) {
-      xu[i].xt = u[i].tt->Expand (ns, s);
-    }
-    else {
-      xu[i].xi = u[i].tp->Expand (ns, s);
-    }
-  }
-  xt = t->Expand (ns, s, nt, xu);
+  xt = t->Expand (ns, s, nt, u);
   
-  /*
-    If parent is user-defined, we need to make sure we have the
-    expanded version of this in place!
+  /* If parent is user-defined, we need to make sure we have the
+     expanded version of this in place!
   */
-
   xit = new InstType (NULL, xt, 0);
   xit->expanded = 1;
 

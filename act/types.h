@@ -55,6 +55,17 @@ class Type {
     OUTIN = 4
   };
 
+  static const char *dirstring (direction d) {
+    switch (d) {
+    case Type::NONE: return ""; break;
+    case Type::IN: return "?"; break;
+    case Type::OUT: return "!"; break;
+    case Type::INOUT: return "?!"; break;
+    case Type::OUTIN: return "!?"; break;
+    }
+    return "-err-";
+  };
+
  protected:
   friend class TypeFactory;
 };
@@ -177,6 +188,14 @@ class UserDef : public Type {
    *
    */
   int AddMetaParam (InstType *t, const char *id, int opt = 0);
+
+  /**
+   * Allocate space for meta parameters
+   *
+   * @param id is the name of the meta parameter
+   * 
+   */
+  void AllocMetaParam (const char *id);
 
   /**
    * Add a new port
@@ -527,7 +546,10 @@ class TypeFactory {
   static int isDataType (Type *t);
 
   static int isIntType (Type *t);
+  static int isIntsType (Type *t);
+
   static int isPIntType (Type *t);
+  static int isPIntsType (Type *t);
 
   static int isBoolType (Type *t);
   static int isPBoolType (Type *t);
@@ -567,6 +589,15 @@ class TypeFactory {
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
   static int isPtypeType (Type *t);
+
+
+  /**
+   * Determines if the specified type is a parameter type
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid ptype type, 0 otherwise
+   */
+  static int isParamType (Type *t);
 };
 
 
@@ -624,9 +655,11 @@ class Array {
 
   /**
    * Check if two array derefes are identical
+   * @param strict is 1 if the low and high indices must match; 0
+   * means the sizes must match.
    *
    */
-  int isEqual (Array *a);
+  int isEqual (Array *a, int strict);
 
   /**
    * Check if two arrays have compatible parameters (matching
@@ -651,6 +684,8 @@ class Array {
 
   int isExpanded() { return expanded; }	
   /* returns 1 if expanded array, 0 otherwise */
+
+  int size(); /**< returns total number of elements */
 
  private:
 
@@ -708,6 +743,7 @@ class AExpr {
   AExpr *Clone ();
 
   InstType *getInstType (Scope *);
+  InstType *getExpInstType (Scope *); /**< expanded type */
 
   long Expand (ActNamespace *, Scope *); /**< return index into value
 					    space based on the size
@@ -783,11 +819,15 @@ union inst_param {
 				   signature for ptypes
 				*/
 
+#if 0
+  double xr;			/**< expanded real value */
+
   long xi;			/**< expanded integer or boolean
 				   value, or index for more complex
 				   objects */
 
   InstType *xt;			/**< expanded type value */
+#endif
 };
 
 /*------------------------------------------------------------------------
@@ -806,7 +846,7 @@ class ActBody {
   ActBody *Tail ();
   ActBody *Next () { return next; }
 
-  virtual void Expand (ActNamespace *, Scope *) { fatal_error ("Need to define Expand() method!"); }
+  virtual void Expand (ActNamespace *, Scope *, int meta_only = 0) { fatal_error ("Need to define Expand() method!"); }
 
  private:
   ActBody *next;
@@ -819,7 +859,7 @@ class ActBody {
 class ActBody_Inst : public ActBody {
  public:
   ActBody_Inst(InstType *, const char *);
-  void Expand (ActNamespace *, Scope *);
+  void Expand (ActNamespace *, Scope *, int meta_only = 0);
   Type *BaseType ();
 
  private:
@@ -841,7 +881,7 @@ class ActBody_Conn : public ActBody {
     u.general.rhs = id2;
   }
 
-  void Expand (ActNamespace *, Scope *);
+  void Expand (ActNamespace *, Scope *, int meta_only = 0);
   
  private:
   union {
@@ -879,7 +919,7 @@ class ActBody_Loop : public ActBody {
     b = _b;
   }
 
-  void Expand (ActNamespace *, Scope *);
+  void Expand (ActNamespace *, Scope *, int meta_only = 0);
 
  private:
   ActBody_Loop::type t;			/**< type of loop */
@@ -925,7 +965,7 @@ class ActBody_Select : public ActBody {
   }
 #endif
 
-  void Expand (ActNamespace *, Scope *);
+  void Expand (ActNamespace *, Scope *, int meta_only = 0);
 
  private:
   ActBody_Select_gc *gc;

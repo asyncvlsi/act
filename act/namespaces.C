@@ -354,6 +354,19 @@ Scope::Scope (Scope *parent, int is_expanded)
   H = hash_new (2);
   u = NULL;
   up = parent;
+
+  A_INIT (vpint);
+  A_INIT (vpints);
+  A_INIT (vpreal);
+  A_INIT (vptype);
+  vpbool = NULL;
+
+  vpint_set = NULL;
+  vpints_set = NULL;
+  vpreal_set = NULL;
+  vptype_set = NULL;
+  vpbool_set = NULL;
+
 }
 
 InstType *Scope::Lookup (const char *s)
@@ -372,6 +385,21 @@ InstType *Scope::Lookup (const char *s)
   else {
     return NULL;
   }
+}
+
+ValueIdx *Scope::LookupVal (const char *s)
+{
+  hash_bucket_t *b;
+
+  if (!expanded) {
+    return NULL;
+  }
+
+  b = hash_lookup (H, s);
+  if (!b) {
+    return NULL;
+  }
+  return (ValueIdx *)b->v;
 }
 
 InstType *Scope::FullLookup (const char *s)
@@ -400,6 +428,17 @@ Scope::~Scope ()
 {
   hash_free (H);
   H = NULL;
+
+  A_FREE (vpint);
+  A_FREE (vpints);
+  A_FREE (vpreal);
+  A_FREE (vptype);
+  if (vpbool) { bitset_free (vpbool); }
+  if (vpint_set) { bitset_free (vpint_set); }
+  if (vpints_set) { bitset_free (vpints_set); }
+  if (vpreal_set) { bitset_free (vpreal_set); }
+  if (vptype_set) { bitset_free (vptype_set); }
+  if (vpbool_set) { bitset_free (vpbool_set); }
 }
 
 InstType *Scope::Lookup (ActId *id, int err)
@@ -488,9 +527,32 @@ void Scope::FlushExpand ()
 	delete v;
       }
     }
+    A_FREE (vpint);
+    A_FREE (vpints);
+    A_FREE (vpreal);
+    A_FREE (vptype);
+    if (vpbool) { bitset_free (vpbool); }
+    if (vpint_set) { bitset_free (vpint_set); }
+    if (vpints_set) { bitset_free (vpints_set); }
+    if (vpreal_set) { bitset_free (vpreal_set); }
+    if (vptype_set) { bitset_free (vptype_set); }
+    if (vpbool_set) { bitset_free (vpbool_set); }
   }
   hash_clear (H);
   expanded = 1;
+
+  /* value storage */
+  A_INIT (vpint);
+  A_INIT (vpints);
+  A_INIT (vpreal);
+  A_INIT (vptype);
+  vpbool = NULL;
+
+  vpint_set = NULL;
+  vpints_set = NULL;
+  vpreal_set = NULL;
+  vptype_set = NULL;
+  vpbool_set = NULL;
 }
 
 /**
@@ -546,7 +608,12 @@ void ActNamespace::Expand ()
   /* flush the scope, and re-create it! */
   I->FlushExpand ();
 
-  /* Expand all namespaces that are nested within me */
+  /* 1. Expand all meta parameters at the top level of the namespace. */
+  for (b = B; b; b = b->Next ()) {
+    b->Expand (this, I, 1 /* meta-only */);
+  }
+
+  /* 2. Expand all namespaces that are nested within me */
   for (i=0; i < N->size; i++) {
     for (bkt = N->head[i]; bkt; bkt = bkt->next) {
       ns = (ActNamespace *) bkt->v;
@@ -554,10 +621,246 @@ void ActNamespace::Expand ()
     }
   }
 
-  /* Expand body */
-  for (b = B; b; b = b->Next ()) {
+  /* 3. Expand the rest. Note that expanding meta parameters is
+     idempotent for a namespace. */
+  for (b = B; b; b = b->Next()) {
     b->Expand (this, I);
   }
 
   act_error_pop ();
 }
+
+
+/*------------------------------------------------------------------------
+ *
+ *   Functions to handle parameter values in a scope
+ *
+ *------------------------------------------------------------------------
+ */
+
+/**----- pint -----**/
+
+unsigned long Scope::AllocPInt(int count)
+{
+  unsigned long ret;
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPInt(): count must be >0!");
+  }
+  A_NEWP (vpint, unsigned long, count);
+  ret = A_LEN (vpint);
+  if (!vpint_set) { vpint_set = bitset_new (count); }
+  else {
+    bitset_expand (vpint_set, ret + count);
+  }
+  A_LEN (vpint) += count;
+  return ret;
+}
+
+void Scope::setPInt(unsigned long id, unsigned long val)
+{
+  if (id >= A_LEN (vpint)) {
+    fatal_error ("Scope::setPInt(): invalid identifier!");
+  }
+  vpint[id] = val;
+  bitset_set (vpint_set, id);
+}
+
+int Scope::issetPInt(unsigned long id)
+{
+  if (id >= A_LEN (vpint)) {
+    fatal_error ("Scope::setPInt(): invalid identifier!");
+  }
+  return bitset_tst (vpint_set, id);
+}
+
+unsigned long Scope::getPInt(unsigned long id)
+{
+  if (id >= A_LEN (vpint)) {
+    fatal_error ("Scope::setPInt(): invalid identifier!");
+  }
+  return vpint[id];
+}
+
+/**----- pints -----**/
+
+unsigned long Scope::AllocPInts(int count)
+{
+  unsigned long ret;
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPInts(): count must be >0!");
+  }
+  A_NEWP (vpints, long, count);
+  ret = A_LEN (vpints);
+  if (!vpints_set) { vpints_set = bitset_new (count); }
+  else {
+    bitset_expand (vpints_set, A_LEN (vpints)+count);
+  }
+  A_LEN (vpints) += count;
+  return A_LEN (vpints)-1;
+}
+
+void Scope::setPInts(unsigned long id, long val)
+{
+  if (id >= A_LEN (vpints)) {
+    fatal_error ("Scope::setPInts(): invalid identifier!");
+  }
+  vpints[id] = val;
+  bitset_set (vpints_set, id);
+}
+
+int Scope::issetPInts(unsigned long id)
+{
+  if (id >= A_LEN (vpints)) {
+    fatal_error ("Scope::setPInts(): invalid identifier!");
+  }
+  return bitset_tst (vpints_set, id);
+}
+
+long Scope::getPInts(unsigned long id)
+{
+  if (id >= A_LEN (vpints)) {
+    fatal_error ("Scope::setPInts(): invalid identifier!");
+  }
+  return vpints[id];
+}
+
+/**----- preal -----**/
+
+unsigned long Scope::AllocPReal(int count)
+{
+  unsigned long ret;
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPReal(): count must be >0!");
+  }
+  A_NEWP (vpreal, double, count);
+  ret = A_LEN (vpreal);
+  if (!vpreal_set) { vpreal_set = bitset_new (count); }
+  else {
+    bitset_expand (vpreal_set, A_LEN (vpreal)+count);
+  }
+  A_LEN (vpreal) += count;
+  return ret;
+}
+
+void Scope::setPReal(unsigned long id, double val)
+{
+  if (id >= A_LEN (vpreal)) {
+    fatal_error ("Scope::setPPReal(): invalid identifier!");
+  }
+  vpreal[id] = val;
+  bitset_set (vpreal_set, id);
+}
+
+int Scope::issetPReal(unsigned long id)
+{
+  if (id >= A_LEN (vpreal)) {
+    fatal_error ("Scope::setPReal(): invalid identifier!");
+  }
+  return bitset_tst (vpreal_set, id);
+}
+
+double Scope::getPReal(unsigned long id)
+{
+  if (id >= A_LEN (vpreal)) {
+    fatal_error ("Scope::setPReal(): invalid identifier!");
+  }
+  return vpreal[id];
+}
+
+
+
+/**----- ptype -----**/
+
+unsigned long Scope::AllocPType(int count)
+{
+  unsigned long ret;
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPType(): count must be >0!");
+  }
+  A_NEWP (vptype, InstType *, count);
+  ret = A_LEN (vptype);
+  if (!vptype_set) { vptype_set = bitset_new (count); }
+  else {
+    bitset_expand (vptype_set, A_LEN (vptype)+count);
+  }
+  A_LEN (vptype) += count;
+  return ret;
+}
+
+void Scope::setPType(unsigned long id, InstType *val)
+{
+  if (id >= A_LEN (vptype)) {
+    fatal_error ("Scope::setPPType(): invalid identifier!");
+  }
+  vptype[id] = val;
+  bitset_set (vptype_set, id);
+}
+
+int Scope::issetPType(unsigned long id)
+{
+  if (id >= A_LEN (vptype)) {
+    fatal_error ("Scope::setPType(): invalid identifier!");
+  }
+  return bitset_tst (vptype_set, id);
+}
+
+InstType *Scope::getPType(unsigned long id)
+{
+  if (id >= A_LEN (vptype)) {
+    fatal_error ("Scope::setPType(): invalid identifier!");
+  }
+  return vptype[id];
+}
+
+
+/**----- pbool -----**/
+
+unsigned long Scope::AllocPBool(int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPBool(): count must be >0!");
+  }
+  if (!vpbool) {
+    vpbool = bitset_new (count);
+    vpbool_set = bitset_new (count);
+    vpbool_len = count;
+    return 0;
+  }
+  else {
+    bitset_expand (vpbool, vpbool_len + count);
+    bitset_expand (vpbool_set, vpbool_len + count);
+    vpbool_len += count;
+    return vpbool_len - count;
+  }
+}
+
+void Scope::setPBool(unsigned long id, int val)
+{
+  if (id >= vpbool_len) {
+    fatal_error ("Scope::setPBool(): invalid identifier!");
+  }
+  if (val) {
+    bitset_set (vpbool, id);
+  }
+  else {
+    bitset_clr (vpbool, id);
+  }
+  bitset_set (vpreal_set, id);
+}
+
+int Scope::issetPBool(unsigned long id)
+{
+  if (id >= vpbool_len) {
+    fatal_error ("Scope::setPBool(): invalid identifier!");
+  }
+  return bitset_tst (vpbool_set, id);
+}
+
+int Scope::getPBool(unsigned long id)
+{
+  if (id >= vpbool_len) {
+    fatal_error ("Scope::setPBool(): invalid identifier!");
+  }
+  return bitset_tst (vpbool, id);
+}
+
