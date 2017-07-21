@@ -166,3 +166,8 @@ bitset_t *bitset_copy (bitset_t *b)
   }
   return r;
 }
+
+unsigned int bitset_size (bitset_t *b)
+{
+  return (unsigned)b->sz*32;
+}
