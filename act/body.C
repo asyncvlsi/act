@@ -57,7 +57,7 @@ Type *ActBody_Inst::BaseType ()
  * there's no notion of a parameterized namespace.
  * s = the *fresh*, new scope for expansion
  */
-void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
+void ActBody_Inst::Expand (ActNamespace *ns, Scope *s, int meta_only)
 {
   InstType *x;
   /* typechecking should all pass, so there shouldn't be an issue
@@ -89,17 +89,17 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 
 
 
-void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
+void ActBody_Conn::Expand (ActNamespace *ns, Scope *s, int meta_only)
 {
   printf ("Expand conn!\n");
 }
 
-void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
+void ActBody_Loop::Expand (ActNamespace *ns, Scope *s, int meta_only)
 {
   printf ("Expand loop!\n");
 }
 
-void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
+void ActBody_Select::Expand (ActNamespace *ns, Scope *s, int meta_only)
 {
   printf ("Expand select\n");
 }
