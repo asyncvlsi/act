@@ -7,6 +7,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=common pgen act layout sim analysis synthesis
+SUBDIRS=common pgen xact layout sim analysis synthesis
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
