@@ -310,7 +310,7 @@ static void check_table (struct Hashtable *H)
     for (b = H->head[i]; b; b = b->next) {
       if (i != hash (H, b->key)) {
 	printf ("XXX: hash table messed up!\n");
-	printf ("Entry: `%s' [len=%ld]\n", b->key, strlen (b->key));
+	printf ("Entry: `%s' [len=%d]\n", b->key, (int)strlen (b->key));
 	exit (1);
       }
     }
