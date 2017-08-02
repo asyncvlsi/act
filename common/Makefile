@@ -7,21 +7,45 @@
 
 LIB1=libvlsilib_$(EXT).a
 LIB2=libALINT_$(EXT).so
+LIB3=libssim_$(EXT).a
+LIB4=libasim_$(EXT).a
 
-TARGETLIBS=$(LIB1) $(LIB2)
+TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
 
 TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
-	names.h mstring.h
+	names.h mstring.h mytime.h \
+	channel.h hconfig.h checkpoint.h contexts.h count.h \
+	machine.h mem.h mutex.h queue.h tasking.h thread.h sim.h \
+	log.h
 
+# general library support
 OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
-	heap.o except.o pp.o list.o bool.o names.o mstring.o
+	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o 
+
+# shared libs hsim integration
 OBJS2=hash2.os atrace2.os ns.os misc.os
 
-SRCS=$(OBJS1:.o=.c) ns.c
+# synchronous simulation
+OBJS3CPP=queue.o tasking.o wakeupcall.o hconfig.o
+OBJS3C2=contexts_uf.o
+OBJS3CPP2=slog.o smem.o ssim.o scheckpoint.o
 
-OBJS=$(OBJS1) $(OBJS2)
-CLEAN=hash2.c hash2.h atrace2.c atrace2.h
+# asynchronous simulation
+OBJS4CPP=hconfig.o 
+OBJS4CPP2=alog.o amem.o asim.o
+OBJS4C=thread.o mutex.o count.o channel.o
+OBJS4C2=contexts_f.o 
+
+OBJS3=$(OBJS3C) $(OBJCS3C2) $(OBJS3CPP) $(OBJS3CPP2)
+
+OBJS4=$(OBJS4C) $(OBJCS4C2) $(OBJS4CPP) $(OBJS4CPP2)
+
+SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.C) \
+	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.C)
+
+OBJS=$(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4)
+CLEAN=hash2.c hash2.h atrace2.c atrace2.h 
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
@@ -36,9 +60,50 @@ atrace2.c: atrace.c
 atrace2.h: atrace.h
 	sed 's/hash\.h/hash2.h/' $< > atrace2.h
 
+contexts_uf.o: contexts.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS)  $< -o contexts_uf.o
+
+contexts_f.o: contexts.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< -o contexts_uf.o
+
+ssim.o: sim.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
+
+smem.o: mem.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o smem.o
+
+slog.o: log.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $< -o slog.o
+
+scheckpoint.o: checkpoint.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
+
+asim.o: sim.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DASYNCHRONOUS $< -o asim.o
+
+amem.o: mem.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DASYNCHRONOUS $< -o amem.o
+
+alog.o: log.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DASYNCHRONOUS $< -o alog.o
+
+acheckpoint.o: checkpoint.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DASYNCHRONOUS $<  -o acheckpoint.o
+
+queue.o: queue.C
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
+
 $(LIB1): $(OBJS1)
 	ar ruv $(LIB1) $(OBJS1)
 	$(RANLIB) $(LIB1)
+
+$(LIB3): $(OBJS3)
+	ar ruv $(LIB3) $(OBJS3)
+	$(RANLIB) $(LIB3)
+
+$(LIB4): $(OBJS4)
+	ar ruv $(LIB4) $(OBJS4)
+	$(RANLIB) $(LIB4)
 
 $(LIB2): $(OBJS2)
 	$(CC) $(SH_LINK_OPTIONS) -o $(LIB2) $(OBJS2)

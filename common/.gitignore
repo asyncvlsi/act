@@ -13,9 +13,8 @@ Makefile.deps
 # Targets
 libALINT*
 libvlsilib*
-
-# working directories
-i386_*
+libssim*
+libasim*
 
 # fix this later
 view.c
@@ -23,4 +22,5 @@ view.h
 
 #
 # build dirs
+i386_*
 x86_64*
