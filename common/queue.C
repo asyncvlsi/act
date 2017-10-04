@@ -6,7 +6,7 @@
 #include <string.h>
 #include "queue.h"
 
-Queue::Queue (char *name, int size)
+Queue::Queue (const char *name, int size)
 {
   char *s;
 
