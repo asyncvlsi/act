@@ -89,9 +89,9 @@ void Log::Initialize_LogLevel (const char *s)
 {
   int i;
 
+  for (i=0; i < 256; i++)
+    log_level[i] = 0;
   if (!s) {
-    for (i=0; i < 256; i++)
-      log_level[i] = 0;
     return;
   }
   while (*s) {

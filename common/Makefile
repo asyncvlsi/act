@@ -37,9 +37,9 @@ OBJS4CPP2=alog.o amem.o asim.o
 OBJS4C=thread.o mutex.o count.o channel.o
 OBJS4C2=contexts_f.o 
 
-OBJS3=$(OBJS3C) $(OBJCS3C2) $(OBJS3CPP) $(OBJS3CPP2)
+OBJS3=$(OBJS3C) $(OBJS3C2) $(OBJS3CPP) $(OBJS3CPP2)
 
-OBJS4=$(OBJS4C) $(OBJCS4C2) $(OBJS4CPP) $(OBJS4CPP2)
+OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 
 SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.C) \
 	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.C)
@@ -64,7 +64,7 @@ contexts_uf.o: contexts.c
 	$(CC) -c $(CFLAGS) $(DFLAGS)  $< -o contexts_uf.o
 
 contexts_f.o: contexts.c 
-	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< -o contexts_uf.o
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< -o contexts_f.o
 
 ssim.o: sim.C
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
