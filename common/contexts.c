@@ -399,9 +399,10 @@ void context_init (process_t *p, void (*f)(void))
 /* This works with Ubuntu 12.04 */
 #define INIT_SP(p) (int)((char*)(p)->c.stack + (p)->c.sz)
 #define CURR_SP(p) DecodeJMPBUF((p)->c.buf[0].__jmpbuf[4])
+#define SET_CURR_SP(p,v) (p)->c.buf[0].__jmpbuf[4] = EncodeJMPBUF(v)
 
   p->c.buf[0].__jmpbuf[5] = EncodeJMPBUF((int)context_stub);
-  p->c.buf[0].__jmpbuf[4] = EncodeJMPBUF((int)((char*)stack+n-4));
+  SET_CURR_SP(p,((int)((char*)stack+n-4)));
 
 
 /* This works with RedHat 7.1 */
@@ -415,14 +416,10 @@ void context_init (process_t *p, void (*f)(void))
 
 #define INIT_SP(p) (unsigned long long)((char*)(p)->c.stack + (p)->c.sz)
 #define CURR_SP(p) DecodeJBRHEL((p)->c.buf[0].__jmpbuf[6])
+#define SET_CURR_SP(p,v) (p)->c.buf[0].__jmpbuf[6] = EncodeJBRHEL((unsigned long long)v)
 
-#if 0
-  p->c.buf[0].__jmpbuf[6] = EncodeJBRHEL((unsigned long long)context_stub);
-  p->c.buf[0].__jmpbuf[1] = EncodeJBRHEL((unsigned long long)((char*)stack+n-8));
-#endif
   p->c.buf[0].__jmpbuf[7] = EncodeJBRHEL((unsigned long long)context_stub);
-  p->c.buf[0].__jmpbuf[6] = EncodeJBRHEL((unsigned long long)((char*)stack+n-8));
-  
+  SET_CURR_SP(p,((unsigned long long)((char*)stack+n-8)));
 
 #else
 
@@ -455,10 +452,15 @@ void context_init (process_t *p, void (*f)(void))
 
 #define INIT_SP(p) (long long)((char*)(p)->c.stack + (p)->c.sz)
 #define CURR_SP(p) (p)->c.buf[0]._jb[3]
+#define SET_CURR_SP(p,v)  ((p)->c.buf[0]._jb[3] = (v)),((p)->c.buf[0]._jb[2] = 16+(v))
 
   p->c.buf[0]._jb[0] = (long)context_stub;
+  SET_CURR_SP(p,(long)((char*)(stack+n-24)));
+
+#if 0
   p->c.buf[0]._jb[2] = (long)((char*)(stack+n-8));
   p->c.buf[0]._jb[3] = (long)((char*)(stack+n-24));
+#endif
 
 #elif defined (__alpha)
 
@@ -549,6 +551,11 @@ void context_init (process_t *p, void (*f)(void))
 }
 
 
+#ifndef SET_CURR_SP
+
+#define SET_CURR_SP(p,v)  (CURR_SP(p) = v)
+
+#endif
 
 /*------------------------------------------------------------------------
  *
@@ -576,6 +583,10 @@ void context_write (FILE *fp, process_t *p)
     curr_sp = init_sp;
     init_sp = (unsigned char *)CURR_SP(p);
   }
+
+  i = (curr_sp - init_sp);
+  fprintf (fp, "%d\n", i);
+
   /*
    * This is broken. if init_sp == curr_sp, do we save or not???
    * (machine-dependent)
@@ -612,10 +623,19 @@ void context_read (FILE *fp, process_t *p)
   init_sp = (unsigned char *)INIT_SP(p);
   curr_sp = (unsigned char *)CURR_SP(p);
 
+  fscanf (fp, "%d", &i);
+
+  /* XXX: assumes stack grows downward */
+  curr_sp = init_sp - i;
+
+  /* replace CURR_SP with curr_sp */
+  SET_CURR_SP(p,curr_sp);
+
   if (init_sp > curr_sp) {
     curr_sp = init_sp;
     init_sp = (unsigned char *)CURR_SP(p);
   }
+
   /* this is broken too... */
   while (init_sp < curr_sp) {
     fscanf (fp, "%d", &i);

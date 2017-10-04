@@ -152,14 +152,14 @@ void SimCreateTask (SimObject *s, const char *name, int stksz = DEFAULT_STACK_SI
    void RestoreState (FILE *fp, UnCheckPoint *uc);	\
    void DumpStats (void)
 
-#define FAKE_SIM_TEMPLATE   				\
+#define DUMMY_SIM_TEMPLATE   				\
    void MainLoop(void); 				\
    void Print (FILE *fp) { }				\
    void SaveState (FILE *fp) { }			\
    void RestoreState (FILE *fp, UnCheckPoint *uc) { }	\
    void DumpStats (void) { }
 
-#define FAKE_STATS_TEMPLATE				\
+#define DUMMY_STATS_TEMPLATE				\
    void MainLoop(void); 				\
    void DumpStats (void);				\
    void Print (FILE *fp) { }				\
