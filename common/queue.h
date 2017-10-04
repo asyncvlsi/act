@@ -22,7 +22,7 @@ class UnCheckPoint;
 
 class Queue {
  public:
-  Queue (char *name, int size);
+  Queue (const char *name, int size);
   // queue size
   
   int Get (void);
