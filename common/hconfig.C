@@ -371,7 +371,7 @@ void RegisterDefault (const char *name, float f)
   h->dfloat = f;
 }
 
-void RegisterDefault (const char *name, char *s)
+void RegisterDefault (const char *name, const char *s)
 {
   struct helem *h;
 
@@ -383,7 +383,7 @@ void RegisterDefault (const char *name, char *s)
   strcpy (h->ds, s);
 }
 
-void OverrideConfig (const char *name, char *s)
+void OverrideConfig (const char *name, const char *s)
 {
   struct helem *h;
 

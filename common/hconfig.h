@@ -32,7 +32,7 @@ LL ParamGetLL (const char *name);
 void RegisterDefault (const char *name, int val);
 void RegisterDefault (const char *name, LL val);
 void RegisterDefault (const char *name, float val);
-void RegisterDefault (const char *name, char *s);
-void OverrideConfig (const char *name, char *value);
+void RegisterDefault (const char *name, const char *s);
+void OverrideConfig (const char *name, const char *value);
 
 #endif /* __CONFIG_H__ */
