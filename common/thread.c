@@ -10,6 +10,8 @@
 #include "thread.h"
 #include "qops.h"
 
+#define DEBUG_MODE
+
 /* the ready queue */
 lthread_t *readyQh = NULL;
 lthread_t *readyQt = NULL;
@@ -136,7 +138,7 @@ void context_destroy (lthread_t *t)
   if (t->name) free (t->name);
   if (t->file) free (t->file);
 #endif /* DEBUG_MODE */
-  if (t->sz == DEFAULT_STACK_SIZE) {
+  if (t->c.sz == DEFAULT_STACK_SIZE) {
     t->next = thread_freeq;
     thread_freeq = t;
   }
@@ -239,7 +241,7 @@ _thread_new (void (*f)(void), int stksz, const char *name, int ready,
   t->in_readyq = 0;
   time_init (t->time);
 
-#ifdef DEBUG_MODE
+  /*#ifdef DEBUG_MODE*/
   if (file) {
     t->file = (char*)malloc(1+strlen(file));
     if (!t->file) {
@@ -261,9 +263,9 @@ _thread_new (void (*f)(void), int stksz, const char *name, int ready,
   }
   else
     t->name = NULL;
-#else   /* !DEBUG_MODE */
-  t->name = NULL;
-#endif  /* DEBUG_MODE */
+  /*#else  !DEBUG_MODE */
+  /*t->name = NULL;*/
+  /*#endif  DEBUG_MODE */
 
   context_init (t, f);
   if (ready) {
