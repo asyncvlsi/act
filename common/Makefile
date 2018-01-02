@@ -66,6 +66,19 @@ contexts_uf.o: contexts.c
 contexts_f.o: contexts.c 
 	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< -o contexts_f.o
 
+thread.o: thread.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< 
+
+mutex.o: mutex.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< 
+
+
+count.o: count.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< 
+
+channel.o: channel.c 
+	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS -DCLASS_HACKERY $< 
+
 ssim.o: sim.C
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
 
@@ -79,16 +92,16 @@ scheckpoint.o: checkpoint.C
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
 
 asim.o: sim.C
-	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DASYNCHRONOUS $< -o asim.o
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o asim.o
 
 amem.o: mem.C
-	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DASYNCHRONOUS $< -o amem.o
+	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o amem.o
 
 alog.o: log.C
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DASYNCHRONOUS $< -o alog.o
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $< -o alog.o
 
 acheckpoint.o: checkpoint.C
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DASYNCHRONOUS $<  -o acheckpoint.o
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
 
 queue.o: queue.C
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<

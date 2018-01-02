@@ -215,6 +215,9 @@ move-out:
 .C.o:
 	$(CXX) -c $(CFLAGS) $(DFLAGS) $<
 
+.cc.o:
+	$(CXX) -c $(CFLAGS) $(DFLAGS) $<
+
 .c.os:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
 

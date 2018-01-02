@@ -53,11 +53,11 @@ typedef struct {
   char *stack;			/* stack  */
   int sz;			/* stack size */
   void (*start) ();		/* entry point */
-#ifdef FAIR
+/*#ifdef FAIR*/
   int in_cs;			/* in critical section */
   int pending;			/* interrupt pending */
   int interrupted;              /* have you been interrupted lately? */
-#endif
+/*#endif*/
 } context_t;
 
 
