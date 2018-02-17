@@ -19,6 +19,13 @@
   int    <var> value
   string <var> value
   real   <var> value
+  int_table <var> values
+  real_table <var> values
+  string_table <var> values
+
+  begin name -- appends "name." as a prefix
+  end  -- drops last prefix
+  
 */
 
 enum {
@@ -111,6 +118,7 @@ void config_read (char *name)
   FILE *fp;
   char buf[10240];
   char buf2[10240];
+  char buf3[10240];
   char *s;
   hash_bucket_t *b;
   config_t *c;
@@ -118,6 +126,8 @@ void config_read (char *name)
   struct search_path *p;
   static int level = 0;
   int i;
+  char *prefix = NULL;
+  int prefix_len = 0;
 
   if (level == 0) {
     A_INIT (files_read);
@@ -160,6 +170,25 @@ void config_read (char *name)
     H = hash_new (8);
   }
 
+  MALLOC (prefix, char, 1024);
+  prefix_len = 1024;
+  prefix[0] = '\0';
+
+#define RAW_GET_NEXT						\
+  do {								\
+    s = strtok (NULL, " \t");					\
+    if (!s) fatal_error ("Invalid format [%s:%d]", name, line);	\
+  } while (0)
+
+#define GET_NAME						\
+  do {								\
+    RAW_GET_NEXT;						\
+    if (strlen (prefix) + 1 + strlen (s) > 10240) {		\
+      fatal_error ("Names are too long [%s:%d]", name, line);	\
+    }								\
+    sprintf (buf3, "%s%s", prefix, s);				\
+  } while (0)
+
   buf[0] = '\0';
   buf[10239] = '\0';
   while (fgets (buf, 10240, fp)) {
@@ -173,8 +202,7 @@ void config_read (char *name)
     if (!s || !*s) continue;
 
     if (strcmp (s, "include") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
+      RAW_GET_NEXT;
       if (s[0] != '"' || s[strlen(s)-1] != '"') {
 	fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
       }
@@ -182,10 +210,9 @@ void config_read (char *name)
       config_read (s+1);
     }
     else if (strcmp (s, "int") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format [%s:%d]", name, line);;
-      if (!(b = hash_lookup (H, s))) {
-	b = hash_add (H, s);
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_INT, "Switching types!?");
@@ -199,10 +226,9 @@ void config_read (char *name)
       b->v = c;
     }
     else if (strcmp (s, "string") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format");
-      if (!(b = hash_lookup (H, s))) {
-	b = hash_add (H, s);
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_STR, "Switching types!?");
@@ -237,10 +263,9 @@ void config_read (char *name)
       b->v = c;
     }
     else if  (strcmp (s, "real") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format [%s:%d]", name, line);;
-      if (!(b = hash_lookup (H, s))) {
-	b = hash_add (H, s);
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_REAL, "Switching types!?");
@@ -254,10 +279,9 @@ void config_read (char *name)
       b->v = c;
     }
     else if (strcmp (s, "int_table") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format [%s:%d]", name, line);;
-      if (!(b = hash_lookup (H, s))) {
-	b = hash_add (H, s);
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
@@ -284,10 +308,9 @@ void config_read (char *name)
       }
     }
     else if (strcmp (s, "real_table") == 0) {
-      s = strtok (NULL, " \t");
-      if (!s) fatal_error ("Invalid format [%s:%d]", name, line);;
-      if (!(b = hash_lookup (H, s))) {
-	b = hash_add (H, s);
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
@@ -313,8 +336,28 @@ void config_read (char *name)
 	c->u.t.u.r = x;
       }
     }
+    else if (strcmp (s, "begin") == 0) {
+      RAW_GET_NEXT;
+      while (strlen (s) + 1 + strlen (prefix) >= prefix_len) {
+	prefix_len += 1024;
+	REALLOC (prefix, char, prefix_len);
+      }
+      strcat (prefix, s);
+      strcat (prefix, ".");
+    }
+    else if (strcmp (s, "end") == 0) {
+      int x = strlen (prefix)-1;
+      if (x < 0) {
+	fatal_error ("end found without matching begin [%s:%d]\n", name, line);
+      }
+      x--;
+      while (x >= 0 && prefix[x] != '.') 
+	x--;
+      x++;
+      prefix[x] = '\0';
+    }
     else {
-      fatal_error ("Expecting int|string|real|int_table|real_table [%s:%d]\n", name, line);
+      fatal_error ("Expecting int|string|real|int_table|real_table|begin|end|include [%s:%d]\n", name, line);
     }
   }
   fclose (fp);
