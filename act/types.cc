@@ -2148,7 +2148,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 	fatal_error ("ptype array parameters not supported");
       }
 
-      x = u[i].xt;
+      x = u[i].tt;
       /* x is now the value of the parameter */
       sz += strlen (x->BaseType()->getName())  + 2;
       /* might have directions, upto 2 characters worth */
@@ -2183,7 +2183,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     x = getPortType (-(i+1));
     xa = x->arrayInfo();
     if (TypeFactory::isPtypeType (x->BaseType())) {
-      x = u[i].xt;
+      x = u[i].tt;
       snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
 		Type::dirstring (x->getDir()));
       len = strlen (buf+k); k += len; sz -= len;
