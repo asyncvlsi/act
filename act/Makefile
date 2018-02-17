@@ -23,7 +23,7 @@ OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 
 OBJS=$(OBJS1) $(OBJS2)
 
-SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.C)
+SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.cc)
 
 CLEAN=act_parse.C act_walk_X.C expr.c expr.h act_parse.h \
 	act_walk_X.h act_parse_int.h act_parse.def act_parse.gram \
