@@ -41,11 +41,13 @@ OBJS3=$(OBJS3C) $(OBJS3C2) $(OBJS3CPP) $(OBJS3CPP2)
 
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 
-SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.C) \
-	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.C)
+SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
+	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc)
 
 OBJS=$(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 
+
+DEPEND_FLAGS=-DSYNCHRONOUS
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
@@ -79,31 +81,31 @@ count.o: count.c
 channel.o: channel.c 
 	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS -DCLASS_HACKERY $< 
 
-ssim.o: sim.C
+ssim.o: sim.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
 
-smem.o: mem.C
+smem.o: mem.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o smem.o
 
-slog.o: log.C
+slog.o: log.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $< -o slog.o
 
-scheckpoint.o: checkpoint.C
+scheckpoint.o: checkpoint.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
 
-asim.o: sim.C
+asim.o: sim.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o asim.o
 
-amem.o: mem.C
+amem.o: mem.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o amem.o
 
-alog.o: log.C
+alog.o: log.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $< -o alog.o
 
-acheckpoint.o: checkpoint.C
+acheckpoint.o: checkpoint.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
 
-queue.o: queue.C
+queue.o: queue.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
 
 $(LIB1): $(OBJS1)
