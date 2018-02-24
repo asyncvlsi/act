@@ -1,0 +1,267 @@
+\newbox\warningbox  % @c -*-texinfo-*-
+\hfuzz=5pt
+@iftex 
+{\dimen2 = .55pt % Thickness of rules
+  \dimen0 = 5em% Width of the box.
+\font\textsf=cmss10 scaled \magstephalf
+\setbox0 = \hbox{\kern-.75pt \textsf warning\kern-1.5pt}
+\global\setbox\warningbox=\hbox to \dimen0{\hfil
+   \hsize = \dimen0 \advance\hsize by -5.8pt % Space to left+right.
+   \advance\hsize by -2\dimen2 % Rules.
+   \vbox{
+      \hrule height\dimen2
+      \hbox{\vrule width\dimen2 \kern3pt          % Space to left of text.
+         \vtop{\kern2.4pt \box0 \kern2.4pt}% Space above/below.
+         \kern3pt\vrule width\dimen2}% Space to right.
+      \hrule height\dimen2}
+    \hfil}
+\global\def\warning{\leavevmode\lower.7ex\copy\warningbox}}
+@end iftex
+\input texinfo
+@c %**start of header
+@setfilename layout
+@settitle ACT Layout Tools
+@setchapternewpage odd
+@paragraphindent 0
+@c
+@c %**end of header
+
+@c ------------------------------------------------------------------------
+@c  Copyright notice
+@c ------------------------------------------------------------------------
+
+@ifinfo
+This document describes the layout tools used by the Asynchronous Circuit
+Toolkit (ACT), and how to write new tools that use the layout library.
+
+Copyright @copyright{} 2018-2013 Rajit Manohar
+
+All Rights Reserved.
+@end ifinfo
+
+@c ------------------------------------------------------------------------
+@c  Title page
+@c ------------------------------------------------------------------------
+
+@titlepage
+@title ACT Layout Tools
+@subtitle Layout tools and libraries
+@author Rajit Manohar
+
+@c ------------------------------------------------------------------------
+@c  Copyright notice
+@c ------------------------------------------------------------------------
+
+@page
+@vskip 0pt plus 1filll
+This document describes the layout tools used by the Asynchronous Circuit
+Toolkit (ACT), and how to write new tools that use the layout library.
+
+@vskip 1cm
+
+Copyright @copyright{} 2018 Rajit Manohar
+
+All Rights Reserved.
+@end titlepage
+
+@c ------------------------------------------------------------------------
+@c   Top node
+@c ------------------------------------------------------------------------
+
+@ifinfo
+@node    Top, Introduction, (dir), (dir)
+
+This document describes the layout tools used by the Asynchronous Circuit
+Toolkit (ACT), and how to write new tools that use the layout library.
+
+@menu
+Select a chapter using the `m' key
+
+* Introduction::        A brief introduction with simple examples.
+* Technology file::     Describing geometric constraints for a technology.
+
+Appendices.
+
+* Errors and Warnings:: Index of errors and warnings printed by the library.
+* Function Index::      Index of functions that are part of the library.
+* Concept Index::       Index of concepts.
+
+@end menu
+
+@end ifinfo
+
+@c ------------------------------------------------------------------------
+@c     Introduction
+@c ------------------------------------------------------------------------
+
+@node Introduction,  Simple example, Top, Top
+@comment node-name, next, previous, up
+
+@chapter A Tutorial Introduction
+
+@cindex introduction
+
+@menu
+* Simple example::      A simple example of how @sc{act} can be used.
+@end menu
+
+@c ------------------------------------------------------------------------
+@c   Simple example
+@c ------------------------------------------------------------------------
+@node Simple example,  Technology file, Top, Introduction
+@comment  node-name,  next,  previous,  up
+
+@section A Simple Example
+
+Something goes here
+
+@c ------------------------------------------------------------------------
+
+
+@c ------------------------------------------------------------------------
+@c   Types
+@c ------------------------------------------------------------------------
+
+@node Technology file,  Header, Top, Top
+@comment  node-name,  next,  previous,  up
+
+@chapter Technology file
+
+The technology file contains information that is specific to the
+manufacturing technology being targetted. This information is in the
+form of abstract constraints and electrical information. The
+specifications contained in this file are not general enough to capture
+the complete design rule manual for a technology. However, they are
+sufficient for the layout library to generate design-rule clean
+geometry.
+
+@menu
+Select a section using the 'm' key
+
+* Header::  The preamble of the technology file
+* Transistors:: Specifying rules for diffusion, selects, polysilicon
+* Metal rules:: Specifying metal
+* Contacts:: Specifying connections between layers
+* Directives:: Specifying constraints and directives for the layout generator
+
+@comment * Electrical:: Electrical information
+@comment * Translations:: Layer names to be emitted
+
+@end menu
+
+@node Header,  Transistors, Technology file, Technology file
+
+@section File header
+
+The technology file header contains general information that identifies
+the technology node, the creation date of the file, and basic
+information about the rest of the technology.
+
+The two items that specify this are the name and date.
+@example
+begin info
+   string name "ST Micro 28nm FDSOI Process"
+   string date "Created on Jan 1, 2017 by Rajit Manohar"
+end
+@end example
+
+@example
+begin general
+   int scale 1   # units are in nanometers
+   int metals 6  # 6 metal layers being used
+   real vdd 1.0  # standard voltage 
+end
+@end example
+
+Diffusion types for different transistors
+@example
+begin diff
+   int types 7  # materials that share this layer
+   string pfet_svt "pdiff"
+   string pfet_lvt "lvtpdiff"
+   string pfet_hvt "hvtpdiff"
+   string nfet_svt "ndiff"
+   string nfet_lvt "lvtndiff"
+   string nfet_hvt "hvtndiff"
+end
+@end example
+The number of @code{types} corresponds to the number of different types
+of material that share the diffusion layer. Typically this number is
+twice the number of transistor types plus one for polysilicon.
+
+@node Transistors, Metal rules, Header, Technology file
+
+The materials section contains all the information about the materials
+that the layout library uses. These materials have standard names
+(strongly related to the names used by the open-source @code{magic} VLSI
+layout editor), and the technology file contains information that can be
+used to map these layers to actual geometry. All layout is specified in
+abstract layers. The concrete layers are generated from the abstract
+layers.
+
+There must be a section for each type of diffusion.
+
+@example
+begin materials
+   begin pdiff
+      
+
+   end
+end
+@end example
+
+
+@node Metal rules, Contacts, Transistors,  Technology file
+
+@node Contacts, Directives, Metal rules, Technology file
+
+@node Directives, , Contacts, Technology file
+
+
+@c ------------------------------------------------------------------------
+
+@c ------------------------------------------------------------------------
+@c     Table of warnings and errors
+@c ------------------------------------------------------------------------
+
+@node Errors and Warnings,  Function Index, Technology file, Top
+@comment  node-name,  next,  previous,  up
+
+@unnumbered Warning and Error messages
+
+Warning and error messages are generated by @sc{act} when parsing the
+input as well as when expanding the @sc{act} hierarchy. Typically, any
+error that can be checked statically is checked at parse time. All other
+errors are reported when flattening the @sc{act} hierarchy. When an
+error is reported, some feedback regarding where the error occurred is
+provided. Parse errors include the file name and line number where the
+error occurred. Errors reported when flattening the hierarchy (such as
+array bounds errors) include the name of the instance variable and the
+type being instantiated when the error occurred.
+
+@printindex ky
+
+@c ------------------------------------------------------------------------
+@c     Function Index
+@c ------------------------------------------------------------------------
+
+@node Function Index,  Concept Index, Errors and Warnings, Top
+@comment  node-name,  next,  previous,  up
+
+@unnumbered Function Index
+
+@printindex fn
+
+@c ------------------------------------------------------------------------
+@c     Concept Index
+@c ------------------------------------------------------------------------
+
+@node  Concept Index,  , Top, Top
+
+@unnumbered Concept Index
+
+@printindex cp
+
+@contents
+
+@bye

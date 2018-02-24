@@ -1,5 +1,6 @@
 \newbox\warningbox  % @c -*-texinfo-*-
 \hfuzz=5pt
+@iftex
 {\dimen2 = .55pt % Thickness of rules
   \dimen0 = 5em% Width of the box.
 \font\textsf=cmss10 scaled \magstephalf
@@ -15,6 +16,7 @@
       \hrule height\dimen2}
     \hfil}
 \global\def\warning{\leavevmode\lower.7ex\copy\warningbox}}
+@end iftex
 \input texinfo
 @c %**start of header
 @setfilename act
