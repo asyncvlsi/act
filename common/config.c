@@ -62,6 +62,7 @@ static struct search_path {
 } *Path = NULL;
 
 L_A_DECL (char *, files_read);
+L_A_DECL (char, global_prefix);
 
 /*------------------------------------------------------------------------
  *
@@ -71,7 +72,7 @@ L_A_DECL (char *, files_read);
  *
  *------------------------------------------------------------------------
  */
-void config_append_path (char *s)
+void config_append_path (const char *s)
 {
   struct search_path *p;
   if (!s) return;
@@ -90,7 +91,7 @@ void config_append_path (char *s)
  *
  *------------------------------------------------------------------------
  */
-void config_std_path (char *tool)
+void config_std_path (const char *tool)
 {
   char buf[10240];
 
@@ -107,13 +108,58 @@ void config_std_path (char *tool)
 
 /*------------------------------------------------------------------------
  *
+ *  config_push_prefix --
+ *
+ *   add prefix to the name. used when a tool uses multiple
+ *   configuration files.
+ *
+ *------------------------------------------------------------------------
+ */
+void config_push_prefix (const char *s)
+{
+  A_NEWP (global_prefix, char, strlen (s) + 2);
+  if (A_LEN (global_prefix) > 0) {
+    A_APPEND (global_prefix, '.');
+  }
+  while (*s) {
+    A_APPEND (global_prefix, *s);
+    s++;
+  }
+  A_NEXT (global_prefix) = '\0';
+}
+
+/*------------------------------------------------------------------------
+ *
+ *  config_pop_prefix --
+ *
+ *   Drop last prefix 
+ *
+ *------------------------------------------------------------------------
+ */
+void config_pop_prefix (void)
+{
+  int i;
+
+  if (A_LEN (global_prefix) == 0) {
+    fatal_error ("config_pop_prefix() called too many times");
+  }
+  i = A_LEN(global_prefix)-1;
+  while (i > 0 && global_prefix[i] != '.') {
+    i--;
+  }
+  A_LEN (global_prefix) = i;
+  global_prefix[i] = '\0';
+}
+
+/*------------------------------------------------------------------------
+ *
  *  config_read --
  *
  *   Read configuration file
  *
  *------------------------------------------------------------------------
  */
-void config_read (char *name)
+void config_read (const char *name)
 {
   FILE *fp;
   char buf[10240];
@@ -128,6 +174,7 @@ void config_read (char *name)
   int i;
   char *prefix = NULL;
   int prefix_len = 0;
+  int initial_phase = 1;
 
   if (level == 0) {
     A_INIT (files_read);
@@ -180,13 +227,19 @@ void config_read (char *name)
     if (!s) fatal_error ("Invalid format [%s:%d]", name, line);	\
   } while (0)
 
-#define GET_NAME						\
-  do {								\
-    RAW_GET_NEXT;						\
-    if (strlen (prefix) + 1 + strlen (s) > 10240) {		\
-      fatal_error ("Names are too long [%s:%d]", name, line);	\
-    }								\
-    sprintf (buf3, "%s%s", prefix, s);				\
+#define GET_NAME							\
+  do {									\
+    initial_phase = 0;							\
+    RAW_GET_NEXT;							\
+    if (A_LEN (global_prefix) + strlen (prefix) + 1 + strlen (s) > 10240) { \
+      fatal_error ("Names are too long [%s:%d]", name, line);		\
+    }									\
+    if (A_LEN (global_prefix) > 0) {					\
+      sprintf (buf3, "%s.%s%s", global_prefix, prefix, s);		\
+    }									\
+    else {								\
+      sprintf (buf3, "%s%s", prefix, s);				\
+    }									\
   } while (0)
 
   buf[0] = '\0';
@@ -202,6 +255,9 @@ void config_read (char *name)
     if (!s || !*s) continue;
 
     if (strcmp (s, "include") == 0) {
+      if (!initial_phase) {
+	fatal_error ("`include' directive is only permitted at the start of the file, before any definitions");
+      }
       RAW_GET_NEXT;
       if (s[0] != '"' || s[strlen(s)-1] != '"') {
 	fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
@@ -294,7 +350,7 @@ void config_read (char *name)
 	A_DECL (int, x);
 	A_INIT (x);
 	
-      /* read in a space-separated list of integers */
+	/* read in a space-separated list of integers */
 	s = strtok (NULL, " \t");
 	while (s) {
 	  /* accumulate s in the table */
@@ -337,6 +393,7 @@ void config_read (char *name)
       }
     }
     else if (strcmp (s, "begin") == 0) {
+      initial_phase = 0;
       RAW_GET_NEXT;
       while (strlen (s) + 1 + strlen (prefix) >= prefix_len) {
 	prefix_len += 1024;
@@ -347,6 +404,7 @@ void config_read (char *name)
     }
     else if (strcmp (s, "end") == 0) {
       int x = strlen (prefix)-1;
+      initial_phase = 0;
       if (x < 0) {
 	fatal_error ("end found without matching begin [%s:%d]\n", name, line);
       }
@@ -408,7 +466,7 @@ void config_clear (void)
  *
  *------------------------------------------------------------------------
  */
-int config_get_int (char *s)
+int config_get_int (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -430,7 +488,7 @@ int config_get_int (char *s)
  *
  *------------------------------------------------------------------------
  */
-double config_get_real (char *s)
+double config_get_real (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -444,7 +502,7 @@ double config_get_real (char *s)
   return c->u.r;
 }
 
-char *config_get_string (char *s)
+char *config_get_string (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -466,7 +524,7 @@ char *config_get_string (char *s)
  *
  *------------------------------------------------------------------------
  */
-int *config_get_table_int (char *s)
+int *config_get_table_int (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -489,7 +547,7 @@ int *config_get_table_int (char *s)
  *
  *------------------------------------------------------------------------
  */
-double *config_get_table_real (char *s)
+double *config_get_table_real (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -511,7 +569,7 @@ double *config_get_table_real (char *s)
  *
  *------------------------------------------------------------------------
  */
-int config_get_table_size (char *s)
+int config_get_table_size (const char *s)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -526,7 +584,7 @@ int config_get_table_size (char *s)
 }
 
 
-void config_set_default_int (char *s, int v)
+void config_set_default_int (const char *s, int v)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -550,7 +608,7 @@ void config_set_default_int (char *s, int v)
   c->u.i = v;
 }
 
-void config_set_default_real (char *s, double v)
+void config_set_default_real (const char *s, double v)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -575,7 +633,7 @@ void config_set_default_real (char *s, double v)
 }
 
 
-void config_set_default_string (char *s, char *t)
+void config_set_default_string (const char *s, char *t)
 {
   hash_bucket_t *b;
   config_t *c;
@@ -609,7 +667,7 @@ void config_set_default_string (char *s, char *t)
  *
  *------------------------------------------------------------------------
  */
-int config_exists (char *s)
+int config_exists (const char *s)
 {
   hash_bucket_t *b;
 
