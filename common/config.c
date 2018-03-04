@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2009 Rajit Manohar
+ *  Copyright (c) 2009-2018 Rajit Manohar
  *  All Rights Reserved
  *
  **************************************************************************
@@ -119,10 +119,10 @@ void config_push_prefix (const char *s)
 {
   A_NEWP (global_prefix, char, strlen (s) + 2);
   if (A_LEN (global_prefix) > 0) {
-    A_APPEND (global_prefix, '.');
+    A_APPEND (global_prefix, char, '.');
   }
   while (*s) {
-    A_APPEND (global_prefix, *s);
+    A_APPEND (global_prefix, char, *s);
     s++;
   }
   A_NEXT (global_prefix) = '\0';
@@ -252,7 +252,7 @@ void config_read (const char *name)
     buf[strlen(buf)-1] = '\0';
     if (buf[0] == '#' || buf[0] == '\0') continue;
     s = strtok (buf, " \t");
-    if (!s || !*s) continue;
+    if (!s || !*s || s[0] == '#') continue;
 
     if (strcmp (s, "include") == 0) {
       if (!initial_phase) {
@@ -294,7 +294,7 @@ void config_read (const char *name)
       NEW (c, config_t);
       c->type = CONFIG_STR;
 
-      s = strtok (NULL, " \t\n");
+      s = strtok (NULL, " \t");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
 
      
@@ -305,7 +305,7 @@ void config_read (const char *name)
       strcpy (buf2, s);
 
       while (s && buf2[strlen(buf2)-1] != '"') {
-	s = strtok (NULL, " \t\n");
+	s = strtok (NULL, " \t");
 	if (s) {
 	  strcat (buf2, " ");
 	  strcat (buf2, s);
@@ -352,7 +352,7 @@ void config_read (const char *name)
 	
 	/* read in a space-separated list of integers */
 	s = strtok (NULL, " \t");
-	while (s) {
+	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,int);
 	  sscanf (s, "%d", &A_NEXT (x));
@@ -381,7 +381,7 @@ void config_read (const char *name)
 	
       /* read in a space-separated list of integers */
 	s = strtok (NULL, " \t");
-	while (s) {
+	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,double);
 	  sscanf (s, "%lg", &A_NEXT (x));
@@ -392,7 +392,57 @@ void config_read (const char *name)
 	c->u.t.u.r = x;
       }
     }
-    else if (strcmp (s, "begin") == 0) {
+    else if (strcmp (s, "string_table") == 0) {
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
+      }
+      else {
+	Assert (((config_t*)b->v)->type == CONFIG_TABLE_STR, "Switching types!?");
+	FREE (b->v);
+      }
+      NEW (c, config_t);
+      b->v = c;
+      c->type = CONFIG_TABLE_STR;
+      {
+	A_DECL (char *, x);
+	A_INIT (x);
+	
+      /* read in a space-separated list of integers */
+	s = strtok (NULL, " \t");
+	if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
+
+	do {
+	  if (s[0] != '"') {
+	    fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
+	  }
+	  strcpy (buf2, s);
+
+	  while (s && buf2[strlen(buf2)-1] != '"') {
+	    s = strtok (NULL, " \t");
+	    if (s) {
+	      strcat (buf2, " ");
+	      strcat (buf2, s);
+	    }
+	  }
+	  if (!s) {
+	    fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
+	  }
+
+	  buf2[strlen(buf2)-1] = '\0';
+
+	  A_APPEND (x, char *, Strdup (buf2+1));
+
+	  s = strtok (NULL, " \t");
+
+	  if (s && s[0] == '#') break;  /* comment */
+
+	} while (s);
+
+	c->u.t.sz = A_LEN (x);
+	c->u.t.u.s = x;
+      }
+    } else if (strcmp (s, "begin") == 0) {
       initial_phase = 0;
       RAW_GET_NEXT;
       while (strlen (s) + 1 + strlen (prefix) >= prefix_len) {
@@ -563,6 +613,28 @@ double *config_get_table_real (const char *s)
 
 /*------------------------------------------------------------------------
  *
+ *  config_get_table_string --
+ *
+ *   Return string table
+ *
+ *------------------------------------------------------------------------
+ */
+char **config_get_table_string (const char *s)
+{
+  hash_bucket_t *b;
+  config_t *c;
+  
+  if (!H || !(b = hash_lookup (H, s))) {
+    fatal_error ("%s: string_table, not in configuration file", s);
+  }
+  c = (config_t *)b->v;
+  if (c->type != CONFIG_TABLE_STR) 
+    fatal_error ("%s: not of type string_table!", s);
+  return c->u.t.u.s;
+}
+
+/*------------------------------------------------------------------------
+ *
  *  config_get_table_size --
  *
  *   Return number of entries in the table
@@ -578,7 +650,8 @@ int config_get_table_size (const char *s)
     fatal_error ("%s : table not in configuration file", s);
   }
   c = (config_t *)b->v;
-  if (c->type != CONFIG_TABLE_INT && c->type != CONFIG_TABLE_REAL)
+  if (c->type != CONFIG_TABLE_INT && c->type != CONFIG_TABLE_REAL &&
+      c->type != CONFIG_TABLE_STR)
     fatal_error ("%s : not of type table!", s);
   return c->u.t.sz;
 }
@@ -675,4 +748,70 @@ int config_exists (const char *s)
     return 0;
   }
   return 1;
+}
+
+
+/*------------------------------------------------------------------------
+ *
+ *  config_dump --
+ *
+ *   Dump config table to a file
+ *
+ *------------------------------------------------------------------------
+ */
+void config_dump (FILE *fp)
+{
+  int i;
+  int j;
+  hash_bucket_t *b;
+  config_t *c;
+  
+  if (!H) return;
+
+  for (i=0; i < H->size; i++) {
+    for (b = H->head[i]; b; b = b->next) {
+      c = (config_t *)b->v;
+      switch (c->type) {
+      case CONFIG_INT:
+	fprintf (fp, "int %s %d\n", b->key, c->u.i);
+	break;
+
+      case CONFIG_REAL:
+	fprintf (fp, "real %s %g\n", b->key, c->u.r);
+	break;
+
+      case CONFIG_STR:
+	fprintf (fp, "string %s \"%s\"\n", b->key, c->u.s);
+	break;
+	
+      case CONFIG_TABLE_INT:
+	fprintf (fp, "int_table %s", b->key);
+	for (j=0; j < c->u.t.sz; j++) {
+	  fprintf (fp, " %d", c->u.t.u.i[j]);
+	}
+	fprintf (fp, "\n");
+	break;
+
+      case CONFIG_TABLE_REAL:
+	fprintf (fp, "real_table %s", b->key);
+	for (j=0; j < c->u.t.sz; j++) {
+	  fprintf (fp, " %g", c->u.t.u.r[j]);
+	}
+	fprintf (fp, "\n");
+	break;
+
+      case CONFIG_TABLE_STR:
+	fprintf (fp, "string_table %s", b->key);
+	for (j=0; j < c->u.t.sz; j++) {
+	  fprintf (fp, " \"%s\"", c->u.t.u.s[j]);
+	}
+	fprintf (fp, "\n");
+	break;
+
+      default:
+	fatal_error ("Unknown configuration variable type?");
+	break;
+      }
+    }
+  }
 }

@@ -120,8 +120,9 @@
 #define A_NEXT(name)  name[A_LEN(name)]
 #define A_INC(name)  A_LEN(name)++
 
-#define A_APPEND(name,v)			\
+#define A_APPEND(name,type,v)			\
    do {						\
+     A_NEW (name,type);				\
      A_NEXT (name) = (v);			\
      A_INC (name);				\
    } while (0)
