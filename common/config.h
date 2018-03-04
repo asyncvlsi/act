@@ -39,6 +39,7 @@ char *config_get_string (const char *s);
 int config_get_table_size (const char *s);
 double *config_get_table_real (const char *s);
 int *config_get_table_int (const char *s);
+char **config_get_table_string (const char *s);
 
 /* set default value */
 void config_set_default_int (const char *s, int v);
@@ -50,6 +51,9 @@ void config_clear (void);
 
 /* check if variable exists */
 int config_exists (const char *s);
+
+/* dump config table to file */
+void config_dump (FILE *s);
 
 #ifdef __cplusplus
 }
