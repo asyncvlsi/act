@@ -1,5 +1,6 @@
 \newbox\warningbox  % @c -*-texinfo-*-
 \hfuzz=5pt
+@iftex
 {\dimen2 = .55pt % Thickness of rules
   \dimen0 = 5em% Width of the box.
 \font\textsf=cmss10 scaled \magstephalf
@@ -15,6 +16,7 @@
       \hrule height\dimen2}
     \hfil}
 \global\def\warning{\leavevmode\lower.7ex\copy\warningbox}}
+@end iftex
 \input texinfo
 @c %**start of header
 @setfilename act
@@ -575,9 +577,9 @@ bool Reset,Reset_;
 @end example
 @noindent
 This permits the names @code{Reset} and @code{Reset_} to be used
-throughout the @sc{act} file. However, unlike traditional programming
-languages, these signals cannot be used within the body of a
-definition. The definition of types cannot be nested. In other words,
+throughout the @sc{act} file. 
+
+The definition of types cannot be nested. In other words,
 a construct such as @code{defproc} cannot contain a @code{defproc} within its
 body.
 
@@ -670,6 +672,13 @@ processor::lib::a1of2 d;
 
 This is more selective, and only re-exports the specified definition.
 
+A namespace can have global variables. The global variables described
+earlier were simply a special case corresponding to the namespace
+@code{Global}. For instance, a collection of process definitions within
+a namespace might have a reset signal that is global to the namespace
+only, and which is generated using some logic defined within the
+namespace.
+
 @c ------------------------------------------------------------------------
 
 @node     Importing files,  Types, Intro to Namespaces, Introduction
@@ -696,14 +705,17 @@ first, then in the colon-separated path specified by @code{$ACT_PATH},
 and finally in @code{$ACT_HOME/act}.
 
 A typical project would contain multiple files, each possibly having
-their own namespace. There are a few things that might create issues
-in such a situation.
+their own namespace. Namespaces can also have global variables, so
+importing a namespace automatically creates an instance of the global
+variables from that namespace, and from any sub-namespace that was also
+imported. 
 
+There are a few things that might create issues in such a situation.
 First, duplicate namespaces might exist, especially when re-using old
 files. For instance, suppose we have two files: @code{lib1.act}@ and
 @code{lib2.act} both containing namespace @code{lib}, but having
-definitions that are useful. Importing both would result in the union
-of the namespaces, and could create naming conflicts (e.g. multiple
+definitions that are useful. Importing both would result in the union of
+the namespaces, and could create naming conflicts (e.g. multiple
 definition of types having the same name---an error). To solve this
 problem, one can do the following:
 
@@ -752,11 +764,10 @@ hierarchy. The import statement
 import processor::lib;
 @end example
 
-is equivalent to the following two directives:
+is equivalent to the following:
 
 @example
 import "processor/lib/_all_.act";
-open processor::lib;
 @end example
 
 It assumes that the file @code{_all_.act} in the directory
@@ -1658,7 +1669,7 @@ instances can be used.
 
 Sub-typing is only supported on processes and cells. The reason for
 this restriction is that subtyping on channels and data types means
-that the types hvae to be equivalent. (Note: this is not true for
+that the types have to be equivalent. (Note: this is not true for
 types with @code{!} or @code{?} decorators, but we are ignoring this
 for the moment.)  In addition, if a process/cell is defined as a
 sub-type of another, the sub-type cannot @emph{conflict} with the
@@ -1710,7 +1721,7 @@ defproc buffer (chan?(int<1>) l, chan!(int<1>) r)
    @}
 @}
 
-defproc wchb <: buffer (e1of2? l, e1of2! r)
+defproc wchb <: buffer (+e1of2? l, +e1of2! r)
 @{
    prs @{
      ...
@@ -1718,10 +1729,13 @@ defproc wchb <: buffer (e1of2? l, e1of2! r)
 @}
 @end example
 
-In this version, the original process implements a buffer with
-channels, and the @code{wchb} specifies the channel protocol as
-well. The first abstract buffer can be used with different handshake
-protocols on channels.
+In this version, the original process implements a buffer with channels,
+and the @code{wchb} specifies the channel protocol as well.  The first
+abstract buffer can be used with different handshake protocols on
+channels. The ``@code{+}'' indicates that the type of the instance is
+being over-ridden in the @code{wchb}. While the @code{+} isn't
+necessary, @sc{act} forces a user to be explicit when overriding types
+in a subtype so that it is clear this was intentional.
 
 Sub-typing relations introduced when the right hand side is not a
 skeleton should be handled with care. For example, suppose one has two
@@ -2528,9 +2542,9 @@ The @code{spec} language.
 @node BNF,  Errors and Warnings, Languages, Top
 @comment  node-name,  next,  previous,  up
 
-@appendix BNF for the @sc{cast} language
-@cindex @sc{cast}, BNF
-@cindex BNF, @sc{cast}
+@appendix BNF for the @sc{act} language
+@cindex @sc{act}, BNF
+@cindex BNF, @sc{act}
 
 @include bnf.texinfo
 
@@ -2546,10 +2560,10 @@ The @code{spec} language.
 
 @unnumbered Warning and Error messages
 
-Warning and error messages are generated by @sc{cast} when parsing the
-input as well as when expanding the @sc{cast} hierarchy. Typically, any
+Warning and error messages are generated by @sc{act} when parsing the
+input as well as when expanding the @sc{act} hierarchy. Typically, any
 error that can be checked statically is checked at parse time. All other
-errors are reported when flattening the @sc{cast} hierarchy. When an
+errors are reported when flattening the @sc{act} hierarchy. When an
 error is reported, some feedback regarding where the error occurred is
 provided. Parse errors include the file name and line number where the
 error occurred. Errors reported when flattening the hierarchy (such as
