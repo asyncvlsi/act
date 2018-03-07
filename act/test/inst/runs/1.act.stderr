@@ -1,5 +1,4 @@
 ERROR: File `1.act', line 5, col 6
-	Could not create instance `x'
-	Array instance: incompatible int<> width specifier
-Instance previously created in current scope with different type.
-Previous type: int<22>[10]
+	Array instance for `x' is incompatible with previous instance of the same name
+ prev: int<22>[10]
+ here: int<32>[10]

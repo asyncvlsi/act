@@ -235,10 +235,6 @@ int TypeFactory::isDataType (Type *t)
   if (tmp_i) {
     return 1;
   }
-  Ints *tmp_is = dynamic_cast<Ints *>(t);
-  if (tmp_is) {
-    return 1;
-  }
   Enum *tmp_e = dynamic_cast<Enum *>(t);
   if (tmp_e) {
     return 1;
@@ -258,15 +254,6 @@ int TypeFactory::isIntType (Type *t)
   }
   Enum *tmp_e = dynamic_cast<Enum *>(t);
   if (tmp_e) {
-    return 1;
-  }
-  return 0;
-}
-
-int TypeFactory::isIntsType (Type *t)
-{
-  Ints *tmp_i = dynamic_cast<Ints *>(t);
-  if (tmp_i) {
     return 1;
   }
   return 0;
@@ -1924,6 +1911,10 @@ static void _print_expr (FILE *fp, Expr *e, int prec)
     fprintf (fp, "%d", e->u.v);
     break;
 
+  case E_REAL:
+    fprintf (fp, "%g", e->u.f);
+    break;
+
   case E_TRUE:
     fprintf (fp, "true");
     break;
@@ -1938,7 +1929,6 @@ static void _print_expr (FILE *fp, Expr *e, int prec)
 
   case E_FUNCTION:
   case E_BITFIELD:
-    /* XXX */
   default:
     fatal_error ("Unhandled case!\n");
     break;
