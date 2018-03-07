@@ -23,7 +23,7 @@ OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 
 OBJS=$(OBJS1) $(OBJS2)
 
-SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.C)
+SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.cc)
 
 CLEAN=act_parse.C act_walk_X.C expr.c expr.h act_parse.h \
 	act_walk_X.h act_parse_int.h act_parse.def act_parse.gram \
@@ -44,8 +44,8 @@ act.cy: act.m4 defs.m4 expr.m4 lang.m4 namespaces.m4 types.m4 expr.c expr.h
 
 id.h act_walk.h act_parse.h act_parse_int.h act_parse.C act_walk_X.C: act.cy
 	$(INSTALLDIR)/bin/pgen act.cy -w X -p -n act
-	-mv act_parse.c act_parse.C
-	-mv act_walk_X.c act_walk_X.C
+	-mv act_parse.c act_parse.cc
+	-mv act_walk_X.c act_walk_X.cc
 
 expr.c: $(INSTALLDIR)/lib/expr.c
 	cp $(INSTALLDIR)/lib/expr.c .
