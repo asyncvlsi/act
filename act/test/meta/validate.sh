@@ -14,5 +14,5 @@ fi
 
 for i in $list
 do
-	../../act -p $i > runs/$i.stdout 2> runs/$i.stderr
+	../act-test.* $i > runs/$i.stdout 2> runs/$i.stderr
 done

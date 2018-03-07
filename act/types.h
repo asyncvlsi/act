@@ -120,6 +120,8 @@ class Int : public Type {
   unsigned int is_signed:1;
   unsigned int expanded:1;
   int w;			/* bit-width */
+
+  friend class TypeFactory;
 };
 
 class Enum : public Type {
@@ -129,6 +131,8 @@ class Enum : public Type {
   }
   unsigned int expanded:1;
   int count;			/* size of enumeration */
+
+  friend class TypeFactory;
 };
 
 /**
@@ -141,6 +145,8 @@ class Chan : public Type {
   }
   unsigned int expanded:1;
   /* type info here */
+
+  friend class TypeFactory;
 };
 
 
@@ -546,7 +552,6 @@ class TypeFactory {
   static int isDataType (Type *t);
 
   static int isIntType (Type *t);
-  static int isIntsType (Type *t);
 
   static int isPIntType (Type *t);
   static int isPIntsType (Type *t);
@@ -745,7 +750,7 @@ class AExpr {
   InstType *getInstType (Scope *);
   InstType *getExpInstType (Scope *); /**< expanded type */
 
-  long Expand (ActNamespace *, Scope *); /**< return index into value
+  list_t *Expand (ActNamespace *, Scope *); /**< return index into value
 					    space based on the size
 					    of the array */
 
@@ -981,11 +986,11 @@ class ActBody_Select : public ActBody {
 
 #define T_INT        0x1
 #define T_REAL       0x2
-#define T_BOOL       0x3
-#define T_PROC       0x4
-#define T_CHAN       0x5
-#define T_DATA       0x6
-#define T_SELF       0x7   /* special type, "self" */
+#define T_BOOL       0x4
+#define T_PROC       0x5
+#define T_CHAN       0x6
+#define T_DATA       0x7
+#define T_SELF       0x8   /* special type, "self" */
 
 int act_type_expr (Scope *, Expr *);
 int act_type_var (Scope *, ActId *);
