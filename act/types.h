@@ -113,17 +113,13 @@ class Bool : public Type {
 };
 
 class Int : public Type {
-  const char *getName() { return "int"; }
+  const char *getName() { if (is_signed) return "ints"; else return "int"; }
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
-};
-
-class Ints : public Type {
-  const char *getName() { return "ints"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-     return this;
-  }
+  unsigned int is_signed:1;
+  unsigned int expanded:1;
+  int w;			/* bit-width */
 };
 
 class Enum : public Type {
@@ -131,6 +127,8 @@ class Enum : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  unsigned int expanded:1;
+  int count;			/* size of enumeration */
 };
 
 /**
@@ -141,6 +139,8 @@ class Chan : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
      return this;
   }
+  unsigned int expanded:1;
+  /* type info here */
 };
 
 
