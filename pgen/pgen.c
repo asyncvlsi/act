@@ -1915,6 +1915,7 @@ void emit_parser (void)
   pp_puts (pp, " fprintf (stderr, \"File `%s', line %d, col %d\\n\\t\", p->f, p->l, p->c);"); pp_nl;
   pp_puts (pp, " va_start (ap, fmt);"); pp_nl;
   pp_puts (pp, " vfprintf (stderr, fmt, ap);"); pp_nl;
+  pp_puts (pp, " fprintf (stderr, \"\\n\");"); pp_nl;
   pp_puts (pp, " va_end (ap);"); pp_nl;
   pp_puts (pp, "}"); pp_nl; pp_nl;
 
