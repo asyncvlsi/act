@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2015 Rajit Manohar
+ *  Copyright (c) 2015-2018 Rajit Manohar
  *  All Rights Reserved
  *
  **************************************************************************
@@ -18,8 +18,6 @@
  * Typechecking code
  *
  */
-
-
 
 static char typecheck_errmsg[10240];
 
@@ -132,9 +130,11 @@ int act_type_expr (Scope *s, Expr *e)
   int lt, rt;
   int flgs;
   if (!e) return T_ERR;
-  
-  /*printf ("check: %s\n", expr_operator_name (e->type));*/
-  /*printf (" lt: %x  rt: %\n", lt, rt);       */
+
+  /*  
+  printf ("check: %s\n", expr_operator_name (e->type));
+  printf (" lt: %x  rt: %x\n", lt, rt);      
+  */
 
 #define EQUAL_LT_RT2(f,g)			\
   do {						\
@@ -310,7 +310,7 @@ static InstType *actual_insttype (Scope *s, ActId *id)
 {
   InstType *it;
 
-  it = s->Lookup (id, 0);
+  it = s->FullLookup (id->getName());
   Assert (it, "This should have been caught earlier!");
   while (id->Rest()) {
       /* this had better be an array deref if there is a array'ed type
@@ -399,22 +399,24 @@ InstType *act_expr_insttype (Scope *s, Expr *e)
     return it;
   }
   ret = act_type_expr (s, e);
+
   if (ret == T_ERR) {
     return NULL;
   }
-  if (ret & (T_INT|T_PARAM)) {
+  ret &= ~T_STRICT;
+  if (ret == (T_INT|T_PARAM)) {
     return TypeFactory::Factory()->NewPInt();
   }
-  else if (ret & T_INT) {
+  else if (ret == T_INT) {
     return TypeFactory::Factory()->NewInt (s, Type::NONE, 0, const_expr (32));
   }
-  else if (ret & (T_BOOL|T_PARAM)) {
+  else if (ret == (T_BOOL|T_PARAM)) {
     return TypeFactory::Factory()->NewPBool ();
   }
-  else if (ret & T_BOOL) {
+  else if (ret == T_BOOL) {
     return TypeFactory::Factory()->NewBool (Type::NONE);
   }
-  else if (ret & (T_REAL|T_PARAM)) {
+  else if (ret == (T_REAL|T_PARAM)) {
     return TypeFactory::Factory()->NewPReal ();
   }
   else {
@@ -574,7 +576,7 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
     delete lhs;
     return T_ERR;
   }
-
+  
   /*
   printf ("Types: ");
   lhs->Print (stdout);
