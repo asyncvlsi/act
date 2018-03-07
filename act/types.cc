@@ -141,9 +141,13 @@ InstType *TypeFactory::NewBool (Type::direction dir)
 struct inthashkey {
   Scope *s;
   Type::direction d;
+  int sig;			// signed or not
   Expr *w;
 };
 
+/*
+  sig = is signed?
+*/
 InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 {
   chash_bucket_t *b;
@@ -152,11 +156,14 @@ InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 
   if (_i == NULL) {
     _i = new Int();
+    _i->expanded = 0;
+    _i->is_signed = sig;
   }
   
   k.s = s;
   k.d = dir;
   k.w = w;
+  k.sig = sig;
 
   /* the key should contain the direction and width expression.
      For int<w>, we need to know the *context* of w.. is it the same w
@@ -189,6 +196,7 @@ InstType *TypeFactory::NewEnum (Scope *s, Type::direction dir, Expr *w)
   k.s = s;
   k.d = dir;
   k.w = w;
+  k.sig = 0;
 
   /* the key should contain the direction and width expression.
      For int<w>, we need to know the *context* of w.. is it the same w
@@ -616,6 +624,7 @@ int TypeFactory::inthashfn (int sz, void *key)
 {
   struct inthashkey *k = (struct inthashkey *)key;
   int v;
+  unsigned char sig;
 
   /* scope pointers are unique */
   v = hash_function_continue 
@@ -624,6 +633,10 @@ int TypeFactory::inthashfn (int sz, void *key)
   /* hash the direction */
   v = hash_function_continue 
     (sz, (const unsigned char *) &k->d, sizeof (Type::direction), v,1);
+
+  /* hash the sign */
+  sig = k->sig;
+  v = hash_function_continue (sz, (const unsigned char *) &sig, 1, v, 1);
 
   /* now walk the expression to compute its hash */
   v = expr_hash (sz, k->w, v);
@@ -638,6 +651,7 @@ int TypeFactory::intmatchfn (void *key1, void *key2)
   k2 = (struct inthashkey *)key2;
   if (k1->s != k2->s) return 0;
   if (k1->d != k2->d) return 0;
+  if (k1->sig != k2->sig) return 0;
   return expr_equal (k1->w, k2->w);
 }
 
@@ -649,6 +663,7 @@ void *TypeFactory::intdupfn (void *key)
   kret->s = k->s;
   kret->d = k->d;
   kret->w = k->w;
+  kret->sig = k->sig;
   return kret;
 }
 
@@ -732,6 +747,7 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, int n, InstType *
 
   if (!_c) {
     _c = new Chan();
+    _c->expanded = 0;
   }
 
   c.s = s;
@@ -1538,10 +1554,13 @@ void AExpr::Print (FILE *fp)
 }
 
 
-long AExpr::Expand (ActNamespace *ns, Scope *s)
+/*
+  Expand: returns a list of values.
+*/
+list_t *AExpr::Expand (ActNamespace *ns, Scope *s)
 {
-  /* compute array expression, everything is CONST here, so allocate
-     the array space and return an index to it */
+  /* this evaluates the array expression: everything must be a
+     constant or known parameter value */
   return NULL;
 }
 
