@@ -582,7 +582,7 @@ extern void lex_deltokens (LEX_T *l, int m)
  *  FIXME: binary search
  *------------------------------------------------------------------------
  */
-extern int lex_istoken (LEX_T *l, char *s)
+extern int lex_istoken (LEX_T *l, const char *s)
 {
   int i;
   for (i=0; i < l->ntokens; i++)
@@ -682,7 +682,7 @@ extern int lex_getsym (LEX_T *l)
 	ungetch (l);
 	l->ch = '/';
       }
-      if (flag)
+      if (flag) {
 	/* delimited token, check if there is a match at previous depth */
 	if (l->tokens[i][depth] == '\0') {
 	  found = 1;
@@ -693,7 +693,7 @@ extern int lex_getsym (LEX_T *l)
 	  found = (oldi == -1) ? 0 : 1;
 	  break;
 	}
-      
+      }
       /* check if this could be a legal end-of-token */
       if (!(contiguous_tok(l->tokens[i][depth-1]) && contiguous_tok(l->ch)) &&
 	  l->tokens[i][depth] == '\0')
