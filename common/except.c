@@ -159,7 +159,7 @@ except_arg (void)
  *
  *------------------------------------------------------------------------
  */
-void
+NORETURN_SPECIFIER void
 except_throw (int type, char *arg)
 {
   if (!root) {
