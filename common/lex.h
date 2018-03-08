@@ -164,7 +164,7 @@ extern void lex_deltokens (LEX_T *l, int n);
      Deletes the last "n" tokens.
    */
 
-extern int lex_istoken (LEX_T *l, char *s);
+extern int lex_istoken (LEX_T *l, const char *s);
    /*
      Returns 1 if s is a token that has been defined already, 0 otherwise
     */
