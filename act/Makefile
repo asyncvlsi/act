@@ -25,6 +25,8 @@ OBJS=$(OBJS1) $(OBJS2)
 
 SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.cc)
 
+GENERATED=act_parse.cc act_walk_X.cc
+
 CLEAN=act_parse.cc act_walk_X.cc expr.c expr.h act_parse.h \
 	act_walk_X.h act_parse_int.h act_parse.def act_parse.gram \
 	act.cy id.h
