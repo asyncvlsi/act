@@ -103,7 +103,7 @@ realclean: clean
 		fi; \
 		done
 
-depend:
+depend: $(GENERATED)
 	-$(VLSI_TOOLS_SRC)/scripts/mymakedepend "$(SRCS)" $(DFLAGS) $(DEPEND_FLAGS)
 	@for i in dummy_bad_name $(SUBDIRS); \
 		do \
