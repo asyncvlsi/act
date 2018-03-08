@@ -20,6 +20,16 @@
 extern "C" {
 #endif
 
+#if defined (__STDC__)
+#if (__STDC_VERSION__ >= 201112L)
+#define NORETURN_SPECIFIER _Noreturn
+#else
+#define NORETURN_SPECIFIER
+#endif
+#else 
+#define NORETURN_SPECIFIER
+#endif
+
 typedef struct _except_ except_t;
 
 void except_init (void);
@@ -31,7 +41,7 @@ int except_type (void);
 
 char *except_arg (void);
 
-void except_throw (int type, char *arg);
+NORETURN_SPECIFIER void except_throw (int type, char *arg);
 
 void except_error (void);
 
