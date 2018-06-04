@@ -1,0 +1,17 @@
+\newbox\warningbox  % 
+\hfuzz=5pt
+{\dimen2 = .55pt % Thickness of rules
+  \dimen0 = 5em% Width of the box.
+\font\textsf=cmss10 scaled \magstephalf
+\setbox0 = \hbox{\kern-.75pt \textsf warning\kern-1.5pt}
+\global\setbox\warningbox=\hbox to \dimen0{\hfil
+   \hsize = \dimen0 \advance\hsize by -5.8pt % Space to left+right.
+   \advance\hsize by -2\dimen2 % Rules.
+   \vbox{
+      \hrule height\dimen2
+      \hbox{\vrule width\dimen2 \kern3pt          % Space to left of text.
+         \vtop{\kern2.4pt \box0 \kern2.4pt}% Space above/below.
+         \kern3pt\vrule width\dimen2}% Space to right.
+      \hrule height\dimen2}
+    \hfil}
+\global\def\warning{\leavevmode\lower.7ex\copy\warningbox}}

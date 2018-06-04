@@ -65,7 +65,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s, int meta_only)
      duplicate dereference issues
   */
 
-#if 0
+#if 1
   printf ("Expand inst: ");
   t->Print (stdout);
   printf (" : id = %s\n", id);
@@ -102,4 +102,9 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s, int meta_only)
 void ActBody_Select::Expand (ActNamespace *ns, Scope *s, int meta_only)
 {
   printf ("Expand select\n");
+}
+
+void ActBody_Lang::Expand (ActNamespace *ns, Scope *s, int meta_only)
+{
+  printf ("Expand language\n");
 }
