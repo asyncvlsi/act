@@ -65,15 +65,16 @@ class Scope {
   InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
 						id; default report an error */
 
+  InstType *FullLookup (const char *s); /**< return full lookup,
+					   including in parent scopes */
+
+
   /* 
      only for expanded scopes
      returns ValueIdx information for identifier
   */
   ValueIdx *LookupVal (const char *s);
 
-
-  InstType *FullLookup (const char *s); /**< return full lookup,
-					   including in parent scopes */
 
   int Add (const char *s, InstType *it);
   void Del (const char *s);	/* used to delete loop index variables
@@ -90,10 +91,7 @@ class Scope {
   /**
    * Create a new scope that is a child of the current scope
    */
-  Scope *Push ()
-  {
-    return new Scope (this);
-  }
+  Scope *Push () { return new Scope (this); }
 
   /**
    * Delete current scope, returning parent [does this work?]
@@ -110,8 +108,6 @@ class Scope {
    */
   void setUserDef (UserDef *_u) { u = _u; }
   UserDef *getUserDef () { return u; }
-
-
 
   unsigned long AllocPInt(int count = 1);
   void setPInt(unsigned long id, unsigned long val);
@@ -319,7 +315,7 @@ class ActNamespace {
   /**
    * hash table for namespaces nested within this one
    */
-  struct Hashtable *N;		
+  struct Hashtable *N;
 
   /**
    * hash table of all the types defined within this namespace
@@ -327,8 +323,7 @@ class ActNamespace {
   struct Hashtable *T;
 
   /**
-   *  hash table of all the instances within this namespace. This
-   *  should only be non-empty for the global namespace
+   *  hash table of all the instances within this namespace.
    */
   Scope *I;
 
