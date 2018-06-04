@@ -101,6 +101,8 @@ class PReal : public Type {
 class PType : public Type {
   const char *getName() { return "ptype"; }
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+    /* XXX: FIXME */
+    printf ("XXX: fixme: PType::Expand\n");
     return this;
   }
 };
@@ -975,6 +977,44 @@ class ActBody_Select : public ActBody {
  private:
   ActBody_Select_gc *gc;
 };
+
+
+struct act_prs;
+struct act_chp;
+
+/*
+ * Language body
+ */
+class ActBody_Lang : public ActBody {
+ public:
+  ActBody_Lang (act_prs *p) {
+    t = LANG_PRS;
+    lang = p;
+  }
+  ActBody_Lang (act_chp *c, int ishse = 0) {
+    if (ishse) {
+      t = LANG_HSE;
+    }
+    else {
+      t = LANG_CHP;
+    }
+    lang = c;
+  }
+
+  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+
+ private:
+  enum {
+    LANG_PRS,
+    LANG_CHP,
+    LANG_HSE,
+    LANG_SPICE,
+    LANG_SPEC,
+    LANG_SIZE
+  } t;
+  void *lang;
+};
+
 
 /*
   Typecheck expression: returns -1 on failure
