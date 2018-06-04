@@ -2028,29 +2028,21 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   */
   printf ("Expanding userdef, nt=%d\n", nt);
 
+  /*
+    XXX: here, check if this has been previously expanded. If so,
+    return the cached value
+  */
+
   /* create a new userdef type */
   ux = new UserDef (ns);
 
   /* set its scope to "expanded" mode */
   ux->I->FlushExpand();
-  
-#if 0
-  if (nt > 0) {
-    MALLOC (xu, inst_param, nt);
-    for (int i=0; i < nt; i++) {
-      xu[i].tp = NULL;
-    }
-  }
-  for (int i=0; i < nt; i++) {
-    if (isParamAType (i)) {
-      xu[i].xt = u[i].tt->Expand (ns, s);
-    }
-    else {
-      /* XXX: typecheck here */
-      xu[i].xi = u[i].tp->Expand (ns, s);
-    }
-  }
-#endif
+
+  /* Step 1: create the port meta parameters
+     Step 2: create the port parameters
+     Step 3: expand the body 
+  */
 
   /* create bindings for type parameters */
   for (int i=0; i < nt; i++) {
