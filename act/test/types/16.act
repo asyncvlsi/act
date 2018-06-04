@@ -1,0 +1,6 @@
+pint x;
+
+defchan foo <: chan(int<4>) (bool b) ;
+
+defchan foo <: chan(int<6>) (bool b) ;
+

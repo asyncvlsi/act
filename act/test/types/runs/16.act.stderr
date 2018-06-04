@@ -1,0 +1,2 @@
+ERROR: File `16.act', line 5, col 8
+	Name `foo' previously defined as a different channel

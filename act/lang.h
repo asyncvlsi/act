@@ -187,42 +187,4 @@ struct act_chp {
   act_chp_lang_t *c;
 };
 
-/**
- * XXX: Handshaking expansions
- */
-struct act_hse_lang;
-
-
-#include <act/types.h>
-
-/*
- * Language body
- */
-class ActBody_Lang : public ActBody {
- public:
-  ActBody_Lang (act_prs *p) {
-    t = LANG_PRS;
-    lang = p;
-  }
-  ActBody_Lang (act_chp *c, int ishse = 0) {
-    if (ishse) {
-      t = LANG_HSE;
-    }
-    else {
-      t = LANG_CHP;
-    }
-    lang = c;
-  }
- private:
-  enum {
-    LANG_PRS,
-    LANG_CHP,
-    LANG_HSE,
-    LANG_SPCE,
-    LANG_SIZE
-  } t;
-  void *lang;
-};
-
 #endif /* __LANG_H__ */
-
