@@ -1,23 +1,5 @@
-\newbox\warningbox  % @c -*-texinfo-*-
-\hfuzz=5pt
-@iftex
-{\dimen2 = .55pt % Thickness of rules
-  \dimen0 = 5em% Width of the box.
-\font\textsf=cmss10 scaled \magstephalf
-\setbox0 = \hbox{\kern-.75pt \textsf warning\kern-1.5pt}
-\global\setbox\warningbox=\hbox to \dimen0{\hfil
-   \hsize = \dimen0 \advance\hsize by -5.8pt % Space to left+right.
-   \advance\hsize by -2\dimen2 % Rules.
-   \vbox{
-      \hrule height\dimen2
-      \hbox{\vrule width\dimen2 \kern3pt          % Space to left of text.
-         \vtop{\kern2.4pt \box0 \kern2.4pt}% Space above/below.
-         \kern3pt\vrule width\dimen2}% Space to right.
-      \hrule height\dimen2}
-    \hfil}
-\global\def\warning{\leavevmode\lower.7ex\copy\warningbox}}
-@end iftex
-\input texinfo
+\input wbox
+\input texinfo @c -*-texinfo-*-
 @c %**start of header
 @setfilename act
 @settitle ACT
@@ -35,7 +17,7 @@ This document describes the language used by the Asynchronous Circuit
 Toolkit (ACT), and how to write new tools that understand this
 language using the standard ACT library.
 
-Copyright @copyright{} 2004-2013 Rajit Manohar
+Copyright @copyright{} 2004-2018 Rajit Manohar
 
 All Rights Reserved.
 @end ifinfo
@@ -56,12 +38,12 @@ All Rights Reserved.
 @page
 @vskip 0pt plus 1filll
 This document describes the language used by the Asynchronous Circuit
-Toolkit (ACT), and how to write new tools that understand this
-language using the standard ACT library.
+Toolkit (@sc{act}), and how to write new tools that understand this
+language using the standard @sc{act} library.
 
 @vskip 1cm
 
-Copyright @copyright{} 2004-2013 Rajit Manohar
+Copyright @copyright{} 2004-2018 Rajit Manohar
 
 All Rights Reserved.
 @end titlepage
@@ -75,7 +57,7 @@ All Rights Reserved.
 
 This document describes the language used by the Asynchronous
 Circuit Toolkit, and how to write new tools that understand this
-language using the standard ACT library.
+language using the standard @sc{act} library.
 
 @menu
 Select a chapter using the `m' key
@@ -95,17 +77,21 @@ Select a chapter using the `m' key
 
 * Languages::           Various languages, including CHP, PRS, and HSE.
 
+* API::                 C++ API to use the @sc{act} library
+
 Appendices.
 
-* BNF::                 BNF for the ACT language.
-* Errors and Warnings:: Index of errors and warnings printed by the ACT
+* BNF::                 BNF for the @sc{act} language.
+* Errors and Warnings:: Index of errors and warnings printed by the @sc{act}
 			library.
-* Function Index::      Index of functions that are part of the ACT library.
+* Function Index::      Index of functions that are part of the @sc{act} library.
 * Concept Index::       Index of concepts.
 
 @end menu
 
 @end ifinfo
+
+@contents
 
 @c ------------------------------------------------------------------------
 @c     Introduction
@@ -119,7 +105,7 @@ Appendices.
 @cindex @sc{act}, language
 @cindex @sc{act}, introduction
 
-The Asynchronous Circuit Toolkit (ACT) is a suite of programs that can be
+The Asynchronous Circuit Toolkit (@sc{act}) is a suite of programs that can be
 used to design, verify, and test asynchronous circuits.  The tools share
 a common input language---@sc{act}---which can be used to describe
 circuits at different levels of detail. In what follows, we assume that
@@ -2495,7 +2481,7 @@ Raw and renaming.
 @c   Language-specific information goes here
 @c ------------------------------------------------------------------------
 
-@node Languages, BNF, Namespaces, Top
+@node Languages, API, Namespaces, Top
 @comment  node-name,  next,  previous,  up
 
 @chapter Hardware description languges
@@ -2533,6 +2519,55 @@ Implicit gate ordering.
 @section Specifications
 
 The @code{spec} language.
+
+
+@node API, BNF, Languages, Top
+@comment  node-name,  next,  previous,  up
+
+@chapter API to the library
+
+There are two basic data structures created by the @sc{act} library:
+
+@itemize @bullet
+@item @emph{Unexpanded} data structures correspond to a representation
+of the @sc{act} input. This primarily consists of namespaces and type
+definitions, along with top-level instances in each namespace.
+@item @emph{Expanded} data structures correspond to the @sc{act} file
+specialized with all parameters expanded out.
+@end itemize
+
+The @code{Act} class is used to read in @sc{act} files, and expand all
+template parameters. Reading in the file performs a number of static
+checks, verifying that the input is valid. Not all the checks can be
+performed when a file is just read in; for example, it may not be
+possible to verify that an array access is valid because array bounds
+checks can depend on the values of parameters. Expanding the input
+performs the checks that might need parameter values, in addition to
+creating expanded data structures.
+
+@example
+Act *a = new Act ("test.act"); // creates unexpanded data structures
+a->Expand(); // creates expanded data structures
+@end example
+
+@section Namespaces
+
+The contents of the @sc{act} file are accessed through the global
+namespace. Each namespace contains:
+
+@itemize @bullet
+@item A set of namespaces within it (nested namespaces);
+@item A set of types defined within the namespace;
+@item A set of expanded types (if any);
+@item The body of the namespace;
+@item A @code{Scope}, used to create and represent the identifiers
+created within the namespace.
+@end itemize
+
+@subsection Scope
+
+Within a scope, we have per-scope values (parameters). We don't have
+per instance values here. 
 
 
 @c -----------------------------------------------------------------------
@@ -2592,7 +2627,5 @@ type being instantiated when the error occurred.
 @unnumbered Concept Index
 
 @printindex cp
-
-@contents
 
 @bye
