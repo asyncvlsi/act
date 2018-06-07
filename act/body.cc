@@ -57,7 +57,7 @@ Type *ActBody_Inst::BaseType ()
  * there's no notion of a parameterized namespace.
  * s = the *fresh*, new scope for expansion
  */
-void ActBody_Inst::Expand (ActNamespace *ns, Scope *s, int meta_only)
+void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 {
   InstType *x;
   /* typechecking should all pass, so there shouldn't be an issue
@@ -75,7 +75,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s, int meta_only)
      expand instance type!
   */
   t = t->Expand (ns, s);
-
+  
   x = s->Lookup (id);
   if (x) {
     /* sparse array */
@@ -89,22 +89,28 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s, int meta_only)
 
 
 
-void ActBody_Conn::Expand (ActNamespace *ns, Scope *s, int meta_only)
+void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 {
   printf ("Expand conn!\n");
 }
 
-void ActBody_Loop::Expand (ActNamespace *ns, Scope *s, int meta_only)
+void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
 {
   printf ("Expand loop!\n");
 }
 
-void ActBody_Select::Expand (ActNamespace *ns, Scope *s, int meta_only)
+void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 {
   printf ("Expand select\n");
 }
 
-void ActBody_Lang::Expand (ActNamespace *ns, Scope *s, int meta_only)
+void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 {
   printf ("Expand language\n");
+}
+
+void ActBody_Namespace::Expand (ActNamespace *_ns, Scope *s)
+{
+  /* expand the top-level of the namespace that was imported */
+  ns->Expand ();
 }
