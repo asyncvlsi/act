@@ -179,7 +179,9 @@ open_item: "open" qualified_ns "->" ID  ";"
 namespace_management: [ "export" ] "namespace" ID 
 {{X:
     ActNamespace *ns;
+    int new_ns;
 
+    new_ns = 0;
     if ((ns = $0->curns->findNS ($3))) {
       if (OPT_EXISTS ($1)) {
 	if (!ns->isExported()) {
@@ -195,7 +197,13 @@ namespace_management: [ "export" ] "namespace" ID
       if (OPT_EXISTS ($1)) {
 	ns->MkExported ();
       }
+      new_ns = 1;
     }
+    if (new_ns) {
+      /* append something to the body! */
+      $0->curns->AppendBody (new ActBody_Namespace (ns));
+    }
+    
     $0->curns = ns;
     $0->scope = ns->CurScope ();
     OPT_FREE ($1);

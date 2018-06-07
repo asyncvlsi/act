@@ -50,9 +50,6 @@ class InstType {
 
   Type *BaseType ()  { return t; } /**< Return root type */
 
-  void setScope (Scope *s);	/**< set scope for evaluating any
-				   parameters/etc. */
-
   void setNumParams (int n);  /**< Create template parameter values */
 
   /* 
@@ -106,7 +103,7 @@ class InstType {
   /**
    * Parent scope in which variables are to be evaluated
    */
-  Scope *s;
+  //  Scope *s;
 
   /* the following are optional */
   Array *a;			/**< array specification */
