@@ -61,6 +61,11 @@ then
     mkdir $installdir/include
 fi
 
+if [ ! -d $installdir/include/act ]
+then
+    mkdir $installdir/include/act
+fi
+
 c_compiler_name=gcc
 cxx_compiler_name=g++
 c_compiler_flags=-O2
