@@ -102,7 +102,7 @@ param_inst: param_type id_list
 	r = OPT_VALUE (m);
 	$A(r->type == R_ARRAY);
 
-	if (TypeFactory::isPtypeType (it->BaseType())) {
+	if (TypeFactory::isPTypeType (it->BaseType())) {
 	  $E("ptype parameters cannot be arrays!");
 	}
 	it->MkArray (r->u.array);
