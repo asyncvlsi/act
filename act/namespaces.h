@@ -60,6 +60,8 @@ class Scope {
   Scope(Scope *parent, int is_expanded = 0);
   ~Scope();
 
+  Scope *Parent () { return up; }
+
   /* Local scope lookup only */
   InstType *Lookup (const char *s);
   InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
@@ -133,6 +135,9 @@ class Scope {
   int issetPType (unsigned long id);
   InstType *getPType(unsigned long id);
   void setPType(unsigned long id, InstType *val);
+
+  /**< returns 1 if this is an expanded scope */
+  int isExpanded () { return expanded; }
 
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

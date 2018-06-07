@@ -608,22 +608,8 @@ void ActNamespace::Expand ()
   /* flush the scope, and re-create it! */
   I->FlushExpand ();
 
-  /* 1. Expand all meta parameters at the top level of the namespace. */
+  /* Expand all meta parameters at the top level of the namespace. */
   for (b = B; b; b = b->Next ()) {
-    b->Expand (this, I, 1 /* meta-only */);
-  }
-
-  /* 2. Expand all namespaces that are nested within me */
-  for (i=0; i < N->size; i++) {
-    for (bkt = N->head[i]; bkt; bkt = bkt->next) {
-      ns = (ActNamespace *) bkt->v;
-      ns->Expand ();
-    }
-  }
-
-  /* 3. Expand the rest. Note that expanding meta parameters is
-     idempotent for a namespace. */
-  for (b = B; b; b = b->Next()) {
     b->Expand (this, I);
   }
 
