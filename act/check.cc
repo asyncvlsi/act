@@ -276,7 +276,7 @@ int act_type_expr (Scope *s, Expr *e)
     break;
 
   case E_PROBE:
-    /* XXX: if the variable is a channel, then */
+    /* YYY: if the variable is a channel, then */
     return T_BOOL;
 
   case E_REAL:
@@ -306,6 +306,7 @@ int act_type_expr (Scope *s, Expr *e)
 }
 
 
+
 static InstType *actual_insttype (Scope *s, ActId *id)
 {
   InstType *it;
@@ -317,13 +318,23 @@ static InstType *actual_insttype (Scope *s, ActId *id)
 	 involved */
       if (it->arrayInfo()) {
 	if (!id->arrayInfo()) {
-	  typecheck_err ("Port `.%s' access for an arrayed type", id->getName ());
+	  typecheck_err ("Port `.%s' access for an arrayed type is missing an array dereference", id->getName ());
 	  return NULL;
 	}
 	if (it->arrayInfo()->nDims () != id->arrayInfo()->nDims ()) {
 	  typecheck_err ("Port `.%s': number of dimensions don't match type (%s v/s %s)", id->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
 	  return NULL;
 	}
+	/* for expanded types, we need to check that this is a
+	   legitimate dereference! */
+	if (s->isExpanded()) {
+	  int i;
+	  Assert (it->isExpanded(), "What on earth?");
+	  Assert (id->arrayInfo()->isExpanded(), "What on earth2?");
+	  /* YYY: HERE */
+
+	}
+	
       }
       else {
 	if (id->arrayInfo()) {
@@ -437,8 +448,13 @@ void type_set_position (int l, int c, char *n)
 
 /* 
    are these two types compatible? connectable?
+
+   skip_last_array = 1 : for array dimensions, skip the last dimension
+   check. Check that # of dimensions are equal, and for expanded
+   types, check all dims are equal except for the last one.
+   
 */
-int type_connectivity_check (InstType *lhs, InstType *rhs)
+int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0)
 {
   struct act_position p;
   if (lhs == rhs) return 1;
@@ -454,7 +470,7 @@ int type_connectivity_check (InstType *lhs, InstType *rhs)
 
   if (lhs->isExpanded ()) {
     /* the connectivity check is now strict */
-    if (lhs->isEqual (rhs, 2)) {
+    if (lhs->isEqual (rhs, (skip_last_array ? 3: 2))) {
       return 1;
     }
   }
@@ -480,52 +496,114 @@ int type_connectivity_check (InstType *lhs, InstType *rhs)
   return 0;
 }
 
-InstType *AExpr::getInstType (Scope *s)
+InstType *AExpr::getInstType (Scope *s, int expanded)
 {
   InstType *cur, *tmp;
   AExpr *ae;
-
+  int count;
+  
+  count = 0;
   switch (t) {
   case AExpr::CONCAT:
   case AExpr::COMMA:
-    cur = l->getInstType (s);
+    cur = l->getInstType (s, expanded);
     if (!cur) return NULL;
+
+    if (t == AExpr::CONCAT && !cur->arrayInfo()) {
+      act_error_ctxt (stderr);
+      fatal_error ("Concatenations are for arrays only!");
+    }
+
     ae = r;
+    if (t == AExpr::CONCAT && expanded) {
+      Array *xa;
+      /* find the last dimension size */
+      Assert (cur->isExpanded(), "Should be expanded!");
+      xa = cur->arrayInfo();
+      Assert (xa, "Huh?");
+      if (xa->isSparse()) {
+	act_error_ctxt (stderr);
+	fatal_error ("Cannot have a sparse array within an array expression");
+      }
+      count = xa->range_size(xa->nDims()-1);
+    }
+    else {
+      count = 1;
+    }
     while (ae) {
       Assert (ae->GetLeft (), "Hmm");
-      tmp = ae->GetLeft ()->getInstType (s);
+      tmp = ae->GetLeft ()->getInstType (s, expanded);
+
       if (!tmp) {
 	delete cur;
 	return NULL;
       }
-      if (!type_connectivity_check (cur, tmp)) {
+      
+      if (tmp->arrayInfo() && tmp->arrayInfo()->isSparse()) {
+	act_error_ctxt (stderr);
+	fatal_error ("Cannot have a sparse array within an array expression");
+      }
+      
+      if (!type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0))) {
 	delete cur;
 	delete tmp;
 	return NULL;
       }
+      
+      /* cur has the base type.
+	 for comma expresisons, the next type simply is a higher
+	 dimensional array */
+      
+      if (!expanded || (t == AExpr::COMMA)) {
+	count++;
+      }
+      else {
+	Array *xa;
+	Assert (tmp->isExpanded(), "What on earth?");
+	xa = tmp->arrayInfo();
+	Assert (xa, "Huh?");
+	count += xa->range_size (xa->nDims()-1);
+      }
       delete tmp;
       ae = ae->GetRight ();
     }
+    
+    /* count = # of items in the list */
+    
     if (t == AExpr::CONCAT) {
-      return cur;
+      Array *xa;
+      
+      if (!expanded) {
+	return cur;
+      }
+      /* if it is expanded, we need to return a new type with the
+	 correct size for the last range, i.e., "count" */
+      tmp = new InstType (cur, 1);
+      xa = cur->arrayInfo ();
+      xa = xa->Clone ();
+      xa->update_range (xa->nDims()-1, 0, count-1);
+      tmp->MkArray (xa);
+      return tmp;
     }
     else {
-      Array *a;
+      /* comma expression */
+      
+      Array *a, *tmpa;
 
+      /* we have to promote the dimensions. we now have ``count'' items */
       tmp = new InstType (cur, 1);
       a = cur->arrayInfo ();
+
+      tmpa = new Array (const_expr (count));
+      tmpa->mkArray ();
+
       if (!a) {
-	a = new Array (const_expr (1));
+	a = tmpa;
       }
       else {
-	int i;
-	i = a->nDims () + 1;
-	a = new Array (const_expr (1));
-	a->mkArray ();
-	i--;
-	for (; i > 0; i--) {
-	  a->Concat (new Array (const_expr (1)));
-	}
+	a = a->Clone ();
+	a->Concat (tmpa);
+	delete tmpa;
       }
       tmp->MkArray (a);
 
@@ -549,7 +627,6 @@ InstType *AExpr::getInstType (Scope *s)
   }
   return NULL;
 }
-
 
 int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 {

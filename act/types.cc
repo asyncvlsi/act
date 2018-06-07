@@ -331,7 +331,7 @@ int TypeFactory::isFuncType (Type *t)
   return 0;
 }
 
-int TypeFactory::isPtypeType (Type *t)
+int TypeFactory::isPTypeType (Type *t)
 {
   PType *tmp_t = dynamic_cast<PType *>(t);
   if (tmp_t) {
@@ -344,7 +344,7 @@ int TypeFactory::isPtypeType (Type *t)
 
 int TypeFactory::isParamType (Type *t)
 {
-  if (isPtypeType (t) ||
+  if (isPTypeType (t) ||
       isPIntType (t) ||
       isPIntsType (t) ||
       isPBoolType (t) ||
@@ -787,7 +787,7 @@ InstType *TypeFactory::NewPType (Scope *s, InstType *t)
   if (!b) {
     InstType *i = new InstType (s, _t, 0);
 
-    i->setScope (s);
+    //i->setScope (s);
     i->setNumParams (1);
     i->setParam (0, t);
 
@@ -822,6 +822,7 @@ Array::Array (Expr *e, Expr *f)
     deref = 0;
   }
   expanded = 0;
+  range_sz = -1;
   next = NULL;
 }
 
@@ -853,7 +854,92 @@ void Array::Concat (Array *a)
   if (a->deref == 0) {
     deref = 0;
   }
+
+  range_sz = -1;
 }
+
+
+int Array::in_range (Array *a)
+{
+  int sz;
+  int offset;
+  
+  /* expanded only */
+
+  /* compute the size */
+  if (range_sz == -1) {
+    size();
+  }
+
+  sz = range_sz;
+  offset = 0;
+  
+  for (int i=0; i < dims; i++) {
+    int d;
+    
+    d = a->r[i].u.ex.hi + 1;
+    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+      return -1;
+    }
+    sz = sz / (r[i].u.ex.hi - r[i].u.ex.lo + 1);
+    offset = offset + (d - r[i].u.ex.lo)*sz;
+    Assert ((i != dims-1) || (sz == 1), "Wait a sec");
+  }
+  return offset;
+}
+
+int Array::Offset (Array *a)
+{
+  int offset;
+  
+  /* expanded only */
+  Assert (expanded && a->isExpanded(), "Hmm...");
+  Assert (a->isDeref (), "Hmm...");
+
+  offset = in_range (a);
+  if (offset != -1) {
+    return offset;
+  }
+  else {
+    offset = next->Offset (a);
+    if (offset == -1) {
+      return -1;
+    }
+    else {
+      return range_sz + offset;
+    }
+  }
+}
+
+int Array::Validate (Array *a)
+{
+  if (!expanded || !a->isExpanded()) {
+    fatal_error ("should only be called for expanded arrays");
+  }
+  if (!a->isDeref()) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " array: ");
+    a->Print (stderr);
+    fatal_error ("\nShould be a de-reference!");
+  }
+  Assert (dims == a->nDims(), "dimensions don't match!");
+
+  int i, d;
+
+  for (i=0; i < dims; i++) {
+    d = a->r[i].u.ex.hi + 1;
+    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+      if (next) {
+	return next->Validate (a);
+      }
+      else {
+	return 0;
+      }
+    }
+  }
+  return 1;
+}
+  
 
 
 InstType::InstType (Scope *_s, Type *_t, int is_temp)
@@ -864,7 +950,7 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
   a = NULL;
   dir = Type::NONE;
   u = NULL;
-  s = _s;
+  //s = _s;
   temp_type = (is_temp ? 1 : 0);
 }
 
@@ -874,7 +960,7 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
 int InstType::isParamAType (int k)
 {
   Assert (0 <= k && k < nt, "Hmm");
-  if (TypeFactory::isChanType (t) || TypeFactory::isPtypeType (t)) {
+  if (TypeFactory::isChanType (t) || TypeFactory::isPTypeType (t)) {
     /* all are type parameters */
     return 1;
   }
@@ -888,7 +974,7 @@ int InstType::isParamAType (int k)
   Assert (u, "What on earth");
   x = u->getPortType (-(k+1));
   Assert (x, "Huh");
-  if (TypeFactory::isPtypeType (x->BaseType ())) {
+  if (TypeFactory::isPTypeType (x->BaseType ())) {
     return 1;
   }
   else {
@@ -1278,29 +1364,36 @@ int UserDef::isEqual (UserDef *u)
  *
  * @param weak : this parameter only matters for array types. All
  *               cases check that the # of dimensions match.
+ *
  *               0 = check that the arrays are in fact equal and have
- *               the same index ranges (and range expressions)
+ *               the same index ranges (and range expressions).
+ *               Used for checking that port parameters are the same
+ *               in the definition and declaration.
+ *
  *               1 = checks that arrays are compatible in terms of #
- *               of dimensions, rather than equal
+ *               of dimensions, rather than equal.
+ *               Used to sanity check connections prior to expanding
+ *               parameters. 
+ *
  *               2 = check that array ranges have the same size; they
- *               could have different index ranges 
+ *               could have different index ranges.
+ *               Used to check that two types can be connected.
+ *
+ *               3 = check that array ranges have the same size,
+ *               except for the last dimension.
+ *               Used to check that two types can be concatenated in
+ *               an array expression.
+ * 
  *
  *------------------------------------------------------------------------
  */
 int InstType::isEqual (InstType *it, int weak)
 {
-  if (t != it->t) return 0;
-  if (nt != it->nt) return 0;
+  if (t != it->t) return 0;   /* same base type */
 
-  if ((a && !it->a) || (!a && it->a)) return 0;
+  if (nt != it->nt) return 0; /* same number of template params, if any */
 
-  if (weak != 1) {
-    if (a && !a->isEqual (it->a, weak == 0 ? 1 : 0)) return 0;
-  }
-  else {
-    if (a && !a->isDimCompatible (it->a)) return 0;
-  }
-
+  /* check that the template parameters of the type are the same */
   for (int i=0; i < nt; i++) {
     if (isParamAType (i)) {
       if (!u[i].tt->isEqual (it->u[i].tt)) return 0;
@@ -1308,6 +1401,25 @@ int InstType::isEqual (InstType *it, int weak)
     else {
       if (!u[i].tp->isEqual (it->u[i].tp)) return 0;
     }
+  }
+
+  if ((a && !it->a) || (!a && it->a)) return 0; /* both are either
+						   arrays or not
+						   arrays */
+
+  /* dimensions must be compatible no matter what */
+  if (a && !a->isDimCompatible (it->a)) return 0;
+
+  if (!a || (weak == 1)) return 1; /* we're done */
+
+  if (weak == 0) {
+    if (!a->isEqual (it->a, 1)) return 0;
+  }
+  else if (weak == 2) {
+    if (!a->isEqual (it->a, 0)) return 0;
+  }
+  else if (weak == 3) {
+    if (!a->isEqual (it->a, -1)) return 0;
   }
   return 1;
 }
@@ -1366,6 +1478,10 @@ void InstType::Print (FILE *fp)
 
 /*------------------------------------------------------------------------
  * Compare two arrays
+ *   dims have to be compatible
+ *   strict = 0 : just check ranges have the same sizes
+ *   strict = 1 : the ranges must be the same
+ *   strict = -1 : ranges have same sizes, except for the last one
  *------------------------------------------------------------------------
  */
 int Array::isEqual (Array *a, int strict) 
@@ -1373,10 +1489,8 @@ int Array::isEqual (Array *a, int strict)
   struct range *r1, *r2;
   int i;
 
-  if (dims != a->dims) return 0;
-  if (deref != a->deref) return 0;
-  if ((next && !a->next) || (a->next && !next)) return 0;
-  
+  if (!isDimCompatible (a)) return 0;
+
   r1 = r;
   r2 = a->r;
 
@@ -1390,8 +1504,8 @@ int Array::isEqual (Array *a, int strict)
     }
   }
   else {
-    for (i=0; i < dims; i++) {
-      if (strict) {
+    for (i=0; i < (strict == -1 ? dims-1 : dims); i++) {
+      if (strict == 1) {
 	if ((r1[i].u.ex.lo != r2[i].u.ex.lo) || (r1[i].u.ex.hi != r2[i].u.ex.hi))
 	  return 0;
       }
@@ -1418,7 +1532,7 @@ int Array::isDimCompatible (Array *a)
 
   if (dims != a->dims) return 0;
   if (deref != a->deref) return 0;
-  if ((next && !a->next) || (a->next && !next)) return 0;
+  if (isSparse() != a->isSparse()) return 0;
   
   return 1;
 }
@@ -1541,14 +1655,439 @@ void AExpr::Print (FILE *fp)
 }
 
 
+Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s)
+{
+  Expr *ret, *te;
+  ActId *xid;
+  
+  if (!e) return NULL;
+
+  NEW (ret, Expr);
+  ret->type = e->type;
+
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+      if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
+	unsigned int v;
+
+	v = ret->u.e.l->u.v;
+	if (e->type == E_AND) {
+	  v = v & ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_OR) {
+	  v = v | ((unsigned int)ret->u.e.r->u.v);
+	}
+	else {
+	  v = v ^ ((unsigned int)ret->u.e.r->u.v);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	ret->type = E_INT;
+	ret->u.v = v;
+      }
+      else if (ret->u.e.l->type == E_TRUE || ret->u.e.l->type == E_FALSE) {
+	unsigned int v;
+
+	v = (ret->u.e.l->type == E_TRUE) ? 1 : 0;
+	if (e->type == E_AND) {
+	  v = v & ((ret->u.e.r->type == E_TRUE) ? 1 : 0);
+	}
+	else if (e->type == E_OR) {
+	  v = v | ((ret->u.e.r->type == E_TRUE) ? 1 : 0);
+	}
+	else {
+	  v = v ^ ((ret->u.e.r->type == E_TRUE) ? 1 : 0);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	if (v) {
+	  ret->type = E_TRUE;
+	}
+	else {
+	  ret->type = E_FALSE;
+	}
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible types for &/| operator");
+      }
+    }
+    break;
+
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+      if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
+	unsigned int v;
+
+	v = ret->u.e.l->u.v;
+	if (e->type == E_PLUS) {
+	  v = v + ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_MINUS) {
+	  v = v - ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_MULT) {
+	  v = v * ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_DIV) {
+	  v = v / ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_MOD) {
+	  v = v % ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_LSL) {
+	  v = v << ((unsigned int)ret->u.e.r->u.v);
+	}
+	else if (e->type == E_LSR) {
+	  v = v << ((unsigned int)ret->u.e.r->u.v);
+	}
+	else { /* ASR */
+	  v = (signed)v >> ((unsigned int)ret->u.e.r->u.v);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	ret->type = E_INT;
+	ret->u.v = v;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible types for arithmetic operator");
+      }
+    }
+    break;
+
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+      if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
+	unsigned int v;
+
+	v = ret->u.e.l->u.v;
+	if (e->type == E_LT) {
+	  v = (v < ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	else if (e->type == E_GT) {
+	  v = (v > ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	else if (e->type == E_LE) {
+	  v = (v <= ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	else if (e->type == E_GE) {
+	  v = (v >= ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	else if (e->type == E_EQ) {
+	  v = (v == ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	else { /* NE */
+	  v = (v != ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	if (v) {
+	  ret->type = E_TRUE;
+	}
+	else {
+	  ret->type = E_FALSE;
+	}
+      }
+      else if (ret->u.e.l->type == E_REAL && ret->u.e.r->type == E_REAL) {
+	double v;
+
+	v = ret->u.e.l->u.f;
+	if (e->type == E_LT) {
+	  v = (v < ret->u.e.r->u.f ? 1 : 0);
+	}
+	else if (e->type == E_GT) {
+	  v = (v > ret->u.e.r->u.f ? 1 : 0);
+	}
+	else if (e->type == E_LE) {
+	  v = (v <= ret->u.e.r->u.f ? 1 : 0);
+	}
+	else if (e->type == E_GE) {
+	  v = (v >= ret->u.e.r->u.f ? 1 : 0);
+	}
+	else if (e->type == E_EQ) {
+	  v = (v == ret->u.e.r->u.f ? 1 : 0);
+	}
+	else { /* NE */
+	  v = (v != ret->u.e.r->u.f ? 1 : 0);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	if (v) {
+	  ret->type = E_TRUE;
+	}
+	else {
+	  ret->type = E_FALSE;
+	}
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible types for comparison operator");
+      }
+    }
+    break;
+    
+  case E_NOT:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    if (expr_is_a_const (ret->u.e.l)) {
+      if (ret->u.e.l->type == E_TRUE) {
+	FREE (ret->u.e.l);
+	ret->type = E_FALSE;
+      }
+      else if (ret->u.e.l->type == E_FALSE) {
+	FREE (ret->u.e.l);
+	ret->type = E_TRUE;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible type for not operator");
+      }
+    }
+    break;
+    
+  case E_COMPLEMENT:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    if (expr_is_a_const (ret->u.e.l)) {
+      if (ret->u.e.l->type == E_TRUE) {
+	FREE (ret->u.e.l);
+	ret->type = E_FALSE;
+      }
+      else if (ret->u.e.l->type == E_FALSE) {
+	FREE (ret->u.e.l);
+	ret->type = E_TRUE;
+      }
+      else if (ret->u.e.l->type == E_INT) {
+	unsigned int v = ret->u.e.l->u.v;
+	FREE (ret->u.e.l);
+	ret->type = E_INT;
+	ret->u.v = ~v;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible type for complement operator");
+      }
+    }
+    break;
+    
+  case E_UMINUS:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    if (expr_is_a_const (ret->u.e.l)) {
+      if (ret->u.e.l->type == E_INT) {
+	unsigned int v = ret->u.e.l->u.v;
+	FREE (ret->u.e.l);
+	ret->type = E_INT;
+	ret->u.v = -v;
+      }
+      else if (ret->u.e.l->type == E_REAL) {
+	double f = ret->u.e.l->u.f;
+	FREE (ret->u.e.l);
+	ret->type = E_REAL;
+	ret->u.f = -f;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Incompatible type for unary minus operator");
+      }
+    }
+    break;
+
+  case E_QUERY:
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    if (!expr_is_a_const (ret->u.e.l)) {
+      ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    }
+    else {
+      FREE (ret->u.e.l);
+      if (ret->u.e.l->type == E_TRUE) {
+	ret = expr_expand (e->u.e.r->u.e.l, ns, s);
+      }
+      else if (ret->u.e.l->type == E_FALSE) {
+	ret = expr_expand (e->u.e.r->u.e.r, ns, s);
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Query operator expression has non-Boolean value");
+      }
+    }
+    break;
+
+  case E_COLON:
+    /* you only get here for non-const things */
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    break;
+
+  case E_BITFIELD:
+    ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
+    if (!expr_is_a_const (ret->u.e.l)) {
+      NEW (ret->u.e.r, Expr);
+      ret->u.e.r->type = E_BITFIELD;
+      ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s);
+      ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s);
+    }
+    else {
+      Expr *lo, *hi;
+      lo = expr_expand (e->u.e.r->u.e.l, ns, s);
+      hi = expr_expand (e->u.e.r->u.e.r, ns, s);
+      if (!expr_is_a_const (lo) || !expr_is_a_const (hi)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Bitfield operator has const variable but non-const components");
+      }
+      if (ret->u.e.l->type != E_INT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Variable in bitfield operator is a non-integer");
+      }
+      unsigned int v;
+      v = ret->u.e.l->u.v;
+      FREE (ret->u.e.l);
+      if (lo->type != E_INT || hi->type != E_INT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Bitfield parameter in operator is a non-integer");
+      }
+      if (lo->u.v > hi->u.v) {
+	v = 0;
+      }
+      else {
+	v = (v >> lo->u.v) & ~(~0UL << (hi->u.v - lo->u.v + 1));
+      }
+      FREE (lo);
+      FREE (hi);
+      ret->type = E_INT;
+      ret->u.v = v;
+    }
+    break;
+
+  case E_PROBE:
+    ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
+    break;
+
+  case E_VAR:
+    /* expand an ID:
+       this either returns an expanded ID, or 
+       for parameterized types returns the value. */
+    xid = ((ActId *)e->u.e.l)->Expand (ns, s);
+    te = xid->Eval (ns, s);
+    FREE (ret);
+    ret = te;
+    break;
+
+  case E_INT:
+    ret->u.v = e->u.v;
+    break;
+
+  case E_REAL:
+    ret->u.f = e->u.f;
+    break;
+
+  case E_TRUE:
+  case E_FALSE:
+    break;
+    
+  default:
+    fatal_error ("Unknown expression type!");
+    break;
+  }
+  
+  return ret;
+}
+
+int expr_is_a_const (Expr *e)
+{
+  Assert (e, "What?");
+  if (e->type == E_INT || e->type == E_REAL ||
+      e->type == E_TRUE || e->type == E_FALSE) {
+    return 1;
+  }
+  
+  return 0;
+}
+
 /*
   Expand: returns a list of values.
 */
-list_t *AExpr::Expand (ActNamespace *ns, Scope *s)
+AExpr *AExpr::Expand (ActNamespace *ns, Scope *s)
 {
   /* this evaluates the array expression: everything must be a
      constant or known parameter value */
-  return NULL;
+  AExpr *newl, *newr;
+
+  newl = NULL;
+  newr = NULL;
+
+  if (l) {
+    if (t != AExpr::EXPR) {
+      newl = l->Expand (ns, s);
+    }
+    else {
+      Expr *xe;
+      /* expr_expand: returns either a constant expression or an
+	 expanded id */
+      xe = expr_expand ((Expr *)l, ns, s);
+      if (xe->type != E_VAR && !expr_is_a_const (xe)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\t array expression: ");
+	this->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("In expanding array expression, found a non-identifier/non-const expression");
+      }
+      newl = (AExpr *) xe;
+    }
+  }
+  if (r) {
+    newr = r->Expand (ns, s);
+  }
+  return new AExpr (t, newl, newr);
 }
 
 
@@ -1602,6 +2141,205 @@ ActId *ActId::Clone ()
   return ret;
 }
 
+ActId *ActId::Expand (ActNamespace *ns, Scope *s)
+{
+  ActId *ret;
+  Array *ax;
+
+  if (a) {
+    ax = a->Expand (ns, s);
+  }
+  else {
+    ax = NULL;
+  }
+
+  ret = new ActId (string_char (name), ax);
+
+  if (next) {
+    ret->next = next->Expand (ns, s);
+  }
+
+  fprintf (stderr, "expanding id: ");
+  this->Print (stderr, NULL);
+  fprintf (stderr, " -> ");
+  ret->Print (stderr, NULL);
+  fprintf (stderr, "\n");
+
+
+  return ret;
+}
+
+Expr *ActId::Eval (ActNamespace *ns, Scope *s)
+{
+  InstType *it;
+  ActId *id;
+  Expr *ret;
+  Type *base;
+
+  NEW (ret, Expr);
+
+  do {
+    it = s->Lookup (getName ());
+    Assert (it->isExpanded (), "Hmm...");
+    if (!it) {
+      s = s->Parent ();
+    }
+  } while (!it && s);
+  if (!s) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " id: ");
+    this->Print (stderr);
+    fatal_error ("\nNot found. Should have been caught earlier...");
+  }
+
+  id = this;
+  do {
+    /* insttype is "it";
+       scope is "s"
+       id is "id"
+
+       check array deref:
+       if the id has one, then:
+          -- either the type is an array type, yay
+	  -- otherwise error
+    */
+    if (id->arrayInfo() && !it->arrayInfo()) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      this->Print (stderr);
+      fatal_error ("\nArray de-reference without array type.");
+    }
+    if (it->arrayInfo() && !id->arrayInfo() && id->Rest()) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      this->Print (stderr);
+      fatal_error ("\nMissing array dereference.");
+    }
+
+    if (id->arrayInfo()) {
+      if (!it->arrayInfo()->Validate (id->arrayInfo())) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " id: ");
+	this->Print (stderr);
+	fprintf (stderr, "\n type: ");
+	it->Print (stderr);
+	fatal_error ("\nDereference out of range");
+      }
+    }
+
+    if (id->Rest()) {
+      UserDef *u;
+    
+      u = dynamic_cast<UserDef *>(it->BaseType ());
+    
+      Assert (it->isExpanded(), "This should be expanded");
+      /* WWW: here we would have to check the array index for relaxed
+	 parameters */
+
+      id = id->Rest ();
+      s = u->CurScope ();
+      it = s->Lookup (id->getName ());
+    }
+    else {
+      break;
+    }
+  } while (1);
+
+  /* identifier is "id"
+     scope is "s"
+     type is "it"
+     any array index has been validated
+  */
+
+  base = it->BaseType ();
+
+  /* now, verify that the type is a parameter v/s not a parameter */
+  if (TypeFactory::isParamType (base)) {
+    ValueIdx *vx = s->LookupVal (id->getName ());
+    int offset = 0;
+    if (!vx->init) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      this->Print (stderr);
+      fatal_error ("\nUninitialized identifier");
+    }
+
+    /* now we check for each type */
+    if (it->arrayInfo() && id->arrayInfo()) {
+      offset = it->arrayInfo()->Offset (id->arrayInfo());
+      Assert (offset != -1, "Hmm...");
+    }
+
+    if (it->arrayInfo() && !id->arrayInfo()) {
+      int k;
+      /* check that the entire array is set! */
+      for (k=0; k < it->arrayInfo()->size(); k++) {
+	/* check the appropriate thing is set */
+	if (TypeFactory::isPIntType (base) && !s->issetPInt (vx->idx + k) ||
+	    TypeFactory::isPIntsType (base) && !s->issetPInts (vx->idx + k) ||
+	    TypeFactory::isPBoolType (base) && !s->issetPBool (vx->idx + k) ||
+	    TypeFactory::isPRealType (base) && !s->issetPReal (vx->idx + k) ||
+	    TypeFactory::isPTypeType (base) && !s->issetPType (vx->idx + k)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fatal_error ("\nArray has an uninitialized element");
+	}
+      }
+      ret->type = E_VAR;
+      ret->u.e.l = (Expr *)this;
+      return ret;
+    }
+    if (TypeFactory::isPIntType (base) && !s->issetPInt (vx->idx + offset) ||
+	TypeFactory::isPIntsType (base) && !s->issetPInts (vx->idx + offset) ||
+	TypeFactory::isPBoolType (base) && !s->issetPBool (vx->idx + offset) ||
+	TypeFactory::isPRealType (base) && !s->issetPReal (vx->idx + offset) ||
+	TypeFactory::isPTypeType (base) && !s->issetPType (vx->idx + offset)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      this->Print (stderr);
+      fatal_error ("\nUninitialized value");
+    }
+    if (TypeFactory::isPIntType (base)) {
+      ret->type = E_INT;
+      ret->u.v = s->getPInt (offset + vx->idx);
+      return ret;
+    }
+    else if (TypeFactory::isPIntsType (base)) {
+      ret->type = E_INT;
+      ret->u.v = s->getPInts (offset + vx->idx);
+      return ret;
+    }
+    else if (TypeFactory::isPBoolType (base)) {
+      if (s->getPBool (offset + vx->idx)) {
+	ret->type = E_TRUE;
+      }
+      else {
+	ret->type = E_FALSE;
+      }
+      return ret;
+    }
+    else if (TypeFactory::isPRealType (base)) {
+      ret->type = E_REAL;
+      ret->u.f = s->getPReal (offset + vx->idx);
+      return ret;
+    }
+    else if (TypeFactory::isPTypeType (base)) {
+      ret->type = E_TYPE;
+      ret->u.e.l = (Expr *) s->getPType (offset + vx->idx);
+      return ret;
+    }
+    else {
+      Assert (0, "Should not be here");
+    }
+  }
+  else {
+    /* all this for nothing! */
+    ret->type = E_VAR;
+    ret->u.e.l = (Expr *)this;
+  }
+  return ret;
+}
 
 
 int ActId::isRange ()
@@ -1649,7 +2387,7 @@ InstType::InstType (InstType *i, int skip_array)
 {
   t = i->t;
   dir = i->dir;
-  s = i->s;
+  //s = i->s;
   expanded = i->expanded;
   if (!skip_array) {
     Assert (i->a == NULL, "Replication in the presence of arrays?");
@@ -1711,12 +2449,6 @@ void InstType::setParam (int pn, InstType *t)
   Assert (u[pn].tp == NULL, "setParam() changing an existing parameter!");
   u[pn].tt = t;
 }
-
-void InstType::setScope (Scope *_s)
-{
-  s = _s;
-}
-
 
 void Array::Print (FILE *fp)
 {
@@ -1780,6 +2512,35 @@ int Array::effDims()
 }
 
 /*
+ * @return the range of the d'th dimension of the array
+ */
+int Array::range_size(int d)
+{
+  int i;
+  int count = 1;
+  struct Array *a;
+
+  Assert (expanded, "Only applicable to expanded arrays");
+  Assert (0 <= d && d < dims, "Invalid dimension");
+  Assert (!isSparse(), "Only applicable to dense arrays");
+
+  return r[d].u.ex.hi - r[d].u.ex.lo + 1;
+}
+
+/*
+ * Update range size
+ */
+void Array::update_range (int d, int lo, int hi)
+{
+  Assert (expanded, "Huh?");
+  Assert (0 <= d && d < dims, "Invalid dimension");
+  Assert (!isSparse(), "Only applicable to dense arrays");
+  r[d].u.ex.lo = lo;
+  r[d].u.ex.hi = hi;
+  range_sz = -1;
+}
+
+/*
  * @return number of elements in the array
  */
 int Array::size()
@@ -1789,14 +2550,21 @@ int Array::size()
   struct Array *a;
 
   Assert (expanded, "Only applicable to expanded arrays");
-  for (i=0; i < dims; i++) {
-    if (r[i].u.ex.hi < r[i].u.ex.lo) {
-      count = 0;
-      break;
+
+  if (range_sz != -1) {
+    count = range_sz;
+  }
+  else {
+    for (i=0; i < dims; i++) {
+      if (r[i].u.ex.hi < r[i].u.ex.lo) {
+	count = 0;
+	break;
+      }
+      else {
+	count = count*(r[i].u.ex.hi-r[i].u.ex.lo+1);
+      }
     }
-    else {
-      count = count*(r[i].u.ex.hi-r[i].u.ex.lo+1);
-    }
+    range_sz = count;
   }
   if (next) {
     count += next->size();
@@ -1969,6 +2737,9 @@ Array *Array::Clone ()
   if (next) {
     ret->next = next->Clone ();
   }
+  else {
+    ret->next = NULL;
+  }
   ret->dims = dims;
 
   if (dims > 0) {
@@ -1977,6 +2748,78 @@ Array *Array::Clone ()
       ret->r[i] = r[i];
     }
   }
+  return ret;
+}
+
+/*------------------------------------------------------------------------
+ *
+ *  Array::Expand --
+ *
+ *   Return an expanded array
+ *
+ *------------------------------------------------------------------------
+ */
+Array *Array::Expand (ActNamespace *ns, Scope *s)
+{
+  Array *ret;
+  
+  if (expanded) {
+    /* eh, why am I here anyway */
+    act_error_ctxt (stderr);
+    warning ("Not sure why Array::Expand() was called");
+    return this;
+  }
+
+  ret = new Array();
+  ret->expanded = 1;
+  if (deref) {
+    ret->deref = 1;
+  }
+  ret->dims = dims;
+  Assert (dims > 0, "What on earth is going on...");
+  MALLOC (ret->r, struct range, dims);
+
+  int i;
+
+  for (i=0; i < dims; i++) {
+    Expr *hval, *lval;
+
+    Assert (r[i].u.ue.hi, "Invalid array range");
+    hval = expr_expand (r[i].u.ue.hi, ns, s);
+
+#if 0
+    fprintf (stderr, "expr: ");
+    print_expr (stderr, r[i].u.ue.hi);
+    fprintf (stderr, " -> ");
+    print_expr(stderr, hval);
+    fprintf (stderr, "\n");
+#endif
+    
+    if (hval->type != E_INT) {
+      act_error_ctxt (stderr);
+      fatal_error ("Array range value is a non-integer/non-constant value");
+    }
+    if (r[i].u.ue.lo) {
+      lval = expr_expand (r[i].u.ue.lo, ns, s);
+      if (lval->type != E_INT) {
+	act_error_ctxt (stderr);
+	fatal_error ("Array range value is a non-integer/non-constant value");
+      }
+      ret->r[i].u.ex.lo = lval->u.v;
+      ret->r[i].u.ex.hi = hval->u.v;
+      FREE (lval);
+    }
+    else {
+      ret->r[i].u.ex.lo = 0;
+      ret->r[i].u.ex.hi = hval->u.v - 1;
+    }
+    FREE (hval);
+  }
+
+  if (next) {
+    ret->next = next->Expand (ns, s);
+  }
+
   return ret;
 }
 
@@ -2028,21 +2871,13 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   */
   printf ("Expanding userdef, nt=%d\n", nt);
 
-  /*
-    XXX: here, check if this has been previously expanded. If so,
-    return the cached value
-  */
-
   /* create a new userdef type */
   ux = new UserDef (ns);
 
   /* set its scope to "expanded" mode */
   ux->I->FlushExpand();
-
-  /* Step 1: create the port meta parameters
-     Step 2: create the port parameters
-     Step 3: expand the body 
-  */
+  /* set to pending */
+  ux->pending = 1;
 
   /* create bindings for type parameters */
   for (int i=0; i < nt; i++) {
@@ -2059,18 +2894,27 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     vx->init = 1;
 
     /* allocate space and bind it to a value */
-    if (TypeFactory::isPtypeType (p->BaseType())) {
+    if (TypeFactory::isPTypeType (p->BaseType())) {
       /* recall: no ptype arrays */
       Assert (!x->arrayInfo(), "No ptype arrays?");
       
       /* alloc */
       vx->idx = ux->I->AllocPType();
+
+      /* compute value */
       x = u[i].tt->Expand (ns, s);
       Assert (ux->I->issetPType (vx->idx) == 0, "Huh?");
+
+      /* assign */
       ux->I->setPType (vx->idx, x);
       Assert (ux->I->getPType (vx->idx) == x, "Huh?!");
     }
     else {
+      InstType *xrhs;
+      /* other parameterized types: these could be arrays */
+
+
+      /* compute the array, if any */
       unsigned int len;
       xa = x->arrayInfo();
       if (xa) {
@@ -2080,11 +2924,26 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 	len = 1;
       }
 
+
+      xrhs = u[i].tp->getInstType (s, 1 /* expanded */);
+
+      /* YYY: here */
+
       /* x = expanded type of port parameter
 	 xa = expanded array field
+	 len = number of items
       */
       if (TypeFactory::isPIntType (x->BaseType())) {
-	/* expand the array expression */
+	/* alloc */
+	vx->idx = ux->I->AllocPInt(len);
+
+	/* compute value */
+	/* value is u[i]->tp: an array expression */
+	
+	
+
+	/* assign */
+
 
 	/*unsigned long val = u[i].tp->Expand (_ns, ux->I);*/
 	/* get the value */
@@ -2143,7 +3002,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
     x = getPortType (-(i+1));
     xa = x->arrayInfo();
-    if (TypeFactory::isPtypeType (x->BaseType())) {
+    if (TypeFactory::isPTypeType (x->BaseType())) {
       if (xa) {
 	act_error_ctxt (stderr);
 	fatal_error ("ptype array parameters not supported");
@@ -2183,7 +3042,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     Assert (sz > 0, "Check");
     x = getPortType (-(i+1));
     xa = x->arrayInfo();
-    if (TypeFactory::isPtypeType (x->BaseType())) {
+    if (TypeFactory::isPTypeType (x->BaseType())) {
       x = u[i].tt;
       snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
 		Type::dirstring (x->getDir()));
@@ -2214,9 +3073,9 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 	}
       }
     }
-    
   }
-
+  
+  ux->pending = 0;
 
   return NULL;
 }
@@ -2238,8 +3097,25 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 
   act_error_push (t->getName(), NULL, 0);
 
+  /* expand template parameters, and then expand the type */
+  inst_param *xu;
+  int i;
+
+  xu = NULL;
+  if (nt > 0) {
+    MALLOC (xu, inst_param, nt);
+    for (i=0; i < nt; i++) {
+      if (isParamAType (i)) {
+	xu[i].tt = u[i].tt->Expand (ns, s);
+      }
+      else {
+	xu[i].tp = u[i].tp->Expand (ns, s);
+      }
+    }
+  }
+
   /* Expand the core type using template parameters, if any */
-  xt = t->Expand (ns, s, nt, u);
+  xt = t->Expand (ns, s, nt, xu);
   
   /* If parent is user-defined, we need to make sure we have the
      expanded version of this in place!
@@ -2247,6 +3123,18 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   xit = new InstType (NULL, xt, 0);
   xit->expanded = 1;
 
+  /* array derefs */
+  if (a) {
+    xit->MkArray (a->Expand (ns, s));
+  }
+
   act_error_pop ();
+
+  fprintf (stderr, "expand: ");
+  this->Print (stderr);
+  fprintf (stderr, " -> ");
+  xit->Print (stderr);
+  fprintf (stderr, "\n");
+  
   return xit;
 }

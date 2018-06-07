@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2011 Rajit Manohar
+ *  Copyright (c) 2018 Rajit Manohar
  *  All Rights Reserved
  *
  **************************************************************************
@@ -228,7 +228,9 @@ class UserDef : public Type {
   /**
    * Returns name of port at specified position
    * 
-   * @param pos is the position of the port in the port list
+   * @param pos is the position of the port in the port list. Negative
+   * numbers indicate meta-parameters, 0 and positive parameters
+   * indicate physical port parameters.
    * @return the name of the specified port
    */
   const char *getPortName (int pos);
@@ -315,6 +317,9 @@ class UserDef : public Type {
 				   otherwise */
   unsigned int expanded:1;	/**< 1 if this has been expanded, 0
 				   otherwise */
+
+  unsigned int pending:1;	/**< 1 if this is currently being
+				   expanded, 0 otherwise. */
 
   int nt;			/**< number of template parameters */
   int mt;			/**< always <= nt; corresponds to the
@@ -595,7 +600,7 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
-  static int isPtypeType (Type *t);
+  static int isPTypeType (Type *t);
 
 
   /**
@@ -693,10 +698,24 @@ class Array {
   /* returns 1 if expanded array, 0 otherwise */
 
   int size(); /**< returns total number of elements */
+  int range_size(int d); /**< returns size of a particular dimension */
+  void update_range (int d, int lo, int hi); /**< set range */
 
+  /**< return expanded array */
+  Array *Expand (ActNamespace *ns, Scope *s);
+
+  int Validate (Array *a);	// check that the array deref is a
+				// valid deref for the array!
+
+
+  int Offset (Array *a);	// return the offset within the array
+				// for deref a, -1 if there isn't one.
+  
  private:
 
   Array ();			/* for deep copy only */
+
+  int in_range (Array *a);	// offset within a range, -1 if missing
 
   int dims;			/**< number of dimensions */
 
@@ -711,6 +730,8 @@ class Array {
       } ex;			/* expanded */
     } u;
   } *r;				/**< range for each dimension */
+  unsigned int range_sz;	/**< cache: size of the range; only
+				   for expanded arrays */
 
   Array *next;			/**< for sparse arrays */
   unsigned int deref:1;		/**< 1 if this is a dereference, 0
@@ -749,12 +770,11 @@ class AExpr {
 
   AExpr *Clone ();
 
-  InstType *getInstType (Scope *);
-  InstType *getExpInstType (Scope *); /**< expanded type */
+  InstType *getInstType (Scope *, int expanded = 0);
 
-  list_t *Expand (ActNamespace *, Scope *); /**< return index into value
-					    space based on the size
-					    of the array */
+  AExpr *Expand (ActNamespace *, Scope *); /**< expand out all
+					      parameters */
+
 
  private:
   enum type t;
@@ -803,6 +823,15 @@ class ActId {
 						print the entire ID */
 
   ActId *Clone ();
+
+  ActId *Expand (ActNamespace *ns, Scope  *s); /**< expand ID */
+
+  Expr *Eval (ActNamespace *ns, Scope *s); /**< evaluating an ID
+					      returns either: just the
+					      ID itself, for non-meta
+					      parameters, or the value
+					      of the parameter for
+					      meta-parameters */
 
  private:
   mstring_t *name;		/**< name of the identifier */
@@ -853,7 +882,7 @@ class ActBody {
   ActBody *Tail ();
   ActBody *Next () { return next; }
 
-  virtual void Expand (ActNamespace *, Scope *, int meta_only = 0) { fatal_error ("Need to define Expand() method!"); }
+  virtual void Expand (ActNamespace *, Scope *) { fatal_error ("Need to define Expand() method!"); }
 
  private:
   ActBody *next;
@@ -866,7 +895,7 @@ class ActBody {
 class ActBody_Inst : public ActBody {
  public:
   ActBody_Inst(InstType *, const char *);
-  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+  void Expand (ActNamespace *, Scope *);
   Type *BaseType ();
 
  private:
@@ -888,7 +917,7 @@ class ActBody_Conn : public ActBody {
     u.general.rhs = id2;
   }
 
-  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+  void Expand (ActNamespace *, Scope *);
   
  private:
   union {
@@ -926,7 +955,7 @@ class ActBody_Loop : public ActBody {
     b = _b;
   }
 
-  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+  void Expand (ActNamespace *, Scope *);
 
  private:
   ActBody_Loop::type t;			/**< type of loop */
@@ -972,10 +1001,22 @@ class ActBody_Select : public ActBody {
   }
 #endif
 
-  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+  void Expand (ActNamespace *, Scope *);
 
  private:
   ActBody_Select_gc *gc;
+};
+
+class ActBody_Namespace : public ActBody {
+public:
+  ActBody_Namespace (ActNamespace *_ns) {
+    ns = _ns;
+  }
+
+  void Expand (ActNamespace *, Scope *);
+  
+private:
+  ActNamespace *ns;
 };
 
 
@@ -1001,7 +1042,7 @@ class ActBody_Lang : public ActBody {
     lang = c;
   }
 
-  void Expand (ActNamespace *, Scope *, int meta_only = 0);
+  void Expand (ActNamespace *, Scope *);
 
  private:
   enum {
@@ -1021,8 +1062,10 @@ class ActBody_Lang : public ActBody {
 */
 #define T_ERR         -1
 
-#define T_STRICT     0x20
-#define T_PARAM      0x40
+#define T_STRICT     0x20   // a port parameter that is in the
+			    // "strict" list... i.e. not optional,
+			    // i.e. before the vertical bar
+#define T_PARAM      0x40   // a parameter type pint/... etc
 
 #define T_INT        0x1
 #define T_REAL       0x2
@@ -1039,7 +1082,11 @@ int act_type_conn (Scope *, AExpr *, AExpr *);
 const char *act_type_errmsg (void);
 
 void print_expr (FILE *fp, Expr *e);
+int expr_is_a_const (Expr *e);
 void type_set_position (int l, int c, char *n);
+
+/* for expanded expressions */
+#define E_TYPE 80 /* the "l" field will point to an InstType */
 
 /*
   Push expansion context 
