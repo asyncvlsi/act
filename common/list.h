@@ -53,6 +53,7 @@ typedef void *(*LISTMAPFNCOOKIE)(void *, void *);
 
 void stack_push (list_t *l, void *item);
 void *stack_pop (list_t *l);
+#define stack_isempty(l) list_isempty(l)
 
 #ifdef __cplusplus
 }
