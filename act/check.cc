@@ -451,10 +451,10 @@ void type_set_position (int l, int c, char *n)
 
    skip_last_array = 1 : for array dimensions, skip the last dimension
    check. Check that # of dimensions are equal, and for expanded
-   types, check all dims are equal except for the last one.
+   types, check all dims are equal except for the first one.
    
 */
-int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0)
+int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 {
   struct act_position p;
   if (lhs == rhs) return 1;
@@ -525,7 +525,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 	act_error_ctxt (stderr);
 	fatal_error ("Cannot have a sparse array within an array expression");
       }
-      count = xa->range_size(xa->nDims()-1);
+      count = xa->range_size(0);
     }
     else {
       count = 1;
@@ -562,7 +562,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 	Assert (tmp->isExpanded(), "What on earth?");
 	xa = tmp->arrayInfo();
 	Assert (xa, "Huh?");
-	count += xa->range_size (xa->nDims()-1);
+	count += xa->range_size (0);
       }
       delete tmp;
       ae = ae->GetRight ();
@@ -581,8 +581,10 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
       tmp = new InstType (cur, 1);
       xa = cur->arrayInfo ();
       xa = xa->Clone ();
-      xa->update_range (xa->nDims()-1, 0, count-1);
+      xa->update_range (0, 0, count-1);
       tmp->MkArray (xa);
+      
+      delete cur;
       return tmp;
     }
     else {
@@ -607,6 +609,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
       }
       tmp->MkArray (a);
 
+      delete cur;
       return tmp;
     }
     break;

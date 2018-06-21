@@ -181,6 +181,19 @@ char *user_ret (bnf_item_t *b)
   }
 }
 
+int is_user_ret_ptr (bnf_item_t *b)
+{
+  if (b->lhs_ret) {
+    if (b->lhs_ret_p != 0) {
+      return 1;
+    }
+    return 0;
+  }
+  else {
+    return 1;
+  }
+}
+
 char *user_ret_id (int id)
 {
   return user_ret (&BNF[id]);
