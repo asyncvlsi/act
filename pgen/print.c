@@ -342,7 +342,7 @@ void print_walker_main (pp_t *pp)
       pp_printf (pp, " return walk_%s_%s (cookie, ", WNAME, BNF[i].lhs);
       pp_printf (pp, "t->u.Tok_%s.n0); break; ", BNF[i].lhs);
     }
-    pp_printf (pp, "default: THROW (EXC_NULL_EXCEPTION); break; }}");
+    pp_printf (pp, "default: THROW (EXC_NULL_EXCEPTION); break; } return NULL; }");
     pp_nl; pp_nl;
   }
   pp_nl;
@@ -540,6 +540,10 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
     pp_puts (pp, "}"); pp_nl;
 
     pp_puts (pp, "THROW (EXC_NULL_EXCEPTION);");
+    /* check user ret */
+    if (is_user_ret_ptr (&BNF[i])) {
+      pp_nl; pp_puts (pp, "return NULL;");
+    }
     END_INDENT;
     pp_puts (pp, "}");
     pp_nl;

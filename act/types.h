@@ -613,6 +613,7 @@ class TypeFactory {
 };
 
 
+class Arraystep;
 /**
  *
  *  Dense arrays, sparse arrays, and array dereferences
@@ -701,8 +702,11 @@ class Array {
   int range_size(int d); /**< returns size of a particular dimension */
   void update_range (int d, int lo, int hi); /**< set range */
 
-  /**< return expanded array */
-  Array *Expand (ActNamespace *ns, Scope *s);
+  /**< return expanded array, is_ref: 1 if it is on the rhs of an ID,
+        0 if it is for a type */
+  Array *Expand (ActNamespace *ns, Scope *s, int is_ref = 0);
+  Array *ExpandRef (ActNamespace *ns, Scope *s) { return Expand (ns, s, 1); }
+
 
   int Validate (Array *a);	// check that the array deref is a
 				// valid deref for the array!
@@ -710,9 +714,16 @@ class Array {
 
   int Offset (Array *a);	// return the offset within the array
 				// for deref a, -1 if there isn't one.
-  
- private:
 
+
+  /*
+   * Stepper/iterator functionality
+   */
+  Arraystep *stepper();		// returns an "iterator" for this
+				// array. why not call it an iterator?
+				// because it isn't...
+
+private:
   Array ();			/* for deep copy only */
 
   int in_range (Array *a);	// offset within a range, -1 if missing
@@ -736,7 +747,27 @@ class Array {
   Array *next;			/**< for sparse arrays */
   unsigned int deref:1;		/**< 1 if this is a dereference, 0
 				   otherwise */
-  unsigned int expanded:1;	/**< 1 if this is expanded, 0 otherwise */
+  unsigned int expanded:1;	/**< 1 if this is expanded, 0
+				   otherwise */
+
+  friend class Arraystep;
+};
+
+/*
+ * Class for stepping through an array
+ */
+class Arraystep {
+public:
+  Arraystep (Array *a, int _is_subrange = 0);
+  ~Arraystep ();
+  void step();
+  int index() { return idx; }
+  int isend();		// returns 1 on an end of array, 0 otherwise
+private:
+  int idx;
+  int *deref;
+  int is_subrange;
+  Array *base;
 };
 
 
@@ -744,6 +775,8 @@ class Array {
  * Array expressions
  *
  */
+class AExprstep;
+
 class AExpr {
  public:
   /**
@@ -772,15 +805,51 @@ class AExpr {
 
   InstType *getInstType (Scope *, int expanded = 0);
 
-  AExpr *Expand (ActNamespace *, Scope *); /**< expand out all
-					      parameters */
+  AExpr *Expand (ActNamespace *, Scope *, int is_lval = 0);
+  /**< expand out all parameters */
 
+  AExprstep *stepper();  /* return stepper! */
 
  private:
   enum type t;
   AExpr *l, *r;
+
+  friend class AExprstep;
 };
  
+/*
+ * Class for stepping through an array expr
+ */
+class AExprstep {
+public:
+  AExprstep (AExpr *a);
+  ~AExprstep ();
+  void step();
+  int index() { return idx; }
+  int isend();		  // returns 1 on an end of array, 0 otherwise
+private:
+  int idx;
+  list_t *stack;		// stack of AExprs
+  AExpr *cur;
+
+  union {
+    Expr *const_expr;		// current constant expression, or:
+    struct {
+      ActId *act_id;		// identifier
+      Arraystep *a;		// array deref within the id, in case
+				// it is an array
+    } id;
+    struct {
+      ValueIdx *vx;
+      Scope *s;
+      int offset;
+      int max;
+    } vx;
+  } u;
+  unsigned int type:2;		// 0 = none, 1 = const, 2 = id,
+				// 3 = value array
+  
+};
 
 
 /**
@@ -826,12 +895,10 @@ class ActId {
 
   ActId *Expand (ActNamespace *ns, Scope  *s); /**< expand ID */
 
-  Expr *Eval (ActNamespace *ns, Scope *s); /**< evaluating an ID
-					      returns either: just the
-					      ID itself, for non-meta
-					      parameters, or the value
-					      of the parameter for
-					      meta-parameters */
+  Expr *Eval (ActNamespace *ns, Scope *s, int is_lval = 0);
+  /**< evaluating an ID returns either: just the ID itself, for
+     non-meta parameters (also for meta parameters if is_lval=1)
+     or the value of the parameter for meta-parameters. */
 
  private:
   mstring_t *name;		/**< name of the identifier */
@@ -1085,8 +1152,16 @@ void print_expr (FILE *fp, Expr *e);
 int expr_is_a_const (Expr *e);
 void type_set_position (int l, int c, char *n);
 
+int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
+int expr_equal (Expr *a, Expr *b);
+Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
+
 /* for expanded expressions */
-#define E_TYPE 80 /* the "l" field will point to an InstType */
+#define E_TYPE 80  /* the "l" field will point to an InstType */
+#define E_ARRAY 81 /* an expanded paramter array
+		        - the l field will point to the ValueIdx
+			- the r field will point to the Scope 
+		   */
 
 /*
   Push expansion context 
