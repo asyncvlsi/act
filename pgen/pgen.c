@@ -1793,65 +1793,81 @@ void emit_parser (void)
   */
   pp_nl;
   for (i=0; i < A_LEN (BNF); i++) {
+    int union_or_not = 0;
     pp_printf_text (pp, "struct DefNode_%s {", BNF[i].lhs);
     BEGIN_INDENT;
     pp_printf_text (pp, "int type;"); pp_nl;
     pp_printf_text (pp, "struct %s_position p;", prefix); pp_nl;
-    pp_printf_text (pp, "union {");
-    flag2 = 0;
-    BEGIN_INDENT;
     for (j=0; j < A_LEN (BNF[i].a); j++) {
+      int mm = 0;
+      for (k=0; k < A_LEN (BNF[i].a[j].a); k++) {
+	if (HAS_DATA (BNF[i].a[j].a[k])) {
+	  mm = 1;
+	  break;
+	}
+      }
+      if (mm && union_or_not == 0) {
+	pp_printf_text (pp, "union {");
+	flag2 = 0;
+	BEGIN_INDENT;
+	union_or_not = 1;
+      }
+      
       if (flag2) {
 	pp_nl;
       }
       flag2 = 1;
-      pp_printf_text (pp, "struct {");
-      BEGIN_INDENT;
 
-      for (k=0; k < A_LEN (BNF[i].a[j].a); k++) {
-	/* needs a datatype if it is not a keyword */
-	if (HAS_DATA (BNF[i].a[j].a[k])) {
-	  pp_lazy (pp, 3);
-	  switch (BNF[i].a[j].a[k].type) {
-	  case T_L_EXPR:
-	  case T_L_BEXPR:
-	  case T_L_IEXPR:
-	  case T_L_REXPR:
-	    pp_printf_text (pp, "Expr *f%d; ", k);
-	    break;
-	  case T_L_ID:
-	  case T_L_STRING:
-	    pp_printf_text (pp, "const char *f%d; ", k);
-	    break;
-	  case T_L_FLOAT:
-	    pp_printf_text (pp, "double f%d;", k);
-	    break;
-	  case T_L_INT:
-	    pp_printf_text (pp, "int f%d;", k);
-	    break;
-	  case T_EXTERN:
-	    pp_printf_text (pp, "void *f%d;", k);
-	    break;
-	  case T_LHS:
-	    pp_printf_text (pp, "Node_%s *f%d; ",
-			    ((bnf_item_t *)BNF[i].a[j].a[k].toks)->lhs, k);
-	    break;
-	  case T_OPT:
-	  case T_LIST:
-	  case T_LIST_SPECIAL:
-	    pp_printf_text (pp, "list_t *f%d; ", k);
-	    break;
-	  default:
-	    fatal_error ("Internal inconsistency");
-	    break;
+      if (mm) {
+	pp_printf_text (pp, "struct {");
+	BEGIN_INDENT;
+	for (k=0; k < A_LEN (BNF[i].a[j].a); k++) {
+	  /* needs a datatype if it is not a keyword */
+	  if (HAS_DATA (BNF[i].a[j].a[k])) {
+	    pp_lazy (pp, 3);
+	    switch (BNF[i].a[j].a[k].type) {
+	    case T_L_EXPR:
+	    case T_L_BEXPR:
+	    case T_L_IEXPR:
+	    case T_L_REXPR:
+	      pp_printf_text (pp, "Expr *f%d; ", k);
+	      break;
+	    case T_L_ID:
+	    case T_L_STRING:
+	      pp_printf_text (pp, "const char *f%d; ", k);
+	      break;
+	    case T_L_FLOAT:
+	      pp_printf_text (pp, "double f%d;", k);
+	      break;
+	    case T_L_INT:
+	      pp_printf_text (pp, "int f%d;", k);
+	      break;
+	    case T_EXTERN:
+	      pp_printf_text (pp, "void *f%d;", k);
+	      break;
+	    case T_LHS:
+	      pp_printf_text (pp, "Node_%s *f%d; ",
+			      ((bnf_item_t *)BNF[i].a[j].a[k].toks)->lhs, k);
+	      break;
+	    case T_OPT:
+	    case T_LIST:
+	    case T_LIST_SPECIAL:
+	      pp_printf_text (pp, "list_t *f%d; ", k);
+	      break;
+	    default:
+	      fatal_error ("Internal inconsistency");
+	      break;
+	    }
 	  }
 	}
+	END_INDENT;
+	pp_printf_text (pp, "} Option_%s%d;", BNF[i].lhs, j);
       }
-      END_INDENT;
-      pp_printf_text (pp, "} Option_%s%d;", BNF[i].lhs, j);
     }
-    END_INDENT;
-    pp_printf_text (pp, "} u;");
+    if (union_or_not) {
+      END_INDENT;
+      pp_printf_text (pp, "} u;");
+    }
     END_INDENT;
     pp_printf_text (pp, "};\n\n");
   }
