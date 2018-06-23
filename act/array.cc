@@ -7,7 +7,9 @@
  */
 #include <act/types.h>
 #include <act/inst.h>
+#include <string.h>
 #include "list.h"
+#include "misc.h"
 
 
 /*------------------------------------------------------------------------
@@ -221,11 +223,45 @@ int Array::in_range (Array *a)
     sz = sz / (r[i].u.ex.hi - r[i].u.ex.lo + 1);
     offset = offset + (d - r[i].u.ex.lo)*sz;
 
+    /* this is here to handle the subrange case */
     d = a->r[i].u.ex.hi;
     if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
       return -1;
     }
     
+    Assert ((i != dims-1) || (sz == 1), "Wait a sec");
+  }
+  return offset;
+}
+
+int Array::in_range (int *a)
+{
+  int sz;
+  int offset;
+  
+  /* expanded only */
+  /* this is true, but in_range is a private function 
+    Assert (a->isDeref (), "Hmmm");
+  */
+
+  /* compute the size */
+  if (range_sz == -1) {
+    size();
+  }
+
+  sz = range_sz;
+  offset = 0;
+  
+  for (int i=0; i < dims; i++) {
+    int d;
+
+    d = a[i];
+    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+      return -1;
+    }
+    sz = sz / (r[i].u.ex.hi - r[i].u.ex.lo + 1);
+    offset = offset + (d - r[i].u.ex.lo)*sz;
+
     Assert ((i != dims-1) || (sz == 1), "Wait a sec");
   }
   return offset;
@@ -237,6 +273,30 @@ int Array::in_range (Array *a)
  *  This uses in_range as a helper function.
  *------------------------------------------------------------------------
  */
+int Array::Offset (int *a)
+{
+  int offset;
+  
+  /* expanded only */
+  Assert (expanded, "Hmm...");
+
+  /*Assert (a->isDeref (), "Hmm...");*/
+
+  offset = in_range (a);
+  if (offset != -1) {
+    return offset;
+  }
+  else {
+    offset = next->Offset (a);
+    if (offset == -1) {
+      return -1;
+    }
+    else {
+      return range_sz + offset;
+    }
+  }
+}
+
 int Array::Offset (Array *a)
 {
   int offset;
@@ -276,7 +336,8 @@ int Array::Validate (Array *a)
     act_error_ctxt (stderr);
     fprintf (stderr, " array: ");
     a->Print (stderr);
-    fatal_error ("\nShould be a de-reference!");
+    fprintf (stderr, "\n");
+    fatal_error ("Should be a de-reference!");
   }
   Assert (dims == a->nDims(), "dimensions don't match!");
 
@@ -302,41 +363,70 @@ int Array::Validate (Array *a)
  */
 void Array::Print (FILE *fp)
 {
+  char buf[10240];
+  sPrint (buf, 10240);
+  fprintf (fp, "%s", buf);
+}
+
+void Array::sPrint (char *buf, int sz)
+{
   Array *pr;
+  int k = 0;
+  int l;
+
+#define PRINT_STEP				\
+  do {						\
+    l = strlen (buf+k);				\
+    k += l;					\
+    sz -= l;					\
+    if (sz <= 0) return;			\
+  } while (0)
+
   if (next) {
-    fprintf (fp, "[ ");
+    snprintf (buf+k, sz, "[ ");
+    PRINT_STEP;
   }
   pr = this;
   while (pr) {
-    fprintf (fp, "[");
+    snprintf (buf+k, sz, "[");
+    PRINT_STEP;
     for (int i=0; i < pr->dims; i++) {
       if (!expanded) {
 	if (pr->r[i].u.ue.lo == NULL) {
-	  print_expr (fp, pr->r[i].u.ue.hi);
+	  sprint_expr (buf+k, sz, pr->r[i].u.ue.hi);
+	  PRINT_STEP;
 	}
 	else {
-	  print_expr (fp, pr->r[i].u.ue.lo);
-	  fprintf (fp, "..");
-	  print_expr (fp, pr->r[i].u.ue.hi);
+	  sprint_expr (buf+k, sz, pr->r[i].u.ue.lo);
+	  PRINT_STEP;
+	  snprintf (buf+k, sz, "..");
+	  PRINT_STEP;
+	  sprint_expr (buf+k, sz, pr->r[i].u.ue.hi);
+	  PRINT_STEP;
 	}
       }
       else {
 	if (pr->r[i].u.ex.lo == 0) {
-	  fprintf (fp, "%d", pr->r[i].u.ex.hi+1);
+	  snprintf (buf+k, sz, "%d", pr->r[i].u.ex.hi+1);
+	  PRINT_STEP;
 	}
 	else {
-	  fprintf (fp, "%d..%d", pr->r[i].u.ex.lo, pr->r[i].u.ex.hi);
+	  snprintf (buf+k, sz, "%d..%d", pr->r[i].u.ex.lo, pr->r[i].u.ex.hi);
+	  PRINT_STEP;
 	}
       }
       if (i < pr->dims-1) {
-	fprintf (fp, ",");
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
       }
     }
-    fprintf (fp, "]");
+    snprintf (buf+k, sz, "]");
+    PRINT_STEP;
     pr = pr->next;
   }
   if (this->next) {
-    fprintf (fp, " ]");
+    snprintf (buf+k, sz, " ]");
+    PRINT_STEP;
   }
 }
 
@@ -517,14 +607,12 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
  *
  *------------------------------------------------------------------------
  */
-Arraystep *Array::stepper ()
+Arraystep *Array::stepper (Array *sub)
 {
-  Array *a;
-
   if (!expanded) {
     fatal_error ("Array::stepper() called for an unexpanded array");
   }
-  return new Arraystep (this);
+  return new Arraystep (this, sub);
 }
 
 
@@ -532,25 +620,41 @@ Arraystep *Array::stepper ()
  * Arraystep functions
  *------------------------------------------------------------------------
  */
-Arraystep::Arraystep (Array *a, int _is_subrange)
+Arraystep::Arraystep (Array *a, Array *sub)
 {
+  int offset;
+  
   base = a;
-  is_subrange = _is_subrange;
+  if (sub) {
+    subrange = sub->Clone ();
+  }
+  else {
+    subrange = NULL;
+  }
   
   MALLOC (deref, int, base->dims);
   for (int i = 0; i < base->dims; i++) {
-    if (is_subrange) {
-      deref[i] = base->r[i].u.ex.lo;
+    if (subrange) {
+      deref[i] = subrange->r[i].u.ex.lo;
     }
     else {
       deref[i] = base->r[i].u.ex.hi + 1;
     }
   }
-  idx = 0;
+  if (subrange) {
+    /* compute base index */
+    idx = base->Offset (deref);
+  }
+  else {
+    idx = 0;
+  }
 }
 
 Arraystep::~Arraystep()
 {
+  if (subrange) {
+    delete subrange;
+  }
   FREE (deref);
 }
 
@@ -563,6 +667,22 @@ Arraystep::~Arraystep()
 void Arraystep::step()
 {
   if (!base) return;
+
+  if (subrange) {
+    /* ok, we need to do a step */
+    for (int i = base->dims - 1; i >= 0; i--) {
+      if (subrange->r[i].u.ex.lo == subrange->r[i].u.ex.hi)
+	continue;
+      deref[i]++;
+      if (deref[i] <= subrange->r[i].u.ex.hi) {
+	/* we're done */
+	idx = base->Offset (deref);
+	return;
+      }
+    }
+    idx = -1;
+    return;
+  }
   
   for (int i = base->dims - 1; i >= 0; i--) {
     deref[i]++;
@@ -612,7 +732,6 @@ AExprstep::AExprstep (AExpr *a)
 {
   stack = list_new ();
   cur = a;
-  idx = -1;
   type = 0;
   step();
 }
@@ -627,14 +746,16 @@ void AExprstep::step()
 {
   switch (type) {
   case 0:
+    break;
   case 1:
     /* nothing to see here, need to continue traversing the AExpr */
+    FREE (u.const_expr);
+    u.const_expr = NULL;
     break;
   case 2:
     /* check if we are out of identifiers */
     if (u.id.a && !u.id.a->isend()) {
       u.id.a->step();
-      idx++;
       return;
     }
     if (u.id.a) {
@@ -643,11 +764,12 @@ void AExprstep::step()
     }
     break;
   case 3:
-    /* check if we are out of values */
-    if (u.vx.offset < u.vx.max) {
-      idx++;
-      u.vx.offset++;
+    if (u.vx.a && !u.vx.a->isend()) {
+      u.vx.a->step();
       return;
+    }
+    if (u.vx.a) {
+      delete u.vx.a;
     }
     break;
   default:
@@ -655,10 +777,12 @@ void AExprstep::step()
     return;
   }
 
+  /* here to get the next thing */
   type = 0;
 
   if (!cur) {
     if (stack_isempty (stack)) {
+      /* nothing left */
       return;
     }
     cur = (AExpr *) stack_pop (stack);
@@ -669,7 +793,8 @@ void AExprstep::step()
     case AExpr::EXPR:
       {
 	Expr *xe = (Expr *) cur->l;
-	Assert (xe->type == E_VAR || expr_is_a_const (xe) || xe->type == E_ARRAY, "What?");
+	Assert (xe->type == E_VAR || expr_is_a_const (xe) ||
+		xe->type == E_ARRAY || xe->type == E_SUBRANGE, "What?");
 	if (expr_is_a_const (xe)) {
 	  /* return the constant! */
 	  type = 1;
@@ -684,27 +809,41 @@ void AExprstep::step()
 	  u.id.a = NULL;
 	  it = (InstType *)xe->u.e.r;
 
-	  if (u.id.act_id->arrayInfo() && u.id.act_id->arrayInfo()->isDeref()) {
-	    /* single deref, we're done */
+	  if (!it->arrayInfo() || /* type is not an array */
+	      /* or type is an array, but we have a full deref */
+	    (u.id.act_id->arrayInfo() && u.id.act_id->arrayInfo()->isDeref())) {
+	    /* single variable */
 	  }
 	  else {
-	    /* array slice, we have to step through each of them */
-	    u.id.a = u.id.act_id->arrayInfo()->stepper();
+	    /* array reference */
+	    if (!u.id.act_id->arrayInfo()) {
+	      /* dense array */
+	      u.id.a = it->arrayInfo()->stepper();
+	    }
+	    else {
+	      /* sparse array */
+	      u.id.a = it->arrayInfo()->stepper (u.id.act_id->arrayInfo());
+	    }
 	  }
 	}
-	else if (xe->type == E_ARRAY) {
+	else if (xe->type == E_ARRAY || xe->type == E_SUBRANGE) {
 	  /* array slice */
 	  type = 3;
 	  u.vx.vx = (ValueIdx *) xe->u.e.l;
-	  u.vx.s = (Scope *) xe->u.e.r;
-	  u.vx.offset = 0;
-	  u.vx.max = u.vx.vx->t->arrayInfo()->size()-1;
+	  if (xe->type == E_ARRAY) {
+	    u.vx.s = (Scope *) xe->u.e.r;
+	    u.vx.a = u.vx.vx->t->arrayInfo()->stepper ();
+	  }
+	  else {
+	    u.vx.s = (Scope *) xe->u.e.r->u.e.l;
+	    u.vx.a = u.vx.vx->t->arrayInfo()->stepper ((Array *)xe->u.e.r->u.e.r);
+	  }
 	}
 	else {
 	  Assert (0," Should not be here ");
 	}
-	idx++;
-	cur = (AExpr *) stack_pop (stack);
+	/* we've consumed cur */
+	cur = NULL;
 	return;
       }
       break;
@@ -730,3 +869,149 @@ int AExprstep::isend()
   }
   return 0;
 }
+
+
+unsigned long AExprstep::getPInt()
+{
+  unsigned long v;
+  Assert (type != 0, "AExprstep::getPInt() called without step or on end");
+
+  v = 0;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_INT, "Typechecking...");
+    v = u.const_expr->u.v;
+    break;
+
+  case 2:
+    Assert (0, "getPInt() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (u.vx.s->issetPInt (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPInt (u.vx.vx->idx + u.vx.a->index());
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+
+long AExprstep::getPInts()
+{
+  long v;
+  Assert (type != 0, "AExprstep::getPInts() called without step or on end");
+
+  v = 0;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_INT, "Typechecking...");
+    v = u.const_expr->u.v;
+    break;
+
+  case 2:
+    Assert (0, "getPInts() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (u.vx.s->issetPInts (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPInts (u.vx.vx->idx + u.vx.a->index());
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+
+
+double AExprstep::getPReal()
+{
+  double v;
+  Assert (type != 0, "AExprstep::getPReal() called without step or on end");
+
+  v = 0;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_REAL, "Typechecking...");
+    v = u.const_expr->u.f;
+    break;
+
+  case 2:
+    Assert (0, "getPReal() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (u.vx.s->issetPReal (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPReal (u.vx.vx->idx + u.vx.a->index());
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+
+
+int AExprstep::getPBool()
+{
+  int v;
+  Assert (type != 0, "AExprstep::getPBool() called without step or on end");
+
+  v = 0;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_TRUE || u.const_expr->type == E_FALSE, "Typechecking...");
+    v = (u.const_expr->type == E_TRUE ? 1 : 0);
+    break;
+
+  case 2:
+    Assert (0, "getPBool() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (u.vx.s->issetPBool (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPBool (u.vx.vx->idx + u.vx.a->index());
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+
+
+
+InstType *AExprstep::getPType()
+{
+  InstType *v;
+  Assert (type != 0, "AExprstep::getPType() called without step or on end");
+
+  v = NULL;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_TYPE, "Typechecking...");
+    v = (InstType *) u.const_expr->u.e.l;
+    break;
+
+  case 2:
+    Assert (0, "getPType() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (0, "No ptype arrays yet");
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+
+
