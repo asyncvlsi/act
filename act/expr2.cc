@@ -6,7 +6,15 @@
  **************************************************************************
  */
 #include <act/types.h>
+#include <string.h>
 
+#define PRINT_STEP				\
+  do {						\
+    len = strlen (buf+k);			\
+    k += len;					\
+    sz -= len;					\
+    if (sz <= 0) return;			\
+  } while (0)
 
 /*
   Expression helper routines, not in the standard expr.c 
@@ -32,47 +40,58 @@
    otherwise parenthesize it.
 
 */
-static void _print_expr (FILE *fp, Expr *e, int prec)
+static void _print_expr (char *buf, int sz, Expr *e, int prec)
 {
+  int k = 0;
+  int len;
   char *s;
   if (!e) return;
  
 #define PREC_BEGIN(myprec)			\
   do {						\
     if ((myprec) < prec) {			\
-      fprintf (fp, "(");			\
+      snprintf (buf+k, sz, "(");		\
+      PRINT_STEP;				\
     }						\
   } while (0)
 
 #define PREC_END(myprec)			\
   do {						\
     if ((myprec) < prec) {			\
-      fprintf (fp, ")");			\
+      snprintf (buf+k, sz, ")");		\
+      PRINT_STEP;				\
     }						\
   } while (0)
 
-#define EMIT_BIN(myprec,sym)			\
-  do {						\
-    PREC_BEGIN(myprec);				\
-    _print_expr (fp, e->u.e.l, (myprec));	\
-    fprintf (fp, "%s", (sym));			\
-    _print_expr (fp, e->u.e.r, (myprec));	\
-    PREC_END (myprec);				\
+#define EMIT_BIN(myprec,sym)				\
+  do {							\
+    PREC_BEGIN(myprec);					\
+    _print_expr (buf+k, sz, e->u.e.l, (myprec));	\
+    PRINT_STEP;						\
+    snprintf (buf+k, sz, "%s", (sym));			\
+    PRINT_STEP;						\
+    _print_expr (buf+k, sz, e->u.e.r, (myprec));	\
+    PRINT_STEP;						\
+    PREC_END (myprec);					\
   } while (0)
 
-#define EMIT_UNOP(myprec,sym)			\
-  do {						\
-    PREC_BEGIN(myprec);				\
-    fprintf (fp, "%s", sym);			\
-    _print_expr (fp, e->u.e.l, (myprec));	\
-    PREC_END (myprec);				\
+#define EMIT_UNOP(myprec,sym)				\
+  do {							\
+    PREC_BEGIN(myprec);					\
+    snprintf (buf+k, sz, "%s", sym);			\
+    PRINT_STEP;						\
+    _print_expr (buf+k, sz, e->u.e.l, (myprec));	\
+    PRINT_STEP;						\
+    PREC_END (myprec);					\
   } while (0)
     
   switch (e->type) {
   case E_PROBE:
     PREC_BEGIN (10);
-    fprintf (fp, "#");
-    ((ActId *)(e->u.e.l))->Print (fp);
+    snprintf (buf+k, sz, "#");
+    PRINT_STEP;
+    ((ActId *)(e->u.e.l))->sPrint (buf+k, sz);
+    PRINT_STEP;
     PREC_END (10);
     break;
     
@@ -105,33 +124,43 @@ static void _print_expr (FILE *fp, Expr *e, int prec)
 
   case E_QUERY: /* prec = 3 */
     PREC_BEGIN(3);
-    _print_expr (fp, e->u.e.l, 3);
-    fprintf (fp, " ? ");
+    _print_expr (buf+k, sz, e->u.e.l, 3);
+    PRINT_STEP;
+    snprintf (buf+k, sz, " ? ");
+    PRINT_STEP;
     Assert (e->u.e.r->type == E_COLON, "Hmm");
-    _print_expr (fp, e->u.e.r->u.e.l, 3);
-    fprintf (fp, " : ");
-    _print_expr (fp, e->u.e.r->u.e.r, 3);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 3);
+    PRINT_STEP;
+    snprintf (buf+k, sz, " : ");
+    PRINT_STEP;
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r, 3);
+    PRINT_STEP;
     PREC_END(3);
     break;
 
   case E_INT:
-    fprintf (fp, "%d", e->u.v);
+    snprintf (buf+k, sz, "%d", e->u.v);
+    PRINT_STEP;
     break;
 
   case E_REAL:
-    fprintf (fp, "%g", e->u.f);
+    snprintf (buf+k, sz, "%g", e->u.f);
+    PRINT_STEP;
     break;
 
   case E_TRUE:
-    fprintf (fp, "true");
+    snprintf (buf+k, sz, "true");
+    PRINT_STEP;
     break;
 
   case E_FALSE:
-    fprintf (fp, "false");
+    snprintf (buf+k, sz, "false");
+    PRINT_STEP;
     break;
     
   case E_VAR:
-    ((ActId *)e->u.e.l)->Print (fp);
+    ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
+    PRINT_STEP;
     break;
 
   case E_FUNCTION:
@@ -144,12 +173,20 @@ static void _print_expr (FILE *fp, Expr *e, int prec)
 
 
 /*------------------------------------------------------------------------
- *  print_expr() is the top-level function
+ *  s/print_expr() is the top-level function
  *------------------------------------------------------------------------
  */
+void sprint_expr (char *buf, int sz, Expr *e)
+{
+  _print_expr (buf, sz, e, 0);
+}
+  
 void print_expr (FILE *fp, Expr *e)
 {
-  _print_expr (fp, e, 10);
+  char buf[10240];
+  buf[0] = '\0';
+  sprint_expr (buf, 10240, e);
+  fprintf (fp, "%s", buf);
 }
 
 
@@ -320,7 +357,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	act_error_ctxt (stderr);					\
 	fprintf (stderr, "\texpanding expr: ");				\
 	print_expr (stderr, e);						\
-	fatal_error ("\nInvalid assignable or connectable value!");	\
+	fprintf (stderr, "\n");						\
+	fatal_error ("Invalid assignable or connectable value!");	\
       }									\
     } while (0)
 
@@ -752,7 +790,7 @@ AExpr::AExpr (AExpr::type typ, AExpr *inl, AExpr *inr)
 
 AExpr::~AExpr ()
 {
-  if (/*t != AExpr::SUBRANGE &&*/ t != AExpr::EXPR) {
+  if (t != AExpr::EXPR) {
     if (l) {
       delete l;
     }
@@ -760,51 +798,61 @@ AExpr::~AExpr ()
       delete r;
     }
   }
-#if 0
-  else if (t == AExpr::SUBRANGE) {
-    delete ((ActId *)l);
-  }
-#endif
-  else if (t == AExpr::EXPR) {
-    /* hmm... expression memory management */
+  else {
+    /* YYY: hmm... expression memory management */
   }
 }
 
+
 void AExpr::Print (FILE *fp)
 {
+  char buf[10240];
+  sPrint (buf, 10240);
+  fprintf (fp, "%s", buf);
+}
+
+void AExpr::sPrint (char *buf, int sz)
+{
+  int k = 0;
+  int len;
+  
   AExpr *a;
   switch (t) {
   case AExpr::EXPR:
-    print_expr (fp, (Expr *)l);
+    sprint_expr (buf+k, sz, (Expr *)l);
+    PRINT_STEP;
     break;
 
   case AExpr::CONCAT:
     a = this;
     while (a) {
-      a->l->Print (fp);
+      a->l->sPrint (buf+k, sz);
+      PRINT_STEP;
       a = a->GetRight ();
       if (a) {
-	fprintf (fp, "#");
+	snprintf (buf+k, sz, "#");
+	PRINT_STEP;
       }
     }
     break;
 
   case AExpr::COMMA:
-    fprintf (fp, "{");
+    snprintf (buf+k, sz, "{");
+    PRINT_STEP;
     a = this;
     while (a) {
-      a->l->Print (fp);
+      a->l->sPrint (buf+k, sz);
+      PRINT_STEP;
       a = a->GetRight ();
       if (a) {
-	fprintf (fp, ",");
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
       }
     }
-    fprintf (fp, "}");
+    snprintf (buf+k, sz, "}");
+    PRINT_STEP;
     break;
 
-#if 0
-  case AExpr::SUBRANGE:
-#endif
   default:
     fatal_error ("Blah, or unimpl %x", this);
     break;
@@ -825,10 +873,7 @@ int AExpr::isEqual (AExpr *a)
   if ((l && !a->l) || (!l && a->l)) return 0;
   if ((r && !a->r) || (!r && a->r)) return 0;
   
-  if (0/*t == AExpr::SUBRANGE*/) {
-    return _id_equal ((ActId *)l, (ActId *)a->l);
-  }
-  else if (t == AExpr::EXPR) {
+  if (t == AExpr::EXPR) {
     return expr_equal ((Expr *)l, (Expr *)a->l);
   }
   if (l && !l->isEqual (a->l)) return 0;
@@ -859,7 +904,8 @@ AExpr *AExpr::Expand (ActNamespace *ns, Scope *s, int is_lval)
       /* expr_expand: returns either a constant expression or an
 	 expanded id or an expanded array */
       xe = expr_expand ((Expr *)l, ns, s, is_lval);
-      if (xe->type != E_VAR && !expr_is_a_const (xe) && xe->type != E_ARRAY) {
+      if (!expr_is_a_const (xe) && xe->type != E_VAR
+	  && xe->type != E_ARRAY && xe->type != E_SUBRANGE) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\t array expression: ");
 	this->Print (stderr);
@@ -887,17 +933,11 @@ AExpr *AExpr::Clone()
   newl = NULL;
   newr = NULL;
   if (l) {
-    if (t != AExpr::EXPR /*&& t != AExpr::SUBRANGE*/) {
+    if (t != AExpr::EXPR) {
       newl = l->Clone ();
     }
     else {
-      if (0/*t == AExpr::SUBRANGE*/) {
-	newl = (AExpr *) ((ActId *)l)->Clone ();
-      }
-      else {
-	/* AExpr::Expr... mm. */
-	newl = l;
-      }
+      newl = l;
     }
   }
   if (r) {
@@ -905,3 +945,11 @@ AExpr *AExpr::Clone()
   }
   return new AExpr (t, newl, newr);
 }
+
+
+AExprstep *AExpr::stepper()
+{
+  return new AExprstep (this);
+}
+
+  

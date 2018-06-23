@@ -162,6 +162,10 @@ class Scope {
   unsigned long vpbool_len;
   bitset_t *vpbool;
   bitset_t *vpbool_set;
+
+  int id;
+
+  static int count;
 };
 
 /**
