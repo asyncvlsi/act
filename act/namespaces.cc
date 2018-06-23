@@ -12,6 +12,8 @@
 #include <string.h>
 #include "misc.h"
 
+int Scope::count = 0;
+
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;
 
@@ -350,6 +352,7 @@ int ActNamespace::findName (const char *s)
 
 Scope::Scope (Scope *parent, int is_expanded)
 {
+  id = Scope::count++;
   expanded = is_expanded;
   H = hash_new (2);
   u = NULL;
@@ -849,4 +852,3 @@ int Scope::getPBool(unsigned long id)
   }
   return bitset_tst (vpbool, id);
 }
-

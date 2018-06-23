@@ -48,6 +48,8 @@ class InstType {
 
   void Print (FILE *fp);	/**< print inst type string */
 
+  void sPrint (char *buf, int sz); /**< snprintf */
+
   Type *BaseType ()  { return t; } /**< Return root type */
 
   void setNumParams (int n);  /**< Create template parameter values */
