@@ -692,6 +692,7 @@ class Array {
   ~Array ();
 
   void Print (FILE *fp);
+  void sPrint (char *buf, int sz);
 
   Array *Clone ();		/* returns a deep copy */
 
@@ -714,19 +715,22 @@ class Array {
 
   int Offset (Array *a);	// return the offset within the array
 				// for deref a, -1 if there isn't one.
-
+  int Offset (int *a);
 
   /*
    * Stepper/iterator functionality
    */
-  Arraystep *stepper();		// returns an "iterator" for this
+  Arraystep *stepper(Array *sub = NULL); // returns an "iterator" for this
 				// array. why not call it an iterator?
 				// because it isn't...
+				// sub = subrange within this array
 
 private:
   Array ();			/* for deep copy only */
 
-  int in_range (Array *a);	// offset within a range, -1 if missing
+  int in_range (Array *a);	// offset within a range, -1 if
+				// missing
+  int in_range (int *a);	// same thing
 
   int dims;			/**< number of dimensions */
 
@@ -758,7 +762,7 @@ private:
  */
 class Arraystep {
 public:
-  Arraystep (Array *a, int _is_subrange = 0);
+  Arraystep (Array *a, Array *sub = NULL);
   ~Arraystep ();
   void step();
   int index() { return idx; }
@@ -766,8 +770,8 @@ public:
 private:
   int idx;
   int *deref;
-  int is_subrange;
   Array *base;
+  Array *subrange;		// subrange, if any
 };
 
 
@@ -800,6 +804,7 @@ class AExpr {
   void SetRight (AExpr *a) { r = a; }
   
   void Print (FILE *fp);
+  void sPrint (char *buf, int sz);
 
   AExpr *Clone ();
 
@@ -825,25 +830,35 @@ public:
   AExprstep (AExpr *a);
   ~AExprstep ();
   void step();
-  int index() { return idx; }
   int isend();		  // returns 1 on an end of array, 0 otherwise
+
+  /* get a value */
+  unsigned long getPInt();
+  long getPInts();
+  double getPReal();
+  int getPBool();
+  InstType *getPType();
+
+  /* get an identifier */
+  /* XXX: later */
+  
 private:
-  int idx;
   list_t *stack;		// stack of AExprs
   AExpr *cur;
 
   union {
     Expr *const_expr;		// current constant expression, or:
     struct {
+      /* this is used for non-parameter identifiers */
       ActId *act_id;		// identifier
       Arraystep *a;		// array deref within the id, in case
 				// it is an array
     } id;
     struct {
-      ValueIdx *vx;
-      Scope *s;
-      int offset;
-      int max;
+      /* this is used for arrays of parameters */
+      ValueIdx *vx;		// base value idx
+      Scope *s;			// scope in which to evaluate
+      Arraystep *a;		// if it is an array or subrange
     } vx;
   } u;
   unsigned int type:2;		// 0 = none, 1 = const, 2 = id,
@@ -890,7 +905,8 @@ class ActId {
 						specified
 						point. Default is
 						print the entire ID */
-
+  void sPrint (char *buf, int sz, ActId *stop = NULL); 
+  
   ActId *Clone ();
 
   ActId *Expand (ActNamespace *ns, Scope  *s); /**< expand ID */
@@ -922,15 +938,7 @@ union inst_param {
 				   signature for ptypes
 				*/
 
-#if 0
-  double xr;			/**< expanded real value */
-
-  long xi;			/**< expanded integer or boolean
-				   value, or index for more complex
-				   objects */
-
-  InstType *xt;			/**< expanded type value */
-#endif
+  /* if both are NULL, it means the parameter was omitted */
 };
 
 /*------------------------------------------------------------------------
@@ -1149,6 +1157,7 @@ int act_type_conn (Scope *, AExpr *, AExpr *);
 const char *act_type_errmsg (void);
 
 void print_expr (FILE *fp, Expr *e);
+void sprint_expr (char *buf, int sz, Expr *e);
 int expr_is_a_const (Expr *e);
 void type_set_position (int l, int c, char *n);
 
@@ -1157,11 +1166,17 @@ int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 
 /* for expanded expressions */
-#define E_TYPE 80  /* the "l" field will point to an InstType */
-#define E_ARRAY 81 /* an expanded paramter array
-		        - the l field will point to the ValueIdx
-			- the r field will point to the Scope 
-		   */
+#define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */
+#define E_ARRAY (E_END + 11) /* an expanded paramter array
+				- the l field will point to the ValueIdx
+				- the r field will point to the Scope 
+			     */
+#define E_SUBRANGE (E_END + 12) /* like array, but it is a subrange
+				   - l points to the ValueIdx
+				   - r points to another Expr whose
+				         l points to Scope
+					 r points to the array range
+				*/
 
 /*
   Push expansion context 

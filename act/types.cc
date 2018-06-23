@@ -1145,373 +1145,83 @@ int InstType::isEqual (InstType *it, int weak)
 
 void InstType::Print (FILE *fp)
 {
+  char buf[10240];
+
+  sPrint (buf, 10240);
+  fprintf (fp, "%s", buf);
+  return;
+}
+  
+void InstType::sPrint (char *buf, int sz)
+{
   UserDef *ud;
   InstType *x;
+  int k = 0;
+  int l;
 
+#define PRINT_STEP				\
+  do {						\
+    l = strlen (buf+k);				\
+    k += l;					\
+    sz -= l;					\
+    if (sz <= 0) return;			\
+  } while (0)
+    
 #if 0
   /* view cached flag */
   if (temp_type == 0) {
     fprintf (fp, "c:");
   }
 #endif
-  fprintf (fp, "%s", t->getName ());
+  snprintf (buf+k, sz, "%s", t->getName());
+  PRINT_STEP;
+  
   if (nt > 0) {
     /* templates are used for int, chan, ptype, and userdef */
-    fprintf (fp, "<");
+    snprintf (buf+k, sz, "<");
+    PRINT_STEP;
     
     for (int i=0; i < nt; i++) {
       if (isParamAType (i)) {
-	u[i].tt->Print (fp);
+	u[i].tt->sPrint (buf+k, sz);
+	PRINT_STEP;
       }
       else {
-	u[i].tp->Print (fp);
+	u[i].tp->sPrint (buf+k, sz);
+	PRINT_STEP;
       }
       if (i < nt-1) {
-	fprintf (fp, ",");
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
       }
     }
-    fprintf (fp, ">");
+    snprintf (buf+k, sz, ">");
+    PRINT_STEP;
   }
   switch (dir) {
   case Type::NONE:
     break;
   case Type::IN:
-    fprintf (fp, "?");
+    snprintf (buf+k, sz, "?");
+    PRINT_STEP;
     break;
   case Type::OUT:
-    fprintf (fp, "!");
+    snprintf (buf+k, sz, "!");
+    PRINT_STEP;
     break;
   case Type::INOUT:
-    fprintf (fp, "?!");
+    snprintf (buf+k, sz, "?!");
+    PRINT_STEP;
     break;
   case Type::OUTIN:
-    fprintf (fp, "!?");
+    snprintf (buf+k, sz, "!?");
+    PRINT_STEP;
     break;
   }
   if (a) {
-    a->Print (fp);
+    a->sPrint (buf+k, sz);
+    PRINT_STEP;
   }
-}
-
-
-
-/*------------------------------------------------------------------------
- *
- * Identifiers
- *
- *------------------------------------------------------------------------
- */
-ActId::ActId (const char *s, Array *_a)
-{
-  name = string_create (s);
-  a = _a;
-  next = NULL;
-}
-
-ActId::~ActId ()
-{
-  string_free (name);
-  if (a) {
-    delete a;
-  }
-  if (next) {
-    delete next;
-  }
-  next = NULL;
-  a = NULL;
-  name = NULL;
-}
-   
-
-
-ActId *ActId::Clone ()
-{
-  ActId *ret;
-  Array *aclone;
-
-  if (a) {
-    aclone = a->Clone();
-  }
-  else {
-    aclone = NULL;
-  }
-
-  ret = new ActId (string_char (name), aclone);
-
-  if (next) {
-    ret->next = next->Clone ();
-  }
-
-  return ret;
-}
-
-ActId *ActId::Expand (ActNamespace *ns, Scope *s)
-{
-  ActId *ret;
-  Array *ax;
-
-  if (a) {
-    ax = a->ExpandRef (ns, s);
-  }
-  else {
-    ax = NULL;
-  }
-
-  ret = new ActId (string_char (name), ax);
-
-  if (next) {
-    ret->next = next->Expand (ns, s);
-  }
-
-#if 0
-  fprintf (stderr, "expanding id: ");
-  this->Print (stderr, NULL);
-  fprintf (stderr, " -> ");
-  ret->Print (stderr, NULL);
-  fprintf (stderr, "\n");
-#endif
-
-
-  return ret;
-}
-
-/*------------------------------------------------------------------------
- *
- *  Evaluate identifier: It either returns an evaluated identifier
- *  (i.e. all items expanded out), or in the case of something that
- *  isn't an lval, the value of the parameter.
- *
- *------------------------------------------------------------------------
- */
-Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
-{
-  InstType *it;
-  ActId *id;
-  Expr *ret;
-  Type *base;
-
-  NEW (ret, Expr);
-
-  do {
-    it = s->Lookup (getName ());
-    Assert (it->isExpanded (), "Hmm...");
-    if (!it) {
-      s = s->Parent ();
-    }
-  } while (!it && s);
-  if (!s) {
-    act_error_ctxt (stderr);
-    fprintf (stderr, " id: ");
-    this->Print (stderr);
-    fatal_error ("\nNot found. Should have been caught earlier...");
-  }
-
-  id = this;
-  do {
-    /* insttype is "it";
-       scope is "s"
-       id is "id"
-
-       check array deref:
-       if the id has one, then:
-          -- either the type is an array type, yay
-	  -- otherwise error
-    */
-    if (id->arrayInfo() && !it->arrayInfo()) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, " id: ");
-      this->Print (stderr);
-      fatal_error ("\nArray de-reference without array type.");
-    }
-    if (it->arrayInfo() && !id->arrayInfo() && id->Rest()) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, " id: ");
-      this->Print (stderr);
-      fatal_error ("\nMissing array dereference for ``%s''.", id->getName());
-    }
-
-    if (id->arrayInfo()) {
-      if (!it->arrayInfo()->Validate (id->arrayInfo())) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, " id: ");
-	this->Print (stderr);
-	fprintf (stderr, "\n type: ");
-	it->Print (stderr);
-	fatal_error ("\nDereference out of range");
-      }
-    }
-
-    if (id->Rest()) {
-      UserDef *u;
-    
-      u = dynamic_cast<UserDef *>(it->BaseType ());
-    
-      Assert (it->isExpanded(), "This should be expanded");
-      /* WWW: here we would have to check the array index for relaxed
-	 parameters */
-
-      id = id->Rest ();
-      s = u->CurScope ();
-      it = s->Lookup (id->getName ());
-    }
-    else {
-      break;
-    }
-  } while (1);
-
-  /* identifier is "id"
-     scope is "s"
-     type is "it"
-     any array index has been validated
-  */
-
-  base = it->BaseType ();
-
-  /* now, verify that the type is a parameter v/s not a parameter */
-  if (TypeFactory::isParamType (base)) {
-    ValueIdx *vx = s->LookupVal (id->getName ());
-    int offset = 0;
-    if (!vx->init) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, " id: ");
-      this->Print (stderr);
-      fatal_error ("\nUninitialized identifier");
-    }
-
-    /* now we check for each type */
-    if (it->arrayInfo() && id->arrayInfo()) {
-      offset = it->arrayInfo()->Offset (id->arrayInfo());
-      if (offset == -1) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, " id: ");
-	this->Print (stderr);
-	fatal_error ("\nIndex is out of range");
-      }
-      Assert (offset != -1, "Hmm...");
-    }
-
-    if (is_lval) {
-      ret->type = E_VAR;
-      ret->u.e.l = (Expr *)this;
-      ret->u.e.r = (Expr *)it;
-      return ret;
-    }
-
-    if (id->arrayInfo() && !id->arrayInfo()->isDeref()) {
-      warning ("This code doesn't handle subranges!");
-    }
-
-    if (it->arrayInfo() && !id->arrayInfo()) {
-      int k;
-      /* check that the entire array is set! */
-      for (k=0; k < it->arrayInfo()->size(); k++) {
-	/* check the appropriate thing is set */
-	if ((TypeFactory::isPIntType (base) && !s->issetPInt (vx->idx + k)) ||
-	    (TypeFactory::isPIntsType (base) && !s->issetPInts (vx->idx + k)) ||
-	    (TypeFactory::isPBoolType (base) && !s->issetPBool (vx->idx + k)) ||
-	    (TypeFactory::isPRealType (base) && !s->issetPReal (vx->idx + k)) ||
-	    (TypeFactory::isPTypeType (base) && !s->issetPType (vx->idx + k))) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " id: ");
-	  this->Print (stderr);
-	  fatal_error ("\nArray has an uninitialized element");
-	}
-      }
-      ret->type = E_ARRAY;
-      ret->u.e.l = (Expr *) vx;
-      ret->u.e.r = (Expr *) s;
-      return ret;
-    }
-    if ((TypeFactory::isPIntType(base) && !s->issetPInt (vx->idx + offset)) ||
-	(TypeFactory::isPIntsType(base) && !s->issetPInts (vx->idx + offset)) ||
-	(TypeFactory::isPBoolType(base) && !s->issetPBool (vx->idx + offset)) ||
-	(TypeFactory::isPRealType(base) && !s->issetPReal (vx->idx + offset)) ||
-	(TypeFactory::isPTypeType(base) && !s->issetPType (vx->idx + offset))) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, " id: ");
-      this->Print (stderr);
-      fatal_error ("\nUninitialized value");
-    }
-    /* what if this is a subrange: we can return an E_ARRAY */
-    if (TypeFactory::isPIntType (base)) {
-      ret->type = E_INT;
-      ret->u.v = s->getPInt (offset + vx->idx);
-      return ret;
-    }
-    else if (TypeFactory::isPIntsType (base)) {
-      ret->type = E_INT;
-      ret->u.v = s->getPInts (offset + vx->idx);
-      return ret;
-    }
-    else if (TypeFactory::isPBoolType (base)) {
-      if (s->getPBool (offset + vx->idx)) {
-	ret->type = E_TRUE;
-      }
-      else {
-	ret->type = E_FALSE;
-      }
-      return ret;
-    }
-    else if (TypeFactory::isPRealType (base)) {
-      ret->type = E_REAL;
-      ret->u.f = s->getPReal (offset + vx->idx);
-      return ret;
-    }
-    else if (TypeFactory::isPTypeType (base)) {
-      ret->type = E_TYPE;
-      ret->u.e.l = (Expr *) s->getPType (offset + vx->idx);
-      return ret;
-    }
-    else {
-      Assert (0, "Should not be here");
-    }
-  }
-  else {
-    /* all this for nothing! */
-    ret->type = E_VAR;
-    ret->u.e.l = (Expr *)this;
-    ret->u.e.r = (Expr *)it;
-  }
-  return ret;
-}
-
-
-int ActId::isRange ()
-{
-  ActId *id;
-
-  id = this;
-  while (id) {
-    if (id->a && !id->a->isDeref()) {
-      return 1;
-    }
-    id = id->next;
-  }
-  return 0;
-}
-
-void ActId::Append (ActId *id)
-{
-  Assert (!next, "ActId::Append() called with non-NULL next field");
-  next = id;
-}
-
-
-void ActId::Print (FILE *fp, ActId *end)
-{
-  ActId *start = this;
-
-  while (start && start != end) {
-    if (start != this) {
-      fprintf (fp, ".");
-    }
-    fprintf (fp, "%s", string_char(start->name));
-    if (start->a) {
-      start->a->Print (fp);
-    }
-    start = start->next;
-  }
-  fflush (fp);
 }
 
 /*
@@ -1591,7 +1301,7 @@ void InstType::setParam (int pn, InstType *t)
  *
  *------------------------------------------------------------------------
  */
-Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 {
   UserDef *ux;
   int k, sz, len;
@@ -1602,7 +1312,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   /* nt = # of specified parameters
      u = expanded instance paramters
   */
-  printf ("Expanding userdef, nt=%d\n", nt);
+  printf ("Expanding userdef, nt=%d, spec_nt=%d\n", nt, spec_nt);
 
   /* create a new userdef type */
   ux = new UserDef (ns);
@@ -1616,7 +1326,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   for (int i=0; i < nt; i++) {
     p = getPortType (-(i+1));
 
-    x = p->Expand (_ns, ux->I); // this is the real type of the
+    x = p->Expand (ns, ux->I); // this is the real type of the
 				// parameter
 
     /* add parameter to the scope */
@@ -1634,13 +1344,16 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
       /* alloc */
       vx->idx = ux->I->AllocPType();
 
-      /* compute value */
-      x = u[i].tt->Expand (ns, s);
-      Assert (ux->I->issetPType (vx->idx) == 0, "Huh?");
+      if (i < spec_nt && u[i].tt) {
+	/* compute value */
+	x = u[i].tt->Expand (ns, s);
+	Assert (ux->I->issetPType (vx->idx) == 0, "Huh?");
 
-      /* assign */
-      ux->I->setPType (vx->idx, x);
-      Assert (ux->I->getPType (vx->idx) == x, "Huh?!");
+	/* assign */
+	ux->I->setPType (vx->idx, x);
+	Assert (ux->I->getPType (vx->idx) == x, "Huh?!");
+      }
+      else { /* skipped parameter */ }
     }
     else {
       InstType *xrhs;
@@ -1656,70 +1369,169 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 	len = 1;
       }
 
-      xrhs = u[i].tp->getInstType (s, 1 /* expanded */);
-      if (!type_connectivity_check (x, xrhs)) {
-	fatal_error ("typechecking failed");
-      }
-      delete xrhs;
-      xrhs = NULL;
-      
       /* x = expanded type of port parameter
-	 xa = expanded array field
+	 xa = expanded array field of x
 	 len = number of items
       */
 
       AExpr *rhsval;
+      AExprstep *aes;
 
-      rhsval = u[i].tp->Expand (ns, s);
+      if (i < spec_nt && u[i].tp) {
+	xrhs = u[i].tp->getInstType (s, 1 /* expanded */);
+	if (!type_connectivity_check (x, xrhs)) {
+	  fatal_error ("typechecking failed");
+	}
+	
+	rhsval = u[i].tp->Expand (ns, s);
+	aes = rhsval->stepper();
+      }
+      else {
+	/* no rhs */
+      }
 
-      /* YYY: here */
-      
       if (TypeFactory::isPIntType (x->BaseType())) {
-	/* alloc */
-	vx->idx = ux->I->AllocPInt(len);
+	unsigned long v;
 
-	/* compute value */
-	/* value is u[i]->tp: an array expression */
-	
-	
-	
+	vx->idx = ux->I->AllocPInt(len); /* allocate */
 
-	/* assign */
+	if (i < spec_nt && u[i].tp) {
+	  if (xa) {		/* array assignment */
+	    int idx;
+	    Arraystep *as;
 
+	    as = xa->stepper();
 
-	/*unsigned long val = u[i].tp->Expand (_ns, ux->I);*/
-	/* get the value */
-	/* bind */
+	    while (!as->isend()) {
+	      Assert (!aes->isend(), "This should have been caught earlier");
+
+	      idx = as->index();
+	      v = aes->getPInt();
+	      ux->I->setPInt (vx->idx + idx, v);
+	    
+	      as->step();
+	      aes->step();
+	    }
+	    Assert (aes->isend(), "What on earth?");
+	    delete as;
+	  }
+	  else {
+	    aes = rhsval->stepper();
+	    ux->I->setPInt (vx->idx, aes->getPInt());
+	    aes->step();
+	    Assert (aes->isend(), "This should have been caught earlier");
+	  }
+	}
       }
       else if (TypeFactory::isPIntsType (x->BaseType())) {
-	vx->idx = ux->I->AllocPInts(len);
-	/* get the value */
-	/* bind */
+	long v;
+
+	vx->idx = ux->I->AllocPInts(len); /* allocate */
+
+	if (i < spec_nt && u[i].tp) {
+	  if (xa) {		/* array assignment */
+	    int idx;
+	    Arraystep *as;
+	  
+	    as = xa->stepper();
+
+	    while (!as->isend()) {
+	      Assert (!aes->isend(), "This should have been caught earlier");
+
+	      idx = as->index();
+	      v = aes->getPInts();
+	      ux->I->setPInts (vx->idx + idx, v);
+	    
+	      as->step();
+	      aes->step();
+	    }
+	    Assert (aes->isend(), "What on earth?");
+	    delete as;
+	  }
+	  else {
+	    aes = rhsval->stepper();
+	    ux->I->setPInts (vx->idx, aes->getPInts());
+	    aes->step();
+	    Assert (aes->isend(), "This should have been caught earlier");
+	  }
+	}
       }
       else if (TypeFactory::isPRealType (x->BaseType())) {
-	vx->idx = ux->I->AllocPReal(len);
-	/* get the value */
-	/* bind */
+	double v;
+
+	vx->idx = ux->I->AllocPReal(len); /* allocate */
+
+	if (i < spec_nt && u[i].tp) {
+	  if (xa) {		/* array assignment */
+	    int idx;
+	    Arraystep *as;
+	  
+	    as = xa->stepper();
+
+	    while (!as->isend()) {
+	      Assert (!aes->isend(), "This should have been caught earlier");
+
+	      idx = as->index();
+	      v = aes->getPReal();
+	      ux->I->setPReal (vx->idx + idx, v);
+	    
+	      as->step();
+	      aes->step();
+	    }
+	    Assert (aes->isend(), "What on earth?");
+	    delete as;
+	  }
+	  else {
+	    aes = rhsval->stepper();
+	    ux->I->setPReal (vx->idx, aes->getPReal());
+	    aes->step();
+	    Assert (aes->isend(), "This should have been caught earlier");
+	  }
+	}
       }
       else if (TypeFactory::isPBoolType (x->BaseType())) {
-	vx->idx = ux->I->AllocPBool(len);
-	/* get the value */
-	/* bind */
+	int v;
+
+	vx->idx = ux->I->AllocPBool(len); /* allocate */
+
+	if (i < spec_nt && u[i].tp) {
+	  if (xa) {		/* array assignment */
+	    int idx;
+	    Arraystep *as;
+	  
+	    as = xa->stepper();
+
+	    while (!as->isend()) {
+	      Assert (!aes->isend(), "This should have been caught earlier");
+
+	      idx = as->index();
+	      v = aes->getPBool();
+	      ux->I->setPBool (vx->idx + idx, v);
+	    
+	      as->step();
+	      aes->step();
+	    }
+	    Assert (aes->isend(), "What on earth?");
+	    delete as;
+	  }
+	  else {
+	    aes = rhsval->stepper();
+	    ux->I->setPInts (vx->idx, aes->getPInts());
+	    aes->step();
+	    Assert (aes->isend(), "This should have been caught earlier");
+	  }
+	}
       }
       else {
 	fatal_error ("Should not be here: meta params only");
       }
-	
+      if (i < spec_nt && u[i].tp) {
+	delete aes;
+	delete xrhs;
+      }
     }
-
   }
   
-
-  /*
-    Bind template parameters to the ones passed in
-  */
-  
-
   /*
      create a name for it!
      (old name)"<"string-from-types">"
@@ -1736,6 +1548,9 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   sz = 0;
 
   /* type< , , , ... , > + end-of-string */
+  /* for arrays, originally we had {a,b,c}... the expanded values.
+     instead, we now have scope#idx
+  */
   sz = strlen (getName()) + 3 + nt;
 
   for (int i=0; i < nt; i++) {
@@ -1750,23 +1565,27 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 	fatal_error ("ptype array parameters not supported");
       }
 
-      x = u[i].tt;
+      x = (i < spec_nt ? u[i].tt : NULL);
       /* x is now the value of the parameter */
-      sz += strlen (x->BaseType()->getName())  + 2;
+      if (x) {
+	sz += strlen (x->BaseType()->getName()) + 2;
+      }
       /* might have directions, upto 2 characters worth */
     }
     else {
       /* check array info */
-      if (xa) {
-	Assert (xa->isExpanded(), "Array info is not expanded");
-	sz += 16*xa->size()+2;
-      }
-      else {
-	sz += 16;
+      if (i < spec_nt && u[i].tp) {
+	if (xa) {
+	  Assert (xa->isExpanded(), "Array info is not expanded");
+	  sz += 16*xa->size()+2;
+	}
+	else {
+	  sz += 16;
+	}
       }
     }
   }
-  
+
   char *buf;
   MALLOC (buf, char, sz);
   k = 0;
@@ -1777,47 +1596,119 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   sz -= len;
 
   for (int i=0; i < nt; i++) {
+    ValueIdx *vx;
     if (i != 0) {
       snprintf (buf+k, sz, ",");
       len = strlen (buf+k); k += len; sz -= len;
     }
     Assert (sz > 0, "Check");
     x = getPortType (-(i+1));
+    vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
-      x = u[i].tt;
-      snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
-		Type::dirstring (x->getDir()));
-      len = strlen (buf+k); k += len; sz -= len;
+      x = (i < spec_nt ? u[i].tt : NULL);
+      if (x) {
+	snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
+		  Type::dirstring (x->getDir()));
+	len = strlen (buf+k); k += len; sz -= len;
+      }
     }
     else {
-      if (xa) {
-	snprintf (buf+k, sz, "{");
-	k++; sz--;
-	/* add code here */
-	snprintf (buf+k, sz, "}");
-	k++; sz--;
-	fatal_error ("XXX: fix this array");
-      }
-      else {
-	/* XXX: ok, need to set up value tables */
-	if (TypeFactory::isPIntsType (x->BaseType())) {
+      if (i < spec_nt && u[i].tp) {
+	if (xa) {
+	  Arraystep *as;
 	  
-	}
-	else if (TypeFactory::isPIntType (x->BaseType())) {
+	  snprintf (buf+k, sz, "{");
+	  k++; sz--;
 
+	  as = xa->stepper();
+	  while (!as->isend()) {
+	    if (TypeFactory::isPIntType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%lu",
+			ux->I->getPInt (vx->idx + as->index()));
+	    }
+	    else if (TypeFactory::isPIntsType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%ld",
+			ux->I->getPInts (vx->idx + as->index()));
+	    }
+	    else if (TypeFactory::isPRealType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%g",
+			ux->I->getPReal (vx->idx + as->index()));
+	    }
+	    else if (TypeFactory::isPBoolType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%d",
+			ux->I->getPBool (vx->idx + as->index()));
+	    }
+	    else {
+	      fatal_error ("What type is this?");
+	    }
+	    len = strlen (buf+k); k+= len; sz-= len;
+	    as->step();
+	    if (!as->isend()) {
+	      snprintf (buf+k, sz, ",");
+	      k++; sz--;
+	    }
+	  }
+	  delete as;
+	  snprintf (buf+k, sz, "}");
+	  k++; sz--;
 	}
-	else if (TypeFactory::isPBoolType (x->BaseType())) {
-	  
-	}
-	else if (TypeFactory::isPRealType (x->BaseType())) {
-	  
+	else {
+	  if (TypeFactory::isPIntType (x->BaseType())) {
+	    snprintf (buf+k, sz, "%lu", ux->I->getPInt (vx->idx));
+	  }
+	  else if (TypeFactory::isPIntsType (x->BaseType())) {
+	    snprintf (buf+k, sz, "%ld", ux->I->getPInts (vx->idx));
+	  }
+	    else if (TypeFactory::isPRealType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->idx));
+	    }
+	    else if (TypeFactory::isPBoolType (x->BaseType())) {
+	      snprintf (buf+k, sz, "%d", ux->I->getPBool (vx->idx));
+	    }
+	    else {
+	      fatal_error ("What type is this?");
+	    }
+	    len = strlen (buf+k); k+= len; sz-= len;
 	}
       }
     }
   }
-  
+  snprintf (buf+k, sz, ">");
+  k++; sz--;
+
   ux->pending = 0;
+
+  Assert (sz >= 0, "Hmmmmm");
+
+  /* now we have the string for the type! */
+  UserDef *uy;
+
+  uy = ns->findType (buf);
+
+  if (uy) {
+    /* we found one! */
+    delete ux;
+    return uy;
+  }
+
+  Assert (ns->CreateType (buf, ux), "Huh");
+
+  if (parent) {
+    ux->SetParent (parent->Expand (ns, s), parent_eq);
+  }
+  ux->exported = exported;
+
+  /*-- create ports --*/
+
+  for (int i=0; i < nports; i++) {
+    Assert (ux->AddPort (getPortType(i)->Expand (ns, ux->I), getPortName (i)), "What?");
+  }
+
+  /*-- expand body --*/
+  for (ActBody *bi = b; bi; bi = bi->Next()) {
+    bi->Expand (ns, ux->I);
+  }
 
   return ux;
 }
@@ -1843,7 +1734,10 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   */
   Assert (t, "Missing parent type?");
 
-  act_error_push (t->getName(), NULL, 0);
+  char *tmp;
+  MALLOC (tmp, char, 1024);
+  sPrint (tmp, 1024);
+  act_error_push (tmp, NULL, 0);
 
   /* expand template parameters, and then expand the type */
   inst_param *xu;
@@ -1876,6 +1770,7 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
     xit->MkArray (a->Expand (ns, s));
   }
 
+  FREE (tmp);
   act_error_pop ();
 
   fprintf (stderr, "expand: ");
