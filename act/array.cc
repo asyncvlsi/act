@@ -888,8 +888,8 @@ unsigned long AExprstep::getPInt()
     break;
     
   case 3:
-    Assert (u.vx.s->issetPInt (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
-    return u.vx.s->getPInt (u.vx.vx->idx + u.vx.a->index());
+    Assert (u.vx.s->issetPInt (u.vx.vx->u.idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPInt (u.vx.vx->u.idx + u.vx.a->index());
     break;
 
   default:
@@ -916,8 +916,8 @@ long AExprstep::getPInts()
     break;
     
   case 3:
-    Assert (u.vx.s->issetPInts (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
-    return u.vx.s->getPInts (u.vx.vx->idx + u.vx.a->index());
+    Assert (u.vx.s->issetPInts (u.vx.vx->u.idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPInts (u.vx.vx->u.idx + u.vx.a->index());
     break;
 
   default:
@@ -945,8 +945,8 @@ double AExprstep::getPReal()
     break;
     
   case 3:
-    Assert (u.vx.s->issetPReal (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
-    return u.vx.s->getPReal (u.vx.vx->idx + u.vx.a->index());
+    Assert (u.vx.s->issetPReal (u.vx.vx->u.idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPReal (u.vx.vx->u.idx + u.vx.a->index());
     break;
 
   default:
@@ -974,8 +974,8 @@ int AExprstep::getPBool()
     break;
     
   case 3:
-    Assert (u.vx.s->issetPBool (u.vx.vx->idx + u.vx.a->index()), "Should have been caught earlier");
-    return u.vx.s->getPBool (u.vx.vx->idx + u.vx.a->index());
+    Assert (u.vx.s->issetPBool (u.vx.vx->u.idx + u.vx.a->index()), "Should have been caught earlier");
+    return u.vx.s->getPBool (u.vx.vx->u.idx + u.vx.a->index());
     break;
 
   default:

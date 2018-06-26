@@ -118,4 +118,6 @@ class InstType {
   
 };
 
+
+
 #endif /* __INST_H__ */

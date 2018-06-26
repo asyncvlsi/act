@@ -1528,27 +1528,25 @@ connection[ActBody *]: special_connection_id ";"
 {{X: return $1; }}
 ;
 
-loop[ActBody *]: "(" ";" ID 
+loop[ActBody *]: "(" ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
 {{X:
-    if ($0->scope->Lookup ($3)) {
-      $E("Identifier `%s' already defined in current scope", $3);
+    if ($0->scope->Lookup ($2)) {
+      $E("Identifier `%s' already defined in current scope", $2);
     }
-    $0->scope->Add ($3, $0->tf->NewPInt());
+    $0->scope->Add ($2, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" 
    base_item_list ")"
 {{X:
-    if (OPT_EMPTY ($6)) {
-      $0->scope->Del ($3);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, NULL, $5, $8);
+    $0->scope->Del ($2);
+    if (OPT_EMPTY ($5)) {
+      return new ActBody_Loop (ActBody_Loop::SEMI, $2, NULL, $4, $7);
     }
     else {
       ActRet *r;
-      r = OPT_VALUE ($6);
-      OPT_FREE ($6);
+      r = OPT_VALUE ($5);
+      OPT_FREE ($5);
       $A(r->type == R_EXPR);
-      $0->scope->Del ($3);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, r->u.exp, $8);
+      return new ActBody_Loop (ActBody_Loop::SEMI, $2, $4, r->u.exp, $7);
     }
 }}
 ;
