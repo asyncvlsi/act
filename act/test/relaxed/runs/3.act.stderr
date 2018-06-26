@@ -1,4 +1,0 @@
-ERROR: File `3.act', line 15, col 13
-	Array instance for `f' is incompatible with previous instance of the same name
- prev: foo<4,3>[3]
- here: foo<3,4>[4..5]

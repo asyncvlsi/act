@@ -1,4 +1,4 @@
-template <pint x | pbool y>
+template <pint x ; pbool y>
 deftype foo <: 
               int<5>
   (bool b) 
