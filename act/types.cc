@@ -6,6 +6,7 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <act/act.h>
 #include <act/types.h>
 #include <act/inst.h>
 #include <string.h>
@@ -352,6 +353,11 @@ int TypeFactory::isParamType (Type *t)
     return 1;
   }
   return 0;
+}
+
+int TypeFactory::isParamType (InstType *it)
+{
+  return TypeFactory::isParamType (it->BaseType ());
 }
 
 
@@ -1295,6 +1301,241 @@ void InstType::setParam (int pn, InstType *t)
 }
 
 
+/*
+  tt has to be expanded
+*/
+void UserDef::BindParam (const char *s, InstType *tt)
+{
+  /* get the ValueIdx for the parameter */
+  int need_alloc = 0;
+  ValueIdx *vx = I->LookupVal (s);
+
+  Assert (vx, "should have checked this before");
+  Assert (vx->t, "what?");
+
+  if (!vx->init) {
+    need_alloc = 1;
+  }
+  vx->init = 1;
+
+
+  /* allocate space and bind it to a value */
+  Assert (TypeFactory::isPTypeType (vx->t->BaseType()), "BindParam called with a Type, but needs a value");
+
+  /* recall: no ptype arrays */
+  Assert (!vx->t->arrayInfo(), "No ptype arrays?");
+
+  if (need_alloc) {
+    /* alloc */
+    vx->u.idx = I->AllocPType();
+  }
+  if (tt) {
+    if (vx->immutable) {
+      if (I->issetPType (vx->u.idx)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Setting immutable parameter `%s' that has already been set", s);
+      }
+    }
+    /* assign */
+    I->setPType (vx->u.idx, tt);
+    Assert (I->getPType (vx->u.idx) == tt, "Huh?!");
+  }
+}
+
+
+/*
+  ae has to be expanded
+*/
+void UserDef::BindParam (const char *s, AExpr *ae)
+{
+  /* get the ValueIdx for the parameter */
+  int need_alloc = 0;
+  ValueIdx *vx = I->LookupVal (s);
+
+  Assert (vx, "should have checked this before");
+  Assert (vx->t, "what?");
+
+  if (!vx->init) {
+    need_alloc = 1;
+  }
+  vx->init = 1;
+
+  Assert (!TypeFactory::isPTypeType (vx->t->BaseType()), "Should not be a type!");
+
+  InstType *xrhs;
+  Array *xa;
+
+  /* compute the array, if any */
+  unsigned int len;
+  xa = vx->t->arrayInfo();
+  if (xa) {
+    len = xa->size();
+  }
+  else {
+    len = 1;
+  }
+
+  /* x = expanded type of port parameter
+     xa = expanded array field of x
+     len = number of items
+  */
+  
+  AExpr *rhsval;
+  AExprstep *aes;
+
+  if (ae) {
+    xrhs = ae->getInstType (I, 1 /* expanded */);
+    if (!type_connectivity_check (vx->t, xrhs)) {
+      fatal_error ("typechecking failed");
+    }
+	
+    rhsval = ae;
+    aes = rhsval->stepper();
+  }
+
+  if (TypeFactory::isPIntType (vx->t->BaseType())) {
+    unsigned long v;
+
+    vx->u.idx = I->AllocPInt(len); /* allocate */
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+
+	as = xa->stepper();
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+	  
+	  idx = as->index();
+	  v = aes->getPInt();
+	  I->setPInt (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	I->setPInt (vx->u.idx, aes->getPInt());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
+    long v;
+
+    vx->u.idx = I->AllocPInts(len); /* allocate */
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper();
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+
+	  idx = as->index();
+	  v = aes->getPInts();
+	  I->setPInts (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	I->setPInts (vx->u.idx, aes->getPInts());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPRealType (vx->t->BaseType())) {
+    double v;
+
+    vx->u.idx = I->AllocPReal(len); /* allocate */
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper();
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+	  
+	  idx = as->index();
+	  v = aes->getPReal();
+	  I->setPReal (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	I->setPReal (vx->u.idx, aes->getPReal());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
+    int v;
+
+    vx->u.idx = I->AllocPBool(len); /* allocate */
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper();
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+
+	  idx = as->index();
+	  v = aes->getPBool();
+	  I->setPBool (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	I->setPBool (vx->u.idx, aes->getPBool());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else {
+    fatal_error ("Should not be here: meta params only");
+  }
+  if (ae) {
+    delete aes;
+    delete xrhs;
+  }
+}
+
+
+static int recursion_depth = 0;
 /*------------------------------------------------------------------------
  *
  *   Expand user-defined type! 
@@ -1307,6 +1548,14 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   int k, sz, len;
   InstType *x, *p;  
   Array *xa;
+
+  recursion_depth++;
+
+  
+  if (recursion_depth >= Act::max_recurse_depth) {
+    act_error_ctxt (stderr);
+    fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
+  }
 
   printf ("Hello, expand userdef!\n");
   /* nt = # of specified parameters
@@ -1342,16 +1591,16 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
       Assert (!x->arrayInfo(), "No ptype arrays?");
       
       /* alloc */
-      vx->idx = ux->I->AllocPType();
+      vx->u.idx = ux->I->AllocPType();
 
       if (i < spec_nt && u[i].tt) {
 	/* compute value */
 	x = u[i].tt->Expand (ns, s);
-	Assert (ux->I->issetPType (vx->idx) == 0, "Huh?");
+	Assert (ux->I->issetPType (vx->u.idx) == 0, "Huh?");
 
 	/* assign */
-	ux->I->setPType (vx->idx, x);
-	Assert (ux->I->getPType (vx->idx) == x, "Huh?!");
+	ux->I->setPType (vx->u.idx, x);
+	Assert (ux->I->getPType (vx->u.idx) == x, "Huh?!");
       }
       else { /* skipped parameter */ }
     }
@@ -1393,7 +1642,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
       if (TypeFactory::isPIntType (x->BaseType())) {
 	unsigned long v;
 
-	vx->idx = ux->I->AllocPInt(len); /* allocate */
+	vx->u.idx = ux->I->AllocPInt(len); /* allocate */
 
 	if (i < spec_nt && u[i].tp) {
 	  if (xa) {		/* array assignment */
@@ -1407,7 +1656,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 
 	      idx = as->index();
 	      v = aes->getPInt();
-	      ux->I->setPInt (vx->idx + idx, v);
+	      ux->I->setPInt (vx->u.idx + idx, v);
 	    
 	      as->step();
 	      aes->step();
@@ -1417,7 +1666,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	  }
 	  else {
 	    aes = rhsval->stepper();
-	    ux->I->setPInt (vx->idx, aes->getPInt());
+	    ux->I->setPInt (vx->u.idx, aes->getPInt());
 	    aes->step();
 	    Assert (aes->isend(), "This should have been caught earlier");
 	  }
@@ -1426,7 +1675,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
       else if (TypeFactory::isPIntsType (x->BaseType())) {
 	long v;
 
-	vx->idx = ux->I->AllocPInts(len); /* allocate */
+	vx->u.idx = ux->I->AllocPInts(len); /* allocate */
 
 	if (i < spec_nt && u[i].tp) {
 	  if (xa) {		/* array assignment */
@@ -1440,7 +1689,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 
 	      idx = as->index();
 	      v = aes->getPInts();
-	      ux->I->setPInts (vx->idx + idx, v);
+	      ux->I->setPInts (vx->u.idx + idx, v);
 	    
 	      as->step();
 	      aes->step();
@@ -1450,7 +1699,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	  }
 	  else {
 	    aes = rhsval->stepper();
-	    ux->I->setPInts (vx->idx, aes->getPInts());
+	    ux->I->setPInts (vx->u.idx, aes->getPInts());
 	    aes->step();
 	    Assert (aes->isend(), "This should have been caught earlier");
 	  }
@@ -1459,7 +1708,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
       else if (TypeFactory::isPRealType (x->BaseType())) {
 	double v;
 
-	vx->idx = ux->I->AllocPReal(len); /* allocate */
+	vx->u.idx = ux->I->AllocPReal(len); /* allocate */
 
 	if (i < spec_nt && u[i].tp) {
 	  if (xa) {		/* array assignment */
@@ -1473,7 +1722,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 
 	      idx = as->index();
 	      v = aes->getPReal();
-	      ux->I->setPReal (vx->idx + idx, v);
+	      ux->I->setPReal (vx->u.idx + idx, v);
 	    
 	      as->step();
 	      aes->step();
@@ -1483,7 +1732,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	  }
 	  else {
 	    aes = rhsval->stepper();
-	    ux->I->setPReal (vx->idx, aes->getPReal());
+	    ux->I->setPReal (vx->u.idx, aes->getPReal());
 	    aes->step();
 	    Assert (aes->isend(), "This should have been caught earlier");
 	  }
@@ -1492,7 +1741,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
       else if (TypeFactory::isPBoolType (x->BaseType())) {
 	int v;
 
-	vx->idx = ux->I->AllocPBool(len); /* allocate */
+	vx->u.idx = ux->I->AllocPBool(len); /* allocate */
 
 	if (i < spec_nt && u[i].tp) {
 	  if (xa) {		/* array assignment */
@@ -1506,7 +1755,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 
 	      idx = as->index();
 	      v = aes->getPBool();
-	      ux->I->setPBool (vx->idx + idx, v);
+	      ux->I->setPBool (vx->u.idx + idx, v);
 	    
 	      as->step();
 	      aes->step();
@@ -1516,7 +1765,7 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	  }
 	  else {
 	    aes = rhsval->stepper();
-	    ux->I->setPInts (vx->idx, aes->getPInts());
+	    ux->I->setPBool (vx->u.idx, aes->getPBool());
 	    aes->step();
 	    Assert (aes->isend(), "This should have been caught earlier");
 	  }
@@ -1542,8 +1791,6 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 
      insert the new type into the namespace into the xt table
   */
-  act_error_ctxt (stderr);
-  warning ("Need to actually expand the type");
 
   sz = 0;
 
@@ -1625,19 +1872,19 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	  while (!as->isend()) {
 	    if (TypeFactory::isPIntType (x->BaseType())) {
 	      snprintf (buf+k, sz, "%lu",
-			ux->I->getPInt (vx->idx + as->index()));
+			ux->I->getPInt (vx->u.idx + as->index()));
 	    }
 	    else if (TypeFactory::isPIntsType (x->BaseType())) {
 	      snprintf (buf+k, sz, "%ld",
-			ux->I->getPInts (vx->idx + as->index()));
+			ux->I->getPInts (vx->u.idx + as->index()));
 	    }
 	    else if (TypeFactory::isPRealType (x->BaseType())) {
 	      snprintf (buf+k, sz, "%g",
-			ux->I->getPReal (vx->idx + as->index()));
+			ux->I->getPReal (vx->u.idx + as->index()));
 	    }
 	    else if (TypeFactory::isPBoolType (x->BaseType())) {
 	      snprintf (buf+k, sz, "%d",
-			ux->I->getPBool (vx->idx + as->index()));
+			ux->I->getPBool (vx->u.idx + as->index()));
 	    }
 	    else {
 	      fatal_error ("What type is this?");
@@ -1655,16 +1902,16 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	}
 	else {
 	  if (TypeFactory::isPIntType (x->BaseType())) {
-	    snprintf (buf+k, sz, "%lu", ux->I->getPInt (vx->idx));
+	    snprintf (buf+k, sz, "%lu", ux->I->getPInt (vx->u.idx));
 	  }
 	  else if (TypeFactory::isPIntsType (x->BaseType())) {
-	    snprintf (buf+k, sz, "%ld", ux->I->getPInts (vx->idx));
+	    snprintf (buf+k, sz, "%ld", ux->I->getPInts (vx->u.idx));
 	  }
 	    else if (TypeFactory::isPRealType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->idx));
+	      snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->u.idx));
 	    }
 	    else if (TypeFactory::isPBoolType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%d", ux->I->getPBool (vx->idx));
+	      snprintf (buf+k, sz, "%d", ux->I->getPBool (vx->u.idx));
 	    }
 	    else {
 	      fatal_error ("What type is this?");
@@ -1677,8 +1924,6 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   snprintf (buf+k, sz, ">");
   k++; sz--;
 
-  ux->pending = 0;
-
   Assert (sz >= 0, "Hmmmmm");
 
   /* now we have the string for the type! */
@@ -1687,10 +1932,17 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   uy = ns->findType (buf);
 
   if (uy) {
+    if (uy->pending) {
+      act_error_ctxt (stderr);
+      fatal_error ("Recursive construction of type `%s'", buf);
+    }
+    FREE (buf);
     /* we found one! */
     delete ux;
+    recursion_depth--;
     return uy;
   }
+  FREE (buf);
 
   Assert (ns->CreateType (buf, ux), "Huh");
 
@@ -1700,16 +1952,15 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   ux->exported = exported;
 
   /*-- create ports --*/
-
   for (int i=0; i < nports; i++) {
     Assert (ux->AddPort (getPortType(i)->Expand (ns, ux->I), getPortName (i)), "What?");
   }
 
   /*-- expand body --*/
-  for (ActBody *bi = b; bi; bi = bi->Next()) {
-    bi->Expand (ns, ux->I);
-  }
+  b->Expandlist (ns, ux->I);
 
+  ux->pending = 0;
+  recursion_depth--;
   return ux;
 }
 
@@ -1725,6 +1976,10 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 {
   InstType *xit = NULL;
   Type *xt = NULL;
+
+  if (expanded) {
+    return this;
+  }
 
   /* copy in my scope and parent base type. But it must be an expanded
      scope.

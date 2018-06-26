@@ -86,7 +86,6 @@ ActId *ActId::Expand (ActNamespace *ns, Scope *s)
   fprintf (stderr, "\n");
 #endif
 
-
   return ret;
 }
 
@@ -95,6 +94,12 @@ ActId *ActId::Expand (ActNamespace *ns, Scope *s)
  *  Evaluate identifier: It either returns an evaluated identifier
  *  (i.e. all items expanded out), or in the case of something that
  *  isn't an lval, the value of the parameter.
+ *
+ *  Return types are:
+ *    for lval: E_VAR
+ *    otherwise: E_VAR (for non-parameter types)
+ *               E_TRUE, E_FALSE, E_TYPE, E_REAL, E_INT,
+ *               E_ARRAY, E_SUBRANGE -- for parameter types
  *
  *------------------------------------------------------------------------
  */
@@ -236,7 +241,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 	}
 	else {
 	  /* dense array, simple indexing */
-	  idx = vx->idx + k;
+	  idx = vx->u.idx + k;
 	}
 	/* check the appropriate thing is set */
 	if ((TypeFactory::isPIntType (base) && !s->issetPInt (idx)) ||
@@ -265,11 +270,11 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
       }
       return ret;
     }
-    if ((TypeFactory::isPIntType(base) && !s->issetPInt (vx->idx + offset)) ||
-	(TypeFactory::isPIntsType(base) && !s->issetPInts (vx->idx + offset)) ||
-	(TypeFactory::isPBoolType(base) && !s->issetPBool (vx->idx + offset)) ||
-	(TypeFactory::isPRealType(base) && !s->issetPReal (vx->idx + offset)) ||
-	(TypeFactory::isPTypeType(base) && !s->issetPType (vx->idx + offset))) {
+    if ((TypeFactory::isPIntType(base) && !s->issetPInt (vx->u.idx + offset)) ||
+	(TypeFactory::isPIntsType(base) && !s->issetPInts (vx->u.idx + offset)) ||
+	(TypeFactory::isPBoolType(base) && !s->issetPBool (vx->u.idx + offset)) ||
+	(TypeFactory::isPRealType(base) && !s->issetPReal (vx->u.idx + offset)) ||
+	(TypeFactory::isPTypeType(base) && !s->issetPType (vx->u.idx + offset))) {
       act_error_ctxt (stderr);
       fprintf (stderr, " id: ");
       this->Print (stderr);
@@ -278,16 +283,16 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     }
     if (TypeFactory::isPIntType (base)) {
       ret->type = E_INT;
-      ret->u.v = s->getPInt (offset + vx->idx);
+      ret->u.v = s->getPInt (offset + vx->u.idx);
       return ret;
     }
     else if (TypeFactory::isPIntsType (base)) {
       ret->type = E_INT;
-      ret->u.v = s->getPInts (offset + vx->idx);
+      ret->u.v = s->getPInts (offset + vx->u.idx);
       return ret;
     }
     else if (TypeFactory::isPBoolType (base)) {
-      if (s->getPBool (offset + vx->idx)) {
+      if (s->getPBool (offset + vx->u.idx)) {
 	ret->type = E_TRUE;
       }
       else {
@@ -297,12 +302,12 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     }
     else if (TypeFactory::isPRealType (base)) {
       ret->type = E_REAL;
-      ret->u.f = s->getPReal (offset + vx->idx);
+      ret->u.f = s->getPReal (offset + vx->u.idx);
       return ret;
     }
     else if (TypeFactory::isPTypeType (base)) {
       ret->type = E_TYPE;
-      ret->u.e.l = (Expr *) s->getPType (offset + vx->idx);
+      ret->u.e.l = (Expr *) s->getPType (offset + vx->u.idx);
       return ret;
     }
     else {
