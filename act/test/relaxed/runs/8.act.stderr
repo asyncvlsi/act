@@ -1,4 +1,0 @@
-Incompatible element types in array connection.
-Type 1: defproc <4,3> (bool a; bool b; bool c)
-Type 2: defproc <4,4> (bool a; bool b; bool c)
-	File `8.act', line: 17, col: 2

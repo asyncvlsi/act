@@ -1,6 +1,6 @@
-template <pint p | pint x>
+template <pint p>
 defproc foo(bool a[p], b)
 {
-  bool s[x+p];
+  bool s[2*p];
 }
 

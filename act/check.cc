@@ -481,11 +481,16 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
     }
   }
 
-  p.l = stype_line_no;
-  p.c = stype_col_no;
-  p.f = stype_file_name;
+  if (!lhs->isExpanded()) {
+    p.l = stype_line_no;
+    p.c = stype_col_no;
+    p.f = stype_file_name;
 
-  act_parse_msg (&p, "Type checking failed in connection\n");
+    act_parse_msg (&p, "Type checking failed in connection\n");
+  }
+  else {
+    act_error_ctxt (stderr);
+  }
   fprintf (stderr, "\tTypes `");
   lhs->Print (stderr);
   fprintf (stderr, "' and `");
