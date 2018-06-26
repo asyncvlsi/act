@@ -3,5 +3,5 @@ pint w;
 
 prs <a|c,b> {
 
- (:i:0..3:a<i,svt:0> & b -> c-)
+ (i:0..3:a<i,svt:0> & b -> c-)
 }

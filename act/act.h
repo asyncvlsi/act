@@ -29,6 +29,12 @@ class Act {
    */
   static void Init (int *argc, char ***argv);
 
+
+  /**
+   * Maximum depth of recursion for expanding types
+   */
+  static int max_recurse_depth;
+  
   /**
    * Create an act data structure for the specified input file
    *

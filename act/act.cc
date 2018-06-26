@@ -11,6 +11,8 @@
 #include <act/act_walk_X.h>
 #include <act/types.h>
 
+int Act::max_recurse_depth = 1000;
+
 void Act::Init (int *iargc, char ***iargv)
 {
   static int initialize = 0;
