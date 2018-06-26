@@ -58,10 +58,12 @@ void act_error_ctxt (FILE *fp)
   int x = 0;
 
   for (ec = hd; ec; ec = ec->next) {
+#if 0
     for (int i=0; i < x; i++) {
       fprintf (fp, " ");
     }
     x++;
+#endif    
     fprintf (fp, "In expanding %s", ec->s);
     if (ec->file) {
       fprintf (fp, " (%s:%d)", ec->file, ec->line);

@@ -12,8 +12,6 @@
 #include <string.h>
 #include "misc.h"
 
-int Scope::count = 0;
-
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;
 
@@ -352,7 +350,6 @@ int ActNamespace::findName (const char *s)
 
 Scope::Scope (Scope *parent, int is_expanded)
 {
-  id = Scope::count++;
   expanded = is_expanded;
   H = hash_new (2);
   u = NULL;
@@ -369,7 +366,6 @@ Scope::Scope (Scope *parent, int is_expanded)
   vpreal_set = NULL;
   vptype_set = NULL;
   vpbool_set = NULL;
-
 }
 
 InstType *Scope::Lookup (const char *s)
@@ -429,6 +425,19 @@ InstType *Scope::FullLookup (const char *s)
 
 Scope::~Scope ()
 {
+  /* free items from the hash table */
+  hash_bucket_t *b;
+  int i;
+
+  if (expanded) {
+    for (i=0; i < H->size; i++) {
+      for (b = H->head[i]; b; b = b->next) {
+	ValueIdx *vx = (ValueIdx *)b->v;
+	/* delete connections too */
+	delete vx;
+      }
+    }
+  }
   hash_free (H);
   H = NULL;
 
@@ -494,7 +503,12 @@ int Scope::Add (const char *s, InstType *it)
     
     v->t = it;
     v->init = 0;
+    v->immutable = 0;
     b->v = v;
+    if (!TypeFactory::isParamType (it->BaseType())) {
+      v->u.obj.name = b->key;
+      v->u.obj.c = NULL;
+    }
   }
   return 1;
 }
@@ -509,6 +523,14 @@ void Scope::Del (const char *s)
   }
   if (expanded) {
     ValueIdx *v = (ValueIdx *)b->v;
+
+    Assert (v->t, "Huh");
+    
+    if (!TypeFactory::isParamType (v->t->BaseType())) {
+      if (v->u.obj.c) {
+	warning ("Del() called, but object has a connection!");
+      }
+    }
     delete v;
   }
   hash_delete (H, s);
@@ -527,6 +549,12 @@ void Scope::FlushExpand ()
     for (i=0; i < H->size; i++) {
       for (b = H->head[i]; b; b = b->next) {
 	v = (ValueIdx *)b->v;
+	Assert (v->t, "Huh");
+	if (!TypeFactory::isParamType (v->t->BaseType())) {
+	  if (v->u.obj.c) {
+	    warning ("FlushExpand() called, but object has a connection!");
+	  }
+	}
 	delete v;
       }
     }
@@ -612,9 +640,7 @@ void ActNamespace::Expand ()
   I->FlushExpand ();
 
   /* Expand all meta parameters at the top level of the namespace. */
-  for (b = B; b; b = b->Next ()) {
-    b->Expand (this, I);
-  }
+  B->Expandlist (this, I);
 
   act_error_pop ();
 }
