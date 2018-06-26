@@ -723,6 +723,9 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
        for parameterized types returns the value. */
     xid = ((ActId *)e->u.e.l)->Expand (ns, s);
     te = xid->Eval (ns, s, is_lval);
+    if (te->type != E_VAR) {
+      delete xid;
+    }
     FREE (ret);
     ret = te;
     break;

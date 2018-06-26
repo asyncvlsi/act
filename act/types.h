@@ -21,6 +21,7 @@ class ActNamespace;
 class ActBody;
 struct act_chp_lang;
 union inst_param;
+class AExpr;
 
 /**
  * The base class for all types in the system
@@ -307,6 +308,12 @@ class UserDef : public Type {
   void setBody (ActBody *x) { b = x; } /**< Set the body of the process */
 
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  /**
+     Add a binding function
+  */
+  void BindParam (const char *s, InstType *tt);
+  void BindParam (const char *s, AExpr *ae);
 
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
@@ -610,6 +617,7 @@ class TypeFactory {
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
   static int isParamType (Type *t);
+  static int isParamType (InstType *it);
 };
 
 
@@ -959,6 +967,8 @@ class ActBody {
 
   virtual void Expand (ActNamespace *, Scope *) { fatal_error ("Need to define Expand() method!"); }
 
+  void Expandlist (ActNamespace *, Scope *);
+
  private:
   ActBody *next;
 };
@@ -1012,10 +1022,10 @@ class ActBody_Loop : public ActBody {
 
   enum type {
     SEMI,
-    COMMA,
-    AND,
-    OR,
-    BAR
+    COMMA,			// unused
+    AND,			// unused
+    OR,				// unused
+    BAR				// unused
   };
     
   ActBody_Loop (ActBody_Loop::type _t, 
@@ -1061,6 +1071,8 @@ class ActBody_Select_gc {
   Expr *g;			/**< guard */
   ActBody *s;			/**< statement */
   ActBody_Select_gc *next;		/**< rest of the selection */
+
+  friend class ActBody_Select;
 };
 
 class ActBody_Select : public ActBody {
@@ -1164,6 +1176,10 @@ void type_set_position (int l, int c, char *n);
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
+
+/* language expanders */
+void prs_expand (act_prs *, ActNamespace *, Scope *);
+void chp_expand (act_chp *, ActNamespace *, Scope *);
 
 /* for expanded expressions */
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */

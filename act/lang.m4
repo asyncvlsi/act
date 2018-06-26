@@ -644,38 +644,38 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     if (r) { FREE (r); }
     return p;
 }}
-| "(" [":"] ID 
+| "(" ID 
 {{X:
-    if ($0->scope->Lookup ($3)) {
-      $E("Identifier `%s' already defined in current scope", $3);
+    if ($0->scope->Lookup ($2)) {
+      $E("Identifier `%s' already defined in current scope", $2);
     }
-    $0->scope->Add ($3, $0->tf->NewPInt ());
-    OPT_FREE ($2);
+    $0->scope->Add ($2, $0->tf->NewPInt ());
 }}
 ":" !noreal wint_expr [ ".." wint_expr ] ":" prs_body ")"
 {{X:
     act_prs_lang_t *p;
-    $0->scope->Del ($3);
+    
+    $0->scope->Del ($2);
 
     NEW (p, act_prs_lang_t);
     p->type = ACT_PRS_LOOP;
     p->next = NULL;
-    p->u.l.id = $3;
-    p->u.l.lo = $5;
+    p->u.l.id = $2;
+    p->u.l.lo = $4;
     
-    if (OPT_EMPTY ($6)) {
-      p->u.l.hi = $5;
+    if (OPT_EMPTY ($5)) {
+      p->u.l.hi = $4;
       p->u.l.lo = NULL;
     }
     else {
       ActRet *r;
-      r = OPT_VALUE ($6);
+      r = OPT_VALUE ($5);
       $A(r->type == R_EXPR);
       p->u.l.hi = r->u.exp;
       FREE (r);
     }
-    OPT_FREE ($6);
-    p->u.l.p = $8;
+    OPT_FREE ($5);
+    p->u.l.p = $7;
     return p;
 }}
 /* gate, source, drain */
