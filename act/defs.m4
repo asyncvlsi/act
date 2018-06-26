@@ -51,24 +51,10 @@ template_spec: "export"
     OPT_FREE ($1);
     $0->strict_checking = 1;
 }}
-"<" { param_inst ";" }* 
+"<" { param_inst ";" }* ">"
 {{X:
     $0->param_mode = 1;
     list_free ($4);
-}}
-[ "|" { param_inst ";" }* ] ">"
-{{X:
-    if (!OPT_EMPTY ($5)) {
-      list_t *m;
-      ActRet *r;
-
-      r = OPT_VALUE ($5);
-      $A(r->type == R_LIST);
-      m = r->u.l;
-      FREE (r);
-      list_free (m);
-    }
-    OPT_FREE ($5);
     return NULL;
 }}
 ;

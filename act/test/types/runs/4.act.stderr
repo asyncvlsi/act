@@ -1,0 +1,3 @@
+ERROR: File `4.act', line 8, col 5
+	Type checking failed in connection
+	Types `pbool' and `pint' are not compatible

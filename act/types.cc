@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2011-2018 Rajit Manohar
+ *  Copyright (c) 2017-2018 Rajit Manohar
  *  All Rights Reserved
  *
  **************************************************************************
@@ -1557,11 +1557,13 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
     fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
   }
 
-  printf ("Hello, expand userdef!\n");
   /* nt = # of specified parameters
      u = expanded instance paramters
   */
+#if 0
+  printf ("Hello, expand userdef!\n");
   printf ("Expanding userdef, nt=%d, spec_nt=%d\n", nt, spec_nt);
+#endif
 
   /* create a new userdef type */
   ux = new UserDef (ns);

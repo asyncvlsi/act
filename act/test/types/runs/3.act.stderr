@@ -1,2 +1,2 @@
 ERROR: File `3.act', line 8, col 5
-	Number of template parameters specified (3) > available parameters (2) for foo
+	Number of template parameters specified (2) > available parameters (1) for foo
