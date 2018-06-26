@@ -7,7 +7,7 @@ defproc foo(bool x, y)
   prs<x> {
    w[0] -> x-
 
-  (:i:4: w[i] -> x- )
+  (i:4: w[i] -> x- )
    tree {
  	a & b -> c-
 	d -> @l+

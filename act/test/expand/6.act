@@ -13,7 +13,7 @@ template <pint i>
 defproc foo (bool x[i]; bool y[i]; bool z[j+i])
 {
   prs {
-   (:k:i: x[k] => y[k]-)
+   (k:i: x[k] => y[k]-)
   }
   bar<2+i> b;
 }

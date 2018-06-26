@@ -19,40 +19,29 @@ class Type;
 class InstType;
 class ActId;
 
+struct act_connection;
+
 struct ValueIdx {
   InstType *t;
   unsigned int init:1;	   /**< Has this been allocated? 
 			         0 = no allocation
 				 1 = allocated
 			    */
-  long idx;		   /**< Base index for allocated storage */
+  unsigned int immutable:1;	/**< for parameter types: immutable if
+				   it is in a namespace or a template
+				   parameter */
+  
+  union {
+    long idx;		   /**< Base index for allocated storage for
+			      ptypes */
+    struct {
+      act_connection *c;	/**< For non-parameter types */
+      const char *name;		/**< the base name, from the hash
+				   table lookup: DO NOT FREE */
+    } obj;
+  } u;
 };
 
-class ValueStoreInst {
- public:
-  /* allocation of data and channel values
-     int, ints, bool, enum, chan
-     enums are treated as just another int
-   */
-  ValueStoreInst() {
-    A_INIT (vchan);
-    A_INIT (vint);
-    A_INIT (vints);
-    vbool = NULL;
-  }
-  ~ValueStoreInst() {
-    A_FREE (vchan);
-    A_FREE (vint);
-    A_FREE (vints);
-    if (vbool) { bitset_free (vbool); }
-  }
-
- private:
-  A_DECL (void, vchan);
-  A_DECL (unsigned int, vint);
-  A_DECL (int, vints);
-  bitset_t *vbool;
-};  
 
 
 class Scope {
@@ -162,11 +151,32 @@ class Scope {
   unsigned long vpbool_len;
   bitset_t *vpbool;
   bitset_t *vpbool_set;
-
-  int id;
-
-  static int count;
 };
+
+/*
+  Connections
+
+  For non-parameter types, we represent connections.
+   - ring of connections
+   - union-find tree
+*/
+struct act_connection {
+  ValueIdx *vx;			// identifier that has been allocated
+
+  act_connection *parent;	// parent for id . id
+  
+  union {
+    struct {
+      act_connection *up;
+      act_connection *next;
+    } uf;			// union find tree
+    struct {
+      act_connection **a;	// slots for root arrays and root
+				// userdefs
+    } slots;
+  } u;
+};
+
 
 /**
  *   @file namespaces.h
@@ -442,6 +452,4 @@ class ActOpen {
   list_t *search_path;
 };
   
-
-
 #endif /* __NAMESPACES_H__ */
