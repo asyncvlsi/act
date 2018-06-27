@@ -323,15 +323,17 @@ int Array::Offset (Array *a)
 
 
 /*------------------------------------------------------------------------
- *  "a" is a deref
- *  Returns 1 if "a" is a valid de-reference for the array, 0 otherwise.
+ *  "a" is an ExpandRef'ed array
+ *  Returns 1 if "a" is a valid de-reference or subrange reference for
+ *  the array, 0 otherwise.
  *------------------------------------------------------------------------
  */
 int Array::Validate (Array *a)
 {
   if (!expanded || !a->isExpanded()) {
-    fatal_error ("should only be called for expanded arrays");
+    fatal_error ("Array::Validate() should only be called for expanded arrays");
   }
+#if 0
   if (!a->isDeref()) {
     act_error_ctxt (stderr);
     fprintf (stderr, " array: ");
@@ -339,18 +341,32 @@ int Array::Validate (Array *a)
     fprintf (stderr, "\n");
     fatal_error ("Should be a de-reference!");
   }
+#endif
   Assert (dims == a->nDims(), "dimensions don't match!");
 
   int i, d;
 
   for (i=0; i < dims; i++) {
-    d = a->r[i].u.ex.hi + 1;
+    /* a is going to be from an ID */
+    d = a->r[i].u.ex.hi;
     if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
       if (next) {
 	return next->Validate (a);
       }
       else {
 	return 0;
+      }
+    }
+    if (a->r[i].u.ex.lo != a->r[i].u.ex.hi) {
+      /* subrange, check the extreme ends */
+      d = a->r[i].u.ex.lo;
+      if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+	if (next) {
+	  return next->Validate (a);
+	}
+	else {
+	  return 0;
+	}
       }
     }
   }
@@ -591,7 +607,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
   }
 
   if (next) {
-    ret->next = next->Expand (ns, s);
+    ret->next = next->Expand (ns, s, is_ref);
   }
 
   return ret;

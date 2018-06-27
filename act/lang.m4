@@ -839,7 +839,7 @@ spec_body: spec_body_item spec_body
 ;
 
 spec_body_item: ID "(" { bool_expr_id "," }* ")" 
-| "$(" wbool_expr ")"
+| "{" wbool_expr "}"
 ;
 
 /*

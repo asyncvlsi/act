@@ -7,6 +7,7 @@
  */
 #include <act/types.h>
 #include <act/inst.h>
+#include <string.h>
 #include "misc.h"
 
 /* XXX: free actbody */
@@ -83,6 +84,33 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 }
 
 
+void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
+{
+  Expr *ex;
+
+  ex = expr_expand (e, ns, s);
+  if (ex->type != E_TRUE && ex->type != E_FALSE) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Expression: ");
+    print_expr (stderr, e);
+    fprintf (stderr, "\n");
+    fatal_error ("Not a Boolean constant!");
+  }
+  if (ex->type == E_FALSE) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "*** Assertion failed ***\n");
+    fprintf (stderr, " assertion: ");
+    print_expr (stderr, e);
+    fprintf (stderr, "\n");
+    if (msg) {
+      char *s = Strdup (msg+1);
+      s[strlen(s)-1] = '\0';
+      fprintf (stderr, "   message: %s\n", s);
+    }
+    fatal_error ("Aborted execution on failed assertion");
+  }
+}
+
 
 void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 {
@@ -126,6 +154,8 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
 	/* ptype assignment */
 	AExprstep *stepper = arhs->stepper();
+
+	/* YYY: here */
 
 	/* bind the ptype from the expr */
       }

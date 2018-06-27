@@ -1009,7 +1009,36 @@ base_item[ActBody *]: instance
 | loop 
 {{X: return $1; }}
 | conditional
-{{X: return $1; }};
+{{X: return $1; }}
+| assertion
+{{X: return $1; }}
+;
+
+
+assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
+{{X:
+    ActBody *b;
+    
+    InstType *it = act_expr_insttype ($0->scope, $2);
+    if (!TypeFactory::isPBoolType (it->BaseType()) ||
+	it->arrayInfo() != NULL) {
+      $E("Assertion requires a Boolean expression of parameters/consts only");
+    }
+    delete it;
+    
+    if (OPT_EMPTY ($3)) {
+      b = new ActBody_Assertion ($2);
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_STRING);
+      b = new ActBody_Assertion ($2, r->u.str);
+      FREE (r);
+    }
+    return b;
+}}
+;
 
 
 instance[ActBody *]: [ "+" ] inst_type
