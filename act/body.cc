@@ -60,16 +60,11 @@ Type *ActBody_Inst::BaseType ()
 void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 {
   InstType *x;
+
   /* typechecking should all pass, so there shouldn't be an issue
      beyond creating the actual object. For arrays, there may be
      duplicate dereference issues
   */
-
-#if 0
-  printf ("Expand inst: ");
-  t->Print (stdout);
-  printf (" : id = %s\n", id);
-#endif
 
   /* 
      expand instance type!
@@ -98,18 +93,49 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
   
   switch (type) {
   case 0:
+    /*--  basic --*/
+    
+    /* lhs */
     ex = u.basic.lhs->Expand (ns, s);
     Assert (ex, "What?");
     e = ex->Eval (ns, s, 1 /* it is an lval */);
     Assert (e, "What?");
     Assert (e->type == E_VAR, "Hmm...");
     tlhs = (InstType *)e->u.e.r;
+
+    /* rhs */
+    arhs = u.basic.rhs->Expand (ns, s);
+    trhs = arhs->getInstType (s, 1);
+
+    if (!type_connectivity_check (tlhs, trhs)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Connection: ");
+      ex->Print (stderr);
+      fprintf (stderr, " = ");
+      arhs->Print (stderr);
+      fprintf (stderr, "\n  LHS: ");
+      tlhs->Print (stderr);
+      fprintf (stderr, "\n  RHS: ");
+      trhs->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Type-checking failed on connection");
+    }
+    
     if (TypeFactory::isParamType (tlhs)) {
       /* a parameter assignment */
+      if (TypeFactory::isPTypeType (tlhs->BaseType())) {
+	/* ptype assignment */
+	AExprstep *stepper = arhs->stepper();
 
+	/* bind the ptype from the expr */
+      }
+      
     }
 
-    /* basic */
+    delete e;
+    delete tlhs;
+    delete trhs;
+    delete arhs;
 
     break;
   case 1:
@@ -117,7 +143,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 
     break;
   default:
-    fatal_error ("Shoudl not be here");
+    fatal_error ("Should not be here");
     break;
   }
 }

@@ -722,6 +722,28 @@ int Arraystep::isend()
   else return 0;
 }
 
+/*------------------------------------------------------------------------
+ *
+ *  Arraystep::Print --
+ *
+ *   Print current index to the specified file
+ *
+ *------------------------------------------------------------------------
+ */
+void Arraystep::Print (FILE *fp)
+{
+  int i;
+  
+  fprintf (fp, "[");
+  for (i=0; i < base->dims; i++) {
+    if (i != 0) {
+      fprintf (fp, ",");
+    }
+    fprintf (fp, "%d", deref[i]);
+  }
+  fprintf (fp, "]");
+}
+
 
 /*------------------------------------------------------------------------
  * Step through an AExpr. The assumption is that the AExpr is already

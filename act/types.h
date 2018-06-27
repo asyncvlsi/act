@@ -309,11 +309,6 @@ class UserDef : public Type {
 
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
-  /**
-     Add a binding function
-  */
-  void BindParam (const char *s, InstType *tt);
-  void BindParam (const char *s, AExpr *ae);
 
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
@@ -775,6 +770,9 @@ public:
   void step();
   int index() { return idx; }
   int isend();		// returns 1 on an end of array, 0 otherwise
+
+  void Print (FILE *fp);
+  
 private:
   int idx;
   int *deref;
@@ -849,6 +847,7 @@ public:
 
   /* get an identifier */
   /* XXX: later */
+  void Print (FILE *fp);
   
 private:
   list_t *stack;		// stack of AExprs

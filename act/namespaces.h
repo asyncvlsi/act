@@ -18,6 +18,7 @@ class UserDef;
 class Type;
 class InstType;
 class ActId;
+class AExpr;
 
 struct act_connection;
 
@@ -30,6 +31,11 @@ struct ValueIdx {
   unsigned int immutable:1;	/**< for parameter types: immutable if
 				   it is in a namespace or a template
 				   parameter */
+
+  unsigned int global:1;	/**< 1 for a namespace global; 0
+				   otherwise. Note that global =>
+				   immutable, but not the other way
+				   around. */
   
   union {
     long idx;		   /**< Base index for allocated storage for
@@ -128,6 +134,12 @@ class Scope {
   /**< returns 1 if this is an expanded scope */
   int isExpanded () { return expanded; }
 
+  /**
+     Add a binding function
+  */
+  void BindParam (const char *s, InstType *tt);
+  void BindParam (const char *s, AExpr *ae);
+  
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if
 				   unexpanded; maps to ValueIdx if expanded. */
