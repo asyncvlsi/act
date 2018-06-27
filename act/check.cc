@@ -332,6 +332,7 @@ static InstType *actual_insttype (Scope *s, ActId *id)
 	  Assert (it->isExpanded(), "What on earth?");
 	  Assert (id->arrayInfo()->isExpanded(), "What on earth2?");
 	  /* YYY: HERE */
+	  
 
 	}
 	
@@ -361,12 +362,16 @@ static InstType *actual_insttype (Scope *s, ActId *id)
     typecheck_err ("Port `.%s': number of dimensions don't match type (%s v/s %s)", id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
     return NULL;
   }
+
   /* type is an array, there is a deref specified here */
   /* XXX: currently two cases handled correctly
        subrange specifier, full dimensions, return original type
        OR
        full deref
   */
+
+  /* YYY: for expanded, needs the right value; not the fake -1 */
+  
   if (id->arrayInfo()->effDims() == id->arrayInfo()->nDims()) {
     InstType *it2 = new InstType (it, 1);
     it2->MkArray (id->arrayInfo()->Clone ());
