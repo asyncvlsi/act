@@ -154,6 +154,15 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     }
 
     if (id->arrayInfo()) {
+      if (!id->arrayInfo()->isDeref() && id->Rest()) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " id: ");
+	this->Print (stderr);
+	fprintf (stderr, "; deref: ");
+	id->arrayInfo()->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Using `.' for an array, not an array de-reference");
+      }
       if (!it->arrayInfo()->Validate (id->arrayInfo())) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, " id: ");
@@ -204,6 +213,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     }
 
     /* now we check for each type */
+    offset = -1;
     if (it->arrayInfo() && id->arrayInfo()) {
       offset = it->arrayInfo()->Offset (id->arrayInfo());
       if (offset == -1) {
@@ -237,7 +247,8 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
       /* check that the entire array is set! */
       for (k=0; k < sz; k++) {
 	if (id->arrayInfo()) {
-	  
+	  Assert (offset != -1, "what?");
+	  idx = vx->u.idx + offset + k;
 	}
 	else {
 	  /* dense array, simple indexing */

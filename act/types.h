@@ -744,8 +744,14 @@ private:
 	Expr *lo, *hi;
       } ue;			/* unexpanded */
       struct {
-	int lo, hi;
-      } ex;			/* expanded */
+	int lo, hi;	       
+      } ex;			/* expanded.
+				   when an array is attached to an
+				   ActId, this is the correct value;
+				   in other contexts you have things
+				   like 0..val-1
+				*/
+
     } u;
   } *r;				/**< range for each dimension */
   unsigned int range_sz;	/**< cache: size of the range; only
@@ -1093,6 +1099,24 @@ class ActBody_Select : public ActBody {
   ActBody_Select_gc *gc;
 };
 
+class ActBody_Assertion : public ActBody {
+public:
+  ActBody_Assertion (Expr *_e, const char *_msg = NULL) {
+    e = _e;
+    msg = _msg;
+  }
+  ~ActBody_Assertion () {
+    if (e) {
+      expr_free (e);
+    }
+  }
+  void Expand (ActNamespace *, Scope *);
+private:
+  Expr *e;
+  const char *msg;
+};
+  
+
 class ActBody_Namespace : public ActBody {
 public:
   ActBody_Namespace (ActNamespace *_ns) {
@@ -1171,6 +1195,7 @@ void print_expr (FILE *fp, Expr *e);
 void sprint_expr (char *buf, int sz, Expr *e);
 int expr_is_a_const (Expr *e);
 void type_set_position (int l, int c, char *n);
+InstType *act_expr_insttype (Scope *s, Expr *e);
 
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
 int expr_equal (Expr *a, Expr *b);
