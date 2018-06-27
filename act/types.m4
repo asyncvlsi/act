@@ -237,6 +237,8 @@ user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
 	if (!type_connectivity_check (lhs, rhs)) {
 	  $E("Typechecking failed for template parameter #%d\n", (i-1));
 	}
+	delete lhs;
+	delete rhs;
       }
       list_free (l);
     }
