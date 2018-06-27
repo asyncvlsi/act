@@ -691,6 +691,7 @@ class Array {
    * array range is e..f; otherwise it is 0..(e-1).
    */
   Array (Expr *e, Expr *f = NULL);
+  Array (int lo, int hi);
 
   ~Array ();
 
@@ -705,6 +706,9 @@ class Array {
   int size(); /**< returns total number of elements */
   int range_size(int d); /**< returns size of a particular dimension */
   void update_range (int d, int lo, int hi); /**< set range */
+  int isrange (int d) { return r[d].u.ex.isrange; }
+  Expr *lo (int d) { return r[d].u.ue.lo; }
+  Expr *hi (int d) { return r[d].u.ue.hi; }
 
   /**< return expanded array, is_ref: 1 if it is on the rhs of an ID,
         0 if it is for a type */
@@ -744,6 +748,7 @@ private:
 	Expr *lo, *hi;
       } ue;			/* unexpanded */
       struct {
+	unsigned int isrange:1;	// it is a range... need this info, sadly.
 	int lo, hi;	       
       } ex;			/* expanded.
 				   when an array is attached to an
