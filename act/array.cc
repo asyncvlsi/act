@@ -50,6 +50,23 @@ Array::Array (Expr *e, Expr *f)
 }
 
 /*------------------------------------------------------------------------
+ * Constructor: [e..f] single dimensional array
+ *------------------------------------------------------------------------
+ */
+Array::Array (int lo, int hi)
+{
+  dims = 1;
+  NEW (r, struct range);
+  r->u.ex.lo = lo;
+  r->u.ex.hi = hi;
+  r->u.ex.isrange = 1;
+  deref = 0;
+  expanded = 1;
+  range_sz = -1;
+  next = NULL;
+}
+
+/*------------------------------------------------------------------------
  *  Destructor
  *------------------------------------------------------------------------
  */
@@ -171,8 +188,13 @@ void Array::Concat (Array *a)
   Assert (a->isExpanded () == expanded, "Array::Concat() must have same expanded state");
   
   dims += a->dims;
-  
-  REALLOC (r, struct range, dims);
+
+  if (dims == a->dims) {
+    MALLOC (r, struct range, dims);
+  }
+  else {
+    REALLOC (r, struct range, dims);
+  }
   
   for (i=0; i < a->dims; i++) {
     r[dims - a->dims + i] = a->r[i];
@@ -422,12 +444,18 @@ void Array::sPrint (char *buf, int sz)
 	}
       }
       else {
-	if (pr->r[i].u.ex.lo == 0) {
-	  snprintf (buf+k, sz, "%d", pr->r[i].u.ex.hi+1);
-	  PRINT_STEP;
+	if (pr->r[i].u.ex.isrange) {
+	  if (pr->r[i].u.ex.lo == 0) {
+	    snprintf (buf+k, sz, "%d", pr->r[i].u.ex.hi+1);
+	    PRINT_STEP;
+	  }
+	  else {
+	    snprintf (buf+k, sz, "%d..%d", pr->r[i].u.ex.lo, pr->r[i].u.ex.hi);
+	    PRINT_STEP;
+	  }
 	}
 	else {
-	  snprintf (buf+k, sz, "%d..%d", pr->r[i].u.ex.lo, pr->r[i].u.ex.hi);
+	  snprintf (buf+k, sz, "%d", pr->r[i].u.ex.lo);
 	  PRINT_STEP;
 	}
       }
@@ -591,16 +619,19 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
       }
       ret->r[i].u.ex.lo = lval->u.v;
       ret->r[i].u.ex.hi = hval->u.v;
+      ret->r[i].u.ex.isrange = 1;
       FREE (lval);
     }
     else {
       if (is_ref) {
 	ret->r[i].u.ex.lo = hval->u.v;
 	ret->r[i].u.ex.hi = hval->u.v;
+	ret->r[i].u.ex.isrange = 0;
       }
       else {
 	ret->r[i].u.ex.lo = 0;
 	ret->r[i].u.ex.hi = hval->u.v - 1;
+	ret->r[i].u.ex.isrange = 1;
       }
     }
     FREE (hval);

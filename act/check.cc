@@ -276,8 +276,15 @@ int act_type_expr (Scope *s, Expr *e)
     break;
 
   case E_PROBE:
-    /* YYY: if the variable is a channel, then */
-    return T_BOOL;
+    lt = act_type_var (s, (ActId *)e->u.e.l);
+    if (lt == T_CHAN) {
+      return T_BOOL;
+    }
+    else {
+      typecheck_err ("Probe operator applied to a non-channel identifier");
+      return T_ERR;
+    }
+    break;
 
   case E_REAL:
     return (T_REAL|T_PARAM|T_STRICT);
@@ -327,15 +334,20 @@ static InstType *actual_insttype (Scope *s, ActId *id)
 	}
 	/* for expanded types, we need to check that this is a
 	   legitimate dereference! */
+	if (!id->arrayInfo()->isDeref()) {
+	  typecheck_err ("`.' applied to a subrange specifier");
+	  return NULL;
+	}
 	if (s->isExpanded()) {
 	  int i;
 	  Assert (it->isExpanded(), "What on earth?");
 	  Assert (id->arrayInfo()->isExpanded(), "What on earth2?");
-	  /* YYY: HERE */
-	  
 
+	  if (!it->arrayInfo()->Validate (id->arrayInfo())) {
+	    typecheck_err ("Array dereference out of range");
+	    return NULL;
+	  }
 	}
-	
       }
       else {
 	if (id->arrayInfo()) {
@@ -358,6 +370,7 @@ static InstType *actual_insttype (Scope *s, ActId *id)
     typecheck_err ("Array de-reference for a non-arrayed type, port `.%s'", id->getName ());
     return NULL;
   }
+  
   if (it->arrayInfo ()->nDims () != id->arrayInfo()->nDims ()) {
     typecheck_err ("Port `.%s': number of dimensions don't match type (%s v/s %s)", id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
     return NULL;
@@ -369,33 +382,69 @@ static InstType *actual_insttype (Scope *s, ActId *id)
        OR
        full deref
   */
+  if (s->isExpanded()) {
+    if (id->arrayInfo()->isDeref()) {
+      InstType *it2 = new InstType (it, 1);
+      it = it2;
+    }
+    else {
+      /* subrange */
+      InstType *it2 = new InstType (it, 1);
+      Array *aret, *ida;
 
-  /* YYY: for expanded, needs the right value; not the fake -1 */
-  
-  if (id->arrayInfo()->effDims() == id->arrayInfo()->nDims()) {
-    InstType *it2 = new InstType (it, 1);
-    it2->MkArray (id->arrayInfo()->Clone ());
-    it = it2;
-  }
-  else if (id->arrayInfo()->effDims() == 0) {
-    InstType *it2 = new InstType (it, 1);
-    /* no array! */
-    it = it2;
+      ida = id->arrayInfo();
+      aret = NULL;
+      for (int i=0; i < ida->nDims(); i++) {
+	if (ida->isrange (i)) {
+	  Array *tmp = new Array (0, ida->range_size (i)-1);
+	  tmp->mkArray ();
+	  if (!aret) {
+	    aret = tmp;
+	  }
+	  else {
+	    aret->Concat (tmp);
+	    delete tmp;
+	  }
+	}
+      }
+      Assert (aret, "Huh?");
+      it2->MkArray (aret);
+      it = it2;
+    }
   }
   else {
-    InstType *it2 = new InstType (it, 1);
-    Array *a = NULL;
-    for (int i=0; i < id->arrayInfo()->effDims(); i++) {
-      if (!a) {
-	a = new Array (const_expr (-1));
-	a->mkArray ();
-      }
-      else {
-	a->Concat (new Array (const_expr (-1)));
-      }
+    /* not expanded */
+    if (id->arrayInfo()->effDims() == id->arrayInfo()->nDims()) {
+      InstType *it2 = new InstType (it, 1);
+      it2->MkArray (id->arrayInfo()->Clone ());
+      it = it2;
     }
-    it2->MkArray (a);
-    it = it2;
+    else if (id->arrayInfo()->effDims() == 0) {
+      InstType *it2 = new InstType (it, 1);
+      /* no array! */
+      it = it2;
+    }
+    else {
+      InstType *it2 = new InstType (it, 1);
+      Array *a = NULL, *ida;
+
+      ida = id->arrayInfo();
+      for (int i=0; i < ida->nDims(); i++) {
+	Array *tmp;
+	if (ida->lo(i) == NULL) continue;
+
+	tmp = new Array (ida->lo(i), ida->hi(i));;
+	tmp->mkArray ();
+	if (!a) {
+	  a = tmp;
+	}
+	else {
+	  a->Concat (tmp);
+	}
+      }
+      it2->MkArray (a);
+      it = it2;
+    }
   }
   return it;
 }
@@ -459,6 +508,7 @@ void type_set_position (int l, int c, char *n)
    types, check all dims are equal except for the first one.
    
 */
+static char *conn_msg = NULL;
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 {
   struct act_position p;
@@ -491,10 +541,18 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
     p.c = stype_col_no;
     p.f = stype_file_name;
 
-    act_parse_msg (&p, "Type checking failed in connection\n");
+    if (conn_msg) {
+      act_parse_msg (&p, "%s\n", conn_msg);
+    }
+    else {
+      act_parse_msg (&p, "Type checking failed in connection\n");
+    }
   }
   else {
     act_error_ctxt (stderr);
+    if (conn_msg) {
+      fprintf (stderr, "%s\n", conn_msg);
+    }
   }
   fprintf (stderr, "\tTypes `");
   lhs->Print (stderr);
@@ -553,12 +611,38 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 	act_error_ctxt (stderr);
 	fatal_error ("Cannot have a sparse array within an array expression");
       }
-      
-      if (!type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0))) {
+
+      if (!tmp->arrayInfo() && t == AExpr::CONCAT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Array concatenation requires arrays\n");
+	fprintf (stderr, " array expr: ");
+	this->Print (stderr);
+	fprintf (stderr, "\n   sub-expr: ");
+	ae->GetLeft()->Print (stderr);
+	fprintf (stderr, " isn't an array\n");
+	exit (1);
 	delete cur;
 	delete tmp;
 	return NULL;
       }
+
+      conn_msg = "Array expression, components are not compatible";
+      if (!type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0))) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Array expression, components are not compatible\n");
+	fprintf (stderr, "\t");
+	cur->Print (stderr);
+	fprintf (stderr, "  v/s  ");
+	tmp->Print (stderr);
+	fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	exit (1);
+#if 0
+	delete cur;
+	delete tmp;
+	return NULL;
+#endif	
+      }
+      conn_msg = NULL;
       
       /* cur has the base type.
 	 for comma expresisons, the next type simply is a higher

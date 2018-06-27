@@ -3,6 +3,7 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
+ACT=../act-test.$EXT
 
 check_echo=0
 myecho()
@@ -32,10 +33,14 @@ then
 	mkdir runs
 fi
 
+myecho "test"
+num=0
+lim=6
 for i in [0-9]*.act
 do
-	myecho "[$i]"
-	../act-test.${EXT} $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	num=`expr $num + 1`
+	myecho ".[$i]"
+	$ACT $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
@@ -51,11 +56,25 @@ do
 	fi
 	if [ $ok -eq 1 ]
 	then
-		echo " ok"
+		if [ $num -eq $lim ]
+		then
+			echo
+			myecho "    "
+			num=0
+		fi
 	else
 		echo " **FAIL"
+		myecho "    "
+		num=0
 	fi
 done
+
+if [ $num -ne 0 ]
+then
+	echo
+	myecho "    "
+fi
+
 
 if [ $fail -ne 0 ]
 then
