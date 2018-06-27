@@ -1369,7 +1369,12 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 	rhstype = rhsval->getInstType (s, 1);
 	if (!type_connectivity_check (x, rhstype)) {
 	  act_error_ctxt (stderr);
-	  fatal_error ("Type-checking failed.");
+	  fprintf (stderr, "Typechecking failed, ");
+	  x->Print (stderr);
+	  fprintf (stderr, "  v/s ");
+	  rhstype->Print (stderr);
+	  fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	  exit (1);
 	}
 	ux->I->BindParam (pn[i], rhsval);
 	delete rhstype;

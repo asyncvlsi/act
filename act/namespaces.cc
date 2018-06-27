@@ -971,7 +971,13 @@ void Scope::BindParam (const char *s, AExpr *ae)
   if (ae) {
     xrhs = ae->getInstType (this, 1 /* expanded */);
     if (!type_connectivity_check (vx->t, xrhs)) {
-      fatal_error ("typechecking failed");
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Typechecking failed, ");
+      vx->t->Print (stderr);
+      fprintf (stderr, "  v/s ");
+      xrhs->Print (stderr);
+      fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+      exit (1);
     }
 	
     rhsval = ae;
