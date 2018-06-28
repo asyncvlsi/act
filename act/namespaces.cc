@@ -867,7 +867,7 @@ void Scope::setPBool(unsigned long id, int val)
   else {
     bitset_clr (vpbool, id);
   }
-  bitset_set (vpreal_set, id);
+  bitset_set (vpbool_set, id);
 }
 
 int Scope::issetPBool(unsigned long id)
@@ -949,6 +949,14 @@ void Scope::BindParam (ActId *id, InstType *tt)
 */
 void Scope::BindParam (ActId *id, AExpr *ae)
 {
+#if 0
+  fprintf (stderr, "Bind [scope=%x] ", this);
+  id->Print (stderr);
+  fprintf (stderr, " = ");
+  ae->Print (stderr);
+  fprintf (stderr, "\n");
+#endif  
+  
   /* get the ValueIdx for the parameter */
   if (id->Rest() != NULL) {
     act_error_ctxt (stderr);

@@ -1,0 +1,3 @@
+Array concatenation requires arrays
+ array expr: N#M[0,1]
+   sub-expr: M[0,1] isn't an array

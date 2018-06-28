@@ -707,6 +707,26 @@ int InstType::isParamAType (int k)
   }
 }
 
+/*
+  Return 1 if the type is expanded.
+  param types (except ptypes) are always expanded
+*/
+int InstType::isExpanded()
+{
+  if (expanded) {
+    return 1;
+  }
+  if (TypeFactory::isParamType (this)) {
+    if (!TypeFactory::isPTypeType (BaseType())) {
+      return 1;
+    }
+    return 0;
+  }
+  else {
+    return 0;
+  }
+}
+
 InstType::~InstType ()
 {
   int i;
@@ -1322,7 +1342,6 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   Array *xa;
 
   recursion_depth++;
-
   
   if (recursion_depth >= Act::max_recurse_depth) {
     act_error_ctxt (stderr);
@@ -1348,37 +1367,41 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   /* create bindings for type parameters */
   for (int i=0; i < nt; i++) {
     p = getPortType (-(i+1));
-
-    x = p->Expand (ns, ux->I); // this is the real type of the
-				// parameter
-
-    /* add parameter to the scope */
-    ux->AddMetaParam (x, pn[i], (i < mt ? 0 : 1));
-
-    if (TypeFactory::isPTypeType (p->BaseType())) {
-      if (i < spec_nt && u[i].tt) {
-	x = u[i].tt->Expand (ns, s);
-	ux->I->BindParam (pn[i], x);
-      }
+    if (!p)  {
+      /* this is an enumeration type, there is nothing to be done here */
+      ux->AddMetaParam (NULL, pn[i], (i < mt ? 0 : 1));
     }
     else {
-      Assert (TypeFactory::isParamType (x), "What?");
-      if (i < spec_nt && u[i].tp) {
-	InstType *rhstype;
-	AExpr *rhsval = u[i].tp->Expand (ns, s);
-	rhstype = rhsval->getInstType (s, 1);
-	if (!type_connectivity_check (x, rhstype)) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "Typechecking failed, ");
-	  x->Print (stderr);
-	  fprintf (stderr, "  v/s ");
-	  rhstype->Print (stderr);
-	  fprintf (stderr, "\n\t%s\n", act_type_errmsg());
-	  exit (1);
+      x = p->Expand (ns, ux->I); // this is the real type of the parameter
+
+      /* add parameter to the scope */
+      ux->AddMetaParam (x, pn[i], (i < mt ? 0 : 1));
+
+      if (TypeFactory::isPTypeType (p->BaseType())) {
+	if (i < spec_nt && u[i].tt) {
+	  x = u[i].tt->Expand (ns, s);
+	  ux->I->BindParam (pn[i], x);
 	}
-	ux->I->BindParam (pn[i], rhsval);
-	delete rhstype;
-	delete rhsval;
+      }
+      else {
+	Assert (TypeFactory::isParamType (x), "What?");
+	if (i < spec_nt && u[i].tp) {
+	  InstType *rhstype;
+	  AExpr *rhsval = u[i].tp->Expand (ns, s);
+	  rhstype = rhsval->getInstType (s, 1);
+	  if (!type_connectivity_check (x, rhstype)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed, ");
+	    x->Print (stderr);
+	    fprintf (stderr, "  v/s ");
+	    rhstype->Print (stderr);
+	    fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	    exit (1);
+	  }
+	  ux->I->BindParam (pn[i], rhsval);
+	  delete rhstype;
+	  delete rhsval;
+	}
       }
     }
   }
@@ -1544,9 +1567,9 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
     recursion_depth--;
     return uy;
   }
-  FREE (buf);
 
   Assert (ns->CreateType (buf, ux), "Huh");
+  FREE (buf);
 
   if (parent) {
     ux->SetParent (parent->Expand (ns, s), parent_eq);

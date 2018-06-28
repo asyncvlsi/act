@@ -465,6 +465,32 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	ret->type = E_INT;
 	ret->u.v = v;
       }
+      else if ((ret->u.e.l->type == E_INT||ret->u.e.l->type == E_REAL)
+	       && (ret->u.e.r->type == E_INT || ret->u.e.r->type == E_REAL)
+	       && (e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
+		   || e->type == E_DIV)) {
+	double v;
+
+#define VAL(e) (((e)->type == E_INT) ? (unsigned int)(e)->u.v : (e)->u.f)
+
+	v = VAL(ret->u.e.l);
+	if (e->type == E_PLUS) {
+	  v = v + VAL(ret->u.e.r);
+	}
+	else if (e->type == E_MINUS) {
+	  v = v - VAL(ret->u.e.r);
+	}
+	else if (e->type == E_MULT) {
+	  v = v * VAL(ret->u.e.r);
+	}
+	else if (e->type == E_DIV) {
+	  v = v / VAL(ret->u.e.r);
+	}
+	FREE (ret->u.e.l);
+	FREE (ret->u.e.r);
+	ret->type = E_REAL;
+	ret->u.f = v;
+      }
       else {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
