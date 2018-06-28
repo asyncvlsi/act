@@ -1630,11 +1630,13 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   FREE (tmp);
   act_error_pop ();
 
+#if 0
   fprintf (stderr, "expand: ");
   this->Print (stderr);
   fprintf (stderr, " -> ");
   xit->Print (stderr);
   fprintf (stderr, "\n");
+#endif
   
   return xit;
 }

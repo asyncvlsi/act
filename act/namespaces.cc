@@ -927,15 +927,45 @@ void Scope::BindParam (const char *s, InstType *tt)
   }
 }
 
+void Scope::BindParam (ActId *id, InstType *tt)
+{
+  if (id->Rest() == NULL) {
+    Assert (id->arrayInfo() == NULL, "No array ptypes please");
+    BindParam (id->getName(), tt);
+  }
+  else {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+}
+
 
 /*
   ae has to be expanded
 */
-void Scope::BindParam (const char *s, AExpr *ae)
+void Scope::BindParam (ActId *id, AExpr *ae)
 {
   /* get the ValueIdx for the parameter */
+  if (id->Rest() != NULL) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+
+  /* nothing to do here */
+  if (!ae) return;
+  
   int need_alloc = 0;
-  ValueIdx *vx = LookupVal (s);
+  int subrange_offset = 0;
+  Array *subrange_info = id->arrayInfo();
+  ValueIdx *vx = LookupVal (id->getName());
 
   Assert (vx, "should have checked this before");
   Assert (vx->t, "what?");
@@ -952,7 +982,7 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
   /* compute the array, if any */
   unsigned int len;
-  xa = vx->t->arrayInfo();
+  xa = vx->t->arrayInfo();	
   if (xa) {
     len = xa->size();
   }
@@ -964,37 +994,51 @@ void Scope::BindParam (const char *s, AExpr *ae)
      xa = expanded array field of x
      len = number of items
   */
+  InstType *actual;
   
   AExpr *rhsval;
   AExprstep *aes;
 
+  if (subrange_info) {
+    actual = actual_insttype (this, id);
+  }
+  else {
+    actual = vx->t;
+  }
+  
   if (ae) {
     xrhs = ae->getInstType (this, 1 /* expanded */);
-    if (!type_connectivity_check (vx->t, xrhs)) {
+    if (!type_connectivity_check (actual, xrhs)) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Typechecking failed, ");
-      vx->t->Print (stderr);
+      actual->Print (stderr);
       fprintf (stderr, "  v/s ");
       xrhs->Print (stderr);
       fprintf (stderr, "\n\t%s\n", act_type_errmsg());
       exit (1);
     }
-	
     rhsval = ae;
     aes = rhsval->stepper();
+  }
+  if (subrange_info) {
+    delete actual;
+    actual = NULL;
   }
 
   if (TypeFactory::isPIntType (vx->t->BaseType())) {
     unsigned long v;
 
-    vx->u.idx = AllocPInt(len); /* allocate */
+    if (need_alloc) {
+      vx->u.idx = AllocPInt(len); /* allocate */
+    }
 
     if (ae) {
-      if (xa) {		/* array assignment */
+      if (xa) {
+	/* identifier is of an array type */
 	int idx;
 	Arraystep *as;
 
-	as = xa->stepper();
+	as = xa->stepper(subrange_info);
 
 	while (!as->isend()) {
 	  Assert (!aes->isend(), "This should have been caught earlier");
@@ -1004,11 +1048,11 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	  if (vx->immutable && issetPInt (vx->u.idx + idx)) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", s);
+	    fprintf (stderr, " Id: %s", id->getName());
 	    as->Print (stderr);
 	    fprintf (stderr, "\n");
 	    
-	    fatal_error ("Setting immutable parameter that has already been set", s);
+	    fatal_error ("Setting immutable parameter that has already been set");
 	  }
 	  setPInt (vx->u.idx + idx, v);
 	    
@@ -1022,8 +1066,8 @@ void Scope::BindParam (const char *s, AExpr *ae)
 	aes = rhsval->stepper();
 	if (vx->immutable && issetPInt (vx->u.idx)) {
 	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: %s\n", s);
-	  fatal_error ("Setting immutable parameter that has already been set", s);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
 	}
 	setPInt (vx->u.idx, aes->getPInt());
 	aes->step();
@@ -1034,14 +1078,16 @@ void Scope::BindParam (const char *s, AExpr *ae)
   else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
     long v;
 
-    vx->u.idx = AllocPInts(len); /* allocate */
+    if (need_alloc) {
+      vx->u.idx = AllocPInts(len); /* allocate */
+    }
 
     if (ae) {
       if (xa) {		/* array assignment */
 	int idx;
 	Arraystep *as;
 	  
-	as = xa->stepper();
+	as = xa->stepper(subrange_info);
 
 	while (!as->isend()) {
 	  Assert (!aes->isend(), "This should have been caught earlier");
@@ -1051,11 +1097,11 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	  if (vx->immutable && issetPInts (vx->u.idx + idx)) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", s);
+	    fprintf (stderr, " Id: %s", id->getName());
 	    as->Print (stderr);
 	    fprintf (stderr, "\n");
 	    
-	    fatal_error ("Setting immutable parameter that has already been set", s);
+	    fatal_error ("Setting immutable parameter that has already been set");
 	  }
 	  
 	  setPInts (vx->u.idx + idx, v);
@@ -1070,8 +1116,8 @@ void Scope::BindParam (const char *s, AExpr *ae)
 	aes = rhsval->stepper();
 	if (vx->immutable && issetPInts (vx->u.idx)) {
 	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: %s\n", s);
-	  fatal_error ("Setting immutable parameter that has already been set", s);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
 	}
 	setPInts (vx->u.idx, aes->getPInts());
 	aes->step();
@@ -1082,14 +1128,16 @@ void Scope::BindParam (const char *s, AExpr *ae)
   else if (TypeFactory::isPRealType (vx->t->BaseType())) {
     double v;
 
-    vx->u.idx = AllocPReal(len); /* allocate */
+    if (need_alloc) {
+      vx->u.idx = AllocPReal(len); /* allocate */
+    }
 
     if (ae) {
       if (xa) {		/* array assignment */
 	int idx;
 	Arraystep *as;
 	  
-	as = xa->stepper();
+	as = xa->stepper(subrange_info);
 
 	while (!as->isend()) {
 	  Assert (!aes->isend(), "This should have been caught earlier");
@@ -1099,11 +1147,11 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	  if (vx->immutable && issetPReal (vx->u.idx + idx)) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", s);
+	    fprintf (stderr, " Id: %s", id->getName());
 	    as->Print (stderr);
 	    fprintf (stderr, "\n");
 	    
-	    fatal_error ("Setting immutable parameter that has already been set", s);
+	    fatal_error ("Setting immutable parameter that has already been set");
 	  }
 	  
 	  setPReal (vx->u.idx + idx, v);
@@ -1119,8 +1167,8 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	if (vx->immutable && issetPReal (vx->u.idx)) {
 	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: %s\n", s);
-	  fatal_error ("Setting immutable parameter that has already been set", s);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
 	}
 	
 	setPReal (vx->u.idx, aes->getPReal());
@@ -1132,14 +1180,16 @@ void Scope::BindParam (const char *s, AExpr *ae)
   else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
     int v;
 
-    vx->u.idx = AllocPBool(len); /* allocate */
+    if (need_alloc) {
+      vx->u.idx = AllocPBool(len); /* allocate */
+    }
 
     if (ae) {
       if (xa) {		/* array assignment */
 	int idx;
 	Arraystep *as;
 	  
-	as = xa->stepper();
+	as = xa->stepper(subrange_info);
 
 	while (!as->isend()) {
 	  Assert (!aes->isend(), "This should have been caught earlier");
@@ -1149,11 +1199,11 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	  if (vx->immutable && issetPBool (vx->u.idx + idx)) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", s);
+	    fprintf (stderr, " Id: %s", id->getName());
 	    as->Print (stderr);
 	    fprintf (stderr, "\n");
 	    
-	    fatal_error ("Setting immutable parameter that has already been set", s);
+	    fatal_error ("Setting immutable parameter that has already been set");
 	  }
 	  
 	  setPBool (vx->u.idx + idx, v);
@@ -1169,8 +1219,8 @@ void Scope::BindParam (const char *s, AExpr *ae)
 
 	if (vx->immutable && issetPBool (vx->u.idx)) {
 	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: %s\n", s);
-	  fatal_error ("Setting immutable parameter that has already been set", s);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
 	}
 	
 	setPBool (vx->u.idx, aes->getPBool());
@@ -1188,3 +1238,14 @@ void Scope::BindParam (const char *s, AExpr *ae)
   }
 }
 
+
+/*
+  ae has to be expanded
+*/
+void Scope::BindParam (const char *s, AExpr *ae)
+{
+  /* get the ValueIdx for the parameter */
+  ActId *tmpid = new ActId (s, NULL);
+  BindParam (tmpid, ae);
+  delete tmpid;
+}
