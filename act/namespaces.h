@@ -138,7 +138,9 @@ class Scope {
      Add a binding function
   */
   void BindParam (const char *s, InstType *tt);
+  void BindParam (ActId *id, InstType *tt);
   void BindParam (const char *s, AExpr *ae);
+  void BindParam (ActId *id, AExpr *ae);
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

@@ -153,13 +153,22 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       /* a parameter assignment */
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
 	/* ptype assignment */
-	AExprstep *stepper = arhs->stepper();
+	s->BindParam ((ActId *)e->u.e.l, arhs);
+	AExprstep *astep = arhs->stepper();
 
-	/* YYY: here */
-
-	/* bind the ptype from the expr */
+	s->BindParam ((ActId *)e->u.e.l, astep->getPType());
+	
+	astep->step();
+	Assert (astep->isend(), "What?");
+	delete astep;
       }
-      
+      else {
+	/* any other parameter assignment */
+	s->BindParam ((ActId *)e->u.e.l, arhs);
+      }
+    }
+    else {
+      /* a real connection */
     }
 
     delete e;
