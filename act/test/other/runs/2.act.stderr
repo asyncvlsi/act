@@ -1,3 +1,2 @@
 ERROR: File `2.act', line 3, col 2
-	Type-checking failed on expression!
-	Array dereference for a non-arrayed type
+	Array reference (1 dims) for a non-arrayed identifier: a[3]

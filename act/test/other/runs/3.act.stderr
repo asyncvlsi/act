@@ -1,2 +1,5 @@
-Identifier `W' is not defined!
-	File `3.act', line: 7, col: 18
+In expanding bar_type<W>
+In expanding foo_type<2,2>
+In expanding ::<Global>
+ id: W
+FATAL: Uninitialized identifier

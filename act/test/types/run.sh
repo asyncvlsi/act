@@ -40,7 +40,7 @@ for i in [0-9]*.act
 do
 	num=`expr $num + 1`
 	myecho ".[$i]"
-	$ACT $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	$ACT -e $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then

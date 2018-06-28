@@ -204,7 +204,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
   if (TypeFactory::isParamType (base)) {
     ValueIdx *vx = s->LookupVal (id->getName ());
     int offset = 0;
-    if (!vx->init) {
+    if (!vx->init && !is_lval) {
       act_error_ctxt (stderr);
       fprintf (stderr, " id: ");
       this->Print (stderr);
@@ -213,7 +213,6 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     }
 
     /* now we check for each type */
-    offset = -1;
     if (it->arrayInfo() && id->arrayInfo()) {
       offset = it->arrayInfo()->Offset (id->arrayInfo());
       if (offset == -1) {

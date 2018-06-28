@@ -1,0 +1,3 @@
+In expanding ::<Global>
+ id: f.a
+FATAL: Missing array dereference for ``f''.

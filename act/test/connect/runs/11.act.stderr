@@ -1,0 +1,3 @@
+ERROR: File `11.act', line 10, col 2
+	Array expression, components are not compatible
+	Types `int<32>[8]' and `int<32>' are not compatible
