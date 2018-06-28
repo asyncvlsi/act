@@ -20,7 +20,9 @@ int main (int argc, char **argv)
   a = new Act (argv[argc-1]);
 
   if (exp) {
-    a->Expand ();
+    if (a) {
+      a->Expand ();
+    }
   }
 
   return 0;

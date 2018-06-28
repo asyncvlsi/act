@@ -314,7 +314,7 @@ int act_type_expr (Scope *s, Expr *e)
 
 
 
-static InstType *actual_insttype (Scope *s, ActId *id)
+InstType *actual_insttype (Scope *s, ActId *id)
 {
   InstType *it;
 

@@ -730,6 +730,8 @@ void Arraystep::step()
     idx = -1;
     return;
   }
+
+  /*-- not a subrange --*/
   
   for (int i = base->dims - 1; i >= 0; i--) {
     deref[i]++;

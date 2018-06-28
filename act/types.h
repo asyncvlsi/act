@@ -1201,6 +1201,7 @@ void sprint_expr (char *buf, int sz, Expr *e);
 int expr_is_a_const (Expr *e);
 void type_set_position (int l, int c, char *n);
 InstType *act_expr_insttype (Scope *s, Expr *e);
+InstType *actual_insttype (Scope *s, ActId *id);
 
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
 int expr_equal (Expr *a, Expr *b);
