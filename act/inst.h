@@ -87,8 +87,8 @@ class InstType {
    */
   InstType *Expand (ActNamespace *ns, Scope *s);
 
-  int isExpanded() { return expanded; } /**< Return 1 if this is an
-					   expanded type */
+  int isExpanded();
+  int israwExpanded() { return expanded; }
 
  private:
   int isParamAType (int k);

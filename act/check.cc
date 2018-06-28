@@ -536,7 +536,7 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
     }
   }
 
-  if (!lhs->isExpanded()) {
+  if (!lhs->israwExpanded()) {
     p.l = stype_line_no;
     p.c = stype_col_no;
     p.f = stype_file_name;

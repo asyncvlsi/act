@@ -16,7 +16,7 @@
 definition: defproc_or_cell
 | defdata
 | defchan
-| defenum
+/*| defenum*/
 | deffunc
 ;
 
@@ -725,7 +725,7 @@ chan_body: ";" | "{" base_body [ methods_body ] "}"
 
 /*------------------------------------------------------------------------
  *
- * Enumerations
+ * Enumerations: not implemented
  *
  *------------------------------------------------------------------------
  */

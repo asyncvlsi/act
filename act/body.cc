@@ -118,10 +118,18 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
   AExpr *alhs, *arhs;
   ActId *ex;
   InstType *tlhs, *trhs;
-  
+
   switch (type) {
   case 0:
     /*--  basic --*/
+
+#if 0
+    fprintf (stderr, "Conn: ");
+    u.basic.lhs->Print (stderr);
+    fprintf (stderr, " = ");
+    u.basic.rhs->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
     
     /* lhs */
     ex = u.basic.lhs->Expand (ns, s);
@@ -148,7 +156,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       fprintf (stderr, "\n");
       fatal_error ("Type-checking failed on connection");
     }
-    
+
     if (TypeFactory::isParamType (tlhs)) {
       /* a parameter assignment */
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
@@ -168,7 +176,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
     }
     else {
-      /* a real connection */
+      /* YYY: a real connection */
     }
 
     delete e;
@@ -179,6 +187,14 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     break;
   case 1:
     /* aexpr */
+#if 0
+    fprintf (stderr, "Conn2: ");
+    u.general.lhs->Print (stderr);
+    fprintf (stderr, " = ");
+    u.general.rhs->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
+    
 
     break;
   default:
