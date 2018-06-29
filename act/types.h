@@ -399,6 +399,8 @@ class Data : public UserDef {
   void setMethodget (struct act_chp_lang *h) { get = h; }
   struct act_chp_lang *getMethodget () { return get; }
  
+  Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  
  private:
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
   struct act_chp_lang *set, *get;   /**< set and get methods for this data type */
@@ -415,8 +417,10 @@ class Channel : public UserDef {
   void setMethodrecv (act_chp_lang *h) { recv = h; }
   act_chp_lang *getMethodrecv() { return recv; }
 
+  Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  
  private:
-  act_chp_lang *send, *recv;
+  struct act_chp_lang *send, *recv;
 };
 
 class TypeFactory {
@@ -1231,9 +1235,6 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array =
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 
-/* language expanders */
-void prs_expand (act_prs *, ActNamespace *, Scope *);
-void chp_expand (act_chp *, ActNamespace *, Scope *);
 
 /* for expanded expressions */
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */

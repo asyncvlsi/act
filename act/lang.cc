@@ -11,18 +11,27 @@
 
 
 
-void prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
+act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
 {
   /* s->u must exist */
-
+  return p;
 }
 
+act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
+{
+  return p;
+}
 
-void chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
+act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
 {
   /* s->u must exist */
-  
+  return c;
+}
 
+act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
+{
+  /* s->u must exist */
+  return c;
 }
 
 
