@@ -158,7 +158,7 @@ InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 
   if (_i == NULL) {
     _i = new Int();
-    _i->expanded = 0;
+    //_i->expanded = 0;
     _i->is_signed = sig;
   }
   
