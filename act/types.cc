@@ -966,6 +966,7 @@ void UserDef::MkCopy (UserDef *u)
   
   defined  = u->defined; u->defined = 0;
   expanded = u->expanded; u->expanded = 0;
+  pending = u->pending; u->pending = 0;
 
   nt = u->nt; u->nt = 0;
   mt = u->mt; u->mt = 0;
@@ -984,6 +985,7 @@ void UserDef::MkCopy (UserDef *u)
 
   name = u->name; u->name = NULL;
   b = u->b; u->b = NULL;
+  _ns = u->_ns; u->_ns = NULL;
 }
 
 
@@ -1334,7 +1336,7 @@ static int recursion_depth = 0;
  *
  *------------------------------------------------------------------------
  */
-Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
+UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
 {
   UserDef *ux;
   int k, sz, len;
@@ -1587,6 +1589,21 @@ Type *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
   ux->pending = 0;
   recursion_depth--;
   return ux;
+}
+
+Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Process *xp;
+  UserDef *ux;
+
+  ux = UserDef::Expand (ns, s, nt, u);
+
+  xp = new Process (ux);
+  delete ux;
+
+  Assert (ns->EditType (xp->name, xp) == 1, "What?");
+  xp->is_cell = is_cell;
+  return xp;
 }
 
 

@@ -329,6 +329,18 @@ int ActNamespace::CreateType (const char *s, UserDef *u)
   }
 }
 
+int ActNamespace::EditType (const char *s, UserDef *u)
+{
+  hash_bucket_t *b;
+  b = hash_lookup (T, s);
+  if (!b) {
+    return 0;
+  }
+  b->v = u;
+  u->setName (b->key);
+  return 1;
+}
+
 
 /**
  *  Check if a name is free
