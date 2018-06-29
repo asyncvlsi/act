@@ -323,9 +323,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       /* YYY: a real connection */
     }
 
-    if (e) {
-      expr_free (e);
-    }
+    if (e) { FREE (e); }
     delete tlhs;
     delete trhs;
     delete arhs;
