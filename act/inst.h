@@ -74,6 +74,7 @@ class InstType {
   void MkCached () { temp_type = 0; }
   int isTemp() { return temp_type; }
 
+  void *operator new (size_t count ) { return malloc (count); }
   void operator delete (void *ptr) { InstType *t = (InstType *)ptr; if (t->temp_type == 0) return; free (ptr); }
 
 
