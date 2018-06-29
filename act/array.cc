@@ -613,6 +613,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
     ret->deref = 1;
   }
   ret->dims = dims;
+
   Assert (dims > 0, "What on earth is going on...");
   MALLOC (ret->r, struct range, dims);
 
@@ -666,6 +667,8 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
   if (next) {
     ret->next = next->Expand (ns, s, is_ref);
   }
+
+  ret->range_sz = -1;
 
   return ret;
 }
@@ -1160,7 +1163,10 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
 	(r[idx].u.ex.hi != mr[idx].u.ex.hi))
       break;
   }
-  if (idx == dims) return;
+  if (idx == dims) {
+    FREE (mr);
+    return;
+  }
   
   /* YYY: write this 
 
@@ -1211,6 +1217,7 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
       }
       tmp->next = next;
       next = tmp;
+      FREE (mr);
       return;
     }
     
@@ -1222,6 +1229,7 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
       tmp->r[idx].u.ex.lo = mr[idx].u.ex.lo;
       tmp->next = next;
       next = tmp;
+      FREE (mr);
       continue;
     }
     else if (r[idx].u.ex.lo == mr[idx].u.ex.lo) {
@@ -1253,6 +1261,7 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
       Assert (0, "This should have been fixed earlier?");
     }
   }
+  FREE (mr);
   return;
 }
 
@@ -1389,12 +1398,11 @@ void Array::Merge (Array *a)
 	r[i] = a->r[i];
       }
       tmp->_merge_range (i, prev, r);
-      FREE (r);
 #if 0
       fprintf (stderr, "After merge: ");
       Print (stderr);
       fprintf (stderr, "\n");
-#endif      
+#endif
       return;
     }
   } while (tmp);
