@@ -60,7 +60,7 @@ Type *ActBody_Inst::BaseType ()
  */
 void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 {
-  InstType *x;
+  InstType *x, *it;
 
   /* typechecking should all pass, so there shouldn't be an issue
      beyond creating the actual object. For arrays, there may be
@@ -70,16 +70,52 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
   /* 
      expand instance type!
   */
-  t = t->Expand (ns, s);
-  
+  it = t->Expand (ns, s);
   x = s->Lookup (id);
+
   if (x) {
+    ValueIdx *vx;
+    Array *old;
+
+    vx = s->LookupVal (id);
+    Assert (vx && vx->t == x, "What?");
+    old = x->arrayInfo()->Clone();
+
+#if 0
+    fprintf (stderr, "Original: ");
+    vx->t->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
+
     /* sparse array */
+    x->arrayInfo()->Merge (it->arrayInfo());
+
+#if 0
+    fprintf (stderr, "New: ");
+    vx->t->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
+    
+    if (vx->init) {
+      /* it's been allocated; needs reallocation! */
+      /* XXXXXXXXXX */
+      fatal_error ("HERE");
+      
+
+      
+    }
+    else {
+      /* we're good, nothing needed */
+    }
+
+    delete old;
+#if 0
     act_error_ctxt (stderr);
     warning ("Sparse array--FIXME, skipping right now!\n");
+#endif    
   }
   else {
-    Assert (s->Add (id, t), "Should succeed; what happened?!");
+    Assert (s->Add (id, it), "Should succeed; what happened?!");
   }
 }
 
