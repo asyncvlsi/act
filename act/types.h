@@ -684,6 +684,12 @@ class Array {
   int isDimCompatible (Array *a);
 
   /**
+   * Merge a second array into this one. Used to construct sparse
+   * array types. Both must be expanded.
+   */
+  void Merge (Array *a);
+
+  /**
    * Create a new one-dimensional dense array.
    * @param e is an integer expression corresponding to the size of
    * the array
@@ -699,6 +705,7 @@ class Array {
   void sPrint (char *buf, int sz);
 
   Array *Clone ();		/* returns a deep copy */
+  Array *CloneOne ();		/* only copy current range */
 
   int isExpanded() { return expanded; }	
   /* returns 1 if expanded array, 0 otherwise */
@@ -759,6 +766,13 @@ private:
 
     } u;
   } *r;				/**< range for each dimension */
+
+
+  void dumprange (struct range *r);
+  void _merge_range (int idx, Array *prev, struct range *m);
+  int overlapping (struct range *a, struct range *b);
+
+
   unsigned int range_sz;	/**< cache: size of the range; only
 				   for expanded arrays */
 
