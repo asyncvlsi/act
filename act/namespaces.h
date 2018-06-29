@@ -319,6 +319,9 @@ class ActNamespace {
    */
   int CreateType (const char *nm, UserDef *u);
 
+  /* edit type */
+  int EditType (const char *s, UserDef *u);
+
   /**
    * Scope corresponding to this namespace
    * 
