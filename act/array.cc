@@ -1316,7 +1316,7 @@ void Array::Merge (Array *a)
     /* check special case */
     for (i=0; i < dims; i++) {
       if (a->r[i].u.ex.lo == tmp->r[i].u.ex.lo &&
-	  a->r[i].u.ex.lo == tmp->r[i].u.ex.hi) continue;
+	  a->r[i].u.ex.hi == tmp->r[i].u.ex.hi) continue;
       if (adjacent == 0) {
 	if (a->r[i].u.ex.lo == (tmp->r[i].u.ex.hi + 1)) {
 	  adjacent = 1;
@@ -1371,8 +1371,8 @@ void Array::Merge (Array *a)
       if (!prev) {
 	struct range *rx;       
 	/* swap the range pointers! */
-	rx = r;
-	r = m->r;
+	rx = tmp->r;
+	tmp->r = m->r;
 	m->r = rx;
 	
 	m->next = next;
