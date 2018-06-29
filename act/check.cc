@@ -508,7 +508,7 @@ void type_set_position (int l, int c, char *n)
    types, check all dims are equal except for the first one.
    
 */
-static char *conn_msg = NULL;
+static const char *conn_msg = NULL;
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 {
   struct act_position p;

@@ -102,8 +102,6 @@ class PReal : public Type {
 class PType : public Type {
   const char *getName() { return "ptype"; }
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    /* XXX: FIXME */
-    printf ("XXX: fixme: PType::Expand\n");
     return this;
   }
 };
@@ -121,9 +119,7 @@ class Int : public Type {
     return this;
   }
   unsigned int is_signed:1;
-  unsigned int expanded:1;
-  int w;			/* bit-width */
-
+  
   friend class TypeFactory;
 };
 
@@ -132,8 +128,6 @@ class Enum : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
-  unsigned int expanded:1;
-  int count;			/* size of enumeration */
 
   friend class TypeFactory;
 };
