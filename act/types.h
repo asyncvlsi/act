@@ -307,7 +307,7 @@ class UserDef : public Type {
 
   void setBody (ActBody *x) { b = x; } /**< Set the body of the process */
 
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
 
  protected:
@@ -353,6 +353,8 @@ class Process : public UserDef {
   Process (UserDef *u);		/**< Construct a process from a userdef */
   ~Process ();
   void MkCell () { is_cell = 1; } /**< Mark this as a cell */
+
+  Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
