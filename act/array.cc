@@ -1392,17 +1392,17 @@ void Array::Merge (Array *a)
       tmp = tmp->next;
     }
     else {
-      struct range *r;
-      MALLOC (r, struct range, dims);
-      for (int i=0; i < dims; i++) {
-	r[i] = a->r[i];
+      struct range *tmpr;
+      MALLOC (tmpr, struct range, dims);
+      for (int j=0; j < dims; j++) {
+	tmpr[j] = a->r[j];
       }
-      tmp->_merge_range (i, prev, r);
-#if 0
+      tmp->_merge_range (i, prev, tmpr);
+#if 0      
       fprintf (stderr, "After merge: ");
       Print (stderr);
       fprintf (stderr, "\n");
-#endif
+#endif      
       return;
     }
   } while (tmp);
