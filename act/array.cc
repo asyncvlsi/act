@@ -796,7 +796,7 @@ void Arraystep::step()
  */
 int Arraystep::isend()
 {
-  if (base == NULL) return 1;
+  if (base == NULL || idx == -1) return 1;
   else return 0;
 }
 
@@ -854,9 +854,11 @@ void AExprstep::step()
     break;
   case 2:
     /* check if we are out of identifiers */
-    if (u.id.a && !u.id.a->isend()) {
+    if (u.id.a) {
       u.id.a->step();
-      return;
+      if (!u.id.a->isend()) {
+	return;
+      }
     }
     if (u.id.a) {
       /* finished with the stepper */
@@ -906,14 +908,11 @@ void AExprstep::step()
 	  InstType *it;
 	  type = 2;
 	  u.id.act_id = (ActId *)xe->u.e.l;
-	  u.id.s = NULL;
 	  u.id.a = NULL;
 	  it = (InstType *)xe->u.e.r;
 
-	  if (!it->arrayInfo() || /* type is not an array */
-	      /* or type is an array, but we have a full deref */
-	    (u.id.act_id->arrayInfo() && u.id.act_id->arrayInfo()->isDeref())) {
-	    /* single variable */
+	  if (!it->arrayInfo()) {
+	    /* not an array */
 	  }
 	  else {
 	    /* array reference */
@@ -1085,8 +1084,6 @@ int AExprstep::getPBool()
   return v;
 }
 
-
-
 InstType *AExprstep::getPType()
 {
   InstType *v;
@@ -1115,6 +1112,29 @@ InstType *AExprstep::getPType()
 }
 
 
+void AExprstep::getID (ActId **id, int *idx)
+{
+  Assert (type != 0, "AExprstep::getID() called without step or on end");
+
+  switch (type) {
+  case 1:
+  case 3:
+    Assert (0, "getID: should be an ID!");
+    break;
+  case 2:
+    *id = u.id.act_id;
+    if (!u.id.a) {
+      *idx = -1;
+    }
+    else {
+      *idx = u.id.a->index();
+    }
+    break;
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+}
 
 int Array::overlapping (struct range *a, struct range *b)
 {

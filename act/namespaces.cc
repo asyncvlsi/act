@@ -700,6 +700,9 @@ void Scope::DeallocPInt (unsigned long idx, int count)
 
 void Scope::setPInt(unsigned long id, unsigned long val)
 {
+#if 0
+  fprintf (stderr, "[%x] set %d to %d\n", this, id, val);
+#endif
   if (id >= A_LEN (vpint)) {
     fatal_error ("Scope::setPInt(): invalid identifier!");
   }
@@ -709,6 +712,9 @@ void Scope::setPInt(unsigned long id, unsigned long val)
 
 int Scope::issetPInt(unsigned long id)
 {
+#if 0  
+  fprintf (stderr, "[%x] check %d\n", this, id);
+#endif  
   if (id >= A_LEN (vpint)) {
     fatal_error ("Scope::setPInt(): invalid identifier!");
   }
@@ -1042,6 +1048,121 @@ void Scope::BindParam (ActId *id, InstType *tt)
   }
 }
 
+void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
+{
+  if (id->Rest() != NULL) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+  
+  ValueIdx *vx = LookupVal (id->getName());
+
+  Assert (vx, "should have checked this before");
+  Assert (vx->t, "what?");
+
+  int need_alloc = 0;
+  
+  if (!vx->init) {
+    need_alloc = 1;
+  }
+  vx->init = 1;
+
+  Array *xa;
+
+  /* compute the array, if any */
+  unsigned int len;
+  xa = vx->t->arrayInfo();
+  if (xa) {
+    len = xa->size();
+  }
+  else {
+    len = 1;
+  }
+  
+  if (need_alloc) {
+    /* allocate */
+    if (TypeFactory::isPIntType (vx->t->BaseType())) {
+      vx->u.idx = AllocPInt(len);
+    }
+    else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
+      vx->u.idx = AllocPInts(len);
+    }
+    else if (TypeFactory::isPRealType (vx->t->BaseType())) {
+      vx->u.idx = AllocPReal (len);
+    }
+    else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
+      vx->u.idx = AllocPBool (len);
+    }
+    else {
+      Assert (0, "Should not be here!");
+    }
+  }
+
+  int offset;
+
+  if (id->arrayInfo()) {
+    if (idx == -1) {
+      if (!vx->t->arrayInfo()->Validate (id->arrayInfo())) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " id: ");
+	id->Print (stderr);
+	fprintf (stderr, "\n type: ");
+	vx->t->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Dereference out of range");
+      }
+
+      offset = vx->t->arrayInfo()->Offset (id->arrayInfo());
+    }
+    else {
+      offset = idx;
+    }
+  }
+  else {
+    offset = 0;
+  }
+
+#if 0
+  fprintf (stderr, " id: ");
+  id->Print (stderr);
+  fprintf (stderr, "\n type: ");
+  vx->t->Print (stderr);
+  fprintf (stderr, "\n");
+
+  printf ("check: id=%d, offset=%d\n", vx->u.idx, offset);
+#endif  
+
+  if (vx->immutable &&
+      ((TypeFactory::isPIntType (vx->t->BaseType()) && issetPInt (vx->u.idx + offset))
+       || (TypeFactory::isPIntsType (vx->t->BaseType()) && issetPInts (vx->u.idx + offset))
+       || (TypeFactory::isPRealType (vx->t->BaseType()) && issetPReal (vx->u.idx + offset))
+       || (TypeFactory::isPBoolType (vx->t->BaseType()) && issetPBool (vx->u.idx + offset)))
+      ) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " Id: %s", id->getName());
+    fprintf (stderr, "\n");
+    fatal_error ("Setting immutable parameter that has already been set");
+  }
+  if (TypeFactory::isPIntType (vx->t->BaseType())) {
+    setPInt (vx->u.idx + offset, aes->getPInt());
+  }
+  else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
+    setPInts (vx->u.idx + offset, aes->getPInts());
+  }
+  else if (TypeFactory::isPRealType (vx->t->BaseType())) {
+    setPReal (vx->u.idx + offset, aes->getPReal());
+  }
+  else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
+    setPBool (vx->u.idx + offset, aes->getPBool());
+  }
+  else {
+    Assert (0, "Should not be here");
+  }
+}
 
 /*
   ae has to be expanded
