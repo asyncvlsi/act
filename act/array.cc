@@ -23,6 +23,7 @@ Array::Array()
   next = NULL;
   deref = 0;
   expanded = 0;
+  range_sz = -1;
 }
 
 /*------------------------------------------------------------------------
@@ -635,6 +636,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
       act_error_ctxt (stderr);
       fatal_error ("Array range value is a non-integer/non-constant value");
     }
+    
     if (r[i].u.ue.lo) {
       lval = expr_expand (r[i].u.ue.lo, ns, s);
       if (lval->type != E_INT) {
