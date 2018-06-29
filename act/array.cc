@@ -112,6 +112,30 @@ Array *Array::Clone ()
   return ret;
 }
 
+/*------------------------------------------------------------------------
+ *  Only clone this range 
+ *------------------------------------------------------------------------
+ */
+Array *Array::CloneOne ()
+{
+  Array *ret;
+
+  ret = new Array();
+
+  ret->deref = deref;
+  ret->expanded = expanded;
+  ret->next = NULL;
+  ret->dims = dims;
+
+  if (dims > 0) {
+    MALLOC (ret->r, struct range, dims);
+    for (int i = 0; i < dims; i++) {
+      ret->r[i] = r[i];
+    }
+  }
+  return ret;
+}
+
 
 /*------------------------------------------------------------------------
  * Compare two arrays
@@ -1086,3 +1110,293 @@ InstType *AExprstep::getPType()
 }
 
 
+int Array::overlapping (struct range *a, struct range *b)
+{
+  for (int i=0; i < dims; i++) {
+    if (a[i].u.ex.lo > b[i].u.ex.hi) return 0;
+    if (a[i].u.ex.hi < b[i].u.ex.lo) return 0;
+  }
+  return 1;
+}
+
+
+/*
+  from 0..idx-1, ranges are overlapping perfectly. so keep those
+  indicies intact.
+
+  at idx, there is overlap.
+*/
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+void Array::dumprange (struct range *r)
+{
+  int i;
+  
+  fprintf (stderr, "[");
+  for (i=0; i < dims; i++) {
+    if (i != 0) fprintf (stderr, ",");
+    fprintf (stderr, "%d..%d", r[i].u.ex.lo, r[i].u.ex.hi);
+  }
+  fprintf (stderr, "]");
+}
+  
+
+void Array::_merge_range (int idx, Array *prev, struct range *mr)
+{
+#if 0
+  fprintf (stderr, "Merging: ");
+  Print (stderr);
+  fprintf (stderr, " with: ");
+  dumprange (mr);
+  fprintf (stderr, "\n");
+#endif
+  
+ start: /* basically a tail recursion */
+  for (; idx < dims; idx++) {
+    if ((r[idx].u.ex.lo != mr[idx].u.ex.lo) ||
+	(r[idx].u.ex.hi != mr[idx].u.ex.hi))
+      break;
+  }
+  if (idx == dims) return;
+  
+  /* YYY: write this 
+
+     [a..b] [c..d]
+
+     if a is the min: (if c is the min, swap the two)
+
+     (A)   a..c-1 c..d d+1..b
+        OR
+     (B)   a..c-1 c..b b+1..d
+
+     INSERT
+     (1) [a..c-1] + [rest dims of LHS] inserted
+
+     (A) INSERT
+       (2) [c..d] + {{recursive insert of rest of the dims}}
+       (3) [d+1..b] + [rest dims of LHS]
+
+     (B) INSERT
+       (2) [c..b] + {{recursive insert of rest of the dims}}
+       (3) [b+1..d] + [rest of dims of RHS]
+  */
+  if (mr[idx].u.ex.lo < r[idx].u.ex.lo) {
+    struct range *tr;
+    /* swap mr and r */
+    tr = r;
+    r = mr;
+    mr = tr;
+  }
+
+  Array *tmp;
+
+#if 0
+  fprintf (stderr, "Index=%d\n", idx);
+  fprintf (stderr, "lhs=");
+  dumprange (r);
+  fprintf (stderr, "; rhs=");
+  dumprange (mr);
+  fprintf (stderr, "\n");
+#endif  
+
+  while (1) {
+    /* if the ranges are now disjoint, we can just insert and quit */
+    if (r[idx].u.ex.hi < mr[idx].u.ex.lo) {
+      tmp = CloneOne();
+      for (int i=0; i < dims; i++) {
+	tmp->r[i] = mr[i];
+      }
+      tmp->next = next;
+      next = tmp;
+      return;
+    }
+    
+    if (r[idx].u.ex.lo < mr[idx].u.ex.lo) {
+      /* range split, and re-try */
+      tmp = CloneOne();
+      Assert (r[idx].u.ex.hi >= mr[idx].u.ex.lo, "Eh?");
+      r[idx].u.ex.hi = mr[idx].u.ex.lo-1;
+      tmp->r[idx].u.ex.lo = mr[idx].u.ex.lo;
+      tmp->next = next;
+      next = tmp;
+      continue;
+    }
+    else if (r[idx].u.ex.lo == mr[idx].u.ex.lo) {
+      /* find the shared part of this dimension */
+      if (r[idx].u.ex.hi < mr[idx].u.ex.hi) {
+	tmp = CloneOne();
+	for (int i=0; i < dims; i++) {
+	  tmp->r[i] = mr[i];
+	}
+	tmp->r[idx].u.ex.lo = r[idx].u.ex.hi+1;
+	tmp->next = next;
+	next = tmp;
+	mr[idx].u.ex.hi = r[idx].u.ex.hi;
+	goto start;
+      }
+      else if (mr[idx].u.ex.hi < r[idx].u.ex.hi) {
+	tmp = CloneOne();
+	tmp->r[idx].u.ex.lo = mr[idx].u.ex.hi+1;
+	tmp->next = next;
+	next = tmp;
+	r[idx].u.ex.hi = mr[idx].u.ex.hi;
+	goto start;
+      }
+      else {
+	Assert (0, "Should not be here");
+      }
+    }
+    else if (r[idx].u.ex.lo > mr[idx].u.ex.lo) {
+      Assert (0, "This should have been fixed earlier?");
+    }
+  }
+  return;
+}
+
+void Array::Merge (Array *a)
+{
+  Array *tmp, *prev;
+  int i;
+
+  Assert (expanded && a->isExpanded(), "Needs to be expanded!");
+
+  if (dims != a->nDims()) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Sparse array extension has incompatible dimensions\n");
+    fprintf (stderr, " Original: ");
+    Print (stderr);
+    fprintf (stderr, "; extension: ");
+    a->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+
+  Assert (!a->isSparse(), "Can only merge a dense range into a sparse array");
+
+  for (tmp = this; tmp; tmp = tmp->next) {
+    if (overlapping (tmp->r, a->r)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Sparse array: overlap in range in instantiation\n");
+      fprintf (stderr, "  Original: ");
+      Print (stderr);
+      fprintf (stderr, "; adding: ");
+      a->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+  }
+  
+  prev = NULL;
+  tmp = this;
+  /* 
+     invariant:
+        for all items in the range list upto the current one 
+	so far have indices < the lowest index in a's index set
+  */
+
+  do {
+    int adjacent;
+    int idx;
+
+    adjacent = 0;
+    idx = -1;
+
+    /* check special case */
+    for (i=0; i < dims; i++) {
+      if (a->r[i].u.ex.lo == tmp->r[i].u.ex.lo &&
+	  a->r[i].u.ex.lo == tmp->r[i].u.ex.hi) continue;
+      if (adjacent == 0) {
+	if (a->r[i].u.ex.lo == (tmp->r[i].u.ex.hi + 1)) {
+	  adjacent = 1;
+	  idx = i;
+	}
+	else if (tmp->r[i].u.ex.lo == (a->r[i].u.ex.hi+1)) {
+	  adjacent = -1;
+	  idx = i;
+	}
+	else {
+	  break;
+	}
+      }
+      else {
+	break;
+      }
+    }
+    if (i == dims) {
+      Assert (adjacent != 0, "Should have been caught earlier!");
+      /* simple concatenation */
+      if (adjacent == 1) {
+	tmp->r[idx].u.ex.hi = a->r[idx].u.ex.hi;
+      }
+      else {
+	Assert (adjacent == -1, "hmm");
+	tmp->r[idx].u.ex.lo = a->r[idx].u.ex.lo;
+      }
+      tmp->range_sz = -1;
+      return;
+    }
+
+    /*
+
+     First, compute overlap with first range:
+     - if empty, then figure out if this range is before or after
+     --> insert
+     done
+
+     Otherwise: split range
+    */
+    for (i=0; i < dims; i++) {
+      if (a->r[i].u.ex.lo != tmp->r[i].u.ex.lo ||
+	  a->r[i].u.ex.hi != tmp->r[i].u.ex.hi)
+	break;
+    }
+
+    Assert (i != dims, "What?");
+    
+    if (a->hi(i) < tmp->lo(i)) {
+      Array *m = a->Clone();
+      /* insert to the left, done */
+      if (!prev) {
+	struct range *rx;       
+	/* swap the range pointers! */
+	rx = r;
+	r = m->r;
+	m->r = rx;
+	
+	m->next = next;
+	next = m;
+	range_sz = -1;
+      }
+      else {
+	m->next = tmp;
+	prev->next = m;
+	range_sz = -1;
+      }
+      return;
+    }
+    else if (a->lo(i) > hi(i)) {
+      /* go right */
+      prev = tmp;
+      tmp = tmp->next;
+    }
+    else {
+      struct range *r;
+      MALLOC (r, struct range, dims);
+      for (int i=0; i < dims; i++) {
+	r[i] = a->r[i];
+      }
+      tmp->_merge_range (i, prev, r);
+      FREE (r);
+#if 0
+      fprintf (stderr, "After merge: ");
+      Print (stderr);
+      fprintf (stderr, "\n");
+#endif      
+      return;
+    }
+  } while (tmp);
+
+  /* otherwise it goes on the end */
+  /* insert to the right */
+  prev->next = a->Clone();
+}
