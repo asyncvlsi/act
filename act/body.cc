@@ -339,10 +339,9 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     fprintf (stderr, "\n");
 #endif
 
-#if 0
     /* lhs */
     alhs = u.general.lhs->Expand (ns, s, 1); /* an lval */
-    tlhs = alhs->getInstType (s, 0);
+    tlhs = alhs->getInstType (s, 1);
 
     /* rhs */
     arhs = u.basic.rhs->Expand (ns, s);
@@ -376,12 +375,30 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	delete astep;
       }
       else {
-#if 0
+	ActId *lhsid;
+	int lhsidx;
 	AExprstep *aes = alhs->stepper();
 	AExprstep *bes = arhs->stepper();
 	/* any other parameter assignment */
-	s->BindParam (alhs->(ActId *)e->u.e.l, arhs);
-#endif
+	int ii = 0;
+	while (!aes->isend()) {
+
+	  //printf ("here! %d\n", ii++);
+	  
+	  aes->getID (&lhsid, &lhsidx);
+	  if (lhsidx == -1) {
+	    /* it's a pure ID */
+	    s->BindParam (lhsid, bes);
+	  }
+	  else {
+	    s->BindParam (lhsid, bes, lhsidx);
+	  }
+	  aes->step();
+	  bes->step();
+	}
+	Assert (bes->isend(), "Should have been caught earlier!");
+	delete aes;
+	delete bes;
       }
     }
     else {
@@ -394,7 +411,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     delete trhs;
     delete arhs;
     delete alhs;
-#endif
     
     break;
   default:

@@ -714,6 +714,8 @@ class Array {
   int range_size(int d); /**< returns size of a particular dimension */
   void update_range (int d, int lo, int hi); /**< set range */
   int isrange (int d) { return r[d].u.ex.isrange; }
+
+  /* only for unexpanded ranges */
   Expr *lo (int d) { return r[d].u.ue.lo; }
   Expr *hi (int d) { return r[d].u.ue.hi; }
 
@@ -874,6 +876,9 @@ public:
   InstType *getPType();
 
   /* get an identifier */
+  void getID (ActId **id, int *idx);
+
+  
   /* XXX: later */
   void Print (FILE *fp);
   
@@ -886,7 +891,6 @@ private:
     struct {
       /* this is used for non-parameter identifiers */
       ActId *act_id;		// identifier
-      Scope *s;
       Arraystep *a;		// array deref within the id, in case
 				// it is an array
     } id;
