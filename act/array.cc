@@ -901,6 +901,7 @@ void AExprstep::step()
 	  InstType *it;
 	  type = 2;
 	  u.id.act_id = (ActId *)xe->u.e.l;
+	  u.id.s = NULL;
 	  u.id.a = NULL;
 	  it = (InstType *)xe->u.e.r;
 
@@ -1022,7 +1023,6 @@ long AExprstep::getPInts()
   return v;
 }
 
-
 double AExprstep::getPReal()
 {
   double v;
@@ -1108,6 +1108,7 @@ InstType *AExprstep::getPType()
   }
   return v;
 }
+
 
 
 int Array::overlapping (struct range *a, struct range *b)
@@ -1399,4 +1400,14 @@ void Array::Merge (Array *a)
   /* otherwise it goes on the end */
   /* insert to the right */
   prev->next = a->Clone();
+}
+
+
+ActId *AExpr::toid ()
+{
+  Expr *e;
+  Assert (t == AExpr::EXPR, "What?");
+  e = (Expr *)l;
+  Assert (e && e->type == E_VAR, "What?");
+  return (ActId *)e->u.e.l;
 }

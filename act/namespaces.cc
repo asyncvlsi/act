@@ -1356,3 +1356,303 @@ void Scope::BindParam (const char *s, AExpr *ae)
   BindParam (tmpid, ae);
   delete tmpid;
 }
+
+
+#if 0
+/*
+  complex bind operation
+*/
+void Scope::BindParam (AExpr *lhs, AExpr *ae)
+{
+#if 0
+  fprintf (stderr, "Bind [scope=%x] ", this);
+  id->Print (stderr);
+  fprintf (stderr, " = ");
+  ae->Print (stderr);
+  fprintf (stderr, "\n");
+#endif
+  AExprstep = lhs->stepper();
+
+  /* nothing to do here */
+  if (!ae) return;
+
+  
+  
+  int need_alloc = 0;
+
+  /* what is the first thing in the lhs?
+     
+   */
+  
+  Assert (vx, "should have checked this before");
+  Assert (vx->t, "what?");
+
+  if (!vx->init) {
+    need_alloc = 1;
+  }
+  vx->init = 1;
+
+  Assert (!TypeFactory::isPTypeType (vx->t->BaseType()), "Should not be a type!");
+
+  InstType *xrhs;
+  Array *xa;
+
+  /* compute the array, if any */
+  unsigned int len;
+  xa = vx->t->arrayInfo();	
+  if (xa) {
+    len = xa->size();
+  }
+  else {
+    len = 1;
+  }
+
+  /* x = expanded type of port parameter
+     xa = expanded array field of x
+     len = number of items
+  */
+  InstType *actual;
+  
+  AExpr *rhsval;
+  AExprstep *aes;
+
+  if (subrange_info) {
+    actual = actual_insttype (this, id);
+  }
+  else {
+    actual = vx->t;
+  }
+  
+  if (ae) {
+    xrhs = ae->getInstType (this, 1 /* expanded */);
+    if (!type_connectivity_check (actual, xrhs)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Typechecking failed, ");
+      actual->Print (stderr);
+      fprintf (stderr, "  v/s ");
+      xrhs->Print (stderr);
+      fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+      exit (1);
+    }
+    rhsval = ae;
+    aes = rhsval->stepper();
+  }
+  if (subrange_info) {
+    delete actual;
+    actual = NULL;
+  }
+
+  if (TypeFactory::isPIntType (vx->t->BaseType())) {
+    unsigned long v;
+
+    if (need_alloc) {
+      vx->u.idx = AllocPInt(len); /* allocate */
+    }
+
+    if (ae) {
+      if (xa) {
+	/* identifier is of an array type */
+	int idx;
+	Arraystep *as;
+
+	as = xa->stepper(subrange_info);
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+	  
+	  idx = as->index();
+	  v = aes->getPInt();
+
+	  if (vx->immutable && issetPInt (vx->u.idx + idx)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    as->Print (stderr);
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  setPInt (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	if (vx->immutable && issetPInt (vx->u.idx)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
+	}
+	setPInt (vx->u.idx, aes->getPInt());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
+    long v;
+
+    if (need_alloc) {
+      vx->u.idx = AllocPInts(len); /* allocate */
+    }
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper(subrange_info);
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+
+	  idx = as->index();
+	  v = aes->getPInts();
+
+	  if (vx->immutable && issetPInts (vx->u.idx + idx)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    as->Print (stderr);
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  
+	  setPInts (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+	if (vx->immutable && issetPInts (vx->u.idx)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
+	}
+	setPInts (vx->u.idx, aes->getPInts());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPRealType (vx->t->BaseType())) {
+    double v;
+
+    if (need_alloc) {
+      vx->u.idx = AllocPReal(len); /* allocate */
+    }
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper(subrange_info);
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+	  
+	  idx = as->index();
+	  v = aes->getPReal();
+
+	  if (vx->immutable && issetPReal (vx->u.idx + idx)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    as->Print (stderr);
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  
+	  setPReal (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+
+	if (vx->immutable && issetPReal (vx->u.idx)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
+	}
+	
+	setPReal (vx->u.idx, aes->getPReal());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
+    int v;
+
+    if (need_alloc) {
+      vx->u.idx = AllocPBool(len); /* allocate */
+    }
+
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper(subrange_info);
+
+	while (!as->isend()) {
+	  Assert (!aes->isend(), "This should have been caught earlier");
+
+	  idx = as->index();
+	  v = aes->getPBool();
+
+	  if (vx->immutable && issetPBool (vx->u.idx + idx)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    as->Print (stderr);
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  
+	  setPBool (vx->u.idx + idx, v);
+	    
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	aes = rhsval->stepper();
+
+	if (vx->immutable && issetPBool (vx->u.idx)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: %s\n", id->getName());
+	  fatal_error ("Setting immutable parameter that has already been set");
+	}
+	
+	setPBool (vx->u.idx, aes->getPBool());
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
+  }
+  else {
+    fatal_error ("Should not be here: meta params only");
+  }
+  if (ae) {
+    delete aes;
+    delete xrhs;
+  }
+}
+
+#endif
