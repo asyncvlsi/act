@@ -19,6 +19,7 @@ class Type;
 class InstType;
 class ActId;
 class AExpr;
+class AExprstep;
 
 struct act_connection;
 
@@ -145,6 +146,8 @@ class Scope {
   void BindParam (ActId *id, InstType *tt);
   void BindParam (const char *s, AExpr *ae);
   void BindParam (ActId *id, AExpr *ae);
+
+  void BindParam (ActId *id, AExprstep *aes, int idx = -1);
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if
