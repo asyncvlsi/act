@@ -1365,7 +1365,7 @@ void Array::Merge (Array *a)
 
     Assert (i != dims, "What?");
     
-    if (a->hi(i) < tmp->lo(i)) {
+    if (a->r[i].u.ex.hi < tmp->r[i].u.ex.lo) {
       Array *m = a->Clone();
       /* insert to the left, done */
       if (!prev) {
@@ -1386,7 +1386,7 @@ void Array::Merge (Array *a)
       }
       return;
     }
-    else if (a->lo(i) > tmp->hi(i)) {
+    else if (a->r[i].u.ex.lo > tmp->r[i].u.ex.hi) {
       /* go right */
       prev = tmp;
       tmp = tmp->next;
