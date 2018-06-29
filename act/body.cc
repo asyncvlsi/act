@@ -213,7 +213,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
       }
     }
     else {
-      /* we're good, nothing needed */
+      /* nothing needed here, since this was not allocated at all */
     }
 
     delete old;
@@ -305,7 +305,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       /* a parameter assignment */
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
 	/* ptype assignment */
-	s->BindParam ((ActId *)e->u.e.l, arhs);
 	AExprstep *astep = arhs->stepper();
 
 	s->BindParam ((ActId *)e->u.e.l, astep->getPType());
@@ -320,6 +319,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
     }
     else {
+      
       /* YYY: a real connection */
     }
 
@@ -338,8 +338,64 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     u.general.rhs->Print (stderr);
     fprintf (stderr, "\n");
 #endif
-    
 
+#if 0
+    /* lhs */
+    alhs = u.general.lhs->Expand (ns, s, 1); /* an lval */
+    tlhs = alhs->getInstType (s, 0);
+
+    /* rhs */
+    arhs = u.basic.rhs->Expand (ns, s);
+    trhs = arhs->getInstType (s, 1);
+
+    if (!type_connectivity_check (tlhs, trhs)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Connection: ");
+      ex->Print (stderr);
+      fprintf (stderr, " = ");
+      arhs->Print (stderr);
+      fprintf (stderr, "\n  LHS: ");
+      tlhs->Print (stderr);
+      fprintf (stderr, "\n  RHS: ");
+      trhs->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Type-checking failed on connection");
+    }
+
+    if (TypeFactory::isParamType (tlhs)) {
+      /* a parameter assignment */
+
+      if (TypeFactory::isPTypeType (tlhs->BaseType())) {
+	/* ptype assignment */
+	AExprstep *astep = arhs->stepper();
+
+	s->BindParam (alhs->toid(), astep->getPType());
+	
+	astep->step();
+	Assert (astep->isend(), "What?");
+	delete astep;
+      }
+      else {
+#if 0
+	AExprstep *aes = alhs->stepper();
+	AExprstep *bes = arhs->stepper();
+	/* any other parameter assignment */
+	s->BindParam (alhs->(ActId *)e->u.e.l, arhs);
+#endif
+      }
+    }
+    else {
+#if 0      
+      /* YYY: a real connection */
+#endif
+    }
+
+    delete tlhs;
+    delete trhs;
+    delete arhs;
+    delete alhs;
+#endif
+    
     break;
   default:
     fatal_error ("Should not be here");
