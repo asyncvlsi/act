@@ -845,6 +845,8 @@ class AExpr {
   AExpr *Expand (ActNamespace *, Scope *, int is_lval = 0);
   /**< expand out all parameters */
 
+  ActId *toid ();
+
   AExprstep *stepper();  /* return stepper! */
 
  private:
@@ -884,6 +886,7 @@ private:
     struct {
       /* this is used for non-parameter identifiers */
       ActId *act_id;		// identifier
+      Scope *s;
       Arraystep *a;		// array deref within the id, in case
 				// it is an array
     } id;

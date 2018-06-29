@@ -49,7 +49,6 @@ struct ValueIdx {
 };
 
 
-
 class Scope {
  public:
   Scope(Scope *parent, int is_expanded = 0);
