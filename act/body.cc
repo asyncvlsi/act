@@ -98,11 +98,119 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
     
     if (vx->init) {
       /* it's been allocated; needs reallocation! */
-      /* XXXXXXXXXX */
-      fatal_error ("HERE");
-      
+      if (TypeFactory::isParamType (vx->t)) {
+	bitset_t *b = bitset_new (old->size());
+	/* realloc and copy */
 
-      
+	if (TypeFactory::isPIntType (vx->t->BaseType())) {
+	  int *vals;
+	  Arraystep *as;
+	  
+	  MALLOC (vals, int, old->size());
+	  for (int i=0; i < old->size(); i++) {
+	    if (s->issetPInt (vx->u.idx + i)) {
+	      bitset_set (b, i);
+	      vals[i] = s->getPInt (vx->u.idx + i);
+	    }
+	  }
+	  s->DeallocPInt (vx->u.idx, old->size());
+	  vx->u.idx = s->AllocPInt (x->arrayInfo()->size());
+
+	  as = old->stepper();
+	  while (!as->isend()) {
+	    if (bitset_tst (b, as->index())) {
+	      s->setPInt (vx->u.idx + as->index (x->arrayInfo()),
+			  vals[as->index()]);
+	    }
+	    as->step();
+	  }
+	  delete as;
+	  FREE (vals);
+	}
+	else if (TypeFactory::isPIntsType (vx->t->BaseType())) {
+	  int *vals;
+	  Arraystep *as;
+	  
+	  MALLOC (vals, int, old->size());
+	  for (int i=0; i < old->size(); i++) {
+	    if (s->issetPInts (vx->u.idx + i)) {
+	      bitset_set (b, i);
+	      vals[i] = s->getPInts (vx->u.idx + i);
+	    }
+	  }
+	  s->DeallocPInts (vx->u.idx, old->size());
+	  vx->u.idx = s->AllocPInts (x->arrayInfo()->size());
+
+	  as = old->stepper();
+	  while (!as->isend()) {
+	    if (bitset_tst (b, as->index())) {
+	      s->setPInts (vx->u.idx + as->index (x->arrayInfo()),
+			  vals[as->index()]);
+	    }
+	    as->step();
+	  }
+	  delete as;
+	  FREE (vals);
+	}
+	else if (TypeFactory::isPRealType (vx->t->BaseType())) {
+	  double *vals;
+	  Arraystep *as;
+	  
+	  MALLOC (vals, double, old->size());
+	  for (int i=0; i < old->size(); i++) {
+	    if (s->issetPReal (vx->u.idx + i)) {
+	      bitset_set (b, i);
+	      vals[i] = s->getPReal (vx->u.idx + i);
+	    }
+	  }
+	  s->DeallocPReal (vx->u.idx, old->size());
+	  vx->u.idx = s->AllocPReal (x->arrayInfo()->size());
+
+	  as = old->stepper();
+	  while (!as->isend()) {
+	    if (bitset_tst (b, as->index())) {
+	      s->setPReal (vx->u.idx + as->index (x->arrayInfo()),
+			   vals[as->index()]);
+	    }
+	    as->step();
+	  }
+	  delete as;
+	  FREE (vals);
+	}
+	else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
+	  int *vals;
+	  Arraystep *as;
+	  
+	  MALLOC (vals, int, old->size());
+	  for (int i=0; i < old->size(); i++) {
+	    if (s->issetPBool (vx->u.idx + i)) {
+	      bitset_set (b, i);
+	      vals[i] = s->getPBool (vx->u.idx + i);
+	    }
+	  }
+	  s->DeallocPBool (vx->u.idx, old->size());
+	  vx->u.idx = s->AllocPBool (x->arrayInfo()->size());
+
+	  as = old->stepper();
+	  while (!as->isend()) {
+	    if (bitset_tst (b, as->index())) {
+	      s->setPBool (vx->u.idx + as->index (x->arrayInfo()),
+			   vals[as->index()]);
+	    }
+	    as->step();
+	  }
+	  delete as;
+	  FREE (vals);
+	}
+	else {
+	  Assert (0, "no ptype arrays");
+	}
+        bitset_free (b);
+      }
+      else {
+	/* XXX: HERE: WORK ON THIS ONCE CONNECTIONS ARE DONE */
+	warning ("Sparse array: Fix this please");
+      }
     }
     else {
       /* we're good, nothing needed */

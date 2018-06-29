@@ -794,6 +794,7 @@ public:
   ~Arraystep ();
   void step();
   int index() { return idx; }
+  int index(Array *b) { return b->Offset (deref); }
   int isend();		// returns 1 on an end of array, 0 otherwise
 
   void Print (FILE *fp);

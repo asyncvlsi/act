@@ -107,26 +107,31 @@ class Scope {
   UserDef *getUserDef () { return u; }
 
   unsigned long AllocPInt(int count = 1);
+  void DeallocPInt(unsigned long idx, int count = 1);
   void setPInt(unsigned long id, unsigned long val);
   int issetPInt (unsigned long id);
   unsigned long getPInt(unsigned long id);
 
   unsigned long AllocPInts(int count = 1);
+  void DeallocPInts(unsigned long idx, int count = 1);
   int issetPInts (unsigned long id);
   long getPInts(unsigned long id);
   void setPInts(unsigned long id, long val);
 
   unsigned long AllocPReal(int count = 1);
+  void DeallocPReal(unsigned long idx, int count = 1);
   int issetPReal (unsigned long id);
   double getPReal(unsigned long id);
   void setPReal(unsigned long id, double val);
 
   unsigned long AllocPBool(int count = 1);
+  void DeallocPBool(unsigned long idx, int count = 1);
   int issetPBool (unsigned long id);
   int getPBool(unsigned long id);
   void setPBool(unsigned long id, int val);
 
   unsigned long AllocPType(int count = 1);
+  void DeallocPType(unsigned long idx, int count = 1);
   int issetPType (unsigned long id);
   InstType *getPType(unsigned long id);
   void setPType(unsigned long id, InstType *val);

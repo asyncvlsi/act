@@ -678,6 +678,26 @@ unsigned long Scope::AllocPInt(int count)
   return ret;
 }
 
+void Scope::DeallocPInt (unsigned long idx, int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::DeallocPInt(): count must be >0!");
+  }
+  if ((idx+count) > A_LEN (vpint)) {
+    fatal_error ("Scope::DeallocPInt(): out of range");
+  }
+  if (idx+count == A_LEN (vpint)) {
+    /* we can actually deallocate this! */
+    for (unsigned long i = idx; i < idx + count; i++) {
+      bitset_clr (vpint_set, i);
+    }
+    A_LEN (vpint) -= count;
+    
+    return;
+  }
+  /* otherwise, ignore it. too bad! */
+}
+
 void Scope::setPInt(unsigned long id, unsigned long val)
 {
   if (id >= A_LEN (vpint)) {
@@ -718,8 +738,29 @@ unsigned long Scope::AllocPInts(int count)
     bitset_expand (vpints_set, A_LEN (vpints)+count);
   }
   A_LEN (vpints) += count;
-  return A_LEN (vpints)-1;
+  return ret;
 }
+
+void Scope::DeallocPInts (unsigned long idx, int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::DeallocPInts(): count must be >0!");
+  }
+  if ((idx+count) > A_LEN (vpints)) {
+    fatal_error ("Scope::DeallocPInts(): out of range");
+  }
+  if (idx+count == A_LEN (vpints)) {
+    /* we can actually deallocate this! */
+    for (unsigned long i = idx; i < idx + count; i++) {
+      bitset_clr (vpints_set, i);
+    }
+    A_LEN (vpints) -= count;
+    
+    return;
+  }
+  /* otherwise, ignore it. too bad! */
+}
+
 
 void Scope::setPInts(unsigned long id, long val)
 {
@@ -764,6 +805,26 @@ unsigned long Scope::AllocPReal(int count)
   return ret;
 }
 
+void Scope::DeallocPReal (unsigned long idx, int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::DeallocPReal(): count must be >0!");
+  }
+  if ((idx+count) > A_LEN (vpreal)) {
+    fatal_error ("Scope::DeallocPReal(): out of range");
+  }
+  if (idx+count == A_LEN (vpreal)) {
+    /* we can actually deallocate this! */
+    for (unsigned long i = idx; i < idx + count; i++) {
+      bitset_clr (vpreal_set, i);
+    }
+    A_LEN (vpreal) -= count;
+    return;
+  }
+  /* otherwise, ignore it. too bad! */
+}
+
+
 void Scope::setPReal(unsigned long id, double val)
 {
   if (id >= A_LEN (vpreal)) {
@@ -807,6 +868,25 @@ unsigned long Scope::AllocPType(int count)
   }
   A_LEN (vptype) += count;
   return ret;
+}
+
+void Scope::DeallocPType (unsigned long idx, int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::DeallocPType(): count must be >0!");
+  }
+  if ((idx+count) > A_LEN (vptype)) {
+    fatal_error ("Scope::DeallocPReal(): out of range");
+  }
+  if (idx+count == A_LEN (vptype)) {
+    /* we can actually deallocate this! */
+    for (unsigned long i = idx; i < idx + count; i++) {
+      bitset_clr (vptype_set, i);
+    }
+    A_LEN (vptype) -= count;
+    return;
+  }
+  /* otherwise, ignore it. too bad! */
 }
 
 void Scope::setPType(unsigned long id, InstType *val)
@@ -854,6 +934,25 @@ unsigned long Scope::AllocPBool(int count)
     vpbool_len += count;
     return vpbool_len - count;
   }
+}
+
+void Scope::DeallocPBool (unsigned long idx, int count)
+{
+  if (count <= 0) {
+    fatal_error ("Scope::DeallocPBool(): count must be >0!");
+  }
+  if ((idx+count) > vpbool_len) {
+    fatal_error ("Scope::DeallocPBool(): out of range");
+  }
+  if (idx+count == vpbool_len) {
+    /* we can actually deallocate this! */
+    for (unsigned long i = idx; i < idx + count; i++) {
+      bitset_clr (vpbool_set, i);
+    }
+    vpbool_len -= count;
+    return;
+  }
+  /* otherwise, ignore it. too bad! */
 }
 
 void Scope::setPBool(unsigned long id, int val)
