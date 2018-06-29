@@ -1386,7 +1386,7 @@ void Array::Merge (Array *a)
       }
       return;
     }
-    else if (a->lo(i) > hi(i)) {
+    else if (a->lo(i) > tmp->hi(i)) {
       /* go right */
       prev = tmp;
       tmp = tmp->next;
