@@ -187,5 +187,12 @@ struct act_chp {
   act_chp_lang_t *c;
 };
 
+class ActNamespace;
+class Scope;
+
+act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
+act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
+act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
+act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 
 #endif /* __LANG_H__ */

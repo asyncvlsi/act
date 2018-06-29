@@ -9,6 +9,7 @@
 #include <act/act.h>
 #include <act/types.h>
 #include <act/inst.h>
+#include <act/lang.h>
 #include <string.h>
 #include "misc.h"
 #include "hash.h"
@@ -1591,6 +1592,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   return ux;
 }
 
+
 Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Process *xp;
@@ -1604,6 +1606,43 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (ns->EditType (xp->name, xp) == 1, "What?");
   xp->is_cell = is_cell;
   return xp;
+}
+
+Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Data *xd;
+  UserDef *ux;
+
+  ux = UserDef::Expand (ns, s, nt, u);
+
+  xd = new Data (ux);
+  delete ux;
+
+  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+  xd->is_enum = is_enum;
+
+  xd->set = chp_expand (set, ns, s);
+  xd->get = chp_expand (get, ns, s);
+  
+  return xd;
+}
+
+Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Channel *xc;
+  UserDef *ux;
+
+  ux = UserDef::Expand (ns, s, nt, u);
+
+  xc = new Channel (ux);
+  delete ux;
+
+  Assert (ns->EditType (xc->name, xc) == 1, "What?");
+
+  xc->send = chp_expand (send, ns, s);
+  xc->recv = chp_expand (recv, ns, s);
+  
+  return xc;
 }
 
 
