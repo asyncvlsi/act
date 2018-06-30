@@ -100,12 +100,17 @@ class PReal : public Type {
 };
 
 class PType : public Type {
+public:
   const char *getName();
   PType *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
+  PType() { i = NULL; name = NULL; };
+  
 private:
   InstType *i;			// when it is expanded
   const char *name;
+
+  friend class TypeFactory;
 };
 
 class Bool : public Type {
@@ -491,6 +496,7 @@ class TypeFactory {
   InstType *NewPBool () { return pbool; }
   InstType *NewPReal () { return preal; }
   InstType *NewPType (Scope *s, InstType *t);
+  PType *NewPType (InstType *t);
 
   /**
    * Return unique pointer to the bool type
