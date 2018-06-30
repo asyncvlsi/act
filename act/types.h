@@ -100,10 +100,12 @@ class PReal : public Type {
 };
 
 class PType : public Type {
-  const char *getName() { return "ptype"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    return this;
-  }
+  const char *getName();
+  PType *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+private:
+  InstType *i;			// when it is expanded
+  const char *name;
 };
 
 class Bool : public Type {
@@ -114,11 +116,12 @@ class Bool : public Type {
 };
 
 class Int : public Type {
-  const char *getName() { if (is_signed) return "ints"; else return "int"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    return this;
-  }
+  const char *getName();
+  Int *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  
   unsigned int is_signed:1;
+  int w;
+  const char *name;
   
   friend class TypeFactory;
 };
@@ -509,6 +512,7 @@ class TypeFactory {
    * \return a unique pointer to the specified type
    */
   InstType *NewInt (Scope *s, Type::direction dir, int sig, Expr *w);
+  Int *NewInt (int sig, int w);
 
   /**
    * Return unique pointer to the enum type
