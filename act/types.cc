@@ -141,80 +141,80 @@ InstType *TypeFactory::NewBool (Type::direction dir)
 }
 
 struct inthashkey {
-  Scope *s;
-  Type::direction d;
   int sig;			// signed or not
-  Expr *w;
+  int w;
 };
 
 /*
   sig = is signed?
 */
+Int *TypeFactory::NewInt (int sig, int w)
+{
+  struct inthashkey k;
+  chash_bucket_t *b;
+
+  k.sig = sig;
+  k.w = w;
+  
+  b = chash_lookup (inthash, &k);
+  if (!b) {
+    Int *i = new Int();
+    i->is_signed = sig;
+    i->w = w;
+    i->name = NULL;
+    
+    b = chash_add (inthash, &k);
+    b->v = i;
+  }
+  return (Int *)b->v;
+}
+ 
 InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 {
-  chash_bucket_t *b;
-  struct inthashkey k;
-  static Int *_i = NULL;
+  static Int *_iu = NULL, *_is = NULL;
 
-  if (_i == NULL) {
-    _i = new Int();
-    //_i->expanded = 0;
-    _i->is_signed = sig;
+  if (_iu == NULL) {
+    _iu = new Int();
+    _iu->is_signed = 0;
+    _iu->name = NULL;
+    _iu->w = -1;
+    _is = new Int();
+    _is->is_signed = 1;
+    _is->name = NULL;
+    _is->w = -1;
   }
   
-  k.s = s;
-  k.d = dir;
-  k.w = w;
-  k.sig = sig;
-
   /* the key should contain the direction and width expression.
      For int<w>, we need to know the *context* of w.. is it the same w
      as another int<w>, or not.
   */
-  b = chash_lookup (inthash, &k);
-  if (!b) {
-    InstType *i = new InstType (s, _i, 0);
-    i->setNumParams (1);
-    i->setParam (0, w);
-    i->SetDir (dir);
+  InstType *i = new InstType (s, (sig ? _is : _iu), 0);
+  i->setNumParams (1);
+  i->setParam (0, w);
+  i->SetDir (dir);
 
-    b = chash_add (inthash, &k);
-    b->v = i;
-  }
-  return (InstType *)b->v;
+  return i;
 }
 
 
 InstType *TypeFactory::NewEnum (Scope *s, Type::direction dir, Expr *w)
 {
-  chash_bucket_t *b;
-  struct inthashkey k;
   static Enum *_e = NULL;
 
   if (!_e) {
     _e = new Enum();
   }
   
-  k.s = s;
-  k.d = dir;
-  k.w = w;
-  k.sig = 0;
+  InstType *i = new InstType (s, _e, 0);
+  i->setNumParams (1);
+  i->setParam (0, w);
+  i->SetDir (dir);
 
   /* the key should contain the direction and width expression.
      For int<w>, we need to know the *context* of w.. is it the same w
      as another int<w>, or not.
   */
-  b = chash_lookup (enumhash, &k);
-  if (!b) {
-    InstType *i = new InstType (s, _e, 0);
-    i->setNumParams (1);
-    i->setParam (0, w);
-    i->SetDir (dir);
-
-    b = chash_add (enumhash, &k);
-    b->v = i;
-  }
-  return (InstType *)b->v;
+  return i;
 }
 
 
@@ -478,19 +478,11 @@ int TypeFactory::inthashfn (int sz, void *key)
   unsigned char sig;
 
   /* scope pointers are unique */
-  v = hash_function_continue 
-    (sz, (const unsigned char *) &k->s, sizeof (Scope *), 0, 0);
-
-  /* hash the direction */
-  v = hash_function_continue 
-    (sz, (const unsigned char *) &k->d, sizeof (Type::direction), v,1);
-
-  /* hash the sign */
   sig = k->sig;
-  v = hash_function_continue (sz, (const unsigned char *) &sig, 1, v, 1);
+  v = hash_function_continue 
+    (sz, (const unsigned char *) &sig, 1, 0, 0);
 
-  /* now walk the expression to compute its hash */
-  v = expr_hash (sz, k->w, v);
+  v = hash_function_continue (sz, (const unsigned char *) &k->w, sizeof (int), v, 1);
 
   return v;
 }
@@ -500,10 +492,9 @@ int TypeFactory::intmatchfn (void *key1, void *key2)
   struct inthashkey *k1, *k2;
   k1 = (struct inthashkey *)key1;
   k2 = (struct inthashkey *)key2;
-  if (k1->s != k2->s) return 0;
-  if (k1->d != k2->d) return 0;
   if (k1->sig != k2->sig) return 0;
-  return expr_equal (k1->w, k2->w);
+  if (k1->w != k2->w) return 0;
+  return 1;
 }
 
 void *TypeFactory::intdupfn (void *key)
@@ -511,8 +502,6 @@ void *TypeFactory::intdupfn (void *key)
   struct inthashkey *k, *kret;
   k = (struct inthashkey *) key;
   kret = new inthashkey;
-  kret->s = k->s;
-  kret->d = k->d;
   kret->w = k->w;
   kret->sig = k->sig;
   return kret;
@@ -1716,6 +1705,85 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   xit->Print (stderr);
   fprintf (stderr, "\n");
 #endif
+  xit->dir = dir;
   
   return xit;
 }
+
+
+PType *PType::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  PType *ret;
+  Assert (nt == 1, "What?");
+
+  ret = new PType ();
+  ret->i = u[0].tt->Expand (ns, s);
+  ret->name = NULL;
+
+  return ret;
+}
+
+const char *PType::getName ()
+{
+  if (!i) {
+    return "ptype";
+  }
+  else if (!name) {
+    char buf[10240];
+    sprintf (buf, "ptype<");
+    i->sPrint (buf+strlen (buf), 10240-strlen (buf));
+    sprintf (buf+strlen(buf), ">");
+    name = Strdup (buf);
+  }
+  return name;
+}
+
+Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Int *ix;
+  AExpr *ae;
+  Expr *e;
+  InstType *it;
+  
+  Assert (nt == 1, "What?");
+
+  ae = u[0].tp->Expand (ns, s);
+  it = ae->getInstType (s);
+  if (!TypeFactory::isPIntType (it->BaseType()) ||
+      it->arrayInfo()) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Expanding integer type; parameter is not an integer\n");
+    fprintf (stderr, " parameter: ");
+    ae->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+  delete it;
+
+  AExprstep *step = ae->stepper();
+
+  ix = TypeFactory::Factory()->NewInt (is_signed, step->getPInt());
+
+  step->step();
+  Assert (step->isend(), "Hmm?");
+
+  return ix;
+}
+
+const char *Int::getName()
+{
+  if (!name) {
+    if (w == -1) {
+      name = (is_signed ? "ints" : "int");
+    }
+    else {
+      char buf[1024];
+      sprintf (buf, "int%s<%d>", (is_signed ? "s" : ""), w);
+      name = Strdup (buf);
+    }
+  }
+  return name;
+}
+
+
+	
