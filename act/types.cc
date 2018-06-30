@@ -649,6 +649,29 @@ InstType *TypeFactory::NewPType (Scope *s, InstType *t)
   return (InstType *)b->v;
 }
 
+PType *TypeFactory::NewPType (InstType *t)
+{
+  chash_bucket_t *b;
+  struct chanhashkey c;
+  InstType *it[1];
+
+  c.s = NULL;
+  c.d = Type::NONE;
+  c.ntypes = 1;
+  it[0] = t;
+  c.t = it;
+
+  b = chash_lookup (ptypehash, &c);
+
+  if (!b) {
+    PType *i = new PType();
+    i->i = t;
+
+    b->v = i;
+  }
+  return (PType *)b->v;
+}
+
 
 
 const char *UserDef::getName()
@@ -1713,14 +1736,9 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 
 PType *PType::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
-  PType *ret;
   Assert (nt == 1, "What?");
 
-  ret = new PType ();
-  ret->i = u[0].tt->Expand (ns, s);
-  ret->name = NULL;
-
-  return ret;
+  return TypeFactory::Factory()->NewPType (u[0].tt->Expand (ns, s));
 }
 
 const char *PType::getName ()
@@ -1784,6 +1802,3 @@ const char *Int::getName()
   }
   return name;
 }
-
-
-	
