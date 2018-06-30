@@ -124,19 +124,10 @@ class Int : public Type {
   const char *getName();
   Int *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
-  unsigned int is_signed:1;
+  unsigned int kind:2;		// 0 = unsigned, 1 = signed, 2 = enum
   int w;
   const char *name;
   
-  friend class TypeFactory;
-};
-
-class Enum : public Type {
-  const char *getName() { return "enum"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-    return this;
-  }
-
   friend class TypeFactory;
 };
 

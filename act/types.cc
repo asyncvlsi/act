@@ -159,7 +159,7 @@ Int *TypeFactory::NewInt (int sig, int w)
   b = chash_lookup (inthash, &k);
   if (!b) {
     Int *i = new Int();
-    i->is_signed = sig;
+    i->kind = sig;
     i->w = w;
     i->name = NULL;
     
@@ -172,23 +172,30 @@ Int *TypeFactory::NewInt (int sig, int w)
 InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 {
   static Int *_iu = NULL, *_is = NULL;
+  static Int *_ie = NULL;
 
   if (_iu == NULL) {
     _iu = new Int();
-    _iu->is_signed = 0;
+    _iu->kind = 0;
     _iu->name = NULL;
     _iu->w = -1;
+
     _is = new Int();
-    _is->is_signed = 1;
+    _is->kind = 1;
     _is->name = NULL;
     _is->w = -1;
+
+    _ie = new Int();
+    _ie->name = NULL;
+    _ie->w = -1;
+    _ie->kind = 2;
   }
   
   /* the key should contain the direction and width expression.
      For int<w>, we need to know the *context* of w.. is it the same w
      as another int<w>, or not.
   */
-  InstType *i = new InstType (s, (sig ? _is : _iu), 0);
+  InstType *i = new InstType (s, (sig == 0 ? _iu : (sig == 1 ? _is : _ie)), 0);
   i->setNumParams (1);
   i->setParam (0, w);
   i->SetDir (dir);
@@ -199,22 +206,8 @@ InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
 
 InstType *TypeFactory::NewEnum (Scope *s, Type::direction dir, Expr *w)
 {
-  static Enum *_e = NULL;
-
-  if (!_e) {
-    _e = new Enum();
-  }
-  
-  InstType *i = new InstType (s, _e, 0);
-  i->setNumParams (1);
-  i->setParam (0, w);
-  i->SetDir (dir);
-
-  /* the key should contain the direction and width expression.
-     For int<w>, we need to know the *context* of w.. is it the same w
-     as another int<w>, or not.
-  */
-  return i;
+  /* enums are just a special type of int. */
+  return NewInt (s, dir, 2, w);
 }
 
 
@@ -237,10 +230,6 @@ int TypeFactory::isDataType (Type *t)
   if (tmp_i) {
     return 1;
   }
-  Enum *tmp_e = dynamic_cast<Enum *>(t);
-  if (tmp_e) {
-    return 1;
-  }
   Bool *tmp_b = dynamic_cast<Bool *>(t);
   if (tmp_b) {
     return 1;
@@ -252,10 +241,6 @@ int TypeFactory::isIntType (Type *t)
 {
   Int *tmp_i = dynamic_cast<Int *>(t);
   if (tmp_i) {
-    return 1;
-  }
-  Enum *tmp_e = dynamic_cast<Enum *>(t);
-  if (tmp_e) {
     return 1;
   }
   return 0;
@@ -1780,7 +1765,7 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   AExprstep *step = ae->stepper();
 
-  ix = TypeFactory::Factory()->NewInt (is_signed, step->getPInt());
+  ix = TypeFactory::Factory()->NewInt (kind, step->getPInt());
 
   step->step();
   Assert (step->isend(), "Hmm?");
@@ -1790,15 +1775,27 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
 const char *Int::getName()
 {
-  if (!name) {
-    if (w == -1) {
-      name = (is_signed ? "ints" : "int");
-    }
-    else {
-      char buf[1024];
-      sprintf (buf, "int%s<%d>", (is_signed ? "s" : ""), w);
-      name = Strdup (buf);
-    }
+  const char *k2v;
+
+  if (name) return name;
+  
+  if (kind == 0) {
+    k2v = "int";
+  }
+  else if (kind == 1) {
+    k2v = "ints";
+  }
+  else {
+    k2v = "enum";
+  }
+  
+  if (w == -1) {
+    name = k2v;
+  }
+  else {
+    char buf[1024];
+    sprintf (buf, "%s<%d>", k2v, w);
+    name = Strdup (buf);
   }
   return name;
 }
