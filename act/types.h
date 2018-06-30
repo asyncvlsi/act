@@ -135,12 +135,13 @@ class Int : public Type {
  * Chan class. Paramterized chan(...) type
  */
 class Chan : public Type {
-  const char *getName () { return "chan"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
-     return this;
-  }
-  unsigned int expanded:1;
+  const char *getName ();
+  Chan *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
   /* type info here */
+  const char *name;
+  int n;			//  # of types
+  InstType **p;			// port types
 
   friend class TypeFactory;
 };
@@ -535,6 +536,7 @@ class TypeFactory {
    * \return a unique pointer to the specified channel type
    */
   InstType *NewChan (Scope *s, Type::direction dir, int n, InstType **l);
+  Chan *NewChan (int n, InstType **l);
 
   /**
    * Returns a unique pointer to the instance type specified
