@@ -563,6 +563,34 @@ void TypeFactory::chanfreefn (void *key)
   delete c;
 }
 
+Chan *TypeFactory::NewChan (int n, InstType **l)
+{
+  struct chanhashkey c;
+  chash_bucket_t *b;
+  
+  c.s = NULL;
+  c.d = Type::NONE;
+  c.ntypes = n;
+  c.t = l;
+  b = chash_lookup (chanhash, &c);
+  if (!b) {
+    Chan *cx;
+    
+    b = chash_add (chanhash, &c);
+    cx = new Chan();
+    cx->n = n;
+    cx->name = NULL;
+    cx->p = l;
+
+    for (int i=0; i < n; i++) {
+      l[i]->MkCached();
+    }
+    
+    b->v = cx;
+  }
+  return (Chan *)b->v;
+}
+
 InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, int n, InstType **l)
 {
   struct chanhashkey c;
@@ -571,7 +599,9 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, int n, InstType *
 
   if (!_c) {
     _c = new Chan();
-    _c->expanded = 0;
+    _c->n = -1;
+    _c->p = NULL;
+    _c->name = NULL;
   }
 
   c.s = s;
@@ -1798,4 +1828,59 @@ const char *Int::getName()
     name = Strdup (buf);
   }
   return name;
+}
+
+const char *Chan::getName ()
+{
+  char buf[10240];
+  if (name) return name;
+  
+  if (n == -1) {
+    name = "chan";
+  }
+  else {
+    sprintf (buf, "chan<");
+    for (int i=0; i < n; i++) {
+      if (i != 0) { strcat (buf, ","); }
+      p[i]->sPrint (buf+strlen (buf), 10239-strlen(buf));
+    }
+    strcat (buf, ">");
+    name = Strdup (buf);
+  }
+  return name;
+}
+
+
+Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Chan *cx;
+  InstType *xp;
+  struct chanhashkey c;
+  chash_bucket_t *b;
+  InstType **cp;
+  
+  Assert (nt > 0, "What?");
+
+  MALLOC (cp, InstType *, nt);
+
+  for (int i=0; i < nt; i++) {
+    xp = u[i].tt->Expand (ns, s);
+    if (TypeFactory::isParamType (xp)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Parameter %d to channel type is not a datatype\n", i);
+      fprintf (stderr, " parameter: ");
+      xp->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+    cp[i] = xp;
+  }
+  cx = TypeFactory::Factory()->NewChan (nt, cp);
+  if (cx->p != cp) {
+    for (int i=0; i < nt; i++) {
+      delete cp[i];
+    }
+    FREE (cp);
+  }
+  return cx;
 }
