@@ -802,6 +802,8 @@ public:
   int index(Array *b) { return b->Offset (deref); }
   int isend();		// returns 1 on an end of array, 0 otherwise
 
+  int typesize() { return base->size(); }
+
   void Print (FILE *fp);
   
 private:
@@ -879,9 +881,10 @@ public:
   InstType *getPType();
 
   /* get an identifier */
-  void getID (ActId **id, int *idx);
+  void getID (ActId **id, int *idx, int *typesize);
 
-  
+  int isSimpleID ();
+
   /* XXX: later */
   void Print (FILE *fp);
   
@@ -959,10 +962,21 @@ class ActId {
      non-meta parameters (also for meta parameters if is_lval=1)
      or the value of the parameter for meta-parameters. */
 
+  /**< 
+     Find canonical root identifier in the current scope.
+     (This ignores Rest()).
+  */
+  act_connection *Canonical (Scope *s);
+
+  /**< find unique ValueIdx in the current scope */
+  act_connection *CanonicalRec (Scope *s);
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */
   ActId *next;			/**< any `.' reference */
+
+  ValueIdx *rawCanonical (Scope *);
 };
 
 
@@ -1232,6 +1246,7 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array =
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 
+act_connection *act_mk_id_canonical (act_connection *c);
 
 /* for expanded expressions */
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */

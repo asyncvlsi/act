@@ -390,3 +390,180 @@ void ActId::sPrint (char *buf, int sz, ActId *end)
     start = start->next;
   }
 }
+
+act_connection *act_mk_id_canonical (act_connection *c)
+{
+  act_connection *root = NULL;
+  act_connection *tmp;
+  
+  tmp = c;
+  /* find root */
+  while (tmp->up) {
+    tmp = tmp->up;
+  }
+  root = tmp;
+
+  /* flatten connection */
+  while (c->up) {
+    tmp = c->up;
+    c->up = root;
+    c = tmp;
+  }
+  return root;
+}
+
+ValueIdx *ActId::rawCanonical (Scope *s)
+{
+  ValueIdx *vx;
+  act_connection *cx;
+  vx = NULL;
+  
+  Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
+
+  while (s && !vx) {
+    vx = s->LookupVal (getName());
+    s = s->Parent ();
+  }
+
+  if (!vx) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " Id: ");
+    Print (stderr);
+    fprintf (stderr, "\nNot found in scope!\n");
+    exit (1);
+  }
+
+  if (!vx->init) {
+    vx->init = 1;
+    NEW (cx, act_connection);
+    vx->u.obj.c = cx;
+    cx->vx = vx;
+    cx->parent = NULL;  /* no parent pointer; this is the root */
+    cx->a = NULL;	/* no slots; lazy allocation */
+
+    /* union-find tree and search list */
+    cx->up = NULL;
+    cx->next = cx;
+    vx->u.obj.name = getName();
+  }
+  cx = vx->u.obj.c;
+
+  cx = act_mk_id_canonical (cx);
+  if (cx->vx == NULL) {
+    /* array or subtype */
+    return cx->parent->vx;
+  }
+  return cx->vx;
+}  
+
+/*
+  Return canonical connection slot for identifier in scope.
+  If it is a subrange identifier, it will be the array id rather than
+  a reference to the subrange.
+*/
+act_connection *ActId::Canonical (Scope *s)
+{
+  ValueIdx *vx;
+  act_connection *cx, *tmpx;
+  ActId *id;
+  
+  Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
+
+  vx = rawCanonical (s);
+  cx = vx->u.obj.c;
+  Assert (cx == act_mk_id_canonical (cx), "What?");
+
+  id = this;
+
+  do {
+    /* vx is the value 
+       cx is the object
+    */
+    if (id->arrayInfo() && id->arrayInfo()->isDeref()) {
+      /* find array slot, make vx the value, cx the connection id for
+	 the canonical value */
+      if (!cx->a) {
+	/* no slots */
+	int sz = vx->t->arrayInfo()->size();
+	MALLOC (cx->a, act_connection *, sz);
+	for (int i=0; i < sz; i++) {
+	  cx->a[i] = NULL;
+	}
+      }
+
+      int idx = vx->t->arrayInfo()->Offset (id->arrayInfo());
+      Assert (idx != -1, "This should have been caught earlier");
+
+      if (!cx->a[idx]) {
+	/* slot is empty, need to allocate it */
+	NEW (cx->a[idx], act_connection);
+
+	cx->a[idx]->vx = NULL; /* get array valueidx slot from the parent */
+	cx->a[idx]->parent = cx;
+
+	/* no connections */
+	cx->a[idx]->up = NULL;
+	cx->a[idx]->next = cx->a[idx];
+
+	/* no subslots */
+	cx->a[idx]->a = NULL;
+      }
+
+      cx = cx->a[idx];
+      cx = act_mk_id_canonical (cx);
+
+      /* find the value slot for the canonical name */
+      if (cx->vx) {
+	vx = cx->vx;
+      }
+      else {
+	vx = cx->parent->vx;
+      }
+    }
+    if (id->Rest()) {
+      int portid;
+      UserDef *ux;
+      /* find port id */
+
+      ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+      Assert (ux, "Should have been caught earlier!");
+      
+      portid = ux->FindPort (id->Rest()->getName());
+      Assert (portid > 0, "What?");
+
+      portid--;
+
+      if (!cx->a) {
+	MALLOC (cx->a, act_connection *, ux->getNumPorts());
+	for (int i=0; i < ux->getNumPorts(); i++) {
+	  cx->a[i] = NULL;
+	}
+      }
+
+      if (!cx->a[portid]) {
+	/* slot empty */
+	NEW (cx->a[portid], act_connection);
+	
+	cx->a[portid]->vx = NULL;
+	cx->a[portid]->parent = cx;
+	cx->a[portid]->up = NULL;
+	cx->a[portid]->next = cx->a[portid];
+	cx->a[portid]->a = NULL;
+      }
+      
+      cx = cx->a[portid];
+      cx = act_mk_id_canonical (cx);
+
+      if (cx->vx) {
+	vx = cx->vx;
+      }
+      else {
+	vx = cx->parent->vx;
+      }
+    }
+    id = id->Rest();
+  } while (id);
+
+  return cx;
+}  
+

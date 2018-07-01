@@ -714,7 +714,12 @@ Arraystep::Arraystep (Array *a, Array *sub)
       deref[i] = subrange->r[i].u.ex.lo;
     }
     else {
-      deref[i] = base->r[i].u.ex.hi + 1;
+      if (base->r[i].u.ex.isrange) {
+	deref[i] = base->r[i].u.ex.lo;
+      }
+      else {
+	deref[i] = base->r[i].u.ex.hi + 1;
+      }
     }
   }
   if (subrange) {
@@ -839,6 +844,25 @@ AExprstep::AExprstep (AExpr *a)
 
 AExprstep::~AExprstep ()
 {
+  switch (type) {
+  case 0:
+    break;
+  case 1:
+    if (u.const_expr) { FREE (u.const_expr); }
+    break;
+  case 2:
+    if (u.id.a) {
+      delete u.id.a;
+    }
+    break;
+  case 3:
+    if (u.vx.a) {
+      delete u.vx.a;
+    }
+    break;
+  default:
+    break;
+  }
   list_free (stack);
 }
 
@@ -859,10 +883,9 @@ void AExprstep::step()
       if (!u.id.a->isend()) {
 	return;
       }
-    }
-    if (u.id.a) {
       /* finished with the stepper */
       delete u.id.a;
+      u.id.a = NULL;
     }
     break;
   case 3:
@@ -872,6 +895,7 @@ void AExprstep::step()
     }
     if (u.vx.a) {
       delete u.vx.a;
+      u.vx.a = NULL;
     }
     break;
   default:
@@ -1112,7 +1136,7 @@ InstType *AExprstep::getPType()
 }
 
 
-void AExprstep::getID (ActId **id, int *idx)
+void AExprstep::getID (ActId **id, int *idx, int *size)
 {
   Assert (type != 0, "AExprstep::getID() called without step or on end");
 
@@ -1125,9 +1149,16 @@ void AExprstep::getID (ActId **id, int *idx)
     *id = u.id.act_id;
     if (!u.id.a) {
       *idx = -1;
+      if (size) {
+	*size = 0;
+      }
     }
     else {
       *idx = u.id.a->index();
+      if (size) {
+	*size = u.id.a->typesize();
+	Assert ((0 <= *idx) && (*idx < *size), "What?");
+      }
     }
     break;
   default:
@@ -1440,4 +1471,17 @@ ActId *AExpr::toid ()
   e = (Expr *)l;
   Assert (e && e->type == E_VAR, "What?");
   return (ActId *)e->u.e.l;
+}
+
+
+int AExprstep::isSimpleID ()
+{
+  if (type != 2) return 0;
+
+  if (!u.id.a
+      || (u.id.act_id->arrayInfo() && u.id.act_id->arrayInfo()->isDeref())) {
+    return 1;
+  }
+
+  return 0;
 }
