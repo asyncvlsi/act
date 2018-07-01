@@ -186,16 +186,9 @@ struct act_connection {
 
   act_connection *parent;	// parent for id . id
   
-  union {
-    struct {
-      act_connection *up;
-      act_connection *next;
-    } uf;			// union find tree
-    struct {
-      act_connection **a;	// slots for root arrays and root
-				// userdefs
-    } slots;
-  } u;
+  act_connection *up;
+  act_connection *next;
+  act_connection **a;	// slots for root arrays and root userdefs
 };
 
 

@@ -256,6 +256,108 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
   }
 }
 
+int offset (act_connection **a, act_connection *c)
+{
+  int i = 0;
+  while (a[i] != c) {
+    i++;
+  }
+  return i;
+}
+
+static void dump_conn (act_connection *c)
+{
+  ValueIdx *vx = c->vx;
+  act_connection *root;
+
+  printf ("[c=%x]", c);
+  if (!vx) {
+    vx = c->parent->vx;
+    printf (" arr/subt");
+    printf ("(off=%d)", offset (c->parent->a, c));
+    if (!vx) {
+      vx = c->parent->parent->vx;
+      printf ("(off2=%d)", offset (c->parent->parent->a, c->parent));
+    }
+  }
+
+  root = c;
+  while (root->up) root = root->up;
+  printf (" root=%x\n", root);
+}
+
+static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
+			   const char *s2, act_connection *c2)
+{
+  int p1, p2;
+  act_connection *tmp;
+  ValueIdx *vx1, *vx2;
+
+#if 0
+  printf ("connect: %s and %s\n", s1, s2);
+  dump_conn (c1);
+  dump_conn (c2);
+#endif
+  vx1 = (c1->vx ? c1->vx : (c1->parent->vx ? c1->parent->vx : c1->parent->parent->vx));
+  Assert (vx1, "What");
+  vx2 = (c2->vx ? c2->vx : (c2->parent->vx? c2->parent->vx : c2->parent->parent->vx));
+  Assert (vx2, "Hmm...");
+
+  if (vx1->global || vx2->global) {
+    if (vx2->global && !vx1->global) {
+      tmp = c1;
+      c1 = c2;
+      c2 = tmp;
+    }
+    p1 = 0;
+    p2 = 0;
+  }
+  else {
+    if (ux) {
+      /* user defined type */
+      p1 = ux->FindPort (s1);
+      p2 = ux->FindPort (s2);
+      if (p1 > 0 || p2 > 0) {
+	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
+	  tmp = c1;
+	  c1 = c2;
+	  c2 = tmp;
+	}
+      }
+    }
+  }
+  if (!ux || (p1 == 0 && p2 == 0)) {
+    p1 = strlen (s1);
+    p2 = strlen (s2);
+    if (p2 > p1) {	
+      tmp = c1;
+      c1 = c2;
+      c2 = tmp;
+    }
+    else if (p1 == p2) {
+      p1 = strcmp (s1, s2);
+      if (p1 > 0) {
+	tmp = c1;
+	c1 = c2;
+	c2 = tmp;
+      }
+    }
+  }
+  
+  /* c1 is the root, not c2 */
+  while (c2->up) {
+    c2 = c2->up;
+  }
+  c2->up = c1;
+
+  act_connection *t1, *t2;
+
+  /* merge c1, c2 connection ring */
+  t1 = c1->next;
+  t2 = c2->next;
+  c1->next = t2;
+  c2->next = t1;
+}
 
 void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 {
@@ -320,8 +422,123 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
     }
     else {
+      ActId *id = (ActId *)e->u.e.l;
+      act_connection *lcx;
+      act_connection *rcx;
+      AExprstep *rhsstep = arhs->stepper();
+      int done_conn;
       
-      /* YYY: a real connection */
+      done_conn = 0;
+      if (!id->arrayInfo() || id->arrayInfo()->isDeref()) {
+	/* this is a direct connection */
+	/* check for special case for rhs */
+	if (rhsstep->isSimpleID()) {
+	  int ridx;
+	  ActId *rid;
+	  int rsize;
+	  
+	  done_conn = 1;
+	  
+	  lcx = id->Canonical (s);
+	  rhsstep->getID (&rid, &ridx, &rsize);
+	  rcx = rid->Canonical (s);
+	  if (ridx == -1) {
+	    mk_connection (s->getUserDef(),
+			   id->getName(), lcx,
+			   rid->getName(), rcx);
+	  }
+	  else {
+	    Assert (trhs->arrayInfo(), "What?");
+	    Assert (rsize == trhs->arrayInfo()->size(), "What?");
+	    if (!rcx->a) {
+	      MALLOC (rcx->a, act_connection *, rsize);
+	      for (int i=0; i < rsize; i++) {
+		rcx->a[i] = NULL;
+	      }
+	    }
+	    Assert (0 <= ridx && ridx < rsize, "What?");
+	    if (!rcx->a[ridx]) {
+	      NEW (rcx->a[ridx], act_connection);
+	      rcx->a[ridx]->vx = NULL;
+	      rcx->a[ridx]->parent = rcx;
+	      rcx->a[ridx]->up = NULL;
+	      rcx->a[ridx]->next = rcx->a[ridx];
+	      rcx->a[ridx]->a = NULL;
+	    }
+	    rcx = act_mk_id_canonical (rcx->a[ridx]);
+	    
+	    mk_connection (s->getUserDef(),
+			   id->getName(), lcx,
+			   rid->getName(), rcx);
+	  }
+	}
+      }
+      if (!done_conn) {
+	Arraystep *lhsstep = tlhs->arrayInfo()->stepper (id->arrayInfo());
+	/* element by element array connection */
+
+	while (!lhsstep->isend()) {
+	  int lidx, lsize;
+	  ActId *lid;
+	  int ridx, rsize;
+	  ActId *rid;
+	  act_connection *lx, *rx;
+
+	  lid = id;
+	  lidx = lhsstep->index();
+	  lsize = lhsstep->typesize();
+
+	  rhsstep->getID (&rid, &ridx, &rsize);
+
+	  lx = lid->Canonical (s);
+	  rx = rid->Canonical (s);
+
+	  if (lidx != -1) {
+	    if (!lx->a) {
+	      MALLOC (lx->a, act_connection *, lsize);
+	      for (int i=0; i < lsize; i++) {
+		lx->a[i] = NULL;
+	      }
+	    }
+	    if (!lx->a[lidx]) {
+	      NEW (lx->a[lidx], act_connection);
+	      lx->a[lidx]->vx = NULL;
+	      lx->a[lidx]->parent = lx;
+	      lx->a[lidx]->up = NULL;
+	      lx->a[lidx]->next = lx->a[lidx];
+	      lx->a[lidx]->a = NULL;
+	    }
+	    lx = lx->a[lidx];
+	  }
+	  if (ridx != -1) {
+	    if (!rx->a) {
+	      MALLOC (rx->a, act_connection *, rsize);
+	      for (int i=0; i < rsize; i++) {
+		rx->a[i] = NULL;
+	      }
+	    }
+	    if (!rx->a[ridx]) {
+	      NEW (rx->a[ridx], act_connection);
+	      rx->a[ridx]->vx = NULL;
+	      rx->a[ridx]->parent = rx;
+	      rx->a[ridx]->up = NULL;
+	      rx->a[ridx]->next = rx->a[lidx];
+	      rx->a[ridx]->a = NULL;
+	    }
+	    rx = rx->a[ridx];
+	  }
+
+	  mk_connection (s->getUserDef(),
+			 lid->getName(), lx,
+			 rid->getName(), rx);
+	  
+	  lhsstep->step();
+	  rhsstep->step();
+	}
+	Assert (rhsstep->isend(), "What?");
+	delete lhsstep;
+      }
+      delete rhsstep;
     }
 
     if (e) { FREE (e); }
@@ -332,6 +549,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     break;
   case 1:
     /* aexpr */
+
 #if 0
     fprintf (stderr, "Conn2: ");
     u.general.lhs->Print (stderr);
@@ -384,9 +602,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	int ii = 0;
 	while (!aes->isend()) {
 
-	  //printf ("here! %d\n", ii++);
-	  
-	  aes->getID (&lhsid, &lhsidx);
+	  aes->getID (&lhsid, &lhsidx, NULL);
 	  if (lhsidx == -1) {
 	    /* it's a pure ID */
 	    s->BindParam (lhsid, bes);
@@ -403,9 +619,88 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
     }
     else {
-#if 0      
-      /* YYY: a real connection */
-#endif
+      AExprstep *aes, *bes;
+      
+      ActId *lid, *rid;
+      int lidx, ridx;
+      int lsize, rsize;
+      act_connection *lx, *rx;
+      
+      /* 
+	 check for direct connection id = id.
+	 otherwise, we step
+      */
+      aes = alhs->stepper();
+      bes = arhs->stepper();
+
+      if (aes->isSimpleID() && bes->isSimpleID()) {
+	/* a simple ID is either foo without array specifier,
+	   or foo[complete deref] (i.e. not a subrange)
+	*/
+
+	aes->getID (&lid, &lidx, &lsize);
+	bes->getID (&rid, &ridx, &rsize);
+
+	lx = lid->Canonical (s);
+	rx = rid->Canonical (s);
+
+	mk_connection (s->getUserDef(), lid->getName(), lx,
+		       rid->getName(), rx);
+      }
+      else {
+	while (!aes->isend()) {
+	  aes->getID (&lid, &lidx, &lsize);
+	  bes->getID (&rid, &ridx, &rsize);
+
+	  lx = lid->Canonical (s);
+	  rx = rid->Canonical (s);
+
+	  if (lidx != -1) {
+	    if (!lx->a) {
+	      MALLOC (lx->a, act_connection *, lsize);
+	      for (int i=0; i < lsize; i++) {
+		lx->a[i] = NULL;
+	      }
+	    }
+	    if (!lx->a[lidx]) {
+	      NEW (lx->a[lidx], act_connection);
+	      lx->a[lidx]->vx = NULL;
+	      lx->a[lidx]->parent = lx;
+	      lx->a[lidx]->up = NULL;
+	      lx->a[lidx]->next = lx->a[lidx];
+	      lx->a[lidx]->a = NULL;
+	    }
+	    lx = lx->a[lidx];
+	  }
+	  if (ridx != -1) {
+	    if (!rx->a) {
+	      MALLOC (rx->a, act_connection *, rsize);
+	      for (int i=0; i < rsize; i++) {
+		rx->a[i] = NULL;
+	      }
+	    }
+	    if (!rx->a[ridx]) {
+	      NEW (rx->a[ridx], act_connection);
+	      rx->a[ridx]->vx = NULL;
+	      rx->a[ridx]->parent = rx;
+	      rx->a[ridx]->up = NULL;
+	      rx->a[ridx]->next = rx->a[lidx];
+	      rx->a[ridx]->a = NULL;
+	    }
+	    rx = rx->a[ridx];
+	  }
+
+	  mk_connection (s->getUserDef(),
+			 lid->getName(), lx,
+			 rid->getName(), rx);
+	  
+	  aes->step();
+	  bes->step();
+	}
+	Assert (bes->isend(), "What?");
+      }
+      delete aes;
+      delete bes;
     }
 
     delete tlhs;
