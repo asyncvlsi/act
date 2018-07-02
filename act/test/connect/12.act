@@ -1,0 +1,11 @@
+int a, b, c;
+
+a=b;
+
+b=c;
+
+int p, q, r;
+
+p = q;
+
+p = b;

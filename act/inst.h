@@ -91,6 +91,8 @@ class InstType {
   int isExpanded();
   int israwExpanded() { return expanded; }
 
+  ActNamespace *getNamespace() { return s->getNamespace(); }
+
  private:
   int isParamAType (int k);
 
@@ -104,9 +106,9 @@ class InstType {
   Type::direction dir;
 
   /**
-   * Parent scope in which variables are to be evaluated
+   * Scope in which the expanded instance was created
    */
-  //  Scope *s;
+  Scope *s;
 
   /* the following are optional */
   Array *a;			/**< array specification */

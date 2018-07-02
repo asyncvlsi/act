@@ -703,7 +703,7 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
   a = NULL;
   dir = Type::NONE;
   u = NULL;
-  //s = _s;
+  s = _s;
   temp_type = (is_temp ? 1 : 0);
 }
 
@@ -1725,7 +1725,7 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   /* If parent is user-defined, we need to make sure we have the
      expanded version of this in place!
   */
-  xit = new InstType (NULL, xt, 0);
+  xit = new InstType (s, xt, 0);
   xit->expanded = 1;
 
   /* array derefs */

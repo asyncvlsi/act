@@ -451,7 +451,15 @@ ValueIdx *ActId::rawCanonical (Scope *s)
   cx = act_mk_id_canonical (cx);
   if (cx->vx == NULL) {
     /* array or subtype */
-    return cx->parent->vx;
+    if (cx->parent->vx) {
+      return cx->parent->vx;
+    }
+    else if (cx->parent->parent->vx) {
+      return cx->parent->parent->vx;
+    }
+    else {
+      Assert (0, "What?");
+    }
   }
   return cx->vx;
 }  
@@ -465,6 +473,7 @@ act_connection *ActId::Canonical (Scope *s)
 {
   ValueIdx *vx;
   act_connection *cx, *tmpx;
+  act_connection *parent_cx;
   ActId *id;
   
   Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
