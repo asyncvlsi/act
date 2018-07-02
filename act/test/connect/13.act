@@ -1,0 +1,12 @@
+bool p, q;
+
+p = q;
+
+
+defproc foo (bool l, m)
+{
+   l = p;
+}
+
+foo f;
+foo g;

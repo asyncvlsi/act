@@ -258,33 +258,86 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
 
 int offset (act_connection **a, act_connection *c)
 {
-  int i = 0;
-  while (a[i] != c) {
+  int i;
+  i = 0;
+  while (1) {
+    if (a[i] == c) return i;
     i++;
+    if (i > 10000) return -1;
   }
-  return i;
+  return -1;
+}
+
+static void print_id (act_connection *c)
+{
+  printf ("<rev: ");
+
+  while (c) {
+    if (c->vx) {
+      printf (".");
+      if (c->vx->global) {
+	char *s = c->vx->t->getNamespace()->Name();
+	printf ("%s%s(g)", s, c->vx->u.obj.name);
+	FREE (s);
+      }
+      else {
+	printf ("<t:");
+	c->vx->t->Print (stdout);
+	printf (">%s", c->vx->u.obj.name);
+      }
+    }
+    else {
+      InstType *it;
+      if (c->parent->vx) {
+	/* one level: either x[] or x.y */
+	it = c->parent->vx->t;
+	if (it->arrayInfo()) {
+	  printf ("[i:%d]", offset (c->parent->a, c));
+	}
+	else {
+	  UserDef *ux = dynamic_cast<UserDef *>(it->BaseType());
+	  Assert (ux, "What?");
+	  printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+	}
+      }
+      else if (c->parent->parent->vx) {
+	it = c->parent->parent->vx->t;
+	/* x[].y */
+	Assert (it->arrayInfo(), "What?");
+	printf ("[i:%d]", offset (c->parent->parent->a, c->parent));
+	printf (".%s", offset (c->parent->a, c));
+      }
+      else {
+	Assert (0, "What?");
+      }
+    }
+    c = c->parent;
+  }
+  printf (">");
 }
 
 static void dump_conn (act_connection *c)
 {
-  ValueIdx *vx = c->vx;
-  act_connection *root;
-
-  printf ("[c=%x]", c);
-  if (!vx) {
-    vx = c->parent->vx;
-    printf (" arr/subt");
-    printf ("(off=%d)", offset (c->parent->a, c));
-    if (!vx) {
-      vx = c->parent->parent->vx;
-      printf ("(off2=%d)", offset (c->parent->parent->a, c->parent));
-    }
-  }
+  act_connection *tmp, *root;
 
   root = c;
   while (root->up) root = root->up;
-  printf (" root=%x\n", root);
+
+  tmp = c;
+
+  printf ("conn: ");
+  do {
+    print_id (tmp);
+    if (tmp == root) {
+      printf ("*");
+    }
+    printf (" , ");
+    tmp = tmp->next;
+  } while (tmp != c);
+  printf("\n");
 }
+
+
 
 static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 			   const char *s2, act_connection *c2)
@@ -295,6 +348,7 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 
 #if 0
   printf ("connect: %s and %s\n", s1, s2);
+  
   dump_conn (c1);
   dump_conn (c2);
 #endif
@@ -308,9 +362,17 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       tmp = c1;
       c1 = c2;
       c2 = tmp;
+      p1 = -1;
+      p2 = -1;
     }
-    p1 = 0;
-    p2 = 0;
+    else if (vx1->global && !vx2->global) {
+      p1 = -1;
+      p2 = -1;
+    }
+    else {
+      p1 = 0;
+      p2 = 0;
+    }
   }
   else {
     if (ux) {
@@ -522,7 +584,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	      rx->a[ridx]->vx = NULL;
 	      rx->a[ridx]->parent = rx;
 	      rx->a[ridx]->up = NULL;
-	      rx->a[ridx]->next = rx->a[lidx];
+	      rx->a[ridx]->next = rx->a[ridx];
 	      rx->a[ridx]->a = NULL;
 	    }
 	    rx = rx->a[ridx];
@@ -684,7 +746,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	      rx->a[ridx]->vx = NULL;
 	      rx->a[ridx]->parent = rx;
 	      rx->a[ridx]->up = NULL;
-	      rx->a[ridx]->next = rx->a[lidx];
+	      rx->a[ridx]->next = rx->a[ridx];
 	      rx->a[ridx]->a = NULL;
 	    }
 	    rx = rx->a[ridx];

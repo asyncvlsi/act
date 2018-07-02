@@ -28,6 +28,7 @@ void ActNamespace::Init ()
   else {
     creating_global = 1;
     global = new ActNamespace ("Global");
+    global->I->setNamespace (global);
     creating_global = 0;
   }
 }
@@ -61,6 +62,7 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
   }
   else {
     I = new Scope(ns->CurScope());
+    I->setNamespace (this);
   }
   B = NULL;
   exported = 0;
@@ -365,6 +367,7 @@ Scope::Scope (Scope *parent, int is_expanded)
   expanded = is_expanded;
   H = hash_new (2);
   u = NULL;
+  ns = NULL;
   up = parent;
 
   A_INIT (vpint);
