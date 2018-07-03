@@ -129,6 +129,16 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 
   id = this;
   do {
+
+#if 0
+    printf ("checking: ");
+    id->Print (stdout);
+    printf (" in [%x] ", it->BaseType());
+    fflush (stdout);
+    it->Print (stdout);
+    printf ("\n");
+#endif
+    
     /* insttype is "it";
        scope is "s"
        id is "id"
@@ -177,9 +187,10 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
     if (id->Rest()) {
       UserDef *u;
     
+      Assert (it->isExpanded(), "This should be expanded");
+      
       u = dynamic_cast<UserDef *>(it->BaseType ());
     
-      Assert (it->isExpanded(), "This should be expanded");
       /* WWW: here we would have to check the array index for relaxed
 	 parameters */
 

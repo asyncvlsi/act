@@ -281,9 +281,14 @@ static void print_id (act_connection *c)
 	FREE (s);
       }
       else {
-	printf ("<t:");
+	UserDef *ux;
+	printf ("{t:");
+	ux = c->vx->t->getUserDef();
+	if (ux) {
+	  printf ("#%s#", ux->getName());
+	}
 	c->vx->t->Print (stdout);
-	printf (">%s", c->vx->u.obj.name);
+	printf ("}%s", c->vx->u.obj.name);
       }
     }
     else {
@@ -301,11 +306,14 @@ static void print_id (act_connection *c)
 	}
       }
       else if (c->parent->parent->vx) {
+	UserDef *ux;
 	it = c->parent->parent->vx->t;
 	/* x[].y */
 	Assert (it->arrayInfo(), "What?");
+	ux = dynamic_cast<UserDef *>(it->BaseType());
+	Assert (ux, "What?");
 	printf ("[i:%d]", offset (c->parent->parent->a, c->parent));
-	printf (".%s", offset (c->parent->a, c));
+	printf (".%s", ux->getPortName(offset (c->parent->a, c)));
       }
       else {
 	Assert (0, "What?");
