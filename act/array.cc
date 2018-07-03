@@ -1485,3 +1485,43 @@ int AExprstep::isSimpleID ()
 
   return 0;
 }
+
+
+Array *Array::unOffset (int idx)
+{
+  Array *tmp;
+  Assert (expanded, "Array::unOffset() only works for expanded arrays");
+  unsigned int sz;
+
+  if (idx < 0 || idx >= size()) return NULL;
+
+  tmp = this;
+  while (tmp && (idx >= tmp->range_sz)) {
+    idx -= tmp->range_sz;
+    tmp = tmp->next;
+  }
+  Assert (tmp, "What?");
+  Assert ((0 <= idx) && (idx < tmp->range_sz), "What?");
+
+  Array *ret = new Array();
+
+  ret->deref = 1;
+  ret->expanded = 1;
+  ret->dims = dims;
+  MALLOC (ret->r, struct range, dims);
+
+  sz = 1;
+  for (int i=1; i < dims; i++) {
+    sz *= (tmp->r[i].u.ex.hi - tmp->r[i].u.ex.lo + 1);
+  }
+  for (int i=0; i < dims; i++) {
+    ret->r[i].u.ex.isrange = 0;
+    ret->r[i].u.ex.lo = tmp->r[i].u.ex.lo + ((unsigned int)idx/sz);
+    ret->r[i].u.ex.hi = ret->r[i].u.ex.lo;
+    idx = idx % sz;
+    if (i != dims-1) {
+      sz = sz/(tmp->r[i+1].u.ex.hi - tmp->r[i+1].u.ex.lo + 1);
+    }
+  }
+  return ret;
+}

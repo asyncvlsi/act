@@ -190,7 +190,7 @@ class Scope {
 struct act_connection {
   ValueIdx *vx;			// identifier that has been allocated
 
-  act_connection *parent;	// parent for id . id
+  act_connection *parent;	// parent for id.id or id[val]
   
   act_connection *up;
   act_connection *next;
