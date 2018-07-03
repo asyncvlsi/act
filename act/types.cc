@@ -1364,7 +1364,7 @@ static int recursion_depth = 0;
  *
  *------------------------------------------------------------------------
  */
-UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u)
+UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u, int *cache_hit)
 {
   UserDef *ux;
   int k, sz, len;
@@ -1388,6 +1388,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
   /* create a new userdef type */
   ux = new UserDef (ns);
+
+  if (defined) {
+    ux->MkDefined();
+  }
 
   /* set its scope to "expanded" mode */
   ux->I->FlushExpand();
@@ -1595,8 +1599,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     /* we found one! */
     delete ux;
     recursion_depth--;
+    *cache_hit = 1;
     return uy;
   }
+  *cache_hit = 0;
 
   Assert (ns->CreateType (buf, ux), "Huh");
   FREE (buf);
@@ -1624,8 +1630,13 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Process *xp;
   UserDef *ux;
+  int cache_hit;
 
-  ux = UserDef::Expand (ns, s, nt, u);
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+
+  if (cache_hit) {
+    return dynamic_cast<Process *> (ux);
+  }
 
   xp = new Process (ux);
   delete ux;
@@ -1639,8 +1650,13 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Data *xd;
   UserDef *ux;
+  int cache_hit;
 
-  ux = UserDef::Expand (ns, s, nt, u);
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+
+  if (cache_hit) {
+    return dynamic_cast<Data *>(ux);
+  }
 
   xd = new Data (ux);
   delete ux;
@@ -1658,8 +1674,13 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Channel *xc;
   UserDef *ux;
+  int cache_hit;
 
-  ux = UserDef::Expand (ns, s, nt, u);
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+
+  if (cache_hit) {
+    return dynamic_cast<Channel *>(ux);
+  }
 
   xc = new Channel (ux);
   delete ux;
@@ -1721,12 +1742,18 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 
   /* Expand the core type using template parameters, if any */
   xt = t->Expand (ns, s, nt, xu);
+
+#if 0
+  printf ("[%x] Name: %s\n", t, t->getName());
+  printf ("[%x] Expanded: %s\n", xt, xt->getName());
+#endif  
   
   /* If parent is user-defined, we need to make sure we have the
      expanded version of this in place!
   */
   xit = new InstType (s, xt, 0);
   xit->expanded = 1;
+  xit->MkCached();
 
   /* array derefs */
   if (a) {

@@ -1,0 +1,16 @@
+defproc bar (bool x, y, z)
+{
+  x = y;
+}
+
+defproc foo (bool l, m)
+{
+  bool one, two, three;
+  bar b1(one);
+  bar b2(two);
+
+  b1.y = b2.y;  
+}
+
+foo f;
+foo g;
