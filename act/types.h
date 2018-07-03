@@ -301,7 +301,11 @@ class UserDef : public Type {
 
   void setBody (ActBody *x) { b = x; } /**< Set the body of the process */
 
-  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+    Assert (0, "Don't call this ever");
+  }
+  
+  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit);
 
 
  protected:

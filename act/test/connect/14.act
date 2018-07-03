@@ -1,0 +1,15 @@
+defproc bar (bool p, q)
+{
+
+}
+
+defproc foo (bool l, m)
+{
+  bool one, two, three;
+
+  bar b1, b2;
+
+  b1.p = b2.q;
+}
+
+foo f;

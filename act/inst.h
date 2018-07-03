@@ -92,6 +92,7 @@ class InstType {
   int israwExpanded() { return expanded; }
 
   ActNamespace *getNamespace() { return s->getNamespace(); }
+  UserDef *getUserDef () { return s->getUserDef(); }
 
  private:
   int isParamAType (int k);
