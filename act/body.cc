@@ -430,11 +430,22 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   dump_conn (c1);
   dump_conn (c2);
 #endif
-  vx1 = (c1->vx ? c1->vx : (c1->parent->vx ? c1->parent->vx : c1->parent->parent->vx));
-  Assert (vx1, "What");
-  vx2 = (c2->vx ? c2->vx : (c2->parent->vx? c2->parent->vx : c2->parent->parent->vx));
-  Assert (vx2, "Hmm...");
 
+  /* for global flag, find the root value */
+  tmp = c1;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?");
+  vx1 = tmp->vx;
+
+  tmp = c2;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?!");
+  vx2 = tmp->vx;
+  
   if (vx1->global || vx2->global) {
     if (vx2->global && !vx1->global) {
       tmp = c1;
