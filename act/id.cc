@@ -493,7 +493,7 @@ static void print_id (act_connection *c)
     }
     
   }
-  
+
   while (!stack_isempty (stk)) {
     c = (act_connection *) stack_pop (stk);
     if (c->vx) {
@@ -652,6 +652,8 @@ act_connection *ActId::Canonical (Scope *s)
             foo became q[5]
   */
 
+  ActId *topf = NULL;
+
   id = this;
   idrest = id->Rest();
   if (idrest) {
@@ -689,7 +691,7 @@ act_connection *ActId::Canonical (Scope *s)
     printf("\n");
     dump_conn (cxrest);
     printf ("------\n");
-#endif    
+#endif
 
     /* YYY: convert cxrest into an ID! */
     vxrest = cxrest->vx;
@@ -712,8 +714,8 @@ act_connection *ActId::Canonical (Scope *s)
     /* compute new idrest! */
     list_t *stk = list_new ();
 
-    stack_push (stk, cxrest);
     while (cxrest) {
+      stack_push (stk, cxrest);
       if (cxrest->vx) {
 	cxrest = cxrest->parent;
       }
@@ -725,6 +727,75 @@ act_connection *ActId::Canonical (Scope *s)
 	cxrest = cxrest->parent->parent->parent;
       }
     }
+    ActId *fresh;
+
+    fresh = NULL;
+    /* replace idrest! */
+    
+    while (!stack_isempty (stk)) {
+      cxrest = (act_connection *) stack_pop (stk);
+      if (cxrest->vx) {
+	vxrest = cxrest->vx;
+	if (!fresh) {
+	  fresh = new ActId (vxrest->u.obj.name);
+	  topf = fresh;
+	}
+	else {
+	  fresh->Append (new ActId (vxrest->u.obj.name));
+	  fresh = fresh->Rest();
+	}
+      }
+      else if (cxrest->parent->vx) {
+	vxrest = cxrest->parent->vx;
+	if (vxrest->t->arrayInfo()) {
+	  Array *tmp;
+	  tmp = vxrest->t->arrayInfo()->unOffset (offset (cxrest->parent->a, cxrest));
+	  if (!fresh) {
+	    fresh = new ActId (vxrest->u.obj.name, tmp);
+	    topf = fresh;
+	  }
+	  else {
+	    fresh->Append (new ActId (vxrest->u.obj.name, tmp));
+	    fresh = fresh->Rest();
+	  }
+	}
+	else {
+	  UserDef *ux;
+
+	  ux = dynamic_cast<UserDef *> (vxrest->t->BaseType());
+	  Assert (ux, "???");
+	  
+	  if (!fresh) {
+	    fresh = new ActId (vxrest->u.obj.name);
+	    topf = fresh;
+	  }
+	  else {
+	    fresh->Append (new ActId (vxrest->u.obj.name));
+	    fresh = fresh->Rest();
+	  }
+	}
+      }
+      else {
+	vxrest = cxrest->parent->parent->vx;
+	Assert (vxrest, "???");
+
+	Array *tmp;
+	tmp = vxrest->t->arrayInfo()->unOffset (offset (cxrest->parent->parent->a, cxrest->parent));
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vxrest->t->BaseType());
+	Assert (ux, "what?");
+
+	if (!fresh) {
+	  fresh = new ActId (vxrest->u.obj.name, tmp);
+	  topf = fresh;
+	}
+	else {
+	  fresh->Append (new ActId (vxrest->u.obj.name, tmp));
+	  fresh = fresh->Rest();
+	  fresh->Append (new ActId (ux->getPortName (offset (cxrest->parent->a, cxrest))));
+	}
+      }
+    }
     list_free (stk);
   }
 
@@ -734,11 +805,14 @@ act_connection *ActId::Canonical (Scope *s)
   printf (" [rest=");
   idrest->Print (stdout);
   printf ("] ");
+  printf ("[new=");
+  topf->Print (stdout);
+  printf ("] ");
   fflush (stdout);
 #endif
   
   do {
-#if 0 
+#if 0
     printf (" --> ");
     fflush (stdout);
 #endif    
@@ -878,7 +952,10 @@ act_connection *ActId::Canonical (Scope *s)
 #if 0
   printf ("\n");
   fflush (stdout);
-#endif  
+#endif
+  if (topf) {
+    delete topf;
+  }
 
   return cx;
 }  
