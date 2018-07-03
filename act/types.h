@@ -740,6 +740,9 @@ class Array {
 				// for deref a, -1 if there isn't one.
   int Offset (int *a);
 
+  Array *unOffset (int offset);	// returns array deref corresponding
+				// to the offset
+
   /*
    * Stepper/iterator functionality
    */
@@ -980,7 +983,7 @@ class ActId {
   Array *a;			/**< array reference/dereference */
   ActId *next;			/**< any `.' reference */
 
-  ValueIdx *rawCanonical (Scope *);
+  ValueIdx *rawValueIdx (Scope *);
 };
 
 

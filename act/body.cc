@@ -256,7 +256,7 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
   }
 }
 
-int offset (act_connection **a, act_connection *c)
+static int offset (act_connection **a, act_connection *c)
 {
   int i;
   i = 0;
@@ -268,6 +268,75 @@ int offset (act_connection **a, act_connection *c)
   return -1;
 }
 
+static void print_id (act_connection *c)
+{
+  list_t *stk = list_new ();
+  ValueIdx *vx;
+
+  while (c) {
+    stack_push (stk, c);
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      c = c->parent->parent->parent;
+    }
+    
+  }
+  
+  while (!stack_isempty (stk)) {
+    c = (act_connection *) stack_pop (stk);
+    if (c->vx) {
+      vx = c->vx;
+      printf ("%s", vx->u.obj.name);
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      if (vx->t->arrayInfo()) {
+	Array *tmp;
+	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	printf ("%s", vx->u.obj.name);
+	tmp->Print (stdout);
+	delete tmp;
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	Assert (ux, "what?");
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
+      }
+    }
+    else {
+      vx = c->parent->parent->vx;
+      Assert (vx, "What?");
+      
+      Array *tmp;
+      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+      Assert (ux, "what?");
+
+      printf ("%s", vx->u.obj.name);
+      tmp->Print (stdout);
+      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+
+      delete tmp;
+    }
+    if (vx->global) {
+      printf ("(g)");
+    }
+    if (!stack_isempty (stk)) {
+      printf (".");
+    }
+  }
+  list_free (stk);
+}
+
+#if 0
 static void print_id (act_connection *c)
 {
   printf ("<rev: ");
@@ -323,6 +392,7 @@ static void print_id (act_connection *c)
   }
   printf (">");
 }
+#endif
 
 static void dump_conn (act_connection *c)
 {
