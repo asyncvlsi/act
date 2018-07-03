@@ -1,0 +1,22 @@
+defchan foo <: chan(bool) (bool d0, d1, e; bool t, f)
+{
+  d0=f;
+  d1=t;
+}
+
+defproc test (foo a, b)
+{
+  bool q;
+  bool r;
+  bool s;
+
+  a.t = q;
+
+  a.d1 = r;
+
+  s = q;
+}
+
+
+
+test t;

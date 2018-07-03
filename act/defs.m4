@@ -34,13 +34,7 @@ def_or_proc[int]: "defproc"
 /*
  * Templates
  */
-template_spec: "export"
-{{X:
-    $A($0->u == NULL);
-    $0->u = new UserDef ($0->curns);
-    $0->u->MkExported();
-}}
-| [ "export" ] "template"
+template_spec: [ "export" ] "template"
 {{X:
     $A($0->u == NULL);
     $0->u = new UserDef ($0->curns);
@@ -56,6 +50,12 @@ template_spec: "export"
     $0->param_mode = 1;
     list_free ($4);
     return NULL;
+}}
+| "export"
+{{X:
+    $A($0->u == NULL);
+    $0->u = new UserDef ($0->curns);
+    $0->u->MkExported();
 }}
 ;
 
@@ -1542,26 +1542,26 @@ alias[ActBody *]: array_expr "=" { array_expr "=" }* ";"
 connection[ActBody *]: special_connection_id ";"
 {{X: return $1; }}
 ;
-
-loop[ActBody *]: "(" ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
+                      
+loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
 {{X:
-    if ($0->scope->Lookup ($2)) {
-      $E("Identifier `%s' already defined in current scope", $2);
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier `%s' already defined in current scope", $3);
     }
-    $0->scope->Add ($2, $0->tf->NewPInt());
+    $0->scope->Add ($3, $0->tf->NewPInt());
 }}
    base_item_list ")"
 {{X:
-    $0->scope->Del ($2);
-    if (OPT_EMPTY ($5)) {
-      return new ActBody_Loop (ActBody_Loop::SEMI, $2, NULL, $4, $7);
+    $0->scope->Del ($3);
+    if (OPT_EMPTY ($6)) {
+      return new ActBody_Loop (ActBody_Loop::SEMI, $3, NULL, $5, $8);
     }
     else {
       ActRet *r;
-      r = OPT_VALUE ($5);
-      OPT_FREE ($5);
+      r = OPT_VALUE ($6);
+      OPT_FREE ($6);
       $A(r->type == R_EXPR);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $2, $4, r->u.exp, $7);
+      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, r->u.exp, $8);
     }
 }}
 ;

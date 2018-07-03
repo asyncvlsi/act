@@ -423,7 +423,7 @@ act_connection *act_mk_id_canonical (act_connection *c)
   return root;
 }
 
-ValueIdx *ActId::rawCanonical (Scope *s)
+ValueIdx *ActId::rawValueIdx (Scope *s)
 {
   ValueIdx *vx;
   act_connection *cx;
@@ -457,24 +457,168 @@ ValueIdx *ActId::rawCanonical (Scope *s)
     cx->next = cx;
     vx->u.obj.name = getName();
   }
-  cx = vx->u.obj.c;
 
-  cx = act_mk_id_canonical (cx);
-  if (cx->vx == NULL) {
-    /* array or subtype */
-    if (cx->parent->vx) {
-      return cx->parent->vx;
-    }
-    else if (cx->parent->parent->vx) {
-      return cx->parent->parent->vx;
-    }
-    else {
-      Assert (0, "What?");
-    }
-  }
-  return cx->vx;
+  return vx;
 }  
 
+
+static int offset (act_connection **a, act_connection *c)
+{
+  int i;
+  i = 0;
+  while (1) {
+    if (a[i] == c) return i;
+    i++;
+    if (i > 10000) return -1;
+  }
+  return -1;
+}
+    
+static void print_id (act_connection *c)
+{
+  list_t *stk = list_new ();
+  ValueIdx *vx;
+
+  while (c) {
+    stack_push (stk, c);
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      c = c->parent->parent->parent;
+    }
+    
+  }
+  
+  while (!stack_isempty (stk)) {
+    c = (act_connection *) stack_pop (stk);
+    if (c->vx) {
+      vx = c->vx;
+      printf ("%s", vx->u.obj.name);
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      if (vx->t->arrayInfo()) {
+	Array *tmp;
+	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	printf ("%s", vx->u.obj.name);
+	tmp->Print (stdout);
+	delete tmp;
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	Assert (ux, "what?");
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
+      }
+    }
+    else {
+      vx = c->parent->parent->vx;
+      Assert (vx, "What?");
+      
+      Array *tmp;
+      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+      Assert (ux, "what?");
+
+      printf ("%s", vx->u.obj.name);
+      tmp->Print (stdout);
+      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+
+      delete tmp;
+    }
+    if (vx->global) {
+      printf ("(g)");
+    }
+    if (!stack_isempty (stk)) {
+      printf (".");
+    }
+  }
+  
+  list_free (stk);
+
+#if 0
+  printf ("<rev: ");
+
+  while (c) {
+    if (c->vx) {
+      printf (".");
+      if (c->vx->global) {
+	char *s = c->vx->t->getNamespace()->Name();
+	printf ("%s%s(g)", s, c->vx->u.obj.name);
+	FREE (s);
+      }
+      else {
+	UserDef *ux;
+	printf ("{t:");
+	ux = c->vx->t->getUserDef();
+	if (ux) {
+	  printf ("#%s#", ux->getName());
+	}
+	c->vx->t->Print (stdout);
+	printf ("}%s", c->vx->u.obj.name);
+      }
+    }
+    else {
+      InstType *it;
+      if (c->parent->vx) {
+	/* one level: either x[] or x.y */
+	it = c->parent->vx->t;
+	if (it->arrayInfo()) {
+	  printf ("[i:%d]", offset (c->parent->a, c));
+	}
+	else {
+	  UserDef *ux = dynamic_cast<UserDef *>(it->BaseType());
+	  Assert (ux, "What?");
+	  printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+	}
+      }
+      else if (c->parent->parent->vx) {
+	UserDef *ux;
+	it = c->parent->parent->vx->t;
+	/* x[].y */
+	Assert (it->arrayInfo(), "What?");
+	ux = dynamic_cast<UserDef *>(it->BaseType());
+	Assert (ux, "What?");
+	printf ("[i:%d]", offset (c->parent->parent->a, c->parent));
+	printf (".%s", ux->getPortName(offset (c->parent->a, c)));
+      }
+      else {
+	Assert (0, "What?");
+      }
+    }
+    c = c->parent;
+  }
+  printf (">");
+#endif  
+}
+
+static void dump_conn (act_connection *c)
+{
+  act_connection *tmp, *root;
+
+  root = c;
+  while (root->up) root = root->up;
+
+  tmp = c;
+
+  printf ("conn: ");
+  do {
+    print_id (tmp);
+    if (tmp == root) {
+      printf ("*");
+    }
+    printf (" , ");
+    tmp = tmp->next;
+  } while (tmp != c);
+  printf("\n");
+}
+    
 /*
   Return canonical connection slot for identifier in scope.
   If it is a subrange identifier, it will be the array id rather than
@@ -486,16 +630,118 @@ act_connection *ActId::Canonical (Scope *s)
   act_connection *cx, *tmpx;
   act_connection *parent_cx;
   ActId *id;
+  ActId *idrest;
   
   Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
 
-  vx = rawCanonical (s);
+  vx = rawValueIdx(s);
   cx = vx->u.obj.c;
-  Assert (cx == act_mk_id_canonical (cx), "What?");
+
+  cx = act_mk_id_canonical (cx);
+
+  /* now cx could be something else; but it has the same type has the
+     id's core name 
+          i.e. for foo[x].bar...  or foo.bar...
+               the type of vx/cx is the same as "foo"
+
+	  foo = q[5];
+
+           foo.bar --> foo's cx would be q[5]
+        so really it is q[5].bar
+
+            foo became q[5]
+  */
 
   id = this;
+  idrest = id->Rest();
+  if (idrest) {
+    /* now check to see if id->Reset() has a *DIFFERENT* 
+       canonical name in the subtype! 
 
+       1. It is a global! In that case, abort this loop and return
+       the connection idx for the global.
+
+       2. It is the same, no change. Continue as below.
+       
+       3. It is a different name. By construction, the new name must
+       be a port.
+       
+       Replace id->Rest with the new id!
+    */
+
+    act_connection *cxrest;
+    ValueIdx *vxrest;
+    UserDef *ux;
+
+    /* find canonical connection of rest in the scope for the inst
+       type */
+
+    ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+    Assert (ux, "What?");
+    cxrest = id->Rest()->Canonical (ux->CurScope());
+
+#if 0
+    printf ("------\n");
+    printf ("Original name: ");
+    id->Rest()->Print (stdout);
+    printf ("\nUnique name: ");
+    print_id (cxrest);
+    printf("\n");
+    dump_conn (cxrest);
+    printf ("------\n");
+#endif    
+
+    /* YYY: convert cxrest into an ID! */
+    vxrest = cxrest->vx;
+    if (!vxrest) {
+      vxrest = cxrest->parent->vx;
+      if (!vxrest) {
+	vxrest = cxrest->parent->parent->vx;
+      }
+    }
+    Assert (vxrest, "What?");
+    if (vxrest->global) {
+      /* we're done! */
+      return cxrest;
+    }
+
+    /* not global, so re-write the port to be the canonical port name.
+       Note that this *will* be canonical at all levels. 
+    */
+
+    /* compute new idrest! */
+    list_t *stk = list_new ();
+
+    stack_push (stk, cxrest);
+    while (cxrest) {
+      if (cxrest->vx) {
+	cxrest = cxrest->parent;
+      }
+      else if (cxrest->parent->vx) {
+	cxrest = cxrest->parent->parent;
+      }
+      else {
+	Assert (cxrest->parent->parent->vx, "What?");
+	cxrest = cxrest->parent->parent->parent;
+      }
+    }
+    list_free (stk);
+  }
+
+#if 0
+  printf ("canonical: ");
+  id->Print (stdout);
+  printf (" [rest=");
+  idrest->Print (stdout);
+  printf ("] ");
+  fflush (stdout);
+#endif
+  
   do {
+#if 0 
+    printf (" --> ");
+    fflush (stdout);
+#endif    
     /* vx is the value 
        cx is the object
     */
@@ -536,19 +782,49 @@ act_connection *ActId::Canonical (Scope *s)
       if (cx->vx) {
 	vx = cx->vx;
       }
-      else {
+      else if (cx->parent->vx) {
+	/* array */
 	vx = cx->parent->vx;
       }
+      else {
+	/* array and subtype */
+	vx = cx->parent->parent->vx;
+      }
+      Assert (vx, "What?");
     }
-    if (id->Rest()) {
+    
+    if (idrest) {
       int portid;
       UserDef *ux;
       /* find port id */
 
       ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+      if (cx->vx == vx) {
+	/* raw connection, basetype is fine */
+      }
+      else {
+	if (id->arrayInfo()) {
+	  if (cx->parent->vx == vx) {
+	    /* cx is just array, basetype is fine */
+	  }
+	  else {
+	    /* foo[].bar; arrays are first, so bar is the offset */
+	    ux = dynamic_cast <UserDef *>
+	      (ux->getPortType (offset (cx->parent->a, cx))->BaseType());
+	  }
+	}
+	else {
+	  ux = dynamic_cast<UserDef *>
+	    (ux->getPortType (offset (cx->parent->a, cx))->BaseType());
+	}
+      }
       Assert (ux, "Should have been caught earlier!");
+
+#if 0
+      printf ("Type: %s, port %s\n", ux->getName(), idrest->getName());
+#endif      
       
-      portid = ux->FindPort (id->Rest()->getName());
+      portid = ux->FindPort (idrest->getName());
       Assert (portid > 0, "What?");
 
       portid--;
@@ -563,7 +839,7 @@ act_connection *ActId::Canonical (Scope *s)
       if (!cx->a[portid]) {
 	/* slot empty */
 	NEW (cx->a[portid], act_connection);
-	
+
 	cx->a[portid]->vx = NULL;
 	cx->a[portid]->parent = cx;
 	cx->a[portid]->up = NULL;
@@ -577,12 +853,26 @@ act_connection *ActId::Canonical (Scope *s)
       if (cx->vx) {
 	vx = cx->vx;
       }
-      else {
+      else if (cx->parent->vx) {
 	vx = cx->parent->vx;
       }
+      else {
+	vx = cx->parent->parent->vx;
+      }
+      Assert (vx, "What?");
     }
-    id = id->Rest();
+    id = idrest;
+    if (idrest) {
+      // we are fine, because we re-computed
+      // the canonical port at the top.
+      idrest = idrest->Rest();
+    }
   } while (id);
+
+#if 0
+  printf ("\n");
+  fflush (stdout);
+#endif  
 
   return cx;
 }  
