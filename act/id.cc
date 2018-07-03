@@ -799,6 +799,7 @@ act_connection *ActId::Canonical (Scope *s)
       /* find port id */
 
       ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+#if 0      
       if (cx->vx == vx) {
 	/* raw connection, basetype is fine */
       }
@@ -818,7 +819,9 @@ act_connection *ActId::Canonical (Scope *s)
 	    (ux->getPortType (offset (cx->parent->a, cx))->BaseType());
 	}
       }
+#endif      
       Assert (ux, "Should have been caught earlier!");
+      
 
 #if 0
       printf ("Type: %s, port %s\n", ux->getName(), idrest->getName());
@@ -845,11 +848,14 @@ act_connection *ActId::Canonical (Scope *s)
 	cx->a[portid]->up = NULL;
 	cx->a[portid]->next = cx->a[portid];
 	cx->a[portid]->a = NULL;
+
+	/* WWW: is this right?! */
+	cx->a[portid]->vx = idrest->rawValueIdx (ux->CurScope());
       }
       
       cx = cx->a[portid];
       cx = act_mk_id_canonical (cx);
-
+      
       if (cx->vx) {
 	vx = cx->vx;
       }
