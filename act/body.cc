@@ -415,6 +415,77 @@ static void dump_conn (act_connection *c)
   printf("\n");
 }
 
+static void mk_raw_connection (act_connection *c1, act_connection *c2)
+{
+  /* c1 is the root, not c2 */
+  while (c2->up) {
+    c2 = c2->up;
+  }
+  c2->up = c1;
+
+  act_connection *t1, *t2;
+
+  /* merge c1, c2 connection ring */
+  t1 = c1->next;
+  t2 = c2->next;
+  c1->next = t2;
+  c2->next = t1;
+}
+
+static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2)
+{
+  ValueIdx *vx;
+  
+  if (!c1->a) {
+    if (c2->a) {
+      c1->a = c2->a;
+      c2->a = NULL;
+    }
+  }
+  else if (c2->a) {
+    if (c1->vx) {
+      vx = c1->vx;
+    }
+    else if (c1->parent->vx) {
+      vx = c1->parent->vx;}
+    else {
+      vx = c1->parent->parent->vx;
+      Assert (vx, "What?");
+    }
+    int i, sz;
+    if (vx->t->arrayInfo()) {
+      sz = vx->t->arrayInfo()->size();
+      for (i=0; i < sz; i++) {
+	/* connect c1->a[i] with c2->a[i] */
+	if (c1->a[i] && c2->a[i]) {
+	  /* you might have the same thing repeated... */
+	  mk_raw_connection (c1->a[i], c2->a[i]);
+	}
+	else if (c2->a[i]) {
+	  c1->a[i] = c2->a[i];
+	  c2->a[i] = NULL;
+	}
+      }
+      FREE (c2->a);
+    }
+    else {
+      UserDef *ux;
+      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+      
+      sz = ux->getNumPorts();
+      for (i=0; i < sz; i++) {
+	if (c1->a[i] && c2->a[i]) {
+	  mk_raw_connection (c1->a[i], c2->a[i]);
+	}
+	else if (c2->a[i]) {
+	  c1->a[i] = c2->a[i];
+	  c2->a[i] = NULL;
+	}
+      }
+      FREE (c2->a);
+    }
+  }
+}
 
 
 static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
@@ -494,20 +565,11 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       }
     }
   }
+
+  mk_raw_connection (c1, c2);
   
-  /* c1 is the root, not c2 */
-  while (c2->up) {
-    c2 = c2->up;
-  }
-  c2->up = c1;
-
-  act_connection *t1, *t2;
-
-  /* merge c1, c2 connection ring */
-  t1 = c1->next;
-  t2 = c2->next;
-  c1->next = t2;
-  c2->next = t1;
+  /* now merge any subtrees */
+  _merge_subtrees (ux, c1, c2);
 }
 
 void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
