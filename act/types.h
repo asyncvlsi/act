@@ -20,6 +20,8 @@
 class ActNamespace;
 class ActBody;
 struct act_chp_lang;
+struct act_chp;
+struct act_prs;
 union inst_param;
 class AExpr;
 
@@ -307,6 +309,10 @@ class UserDef : public Type {
   
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit);
 
+  /* append in the case of multiple bodies! */
+  void setprs (act_prs *p) { lang.prs = p; }
+  void sethse (act_chp *c) { lang.hse = c; }
+  void setchp (act_chp *c) { lang.chp = c; }
 
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
@@ -339,6 +345,12 @@ class UserDef : public Type {
 
   ActBody *b;			/**< body of user-defined type */
   ActNamespace *_ns;		/**< namespace within which this type is defined */
+
+  /* languages */
+  struct {
+    act_prs *prs;
+    act_chp *hse, *chp;
+  } lang;
 };
 
 /**
@@ -353,6 +365,7 @@ class Process : public UserDef {
   void MkCell () { is_cell = 1; } /**< Mark this as a cell */
 
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
 
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */

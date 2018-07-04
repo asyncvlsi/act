@@ -66,6 +66,9 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
   }
   B = NULL;
   exported = 0;
+  lang.chp = NULL;
+  lang.hse = NULL;
+  lang.prs = NULL;
 }
 
 void ActNamespace::AppendBody (ActBody *b)
