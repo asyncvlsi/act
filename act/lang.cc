@@ -629,10 +629,5 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   default:
     break;
   }
-  
-  /* s->u must exist */
   return ret;
 }
-
-
-
