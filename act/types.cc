@@ -949,6 +949,10 @@ UserDef::UserDef (ActNamespace *ns)
 
   b = NULL;
 
+  lang.prs = NULL;
+  lang.chp = NULL;
+  lang.hse = NULL;
+
   I = new Scope(ns->CurScope());
   I->setUserDef (this);
   _ns = ns;
@@ -1014,6 +1018,11 @@ void UserDef::MkCopy (UserDef *u)
   name = u->name; u->name = NULL;
   b = u->b; u->b = NULL;
   _ns = u->_ns; u->_ns = NULL;
+
+  lang = u->lang;
+  u->lang.prs = NULL;
+  u->lang.chp = NULL;
+  u->lang.hse = NULL;
 }
 
 
