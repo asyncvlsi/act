@@ -346,7 +346,11 @@ class ActNamespace {
   static ActNamespace *Global () { return global; }
 
   void setBody (ActBody *b) { B = b; }
-  void AppendBody (ActBody *b); 
+  void AppendBody (ActBody *b);
+
+  void setprs (struct act_prs *p) { lang.prs = p; }
+  void sethse (struct act_chp *c) { lang.hse = c; }
+  void setchp (struct act_chp *c) { lang.chp = c; }
 
  private:
   /**
@@ -379,10 +383,15 @@ class ActNamespace {
   struct Hashtable *xT;
 
   /**
-   * namespace body. Should be empty except for the global namespace.
+   * namespace body.
    */
-  ActBody *B;			
+  ActBody *B;
 
+  struct {
+    struct act_prs *prs;
+    struct act_chp *chp, *hse;
+  } lang;
+  
   /**
    * if the namespace is nested, this is a pointer to the parent.
    */

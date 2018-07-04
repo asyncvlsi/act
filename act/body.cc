@@ -5,6 +5,7 @@
  *
  **************************************************************************
  */
+#include <act/namespaces.h>
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/lang.h>
@@ -1179,15 +1180,46 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 
 void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 {
+  UserDef *ux;
+  act_prs *p;
+  act_chp *c;
+  
   switch (t) {
   case ActBody_Lang::LANG_PRS:
-    prs_expand ((act_prs *)lang, ns, s);
+    p = prs_expand ((act_prs *)lang, ns, s);
+    /* this had better be in a userdef */
+    ux = s->getUserDef();
+    if (!ux) {
+      /* better be the global namespace */
+      ActNamespace::Global()->setprs (p);
+    }
+    else {
+      ux->setprs (p);
+    }
     break;
 
   case ActBody_Lang::LANG_CHP:
-  case ActBody_Lang::LANG_HSE:
-    chp_expand ((act_chp *)lang, ns, s);
+    c = chp_expand ((act_chp *)lang, ns, s);
+    ux = s->getUserDef();
+    if (!ux) {
+      ActNamespace::Global()->setchp (c);
+    }
+    else {
+      ux->setchp (c);
+    }
     break;
+    
+  case ActBody_Lang::LANG_HSE:
+    c = chp_expand ((act_chp *)lang, ns, s);
+    ux = s->getUserDef();
+    if (!ux) {
+      ActNamespace::Global()->sethse (c);
+    }
+    else {
+      ux->sethse (c);
+    }
+    break;
+    
   default:
     fatal_error ("Unknown language");
     break;
