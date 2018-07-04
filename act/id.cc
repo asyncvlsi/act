@@ -803,19 +803,17 @@ act_connection *ActId::Canonical (Scope *s)
   printf ("canonical: ");
   id->Print (stdout);
   printf (" [rest=");
-  idrest->Print (stdout);
+  id->Rest()->Print (stdout);
   printf ("] ");
   printf ("[new=");
   topf->Print (stdout);
   printf ("] ");
   fflush (stdout);
+  printf ("\n");
 #endif
+  idrest = topf;
   
   do {
-#if 0
-    printf (" --> ");
-    fflush (stdout);
-#endif    
     /* vx is the value 
        cx is the object
     */
@@ -896,7 +894,6 @@ act_connection *ActId::Canonical (Scope *s)
 #endif      
       Assert (ux, "Should have been caught earlier!");
       
-
 #if 0
       printf ("Type: %s, port %s\n", ux->getName(), idrest->getName());
 #endif      
@@ -949,10 +946,6 @@ act_connection *ActId::Canonical (Scope *s)
     }
   } while (id);
 
-#if 0
-  printf ("\n");
-  fflush (stdout);
-#endif
   if (topf) {
     delete topf;
   }
