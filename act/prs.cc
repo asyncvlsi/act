@@ -145,6 +145,10 @@ static void _freeexpr (act_prs_expr_t *e)
     _freeexpr (e->u.loop.e);
     break;
 
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+    
   default:
     fatal_error ("what?");
     break;
