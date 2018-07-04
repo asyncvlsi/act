@@ -30,6 +30,16 @@ static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
   return idtmp;
 }
 
+static ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
+{
+  return expand_var_read (id, ns, s);
+}
+
+static ActId *expand_var_chan (ActId *id, ActNamespace *ns, Scope *s)
+{
+  return expand_var_read (id, ns, s);
+}
+
 act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
 {
   act_prs *ret;
@@ -526,14 +536,102 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 
 act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
 {
-  /* s->u must exist */
-  return c;
+  act_chp *ret;
+  if (!c) return NULL;
+
+  NEW (ret, act_chp);
+  
+  ret->vdd = expand_var_read (c->vdd, ns, s);
+  ret->gnd = expand_var_read (c->gnd, ns, s);
+  ret->psc = expand_var_read (c->psc, ns, s);
+  ret->nsc = expand_var_read (c->nsc, ns, s);
+  ret->c = chp_expand (c->c, ns, s);
+  
+  return ret;
 }
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
+  act_chp_lang_t *ret;
+  act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
+  listitem_t *li;
+  
+  if (!c) return NULL;
+  NEW (ret, act_chp_lang_t);
+  ret->type = c->type;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    ret->u.semi_comma.cmd = list_new ();
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      list_append (ret->u.semi_comma.cmd, chp_expand ((act_chp_lang_t *)list_value (li), ns, s));
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_LOOP:
+    gchd = NULL;
+    gctl = NULL;
+    for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+      NEW (tmp, act_chp_gc_t);
+      tmp->next = NULL;
+      tmp->g = expr_expand (gctmp->g, ns, s);
+      tmp->s = chp_expand (gctmp->s, ns, s);
+      q_ins (gchd, gctl, tmp);
+    }
+    ret->u.gc = gchd;
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
+    ret->u.assign.e = expr_expand (c->u.assign.e, ns, s);
+    break;
+    
+  case ACT_CHP_SEND:
+    ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    ret->u.comm.rhs = list_new ();
+    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      list_append (ret->u.comm.rhs,
+		   expr_expand ((Expr *)list_value (li), ns, s));
+    }
+    break;
+    
+  case ACT_CHP_RECV:
+    ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    ret->u.comm.rhs = list_new ();
+    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      list_append (ret->u.comm.rhs,
+		   expand_var_write ((ActId *)list_value (li), ns, s));
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+    ret->u.func.name = c->u.func.name;
+    ret->u.func.rhs = list_new ();
+    for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *arg, *ra;
+      NEW (arg, act_func_arguments_t);
+      ra = (act_func_arguments_t *) list_value (li);
+      arg->isstring = ra->isstring;
+      if (ra->isstring) {
+	arg->u.s = ra->u.s;
+      }
+      else {
+	arg->u.e = expr_expand (ra->u.e, ns, s);
+      }
+      list_append (ret->u.func.rhs, arg);
+    }
+    break;
+    
+  default:
+    break;
+  }
+  
   /* s->u must exist */
-  return c;
+  return ret;
 }
 
 
