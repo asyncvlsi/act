@@ -41,7 +41,10 @@ enum act_prs_expr_type {
   ACT_PRS_EXPR_NOT = 3,
   ACT_PRS_EXPR_LABEL = 4,
   ACT_PRS_EXPR_ANDLOOP = 5,
-  ACT_PRS_EXPR_ORLOOP = 6
+  ACT_PRS_EXPR_ORLOOP = 6,
+
+  ACT_PRS_EXPR_TRUE = 7,
+  ACT_PRS_EXPR_FALSE = 8
 };
 
 
@@ -61,7 +64,7 @@ typedef struct {
 
 
 typedef struct act_prs_expr {
-  unsigned int type:3;
+  unsigned int type:4;
   union {
     struct {
       struct act_prs_expr *l, *r;
