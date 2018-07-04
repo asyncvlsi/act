@@ -1103,9 +1103,6 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
   Assert (t == ActBody_Loop::SEMI, "What loop is this?");
 
   Assert (s->Add (id, TypeFactory::Factory()->NewPInt()), "Should have been caught earlier");
-  vx = s->LookupVal (id);
-  vx->init = 1;
-  vx->u.idx = s->AllocPInt();
 
   if (lo) {
     e = expr_expand (lo, ns, s);
@@ -1136,11 +1133,16 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
     ihi--;
   }
 
+  vx = s->LookupVal (id);
+  vx->init = 1;
+  vx->u.idx = s->AllocPInt();
+
   for (; ilo <= ihi; ilo++) {
     s->setPInt (vx->u.idx, ilo);
     b->Expandlist (ns, s);
   }
 
+  s->DeallocPInt (vx->u.idx, 1);
   s->Del (id);
 }
 

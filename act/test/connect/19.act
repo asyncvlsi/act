@@ -1,0 +1,23 @@
+
+defproc deep(bool x, y)
+{
+  x = y;
+}
+
+
+defproc lesser(bool p, q, r)
+{
+  deep d(q,r);
+}
+
+
+defproc evenless(bool a, b, c)
+{
+  lesser l(c,b);
+}
+
+
+bool x, q;
+evenless e(.c=x);
+
+q=e.b;
