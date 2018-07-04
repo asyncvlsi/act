@@ -1345,7 +1345,78 @@ opt_extra_conn[list_t *]: [ "=" { array_expr "=" }** ]
 ;
 
 /* the "CONNECT" body statements are returned in t_inst */
-port_conn_spec: { opt_array_expr "," }*
+port_conn_spec:  { "." ID "=" array_expr "," }**
+{{X:
+    UserDef *ud;
+    ActBody *b, *tmp, *ret;
+    ActRet *r;
+    listitem_t *li;
+    const char *str;
+    AExpr *ae;
+    int i;
+    
+    $A($0->i_t);
+    $A($0->i_id);
+    
+    ud = dynamic_cast<UserDef *>($0->i_t->BaseType());
+
+    if (!ud) {
+      $E("Connection specifier used for instance ``%s'' whose root type is ``%s''\n\tnot a user-defined type", $0->i_id, ud->getName());
+    }
+
+    b = NULL;
+    ret = NULL;
+
+    for (li = list_first ($1); li; li = list_next (li)) {
+      r = (ActRet *)list_value (li);
+      $A(r->type == R_STRING);
+      str = r->u.str;
+      FREE (r);
+
+      li = list_next (li);
+      $A(li);
+      r = (ActRet *)list_value (li);
+      $A(r->type == R_AEXPR);
+      ae = r->u.ae;
+      FREE (r);
+      
+      for (i=ud->getNumPorts()-1; i >= 0; i--) {
+	if (strcmp (str, ud->getPortName (i)) == 0) {
+	  break;
+	}
+      }
+      if (i < 0) {
+	$E("``%s'' is not a valid port name for type ``%s''", str, 
+	   ud->getName ());
+      }
+      ActId *id  = new ActId ($0->i_id, NULL);
+      id->Append (new ActId (str, NULL));
+      type_set_position ($l, $c, $n);
+      if (!act_type_conn ($0->scope, id, ae)) {
+	$e("Typechecking failed on connection!");
+	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+	exit (1);
+      }
+      tmp = new ActBody_Conn (id, ae);
+      if (!b) {
+	b = tmp;
+	ret = b;
+      }
+      else {
+	b->Append (tmp);
+	b = b->Tail ();
+      }
+    }
+    list_free ($1);
+    if ($0->t_inst) {
+      $0->t_inst->Tail()->Append (ret);
+    }
+    else {
+      $0->t_inst = ret;
+    }
+    return NULL;
+}}
+| { opt_array_expr "," }*
 {{X:
     int pos = 0;
     listitem_t *li;
@@ -1427,77 +1498,6 @@ port_conn_spec: { opt_array_expr "," }*
       delete $0->a_id;
     }
     $0->a_id = NULL;
-    return NULL;
-}}
-| { "." ID "=" array_expr "," }**
-{{X:
-    UserDef *ud;
-    ActBody *b, *tmp, *ret;
-    ActRet *r;
-    listitem_t *li;
-    const char *str;
-    AExpr *ae;
-    int i;
-    
-    $A($0->i_t);
-    $A($0->i_id);
-    
-    ud = dynamic_cast<UserDef *>($0->i_t->BaseType());
-
-    if (!ud) {
-      $E("Connection specifier used for instance ``%s'' whose root type is ``%s''\n\tnot a user-defined type", $0->i_id, ud->getName());
-    }
-
-    b = NULL;
-    ret = NULL;
-
-    for (li = list_first ($1); li; li = list_next (li)) {
-      r = (ActRet *)list_value (li);
-      $A(r->type == R_STRING);
-      str = r->u.str;
-      FREE (r);
-
-      li = list_next (li);
-      $A(li);
-      r = (ActRet *)list_value (li);
-      $A(r->type == R_AEXPR);
-      ae = r->u.ae;
-      FREE (r);
-      
-      for (i=ud->getNumPorts()-1; i >= 0; i--) {
-	if (strcmp (str, ud->getPortName (i)) == 0) {
-	  break;
-	}
-      }
-      if (i < 0) {
-	$E("``%s'' is not a valid port name for type ``%s''", str, 
-	   ud->getName ());
-      }
-      ActId *id  = new ActId ($0->i_id, NULL);
-      id->Append (new ActId (str, NULL));
-      type_set_position ($l, $c, $n);
-      if (!act_type_conn ($0->scope, id, ae)) {
-	$e("Typechecking failed on connection!");
-	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
-	exit (1);
-      }
-      tmp = new ActBody_Conn (id, ae);
-      if (!b) {
-	b = tmp;
-	ret = b;
-      }
-      else {
-	b->Append (tmp);
-	b = b->Tail ();
-      }
-    }
-    list_free ($1);
-    if ($0->t_inst) {
-      $0->t_inst->Tail()->Append (ret);
-    }
-    else {
-      $0->t_inst = ret;
-    }
     return NULL;
 }}
 ;
