@@ -432,26 +432,187 @@ static void mk_raw_connection (act_connection *c1, act_connection *c2)
   c2->next = t1;
 }
 
+static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
+{
+  act_connection *tmp = c2;
+  /* c1 is the root, not c2 */
+
+  if (c2->next == c2) {
+    /* nothing to do */
+  }
+  else {
+    while (c2->up) {
+      c2 = c2->up;
+    }
+    c2->up = c1;
+
+    act_connection *t1, *t2;
+
+    t1 = tmp->next;
+    while (t1 != tmp) {
+      if (t1->up == c2) {
+	t1->up = c2->up;
+      }
+      t1 = t1->next;
+    }
+
+    c2 = tmp;
+
+    /* merge c1, c2 connection ring, and drop c2 itself */
+    t1 = c1->next;
+    t2 = c2->next->next;
+    c1->next = t2;
+    c2->next->next = t1;
+    
+  }
+  /* now we need to merge any further subconnections between the array
+     elements of c1->a and c2->a, if any */
+
+  if (!c1->a && !c2->a) {
+    FREE (c2);
+    return;
+  }
+  
+  ValueIdx *vx;
+
+  if (c1->vx) {
+    /* direct */
+    FREE (c2);
+    return;
+  }
+  else if (c1->parent->vx) {
+    int sz;
+    /* just an array or just a subport */
+    vx = c1->parent->vx;
+
+    if (vx->t->arrayInfo()) {
+      sz = vx->t->arrayInfo()->size();
+    }
+    else {
+      UserDef *ux;
+      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+      sz = ux->getNumPorts();
+    }
+    if (!c1->a) {
+      c1->a = c2->a;
+      for (int i=0; i < sz; i++) {
+	c1->a[i]->parent = c1;
+      }
+    }
+    else if (c2->a) {
+      for (int i=0; i < sz; i++) {
+	if (!c1->a[i]) {
+	  c1->a[i] = c2->a[i];
+	  if (c1->a[i]) {
+	    c1->a[i]->parent = c1->a[i];
+	  }
+	}
+	else if (c2->a[i]) {
+	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
+	}
+      }
+      FREE (c2->a);
+    }
+  }
+  else {
+    int sz1, sz2;
+    /* array and sub-port */
+    vx = c1->parent->parent->vx;
+    Assert (vx, "What?");
+    
+    sz1 = vx->t->arrayInfo()->size();
+
+    UserDef *ux;
+    ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+
+    sz2 = ux->getNumPorts();
+
+    if (!c1->a) {
+      c1->a = c2->a;
+      if (c1->a) {
+	for (int i=0; i < sz1; i++) {
+	  c1->a[i]->parent = c1;
+	  if (c1->a[i]->a) {
+	    for (int j=0; j < sz2; j++) {
+	      if (c1->a[i]->a[j]) {
+		c1->a[i]->a[j]->parent = c1->a[i];
+	      }
+	    }
+	  }
+	}
+      }
+    }
+    else if (c2->a) {
+      for (int i=0; i < sz1; i++) {
+	if (c1->a[i]) {
+	  if (c2->a[i]) {
+	    for (int j=0; j < sz2; j++) {
+	      if (c1->a[i]->a[j]) {
+		if (c2->a[i]->a[j]) {
+		  mk_raw_skip_connection (c1->a[i]->a[j], c2->a[i]->a[j]);
+		}
+	      }
+	      else if (c2->a[i]->a[j]) {
+		c1->a[i]->a[j] = c2->a[i]->a[j];
+		c1->a[i]->a[j]->parent = c1->a[i];
+	      }
+	    }
+	  }
+	}
+	else {
+	  c1->a[i] = c2->a[i];
+	  if (c2->a[i]) {
+	    for (int j=0; j < sz2; j++) {
+	      c1->a[i]->a[j]->parent = c1->a[i];
+	    }
+	  }
+	}
+      }
+      FREE (c2->a);
+    }
+  }
+}
+
 static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2)
 {
   ValueIdx *vx;
-  
+
+  if (c1->vx) {
+    vx = c1->vx;
+  }
+  else if (c1->parent->vx) {
+    vx = c1->parent->vx;}
+  else {
+    vx = c1->parent->parent->vx;
+    Assert (vx, "What?");
+  }
+      
   if (!c1->a) {
     if (c2->a) {
-      c1->a = c2->a;
-      c2->a = NULL;
+      if (vx->t->arrayInfo()) {
+	int sz;
+	
+	sz = vx->t->arrayInfo()->size();
+	c1->a = c2->a;
+	c2->a = NULL;
+	for (int i=0; i < sz; i++) {
+	  c1->a[i]->parent = c1;
+	}
+      }
+      else {
+	UserDef *ux;
+	int sz;
+	
+	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+      
+	sz = ux->getNumPorts();
+	for (int i=0; i < sz; i++) {
+	  c1->a[i]->parent = c1;
+	}
+      }
     }
   }
   else if (c2->a) {
-    if (c1->vx) {
-      vx = c1->vx;
-    }
-    else if (c1->parent->vx) {
-      vx = c1->parent->vx;}
-    else {
-      vx = c1->parent->parent->vx;
-      Assert (vx, "What?");
-    }
     int i, sz;
     if (vx->t->arrayInfo()) {
       sz = vx->t->arrayInfo()->size();
@@ -459,28 +620,32 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 	/* connect c1->a[i] with c2->a[i] */
 	if (c1->a[i] && c2->a[i]) {
 	  /* you might have the same thing repeated... */
-	  mk_raw_connection (c1->a[i], c2->a[i]);
+	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
 	}
 	else if (c2->a[i]) {
 	  c1->a[i] = c2->a[i];
 	  c2->a[i] = NULL;
 	}
+	c1->a[i]->parent = c1;
       }
       FREE (c2->a);
     }
     else {
       UserDef *ux;
+      int sz;
+
       ux = dynamic_cast <UserDef *> (vx->t->BaseType());
       
       sz = ux->getNumPorts();
       for (i=0; i < sz; i++) {
 	if (c1->a[i] && c2->a[i]) {
-	  mk_raw_connection (c1->a[i], c2->a[i]);
+	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
 	}
 	else if (c2->a[i]) {
 	  c1->a[i] = c2->a[i];
 	  c2->a[i] = NULL;
 	}
+	c1->a[i]->parent = c1;
       }
       FREE (c2->a);
     }
