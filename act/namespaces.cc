@@ -56,7 +56,6 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
     parent = ns;
   }
   T = hash_new (4);
-  xT = hash_new (4);
   if (creating_global) {
     I = new Scope  (NULL);
   }
@@ -664,8 +663,34 @@ void ActNamespace::Expand ()
   /* flush the scope, and re-create it! */
   I->FlushExpand ();
 
+  /* 
+     YYY: fixme
+
+     This has to be expanded in the order it was encountered in the
+     file!
+
+     import globals;
+     import foo;
+     import bar;
+
+     ... 
+     defns
+
+     more stuff
+  */
+
+  /* Expand any sub-namespaces */
+  for (i=0; i < N->size; i++) {
+    for (bkt = N->head[i]; bkt; bkt = bkt->next) {
+      ns = (ActNamespace *)bkt->v;
+      ns->Expand();
+    }
+  }
+
   /* Expand all meta parameters at the top level of the namespace. */
-  B->Expandlist (this, I);
+  if (B) {
+    B->Expandlist (this, I);
+  }
 
   act_error_pop ();
 }

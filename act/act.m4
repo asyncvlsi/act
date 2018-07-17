@@ -59,8 +59,7 @@ body[ActBody *]
 {{X: return $1; }}
 ;
 
-ns_body[ActBody *]
-: ns_body_item ns_body
+ns_body[ActBody *]: ns_body_item ns_body
 {{X:
     if ($1 == NULL) {
       return $2;

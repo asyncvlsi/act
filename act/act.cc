@@ -43,6 +43,7 @@ Act::Act (const char *s)
   FREE (argv);
 
   tr.curns = ActNamespace::global;
+  tr.global = tr.curns;
   tr.os = new ActOpen ();
   tr.tf = new TypeFactory ();
   tr.scope = tr.curns->CurScope ();

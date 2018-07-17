@@ -78,7 +78,7 @@ import_item: "import" STRING ";"
       ns = $0->curns;
     }
     else {
-      ns = ActNamespace::Global();
+      ns = $0->global;
     }
 
     tmpns = ns;
@@ -233,7 +233,7 @@ qualified_ns[ActNamespace *]: [ "::" ] { ID "::" }*
     ActNamespace *ns, *tmp;
 
     if (OPT_EXISTS ($1)) {
-      ns = ActNamespace::Global();
+      ns = $0->global;
     }
     else {
       ns = $0->curns;

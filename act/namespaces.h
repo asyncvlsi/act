@@ -21,9 +21,30 @@ class ActId;
 class AExpr;
 class AExprstep;
 class ActNamespace;
+class ActNamespaceiter;
+struct ValueIdx;
 
-struct act_connection;
+/*
+  Connections
 
+  For non-parameter types, we represent connections.
+   - ring of connections
+   - union-find tree
+*/
+struct act_connection {
+  ValueIdx *vx;			// identifier that has been allocated
+
+  act_connection *parent;	// parent for id.id or id[val]
+  
+  act_connection *up;
+  act_connection *next;
+  act_connection **a;	// slots for root arrays and root userdefs
+};
+
+
+/*
+  Values: this is the core expanded data structure
+*/
 struct ValueIdx {
   InstType *t;
   unsigned int init:1;	   /**< Has this been allocated? 
@@ -48,6 +69,10 @@ struct ValueIdx {
 				   table lookup: DO NOT FREE */
     } obj;
   } u;
+
+  /* assumes object is not a parameter type */
+  bool hasConnection()  { return init && (u.obj.c != NULL); }
+  bool isPrimary() { return !hasConnection() || (u.obj.c->up == NULL); }
 };
 
 
@@ -178,23 +203,8 @@ class Scope {
   unsigned long vpbool_len;
   bitset_t *vpbool;
   bitset_t *vpbool_set;
-};
 
-/*
-  Connections
-
-  For non-parameter types, we represent connections.
-   - ring of connections
-   - union-find tree
-*/
-struct act_connection {
-  ValueIdx *vx;			// identifier that has been allocated
-
-  act_connection *parent;	// parent for id.id or id[val]
-  
-  act_connection *up;
-  act_connection *next;
-  act_connection **a;	// slots for root arrays and root userdefs
+  friend class ActInstiter;
 };
 
 
@@ -349,8 +359,13 @@ class ActNamespace {
   void AppendBody (ActBody *b);
 
   void setprs (struct act_prs *p) { lang.prs = p; }
+  struct act_prs *getprs() { return lang.prs; }
+  
   void sethse (struct act_chp *c) { lang.hse = c; }
+  struct act_chp *gethse() { return lang.hse; }
+  
   void setchp (struct act_chp *c) { lang.chp = c; }
+  struct act_chp *getchp() { return lang.chp; }
 
  private:
   /**
@@ -365,6 +380,9 @@ class ActNamespace {
 
   /**
    * hash table of all the types defined within this namespace
+   *  When a type foo in the namespace is expanded to foo<x,y,z>, then
+   *  the expanded version is also stored in this hash table.
+   *
    */
   struct Hashtable *T;
 
@@ -372,15 +390,6 @@ class ActNamespace {
    *  hash table of all the instances within this namespace.
    */
   Scope *I;
-
-  /**
-   *  hash table of all expanded instance types in this namespace
-   *  When a type foo in the namespace is expanded to foo<x,y,z>, then
-   *  the expanded version is stored in this hash table.
-   *
-   *  The Global:: namespace contains expanded built-in types.
-   */
-  struct Hashtable *xT;
 
   /**
    * namespace body.
@@ -422,8 +431,8 @@ class ActNamespace {
 
 
   friend class Act;
+  friend class ActNamespaceiter;
 };
-
 
 
 

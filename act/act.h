@@ -49,6 +49,8 @@ class Act {
    */
   void Expand ();
 
+  ActNamespace *Global() { return gns; }
+
  private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */

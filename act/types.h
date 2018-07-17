@@ -311,8 +311,13 @@ class UserDef : public Type {
 
   /* append in the case of multiple bodies! */
   void setprs (act_prs *p) { lang.prs = p; }
+  act_prs *getprs () { return lang.prs; }
+  
   void sethse (act_chp *c) { lang.hse = c; }
+  act_chp *gethse() { return lang.hse; }
+  
   void setchp (act_chp *c) { lang.chp = c; }
+  act_chp *getchp() { return lang.chp; }
 
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
