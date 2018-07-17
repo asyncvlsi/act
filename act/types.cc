@@ -31,6 +31,8 @@ struct cHashtable *TypeFactory::chanhash = NULL;
 struct cHashtable *TypeFactory::enumhash = NULL;
 struct cHashtable *TypeFactory::ptypehash = NULL;
 
+Expr *const_expr (int val);
+
 /*------------------------------------------------------------------------
  *
  *  Parameter types (preal, pbool, pint, ptype)
@@ -1185,10 +1187,35 @@ int InstType::isEqual (InstType *it, int weak)
   /* check that the template parameters of the type are the same */
   for (int i=0; i < nt; i++) {
     if (isParamAType (i)) {
-      if (!u[i].tt->isEqual (it->u[i].tt)) return 0;
+      if ((u[i].tt && !it->u[i].tt) ||
+	  (!u[i].tt && it->u[i].tt)) return 0;
+      if (u[i].tt && it->u[i].tt) {
+	if (!u[i].tt->isEqual (it->u[i].tt)) return 0;
+      }
     }
     else {
-      if (!u[i].tp->isEqual (it->u[i].tp)) return 0;
+      AExpr *constexpr;
+      if (!u[i].tp || !it->u[i].tp) {
+	constexpr = new AExpr (const_expr (32));
+      }
+      else {
+	constexpr = NULL;
+      }
+      /* being NULL is the same as const 32 */
+      if (u[i].tp && !it->u[i].tp) {
+	if (!u[i].tp->isEqual (constexpr)) return 0;
+	delete constexpr;
+      }
+      else if (it->u[i].tp && !u[i].tp) {
+	if (!constexpr->isEqual (it->u[i].tp)) return 0;
+	delete constexpr;
+      }
+      else if (u[i].tp && it->u[i].tp) {
+	if (!u[i].tp->isEqual (it->u[i].tp)) return 0;
+      }
+      else {
+	delete constexpr;
+      }
     }
   }
 
@@ -1253,11 +1280,15 @@ void InstType::sPrint (char *buf, int sz)
     
     for (int i=0; i < nt; i++) {
       if (isParamAType (i)) {
-	u[i].tt->sPrint (buf+k, sz);
+	if (u[i].tt) {
+	  u[i].tt->sPrint (buf+k, sz);
+	}
 	PRINT_STEP;
       }
       else {
-	u[i].tp->sPrint (buf+k, sz);
+	if (u[i].tp) {
+	  u[i].tp->sPrint (buf+k, sz);
+	}
 	PRINT_STEP;
       }
       if (i < nt-1) {
@@ -1314,10 +1345,20 @@ InstType::InstType (InstType *i, int skip_array)
     /* clone this too */
     for (int k = 0; k < nt; k++) {
       if (i->isParamAType (k)) {
-	u[k].tt = new InstType (i->u[k].tt);
+	if (i->u[k].tt) {
+	  u[k].tt = new InstType (i->u[k].tt);
+	}
+	else {
+	  u[k].tt = NULL;
+	}
       }
       else {
-	u[k].tp = i->u[k].tp->Clone ();
+	if (i->u[k].tp) {
+	  u[k].tp = i->u[k].tp->Clone ();
+	}
+	else {
+	  u[k].tp = NULL;
+	}
       }
     }
   }
@@ -1354,13 +1395,15 @@ void InstType::setParam (int pn, Expr *a)
 {
   Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
   Assert (u[pn].tp == NULL, "setParam() changing an existing parameter!");
-  u[pn].tp = new AExpr (a);
+  if (a) {
+    u[pn].tp = new AExpr (a);
+  }
 }
 
 void InstType::setParam (int pn, InstType *t)
 {
   Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].tp == NULL, "setParam() changing an existing parameter!");
+  Assert (u[pn].tt == NULL, "setParam() changing an existing parameter!");
   u[pn].tt = t;
 }
 
@@ -1703,7 +1746,6 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 }
 
 
-
 /*------------------------------------------------------------------------
  *
  *  Expand instance type!
@@ -1744,7 +1786,13 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 	xu[i].tt = u[i].tt->Expand (ns, s);
       }
       else {
-	xu[i].tp = u[i].tp->Expand (ns, s);
+	if (!u[i].tp) {
+	  /* only for int<> */
+	  xu[i].tp = new AExpr (const_expr (32));
+	}
+	else {
+	  xu[i].tp = u[i].tp->Expand (ns, s);
+	}
       }
     }
   }
@@ -1807,6 +1855,8 @@ const char *PType::getName ()
   return name;
 }
 
+
+
 Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Int *ix;
@@ -1816,7 +1866,12 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   
   Assert (nt == 1, "What?");
 
-  ae = u[0].tp->Expand (ns, s);
+  if (u[0].tp) {
+    ae = u[0].tp->Expand (ns, s);
+  }
+  else {
+    ae = new AExpr (const_expr (32));
+  }
   it = ae->getInstType (s);
   if (!TypeFactory::isPIntType (it->BaseType()) ||
       it->arrayInfo()) {

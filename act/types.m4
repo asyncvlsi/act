@@ -72,7 +72,7 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" wint_expr ">" ]
       FREE (r);
     }
     else {
-      width = const_expr (32);
+      width = NULL; //const_expr (32);
     }
     OPT_FREE ($3);
     return $0->tf->NewInt ($0->scope, d, $1, width);
@@ -283,7 +283,7 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
       gs = "";
     }
     else {
-      g = ActNamespace::Global();
+      g = $0->global;
       gs = "::";
     }
 
