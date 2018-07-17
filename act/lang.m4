@@ -415,7 +415,7 @@ hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
 }}
 ;
 
-hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }* 
+hse_body_item[act_chp_lang_t *]: { assign_stmt "," }* 
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
@@ -437,11 +437,13 @@ hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }*
 }}
 ;
 
+/*
 hse_assign_stmt[act_chp_lang_t *]: expr_id dir 
 {{X:
     return apply_X_assign_stmt_opt1 ($0, $1, $2);
 }}
 ;
+*/
 
 hse_select_stmt[act_chp_lang_t *]: "[" { hse_guarded_cmd "[]" }* "]"
 {{X:

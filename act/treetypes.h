@@ -63,6 +63,11 @@ typedef struct {
  * Top-down information when the parse tree is being traversed 
  */
 typedef struct {
+  /** 
+   * Global namespace
+   */
+  ActNamespace *global;
+  
   /**
    * Current namespace
    */
