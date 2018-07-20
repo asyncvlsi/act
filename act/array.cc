@@ -1525,3 +1525,21 @@ Array *Array::unOffset (int idx)
   }
   return ret;
 }
+
+
+char *Arraystep::string()
+{
+  char *s, *t;
+  int i;
+
+  MALLOC (s, char, base->dims*20);
+
+  t = s;
+  t[0] = '\0';
+
+  for (i=0; i < base->dims; i++) {
+    sprintf (t, "[%d]", deref[i]);
+    t += strlen (t);
+  }
+  return s;
+}

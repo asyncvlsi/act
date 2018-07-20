@@ -829,6 +829,8 @@ public:
 
   int typesize() { return base->size(); }
 
+  char *string();
+
   void Print (FILE *fp);
   
 private:
