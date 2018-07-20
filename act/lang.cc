@@ -23,7 +23,9 @@ static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
   idtmp = id->Expand (ns, s);
   etmp = idtmp->Eval (ns, s);
   Assert (etmp->type == E_VAR, "Hmm");
-  delete idtmp;
+  if ((ActId *)etmp->u.e.l != idtmp) {
+    delete idtmp;
+  }
   idtmp = (ActId *)etmp->u.e.l;
   /* check that type is a bool */
   FREE (etmp);
