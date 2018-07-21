@@ -442,12 +442,25 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
     /* nothing to do */
   }
   else {
-    while (c2->up) {
-      c2 = c2->up;
-    }
-    c2->up = c1;
-
     act_connection *t1, *t2;
+    int in_ring = 0;
+
+    t1 = act_mk_id_canonical (c1);
+    t2 = act_mk_id_canonical (c2);
+
+    if (t1 == t2) {
+      in_ring = 1;
+    }
+    else {
+      in_ring = 0;
+    }
+
+    if (!in_ring) {
+      while (c2->up) {
+	c2 = c2->up;
+      }
+      c2->up = c1;
+    }
 
     t1 = tmp->next;
     while (t1 != tmp) {
@@ -459,12 +472,21 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
 
     c2 = tmp;
 
-    /* merge c1, c2 connection ring, and drop c2 itself */
-    t1 = c1->next;
-    t2 = c2->next->next;
-    c1->next = t2;
-    c2->next->next = t1;
-    
+    if (!in_ring) {
+      /* merge c1, c2 connection ring, and drop c2 itself */
+      t1 = c1->next;
+      t2 = c2->next->next;
+      c1->next = t2;
+      c2->next->next = t1;
+    }
+    else {
+      /* the rings are already merged. we need to delete c2 from it */
+      t1 = c2;
+      while (t1->next != c2) {
+	t1 = t1->next;
+      }
+      t1->next = t1->next->next;
+    }
   }
   /* now we need to merge any further subconnections between the array
      elements of c1->a and c2->a, if any */
@@ -582,12 +604,13 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
     vx = c1->vx;
   }
   else if (c1->parent->vx) {
-    vx = c1->parent->vx;}
+    vx = c1->parent->vx;
+  }
   else {
     vx = c1->parent->parent->vx;
     Assert (vx, "What?");
   }
-      
+  
   if (!c1->a) {
     if (c2->a) {
       if (vx->t->arrayInfo()) {
