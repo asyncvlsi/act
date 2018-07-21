@@ -58,6 +58,94 @@ void prefix_id_print (ActId *id)
   printf ("\"");
 }
 
+static int offset (act_connection **a, act_connection *c)
+{
+  int i;
+  i = 0;
+  while (1) {
+    if (a[i] == c) return i;
+    i++;
+    if (i > 100000) return -1;
+  }
+  return -1;
+}
+
+void prefix_connid_print (act_connection *c, const char *s = "")
+{
+  list_t *stk = list_new ();
+  ValueIdx *vx;
+  listitem_t *li;
+  
+  printf ("\"");
+  if (prefixes) {
+    for (li = list_first (prefixes); li; li = list_next (li)) {
+      printf ("%s", (char *)list_value (li));
+    }
+  }
+  
+  while (c) {
+    stack_push (stk, c);
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      c = c->parent->parent->parent;
+    }
+  }
+
+  while (!stack_isempty (stk)) {
+    c = (act_connection *) stack_pop (stk);
+    if (c->vx) {
+      vx = c->vx;
+      printf ("%s", vx->u.obj.name);
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      if (vx->t->arrayInfo()) {
+	Array *tmp;
+	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	printf ("%s", vx->u.obj.name);
+	tmp->Print (stdout);
+	delete tmp;
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	Assert (ux, "What?");
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
+      }
+    }
+    else {
+      vx = c->parent->parent->vx;
+
+      Array *tmp;
+      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+      Assert (ux, "what?");
+
+      printf ("%s", vx->u.obj.name);
+      tmp->Print (stdout);
+      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+
+      delete tmp;
+    }
+    if (vx->global) {
+      /* XXX */
+    }
+    if (!stack_isempty (stk)) {
+      printf (".");
+    }
+  }
+  printf ("%s\"", s);
+
+  list_free (stk);
+}
+
 /* hash table for labels */
 static struct Hashtable *labels;
 
@@ -212,6 +300,71 @@ void aflat_print_prs (act_prs_lang_t *p)
   }
 }
 
+void _print_connections_bool (ValueIdx *vx)
+{
+  act_connection *c = vx->connection();
+  act_connection *tmp;
+  ValueIdx *vx2;
+
+  tmp = c->next;
+  while (tmp != c) {
+    if (vx->t->arrayInfo()) {
+      Arraystep *s1 = vx->t->arrayInfo()->stepper();
+
+      /* tmp might have a different array index, so it needs its own stepper */
+      Arraystep *s2;
+
+
+      if (tmp->vx) {
+	Assert (tmp->vx->t->arrayInfo(), "huh?");
+	s2 = tmp->vx->t->arrayInfo()->stepper();
+	vx2 = tmp->vx;
+      }
+      else if (tmp->parent->vx) {
+	Assert (tmp->parent->vx->t->arrayInfo(), "What?");
+	s2 = tmp->parent->vx->t->arrayInfo()->stepper();
+	vx2 = tmp->parent->vx;
+      }
+      else {
+	Assert (0, "Can't be this case...");
+      }
+
+      while (!s1->isend()) {
+	char *tmp1, *tmp2;
+	Assert (!s2->isend(), "What?");
+
+	tmp1 = s1->string();
+	
+	printf ("= ");
+	prefix_connid_print (c, tmp1);
+	FREE (tmp1);
+	printf (" ");
+
+	tmp2 = s2->string();
+	prefix_connid_print (tmp, tmp2);
+	FREE (tmp2);
+	printf ("\n");
+
+	s1->step();
+	s2->step();
+      }
+      Assert (s2->isend(), "Hmm...");
+      delete s1;
+      delete s2;
+    }
+    else {
+      printf ("= ");
+      prefix_connid_print (c);
+      printf (" ");
+      prefix_connid_print (tmp);
+      printf ("\n");
+    }
+    tmp = tmp->next;
+  }
+}
+  
+  
+
 
 void aflat_prs_scope (Scope *s)
 {
@@ -219,30 +372,28 @@ void aflat_prs_scope (Scope *s)
 
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx;
-    UserDef *ux;
+    Process *px;
     InstType *it;
     int count;
 
     vx = *inst;
 
+    if (!vx->isPrimary()) {
+      continue;
+    }
+	
     it = vx->t;
-
-    ux = dynamic_cast<UserDef *>(it->BaseType());
+    px = dynamic_cast<Process *>(it->BaseType());
     
-    if (ux) {
-      if (!vx->isPrimary()) {
-	continue;
-      }
-
-      act_prs *p = ux->getprs();
+    if (px) {
+      act_prs *p = px->getprs();
 
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
-	act_connection *c = vx->connection();
 	int idx = 0;
 
 	while (!step->isend()) {
-	  if (!c || !c->a || !c->a[idx] || (c->a[idx]->up == NULL)) {
+	  if (vx->isPrimary(idx)) {
 	    char *tmp =  step->string();
 	    push_name_array (vx->getName(), tmp);
 	    FREE (tmp);
@@ -252,7 +403,7 @@ void aflat_prs_scope (Scope *s)
 	      hash_free (labels);
 	      labels = NULL;
 	    }
-	    aflat_prs_scope (ux->CurScope());
+	    aflat_prs_scope (px->CurScope());
 	    pop_name ();
 	  }
 	  idx++;
@@ -268,12 +419,31 @@ void aflat_prs_scope (Scope *s)
 	  hash_free (labels);
 	  labels = NULL;
 	}
-	aflat_prs_scope (ux->CurScope());
+	aflat_prs_scope (px->CurScope());
 	pop_name ();
       }
     }
-    else {
-      /* for bools, print connections as well */
+
+    /* now print connections, if any */
+    if (vx->hasConnection()) {
+      /* ok, now we get to look at this more closely */
+      if (TypeFactory::isUserType (it)) {
+	/* user-defined---now expand recursively */
+	act_connection *c;
+	c = vx->connection();
+	if (c->next != c) {
+	  /* ok, we have other user-defined things directly connected,
+	     take care of this */
+	}
+	if (c->a) {
+	  /* we have connections to components of this as well, check! */
+	  /* if it is an array.... check c->a[i]->a[j] */
+	}
+      }
+      else if (TypeFactory::isBoolType (it)) {
+	/* print connections! */
+	_print_connections_bool (vx);
+      }
     }
   }
 }

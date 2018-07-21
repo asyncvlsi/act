@@ -72,7 +72,9 @@ struct ValueIdx {
 
   /* assumes object is not a parameter type */
   bool hasConnection()  { return init && (u.obj.c != NULL); }
+  bool hasConnection(int i) { return init && (u.obj.c != NULL) && (u.obj.c->a) && (u.obj.c->a[i]); }
   bool isPrimary() { return !hasConnection() || (u.obj.c->up == NULL); }
+  bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->up == NULL); }
   act_connection *connection() { return init ? u.obj.c : NULL; }
   const char *getName() { return u.obj.name; }
 };
