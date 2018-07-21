@@ -213,6 +213,12 @@ InstType *TypeFactory::NewEnum (Scope *s, Type::direction dir, Expr *w)
 }
 
 
+#define INSTMACRO(isfunc)			\
+int TypeFactory::isfunc (InstType *it)		\
+{						\
+  return TypeFactory::isfunc (it->BaseType());	\
+}
+
 int TypeFactory::isUserType (Type *t)
 {
   UserDef *tmp_u = dynamic_cast<UserDef *>(t);
@@ -221,6 +227,8 @@ int TypeFactory::isUserType (Type *t)
   }
   return 0;
 }
+
+INSTMACRO(isUserType)
 
 int TypeFactory::isDataType (Type *t)
 {
@@ -238,6 +246,7 @@ int TypeFactory::isDataType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isDataType)
 
 int TypeFactory::isIntType (Type *t)
 {
@@ -247,6 +256,7 @@ int TypeFactory::isIntType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isIntType)
 
 int TypeFactory::isPIntType (Type *t)
 {
@@ -255,6 +265,7 @@ int TypeFactory::isPIntType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isPIntType)
 
 int TypeFactory::isPIntsType (Type *t)
 {
@@ -263,6 +274,7 @@ int TypeFactory::isPIntsType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isPIntsType)
 
 int TypeFactory::isBoolType (Type *t)
 {
@@ -272,6 +284,7 @@ int TypeFactory::isBoolType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isBoolType)
 
 int TypeFactory::isPBoolType (Type *t)
 {
@@ -280,6 +293,7 @@ int TypeFactory::isPBoolType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isPBoolType)
 
 int TypeFactory::isPRealType (Type *t)
 {
@@ -288,6 +302,7 @@ int TypeFactory::isPRealType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isPRealType)
 
 int TypeFactory::isChanType (Type *t)
 {
@@ -301,6 +316,7 @@ int TypeFactory::isChanType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isChanType)
 
 int TypeFactory::isProcessType (Type *t)
 {
@@ -310,6 +326,7 @@ int TypeFactory::isProcessType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isProcessType)
 
 int TypeFactory::isFuncType (Type *t)
 {
@@ -319,6 +336,7 @@ int TypeFactory::isFuncType (Type *t)
   }
   return 0;
 }
+INSTMACRO(isFuncType)
 
 int TypeFactory::isPTypeType (Type *t)
 {
@@ -330,6 +348,8 @@ int TypeFactory::isPTypeType (Type *t)
     return 0;
   }
 }
+INSTMACRO(isPTypeType)
+
 
 int TypeFactory::isParamType (Type *t)
 {
@@ -342,12 +362,7 @@ int TypeFactory::isParamType (Type *t)
   }
   return 0;
 }
-
-int TypeFactory::isParamType (InstType *it)
-{
-  return TypeFactory::isParamType (it->BaseType ());
-}
-
+INSTMACRO(isParamType)
 
 
 /**

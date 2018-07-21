@@ -584,18 +584,28 @@ class TypeFactory {
    * @return 1 if it is a valid data type, 0 otherwise
    */
   static int isDataType (Type *t);
+  static int isDataType (InstType *t);
 
   static int isIntType (Type *t);
+  static int isIntType (InstType *t);
 
   static int isPIntType (Type *t);
+  static int isPIntType (InstType *t);
+
   static int isPIntsType (Type *t);
+  static int isPIntsType (InstType *t);
 
   static int isBoolType (Type *t);
+  static int isBoolType (InstType *it);
+  
   static int isPBoolType (Type *t);
+  static int isPBoolType (InstType *it);
 
   static int isPRealType (Type *t);
+  static int isPRealType (InstType *it);
 
   static int isUserType (Type *t);
+  static int isUserType (InstType *it);
 
   /**
    * Determines if the specified type is a channel type or not
@@ -604,6 +614,7 @@ class TypeFactory {
    * @return 1 if it is a valid channel type, 0 otherwise
    */
   static int isChanType (Type *t);
+  static int isChanType (InstType *it);
 
   /**
    * Determines if the specified type is a process type or not
@@ -612,6 +623,7 @@ class TypeFactory {
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
   static int isProcessType (Type *t);
+  static int isProcessType (InstType *it);
 
   /**
    * Determines if the specified type is a function type or not
@@ -620,6 +632,7 @@ class TypeFactory {
    * @return 1 if it is a valid function, 0 otherwise
    */
   static int isFuncType (Type *t);
+  static int isFuncType (InstType *it);
 
   /**
    * Determines if the specified type is a ptype or not
@@ -628,6 +641,7 @@ class TypeFactory {
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
   static int isPTypeType (Type *t);
+  static int isPTypeType (InstType *it);
 
 
   /**
