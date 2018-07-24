@@ -172,3 +172,68 @@ ActInstiter& ActInstiter::operator++()
   }
   return *this;
 }
+
+/*------------------------------------------------------------------------*/
+
+ActConniter::ActConniter (act_connection *s)
+{
+ start = s;
+ cur = NULL;
+}
+
+
+ActConniter::ActConniter (const ActConniter &c)
+{
+ start = c.start;
+ cur = c.cur;
+}
+  
+ActConniter ActConniter::operator++(int)
+{
+  ActConniter tmp(*this);
+  operator++();
+  return tmp;
+}
+
+bool ActConniter::operator==(const ActConniter& rhs) const
+{
+ return (rhs.start == start) && (cur == rhs.cur);
+}
+
+
+bool ActConniter::operator!=(const ActConniter& rhs) const
+{
+ return !operator==(rhs);
+}
+
+act_connection *ActConniter::operator*()
+{
+ return cur;
+}
+
+ActConniter ActConniter::begin()
+{
+  ActConniter iter(*this);
+  iter.cur = start;
+  return iter;
+}
+
+ActConniter ActConniter::end()
+{
+  ActConniter iter(*this);
+  iter.cur = NULL;
+  return iter;
+}
+
+ActConniter& ActConniter::operator++()
+{
+  if (cur) {
+    if (cur->next == start) {
+      cur = NULL;
+    }
+    else {
+      cur = cur->next;
+    }
+  }
+  return *this;
+}

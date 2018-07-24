@@ -11,9 +11,14 @@
 #include <act/inst.h>
 #include <act/lang.h>
 
-/* prefix tracking */
 
+/* hash table for labels */
+static struct Hashtable *labels;
+
+/* prefix tracking */
 static list_t *prefixes = NULL;
+
+static list_t *suffixes = NULL;
 
 void push_namespace_name (const char *s)
 {
@@ -31,6 +36,28 @@ void push_name (const char *s)
   list_append (prefixes, n);
 }
 
+void push_name_suffix (const char *s)
+{
+  char *n;
+  MALLOC (n, char, strlen (s) + 2);
+  sprintf (n, "%s.", s);
+  list_append (suffixes, n);
+}
+
+void push_name_array_suffix (const char *s, const char *t)
+{
+  char *n;
+  MALLOC (n, char, strlen (s) + strlen (t) + 2);
+  sprintf (n, "%s%s.", s, t);
+  list_append (suffixes, n);
+}
+
+void pop_name_suffix ()
+{
+  char *s = (char *) list_delete_tail (suffixes);
+  FREE (s);
+}
+
 void push_name_array (const char *s, const char *t)
 {
   char *n;
@@ -45,109 +72,49 @@ void pop_name ()
   FREE (s);
 }
 
+void prefix_print ()
+{
+  listitem_t *li;
+  if (prefixes) {
+    for (li = list_first (prefixes); li; li = list_next (li)) {
+      printf ("%s", (char *)list_value (li));
+    }
+  }
+}
+
+void suffix_print ()
+{
+  listitem_t *li;
+  printf (".");
+  if (suffixes) {
+    for (li = list_first (suffixes); li; li = list_next (li)) {
+      printf ("%s", (char *)list_value (li));
+    }
+  }
+}
+    
+
 void prefix_id_print (ActId *id)
 {
   listitem_t *li;
   printf ("\"");
-  if (prefixes) {
-    for (li = list_first (prefixes); li; li = list_next (li)) {
-      printf ("%s", (char *)list_value (li));
-    }
-  }
+  prefix_print();
   id->Print (stdout);
   printf ("\"");
 }
 
-static int offset (act_connection **a, act_connection *c)
-{
-  int i;
-  i = 0;
-  while (1) {
-    if (a[i] == c) return i;
-    i++;
-    if (i > 100000) return -1;
-  }
-  return -1;
-}
-
 void prefix_connid_print (act_connection *c, const char *s = "")
 {
-  list_t *stk = list_new ();
-  ValueIdx *vx;
   listitem_t *li;
   
   printf ("\"");
-  if (prefixes) {
-    for (li = list_first (prefixes); li; li = list_next (li)) {
-      printf ("%s", (char *)list_value (li));
-    }
-  }
-  
-  while (c) {
-    stack_push (stk, c);
-    if (c->vx) {
-      c = c->parent;
-    }
-    else if (c->parent->vx) {
-      c = c->parent->parent;
-    }
-    else {
-      Assert (c->parent->parent->vx, "What?");
-      c = c->parent->parent->parent;
-    }
-  }
-
-  while (!stack_isempty (stk)) {
-    c = (act_connection *) stack_pop (stk);
-    if (c->vx) {
-      vx = c->vx;
-      printf ("%s", vx->u.obj.name);
-    }
-    else if (c->parent->vx) {
-      vx = c->parent->vx;
-      if (vx->t->arrayInfo()) {
-	Array *tmp;
-	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
-	printf ("%s", vx->u.obj.name);
-	tmp->Print (stdout);
-	delete tmp;
-      }
-      else {
-	UserDef *ux;
-	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
-	Assert (ux, "What?");
-	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
-      }
-    }
-    else {
-      vx = c->parent->parent->vx;
-
-      Array *tmp;
-      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
-      UserDef *ux;
-      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
-      Assert (ux, "what?");
-
-      printf ("%s", vx->u.obj.name);
-      tmp->Print (stdout);
-      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
-
-      delete tmp;
-    }
-    if (vx->global) {
-      /* XXX */
-    }
-    if (!stack_isempty (stk)) {
-      printf (".");
-    }
-  }
+  prefix_print ();
+  ActId *tid = c->toid();
+  tid->Print (stdout);
+  delete tid;
   printf ("%s\"", s);
-
-  list_free (stk);
 }
 
-/* hash table for labels */
-static struct Hashtable *labels;
 
 #define PREC_BEGIN(myprec)			\
   do {						\
@@ -187,6 +154,9 @@ static struct Hashtable *labels;
 */
 static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
 {
+  hash_bucket_t *b;
+  act_prs_lang_t *pl;
+  
   if (!e) return;
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
@@ -209,6 +179,21 @@ static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
     break;
     
   case ACT_PRS_EXPR_LABEL:
+    if (!labels) {
+      fatal_error ("No labels defined!");
+    }
+    b = hash_lookup (labels, e->u.l.label);
+    if (!b) {
+      fatal_error ("Missing label `%s'", e->u.l.label);
+    }
+    pl = (act_prs_lang_t *) b->v;
+    if (pl->u.one.dir == 0) {
+      printf ("~");
+    }
+    printf ("(");
+    _print_prs_expr (pl->u.one.e, 0, flip);
+    printf (")");
+    break;
 
   case ACT_PRS_EXPR_TRUE:
     printf ("true");
@@ -303,17 +288,21 @@ void aflat_print_prs (act_prs_lang_t *p)
 void _print_connections_bool (ValueIdx *vx)
 {
   act_connection *c = vx->connection();
+  ActConniter iter(c);
   act_connection *tmp;
   ValueIdx *vx2;
 
-  tmp = c->next;
-  while (tmp != c) {
+  for (iter = iter.begin(); iter != iter.end(); iter++) {
+    tmp = *iter;
+
+    /* don't print connections to yourself */
+    if (tmp == c) continue;
+    
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
 
       /* tmp might have a different array index, so it needs its own stepper */
       Arraystep *s2;
-
 
       if (tmp->vx) {
 	Assert (tmp->vx->t->arrayInfo(), "huh?");
@@ -359,11 +348,123 @@ void _print_connections_bool (ValueIdx *vx)
       prefix_connid_print (tmp);
       printf ("\n");
     }
-    tmp = tmp->next;
   }
 }
-  
-  
+
+/* if nm == NULL, there are no suffixes! */
+static void _print_single_connection (ActId *one, Array *oa,
+				      ActId *two, Array *ta,
+				      const char *nm, Arraystep *na)
+{
+  if (oa) {
+    Arraystep *s1, *s2;
+    s1 = oa->stepper();
+    s2 = ta->stepper();
+    while (!s1->isend()) {
+      printf ("= \"");
+      prefix_print ();
+      one->Print (stdout);
+      s1->Print (stdout);
+      suffix_print ();
+      printf ("%s", nm);
+      if (na) {
+	na->Print (stdout);
+      }
+      printf ("\" \"");
+      prefix_print ();
+      two->Print (stdout);
+      s2->Print (stdout);
+      if (nm) {
+	suffix_print ();
+	printf ("%s", nm);
+      }
+      if (na) {
+	na->Print (stdout);
+      }
+      printf ("\"\n");
+      s1->step();
+      s2->step();
+    }
+    delete s1;
+    delete s2;
+  }
+  else {
+    printf ("= \"");
+    prefix_print ();
+    one->Print (stdout);
+    if (nm) {
+      suffix_print ();
+      printf ("%s", nm);
+    }
+    if (na) {
+      na->Print (stdout);
+    }
+    printf ("\" \"");
+    prefix_print ();
+    two->Print (stdout);
+    if (nm) {
+      suffix_print ();
+      printf ("%s", nm);
+    }
+    if (na) {
+      na->Print (stdout);
+    }
+    printf ("\"\n");
+  }
+}
+
+
+static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
+				   Array *oa, Array *ta)
+{
+  Assert (ux, "What");
+  Assert (one, "What");
+  Assert (two, "What");
+  Assert ((oa && ta) || (!oa && !ta), "What?");
+
+  /* walk through all instances */
+  ActInstiter inst(ux->CurScope());
+  for (inst = inst.begin(); inst != inst.end(); inst++) {
+    ValueIdx *vx = (*inst);
+      
+    if (!vx->isPrimary()) continue;
+    
+    if (TypeFactory::isUserType (vx->t)) {
+      UserDef *rux = dynamic_cast<UserDef *>(vx->t->BaseType());
+      
+      if (vx->t->arrayInfo()) {
+	Arraystep *p = vx->t->arrayInfo()->stepper ();
+	while (!p->isend()) {
+	  char *tmp;
+	  tmp = p->string();
+	  push_name_array_suffix (vx->getName (), tmp);
+	  FREE (tmp);
+	  _print_rec_bool_conns (one, two, rux, oa, ta);
+	  pop_name_suffix ();
+	  p->step();
+	}
+      }
+      else {
+	push_name_suffix (vx->getName());
+	_print_rec_bool_conns (one, two, rux, oa, ta);
+	pop_name_suffix ();
+      }
+    }
+    else if (TypeFactory::isBoolType (vx->t)) {
+      /* print all booleans here */
+      if (vx->t->arrayInfo()) {
+	Arraystep *p = vx->t->arrayInfo()->stepper();
+	while (!p->isend()) {
+	  _print_single_connection (one, oa, two, ta, vx->getName (), p);
+	  p->step();
+	}
+      }
+      else {
+	_print_single_connection (one, oa, two, ta, vx->getName(), NULL);
+      }
+    }
+  }
+}
 
 
 void aflat_prs_scope (Scope *s)
@@ -381,7 +482,7 @@ void aflat_prs_scope (Scope *s)
     if (!vx->isPrimary()) {
       continue;
     }
-	
+
     it = vx->t;
     px = dynamic_cast<Process *>(it->BaseType());
     
@@ -429,15 +530,89 @@ void aflat_prs_scope (Scope *s)
       /* ok, now we get to look at this more closely */
       if (TypeFactory::isUserType (it)) {
 	/* user-defined---now expand recursively */
+	UserDef *rux = dynamic_cast<UserDef *>(it->BaseType());
 	act_connection *c;
 	c = vx->connection();
-	if (c->next != c) {
+	if (c->hasConnections()) {
 	  /* ok, we have other user-defined things directly connected,
 	     take care of this */
+	  ActId *one, *two;
+	  ActConniter ci(c);
+
+	  one = c->toid();
+	  for (ci = ci.begin(); ci != ci.end(); ci++) {
+	    if (*ci == c) continue; // don't print connections to
+				    // yourself
+
+	    two = (*ci)->toid();
+	    suffixes = list_new ();
+	    _print_rec_bool_conns (one, two, rux, it->arrayInfo(),
+			    ((*ci)->vx ? (*ci)->vx->t->arrayInfo() : NULL));
+	    list_free (suffixes);
+	    suffixes = NULL;
+	    delete two;
+	  }
+	  delete one;
 	}
-	if (c->a) {
+	if (c->hasSubconnections()) {
 	  /* we have connections to components of this as well, check! */
 	  /* if it is an array.... check c->a[i]->a[j] */
+
+	  list_t *sublist = list_new ();
+
+	  list_append (sublist, c);
+
+	  while ((c = (act_connection *)list_delete_tail (sublist))) {
+	    Assert (c->hasSubconnections(), "Invariant fail");
+
+	    for (int i=0; i < c->numSubconnections(); i++) {
+	      if (c->hasConnections (i)) {
+		int type;
+		InstType *xit;
+		ActId *one, *two;
+		ActConniter ci(c->a[i]);
+
+		type = c->a[i]->getctype();
+		it = c->a[i]->getvx()->t;
+		
+		UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
+
+		/* now find the type */
+		if (type == 0 || type == 1) {
+		  xit = it;
+		}
+		else {
+		  Assert (rux, "what?");
+		  xit = rux->getPortType (i);
+		}
+
+		one = c->a[i]->toid();
+		for (ci = ci.begin(); ci != ci.end(); ci++) {
+		  if (*ci == c->a[i]) continue;
+
+		  two = (*ci)->toid();
+		  if (TypeFactory::isUserType (xit)) {
+		    suffixes = list_new ();
+		    _print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
+					   (*ci)->getvx()->t->arrayInfo());
+		    list_free (suffixes);
+		    suffixes = NULL;
+		  }
+		  else if (TypeFactory::isBoolType (xit)) {
+		    _print_single_connection (one, xit->arrayInfo(),
+					      two,
+					      (*ci)->getvx()->t->arrayInfo(),
+					      NULL, NULL);
+		  }
+		  delete two;
+		}
+	      }
+	      if (c->a[i] && c->a[i]->hasSubconnections ()) {
+		list_append (sublist, c->a[i]);
+	      }
+	    }
+	  }
+	  list_free (sublist);
 	}
       }
       else if (TypeFactory::isBoolType (it)) {
