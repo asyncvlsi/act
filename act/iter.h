@@ -11,6 +11,17 @@
 #include <act/namespaces.h>
 #include <iterator>
 
+#define ACTSTDITER(name,rettype)		\
+  name (const name & c);			\
+  name& operator++();				\
+  name operator++(int);				\
+  bool operator==(const name& rhs) const;	\
+  bool operator!=(const name& rhs) const;	\
+  rettype operator*();				\
+  name begin();					\
+  name end()
+    
+
 class ActNamespaceiter : public
       std::iterator<std::input_iterator_tag, ActNamespace *> {
   
@@ -20,15 +31,7 @@ class ActNamespaceiter : public
 
  public:
   ActNamespaceiter (ActNamespace *ns);
-  ActNamespaceiter (const ActNamespaceiter &c);
-  
-  ActNamespaceiter& operator++();
-  ActNamespaceiter operator++(int);
-  bool operator==(const ActNamespaceiter& rhs) const;
-  bool operator!=(const ActNamespaceiter& rhs) const;
-  ActNamespace *operator*();
-  ActNamespaceiter begin();
-  ActNamespaceiter end();
+  ACTSTDITER(ActNamespaceiter, ActNamespace *);
 };
 
 
@@ -41,20 +44,22 @@ class ActInstiter :
 
  public:
   ActInstiter (Scope *s);
-  ActInstiter (const ActInstiter &c);
-  
-  ActInstiter& operator++();
-  ActInstiter operator++(int);
-  bool operator==(const ActInstiter& rhs) const;
-  bool operator!=(const ActInstiter& rhs) const;
-  ValueIdx *operator*();
-  ActInstiter begin();
-  ActInstiter end();
+  ACTSTDITER(ActInstiter, ValueIdx *);
 };
 
+class ActConniter :
+  public std::iterator<std::input_iterator_tag, act_connection *> {
+  
+  act_connection *start;
+  act_connection *cur;
 
+ public:
+  ActConniter (act_connection *s);
+  ACTSTDITER(ActConniter, act_connection *);
+};
 
-
+#undef ACTSTDITER
 
 
 #endif /* __ITER_H__ */
+
