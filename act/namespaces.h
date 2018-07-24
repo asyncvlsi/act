@@ -39,6 +39,27 @@ struct act_connection {
   act_connection *up;
   act_connection *next;
   act_connection **a;	// slots for root arrays and root userdefs
+
+  ActId *toid();		// the ActId name for this connection entity
+  
+  bool isglobal();		// returns true if this is a global signal
+  
+  // returns true when there are other things connected to it
+  bool hasConnections() { return next != this; }
+  bool hasConnections(int i) { return a[i] && a[i]->hasConnections(); }
+  
+  // returns true if this is a complex object (array or user-defined)
+  // with potential subconnections to it
+  bool hasSubconnections() { return a != NULL; }
+  int numSubconnections();
+  ValueIdx *getvx();
+
+  unsigned int getctype();
+  // 0 = standard  "x"
+  // 1 = array element "x[i]"
+  // 2 = port "x.y" 
+  // 3 = array element + port "x[i].y"
+  
 };
 
 

@@ -269,6 +269,175 @@ static int offset (act_connection **a, act_connection *c)
   return -1;
 }
 
+bool act_connection::isglobal()
+{
+  act_connection *c;
+  ValueIdx *vx;
+
+  c = this;
+  vx = NULL;
+  
+  while (c) {
+    if (c->vx) {
+      vx = c->vx;
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      vx = c->parent->parent->vx;
+      c = c->parent->parent->parent;
+    }
+  }
+  Assert (vx, "What?");
+  return vx->global ? 1 : 0;
+}
+
+
+ActId *act_connection::toid()
+{
+  list_t *stk = list_new ();
+  ValueIdx *vx;
+  act_connection *c = this;
+
+  while (c) {
+    stack_push (stk, c);
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      c = c->parent->parent->parent;
+    }
+    
+  }
+
+  ActId *ret = NULL;
+  ActId *cur = NULL;
+
+  while (!stack_isempty (stk)) {
+    ActId *t;
+    
+    c = (act_connection *) stack_pop (stk);
+    
+    if (c->vx) {
+      vx = c->vx;
+      t = new ActId (vx->u.obj.name);
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      if (vx->t->arrayInfo()) {
+	Array *tmp;
+	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	t = new ActId (vx->u.obj.name, tmp);
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+
+	t = new ActId (vx->u.obj.name);
+	t->Append (new ActId (ux->getPortName (offset (c->parent->a, c))));
+      }
+    }
+    else {
+      vx = c->parent->parent->vx;
+      Assert (vx, "What?");
+      
+      Array *tmp;
+      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+      Assert (ux, "what?");
+
+      t = new ActId (vx->u.obj.name, tmp);
+      t->Append (new ActId (ux->getPortName (offset (c->parent->a, c))));
+    }
+
+    if (!ret) {
+      ret = t;
+      cur = ret;
+    }
+    else {
+      cur->Append (t);
+      cur = t;
+    }
+    while (cur->Rest()) {
+      cur = cur->Rest();
+    }
+  }
+  list_free (stk);
+  return ret;
+}
+
+int act_connection::numSubconnections()
+{
+  ValueIdx *_vx;
+
+  if (!a) { return 0; }
+
+  _vx = getvx();
+
+  if (_vx->t->arrayInfo()) {
+    /* it is an array! */
+    return _vx->t->arrayInfo()->size();
+  }
+  else {
+    UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
+    Assert (ux, "hmm...");
+    return ux->getNumPorts ();
+  }
+}
+
+ValueIdx *act_connection::getvx()
+{
+  if (vx) {
+    return vx;
+  }
+  else if (parent->vx) {
+    return parent->vx;
+  }
+  else if (parent->parent->vx) {
+    return parent->parent->vx;
+  }
+  Assert (0, "What");
+  return vx;
+}
+
+unsigned int act_connection::getctype()
+{
+  if (vx) {
+    return 0;
+  }
+  else if (parent->vx) {
+    if (parent->vx->t->arrayInfo()) {
+      return 1;
+    }
+    else {
+      return 2;
+    }
+  }
+  else {
+    return 3;
+  }
+}
+
+static void print_id (act_connection *c)
+{
+  if (!c) return;
+  
+  ActId *id = c->toid();
+
+  id->Print (stdout);
+  delete id;
+}
+
+#if 0
 static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();
@@ -286,7 +455,6 @@ static void print_id (act_connection *c)
       Assert (c->parent->parent->vx, "What?");
       c = c->parent->parent->parent;
     }
-    
   }
   
   while (!stack_isempty (stk)) {
@@ -336,6 +504,7 @@ static void print_id (act_connection *c)
   }
   list_free (stk);
 }
+#endif
 
 #if 0
 static void print_id (act_connection *c)
@@ -600,16 +769,7 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 {
   ValueIdx *vx;
 
-  if (c1->vx) {
-    vx = c1->vx;
-  }
-  else if (c1->parent->vx) {
-    vx = c1->parent->vx;
-  }
-  else {
-    vx = c1->parent->parent->vx;
-    Assert (vx, "What?");
-  }
+  vx = c1->getvx();
   
   if (!c1->a) {
     if (c2->a) {
