@@ -94,8 +94,8 @@ class InstType {
   ActNamespace *getNamespace() { return s->getNamespace(); }
   UserDef *getUserDef () { return s->getUserDef(); }
 
- private:
   int isParamAType (int k);
+ private:
 
 
   Type *t;			/**< root type */
