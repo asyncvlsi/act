@@ -378,18 +378,21 @@ ActId *act_connection::toid()
 int act_connection::numSubconnections()
 {
   ValueIdx *_vx;
+  int type;
 
   if (!a) { return 0; }
 
   _vx = getvx();
+  type = getctype();
 
-  if (_vx->t->arrayInfo()) {
+  if (_vx->t->arrayInfo() && (type != 1)) {
     /* it is an array! */
     return _vx->t->arrayInfo()->size();
   }
   else {
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
     Assert (ux, "hmm...");
+
     return ux->getNumPorts ();
   }
 }
@@ -902,7 +905,7 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   if (!ux || (p1 == 0 && p2 == 0)) {
     p1 = strlen (s1);
     p2 = strlen (s2);
-    if (p2 > p1) {	
+    if (p2 < p1) {
       tmp = c1;
       c1 = c2;
       c2 = tmp;
