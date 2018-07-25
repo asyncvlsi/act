@@ -84,10 +84,10 @@ struct ValueIdx {
 				   it is in a namespace or a template
 				   parameter */
 
-  unsigned int global:1;	/**< 1 for a namespace global; 0
-				   otherwise. Note that global =>
-				   immutable, but not the other way
-				   around. */
+  ActNamespace *global;	     /**< set for a namespace global; NULL
+				otherwise. Note that global =>
+				immutable, but not the other way
+				around. */
   
   union {
     long idx;		   /**< Base index for allocated storage for
@@ -130,6 +130,7 @@ class Scope {
      returns ValueIdx information for identifier
   */
   ValueIdx *LookupVal (const char *s);
+  ValueIdx *FullLookupVal (const char *s);
 
 
   int Add (const char *s, InstType *it);
