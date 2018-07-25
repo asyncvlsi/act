@@ -11,6 +11,10 @@
 #include <act/act_walk_X.h>
 #include <act/types.h>
 
+#ifdef DEBUG_PERFORMANCE
+#include "mytime.h"
+#endif
+
 int Act::max_recurse_depth = 1000;
 
 void Act::Init (int *iargc, char ***iargv)
@@ -74,9 +78,22 @@ Act::Act (const char *s)
   tr.in_tree = 0;
   tr.in_subckt = 0;
 
+#ifdef DEBUG_PERFORMANCE
+  realtime_msec ();
+#endif
+
   a = act_parse (s);
+
+#ifdef DEBUG_PERFORMANCE
+  printf ("Parser time: %g\n", (realtime_msec()/1000.0));
+#endif
+
   act_walk_X (&tr, a);
   act_parse_free (a);
+
+#ifdef DEBUG_PERFORMANCE
+  printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
+#endif
 
   gns = ActNamespace::global;
   tf = tr.tf;

@@ -402,10 +402,11 @@ void ActId::sPrint (char *buf, int sz, ActId *end)
   }
 }
 
-act_connection *act_mk_id_canonical (act_connection *c)
+act_connection *act_connection::primary()
 {
   act_connection *root = NULL;
   act_connection *tmp;
+  act_connection *c = this;
   
   tmp = c;
   /* find root */
@@ -637,7 +638,7 @@ act_connection *ActId::Canonical (Scope *s)
   vx = rawValueIdx(s);
   cx = vx->u.obj.c;
 
-  cx = act_mk_id_canonical (cx);
+  cx = cx->primary();
 
   /* now cx could be something else; but it has the same type has the
      id's core name 
@@ -848,7 +849,7 @@ act_connection *ActId::Canonical (Scope *s)
       }
 
       cx = cx->a[idx];
-      cx = act_mk_id_canonical (cx);
+      cx = cx->primary();
 
       /* find the value slot for the canonical name */
       if (cx->vx) {
@@ -925,7 +926,7 @@ act_connection *ActId::Canonical (Scope *s)
       }
       
       cx = cx->a[portid];
-      cx = act_mk_id_canonical (cx);
+      cx = cx->primary();
       
       if (cx->vx) {
 	vx = cx->vx;

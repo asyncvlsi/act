@@ -291,12 +291,18 @@ void _print_connections_bool (ValueIdx *vx)
   ActConniter iter(c);
   act_connection *tmp;
   ValueIdx *vx2;
+  int is_global, ig;
+
+  is_global = vx->connection()->isglobal();
 
   for (iter = iter.begin(); iter != iter.end(); iter++) {
     tmp = *iter;
 
     /* don't print connections to yourself */
     if (tmp == c) continue;
+
+    ig = tmp->isglobal();
+    if (ig != is_global) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -480,6 +486,13 @@ void aflat_prs_scope (Scope *s)
     vx = *inst;
 
     if (!vx->isPrimary()) {
+      if (vx->connection()->isglobal()) continue;
+      
+      /* Check if this or any of its sub-objects is connected to a
+	 global signal. If so, just emit that connection and nothing
+	 else. 
+      */
+
       continue;
     }
 
@@ -525,29 +538,46 @@ void aflat_prs_scope (Scope *s)
       }
     }
 
-    /* now print connections, if any */
+    /* not the special case of global to non-global connection; vx
+       is the primary ValueIdx */
     if (vx->hasConnection()) {
+      int is_global_conn;
+
+      if (vx->connection()->isglobal()) {
+	/* only emit connections when the other vx is a global */
+	is_global_conn = 1;
+      }
+      else {
+	/* only emit local connections */
+	is_global_conn = 0;
+      }
+      
       /* ok, now we get to look at this more closely */
       if (TypeFactory::isUserType (it)) {
 	/* user-defined---now expand recursively */
 	UserDef *rux = dynamic_cast<UserDef *>(it->BaseType());
 	act_connection *c;
 	c = vx->connection();
-	if (c->hasConnections()) {
+	if (c->hasDirectconnections()) {
 	  /* ok, we have other user-defined things directly connected,
 	     take care of this */
 	  ActId *one, *two;
 	  ActConniter ci(c);
+	  int ig;
 
 	  one = c->toid();
 	  for (ci = ci.begin(); ci != ci.end(); ci++) {
-	    if (*ci == c) continue; // don't print connections to
-				    // yourself
+	    if (*ci == c) continue; // don't print connections to yourself
 
+	    ig = (*ci)->isglobal();
+	    if (ig != is_global_conn) continue; // only print global
+	    // to global or
+	    // non-global to non-global
+	      
 	    two = (*ci)->toid();
 	    suffixes = list_new ();
 	    _print_rec_bool_conns (one, two, rux, it->arrayInfo(),
-			    ((*ci)->vx ? (*ci)->vx->t->arrayInfo() : NULL));
+				   ((*ci)->vx ? (*ci)->vx->t->arrayInfo() : NULL));
 	    list_free (suffixes);
 	    suffixes = NULL;
 	    delete two;
@@ -556,21 +586,19 @@ void aflat_prs_scope (Scope *s)
 	}
 	if (c->hasSubconnections()) {
 	  /* we have connections to components of this as well, check! */
-	  /* if it is an array.... check c->a[i]->a[j] */
-
 	  list_t *sublist = list_new ();
-
 	  list_append (sublist, c);
 
 	  while ((c = (act_connection *)list_delete_tail (sublist))) {
 	    Assert (c->hasSubconnections(), "Invariant fail");
 
 	    for (int i=0; i < c->numSubconnections(); i++) {
-	      if (c->hasConnections (i)) {
+	      if (c->hasDirectconnections (i) && c->isPrimary (i)) {
 		int type;
 		InstType *xit;
 		ActId *one, *two;
 		ActConniter ci(c->a[i]);
+		int ig;
 
 		type = c->a[i]->getctype();
 		it = c->a[i]->getvx()->t;
@@ -590,22 +618,38 @@ void aflat_prs_scope (Scope *s)
 		for (ci = ci.begin(); ci != ci.end(); ci++) {
 		  if (*ci == c->a[i]) continue;
 
+		  ig = (*ci)->isglobal();
+		  if (ig != is_global_conn) continue; 
+
 		  two = (*ci)->toid();
 		  if (TypeFactory::isUserType (xit)) {
 		    suffixes = list_new ();
-		    _print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
-					   (*ci)->getvx()->t->arrayInfo());
+		    if (type == 1) {
+		      _print_rec_bool_conns (one, two, rux, NULL, NULL);
+		    }
+		    else {
+		      _print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
+					     (*ci)->getvx()->t->arrayInfo());
+		    }
 		    list_free (suffixes);
 		    suffixes = NULL;
 		  }
 		  else if (TypeFactory::isBoolType (xit)) {
-		    _print_single_connection (one, xit->arrayInfo(),
-					      two,
-					      (*ci)->getvx()->t->arrayInfo(),
-					      NULL, NULL);
+		    if (type == 1) {
+		      _print_single_connection (one, NULL,
+						two, NULL,
+						NULL, NULL);
+		    }
+		    else {
+		      _print_single_connection (one, xit->arrayInfo(),
+						two,
+						(*ci)->getvx()->t->arrayInfo(),
+						NULL, NULL);
+		    }
 		  }
 		  delete two;
 		}
+		delete one;
 	      }
 	      if (c->a[i] && c->a[i]->hasSubconnections ()) {
 		list_append (sublist, c->a[i]);
