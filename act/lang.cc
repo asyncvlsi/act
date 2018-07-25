@@ -194,10 +194,10 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	exit (1);
       }
       if (p->u.loop.lo) {
-	ihi = etmp->u.v-1;
+	ihi = etmp->u.v;
       }
       else {
-	ihi = etmp->u.v;
+	ihi = etmp->u.v-1;
       }
       FREE (etmp);
 
@@ -219,6 +219,9 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	ret = NULL;
 	for (i=ilo; i <= ihi; i++) {
 	  act_prs_expr_t *at;
+
+	  s->setPInt (vx->u.idx, i);
+	  
 	  at = prs_expr_expand (p->u.loop.e, ns, s);
 
 	  if (!ret) {
@@ -461,10 +464,10 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	  exit (1);
 	}
 	if (p->u.l.lo) {
-	  ihi = etmp->u.v-1;
+	  ihi = etmp->u.v;
 	}
 	else {
-	  ihi = etmp->u.v;
+	  ihi = etmp->u.v-1;
 	}
 	FREE (etmp);
 
@@ -499,14 +502,19 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       break;
       
     case ACT_PRS_TREE:
-      etmp = expr_expand (p->u.l.lo, ns, s);
-      if (etmp->type != E_INT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "tree<> expression is not of type pint\n");
-	fprintf (stderr, " expr: ");
-	print_expr (stderr, p->u.l.lo);
-	fprintf (stderr, "\n");
-	exit (1);
+      if (p->u.l.lo) {
+	etmp = expr_expand (p->u.l.lo, ns, s);
+	if (etmp->type != E_INT) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "tree<> expression is not of type pint\n");
+	  fprintf (stderr, " expr: ");
+	  print_expr (stderr, p->u.l.lo);
+	  fprintf (stderr, "\n");
+	  exit (1);
+	}
+      }
+      else {
+	etmp = NULL;
       }
       tmp->u.l.lo = etmp;
       tmp->u.l.hi = NULL;

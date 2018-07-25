@@ -770,7 +770,7 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
   ValueIdx *vx;
 
   vx = c1->getvx();
-  
+
   if (!c1->a) {
     if (c2->a) {
       if (vx->t->arrayInfo()) {
@@ -850,6 +850,8 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   dump_conn (c1);
   dump_conn (c2);
 #endif
+  if (c1 == c2) return;
+  if (c1->primary() == c2->primary()) return;
 
   /* for global flag, find the root value */
   tmp = c1;
