@@ -1287,8 +1287,6 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array =
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 
-act_connection *act_mk_id_canonical (act_connection *c);
-
 /* for expanded expressions */
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */
 #define E_ARRAY (E_END + 11) /* an expanded paramter array

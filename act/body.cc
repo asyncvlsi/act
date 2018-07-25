@@ -614,8 +614,8 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
     act_connection *t1, *t2;
     int in_ring = 0;
 
-    t1 = act_mk_id_canonical (c1);
-    t2 = act_mk_id_canonical (c2);
+    t1 = c1->primary();
+    t2 = c2->primary();
 
     if (t1 == t2) {
       in_ring = 1;
@@ -1027,8 +1027,8 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	      rcx->a[ridx]->next = rcx->a[ridx];
 	      rcx->a[ridx]->a = NULL;
 	    }
-	    rcx = act_mk_id_canonical (rcx->a[ridx]);
-	    
+	    rcx = rcx->a[ridx]->primary();
+
 	    mk_connection (s->getUserDef(),
 			   id->getName(), lcx,
 			   rid->getName(), rcx);
