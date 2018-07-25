@@ -42,11 +42,16 @@ struct act_connection {
 
   ActId *toid();		// the ActId name for this connection entity
   
-  bool isglobal();		// returns true if this is a global signal
+  bool isglobal();		// returns true if this is a global
+				// signal
+
+  bool isPrimary() { return (up == NULL) ? 1 : 0; }
+  bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
+  
   
   // returns true when there are other things connected to it
-  bool hasConnections() { return next != this; }
-  bool hasConnections(int i) { return a[i] && a[i]->hasConnections(); }
+  bool hasDirectconnections() { return next != this; }
+  bool hasDirectconnections(int i) { return a[i] && a[i]->hasDirectconnections(); }
   
   // returns true if this is a complex object (array or user-defined)
   // with potential subconnections to it
@@ -59,6 +64,9 @@ struct act_connection {
   // 1 = array element "x[i]"
   // 2 = port "x.y" 
   // 3 = array element + port "x[i].y"
+
+
+  act_connection *primary(); // return primary designee for this connection
   
 };
 
@@ -94,8 +102,8 @@ struct ValueIdx {
   /* assumes object is not a parameter type */
   bool hasConnection()  { return init && (u.obj.c != NULL); }
   bool hasConnection(int i) { return init && (u.obj.c != NULL) && (u.obj.c->a) && (u.obj.c->a[i]); }
-  bool isPrimary() { return !hasConnection() || (u.obj.c->up == NULL); }
-  bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->up == NULL); }
+  bool isPrimary() { return !hasConnection() || (u.obj.c->isPrimary()); }
+  bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->isPrimary()); }
   act_connection *connection() { return init ? u.obj.c : NULL; }
   const char *getName() { return u.obj.name; }
 };
