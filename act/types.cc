@@ -1263,6 +1263,75 @@ void InstType::Print (FILE *fp)
   fprintf (fp, "%s", buf);
   return;
 }
+
+static void sPrintInstType (char *buf, int sz, InstType *it, 
+			    int nt, inst_param *u,
+			    Type::direction dir)
+{
+  UserDef *ud;
+  InstType *x;
+  int k = 0;
+  int l;
+
+#define PRINT_STEP				\
+  do {						\
+    l = strlen (buf+k);				\
+    k += l;					\
+    sz -= l;					\
+    if (sz <= 0) return;			\
+  } while (0)
+    
+  snprintf (buf+k, sz, "%s", it->BaseType()->getName());
+  PRINT_STEP;
+  
+  if (nt > 0) {
+    /* templates are used for int, chan, ptype, and userdef */
+    snprintf (buf+k, sz, "<");
+    PRINT_STEP;
+    
+    for (int i=0; i < nt; i++) {
+      if (it->isParamAType (i)) {
+	if (u[i].tt) {
+	  u[i].tt->sPrint (buf+k, sz);
+	}
+	PRINT_STEP;
+      }
+      else {
+	if (u[i].tp) {
+	  u[i].tp->sPrint (buf+k, sz);
+	}
+	PRINT_STEP;
+      }
+      if (i < nt-1) {
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
+      }
+    }
+    snprintf (buf+k, sz, ">");
+    PRINT_STEP;
+  }
+  switch (dir) {
+  case Type::NONE:
+    break;
+  case Type::IN:
+    snprintf (buf+k, sz, "?");
+    PRINT_STEP;
+    break;
+  case Type::OUT:
+    snprintf (buf+k, sz, "!");
+    PRINT_STEP;
+    break;
+  case Type::INOUT:
+    snprintf (buf+k, sz, "?!");
+    PRINT_STEP;
+    break;
+  case Type::OUTIN:
+    snprintf (buf+k, sz, "!?");
+    PRINT_STEP;
+    break;
+  }
+}
+
   
 void InstType::sPrint (char *buf, int sz)
 {
@@ -1812,6 +1881,10 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
     }
   }
 
+
+  /* now change the tmp name! */
+  sPrintInstType (tmp, 10240, this, nt, xu, dir);
+
   /* Expand the core type using template parameters, if any */
   xt = t->Expand (ns, s, nt, xu);
 
@@ -1832,9 +1905,6 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
     xit->MkArray (a->Expand (ns, s));
   }
 
-  FREE (tmp);
-  act_error_pop ();
-
 #if 0
   fprintf (stderr, "expand: ");
   this->Print (stderr);
@@ -1844,6 +1914,9 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 #endif
   xit->dir = dir;
   
+  FREE (tmp);
+  act_error_pop ();
+
   return xit;
 }
 
