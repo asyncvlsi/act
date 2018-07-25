@@ -58,6 +58,7 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
   T = hash_new (4);
   if (creating_global) {
     I = new Scope  (NULL);
+    I->setNamespace (this);
   }
   else {
     I = new Scope(ns->CurScope());
@@ -418,6 +419,22 @@ ValueIdx *Scope::LookupVal (const char *s)
   return (ValueIdx *)b->v;
 }
 
+ValueIdx *Scope::FullLookupVal (const char *s)
+{
+  ValueIdx *vx;
+
+  vx = LookupVal (s);
+  if (vx) {
+    return vx;
+  }
+  if (up) {
+    return up->FullLookupVal (s);
+  }
+  else {
+    return NULL;
+  }
+}
+
 InstType *Scope::FullLookup (const char *s)
 {
   hash_bucket_t *b;
@@ -521,11 +538,11 @@ int Scope::Add (const char *s, InstType *it)
     v->t = it;
     v->init = 0;
     if (getUserDef() == NULL) {
-      v->global = 1;
+      v->global = getNamespace();
       v->immutable = 1;
     }
     else {
-      v->global = 0;
+      v->global = NULL;
       v->immutable = 0;
     }
     b->v = v;

@@ -94,11 +94,30 @@ void suffix_print ()
 }
     
 
-void prefix_id_print (ActId *id)
+void prefix_id_print (Scope *s, ActId *id)
 {
   listitem_t *li;
+
   printf ("\"");
-  prefix_print();
+
+  if (s->Lookup (id, 0)) {
+    prefix_print ();
+  }
+  else {
+    ValueIdx *vx;
+    /* must be a global */
+    vx = s->FullLookupVal (id->getName());
+    Assert (vx, "Hmm.");
+    Assert (vx->global, "Hmm");
+    if (vx->global == ActNamespace::Global()) {
+      /* nothing to do */
+    }
+    else {
+      char *tmp = vx->global->Name ();
+      printf ("%s::", tmp);
+      FREE (tmp);
+    }
+  }
   id->Print (stdout);
   printf ("\"");
 }
@@ -133,9 +152,9 @@ void prefix_connid_print (act_connection *c, const char *s = "")
 #define EMIT_BIN(myprec,sym)			\
   do {						\
     PREC_BEGIN(myprec);				\
-    _print_prs_expr (e->u.e.l, (myprec), flip);	\
+    _print_prs_expr (s, e->u.e.l, (myprec), flip);	\
     printf ("%s", (sym));			\
-    _print_prs_expr (e->u.e.r, (myprec), flip);	\
+    _print_prs_expr (s, e->u.e.r, (myprec), flip);	\
     PREC_END (myprec);				\
   } while (0)
 
@@ -143,7 +162,7 @@ void prefix_connid_print (act_connection *c, const char *s = "")
   do {						\
     PREC_BEGIN(myprec);				\
     printf ("%s", sym);				\
-    _print_prs_expr (e->u.e.l, (myprec), flip);	\
+    _print_prs_expr (s, e->u.e.l, (myprec), flip);	\
     PREC_END (myprec);				\
   } while (0)
 
@@ -152,7 +171,7 @@ void prefix_connid_print (act_connection *c, const char *s = "")
   2 = &
   1 = |
 */
-static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
+static void _print_prs_expr (Scope *s, act_prs_expr_t *e, int prec, int flip = 0)
 {
   hash_bucket_t *b;
   act_prs_lang_t *pl;
@@ -171,7 +190,7 @@ static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
     if (flip) {
       printf ("~");
     }
-    prefix_id_print (e->u.v.id);
+    prefix_id_print (s, e->u.v.id);
     break;
     
   case ACT_PRS_EXPR_NOT:
@@ -191,7 +210,7 @@ static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
       printf ("~");
     }
     printf ("(");
-    _print_prs_expr (pl->u.one.e, 0, flip);
+    _print_prs_expr (s, pl->u.one.e, 0, flip);
     printf (")");
     break;
 
@@ -210,7 +229,7 @@ static void _print_prs_expr (act_prs_expr_t *e, int prec, int flip = 0)
 }
 
 
-void aflat_print_prs (act_prs_lang_t *p)
+void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 {
   if (!p) return;
   
@@ -228,9 +247,9 @@ void aflat_print_prs (act_prs_lang_t *p)
       }
       else {
 	/* examine attributes */
-	_print_prs_expr (p->u.one.e, 0);
+	_print_prs_expr (s, p->u.one.e, 0);
 	printf ("->");
-	prefix_id_print (p->u.one.id);
+	prefix_id_print (s, p->u.one.id);
 	if (p->u.one.dir) {
 	  printf ("+\n");
 	}
@@ -239,10 +258,10 @@ void aflat_print_prs (act_prs_lang_t *p)
 	}
 	if (p->u.one.arrow_type == 1) {
 	  printf ("~(");
-	  _print_prs_expr (p->u.one.e, 0);
+	  _print_prs_expr (s, p->u.one.e, 0);
 	  printf (")");
 	  printf ("->");
-	  prefix_id_print (p->u.one.id);
+	  prefix_id_print (s, p->u.one.id);
 	  if (p->u.one.dir) {
 	    printf ("-\n");
 	  }
@@ -251,9 +270,9 @@ void aflat_print_prs (act_prs_lang_t *p)
 	  }
 	}
 	else if (p->u.one.arrow_type == 2) {
-	  _print_prs_expr (p->u.one.e, 1);
+	  _print_prs_expr (s, p->u.one.e, 1);
 	  printf ("->");
-	  prefix_id_print (p->u.one.id);
+	  prefix_id_print (s, p->u.one.id);
 	  if (p->u.one.dir) {
 	    printf ("-\n");
 	  }
@@ -271,11 +290,11 @@ void aflat_print_prs (act_prs_lang_t *p)
       break;
     case ACT_PRS_TREE:
       /* this is fine */
-      aflat_print_prs (p->u.l.p);
+      aflat_print_prs (s, p->u.l.p);
       break;
     case ACT_PRS_SUBCKT:
       /* this is fine */
-      aflat_print_prs (p->u.l.p);
+      aflat_print_prs (s, p->u.l.p);
       break;
     default:
       fatal_error ("loops should have been expanded by now!");
@@ -360,7 +379,8 @@ void _print_connections_bool (ValueIdx *vx)
 /* if nm == NULL, there are no suffixes! */
 static void _print_single_connection (ActId *one, Array *oa,
 				      ActId *two, Array *ta,
-				      const char *nm, Arraystep *na)
+				      const char *nm, Arraystep *na,
+				      ActNamespace *isoneglobal)
 {
   if (oa) {
     Arraystep *s1, *s2;
@@ -368,7 +388,19 @@ static void _print_single_connection (ActId *one, Array *oa,
     s2 = ta->stepper();
     while (!s1->isend()) {
       printf ("= \"");
-      prefix_print ();
+      if (isoneglobal) {
+	if (isoneglobal == ActNamespace::Global()) {
+	  /* nothing */
+	}
+	else {
+	  char *tmp = isoneglobal->Name();
+	  printf ("%s::", tmp);
+	  FREE (tmp);
+	}
+      }
+      else {
+	prefix_print ();
+      }
       one->Print (stdout);
       s1->Print (stdout);
       suffix_print ();
@@ -396,7 +428,19 @@ static void _print_single_connection (ActId *one, Array *oa,
   }
   else {
     printf ("= \"");
-    prefix_print ();
+    if (isoneglobal) {
+      if (isoneglobal == ActNamespace::Global()) {
+	/* nothing */
+      }
+      else {
+	char *tmp = isoneglobal->Name();
+	printf ("%s::", tmp);
+	FREE (tmp);
+      }
+    }
+    else {
+      prefix_print ();
+    }
     one->Print (stdout);
     if (nm) {
       suffix_print ();
@@ -421,7 +465,8 @@ static void _print_single_connection (ActId *one, Array *oa,
 
 
 static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
-				   Array *oa, Array *ta)
+				   Array *oa, Array *ta,
+				   ActNamespace *isoneglobal)
 {
   Assert (ux, "What");
   Assert (one, "What");
@@ -445,14 +490,14 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	  tmp = p->string();
 	  push_name_array_suffix (vx->getName (), tmp);
 	  FREE (tmp);
-	  _print_rec_bool_conns (one, two, rux, oa, ta);
+	  _print_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
 	  pop_name_suffix ();
 	  p->step();
 	}
       }
       else {
 	push_name_suffix (vx->getName());
-	_print_rec_bool_conns (one, two, rux, oa, ta);
+	_print_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
 	pop_name_suffix ();
       }
     }
@@ -461,17 +506,75 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
       if (vx->t->arrayInfo()) {
 	Arraystep *p = vx->t->arrayInfo()->stepper();
 	while (!p->isend()) {
-	  _print_single_connection (one, oa, two, ta, vx->getName (), p);
+	  _print_single_connection (one, oa, two, ta, vx->getName (), p,
+				    isoneglobal);
 	  p->step();
 	}
       }
       else {
-	_print_single_connection (one, oa, two, ta, vx->getName(), NULL);
+	_print_single_connection (one, oa, two, ta, vx->getName(), NULL,
+				  isoneglobal);
       }
     }
   }
 }
 
+void print_any_global_conns (act_connection *c)
+{
+  act_connection *root;
+  list_t *stack;
+
+  stack = list_new ();
+  list_append (stack, c);
+
+  while ((c = (act_connection *)list_delete_tail (stack))) {
+    root = c->primary();
+    if (c->hasDirectconnections()) {
+      if (root->isglobal() && !c->isglobal()) {
+	InstType *xit, *it;
+	ActId *one, *two;
+	int type;
+	UserDef *rux;
+	
+	/* print a connection from c to root */
+	type = c->getctype ();
+	xit = c->getvx()->t;
+	it = root->getvx()->t;
+	
+
+	rux = dynamic_cast<UserDef *> (xit->BaseType());
+
+	one = root->toid();
+	two = c->toid();
+
+	if (TypeFactory::isUserType (xit)) {
+	  suffixes = list_new ();
+	  _print_rec_bool_conns (one, two, rux,
+				 it->arrayInfo(), xit->arrayInfo(),
+				 root->getvx()->global);
+	  list_free (suffixes);
+	  suffixes = NULL;
+	}
+	else if (TypeFactory::isBoolType (xit)) {
+	  _print_single_connection (one, it->arrayInfo(),
+				    two, xit->arrayInfo(),
+				    NULL, NULL,
+				    root->getvx()->global);
+	}
+	delete one;
+	delete two;
+      }
+    }
+    if (c->hasSubconnections()) {
+      for (int i=0; i < c->numSubconnections(); i++) {
+	if (c->a[i]) {
+	  list_append (stack, c->a[i]);
+	}
+      }
+    }
+  }
+  list_free (stack);
+}
 
 void aflat_prs_scope (Scope *s)
 {
@@ -492,7 +595,7 @@ void aflat_prs_scope (Scope *s)
 	 global signal. If so, just emit that connection and nothing
 	 else. 
       */
-
+      print_any_global_conns (vx->connection());
       continue;
     }
 
@@ -501,6 +604,8 @@ void aflat_prs_scope (Scope *s)
     
     if (px) {
       act_prs *p = px->getprs();
+
+      /* set scope here */
 
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
@@ -513,7 +618,7 @@ void aflat_prs_scope (Scope *s)
 	    FREE (tmp);
 	    if (p) {
 	      labels = hash_new (2);
-	      aflat_print_prs (p->p);
+	      aflat_print_prs (px->CurScope(), p->p);
 	      hash_free (labels);
 	      labels = NULL;
 	    }
@@ -529,7 +634,7 @@ void aflat_prs_scope (Scope *s)
 	push_name (vx->getName());
 	if (p) {
 	  labels = hash_new (2);
-	  aflat_print_prs (p->p);
+	  aflat_print_prs (px->CurScope(), p->p);
 	  hash_free (labels);
 	  labels = NULL;
 	}
@@ -577,7 +682,9 @@ void aflat_prs_scope (Scope *s)
 	    two = (*ci)->toid();
 	    suffixes = list_new ();
 	    _print_rec_bool_conns (one, two, rux, it->arrayInfo(),
-				   ((*ci)->vx ? (*ci)->vx->t->arrayInfo() : NULL));
+				   ((*ci)->vx ?
+				    (*ci)->vx->t->arrayInfo() : NULL),
+				   NULL);
 	    list_free (suffixes);
 	    suffixes = NULL;
 	    delete two;
@@ -625,11 +732,12 @@ void aflat_prs_scope (Scope *s)
 		  if (TypeFactory::isUserType (xit)) {
 		    suffixes = list_new ();
 		    if (type == 1) {
-		      _print_rec_bool_conns (one, two, rux, NULL, NULL);
+		      _print_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
 		    }
 		    else {
 		      _print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
-					     (*ci)->getvx()->t->arrayInfo());
+					     (*ci)->getvx()->t->arrayInfo(),
+					     NULL);
 		    }
 		    list_free (suffixes);
 		    suffixes = NULL;
@@ -638,13 +746,13 @@ void aflat_prs_scope (Scope *s)
 		    if (type == 1) {
 		      _print_single_connection (one, NULL,
 						two, NULL,
-						NULL, NULL);
+						NULL, NULL, NULL);
 		    }
 		    else {
 		      _print_single_connection (one, xit->arrayInfo(),
 						two,
 						(*ci)->getvx()->t->arrayInfo(),
-						NULL, NULL);
+						NULL, NULL, NULL);
 		    }
 		  }
 		  delete two;
@@ -675,7 +783,8 @@ void aflat_prs_ns (ActNamespace *ns)
   /* my top-level prs */
   p = ns->getprs();
   if (p) {
-    aflat_print_prs (p->p);
+    /* set scope here */
+    aflat_print_prs (ns->CurScope(), p->p);
   }
 
   /* sub-namespaces */
