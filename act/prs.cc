@@ -221,12 +221,13 @@ static act_prs_expr_t *atom (LFILE *l)
       }
     }
     else {
-      e->u.loop.hi = NULL;
+      e->u.loop.hi = e->u.loop.lo;
+      e->u.loop.lo = NULL;
     }
     file_setflags (l, flags);
     if (!file_have (l, COLON)) {
       if (e->u.loop.hi) expr_free (e->u.loop.hi);
-      expr_free (e->u.loop.lo);
+      if (e->u.loop.lo) expr_free (e->u.loop.lo);
       FREE (e->u.loop.id);
       FREE (e);
       return NULL;
@@ -234,7 +235,7 @@ static act_prs_expr_t *atom (LFILE *l)
     e->u.loop.e = _act_parse_prs_expr (l);
     if (!e->u.loop.e) {
       if (e->u.loop.hi) expr_free (e->u.loop.hi);
-      expr_free (e->u.loop.lo);
+      if (e->u.loop.lo) expr_free (e->u.loop.lo);
       FREE (e->u.loop.id);
       FREE (e);
       return NULL;

@@ -92,12 +92,13 @@ void suffix_print ()
     }
   }
 }
-    
 
+/*------------------------------------------------------------------------
+ *  test
+ *------------------------------------------------------------------------
+ */
 void prefix_id_print (Scope *s, ActId *id)
 {
-  listitem_t *li;
-
   printf ("\"");
 
   if (s->Lookup (id, 0)) {
@@ -124,8 +125,6 @@ void prefix_id_print (Scope *s, ActId *id)
 
 void prefix_connid_print (act_connection *c, const char *s = "")
 {
-  listitem_t *li;
-  
   printf ("\"");
   prefix_print ();
   ActId *tid = c->toid();
@@ -477,6 +476,7 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   ActInstiter inst(ux->CurScope());
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = (*inst);
+    if (TypeFactory::isParamType (vx->t)) continue;
       
     if (!vx->isPrimary()) continue;
     
@@ -541,7 +541,6 @@ void print_any_global_conns (act_connection *c)
 	xit = c->getvx()->t;
 	it = root->getvx()->t;
 	
-
 	rux = dynamic_cast<UserDef *> (xit->BaseType());
 
 	one = root->toid();
@@ -587,6 +586,7 @@ void aflat_prs_scope (Scope *s)
     int count;
 
     vx = *inst;
+    if (TypeFactory::isParamType (vx->t)) continue;
 
     if (!vx->isPrimary()) {
       if (vx->connection()->isglobal()) continue;
