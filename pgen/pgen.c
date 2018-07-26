@@ -532,6 +532,15 @@ void print_bnf (pp_t *pp)
     pp_printf (pp, "%s", BNF[i].lhs);
     pp_setb (pp);
     pp_printf (pp, ":");
+    if (BNF[i].is_exclusive) {
+      pp_printf (pp, " {excl}");
+    }
+    if (BNF[i].tail_recursive) {
+      pp_printf (pp, " {t-rec}");
+    }
+    if (BNF[i].is_exclusive || BNF[i].tail_recursive) {
+      pp_nl;
+    }
     for (j=0; j < A_LEN (BNF[i].a); j++) {
       pp_setb (pp);
       print_tok_list (pp, &BNF[i].a[j]);
@@ -610,7 +619,10 @@ void emit_bexpr_for_typematch (pp_t *pp, token_list_t *tl, int idx)
 
   switch (t->type) {
   case T_L_EXPR:
+    pp_printf (pp, "(is_expr_parse_any(l))");
+#if 0
     pp_printf (pp, "(is_expr_parse_int(l) || is_expr_parse_bool(l) || is_expr_parse_real(l))");
+#endif
     break;
   case T_L_BEXPR:
     pp_printf (pp, "is_expr_parse_bool(l)");
@@ -1065,11 +1077,13 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
     case T_L_EXPR:
       pp_printf (pp, "{ Expr *");
       nbraces++;
-      pp_printf (pp, "f_%d_%d = expr_parse_int (l);", nest, i); pp_nl;
+      pp_printf (pp, "f_%d_%d = expr_parse_any (l);", nest, i); pp_nl;
+#if 0      
       pp_printf (pp, "if (!f_%d_%d) f_%d_%d = expr_parse_bool (l);",
 		 nest, i, nest, i); pp_nl;
       pp_printf (pp, "if (!f_%d_%d) f_%d_%d = expr_parse_real (l);",
 		 nest, i, nest, i); pp_nl;
+#endif      
       pp_printf (pp, "if (!f_%d_%d) {", nest, i);
       BEGIN_INDENT; 
       emit_frees_upto_curtoken (pp, tl, nest, i);
@@ -2003,6 +2017,8 @@ void emit_parser (void)
     pp_nl;
     pp_puts (pp, "static int is_expr_parse_real (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_real (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
+    pp_puts (pp, "static int is_expr_parse_any (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_any (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
+    pp_nl;
     pp_puts (pp, "static Node_expr_id *parse_a_expr__id (LFILE *l) { int opt = 0; Node_expr_id *e = NULL; while (opt != -1 && !e) { e = parse_a_expr_id (l, &opt); } return e; }");
     pp_nl;
     pp_puts (pp, "void free_a_expr__id (void *v) { free_a_expr_id ((Node_expr_id *)v); }"); 
@@ -2772,6 +2788,8 @@ int main (int argc, char **argv)
 
   find_tail_recursion ();
 
+  compute_token_options ();
+  
   {
     char buf[1024];
     pp_t *pp;
@@ -2785,7 +2803,6 @@ int main (int argc, char **argv)
     return 0;
   }
 
-  compute_token_options ();
 
   emit_parser ();
   emit_walker ();

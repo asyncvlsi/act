@@ -121,6 +121,11 @@ void expr_settoken (int name, int value);
      to -1.
   */
 
+Expr *expr_parse_any (LFILE *l);
+  /*
+    Parse any expression
+  */
+
 Expr *expr_parse_int (LFILE *l);
   /*
     Parse an integer expression and returns its parse tree.
