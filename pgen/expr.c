@@ -63,6 +63,7 @@ int expr_init (LFILE *l)
   INIT (E_AND, "&");
   INIT (E_OR, "|");
   INIT (E_NOT, "~");
+  INIT (E_COMPLEMENT, "~");
   INIT (E_PLUS, "+");
   INIT (E_MINUS, "-");
   INIT (E_MULT, "*");
@@ -491,6 +492,20 @@ static Expr *W (void)
     }
     uminus = 0;
   }
+  else if (strcmp (file_tokenstring (Tl), "true") == 0) {
+    POP (Tl);
+    file_getsym (Tl);
+    e = newexpr ();
+    e->type = E_TRUE;
+    e->u.v = 1;
+  }
+  else if (strcmp (file_tokenstring (Tl), "false") == 0) {
+    POP (Tl);
+    file_getsym (Tl);
+    e = newexpr ();
+    e->type = E_FALSE;
+    e->u.v = 0;
+  }
   else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
 	   /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {
     e = newexpr ();
@@ -539,6 +554,19 @@ static Expr *W (void)
     }
     else {
       POP (Tl);
+    }
+  }
+  else if (file_have (Tl, T[E_PROBE])) {
+    if (expr_parse_id && (v = (*expr_parse_id)(Tl))) {
+      POP (Tl);
+      e = newexpr ();
+      e->type = E_PROBE;
+      e->u.e.l = (Expr *)v;
+    }
+    else {
+      SET (Tl);
+      POP (Tl);
+      return NULL;
     }
   }
 #if 0
@@ -942,4 +970,10 @@ void expr_print (pp_t *pp, Expr *e)
     fatal_error ("Unhandled case!\n");
     break;
   }
+}
+
+
+Expr *expr_parse_any (LFILE *l)
+{
+  return expr_parse_real (l);
 }
