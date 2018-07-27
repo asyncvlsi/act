@@ -11,6 +11,7 @@
 #include <act/lang.h>
 #include <string.h>
 #include "misc.h"
+#include "config.h"
 
 /* XXX: free actbody */
 
@@ -1420,6 +1421,108 @@ void ActBody_Namespace::Expand (ActNamespace *_ns, Scope *s)
   ns->Expand ();
 }
 
+static void _merge_attributes (act_attr_t **x, act_attr *a)
+{
+  act_attr_t *t, *prev;
+  
+  if (*x) {
+    prev = NULL;
+    while (a) {
+      for (t = *x; t; t = t->next) {
+	if (strcmp (t->attr, a->attr) == 0) {
+	  /* merge the two */
+	  char **z = config_get_table_string ("instance_attr");
+	  int i;
+	  for (i = 0; i < config_get_table_size ("instance_attr"); i++) {
+	    if (strcmp (z[i]+4, t->attr) == 0) {
+	      break;
+	    }
+	  }
+	  Assert (i != config_get_table_size ("instance_attr"), "What");
+	  if (z[i][2] == 's') {
+	    /* strict! */
+	    if (!expr_equal (t->e, a->e)) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': inconsistent values",
+			   t->attr);
+	    }
+	  }
+	  else if (z[i][2] == '+') {
+	    /* sum */
+	    
+	  }
+	  else if (z[i][2] == 'M') {
+	    /* max */
+	    
+	  }
+	  else if (z[i][2] == 'm') {
+	    /* min */
+	  }
+	  else {
+	    fatal_error ("Unrecognized attribute format `%s'", z[i]);
+	  }
+	  break;
+	}
+      }
+      if (!t) {
+	/* take this piece and merge it into vx */
+	t = a->next;
+	if (prev) {
+	  prev->next = a->next;
+	}
+	a->next = *x;
+	*x = a;
+	a = t;
+      }
+      else {
+	/* ok, a is merged, so delete it */
+	if (prev) {
+	  prev->next = a->next;
+	}
+	t = a;
+	a = a->next;
+	FREE (t->e);
+	FREE (t);
+      }
+    }
+  }
+  else {
+    *x = a;
+  }
+}
+
+
+void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
+{
+  act_attr_t *_a;
+  Array *_arr;
+  ValueIdx *vx;
+
+  /* XXX: do this */
+  _a = inst_attr_expand (a, _ns, s);
+  if (arr) {
+    _arr = arr->Expand (_ns, s);
+  }
+  else {
+    _arr = NULL;
+  }
+
+  vx = s->LookupVal (inst);
+  if (!vx) {
+    act_error_ctxt (stderr);
+    fatal_error ("Instance `%s' with attribute not from current scope!",
+		 inst);
+  }
+
+  if (!_arr) {
+    _merge_attributes (&vx->a, _a);
+    
+  }
+  else {
+    /* YYY: now look at array deref */
+  }
+}
+
 
 void ActBody::Expandlist (ActNamespace *ns, Scope *s)
 {
@@ -1429,3 +1532,5 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
     b->Expand (ns, s);
   }
 }
+
+

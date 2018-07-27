@@ -48,17 +48,9 @@ enum act_prs_expr_type {
 };
 
 
-#undef FET_TOKEN
-#define FET_TOKEN(a,b)  b,
-
-enum act_transistor_flavors {
-#include "fets.def"
-  ACT_FET_END
-};
-
 typedef struct {
   Expr *w, *l;		/* size, if any */
-  enum act_transistor_flavors flavor;
+  int flavor;
   int subflavor;		/* special flavor override (-1 if missing) */
 } act_size_spec_t;
 
@@ -197,5 +189,6 @@ act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
+act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 
 #endif /* __LANG_H__ */

@@ -534,7 +534,8 @@ int Scope::Add (const char *s, InstType *it)
     if (it->isExpanded() == 0) {
       fatal_error ("Scope::Add(): Scope is expanded, but instance type is not!");
     }
-
+    v->a = NULL;
+    v->array_spec = NULL;
     v->t = it;
     v->init = 0;
     if (getUserDef() == NULL) {

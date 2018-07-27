@@ -10,6 +10,7 @@
 #include <act/act_parse.h>
 #include <act/act_walk_X.h>
 #include <act/types.h>
+#include "config.h"
 
 #ifdef DEBUG_PERFORMANCE
 #include "mytime.h"
@@ -27,6 +28,9 @@ void Act::Init (int *iargc, char ***iargv)
   initialize = 1;
   ActNamespace::Init();
   Type::Init();
+
+  config_std_path ("act");
+  config_read ("global.conf");
   
   return;
 }
@@ -77,6 +81,9 @@ Act::Act (const char *s)
 
   tr.in_tree = 0;
   tr.in_subckt = 0;
+
+  tr.attr_num = config_get_table_size ("instance_attr");
+  tr.attr_table = config_get_table_string ("instance_attr");
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();

@@ -8,28 +8,21 @@
 #include <stdio.h>
 #include <act/act_walk_X.h>
 #include <act/lang.h>
+#include "config.h"
 
-enum act_transistor_flavors act_fet_string_to_value (const char *s)
+static char **fet_flavors = NULL;
+static int num_fets = -1;
+int act_fet_string_to_value (const char *s)
 {
-#define FET_TOKEN(a,b)				\
-  if (strcmp (a, s) == 0) {			\
-     return b;					\
+  if (num_fets == -1) {
+    num_fets = config_get_table_size ("fet_flavors");
+    fet_flavors = config_get_table_string ("fet_flavors");
   }
-#include "fets.def"
-  return ACT_FET_END;
-}
-
-void act_fet_print_strings (FILE *fp)
-{
-  int first = 0;
-
-#define FET_TOKEN(a,b)				\
-  if (first != 0) {				\
-    fprintf (fp, ", ");				\
-  }						\
-  first = 1;					\
-  fprintf (fp, "`%s'", a);
-#include "fets.def"  
+  for (int i=0; i < num_fets; i++) {
+    if (strcmp (s, fet_flavors[i]) == 0)
+      return i;
+  }
+  return -1;
 }
 
 #define NULL_WRAP(nm,t) ActRet *act_wrap_X_##nm (t v) { return NULL; }

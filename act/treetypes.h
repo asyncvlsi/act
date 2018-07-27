@@ -129,13 +129,16 @@ typedef struct {
   /* instance override */
   int override;
 
+  /* attributes */
+  int attr_num;
+  char **attr_table;
+
 } ActTree;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-enum act_transistor_flavors act_fet_string_to_value (const char *s);
-void act_fet_print_strings (FILE *fp);
+int act_fet_string_to_value (const char *s);
 #ifdef __cplusplus
 }
 #endif
