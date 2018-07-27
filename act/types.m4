@@ -37,7 +37,7 @@ param_type[InstType *]: "pint"
 {{X:
     return $0->tf->NewPReal();
 }}
-| "ptype" "<" physical_inst_type ">"
+| "ptype" "(" physical_inst_type ")"
 {{X:
     return $0->tf->NewPType($0->scope, $3);
 }}

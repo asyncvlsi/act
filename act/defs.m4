@@ -1113,19 +1113,45 @@ special_connection_id[ActBody *]: ID [ dense_range ]
 {{X:
     ActBody *b;
     /* connections handled already */
+    b = NULL;
     if (!OPT_EMPTY ($6)) {
-      /* XXX: handle attributes, if any */
+      ActRet *r;
+
+      r = OPT_VALUE ($6);
+      $A(r->type == R_ATTR);
+      if ($0->a_id) {
+	b = new ActBody_Attribute ($1, r->u.attr, $0->a_id->arrayInfo());
+      }
+      else {
+	b = new ActBody_Attribute ($1, r->u.attr);
+      }
+      FREE (r);
     }
     OPT_FREE ($6);
     $0->a_id = NULL;
-    b = $0->t_inst;
+    if (b) {
+      b->Tail()->Append ($0->t_inst);
+    }
+    else {
+      b = $0->t_inst;
+    }
     $0->t_inst = NULL;
     return b;
 }}
 | ID [ dense_range ] "@" attr_list
 {{X:
-    /* XXX: attributes */
-    return NULL;
+    Array *a = NULL;
+
+    if (!OPT_EMPTY ($2)) {
+      ActRet *r;
+      r = OPT_VALUE ($2);
+      $A(r->type == R_ARRAY);
+      a = r->u.array;
+      FREE (r);
+    }
+    OPT_FREE ($2);
+    
+    return new ActBody_Attribute ($1, $4, a);
 }}
 ;
 
@@ -1235,22 +1261,6 @@ instance_id[ActBody *]: ID [ sparse_range ]
     ActBody *b = NULL;
     ActRet *r;
 
-    /* Handle attributes, if any */
-    if (!OPT_EMPTY ($4)) {
-      /* XXX: ignoring attributes at the moment */
-      /* XXX: add attributes to this instance */
-
-      /* free attribute list
-	 An attribute list is a list of wrapped (string, expr)s
-      */
-      r = OPT_VALUE ($4);
-      $A(r->type == R_ATTR);
-      FREE (r);
-      OPT_FREE ($4);
-    }
-
-    /* XXX: Process connections */
-
     /* 1: Connections in the port conn spec are
        processed in port_conn_spec itself
     */
@@ -1258,6 +1268,25 @@ instance_id[ActBody *]: ID [ sparse_range ]
 
     b = $0->t_inst;
     $0->t_inst = NULL;
+
+    /* Handle attributes, if any */
+    if (!OPT_EMPTY ($4)) {
+      ActBody *btmp;
+      /* An attribute list is a list of wrapped (string, expr)s */
+      r = OPT_VALUE ($4);
+      $A(r->type == R_ATTR);
+
+      btmp = new ActBody_Attribute ($1, r->u.attr);
+
+      if (b) {
+	b->Tail()->Append (btmp);
+      }
+      else {
+	b = btmp;
+      }
+      FREE (r);
+    }
+    OPT_FREE ($4);
 
     /* 2: Connections on the RHS */
     if ($5) {
@@ -1317,6 +1346,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
       list_free ($5);
     }
     OPT_FREE ($2);
+    
     return b;
 }}
 ;

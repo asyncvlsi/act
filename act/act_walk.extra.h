@@ -14,6 +14,7 @@
 #include "except.h"
 #include "qops.h"
 #include "misc.h"
+#include "config.h"
 #include <act/lang.h>
 #include <act/path.h>
 #include <act/namespaces.h>

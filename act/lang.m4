@@ -127,7 +127,12 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}"
 }}
 ;
 
-lang_prs[ActBody *]: "prs" [ supply_spec ] "{" [ prs_body ] "}" 
+lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
+{{X:
+    $0->attr_num = config_get_table_size ("prs_attr");
+    $0->attr_table = config_get_table_string ("prs_attr");
+}}
+[ prs_body ] "}" 
 {{X:
     ActBody *b;
     act_prs *p;
@@ -155,6 +160,10 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{" [ prs_body ] "}"
     $0->supply.psc = NULL;
     $0->supply.nsc = NULL;
     OPT_FREE ($2);
+
+    $0->attr_num = config_get_table_size ("instance_attr");
+    $0->attr_table = config_get_table_string ("instance_attr");
+
     return b;
 }}
 ;
@@ -483,7 +492,27 @@ prs_body[act_prs_lang_t *]: [ attr_list ]
 }}
 single_prs prs_body
 {{X:
-    $2->next=  $3;
+    if (!OPT_EMPTY ($1)) {
+      ActRet *r;
+
+      r = OPT_VALUE ($1);
+      $A(r->type == R_ATTR);
+
+      if ($2->type == ACT_PRS_LOOP || $2->type == ACT_PRS_TREE ||
+	  $2->type == ACT_PRS_SUBCKT || ($2->type == ACT_PRS_RULE && $2->u.one.label)) {
+	$E("Attributes cannot be associated with tree { }, subckt { }, loop, or label");
+      }
+      if ($2->type == ACT_PRS_RULE) {
+	$2->u.one.attr = r->u.attr;
+      }
+      else {
+	$2->u.p.attr = r->u.attr;
+      }
+      FREE (r);
+    }
+    OPT_FREE ($1);
+    
+    $2->next = $3;
     return $2;
 }}
 | [ attr_list ] 
@@ -494,6 +523,26 @@ single_prs prs_body
 }}
 single_prs
 {{X:
+    if (!OPT_EMPTY ($1)) {
+      ActRet *r;
+
+      r = OPT_VALUE ($1);
+      $A(r->type == R_ATTR);
+
+      if ($2->type == ACT_PRS_LOOP || $2->type == ACT_PRS_TREE ||
+	  $2->type == ACT_PRS_SUBCKT || ($2->type == ACT_PRS_RULE && $2->u.one.label)) {
+	$E("Attributes cannot be associated with tree { }, subckt { }, loop, or label");
+      }
+      if ($2->type == ACT_PRS_RULE) {
+	$2->u.one.attr = r->u.attr;
+      }
+      else {
+	$2->u.p.attr = r->u.attr;
+      }
+      FREE (r);
+    }
+    OPT_FREE ($1);
+
     return $2;
 }}
 ;
@@ -506,9 +555,27 @@ attr_list[act_attr_t *]: "[" { ID "=" w_expr ";" }** "]"
 
     a = ret = prev = NULL;
     for (li = list_first ($2); li; li = list_next (li)) {
+      int i;
+      
       r = (ActRet *)list_value (li);
       $A(r);
       $A(r->type == R_STRING);
+
+      /* validate this attribute */
+      for (i=0; i < $0->attr_num; i++) {
+	if (strcmp (r->u.str, $0->attr_table[i]+4) == 0)
+	  break;
+      }
+      if (i == $0->attr_num) {
+	$e("Attribute ``%s'' is not defined in this ACT configuration\n", r->u.str);
+	fprintf (stderr, "Valid options:");
+	for (i=0; i < $0->attr_num; i++) {
+	  fprintf (stderr, " %s", $0->attr_table[i]+4);
+	}
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      
       if (!ret) {
 	NEW (ret, act_attr_t);
 	a = ret;
@@ -789,7 +856,7 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
     NEW (s, act_size_spec_t);
     s->w = $2;
     s->l = NULL;
-    s->flavor = ACT_FET_STD;
+    s->flavor = 0;
     s->subflavor = -1;
     
     if (!OPT_EMPTY ($3)) {
@@ -809,7 +876,7 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
       $A(r->type == R_STRING);
 
       s->flavor = act_fet_string_to_value (r->u.str);
-      if (s->flavor == ACT_FET_END) {
+      if (s->flavor == -1) {
 	$E("Unknown transistor flavor ``%s''", r->u.str);
       }
       FREE (r);

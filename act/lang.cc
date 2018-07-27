@@ -10,6 +10,8 @@
 #include <act/inst.h>
 #include <act/prs.h>
 #include "qops.h"
+#include "config.h"
+#include <string.h>
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
 
@@ -296,27 +298,71 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
   return ret;
 }
 
-act_attr_t *attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
+static int current_attr_num;
+static  char **current_attr_table;
+static act_attr_t *attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 {
   act_attr_t *hd = NULL, *tl = NULL, *tmp;
+  int pos;
 
   while (a) {
     NEW (tmp, act_attr_t);
     tmp->attr = a->attr;
+
+    for (pos = 0; pos < current_attr_num; pos++) {
+      if (strcmp (current_attr_table[pos]+4, a->attr) == 0) break;
+    }
+    Assert (pos != current_attr_num, "What?");
     tmp->e = expr_expand (a->e, ns, s);
-    if (tmp->e->type != E_INT || tmp->e->type != E_REAL ||
-	tmp->e->type != E_TRUE || tmp->e->type != E_FALSE) {
+
+    if (current_attr_table[pos][0] == 'i' && tmp->e->type != E_INT) {
       act_error_ctxt (stderr);
-      fprintf (stderr, "attribute %s is assigned a non-constant expression\n", tmp->attr);
+      fprintf (stderr, "Integer attribute %s is assigned a non-integer/non-constant expression\n", tmp->attr);
       fprintf (stderr, "  expr: ");
       print_expr (stderr, a->e);
+      fprintf (stderr, "  evaluated to: ");
+      print_expr (stderr, tmp->e);
       fprintf (stderr, "\n");
-
+      exit (1);
+    } else if (current_attr_table[pos][0] == 'r' && tmp->e->type != E_REAL) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Real attribute %s is assigned a non-real/non-constant expression\n", tmp->attr);
+      fprintf (stderr, "  expr: ");
+      print_expr (stderr, a->e);
+      fprintf (stderr, "  evaluated to: ");
+      print_expr (stderr, tmp->e);
+      fprintf (stderr, "\n");
+      exit (1);
+    } else if (current_attr_table[pos][0] == 'b' &&
+	       (tmp->e->type != E_TRUE && tmp->e->type != E_FALSE)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Boolean attribute %s is assigned a non-Boolean/non-constant expression\n", tmp->attr);
+      fprintf (stderr, "  expr: ");
+      print_expr (stderr, a->e);
+      fprintf (stderr, "  evaluated to: ");
+      print_expr (stderr, tmp->e);
+      fprintf (stderr, "\n");
       exit (1);
     }
     q_ins (hd, tl, tmp);
+    a = a->next;
   }
   return hd;
+}
+
+
+act_attr_t *prs_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
+{
+  current_attr_num = config_get_table_size ("prs_attr");
+  char **current_attr_table = config_get_table_string ("prs_attr");
+  return attr_expand (a, ns, s);
+}
+
+act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
+{
+  current_attr_num = config_get_table_size ("instance_attr");
+  char **current_attr_table = config_get_table_string ("instance_attr");
+  return attr_expand (a, ns, s);
 }
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s)
@@ -334,7 +380,7 @@ act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *
       print_expr (stderr, sz->w);
       fprintf (stderr, "\n");
       exit (1);
-    }
+   }
   }
   else {
     ret->w = NULL;
@@ -374,7 +420,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
     tmp->next = NULL;
     switch (p->type) {
     case ACT_PRS_RULE:
-      tmp->u.one.attr = attr_expand (p->u.one.attr, ns, s);
+      tmp->u.one.attr = prs_attr_expand (p->u.one.attr, ns, s);
       tmp->u.one.e = prs_expr_expand (p->u.one.e, ns, s);
 
       if (p->u.one.label == 0) {
@@ -394,7 +440,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       break;
       
     case ACT_PRS_GATE:
-      tmp->u.p.attr = attr_expand (p->u.p.attr, ns, s);
+      tmp->u.p.attr = prs_attr_expand (p->u.p.attr, ns, s);
       idtmp = p->u.p.s->Expand (ns, s);
       etmp = idtmp->Eval (ns, s);
       Assert (etmp->type == E_VAR, "Hm");

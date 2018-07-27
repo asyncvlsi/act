@@ -22,6 +22,7 @@ class ActBody;
 struct act_chp_lang;
 struct act_chp;
 struct act_prs;
+struct act_attr;
 union inst_param;
 class AExpr;
 
@@ -1077,6 +1078,20 @@ class ActBody_Inst : public ActBody {
   InstType *t;
   const char *id;
 };
+
+class ActBody_Attribute : public ActBody {
+public:
+  ActBody_Attribute(const char *_inst, act_attr *_a, Array *_arr = NULL) {
+    inst = inst; a = _a; arr = _arr;
+  }
+  void Expand (ActNamespace *, Scope *);
+
+private:
+  const char *inst;
+  act_attr *a;
+  Array *arr;
+};
+
 
 class ActBody_Conn : public ActBody {
  public:
