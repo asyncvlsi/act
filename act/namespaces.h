@@ -76,6 +76,9 @@ struct act_connection {
 */
 struct ValueIdx {
   InstType *t;
+  struct act_attr *a;			// attributes for the value
+  struct act_attr **array_spec;	// array deref-specific value
+  
   unsigned int init:1;	   /**< Has this been allocated? 
 			         0 = no allocation
 				 1 = allocated

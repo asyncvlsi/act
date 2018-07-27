@@ -270,7 +270,7 @@ static act_prs_expr_t *atom (LFILE *l)
       sz->w = expr_parse_real (l);
       sz->l = NULL;
       sz->subflavor = -1;
-      sz->flavor = ACT_FET_STD;
+      sz->flavor = 0;
       if (!sz->w) {
 	FREE (sz);
 	_freeexpr (e);
@@ -280,6 +280,10 @@ static act_prs_expr_t *atom (LFILE *l)
       if (file_have (l, COMMA)) {
 	if (file_have (l, f_id)) {
 	  sz->flavor = act_fet_string_to_value (file_prev (l));
+	  if (sz->flavor == -1) {
+	    _freeexpr (e);
+	    return NULL;
+	  }
 	  if (file_have (l, COLON)) {
 	    if (!file_have (l, f_integer)) {
 	      _freeexpr (e);
