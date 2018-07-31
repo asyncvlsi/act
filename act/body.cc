@@ -944,23 +944,51 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   if (vx2 == c2->vx) {
     if (!c2->parent) {
       /* c2 is a raw identifier */
-      
-      /* look at the attributes on vx2 */
-      _merge_attributes (&vx1->a, vx2->a);
-      vx2->a = NULL;
-      if (vx2->array_spec) {
-	if (!vx1->array_spec) {
-	  vx1->array_spec = vx2->array_spec;
-	  vx2->array_spec = NULL;
+      if (vx1 == c1->vx) {
+	if (!c1->parent) {
+	  /* c1 is a raw identifier */
+	  _merge_attributes (&vx1->a, vx2->a);
+	  vx2->a = NULL;
+	  if (vx2->array_spec) {
+	    if (!vx1->array_spec) {
+	      vx1->array_spec = vx2->array_spec;
+	      vx2->array_spec = NULL;
+	    }
+	    else {
+	      Assert (vx1->t->arrayInfo(), "Hmm");
+	      for (int i=0; i < vx1->t->arrayInfo()->size(); i++) {
+		_merge_attributes (&vx1->array_spec[i], vx2->array_spec[i]);
+		vx2->array_spec[i] = NULL;
+	      }
+	      FREE (vx2->array_spec);
+	      vx2->array_spec = NULL;
+	    }
+	  }
 	}
 	else {
-	  Assert (vx1->t->arrayInfo(), "Hmm");
-	  for (int i=0; i < vx1->t->arrayInfo()->size(); i++) {
-	    _merge_attributes (&vx1->array_spec[i], vx2->array_spec[i]);
-	    vx2->array_spec[i] = NULL;
+	  /* connection to sub-object, drop attributes */
+	}
+      }
+      else {
+	if (c1->parent->vx && (c1->parent->vx == vx1) && vx1->t->arrayInfo()) {
+	  int i = offset (c1->parent->a, c1);
+
+	  if (!vx1->array_spec) {
+	    int sz;
+
+	    sz = vx1->t->arrayInfo()->size();
+	    MALLOC (vx1->array_spec, act_attr_t *, sz);
+	    for (; sz > 0; sz--) {
+	      vx1->array_spec[sz-1] = NULL;
+	    }
 	  }
-	  FREE (vx2->array_spec);
-	  vx2->array_spec = NULL;
+	  if (vx2->a) {
+	    _merge_attributes (&vx1->array_spec[i], vx2->a);
+	    vx2->a = NULL;
+	  }
+	}
+	else {
+	  /* do nothing */
 	}
       }
     }
@@ -970,13 +998,39 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
        */
     }
   }
-  else if (c2->parent->vx && (c2->parent->vx == vx2)) {
+  else if (c2->parent->vx && (c2->parent->vx == vx2) && vx2->t->arrayInfo()) {
     /* array reference, look at attributes on vx2->array_info[i] */
     int i = offset (c2->parent->a, c2);
 
-    if (vx2->array_spec && vx2->array_spec[i]) {
-      _merge_attributes (&vx1->a, vx2->array_spec[i]);
-      vx2->array_spec[i] = NULL;
+    if (vx1 == c1->vx) {
+      if (!c1->parent) {
+	/* look at the attributes on vx2 */
+	if (vx2->array_spec && vx2->array_spec[i]) {
+	  _merge_attributes (&vx1->a, vx2->array_spec[i]);
+	  vx2->array_spec[i] = NULL;
+	}
+      }
+      else {
+	if (c1->parent->vx && (c1->parent->vx == vx1) && (vx1->t->arrayInfo())) {
+	  int j = offset (c1->parent->a, c1);
+
+	  if (vx2->array_spec && vx2->array_spec[i]) {
+	    if (!vx1->array_spec) {
+	      int sz;
+
+	      Assert (vx1->t->arrayInfo(), "Hmm");
+
+	      sz = vx1->t->arrayInfo()->size();
+	      MALLOC (vx1->array_spec, act_attr_t *, sz);
+	      for (; sz > 0; sz--) {
+		      vx1->array_spec[sz-1] = NULL;
+	      }
+	    }
+	    _merge_attributes (&vx1->array_spec[j], vx2->array_spec[i]);
+	    vx2->array_spec[i] = NULL;
+	  }
+	}
+      }
     }
   }
 
@@ -1644,7 +1698,17 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
     _merge_attributes (&vx->a, _a);
   }
   else {
-    /* YYY: now look at array deref */
+    /* attribute on an element of an array */
+    if (!vx->array_spec) {
+      Assert (vx->t->arrayInfo(), "Hmm");
+      int sz = vx->t->arrayInfo()->size();
+      MALLOC (vx->array_spec, act_attr_t *, sz);
+      for (; sz > 0; sz--) {
+	vx->array_spec[sz-1] = NULL;
+      }
+    }
+    int i = vx->t->arrayInfo()->Offset (_arr);
+    _merge_attributes (&vx->array_spec[i], _a);
   }
 }
 
