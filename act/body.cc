@@ -841,12 +841,15 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 }
 
 
+static void _merge_attributes (act_attr_t **x, act_attr *a);
+
+
 static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 			   const char *s2, act_connection *c2)
 {
   int p1, p2;
   act_connection *tmp;
-  ValueIdx *vx1, *vx2;
+  ValueIdx *vx1, *vx2, *vxtmp;
 
 #if 0
   printf ("connect: %s and %s\n", s1, s2);
@@ -871,7 +874,7 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   }
   Assert (tmp->vx, "What?!");
   vx2 = tmp->vx;
-  
+
   if (vx1->global || vx2->global) {
     if (vx2->global && !vx1->global) {
       tmp = c1;
@@ -879,6 +882,10 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       c2 = tmp;
       p1 = -1;
       p2 = -1;
+
+      vxtmp = vx1;
+      vx1 = vx2;
+      vx2 = vxtmp;
     }
     else if (vx1->global && !vx2->global) {
       p1 = -1;
@@ -899,6 +906,9 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 	  tmp = c1;
 	  c1 = c2;
 	  c2 = tmp;
+	  vxtmp = vx1;
+	  vx1 = vx2;
+	  vx2 = vxtmp;
 	}
       }
     }
@@ -910,6 +920,9 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       tmp = c1;
       c1 = c2;
       c2 = tmp;
+      vxtmp = vx1;
+      vx1 = vx2;
+      vx2 = vxtmp;
     }
     else if (p1 == p2) {
       p1 = strcmp (s1, s2);
@@ -917,10 +930,57 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 	tmp = c1;
 	c1 = c2;
 	c2 = tmp;
+	vxtmp = vx1;
+	vx1 = vx2;
+	vx2 = vxtmp;
       }
     }
   }
 
+  /* NOTE: attributes can only show up on raw identifiers, or raw
+     identifiers followed by a deref */
+
+  /* vx1 gets attributes in vx2 */
+  if (vx2 == c2->vx) {
+    if (!c2->parent) {
+      /* c2 is a raw identifier */
+      
+      /* look at the attributes on vx2 */
+      _merge_attributes (&vx1->a, vx2->a);
+      vx2->a = NULL;
+      if (vx2->array_spec) {
+	if (!vx1->array_spec) {
+	  vx1->array_spec = vx2->array_spec;
+	  vx2->array_spec = NULL;
+	}
+	else {
+	  Assert (vx1->t->arrayInfo(), "Hmm");
+	  for (int i=0; i < vx1->t->arrayInfo()->size(); i++) {
+	    _merge_attributes (&vx1->array_spec[i], vx2->array_spec[i]);
+	    vx2->array_spec[i] = NULL;
+	  }
+	  FREE (vx2->array_spec);
+	  vx2->array_spec = NULL;
+	}
+      }
+    }
+    else {
+      /* c2 is a sub-object, so it should not have any attributes;
+	 do nothing.
+       */
+    }
+  }
+  else if (c2->parent->vx && (c2->parent->vx == vx2)) {
+    /* array reference, look at attributes on vx2->array_info[i] */
+    int i = offset (c2->parent->a, c2);
+
+    if (vx2->array_spec && vx2->array_spec[i]) {
+      _merge_attributes (&vx1->a, vx2->array_spec[i]);
+      vx2->array_spec[i] = NULL;
+    }
+  }
+
+  /* actually connect them! */
   mk_raw_connection (c1, c2);
   
   /* now merge any subtrees */
@@ -1449,14 +1509,50 @@ static void _merge_attributes (act_attr_t **x, act_attr *a)
 	  }
 	  else if (z[i][2] == '+') {
 	    /* sum */
-	    
+	    if (t->e->type == E_REAL) {
+	      t->e->u.f += a->e->u.f;
+	    }
+	    else if (t->e->type == E_INT) {
+	      t->e->u.v += a->e->u.v;
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': merge rule SUM only for reals and ints", t->attr);
+	    }
 	  }
 	  else if (z[i][2] == 'M') {
 	    /* max */
-	    
+	    if (t->e->type == E_REAL) {
+	      if (t->e->u.f < a->e->u.f) {
+		t->e->u.f = a->e->u.f;
+	      }
+	    }
+	    else if (t->e->type == E_INT) {
+	      if (t->e->u.v < a->e->u.v) {
+		t->e->u.v = a->e->u.v;
+	      }
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': merge rule MAX only for reals and ints", t->attr);
+	    }
 	  }
 	  else if (z[i][2] == 'm') {
 	    /* min */
+	    if (t->e->type == E_REAL) {
+	      if (t->e->u.f > a->e->u.f) {
+		t->e->u.f = a->e->u.f;
+	      }
+	    }
+	    else if (t->e->type == E_INT) {
+	      if (t->e->u.v > a->e->u.v) {
+		t->e->u.v = a->e->u.v;
+	      }
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': merge rule MIN only for reals and ints", t->attr);
+	    }
 	  }
 	  else {
 	    fatal_error ("Unrecognized attribute format `%s'", z[i]);
@@ -1497,8 +1593,45 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
   act_attr_t *_a;
   Array *_arr;
   ValueIdx *vx;
+  act_connection *c;
+    
+  vx = s->LookupVal (inst);
+  if (!vx) {
+    act_error_ctxt (stderr);
+    fatal_error ("Instance `%s' with attribute not from current scope!",
+		 inst);
+  }
+  if (TypeFactory::isParamType (vx->t)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Invalid attribute on instance `%s'\n", inst);
+    fatal_error ("Attributes can only be associated with non-parameter types");
+  }
 
-  /* XXX: do this */
+  /* now we need to find the canonical ValueIdx */
+  if (vx->init) {
+    c = vx->u.obj.c->primary();
+  }
+  else {
+    c = NULL;
+  }
+
+  if (c) {
+    if (!c->parent) {
+      /* primary */
+      vx = c->vx;
+      Assert (vx, "What");
+    }
+    else if (c->parent->vx && c->parent->vx->t->arrayInfo()) {
+      /* array */
+      vx = c->parent->vx;
+    }
+    else {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Invalid attribute on instance `%s'\n", inst);
+      fatal_error ("Instance is connected to a port of another instance");
+    }
+  }
+
   _a = inst_attr_expand (a, _ns, s);
   if (arr) {
     _arr = arr->Expand (_ns, s);
@@ -1507,16 +1640,8 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
     _arr = NULL;
   }
 
-  vx = s->LookupVal (inst);
-  if (!vx) {
-    act_error_ctxt (stderr);
-    fatal_error ("Instance `%s' with attribute not from current scope!",
-		 inst);
-  }
-
   if (!_arr) {
     _merge_attributes (&vx->a, _a);
-    
   }
   else {
     /* YYY: now look at array deref */
