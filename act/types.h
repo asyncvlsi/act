@@ -1082,7 +1082,7 @@ class ActBody_Inst : public ActBody {
 class ActBody_Attribute : public ActBody {
 public:
   ActBody_Attribute(const char *_inst, act_attr *_a, Array *_arr = NULL) {
-    inst = inst; a = _a; arr = _arr;
+    inst = _inst; a = _a; arr = _arr;
   }
   void Expand (ActNamespace *, Scope *);
 
