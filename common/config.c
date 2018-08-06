@@ -706,7 +706,7 @@ void config_set_default_real (const char *s, double v)
 }
 
 
-void config_set_default_string (const char *s, char *t)
+void config_set_default_string (const char *s, const char *t)
 {
   hash_bucket_t *b;
   config_t *c;
