@@ -1721,5 +1721,3 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
     b->Expand (ns, s);
   }
 }
-
-
