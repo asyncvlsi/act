@@ -353,15 +353,15 @@ static act_attr_t *attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 
 act_attr_t *prs_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 {
-  current_attr_num = config_get_table_size ("prs_attr");
-  char **current_attr_table = config_get_table_string ("prs_attr");
+  current_attr_num = config_get_table_size ("act.prs_attr");
+  char **current_attr_table = config_get_table_string ("act.prs_attr");
   return attr_expand (a, ns, s);
 }
 
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 {
-  current_attr_num = config_get_table_size ("instance_attr");
-  char **current_attr_table = config_get_table_string ("instance_attr");
+  current_attr_num = config_get_table_size ("act.instance_attr");
+  char **current_attr_table = config_get_table_string ("act.instance_attr");
   return attr_expand (a, ns, s);
 }
 

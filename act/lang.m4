@@ -129,8 +129,8 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}"
 
 lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
 {{X:
-    $0->attr_num = config_get_table_size ("prs_attr");
-    $0->attr_table = config_get_table_string ("prs_attr");
+    $0->attr_num = config_get_table_size ("act.prs_attr");
+    $0->attr_table = config_get_table_string ("act.prs_attr");
 }}
 [ prs_body ] "}" 
 {{X:
@@ -161,8 +161,8 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
     $0->supply.nsc = NULL;
     OPT_FREE ($2);
 
-    $0->attr_num = config_get_table_size ("instance_attr");
-    $0->attr_table = config_get_table_string ("instance_attr");
+    $0->attr_num = config_get_table_size ("act.instance_attr");
+    $0->attr_table = config_get_table_string ("act.instance_attr");
 
     return b;
 }}

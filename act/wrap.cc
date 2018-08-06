@@ -15,8 +15,8 @@ static int num_fets = -1;
 int act_fet_string_to_value (const char *s)
 {
   if (num_fets == -1) {
-    num_fets = config_get_table_size ("fet_flavors");
-    fet_flavors = config_get_table_string ("fet_flavors");
+    num_fets = config_get_table_size ("act.fet_flavors");
+    fet_flavors = config_get_table_string ("act.fet_flavors");
   }
   for (int i=0; i < num_fets; i++) {
     if (strcmp (s, fet_flavors[i]) == 0)

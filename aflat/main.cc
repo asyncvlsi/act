@@ -26,6 +26,8 @@ int main (int argc, char **argv)
   char *file;
   output_formats opt;
 
+  Act::Init (&argc, &argv);
+
   if (argc > 3) usage(argv[0]);
   if (argc == 3) {
     if (strcmp (argv[1], "-prsim") == 0) {
