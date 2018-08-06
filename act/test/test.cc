@@ -7,6 +7,8 @@ int main (int argc, char **argv)
   Act *a;
   int exp;
 
+  Act::Init (&argc, &argv);
+
   if (argc > 3 || (argc == 3 && (strcmp (argv[1], "-e") != 0))) {
     fatal_error ("Usage: %s [-e] <file.act>\n", argv[0]);
   }
