@@ -34,7 +34,7 @@ class Act {
    * Maximum depth of recursion for expanding types
    */
   static int max_recurse_depth;
-  
+
   /**
    * Create an act data structure for the specified input file
    *
@@ -51,26 +51,23 @@ class Act {
 
   ActNamespace *Global() { return gns; }
 
+  void mangle (char *s);	// install string mangling functions
+
+  int mangle_string (char *src, char *dst, int sz);
+  int unmangle_string (char *src, char *dst, int sz);
+  void mfprintf (FILE *fp, char *s, ...);
+  void ufprintf (FILE *fp, char *s, ...);
+  int msnprintf (char *fp, int sz, char *s, ...);
+  int usnprintf (char *fp, int sz, char *s, ...);
+  
  private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
+
+  char mangle_characters[256];
+  int inv_map[256];
+  int any_mangling;
+  
 };
-
-/* install string mangling */
-void act_mangle (char *s);
-
-/* mangle/unmangle string from src to dst, sz = size of dst 
-   Returns -1 on error, 0 on success 
-*/
-int act_mangle_string (char *src, char *dst, int sz);
-int act_unmangle_string (char *src, char *dst, int sz);
-
-/* mangle fprintf/snprintf */
-void act_fprintf (FILE *fp, char *s, ...);
-int act_snprintf (char *fp, int len, char *s, ...);
-
-/* unmangle fprintf/snprintf */
-void act_ufprintf (FILE *fp, char *s, ...);
-int act_usnprintf (char *fp, int len, char *s, ...);
 
 #endif /* __ACT_H__ */
