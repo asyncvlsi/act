@@ -1545,14 +1545,14 @@ static void _merge_attributes (act_attr_t **x, act_attr *a)
       for (t = *x; t; t = t->next) {
 	if (strcmp (t->attr, a->attr) == 0) {
 	  /* merge the two */
-	  char **z = config_get_table_string ("instance_attr");
+	  char **z = config_get_table_string ("act.instance_attr");
 	  int i;
-	  for (i = 0; i < config_get_table_size ("instance_attr"); i++) {
+	  for (i = 0; i < config_get_table_size ("act.instance_attr"); i++) {
 	    if (strcmp (z[i]+4, t->attr) == 0) {
 	      break;
 	    }
 	  }
-	  Assert (i != config_get_table_size ("instance_attr"), "What");
+	  Assert (i != config_get_table_size ("act.instance_attr"), "What");
 	  if (z[i][2] == 's') {
 	    /* strict! */
 	    if (!expr_equal (t->e, a->e)) {

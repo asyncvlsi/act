@@ -18,7 +18,7 @@
 #include "mytime.h"
 #endif
 
-int Act::max_recurse_depth = 1000;
+int Act::max_recurse_depth;
 
 struct command_line_defs {
   char *varname;
@@ -64,7 +64,10 @@ void Act::Init (int *iargc, char ***iargv)
   Type::Init();
 
   config_std_path ("act");
+  config_set_default_int ("act.max_recurse_depth", 1000);
   config_read ("global.conf");
+
+  Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
 
   A_INIT (vars);
 
@@ -164,8 +167,8 @@ Act::Act (const char *s)
   tr.in_tree = 0;
   tr.in_subckt = 0;
 
-  tr.attr_num = config_get_table_size ("instance_attr");
-  tr.attr_table = config_get_table_string ("instance_attr");
+  tr.attr_num = config_get_table_size ("act.instance_attr");
+  tr.attr_table = config_get_table_string ("act.instance_attr");
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();

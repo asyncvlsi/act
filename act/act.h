@@ -56,6 +56,21 @@ class Act {
   ActNamespace *gns;		/* global namespace */
 };
 
+/* install string mangling */
+void act_mangle (char *s);
 
+/* mangle/unmangle string from src to dst, sz = size of dst 
+   Returns -1 on error, 0 on success 
+*/
+int act_mangle_string (char *src, char *dst, int sz);
+int act_unmangle_string (char *src, char *dst, int sz);
+
+/* mangle fprintf/snprintf */
+void act_fprintf (FILE *fp, char *s, ...);
+int act_snprintf (char *fp, int len, char *s, ...);
+
+/* unmangle fprintf/snprintf */
+void act_ufprintf (FILE *fp, char *s, ...);
+int act_usnprintf (char *fp, int len, char *s, ...);
 
 #endif /* __ACT_H__ */
