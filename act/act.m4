@@ -85,7 +85,11 @@ ns_body_item[ActBody *]
 {{X:
     return NULL;
 }}
-| instance
+| namespace_other
+{{X: return $1; }}
+;
+
+namespace_other[ActBody *]: instance
 {{X:
     ActBody_Inst *b;
     if ($0->override) {
