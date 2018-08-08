@@ -1533,6 +1533,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   ux->I->FlushExpand();
   /* set to pending */
   ux->pending = 1;
+  ux->expanded = 1;
 
   /* create bindings for type parameters */
   for (int i=0; i < nt; i++) {

@@ -49,18 +49,28 @@ class Act {
    */
   void Expand ();
 
-  ActNamespace *Global() { return gns; }
-
+  
   void mangle (char *s);	// install string mangling functions
 
   int mangle_string (char *src, char *dst, int sz);
   int unmangle_string (char *src, char *dst, int sz);
-  void mfprintf (FILE *fp, char *s, ...);
-  void ufprintf (FILE *fp, char *s, ...);
-  int msnprintf (char *fp, int sz, char *s, ...);
-  int usnprintf (char *fp, int sz, char *s, ...);
+  void mfprintf (FILE *fp, const char *s, ...);
+  void ufprintf (FILE *fp, const char *s, ...);
+  int msnprintf (char *fp, int sz, const char *s, ...);
+  int usnprintf (char *fp, int sz, const char *s, ...);
+
+
+  /* 
+     API functions
+  */
+  Process *findProcess (const char *s);
+  Process *findProcess (ActNamespace *, const char *);
+  ActNamespace *findNamespace (const char *s);
+  ActNamespace *findNamespace (ActNamespace *, const char *);
+  ActNamespace *Global() { return gns; }
   
- private:
+
+private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
 

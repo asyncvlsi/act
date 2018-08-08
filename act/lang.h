@@ -126,6 +126,7 @@ typedef struct act_prs_lang {
 struct act_prs {
   ActId *vdd, *gnd, *psc, *nsc;
   act_prs_lang_t *p;
+  struct act_prs *next;
 };
 
 

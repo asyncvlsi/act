@@ -5,7 +5,6 @@
  *
  **************************************************************************
  */
-
 #ifndef __ACT_TYPES_H__
 #define __ACT_TYPES_H__
 
@@ -178,6 +177,9 @@ class UserDef : public Type {
    * Set this to be an exported type
    */
   void MkExported () { exported = 1; }
+
+  int isExpanded() { return expanded; }
+  
 
   /**
    * Add a new parameter
@@ -1039,6 +1041,7 @@ union inst_param {
 
   /* if both are NULL, it means the parameter was omitted */
 };
+
 
 /*------------------------------------------------------------------------
  *
