@@ -57,6 +57,12 @@ act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
   ret->psc = expand_var_read (p->psc, ns, s);
   ret->nsc = expand_var_read (p->nsc, ns, s);
   ret->p = prs_expand (p->p, ns, s);
+  if (p->next) {
+    ret->next = prs_expand (p->next, ns, s);
+  }
+  else {
+    ret->next = NULL;
+  }
 
   return ret;
 }

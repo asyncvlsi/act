@@ -616,11 +616,13 @@ void aflat_prs_scope (Scope *s)
 	    char *tmp =  step->string();
 	    push_name_array (vx->getName(), tmp);
 	    FREE (tmp);
-	    if (p) {
+	    p = px->getprs();
+	    while (p) {
 	      labels = hash_new (2);
 	      aflat_print_prs (px->CurScope(), p->p);
 	      hash_free (labels);
 	      labels = NULL;
+	      p = p->next;
 	    }
 	    aflat_prs_scope (px->CurScope());
 	    pop_name ();
@@ -632,11 +634,12 @@ void aflat_prs_scope (Scope *s)
       }
       else {
 	push_name (vx->getName());
-	if (p) {
+	while (p) {
 	  labels = hash_new (2);
 	  aflat_print_prs (px->CurScope(), p->p);
 	  hash_free (labels);
 	  labels = NULL;
+	  p = p->next;
 	}
 	aflat_prs_scope (px->CurScope());
 	pop_name ();
@@ -782,9 +785,10 @@ void aflat_prs_ns (ActNamespace *ns)
 
   /* my top-level prs */
   p = ns->getprs();
-  if (p) {
+  while (p) {
     /* set scope here */
     aflat_print_prs (ns->CurScope(), p->p);
+    p = p->next;
   }
 
   /* sub-namespaces */
@@ -800,7 +804,6 @@ void aflat_prs_ns (ActNamespace *ns)
 
   /* instances */
   aflat_prs_scope (ns->CurScope());
-  
 }
 
 
