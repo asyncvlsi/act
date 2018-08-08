@@ -1486,6 +1486,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   UserDef *ux;
   act_prs *p;
   act_chp *c;
+  act_prs *old;
   
   switch (t) {
   case ActBody_Lang::LANG_PRS:
@@ -1494,10 +1495,26 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     ux = s->getUserDef();
     if (!ux) {
       /* better be the global namespace */
-      ActNamespace::Global()->setprs (p);
+      if ((old = ActNamespace::Global()->getprs())) {
+	while (old->next) {
+	  old = old->next;
+	}
+	old->next = p;
+      }
+      else {
+	ActNamespace::Global()->setprs (p);
+      }
     }
     else {
-      ux->setprs (p);
+      if ((old = ux->getprs())) {
+	while (old->next) {
+	  old = old->next;
+	}
+	old->next = p;
+      }
+      else {
+	ux->setprs (p);
+      }
     }
     break;
 
