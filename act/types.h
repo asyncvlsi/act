@@ -1013,12 +1013,9 @@ class ActId {
 
   /**< 
      Find canonical root identifier in the current scope.
-     (This ignores Rest()).
   */
   act_connection *Canonical (Scope *s);
 
-  /**< find unique ValueIdx in the current scope */
-  act_connection *CanonicalRec (Scope *s);
 
   void setArray (Array *_a) { a = _a; }
 
