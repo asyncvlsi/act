@@ -1,0 +1,18 @@
+defproc foo (bool x)
+{
+  bool a, b;
+  bool c[2];
+  spec {
+    mk_exclhi(a,b)
+    exclhi(a,b)
+  }
+  prs {
+    [after=410/5] x -> a-
+  }
+  prs {
+    x -> c-
+  }
+}
+
+foo f; 
+foo f2; 

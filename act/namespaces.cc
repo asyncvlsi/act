@@ -69,6 +69,7 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
   lang.chp = NULL;
   lang.hse = NULL;
   lang.prs = NULL;
+  lang.spec = NULL;
 }
 
 void ActNamespace::AppendBody (ActBody *b)

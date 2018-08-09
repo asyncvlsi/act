@@ -31,6 +31,7 @@ enum act_ret_type_type {
   R_ATTR,
   R_PRS_LANG,
   R_CHP_LANG,
+  R_SPEC_LANG,
   R_CHP_GC,
   R_CHP_FUNC,
   R_INST_TYPE,
@@ -52,6 +53,7 @@ typedef struct {
     act_attr_t *attr;
     act_prs_lang_t *prs;
     act_chp_lang_t *chp;
+    act_spec *spec;
     act_chp_gc *gc;
     act_func_arguments_t *func;
     InstType *inst;

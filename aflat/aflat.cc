@@ -7,6 +7,7 @@
  */
 #include <stdio.h>
 #include "aflat.h"
+#include "config.h"
 #include <act/iter.h>
 #include <act/inst.h>
 #include <act/lang.h>
@@ -97,7 +98,7 @@ void suffix_print ()
  *  test
  *------------------------------------------------------------------------
  */
-void prefix_id_print (Scope *s, ActId *id)
+void prefix_id_print (Scope *s, ActId *id, const char *str = "")
 {
   printf ("\"");
 
@@ -120,7 +121,7 @@ void prefix_id_print (Scope *s, ActId *id)
     }
   }
   id->Print (stdout);
-  printf ("\"");
+  printf ("%s\"", str);
 }
 
 void prefix_connid_print (act_connection *c, const char *s = "")
@@ -227,6 +228,107 @@ static void _print_prs_expr (Scope *s, act_prs_expr_t *e, int prec, int flip = 0
   }
 }
 
+static void print_attr_prefix (act_attr_t *attr)
+{
+  /* examine attributes:
+     after
+     weak
+     unstab
+  */
+  int weak = 0;
+  int unstab = 0;
+  int after = 0;
+  int have_after = 0;
+  act_attr_t *x;
+
+  for (x = attr; x; x = x->next) {
+    if (strcmp (x->attr, "weak") == 0) {
+      weak = 1;
+    }
+    else if (strcmp (x->attr, "unstab") == 0) {
+      unstab = 1;
+    }
+    else if (strcmp (x->attr, "after") == 0) {
+      after = x->e->u.v;
+      have_after = 1;
+    }
+  }
+  if (weak) {
+    printf ("weak ");
+  }
+  if (unstab) {
+    printf ("unstab ");
+  }
+  if (have_after) {
+    printf ("after %d ", after);
+  }
+}
+
+void aflat_print_spec (Scope *s, act_spec *spec)
+{
+  const char *tmp;
+  ActId *id;
+  while (spec) {
+    tmp = act_spec_string (spec->type);
+    Assert (tmp, "Hmm");
+    if (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0) {
+      if (spec->count > 1) {
+	int comma = 0;
+	printf ("%s(", tmp);
+	for (int i=0; i < spec->count; i++) {
+	  id = spec->ids[i];
+	  ValueIdx *vx = s->FullLookupVal (id->getName());
+	  InstType *it = vx->t;
+	  Assert (vx, "What");
+	  while (id->Rest()) {
+	    UserDef *u = dynamic_cast<UserDef *> (it->BaseType ());
+	    Assert (u, "Hm");
+	    id = id->Rest();
+	    it = u->Lookup (id);
+	    Assert (it, "Hmm");
+	  }
+	  /* spec->ids[i] might be a bool, or a bool array! fix bool
+	     array case */
+	  if (it->arrayInfo()) {
+	    Array *a = it->arrayInfo();
+	    if (id->arrayInfo()) {
+	      a = id->arrayInfo();
+	    }
+	    Arraystep *astep = a->stepper();
+	    int restore = 0;
+	    if (id->arrayInfo()) {
+	      id->setArray (NULL);
+	      restore = 1;
+	    }
+	    while (!astep->isend()) {
+	      char *tmp = astep->string();
+	      if (comma != 0) {
+		printf (",");
+	      }
+	      prefix_id_print (s, spec->ids[i], tmp);
+	      comma = 1;
+	      FREE (tmp);
+	      astep->step();
+	    }
+	    delete astep;
+	    if (restore) {
+	      id->setArray (a);
+	    }
+	  }
+	  else {
+	    if (comma != 0) {
+	      printf (",");
+	    }
+	    prefix_id_print (s, spec->ids[i]);
+	    comma = 1;
+	  }
+	}
+	printf (")\n");
+      }
+    }
+    spec = spec->next;
+  }
+}
 
 void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 {
@@ -245,7 +347,7 @@ void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	b->v = p;
       }
       else {
-	/* examine attributes */
+	print_attr_prefix (p->u.one.attr);
 	_print_prs_expr (s, p->u.one.e, 0);
 	printf ("->");
 	prefix_id_print (s, p->u.one.id);
@@ -256,6 +358,7 @@ void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	  printf ("-\n");
 	}
 	if (p->u.one.arrow_type == 1) {
+	  print_attr_prefix (p->u.one.attr);
 	  printf ("~(");
 	  _print_prs_expr (s, p->u.one.e, 0);
 	  printf (")");
@@ -269,6 +372,7 @@ void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	  }
 	}
 	else if (p->u.one.arrow_type == 2) {
+	  print_attr_prefix (p->u.one.attr);
 	  _print_prs_expr (s, p->u.one.e, 1);
 	  printf ("->");
 	  prefix_id_print (s, p->u.one.id);
@@ -604,6 +708,7 @@ void aflat_prs_scope (Scope *s)
     
     if (px) {
       act_prs *p = px->getprs();
+      act_spec *spec = px->getspec ();
 
       /* set scope here */
 
@@ -624,6 +729,9 @@ void aflat_prs_scope (Scope *s)
 	      labels = NULL;
 	      p = p->next;
 	    }
+	    if (spec) {
+	      aflat_print_spec (px->CurScope(), spec);
+	    }
 	    aflat_prs_scope (px->CurScope());
 	    pop_name ();
 	  }
@@ -640,6 +748,9 @@ void aflat_prs_scope (Scope *s)
 	  hash_free (labels);
 	  labels = NULL;
 	  p = p->next;
+	}
+	if (spec) {
+	  aflat_print_spec (px->CurScope(), spec);
 	}
 	aflat_prs_scope (px->CurScope());
 	pop_name ();
@@ -789,6 +900,9 @@ void aflat_prs_ns (ActNamespace *ns)
     /* set scope here */
     aflat_print_prs (ns->CurScope(), p->p);
     p = p->next;
+  }
+  if (ns->getspec ()) {
+    aflat_print_spec (ns->CurScope(), ns->getspec ());
   }
 
   /* sub-namespaces */

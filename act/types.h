@@ -21,6 +21,7 @@ class ActBody;
 struct act_chp_lang;
 struct act_chp;
 struct act_prs;
+struct act_spec;
 struct act_attr;
 union inst_param;
 class AExpr;
@@ -322,6 +323,9 @@ class UserDef : public Type {
   void setchp (act_chp *c) { lang.chp = c; }
   act_chp *getchp() { return lang.chp; }
 
+  void setspec (act_spec *s) { lang.spec = s; }
+  act_spec *getspec() { return lang.spec; }
+
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
   unsigned int parent_eq:1;	/**< 1 if this is an equality, 0 if it
@@ -358,6 +362,7 @@ class UserDef : public Type {
   struct {
     act_prs *prs;
     act_chp *hse, *chp;
+    act_spec *spec;
   } lang;
 };
 
@@ -1015,6 +1020,8 @@ class ActId {
   /**< find unique ValueIdx in the current scope */
   act_connection *CanonicalRec (Scope *s);
 
+  void setArray (Array *_a) { a = _a; }
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */
@@ -1255,6 +1262,11 @@ class ActBody_Lang : public ActBody {
     lang = c;
   }
 
+  ActBody_Lang (act_spec *s) {
+    t = LANG_SPEC;
+    lang = s;
+  }
+
   void Expand (ActNamespace *, Scope *);
 
  private:
@@ -1262,9 +1274,10 @@ class ActBody_Lang : public ActBody {
     LANG_PRS,
     LANG_CHP,
     LANG_HSE,
-    LANG_SPICE,
     LANG_SPEC,
-    LANG_SIZE
+
+    LANG_SIZE,
+    LANG_SPICE
   } t;
   void *lang;
 };
@@ -1287,6 +1300,7 @@ class ActBody_Lang : public ActBody {
 #define T_CHAN       0x6
 #define T_DATA       0x7
 #define T_SELF       0x8   /* special type, "self" */
+#define T_ARRAYOF    0x10
 
 int act_type_expr (Scope *, Expr *);
 int act_type_var (Scope *, ActId *);

@@ -404,6 +404,9 @@ class ActNamespace {
   void setchp (struct act_chp *c) { lang.chp = c; }
   struct act_chp *getchp() { return lang.chp; }
 
+  void setspec (struct act_spec *s) { lang.spec = s; }
+  struct act_spec *getspec() { return lang.spec; }
+
  private:
   /**
    * hash table entry for this namespace
@@ -436,6 +439,7 @@ class ActNamespace {
   struct {
     struct act_prs *prs;
     struct act_chp *chp, *hse;
+    struct act_spec *spec;
   } lang;
   
   /**

@@ -1,0 +1,2 @@
+ERROR: File `6.act', line 13, col 12
+	Identifier `c' is not of type bool
