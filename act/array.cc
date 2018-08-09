@@ -10,7 +10,61 @@
 #include <string.h>
 #include "list.h"
 #include "misc.h"
+#include "hash.h"
 
+
+#if 0
+int Array::arrayhashfn (int sz, void *key)
+{
+  Array *a = (Array *)key;
+  Assert (a->expanded == 1, "Hmm");
+  int h;
+  unsigned char tmp = a->deref;
+
+  h = hash_function_continue (sz, &tmp, sizeof (char), 0, 0);
+  h = hash_function_continue (sz, (const unsigned char *)&a->next,
+			      sizeof (void *), h, 1);
+  h = hash_function_continue (sz, (const unsigned char *)&a->dims,
+			      sizeof (int), h, 1);
+  for (int i=0; i < a->dims; i++) {
+    h = hash_function_continue (sz, (const unsigned char *) &a->r[i].u.ex.lo, sizeof (int), h, 1);
+    h = hash_function_continue (sz, (const unsigned char *) &a->r[i].u.ex.hi, sizeof (int), h, 1);
+    tmp = a->r[i].u.ex.isrange;
+    h = hash_function_continue (sz, (const unsigned char *) &tmp, sizeof (char), h, 1);
+  }
+  return h;
+}
+
+int Array::arraymatchfn (void *key1, void *key2)
+{
+  Array *k1, *k2;
+  k1 = (Array *)key1;
+  k2 = (Array *)key2;
+  Assert (k1->expanded == 1, "hmm");
+  Assert (k2->expanded == 1, "hmm");
+
+  if (k1->deref != k2->deref) return 0;
+  if (k1->next != k2->next) return 0;
+  if (k1->dims != k2->dims) return 0;
+
+  for (int i=0; i < k1->dims; i++) {
+    if (k1->r[i].u.ex.isrange != k2->r[i].u.ex.isrange) return 0;
+    if (k1->r[i].u.ex.lo != k2->r[i].u.ex.lo) return 0;
+    if (k1->r[i].u.ex.hi != k2->r[i].u.ex.hi) return 0;
+  }
+  return 1;
+}
+
+void *Array::arraydupfn (void *key)
+{
+  Array *k = (Array *)key;
+}
+
+void Array::arrayfreefn (void *key)
+{
+  Array *k = (Array *)key;
+}
+#endif
 
 /*------------------------------------------------------------------------
  * Basic constructor
