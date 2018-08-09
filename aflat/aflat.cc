@@ -241,6 +241,8 @@ static void print_attr_prefix (act_attr_t *attr)
   int have_after = 0;
   act_attr_t *x;
 
+  if (export_format == LVS_FMT) return;
+
   for (x = attr; x; x = x->next) {
     if (strcmp (x->attr, "weak") == 0) {
       weak = 1;
@@ -271,7 +273,10 @@ void aflat_print_spec (Scope *s, act_spec *spec)
   while (spec) {
     tmp = act_spec_string (spec->type);
     Assert (tmp, "Hmm");
-    if (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0) {
+    if ((export_format == PRSIM_FMT &&
+	 (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0)) ||
+	(export_format == LVS_FMT &&
+	 (strcmp (tmp, "exclhi") == 0 || strcmp (tmp, "excllo") == 0))) {
       if (spec->count > 1) {
 	int comma = 0;
 	printf ("%s(", tmp);
