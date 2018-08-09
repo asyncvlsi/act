@@ -10,13 +10,22 @@
    Language bodies
 */
 
-language_body[ActBody *]: lang_chp 
-| lang_hse 
+language_body[ActBody *]: lang_chp
+{{X:
+    return $1;
+}}
+| lang_hse
+{{X:
+    return $1;
+}}
 | lang_prs 
 {{X:
     return $1;
 }}
-| lang_spec 
+| lang_spec
+{{X:
+    return $1;
+}}
 | lang_size 
 ;
 
@@ -151,6 +160,7 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
       p->gnd = $0->supply.gnd;
       p->nsc = $0->supply.nsc;
       p->psc = $0->supply.psc;
+      p->next = NULL;
     }
     if (p) {
       b = new ActBody_Lang (p);
@@ -169,6 +179,22 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
 ;
 
 lang_spec[ActBody *]: "spec" "{" [ spec_body ] "}"
+{{X:
+    ActBody *b;
+
+    if (!OPT_EMPTY ($3)) {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_SPEC_LANG);
+      b = new ActBody_Lang (r->u.spec);
+      FREE (r);
+    }
+    else {
+      b = NULL;
+    }
+    OPT_FREE ($3);
+    return b;
+}}    
 ;
 
 chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
@@ -830,16 +856,30 @@ bool_expr_id[ActId *]: expr_id
 {{X:
     int t;
     t = act_type_var ($0->scope, $1);
-    if (t == T_ERR) 
     if (t != T_BOOL) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
-      fprintf ($f, "'' is not of type bool");
+      fprintf ($f, "'' is not of type bool\n");
       exit (1);
     }
     return $1;
 }}
 ;
+
+bool_expr_id_or_array[ActId *]: expr_id
+{{X:
+    int t;
+    t = act_type_var ($0->scope, $1);
+    if (t != T_BOOL && t != (T_BOOL|T_ARRAYOF)) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is not of type bool or bool[]\n");
+      exit (1);
+    }
+    return $1;
+}}
+;
+
 
 /*
   CONSISTENCY: MAKE SURE THIS IS CONSISTENT WITH prs.c
@@ -903,12 +943,53 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
 /*
   Specification body
 */
-spec_body: spec_body_item spec_body 
-| spec_body_item 
+spec_body[act_spec *]: spec_body_item spec_body
+{{X:
+    $1->next = $2;
+    return $1;
+}}
+| spec_body_item
+{{X:
+    return $1;
+}}
 ;
 
-spec_body_item: ID "(" { bool_expr_id "," }* ")" 
-| "{" wbool_expr "}"
+spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
+{{X:
+    int count = config_get_table_size ("act.spec_types");
+    char **specs = config_get_table_string ("act.spec_types");
+    int i;
+
+    for (i=0; i < count; i++) {
+      if (strcmp ($1, specs[i]) == 0)
+	break;
+    }
+    if (i == count) {
+      $e("Unknown spec body directive ``%s''\n", $1);
+      fprintf ($f, "Valid:");
+      for (i=0; i < count; i++) {
+	fprintf ($f, " %s", specs[i]);
+      }
+      fprintf ($f, "\n");
+      exit (1);
+    }
+
+    listitem_t *li;
+
+    act_spec *s;
+
+    NEW (s, act_spec);
+
+    s->count = list_length ($3);
+    s->type = i;
+    MALLOC (s->ids, ActId *, s->count);
+    i = 0;
+    for (li = list_first ($3); li; li = list_next (li)) {
+      s->ids[i++] = (ActId *)list_value (li);
+    }
+    s->next = NULL;
+    return s;
+}}
 ;
 
 /*

@@ -1487,7 +1487,8 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   act_prs *p;
   act_chp *c;
   act_prs *old;
-  
+  act_spec *spec;
+
   switch (t) {
   case ActBody_Lang::LANG_PRS:
     p = prs_expand ((act_prs *)lang, ns, s);
@@ -1537,6 +1538,17 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     }
     else {
       ux->sethse (c);
+    }
+    break;
+
+  case ActBody_Lang::LANG_SPEC:
+    spec = spec_expand ((act_spec *)lang, ns, s);
+    ux = s->getUserDef ();
+    if (!ux) {
+      ActNamespace::Global()->setspec (spec);
+    }
+    else {
+      ux->setspec (spec);
     }
     break;
     

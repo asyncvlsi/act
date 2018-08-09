@@ -79,42 +79,47 @@ int act_type_var (Scope *s, ActId *id)
   Assert (!(id->isDeref () && !it->arrayInfo()), "Check during parsing!");
   
   Type *t = it->BaseType ();
+  unsigned int arr = 0;
+
+  if (it->arrayInfo() && !id->isDeref()) {
+    arr = T_ARRAYOF;
+  }
 
   if (TypeFactory::isPIntType (t)) {
-    return T_INT|T_PARAM|is_strict;
+    return T_INT|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isPBoolType (t)) {
-    return T_BOOL|T_PARAM|is_strict;
+    return T_BOOL|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isPRealType (t)) {
-    return T_REAL|T_PARAM|is_strict;
+    return T_REAL|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isIntType (t)) {
-    return T_INT;
+    return T_INT|arr;
   }
   if (TypeFactory::isBoolType (t)) {
-    return T_BOOL;
+    return T_BOOL|arr;
   }
   if (!TypeFactory::isDataType (t)) {
     if (TypeFactory::isChanType (t)) {
-      return T_CHAN;
+      return T_CHAN|arr;
     }
     if (TypeFactory::isProcessType (t)) {
-      return T_PROC;
+      return T_PROC|arr;
     }
     typecheck_err ("Identifier `%s' is not a data type", id->getName ());
     return T_ERR;
   }
   d = dynamic_cast<Data *>(t);
   if (d->isEnum()) {
-    return T_INT;
+    return T_INT|arr;
   }
 #if 0
   fatal_error ("FIX this. Check that the data type is an int or a bool");
   /* XXX: FIX THIS PLEASE */
   typecheck_err ("FIX this. Check data type.");
 #endif
-  return T_DATA;
+  return T_DATA|arr;
 }
 
 
@@ -140,7 +145,7 @@ int act_type_expr (Scope *s, Expr *e)
   do {						\
     lt = act_type_expr (s, e->u.e.l);		\
     rt = act_type_expr (s, e->u.e.r);		\
-    if (lt == T_ERR || rt == T_ERR) {		\
+    if (lt == T_ERR || rt == T_ERR || (lt & T_ARRAYOF) || (rt & T_ARRAYOF)) { \
       return T_ERR;				\
     }						\
     flgs = lt & rt & (T_PARAM|T_STRICT);        \
@@ -155,7 +160,7 @@ int act_type_expr (Scope *s, Expr *e)
   do {								\
     lt = act_type_expr (s, e->u.e.l);				\
     rt = act_type_expr (s, e->u.e.r);				\
-    if (lt == T_ERR || rt == T_ERR) {				\
+    if (lt == T_ERR || rt == T_ERR || (lt & T_ARRAYOF) || (rt & T_ARRAYOF)) { \
       return T_ERR;						\
     }								\
     flgs = lt & rt & (T_PARAM|T_STRICT);			\

@@ -360,14 +360,14 @@ static act_attr_t *attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 act_attr_t *prs_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 {
   current_attr_num = config_get_table_size ("act.prs_attr");
-  char **current_attr_table = config_get_table_string ("act.prs_attr");
+  current_attr_table = config_get_table_string ("act.prs_attr");
   return attr_expand (a, ns, s);
 }
 
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
 {
   current_attr_num = config_get_table_size ("act.instance_attr");
-  char **current_attr_table = config_get_table_string ("act.instance_attr");
+  current_attr_table = config_get_table_string ("act.instance_attr");
   return attr_expand (a, ns, s);
 }
 
@@ -692,4 +692,48 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     break;
   }
   return ret;
+}
+
+
+act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
+{
+  act_spec *ret = NULL;
+  act_spec *prev = NULL;
+  act_spec *tmp = NULL;
+
+  while (s) {
+    NEW (tmp, act_spec);
+    tmp->type = s->type;
+    tmp->count = s->count;
+    MALLOC (tmp->ids, ActId *, tmp->count);
+    for (int i=0; i < tmp->count; i++) {
+      tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+    }
+    tmp->next = NULL;
+    if (prev) {
+      prev->next = tmp;
+    }
+    else {
+      ret = tmp;
+    }
+    prev = tmp;
+    s = s->next;
+  }
+  return ret;
+}
+
+const char *act_spec_string (int type)
+{
+  static int num = -1;
+  static char **opts;
+
+  if (num == -1) {
+    num = config_get_table_size ("act.spec_types");
+    opts = config_get_table_string ("act.spec_types");
+  }
+
+  if (type < 0 || type >= num) {
+    return NULL;
+  }
+  return opts[type];
 }
