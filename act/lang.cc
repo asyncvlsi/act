@@ -439,6 +439,11 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       else {
 	/* it is a char* */
 	tmp->u.one.id = p->u.one.id;
+	if (p->u.one.arrow_type != 0) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "@-expressions must only use -> arrows");
+	  exit (1);
+	}
       }
       tmp->u.one.arrow_type = p->u.one.arrow_type;
       tmp->u.one.dir = p->u.one.dir;
