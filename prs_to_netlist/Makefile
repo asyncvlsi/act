@@ -1,0 +1,27 @@
+#-------------------------------------------------------------------------
+#
+#  Copyright (c) 2018 Rajit Manohar
+#  All Rights Reserved
+#
+#-------------------------------------------------------------------------
+BINARY=netgen.$(EXT)
+
+TARGETS=$(BINARY) ../passes/$(EXT)/netgen.o
+
+OBJS=main.o globals.o netlist.o emit.o
+
+SRCS=$(OBJS1:.o=.cc)
+
+include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+$(BINARY): $(LIB) $(OBJS) $(ACTDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACT)
+
+../passes/$(EXT)/netgen.o: globals.o netlist.o emit.o
+	-if [ ! -d ../passes/$(EXT) ]; \
+         then \
+           mkdir ../passes/$(EXT); \
+        fi
+	ld -r -o ../passes/$(EXT)/netgen.o globals.o netlist.o emit.o
+
+-include Makefile.deps

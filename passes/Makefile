@@ -8,7 +8,7 @@
 TARGETS=libactpass_$(EXT).a
 TARGETINCS=passes.h
 
-USEOBJS=aflat.o
+USEOBJS=aflat.o netgen.o
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
