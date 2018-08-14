@@ -68,7 +68,9 @@ class Act {
   ActNamespace *findNamespace (const char *s);
   ActNamespace *findNamespace (ActNamespace *, const char *);
   ActNamespace *Global() { return gns; }
-  
+
+  void *aux_find (const char *phase);
+  void aux_add (const char *phase, void *data);
 
 private:
   TypeFactory *tf;		/* type factory for the file */
@@ -77,6 +79,8 @@ private:
   char mangle_characters[256];
   int inv_map[256];
   int any_mangling;
+
+  struct Hashtable *aux;	// any aux storage you want
   
 };
 

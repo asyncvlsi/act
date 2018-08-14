@@ -224,6 +224,8 @@ Act::Act (const char *s)
 
   gns = ActNamespace::global;
   tf = tr.tf;
+
+  aux = hash_new (2);
 }
 
 
@@ -338,3 +340,34 @@ ActNamespace *Act::findNamespace (ActNamespace *ns, const char *s)
   return ns->findNS (s);
 }
 		 
+
+void Act::aux_add (const char *phase, void *data)
+{
+  hash_bucket_t *b;
+
+  b = hash_lookup (aux, phase);
+  if (b) {
+    if (b->v) {
+      warning ("Act::aux_append is replacing old data for `%s'", phase);
+    }
+    b->v = data;
+  }
+  else {
+    b = hash_add (aux, phase);
+    b->v = data;
+  }
+}
+
+void *Act::aux_find (const char *phase)
+{
+  hash_bucket_t *b;
+
+  b = hash_lookup (aux, phase);
+  if (b) {
+    return b->v;
+  }
+  else {
+    return NULL;
+  }
+}
+
