@@ -13,7 +13,6 @@
 #include <act/inst.h>
 #include <act/lang.h>
 
-
 /* hash table for labels */
 static struct Hashtable *labels;
 
@@ -21,6 +20,8 @@ static struct Hashtable *labels;
 static list_t *prefixes = NULL;
 
 static list_t *suffixes = NULL;
+
+static output_formats export_format;
 
 void push_namespace_name (const char *s)
 {
@@ -927,9 +928,25 @@ void aflat_prs_ns (ActNamespace *ns)
 }
 
 
-void aflat_prs (Act *a)
+void aflat_prs (Act *a, output_formats fmt)
 {
+  export_format = fmt;
   prefixes = list_new ();
   aflat_prs_ns (a->Global());
   list_free (prefixes);
+}
+
+void act_prsflat_prsim (Act *a)
+{
+  aflat_prs (a, PRSIM_FMT);
+}
+
+void act_prsflat_lvs (Act *a)
+{
+  aflat_prs (a, LVS_FMT);
+}
+
+void act_expand (Act *a)
+{
+  a->Expand ();
 }

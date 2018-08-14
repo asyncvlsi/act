@@ -8,8 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "aflat.h"
+#include <dlfcn.h>
 
-output_formats export_format;
 
 void usage (char *s)
 {
@@ -17,10 +17,13 @@ void usage (char *s)
   exit (1);
 }
 
+typedef void (*export_pass)(Act *, output_formats);
+			
 int main (int argc, char **argv)
 {
   Act *a;
   char *file;
+  output_formats export_format;
 
   Act::Init (&argc, &argv);
   
@@ -49,7 +52,7 @@ int main (int argc, char **argv)
   a = new Act (file);
   a->Expand ();
 
-  aflat_prs (a);
+  aflat_prs (a, export_format);
 
   return 0;
 }

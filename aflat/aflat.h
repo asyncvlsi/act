@@ -15,8 +15,8 @@ enum output_formats {
   LVS_FMT
 };
 
-extern output_formats export_format;
 
-void aflat_prs (Act *a);
+void act_expand (Act *a);
+void aflat_prs (Act *a, output_formats fmt);
 
 #endif /* __AFLAT_H__ */
