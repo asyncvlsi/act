@@ -10,8 +10,6 @@
 #include "aflat.h"
 #include "config.h"
 #include <act/iter.h>
-#include <act/inst.h>
-#include <act/lang.h>
 
 /* hash table for labels */
 static struct Hashtable *labels;

@@ -118,6 +118,7 @@
     } while (0)						
 
 #define A_NEXT(name)  name[A_LEN(name)]
+#define A_LAST(name)  name[A_LEN(name)-1]
 #define A_INC(name)  A_LEN(name)++
 
 #define A_APPEND(name,type,v)			\

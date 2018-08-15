@@ -12,7 +12,6 @@
 #include "qops.h"
 #include "bitset.h"
 #include <act/iter.h>
-#include <act/inst.h>
 
 static std::map<Process *, netlist_t *> *netmap = NULL;
 
@@ -153,7 +152,7 @@ static void compute_max_reff (netlist_t *N, int type)
 	/* over-ridden by attributes */
 	continue;
       }
-      v->n->reff[type] = 0;
+      v->n->reff[type] = -1;
       for (li = list_first (v->n->wl); li; li = list_next (li)) {
 	p = (path_t *) list_value (li);
 	v->n->reff[type] = MAX(v->n->reff[type], p->reff);
@@ -318,7 +317,7 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
 
   e->w = -1;
   e->l = -1;
-  e->flavor = -1;
+  e->flavor = 0; /* default fet type */
   e->subflavor = -1;
 
   e->type = 0;
@@ -347,7 +346,7 @@ static edge_t *edge_alloc (netlist_t *n, ActId *id, node_t *a, node_t *b,
 
   c = id->Canonical (n->p->CurScope ());
   Assert (c, "This is weird");
-  c = c->primary ();
+  Assert (c == c->primary(), "This is weird");
 
   v = var_lookup (n, c);
 
@@ -395,6 +394,8 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_PCHG     (0x02 << 3) // pchg edges: can use n to vdd, p to gnd
 #define EDGE_INVERT   (0x04 << 3) // strip pchg
 #define EDGE_CELEM    (0x08 << 3) // strip pchg
+#define EDGE_KEEPER   (0x10 << 3) // keeper edge (force)
+#define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
 
 static int max_tree_sharing = -1;
 
@@ -464,11 +465,11 @@ static void generate_staticizers (netlist_t *N)
 
 	edge_t *e_inv;
 
-	e_inv = edge_alloc (N, n, N->Vdd, iout, N->psc);
+	e_inv = edge_alloc (N, n, N->Vdd, iout, N->nsc);
 	e_inv->type = EDGE_PFET;
 	set_fet_params (N, e_inv, EDGE_STATINV|EDGE_PFET, NULL);
 
-	e_inv = edge_alloc (N, n, N->GND, iout, N->nsc);
+	e_inv = edge_alloc (N, n, N->GND, iout, N->psc);
 	e_inv->type = EDGE_NFET;
 	set_fet_params (N, e_inv, EDGE_STATINV|EDGE_NFET, NULL);
 	n->v->inv = iout;
@@ -482,7 +483,7 @@ static void generate_staticizers (netlist_t *N)
 
 	/* pfets */
 	tmp = node_alloc (N, NULL);
-	e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
+	e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
 	e->type = EDGE_PFET;
 	e->w = min_w_in_lambda;
 	e->l = min_l_in_lambda;
@@ -504,6 +505,8 @@ static void generate_staticizers (netlist_t *N)
       }
       else {
 	double r;
+	double rleft;
+	int len;
 	edge_t *e;
 	/* weak inverter */
 
@@ -512,43 +515,45 @@ static void generate_staticizers (netlist_t *N)
 	r /= weak_to_strong_ratio;
 	r /= p_n_ratio;
 
+	rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
+	if (rleft < 0) {
+	  len = 0;
+	}
+	else {
+	  len = (int) (0.5 + rleft*min_w_in_lambda);
+	}
+
 	/* two options:
-	      - minimum size is weak enough
+	      - minimum size is weak enough, or 
+	           series resistance is less than min length in which
+	      case use slightly longer inverter
+	      
 	      - min size + series resistance
-	            \--- this might be weaker than necessary, but that
-		         is okay 
 	*/
-	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r) {
-	  e = edge_alloc (N, n->v->inv, N->Vdd, n, N->psc);
+	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
+	    (len < min_l_in_lambda)) {
+	  e = edge_alloc (N, n->v->inv, N->Vdd, n, N->nsc);
 	  e->type = EDGE_PFET;
 	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda;
+	  e->l = min_l_in_lambda + len;
 	  e->keeper = 1;
 	}
 	else {
 	  /* two edges */
-	  node_t *tmp;
-	  double rleft;
-	  int len;
-
-	  /* subtract strength of min fet */
-	  rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
-
 	  /* residual length conforming to rules */
-	  len = (int) (0.5 + rleft*min_w_in_lambda);
-	  len = MAX (len, min_l_in_lambda);
+	  node_t *tmp;
 
 	  tmp = node_alloc (N, NULL); // tmp node
 
 	  /* resistor */
-	  e = edge_alloc (N, N->GND, N->Vdd, tmp, N->psc);
+	  e = edge_alloc (N, N->GND, N->Vdd, tmp, N->nsc);
 	  e->type = EDGE_PFET;
 	  e->w = min_w_in_lambda;
 	  e->l = len;
 	  e->keeper = 1;
 
 	  /* inv */
-	  e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
+	  e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
 	  e->type = EDGE_PFET;
 	  e->w = min_w_in_lambda;
 	  e->l = min_l_in_lambda;
@@ -559,38 +564,38 @@ static void generate_staticizers (netlist_t *N)
 	r = n->reff[EDGE_PFET];
 	r /= weak_to_strong_ratio;
 	r *= p_n_ratio;
+	rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
+	if (rleft < 0) {
+	  len = 0;
+	}
+	else {
+	  len = (int) (0.5 + rleft*min_w_in_lambda);
+	}
 	
-	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r) {
-	  e = edge_alloc (N, n->v->inv, N->GND, n, N->nsc);
+	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
+	    (len < min_l_in_lambda)) {
+	  e = edge_alloc (N, n->v->inv, N->GND, n, N->psc);
 	  e->type = EDGE_NFET;
 	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda;
+	  e->l = min_l_in_lambda + len;
 	  e->keeper = 1;
 	}
 	else {
 	  /* two edges */
-	  node_t *tmp;
-	  double rleft;
-	  int len;
-
-	  /* subtract strength of min fet */
-	  rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
-
 	  /* residual length conforming to rules */
-	  len = (int) (0.5 + rleft*min_w_in_lambda);
-	  len = MAX (len, min_l_in_lambda);
+	  node_t *tmp;
 
 	  tmp = node_alloc (N, NULL); // tmp node
 
 	  /* resistor */
-	  e = edge_alloc (N, N->Vdd, N->GND, tmp, N->nsc);
+	  e = edge_alloc (N, N->Vdd, N->GND, tmp, N->psc);
 	  e->type = EDGE_NFET;
 	  e->w = min_w_in_lambda;
 	  e->l = len;
 	  e->keeper = 1;
 
 	  /* inv */
-	  e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
+	  e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
 	  e->type = EDGE_NFET;
 	  e->w = min_w_in_lambda;
 	  e->l = min_l_in_lambda;
@@ -637,13 +642,12 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
   if (EDGE_SIZE (type) == EDGE_FEEDBACK) {
     f->keeper = 1;
   }
-  if (EDGE_SIZE (type) == EDGE_FEEDBACK && (type & EDGE_INVERT)) {
+  if ((EDGE_SIZE (type) == EDGE_FEEDBACK && (type & EDGE_INVERT)) || (type & EDGE_CKEEPER)) {
     f->combf = 1;
   }
   if (type & EDGE_TREE) {
     f->tree = 1;
   }
-
   if (EDGE_SIZE (type) == EDGE_NORMAL) {
     /* if type & EDGE_INVERT, could be => opp rule 
        if type & EDGE_CELEM, could be #> rule
@@ -672,7 +676,7 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->l = n->sz[f->type].l;
     }
     f->w = MAX(f->w, min_w_in_lambda);
-    f->l = MAX(f->l, min_w_in_lambda);
+    f->l = MAX(f->l, min_l_in_lambda);
   }
   else if (EDGE_SIZE (type) == EDGE_STATINV
 	   || EDGE_SIZE(type) == EDGE_FEEDBACK) {
@@ -854,7 +858,7 @@ static void create_expr_edges (netlist_t *N, int type, node_t *left,
 
       f = edge_alloc (N, e->u.v.id, left, right,
 		      (sense == 0 /* uninverted var, n-fet */
-		       ? N->nsc : N->psc));
+		       ? N->psc : N->nsc));
 
       /* set w, l, flavor, subflavor */
       f->type = (sense == 0 ? EDGE_NFET : EDGE_PFET);
@@ -867,7 +871,7 @@ static void create_expr_edges (netlist_t *N, int type, node_t *left,
 
       f = edge_alloc (N, e->u.v.id, left, right,
 		      (sense == 1 /* inverted var, n-fet */
-		       ? N->nsc : N->psc));
+		       ? N->psc : N->nsc));
       f->type = (sense == 0 ? EDGE_PFET : EDGE_NFET);
       set_fet_params (N, f, type, e->u.v.sz);
     }
@@ -1018,6 +1022,7 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 {
   int d;
   if (!p) return;
+  act_attr_t *attr;
 
   switch (p->type) {
   case ACT_PRS_RULE:
@@ -1042,12 +1047,63 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     }
     else {
       var_t *v;
+      double cap = default_load_cap;
+      unsigned int attr_type = 0;
 
       v = var_lookup (N, p->u.one.id);
+      v->output = 1;
+
+      for (attr = p->u.one.attr; attr; attr = attr->next) {
+	/* look for keeper, iskeeper, isckeeper, loadcap, oresis,
+	   output,  N_reff, P_reff, autokeeper, comb 
+	*/
+	if (strcmp (attr->attr, "keeper") == 0) {
+	  if (attr->e->u.v == 0) {
+	    v->unstaticized = 1;
+	  }
+	  else {
+	    v->unstaticized = 0;
+	  }
+	}
+	else if (strcmp (attr->attr, "iskeeper") == 0) {
+	  if (attr->e->u.v) {
+	    attr_type |= EDGE_KEEPER;
+	  }
+	}
+	else if (strcmp (attr->attr, "isckeeper") == 0) {
+	  if (attr->e->u.v) {
+	    attr_type |= EDGE_CKEEPER;
+	  }
+	}
+	else if (strcmp (attr->attr, "loadcap") == 0) {
+	  cap = attr->e->u.f;
+	}
+	else if (strcmp (attr->attr, "oresis") == 0) {
+	  /* do something here */
+	}
+	else if (strcmp (attr->attr, "N_reff") == 0) {
+	  v->n->reff[EDGE_NFET] = attr->e->u.f;
+	  v->n->reff_set[EDGE_NFET] = 1;
+	}
+	else if (strcmp (attr->attr, "P_reff") == 0) {
+	  v->n->reff[EDGE_PFET] = attr->e->u.f;
+	  v->n->reff_set[EDGE_PFET] = 1;
+	}
+	else if (strcmp (attr->attr, "comb") == 0) {
+	  if (attr->e->u.v) {
+	    v->usecf = 1;
+	  }
+	  else {
+	    v->usecf = 0;
+	  }
+	}
+      }
+
+      v->n->cap = cap;
 
       if (p->u.one.arrow_type == 0) {
 	/* -> */
-	create_expr_edges (N, d | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
+	create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, v->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
@@ -1058,11 +1114,11 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* => */
-	create_expr_edges (N, d | EDGE_NORMAL,
+	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, v->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
-	create_expr_edges (N, (1-d) | EDGE_INVERT | EDGE_NORMAL,
+	create_expr_edges (N, (1-d) | attr_type | EDGE_INVERT | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
 			   p->u.one.e, v->n, 1);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL|EDGE_INVERT);
@@ -1074,11 +1130,11 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* #> */
-	create_expr_edges (N, d | EDGE_NORMAL,
+	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, v->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_NORMAL);
-	create_expr_edges (N, (1-d) | EDGE_CELEM | EDGE_NORMAL,
+	create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
 			   p->u.one.e, v->n, 1);
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_CELEM | EDGE_NORMAL);
@@ -1089,13 +1145,26 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     break;
 
   case ACT_PRS_GATE:
+    for (attr = p->u.p.attr; attr; attr = attr->next) {
+      if (strcmp (attr->attr, "output") == 0) {
+	unsigned int v = attr->e->u.v;
+	if (v & 0x1) {
+	  var_t *x = var_lookup (N, p->u.p.s);
+	  x->output = 1;
+	}
+	if (v & 0x2) {
+	  var_t *x = var_lookup (N, p->u.p.d);
+	  x->output = 1;
+	}
+      }
+    }
     if (p->u.p.g) {
       edge_t *f;
       /* add nfet */
       f = edge_alloc (N, p->u.p.g,
 		      var_lookup (N, p->u.p.s)->n,
 		      var_lookup (N, p->u.p.d)->n,
-		      N->nsc);
+		      N->psc);
       f->type = EDGE_NFET;
       f->raw = 1;
       set_fet_params (N, f, EDGE_NFET|EDGE_NORMAL, p->u.p.sz);
@@ -1106,7 +1175,7 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       f = edge_alloc (N, p->u.p._g,
 		      var_lookup (N, p->u.p.s)->n,
 		      var_lookup (N, p->u.p.d)->n,
-		      N->psc);
+		      N->nsc);
       f->type = EDGE_PFET;
       f->raw = 1;
       set_fet_params (N, f, EDGE_PFET|EDGE_NORMAL, p->u.p.sz);
@@ -1152,8 +1221,12 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
   NEW (N, netlist_t);
 
+  A_INIT (N->ports);
+  A_INIT (N->instports);
+  
   N->B = bool_init ();
   N->p = proc;
+  N->uH = ihash_new (2);
 
   N->visited = 0;
 

@@ -10,7 +10,7 @@ TARGETS=$(BINARY) ../passes/$(EXT)/netgen.o
 
 OBJS=main.o globals.o netlist.o emit.o
 
-SRCS=$(OBJS1:.o=.cc)
+SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 

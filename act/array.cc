@@ -1597,3 +1597,20 @@ char *Arraystep::string()
   }
   return s;
 }
+
+
+Array *Arraystep::toArray ()
+{
+  Array *a = new Array();
+
+  a->deref = 1;
+  a->expanded = 1;
+  a->dims = base->dims;
+  MALLOC (a->r, struct Array::range, a->dims);
+  for (int i = 0; i < a->dims; i++) {
+    a->r[i].u.ex.isrange = 0;
+    a->r[i].u.ex.lo = deref[i];
+    a->r[i].u.ex.hi = deref[i];
+  }
+  return a;
+}

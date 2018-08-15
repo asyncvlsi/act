@@ -12,10 +12,10 @@
 
 #include <stdio.h>
 #include <act/act.h>
-#include <act/lang.h>
 #include "bool.h"
 #include "list.h"
 #include "bitset.h"
+#include "array.h"
 
 #define EDGE_NFET 0
 #define EDGE_PFET 1
@@ -102,6 +102,12 @@ struct edge {
 
 };
 
+struct netlist_bool_port {
+  act_connection *c;		/* port bool */
+  unsigned int omit:1;		/* skipped due to aliasing */
+  unsigned int input:1;		/* 1 if input, otherwise output */
+};
+  
 
 typedef struct {
   Process *p;
@@ -127,9 +133,16 @@ typedef struct {
     int sw, sl;			/* staticizer sizes */
   } sz[2];    			/* sizes */
 
+
+  A_DECL (struct netlist_bool_port, ports);
+  struct iHashtable *uH;      /* used act_connection *'s in subckts */
+
+  A_DECL (act_connection *, instports);
+
 } netlist_t;
 
 void act_prs_to_netlist (Act *, Process *);
+void act_create_bool_ports (Act *, Process *);
 void act_emit_netlist (Act *, Process *, FILE *);
 void emit_verilog_pins (Act *, FILE *, FILE *, Process *);
 
