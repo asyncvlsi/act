@@ -591,7 +591,13 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       break;
     }
     if (tmp) {
-      q_ins (hd, tl, tmp);
+      if (!hd) {
+	hd = tmp;
+	tl = tmp;
+      }
+      else {
+	tl->next = tmp;
+      }
       while (tl->next) {
 	tl = tl->next;
       }

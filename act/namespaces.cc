@@ -11,6 +11,7 @@
 #include <act/inst.h>
 #include <string.h>
 #include "misc.h"
+#include "array.h"
 
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;

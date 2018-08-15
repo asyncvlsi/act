@@ -40,6 +40,7 @@ int main (int argc, char **argv)
   }
 
   act_prs_to_netlist (a, p);
+  act_create_bool_ports (a, p);
   act_emit_netlist (a, p, fpout);
 
   if (emit_verilog || emit_pinfo) {

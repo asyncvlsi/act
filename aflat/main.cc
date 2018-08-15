@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "aflat.h"
-#include <dlfcn.h>
-
 
 void usage (char *s)
 {
