@@ -9,6 +9,7 @@
 #define __ACT_H__
 
 #include <act/types.h>
+#include <act/lang.h>
 
 /**
  * @file act.h
@@ -51,7 +52,7 @@ class Act {
 
   
   void mangle (char *s);	// install string mangling functions
-
+  int mangle_active() { return any_mangling; }
   int mangle_string (char *src, char *dst, int sz);
   int unmangle_string (char *src, char *dst, int sz);
   void mfprintf (FILE *fp, const char *s, ...);

@@ -44,13 +44,6 @@ int stat_n_length;
 double p_n_ratio;
 double weak_to_strong_ratio;
 
-/* feedback weakening signals */
-int weak_supply_mode;		/* default is 1 */
-int weak_const_Vdd_check;
-int weak_const_GND_check;
-char *weak_const_Vdd;
-char *weak_const_GND;
-
 /* internal diffusion */
 int fet_spacing_diffonly;
 int fet_spacing_diffcontact;
@@ -60,15 +53,10 @@ int top_level_only;		/* only emit top-level cell! */
 
 int emit_parasitics;		/* emit parasitic source/drain area/perim */
 
-int rad_hard;			/* 1 if RH mode (flavors) */
-
 int black_box_mode;		/* 1 if implicit blackbox */
 
 /* load cap on each node */
 double default_load_cap;
-
-/* resistance in series with the output node */
-double default_output_resis;
 
 int ignore_loadcap;		/* ignore loadcap directives (lvs only) */
 
@@ -133,7 +121,6 @@ static void usage (char *name)
   fprintf (stderr, " -p <proc> Emit process <proc>\n");
   fprintf (stderr, " -o <file> Save result to <file> rather than stdout\n");
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
-  fprintf (stderr, " -R	       Use flavor attributes\n");
   fprintf (stderr, " -B	       Black-box mode. Assume empty act process is an external .sp file\n");
   fprintf (stderr, " -V <file> Print Verilog module for the top level in <file> and port information on <file>.port_info \n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
@@ -161,7 +148,6 @@ char *initialize_parameters (int *argc, char ***argv)
   top_level_only = 0;
   conf_file = NULL;
   emit_parasitics = 0;
-  rad_hard = 0;
   fet_width_num = 0;
   fet_width_ranges = NULL;
   extra_fet_string = NULL;
@@ -178,10 +164,6 @@ char *initialize_parameters (int *argc, char ***argv)
 
     case 'B':
       black_box_mode = 1;
-      break;
-
-    case 'R':
-      rad_hard = 1;
       break;
 
     case 'd':
@@ -297,13 +279,6 @@ char *initialize_parameters (int *argc, char ***argv)
   config_set_default_real ("p_n_ratio", 2.0);
   config_set_default_real ("weak_to_strong_ratio", 0.1);
 
-  /* feedback weakening signal */
-  config_set_default_int ("weak_supply_mode", 1);
-  config_set_default_string ("weak_const_Vdd", "Vdd");
-  config_set_default_string ("weak_const_GND", "GND");
-  config_set_default_int ("weak_const_Vdd_check", 0);
-  config_set_default_int ("weak_const_GND_check", 0);
-	
   config_set_default_real ("lambda", 0.1e-6);
 
   config_set_default_string ("mangle_chars", "");
@@ -311,7 +286,6 @@ char *initialize_parameters (int *argc, char ***argv)
   config_set_default_string ("act_cmdline", "");
 
   config_set_default_real ("default_load_cap", 0);
-  config_set_default_real ("default_output_resis", 0);
 
   config_set_default_string ("extra_fet_string", "");
 
@@ -357,18 +331,11 @@ char *initialize_parameters (int *argc, char ***argv)
   p_n_ratio = config_get_real ("p_n_ratio");
   weak_to_strong_ratio = config_get_real ("weak_to_strong_ratio");
 
-  weak_supply_mode = config_get_int ("weak_supply_mode");
-  weak_const_Vdd = config_get_string ("weak_const_Vdd");
-  weak_const_GND = config_get_string ("weak_const_GND");
-  weak_const_Vdd_check = config_get_int ("weak_const_Vdd_check");
-  weak_const_GND_check = config_get_int ("weak_const_GND_check");
-
   fet_spacing_diffonly = config_get_int ("fet_spacing_diffonly");
   fet_spacing_diffcontact = config_get_int ("fet_spacing_diffcontact");
   fet_diff_overhang = config_get_int ("fet_diff_overhang");
 
   default_load_cap = config_get_real ("default_load_cap");
-  default_output_resis = config_get_real ("default_output_resis");
 
   extra_fet_string = config_get_string ("extra_fet_string");
 

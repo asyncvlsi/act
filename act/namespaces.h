@@ -9,9 +9,9 @@
 #define __NAMESPACES_H__
 
 #include "hash.h"
-#include "array.h"
 #include "list.h"
 #include "bitset.h"
+#include "array.h"
 
 class ActBody;
 class UserDef;

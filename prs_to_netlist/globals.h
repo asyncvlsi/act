@@ -42,13 +42,6 @@ extern int stat_n_length;
 extern double p_n_ratio;
 extern double weak_to_strong_ratio;
 
-/* feedback weakening signals */
-extern int weak_supply_mode;	/* default is 1 */
-extern int weak_const_Vdd_check;
-extern int weak_const_GND_check;
-extern char *weak_const_Vdd;
-extern char *weak_const_GND;
-
 /* internal diffusion */
 extern int fet_spacing_diffonly;
 extern int fet_spacing_diffcontact;
@@ -57,8 +50,6 @@ extern int fet_diff_overhang;
 extern int top_level_only;	/* only emit top-level cell! */
 
 extern int emit_parasitics;	/* emit parasitic source/drain area/perim */
-
-extern int rad_hard;		/* 1 if RH mode (flavors) */
 
 extern int black_box_mode;	/* 1 if implicit blackbox */
 

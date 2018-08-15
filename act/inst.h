@@ -8,8 +8,14 @@
 #ifndef __INST_H__
 #define __INST_H__
 
-#include <act/types.h>
+#include <act/expr.h>
+#include <act/basetype.h>
 
+class Scope;
+class Type;
+class Array;
+class AExpr;
+union inst_param;
 
 /**
  * Instance type
