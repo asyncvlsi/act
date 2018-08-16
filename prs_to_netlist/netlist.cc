@@ -204,6 +204,7 @@ static node_t *node_alloc (netlist_t *n, var_t *v)
   x->contact = 0;
   x->supply = 0;
   x->inv = 0;
+  x->visited = 0;
 
   x->reff[0] = -1;
   x->reff[1] = -1;
@@ -328,7 +329,7 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
   e->raw = 0;
 
   e->visited = 0;
-  e->shared = 0;
+  e->pruned = 0;
   e->tree = 0;
 
   list_append (a->e, e);
@@ -396,8 +397,6 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_CELEM    (0x08 << 3) // strip pchg
 #define EDGE_KEEPER   (0x10 << 3) // keeper edge (force)
 #define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
-
-static int max_tree_sharing = -1;
 
 
 static void generate_staticizers (netlist_t *N)
@@ -946,9 +945,194 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
   return ret;
 }
 
-static void tree_compute_sharing (netlist_t *N, int count)
+static void emit_node (netlist_t *N, FILE *fp, node_t *n)
 {
-  /* XXX: fixme */
+  if (n->v) {
+    ActId *id = n->v->id->toid();
+    id->Print (fp);
+    delete id;
+  }
+  else {
+    if (n == N->Vdd) {
+      fprintf (fp, "Vdd");
+    }
+    else if (n == N->GND) {
+      fprintf (fp, "GND");
+    }
+    else {
+      if (n->inv) {
+	fprintf (fp, "#fb%d#", n->i);
+      }
+      else {
+	fprintf (fp, "#%d", n->i);
+      }
+    }
+  }
+}
+
+static void tree_compute_sharing (netlist_t *N, node_t *power,
+				  int type, int count)
+{
+  list_t *wavefront;
+  listitem_t *li, *mi;
+  node_t *a;
+  edge_t *e, *f;
+
+  list_t *next;
+
+  wavefront = list_new ();
+  next = list_new ();
+
+  list_append (wavefront, power);
+  while (count > 0) {
+#if 0
+    printf ("count = %d\n", count);
+    printf ("size of wavefront = %d\n", list_length (wavefront));
+#endif    
+    count--;
+  
+    while (!list_isempty (wavefront)) {
+      
+      a = (node_t *)list_delete_tail (wavefront);
+      /* a is a surviving node */
+      a->visited = 1;
+
+#if 0 
+      printf ("node ");
+      emit_node (N, stdout, a);
+      printf ("\n");
+#endif      
+
+      /* now check if there are any tree edges from a */
+      li = list_first (a->e);
+      while (li) {
+	e = (edge_t *)list_value (li);
+
+	if (e->type != type || e->pruned  || !e->tree) {
+	  li = list_next (li);
+	  continue;
+	}
+
+	if ((e->a == a && (e->b->visited || e->b->v)) ||
+	    (e->b == a && (e->a->visited || e->a->v))) {
+	  li = list_next (li);
+	  continue;
+	}
+
+#if 0
+	printf (" -- edge to ");
+	if (a == e->a) {
+	  emit_node (N, stdout, e->b);
+	}
+	else {
+	  emit_node (N, stdout, e->a);
+	}
+	printf (" [flags:");
+	if (e->pruned) {
+	  printf (" pruned");
+	}
+	if (e->tree) {
+	  printf (" tree");
+	}
+	printf ("]\n");
+#endif
+
+	if (e->a == a) {
+	  if (!e->b->visited) {
+	    /* add e->b to  the next list */
+	    listitem_t *xi;
+	    for (xi = list_first (next); xi; xi = list_next (xi)) {
+	      if ((node_t *)list_value (xi) == e->b)
+		break;
+	    }
+	    if (!xi) {
+	      list_append (next, e->b);
+	    }
+	  }
+	}
+	else {
+	  if (!e->a->visited) {
+	    /* add e->a to the next list */
+	    listitem_t *xi;
+	    for (xi = list_first (next); xi; xi = list_next (xi)) {
+	      if ((node_t *)list_value (xi) == e->a)
+		break;
+	    }
+	    if (!xi) {
+	      list_append (next, e->a);
+	    }
+	  }
+	}
+
+	/* e is a surviving tree edge */
+	mi = list_next (li);
+	while (mi) {
+	  f = (edge_t *)list_value (mi);
+	  if (f->type != e->type || !f->tree || f->pruned) {
+	    mi = list_next (mi);
+	    continue;
+	  }
+
+	  if (f->a == a && f->b->v) {
+	    mi = list_next (li);
+	    continue;
+	  }
+	  if (f->b == a && f->a->v) {
+	    mi = list_next (li);
+	    continue;
+	  }
+	  
+	  if (f->g == e->g) {
+	    node_t *merge;
+	    node_t *src;
+	    /* ok we can prune f! */
+	    f->pruned = 1;
+
+	    if (f->a == a) {
+	      merge = f->b;
+	    }
+	    else {
+	      merge = f->a;
+	    }
+
+	    /* merge "merge" with e */
+	    if (e->a == a) {
+	      src = e->b;
+	    }
+	    else {
+	      src = e->a;
+	    }
+
+	    /* merge with src */
+	    for (listitem_t *xi = list_first (merge->e);
+		 xi; xi = list_next (xi)) {
+	      edge_t *tmp = (edge_t *) list_value (xi);
+	      if (tmp->a == merge) {
+		tmp->a = src;
+	      }
+	      else {
+		Assert (tmp->b == merge, "Hmm");
+		tmp->b = src;
+	      }
+	    }
+	    list_concat (src->e, merge->e);
+	  }
+	  mi = list_next (mi);
+	}
+	li = list_next (li);
+      }
+    }
+    list_t *xtmp = wavefront;
+    wavefront = next;
+    next = xtmp;
+  }
+  
+  list_free (next);
+  list_free (wavefront);
+
+  for (a = N->hd; a; a = a->next) {
+    a->visited = 0;
+  }
 }
 
 static void update_bdds_exprs (netlist_t *N, var_t *v, act_prs_expr_t *e,
@@ -1187,7 +1371,10 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     for (x = p->u.l.p; x; x = x->next) {
       generate_prs_graph (N, x, 1);
     }
-    tree_compute_sharing (N, x->u.l.lo ? x->u.l.lo->u.v : 4);
+    tree_compute_sharing (N, N->GND, EDGE_NFET,
+			  p->u.l.lo ? p->u.l.lo->u.v : 4);
+    tree_compute_sharing (N, N->Vdd, EDGE_PFET,
+			  p->u.l.lo ? p->u.l.lo->u.v : 4);
     break;
     
   case ACT_PRS_SUBCKT:

@@ -287,3 +287,19 @@ void list_cleanup (void)
     FREE (l);
   }
 }
+
+
+
+void list_concat (list_t *l, list_t *x)
+{
+  if (!l->hd) {
+    l->hd = x->hd;
+  }
+  else {
+    l->tl->next = x->hd;
+  }
+  l->tl = x->tl;
+  x->hd = NULL;
+  x->tl = NULL;
+}
+  
