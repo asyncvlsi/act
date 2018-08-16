@@ -6,7 +6,9 @@
 #-------------------------------------------------------------------------
 BINARY=netgen.$(EXT)
 
-TARGETS=$(BINARY) ../passes/$(EXT)/netgen.o
+TARGETS=$(BINARY) 
+
+EXTRA=../passes/$(EXT)/netgen.o
 
 OBJS=main.o globals.o netlist.o emit.o
 
