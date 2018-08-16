@@ -553,6 +553,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   int ncaps = 0;
   char **fetnames = config_get_table_string ("act.fet_flavors");
   char devname[1024];
+  int repnodes = 0;
 
   for (x = n->hd; x; x = x->next) {
     listitem_t *li;
@@ -569,31 +570,54 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
     for (li = list_first (x->e); li; li = list_next (li)) {
       edge_t *e = (edge_t *)list_value (li);
       node_t *src, *drain;
+
+      int len_repeat, width_repeat;
+      int width_last;
+      int il, iw;
+      int w, l;
       
       if (e->visited) continue;
       e->visited = 1;
 
-      if (use_subckt_models) {
-	fprintf (fp, "x");
-      }
+      w = e->w;
+      l = e->l;
 
-      /* name of the instance includes how the fet was generated in it */
-      if (e->pchg) {
-	fprintf (fp, "M%d_pchg ", fets);
-      }
-      else if (e->combf) {
-	fprintf (fp, "M%d_ckeeper ", fets);
-      }
-      else if (e->keeper) {
-	fprintf (fp, "M%d_keeper ", fets);
-      }
-      else if (e->raw) {
-	fprintf (fp, "M%d_pass ", fets);
+      /* discretize lengths */
+      if (discrete_length > 0) {
+	len_repeat = (discrete_length - 1 + e->l)/discrete_length;
+	l = discrete_length;
       }
       else {
-	fprintf (fp, "M%d_ ", fets);
+	len_repeat = 1;
       }
-      fets++;
+
+      /* fold widths */
+      width_repeat = 1;
+      if (e->type == EDGE_NFET) {
+	if (fold_nfet_width > 0) {
+	  width_repeat = e->w/fold_nfet_width;
+	  width_last = e->w % fold_nfet_width;
+	  if (width_last < min_w_in_lambda) {
+	    width_last += fold_nfet_width;
+	  }
+	  else {
+	    width_repeat++;
+	  }
+	}
+      }
+      else {
+	Assert (e->type == EDGE_PFET, "Hmm");
+	if (fold_pfet_width > 0) {
+	  width_repeat = e->w/fold_pfet_width;
+	  width_last = e->w % fold_pfet_width;
+	  if (width_last < min_w_in_lambda) {
+	    width_last += fold_pfet_width;
+	  }
+	  else {
+	    width_repeat++;
+	  }
+	}
+      }
 
       if (swap_source_drain) {
 	src = e->b;
@@ -604,76 +628,154 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	drain = e->b;
       }
 	
-      aemit_node (a, n, fp, src);
-      fprintf (fp, " ");
-      aemit_node (a, n, fp, e->g);
-      fprintf (fp, " ");
-      aemit_node (a, n, fp, drain);
-      fprintf (fp, " ");
-      aemit_node (a, n, fp, e->bulk);
+      for (il = 0; il < len_repeat; il++) {
+	for (iw = 0; iw < width_repeat; iw++) {
 
-      sprintf (devname, "%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
-	       fetnames[e->flavor]);
-      fprintf (fp, " %s", config_get_string (devname));
-      if (e->subflavor != -1) {
-	fprintf (fp, "_%d", e->subflavor);
-      }
-      fprintf (fp, " W=%gU, L=%gU", e->w*lambda*1e6, e->l*lambda*1e6);
+	  if (width_repeat > 1) {
+	    if (iw != width_repeat-1) {
+	      if (e->type == EDGE_NFET) {
+		w = fold_nfet_width;
+	      }
+	      else {
+		w = fold_pfet_width;
+	      }
+	    }
+	    else {
+	      w = width_last;
+	    }
+	  }
+	  
+	  if (use_subckt_models) {
+	    fprintf (fp, "x");
+	  }
 
-      /* area/perim for source/drain */
-      if (emit_parasitics) {
-	int gap;
-	if (src->v) {
-	  gap = fet_diff_overhang;
-	}
-	else {
-	  if (list_length (src->e) > 2) {
-	    gap = fet_spacing_diffcontact;
+	  fprintf (fp, "M%d", fets);
+	  if (len_repeat > 0) {
+	    fprintf (fp, "_%d", il);
+	  }
+	  if (width_repeat > 0) {
+	    fprintf (fp, "_%d", iw);
+	  }
+
+	  /* name of the instance includes how the fet was generated in it */
+	  if (e->pchg) {
+	    fprintf (fp, "_pchg ");
+	  }
+	  else if (e->combf) {
+	    fprintf (fp, "_ckeeper ");
+	  }
+	  else if (e->keeper) {
+	    fprintf (fp, "_keeper ");
+	  }
+	  else if (e->raw) {
+	    fprintf (fp, "_pass ");
 	  }
 	  else {
-	    gap = fet_spacing_diffonly;
+	    fprintf (fp, "d_ ");
 	  }
-	}
-	fprintf (fp, "+ AS=%gP PS=%gU",
-		 (e->w*gap)*(lambda*lambda)*1e12,
-		 2*(e->w + gap)*lambda*1e6);
 
-	if (drain->v) {
-	  gap = fet_diff_overhang;
-	}
-	else {
-	  if (list_length (drain->e) > 2) {
-	    gap = fet_spacing_diffcontact;
+	  /* if length repeat, source/drain changes */
+	  if (il == 0) {
+	    aemit_node (a, n, fp, src);
 	  }
 	  else {
-	    gap = fet_spacing_diffonly;
+	    fprintf (fp, "#l%d", repnodes);
 	  }
-	}
-	fprintf (fp, " AD=%gP PD=%gU\n",
-		 (e->w*gap)*(lambda*lambda)*1e12,
-		 2*(e->w + gap)*lambda*1e6);
-      }
+	  fprintf (fp, " ");
+	  aemit_node (a, n, fp, e->g);
+	  fprintf (fp, " ");
 
-      /* print extra fet string */
-      if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
-	fprintf (fp, " %s\n", extra_fet_string);
-      }
-      else {
-	fprintf (fp, "\n");
-      }
+	  if (il == len_repeat-1) {
+	    aemit_node (a, n, fp, drain);
+	  }
+	  else {
+	    fprintf (fp, "#l%d", repnodes+1);
+	  }
+	  if (len_repeat > 1 && il != len_repeat-1) {
+	    repnodes++;
+	  }
+
+	  fprintf (fp, " ");
+	  aemit_node (a, n, fp, e->bulk);
+
+	  sprintf (devname, "%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
+		   fetnames[e->flavor]);
+	  fprintf (fp, " %s", config_get_string (devname));
+	  if (e->subflavor != -1) {
+	    fprintf (fp, "_%d", e->subflavor);
+	  }
+	  //fprintf (fp, " W=%gU, L=%gU", e->w*lambda*1e6, e->l*lambda*1e6);
+	  fprintf (fp, " W=%gU, L=%gU", w*lambda*1e6, l*lambda*1e6);
+
+	  /* area/perim for source/drain */
+	  if (emit_parasitics) {
+	    int gap;
+
+	    if (il == 0) {
+	      if (src->v) {
+		gap = fet_diff_overhang;
+	      }
+	      else {
+		if (list_length (src->e) > 2 || width_repeat > 1) {
+		  gap = fet_spacing_diffcontact;
+		}
+		else {
+		  gap = fet_spacing_diffonly;
+		}
+	      }
+	    }
+	    else {
+	      gap = fet_spacing_diffonly;
+	    }
+
+	    fprintf (fp, "+ AS=%gP PS=%gU",
+		     (e->w*gap)*(lambda*lambda)*1e12,
+		     2*(e->w + gap)*lambda*1e6);
+
+	    if (il == len_repeat-1) {
+	      if (drain->v) {
+		gap = fet_diff_overhang;
+	      }
+	      else {
+		if (list_length (drain->e) > 2 || width_repeat > 1) {
+		  gap = fet_spacing_diffcontact;
+		}
+		else {
+		  gap = fet_spacing_diffonly;
+		}
+	      }
+	    }
+	    else {
+	      gap = fet_spacing_diffonly;
+	    }
+	    fprintf (fp, " AD=%gP PD=%gU\n",
+		     (e->w*gap)*(lambda*lambda)*1e12,
+		     2*(e->w + gap)*lambda*1e6);
+	  }
+
+	  /* print extra fet string */
+	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
+	    fprintf (fp, " %s\n", extra_fet_string);
+	  }
+	  else {
+	    fprintf (fp, "\n");
+	  }
       
-      fflush (fp);
+	  fflush (fp);
 
-      if (e->type == EDGE_NFET) {
-	if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda) {
-	  fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_n_w_in_lambda);
+	  if (e->type == EDGE_NFET) {
+	    if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda) {
+	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_n_w_in_lambda);
+	    }
+	  }
+	  else {
+	    if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda) {
+	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_p_w_in_lambda);
+	    }
+	  }
 	}
       }
-      else {
-	if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda) {
-	  fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_p_w_in_lambda);
-	}
-      }
+      fets++;
     }
   }
 
