@@ -576,7 +576,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
       int il, iw;
       int w, l;
       
-      if (e->visited) continue;
+      if (e->visited || e->pruned) continue;
       e->visited = 1;
 
       w = e->w;
@@ -650,10 +650,10 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  }
 
 	  fprintf (fp, "M%d", fets);
-	  if (len_repeat > 0) {
+	  if (len_repeat > 1) {
 	    fprintf (fp, "_%d", il);
 	  }
-	  if (width_repeat > 0) {
+	  if (width_repeat > 1) {
 	    fprintf (fp, "_%d", iw);
 	  }
 

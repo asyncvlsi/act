@@ -64,6 +64,7 @@ typedef struct node {
   unsigned int supply:1;	/* is a power supply */
   unsigned int inv:1;		/* 1 if it is a generated inverter
 				   for staticizers */
+  unsigned int visited:1;	/* visited flag for nodes */
 
 
   /* arrays are EDGE_NFET/EDGE_PFET indexed */
@@ -97,7 +98,7 @@ struct edge {
   unsigned int raw:1;		/* explicitly specified fet */
 
   unsigned int visited:1;	/* visited this edge? */
-  unsigned int shared:1;	/* 1 = shared, omit it! */
+  unsigned int pruned:1;	/* 1 = pruned during sharing */
   unsigned int tree:1;		/* is part of the current tree! */
 
 };

@@ -28,6 +28,7 @@ list_t *list_new (void);
 void list_append (list_t *, void *);
 int list_length (list_t *);
 void *list_delete_tail (list_t *);
+void list_concat (list_t *main, list_t *x);
 
 /* in-place reversal */
 void list_reverse (list_t *);
