@@ -7,7 +7,8 @@
 
 BINARY=aflat.$(EXT)
 
-TARGETS=$(BINARY) ../passes/$(EXT)/aflat.o
+TARGETS=$(BINARY)
+EXTRA=../passes/$(EXT)/aflat.o
 
 OBJS=main.o aflat.o
 
