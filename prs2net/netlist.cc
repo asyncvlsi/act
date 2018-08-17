@@ -1227,7 +1227,9 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       a->e = p->u.one.e;
       create_expr_edges (N, d | EDGE_NORMAL,
 			 (d == EDGE_NFET ? N->GND : N->Vdd),
-			 p->u.one.e, (node_t *)b->v, 0);
+			 p->u.one.e, ((at_lookup *)b->v)->n, 0);
+
+      b = hash_lookup (N->atH[d], (char *)p->u.one.id);
     }
     else {
       var_t *v;
@@ -1513,11 +1515,6 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
     for (prs = p->p; prs; prs = prs->next) {
       generate_prs_graph (N, prs);
-      /* @ nodes can only be within a prs body; they cannot span it */
-      release_atalloc (N->atH[EDGE_NFET]);
-      release_atalloc (N->atH[EDGE_PFET]);
-      hash_clear (N->atH[EDGE_PFET]);
-      hash_clear (N->atH[EDGE_NFET]);
       is_empty_proc = 0;
     }
     p = p->next;
@@ -1532,6 +1529,13 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
   /*-- generate staticizers --*/
   generate_staticizers (N);
 
+#if 0 
+  release_atalloc (N->atH[EDGE_NFET]);
+  release_atalloc (N->atH[EDGE_PFET]);
+  hash_clear (N->atH[EDGE_PFET]);
+  hash_clear (N->atH[EDGE_NFET]);
+#endif
+  
   return N;
 }
 
