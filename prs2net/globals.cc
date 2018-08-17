@@ -382,19 +382,25 @@ char *initialize_parameters (int *argc, char ***argv)
       count++;
     }
   }
+  if (strcmp (act_cmdline, "") == 0) {
+    count = 0;
+  }
 
   char **act_argv;
   char *tmp;
   
-  MALLOC (act_argv, char *, count+1);
+  MALLOC (act_argv, char *, count+2);
   act_argv[0] = Strdup ((*argv)[0]);
-  tmp = strtok (act_cmdline, ",");
-  for (int i=1; i < count; i++)  {
-    act_argv[i] = Strdup (tmp);
-    tmp = strtok (NULL, ",");
+  if (count > 0) {
+     tmp = strtok (act_cmdline, ",");
+     for (int i=1; i <= count; i++)  {
+       act_argv[i] = Strdup (tmp);
+       tmp = strtok (NULL, ",");
+     }
+     Assert (tmp == NULL, "What?");
   }
-  Assert (tmp == NULL, "What?");
-  act_argv[count] = NULL;
+  act_argv[count+1] = NULL;
+  count++;
 
   Act::Init (&count, &act_argv);
   FREE (act_argv);
