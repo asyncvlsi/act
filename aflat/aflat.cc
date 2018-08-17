@@ -482,6 +482,33 @@ void _print_connections_bool (ValueIdx *vx)
       printf ("\n");
     }
   }
+
+  /* subconnections in case of an array */
+  if (c && vx->t->arrayInfo() && c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      act_connection *d = c->a[i];
+      if (!d) continue;
+
+      ActConniter iter2(d);
+
+      for (iter2 = iter2.begin(); iter2 != iter2.end(); iter2++) {
+
+	tmp = *iter2;
+
+	if (tmp == d) continue;
+
+	ig = tmp->isglobal();
+	if (ig != is_global) continue;
+	
+	/* cannot be an array */
+	printf ("= ");
+	prefix_connid_print (d);
+	printf(" ");
+	prefix_connid_print (tmp);
+	printf ("\n");
+      }
+    }
+  }
 }
 
 /* if nm == NULL, there are no suffixes! */
