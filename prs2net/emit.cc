@@ -858,9 +858,9 @@ void act_create_bool_ports (Act *a, Process *p)
 {
   Assert (p->isExpanded (), "Process must be expanded!");
 
-  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs_to_netlist");
+  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   if (!netmap) {
-    fatal_error ("emit_netlist pass called before prs_to_netlist pass!");
+    fatal_error ("emit_netlist pass called before prs2net pass!");
   }
 
   /* clear visited flag */
@@ -881,9 +881,9 @@ void act_emit_netlist (Act *a, Process *p, FILE *fp)
 {
   Assert (p->isExpanded (), "Process must be expanded!");
 
-  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs_to_netlist");
+  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   if (!netmap) {
-    fatal_error ("emit_netlist pass called before prs_to_netlist pass!");
+    fatal_error ("emit_netlist pass called before prs2net pass!");
   }
   emit_netlist (a, p, fp);
 }
