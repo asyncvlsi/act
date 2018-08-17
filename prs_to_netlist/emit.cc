@@ -801,17 +801,19 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	Arraystep *as = vx->t->arrayInfo()->stepper();
 	while (!as->isend()) {
 	  char *str = as->string();
-	  fprintf (fp, "x%s%s", vx->getName(), str);
+	  a->mfprintf (fp, "x%s%s", vx->getName(), str);
 	  FREE (str);
 
 	  for (int i=0; i < A_LEN (sub->ports); i++) {
 	    ActId *id;
+	    char buf[10240];
 	    if (sub->ports[i].omit) continue;
 
 	    Assert (iport < A_LEN (n->instports), "Hmm");
 	    id = n->instports[iport]->toid();
 	    fprintf (fp, " ");
-	    id->Print (fp);
+	    id->sPrint (buf, 10240);
+	    a->mfprintf (fp, "%s", buf);
 	    delete id;
 	    iport++;
 	  }
@@ -823,15 +825,17 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	delete as;
       }
       else {
-	fprintf (fp, "x%s", vx->getName ());
+	a->mfprintf (fp, "x%s", vx->getName ());
 	for (int i =0; i < A_LEN (sub->ports); i++) {
 	  ActId *id;
+	  char buf[10240];
 	  if (sub->ports[i].omit) continue;
 	  
 	  Assert (iport < A_LEN (n->instports), "Hmm");
 	  id = n->instports[iport]->toid();
 	  fprintf (fp, " ");
-	  id->Print (fp);
+	  id->sPrint (buf, 10240);
+	  a->mfprintf (fp, "%s", buf);
 	  delete id;
 	  iport++;
 	}
@@ -843,7 +847,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   }
   Assert (iport == A_LEN (n->instports), "Hmm...");
   
-  fprintf (fp, "\n");
   fprintf (fp, ".ends\n");
   fprintf (fp, "*---- end of process: %s -----\n", p->getName());
 
