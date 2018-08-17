@@ -1572,14 +1572,14 @@ void act_prs_to_netlist (Act *a, Process *p)
 {
   std::map<Process *, netlist_t *> *tmp;
 
-  tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs_to_netlist");
+  tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   if (tmp) {
     delete tmp;
   }
   netmap = new std::map<Process *, netlist_t *>();
   generate_netlist (a, p);
 
-  a->aux_add ("prs_to_netlist", netmap);
+  a->aux_add ("prs2net", netmap);
 
   netmap = NULL;
 }
