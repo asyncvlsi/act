@@ -1381,6 +1381,10 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     
   case ACT_PRS_SUBCKT:
     /* handle elsewhere */
+    warning("subckt { } in prs bodies is ignored; use defcell instead");
+    for (act_prs_lang_t *x = p->u.l.p; x; x = x->next) {
+      generate_prs_graph (N, x);
+    }
     break;
 
   default:
