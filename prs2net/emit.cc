@@ -6,6 +6,7 @@
  **************************************************************************
  */
 #include <map>
+#include <string.h>
 #include "netlist.h"
 #include "globals.h"
 #include "config.h"
