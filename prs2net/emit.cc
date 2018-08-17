@@ -707,6 +707,15 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  //fprintf (fp, " W=%gU, L=%gU", e->w*lambda*1e6, e->l*lambda*1e6);
 	  fprintf (fp, " W=%gU, L=%gU", w*lambda*1e6, l*lambda*1e6);
 
+	  /* print extra fet string */
+	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
+	    fprintf (fp, " %s\n", extra_fet_string);
+	  }
+	  else {
+	    fprintf (fp, "\n");
+	  }
+      
+
 	  /* area/perim for source/drain */
 	  if (emit_parasitics) {
 	    int gap;
@@ -727,7 +736,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	    else {
 	      gap = fet_spacing_diffonly;
 	    }
-
 	    fprintf (fp, "+ AS=%gP PS=%gU",
 		     (e->w*gap)*(lambda*lambda)*1e12,
 		     2*(e->w + gap)*lambda*1e6);
@@ -753,14 +761,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 		     2*(e->w + gap)*lambda*1e6);
 	  }
 
-	  /* print extra fet string */
-	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
-	    fprintf (fp, " %s\n", extra_fet_string);
-	  }
-	  else {
-	    fprintf (fp, "\n");
-	  }
-      
 	  fflush (fp);
 
 	  if (e->type == EDGE_NFET) {
