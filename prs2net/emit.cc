@@ -705,8 +705,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  if (e->subflavor != -1) {
 	    fprintf (fp, "_%d", e->subflavor);
 	  }
-	  //fprintf (fp, " W=%gU, L=%gU", e->w*lambda*1e6, e->l*lambda*1e6);
-	  fprintf (fp, " W=%gU, L=%gU", w*lambda*1e6, l*lambda*1e6);
+	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, l*lambda*1e6);
 
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
