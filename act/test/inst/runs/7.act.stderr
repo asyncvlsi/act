@@ -1,4 +1,4 @@
 In expanding ::<Global>
  id: N[9]
- type: pint[ [8][14..17] ]
+ type: pint[ [8]+[14..17] ]
 FATAL: Dereference out of range
