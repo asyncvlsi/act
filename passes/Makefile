@@ -9,12 +9,12 @@ TARGETLIBS=libactpass_$(EXT).a
 TARGETINCS=passes.h
 TARGETINCSUBDIR=act
 
-USEOBJS=aflat.o netgen.o
+USEOBJS=aflat.o netgen.o flatten.o
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(TARGETS): $(USEOBJS)
-	ar ruv $(TARGETS) $(USEOBJS)
-	$(RANLIB) $(TARGETS)
+$(TARGETLIBS): $(USEOBJS)
+	ar ruv $(TARGETLIBS) $(USEOBJS)
+	$(RANLIB) $(TARGETLIBS)
 
 -include Makefile.deps
