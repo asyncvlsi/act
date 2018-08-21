@@ -21,7 +21,7 @@ static list_t *suffixes = NULL;
 
 static output_formats export_format;
 
-void push_namespace_name (const char *s)
+static void push_namespace_name (const char *s)
 {
   char *n;
   MALLOC (n, char, strlen (s)+3);
@@ -29,7 +29,7 @@ void push_namespace_name (const char *s)
   list_append (prefixes, n);
 }
 
-void push_name (const char *s)
+static void push_name (const char *s)
 {
   char *n;
   MALLOC (n, char, strlen (s) + 2);
@@ -37,7 +37,7 @@ void push_name (const char *s)
   list_append (prefixes, n);
 }
 
-void push_name_suffix (const char *s)
+static void push_name_suffix (const char *s)
 {
   char *n;
   MALLOC (n, char, strlen (s) + 2);
@@ -45,7 +45,7 @@ void push_name_suffix (const char *s)
   list_append (suffixes, n);
 }
 
-void push_name_array_suffix (const char *s, const char *t)
+static void push_name_array_suffix (const char *s, const char *t)
 {
   char *n;
   MALLOC (n, char, strlen (s) + strlen (t) + 2);
@@ -53,13 +53,13 @@ void push_name_array_suffix (const char *s, const char *t)
   list_append (suffixes, n);
 }
 
-void pop_name_suffix ()
+static void pop_name_suffix ()
 {
   char *s = (char *) list_delete_tail (suffixes);
   FREE (s);
 }
 
-void push_name_array (const char *s, const char *t)
+static void push_name_array (const char *s, const char *t)
 {
   char *n;
   MALLOC (n, char, strlen (s) + strlen (t) + 2);
@@ -67,13 +67,13 @@ void push_name_array (const char *s, const char *t)
   list_append (prefixes, n);
 }
 
-void pop_name ()
+static void pop_name ()
 {
   char *s = (char *) list_delete_tail (prefixes);
   FREE (s);
 }
 
-void prefix_print ()
+static void prefix_print ()
 {
   listitem_t *li;
   if (prefixes) {
@@ -83,7 +83,7 @@ void prefix_print ()
   }
 }
 
-void suffix_print ()
+static void suffix_print ()
 {
   listitem_t *li;
   printf (".");
@@ -94,11 +94,7 @@ void suffix_print ()
   }
 }
 
-/*------------------------------------------------------------------------
- *  test
- *------------------------------------------------------------------------
- */
-void prefix_id_print (Scope *s, ActId *id, const char *str = "")
+static void prefix_id_print (Scope *s, ActId *id, const char *str = "")
 {
   printf ("\"");
 
@@ -124,7 +120,7 @@ void prefix_id_print (Scope *s, ActId *id, const char *str = "")
   printf ("%s\"", str);
 }
 
-void prefix_connid_print (act_connection *c, const char *s = "")
+static void prefix_connid_print (act_connection *c, const char *s = "")
 {
   printf ("\"");
   prefix_print ();
@@ -266,7 +262,7 @@ static void print_attr_prefix (act_attr_t *attr)
   }
 }
 
-void aflat_print_spec (Scope *s, act_spec *spec)
+static void aflat_print_spec (Scope *s, act_spec *spec)
 {
   const char *tmp;
   ActId *id;
@@ -335,7 +331,7 @@ void aflat_print_spec (Scope *s, act_spec *spec)
   }
 }
 
-void aflat_print_prs (Scope *s, act_prs_lang_t *p)
+static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 {
   if (!p) return;
   
@@ -412,7 +408,7 @@ void aflat_print_prs (Scope *s, act_prs_lang_t *p)
   }
 }
 
-void _print_connections_bool (ValueIdx *vx)
+static void _print_connections_bool (ValueIdx *vx)
 {
   act_connection *c = vx->connection();
   ActConniter iter(c);
@@ -655,7 +651,7 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   }
 }
 
-void print_any_global_conns (act_connection *c)
+static void print_any_global_conns (act_connection *c)
 {
   act_connection *root;
   list_t *stack;
@@ -711,13 +707,14 @@ void print_any_global_conns (act_connection *c)
   list_free (stack);
 }
 
-void aflat_prs_scope (Scope *s)
+static void aflat_prs_scope (Scope *s)
 {
   ActInstiter inst(s);
 
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx;
     Process *px;
+    UserDef *ux;
     InstType *it;
     int count;
 
@@ -736,13 +733,25 @@ void aflat_prs_scope (Scope *s)
     }
 
     it = vx->t;
-    px = dynamic_cast<Process *>(it->BaseType());
-    
-    if (px) {
-      act_prs *p = px->getprs();
-      act_spec *spec = px->getspec ();
+    ux = dynamic_cast<UserDef *>(it->BaseType());
+    if (ux) {
+      px = dynamic_cast<Process *>(ux);
+    }
+    else {
+      px = NULL;
+    }
+    if (px || ux) {
+      act_prs *p; 
+      act_spec *spec;
 
-      /* set scope here */
+      if (px) {
+	p = px->getprs();
+	spec = px->getspec();
+      }
+      else {
+	p = NULL;
+	spec = NULL;
+      }
 
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
@@ -753,7 +762,12 @@ void aflat_prs_scope (Scope *s)
 	    char *tmp =  step->string();
 	    push_name_array (vx->getName(), tmp);
 	    FREE (tmp);
-	    p = px->getprs();
+	    if (px) {
+	      p = px->getprs();
+	    }
+	    else {
+	      p = NULL;
+	    }
 	    while (p) {
 	      labels = hash_new (2);
 	      aflat_print_prs (px->CurScope(), p->p);
@@ -764,7 +778,7 @@ void aflat_prs_scope (Scope *s)
 	    if (spec) {
 	      aflat_print_spec (px->CurScope(), spec);
 	    }
-	    aflat_prs_scope (px->CurScope());
+	    aflat_prs_scope (ux->CurScope());
 	    pop_name ();
 	  }
 	  idx++;
@@ -784,7 +798,7 @@ void aflat_prs_scope (Scope *s)
 	if (spec) {
 	  aflat_print_spec (px->CurScope(), spec);
 	}
-	aflat_prs_scope (px->CurScope());
+	aflat_prs_scope (ux->CurScope());
 	pop_name ();
       }
     }
@@ -922,7 +936,7 @@ void aflat_prs_scope (Scope *s)
 }
 
 
-void aflat_prs_ns (ActNamespace *ns)
+static void aflat_prs_ns (ActNamespace *ns)
 {
   act_prs *p;
 

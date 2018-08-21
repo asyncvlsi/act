@@ -539,13 +539,17 @@ void Array::sPrint (char *buf, int sz)
 	}
       }
       if (i < pr->dims-1) {
-	snprintf (buf+k, sz, ",");
+	snprintf (buf+k, sz, "][");
 	PRINT_STEP;
       }
     }
     snprintf (buf+k, sz, "]");
     PRINT_STEP;
     pr = pr->next;
+    if (pr) {
+      snprintf (buf+k, sz, "+");
+      PRINT_STEP;
+    }
   }
   if (this->next) {
     snprintf (buf+k, sz, " ]");
@@ -874,7 +878,7 @@ void Arraystep::Print (FILE *fp)
   fprintf (fp, "[");
   for (i=0; i < base->dims; i++) {
     if (i != 0) {
-      fprintf (fp, ",");
+      fprintf (fp, "][");
     }
     fprintf (fp, "%d", deref[i]);
   }
@@ -1245,7 +1249,7 @@ void Array::dumprange (struct range *r)
   
   fprintf (stderr, "[");
   for (i=0; i < dims; i++) {
-    if (i != 0) fprintf (stderr, ",");
+    if (i != 0) fprintf (stderr, "][");
     fprintf (stderr, "%d..%d", r[i].u.ex.lo, r[i].u.ex.hi);
   }
   fprintf (stderr, "]");

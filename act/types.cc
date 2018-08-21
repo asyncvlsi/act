@@ -1865,6 +1865,8 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   inst_param *xu;
   int i;
 
+  /* parameter expansion should be done in the scope (ns,s) where this instance
+     was created */
   xu = NULL;
   if (nt > 0) {
     MALLOC (xu, inst_param, nt);
@@ -1883,13 +1885,27 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
       }
     }
   }
-
-
+  
   /* now change the tmp name! */
   sPrintInstType (tmp, 10240, this, nt, xu, dir);
 
   /* Expand the core type using template parameters, if any */
-  xt = t->Expand (ns, s, nt, xu);
+
+  /*-- the body of the type should be expanded using the namespace and
+    scope in which the type was *DEFINED* --*/
+  Scope *c_s;
+  ActNamespace *c_ns;
+  UserDef *u;
+  u = dynamic_cast<UserDef *>(t);
+  if (u) {
+    c_ns = u->getns();
+    c_s = c_ns->CurScope();
+  }
+  else {
+    c_ns = ns;
+    c_s = s;
+  }
+  xt = t->Expand (c_ns, c_s, nt, xu);
 
 #if 0
   printf ("[%x] Name: %s\n", t, t->getName());
@@ -1899,7 +1915,7 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   /* If parent is user-defined, we need to make sure we have the
      expanded version of this in place!
   */
-  xit = new InstType (s, xt, 0);
+  xit = new InstType (c_s, xt, 0);
   xit->expanded = 1;
   xit->MkCached();
 
