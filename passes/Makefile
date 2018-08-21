@@ -5,8 +5,9 @@
 #
 #-------------------------------------------------------------------------
 
-TARGETS=libactpass_$(EXT).a
+TARGETLIBS=libactpass_$(EXT).a
 TARGETINCS=passes.h
+TARGETINCSUBDIR=act
 
 USEOBJS=aflat.o netgen.o
 
