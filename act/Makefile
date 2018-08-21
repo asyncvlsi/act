@@ -11,8 +11,7 @@ LIB=libact_$(EXT).a
 
 TARGETLIBS=$(LIB)
 
-TARGETINCS=lang.h expr.h act_parse.h act_walk_X.h id.h act_walk.extra.h \
-	path.h namespaces.h prs.h act_parse_int.h treetypes.h act.h \
+TARGETINCS=lang.h expr.h id.h path.h namespaces.h act.h \
 	types.h inst.h iter.h act_array.h basetype.h
 
 TARGETINCSUBDIR=act
