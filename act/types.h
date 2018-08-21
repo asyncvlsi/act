@@ -674,6 +674,7 @@ class ActId {
 
 
   void setArray (Array *_a) { a = _a; }
+  void prune () { next = NULL; }
 
  private:
   mstring_t *name;		/**< name of the identifier */
