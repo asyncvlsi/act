@@ -30,6 +30,7 @@ EXT=$(ARCH)_$(OS)
 
 LIBCOMMON=-L$(INSTALLLIB) -lvlsilib
 LIBACT=-L$(INSTALLLIB) -lact -lvlsilib
+LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib
 LIBSSIM=-L$(INSTALLLIB) -lssim -lvlsilib
 LIBASIM=-L$(INSTALLLIB) -lasim -lvlsilib
 

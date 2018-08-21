@@ -534,8 +534,10 @@ static void _print_single_connection (ActId *one, Array *oa,
       }
       one->Print (stdout);
       s1->Print (stdout);
-      suffix_print ();
-      printf ("%s", nm);
+      if (nm) {
+	suffix_print ();
+	printf ("%s", nm);
+      }
       if (na) {
 	na->Print (stdout);
       }
