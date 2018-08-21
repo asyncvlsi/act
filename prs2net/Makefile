@@ -6,7 +6,9 @@
 #-------------------------------------------------------------------------
 BINARY=netgen.$(EXT)
 
-TARGETS=$(BINARY) 
+TARGETS=$(BINARY)
+TARGETINCS=netlist.h
+TARGETINCSUBDIR=act
 
 EXTRA=../passes/$(EXT)/netgen.o
 

@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <act/lang.h>
 #include "file.h"
-#include <act/treetypes.h>
+#include "treetypes.h"
 
 #ifdef __cplusplus
 extern "C" {

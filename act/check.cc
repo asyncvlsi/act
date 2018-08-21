@@ -9,8 +9,8 @@
 #include <stdarg.h>
 #include <act/types.h>
 #include <act/inst.h>
-#include <act/act_parse_int.h>
-#include <act/act_walk.extra.h>
+#include "act_parse_int.h"
+#include "act_walk.extra.h"
 
 
 /*

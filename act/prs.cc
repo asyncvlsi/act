@@ -10,10 +10,10 @@
 #include "file.h"
 #include "expr.h"
 
-#include <act/prs.h>
-#include <act/act_parse_int.h>
+#include "prs.h"
+#include "act_parse_int.h"
 #include <act/types.h>
-#include <act/act_walk.extra.h>
+#include "act_walk.extra.h"
 
 /*
  * ... and I thought I wouldn't have to write a parser any more

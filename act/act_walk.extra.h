@@ -18,9 +18,9 @@
 #include <act/lang.h>
 #include <act/path.h>
 #include <act/namespaces.h>
-#include <act/treetypes.h>
 #include <act/types.h>
 #include <act/inst.h>
+#include "treetypes.h"
 
 #define OPT_EXISTS(x)    !list_isempty (x)
 #define OPT_EMPTY(x)     list_isempty (x)

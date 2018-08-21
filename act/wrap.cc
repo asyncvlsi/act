@@ -6,7 +6,7 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include <act/act_walk_X.h>
+#include "act_walk_X.h"
 #include <act/lang.h>
 #include "config.h"
 
