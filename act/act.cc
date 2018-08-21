@@ -8,9 +8,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <act/act.h>
-#include <act/act_parse.h>
-#include <act/act_walk_X.h>
-#include <act/types.h>
+#include "act_parse.h"
+#include "act_walk_X.h"
 #include "config.h"
 #include "array.h"
 
