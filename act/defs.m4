@@ -173,14 +173,14 @@ def_or_proc ID
     /*printf ("Orig scope: %x\n", $0->scope);*/
     $0->scope = $0->u_p->CurScope ();
 }}
-[ is_a ID ]
+[ is_a physical_inst_type ]
 {{X:
     if (!OPT_EMPTY ($4)) {
       ActRet *r;
       void *v1, *v2;
       listitem_t *li;
       int v;
-      const char *id;
+      InstType *it;
 
       r = OPT_VALUE ($4);
       $A(r->type == R_LIST);
@@ -203,11 +203,11 @@ def_or_proc ID
       FREE (r);
       
       r = (ActRet *)v2;
-      $A(r->type == R_STRING);
-      id = r->u.str;
+      $A(r->type == R_INST_TYPE);
+      it = r->u.inst;
       FREE (r);
 
-      /* XXX: inheritence type v, parent id */
+      /* XXX: inheritence type v, parent it */
     }
     OPT_FREE ($4);
 }}
@@ -494,7 +494,7 @@ is_a physical_inst_type
     OPT_FREE ($6);
     $0->strict_checking = 0;
 }}
-data_body
+data_chan_body
 {{X:
     /* body of data type: this gets updated in the actions for
        data_body */
@@ -514,20 +514,29 @@ is_a[int]: "<:"
 }}
 ;
 
-data_body: ";"
-	   /* empty */
-{{X: return NULL; }}
+data_chan_body: ";"
+{{X:
+    return NULL;
+}}
 | "{" base_body [ methods_body ] "}"
 {{X:
-    ActRet *r;
-
-    $A($0->u_d);
-    if ($0->u_d->isDefined ()) {
-      $E("Data definition ``%s'': duplicate definition with the same type signature", $0->u_d->getName ());
+    if ($0->u_c) {
+      if ($0->u_c->isDefined ()) {
+	$E("Channel definition ``%s'': duplicate definition with the same type signature", $0->u_c->getName ());
+      }
+      $0->u_c->MkDefined ();
+      $0->u_c->setBody ($2);
     }
-    $0->u_d->MkDefined();
-
-    $0->u_d->setBody ($2);
+    else if ($0->u_d) {
+      if ($0->u_d->isDefined ()) {
+	$E("Data definition ``%s'': duplicate definition with the same type signature", $0->u_d->getName ());
+      }
+      $0->u_d->MkDefined();
+      $0->u_d->setBody ($2);
+    }
+    else {
+      $A(0);
+    }
     OPT_FREE ($3);
     return NULL;
 }}
@@ -700,28 +709,13 @@ is_a physical_inst_type
     list_free ($6);
     $0->strict_checking = 0;
 }}
-chan_body
+data_chan_body
 {{X:
     $0->u_c = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;
 }}
 ;
-
-chan_body: ";" | "{" base_body [ methods_body ] "}"
-{{X:
-    $A($0->u_c);
-    if ($0->u_c->isDefined ()) {
-      $E("Channel definition ``%s'': duplicate definition with the same type signature", $0->u_c->getName ());
-    }
-    $0->u_c->MkDefined ();
-
-    $0->u_c->setBody ($2);
-    OPT_FREE ($3);
-    return NULL;
-}}
-;
-
 
 /*------------------------------------------------------------------------
  *

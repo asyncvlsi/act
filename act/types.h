@@ -278,6 +278,8 @@ class UserDef : public Type {
   void setspec (act_spec *s) { lang.spec = s; }
   act_spec *getspec() { return lang.spec; }
 
+  ActNamespace *getns() { return _ns; }
+
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
   unsigned int parent_eq:1;	/**< 1 if this is an equality, 0 if it

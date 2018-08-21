@@ -25,7 +25,7 @@ struct _listDATA_ {
 };
 
 list_t *list_new (void);
-void list_append (list_t *, void *);
+void list_append (list_t *, const void *);
 int list_length (list_t *);
 void *list_delete_tail (list_t *);
 void list_concat (list_t *main, list_t *x);
@@ -52,7 +52,7 @@ void list_apply (list_t *l, void *cookie, void (*f)(void *, void *));
 typedef void *(*LISTMAPFN)(void *);
 typedef void *(*LISTMAPFNCOOKIE)(void *, void *);
 
-void stack_push (list_t *l, void *item);
+void stack_push (list_t *l, const void *item);
 void *stack_pop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
 

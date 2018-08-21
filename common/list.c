@@ -67,7 +67,7 @@ list_new (void)
  *
  *------------------------------------------------------------------------
  */
-void list_append (list_t *l, void *item)
+void list_append (list_t *l, const void *item)
 {
   listitem_t *li;
 
@@ -173,7 +173,7 @@ void list_apply (list_t *l, void *cookie, void (*f)(void *, void *))
 }
 
 
-void stack_push (list_t *l, void *item)
+void stack_push (list_t *l, const void *item)
 {
   listitem_t *li;
 
