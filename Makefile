@@ -1,12 +1,12 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2011 Rajit Manohar
+#  Copyright (c) 2011-2018 Rajit Manohar
 #  All Rights Reserved
 #
 #-------------------------------------------------------------------------
 #
 # Make everything, in the right order
 # 
-SUBDIRS=common pgen xact layout sim analysis synthesis
+SUBDIRS=common pgen act aflat prs2net 
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
