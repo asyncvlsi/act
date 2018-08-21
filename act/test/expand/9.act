@@ -1,0 +1,20 @@
+bool ww;
+
+namespace test {
+
+bool x1, x2;
+
+x1 = x2;
+
+
+export defproc foo (bool a, b)
+{
+  prs {
+   a -> b-
+  }
+  a=ww;
+}
+
+}
+
+test::foo x;
