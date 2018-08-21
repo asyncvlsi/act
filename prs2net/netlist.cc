@@ -1586,7 +1586,24 @@ void act_prs_to_netlist (Act *a, Process *p)
     delete tmp;
   }
   netmap = new std::map<Process *, netlist_t *>();
-  generate_netlist (a, p);
+
+  if (!p) {
+    ActNamespace *g = ActNamespace::Global();
+    ActInstiter i(g->CurScope());
+
+    for (i = i.begin(); i != i.end(); i++) {
+      ValueIdx *vx = *i;
+      if (TypeFactory::isProcessType (vx->t)) {
+	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+	if (x->isExpanded()) {
+	  generate_netlist (a, x);
+	}
+      }
+    }
+  }
+  else {
+    generate_netlist (a, p);
+  }
 
   a->aux_add ("prs2net", netmap);
 
