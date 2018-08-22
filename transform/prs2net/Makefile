@@ -4,13 +4,15 @@
 #  All Rights Reserved
 #
 #-------------------------------------------------------------------------
-
-BINARY=aflat.$(EXT)
+BINARY=netgen.$(EXT)
 
 TARGETS=$(BINARY)
-EXTRA=../passes/$(EXT)/aflat.o ../passes/$(EXT)/flatten.o
+TARGETINCS=netlist.h
+TARGETINCSUBDIR=act
 
-OBJS=main.o aflat.o
+EXTRA=../../passes/$(EXT)/netgen.o
+
+OBJS=main.o netlist.o emit.o
 
 SRCS=$(OBJS:.o=.cc)
 
@@ -19,11 +21,11 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 $(BINARY): $(LIB) $(OBJS) $(ACTDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACT)
 
-../passes/$(EXT)/%.o: %.o
-	-if [ ! -d ../passes/$(EXT) ]; \
+$(EXTRA): netlist.o emit.o
+	-if [ ! -d ../../passes/$(EXT) ]; \
          then \
-           mkdir ../passes/$(EXT); \
+           mkdir ../../passes/$(EXT); \
         fi
-	cp $< ../passes/$(EXT)
+	ld -r -o $(EXTRA) netlist.o emit.o
 
 -include Makefile.deps

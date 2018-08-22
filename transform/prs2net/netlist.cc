@@ -8,11 +8,22 @@
 #include <map>
 #include <string.h>
 #include "netlist.h"
-#include "globals.h"
 #include "hash.h"
 #include "qops.h"
 #include "bitset.h"
+#include "config.h"
 #include <act/iter.h>
+
+/* minimum transistor size */
+static int min_w_in_lambda;
+static int min_l_in_lambda;
+
+/* strength ratios */
+static double p_n_ratio;
+static double weak_to_strong_ratio;
+
+/* load cap */
+static double default_load_cap;
 
 static std::map<Process *, netlist_t *> *netmap = NULL;
 
@@ -451,7 +462,7 @@ static void generate_staticizers (netlist_t *N)
     }
   }
 
-  if (disable_keepers) return;
+  if (config_get_int ("disable_keepers") != 1) return;
 
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
@@ -1459,15 +1470,15 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
     if (p->psc) cpsc = p->psc->Canonical(proc->CurScope());
     if (p->nsc) cnsc = p->nsc->Canonical(proc->CurScope());
 
-    N->sz[EDGE_NFET].w = std_n_width;
-    N->sz[EDGE_NFET].l = std_n_length;
-    N->sz[EDGE_NFET].sw = stat_n_width;
-    N->sz[EDGE_NFET].sl = stat_n_length;
+    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
+    N->sz[EDGE_NFET].sw = config_get_int ("stat_n_width");
+    N->sz[EDGE_NFET].sl = config_get_int ("stat_n_length");
 
-    N->sz[EDGE_PFET].w = std_p_width;
-    N->sz[EDGE_PFET].l = std_p_length;
-    N->sz[EDGE_PFET].sw = stat_p_width;
-    N->sz[EDGE_PFET].sl = stat_p_length;
+    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
+    N->sz[EDGE_PFET].sw = config_get_int ("stat_p_width");
+    N->sz[EDGE_PFET].sl = config_get_int ("stat_p_length");
 
     /* set the current Vdd/GND/psc/nsc */
     if (cvdd) {
@@ -1553,11 +1564,6 @@ static void generate_netlist (Act *a, Process *p)
     return;
   }
 
-  if (verbose) {
-    fprintf (fpout, "* working on process: ");
-    a->mfprintf (fpout, "%s\n", p->getName());
-  }
-
   /* Create netlist for all sub-processes */
   ActInstiter i(p->CurScope());
 
@@ -1586,6 +1592,12 @@ void act_prs_to_netlist (Act *a, Process *p)
     delete tmp;
   }
   netmap = new std::map<Process *, netlist_t *>();
+
+  default_load_cap = config_get_real ("default_load_cap");
+  p_n_ratio = config_get_real ("p_n_ratio");
+  weak_to_strong_ratio = config_get_real ("weak_to_strong_ratio");
+  min_w_in_lambda = config_get_int ("min_width");
+  min_l_in_lambda = config_get_int ("min_length");
 
   if (!p) {
     ActNamespace *g = ActNamespace::Global();

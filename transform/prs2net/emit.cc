@@ -8,12 +8,47 @@
 #include <map>
 #include <string.h>
 #include "netlist.h"
-#include "globals.h"
 #include "config.h"
 #include <act/iter.h>
 
 static std::map<Process *, netlist_t *> *netmap = NULL;
 
+static double lambda;			/* scale factor from width expressions
+					to absolute units */
+
+/* min transistor size */
+static int min_w_in_lambda;
+static int min_l_in_lambda;
+
+/* max fet widths */
+static int max_n_w_in_lambda;
+static int max_p_w_in_lambda;
+
+static int ignore_loadcap;  /* ignore loadcap directives (lvs only) */
+
+/* discrete lengths */
+static int discrete_length;
+
+/* fet extra string */
+static char *extra_fet_string;
+
+/* fold transistors */
+static int fold_nfet_width;
+static int fold_pfet_width;
+
+/* swap source and drain */
+static int swap_source_drain;
+
+/* use subckt models */
+static int use_subckt_models;
+
+/* emit area of source/drain along with fet */
+static int emit_parasitics;
+
+/* internal diffusion */
+static int fet_spacing_diffonly;
+static int fet_spacing_diffcontact;
+static int fet_diff_overhang;
 
 static void special_emit_procname (Act *a, FILE *fp, Process *p)
 {
@@ -885,6 +920,30 @@ void act_emit_netlist (Act *a, Process *p, FILE *fp)
   if (!netmap) {
     fatal_error ("emit_netlist pass called before prs2net pass!");
   }
+
+  lambda = config_get_real ("lambda");
+  
+  min_w_in_lambda = config_get_int ("min_width");
+  min_l_in_lambda = config_get_int ("min_length");
+  
+  max_n_w_in_lambda = config_get_int ("max_n_width");
+  max_p_w_in_lambda = config_get_int ("max_p_width");
+  
+  discrete_length = config_get_int ("discrete_length");
+  fold_pfet_width = config_get_int ("fold_pfet_width");
+  fold_nfet_width = config_get_int ("fold_nfet_width");
+
+  ignore_loadcap = config_get_int ("ignore_loadcap");
+
+  emit_parasitics = config_get_int ("emit_parasitics");
+  fet_spacing_diffonly = config_get_int ("fet_spacing_diffonly");
+  fet_spacing_diffcontact = config_get_int ("fet_spacing_diffcontact");
+  fet_diff_overhang = config_get_int ("fet_diff_overhang");
+  
+  use_subckt_models = config_get_int ("use_subckt_models");
+  swap_source_drain = config_get_int ("swap_source_drain");
+  extra_fet_string = config_get_string ("extra_fet_string");
+  
   emit_netlist (a, p, fp);
 }
 
