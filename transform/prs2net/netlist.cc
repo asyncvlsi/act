@@ -1448,11 +1448,11 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
   N->psc_list = list_new ();
   N->nsc_list = list_new ();
 
+  N->isempty = 1;
+
   if (!p) {
     return N;
   }
-
-  int is_empty_proc = 1;
 
   /* walk through each PRS block */
   while (p) {
@@ -1531,7 +1531,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
     for (prs = p->p; prs; prs = prs->next) {
       generate_prs_graph (N, prs);
-      is_empty_proc = 0;
+      N->isempty = 0;
     }
     p = p->next;
   }
@@ -1557,6 +1557,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
 static void generate_netlist (Act *a, Process *p)
 {
+  int subinst = 0;
   Assert (p->isExpanded(), "Process must be expanded!");
 
   if (netmap->find(p) != netmap->end()) {
@@ -1572,12 +1573,17 @@ static void generate_netlist (Act *a, Process *p)
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
       generate_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()));
+      subinst = 1;
     }
   }
 
   netlist_t *n = generate_netgraph (a, p);
 
   (*netmap)[p] = n;
+
+  if (subinst) {
+    n->isempty = 0;
+  }
 
   return;
 }
