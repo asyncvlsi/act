@@ -50,6 +50,12 @@ static int fet_spacing_diffonly;
 static int fet_spacing_diffcontact;
 static int fet_diff_overhang;
 
+/* black box mode */
+static int black_box_mode;
+
+/* top level only */
+static int top_level_only;
+
 static void special_emit_procname (Act *a, FILE *fp, Process *p)
 {
   const char *x = p->getName ();
@@ -124,6 +130,11 @@ static void append_bool_port (netlist_t *n, act_connection *c)
   if (c->isglobal()) {
     /* globals do not need to be in the port list */
     A_LAST (n->ports).omit = 1;
+    return;
+  }
+
+  if (black_box_mode && n->isempty) {
+    /* assume this is needed! */
     return;
   }
 
@@ -457,15 +468,20 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   netlist_t *n = netmap->find (p)->second;
   if (n->visited) return;
   n->visited = 1;
-    
-  /* emit sub-processes */
-  ActInstiter i(p->CurScope());
 
-  /* handle all processes instantiated by this one */
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      emit_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()), fp);
+  if (n->isempty && black_box_mode) return;
+
+  ActInstiter i(p->CurScope());
+  
+  if (!top_level_only) {
+    /* emit sub-processes */
+
+    /* handle all processes instantiated by this one */
+    for (i = i.begin(); i != i.end(); i++) {
+      ValueIdx *vx = *i;
+      if (TypeFactory::isProcessType (vx->t)) {
+	emit_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()), fp);
+      }
     }
   }
 
@@ -750,7 +766,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	    fprintf (fp, "\n");
 	  }
       
-
 	  /* area/perim for source/drain */
 	  if (emit_parasitics) {
 	    int gap;
@@ -830,20 +845,51 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
     if (TypeFactory::isProcessType (vx->t)) {
       netlist_t *sub;
       Process *instproc = dynamic_cast<Process *>(vx->t->BaseType ());
+      int ports_exist;
       sub = netmap->find (instproc)->second;
+      
+      ports_exist = 0;
+      for (int i=0; i < A_LEN (sub->ports); i++) {
+	if (sub->ports[i].omit == 0) {
+	  ports_exist = 1;
+	  break;
+	}
+      }
 
-      if (vx->t->arrayInfo()) {
-	Arraystep *as = vx->t->arrayInfo()->stepper();
-	while (!as->isend()) {
-	  char *str = as->string();
-	  a->mfprintf (fp, "x%s%s", vx->getName(), str);
-	  FREE (str);
+      if (ports_exist) {
+	if (vx->t->arrayInfo()) {
+	  Arraystep *as = vx->t->arrayInfo()->stepper();
+	  while (!as->isend()) {
+	    char *str = as->string();
+	    a->mfprintf (fp, "x%s%s", vx->getName(), str);
+	    FREE (str);
+	    for (int i=0; i < A_LEN (sub->ports); i++) {
+	      ActId *id;
+	      char buf[10240];
+	      if (sub->ports[i].omit) continue;
 
-	  for (int i=0; i < A_LEN (sub->ports); i++) {
+	      Assert (iport < A_LEN (n->instports), "Hmm");
+	      id = n->instports[iport]->toid();
+	      fprintf (fp, " ");
+	      id->sPrint (buf, 10240);
+	      a->mfprintf (fp, "%s", buf);
+	      delete id;
+	      iport++;
+	    }
+	    a->mfprintf (fp, " ");
+	    special_emit_procname (a, fp, instproc);
+	    a->mfprintf (fp, "\n");
+	    as->step();
+	  }
+	  delete as;
+	}
+	else {
+	  a->mfprintf (fp, "x%s", vx->getName ());
+	  for (int i =0; i < A_LEN (sub->ports); i++) {
 	    ActId *id;
 	    char buf[10240];
 	    if (sub->ports[i].omit) continue;
-
+	  
 	    Assert (iport < A_LEN (n->instports), "Hmm");
 	    id = n->instports[iport]->toid();
 	    fprintf (fp, " ");
@@ -855,28 +901,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  a->mfprintf (fp, " ");
 	  special_emit_procname (a, fp, instproc);
 	  a->mfprintf (fp, "\n");
-	  as->step();
 	}
-	delete as;
-      }
-      else {
-	a->mfprintf (fp, "x%s", vx->getName ());
-	for (int i =0; i < A_LEN (sub->ports); i++) {
-	  ActId *id;
-	  char buf[10240];
-	  if (sub->ports[i].omit) continue;
-	  
-	  Assert (iport < A_LEN (n->instports), "Hmm");
-	  id = n->instports[iport]->toid();
-	  fprintf (fp, " ");
-	  id->sPrint (buf, 10240);
-	  a->mfprintf (fp, "%s", buf);
-	  delete id;
-	  iport++;
-	}
-	a->mfprintf (fp, " ");
-	special_emit_procname (a, fp, instproc);
-	a->mfprintf (fp, "\n");
       }
     }
   }
@@ -898,6 +923,8 @@ void act_create_bool_ports (Act *a, Process *p)
     fatal_error ("emit_netlist pass called before prs2net pass!");
   }
 
+  black_box_mode = config_get_int ("black_box_mode");
+  
   /* clear visited flag */
   std::map<Process *, netlist_t *>::iterator it;
   for (it = netmap->begin(); it != netmap->end(); it++) {
@@ -943,6 +970,10 @@ void act_emit_netlist (Act *a, Process *p, FILE *fp)
   use_subckt_models = config_get_int ("use_subckt_models");
   swap_source_drain = config_get_int ("swap_source_drain");
   extra_fet_string = config_get_string ("extra_fet_string");
+
+  black_box_mode = config_get_int ("black_box_mode");
+
+  top_level_only = config_get_int ("top_level_only");
   
   emit_netlist (a, p, fp);
 }

@@ -118,6 +118,7 @@ typedef struct {
   int idnum;			/* used to number the nodes */
 
   unsigned int visited:1;	/* flags */
+  unsigned int isempty:1;	/* check if this is empty! */
 
   struct iHashtable *cH;   /* connection hash table (map to var_t)  */
 
