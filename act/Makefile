@@ -53,7 +53,7 @@ expr.c: $(INSTALLDIR)/lib/expr.c
 	cp $(INSTALLDIR)/lib/expr.c .
 
 expr.h: $(INSTALLDIR)/lib/expr.h
-	cp $(INSTALLDIR)/lib/expr.h .
+	cat $(INSTALLDIR)/lib/expr.h | sed 's,\"id.h\",<act/id.h>,' > expr.h
 
 
 -include Makefile.deps
