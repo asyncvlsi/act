@@ -30,7 +30,7 @@ toplevel: [ imports_opens ] [ body ]
 
       r = OPT_VALUE ($2);
       $A(r->type == R_ACT_BODY);
-      $0->curns->setBody (r->u.body);
+      $0->curns->AppendBody (r->u.body);
       FREE (r);
     }
     OPT_FREE ($2);

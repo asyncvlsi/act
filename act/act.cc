@@ -206,6 +206,11 @@ Act::Act (const char *s)
     b = new ActBody_Inst (it, vars[i].varname);
     NEW (e, Expr);
     e->type = (vars[i].value ? E_TRUE : E_FALSE);
+
+    Expr *tmp = TypeFactory::NewExpr (e);
+    FREE (e);
+    e = tmp;
+
     bc = new ActBody_Conn (new ActId (vars[i].varname),
 			   new AExpr (e));
     b->Append (bc);
