@@ -418,6 +418,13 @@ class TypeFactory {
   static InstType *bools[5];
 
   /**
+   * Const exprs
+   */
+  static Expr *expr_true;
+  static Expr *expr_false;
+  static struct iHashtable *expr_int;
+
+  /**
    * Hash table for integer types parameterized by bit-width and
    * direction flags.
    */
@@ -433,6 +440,11 @@ class TypeFactory {
    * Hash table for ptype types. Uses channel hash functions.
    */
   static struct cHashtable *ptypehash;
+
+  /**
+   * Hash table for const exprs 
+   */
+  static struct cHashtable *ehash;
 
   /**
    * Helper functions for hash table operations.
@@ -530,6 +542,11 @@ class TypeFactory {
    */
   InstType *NewUserDef (Scope *s, InstType *it);
 
+
+  /**
+   * Returns a unique pointer to a constant expression
+   */
+  static Expr *NewExpr (Expr *e);
 
   static TypeFactory *Factory() { return tf; }
   

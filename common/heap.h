@@ -27,6 +27,7 @@ void heap_free (Heap *h, void (*free_element)(void *));
 void heap_insert (Heap *H, heap_key_t key, void *value);
 void *heap_remove_min (Heap *H);
 void *heap_remove_min_key (Heap *H, heap_key_t *keyp);
+int heap_update_key (Heap *h, heap_key_t key, void *v);
 void heap_insert_random (Heap *H, void *value);
 void *heap_peek_min (Heap *H);
 heap_key_t heap_peek_minkey (Heap *H);

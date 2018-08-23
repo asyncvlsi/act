@@ -345,6 +345,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 {
   Expr *ret, *te;
   ActId *xid;
+  Expr *tmp;
   
   if (!e) return NULL;
 
@@ -383,10 +384,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else {
 	  v = v ^ ((unsigned int)ret->u.e.r->u.v);
 	}
-	FREE (ret->u.e.l);
-	FREE (ret->u.e.r);
+	//FREE (ret->u.e.l);
+	//FREE (ret->u.e.r);
 	ret->type = E_INT;
 	ret->u.v = v;
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_TRUE || ret->u.e.l->type == E_FALSE) {
 	unsigned int v;
@@ -401,14 +406,18 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else {
 	  v = v ^ ((ret->u.e.r->type == E_TRUE) ? 1 : 0);
 	}
-	FREE (ret->u.e.l);
-	FREE (ret->u.e.r);
+	//FREE (ret->u.e.l);
+	//FREE (ret->u.e.r);
 	if (v) {
 	  ret->type = E_TRUE;
 	}
 	else {
 	  ret->type = E_FALSE;
 	}
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else {
 	act_error_ctxt (stderr);
@@ -460,10 +469,16 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else { /* ASR */
 	  v = (signed)v >> ((unsigned int)ret->u.e.r->u.v);
 	}
-	FREE (ret->u.e.l);
-	FREE (ret->u.e.r);
+	//FREE (ret->u.e.l);
+	//FREE (ret->u.e.r);
+
 	ret->type = E_INT;
 	ret->u.v = v;
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
+	
       }
       else if ((ret->u.e.l->type == E_INT||ret->u.e.l->type == E_REAL)
 	       && (ret->u.e.r->type == E_INT || ret->u.e.r->type == E_REAL)
@@ -486,8 +501,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else if (e->type == E_DIV) {
 	  v = v / VAL(ret->u.e.r);
 	}
-	FREE (ret->u.e.l);
-	FREE (ret->u.e.r);
+	if (ret->u.e.l->type != E_INT) FREE (ret->u.e.l);
+	if (ret->u.e.r->type != E_INT) FREE (ret->u.e.r);
 	ret->type = E_REAL;
 	ret->u.f = v;
       }
@@ -533,14 +548,18 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else { /* NE */
 	  v = (v != ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
 	}
-	FREE (ret->u.e.l);
-	FREE (ret->u.e.r);
+	//FREE (ret->u.e.l);
+	//FREE (ret->u.e.r);
 	if (v) {
 	  ret->type = E_TRUE;
 	}
 	else {
 	  ret->type = E_FALSE;
 	}
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_REAL && ret->u.e.r->type == E_REAL) {
 	double v;
@@ -572,6 +591,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	else {
 	  ret->type = E_FALSE;
 	}
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else {
 	act_error_ctxt (stderr);
@@ -588,12 +611,19 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = expr_expand (e->u.e.l, ns, s);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_FALSE;
+
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_FALSE) {
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_TRUE;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else {
 	act_error_ctxt (stderr);
@@ -610,18 +640,27 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = expr_expand (e->u.e.l, ns, s);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_FALSE;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_FALSE) {
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_TRUE;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_INT) {
 	unsigned int v = ret->u.e.l->u.v;
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = ~v;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else {
 	act_error_ctxt (stderr);
@@ -639,9 +678,12 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
 	unsigned int v = ret->u.e.l->u.v;
-	FREE (ret->u.e.l);
+	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = -v;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
       else if (ret->u.e.l->type == E_REAL) {
 	double f = ret->u.e.l->u.f;
@@ -665,11 +707,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       ret->u.e.r = expr_expand (e->u.e.r, ns, s);
     }
     else {
-      FREE (ret->u.e.l);
+      //FREE (ret->u.e.l);
       if (ret->u.e.l->type == E_TRUE) {
+	FREE (ret);
 	ret = expr_expand (e->u.e.r->u.e.l, ns, s);
       }
       else if (ret->u.e.l->type == E_FALSE) {
+	FREE (ret);
 	ret = expr_expand (e->u.e.r->u.e.r, ns, s);
       }
       else {
@@ -717,7 +761,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       }
       unsigned int v;
       v = ret->u.e.l->u.v;
-      FREE (ret->u.e.l);
+      //FREE (ret->u.e.l);
       if (lo->type != E_INT || hi->type != E_INT) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
@@ -731,10 +775,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       else {
 	v = (v >> lo->u.v) & ~(~0UL << (hi->u.v - lo->u.v + 1));
       }
-      FREE (lo);
-      FREE (hi);
+      //FREE (lo);
+      //FREE (hi);
       ret->type = E_INT;
       ret->u.v = v;
+
+      tmp = TypeFactory::NewExpr (ret);
+      FREE (ret);
+      ret = tmp;
     }
     break;
 
@@ -759,6 +807,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
   case E_INT:
     LVAL_ERROR;
     ret->u.v = e->u.v;
+
+    tmp = TypeFactory::NewExpr (ret);
+    FREE (ret);
+    ret = tmp;
+    
     break;
 
   case E_REAL:
@@ -769,6 +822,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
   case E_TRUE:
   case E_FALSE:
     LVAL_ERROR;
+
+    tmp = TypeFactory::NewExpr (ret);
+    FREE (ret);
+    ret = tmp;
+    
     break;
     
   default:

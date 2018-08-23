@@ -705,7 +705,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
       ret->r[i].u.ex.lo = lval->u.v;
       ret->r[i].u.ex.hi = hval->u.v;
       ret->r[i].u.ex.isrange = 1;
-      FREE (lval);
+      //FREE (lval);
     }
     else {
       if (is_ref) {
@@ -719,7 +719,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
 	ret->r[i].u.ex.isrange = 1;
       }
     }
-    FREE (hval);
+    //FREE (hval);
   }
 
   if (next) {
@@ -906,7 +906,7 @@ AExprstep::~AExprstep ()
   case 0:
     break;
   case 1:
-    if (u.const_expr) { FREE (u.const_expr); }
+    if (u.const_expr) { if (u.const_expr->type != E_INT && u.const_expr->type != E_TRUE && u.const_expr->type != E_FALSE) FREE (u.const_expr); }
     break;
   case 2:
     if (u.id.a) {
@@ -931,7 +931,10 @@ void AExprstep::step()
     break;
   case 1:
     /* nothing to see here, need to continue traversing the AExpr */
-    FREE (u.const_expr);
+    if (u.const_expr->type != E_INT && u.const_expr->type != E_TRUE &&
+	u.const_expr->type != E_FALSE) {
+      FREE (u.const_expr);
+    }
     u.const_expr = NULL;
     break;
   case 2:

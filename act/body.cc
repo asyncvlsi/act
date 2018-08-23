@@ -1418,7 +1418,7 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
     }
     Assert (e->type == E_INT, "Should have been caught earlier");
     ilo = e->u.v;
-    FREE (e);
+    //FREE (e);
   }
 
   e = expr_expand (hi, ns, s);
@@ -1430,7 +1430,7 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
   }
   Assert (e->type == E_INT, "Should have been caught earlier");
   ihi = e->u.v;
-  FREE (e);
+  //FREE (e);
 
   if (!lo) {
     ilo = 0;

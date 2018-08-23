@@ -41,7 +41,7 @@ class Act {
    *
    * @param s is the name of the file containing the top-level ACT
    */
-  Act (const char *s);
+  Act (const char *s = NULL);
   ~Act ();
 
 

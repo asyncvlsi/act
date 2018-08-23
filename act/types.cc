@@ -31,6 +31,10 @@ struct cHashtable *TypeFactory::chanhash = NULL;
 struct cHashtable *TypeFactory::enumhash = NULL;
 struct cHashtable *TypeFactory::ptypehash = NULL;
 
+Expr *TypeFactory::expr_true = NULL;
+Expr *TypeFactory::expr_false = NULL;
+struct iHashtable *TypeFactory::expr_int = NULL;
+
 Expr *const_expr (int val);
 
 /*------------------------------------------------------------------------
@@ -127,6 +131,16 @@ void TypeFactory::Init ()
   TypeFactory::ptypehash->match = TypeFactory::chanmatchfn;
   TypeFactory::ptypehash->dup = TypeFactory::chandupfn;
   TypeFactory::ptypehash->free = TypeFactory::chanfreefn;
+
+
+  /* const expr hash */
+  NEW (TypeFactory::expr_true, Expr);
+  TypeFactory::expr_true->type = E_TRUE;
+
+  NEW (TypeFactory::expr_false, Expr);
+  TypeFactory::expr_false->type = E_FALSE;
+  
+  TypeFactory::expr_int = ihash_new (32);
 }
 
 InstType *TypeFactory::NewBool (Type::direction dir)
@@ -579,6 +593,8 @@ void TypeFactory::chanfreefn (void *key)
   delete c->t;
   delete c;
 }
+
+
 
 Chan *TypeFactory::NewChan (int n, InstType **l)
 {
@@ -2082,3 +2098,41 @@ Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
   return cx;
 }
+
+
+Expr *TypeFactory::NewExpr (Expr *x)
+{
+  if (!x) return NULL;
+
+  if (x->type == E_TRUE) {
+    /* find unique ETRUE */
+    return TypeFactory::expr_true;
+  }
+  else if (x->type == E_FALSE) {
+    /* find unique E_FALSE */
+    return TypeFactory::expr_false;
+  }
+  else if (x->type = E_INT) {
+    ihash_bucket_t *b;
+
+    b = ihash_lookup (TypeFactory::expr_int, x->u.v);
+    if (b) {
+      return (Expr *)b->v;
+    }
+    else {
+      Expr *t;
+      b = ihash_add (TypeFactory::expr_int, x->u.v);
+      NEW (t, Expr);
+      t->type = E_INT;
+      t->u.v = x->u.v;
+      b->v = t;
+      return t;
+    }
+  }
+  else {
+    fatal_error ("TypeFactory::NewExpr() called without a constant int/bool expression!");
+  }
+  return NULL;
+}
+
+    

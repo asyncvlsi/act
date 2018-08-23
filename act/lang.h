@@ -51,7 +51,6 @@ enum act_prs_expr_type {
 typedef struct {
   Expr *w, *l;		/* size, if any */
   int flavor;
-  int subflavor;		/* special flavor override (-1 if missing) */
 } act_size_spec_t;
 
 
