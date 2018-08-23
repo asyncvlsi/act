@@ -155,7 +155,7 @@ typedef struct atrace_struct {
 } atrace;
 
 
-atrace *atrace_create (char *s, int fmt, float stop_time, float dt);
+atrace *atrace_create (const char *s, int fmt, float stop_time, float dt);
   /* open an empty trace file
      fmt = trace format
      stop_time = time of last output
@@ -217,7 +217,7 @@ void  atrace_signal_change (atrace *, name_t *, float t, float v);
      for this function are non-decreasing.
   */
 
-name_t *atrace_create_node (atrace *, char *);
+name_t *atrace_create_node (atrace *, const char *);
   /* create a node; if exists, return old value */
 #define atrace_mk_digital(n) ((n)->type = 1)
 #define atrace_mk_analog(n)  ((n)->type = 0)

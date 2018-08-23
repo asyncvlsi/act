@@ -20,7 +20,7 @@
 #define DONT_FILTER_DELTAS(t)  (!((t) == 0))
 
 /* open an empty trace file */
-atrace *atrace_create (char *s, int fmt, float stop_time, float dt)
+atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
 {
   atrace *a;
   int l;
@@ -1394,7 +1394,7 @@ name_t *atrace_lookup (atrace *a, char *s)
 }
 
 /* create a node */
-name_t *atrace_create_node (atrace *a, char *s)
+name_t *atrace_create_node (atrace *a, const char *s)
 {
   name_t *n;
   hash_bucket_t *b;
