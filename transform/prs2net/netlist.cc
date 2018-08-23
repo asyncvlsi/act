@@ -461,7 +461,7 @@ static void generate_staticizers (netlist_t *N)
     }
   }
 
-  if (config_get_int ("disable_keepers") != 1) return;
+  if (config_get_int ("disable_keepers") == 1) return;
 
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
@@ -1219,6 +1219,13 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
   switch (p->type) {
   case ACT_PRS_RULE:
     d = (p->u.one.dir == 0 ? EDGE_NFET : EDGE_PFET);
+
+    /*-- reset default sizes per production rule --*/
+    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
+    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
+
     if (p->u.one.label) {
       if (istree) {
 	fatal_error ("@ variables cannot be within a tree { } block");
@@ -1339,6 +1346,11 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     break;
 
   case ACT_PRS_GATE:
+    /*-- reset default sizes per gate --*/
+    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
+    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
 	unsigned int v = attr->e->u.v;
