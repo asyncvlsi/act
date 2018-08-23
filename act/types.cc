@@ -2112,7 +2112,7 @@ Expr *TypeFactory::NewExpr (Expr *x)
     /* find unique E_FALSE */
     return TypeFactory::expr_false;
   }
-  else if (x->type = E_INT) {
+  else if (x->type == E_INT) {
     ihash_bucket_t *b;
 
     b = ihash_lookup (TypeFactory::expr_int, x->u.v);
