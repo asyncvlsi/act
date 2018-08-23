@@ -133,10 +133,19 @@ Act::Act (const char *s)
   FREE (argv[0]);
   FREE (argv);
 
+  aux = hash_new (2);
+
+  gns = ActNamespace::global;
+  tf = new TypeFactory();
+  
+  if (!s) {
+    return;
+  }
+
   tr.curns = ActNamespace::global;
   tr.global = tr.curns;
   tr.os = new ActOpen ();
-  tr.tf = new TypeFactory ();
+  tr.tf = tf;
   tr.scope = tr.curns->CurScope ();
 
   tr.u = NULL;
@@ -220,11 +229,6 @@ Act::Act (const char *s)
 #ifdef DEBUG_PERFORMANCE
   printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
 #endif
-
-  gns = ActNamespace::global;
-  tf = tr.tf;
-
-  aux = hash_new (2);
 }
 
 

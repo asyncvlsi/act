@@ -331,7 +331,6 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
   e->w = -1;
   e->l = -1;
   e->flavor = 0; /* default fet type */
-  e->subflavor = -1;
 
   e->type = 0;
   
@@ -665,7 +664,6 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
     */
     if (sz) {
       f->flavor = sz->flavor;
-      f->subflavor = sz->subflavor;
 
       if (sz->w) {
 	f->w = (sz->w->type == E_INT ? sz->w->u.v : sz->w->u.f);
@@ -695,13 +693,11 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
     f->w = n->sz[f->type].sw;
     f->l = n->sz[f->type].sl;
     f->flavor = 0;		/* standard fet */
-    f->subflavor = -1;
   }
   else {
     /* min size, overridden by sz directive */
     if (sz) {
       f->flavor = sz->flavor;
-      f->subflavor = sz->subflavor;
 
       if (sz->w) {
 	f->w = (sz->w->type == E_INT ? sz->w->u.v : sz->w->u.f);

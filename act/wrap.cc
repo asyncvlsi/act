@@ -89,12 +89,16 @@ ActRet *act_wrap_X_expr (Expr *e)
 /* return a constant expression with specified value */
 Expr *const_expr (int val)
 {
-  Expr *e;
+  Expr *e, *f;
 
   NEW (e, Expr);
   e->type = E_INT;
   e->u.v = val;
-  return e;
+
+  f = TypeFactory::NewExpr (e);
+  FREE (e);
+  
+  return f;
 }
 
 /**

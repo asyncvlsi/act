@@ -247,3 +247,69 @@ Heap *heap_restore (FILE *fp, void *(restore_element)(FILE *))
   }
   return h;
 }
+
+int heap_update_key (Heap *h, heap_key_t key, void *v)
+{
+  int ii, i, j, k;
+
+  for (i=0; i < h->sz; i++) {
+    if (h->value[i] == v) break;
+  }
+  if (i == h->sz) return 0;
+
+  /* update the key, and move the node into place */
+  h->key[i] = key;
+
+  /* now check propagate down */
+  j = 2*i+1;
+  k = j+1;
+
+  ii = i;
+
+  while (j < h->sz) {
+    if (h->key[j] < h->key[i]) {
+      if (k >= h->sz || h->key[j] < h->key[k]) {
+	APPLY_SWAP (i,j);
+	i = j;
+      }
+      else {
+	APPLY_SWAP (i,k);
+	i = k;
+      }
+    }
+    else if (k < h->sz && (h->key[k] < h->key[i])) {
+      APPLY_SWAP(i,k);
+      i = k;
+    }
+    else {
+      break;
+    }
+    j = 2*i+1;
+    k = j+1;
+  }
+
+  if (i != ii) {
+    /*check_heap ("step1", h);*/
+    return 1;
+  }
+  
+  k = ii;
+  i = (k-1)/2;
+
+  while (k > 0) {
+    if (k & 1)
+      j = k+1;
+    else 
+      j = k-1;
+    if (h->key[k] <= h->key[i]) {
+      APPLY_SWAP (k,i);
+    }
+    if (j < h->sz && h->key[j] < h->key[i]) {
+      APPLY_SWAP(i,j);
+    }
+    k = i;
+    i = (k-1)/2;
+  }
+  /*check_heap ("step2", h);*/
+  return 1;
+}  

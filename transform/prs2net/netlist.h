@@ -87,7 +87,6 @@ struct edge {
 
   int w, l;			/* w, l for the gate */
   int flavor;			/* lvt,svt,hvt,od18,... */
-  int subflavor;		/* subflavor for the fet */
 
   unsigned int type:1;		/* 0 = nfet, 1 = pfet */
   
