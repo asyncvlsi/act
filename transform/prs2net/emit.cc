@@ -723,7 +723,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	    fprintf (fp, "_pass ");
 	  }
 	  else {
-	    fprintf (fp, "d_ ");
+	    fprintf (fp, "_ ");
 	  }
 
 	  /* if length repeat, source/drain changes */
