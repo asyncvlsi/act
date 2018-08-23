@@ -5,15 +5,23 @@
 #
 #-------------------------------------------------------------------------
 BIN=tlint.$(EXT)
-TARGETS=$(BIN)
+BIN2=tr2alint.$(EXT)
+TARGETS=$(BIN) $(BIN2)
 
-OBJS=tlint.o
+OBJS2=hs.o
+OBJS1=tlint.o
+
+OBJS=$(OBJS1) $(OBJS2)
 
 SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(BIN): $(LIB) $(OBJS) $(ACTDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS) ../prsim/$(EXT)/prs.o -o $(BIN) $(LIBACT)
+$(BIN): $(LIB) $(OBJS1) $(ACTDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS1) ../prsim/$(EXT)/prs.o -o $(BIN) $(LIBACT)
+
+$(BIN2): $(LIB) $(OBJS2) $(ACTDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBACT) -lz
+
 
 -include Makefile.deps
