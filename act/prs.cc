@@ -187,7 +187,8 @@ static act_prs_expr_t *atom (LFILE *l)
     file_setflags (l, flags | FILE_FLAGS_NOREAL);
 
     /* optional colon */
-    if (file_have (l, COLON)) ;
+    if (file_have (l, COLON))
+      ;
       /* okay */
     NEW (e, act_prs_expr_t);
     e->type = t;
@@ -269,7 +270,6 @@ static act_prs_expr_t *atom (LFILE *l)
       NEW (sz, act_size_spec_t);
       sz->w = expr_parse_real (l);
       sz->l = NULL;
-      sz->subflavor = -1;
       sz->flavor = 0;
       if (!sz->w) {
 	FREE (sz);
@@ -284,13 +284,6 @@ static act_prs_expr_t *atom (LFILE *l)
 	    _freeexpr (e);
 	    return NULL;
 	  }
-	  if (file_have (l, COLON)) {
-	    if (!file_have (l, f_integer)) {
-	      _freeexpr (e);
-	      return NULL;
-	    }
-	    sz->subflavor = file_integer (l);
-	  }
 	}
 	else {
 	  sz->l = expr_parse_real (l);
@@ -304,13 +297,6 @@ static act_prs_expr_t *atom (LFILE *l)
 	      return NULL;
 	    }
 	    sz->flavor = act_fet_string_to_value (file_prev (l));
-	    if (file_have (l, COLON)) {
-	      if (!file_have (l, f_integer)) {
-		_freeexpr (e);
-		return NULL;
-	      }
-	      sz->subflavor = file_integer (l);
-	    }
 	  }
 	}
       }
@@ -535,7 +521,6 @@ static act_size_spec_t *_process_sz (ActTree *a, act_size_spec_t *sz)
   ret->w = _wnumber_expr (a, sz->w);
   ret->l = _wnumber_expr (a, sz->l);
   ret->flavor = sz->flavor;
-  ret->subflavor = sz->subflavor;
   return ret;
 }
 

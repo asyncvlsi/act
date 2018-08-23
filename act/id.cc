@@ -303,22 +303,43 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
       fatal_error ("Uninitialized value");
     }
     if (TypeFactory::isPIntType (base)) {
+      Expr *tmp;
+
       ret->type = E_INT;
       ret->u.v = s->getPInt (offset + vx->u.idx);
+
+      tmp = TypeFactory::NewExpr (ret);
+      FREE (ret);
+      ret = tmp;
+
       return ret;
     }
     else if (TypeFactory::isPIntsType (base)) {
+      Expr *tmp;
+
       ret->type = E_INT;
       ret->u.v = s->getPInts (offset + vx->u.idx);
+
+      tmp = TypeFactory::NewExpr (ret);
+      FREE (ret);
+      ret = tmp;
+      
       return ret;
     }
     else if (TypeFactory::isPBoolType (base)) {
+      Expr *tmp;
+
       if (s->getPBool (offset + vx->u.idx)) {
 	ret->type = E_TRUE;
       }
       else {
 	ret->type = E_FALSE;
       }
+
+      tmp = TypeFactory::NewExpr (ret);
+      FREE (ret);
+      ret = tmp;
+
       return ret;
     }
     else if (TypeFactory::isPRealType (base)) {

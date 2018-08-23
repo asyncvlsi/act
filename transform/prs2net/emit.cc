@@ -753,9 +753,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  sprintf (devname, "%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   fetnames[e->flavor]);
 	  fprintf (fp, " %s", config_get_string (devname));
-	  if (e->subflavor != -1) {
-	    fprintf (fp, "_%d", e->subflavor);
-	  }
 	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, l*lambda*1e6);
 
 	  /* print extra fet string */

@@ -889,7 +889,7 @@ bool_expr_id_or_array[ActId *]: expr_id
       < width , length, flavor : somethingelse >
 
 */
-size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ ":" INT ] ] ">"
+size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] ">"
 {{X:
     act_size_spec_t *s;
     
@@ -897,7 +897,6 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
     s->w = $2;
     s->l = NULL;
     s->flavor = 0;
-    s->subflavor = -1;
     
     if (!OPT_EMPTY ($3)) {
       ActRet *r;
@@ -920,21 +919,8 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID [ "
 	$E("Unknown transistor flavor ``%s''", r->u.str);
       }
       FREE (r);
-      
-      r = OPT_VALUE2 ($4);
-      $A(r->type == R_LIST);
-      
-      if (!OPT_EMPTY (r->u.l)) {
-	ActRet *r2;
-
-	r2 = OPT_VALUE (r->u.l);
-	$A(r2->type == R_INT);
-	s->subflavor = r2->u.ival;
-	FREE (r2);
-      }
-      list_free (r->u.l);
-      FREE (r);
     }
+    OPT_FREE ($4);
     return s;
 }}
 |  /* empty */

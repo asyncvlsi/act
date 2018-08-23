@@ -187,7 +187,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	  exit (1);
 	}
 	ilo = etmp->u.v;
-	FREE (etmp);
+	//FREE (etmp);
       }
       else {
 	ilo = 0;
@@ -207,7 +207,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
       else {
 	ihi = etmp->u.v-1;
       }
-      FREE (etmp);
+      //FREE (etmp);
 
       vx = s->LookupVal (p->u.loop.id);
       vx->init = 1;
@@ -406,7 +406,6 @@ act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *
     ret->l = NULL;
   }
   ret->flavor = sz->flavor;
-  ret->subflavor = sz->subflavor;
   
   return ret;
 }
@@ -507,7 +506,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	    exit (1);
 	  }
 	  ilo = etmp->u.v;
-	  FREE (etmp);
+	  //FREE (etmp);
 	}
 	else {
 	  ilo = 0;
@@ -526,7 +525,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	else {
 	  ihi = etmp->u.v-1;
 	}
-	FREE (etmp);
+	//FREE (etmp);
 
 	vx = s->LookupVal (p->u.l.id);
 	vx->init = 1;
