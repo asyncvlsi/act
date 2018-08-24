@@ -752,6 +752,9 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 
 	  sprintf (devname, "%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   fetnames[e->flavor]);
+	  if (!config_exists (devname)) {
+	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
+	  }
 	  fprintf (fp, " %s", config_get_string (devname));
 	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, l*lambda*1e6);
 
