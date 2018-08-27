@@ -21,5 +21,14 @@ if [ "x$srcs" = "x" ]
 then
         :
 else
-        g++ -MM $@ $srcs >> Makefile.deps
+    for i in $srcs
+    do 
+      s=`expr $i : '.*\(.cc\)'`
+      if [ "x$s" = "x.cc" ]
+      then
+          g++ -MM $@ $i >> Makefile.deps
+      else
+	  gcc -MM $@ $i >> Makefile.deps
+      fi
+    done
 fi
