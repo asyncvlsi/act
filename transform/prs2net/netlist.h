@@ -102,6 +102,9 @@ struct edge {
   /* nfolds: # of folds */
   int nfolds;
 
+  /* # of repeated lengths */
+  int nlen;
+
   unsigned int type:1;		/* 0 = nfet, 1 = pfet */
   
   unsigned int pchg:1;		/* internal precharge expression */

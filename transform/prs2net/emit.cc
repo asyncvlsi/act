@@ -636,12 +636,9 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
       l = e->l;
 
       /* discretize lengths */
+      len_repeat = e->nlen;
       if (discrete_length > 0) {
-	len_repeat = (discrete_length - 1 + e->l)/discrete_length;
 	l = discrete_length;
-      }
-      else {
-	len_repeat = 1;
       }
 
       if (e->type == EDGE_NFET) {
@@ -653,35 +650,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
       }
 
       width_repeat = e->nfolds;
-#if 0
-      /* fold widths */
-      width_repeat = 1;
-      if (e->type == EDGE_NFET) {
-	if (fold_nfet_width > 0) {
-	  width_repeat = e->w/fold_nfet_width;
-	  width_last = e->w % fold_nfet_width;
-	  if (width_last < min_w_in_lambda) {
-	    width_last += fold_nfet_width;
-	  }
-	  else {
-	    width_repeat++;
-	  }
-	}
-      }
-      else {
-	Assert (e->type == EDGE_PFET, "Hmm");
-	if (fold_pfet_width > 0) {
-	  width_repeat = e->w/fold_pfet_width;
-	  width_last = e->w % fold_pfet_width;
-	  if (width_last < min_w_in_lambda) {
-	    width_last += fold_pfet_width;
-	  }
-	  else {
-	    width_repeat++;
-	  }
-	}
-      }
-#endif
       
       if (swap_source_drain) {
 	src = e->b;
@@ -701,20 +669,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  else {
 	    w = e->w;
 	  }
-#if 0
-	    if (iw != width_repeat-1) {
-	      if (e->type == EDGE_NFET) {
-		w = fold_nfet_width;
-	      }
-	      else {
-		w = fold_pfet_width;
-	      }
-	    }
-	    else {
-	      w = width_last;
-	    }
-	  }
-#endif
 	
 	  if (use_subckt_models) {
 	    fprintf (fp, "x");

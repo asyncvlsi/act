@@ -340,6 +340,7 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
   e->raw = 0;
 
   e->nfolds = 1;  /* default, 1 fold */
+  e->nlen = 1;
   e->visited = 0;
   e->pruned = 0;
   e->tree = 0;
@@ -418,9 +419,10 @@ static void fold_transistors (netlist_t *N)
   edge_t *e;
   int n_fold = config_get_int ("fold_nfet_width");
   int p_fold = config_get_int ("fold_pfet_width");
+  int discrete_len = config_get_int ("discrete_length");
   int fold;
 
-  if (n_fold == 0 && p_fold == 0) return;
+  if (n_fold == 0 && p_fold == 0 && discrete_len == 0) return;
 
   for (n = N->hd; n; n = n->next) {
     for (li = list_first (n->e); li; li = list_next (li)) {
@@ -438,6 +440,9 @@ static void fold_transistors (netlist_t *N)
 	if ((e->w % fold) >= min_w_in_lambda) {
 	  e->nfolds++;
 	}
+      }
+      if (discrete_len > 0) {
+	e->nlen = (e->l + discrete_len - 1)/discrete_len;
       }
     }
   }
