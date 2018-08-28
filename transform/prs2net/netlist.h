@@ -24,6 +24,17 @@ struct edge;
 struct node;
 typedef struct edge edge_t;
 
+/* actual edge width is:
+
+   EDGE_WIDTH(edge, i, fold, minw)
+     edge = edge pointer
+     i = 0..nfolds-1 for the # of folds of this edge
+     fold = folding threshold for this type of edge
+     minw = min width of a transistor
+*/
+#define EDGE_WIDTH(x,i,fold,minw)  \
+  (((i) < (x)->nfolds-1) ? (fold) : ((((x)->w % (fold)) < (minw)) ? (fold) + ((x)->w % (fold)) : ((x)->w % (fold))))
+
 typedef struct var {
   act_connection *id;		/* unique connection id */
   act_prs_expr_t *e_up, *e_dn;	/* parsed expression */
@@ -88,6 +99,9 @@ struct edge {
   int w, l;			/* w, l for the gate */
   int flavor;			/* lvt,svt,hvt,od18,... */
 
+  /* nfolds: # of folds */
+  int nfolds;
+
   unsigned int type:1;		/* 0 = nfet, 1 = pfet */
   
   unsigned int pchg:1;		/* internal precharge expression */
@@ -96,10 +110,11 @@ struct edge {
 
   unsigned int raw:1;		/* explicitly specified fet */
 
-  unsigned int visited:1;	/* visited this edge? */
   unsigned int pruned:1;	/* 1 = pruned during sharing */
   unsigned int tree:1;		/* is part of the current tree! */
 
+  unsigned int visited;		/* visited this edge?; count if the
+				   edge is folded */
 };
 
 struct netlist_bool_port {

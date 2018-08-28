@@ -339,6 +339,7 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
   e->combf = 0;
   e->raw = 0;
 
+  e->nfolds = 1;  /* default, 1 fold */
   e->visited = 0;
   e->pruned = 0;
   e->tree = 0;
@@ -408,6 +409,47 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_CELEM    (0x08 << 3) // strip pchg
 #define EDGE_KEEPER   (0x10 << 3) // keeper edge (force)
 #define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
+
+
+static void fold_transistors (netlist_t *N)
+{
+  node_t *n;
+  listitem_t *li;
+  edge_t *e;
+  int n_fold = config_get_int ("fold_nfet_width");
+  int p_fold = config_get_int ("fold_pfet_width");
+  int fold;
+
+  if (n_fold == 0 && p_fold == 0) return;
+
+  for (n = N->hd; n; n = n->next) {
+    for (li = list_first (n->e); li; li = list_next (li)) {
+      e = (edge_t *) list_value (li);
+      if (e->visited > 0) continue;
+      e->visited = 1;
+      if (e->type == EDGE_NFET) {
+	fold = n_fold;
+      }
+      else {
+	fold = p_fold;
+      }
+      if (fold > 0 && e->w > fold) {
+	e->nfolds = e->w/fold;
+	if ((e->w % fold) >= min_w_in_lambda) {
+	  e->nfolds++;
+	}
+      }
+    }
+  }
+
+  /* clear visited flag */
+  for (n = N->hd; n; n = n->next) {
+    for (li = list_first (n->e); li; li = list_next (li)) {
+      e = (edge_t *) list_value (li);
+      e->visited = 0;
+    }
+  }
+}
 
 
 static void generate_staticizers (netlist_t *N)
@@ -1552,6 +1594,9 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
   /*-- generate staticizers --*/
   generate_staticizers (N);
+
+  /*-- fold transistors --*/
+  fold_transistors (N);
 
 #if 0 
   release_atalloc (N->atH[EDGE_NFET]);
