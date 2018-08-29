@@ -201,7 +201,7 @@ namespace_management: [ "export" ] "namespace" ID
     }
     if (new_ns) {
       /* append something to the body! */
-      $0->curns->AppendBody (new ActBody_Namespace (ns));
+      //$0->curns->AppendBody (new ActBody_Namespace (ns));
     }
     
     $0->curns = ns;
