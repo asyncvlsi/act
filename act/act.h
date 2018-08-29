@@ -70,6 +70,11 @@ class Act {
   ActNamespace *findNamespace (ActNamespace *, const char *);
   ActNamespace *Global() { return gns; }
 
+  /*
+    Dump to a file 
+  */
+  void Print (FILE *fp);
+
   void *aux_find (const char *phase);
   void aux_add (const char *phase, void *data);
 

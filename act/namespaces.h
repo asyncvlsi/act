@@ -22,6 +22,7 @@ class AExpr;
 class AExprstep;
 class ActNamespace;
 class ActNamespaceiter;
+class ActTypeiter;
 struct ValueIdx;
 
 /*
@@ -105,6 +106,9 @@ struct ValueIdx {
   /* assumes object is not a parameter type */
   bool hasConnection()  { return init && (u.obj.c != NULL); }
   bool hasConnection(int i) { return init && (u.obj.c != NULL) && (u.obj.c->a) && (u.obj.c->a[i]); }
+
+  bool hasSubconnections() { return hasConnection() && connection()->hasSubconnections(); }
+  
   bool isPrimary() { return !hasConnection() || (u.obj.c->isPrimary()); }
   bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->isPrimary()); }
   act_connection *connection() { return init ? u.obj.c : NULL; }
@@ -381,6 +385,11 @@ class ActNamespace {
    */
   void Expand ();
 
+  /**
+   * Print text representation
+   */
+  void Print (FILE *fp);
+
 
   /**
    * Initialize the namespace module.
@@ -473,6 +482,7 @@ class ActNamespace {
 
   friend class Act;
   friend class ActNamespaceiter;
+  friend class ActTypeiter;
 };
 
 
