@@ -58,6 +58,18 @@ class ActConniter :
   ACTSTDITER(ActConniter, act_connection *);
 };
 
+class ActTypeiter :
+  public std::iterator<std::input_iterator_tag, Type *> {
+  
+  hash_bucket_t *b;
+  int i;
+  ActNamespace *top;
+
+ public:
+  ActTypeiter (ActNamespace *s);
+  ACTSTDITER(ActTypeiter, Type *);
+};
+
 #undef ACTSTDITER
 
 

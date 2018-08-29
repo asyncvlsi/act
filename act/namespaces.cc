@@ -9,6 +9,7 @@
 #include <act/namespaces.h>
 #include <act/types.h>
 #include <act/inst.h>
+#include <act/iter.h>
 #include <string.h>
 #include "misc.h"
 #include "array.h"
@@ -1539,4 +1540,64 @@ void Scope::BindParam (const char *s, AExpr *ae)
   ActId *tmpid = new ActId (s, NULL);
   BindParam (tmpid, ae);
   delete tmpid;
+}
+
+
+/*
+  Print namespace
+*/
+void ActNamespace::Print (FILE *fp)
+{
+  if (this != ActNamespace::Global()) {
+    fprintf (fp, "%s {\n", getName());
+  }
+
+  /* print subnamespaces */
+  ActNamespaceiter i(this);
+  for (i = i.begin(); i != i.end(); i++) {
+    ActNamespace *n = *i;
+    n->Print (fp);
+  }
+
+  /* print types */
+  ActTypeiter it(this);
+  for (it = it.begin(); it != it.end(); it++) {
+    Type *t = *it;
+    /* print type! */
+    fprintf (fp, "type: %s\n", t->getName());
+  }
+    
+  /* print instances */
+  fprintf (fp, "\n/* instances */\n");
+  ActInstiter inst(CurScope());
+  for (inst = inst.begin(); inst != inst.end(); inst++) {
+    ValueIdx *vx = *inst;
+    if (!TypeFactory::isParamType (vx->t)) {
+      vx->t->Print (fp);
+      fprintf (fp, " %s;\n", vx->getName());
+    }
+    if (vx->hasConnection()) {
+      ActConniter ci(vx->connection());
+      ActId *id;
+
+      fprintf (fp, "%s", vx->getName());
+      for (ci = ci.begin(); ci != ci.end(); ci++) {
+	act_connection *c = *ci;
+	if (c == vx->connection()) continue;
+	id = c->toid();
+	fprintf (fp, "=");
+	id->Print (fp);
+	delete id;
+      }
+      fprintf (fp, ";\n");
+
+      if (vx->hasSubconnections()) {
+	/* do something! */
+      }
+    }
+  }
+
+  if (this != ActNamespace::Global()) {
+    fprintf (fp, "}\n");
+  }
 }
