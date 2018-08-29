@@ -379,3 +379,8 @@ void *Act::aux_find (const char *phase)
   }
 }
 
+
+void Act::Print (FILE *fp)
+{
+  gns->Print (fp);
+}

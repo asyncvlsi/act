@@ -237,3 +237,87 @@ ActConniter& ActConniter::operator++()
   }
   return *this;
 }
+
+/*------------------------------------------------------------------------*/
+
+ActTypeiter::ActTypeiter (ActNamespace *ns)
+{
+  i = 0;
+  b = NULL;
+  top = ns;
+}
+
+
+ActTypeiter::ActTypeiter (const ActTypeiter &c)
+{
+  i = c.i;
+  b = c.b;
+  top = c.top;
+}
+  
+ActTypeiter ActTypeiter::operator++(int)
+{
+  ActTypeiter tmp(*this);
+  operator++();
+  return tmp;
+}
+
+bool ActTypeiter::operator==(const ActTypeiter& rhs) const
+{
+ return (rhs.top == top) && (rhs.i == i) && (rhs.b == b);
+}
+
+
+bool ActTypeiter::operator!=(const ActTypeiter& rhs) const
+{
+ return !operator==(rhs);
+}
+
+Type *ActTypeiter::operator*()
+{
+ if (b) {
+   return (Type *)b->v;
+ }
+ else {
+   return NULL;
+ }
+}
+
+ActTypeiter ActTypeiter::begin()
+{
+  ActTypeiter iter(*this);
+  iter.i = 0;
+  iter.b = NULL;
+  iter++;
+  return iter;
+}
+
+ActTypeiter ActTypeiter::end()
+{
+  ActTypeiter iter(*this);
+  iter.b = NULL;
+  iter.i = top->T->size;
+  return iter;
+}
+
+ActTypeiter& ActTypeiter::operator++()
+{
+  /* initial: i=0, b is NULL */
+  if (b && b->next) {
+    b = b->next;
+  }
+  else {
+    if (b) {
+      i++;
+    }
+    b = NULL;
+    while (!top->T->head[i] && i < top->T->size) {
+      i++;
+    }
+    if (i != top->T->size) {
+      b = top->T->head[i];
+    }
+  }
+  return *this;
+}
+
