@@ -1561,7 +1561,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 void ActBody_Namespace::Expand (ActNamespace *_ns, Scope *s)
 {
   /* expand the top-level of the namespace that was imported */
-  ns->Expand ();
+  //ns->Expand ();
 }
 
 static void _merge_attributes (act_attr_t **x, act_attr *a)
