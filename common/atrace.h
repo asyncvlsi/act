@@ -46,6 +46,10 @@ extern "C" {
  *     t <nodeid> <val> <cause-nodeid> ..... -1
  *     t -1
  *
+ *  If the end marker is -2, then that means the next record is a full
+ *  dump:
+ *     t 0 <val> <val> .... <val> -1 or -2
+ *
  *
  *  <file>.trace : contains the trace
  *  <file>.names : contains the names of all signals
@@ -108,6 +112,9 @@ typedef struct atrace_struct {
   float stop_time;		/* max time in the trace */
   float dt;			/* delta t */
 
+  float adv;			/* min change for recording */
+  float rdv;			/* a=absolute, r=relative */
+
   /* only used for reading */
   int Nvsteps;			/* real step count */
   float vdt;			/* virtual delta t:
@@ -117,6 +124,7 @@ typedef struct atrace_struct {
 				*/
 
   /* internal state for new atrace API */
+  int rec_type;			/* -1 or -2 depending on read type? */
   float curt;			/* record's current time */
   float nextt;			/* next time */
   int curstep;			/* current time step for API */
@@ -160,6 +168,12 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt);
      fmt = trace format
      stop_time = time of last output
      dt = time resolution
+  */
+
+void atrace_filter (atrace *, float adv, float rdv);
+  /* include a trace file filter. only works in create mode for DELTA format.
+     adv = absolute delta v before a change is recorded
+     rdv = relative delta v before a change is recorded
   */
 
 atrace *atrace_open (char *s);
