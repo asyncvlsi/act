@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
+#include <unistd.h>
+#include <time.h>
 #include "atrace.h"
 #include "misc.h"
 
@@ -72,8 +75,22 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
   a->fnum = 0;
   a->used = 0;
   a->endianness = 0;
+
+  a->adv = -1;
+  a->rdv = -1;
   
   return a;
+}
+
+void atrace_filter (atrace *a, float adv, float rdv)
+{
+  Assert (a->read_mode == 0, "Cannot set filter in read mode");
+
+  if (rdv < 0 || rdv > 1) return;
+  if (adv < 0) return;
+
+  a->adv = adv;
+  a->rdv = rdv;
 }
 
 /*
@@ -705,6 +722,7 @@ atrace *atrace_open (char *s)
   a->fnum = 0;
   a->used = 0;
   a->curt = -1;
+  a->rec_type = -2;
 
   return a;
 }
@@ -770,36 +788,76 @@ static float _read_record (atrace *a, float t)
     /* EOF marker */
     return -1;
   }
+  if (a->rec_type == -2) {
+    idx = 0;
+  }
   prev = NULL;
-  while (idx != -1) {
-    if (prev) {
-      prev->chg_next = a->N[idx];
+  if (a->rec_type == -2) {
+    for (idx = 1; idx < a->Nnodes; idx++) {
+      fread_float (a, &v);
+      if (a->N[idx]->v != v) {
+	if (prev) {
+	  prev->chg_next = a->N[idx];
+	}
+	else {
+	  a->hd_chglist = a->N[idx];
+	}
+	a->N[idx]->chg_next = NULL;
+	prev = a->N[idx];
+	a->N[idx]->v = v;
+      }
+      if (a->fmt == ATRACE_DELTA_CAUSE) {
+	fread_int (a, &c);
+	if (c < 0 || c >= a->Nnodes) {
+	  fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", c);
+	  fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
+	  exit (1);
+	}
+	a->N[idx]->cause = c;
+      }
+      else {
+	a->N[idx]->cause = 0;
+      }
     }
-    else {
-      a->hd_chglist = a->N[idx];
-    }
-    a->N[idx]->chg_next = NULL;
-    fread_float (a, &v);
-    if (idx < 0 || idx >= a->Nnodes) {
-      fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", idx);
-      fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
-      exit (1);
-    }
-    a->N[idx]->v = v;
-    if (a->fmt == ATRACE_DELTA_CAUSE) {
-      fread_int (a, &c);
-      if (c < 0 || c >= a->Nnodes) {
-	fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", c);
+    fread_int (a, &idx);
+  }
+  else {
+    while (idx != -1 && idx != -2) {
+      if (prev) {
+	prev->chg_next = a->N[idx];
+      }
+      else {
+	a->hd_chglist = a->N[idx];
+      }
+      a->N[idx]->chg_next = NULL;
+      fread_float (a, &v);
+      if (idx < 0 || idx >= a->Nnodes) {
+	fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", idx);
 	fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
 	exit (1);
       }
-      a->N[idx]->cause = c;
+      a->N[idx]->v = v;
+      if (a->fmt == ATRACE_DELTA_CAUSE) {
+	fread_int (a, &c);
+	if (c < 0 || c >= a->Nnodes) {
+	  fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", c);
+	  fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
+	  exit (1);
+	}
+	a->N[idx]->cause = c;
+      }
+      else {
+	a->N[idx]->cause = 0;
+      }
+      prev = a->N[idx];
+      fread_int (a, &idx);
     }
-    else {
-      a->N[idx]->cause = 0;
-    }
-    prev = a->N[idx];
-    fread_int (a, &idx);
+  }
+  if (idx == -1) {
+    a->rec_type = -1;
+  }
+  else {
+    a->rec_type = -2;
   }
   fread_float (a, &v);
   return v;
@@ -1466,40 +1524,87 @@ static void _emit_record (atrace *a)
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
 	if (n->up) continue;
-	safe_fwrite_int_buf (a, n->idx);
+	/*safe_fwrite_int_buf (a, n->idx);*/
 	safe_fwrite_float_buf (a, n->v);
 	if (a->fmt == ATRACE_DELTA_CAUSE) {
 	  safe_fwrite_int_buf (a, 0);
 	}
 	n->chg = 0;
       }
-    safe_fwrite_int_buf (a, -1);
+    /*safe_fwrite_int_buf (a, -1);*/
   }
   else {
-    flag = 0;
+    int count = 0;
+
     for (i=0; i < a->H->size; i++) 
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
-
-	if (n->chg) {
-	  if (flag == 0) {
-	    safe_fwrite_float_buf (a, a->curtime*a->dt);
-	    flag = 1;
-	  }
-	  safe_fwrite_int_buf (a, n->idx);
-	  safe_fwrite_float_buf (a, n->v);
-	  if (a->fmt == ATRACE_DELTA_CAUSE) {
-	    safe_fwrite_int_buf (a, n->cause);
-	  }
-	  n->chg = 0;
-	}
+	if (n->up) continue;
+	count += n->chg;
       }
-    if (flag) {
-      safe_fwrite_int_buf (a, -1);
+    if (count > 0) {
+      if (count > a->Nnodes/2) {
+	safe_fwrite_int_buf (a, -2);
+	safe_fwrite_float_buf (a, a->curtime*a->dt);
+	for (i=0; i < a->H->size; i++) 
+	  for (b = a->H->head[i]; b; b = b->next) {
+	    n = (name_t *) b->v;
+	    if (n->up) continue;
+	    safe_fwrite_float_buf (a, n->v);
+	    if (a->fmt == ATRACE_DELTA_CAUSE) {
+	      safe_fwrite_int_buf (a, n->cause);
+	    }
+	    n->chg = 0;
+	  }
+      }
+      else {
+	safe_fwrite_int_buf (a, -1);
+	flag = 0;
+	for (i=0; i < a->H->size; i++) 
+	  for (b = a->H->head[i]; b; b = b->next) {
+	    n = (name_t *) b->v;
+	    if (n->chg) {
+	      if (flag == 0) {
+		safe_fwrite_float_buf (a, a->curtime*a->dt);
+	      }
+	      flag = 1;
+	      safe_fwrite_int_buf (a, n->idx);
+	      safe_fwrite_float_buf (a, n->v);
+	      if (a->fmt == ATRACE_DELTA_CAUSE) {
+		safe_fwrite_int_buf (a, n->cause);
+	      }
+	      n->chg = 0;
+	    }
+	  }
+	/*if (flag) {
+	  safe_fwrite_int_buf (a, -1);
+	  }*/
+      }
     }
   }
 }
 
+static int large_change (atrace *a, float oldv, float newv)
+{
+  float chg;
+
+  if (oldv == newv) return 0;
+
+  chg = newv-oldv;
+
+  /* absolute */
+  if ((a->adv > 0) && (fabs (chg) >= a->adv)) {
+    return 1;
+  }
+  /* small according to absolute check */
+
+  /* relative */
+  if ((a->rdv > 0) && (oldv == 0 || (fabs (chg/oldv) >= a->rdv))) {
+    return 1;
+  }
+  
+  return 0;
+}
 
 static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
 {
@@ -1518,7 +1623,7 @@ static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
   Assert (step >= a->curtime, "Going backward in time?");
 
   if (step == a->curtime) {
-    if (m->v != v || DONT_FILTER_DELTAS(m->type)) {
+    if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
       m->v = v;
       m->chg = 1;
     }
@@ -1528,7 +1633,7 @@ static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
   _emit_record (a);		/* emit record */
   
   a->curtime = step;
-  if (m->v != v || DONT_FILTER_DELTAS(m->type)) {
+  if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
     m->v = v;
     m->chg = 1;
   }
@@ -1551,7 +1656,7 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int
   Assert (step >= a->curtime, "Going backward in time?");
 
   if (step == a->curtime) {
-    if (m->v != v || DONT_FILTER_DELTAS(m->type)) {
+    if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
       m->v = v;
       m->cause = idx;
       m->chg = 1;
@@ -1562,7 +1667,7 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int
   _emit_record (a);		/* emit record */
   
   a->curtime = step;
-  if (m->v != v || DONT_FILTER_DELTAS(m->type)) {
+  if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
     m->v = v;
     m->cause = idx;
     m->chg = 1;
@@ -1573,6 +1678,7 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int
 static void _sig_delta_end (atrace *a)
 {
   _emit_record (a);
+  safe_fwrite_int_buf (a, -1);
 
   /* repeat empty sequence */
   safe_fwrite_float_buf (a, a->curtime*a->dt);
