@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2009 Rajit Manohar
+ *  Copyright (c) 2009-2018 Rajit Manohar
  *  All Rights Reserved
  *
  **************************************************************************
@@ -22,6 +22,14 @@ void config_append_path (const char *s);
    $CAD_HOME/lib/tool/ <- next
 */
 void config_std_path (const char *tool);
+
+/*
+  Add standard tech-specific config path
+    . <- highest
+    $ACT_HOME/lib/tech/ <- next
+    $CAD_HOME/lib/tech/  <- next
+*/
+void config_stdtech_path (const char *tech);  
 
 /* read configuration file */
 void config_read (const char *s);

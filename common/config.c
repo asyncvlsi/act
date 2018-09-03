@@ -108,6 +108,20 @@ void config_std_path (const char *tool)
 
 /*------------------------------------------------------------------------
  *
+ *  config_stdtech_path --
+ *
+ *   Add standard config path for config files grouped by technology
+ *   (it's really the same function!)
+ *
+ *------------------------------------------------------------------------
+ */
+void config_stdtech_path (const char *tech)
+{
+  config_std_path (tech);
+}
+
+/*------------------------------------------------------------------------
+ *
  *  config_push_prefix --
  *
  *   add prefix to the name. used when a tool uses multiple
