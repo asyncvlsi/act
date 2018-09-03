@@ -558,6 +558,117 @@ void csv_convert (FILE *fp, const char *output)
   exit (0);
 }
 
+void raw_convert (FILE *fp, const char *output)
+{
+  atrace *A;
+  char *buf;
+  int sz = 10240;
+  int lineno = 0;
+  A_DECL (name_t *, names);
+  char *tok;
+  int nvars;
+  int i;
+  double *vals;
+
+  MALLOC (buf, char, sz);
+  buf[sz-1] = '\0';
+
+  A_INIT (names);
+
+  buf[0] = '\0';
+  buf[sz-1] = '\0';
+
+  /* line 1 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  /* line 2 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  /* line 3 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  /* line 4 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  /* line 5 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  tok = strtok (buf, " ");
+  tok = strtok (NULL, " ");
+  tok = strtok (NULL, " ");
+  Assert (tok, "Hmm");
+  nvars = atoi (tok);
+
+  printf ("Vars: %d\n", nvars);
+
+  /* line 6 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  /* line 7 */
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+
+  /* now read the variables */
+  A = atrace_create (output, ATRACE_DELTA, 1e-9 /* 10ns */ , 1e-12 /* dt */);
+
+  atrace_filter (A, 0.01, 0.01); /* 1% change, 10mV change */
+  
+  for (i=0; i < nvars; i++) {
+    /* first line must be time */
+    Assert (fgets (buf, sz, fp), "Hmm...");
+    Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+    tok = strtok (buf, " ");
+    Assert (atoi(tok) == i, "Hmm");
+    tok = strtok (NULL, " ");
+    if (i == 0) {
+      if (strcasecmp (tok, "time") != 0) {
+	fatal_error ("Variable 0 should be time!\n");
+      }
+    }
+    else {
+      char *nm, *tmp;
+      nm = Strdup (tok);
+      tmp = name_convert (nm);
+      A_NEW (names, name_t *);
+      A_NEXT (names) = atrace_create_node (A, nm);
+      A_INC (names);
+      FREE (nm);
+
+      tok = strtok (NULL, " ");
+      if (strcmp (tok, "voltage") != 0) {
+	fatal_error ("Only voltage trace files supported");
+      }
+    }
+  }
+
+  fgets (buf, sz, fp);
+  Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
+  if (strcmp (buf, "Binary:") != 0) {
+    fatal_error ("Expecting `Binary:'");
+  }
+  /* now read the file! */
+
+  MALLOC (vals, double, nvars);
+
+  while (!feof (fp)) {
+    int x;
+
+    x = fread (vals, sizeof (double), nvars, fp);
+    if (x == 0) break;
+    if (x != nvars) {
+      fatal_error ("File format error");
+    }
+
+    for (i=1; i < nvars; i++) {
+      atrace_signal_change (A, names[i-1], vals[0], vals[i]);
+    }
+  }
+  atrace_close (A);
+  exit (0);
+}
+
+#ifdef HAVE_ZLIB
+
 #include <zlib.h>
 
 void zcsv_convert (const char *input, const char *output)
@@ -670,13 +781,13 @@ void zcsv_convert (const char *input, const char *output)
   exit (0);
 }
 
-
-
+#endif
 
 
 int main (int argc, char **argv) 
 {
   const char *fileName;
+  const char *outfile;
   FILE *f;
   
   name_t **names;
@@ -694,10 +805,23 @@ int main (int argc, char **argv)
 
   atrace *A;
 
-  if (argc != 3) {
-    fatal_error ("Usage: %s <tracefile> <atrace file>\n", argv[0]);
+  int raw_fmt = 0;
+
+  if (argc != 3 && argc != 4) {
+    fatal_error ("Usage: %s [-r] <tracefile> <atrace file>\n", argv[0]);
   }
-  fileName = argv[1];
+  if (argc == 4) {
+    if (strcmp (argv[1], "-r") != 0) {
+      fatal_error ("Usage: %s [-r] <tracefile> <atrace file>\n", argv[0]);
+    }
+    raw_fmt = 1;
+    fileName = argv[2];
+    outfile = argv[3];
+  }
+  else {
+    fileName = argv[1];
+    outfile = argv[2];
+  }
   
   f = fopen(fileName, "rb");	/* open file */
   if(f == NULL) {
@@ -709,21 +833,28 @@ int main (int argc, char **argv)
     fatal_error ("Trace file %s is empty", fileName);
   }
 
-  if((num & 0xff) >= ' ') {
-    /* ASCII file, try CSV conversion */
-    csv_convert (f, argv[2]);
-    fatal_error ("Trace file %s looks like an ASCII file", fileName);
+  if (raw_fmt == 1) {
+    raw_convert (f, outfile);
   }
-  else if ((num & 0xff) == 0x1f) {
-    /* might be gzipped */
-    num = getc (f);
-    num = getc (f);
-    if ((num & 0xff) == 0x8b) {
-      fclose (f);
-      zcsv_convert (argv[1], argv[2]);
-      exit (0);
+  else {
+    if((num & 0xff) >= ' ') {
+      /* ASCII file, try CSV conversion */
+      csv_convert (f, outfile);
+      fatal_error ("Trace file %s looks like an ASCII file", fileName);
     }
-    fseek (f, 0, SEEK_SET);
+#ifdef HAVE_ZLIB
+    else if ((num & 0xff) == 0x1f) {
+      /* might be gzipped */
+      num = getc (f);
+      num = getc (f);
+      if ((num & 0xff) == 0x8b) {
+	fclose (f);
+	zcsv_convert (fileName, outfile);
+	exit (0);
+      }
+      fseek (f, 0, SEEK_SET);
+    }
+#endif
   }
 
   /* Read file */
@@ -809,9 +940,7 @@ int main (int argc, char **argv)
 
   scale = Strdup (token);
 
-
-
-  A = atrace_create (argv[2], ATRACE_DELTA, 1e-9 /* 10ns */ , 1e-12 /* dt */);
+  A = atrace_create (outfile, ATRACE_DELTA, 1e-9 /* 10ns */ , 1e-12 /* dt */);
   
   MALLOC (names, name_t *, numOfVectors-1);
   for (i=0; i < numOfVectors-1; i++) {
