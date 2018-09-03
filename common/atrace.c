@@ -862,7 +862,6 @@ static float _read_record (atrace *a, float t)
   fread_float (a, &v);
   return v;
 }
-    
 
 
 /* read all values into an array 
@@ -1519,7 +1518,7 @@ static void _emit_record (atrace *a)
   if (a->curtime == 0) {
     /* special case, initial condition */
     safe_fwrite_float_buf (a, a->curtime*a->dt);
-
+    safe_fwrite_int_buf (a, 0); /* dummy */
     for (i=0; i < a->H->size; i++)
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
@@ -1535,7 +1534,6 @@ static void _emit_record (atrace *a)
   }
   else {
     int count = 0;
-
     for (i=0; i < a->H->size; i++) 
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
@@ -1544,9 +1542,10 @@ static void _emit_record (atrace *a)
       }
     if (count > 0) {
       if (count > a->Nnodes/2) {
-	safe_fwrite_int_buf (a, -2);
+	safe_fwrite_int_buf (a, -2); /* for prev record */
 	safe_fwrite_float_buf (a, a->curtime*a->dt);
-	for (i=0; i < a->H->size; i++) 
+	safe_fwrite_int_buf (a, 0);
+	for (i=0; i < a->H->size; i++)
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
 	    if (n->up) continue;
@@ -1558,16 +1557,12 @@ static void _emit_record (atrace *a)
 	  }
       }
       else {
-	safe_fwrite_int_buf (a, -1);
-	flag = 0;
+	safe_fwrite_int_buf (a, -1); /* for prev record */
+	safe_fwrite_float_buf (a, a->curtime*a->dt);
 	for (i=0; i < a->H->size; i++) 
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
 	    if (n->chg) {
-	      if (flag == 0) {
-		safe_fwrite_float_buf (a, a->curtime*a->dt);
-	      }
-	      flag = 1;
 	      safe_fwrite_int_buf (a, n->idx);
 	      safe_fwrite_float_buf (a, n->v);
 	      if (a->fmt == ATRACE_DELTA_CAUSE) {
@@ -1576,10 +1571,10 @@ static void _emit_record (atrace *a)
 	      n->chg = 0;
 	    }
 	  }
-	/*if (flag) {
-	  safe_fwrite_int_buf (a, -1);
-	  }*/
       }
+    }
+    else {
+      /* else nothing to do! no changes */
     }
   }
 }
@@ -1589,6 +1584,9 @@ static int large_change (atrace *a, float oldv, float newv)
   float chg;
 
   if (oldv == newv) return 0;
+  if (a->adv < 0 && a->rdv < 0) {
+    return (oldv != newv);
+  }
 
   chg = newv-oldv;
 
