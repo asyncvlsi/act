@@ -15,13 +15,17 @@ OBJS=$(OBJS1) $(OBJS2)
 
 SRCS=$(OBJS:.o=.cc)
 
+ZLIBS=-lz
+
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+CFLAGS+=-DHAVE_ZLIB
 
 $(BIN): $(LIB) $(OBJS1) $(ACTDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS1) ../prsim/$(EXT)/prs.o -o $(BIN) $(LIBACT)
 
 $(BIN2): $(LIB) $(OBJS2) $(ACTDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBACT) -lz
+	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBACT) $(ZLIBS)
 
 
 -include Makefile.deps

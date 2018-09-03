@@ -411,7 +411,7 @@ static char *name_convert (char *signal)
   l = strlen (signal);
   pos = l-1;
 
-  if ((l > 2) && (signal[0] == 'v') &&
+  if ((l > 2) && (signal[0] == 'v' || signal[0] == 'V') &&
       (signal[1] == '(')) {
     skip = 2;
   } 
@@ -599,8 +599,6 @@ void raw_convert (FILE *fp, const char *output)
   Assert (tok, "Hmm");
   nvars = atoi (tok);
 
-  printf ("Vars: %d\n", nvars);
-
   /* line 6 */
   fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
@@ -617,9 +615,12 @@ void raw_convert (FILE *fp, const char *output)
     /* first line must be time */
     Assert (fgets (buf, sz, fp), "Hmm...");
     Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
-    tok = strtok (buf, " ");
+
+    tok = strtok (buf, " \t");
+ 
     Assert (atoi(tok) == i, "Hmm");
-    tok = strtok (NULL, " ");
+    tok = strtok (NULL, " \t");
+
     if (i == 0) {
       if (strcasecmp (tok, "time") != 0) {
 	fatal_error ("Variable 0 should be time!\n");
@@ -630,11 +631,12 @@ void raw_convert (FILE *fp, const char *output)
       nm = Strdup (tok);
       tmp = name_convert (nm);
       A_NEW (names, name_t *);
-      A_NEXT (names) = atrace_create_node (A, nm);
+      A_NEXT (names) = atrace_create_node (A, tmp);
       A_INC (names);
       FREE (nm);
 
-      tok = strtok (NULL, " ");
+      tok = strtok (NULL, " \t\n");
+
       if (strcmp (tok, "voltage") != 0) {
 	fatal_error ("Only voltage trace files supported");
       }
@@ -643,7 +645,7 @@ void raw_convert (FILE *fp, const char *output)
 
   fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
-  if (strcmp (buf, "Binary:") != 0) {
+  if (strcmp (buf, "Binary:\n") != 0) {
     fatal_error ("Expecting `Binary:'");
   }
   /* now read the file! */
