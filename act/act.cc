@@ -105,6 +105,9 @@ void Act::Init (int *iargc, char ***iargv)
       }
       A_INC (vars);
     }
+    else if (strncmp (argv[i], "-T", 2) == 0) {
+      config_stdtech_path (argv[i]+2);
+    }
     else {
       break;
     }
@@ -234,6 +237,10 @@ Act::Act (const char *s)
 #ifdef DEBUG_PERFORMANCE
   printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
 #endif
+
+  if (config_exists ("act.mangle_chars")) {
+    mangle (config_get_string ("act.mangle_chars"));
+  }
 }
 
 
