@@ -723,7 +723,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  fprintf (fp, " ");
 	  aemit_node (a, n, fp, e->bulk);
 
-	  sprintf (devname, "%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
+	  sprintf (devname, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   fetnames[e->flavor]);
 	  if (!config_exists (devname)) {
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
@@ -896,7 +896,7 @@ void act_create_bool_ports (Act *a, Process *p)
     fatal_error ("emit_netlist pass called before prs2net pass!");
   }
 
-  black_box_mode = config_get_int ("black_box_mode");
+  black_box_mode = config_get_int ("net.black_box_mode");
   
   /* clear visited flag */
   std::map<Process *, netlist_t *>::iterator it;
@@ -921,32 +921,32 @@ void act_emit_netlist (Act *a, Process *p, FILE *fp)
     fatal_error ("emit_netlist pass called before prs2net pass!");
   }
 
-  lambda = config_get_real ("lambda");
+  lambda = config_get_real ("net.lambda");
   
-  min_w_in_lambda = config_get_int ("min_width");
-  min_l_in_lambda = config_get_int ("min_length");
+  min_w_in_lambda = config_get_int ("net.min_width");
+  min_l_in_lambda = config_get_int ("net.min_length");
   
-  max_n_w_in_lambda = config_get_int ("max_n_width");
-  max_p_w_in_lambda = config_get_int ("max_p_width");
+  max_n_w_in_lambda = config_get_int ("net.max_n_width");
+  max_p_w_in_lambda = config_get_int ("net.max_p_width");
   
-  discrete_length = config_get_int ("discrete_length");
-  fold_pfet_width = config_get_int ("fold_pfet_width");
-  fold_nfet_width = config_get_int ("fold_nfet_width");
+  discrete_length = config_get_int ("net.discrete_length");
+  fold_pfet_width = config_get_int ("net.fold_pfet_width");
+  fold_nfet_width = config_get_int ("net.fold_nfet_width");
 
-  ignore_loadcap = config_get_int ("ignore_loadcap");
+  ignore_loadcap = config_get_int ("net.ignore_loadcap");
 
-  emit_parasitics = config_get_int ("emit_parasitics");
-  fet_spacing_diffonly = config_get_int ("fet_spacing_diffonly");
-  fet_spacing_diffcontact = config_get_int ("fet_spacing_diffcontact");
-  fet_diff_overhang = config_get_int ("fet_diff_overhang");
+  emit_parasitics = config_get_int ("net.emit_parasitics");
+  fet_spacing_diffonly = config_get_int ("net.fet_spacing_diffonly");
+  fet_spacing_diffcontact = config_get_int ("net.fet_spacing_diffcontact");
+  fet_diff_overhang = config_get_int ("net.fet_diff_overhang");
   
-  use_subckt_models = config_get_int ("use_subckt_models");
-  swap_source_drain = config_get_int ("swap_source_drain");
-  extra_fet_string = config_get_string ("extra_fet_string");
+  use_subckt_models = config_get_int ("net.use_subckt_models");
+  swap_source_drain = config_get_int ("net.swap_source_drain");
+  extra_fet_string = config_get_string ("net.extra_fet_string");
 
-  black_box_mode = config_get_int ("black_box_mode");
+  black_box_mode = config_get_int ("net.black_box_mode");
 
-  top_level_only = config_get_int ("top_level_only");
+  top_level_only = config_get_int ("net.top_level_only");
   
   emit_netlist (a, p, fp);
 }

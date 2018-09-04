@@ -417,9 +417,9 @@ static void fold_transistors (netlist_t *N)
   node_t *n;
   listitem_t *li;
   edge_t *e;
-  int n_fold = config_get_int ("fold_nfet_width");
-  int p_fold = config_get_int ("fold_pfet_width");
-  int discrete_len = config_get_int ("discrete_length");
+  int n_fold = config_get_int ("net.fold_nfet_width");
+  int p_fold = config_get_int ("net.fold_pfet_width");
+  int discrete_len = config_get_int ("net.discrete_length");
   int fold;
 
   if (n_fold == 0 && p_fold == 0 && discrete_len == 0) return;
@@ -508,7 +508,7 @@ static void generate_staticizers (netlist_t *N)
     }
   }
 
-  if (config_get_int ("disable_keepers") == 1) return;
+  if (config_get_int ("net.disable_keepers") == 1) return;
 
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
@@ -1268,10 +1268,10 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
     d = (p->u.one.dir == 0 ? EDGE_NFET : EDGE_PFET);
 
     /*-- reset default sizes per production rule --*/
-    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
-    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
+    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
+    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
 
     if (p->u.one.label) {
       if (istree) {
@@ -1394,10 +1394,10 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 
   case ACT_PRS_GATE:
     /*-- reset default sizes per gate --*/
-    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
-    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
+    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
+    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
 	unsigned int v = attr->e->u.v;
@@ -1525,15 +1525,15 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
     if (p->psc) cpsc = p->psc->Canonical(proc->CurScope());
     if (p->nsc) cnsc = p->nsc->Canonical(proc->CurScope());
 
-    N->sz[EDGE_NFET].w = config_get_int ("std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("std_n_length");
-    N->sz[EDGE_NFET].sw = config_get_int ("stat_n_width");
-    N->sz[EDGE_NFET].sl = config_get_int ("stat_n_length");
+    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
+    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
+    N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
+    N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
 
-    N->sz[EDGE_PFET].w = config_get_int ("std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("std_p_length");
-    N->sz[EDGE_PFET].sw = config_get_int ("stat_p_width");
-    N->sz[EDGE_PFET].sl = config_get_int ("stat_p_length");
+    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
+    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+    N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
+    N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
 
     /* set the current Vdd/GND/psc/nsc */
     if (cvdd) {
@@ -1657,11 +1657,11 @@ void act_prs_to_netlist (Act *a, Process *p)
   }
   netmap = new std::map<Process *, netlist_t *>();
 
-  default_load_cap = config_get_real ("default_load_cap");
-  p_n_ratio = config_get_real ("p_n_ratio");
-  weak_to_strong_ratio = config_get_real ("weak_to_strong_ratio");
-  min_w_in_lambda = config_get_int ("min_width");
-  min_l_in_lambda = config_get_int ("min_length");
+  default_load_cap = config_get_real ("net.default_load_cap");
+  p_n_ratio = config_get_real ("net.p_n_ratio");
+  weak_to_strong_ratio = config_get_real ("net.weak_to_strong_ratio");
+  min_w_in_lambda = config_get_int ("net.min_width");
+  min_l_in_lambda = config_get_int ("net.min_length");
 
   if (!p) {
     ActNamespace *g = ActNamespace::Global();

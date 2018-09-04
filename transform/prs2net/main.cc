@@ -57,7 +57,7 @@ static void usage (char *name)
   Initialize globals from the configuration file.
   Returns process name
 */
-char *initialize_parameters (int *argc, char ***argv)
+static char *initialize_parameters (int *argc, char ***argv)
 {
   char *conf_file;
   char *proc_name;
@@ -74,6 +74,8 @@ char *initialize_parameters (int *argc, char ***argv)
   top_level_only = 0;
   conf_file = NULL;
   proc_name = NULL;
+
+  Act::Init (argc, argv);
 
   while ((ch = getopt (*argc, *argv, "BdC:tp:o:lV:")) != -1) {
     switch (ch) {
@@ -155,62 +157,8 @@ char *initialize_parameters (int *argc, char ***argv)
   }
 
   if (!conf_file) {
-    conf_file = Strdup ("tsmc65.conf");
+    conf_file = Strdup ("prs2net");
   }
-
-  config_std_path ("netgen");
-
-  /* set default configurations */
-  config_set_default_int ("std_p_width", 5);
-  config_set_default_int ("std_p_length", 2);
-
-  config_set_default_int ("std_n_width", 3);
-  config_set_default_int ("std_n_length", 2);
-
-  /* min w, l */
-  config_set_default_int ("min_width", 2);
-  config_set_default_int ("min_length", 2);
-
-  /* max w */
-  config_set_default_int ("max_n_width", 0);
-  config_set_default_int ("max_p_width", 0);
-
-  /* staticizer sizing */
-  config_set_default_int ("stat_p_width", 5);
-  config_set_default_int ("stat_p_length", 4);
-
-  config_set_default_int ("stat_n_width", 3);
-  config_set_default_int ("stat_n_length", 4);
-
-  /* spacing */
-  config_set_default_int ("fet_spacing_diffonly", 4);
-  config_set_default_int ("fet_spacing_diffcontact", 8);
-  config_set_default_int ("fet_diff_overhang", 6);
-
-  /* strength ratios */
-  config_set_default_real ("p_n_ratio", 2.0);
-  config_set_default_real ("weak_to_strong_ratio", 0.1);
-
-  config_set_default_real ("lambda", 0.1e-6);
-
-  config_set_default_string ("mangle_chars", "");
-
-  config_set_default_string ("act_cmdline", "");
-
-  config_set_default_real ("default_load_cap", 0);
-
-  config_set_default_string ("extra_fet_string", "");
-
-  config_set_default_int ("disable_keepers", 0);
-
-  config_set_default_int ("discrete_length", 0);
-
-  config_set_default_int ("swap_source_drain", 0);
-
-  config_set_default_int ("use_subckt_models", 0);
-
-  config_set_default_int ("fold_pfet_width", 0);
-  config_set_default_int ("fold_nfet_width", 0);
 
   config_set_default_int ("ignore_loadcap", ignore_loadcap);
   config_set_default_int ("emit_parasitics", emit_parasitics);
@@ -231,39 +179,6 @@ char *initialize_parameters (int *argc, char ***argv)
     fprintf (stderr, "Missing process name.\n");
     usage ((*argv)[0]);
   }
-
-  act_cmdline = config_get_string ("act_cmdline");
-  
-  /* create a new command line for ACT out of act_cmdline */
-  int count = 1;
-  
-  for (int i=0; act_cmdline[i]; i++) {
-    if (act_cmdline[i] == ',') {
-      count++;
-    }
-  }
-  if (strcmp (act_cmdline, "") == 0) {
-    count = 0;
-  }
-
-  char **act_argv;
-  char *tmp;
-  
-  MALLOC (act_argv, char *, count+2);
-  act_argv[0] = Strdup ((*argv)[0]);
-  if (count > 0) {
-     tmp = strtok (act_cmdline, ",");
-     for (int i=1; i <= count; i++)  {
-       act_argv[i] = Strdup (tmp);
-       tmp = strtok (NULL, ",");
-     }
-     Assert (tmp == NULL, "What?");
-  }
-  act_argv[count+1] = NULL;
-  count++;
-
-  Act::Init (&count, &act_argv);
-  FREE (act_argv);
 
   *argc = 2;
   (*argv)[1] = (*argv)[optind];
@@ -290,7 +205,9 @@ int main (int argc, char **argv)
   
   a = new Act (argv[1]);
   a->Expand ();
-  a->mangle (config_get_string ("mangle_chars"));
+  if (config_exists ("net.mangle_chars")) {
+    a->mangle (config_get_string ("net.mangle_chars"));
+  }
 
   Process *p = a->findProcess (proc);
 
