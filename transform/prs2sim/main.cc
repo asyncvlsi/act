@@ -82,10 +82,6 @@ void g (void *x, ActId *prefix, Process *p)
     }
   }
 
-  printf ("process name: ");
-  prefix->Print (stdout);
-  printf ("; type: %s\n", p->getName());
-
   for (n = N->hd; n; n = n->next) {
     for (li = list_first (n->e); li; li = list_next (li)) {
       e = (edge_t *) list_value (li);
@@ -108,58 +104,7 @@ int main (int argc, char **argv)
   
   a = new Act (argv[1]);
   act_expand (a);
-
-  /* set default configurations */
-  config_set_default_int ("std_p_width", 5);
-  config_set_default_int ("std_p_length", 2);
-
-  config_set_default_int ("std_n_width", 3);
-  config_set_default_int ("std_n_length", 2);
-
-  /* min w, l */
-  config_set_default_int ("min_width", 2);
-  config_set_default_int ("min_length", 2);
-
-  /* max w */
-  config_set_default_int ("max_n_width", 0);
-  config_set_default_int ("max_p_width", 0);
-
-  /* staticizer sizing */
-  config_set_default_int ("stat_p_width", 5);
-  config_set_default_int ("stat_p_length", 4);
-
-  config_set_default_int ("stat_n_width", 3);
-  config_set_default_int ("stat_n_length", 4);
-
-  /* spacing */
-  config_set_default_int ("fet_spacing_diffonly", 4);
-  config_set_default_int ("fet_spacing_diffcontact", 8);
-  config_set_default_int ("fet_diff_overhang", 6);
-
-  /* strength ratios */
-  config_set_default_real ("p_n_ratio", 2.0);
-  config_set_default_real ("weak_to_strong_ratio", 0.1);
-
-  config_set_default_real ("lambda", 0.1e-6);
-
-  config_set_default_string ("mangle_chars", "");
-
-  config_set_default_string ("act_cmdline", "");
-
-  config_set_default_real ("default_load_cap", 0);
-
-  config_set_default_string ("extra_fet_string", "");
-
-  config_set_default_int ("disable_keepers", 0);
-
-  config_set_default_int ("discrete_length", 0);
-
-  config_set_default_int ("swap_source_drain", 0);
-
-  config_set_default_int ("use_subckt_models", 0);
-
-  config_set_default_int ("fold_pfet_width", 0);
-  config_set_default_int ("fold_nfet_width", 0);
+  config_read ("prs2net.conf");
 
   /* generate netlist */
   act_prs_to_netlist (a, NULL);
@@ -184,7 +129,14 @@ int main (int argc, char **argv)
   /* print as sim file 
      units: lambda in centimicrons
    */
-  fprintf (fps, "| units: 30 tech: scmos format: MIT\n");
+  int units = (1.0e8*config_get_real ("net.lambda")+0.5);
+  if (units <= 0) {
+    warning ("Technology lambda is less than 1 centimicron; setting to 1");
+    units = 1;
+  }
+
+  fprintf (fps, "| units: %d tech: %s format: MIT\n", units, config_get_string ("net.name"));
+
   act_flat_apply_processes (a, fps, g);
   fclose (fps);
   
