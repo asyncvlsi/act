@@ -156,8 +156,16 @@ static char *initialize_parameters (int *argc, char ***argv)
     usage ((*argv)[0]);
   }
 
-  if (!conf_file) {
-    conf_file = Strdup ("prs2net");
+  if (conf_file) {
+    /* read config file */
+    if (has_trailing_extension (conf_file, "conf")) {
+      config_read (conf_file);
+    }
+    else {
+      char buf[10240];
+      sprintf (buf, "%s.conf", conf_file);
+      config_read (buf);
+    }
   }
 
   config_set_default_int ("ignore_loadcap", ignore_loadcap);
@@ -165,16 +173,6 @@ static char *initialize_parameters (int *argc, char ***argv)
   config_set_default_int ("black_box_mode", black_box_mode);
   config_set_default_int ("top_level_only", top_level_only);
   
-  /* read config file */
-  if (has_trailing_extension (conf_file, "conf")) {
-    config_read (conf_file);
-  }
-  else {
-    char buf[10240];
-    sprintf (buf, "%s.conf", conf_file);
-    config_read (buf);
-  }
-
   if (!proc_name) {
     fprintf (stderr, "Missing process name.\n");
     usage ((*argv)[0]);
