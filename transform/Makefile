@@ -7,6 +7,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=aflat prs2net 
+SUBDIRS=aflat prs2net prs2sim prs2stk
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

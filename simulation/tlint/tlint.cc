@@ -226,6 +226,10 @@ int main (int argc, char **argv)
   int tmp_optind;
   char *conf_mangle_string;
 
+  Act::Init (&argc, &argv);
+  config_read ("prs2net.conf");
+  config_read ("lint.conf");
+
   for (i=0; i < NUM_ERR_TYPES; i++) {
     signal_errs[i] = NULL;
     num_errs[i] = 0;
@@ -235,21 +239,7 @@ int main (int argc, char **argv)
   smaller_val_better[SLOW_TRANSITION] = 0;
   smaller_val_better[INCOMPLETE_TRANSITION] = 1;
 
-  config_set_default_real ("Vdd", 1.8);
-  config_set_default_int  ("verbose", 0);
-  config_set_default_real ("slewrate_fast_threshold", 100.0);
-  config_set_default_real ("slewrate_slow_threshold", 20.0);
-  config_set_default_real ("V_high", 1.7);
-  config_set_default_real ("V_low", 0.1);
-  config_set_default_int ("max_print", 100);
-  config_set_default_int ("show_frequency", 1);
-  config_set_default_string ("filter_results", "");
-  config_set_default_real ("hysteresis", 0.0);
-  config_set_default_real ("skip_initial_time", 0.0);
-  config_set_default_real ("reset_sync_time", 20.0e-9);
-  config_set_default_string ("mangle_chars", "");
-
-  config_name = Strdup ("tsmc65.conf");
+  config_name = NULL;
 
   MALLOC (eargv, char *, argc+1);
   for (ch = 0; ch < argc+1; ch++)
@@ -273,8 +263,6 @@ int main (int argc, char **argv)
     }
   }
   
-  /* std search path */
-  config_std_path ("lint");
   if (config_name) {
     if (has_trailing_extension (config_name, "conf") == 0) {
       sprintf (buf, "%s.conf", config_name);
@@ -290,22 +278,21 @@ int main (int argc, char **argv)
 
   act_global = new Act();
 
-  verbose = config_get_int ("verbose");
-  Vdd = config_get_real ("Vdd");
-  slewrate_slow_threshold = config_get_real ("slewrate_slow_threshold");
-  slewrate_fast_threshold = config_get_real ("slewrate_fast_threshold");
-  V_high = config_get_real ("V_high");
-  V_low = config_get_real ("V_low");
-  max_print = config_get_int ("max_print");
-  show_frequency = config_get_int ("show_frequency");
-  filter_results = config_get_string ("filter_results");
-  hysteresis = config_get_real ("hysteresis");
-  skip_initial_time = config_get_real ("skip_initial_time");
-  reset_sync_time = config_get_real ("reset_sync_time");
-  conf_mangle_string = config_get_string ("mangle_chars");
+  verbose = config_get_int ("lint.verbose");
+  Vdd = config_get_real ("lint.Vdd");
+  slewrate_slow_threshold = config_get_real ("lint.slewrate_slow_threshold");
+  slewrate_fast_threshold = config_get_real ("lint.slewrate_fast_threshold");
+  V_high = config_get_real ("lint.V_high");
+  V_low = config_get_real ("lint.V_low");
+  max_print = config_get_int ("lint.max_print");
+  show_frequency = config_get_int ("lint.show_frequency");
+  filter_results = config_get_string ("lint.filter_results");
+  hysteresis = config_get_real ("lint.hysteresis");
+  skip_initial_time = config_get_real ("lint.skip_initial_time");
+  reset_sync_time = config_get_real ("lint.reset_sync_time");
 
-  if (strcmp (conf_mangle_string, "") != 0) {
-    act_global->mangle (conf_mangle_string);
+  if (config_exists ("net.mangle_string")) {
+    act_global->mangle (config_get_string ("net.mangle_string"));
   }
 
 #ifdef __APPLE__
