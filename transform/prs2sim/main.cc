@@ -30,7 +30,7 @@ void f (void *x, ActId *one, ActId *two)
 
 static std::map<Process *, netlist_t *> *netmap = NULL;
 
-static void _print_node (FILE *fp, ActId *prefix, node_t *n)
+static void _print_node (netlist_t *N, FILE *fp, ActId *prefix, node_t *n)
 {
   if (n->v) {
     ActId *tmp = n->v->id->toid();
@@ -42,11 +42,19 @@ static void _print_node (FILE *fp, ActId *prefix, node_t *n)
     delete tmp;
   }
   else {
-    if (prefix) {
-      prefix->Print (fp);
-      fprintf (fp, ".");
+    if (n == N->Vdd) {
+      fprintf (fp, "Vdd");
     }
-    fprintf (fp, "n#%d", n->i);
+    else if (n == N->GND) {
+      fprintf (fp, "GND");
+    }
+    else {
+      if (prefix) {
+	prefix->Print (fp);
+	fprintf (fp, ".");
+      }
+      fprintf (fp, "n#%d", n->i);
+    }
   }
 }
 
@@ -75,11 +83,11 @@ void g (void *x, ActId *prefix, Process *p)
       else {
 	fprintf (fp, "p ");
       }
-      _print_node (fp, prefix, e->g);
+      _print_node (N, fp, prefix, e->g);
       fprintf (fp, " ");
-      _print_node (fp, prefix, e->a);
+      _print_node (N, fp, prefix, e->a);
       fprintf (fp, " ");
-      _print_node (fp, prefix, e->b);
+      _print_node (N, fp, prefix, e->b);
       fprintf (fp, " %d %d\n", e->w, e->l);
       e->visited = 1;
     }
