@@ -129,6 +129,7 @@ struct netlist_bool_port {
 
 typedef struct {
   Process *p;
+  Scope *cur;
   BOOL_T *B;
 
   node_t *hd, *tl;

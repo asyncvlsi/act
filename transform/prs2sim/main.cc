@@ -42,8 +42,11 @@ static void _print_node (FILE *fp, ActId *prefix, node_t *n)
     delete tmp;
   }
   else {
-    prefix->Print (fp);
-    fprintf (fp, ".n#%d", n->i);
+    if (prefix) {
+      prefix->Print (fp);
+      fprintf (fp, ".");
+    }
+    fprintf (fp, "n#%d", n->i);
   }
 }
 
@@ -138,6 +141,7 @@ int main (int argc, char **argv)
   fprintf (fps, "| units: %d tech: %s format: MIT\n", units, config_get_string ("net.name"));
 
   act_flat_apply_processes (a, fps, g);
+  g(fps, NULL, NULL);
   fclose (fps);
   
   act_flat_apply_conn_pairs (a, fpal, f);

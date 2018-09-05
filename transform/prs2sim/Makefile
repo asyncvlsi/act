@@ -14,7 +14,7 @@ SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(BINARY): $(LIB) $(OBJS) $(ACTDEPEND)
+$(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
 
 -include Makefile.deps
