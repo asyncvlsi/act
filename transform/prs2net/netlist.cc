@@ -284,7 +284,7 @@ static var_t *var_lookup (netlist_t *n, ActId *id)
 {
   act_connection *c;
 
-  c = id->Canonical (n->p->CurScope());
+  c = id->Canonical (n->cur);
   return var_lookup (n, c);
 }
 
@@ -358,7 +358,7 @@ static edge_t *edge_alloc (netlist_t *n, ActId *id, node_t *a, node_t *b,
   act_connection *c;
   var_t *v;
 
-  c = id->Canonical (n->p->CurScope ());
+  c = id->Canonical (n->cur);
   Assert (c, "This is weird");
   Assert (c == c->primary(), "This is weird");
 
@@ -1476,8 +1476,19 @@ static void release_atalloc (struct Hashtable *H)
 
 static netlist_t *generate_netgraph (Act *a, Process *proc)
 {
-  act_prs *p = proc->getprs();
+  act_prs *p; 
   netlist_t *N;
+  Scope *cur;
+
+  if (proc) {
+    p = proc->getprs();
+    cur = proc->CurScope();
+  }
+  else {
+    /* global namespace */
+    p = ActNamespace::Global()->getprs();
+    cur = ActNamespace::Global()->CurScope();
+  }
 
   NEW (N, netlist_t);
 
@@ -1486,6 +1497,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
   
   N->B = bool_init ();
   N->p = proc;
+  N->cur = cur;
   N->uH = ihash_new (2);
 
   N->visited = 0;
@@ -1520,10 +1532,10 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
     cpsc = NULL;
     cnsc = NULL;
 
-    if (p->vdd) cvdd = p->vdd->Canonical(proc->CurScope());
-    if (p->gnd) cgnd = p->gnd->Canonical(proc->CurScope());
-    if (p->psc) cpsc = p->psc->Canonical(proc->CurScope());
-    if (p->nsc) cnsc = p->nsc->Canonical(proc->CurScope());
+    if (p->vdd) cvdd = p->vdd->Canonical(cur);
+    if (p->gnd) cgnd = p->gnd->Canonical(cur);
+    if (p->psc) cpsc = p->psc->Canonical(cur);
+    if (p->nsc) cnsc = p->nsc->Canonical(cur);
 
     N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
     N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
@@ -1676,6 +1688,10 @@ void act_prs_to_netlist (Act *a, Process *p)
 	}
       }
     }
+    
+    /*-- generate netlist for any prs in the global scope --*/
+    netlist_t *N = generate_netgraph (a, NULL);
+    (*netmap)[NULL] = N;
   }
   else {
     generate_netlist (a, p);
