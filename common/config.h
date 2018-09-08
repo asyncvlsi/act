@@ -54,6 +54,11 @@ void config_set_default_int (const char *s, int v);
 void config_set_default_real (const char *s, double v);
 void config_set_default_string (const char *s, const char *t);
 
+/* set value */
+void config_set_int (const char *s, int v);
+void config_set_real (const char *s, double v);
+void config_set_string (const char *s, const char *t);
+
 /* clear configuration tables */
 void config_clear (void);
 
