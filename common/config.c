@@ -29,16 +29,17 @@
 */
 
 enum {
-  CONFIG_INT,
-  CONFIG_STR,
-  CONFIG_REAL,
-  CONFIG_TABLE_INT,
-  CONFIG_TABLE_STR,
-  CONFIG_TABLE_REAL
+  CONFIG_INT = 0,
+  CONFIG_STR = 1,
+  CONFIG_REAL = 2,
+  CONFIG_TABLE_INT = 3,
+  CONFIG_TABLE_STR = 4,
+  CONFIG_TABLE_REAL = 5
 };
 
 typedef struct {
-  int type;
+  unsigned int type:3;
+  unsigned int set:1;
   union {
     char *s;
     int i;
@@ -165,6 +166,16 @@ void config_pop_prefix (void)
   global_prefix[i] = '\0';
 }
 
+static config_t *newconfig(void)
+{
+  config_t *c;
+  NEW (c, config_t);
+  c->set = 0;
+  c->type = CONFIG_INT;
+  return c;
+}
+  
+
 /*------------------------------------------------------------------------
  *
  *  config_read --
@@ -285,10 +296,13 @@ void config_read (const char *name)
 	b = hash_add (H, buf3);
       }
       else {
+	config_t *tmp;
 	Assert (((config_t*)b->v)->type == CONFIG_INT, "Switching types!?");
+	tmp = (config_t *)b->v;
+	if (tmp->set) continue;
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       c->type = CONFIG_INT;
       s = strtok (NULL, " \t");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
@@ -301,17 +315,19 @@ void config_read (const char *name)
 	b = hash_add (H, buf3);
       }
       else {
+	config_t *tmp;
 	Assert (((config_t*)b->v)->type == CONFIG_STR, "Switching types!?");
+	tmp = (config_t *)b->v;
+	if (tmp->set) continue;
 	FREE (((config_t*)b->v)->u.s);
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       c->type = CONFIG_STR;
 
       s = strtok (NULL, " \t");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
 
-     
       if (s[0] != '"') {
 	fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
       }
@@ -338,10 +354,13 @@ void config_read (const char *name)
 	b = hash_add (H, buf3);
       }
       else {
+	config_t *tmp;
 	Assert (((config_t*)b->v)->type == CONFIG_REAL, "Switching types!?");
+	tmp = (config_t *)b->v;
+	if (tmp->set) continue;
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       c->type = CONFIG_REAL;
       s = strtok (NULL, " \t");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
@@ -357,7 +376,7 @@ void config_read (const char *name)
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       b->v = c;
       c->type = CONFIG_TABLE_INT;
       {
@@ -383,10 +402,10 @@ void config_read (const char *name)
 	b = hash_add (H, buf3);
       }
       else {
-	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
+	Assert (((config_t*)b->v)->type == CONFIG_TABLE_REAL, "Switching types!?");
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       b->v = c;
       c->type = CONFIG_TABLE_REAL;
       {
@@ -415,7 +434,7 @@ void config_read (const char *name)
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_STR, "Switching types!?");
 	FREE (b->v);
       }
-      NEW (c, config_t);
+      c = newconfig ();
       b->v = c;
       c->type = CONFIG_TABLE_STR;
       {
@@ -688,7 +707,7 @@ void config_set_default_int (const char *s, int v)
   }
   else {
     b = hash_add (H, s);
-    NEW (c, config_t);
+    c = newconfig ();
     c->type = CONFIG_INT;
     b->v = c;
   }
@@ -712,7 +731,7 @@ void config_set_default_real (const char *s, double v)
   }
   else {
     b = hash_add (H, s);
-    NEW (c, config_t);
+    c = newconfig ();
     c->type = CONFIG_REAL;
     b->v = c;
   }
@@ -738,10 +757,88 @@ void config_set_default_string (const char *s, const char *t)
   }
   else {
     b = hash_add (H, s);
-    NEW (c, config_t);
+    c = newconfig ();
     c->type = CONFIG_STR;
     b->v = c;
   }
+  c->u.s = Strdup (t);
+}
+
+
+void config_set_int (const char *s, int v)
+{
+  hash_bucket_t *b;
+  config_t *c;
+
+  if (!H) {
+    H = hash_new (8);
+  }
+  b = hash_lookup (H, s);
+  if (b) {
+    c = (config_t*) b->v;
+    if (c->type != CONFIG_INT) {
+      fatal_error ("Changing types on default!");
+    }
+  }
+  else {
+    b = hash_add (H, s);
+    c = newconfig ();
+    c->type = CONFIG_INT;
+    b->v = c;
+  }
+  c->set = 1;
+  c->u.i = v;
+}
+
+void config_set_real (const char *s, double v)
+{
+  hash_bucket_t *b;
+  config_t *c;
+
+  if (!H) {
+    H = hash_new (8);
+  }
+  b = hash_lookup (H, s);
+  if (b) {
+    c = (config_t*) b->v;
+    if (c->type != CONFIG_REAL) {
+      fatal_error ("Changing types on default!");
+    }
+  }
+  else {
+    b = hash_add (H, s);
+    c = newconfig ();
+    c->type = CONFIG_REAL;
+    b->v = c;
+  }
+  c->set = 1;
+  c->u.r = v;
+}
+
+
+void config_set_string (const char *s, const char *t)
+{
+  hash_bucket_t *b;
+  config_t *c;
+
+  if (!H) {
+    H = hash_new (8);
+  }
+  b = hash_lookup (H, s);
+  if (b) {
+    c = (config_t*) b->v;
+    if (c->type != CONFIG_STR) {
+      fatal_error ("Changing types on default!");
+    }
+    FREE (c->u.s);
+  }
+  else {
+    b = hash_add (H, s);
+    c = newconfig ();
+    c->type = CONFIG_STR;
+    b->v = c;
+  }
+  c->set = 1;
   c->u.s = Strdup (t);
 }
 
