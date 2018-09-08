@@ -16,6 +16,7 @@
 */
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <math.h>
 #include "misc.h"
 #include "array.h"
@@ -407,11 +408,14 @@ static char *name_convert (char *signal)
   int l;
   int pos, skip;
 
+  for (l=0; signal[l]; l++) {
+    signal[l] = tolower (signal[l]);
+  }
   
   l = strlen (signal);
   pos = l-1;
 
-  if ((l > 2) && (signal[0] == 'v' || signal[0] == 'V') &&
+  if ((l > 2) && (signal[0] == 'v') &&
       (signal[1] == '(')) {
     skip = 2;
   } 
@@ -443,7 +447,7 @@ static char *name_convert (char *signal)
     l--;
   }
   for (pos = 0; pos < l; pos++) 
-    if (s[pos] == '/')
+    if (s[pos] == '/' || s[pos] == ':')
       s[pos] = '.';
   if (strcmp (s, "vdd") == 0) {
     strcpy (s, "Vdd");
@@ -569,11 +573,13 @@ void raw_convert (FILE *fp, const char *output)
   int nvars;
   int i;
   double *vals;
+  A_DECL (int, skipvars);
 
   MALLOC (buf, char, sz);
   buf[sz-1] = '\0';
 
   A_INIT (names);
+  A_INIT (skipvars);
 
   buf[0] = '\0';
   buf[sz-1] = '\0';
@@ -625,22 +631,33 @@ void raw_convert (FILE *fp, const char *output)
       if (strcasecmp (tok, "time") != 0) {
 	fatal_error ("Variable 0 should be time!\n");
       }
+      A_NEW (skipvars, int);
+      A_NEXT (skipvars) = 0;
     }
     else {
       char *nm, *tmp;
       nm = Strdup (tok);
-      tmp = name_convert (nm);
-      A_NEW (names, name_t *);
-      A_NEXT (names) = atrace_create_node (A, tmp);
-      A_INC (names);
-      FREE (nm);
+
+      A_NEW (skipvars, int);
 
       tok = strtok (NULL, " \t\n");
-
       if (strcmp (tok, "voltage") != 0) {
-	fatal_error ("Only voltage trace files supported");
+	A_NEXT (skipvars) = 1;
+	/* skipping non-voltage variable */
+      }
+      else {
+	A_NEXT (skipvars) = 0;
+      }
+      
+      if (A_NEXT (skipvars) == 0) {
+	tmp = name_convert (nm);
+	A_NEW (names, name_t *);
+	A_NEXT (names) = atrace_create_node (A, tmp);
+	A_INC (names);
+	FREE (nm);
       }
     }
+    A_INC (skipvars);
   }
 
   fgets (buf, sz, fp);
@@ -654,6 +671,7 @@ void raw_convert (FILE *fp, const char *output)
 
   while (!feof (fp)) {
     int x;
+    int j;
 
     x = fread (vals, sizeof (double), nvars, fp);
     if (x == 0) break;
@@ -661,8 +679,13 @@ void raw_convert (FILE *fp, const char *output)
       fatal_error ("File format error");
     }
 
+    j = 0;
     for (i=1; i < nvars; i++) {
-      atrace_signal_change (A, names[i-1], vals[0], vals[i]);
+      if (skipvars[i]) {
+	continue;
+      }
+      atrace_signal_change (A, names[j], vals[0], vals[i]);
+      j++;
     }
   }
   atrace_close (A);
