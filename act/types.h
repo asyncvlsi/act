@@ -257,6 +257,12 @@ class UserDef : public Type {
   int isStrictPort (const char *name);
 
 
+  /**
+   * Print out user defined type 
+   */
+  virtual void Print (FILE *fp) { }
+  void PrintHeader (FILE *fp, const char *type);
+
   void setBody (ActBody *x) { b = x; } /**< Set the body of the process */
 
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
@@ -333,6 +339,7 @@ class Process : public UserDef {
 
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
+  void Print (FILE *fp);
 
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
@@ -379,7 +386,9 @@ class Data : public UserDef {
  
   Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
- private:
+  void Print (FILE *fp);
+
+private:
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
   struct act_chp_lang *set, *get;   /**< set and get methods for this data type */
 };
@@ -396,6 +405,8 @@ class Channel : public UserDef {
   act_chp_lang *getMethodrecv() { return recv; }
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  
+  void Print (FILE *fp);
   
  private:
   struct act_chp_lang *send, *recv;
@@ -741,6 +752,8 @@ class ActBody {
 
   void Expandlist (ActNamespace *, Scope *);
 
+  virtual void Print (FILE *fp) { }
+
  private:
   ActBody *next;
 };
@@ -754,6 +767,7 @@ class ActBody_Inst : public ActBody {
   ActBody_Inst(InstType *, const char *);
   void Expand (ActNamespace *, Scope *);
   Type *BaseType ();
+  void Print (FILE *fp);
 
  private:
   InstType *t;
@@ -766,6 +780,7 @@ public:
     inst = _inst; a = _a; arr = _arr;
   }
   void Expand (ActNamespace *, Scope *);
+  //void Print (FILE *fp);
 
 private:
   const char *inst;
@@ -788,6 +803,7 @@ class ActBody_Conn : public ActBody {
     u.general.rhs = id2;
   }
 
+  void Print (FILE *fp);
   void Expand (ActNamespace *, Scope *);
   
  private:
@@ -827,6 +843,8 @@ class ActBody_Loop : public ActBody {
   }
 
   void Expand (ActNamespace *, Scope *);
+
+  void Print (FILE *fp);
 
  private:
   ActBody_Loop::type t;			/**< type of loop */

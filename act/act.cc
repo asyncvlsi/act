@@ -241,6 +241,7 @@ Act::Act (const char *s)
   if (config_exists ("act.mangle_chars")) {
     mangle (config_get_string ("act.mangle_chars"));
   }
+  ActNamespace::act = this;
 }
 
 void Act::Merge (const char *s)

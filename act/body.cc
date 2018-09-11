@@ -9,6 +9,7 @@
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/lang.h>
+#include <act/act.h>
 #include <string.h>
 #include "misc.h"
 #include "config.h"
@@ -52,6 +53,19 @@ Type *ActBody_Inst::BaseType ()
 {
   Assert (t, "NULL deref on ActBody_Inst's insttype");
   return t->BaseType();
+}
+
+void ActBody_Inst::Print (FILE *fp)
+{
+  char buf[10240];
+  if (t->isExpanded()) {
+    t->sPrint (buf, 10240);
+    ActNamespace::Act()->mfprintf (fp, "%s", buf);
+  }
+  else {
+    t->Print (fp);
+  }
+  fprintf (fp, " %s;\n", id);
 }
 
 /*------------------------------------------------------------------------*/
@@ -1395,6 +1409,61 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     fatal_error ("Should not be here");
     break;
   }
+}
+
+void ActBody_Conn::Print (FILE *fp)
+{
+  if (type == 0) {
+    u.basic.lhs->Print (fp);
+    fprintf (fp, " = ");
+    u.basic.rhs->Print (fp);
+  }
+  else {
+    u.general.lhs->Print (fp);
+    fprintf (fp, " = ");
+    u.general.rhs->Print (fp);
+  }
+  fprintf (fp, ";\n");
+}
+
+void ActBody_Loop::Print (FILE *fp)
+{
+  fprintf (fp, "(");
+  switch (t) {
+  case ActBody_Loop::SEMI:
+    fprintf (fp, ";");
+    break;
+  case ActBody_Loop::COMMA:
+    fprintf (fp, ",");
+    break;
+  case ActBody_Loop::AND:
+    fprintf (fp, "&");
+    break;
+  case ActBody_Loop::OR:
+    fprintf (fp, "|");
+    break;
+  case ActBody_Loop::BAR:
+    fprintf (fp, "[]");
+    break;
+  default:
+    fatal_error ("Eh?");
+    break;
+  }
+  fprintf (fp, "%s", id);
+  fprintf (fp, ":");
+  print_expr (fp, lo);
+  if (hi) {
+    fprintf (fp, " .. ");
+    print_expr (fp, hi);
+  }
+  fprintf (fp, ": ");
+
+  ActBody *bi;
+
+  for (bi = b; bi; bi = bi->Next()) {
+    bi->Print (fp);
+  }
+  fprintf (fp, ")\n");
 }
 
 void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)

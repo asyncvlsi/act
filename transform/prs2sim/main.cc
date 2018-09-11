@@ -18,13 +18,29 @@ void usage (char *s)
   exit (1);
 }
 
+void idprint (FILE *fp, ActId *id)
+{
+  char buf[10240];
+  int i;
+  id->sPrint (buf, 10240);
+  for (i=0; buf[i]; i++) {
+    if (buf[i] == '.') {
+      buf[i] = '/';
+    }
+  }
+  fprintf (fp, "%s", buf);
+}
+
+
 void f (void *x, ActId *one, ActId *two)
 {
   FILE *fp = (FILE *) x;
   fprintf (fp, "= ");
-  one->Print (fp);
+  idprint (fp, one);
+  //one->Print (fp);
   fprintf (fp, " ");
-  two->Print (fp);
+  idprint (fp, two);
+  //two->Print (fp);
   fprintf (fp, "\n");
 }
 
@@ -35,10 +51,13 @@ static void _print_node (netlist_t *N, FILE *fp, ActId *prefix, node_t *n)
   if (n->v) {
     ActId *tmp = n->v->id->toid();
     if (!n->v->id->isglobal()) {
-      prefix->Print (fp);
-      fprintf (fp, ".");
+      idprint (fp, prefix);
+      //prefix->Print (fp);
+      //fprintf (fp, ".");
+      fprintf (fp, "/");
     }
-    tmp->Print (fp);
+    //tmp->Print (fp);
+    idprint (fp, tmp);
     delete tmp;
   }
   else {
@@ -50,8 +69,10 @@ static void _print_node (netlist_t *N, FILE *fp, ActId *prefix, node_t *n)
     }
     else {
       if (prefix) {
-	prefix->Print (fp);
-	fprintf (fp, ".");
+	//prefix->Print (fp);
+	//fprintf (fp, ".");
+	idprint (fp, prefix);
+	fprintf (fp, "/");
       }
       fprintf (fp, "n#%d", n->i);
     }
@@ -153,6 +174,8 @@ int main (int argc, char **argv)
   fclose (fps);
   
   act_flat_apply_conn_pairs (a, fpal, f);
+  fprintf (fpal, "= Vdd Vdd!\n");
+  fprintf (fpal, "= GND GND!\n");
   fclose (fpal);
 
   return 0;
