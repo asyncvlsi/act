@@ -10,12 +10,14 @@
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/iter.h>
+#include <act/act.h>
 #include <string.h>
 #include "misc.h"
 #include "array.h"
 
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;
+Act *ActNamespace::act = NULL;
 
 /**
  * Initialize namespaces. This function creates the ``Global''
@@ -1543,6 +1545,61 @@ void Scope::BindParam (const char *s, AExpr *ae)
 }
 
 
+void Scope::Print (FILE *fp)
+{
+  char buf[10240];
+  UserDef *u = getUserDef ();
+  fprintf (fp, "\n/* instances */\n");
+  
+  ActInstiter inst(this);
+  
+  for (inst = inst.begin(); inst != inst.end(); inst++) {
+    ValueIdx *vx = *inst;
+
+    if (!u || (u->FindPort (vx->getName()) == 0)) {
+      if (!TypeFactory::isParamType (vx->t)) {
+	if (vx->t->isExpanded()) {
+	  vx->t->sPrint (buf, 10240);
+	  ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	}
+	else {
+	  vx->t->Print (fp);
+	}
+	fprintf (fp, " %s;\n", vx->getName());
+      }
+    }
+    /* fix this.
+     * connections should be reported only once
+     * subconnections should be reported 
+     */
+    if (vx->hasConnection()) {
+      ActConniter ci(vx->connection());
+      ActId *id;
+
+      if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
+
+      fprintf (fp, "%s", vx->getName());
+      for (ci = ci.begin(); ci != ci.end(); ci++) {
+	act_connection *c = *ci;
+	if (c == vx->connection()) continue;
+	id = c->toid();
+	fprintf (fp, "=");
+	id->Print (fp);
+	delete id;
+      }
+      fprintf (fp, ";\n");
+      }
+
+      if (vx->hasSubconnections()) {
+	/* do something! */
+      }
+    }
+  }
+}
+
+
+
+
 /*
   Print namespace
 */
@@ -1563,40 +1620,15 @@ void ActNamespace::Print (FILE *fp)
   ActTypeiter it(this);
   for (it = it.begin(); it != it.end(); it++) {
     Type *t = *it;
+    UserDef *u = dynamic_cast<UserDef *>(t);
+    Assert (u, "Hmm...");
     /* print type! */
-    fprintf (fp, "type: %s\n", t->getName());
+    u->Print (fp);
   }
-    
+
   /* print instances */
-  fprintf (fp, "\n/* instances */\n");
-  ActInstiter inst(CurScope());
-  for (inst = inst.begin(); inst != inst.end(); inst++) {
-    ValueIdx *vx = *inst;
-    if (!TypeFactory::isParamType (vx->t)) {
-      vx->t->Print (fp);
-      fprintf (fp, " %s;\n", vx->getName());
-    }
-    if (vx->hasConnection()) {
-      ActConniter ci(vx->connection());
-      ActId *id;
-
-      fprintf (fp, "%s", vx->getName());
-      for (ci = ci.begin(); ci != ci.end(); ci++) {
-	act_connection *c = *ci;
-	if (c == vx->connection()) continue;
-	id = c->toid();
-	fprintf (fp, "=");
-	id->Print (fp);
-	delete id;
-      }
-      fprintf (fp, ";\n");
-
-      if (vx->hasSubconnections()) {
-	/* do something! */
-      }
-    }
-  }
-
+  CurScope()->Print (fp);
+  
   if (this != ActNamespace::Global()) {
     fprintf (fp, "}\n");
   }

@@ -13,6 +13,7 @@
 #include "bitset.h"
 #include "array.h"
 
+class Act;
 class ActBody;
 class UserDef;
 class Type;
@@ -151,6 +152,8 @@ class Scope {
 				   *before* any other instances have
 				   been created.
 				*/
+
+  void Print (FILE *fp);
 
   /**
    * Create a new scope that is a child of the current scope
@@ -400,6 +403,7 @@ class ActNamespace {
    * Returns global namespace
    */
   static ActNamespace *Global () { return global; }
+  static class Act *Act() { return act; }
 
   void setBody (ActBody *b) { B = b; }
   void AppendBody (ActBody *b);
@@ -465,6 +469,7 @@ class ActNamespace {
    * pointer to the global namespace
    */
   static ActNamespace *global;
+  static class Act *act;
 
   /**
    * used while creating the global namespace

@@ -2135,4 +2135,120 @@ Expr *TypeFactory::NewExpr (Expr *x)
   return NULL;
 }
 
+void UserDef::PrintHeader (FILE *fp, const char *type)
+{
+  char buf[10240];
+  int n;
+
+  if (exported) {
+    fprintf (fp, "export ");
+  }
+  n = getNumParams();
+  if (!expanded && n > 0) {
+    fprintf (fp, "template <");
+    for (int i=0; i < n; i++) {
+      InstType *it = getPortType (-(i+1));
+      it->Print (fp);
+      fprintf (fp, " %s", getPortName (-(i+1)));
+      if (i != n-1) {
+	fprintf (fp, "; ");
+      }
+    }
+    fprintf (fp, ">\n");
+  }
+  fprintf (fp, "%s ", type);
+  if (expanded) {
+    ActNamespace::Act()->mfprintf (fp, "%s ", getName());
+  }
+  else {
+    /* ok there is a possibility of a name conflict here but lets not
+       mangle more stuff */
+    fprintf (fp, "%s ", getName());
+  }
+
+  if (parent) {
+    if (parent_eq) {
+      fprintf (fp, "= ");
+    }
+    else {
+      fprintf (fp, "<: ");
+    }
+    parent->Print (fp);
+    fprintf (fp, " ");
+  }
+
+  n = getNumPorts ();
+  fprintf (fp, "(");
+  for (int i=0; i < n; i++) {
+    InstType *it = getPortType (i);
+    if (it->isExpanded()) {
+      it->sPrint (buf, 10240);
+      ActNamespace::Act()->mfprintf (fp, "%s", buf);
+    }
+    else {
+      it->Print (fp);
+    }
+    fprintf (fp, " %s", getPortName (i));
+    if (i != n-1) {
+      fprintf (fp, "; ");
+    }
+  }
+  fprintf (fp, ")\n");
+}
     
+
+void Process::Print (FILE *fp)
+{
+  PrintHeader (fp, "defproc");
+  fprintf (fp, "{\n");
+  if (!expanded) {
+    /* print act bodies */
+    ActBody *bi;
+
+    for (bi = b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+  }
+  else {
+    CurScope()->Print (fp);
+  }
+  fprintf (fp, "}\n\n");
+}
+
+void Channel::Print (FILE *fp)
+{
+  PrintHeader (fp, "defchan");
+  fprintf (fp, "{\n");
+  if (!expanded) {
+    /* print act bodies */
+    ActBody *bi;
+
+    for (bi = b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+  }
+  else {
+    CurScope()->Print (fp);
+  }
+  fprintf (fp, "}\n\n");
+}
+
+void Data::Print (FILE *fp)
+{
+  PrintHeader (fp, "defdata");
+  fprintf (fp, "{\n");
+  if (!expanded) {
+    /* print act bodies */
+    ActBody *bi;
+
+    for (bi = b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+  }
+  else {
+    CurScope()->Print (fp);
+  }
+  fprintf (fp, "}\n\n");
+}
+
+  
