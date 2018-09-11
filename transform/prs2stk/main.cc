@@ -15,7 +15,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s <actfile> <process> <stkfile>\n");
+  fprintf (stderr, "Usage: %s <actfile> <process> <stkfile>\n", usage);
   exit (1);
 }
 
