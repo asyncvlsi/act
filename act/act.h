@@ -44,6 +44,11 @@ class Act {
   Act (const char *s = NULL);
   ~Act ();
 
+  /** 
+   * Merge in ACT file "s" into current ACT database
+   */
+  void Merge (const char *s);
+
 
   /**
    * Expand types!
@@ -53,8 +58,8 @@ class Act {
   
   void mangle (char *s);	// install string mangling functions
   int mangle_active() { return any_mangling; }
-  int mangle_string (char *src, char *dst, int sz);
-  int unmangle_string (char *src, char *dst, int sz);
+  int mangle_string (const char *src, char *dst, int sz);
+  int unmangle_string (const char *src, char *dst, int sz);
   void mfprintf (FILE *fp, const char *s, ...);
   void ufprintf (FILE *fp, const char *s, ...);
   int msnprintf (char *fp, int sz, const char *s, ...);
