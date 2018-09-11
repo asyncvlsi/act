@@ -72,7 +72,7 @@ void Act::mangle (char *str)
  *
  *------------------------------------------------------------------------
  */
-int Act::mangle_string (char *src, char *dst, int sz)
+int Act::mangle_string (const char *src, char *dst, int sz)
 {
   if (!any_mangling) {
     if (strlen (src) > sz) return -1;
@@ -108,7 +108,7 @@ int Act::mangle_string (char *src, char *dst, int sz)
  *
  *------------------------------------------------------------------------
  */
-int Act::unmangle_string (char *src, char *dst, int sz)
+int Act::unmangle_string (const char *src, char *dst, int sz)
 {
   if (!any_mangling) {
     if (strlen (src) > sz) return -1;
