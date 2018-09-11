@@ -1,0 +1,6 @@
+ATTR("pchg",VAR_PCHG)
+ATTR("nup",VAR_PCHG_NUP)
+ATTR("pup",VAR_PCHG_PUP)
+ATTR("pdn",VAR_PCHG_PDN)
+ATTR("ndn",VAR_PCHG_NDN)
+ATTR("voltage_converter",VAR_VOLTAGE_CONV)
