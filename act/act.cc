@@ -243,6 +243,69 @@ Act::Act (const char *s)
   }
 }
 
+void Act::Merge (const char *s)
+{
+  act_Token *a;
+  ActTree tr;
+
+  if (!s) {
+    return;
+  }
+
+  tr.curns = ActNamespace::global;
+  tr.global = tr.curns;
+  tr.os = new ActOpen ();
+  tr.tf = tf;
+  tr.scope = tr.curns->CurScope ();
+
+  tr.u = NULL;
+
+  tr.param_mode = 0;
+
+  tr.u_p = NULL;
+  tr.u_d = NULL;
+  tr.u_c = NULL;
+  tr.u_f = NULL;
+  tr.t = NULL;
+
+  tr.t_inst = NULL;
+
+  tr.i_t = NULL;
+  tr.i_id = NULL;
+  tr.a_id = NULL;
+
+  tr.supply.vdd = NULL;
+  tr.supply.gnd = NULL;
+  tr.supply.psc = NULL;
+  tr.supply.nsc = NULL;
+  
+  tr.strict_checking = 0;
+
+  tr.in_tree = 0;
+  tr.in_subckt = 0;
+
+  tr.attr_num = config_get_table_size ("act.instance_attr");
+  tr.attr_table = config_get_table_string ("act.instance_attr");
+
+#ifdef DEBUG_PERFORMANCE
+  realtime_msec ();
+#endif
+
+  a = act_parse (s);
+
+#ifdef DEBUG_PERFORMANCE
+  printf ("Parser time: %g\n", (realtime_msec()/1000.0));
+#endif
+
+  act_walk_X (&tr, a);
+  
+  act_parse_free (a);
+
+#ifdef DEBUG_PERFORMANCE
+  printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
+#endif
+}
+
 
 void Act::Expand ()
 {
