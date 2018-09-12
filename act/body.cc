@@ -58,14 +58,22 @@ Type *ActBody_Inst::BaseType ()
 void ActBody_Inst::Print (FILE *fp)
 {
   char buf[10240];
+  Array *a = NULL;
   if (t->isExpanded()) {
     t->sPrint (buf, 10240);
     ActNamespace::Act()->mfprintf (fp, "%s", buf);
   }
   else {
+    a = t->arrayInfo();
+    t->clrArray ();
     t->Print (fp);
   }
-  fprintf (fp, " %s;\n", id);
+  fprintf (fp, " %s", id);
+  if (a) {
+    a->Print (fp);
+    t->MkArray (a);
+  }
+  fprintf (fp, ";\n");
 }
 
 /*------------------------------------------------------------------------*/
@@ -1548,6 +1556,15 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
   /* all guards false, skip it */
   act_error_ctxt (stderr);
   warning ("All guards in selection are false.");
+}
+
+void ActBody_Lang::Print (FILE *fp)
+{
+  switch (t) {
+  case ActBody_Lang::LANG_PRS:
+    prs_print (fp, (act_prs *)lang);
+    break;
+  }
 }
 
 void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)

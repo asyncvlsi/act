@@ -957,6 +957,7 @@ class ActBody_Lang : public ActBody {
   }
 
   void Expand (ActNamespace *, Scope *);
+  void Print (FILE *fp);
 
  private:
   enum {

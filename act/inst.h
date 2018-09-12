@@ -46,8 +46,8 @@ class InstType {
   ~InstType ();
 
   void MkArray (Array *a);	/**< make this an array of t */
-
   Array *arrayInfo () { return a; }
+  void clrArray () { a = NULL; }
 
   int isEqual (InstType *t, int weak = 0); /**< check if two instance types are
 				   identical */
