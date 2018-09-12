@@ -14,6 +14,7 @@
 #include <string.h>
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
+extern const char *act_fet_value_to_string (int);
 
 static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
 {
@@ -746,4 +747,263 @@ const char *act_spec_string (int type)
     return NULL;
   }
   return opts[type];
+}
+
+static void _print_attr (FILE *fp, act_attr_t *a)
+{
+  fprintf (fp, "[");
+  while (a) {
+    fprintf (fp, "%s=", a->attr);
+    print_expr (fp, a->e);
+    if (a->next) {
+      fprintf (fp, "; ");
+    }
+    a = a->next;
+  }
+  fprintf (fp, "]");
+}
+
+static void _print_size (FILE *fp, act_size_spec_t *sz)
+{
+  if (sz) {
+    fprintf (fp, "<");
+    if (sz->w) {
+      print_expr (fp, sz->w);
+      if (sz->l) {
+	fprintf (fp, ",");
+	print_expr (fp, sz->l);
+      }
+      if (sz->flavor != 0) {
+	fprintf (fp, ",%s", act_fet_value_to_string (sz->flavor));
+      }
+    }
+    fprintf (fp, ">");
+  }
+}
+
+static void _print_prs_expr (FILE *fp, act_prs_expr_t *e, int prec)
+{
+  if (!e) return;
+ 
+#define PREC_BEGIN(myprec)			\
+  do {						\
+    if ((myprec) < prec) {			\
+      fprintf (fp, "(");			\
+    }						\
+  } while (0)
+
+#define PREC_END(myprec)			\
+  do {						\
+    if ((myprec) < prec) {			\
+      fprintf (fp, ")");			\
+    }						\
+  } while (0)
+
+#define EMIT_BIN(myprec,sym)					\
+  do {								\
+    PREC_BEGIN(myprec);						\
+    _print_prs_expr (fp, e->u.e.l, (myprec));			\
+    fprintf (fp, "%s", (sym));					\
+    if (e->u.e.pchg) {						\
+      fprintf (fp, "{%c", e->u.e.pchg_type ? '+' : '-');	\
+      _print_prs_expr (fp, e->u.e.pchg, 0);				\
+      fprintf (fp, "}");					\
+    }								\
+    _print_prs_expr (fp, e->u.e.r, (myprec));			\
+    PREC_END (myprec);						\
+  } while (0)
+
+#define EMIT_UNOP(myprec,sym)			\
+  do {						\
+    PREC_BEGIN(myprec);				\
+    fprintf (fp, "%s", sym);			\
+    _print_prs_expr (fp, e->u.e.l, (myprec));	\
+    PREC_END (myprec);				\
+  } while (0)
+    
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+    EMIT_BIN(3,"&");
+    break;
+  case ACT_PRS_EXPR_OR:
+    EMIT_BIN(2,"|");
+    break;
+  case ACT_PRS_EXPR_NOT:
+    EMIT_UNOP(4, "~");
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+    fprintf (fp, "true");
+    break;
+
+  case ACT_PRS_EXPR_FALSE:
+    fprintf (fp, "false");
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    fprintf (fp, "@%s", e->u.l.label);
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fprintf (fp, "(%c%s:", e->type == ACT_PRS_EXPR_ANDLOOP ? '&' : '|',
+	     e->u.loop.id);
+    print_expr (fp, e->u.loop.lo);
+    if (e->u.loop.hi) {
+      fprintf (fp, " .. ");
+      print_expr (fp, e->u.loop.hi);
+    }
+    fprintf (fp, ":");
+    _print_prs_expr (fp, e->u.loop.e, 0);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    e->u.v.id->Print (fp);
+    if (e->u.v.sz) {
+      _print_size (fp, e->u.v.sz);
+    }
+    break;
+  default:
+    fatal_error ("What?");
+    break;
+  }
+}
+
+static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
+{
+  if (!prs) return;
+  switch (prs->type) {
+  case ACT_PRS_RULE:
+    if (prs->u.one.attr) {
+      _print_attr (fp, prs->u.one.attr);
+    }
+    _print_prs_expr (fp, prs->u.one.e, 0);
+    if (prs->u.one.arrow_type == 0) {
+      fprintf (fp, " -> ");
+    }
+    else if (prs->u.one.arrow_type == 1) {
+      fprintf (fp, " => ");
+    }
+    else if (prs->u.one.arrow_type == 2) {
+      fprintf (fp, " #> ");
+    }
+    else {
+      fatal_error ("Eh?");
+    }
+    if (prs->u.one.label) {
+      fprintf (fp, "@%s", (char *)prs->u.one.id);
+    }
+    else {
+      prs->u.one.id->Print (fp);
+    }
+    if (prs->u.one.dir) {
+      fprintf (fp, "+\n");
+    }
+    else {
+      fprintf (fp, "-\n");
+    }
+    break;
+  case ACT_PRS_GATE:
+    if (prs->u.p.attr) {
+      _print_attr (fp, prs->u.p.attr);
+    }
+    if (prs->u.p.g && prs->u.p._g) {
+      fprintf (fp, "transgate");
+    }
+    else if (prs->u.p.g) {
+      fprintf (fp, "passn");
+    }
+    else if (prs->u.p._g) {
+      fprintf (fp, "passp");
+    }
+    else {
+      Assert (0, "Hmm");
+    }
+    if (prs->u.p.sz) {
+      _print_size (fp, prs->u.p.sz);
+    }
+    fprintf (fp, "(");
+    if (prs->u.p.g) {
+      prs->u.p.g->Print (fp);
+      fprintf (fp, ",");
+    }
+    if (prs->u.p._g) {
+      prs->u.p._g->Print (fp);
+      fprintf (fp, ",");
+    }
+    prs->u.p.s->Print (fp);
+    fprintf (fp, ",");
+    prs->u.p.d->Print (fp);
+    fprintf (fp, ")\n");
+    break;
+  case ACT_PRS_LOOP:
+    fprintf (fp, "(%s:", prs->u.l.id);
+    if (prs->u.l.lo) {
+      print_expr (fp, prs->u.l.lo);
+      fprintf (fp, " .. ");
+    }
+    print_expr (fp, prs->u.l.hi);
+    fprintf (fp, ":");
+    for (act_prs_lang_t *i = prs->u.l.p; i; i = i->next) {
+      _print_one_prs (fp, i);
+    }
+    fprintf (fp, ")\n");
+    break;
+  case ACT_PRS_TREE:
+    fprintf (fp, "tree");
+    if (prs->u.l.lo) {
+      fprintf (fp, "<");
+      print_expr (fp, prs->u.l.lo);
+      fprintf (fp, ">");
+    }
+    fprintf (fp, "{\n");
+    for (act_prs_lang_t *i = prs->u.l.p; i; i = i->next) {
+      _print_one_prs (fp, i);
+    }
+    fprintf (fp, "}\n");
+    break;
+  case ACT_PRS_SUBCKT:
+    fprintf (fp, "subckt");
+    if (prs->u.l.id) {
+      fprintf (fp, "<%s>", prs->u.l.id);
+    }
+    fprintf (fp, "{\n");
+    for (act_prs_lang_t *i = prs->u.l.p; i; i = i->next) {
+      _print_one_prs (fp, i);
+    }
+    fprintf (fp, "}\n");
+    break;
+  default:
+    fatal_error ("Unsupported");
+    break;
+  }
+}
+
+void prs_print (FILE *fp, act_prs *prs)
+{
+  while (prs) {
+    fprintf (fp, "prs ");
+    if (prs->vdd) {
+      fprintf (fp, "<");
+      prs->vdd->Print (fp);
+      if (prs->gnd) {
+	fprintf (fp, ", ");
+	prs->gnd->Print (fp);
+      }
+      if (prs->psc) {
+	fprintf (fp, " | ");
+	prs->psc->Print (fp);
+	fprintf (fp, ", ");
+	prs->nsc->Print (fp);
+      }
+      fprintf (fp, "> ");
+    }
+    fprintf (fp, "{\n");
+    act_prs_lang_t *p;
+    for (p = prs->p; p; p = p->next) {
+      _print_one_prs (fp, p);
+    }
+    fprintf (fp, "}\n");
+    prs = prs->next;
+  }
 }

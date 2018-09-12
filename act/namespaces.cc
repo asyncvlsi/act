@@ -1549,23 +1549,40 @@ void Scope::Print (FILE *fp)
 {
   char buf[10240];
   UserDef *u = getUserDef ();
+
+  if (!expanded)
+    return;
+  
   fprintf (fp, "\n/* instances */\n");
   
   ActInstiter inst(this);
   
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = *inst;
+    Array *a;
 
-    if (!u || (u->FindPort (vx->getName()) == 0)) {
-      if (!TypeFactory::isParamType (vx->t)) {
+    if (!TypeFactory::isParamType (vx->t)) {
+      if (!u || (u->FindPort (vx->getName()) == 0)) {
+	a = NULL;
 	if (vx->t->isExpanded()) {
 	  vx->t->sPrint (buf, 10240);
 	  ActNamespace::Act()->mfprintf (fp, "%s", buf);
 	}
 	else {
+	  a = vx->t->arrayInfo();
+	  if (a) {
+	    vx->t->clrArray();
+	  }
 	  vx->t->Print (fp);
 	}
-	fprintf (fp, " %s;\n", vx->getName());
+	fprintf (fp, " %s", vx->getName());
+	if (a) {
+	  a->Print (fp);
+	}
+	fprintf (fp, ";\n");
+	if (a) {
+	  vx->t->MkArray (a);
+	}
       }
     }
     /* fix this.
@@ -1631,5 +1648,11 @@ void ActNamespace::Print (FILE *fp)
   
   if (this != ActNamespace::Global()) {
     fprintf (fp, "}\n");
+  }
+  else {
+    /* languages */
+    if (lang.prs) {
+      prs_print (fp, lang.prs);
+    }
   }
 }

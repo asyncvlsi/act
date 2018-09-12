@@ -198,6 +198,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
+void prs_print (FILE *, act_prs *);
 
 const char *act_spec_string (int type);
 
