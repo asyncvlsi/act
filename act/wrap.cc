@@ -25,6 +25,18 @@ int act_fet_string_to_value (const char *s)
   return -1;
 }
 
+const char *act_fet_value_to_string (int f)
+{
+  if (num_fets == -1) {
+    num_fets = config_get_table_size ("act.fet_flavors");
+    fet_flavors = config_get_table_string ("act.fet_flavors");
+  }
+  if (f < 0 || f >= num_fets) {
+    return NULL;
+  }
+  return fet_flavors[f];
+}
+
 #define NULL_WRAP(nm,t) ActRet *act_wrap_X_##nm (t v) { return NULL; }
 
 NULL_WRAP(double,double)
