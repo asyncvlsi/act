@@ -146,11 +146,23 @@ void TypeFactory::Init ()
 InstType *TypeFactory::NewBool (Type::direction dir)
 {
   Scope *gs = ActNamespace::Global ()->CurScope ();
+  Bool *b;
 
   int i = (int)dir;
 
+  b = NULL;
+  for (int j=0; j < sizeof (bools)/sizeof (bools[0]); j++) {
+    if (bools[j]) {
+      b = dynamic_cast<Bool*> (bools[j]->t);
+      break;
+    }
+  }
+
   if (!bools[i]) {
-    bools[i] = new InstType (gs, new Bool(), 0);
+    if (!b) {
+      b = new Bool();
+    }
+    bools[i] = new InstType (gs, b, 0);
     bools[i]->SetDir (dir);
   }
   return bools[i];
