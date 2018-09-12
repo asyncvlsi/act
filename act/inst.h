@@ -125,7 +125,8 @@ class InstType {
   unsigned int temp_type:1;	/**< set if this is an uncached inst
 				   type */
   unsigned int expanded:1;	/**< set if this is expanded */
-  
+
+  friend class TypeFactory;
 };
 
 
