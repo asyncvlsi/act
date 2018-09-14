@@ -79,7 +79,7 @@ struct ext_file {
 };
 
 extern struct ext_file *parse_ext_file (FILE *, FILE *dumpfile, char *name);
-extern FILE *path_open (char *, FILE **);
+extern FILE *mag_path_open (char *, FILE **);
 extern void flatten_ext_file (struct ext_file *, VAR_T *);
 extern void check_ext_timestamp (FILE *fp);
 
