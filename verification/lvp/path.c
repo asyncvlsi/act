@@ -175,12 +175,14 @@ FILE *mag_path_open (char *name, FILE **dumpfile)
 
   *dumpfile = NULL;
   if (first) {
-    read_dotmagic (mystrdup("~cad/lib/magic/sys/.magic"));
-    read_dotmagic (mystrdup("~/.magic"));
-    read_dotmagic (mystrdup(".magic"));
+    addpath(mystrdup("\".\""), 0);
+    read_dotmagic (mystrdup("~cad/lib/magic/sys/.magicrc"));
+    read_dotmagic (mystrdup("~/.magicrc"));
+    read_dotmagic (mystrdup(".magicrc"));
   }
   first = 0;
   p = hd;
+
   while (p) {
     MALLOC (file, char, strlen (p->path)+strlen(name)+6);
     strcpy (file, p->path);
@@ -188,6 +190,7 @@ FILE *mag_path_open (char *name, FILE **dumpfile)
     strcat (file, name);
     try = expand (file);
     FREE (file);
+
     fp = fopen (try, "r");
     if (fp) {
       sprintf (try + strlen (try) - 3, "hxt");
