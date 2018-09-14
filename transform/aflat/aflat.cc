@@ -21,6 +21,16 @@ static list_t *suffixes = NULL;
 
 static output_formats export_format;
 
+static void print_connect()
+{
+  if (export_format == LVS_FMT) {
+    printf ("connect ");
+  }
+  else {
+    printf ("= ");
+  }
+}
+
 static void push_namespace_name (const char *s)
 {
   char *n;
@@ -452,8 +462,8 @@ static void _print_connections_bool (ValueIdx *vx)
 	Assert (!s2->isend(), "What?");
 
 	tmp1 = s1->string();
-	
-	printf ("= ");
+
+	print_connect();
 	prefix_connid_print (c, tmp1);
 	FREE (tmp1);
 	printf (" ");
@@ -471,7 +481,7 @@ static void _print_connections_bool (ValueIdx *vx)
       delete s2;
     }
     else {
-      printf ("= ");
+      print_connect();
       prefix_connid_print (c);
       printf (" ");
       prefix_connid_print (tmp);
@@ -497,7 +507,7 @@ static void _print_connections_bool (ValueIdx *vx)
 	if (ig != is_global) continue;
 	
 	/* cannot be an array */
-	printf ("= ");
+	print_connect();
 	prefix_connid_print (d);
 	printf(" ");
 	prefix_connid_print (tmp);
@@ -518,7 +528,8 @@ static void _print_single_connection (ActId *one, Array *oa,
     s1 = oa->stepper();
     s2 = ta->stepper();
     while (!s1->isend()) {
-      printf ("= \"");
+      print_connect();
+      printf ("\"");
       if (isoneglobal) {
 	if (isoneglobal == ActNamespace::Global()) {
 	  /* nothing */
@@ -560,7 +571,8 @@ static void _print_single_connection (ActId *one, Array *oa,
     delete s2;
   }
   else {
-    printf ("= \"");
+    print_connect();
+    printf ("\"");
     if (isoneglobal) {
       if (isoneglobal == ActNamespace::Global()) {
 	/* nothing */
