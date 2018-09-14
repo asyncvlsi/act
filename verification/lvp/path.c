@@ -167,7 +167,7 @@ void read_dotmagic (char *file)
 }
 
 
-FILE *path_open (char *name, FILE **dumpfile)
+FILE *mag_path_open (char *name, FILE **dumpfile)
 {
   struct pathlist *p;
   char *file, *try;
