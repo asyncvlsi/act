@@ -12,7 +12,7 @@ TARGETS=$(BINARY) $(BIN2)
 OBJS1=main.o lvs.o dots.o excl.o flatten.o \
 	parse_ext.o hier.o parse.o \
 	sneak.o table.o var.o prs.o print.o path.o \
-	pchg.o init.o
+	pchg.o 
 
 OBJS2=extfix.o
 
@@ -22,12 +22,13 @@ OBJS=$(OBJS1) $(OBJS2)
 
 SRCS=$(OBJS:.o=.c) init.cc
 
+
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 DFLAGS+=-DDIGITAL_ONLY
 
-$(BINARY): $(LIB) $(OBJS1) $(ACTDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS1) -o $(BINARY) $(LIBACT)
+$(BINARY): $(LIB) $(OBJS1) init.o $(ACTDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS1) init.o -o $(BINARY) $(LIBACT)
 
 $(BIN2): $(LIB) $(OBJS2) $(LIBDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBCOMMON)
