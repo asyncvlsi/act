@@ -280,6 +280,8 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   int wspec=0;
   int readconfig = 0;
 
+  initialize (&argc, &eargv);
+
   if (getenv ("LVS_OPTIONS")) {
     MALLOC (argv, char *, argc+1);
     argv[0] = eargv[0];
