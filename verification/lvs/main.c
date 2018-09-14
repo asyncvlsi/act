@@ -14,6 +14,7 @@
 #include "lvs.h"
 #include "misc.h"
 #include "cap.h"
+#include "config.h"
 
 /*
  *
@@ -114,6 +115,7 @@ int echo_external_voltage;	/* off */
 
 int overkill_mode;		/* use spice to check each input case */
 
+#if 0
 double BSIM2_OXE = -1;
 double BSIM2_TOX = -1;
 double BSIM2_N_LDAC = -1;
@@ -133,6 +135,7 @@ double BSIM2_P_PB = -1;
 double BSIM2_P_CJSW = -1;
 double BSIM2_P_MJSW = -1;
 double BSIM2_P_PHP = -1;
+#endif
 
 double N_gate_perim;		/* perim cap (from bsim2) */
 
@@ -201,7 +204,6 @@ void usage (void)
     " -P         generate pass transistors (n passes GND, p passes Vdd) [off]",
     " -R         merge _xResety signals with _Reset [off]",
     " -S         don't look for sneak paths [off]",
-    " -T name    read config file for technology name [scn06]",
     " -V name    use \"name\" as Vdd [Vdd]",
     " -W         return non-zero exit status on any warnings [off]",
     "",
@@ -344,7 +346,7 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   prefix_reset = 0;
 
   opterr = 0;
-  while ((ch=getopt (argc,argv,"bHcCWEfnBapgRPDz:hvr:w:sV:G:SZT:o:deKi"))!=-1){
+  while ((ch=getopt (argc,argv,"bHcCWEfnBapgRPDz:hvr:w:sV:G:SZo:deKi"))!=-1){
     switch (ch) {
     case 'R':
       prefix_reset = 1;
@@ -364,10 +366,6 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
       break;
     case 'o':
       sscanf (optarg, "%lf", &cap_coupling_ratio);
-      break;
-    case 'T':
-      read_config_file (optarg);
-      readconfig = 1;
       break;
     case 'Z':
       wizard = 1;
@@ -463,12 +461,28 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
       break;
     }
   }
-  if (!readconfig) {
-    if (getenv ("LVS_TECHNOLOGY"))
-      read_config_file (getenv ("LVS_TECHNOLOGY"));
-    else
-      read_config_file ("scn06");
+  config_read ("lint.conf");
+  config_read ("lvp.conf");
+
+  /* set values */
+  Vdd_value = config_get_real ("lint.Vdd");
+  Vtn_value = config_get_real ("lvp.Vtn");
+  Vtp_value = config_get_real ("lvp.Vtp");
+  lambda = config_get_real ("net.lambda");
+  min_gate_length = config_get_int ("net.min_length");
+  if (config_exists ("lvp.Gatecap")) {
+    gate_cap = config_get_real ("lvp.Gatecap");
   }
+  if (config_exists ("lvp.WeakByWidth")) {
+    width_threshold = config_get_real ("lvp.WeakByWidth");
+  }
+  if (config_exists ("lvp.WeakByStrength")) {
+    strip_threshold = config_get_real ("lvp.WeakByStrength");
+  }
+  N_P_Ratio = 1.0/config_get_real ("net.p_n_ratio");
+  comb_threshold = config_get_real ("lvp.CombThreshold");
+  stateholding_threshold = config_get_real ("lvp.StateThreshold");
+
   do_cmdline_options ();
 #ifndef DIGITAL_ONLY
   compute_derived_params ();
