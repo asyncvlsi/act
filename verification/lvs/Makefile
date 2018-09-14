@@ -4,12 +4,12 @@
 #  All Rights Reserved
 #
 #-------------------------------------------------------------------------
-BINARY=lvs.$(EXT)
+BINARY=lvp.$(EXT)
 BIN2=extfix.$(EXT)
 
 TARGETS=$(BINARY) $(BIN2)
 
-OBJS1=main.o lvs.o config.o dots.o excl.o flatten.o \
+OBJS1=main.o lvs.o dots.o excl.o flatten.o \
 	parse_ext.o hier.o parse.o \
 	sneak.o table.o var.o prs.o print.o path.o \
 	pchg.o
