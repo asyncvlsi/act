@@ -331,7 +331,7 @@ void _check_ext_timestamp (FILE *fp, unsigned long tm)
       while (*s && *s != ' ') s++;
       *s = '\0';
       strcat (buf, ".ext");
-      subcell = path_open (buf+4, &sdump);
+      subcell = mag_path_open (buf+4, &sdump);
       strcpy (cell, buf+4);
       if (sdump) fclose (sdump);
       if (!fgets (buf, MAXLINE, subcell) || 
@@ -576,7 +576,7 @@ readext:
       }
       subcell->next = ext->subcells;
       ext->subcells = subcell;
-      tmp1 = path_open (subcell->file, &tmp2);
+      tmp1 = mag_path_open (subcell->file, &tmp2);
       subcell->ext = parse_ext_file (tmp1, tmp2, subcell->file);
     }
     else if (lex_have_keyw (l, "fet")) {
