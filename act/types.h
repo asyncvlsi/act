@@ -678,13 +678,10 @@ class ActId {
 
   ActId *Rest () { return next; }
 
-  void Print (FILE *fp, ActId *stop = NULL); /**< print ID to the
-						specified output stream,
-						stopping at the
-						specified
-						point. Default is
-						print the entire ID */
-  void sPrint (char *buf, int sz, ActId *stop = NULL); 
+  void Print (FILE *fp, ActId *stop = NULL, int style = 0);
+  /**< print ID to the specified output stream, stopping at the
+     specified point. Default is print the entire ID */
+  void sPrint (char *buf, int sz, ActId *stop = NULL, int style = 0); 
   
   ActId *Clone ();
 
