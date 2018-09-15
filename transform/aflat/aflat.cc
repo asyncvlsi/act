@@ -21,6 +21,9 @@ static list_t *suffixes = NULL;
 
 static output_formats export_format;
 
+#define ARRAY_STYLE (export_format == LVS_FMT ? 1 : 0)
+#define EXTRA_ARGS  NULL, (export_format == LVS_FMT ? 1 : 0)
+
 static void print_connect()
 {
   if (export_format == LVS_FMT) {
@@ -126,7 +129,7 @@ static void prefix_id_print (Scope *s, ActId *id, const char *str = "")
       FREE (tmp);
     }
   }
-  id->Print (stdout);
+  id->Print (stdout, EXTRA_ARGS);
   printf ("%s\"", str);
 }
 
@@ -135,7 +138,7 @@ static void prefix_connid_print (act_connection *c, const char *s = "")
   printf ("\"");
   prefix_print ();
   ActId *tid = c->toid();
-  tid->Print (stdout);
+  tid->Print (stdout, EXTRA_ARGS);
   delete tid;
   printf ("%s\"", s);
 }
@@ -543,8 +546,8 @@ static void _print_single_connection (ActId *one, Array *oa,
       else {
 	prefix_print ();
       }
-      one->Print (stdout);
-      s1->Print (stdout);
+      one->Print (stdout, EXTRA_ARGS);
+      s1->Print (stdout, ARRAY_STYLE);
       if (nm) {
 	suffix_print ();
 	printf ("%s", nm);
@@ -561,7 +564,7 @@ static void _print_single_connection (ActId *one, Array *oa,
 	printf ("%s", nm);
       }
       if (na) {
-	na->Print (stdout);
+	na->Print (stdout, ARRAY_STYLE);
       }
       printf ("\"\n");
       s1->step();
@@ -586,23 +589,23 @@ static void _print_single_connection (ActId *one, Array *oa,
     else {
       prefix_print ();
     }
-    one->Print (stdout);
+    one->Print (stdout, EXTRA_ARGS);
     if (nm) {
       suffix_print ();
       printf ("%s", nm);
     }
     if (na) {
-      na->Print (stdout);
+      na->Print (stdout, ARRAY_STYLE);
     }
     printf ("\" \"");
     prefix_print ();
-    two->Print (stdout);
+    two->Print (stdout, EXTRA_ARGS);
     if (nm) {
       suffix_print ();
       printf ("%s", nm);
     }
     if (na) {
-      na->Print (stdout);
+      na->Print (stdout, ARRAY_STYLE);
     }
     printf ("\"\n");
   }
@@ -633,7 +636,7 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	Arraystep *p = vx->t->arrayInfo()->stepper ();
 	while (!p->isend()) {
 	  char *tmp;
-	  tmp = p->string();
+	  tmp = p->string(ARRAY_STYLE);
 	  push_name_array_suffix (vx->getName (), tmp);
 	  FREE (tmp);
 	  _print_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
@@ -773,7 +776,7 @@ static void aflat_prs_scope (Scope *s)
 
 	while (!step->isend()) {
 	  if (vx->isPrimary(idx)) {
-	    char *tmp =  step->string();
+	    char *tmp =  step->string(ARRAY_STYLE);
 	    push_name_array (vx->getName(), tmp);
 	    FREE (tmp);
 	    if (px) {
