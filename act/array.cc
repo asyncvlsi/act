@@ -478,14 +478,14 @@ int Array::Validate (Array *a)
  * Print out array
  *------------------------------------------------------------------------
  */
-void Array::Print (FILE *fp)
+void Array::Print (FILE *fp, int style)
 {
   char buf[10240];
-  sPrint (buf, 10240);
+  sPrint (buf, 10240, style);
   fprintf (fp, "%s", buf);
 }
 
-void Array::sPrint (char *buf, int sz)
+void Array::sPrint (char *buf, int sz, int style)
 {
   Array *pr;
   int k = 0;
@@ -539,7 +539,12 @@ void Array::sPrint (char *buf, int sz)
 	}
       }
       if (i < pr->dims-1) {
-	snprintf (buf+k, sz, "][");
+	if (style) {
+	  snprintf (buf+k, sz, ",");
+	}
+	else {
+	  snprintf (buf+k, sz, "][");
+	}
 	PRINT_STEP;
       }
     }
@@ -871,14 +876,19 @@ int Arraystep::isend()
  *
  *------------------------------------------------------------------------
  */
-void Arraystep::Print (FILE *fp)
+void Arraystep::Print (FILE *fp, int style)
 {
   int i;
   
   fprintf (fp, "[");
   for (i=0; i < base->dims; i++) {
     if (i != 0) {
-      fprintf (fp, "][");
+      if (style) {
+	fprintf (fp, ",");
+      }
+      else {
+	fprintf (fp, "][");
+      }
     }
     fprintf (fp, "%d", deref[i]);
   }
@@ -1588,7 +1598,7 @@ Array *Array::unOffset (int idx)
 }
 
 
-char *Arraystep::string()
+char *Arraystep::string(int style)
 {
   char *s, *t;
   int i;
@@ -1596,11 +1606,32 @@ char *Arraystep::string()
   MALLOC (s, char, base->dims*20);
 
   t = s;
-  t[0] = '\0';
+
+  if (style) {
+    t[0] = '[';
+    t[1] = '\0';
+    t++;
+  }      
+  else {
+    t[0] = '\0';
+  }
 
   for (i=0; i < base->dims; i++) {
-    sprintf (t, "[%d]", deref[i]);
+    if (style) {
+      if (i != base->dims-1) {
+	sprintf (t, "%d,", deref[i]);
+      }
+      else {
+	sprintf (t, "%d", deref[i]);
+      }
+    }
+    else {
+      sprintf (t, "[%d]", deref[i]);
+    }
     t += strlen (t);
+  }
+  if (style) {
+    sprintf (t, "]");
   }
   return s;
 }

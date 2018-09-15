@@ -102,8 +102,9 @@ class Array {
 
   ~Array ();
 
-  void Print (FILE *fp);
-  void sPrint (char *buf, int sz);
+  void Print (FILE *fp, int style = 0);  // style = 0: [num][num];
+					 // otherwise [num,num]
+  void sPrint (char *buf, int sz, int style = 0);
 
   Array *Clone ();		/* returns a deep copy */
   Array *CloneOne ();		/* only copy current range */
@@ -205,10 +206,10 @@ public:
 
   int typesize() { return base->size(); }
 
-  char *string();
+  char *string(int style = 0);
   Array *toArray();
 
-  void Print (FILE *fp);
+  void Print (FILE *fp, int style = 0);
   
 private:
   int idx;
