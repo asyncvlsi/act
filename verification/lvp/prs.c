@@ -2528,7 +2528,8 @@ int split_combinational_feedback (VAR_T *V, BOOL_T *B, var_t *v)
   /* check nup */
   tmp = bool_or (B, xA, wA = bool_not (B, t1));
   bool_free (B, tmp);
-  if (tmp == nup) {
+  if (tmp == nup && (v->up[WEAK] != bool_false (B))) {
+    /* xA | ~t1 with weak elements... */
     goto nextchk;
   }
 
@@ -2567,7 +2568,7 @@ int split_combinational_feedback (VAR_T *V, BOOL_T *B, var_t *v)
   /* check ndn */
   tmp = bool_or (B, xB, wB = bool_copy (B, t1));
   bool_free (B, tmp);
-  if (tmp == ndn) {
+  if (tmp == ndn && (v->dn[WEAK] != bool_false (B))) {
     goto donechk;
   }
 
