@@ -316,6 +316,7 @@ static act_prs_expr_t *atom (LFILE *l)
     f->u.e.l = e;
     f->u.e.r = NULL;
     f->u.e.pchg = NULL;
+    f->u.e.pchg_type = -1;
     e = f;
   }
   return e;
@@ -334,6 +335,7 @@ static act_prs_expr_t *term (LFILE *l)
     f->type = ACT_PRS_EXPR_AND;
     f->u.e.l = e;
     f->u.e.pchg = NULL;
+    f->u.e.pchg_type = -1;
     f->u.e.r = NULL;
 
     if (file_have (l, LBRACE)) {
@@ -392,6 +394,7 @@ static act_prs_expr_t *_act_parse_prs_expr (LFILE *l)
     f->type = ACT_PRS_EXPR_OR;
     f->u.e.l = e;
     f->u.e.pchg = NULL;
+    f->u.e.pchg_type = -1;
     f->u.e.r = term(l);
     if (!f->u.e.r) {
       _freeexpr (f);
