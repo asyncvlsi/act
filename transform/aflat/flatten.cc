@@ -267,12 +267,29 @@ static void _flat_connections_bool (ValueIdx *vx)
       
     }
     else {
+      ActId *head1, *tail1;
+      ActId *head2, *tail2;
       ActId *id1, *id2;
+
+      head1 = prefix_to_id (&tail1);
+      head2 = prefix_to_id (&tail2);
+      
       id1 = c->toid();
+      tail1->Append (id1);
+      
       id2 = tmp->toid();
-      (*g_apply_fn) (g_cookie, id1, id2);
+      tail2->Append (id2);
+      (*g_apply_fn) (g_cookie, head1, head2);
+
+      tail1->prune();
+      tail2->prune();
+      nullify_arrays (head1);
+      nullify_arrays (head2);
+      
       delete id1;
       delete id2;
+      delete head1;
+      delete head2;
     }
   }
 
