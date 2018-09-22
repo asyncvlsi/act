@@ -78,7 +78,7 @@ ActNamespaceiter& ActNamespaceiter::operator++()
       i++;
     }
     b = NULL;
-    while (!top->N->head[i] && i < top->N->size) {
+    while (i < top->N->size && !top->N->head[i]) {
       i++;
     }
     if (i != top->N->size) {
@@ -163,7 +163,7 @@ ActInstiter& ActInstiter::operator++()
       i++;
     }
     b = NULL;
-    while (!s->H->head[i] && i < s->H->size) {
+    while (i < s->H->size && !s->H->head[i]) {
       i++;
     }
     if (i != s->H->size) {
@@ -311,7 +311,7 @@ ActTypeiter& ActTypeiter::operator++()
       i++;
     }
     b = NULL;
-    while (!top->T->head[i] && i < top->T->size) {
+    while (i < top->T->size && !top->T->head[i]) {
       i++;
     }
     if (i != top->T->size) {
