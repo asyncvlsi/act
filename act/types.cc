@@ -344,6 +344,16 @@ int TypeFactory::isChanType (Type *t)
 }
 INSTMACRO(isChanType)
 
+int TypeFactory::isExactChanType (Type *t)
+{
+  Chan *tmp_c = dynamic_cast<Chan *>(t);
+  if (tmp_c) {
+    return 1;
+  }
+  return 0;
+}
+INSTMACRO(isExactChanType)
+
 int TypeFactory::isProcessType (Type *t)
 {
   Process *tmp_p = dynamic_cast<Process *>(t);
@@ -758,7 +768,7 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
 int InstType::isParamAType (int k)
 {
   Assert (0 <= k && k < nt, "Hmm");
-  if (TypeFactory::isChanType (t) || TypeFactory::isPTypeType (t)) {
+  if (TypeFactory::isExactChanType (t) || TypeFactory::isPTypeType (t)) {
     /* all are type parameters */
     return 1;
   }
@@ -1225,9 +1235,19 @@ int UserDef::isEqual (UserDef *u)
  */
 int InstType::isEqual (InstType *it, int weak)
 {
+  int valcheck;
+
+  valcheck = isExpanded();
+  if (weak == 0) valcheck = 1;
+
+#if 0
+  printf ("valcheck = %d\n", valcheck);
+#endif
+
   if (t != it->t) return 0;   /* same base type */
 
-  if (nt != it->nt) return 0; /* same number of template params, if any */
+  if (nt != it->nt) return 0; /* same number of template params, if
+				 any */
 
   /* check that the template parameters of the type are the same */
   for (int i=0; i < nt; i++) {
@@ -1248,15 +1268,15 @@ int InstType::isEqual (InstType *it, int weak)
       }
       /* being NULL is the same as const 32 */
       if (u[i].tp && !it->u[i].tp) {
-	if (!u[i].tp->isEqual (constexpr)) return 0;
+	if (valcheck && (!u[i].tp->isEqual (constexpr))) return 0;
 	delete constexpr;
       }
       else if (it->u[i].tp && !u[i].tp) {
-	if (!constexpr->isEqual (it->u[i].tp)) return 0;
+	if (valcheck && (!constexpr->isEqual (it->u[i].tp))) return 0;
 	delete constexpr;
       }
       else if (u[i].tp && it->u[i].tp) {
-	if (!u[i].tp->isEqual (it->u[i].tp)) return 0;
+	if (valcheck && (!u[i].tp->isEqual (it->u[i].tp))) return 0;
       }
       else {
 	delete constexpr;
@@ -1267,6 +1287,7 @@ int InstType::isEqual (InstType *it, int weak)
   if ((a && !it->a) || (!a && it->a)) return 0; /* both are either
 						   arrays or not
 						   arrays */
+
 
   /* dimensions must be compatible no matter what */
   if (a && !a->isDimCompatible (it->a)) return 0;
@@ -1446,7 +1467,7 @@ InstType::InstType (InstType *i, int skip_array)
 {
   t = i->t;
   dir = i->dir;
-  //s = i->s;
+  s = i->s;
   expanded = i->expanded;
   if (!skip_array) {
     Assert (i->a == NULL, "Replication in the presence of arrays?");
@@ -1548,7 +1569,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
      u = expanded instance paramters
   */
 #if 0
-  printf ("Hello, expand userdef!\n");
+  printf ("Hello, expand userdef %s\n", getName());
   printf ("Expanding userdef, nt=%d, spec_nt=%d\n", nt, spec_nt);
 #endif
 
@@ -1566,7 +1587,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   ux->expanded = 1;
 
   /* create bindings for type parameters */
-  for (int i=0; i < nt; i++) {
+  int i;
+  for (i=0; i < nt; i++) {
     p = getPortType (-(i+1));
     if (!p)  {
       /* this is an enumeration type, there is nothing to be done here */
@@ -1580,7 +1602,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
       if (TypeFactory::isPTypeType (p->BaseType())) {
 	if (i < spec_nt && u[i].tt) {
-	  x = u[i].tt->Expand (ns, s);
+	  x = u[i].tt /*->Expand (ns, ux->I)*/;
 	  ux->I->BindParam (pn[i], x);
 	}
       }
@@ -1588,7 +1610,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	Assert (TypeFactory::isParamType (x), "What?");
 	if (i < spec_nt && u[i].tp) {
 	  InstType *rhstype;
-	  AExpr *rhsval = u[i].tp->Expand (ns, s);
+	  AExpr *rhsval = u[i].tp /*->Expand (ns, ux->I)*/;
 	  rhstype = rhsval->getInstType (s, 1);
 	  if (!type_connectivity_check (x, rhstype)) {
 	    act_error_ctxt (stderr);
@@ -1606,7 +1628,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       }
     }
   }
-  
   /*
      create a name for it!
      (old name)"<"string-from-types">"
@@ -1630,7 +1651,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     InstType *x;
     Array *xa;
 
-    x = getPortType (-(i+1));
+    x = ux->getPortType (-(i+1));
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
       if (xa) {
@@ -1675,7 +1696,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       len = strlen (buf+k); k += len; sz -= len;
     }
     Assert (sz > 0, "Check");
-    x = getPortType (-(i+1));
+    x = ux->getPortType (-(i+1));
     vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
@@ -1775,7 +1796,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   FREE (buf);
 
   if (parent) {
-    ux->SetParent (parent->Expand (ns, s), parent_eq);
+    ux->SetParent (parent->Expand (ns, ux->CurScope()), parent_eq);
   }
   ux->exported = exported;
 

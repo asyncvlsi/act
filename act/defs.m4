@@ -80,21 +80,20 @@ param_inst: param_type id_list
       list_t *m = r->u.l;
       FREE (r);
 
-      it = $1;
-      
       if (OPT_EMPTY (m)) {
 	/* nothing needs to be done */
+	it = $1;
       }
       else {
+	it = new InstType ($1);
 	r = OPT_VALUE (m);
 	$A(r->type == R_ARRAY);
-
 	if (TypeFactory::isPTypeType (it->BaseType())) {
 	  $E("ptype parameters cannot be arrays!");
 	}
-	it = new InstType ($1, 1);
-	it->MkCached();
+	r->u.array->mkArray();
 	it->MkArray (r->u.array);
+	it->MkCached();
 	FREE (r);
       }
       list_free (m);

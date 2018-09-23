@@ -113,6 +113,26 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 #endif
 
     /* sparse array */
+    Array *ta, *tb;
+
+    ta = it->arrayInfo();
+    it->clrArray ();
+
+    tb = vx->t->arrayInfo();
+    vx->t->clrArray();
+
+    if (!it->isEqual (vx->t)) {
+      fprintf (stderr, "Sparse array type error on %s\n", id);
+      fprintf (stderr, "\tOrig type: ");
+      vx->t->Print (stderr);
+      fprintf (stderr, "\n\tNew type: ");
+      it->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+    it->MkArray (ta);
+    vx->t->MkArray (tb);
+
     x->arrayInfo()->Merge (it->arrayInfo());
 
 #if 0
@@ -408,14 +428,19 @@ int act_connection::numSubconnections()
   _vx = getvx();
   type = getctype();
 
-  if (_vx->t->arrayInfo() && (type != 1)) {
+  Assert (type == 0 || type == 1, "Hmm");
+
+  if (type == 0 && _vx->t->arrayInfo()) {
+    //if (_vx->t->arrayInfo() && (type != 1)) {
     /* it is an array! */
     return _vx->t->arrayInfo()->size();
   }
   else {
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
+    if  (!ux) {
+      return 0;
+    }
     Assert (ux, "hmm...");
-
     return ux->getNumPorts ();
   }
 }
@@ -441,16 +466,12 @@ unsigned int act_connection::getctype()
     return 0;
   }
   else if (parent->vx) {
-    if (parent->vx->t->arrayInfo()) {
-      return 1;
-    }
-    else {
-      return 2;
-    }
+    return 1;
   }
-  else {
-    return 3;
+  else if (parent->parent->vx) {
+    return 2;
   }
+  return 3;
 }
 
 static void print_id (act_connection *c)
@@ -1108,6 +1129,19 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       fatal_error ("Type-checking failed on connection");
     }
 
+#if 0
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Connection: ");
+      ex->Print (stderr);
+      fprintf (stderr, " = ");
+      arhs->Print (stderr);
+      fprintf (stderr, "\n  LHS: ");
+      tlhs->Print (stderr);
+      fprintf (stderr, "\n  RHS: ");
+      trhs->Print (stderr);
+      fprintf (stderr, "\n");
+#endif
+
     if (TypeFactory::isParamType (tlhs)) {
       /* a parameter assignment */
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
@@ -1131,9 +1165,16 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       act_connection *rcx;
       AExprstep *rhsstep = arhs->stepper();
       int done_conn;
-      
+
+      /* if id is not an array, or it is a deref */
+      ActId *tid;
+      tid = id;
+      while (tid->Rest()) {
+	tid = tid->Rest();
+      }
+
       done_conn = 0;
-      if (!id->arrayInfo() || id->arrayInfo()->isDeref()) {
+      if (!tid->arrayInfo() || tid->arrayInfo()->isDeref()) {
 	/* this is a direct connection */
 	/* check for special case for rhs */
 	if (rhsstep->isSimpleID()) {
@@ -1152,8 +1193,8 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 			   rid->getName(), rcx);
 	  }
 	  else {
-	    Assert (trhs->arrayInfo(), "What?");
-	    Assert (rsize == trhs->arrayInfo()->size(), "What?");
+	    //Assert (trhs->arrayInfo(), "What?");
+	    //Assert (rsize == trhs->arrayInfo()->size(), "What?");
 	    if (!rcx->a) {
 	      MALLOC (rcx->a, act_connection *, rsize);
 	      for (int i=0; i < rsize; i++) {

@@ -1189,7 +1189,12 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
     }
   }
   else {
-    offset = 0;
+    if (idx == -1) {
+      offset = 0;
+    }
+    else {
+      offset = idx;
+    }
   }
 
 #if 0
@@ -1199,7 +1204,7 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
   vx->t->Print (stderr);
   fprintf (stderr, "\n");
 
-  printf ("check: id=%d, offset=%d\n", vx->u.idx, offset);
+  printf ("check: id=%d, offset=%d, idx=%d\n", vx->u.idx, offset, idx);
 #endif  
 
   if (vx->immutable &&

@@ -307,8 +307,29 @@ int act_type_expr (Scope *s, Expr *e)
   case E_SELF:
     return T_SELF;
     break;
-
+    
+  case E_ARRAY:
+  case E_SUBRANGE:
+    {
+      ValueIdx *vx = (ValueIdx *) e->u.e.l;
+      int r;
+      if (TypeFactory::isPIntType (vx->t) ||
+	  TypeFactory::isPIntsType (vx->t)) {
+	r = T_INT;
+      }
+      else if (TypeFactory::isPRealType (vx->t)) {
+	r = T_REAL;
+      }
+      else if (TypeFactory::isPBoolType (vx->t)) {
+	r = T_BOOL;
+      }
+      else {
+	Assert (0, "Hmm");
+      }
+      return r|T_ARRAYOF;
+    }
   default:
+    fatal_error ("Unknown type!");
     typecheck_err ("`%d' is an unknown type for an expression", e->type);
     return T_ERR;
   }
@@ -488,6 +509,20 @@ InstType *act_expr_insttype (Scope *s, Expr *e)
   }
   else if (ret == (T_REAL|T_PARAM)) {
     return TypeFactory::Factory()->NewPReal ();
+  }
+  else if (ret & T_ARRAYOF) {
+    if (e->type == E_ARRAY) {
+      return ((ValueIdx *)e->u.e.l)->t;
+    }
+    else if (e->type == E_SUBRANGE) {
+      ValueIdx *vx = (ValueIdx *)e->u.e.l;
+      InstType *it = new InstType (vx->t, 1);
+      it->MkArray (((Array *)e->u.e.r->u.e.r)->Clone());
+      return it;
+    }
+    else {
+      fatal_error ("Not sure how we got here");
+    }
   }
   else {
     fatal_error ("Not sure what to do now");
@@ -695,13 +730,25 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
       tmp = new InstType (cur, 1);
       a = cur->arrayInfo ();
 
-      tmpa = new Array (const_expr (count));
+      if (expanded) {
+	Assert (cur->isExpanded(), "Hmm");
+	tmpa = new Array (0, count-1);
+      }
+      else {
+	tmpa = new Array (const_expr (count));
+      }
       tmpa->mkArray ();
 
       if (!a) {
 	a = tmpa;
       }
       else {
+	if (expanded) {
+	  Assert (a->isExpanded(), "Hmm");
+	}
+	else {
+	  Assert (!a->isExpanded(), "Hmm");
+	}
 	a = a->Clone ();
 	a->Concat (tmpa);
 	delete tmpa;
@@ -714,8 +761,13 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
     break;
 
   case AExpr::EXPR:
-    return act_expr_insttype (s, (Expr *)l);
-    break;
+    { InstType *it = act_expr_insttype (s, (Expr *)l);
+      if (expanded && it) {
+	it->mkExpanded();
+      }
+      return it;
+    }
+     break;
 
 #if 0
   case AExpr::SUBRANGE:
