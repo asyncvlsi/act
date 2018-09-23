@@ -431,18 +431,27 @@ int act_connection::numSubconnections()
   Assert (type == 0 || type == 1, "Hmm");
 
   if (type == 0 && _vx->t->arrayInfo()) {
-    //if (_vx->t->arrayInfo() && (type != 1)) {
     /* it is an array! */
     return _vx->t->arrayInfo()->size();
   }
   else {
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
+#if 0
     if  (!ux) {
+      printf ("Hmm... id is: ");
+      toid()->Print (stdout);
+      printf ("\n");
+      printf ("  +++ VX t is: ");
+      _vx->t->Print (stdout);
+      printf ("\n");
       return 0;
     }
+#endif      
     Assert (ux, "hmm...");
     return ux->getNumPorts ();
   }
+
+    
 }
 
 ValueIdx *act_connection::getvx()
@@ -1181,16 +1190,20 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  int ridx;
 	  ActId *rid;
 	  int rsize;
-	  
+
 	  done_conn = 1;
-	  
+
 	  lcx = id->Canonical (s);
 	  rhsstep->getID (&rid, &ridx, &rsize);
 	  rcx = rid->Canonical (s);
+
+#if 0
 	  if (ridx == -1) {
+#endif	    
 	    mk_connection (s->getUserDef(),
 			   id->getName(), lcx,
 			   rid->getName(), rcx);
+#if 0	    
 	  }
 	  else {
 	    //Assert (trhs->arrayInfo(), "What?");
@@ -1216,6 +1229,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 			   id->getName(), lcx,
 			   rid->getName(), rcx);
 	  }
+#endif
 	}
       }
       if (!done_conn) {
