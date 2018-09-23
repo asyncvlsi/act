@@ -139,6 +139,7 @@ int main (int argc, char **argv)
   config_read ("prs2net.conf");
 
   /* generate netlist */
+  config_set_int ("net.disable_keepers", 1);
   act_prs_to_netlist (a, NULL);
   netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   Assert (netmap, "Hmm...");
