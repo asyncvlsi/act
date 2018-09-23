@@ -299,6 +299,8 @@ wint_expr[Expr *]: int_expr
     tc = act_type_expr ($0->scope, e);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t");
+      print_expr ($f, e);
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
       exit (1);
     }

@@ -782,14 +782,14 @@ int InstType::isParamAType (int k)
 
 /*
   Return 1 if the type is expanded.
-  param types (except ptypes) are always expanded
+  simple param types (except ptypes) are always expanded
 */
 int InstType::isExpanded()
 {
   if (expanded) {
     return 1;
   }
-  if (TypeFactory::isParamType (this)) {
+  if (TypeFactory::isParamType (this) && !this->a) {
     if (!TypeFactory::isPTypeType (BaseType())) {
       return 1;
     }
