@@ -96,6 +96,7 @@ class InstType {
 
   int isExpanded();
   int israwExpanded() { return expanded; }
+  void mkExpanded() { expanded = 1; }
 
   ActNamespace *getNamespace() { return s->getNamespace(); }
   UserDef *getUserDef () { return s->getUserDef(); }

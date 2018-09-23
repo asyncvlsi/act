@@ -606,6 +606,10 @@ class TypeFactory {
   static int isChanType (Type *t);
   static int isChanType (InstType *it);
 
+  /* 1 only on Chan, not on userdefined channels */
+  static int isExactChanType (Type *t);
+  static int isExactChanType (InstType *it);
+
   /**
    * Determines if the specified type is a process type or not
    *
