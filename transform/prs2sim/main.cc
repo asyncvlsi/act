@@ -109,7 +109,7 @@ void g (void *x, ActId *prefix, Process *p)
       _print_node (N, fp, prefix, e->a);
       fprintf (fp, " ");
       _print_node (N, fp, prefix, e->b);
-      fprintf (fp, " %d %d\n", e->w, e->l);
+      fprintf (fp, " %d %d\n", e->l, e->w);
       e->visited = 1;
     }
   }
@@ -139,7 +139,7 @@ int main (int argc, char **argv)
   config_read ("prs2net.conf");
 
   /* generate netlist */
-  config_set_int ("net.disable_keepers", 1);
+  /*config_set_int ("net.disable_keepers", 1);*/
   act_prs_to_netlist (a, NULL);
   netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   Assert (netmap, "Hmm...");
