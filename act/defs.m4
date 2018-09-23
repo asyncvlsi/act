@@ -44,6 +44,7 @@ template_spec: [ "export" ] "template"
     $0->param_mode = 0;
     OPT_FREE ($1);
     $0->strict_checking = 1;
+    $0->scope = $0->u->CurScope ();
 }}
 "<" { param_inst ";" }* ">"
 {{X:
@@ -91,6 +92,8 @@ param_inst: param_type id_list
 	if (TypeFactory::isPTypeType (it->BaseType())) {
 	  $E("ptype parameters cannot be arrays!");
 	}
+	it = new InstType ($1, 1);
+	it->MkCached();
 	it->MkArray (r->u.array);
 	FREE (r);
       }
