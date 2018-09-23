@@ -1138,19 +1138,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       fatal_error ("Type-checking failed on connection");
     }
 
-#if 0
-      act_error_ctxt (stderr);
-      fprintf (stderr, "Connection: ");
-      ex->Print (stderr);
-      fprintf (stderr, " = ");
-      arhs->Print (stderr);
-      fprintf (stderr, "\n  LHS: ");
-      tlhs->Print (stderr);
-      fprintf (stderr, "\n  RHS: ");
-      trhs->Print (stderr);
-      fprintf (stderr, "\n");
-#endif
-
     if (TypeFactory::isParamType (tlhs)) {
       /* a parameter assignment */
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
