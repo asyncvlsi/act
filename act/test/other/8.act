@@ -1,0 +1,6 @@
+
+template <pint N>
+defproc foo (bool b)
+{
+  bool w[N+1], q[N+1];
+}

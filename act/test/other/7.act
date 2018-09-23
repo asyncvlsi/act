@@ -1,0 +1,5 @@
+
+template <pint N; pint d[N]>
+defproc foo (bool b)
+{
+}
