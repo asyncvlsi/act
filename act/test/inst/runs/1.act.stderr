@@ -1,4 +1,3 @@
-ERROR: File `1.act', line 5, col 6
-	Array instance for `x' is incompatible with previous instance of the same name
- prev: int<22>[10]
- here: int<>[10]
+Sparse array type error on x
+	Orig type: int<22>
+	New type: int<32>

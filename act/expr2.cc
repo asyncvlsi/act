@@ -163,6 +163,74 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
     break;
 
+  case E_ARRAY:
+  case E_SUBRANGE:
+    /* id evaluated to an array */
+    {
+      ValueIdx *vx = (ValueIdx *) e->u.e.l;
+      Scope *s;
+      Arraystep *as;
+      int first = 1;
+      int type;
+      
+      if (e->type == E_ARRAY) {
+	s = (Scope *) e->u.e.r;
+	as = vx->t->arrayInfo()->stepper();
+      }
+      else {
+	s = (Scope *) e->u.e.r->u.e.l;
+	as = vx->t->arrayInfo()->stepper ((Array *)e->u.e.r->u.e.r);
+      }
+
+      if (TypeFactory::isPIntType (vx->t)) {
+	type = 0;
+      }
+      else if (TypeFactory::isPRealType (vx->t)) {
+	type = 1;
+      }
+      else if (TypeFactory::isPBoolType (vx->t)) {
+	type = 2;
+      }
+      else if (TypeFactory::isPIntsType (vx->t)) {
+	type = 3;
+      }
+      else {
+	Assert (0, "E_ARRAY/SUBARRAY on non-params?");
+      }
+
+      snprintf (buf+k, sz, "{");
+      PRINT_STEP;
+      while (!as->isend()) {
+	if (!first) {
+	  snprintf (buf+k, sz, ",");
+	  k++, sz--;
+	}
+	first = 0;
+	if (type == 0) {
+	  Assert (s->issetPInt (vx->u.idx + as->index()), "Hmm");
+	  snprintf (buf+k, sz, "%lu", s->getPInt (vx->u.idx + as->index()));
+	}
+	else if (type == 1) {
+	  Assert (s->issetPReal (vx->u.idx + as->index()), "Hmm");
+	  snprintf (buf+k, sz, "%g", s->getPReal (vx->u.idx + as->index()));
+	}
+	else if (type == 2) {
+	  Assert (s->issetPBool (vx->u.idx + as->index()), "Hmm");
+	  snprintf (buf+k, sz, "%d", s->getPBool (vx->u.idx + as->index()));
+	}
+	else if (type == 3) {
+	  Assert (s->issetPInts (vx->u.idx + as->index()), "Hmm");
+	  snprintf (buf+k, sz, "%ld", s->getPInts (vx->u.idx + as->index()));
+	}
+	PRINT_STEP;
+	as->step();
+      }
+      snprintf (buf+k, sz, "}");
+      PRINT_STEP;
+      delete as;
+    }
+    break;
+
   case E_FUNCTION:
   case E_BITFIELD:
   default:
@@ -325,6 +393,122 @@ int expr_equal (Expr *a, Expr *b)
     return 1;
     break;
 
+  case E_ARRAY:
+  case E_SUBRANGE:
+    {
+      ValueIdx *vxa = (ValueIdx *) a->u.e.l;
+      ValueIdx *vxb = (ValueIdx *) b->u.e.l;
+      Scope *sa, *sb;
+      Arraystep *asa, *asb;
+      int type;
+      
+      if (a->type == E_ARRAY) {
+	sa = (Scope *) a->u.e.r;
+	sb = (Scope *) b->u.e.r;
+	asa = vxa->t->arrayInfo()->stepper();
+	asb = vxb->t->arrayInfo()->stepper();
+      }
+      else {
+	sa = (Scope *) a->u.e.r->u.e.l;
+	sb = (Scope *) b->u.e.r->u.e.l;
+	asa = vxa->t->arrayInfo()->stepper ((Array *)a->u.e.r->u.e.r);
+	asb = vxb->t->arrayInfo()->stepper ((Array *)b->u.e.r->u.e.r);
+      }
+
+      if (TypeFactory::isPIntType (vxa->t)) {
+	if (!TypeFactory::isPIntType (vxb->t)) {
+	  delete asa;
+	  delete asb;
+	  return 0;
+	}
+	type = 0;
+      }
+      else if (TypeFactory::isPRealType (vxa->t)) {
+	if (!TypeFactory::isPRealType (vxb->t)) {
+	  delete asa;
+	  delete asb;
+	  return 0;
+	}
+	type = 1;
+      }
+      else if (TypeFactory::isPBoolType (vxa->t)) {
+	if (!TypeFactory::isPBoolType (vxb->t)) {
+	  delete asa;
+	  delete asb;
+	  return 0;
+	}
+	type = 2;
+      }
+      else if (TypeFactory::isPIntsType (vxa->t)) {
+	if (!TypeFactory::isPIntsType (vxb->t)) {
+	  delete asa;
+	  delete asb;
+	  return 0;
+	}
+	type = 3;
+      }
+      else {
+	Assert (0, "E_ARRAY/SUBARRAY on non-params?");
+      }
+      while (!asa->isend()) {
+	if (asb->isend()) {
+	  delete asa;
+	  delete asb;
+	  return 0;
+	}
+	if (type == 0) {
+	  Assert (sa->issetPInt (vxa->u.idx + asa->index()), "Hmm");
+	  Assert (sb->issetPInt (vxb->u.idx + asb->index()), "Hmm");
+	  if (sa->getPInt (vxa->u.idx + asa->index()) !=
+	      sb->getPInt (vxb->u.idx + asb->index())) {
+	    delete asa;
+	    delete asb;
+	    return 0;
+	  }
+	}
+	else if (type == 1) {
+	  Assert (sa->issetPReal (vxa->u.idx + asa->index()), "Hmm");
+	  Assert (sb->issetPReal (vxb->u.idx + asb->index()), "Hmm");
+	  if (sa->getPReal (vxa->u.idx + asa->index()) !=
+	      sb->getPReal (vxb->u.idx + asb->index())) {
+	    delete asa;
+	    delete asb;
+	    return 0;
+	  }
+	}
+	else if (type == 2) {
+	  Assert (sa->issetPBool (vxa->u.idx + asa->index()), "Hmm");
+	  Assert (sb->issetPBool (vxb->u.idx + asb->index()), "Hmm");
+	  if (sa->getPBool (vxa->u.idx + asa->index()) !=
+	      sb->getPBool (vxb->u.idx + asb->index())) {
+	    delete asa;
+	    delete asb;
+	    return 0;
+	  }
+	}
+	else if (type == 3) {
+	  Assert (sa->issetPInts (vxa->u.idx + asa->index()), "Hmm");
+	  Assert (sb->issetPInts (vxb->u.idx + asb->index()), "Hmm");
+	  if (sa->getPInts (vxa->u.idx + asa->index()) !=
+	      sb->getPInts (vxb->u.idx + asb->index())) {
+	    delete asa;
+	    delete asb;
+	    return 0;
+	  }
+	}
+	asa->step();
+	asb->step();
+      }
+      if (!asb->isend()) {
+	delete asa;
+	delete asb;
+	return 0;
+      }
+      delete asa;
+      delete asb;
+      return 1;
+    }
+    break;
     
   default:
     fatal_error ("Unknown expression type?");
@@ -828,7 +1012,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret = tmp;
     
     break;
-    
+
+#if 0
+  case E_ARRAY:
+  case E_SUBRANGE:
+    ret->u = e->u;
+    break;
+#endif
+
   default:
     fatal_error ("Unknown expression type!");
     break;

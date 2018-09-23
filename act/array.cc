@@ -1062,6 +1062,9 @@ int AExprstep::isend()
   if (type == 0 && !cur && stack_isempty (stack)) {
     return 1;
   }
+  if (type == 3 && (!u.vx.a || u.vx.a->isend())) {
+    return 1;
+  }
   return 0;
 }
 
@@ -1547,10 +1550,16 @@ ActId *AExpr::toid ()
 
 int AExprstep::isSimpleID ()
 {
+  ActId *xid;
   if (type != 2) return 0;
 
+  xid = u.id.act_id;
+  while (xid->Rest()) {
+    xid = xid->Rest();
+  }
+
   if (!u.id.a
-      || (u.id.act_id->arrayInfo() && u.id.act_id->arrayInfo()->isDeref())) {
+      || (xid->arrayInfo() && xid->arrayInfo()->isDeref())) {
     return 1;
   }
 
