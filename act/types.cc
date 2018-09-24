@@ -1149,6 +1149,11 @@ int UserDef::isPort (const  char *s)
       return 1;
     }
   }
+  for (i=0; i < nt; i++) {
+    if (strcmp (s, pn[i]) == 0) {
+      return 1;
+    }
+  }
   return 0;
 }
 
