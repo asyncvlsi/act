@@ -1138,6 +1138,21 @@ int UserDef::isStrictPort (const  char *s)
   return 0;
 }
 
+int UserDef::isPort (const  char *s)
+{
+  int i;
+
+  /*printf ("mt = %d, nt = %d [%x]\n", mt, nt, this);*/
+
+  for (i=0; i < nports; i++) {
+    if (strcmp (s, port_n[i]) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+
 Data::Data (UserDef *u) : UserDef (*u)
 {
   /* copy over userdef */

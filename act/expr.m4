@@ -189,6 +189,12 @@ expr_id[ActId *]: { base_id "." }*
 	fprintf ($f, "\n");
 	exit (1);
       }
+      else {
+	if (!ud->isPort (((ActId *)list_value (li))->getName())) {
+	  $E("``%s'' is not a port for ``%s''", ((ActId *)list_value (li))->getName(),
+	     ud->getName());
+	}
+      }
       cur->Append ((ActId *)list_value (li));
       cur = (ActId *) list_value (li);
     }
