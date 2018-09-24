@@ -1184,13 +1184,10 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  rhsstep->getID (&rid, &ridx, &rsize);
 	  rcx = rid->Canonical (s);
 
-#if 0
 	  if (ridx == -1) {
-#endif	    
 	    mk_connection (s->getUserDef(),
 			   id->getName(), lcx,
 			   rid->getName(), rcx);
-#if 0	    
 	  }
 	  else {
 	    //Assert (trhs->arrayInfo(), "What?");
@@ -1216,7 +1213,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 			   id->getName(), lcx,
 			   rid->getName(), rcx);
 	  }
-#endif
 	}
       }
       if (!done_conn) {

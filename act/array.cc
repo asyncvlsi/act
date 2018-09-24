@@ -1010,14 +1010,21 @@ void AExprstep::step()
 	    /* not an array */
 	  }
 	  else {
-	    /* array reference */
-	    if (!u.id.act_id->arrayInfo()) {
+	    ActId *leaf;
+	    leaf = u.id.act_id;
+	    while (leaf->Rest()) leaf = leaf->Rest();
+	    if (!leaf->arrayInfo()) {
 	      /* dense array */
 	      u.id.a = it->arrayInfo()->stepper();
 	    }
 	    else {
-	      /* sparse array */
-	      u.id.a = it->arrayInfo()->stepper (u.id.act_id->arrayInfo());
+	      if (leaf->arrayInfo()->isDeref()) {
+		u.id.a = NULL;
+	      }
+	      else {
+		/* sparse array */
+		u.id.a = it->arrayInfo()->stepper (leaf->arrayInfo());
+	      }
 	    }
 	  }
 	}
