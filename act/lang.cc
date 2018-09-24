@@ -226,6 +226,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
       else {
 	FREE (ret);
 	ret = NULL;
+
 	for (i=ilo; i <= ihi; i++) {
 	  act_prs_expr_t *at;
 
@@ -275,6 +276,22 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	    else {
 	      /* nothing */
 	    }
+	  }
+	  else {
+	    /* ok now & and | combine! */
+	    act_prs_expr_t *tmp;
+	    NEW (tmp, act_prs_expr_t);
+	    tmp->u.e.l = ret;
+	    tmp->u.e.r = at;
+	    tmp->u.e.pchg = NULL;
+	    tmp->u.e.pchg_type = -1;
+	    if (p->type == ACT_PRS_EXPR_ANDLOOP) {
+	      tmp->type = ACT_PRS_EXPR_AND;
+	    }
+	    else {
+	      tmp->type = ACT_PRS_EXPR_OR;
+	    }
+	    ret= tmp;
 	  }
 	}
 	if (ret == NULL) {
