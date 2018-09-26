@@ -229,12 +229,27 @@ static void _flat_connections_bool (ValueIdx *vx)
 
       ActId *id1, *id2;
       ActId *tail1, *tail2;
+      ActId *hd1, *hd2, *tl1, *tl2;
+
+      if (!is_global) {
+	hd1 = prefix_to_id (&tl1);
+	hd2 = prefix_to_id (&tl2);
+      }
+      else {
+	hd1 = NULL;
+	hd2 = NULL;
+      }
 
       id1 = c->toid();
       id2 = tmp->toid();
 
       tail1 = tailid (id1);
       tail2 = tailid (id2);
+
+      if (hd1 && hd2) {
+	tl1->Append (id1);
+	tl2->Append (id2);
+      }
 
       while (!s1->isend()) {
 	Array *a1, *a2;
@@ -246,7 +261,12 @@ static void _flat_connections_bool (ValueIdx *vx)
 	tail1->setArray (a1);
 	tail2->setArray (a2);
 
-	(*g_apply_fn) (g_cookie, id1, id2);
+	if (hd1 && hd2) {
+	  (*g_apply_fn) (g_cookie, hd1, hd2);
+	}
+	else {
+	  (*g_apply_fn) (g_cookie, id1, id2);
+	}
 
 	delete a1;
 	delete a2;
@@ -258,38 +278,62 @@ static void _flat_connections_bool (ValueIdx *vx)
       Assert (s2->isend(), "Hmm...");
       delete s1;
       delete s2;
-
       tail1->setArray (NULL);
       tail2->setArray (NULL);
-
       delete id1;
       delete id2;
-      
+
+      if (hd1 && hd2) {
+	tl1->prune();
+	tl2->prune();
+	nullify_arrays (hd1);
+	nullify_arrays (hd2);
+	delete hd1;
+	delete hd2;
+      }
     }
     else {
       ActId *head1, *tail1;
       ActId *head2, *tail2;
       ActId *id1, *id2;
 
-      head1 = prefix_to_id (&tail1);
-      head2 = prefix_to_id (&tail2);
+      if (is_global) {
+	head1 = NULL;
+	head2 = NULL;
+      }
+      else {
+	head1 = prefix_to_id (&tail1);
+	head2 = prefix_to_id (&tail2);
+      }
       
       id1 = c->toid();
-      tail1->Append (id1);
+
+      if (head1) {
+	tail1->Append (id1);
+      }
       
       id2 = tmp->toid();
-      tail2->Append (id2);
-      (*g_apply_fn) (g_cookie, head1, head2);
+      if (head2) {
+	tail2->Append (id2);
+      }
 
-      tail1->prune();
-      tail2->prune();
-      nullify_arrays (head1);
-      nullify_arrays (head2);
-      
+      if (head1) {
+	(*g_apply_fn) (g_cookie, head1, head2);
+      }
+      else {
+	(*g_apply_fn) (g_cookie, id1, id2);
+      }
+
+      if (head1) {
+	tail1->prune();
+	tail2->prune();
+	nullify_arrays (head1);
+	nullify_arrays (head2);
+	delete head1;
+	delete head2;
+      }
       delete id1;
       delete id2;
-      delete head1;
-      delete head2;
     }
   }
 
@@ -301,8 +345,22 @@ static void _flat_connections_bool (ValueIdx *vx)
 
       ActConniter iter2(d);
       ActId *id1, *id2;
+      ActId *hd1, *hd2, *tl1, *tl2;
+
+      if (is_global) {
+	hd1 = NULL;
+	hd2 = NULL;
+      }
+      else {
+	hd1 = prefix_to_id (&tl1);
+	hd2 = prefix_to_id (&tl2);
+      }
 
       id1 = d->toid();
+
+      if (hd1) {
+	tl1->Append (id1);
+      }
 
       for (iter2 = iter2.begin(); iter2 != iter2.end(); iter2++) {
 
@@ -314,8 +372,14 @@ static void _flat_connections_bool (ValueIdx *vx)
 	if (ig != is_global) continue;
 
 	id2 = tmp->toid();
-	(*g_apply_fn) (g_cookie, id1, id2);
-
+	if (hd2) {
+	  tl2->Append (id2);
+	  (*g_apply_fn) (g_cookie, hd1, hd2);
+	  tl2->prune();
+	}
+	else {
+	  (*g_apply_fn) (g_cookie, id1, id2);
+	}
 	delete id2;
       }
       delete id1;
