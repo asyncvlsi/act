@@ -522,7 +522,7 @@ static void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
     ValueIdx *vx = (*inst);
     if (TypeFactory::isParamType (vx->t)) continue;
       
-    if (!vx->isPrimary()) continue;
+    //if (!vx->isPrimary()) continue;
     
     if (TypeFactory::isUserType (vx->t)) {
       UserDef *rux = dynamic_cast<UserDef *>(vx->t->BaseType());
