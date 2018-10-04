@@ -292,7 +292,8 @@ void print_walker_main (pp_t *pp)
   END_INDENT;
   pp_puts (pp, "}");
   pp_nl;
-
+  pp_puts (pp, "exit (1);");
+  pp_nl;
   END_INDENT;
   pp_puts (pp, "}");
   pp_nl;
@@ -544,6 +545,8 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
     if (is_user_ret_ptr (&BNF[i])) {
       pp_nl; pp_puts (pp, "return NULL;");
     }
+    pp_puts (pp, "exit (1);");
+    pp_nl;
     END_INDENT;
     pp_puts (pp, "}");
     pp_nl;

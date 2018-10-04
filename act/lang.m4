@@ -201,9 +201,16 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
 {{X:
     act_chp_lang_t *c;
 
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_SEMI;
-    c->u.semi_comma.cmd = $1;
+    if (list_length ($1) > 1) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_SEMI;
+      c->u.semi_comma.cmd = $1;
+    }
+    else {
+      $A(list_length ($1) == 1);
+      c = (act_chp_lang_t *) list_value (list_first ($1));
+      list_free ($1);
+    }
     return c;
 }}
 ;
@@ -212,9 +219,16 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 {{X:
     act_chp_lang_t *c;
 
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_COMMA;
-    c->u.semi_comma.cmd = $1;
+    if (list_length ($1) > 1) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_COMMA;
+      c->u.semi_comma.cmd = $1;
+    }
+    else {
+      $A(list_length ($1) == 1);
+      c = (act_chp_lang_t *) list_value (list_first ($1));
+      list_free ($1);
+    }
     return c;
 }}
 ;
@@ -440,7 +454,10 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body "]"
 }}
 | "*[" { guarded_cmd "[]" }* "]"
 {{X:
-    return apply_X_select_stmt_opt0 ($0, $2);
+    act_chp_lang_t *c;
+    c = apply_X_select_stmt_opt0 ($0, $2);
+    c->type = ACT_CHP_LOOP;
+    return c;
 }}
 ;
 
