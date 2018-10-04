@@ -87,16 +87,15 @@ class Int : public Type {
 };
 
 /**
- * Chan class. Paramterized chan(...) type
+ * Chan class. Paramterized chan(foo) type
  */
 class Chan : public Type {
   const char *getName ();
-  Chan *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  Chan *Expand (ActNamespace *ns, Scope *s, int, inst_param *);
 
   /* type info here */
   const char *name;
-  int n;			//  # of types
-  InstType **p;			// port types
+  InstType *p;			// port
 
   friend class TypeFactory;
 };
@@ -286,6 +285,8 @@ class UserDef : public Type {
 
   ActNamespace *getns() { return _ns; }
 
+  InstType *root();
+
  protected:
   InstType *parent;		/**< Sub-typing relationship, if any */
   unsigned int parent_eq:1;	/**< 1 if this is an equality, 0 if it
@@ -366,6 +367,15 @@ class Function : public UserDef {
 };
 
 
+enum datatype_methods {
+    ACT_METHOD_SET = 0,
+    ACT_METHOD_GET = 1,
+    ACT_METHOD_SEND_REST = 2,
+    ACT_METHOD_RECV_REST = 3,
+    ACT_METHOD_SEND_PROBE = 4,
+    ACT_METHOD_RECV_PROBE = 5
+};
+
 /**
  *
  * User-defined data types
@@ -379,10 +389,10 @@ class Data : public UserDef {
   void MkEnum () { is_enum = 1; }
   int isEnum () { return is_enum; }
 
-  void setMethodset (struct act_chp_lang *h) { set = h; }
-  struct act_chp_lang *getMethodset () { return set; }
-  void setMethodget (struct act_chp_lang *h) { get = h; }
-  struct act_chp_lang *getMethodget () { return get; }
+  void setMethod (datatype_methods t, struct act_chp_lang *h) {
+    methods[t] = h;
+  }
+  struct act_chp_lang *getMethod (datatype_methods t) { return methods[t]; }
  
   Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
@@ -390,7 +400,7 @@ class Data : public UserDef {
 
 private:
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
-  struct act_chp_lang *set, *get;   /**< set and get methods for this data type */
+  struct act_chp_lang *methods[2]; /**< set and get methods for this data type */
 };
 
 class Channel : public UserDef {
@@ -398,18 +408,15 @@ class Channel : public UserDef {
   Channel (UserDef *u);
   ~Channel();
   
-  void setMethodsend (act_chp_lang *h) { send = h; }
-  act_chp_lang *getMethodsend() { return send; }
-
-  void setMethodrecv (act_chp_lang *h) { recv = h; }
-  act_chp_lang *getMethodrecv() { return recv; }
+  void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
+  act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
   void Print (FILE *fp);
   
  private:
-  struct act_chp_lang *send, *recv;
+  struct act_chp_lang *methods[6];
 };
 
 class TypeFactory {
@@ -542,8 +549,8 @@ class TypeFactory {
    * the channel
    * \return a unique pointer to the specified channel type
    */
-  InstType *NewChan (Scope *s, Type::direction dir, int n, InstType **l);
-  Chan *NewChan (int n, InstType **l);
+  InstType *NewChan (Scope *s, Type::direction dir, InstType *l);
+  Chan *NewChan (InstType *l);
 
   /**
    * Returns a unique pointer to the instance type specified

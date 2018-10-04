@@ -112,7 +112,7 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" wint_expr ">" ]
     return $0->tf->NewEnum ($0->scope, d, $4);
 }};
 
-chan_type[InstType *]: "chan" [ chan_dir ] "(" { data_type "," }* ")"
+chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")"
 {{X:
     ActRet *r;
     Type::direction d;
@@ -130,21 +130,13 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" { data_type "," }* ")"
       d = Type::NONE;
     }
     OPT_FREE ($2);
-    for (li = list_first ($4); li; li = list_next (li)) {
-      c++;
-    }
-    $A(c > 0);
-    InstType **t;
+    InstType *t = $4;
 
-    MALLOC (t, InstType *, c);
-
-    c = 0;
-    for (li = list_first ($4); li; li = list_next (li)) {
-      t[c++] = (InstType *) list_value (li);
+    if (!TypeFactory::isDataType (t)) {
+      $E("Channels can only send/receive data.");
     }
-    ret = $0->tf->NewChan ($0->scope, d, c, t);
+    ret = $0->tf->NewChan ($0->scope, d, t);
     FREE (t);
-    list_free ($4);
     return ret;
 }}
 ;

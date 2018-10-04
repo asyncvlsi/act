@@ -1418,13 +1418,13 @@ void emit_parse_functions (pp_t *pp)
       else {
 	if (BNF[i].is_exclusive) {
 	  pp_printf (pp, "/*EXCL*/");
-	  pp_printf (pp, "if (");
+	  pp_printf (pp, "if ((");
 	}
 	else {
-	  pp_printf (pp, "if ((*opt <= %d) && ", j);
+	  pp_printf (pp, "if ((*opt <= %d) && (", j);
 	}
 	emit_bexpr_for_typematch (pp, &BNF[i].a[j], 0);
-	pp_puts (pp, ") { ");
+	pp_puts (pp, ")) { ");
       }
       BEGIN_INDENT;
 
@@ -2011,13 +2011,13 @@ void emit_parser (void)
   pp_nl;
   pp_nl;
   if (found_expr) {
-    pp_puts (pp, "static int is_expr_parse_bool (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_bool (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
+    pp_puts (pp, "static int is_expr_parse_bool (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_bool (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
-    pp_puts (pp, "static int is_expr_parse_int (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_int (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
+    pp_puts (pp, "static int is_expr_parse_int (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_int (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
-    pp_puts (pp, "static int is_expr_parse_real (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_real (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
+    pp_puts (pp, "static int is_expr_parse_real (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_real (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
-    pp_puts (pp, "static int is_expr_parse_any (LFILE *l) { Expr *e; file_push_position (l); if (e = expr_parse_any (l)) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
+    pp_puts (pp, "static int is_expr_parse_any (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_any (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
     pp_puts (pp, "static Node_expr_id *parse_a_expr__id (LFILE *l) { int opt = 0; Node_expr_id *e = NULL; while (opt != -1 && !e) { e = parse_a_expr_id (l, &opt); } return e; }");
     pp_nl;

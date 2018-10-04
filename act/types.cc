@@ -554,8 +554,7 @@ void TypeFactory::intfreefn (void *key)
 struct chanhashkey {
   Scope *s;
   Type::direction d;
-  int ntypes;			// number of types
-  InstType **t;			// array of types
+  InstType *t;			// type
 };
 
 
@@ -570,11 +569,7 @@ int TypeFactory::chanhashfn (int sz, void *key)
   v = hash_function_continue
     (sz, (const unsigned char *) &ch->d, sizeof (Type::direction), v, 1);
   v = hash_function_continue
-    (sz, (const unsigned char *) &ch->ntypes, sizeof (int), v, 1);
-  for (i=0; i < ch->ntypes; i++) {
-    v = hash_function_continue
-      (sz, (const unsigned char *) ch->t[i], sizeof (Type *), v, 1);
-  }
+    (sz, (const unsigned char *) &ch->t, sizeof (InstType *), v, 1);
   return v;
 }
 
@@ -586,10 +581,7 @@ int TypeFactory::chanmatchfn (void *key1, void *key2)
 
   if (c1->s != c2->s) return 0;
   if (c1->d != c2->d) return 0;
-  if (c1->ntypes != c2->ntypes) return 0;
-  for (int i=0; i < c1->ntypes; i++) {
-    if (c1->t[i] != c2->t[i]) return 0;
-  }
+  if (c1->t != c2->t) return 0;
   return 1;
 }
 
@@ -601,31 +593,25 @@ void *TypeFactory::chandupfn (void *key)
 
   cret->s = c->s;
   cret->d = c->d;
-  cret->ntypes = c->ntypes;
-  cret->t = new InstType *[cret->ntypes];
-  for (int i=0; i < cret->ntypes; i++) {
-    cret->t[i] = c->t[i];
-  }
+  cret->t = c->t;
   return cret;
 }
 
 void TypeFactory::chanfreefn (void *key)
 {
   struct chanhashkey *c = (struct chanhashkey *)key;
-  delete c->t;
   delete c;
 }
 
 
 
-Chan *TypeFactory::NewChan (int n, InstType **l)
+Chan *TypeFactory::NewChan (InstType *l)
 {
   struct chanhashkey c;
   chash_bucket_t *b;
   
   c.s = NULL;
   c.d = Type::NONE;
-  c.ntypes = n;
   c.t = l;
   b = chash_lookup (chanhash, &c);
   if (!b) {
@@ -633,20 +619,16 @@ Chan *TypeFactory::NewChan (int n, InstType **l)
     
     b = chash_add (chanhash, &c);
     cx = new Chan();
-    cx->n = n;
     cx->name = NULL;
     cx->p = l;
+    l->MkCached();
 
-    for (int i=0; i < n; i++) {
-      l[i]->MkCached();
-    }
-    
     b->v = cx;
   }
   return (Chan *)b->v;
 }
 
-InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, int n, InstType **l)
+InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l)
 {
   struct chanhashkey c;
   chash_bucket_t *b;
@@ -654,26 +636,21 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, int n, InstType *
 
   if (!_c) {
     _c = new Chan();
-    _c->n = -1;
     _c->p = NULL;
     _c->name = NULL;
   }
 
   c.s = s;
   c.d = dir;
-  c.ntypes = n;
   c.t = l;
 
   b = chash_lookup (chanhash, &c);
   if (!b) {
     InstType *ch = new InstType (s, _c, 0);
 
-    ch->setNumParams (n);
-    for (int i=0; i < n; i++) {
-      ch->setParam (i, l[i]);
-    }
+    ch->setNumParams (1);
+    ch->setParam (0, l);
     ch->SetDir (dir);
-
     b = chash_add (chanhash, &c);
     b->v = ch;
   }
@@ -692,7 +669,6 @@ InstType *TypeFactory::NewPType (Scope *s, InstType *t)
   static PType *_t = NULL;
   chash_bucket_t *b;
   struct chanhashkey c;
-  InstType *it[1];
 
   if (_t == NULL) {
     _t = new PType();
@@ -700,9 +676,7 @@ InstType *TypeFactory::NewPType (Scope *s, InstType *t)
 
   c.s = s;
   c.d = Type::NONE;
-  c.ntypes = 1;
-  it[0] = t;
-  c.t = it;
+  c.t = t;
 
   b = chash_lookup (ptypehash, &c);
 
@@ -727,9 +701,7 @@ PType *TypeFactory::NewPType (InstType *t)
 
   c.s = NULL;
   c.d = Type::NONE;
-  c.ntypes = 1;
-  it[0] = t;
-  c.t = it;
+  c.t = t;
 
   b = chash_lookup (ptypehash, &c);
 
@@ -1160,11 +1132,14 @@ int UserDef::isPort (const  char *s)
 
 Data::Data (UserDef *u) : UserDef (*u)
 {
+  int i;
   /* copy over userdef */
   is_enum = 0;
   b = NULL;
-  set = NULL;
-  get = NULL;
+
+  for (i=0; i < 2; i++) {
+    methods[i] = NULL;
+  }
 
   MkCopy (u);
 }
@@ -1176,10 +1151,13 @@ Data::~Data()
 
 Channel::Channel (UserDef *u) : UserDef (*u)
 {
+  int i;
   /* copy over userdef */
   b = NULL;
-  send = NULL;
-  recv = NULL;
+
+  for (i=0; i < 6; i++) {
+    methods[i] = NULL;
+  }
   MkCopy (u);
 }
 
@@ -1859,6 +1837,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Data *xd;
   UserDef *ux;
   int cache_hit;
+  int i;
 
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
 
@@ -1872,8 +1851,9 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (ns->EditType (xd->name, xd) == 1, "What?");
   xd->is_enum = is_enum;
 
-  xd->set = chp_expand (set, ns, s);
-  xd->get = chp_expand (get, ns, s);
+  for (i=0; i < 2; i++) {
+    xd->methods[i] = chp_expand (methods[i], ns, s);
+  }
   
   return xd;
 }
@@ -1883,6 +1863,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Channel *xc;
   UserDef *ux;
   int cache_hit;
+  int i;
 
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
 
@@ -1895,9 +1876,10 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (ns->EditType (xc->name, xc) == 1, "What?");
 
-  xc->send = chp_expand (send, ns, s);
-  xc->recv = chp_expand (recv, ns, s);
-  
+  for (i=0; i < 6; i++) {
+    xc->methods[i] = chp_expand (methods[i], ns, s);
+  }
+
   return xc;
 }
 
@@ -2102,18 +2084,10 @@ const char *Chan::getName ()
   char buf[10240];
   if (name) return name;
   
-  if (n == -1) {
-    name = "chan";
-  }
-  else {
-    sprintf (buf, "chan<");
-    for (int i=0; i < n; i++) {
-      if (i != 0) { strcat (buf, ","); }
-      p[i]->sPrint (buf+strlen (buf), 10239-strlen(buf));
-    }
-    strcat (buf, ">");
-    name = Strdup (buf);
-  }
+  sprintf (buf, "chan<");
+  p->sPrint (buf+strlen (buf), 10239-strlen(buf));
+  strcat (buf, ">");
+  name = Strdup (buf);
   return name;
 }
 
@@ -2124,30 +2098,21 @@ Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   InstType *xp;
   struct chanhashkey c;
   chash_bucket_t *b;
-  InstType **cp;
-  
-  Assert (nt > 0, "What?");
+  InstType *cp;
 
-  MALLOC (cp, InstType *, nt);
-
-  for (int i=0; i < nt; i++) {
-    xp = u[i].tt->Expand (ns, s);
-    if (TypeFactory::isParamType (xp)) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, "Parameter %d to channel type is not a datatype\n", i);
-      fprintf (stderr, " parameter: ");
-      xp->Print (stderr);
-      fprintf (stderr, "\n");
-      exit (1);
-    }
-    cp[i] = xp;
+  Assert (nt == 1, "Hmm");
+  cp = u[0].tt->Expand (ns, s);
+  if (TypeFactory::isParamType (cp)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Parameter to channel type is not a datatype\n");
+    fprintf (stderr, " parameter: ");
+    cp->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
   }
-  cx = TypeFactory::Factory()->NewChan (nt, cp);
+  cx = TypeFactory::Factory()->NewChan (cp);
   if (cx->p != cp) {
-    for (int i=0; i < nt; i++) {
-      delete cp[i];
-    }
-    FREE (cp);
+    delete cp;
   }
   return cx;
 }
@@ -2248,7 +2213,18 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   }
   fprintf (fp, ")\n");
 }
-    
+
+InstType *UserDef::root ()
+{
+  if (!parent) {
+    return NULL;
+  }
+  if (TypeFactory::isUserType (parent)) {
+    UserDef *ux = dynamic_cast<UserDef *> (parent->BaseType());
+    return ux->root();
+  }
+  return parent;
+}
 
 void Process::Print (FILE *fp)
 {
