@@ -57,6 +57,7 @@ template_spec: [ "export" ] "template"
     $A($0->u == NULL);
     $0->u = new UserDef ($0->curns);
     $0->u->MkExported();
+    return NULL;
 }}
 ;
 
@@ -218,7 +219,7 @@ def_or_proc ID
     /* Create type here */
     UserDef *u;
 
-    if (u = $0->curns->findType ($3)) {
+    if ((u = $0->curns->findType ($3))) {
       /* check if the type signature is identical */
       if (u->isEqual ($0->u_p)) {
 	delete $0->u_p;
@@ -459,6 +460,7 @@ defdata: [ template_spec ]
 }}
 is_a physical_inst_type
 {{X:
+    InstType *ir;
     /* parent type cannot be
        - process
        - channel
@@ -472,15 +474,31 @@ is_a physical_inst_type
       $E("A data type cannot be related to a channel");
     }
     if (TypeFactory::isUserType ($5->BaseType ())) {
-      $0->scope->Merge (dynamic_cast<UserDef *>($5->BaseType ())->CurScope ());
+      UserDef *u;
+      u = dynamic_cast<UserDef *>($5->BaseType());
+
+      /* we need to add parameters */
+
+      $0->scope->Merge (u->CurScope ());
+      ir = u->root();
     }
+    else {
+      ir = $5;
+    }
+    if (!ir) {
+      $E("Cannot find root built-in type");
+    }
+    $A(!TypeFactory::isUserType (ir));
+
+    $0->scope->Add ("this", ir);
+
     $0->u_d->SetParent ($5, $4);
 }}
 [ "("  port_formal_list ")" ]
 {{X:
     UserDef *u;
 
-    if (u = $0->curns->findType ($3)) {
+    if ((u = $0->curns->findType ($3))) {
       if (u->isEqual ($0->u_d)) {
 	delete $0->u_d;
 	$0->u_d = dynamic_cast<Data *>(u);
@@ -560,16 +578,16 @@ one_method: ID "{" hse_body "}"
     if ($0->u_d) {
       /* data methods */
       if (strcmp ($1, "set") == 0) {
-	if ($0->u_d->getMethodset()) {
+	if ($0->u_d->getMethod(ACT_METHOD_SET)) {
 	  $E("Duplicate ``set'' method");
 	}
-	$0->u_d->setMethodset ($3);
+	$0->u_d->setMethod (ACT_METHOD_SET, $3);
       }
       else if (strcmp ($1, "get") == 0) {
-	if ($0->u_d->getMethodget()) {
+	if ($0->u_d->getMethod(ACT_METHOD_GET)) {
 	  $E("Duplicate ``get'' method");
 	}
-	$0->u_d->setMethodget ($3);
+	$0->u_d->setMethod (ACT_METHOD_GET, $3);
       }
       else {
 	$E("Method ``%s'' is not supported", $1);
@@ -577,17 +595,49 @@ one_method: ID "{" hse_body "}"
     }
     else if ($0->u_c) {
       /* channel methods */
-      if (strcmp ($1, "send") == 0) {
-	if ($0->u_c->getMethodsend()) {
-	  $E("Duplicate ``send'' method");
+      if (strcmp ($1, "set") == 0) {
+	if ($0->u_c->getMethod(ACT_METHOD_SET)) {
+	  $E("Duplicate ``set'' method");
 	}
-	$0->u_c->setMethodsend ($3);
+	$0->u_c->setMethod (ACT_METHOD_SET, $3);
       }
-      else if (strcmp ($1, "recv") == 0) {
-	if ($0->u_c->getMethodrecv()) {
-	  $E("Duplicate ``recv'' method");
+      else if (strcmp ($1, "get") == 0) {
+	if ($0->u_c->getMethod(ACT_METHOD_GET)) {
+	  $E("Duplicate ``get'' method");
 	}
-	$0->u_c->setMethodrecv ($3);
+	$0->u_c->setMethod (ACT_METHOD_GET, $3);
+      }
+      else if (strcmp ($1, "send_rest") == 0) {
+	if ($0->u_c->getMethod (ACT_METHOD_SEND_REST)) {
+	  $E("Duplicate ``send_rest'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_SEND_REST, $3);
+	}
+      }
+      else if (strcmp ($1, "recv_rest") == 0) {
+	if ($0->u_c->getMethod (ACT_METHOD_RECV_REST)) {
+	  $E("Duplicate ``recv_rest'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_RECV_REST, $3);
+	}
+      }
+      else if (strcmp ($1, "send_probe") == 0) {
+	if ($0->u_c->getMethod (ACT_METHOD_SEND_PROBE)) {
+	  $E("Duplicate ``send_probe'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_SEND_PROBE, $3);
+	}
+      }
+      else if (strcmp ($1, "recv_probe") == 0) {
+	if ($0->u_c->getMethod (ACT_METHOD_RECV_PROBE)) {
+	  $E("Duplicate ``recv_probe'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_RECV_PROBE, $3);
+	}
       }
       else {
 	$E("Method ``%s'' is not supported", $1);
@@ -680,6 +730,7 @@ defchan: [ template_spec ]
 }}
 is_a physical_inst_type
 {{X:
+    InstType *ir;
     if (TypeFactory::isProcessType ($5->BaseType())) {
       $E("A channel type cannot be related to a process");
     }
@@ -687,15 +738,26 @@ is_a physical_inst_type
       $E("A channel type cannot be related to a data type");
     }
     if (TypeFactory::isUserType ($5->BaseType ())) {
-      $0->scope->Merge (dynamic_cast<UserDef *>($5->BaseType ())->CurScope ());
+      UserDef *u;
+      u = dynamic_cast<UserDef *>($5->BaseType());
+      $0->scope->Merge (u->CurScope ());
+      ir = u->root();
     }
+    else {
+      ir = $5;
+    }
+    if (!ir) {
+      $E("Cannot find root built-in type");
+    }
+    $A(!TypeFactory::isUserType (ir));
+    $0->scope->Add ("this", ir);
     $0->u_c->SetParent ($5, $4);
 }}
  [ "(" port_formal_list ")" ] 
 {{X:
     UserDef *u;
 
-    if (u = $0->curns->findType ($3)) {
+    if ((u = $0->curns->findType ($3))) {
       if (u->isEqual ($0->u_c)) {
 	delete $0->u_c;
 	$0->u_c = dynamic_cast<Channel *>(u);
@@ -865,7 +927,7 @@ ID
     UserDef *u;
     /* let's check to see if this matches any previous definition */
 
-    if (u = $0->curns->findType ($3)) {
+    if ((u = $0->curns->findType ($3))) {
       if (u->isEqual ($0->u_f)) {
 	delete $0->u_f;
 	$0->u_f = dynamic_cast<Function *>(u);
@@ -898,6 +960,7 @@ func_body
     $0->u_f->setBody ($8);
     $0->u_f = NULL;
     $0->scope = $0->curns->CurScope();
+    return NULL;
 }}
 ;
 
@@ -1198,7 +1261,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
 
     InstType *prev_it;
 
-    if (prev_it = $0->scope->Lookup ($1)) {
+    if ((prev_it = $0->scope->Lookup ($1))) {
       if (OPT_EMPTY ($2)) {
 	/* not an array instance */
 

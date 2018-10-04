@@ -258,7 +258,7 @@ static act_prs_expr_t *atom (LFILE *l)
       return NULL;
     }
   }
-  else if (id = (*expr_parse_id) (l)) {
+  else if ((id = (*expr_parse_id) (l))) {
     /* sizes? */
     NEW (e, act_prs_expr_t);
     e->type = ACT_PRS_EXPR_VAR;
