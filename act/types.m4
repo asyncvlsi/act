@@ -136,7 +136,6 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")"
       $E("Channels can only send/receive data.");
     }
     ret = $0->tf->NewChan ($0->scope, d, t);
-    FREE (t);
     return ret;
 }}
 ;

@@ -2083,10 +2083,15 @@ const char *Chan::getName ()
 {
   char buf[10240];
   if (name) return name;
-  
-  sprintf (buf, "chan<");
-  p->sPrint (buf+strlen (buf), 10239-strlen(buf));
-  strcat (buf, ">");
+
+  if (!p) {
+    sprintf (buf, "chan");
+  }
+  else {
+    sprintf (buf, "chan<");
+    p->sPrint (buf+strlen (buf), 10239-strlen(buf));
+    strcat (buf, ">");
+  }
   name = Strdup (buf);
   return name;
 }
