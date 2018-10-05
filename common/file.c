@@ -170,6 +170,10 @@ int file_addtoken (LFILE *l, const char *s)
   int k, old_k;
   flist *m;
 
+  if (lex_istoken (l->l->l, s)) {
+    return lex_addtoken (l->l->l, s);
+  }
+
   if (l->maxtoks < l->ntoks + 1) {
     if (l->maxtoks == 0) {
       l->maxtoks = 32;

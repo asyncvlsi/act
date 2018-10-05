@@ -159,6 +159,8 @@ void expr_clear (void);
     Clears expressions from expression parser
   */
 
+void expr_endgtmode (int m);
+
 extern pId *(*expr_parse_id)(LFILE *l);
   /* The function must do the following:
        - if there is a valid identifier, then create a data structure

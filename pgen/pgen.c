@@ -201,6 +201,15 @@ int parse_token (LEX_T *l)
     else {
       curTOKEN->int_flag = 0;
     }
+    if (lex_have (l, ENDANGLE)) {
+      curTOKEN->end_gt = 1;
+    }
+    else if (lex_have (l, ENDANGLE2)) {
+      curTOKEN->end_gt = -1;
+    }
+    else {
+      curTOKEN->end_gt = 0;
+    }
     return 1;
   }
   else if (lex_have (l, l_id)) {
@@ -474,11 +483,23 @@ void print_tok_list (pp_t *pp, token_list_t *t)
       if (t->a[i].int_flag) {
 	pp_printf (pp, " !noreal");
       }
+      else if (t->a[i].end_gt == 1) {
+	pp_printf (pp, " !endgt");
+      }
+      else if (t->a[i].end_gt == -1) {
+	pp_printf (pp, " !noendgt");
+      }
       break;
     case T_KEYW:
       pp_printf (pp, " \"%s\"", t->a[i].toks);
       if (t->a[i].int_flag) {
 	pp_printf (pp, " !noreal");
+      }
+      else if (t->a[i].end_gt == 1) {
+	pp_printf (pp, " !endgt");
+      }
+      else if (t->a[i].end_gt == -1) {
+	pp_printf (pp, " !noendgt");
       }
       break;
     case T_EXTERN:
@@ -574,7 +595,7 @@ pp_t *std_open (char *s)
   FILE *fp;
   pp_t *pp;
 
-  if (fp = fopen (s, "r")) {
+  if ((fp = fopen (s, "r"))) {
     warning ("File `%s' exists, overwriting", s);
     fclose (fp);
   }
@@ -1209,6 +1230,12 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
 	pp_printf (pp, "{ int tmp_flag = file_flags (l); file_setflags (l, tmp_flag | FILE_FLAGS_NOREAL);"); 
 	pp_nl;
       }
+      if (tl->a[i].end_gt == 1) {
+	pp_printf (pp, "expr_endgtmode (1);");
+      }
+      else if (tl->a[i].end_gt == -1) {
+	pp_printf (pp, "expr_endgtmode (0);");
+      }
       pp_printf (pp, "if (!file_have_keyw (l, \"%s\")) {", 
 		 (char*)tl->a[i].toks);
       BEGIN_INDENT; 
@@ -1228,6 +1255,12 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       if (tl->a[i].int_flag) {
 	pp_printf (pp, "{ int tmp_flag = file_flags (l); file_setflags (l, tmp_flag | FILE_FLAGS_NOREAL);"); 
 	pp_nl;
+      }
+      if (tl->a[i].end_gt == 1) {
+	pp_printf (pp, "expr_endgtmode (1);");
+      }
+      else if (tl->a[i].end_gt == -1) {
+	pp_printf (pp, "expr_endgtmode (0);");
       }
       pp_printf (pp, "if (!file_have (l, TOK_%ld)) {", (long)tl->a[i].toks);
       BEGIN_INDENT; 
@@ -1639,6 +1672,7 @@ char *tok_type_to_parser_type (token_type_t *t)
     fatal_error ("Internal inconsistency");
     break;
   }
+  return NULL;
 }
 
 	
