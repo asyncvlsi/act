@@ -21,4 +21,6 @@ TOKEN(COLON, ":")
 TOKEN(LANGLE,"<")
 TOKEN(RANGLE,">")
 TOKEN(INTFLAG, "!noreal")
+TOKEN(ENDANGLE, "!endgt")
+TOKEN(ENDANGLE2, "!noendgt")
 #undef TOKEN

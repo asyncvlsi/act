@@ -254,7 +254,7 @@ user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
 }}
 ;
 
-template_args[list_t *]: "<" { array_expr "," }* ">"
+template_args[list_t *]: "<" !endgt { array_expr "," }* ">" !noendgt
 {{X: return $2; }}
 ;
 
@@ -391,7 +391,7 @@ sparse_range[Array *]: sparse_one_range sparse_range
 
 sparse_one_range[Array *]: "[" !noreal wint_expr [ ".." wint_expr ] "]"
 {{X:
-    Array *a;
+    Array *a; 
     ActRet *r;
     
     if (OPT_EMPTY ($3)) {

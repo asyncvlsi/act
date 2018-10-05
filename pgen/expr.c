@@ -5,6 +5,7 @@
  *
  **************************************************************************
  */
+#include <string.h>
 #include "expr.h"
 #include "file.h"
 #include "misc.h"
@@ -23,7 +24,22 @@ void (*expr_print_probe)(pp_t *, void *) = NULL;
 #define PUSH(x) file_push_position(x)
 #define POP(x)  file_pop_position(x)
 #define SET(x)  file_set_position(x)
-#define INFO(x)  
+#define INFO(x)
+
+static LFILE *Tl;
+
+static int end_gt_mode = 0;
+
+static int have_comma = 0;
+static int have_semi = 0;
+static int comma_token = -1;
+static int semi_token = -1;
+static int paren_count = 0;
+
+void expr_endgtmode (int v)
+{
+  end_gt_mode = v;
+}
 
 /*------------------------------------------------------------------------
  *
@@ -103,7 +119,11 @@ int expr_init (LFILE *l)
  *          I ::= BE ? I : I | H
  *          H ::= HH | HH | H
  *          HH::= G | G ^ HH
- *          G ::= F | F & G 
+ *          G ::= FF | FF & G 
+
+ *      inequalities go here
+ *          FF ::= F | F < F | F > F | F <= F | F >= F | F = F | F != F
+
  *          F ::= U << F | U >> F
  *          U ::= V + U | V - U | V
  *          V ::= W * V | W / V | W % V | W
@@ -140,9 +160,9 @@ void expr_settoken (int x, int v)
 /*
   Helper functions for parser
 */
-static LFILE *Tl;
 static Expr *BE (void);
 static Expr *I (void);
+static int int_real_only;
 
 static Expr *newexpr (void)
 {
@@ -238,7 +258,9 @@ Expr *B (void)
   while (file_have (Tl, T[E_NOT]))
     not = 1 - not;
   if (file_have (Tl, T[E_LPAR])) {
+    paren_count++;
     e = BE ();
+    paren_count--;
     if (file_have (Tl, T[E_RPAR])) {
       POP (Tl);
     }
@@ -427,9 +449,70 @@ static int _shifts[] = { E_LSL, E_LSR, E_ASR };
 static int _addsub[] = { E_PLUS, E_MINUS };
 static int _muldiv[] = { E_MULT, E_DIV, E_MOD };
 
-static Expr *W (void);
+static Expr *F (void);
 
-EMIT_BINOP_SEQ1 (_intcomp,B0,W,B)
+static Expr *FF (void)				
+{							
+  Expr *e, *f;					
+  int i;
+							
+  PUSH (Tl);						
+  e = F ();					
+  if (!e) {						
+    return NULL;
+  }							
+  for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)
+    if (T[_intcomp[i]] != -1)				
+      break;						
+  if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
+    return e;
+  }							
+  for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)	
+    if (T[_intcomp[i]] == file_sym (Tl))
+      break;
+  if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
+    return e;
+  }							
+  f = newexpr ();					
+  f->type = _intcomp[i];				
+  f->u.e.l = e;					
+  file_getsym (Tl);
+  f->u.e.r = F ();
+  if (!f->u.e.r) {
+    FREE (f);
+    return e;
+  }
+  /* success. But if it is endgt mode, and we have ">" and the
+     following token is a ";" or ",", we undo this and only return the
+     left pointer! */
+  if ((f->type == E_GT) && (end_gt_mode == 1)) {
+    have_comma = file_istoken (Tl, ",");
+    if (have_comma) {
+      comma_token = file_addtoken (Tl, ",");
+    }
+    have_semi = file_istoken (Tl, ";");
+    if (have_semi) {
+      semi_token = file_addtoken (Tl, ";");
+    }
+    if ((have_comma && (file_sym (Tl) == comma_token)) ||
+	(have_semi && (file_sym (Tl) == semi_token)) ||
+	(file_sym (Tl) == T[E_RPAR] && paren_count == 0)) {
+      /* unwind */
+      SET (Tl);
+      POP (Tl);
+      efree (f);
+      return F ();
+    }
+  }
+  POP (Tl);						
+  e = f;						
+  return e;
+}
+
+
+
+//EMIT_BINOP_SEQ1 (_intcomp,FF,F,F)
+EMIT_BINOP_SEQ1 (_intcomp,B0,F,B)
 EMIT_BINOP (E_AND, B1, B0)
 EMIT_BINOP (E_XOR, B2, B1)
 EMIT_BINOP (E_OR, BE, B2)
@@ -453,7 +536,9 @@ static Expr *W (void)
       tilde = 1 - tilde;
   }
   if (file_have (Tl, T[E_LPAR])) {
+    paren_count++;
     e = I();
+    paren_count--;
     if (file_have (Tl, T[E_RPAR])) {
       POP (Tl);
     }
@@ -619,6 +704,7 @@ static Expr *W (void)
       e->u.fn.r = NULL;
       f = e;
       file_mustbe (Tl, T[E_LPAR]);
+      paren_count++;
       if (file_sym (Tl) != T[E_RPAR]) {
 	do {
 	  f->u.e.r = newexpr (); /* wow! rely that this is the same
@@ -634,6 +720,7 @@ static Expr *W (void)
 	    return NULL;
 	  }
 	} while (file_have (Tl, T[E_COMMA]));
+	paren_count--;
 	if (file_sym (Tl) != T[E_RPAR]) {
 	  efree (e);
 	  SET (Tl);
@@ -665,12 +752,46 @@ static Expr *W (void)
   return e;
 }
 
+static Expr *G (void);
+
 EMIT_BINOP_SEQ (_muldiv, V, W);
 EMIT_BINOP_SEQ (_addsub, U, V);
 EMIT_BINOP_SEQ (_shifts, F, U);
-EMIT_BINOP (E_AND, G, F);
+//EMIT_BINOP (E_AND, G, F);
 EMIT_BINOP (E_XOR, HH, G);
 EMIT_BINOP (E_OR, H, HH);
+
+static Expr *G (void)
+{
+  Expr *e, *f;
+
+  if (int_real_only) {
+    e = F ();
+  }
+  else {
+    e = FF ();
+  }
+  if (!e || T[E_AND] == -1) return e;
+  
+  while (file_have (Tl, T[E_AND])) {
+    f = newexpr ();
+    f->type = E_AND;
+    f->u.e.l = e;
+    if (int_real_only) {
+      f->u.e.r = F ();
+    }
+    else {
+      f->u.e.r = FF ();
+    }
+    if (!f->u.e.r) {
+      efree (f);
+      return NULL;
+    }
+    e = f;
+  }
+  return e;
+}
+
 
 static Expr *I (void)
 {
@@ -721,6 +842,7 @@ Expr *expr_parse_bool (LFILE *l)
   int count = 0;
   Expr *e;
 
+  int_real_only = 0;
   INIT (E_LSR, ">>");
 
   Tl = l;
@@ -739,6 +861,7 @@ Expr *expr_parse_int (LFILE *l)
   unsigned int flags;
   Expr *x;
 
+  int_real_only = 1;
   flags = file_flags (l);
   file_setflags (l, flags | FILE_FLAGS_NOREAL);
 
@@ -760,6 +883,7 @@ Expr *expr_parse_real (LFILE *l)
   int count = 0;
   Expr *e;
 
+  int_real_only = 1;
   INIT (E_LSR, ">>");
 
   Tl = l;
@@ -975,5 +1099,19 @@ void expr_print (pp_t *pp, Expr *e)
 
 Expr *expr_parse_any (LFILE *l)
 {
-  return expr_parse_real (l);
+  int count;
+  Expr *e;
+
+  int_real_only = 0;
+  
+  INIT (E_LSR, ">>");
+
+  Tl = l;
+  e = I();
+
+  if (count) {
+    file_deltoken (l, ">>");
+  }
+
+  return e;
 }

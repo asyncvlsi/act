@@ -6,9 +6,11 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <string.h>
 #include "pgen.h"
 #include "pp.h"
 
+int is_user_ret_ptr (bnf_item_t *b);
 
 #define WNAME  WALK[walk_id]
 #define WCOOKIE cookie_type[walk_id]
@@ -137,7 +139,7 @@ void print_header_prolog (pp_t *pp)
   pp_printf (pp, "#include \"%s_parse.h\"", prefix);
   pp_forced (pp, 0);
   sprintf (buf, "%s_walk.extra.h", prefix);
-  if (fp = fopen (buf, "r")) {
+  if ((fp = fopen (buf, "r"))) {
     pp_printf (pp, "#include \"%s\"", buf); pp_forced (pp, 0);
     fclose (fp);
   }

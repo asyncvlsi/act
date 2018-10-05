@@ -74,6 +74,76 @@ array_term[AExpr *]: "{" { array_expr "," }* "}"
 }}
 ;
 
+lhs_array_expr[AExpr *]: { lhs_array_term "#" }*
+{{X:
+    AExpr *a, *ret;
+    listitem_t *li;
+
+    if (list_length ($1) == 1) {
+      ret = (AExpr *) list_value (list_first ($1));
+    }
+    else {
+      li = list_first ($1);
+      ret = new AExpr (AExpr::CONCAT, (AExpr *)list_value (li), NULL);
+      a = ret;
+      for (li = list_next (li); li; li = list_next (li)) {
+	a->SetRight (new AExpr (AExpr::CONCAT, (AExpr *)list_value (li), NULL));
+	a = a->GetRight();
+      }
+    }
+    list_free ($1);
+
+    /*printf ("Returning %x\n", ret);*/
+
+    return ret;
+}}
+;
+
+lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
+{{X:
+    AExpr *a, *ret;
+    listitem_t *li;
+
+    li = list_first ($2);
+    ret = new AExpr (AExpr::COMMA, (AExpr *)list_value (li), NULL);
+    a = ret;
+    for (li = list_next (li); li; li = list_next (li)) {
+      a->SetRight (new AExpr (AExpr::COMMA, (AExpr *)list_value (li), NULL));
+      a = a->GetRight ();
+    }
+    list_free ($2);
+    return ret;
+}}
+| expr_id
+{{X:
+    AExpr *a;
+    Expr *e;
+    int tc;
+
+    NEW (e, Expr);
+    e->type = E_VAR;
+    e->u.e.l = (Expr *)$1;
+
+    tc = act_type_expr ($0->scope, e);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+      
+    a = new AExpr (e);
+    /*printf ("Expr: %x\n", a);
+    printf ("It is: ");
+    a->Print (stdout);
+    printf ("\n");*/
+    return a;
+}}
+;
+
+
 opt_array_expr[AExpr *]: [ array_expr ]
 {{X:
     ActRet *r;
