@@ -55,6 +55,8 @@ struct body_info {
 struct token_type {
   token_t type;
   int int_flag;			/* set to suppress reals next! */
+  int end_gt;			/* something ends in ">" for
+				   expression parser */
 
   struct body_info *opt_next;
 

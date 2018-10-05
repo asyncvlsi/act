@@ -1591,7 +1591,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 }}
 ;
 
-alias[ActBody *]: array_expr "=" { array_expr "=" }* ";"
+alias[ActBody *]: lhs_array_expr "=" { array_expr "=" }* ";"
 {{X:
     ActBody *b, *tmp, *ret;
     listitem_t *li;
