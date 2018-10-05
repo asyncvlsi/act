@@ -1853,7 +1853,9 @@ static char *read_input_line (FILE *fp, char *prompt, char *buf, int len)
       fflush (stdout);
       if (fgets (buf, len, fp)) {
 	len = strlen (buf);
-	buf[len-1] = '\0';
+	if (buf[len-1] == '\n') {
+	  buf[len-1] = '\0';
+	}
 	return buf;
       }
       else
@@ -1867,7 +1869,9 @@ static char *read_input_line (FILE *fp, char *prompt, char *buf, int len)
   else {
     if (fgets (buf, len, fp)) {
       len = strlen (buf);
-      buf[len-1] = '\0';
+      if (buf[len-1] == '\n') {
+	buf[len-1] = '\0';
+      }
       return buf;
     }
     else
