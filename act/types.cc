@@ -1803,6 +1803,27 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     Assert (ux->AddPort (getPortType(i)->Expand (ns, ux->I), getPortName (i)), "What?");
   }
 
+  /*-- XXX: create this, if necessary --*/
+  if (dynamic_cast<Channel *>(this)) {
+    InstType *x;
+    Assert (parent, "Hmm...");
+    x = ux->root();
+
+    Chan *ch = dynamic_cast <Chan *>(x->BaseType());
+    Assert (ch, "Hmm?!");
+    Assert (ch->datatype(), "What?");
+    ux->CurScope()->Add ("this", ch->datatype());
+  }
+  else if (dynamic_cast<Data *>(this)) {
+    InstType *x;
+    Assert (parent, "Hmm...");
+    x = ux->root();
+    ux->CurScope()->Add ("this", x);
+  }
+  else {
+    /* process, no this pointer */
+  }
+
   /*-- expand body --*/
   b->Expandlist (ns, ux->I);
 
@@ -1852,7 +1873,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xd->is_enum = is_enum;
 
   for (i=0; i < 2; i++) {
-    xd->methods[i] = chp_expand (methods[i], ns, s);
+    xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
   }
   
   return xd;
@@ -1877,7 +1898,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (ns->EditType (xc->name, xc) == 1, "What?");
 
   for (i=0; i < 6; i++) {
-    xc->methods[i] = chp_expand (methods[i], ns, s);
+    xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
   }
 
   return xc;
@@ -2285,4 +2306,7 @@ void Data::Print (FILE *fp)
   fprintf (fp, "}\n\n");
 }
 
-  
+InstType *InstType::getTypeParam (int pn)
+{
+  return u[pn].tt;
+}
