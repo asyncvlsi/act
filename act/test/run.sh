@@ -5,7 +5,7 @@ fail=0
 
 for i in *
 do
-	if [ -d $i -a -f $i/0.act ]; then
+	if [ -d $i -a -f $i/0.act -a -f $i/run.sh ]; then
 	echo "======= Directory $i ======"
 	if (cd $i; ./run.sh)
 	then
