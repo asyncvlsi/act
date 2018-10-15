@@ -26,15 +26,12 @@ void (*expr_print_probe)(pp_t *, void *) = NULL;
 #define SET(x)  file_set_position(x)
 #define INFO(x)
 
+static int paren_count = 0;
+
 static LFILE *Tl;
 
 static int end_gt_mode = 0;
 
-static int have_comma = 0;
-static int have_semi = 0;
-static int comma_token = -1;
-static int semi_token = -1;
-static int paren_count = 0;
 
 void expr_endgtmode (int v)
 {
@@ -486,6 +483,11 @@ static Expr *FF (void)
      following token is a ";" or ",", we undo this and only return the
      left pointer! */
   if ((f->type == E_GT) && (end_gt_mode == 1)) {
+    int have_comma = 0;
+    int have_semi = 0;
+    int comma_token = -1;
+    int semi_token = -1;
+    
     have_comma = file_istoken (Tl, ",");
     if (have_comma) {
       comma_token = file_addtoken (Tl, ",");

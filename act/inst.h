@@ -70,6 +70,7 @@ class InstType {
 				       value */
 
   void setParam (int pn, InstType *t); /**< for ptype and chans */
+  InstType *getTypeParam (int pn);
 
   /**
    * Set direction flags

@@ -836,7 +836,9 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 	c1->a = c2->a;
 	c2->a = NULL;
 	for (int i=0; i < sz; i++) {
-	  c1->a[i]->parent = c1;
+	  if (c1->a[i]) {
+	    c1->a[i]->parent = c1;
+	  }
 	}
       }
       else {
@@ -844,10 +846,14 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 	int sz;
 	
 	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-      
+
+	c1->a = c2->a;
+	c2->a = NULL;
 	sz = ux->getNumPorts();
 	for (int i=0; i < sz; i++) {
-	  c1->a[i]->parent = c1;
+	  if (c1->a[i]) {
+	    c1->a[i]->parent = c1;
+	  }
 	}
       }
     }
@@ -885,7 +891,9 @@ static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2
 	  c1->a[i] = c2->a[i];
 	  c2->a[i] = NULL;
 	}
-	c1->a[i]->parent = c1;
+	if (c1->a[i]) {
+	  c1->a[i]->parent = c1;
+	}
       }
       FREE (c2->a);
     }
