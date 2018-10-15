@@ -95,7 +95,10 @@ class Chan : public Type {
 
   /* type info here */
   const char *name;
-  InstType *p;			// port
+  InstType *p;			// data type for expanded channel
+
+public:
+  InstType *datatype() { return p; }
 
   friend class TypeFactory;
 };

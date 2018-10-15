@@ -214,7 +214,7 @@ def_or_proc ID
     }
     OPT_FREE ($4);
 }}
-[ "(" port_formal_list ")" ] 
+ "(" [ port_formal_list ] ")"
 {{X:
     /* Create type here */
     UserDef *u;
@@ -233,7 +233,7 @@ def_or_proc ID
     else {
       $A($0->curns->CreateType ($3, $0->u_p));
     }
-    OPT_FREE ($5);
+    OPT_FREE ($6);
     $0->scope = $0->u_p->CurScope ();
     $0->strict_checking = 0;
 }}
@@ -477,10 +477,10 @@ is_a physical_inst_type
       UserDef *u;
       u = dynamic_cast<UserDef *>($5->BaseType());
 
-      /* we need to add parameters */
+      /*--- XXX: FIXME we need to add parameters */
 
       $0->scope->Merge (u->CurScope ());
-      ir = u->root();
+      ir = $5;
     }
     else {
       ir = $5;
@@ -488,13 +488,11 @@ is_a physical_inst_type
     if (!ir) {
       $E("Cannot find root built-in type");
     }
-    $A(!TypeFactory::isUserType (ir));
-
     $0->scope->Add ("this", ir);
 
     $0->u_d->SetParent ($5, $4);
 }}
-[ "("  port_formal_list ")" ]
+"(" [ port_formal_list ] ")"
 {{X:
     UserDef *u;
 
@@ -511,7 +509,7 @@ is_a physical_inst_type
     else {
       $A($0->curns->CreateType ($3, $0->u_d));
     }
-    OPT_FREE ($6);
+    OPT_FREE ($7);
     $0->strict_checking = 0;
 }}
 data_chan_body
@@ -607,17 +605,17 @@ one_method: ID "{" hse_body "}"
 	}
 	$0->u_c->setMethod (ACT_METHOD_GET, $3);
       }
-      else if (strcmp ($1, "send_rest") == 0) {
+      else if ((strcmp ($1, "send_rest") == 0) || (strcmp ($1, "fill") == 0)) {
 	if ($0->u_c->getMethod (ACT_METHOD_SEND_REST)) {
-	  $E("Duplicate ``send_rest'' method");
+	  $E("Duplicate ``send_rest/fill'' method");
 	}
 	else {
 	  $0->u_c->setMethod (ACT_METHOD_SEND_REST, $3);
 	}
       }
-      else if (strcmp ($1, "recv_rest") == 0) {
+      else if ((strcmp ($1, "recv_rest") == 0) || (strcmp ($1, "drain") == 0)) {
 	if ($0->u_c->getMethod (ACT_METHOD_RECV_REST)) {
-	  $E("Duplicate ``recv_rest'' method");
+	  $E("Duplicate ``recv_rest/drain'' method");
 	}
 	else {
 	  $0->u_c->setMethod (ACT_METHOD_RECV_REST, $3);
@@ -741,19 +739,25 @@ is_a physical_inst_type
       UserDef *u;
       u = dynamic_cast<UserDef *>($5->BaseType());
       $0->scope->Merge (u->CurScope ());
-      ir = u->root();
+      /* XXX: FIXME */
+      ir = $5;
+
+      Channel *ch = dynamic_cast<Channel *>($5->BaseType());
+      $A(ch);
+
+      $A(ch->getNumParams() == 1);
+      ir = ch->getPortType (-1);
     }
     else {
-      ir = $5;
+      ir = $5->getTypeParam (0);
     }
     if (!ir) {
       $E("Cannot find root built-in type");
     }
-    $A(!TypeFactory::isUserType (ir));
     $0->scope->Add ("this", ir);
     $0->u_c->SetParent ($5, $4);
 }}
- [ "(" port_formal_list ")" ] 
+ "(" [ port_formal_list ] ")" 
 {{X:
     UserDef *u;
 
@@ -770,7 +774,7 @@ is_a physical_inst_type
     else {
       $A($0->curns->CreateType ($3, $0->u_c));
     }
-    list_free ($6);
+    list_free ($7);
     $0->strict_checking = 0;
 }}
 data_chan_body

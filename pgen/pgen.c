@@ -634,7 +634,7 @@ void emit_bexpr_for_typematch (pp_t *pp, token_list_t *tl, int idx)
   token_type_t *t = &tl->a[idx];
 
   if (A_LEN (tl->a) == 0 && idx == 0) {
-    pp_printf (pp, "1");
+    pp_printf (pp, "(1 == 1)");
     return;
   }
 
@@ -688,7 +688,7 @@ void emit_bexpr_for_typematch (pp_t *pp, token_list_t *tl, int idx)
     pp_lazy (pp, 2);
 
     if (idx >= A_LEN (tl->a)-1) {
-      pp_puts (pp, "1");
+      pp_puts (pp, "(1 == 1)");
     }
     else {
       pp_puts (pp, "(");
