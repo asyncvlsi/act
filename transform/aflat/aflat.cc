@@ -626,6 +626,9 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = (*inst);
     if (TypeFactory::isParamType (vx->t)) continue;
+    if (strcmp (vx->u.obj.name, "this") == 0) {
+      continue;
+    }
       
     //if (!vx->isPrimary()) continue;
     
