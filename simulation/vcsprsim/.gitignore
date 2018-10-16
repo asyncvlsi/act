@@ -4,3 +4,10 @@ i386*
 *.i386*
 x86_64*
 *.x86_64*
+avl.*
+heap.*
+lex.*
+lzw.*
+misc.*
+names.*
+prs.*
