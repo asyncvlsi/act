@@ -477,7 +477,10 @@ static Expr *FF (void)
   f->u.e.r = F ();
   if (!f->u.e.r) {
     FREE (f);
-    return e;
+    efree (e);
+    SET (Tl);
+    POP (Tl);
+    return F();
   }
   /* success. But if it is endgt mode, and we have ">" and the
      following token is a ";" or ",", we undo this and only return the
