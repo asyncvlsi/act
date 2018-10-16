@@ -1101,7 +1101,7 @@ void expr_print (pp_t *pp, Expr *e)
 
 Expr *expr_parse_any (LFILE *l)
 {
-  int count;
+  int count = 0;
   Expr *e;
 
   int_real_only = 0;
