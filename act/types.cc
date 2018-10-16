@@ -548,7 +548,7 @@ void *TypeFactory::intdupfn (void *key)
 void TypeFactory::intfreefn (void *key)
 {
   struct inthashkey *k = (struct inthashkey *)key;
-  delete k;
+  free (k);
 }
 
 struct chanhashkey {
@@ -600,7 +600,7 @@ void *TypeFactory::chandupfn (void *key)
 void TypeFactory::chanfreefn (void *key)
 {
   struct chanhashkey *c = (struct chanhashkey *)key;
-  delete c;
+  free (c);
 }
 
 
