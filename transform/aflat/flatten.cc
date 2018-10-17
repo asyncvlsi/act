@@ -205,7 +205,7 @@ static void _flat_connections_bool (ValueIdx *vx)
     if (tmp == c) continue;
 
     ig = tmp->isglobal();
-    if (ig != is_global) continue;
+    if (!(!ig || ig == is_global)) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -369,7 +369,7 @@ static void _flat_connections_bool (ValueIdx *vx)
 	if (tmp == d) continue;
 
 	ig = tmp->isglobal();
-	if (ig != is_global) continue;
+	if (!(!ig || ig == is_global)) continue;
 
 	id2 = tmp->toid();
 	if (hd2) {
@@ -728,7 +728,7 @@ static void _flat_scope (Scope *s)
 	    if (*ci == c) continue; // don't print connections to yourself
 
 	    ig = (*ci)->isglobal();
-	    if (ig != is_global_conn) continue; // only print global
+	    if (!(!ig || ig == is_global_conn)) continue; // only print global
 	    // to global or
 	    // non-global to non-global
 	      
@@ -782,7 +782,7 @@ static void _flat_scope (Scope *s)
 		  if (*ci == c->a[i]) continue;
 
 		  ig = (*ci)->isglobal();
-		  if (ig != is_global_conn) continue; 
+		  if (!(!ig || ig == is_global_conn)) continue;
 
 		  two = (*ci)->toid();
 		  if (TypeFactory::isUserType (xit)) {

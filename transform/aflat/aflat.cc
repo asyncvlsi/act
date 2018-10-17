@@ -438,7 +438,7 @@ static void _print_connections_bool (ValueIdx *vx)
     if (tmp == c) continue;
 
     ig = tmp->isglobal();
-    if (ig != is_global) continue;
+    if (!(!ig || ig == is_global)) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -507,7 +507,7 @@ static void _print_connections_bool (ValueIdx *vx)
 	if (tmp == d) continue;
 
 	ig = tmp->isglobal();
-	if (ig != is_global) continue;
+	if (!(!ig || ig == is_global)) continue;
 	
 	/* cannot be an array */
 	print_connect();
@@ -855,9 +855,8 @@ static void aflat_prs_scope (Scope *s)
 	    if (*ci == c) continue; // don't print connections to yourself
 
 	    ig = (*ci)->isglobal();
-	    if (ig != is_global_conn) continue; // only print global
-	    // to global or
-	    // non-global to non-global
+	    if (!(!ig || ig == is_global_conn)) continue;
+	    // only print global to global or non-global to any
 	      
 	    two = (*ci)->toid();
 	    suffixes = list_new ();
@@ -906,7 +905,7 @@ static void aflat_prs_scope (Scope *s)
 		  if (*ci == c->a[i]) continue;
 
 		  ig = (*ci)->isglobal();
-		  if (ig != is_global_conn) continue; 
+		  if (!(!ig || ig == is_global_conn)) continue;
 
 		  two = (*ci)->toid();
 		  if (TypeFactory::isUserType (xit)) {
