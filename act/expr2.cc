@@ -261,7 +261,15 @@ void print_expr (FILE *fp, Expr *e)
 /*
   hash ids!
 */
-#define _id_equal(a,b) ((a) == (b))
+//#define _id_equal(a,b) ((a) == (b))
+//#define _id_equal ((ActId *)(a))->isEqual ((ActId *)(b))
+static int _id_equal (Expr *a, Expr *b)
+{
+  ActId *ia, *ib;
+  ia = (ActId *)a;
+  ib = (ActId *)b;
+  return ia->isEqual (ib);
+}
 
 /**
  *  Compare two expressions structurally for equality

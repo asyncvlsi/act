@@ -975,3 +975,23 @@ act_connection *ActId::Canonical (Scope *s)
   return cx;
 }  
 
+
+int ActId::isEqual (ActId *id)
+{
+  if (!id) return 0;
+  if (id->name != name) return 0;
+  if (id->a && !a) return 0;
+  if (!id->a && a) return 0;
+  if (a) {
+    if (!a->isEqual (id->a, 1)) return 0;
+  }
+  if (id->next && !next) return 0;
+  if (!id->next && next) return 0;
+  if (next) {
+    return next->isEqual (id->next);
+  }
+  return 1;
+}
+  
+
+  
