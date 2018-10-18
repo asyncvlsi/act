@@ -715,6 +715,8 @@ class ActId {
   void setArray (Array *_a) { a = _a; }
   void prune () { next = NULL; }
 
+  int isEqual (ActId *other);
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */
