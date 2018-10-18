@@ -1929,7 +1929,7 @@ void emit_parser (void)
   std_close (pp);
 
   if (found_expr) {
-    sprintf (buf, "id.h");
+    sprintf (buf, "%s_parse_id.h", prefix);
     pp = std_open (buf);
     pp_printf_text (pp, "typedef struct DefNode_expr_id pId;\n");
     std_close (pp);
