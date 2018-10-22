@@ -438,7 +438,7 @@ static void _print_connections_bool (ValueIdx *vx)
     if (tmp == c) continue;
 
     ig = tmp->isglobal();
-    if (ig != is_global) continue;
+    if (!(!is_global || ig == is_global)) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -507,7 +507,7 @@ static void _print_connections_bool (ValueIdx *vx)
 	if (tmp == d) continue;
 
 	ig = tmp->isglobal();
-	if (ig != is_global) continue;
+	if (!(!ig || ig == is_global)) continue;
 	
 	/* cannot be an array */
 	print_connect();
@@ -615,6 +615,7 @@ static void _print_single_connection (ActId *one, Array *oa,
 static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 				   Array *oa, Array *ta,
 				   ActNamespace *isoneglobal)
+
 {
   Assert (ux, "What");
   Assert (one, "What");
@@ -626,6 +627,9 @@ static void _print_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = (*inst);
     if (TypeFactory::isParamType (vx->t)) continue;
+    if (strcmp (vx->u.obj.name, "this") == 0) {
+      continue;
+    }
       
     //if (!vx->isPrimary()) continue;
     
@@ -795,7 +799,13 @@ static void aflat_prs_scope (Scope *s)
 	    if (spec) {
 	      aflat_print_spec (px->CurScope(), spec);
 	    }
+#if 0	    
+	    printf ("ux-scope: %s\n", ux->getName());
+#endif	    
 	    aflat_prs_scope (ux->CurScope());
+#if 0	    
+	    printf ("end-ux-scope: %s\n", ux->getName());
+#endif
 	    pop_name ();
 	  }
 	  idx++;
@@ -815,7 +825,13 @@ static void aflat_prs_scope (Scope *s)
 	if (spec) {
 	  aflat_print_spec (px->CurScope(), spec);
 	}
+#if 0	
+	printf ("ux-scope: %s\n", ux->getName());
+#endif	
 	aflat_prs_scope (ux->CurScope());
+#if 0	
+	printf ("end-ux-scope: %s\n", ux->getName());
+#endif	
 	pop_name ();
       }
     }
@@ -833,6 +849,9 @@ static void aflat_prs_scope (Scope *s)
 	/* only emit local connections */
 	is_global_conn = 0;
       }
+#if 0
+      printf ("is_global_conn = %d [name: %s]\n", is_global_conn, vx->getName());
+#endif
       
       /* ok, now we get to look at this more closely */
       if (TypeFactory::isUserType (it)) {
@@ -852,9 +871,8 @@ static void aflat_prs_scope (Scope *s)
 	    if (*ci == c) continue; // don't print connections to yourself
 
 	    ig = (*ci)->isglobal();
-	    if (ig != is_global_conn) continue; // only print global
-	    // to global or
-	    // non-global to non-global
+	    if (!(!ig || ig == is_global_conn)) continue;
+	    // only print global to global or non-global to any
 	      
 	    two = (*ci)->toid();
 	    suffixes = list_new ();
@@ -873,20 +891,37 @@ static void aflat_prs_scope (Scope *s)
 	  list_t *sublist = list_new ();
 	  list_append (sublist, c);
 
+#if 0	  
+	  printf ("subconnections\n");
+#endif	  
+
 	  while ((c = (act_connection *)list_delete_tail (sublist))) {
 	    Assert (c->hasSubconnections(), "Invariant fail");
 
 	    for (int i=0; i < c->numSubconnections(); i++) {
-	      if (c->hasDirectconnections (i) && c->isPrimary (i)) {
+#if 0	      
+	      printf (" check %d\n", i);
+#endif
+	      if (c->hasDirectconnections (i)) {
 		int type;
 		InstType *xit;
 		ActId *one, *two;
 		ActConniter ci(c->a[i]);
 		int ig;
+		int global_mode = 0;
+		ActNamespace *gns;
+
+#if 0
+		printf (" --> here, i=%d\n", i);
+#endif		
+
+		if (!c->isPrimary (i)) {
+		  global_mode = 1;
+		}
 
 		type = c->a[i]->getctype();
 		it = c->a[i]->getvx()->t;
-		
+
 		UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
 
 		/* now find the type */
@@ -903,33 +938,76 @@ static void aflat_prs_scope (Scope *s)
 		  if (*ci == c->a[i]) continue;
 
 		  ig = (*ci)->isglobal();
-		  if (ig != is_global_conn) continue; 
+
+#if 0
+		  printf (" -- here, ig=%d, global_mode=%d\n", ig, global_mode);
+		  (*ci)->toid()->Print (stdout); printf ("\n");
+		  one->Print (stdout); printf ("\n");
+#endif		  
+
+		  if (global_mode && !ig) continue;
+		  if (!global_mode && (!(!ig || ig == is_global_conn))) continue;
+		  if (global_mode) {
+		    gns = (*ci)->getvx()->global;
+		  }
+		  else {
+		    gns = NULL;
+		  }
 
 		  two = (*ci)->toid();
 		  if (TypeFactory::isUserType (xit)) {
 		    suffixes = list_new ();
 		    if (type == 1) {
-		      _print_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
+		      if (global_mode && gns) {
+			_print_rec_bool_conns (two, one, rux, NULL, NULL, gns);
+		      }
+		      else {
+			_print_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
+		      }
 		    }
 		    else {
-		      _print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
-					     (*ci)->getvx()->t->arrayInfo(),
-					     NULL);
+		      if (global_mode && gns) {
+			_print_rec_bool_conns (two, one, rux,
+					       (*ci)->getvx()->t->arrayInfo(),
+					       xit->arrayInfo(),
+					       gns);
+		      }
+		      else {
+			_print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
+					       (*ci)->getvx()->t->arrayInfo(),
+					       NULL);
+		      }
 		    }
 		    list_free (suffixes);
 		    suffixes = NULL;
 		  }
 		  else if (TypeFactory::isBoolType (xit)) {
 		    if (type == 1) {
-		      _print_single_connection (one, NULL,
-						two, NULL,
-						NULL, NULL, NULL);
+		      if (global_mode && gns) {
+			_print_single_connection (two, NULL,
+						  one, NULL,
+						  NULL, NULL, gns);
+		      }
+		      else {
+			_print_single_connection (one, NULL,
+						  two, NULL,
+						  NULL, NULL, NULL);
+		      }
 		    }
 		    else {
-		      _print_single_connection (one, xit->arrayInfo(),
-						two,
-						(*ci)->getvx()->t->arrayInfo(),
-						NULL, NULL, NULL);
+		      if (global_mode && gns) {
+			_print_single_connection (two,
+						  (*ci)->getvx()->t->arrayInfo(),
+						  one, xit->arrayInfo(),
+						  NULL, NULL, gns);
+
+		      }
+		      else {
+			_print_single_connection (one, xit->arrayInfo(),
+						  two,
+						  (*ci)->getvx()->t->arrayInfo(),
+						  NULL, NULL, NULL);
+		      }
 		    }
 		  }
 		  delete two;
@@ -980,7 +1058,13 @@ static void aflat_prs_ns (ActNamespace *ns)
   }
 
   /* instances */
+#if 0  
+  printf ("scope-ns: %s\n", (ns == ActNamespace::Global() ? "global" : ns->getName()));
+#endif  
   aflat_prs_scope (ns->CurScope());
+#if 0  
+  printf ("end-scope-ns: %s\n", (ns == ActNamespace::Global() ? "global" : ns->getName()));
+#endif  
 }
 
 
