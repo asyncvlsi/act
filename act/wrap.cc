@@ -228,6 +228,11 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     ret->u.e.l = (Expr *) act_walk_X_expr_id (cookie, (pId *)e->u.e.l);
     /* e->u.e.r is the bitfield... const expression */
     break;
+
+  case E_FUNCTION:
+    ret->u.fn.s = Strdup (e->u.fn.s);
+    ret->u.fn.r = (Expr *) act_walk_X_expr (cookie, e->u.fn.r);
+    break;
     
   default:
     fatal_error ("-- unknown expression type --");

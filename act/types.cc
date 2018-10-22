@@ -1292,6 +1292,10 @@ int InstType::isEqual (InstType *it, int weak)
 
   if (!a || (weak == 1)) return 1; /* we're done */
 
+#if 0
+  printf ("checking arrays [weak=%d]\n", weak);
+#endif
+
   if (weak == 0) {
     if (!a->isEqual (it->a, 1)) return 0;
   }

@@ -8,7 +8,7 @@ act.cy
 act_walk_X*
 expr.c
 expr.h
-id.h
+act_parse_id.h
 Makefile.deps
 NOTES
 TAGS

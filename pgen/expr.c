@@ -452,22 +452,28 @@ static Expr *FF (void)
 {							
   Expr *e, *f;					
   int i;
+
+  return F ();
 							
   PUSH (Tl);						
   e = F ();					
   if (!e) {						
+    SET (Tl);
+    POP (Tl);
     return NULL;
   }							
   for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)
     if (T[_intcomp[i]] != -1)				
       break;						
   if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
+    POP (Tl);
     return e;
   }							
   for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)	
     if (T[_intcomp[i]] == file_sym (Tl))
       break;
   if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
+    POP (Tl);
     return e;
   }							
   f = newexpr ();					
@@ -477,7 +483,10 @@ static Expr *FF (void)
   f->u.e.r = F ();
   if (!f->u.e.r) {
     FREE (f);
-    return e;
+    efree (e);
+    SET (Tl);
+    POP (Tl);
+    return F();
   }
   /* success. But if it is endgt mode, and we have ">" and the
      following token is a ";" or ",", we undo this and only return the
