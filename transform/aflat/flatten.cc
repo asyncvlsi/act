@@ -205,7 +205,7 @@ static void _flat_connections_bool (ValueIdx *vx)
     if (tmp == c) continue;
 
     ig = tmp->isglobal();
-    if (!(!ig || ig == is_global)) continue;
+    if (!(!is_global || ig == is_global)) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -756,12 +756,18 @@ static void _flat_scope (Scope *s)
 	    Assert (c->hasSubconnections(), "Invariant fail");
 
 	    for (int i=0; i < c->numSubconnections(); i++) {
-	      if (c->hasDirectconnections (i) && c->isPrimary (i)) {
+	      if (c->hasDirectconnections (i)) {
 		int type;
 		InstType *xit;
 		ActId *one, *two;
 		ActConniter ci(c->a[i]);
 		int ig;
+		int global_mode = 0;
+		ActNamespace *gns;
+
+		if (!c->isPrimary(i)) {
+		  global_mode = 1;
+		}
 
 		type = c->a[i]->getctype();
 		it = c->a[i]->getvx()->t;
@@ -782,19 +788,39 @@ static void _flat_scope (Scope *s)
 		  if (*ci == c->a[i]) continue;
 
 		  ig = (*ci)->isglobal();
-		  if (!(!ig || ig == is_global_conn)) continue;
-
+		  if (global_mode && !ig) continue;
+		  if (!global_mode && !(!ig || ig == is_global_conn)) continue;
+		  if (global_mode) {
+		    gns = (*ci)->getvx()->global;
+		  }
+		  else {
+		    gns = NULL;
+		  }
+		  
 		  two = (*ci)->toid();
 		  if (TypeFactory::isUserType (xit)) {
 		    suffixes = list_new ();
 		    suffix_array = list_new ();
 		    if (type == 1) {
-		      _flat_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
+		      if (global_mode && gns) {
+			_flat_rec_bool_conns (two, one, rux, NULL, NULL, gns);
+		      }
+		      else {
+			_flat_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
+		      }
 		    }
 		    else {
-		      _flat_rec_bool_conns (one, two, rux, xit->arrayInfo(),
-					     (*ci)->getvx()->t->arrayInfo(),
-					     NULL);
+		      if (global_mode && gns) {
+			_flat_rec_bool_conns (two, one, rux, 
+					      (*ci)->getvx()->t->arrayInfo(),
+					      xit->arrayInfo(),
+					      gns);
+		      }
+		      else {
+			_flat_rec_bool_conns (one, two, rux, xit->arrayInfo(),
+					      (*ci)->getvx()->t->arrayInfo(),
+					      NULL);
+		      }
 		    }
 		    list_free (suffixes);
 		    list_free (suffix_array);
@@ -803,15 +829,30 @@ static void _flat_scope (Scope *s)
 		  }
 		  else if (TypeFactory::isBoolType (xit)) {
 		    if (type == 1) {
+		      if (global_mode && gns) {
+			_flat_single_connection (two, NULL,
+						 one, NULL,
+						 NULL, NULL, gns);
+		      }
+		      else {
 		      _flat_single_connection (one, NULL,
 						two, NULL,
 						NULL, NULL, NULL);
+		      }
 		    }
 		    else {
-		      _flat_single_connection (one, xit->arrayInfo(),
-						two,
-						(*ci)->getvx()->t->arrayInfo(),
-						NULL, NULL, NULL);
+		      if (global_mode && gns) {
+			_flat_single_connection (two,
+						 (*ci)->getvx()->t->arrayInfo(),
+						 one, xit->arrayInfo(),
+						 NULL, NULL, gns);
+		      }
+		      else {
+			_flat_single_connection (one, xit->arrayInfo(),
+						 two,
+						 (*ci)->getvx()->t->arrayInfo(),
+						 NULL, NULL, NULL);
+		      }
 		    }
 		  }
 		  delete two;
