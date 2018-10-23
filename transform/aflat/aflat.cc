@@ -890,117 +890,59 @@ static void aflat_prs_scope (Scope *s)
 	  /* we have connections to components of this as well, check! */
 	  list_t *sublist = list_new ();
 	  list_append (sublist, c);
-
-#if 0	  
-	  printf ("subconnections\n");
-#endif	  
-
 	  while ((c = (act_connection *)list_delete_tail (sublist))) {
 	    Assert (c->hasSubconnections(), "Invariant fail");
 
 	    for (int i=0; i < c->numSubconnections(); i++) {
-#if 0	      
-	      printf (" check %d\n", i);
-#endif
 	      if (c->hasDirectconnections (i)) {
-		int type;
-		InstType *xit;
-		ActId *one, *two;
-		ActConniter ci(c->a[i]);
-		int ig;
-		int global_mode = 0;
-		ActNamespace *gns;
+		if (c->isPrimary (i)) {
+		  int type;
+		  InstType *xit;
+		  ActId *one, *two;
+		  ActConniter ci(c->a[i]);
+		  int ig;
 
-#if 0
-		printf (" --> here, i=%d\n", i);
-#endif		
+		  type = c->a[i]->getctype();
+		  it = c->a[i]->getvx()->t;
 
-		if (!c->isPrimary (i)) {
-		  global_mode = 1;
-		}
+		  UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
 
-		type = c->a[i]->getctype();
-		it = c->a[i]->getvx()->t;
-
-		UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
-
-		/* now find the type */
-		if (type == 0 || type == 1) {
-		  xit = it;
-		}
-		else {
-		  Assert (rux, "what?");
-		  xit = rux->getPortType (i);
-		}
-
-		one = c->a[i]->toid();
-		for (ci = ci.begin(); ci != ci.end(); ci++) {
-		  if (*ci == c->a[i]) continue;
-
-		  ig = (*ci)->isglobal();
-
-#if 0
-		  printf (" -- here, ig=%d, global_mode=%d\n", ig, global_mode);
-		  (*ci)->toid()->Print (stdout); printf ("\n");
-		  one->Print (stdout); printf ("\n");
-#endif		  
-
-		  if (global_mode && !ig) continue;
-		  if (!global_mode && (!(!ig || ig == is_global_conn))) continue;
-		  if (global_mode) {
-		    gns = (*ci)->getvx()->global;
+		  /* now find the type */
+		  if (type == 0 || type == 1) {
+		    xit = it;
 		  }
 		  else {
-		    gns = NULL;
+		    Assert (rux, "what?");
+		    xit = rux->getPortType (i);
 		  }
 
-		  two = (*ci)->toid();
-		  if (TypeFactory::isUserType (xit)) {
-		    suffixes = list_new ();
-		    if (type == 1) {
-		      if (global_mode && gns) {
-			_print_rec_bool_conns (two, one, rux, NULL, NULL, gns);
-		      }
-		      else {
+		  one = c->a[i]->toid();
+		  for (ci = ci.begin(); ci != ci.end(); ci++) {
+		    if (*ci == c->a[i]) continue;
+
+		    ig = (*ci)->isglobal();
+
+		    if (!(!ig || ig == is_global_conn)) continue;
+
+		    two = (*ci)->toid();
+		    if (TypeFactory::isUserType (xit)) {
+		      suffixes = list_new ();
+		      if (type == 1) {
 			_print_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
-		      }
-		    }
-		    else {
-		      if (global_mode && gns) {
-			_print_rec_bool_conns (two, one, rux,
-					       (*ci)->getvx()->t->arrayInfo(),
-					       xit->arrayInfo(),
-					       gns);
 		      }
 		      else {
 			_print_rec_bool_conns (one, two, rux, xit->arrayInfo(),
 					       (*ci)->getvx()->t->arrayInfo(),
 					       NULL);
 		      }
+		      list_free (suffixes);
+		      suffixes = NULL;
 		    }
-		    list_free (suffixes);
-		    suffixes = NULL;
-		  }
-		  else if (TypeFactory::isBoolType (xit)) {
-		    if (type == 1) {
-		      if (global_mode && gns) {
-			_print_single_connection (two, NULL,
-						  one, NULL,
-						  NULL, NULL, gns);
-		      }
-		      else {
+		    else if (TypeFactory::isBoolType (xit)) {
+		      if (type == 1) {
 			_print_single_connection (one, NULL,
 						  two, NULL,
 						  NULL, NULL, NULL);
-		      }
-		    }
-		    else {
-		      if (global_mode && gns) {
-			_print_single_connection (two,
-						  (*ci)->getvx()->t->arrayInfo(),
-						  one, xit->arrayInfo(),
-						  NULL, NULL, gns);
-
 		      }
 		      else {
 			_print_single_connection (one, xit->arrayInfo(),
@@ -1009,10 +951,13 @@ static void aflat_prs_scope (Scope *s)
 						  NULL, NULL, NULL);
 		      }
 		    }
+		    delete two;
 		  }
-		  delete two;
+		  delete one;
 		}
-		delete one;
+		else {
+		  print_any_global_conns (c->a[i]);
+		}
 	      }
 	      if (c->a[i] && c->a[i]->hasSubconnections ()) {
 		list_append (sublist, c->a[i]);
