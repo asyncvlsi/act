@@ -757,95 +757,57 @@ static void _flat_scope (Scope *s)
 
 	    for (int i=0; i < c->numSubconnections(); i++) {
 	      if (c->hasDirectconnections (i)) {
-		int type;
-		InstType *xit;
-		ActId *one, *two;
-		ActConniter ci(c->a[i]);
-		int ig;
-		int global_mode = 0;
-		ActNamespace *gns;
+		if (c->isPrimary (i)) {
+		  int type;
+		  InstType *xit;
+		  ActId *one, *two;
+		  ActConniter ci(c->a[i]);
+		  int ig;
 
-		if (!c->isPrimary(i)) {
-		  global_mode = 1;
-		}
 
-		type = c->a[i]->getctype();
-		it = c->a[i]->getvx()->t;
+		  type = c->a[i]->getctype();
+		  it = c->a[i]->getvx()->t;
 		
-		UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
+		  UserDef *rux = dynamic_cast<UserDef *> (it->BaseType());
 
-		/* now find the type */
-		if (type == 0 || type == 1) {
-		  xit = it;
-		}
-		else {
-		  Assert (rux, "what?");
-		  xit = rux->getPortType (i);
-		}
-
-		one = c->a[i]->toid();
-		for (ci = ci.begin(); ci != ci.end(); ci++) {
-		  if (*ci == c->a[i]) continue;
-
-		  ig = (*ci)->isglobal();
-		  if (global_mode && !ig) continue;
-		  if (!global_mode && !(!ig || ig == is_global_conn)) continue;
-		  if (global_mode) {
-		    gns = (*ci)->getvx()->global;
+		  /* now find the type */
+		  if (type == 0 || type == 1) {
+		    xit = it;
 		  }
 		  else {
-		    gns = NULL;
+		    Assert (rux, "what?");
+		    xit = rux->getPortType (i);
 		  }
+
+		  one = c->a[i]->toid();
+		  for (ci = ci.begin(); ci != ci.end(); ci++) {
+		    if (*ci == c->a[i]) continue;
+
+		    ig = (*ci)->isglobal();
+		    if (!(!ig || ig == is_global_conn)) continue;
 		  
-		  two = (*ci)->toid();
-		  if (TypeFactory::isUserType (xit)) {
-		    suffixes = list_new ();
-		    suffix_array = list_new ();
-		    if (type == 1) {
-		      if (global_mode && gns) {
-			_flat_rec_bool_conns (two, one, rux, NULL, NULL, gns);
-		      }
-		      else {
+		    two = (*ci)->toid();
+		    if (TypeFactory::isUserType (xit)) {
+		      suffixes = list_new ();
+		      suffix_array = list_new ();
+		      if (type == 1) {
 			_flat_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
-		      }
-		    }
-		    else {
-		      if (global_mode && gns) {
-			_flat_rec_bool_conns (two, one, rux, 
-					      (*ci)->getvx()->t->arrayInfo(),
-					      xit->arrayInfo(),
-					      gns);
 		      }
 		      else {
 			_flat_rec_bool_conns (one, two, rux, xit->arrayInfo(),
 					      (*ci)->getvx()->t->arrayInfo(),
 					      NULL);
 		      }
+		      list_free (suffixes);
+		      list_free (suffix_array);
+		      suffixes = NULL;
+		      suffix_array = NULL;
 		    }
-		    list_free (suffixes);
-		    list_free (suffix_array);
-		    suffixes = NULL;
-		    suffix_array = NULL;
-		  }
-		  else if (TypeFactory::isBoolType (xit)) {
-		    if (type == 1) {
-		      if (global_mode && gns) {
-			_flat_single_connection (two, NULL,
-						 one, NULL,
-						 NULL, NULL, gns);
-		      }
-		      else {
-		      _flat_single_connection (one, NULL,
-						two, NULL,
-						NULL, NULL, NULL);
-		      }
-		    }
-		    else {
-		      if (global_mode && gns) {
-			_flat_single_connection (two,
-						 (*ci)->getvx()->t->arrayInfo(),
-						 one, xit->arrayInfo(),
-						 NULL, NULL, gns);
+		    else if (TypeFactory::isBoolType (xit)) {
+		      if (type == 1) {
+			_flat_single_connection (one, NULL,
+						 two, NULL,
+						 NULL, NULL, NULL);
 		      }
 		      else {
 			_flat_single_connection (one, xit->arrayInfo(),
@@ -854,10 +816,15 @@ static void _flat_scope (Scope *s)
 						 NULL, NULL, NULL);
 		      }
 		    }
+		    delete two;
 		  }
-		  delete two;
+		  delete one;
 		}
-		delete one;
+		else {
+		  if (g_apply_fn) {
+		    _any_global_conns (c->a[i]);
+		  }
+		}
 	      }
 	      if (c->a[i] && c->a[i]->hasSubconnections ()) {
 		list_append (sublist, c->a[i]);

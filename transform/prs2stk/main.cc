@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <act/act.h>
-#include <act/netlist.h>
+#include <act/passes/netlist.h>
 #include "config.h"
 
 
