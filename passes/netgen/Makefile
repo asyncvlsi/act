@@ -4,17 +4,16 @@
 #  All Rights Reserved
 #
 #-------------------------------------------------------------------------
-TARGETLIBS=libactpass_$(EXT).a
-TARGETINCS=passes.h
-TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen
 
-USEOBJS=flatten/$(EXT)/aflat.o netgen/$(EXT)/netgen.o flatten/$(EXT)/flatten.o
+weird: install_inc all
+
+EXTRA=netgen.o 
+TARGETINCS=netlist.h
+TARGETINCSUBDIR=act/passes
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(TARGETLIBS): $(USEOBJS)
-	ar ruv $(TARGETLIBS) $(USEOBJS)
-	$(RANLIB) $(TARGETLIBS)
+netgen.o: netlist.o emit.o
+	ld -r -o netgen.o netlist.o emit.o
 
 -include Makefile.deps
