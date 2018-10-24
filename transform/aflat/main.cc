@@ -7,7 +7,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "aflat.h"
+#include <act/passes/aflat.h>
 
 void usage (char *s)
 {
