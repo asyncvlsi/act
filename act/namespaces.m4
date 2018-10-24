@@ -73,6 +73,7 @@ import_item: "import" STRING ";"
     int len, len2;
     listitem_t *li;
     ActNamespace *ns, *tmpns;
+    FILE *ftmp;
 
     if (OPT_EMPTY ($2)) {
       ns = $0->curns;
@@ -118,11 +119,22 @@ import_item: "import" STRING ";"
 	strcat (s, "/");
       }
     }
-    strcat (s, ".act\"");
-    s--;
 
-    apply_X_import_item_opt0 ($0, s);
+    MALLOC (tmp, char, strlen(s)+14);
+    sprintf (tmp, "%s/_all_.act", s);
+    ftmp = fopen (tmp, "r");
+    if (ftmp) {					\
+      fclose (ftmp);
+      sprintf (tmp, "%s/_all_.act", s-1);
+    }
+    else {
+      sprintf (tmp, "%s.act", s-1);
+    }
+    strcat (tmp, "\"");
+    s--;
     FREE (s);
+    apply_X_import_item_opt0 ($0, tmp);
+    FREE (tmp);
 
     ns = apply_X_qualified_ns_opt0 ($0, $2, $3);
 
