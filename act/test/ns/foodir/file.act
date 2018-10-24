@@ -1,0 +1,4 @@
+namespace foodir {
+
+ export defproc baz (bool x) { }
+}
