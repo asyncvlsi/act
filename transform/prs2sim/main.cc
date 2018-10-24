@@ -8,7 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <act/passes.h>
-#include <act/netlist.h>
+#include <act/passes/netlist.h>
 #include <map>
 #include "config.h"
 
