@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <act/act.h>
-#include "config.h"
-#include "netlist.h"
+#include <act/passes/netlist.h>
+#include <config.h>
 
 FILE *fpout;			/* output file */
 int emit_verilog;
