@@ -7,25 +7,14 @@
 BINARY=netgen.$(EXT)
 
 TARGETS=$(BINARY)
-TARGETINCS=netlist.h
-TARGETINCSUBDIR=act
 
-EXTRA=../../passes/$(EXT)/netgen.o
-
-OBJS=main.o netlist.o emit.o
+OBJS=main.o 
 
 SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(BINARY): $(LIB) $(OBJS) $(ACTDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACT)
-
-$(EXTRA): netlist.o emit.o
-	-if [ ! -d ../../passes/$(EXT) ]; \
-         then \
-           mkdir ../../passes/$(EXT); \
-        fi
-	ld -r -o $(EXTRA) netlist.o emit.o
+	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
 
 -include Makefile.deps
