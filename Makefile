@@ -7,6 +7,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=common pgen act aflat prs2net 
+SUBDIRS=common pgen act passes transform simulation layout
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
