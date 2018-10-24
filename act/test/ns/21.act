@@ -1,0 +1,3 @@
+import foodir;
+
+foodir::baz x;
