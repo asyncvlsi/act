@@ -218,6 +218,8 @@ namespace_management: [ "export" ] "namespace" ID
       FREE (r);
     }
     $0->curns = $0->curns->Parent();
+    $A($0->curns);
+    $0->scope = $0->curns->CurScope();
     OPT_FREE ($5);
     return NULL;
 }}
