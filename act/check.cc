@@ -36,6 +36,31 @@ const char *act_type_errmsg (void)
   return typecheck_errmsg;
 }
 
+static void dumpflags(int f)
+{
+  if (f == T_ERR) { printf ("[t-ERR]"); return; }
+  printf ("[v=%x]", f);
+  if (f & T_INT) {
+    printf ("[t-int]");
+  }
+  if (f & T_REAL) { 
+    printf ("[t-real]");
+  }
+  if (f & T_BOOL) {
+    printf ("[t-bool]");
+  }
+  if (f & T_STRICT) {
+    printf ("[t-strict]");
+  }
+  if (f & T_PARAM) {
+    printf ("[t-param]");
+  }
+  if (f & T_ARRAYOF) {
+    printf ("[t-array]");
+  }
+}
+
+
 int act_type_var (Scope *s, ActId *id)
 {
   InstType *it;
@@ -305,7 +330,12 @@ int act_type_expr (Scope *s, Expr *e)
     break;
 
   case E_SELF:
-    return T_SELF;
+    {
+      ActId *tmpid = new ActId ("self");
+      lt = act_type_var (s, tmpid);
+      delete tmpid;
+    }
+    return lt;
     break;
     
   case E_ARRAY:

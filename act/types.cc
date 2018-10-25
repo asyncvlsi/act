@@ -1157,6 +1157,7 @@ Channel::Channel (UserDef *u) : UserDef (*u)
 
   for (i=0; i < 6; i++) {
     methods[i] = NULL;
+    emethods[i] = NULL;
   }
   MkCopy (u);
 }
@@ -1816,13 +1817,13 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     Chan *ch = dynamic_cast <Chan *>(x->BaseType());
     Assert (ch, "Hmm?!");
     Assert (ch->datatype(), "What?");
-    ux->CurScope()->Add ("this", ch->datatype());
+    ux->CurScope()->Add ("self", ch->datatype());
   }
   else if (dynamic_cast<Data *>(this)) {
     InstType *x;
     Assert (parent, "Hmm...");
     x = ux->root();
-    ux->CurScope()->Add ("this", x);
+    ux->CurScope()->Add ("self", x);
   }
   else {
     /* process, no this pointer */
@@ -1903,6 +1904,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   for (i=0; i < 6; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
+    xc->emethods[i] = expr_expand (emethods[i], ns, xc->CurScope(), 0);
   }
 
   return xc;
