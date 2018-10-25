@@ -488,7 +488,7 @@ is_a physical_inst_type
     if (!ir) {
       $E("Cannot find root built-in type");
     }
-    $0->scope->Add ("this", ir);
+    $0->scope->Add ("self", ir);
 
     $0->u_d->SetParent ($5, $4);
 }}
@@ -621,23 +621,11 @@ one_method: ID "{" hse_body "}"
 	  $0->u_c->setMethod (ACT_METHOD_RECV_REST, $3);
 	}
       }
-      else if (strcmp ($1, "send_probe") == 0) {
-	if ($0->u_c->getMethod (ACT_METHOD_SEND_PROBE)) {
-	  $E("Duplicate ``send_probe'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_SEND_PROBE, $3);
-	}
-      }
-      else if (strcmp ($1, "recv_probe") == 0) {
-	if ($0->u_c->getMethod (ACT_METHOD_RECV_PROBE)) {
-	  $E("Duplicate ``recv_probe'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_RECV_PROBE, $3);
-	}
-      }
       else {
+	if ((strcmp ($1, "send_probe") == 0) ||
+	    (strcmp ($1, "recv_probe") == 0)) {
+	  $E("send/recv probe syntax uses method expressions");
+	}
 	$E("Method ``%s'' is not supported", $1);
       }
     }
@@ -646,6 +634,36 @@ one_method: ID "{" hse_body "}"
     }
     return NULL;
 }}
+| ID "=" wbool_expr ";"
+{{X:
+    if ($0->u_c) {
+      if (strcmp ($1, "send_probe") == 0) {
+	if ($0->u_c->geteMethod (ACT_METHOD_SEND_PROBE)) {
+	  $E("Duplicate ``send_probe'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_SEND_PROBE, $3);
+	}
+      }
+      else if (strcmp ($1, "recv_probe") == 0) {
+	if ($0->u_c->geteMethod (ACT_METHOD_RECV_PROBE)) {
+	  $E("Duplicate ``recv_probe'' method");
+	}
+	else {
+	  $0->u_c->setMethod (ACT_METHOD_RECV_PROBE, $3);
+	}
+      }
+      else {
+	$E("Method-expression ``%s'' is not supported", $1);
+      }
+    }
+    else {
+      $E("Method-expression in invalid context");
+    }
+    return NULL;
+}}
+    
+
 ;
 
 /*
@@ -754,7 +772,7 @@ is_a physical_inst_type
     if (!ir) {
       $E("Cannot find root built-in type");
     }
-    $0->scope->Add ("this", ir);
+    $0->scope->Add ("self", ir);
     $0->u_c->SetParent ($5, $4);
 }}
  "(" [ port_formal_list ] ")" 

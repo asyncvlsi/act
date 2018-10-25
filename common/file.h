@@ -61,6 +61,7 @@ char *file_errstring (LFILE *);
 int file_eof (LFILE *);
 
 char *file_tokenstring (LFILE *);
+const char *file_tokenname (LFILE *l, int tok);
 int file_sym (LFILE *);
 char *file_prev (LFILE *);
 int file_integer (LFILE *);

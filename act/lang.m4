@@ -251,34 +251,34 @@ base_stmt[act_chp_lang_t *]: send_stmt
 {{X:
     return $1;
 }}
-    | recv_stmt
-    {{X:
+| recv_stmt
+{{X:
 	return $1;
-    }}
-    | assign_stmt
-    {{X:
+}}
+| assign_stmt
+{{X:
 	return $1;
-    }}
-    | "skip" 
-    {{X:
+}}
+| "skip" 
+{{X:
 	act_chp_lang_t *c;
 	NEW (c, act_chp_lang_t);
 	c->type = ACT_CHP_SKIP;
 	return c;
-    }}
-    | "(" chp_body ")"
-    {{X:
+}}
+| "(" chp_body ")"
+{{X:
 	return $2;
-    }}
-    | ID "(" { chp_log_item "," }* ")" /* log */
-    {{X:
+}}
+| ID "(" { chp_log_item "," }* ")" /* log */
+{{X:
 	act_chp_lang_t *c;
 	NEW (c, act_chp_lang_t);
 	c->type = ACT_CHP_FUNC;
 	c->u.func.name = string_create ($1);
 	c->u.func.rhs = $3;
 	return c;
-    }}
+}}
 ;
 
 
