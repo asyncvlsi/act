@@ -117,14 +117,16 @@ language. A single @sc{act} file can be used to describe the transistor
 implementation of a circuit as well as a high-level functional
 description of the same circuit.
 
-There are three parts to @sc{act}---reading in an @sc{act} file, 
-an elaboration phase where parameters are expanded, and finally a circuit constructionan instantiation phase. In the parsing phase, the input is
-converted into internal data structures. In the expansion phase,
+There are three parts to @sc{act}---reading in an @sc{act} file, an
+elaboration phase where parameters are expanded, and finally a circuit
+construction and instantiation phase. In the parsing phase, the input
+is converted into internal data structures. In the expansion phase,
 parameters are substituted, creating a concrete hierarchical
 netlist. In the instantiation phase, data structures are created for
 every circuit element specified in the @sc{act} file. Errors may be
 reported in any of these stages. As a rule of thumb, errors are
-reported as soon as there is sufficient information.
+reported as soon as there is sufficient information to determine the
+error.
 
 @menu
 * Simple example::      A simple example of how @sc{act} can be used.
@@ -154,7 +156,7 @@ it.
 
 @example
 /* my first act program */
-defchan a1of2 = chan(bool) (bool d0,d1,a)
+defchan a1of2 <: chan(bool) (bool d0,d1,a)
 @{
   spec @{
     exclhi(d0,d1)  // @r{exclusive high directive}
@@ -190,9 +192,12 @@ the C naming convention. The @dfn{body} of the type @code{a1of2} is
 enclosed in braces.
 
 The @code{defchan} construct specifies that @code{a1of2} is a channel
-type, and the signature @code{= chan(bool)} is used to specify that
-it is a channel of type @code{bool} and that Boolean-valued variables
-can be sent or received on this channel.
+type, and the signature @w{``@code{<: chan(bool)}''} is used to
+specify that @code{a1of2} is an implementation of a channel of type
+@code{chan(bool)}. Boolean-valued variables can be sent or received on
+this channel since the type of the value communicated on the
+@code{chan} that it implements is @code{bool}. @code{chan} is also a
+built-in type that is used for communication channels.
 
 @cindex type, body
 @cindex body, language-specific
@@ -203,7 +208,7 @@ can be sent or received on this channel.
 @cindex specification body
 
 The definition of type @code{a1of2} consists of a @code{spec}
-body. The construct @w{@var{name} @code{@{ @dots{} @}}} is used to
+body. The construct @w{@var{name} @code{@{ @dots{}  @}}} is used to
 specify a @dfn{language-specific body} within a type definition. A
 type can have any number of these language-specific bodies. A program
 using the @sc{act} library typically will examine a subset of all
@@ -231,12 +236,13 @@ that uses this channel.
 @cindex @code{prs} body
 @cindex body, @code{prs}
 
-The process @code{bitbucket} is defined to take a @code{a1of2}
-variable @code{d} as its argument. @code{bitbucket} is a process rather
-than a channel because it was created using @code{defproc}. The body of
-@code{bitbucket} contains a different language-specific body, namely a
-@code{prs} body. @code{prs} bodies correspond to @dfn{production
-rule set} descriptions of the process. In the example, the production rules for @code{bitbucket} 
+The process @code{bitbucket} is defined to take a variable @code{d} of
+type @code{a1of2} as its argument. @code{bitbucket} is a process
+rather than a channel because it was created using @code{defproc}
+instead of @code{defchan}. The body of @code{bitbucket} contains a
+different language-specific body, namely a @code{prs} body. @code{prs}
+bodies correspond to @dfn{production rule set} descriptions of the
+process. In the example, the production rules for @code{bitbucket}
 corresponds to what is commonly referred to as a ``bit-bucket'' or a
 ``token sink'' for a four phase dual rail channel.
 
@@ -247,12 +253,12 @@ corresponds to what is commonly referred to as a ``bit-bucket'' or a
 The statement @code{bitbucket b} creates an @dfn{instance} of type
 @code{bitbucket} named @code{b}. The statement is said to be an
 @dfn{instantiation}. Execution of this statement creates variable
-@code{b} of type @code{bitbucket}, production rules corresponding to the
-body of a @code{bitbucket}, and the specification body for the
-@code{a1of2} variable @code{b.d}. Similarly, the statement
-@code{a1of2 d} creates an instance of type @code{a1of2}. @sc{act}
-uses the standard dot-notation to access the names that are in port
-lists, since they are analogous to the fields of types in conventional
+@code{b} of type @code{bitbucket}, production rules corresponding to
+the body of a @code{bitbucket}, and the specification body for the
+@code{a1of2} variable @code{b.d}. Similarly, the statement @code{a1of2
+d} creates an instance of type @code{a1of2}. @sc{act} uses the
+standard dot-notation to access the names that are in port lists,
+since they are analogous to the fields of types in conventional
 programming languages.
 
 @cindex connections
@@ -291,9 +297,10 @@ the end of line.
 Variables in @sc{act} fall into two basic categories: @dfn{parameters}
 and @dfn{circuit elements}. A parameter is a variable that is used to
 parameterize a circuit element in some way and must be of type integer
-(@code{pint}), real (@code{preal}), or Boolean (@code{pbool}). Circuit
-elements consist of Booleans (@code{bool}), integers (@code{int}), or
-channels (@code{chan}).
+(@code{pint} for unsigned integer or @code{pints} for signed integer),
+real (@code{preal}), or Boolean (@code{pbool}). Circuit elements
+consist of Booleans (@code{bool}), integers (@code{int}), or channels
+(@code{chan}).
 
 @cindex identifier, lexical conventions
 
@@ -311,6 +318,7 @@ bool x5;
 On the other hand, the following declaration is incorrect.
 
 @kindex Expecting bnf-item `@var{item}', got `@var{item}'
+
 @example
 pbool 5;
 @result{} @error{} Expecting bnf-item `instance_id', got `5'
@@ -326,7 +334,7 @@ cannot be accessed outside the body of the type itself. For example,
 consider the following definition of @code{bitbucket}.
 
 @example
-define bitbucket(a1of2 d)
+defproc bitbucket(a1of2 d)
 @{
   bool p;
   prs @{
@@ -342,13 +350,13 @@ within the bit-bucket @code{b}, we cannot access it by statements
 outside the body. Therefore, a statement such as @code{b.p=c.d0} would
 result in the following message:
 
-@kindex Could not find identifier `@var{var}' in current scope. Field `@var{f}' exists but is not a port.
+@kindex `@var{var}' is not a port for `@var{type}'
+
 @example
 bitbucket b;
 a1of2 c;
 b.p = c.0;
-@result{} @error{} Could not find identifier `b.p' in current scope.
-@result{} Field `p' exists in `b' but is not a port.
+@result{} @error{} `p' is not a port for `bitbucket'
 @end example
 
 @cindex expressions, numeric
@@ -367,7 +375,7 @@ logical variables, the logical constants @code{true} and @code{false},
 and the logical operators @code{&}, @code{|}, and @code{~} denoting
 the and, or, and negation operations respectively.  Numeric expressions
 can be compared using @code{<}, @code{<=}, @code{>}, @code{>=},
-@code{==}, and @code{!=} for the operators less than, less than or equal
+@code{=}, and @code{!=} for the operators less than, less than or equal
 to, greater than, greater than or equal to, equal to, and not equal to
 respectively.
 
@@ -417,11 +425,12 @@ second creates @code{x[12]}, @dots{}, @code{x[14]}. This is a valid
 sequence of statements, and it makes @code{x} a sparse array. The
 following, on the other hand, is not valid.
 
-@kindex Overlapping range specifiers: `@var{XXX}' v/s `@var{YYY}'
+@kindex Sparse array: overlap in range in instantiation
 @example
 bool x[10];
 bool x[9..14];
-@result{} @error{} Overlapping range specifiers: [9..14] v/s [0..9]
+@result{} @error{} Sparse array: overlap in range in instantiation
+@result{} Original: [10]; adding: [9..14]
 @end example
 
 @noindent
@@ -438,45 +447,43 @@ below.
 
 @cindex array connections
 
-@kindex Array connection error: LHS and RHS have incompatible # of elements
+@kindex Types `@var{type1}' and `@var{type2}' are not compatible
 @example
 bool x[10];
 bool x[12..14];
-bool y[12];
+bool y[2];
 x=y;
-@result{} @error{} Array connection error:
-@result{} LHS and RHS have incompatible # of elements (13 v/s 12)
+@result{} @error{} Types `bool[ [10]+[12..14] ]' and `bool[2]' are not compatible
 @end example
 
-Note that the dimensionality of the two arrays must match for a
-connection to succeed, but their shape need not be the same.
+Note the syntax used to report the sparse array type as a combination
+of two sub-arrays.
+
+The dimensionality of the two arrays must match for a connection to
+succeed, and their shapes also have to be compatible.
 
 @kindex Type-checking failed in connection. incompatible number of dimensions
+
 @example
 bool x[12];
 bool w[4][3];
 x=w;
-@result{} @error{} Type-checking failed in connection.
-@result{} incompatible number of dimensions (1  v/s 2)
+@result{} @error{} Type-checking failed in connection
+@result{} Types `bool[12]' and `bool[4][3]' are not compatible
 @end example
 
 The following are examples of valid connections:
 
 @example
 bool x[10];
-bool x[12..14];
+bool x[10..12];
 bool y[13];
 x=y; // @r{success!}
 
 bool u[4][3];
-bool v[3][4];
+bool v[4][3];
 u=v; // @r{success!}
 @end example
-
-This partially restrictive mechanism for array connections is a
-compromise between flexibility and error-checking during the
-connection process.
-
 
 @cindex array, connections
 
@@ -503,7 +510,7 @@ carry chain for a ten bit ripple-carry adder.
 
 @example
 fulladder fa[10];
-(;i : 9 : fa[i].co=fa[i+1].ci)
+(i : 9 : fa[i].co=fa[i+1].ci; )
 @end example
 
 The parentheses are used to group the body of the loop. @code{i} is
@@ -522,9 +529,9 @@ indices are connected to @code{z}.
 @example
 bool x[10], y[10], z[10];
 
-(; i : 10 : 
-   [ (i%2) = 0 -> x[i] = y[i]
-   [] (i%2) = 1 -> x[i] = z[i]
+( i : 10 : 
+   [ (i%2) = 0 -> x[i] = y[i];
+   [] (i%2) = 1 -> x[i] = z[i];
    ]
 )
 @end example
@@ -565,9 +572,6 @@ bool Reset,Reset_;
 This permits the names @code{Reset} and @code{Reset_} to be used
 throughout the @sc{act} file. 
 
-The definition of types cannot be nested. In other words,
-a construct such as @code{defproc} cannot contain a @code{defproc} within its
-body.
 
 @node   Intro to Namespaces,  Importing files, Scoping, Introduction
 @comment  node-name,  next,  previous,  up
@@ -576,7 +580,7 @@ body.
 
 Complex projects involve a large number of @sc{act} files, including
 shared libraries and blocks designed by different people. One could
-easily envison a situation where a particular idenfier name is used by
+easily envision a situation where a particular identifier name is used by
 multiple designers to describe different processes.
 
 To keep names of processes, channels, and types separate for different
@@ -590,23 +594,24 @@ within the namespace.
 
 @example
 namespace lib @{
-  export defchan a1of2 = chan(bool) (bool d0,d1,a) @{ @dots{} @}
+  export defchan a1of2 <: chan(bool) (bool d0,d1,a) @{ @dots{} @}
 @}
 
 lib::a1of2 d;
 @end example
 
-Within the @code{lib} namespace, we have created a channel definition
-of type @code{a1of2}. There are a few items that should be noted.
+We have created a channel definition of type @code{a1of2} within the
+@code{lib} namespace. There are a few items that should be noted.
 First, the directive @code{export} indicates that the @code{a1of2}
 type is in fact visible outside the namespace scope. This is why we
 can use the notation @code{lib::a1of2} to access this type. The
 rationale for this is that one might have created a library, but might
 only want a few types exposed (e.g. top-level cells). By default, a
-type is not visible outside a namespace. Second, a user-defined
-namespace cannot contain any global instances. This means that the
-only legal items within a namespace are namespace directives and type
-definitions.
+type is not visible outside a namespace unless it is explicitly
+@code{export}ed. Second, a user-defined namespace cannot contain any
+global instances of processes. This means that the only legal items
+within a namespace are namespace directives, type definitions, and
+global data/channel types.
 
 Namespaces can be nested. For instance, we could have:
 
@@ -626,9 +631,26 @@ within namespace @code{processor}. This brings up another subtlety of
 the @code{export} directive. An exported definition is only exported
 one level up in the namespace hierarchy. Hence, although the channel
 @code{processor::lib::a1of2} exists, it cannot be accessed outside the
-@code{processor} namespace. If this channel needs to be visible
-outside the @code{processor} namespace, this can be accomplished in
-one of two ways:
+@code{processor} namespace.
+
+@kindex Type is not exported up the namespace hierarchy
+
+@example
+namespace processor @{
+
+  namespace lib @{
+       export defchan a1of2 = chan(bool) (bool d0,d1,a) @{ @dots{} @}
+  @}
+
+@}
+processor::lib::a1of2 d;
+@result{} @error{} Type is not exported up the namespace hierarchy:
+@result{}    processor::lib::a1of2
+@end example
+
+If this channel needs to be visible
+outside the @code{processor} namespace, this can be accomplished by
+exporting the namespace itself.
 
 @example
 namespace processor @{
@@ -642,28 +664,22 @@ processor::lib::a1of2 d;
 @end example
 
 In this approach, every element that is exported from namespace
-@code{lib} is also exported out of namespace @code{processor}. An
-alternative is to do the following:
+@code{lib} is also exported out of namespace @code{processor}.
 
-@example
-namespace processor @{
-
-  namespace lib @{
-       export defchan a1of2 = chan(bool) (bool d0,d1,a) @{ @dots{} @}
-  @}
-  export defchan lib::a1of2;
-@}
-processor::lib::a1of2 d;
-@end example
-
-This is more selective, and only re-exports the specified definition.
+Something that is a little unusual is that a type cannot be accessed
+within a sub-namespace unless it is exported. For instance, in the
+example above, if @code{a1of2} was defined within the
+@code{processor}@ namespace, then it will not be visible within the
+@code{processor::lib} namespace unless it is exported. An
+@code{export} directive is needed to permit a type to be used in other
+namespaces apart from the one in which the type was defined.
 
 A namespace can have global variables. The global variables described
 earlier were simply a special case corresponding to the namespace
 @code{Global}. For instance, a collection of process definitions within
 a namespace might have a reset signal that is global to the namespace
 only, and which is generated using some logic defined within the
-namespace.
+namespace. 
 
 @c ------------------------------------------------------------------------
 
@@ -739,8 +755,8 @@ namespace, not just the ones that are exported (including types within
 nested namespaces). Note that this @code{open} statement will fail if
 all types cannot be uniquely resolved.
 
-This sequence of @code{open} and @code{import} statements can only be
-at the top of a file.
+The sequence of @code{open} and @code{import} statements can only be
+at the beginning of an @sc{act} file.
 
 A second version of import uses namespaces directly, but requires that
 @sc{act} files be placed in locations that match the namespace
@@ -784,7 +800,7 @@ an object completely specifies what the object is and how it can be
 used.
 
 Types come in two flavors: parameters and circuit elements. Parameters
-are variables whose types are @code{pint}, @code{pints}, @code{preal},
+are variables whose types are @code{pint}, @code{preal},
 @code{pbool}, or arrays thereof. All other types refer to circuit
 elements. The basic circuit element is a Boolean value
 @code{bool}. Circuit element types are broken down into three
@@ -817,20 +833,26 @@ and @code{Case} are different identifiers.
 The following basic types are supposed by @sc{act}:
 
 @itemize @bullet
+@item Parameter types
+@itemize @minus
 @item @code{pint}, for unsigned integer parameters.
 @item @code{pints}, for signed integer parameters.
 @item @code{preal}, for real-valued parameters.
 @item @code{pbool}, for Boolean-valued parameters.
+@item @code{ptype}, for type parameters.
+@end itemize
+@item Data types
+@itemize @minus
 @item @code{bool}, for Boolean circuit signals.
 @item @code{int}, for unsigned integer-valued data.
-@item @code{ints} for signed integer-valued data (2's complement).
-@item @code{enum} for enumerations.
+@item @code{enum}, for enumerations.
 @item @code{chan}, for channels.
+@end itemize
 @end itemize
 @cindex parameters
 @cindex types, meta-language
 @noindent
-The first three types (and arrays of them) are referred to
+The first group of types (and arrays of them) are referred to
 as @dfn{parameter} types or @dfn{meta-language} types. This is because
 they do not represent physical entities in the circuit itself, but
 rather values that are used to construct the circuit or specify circuit
@@ -840,9 +862,10 @@ The @code{bool} type corresponds to an electrical node in the
 circuit. Eventually all types get implemented using circuit elements and
 @code{bool}s.
 
-The @code{int} and @code{chan} types are used for higher-level
-representations of the circuit. These types support parameters, and are
-described in more detail later (@pxref{User-defined types}).
+The @code{int}, @code{enum}, and @code{chan} types are used for
+higher-level representations of the circuit. These types support
+parameters, and are described in more detail later
+(@pxref{User-defined types}).
 
 Variables of these basic types can be created by specifying the type
 name followed by a comma-separated list of identifier names.
@@ -859,13 +882,12 @@ The statements above are referred to as @dfn{instantiations}, since they
 create variables that are instances of the basic types. It is an error
 to have more than one instantiation of a variable in the same scope.
 
-@kindex Could not create instance `@var{var}'. Instance previously created in current scope with different type.
+@kindex Duplicate instance for name `@var{var}'
+
 @example
 bool a;
 pint a;
-@result{} @error{} Could not create instance `a'
-@result{} Instance previously created in current scope with different type
-@result{} Previous type: bool
+@result{} @error{} Duplicate instance for name `a'
 @end example
 
 @cindex initializer
@@ -881,11 +903,11 @@ preal b=8.9;
 The order of initialization of variables is left to right. 
 Using constructs such as
 
-@kindex Could not find identifier `@var{var}' in current scope. `@var{var}' not found in current or global scope.
+@kindex The identifier `@var{var}' does not exist in the current scope
+
 @example
 pint a=c, c=5;
-@result{} @error{} Could not find identifier `c' in current scope.
-@result{} `c' not found in current or global scope.
+@result{} @error{} The identifier `c' does not exist in the current scope
 @end example
 
 @noindent
@@ -929,19 +951,19 @@ integers, arbitrary integer expressions can also be used as array range
 specifications, as shown below.
 
 @example
-ints ar4[5*3]
+int ar4[5*3]
 preal ar5[7*x+(y%2)-p] // @r{here @t{x}, @t{y}, and @t{p} must be integer parameter types}
 @end example
 
 Expressions used to specify array ranges must be of integer
 type. Variables used must always be parameter types (typically @code{pint}).
 
-@kindex Expecting an integer expression, got an expression of type: @var{type}
+@kindex Expression must be of type int
+
 @example
 preal a = 4.3;
 bool ar6[7*a+5];
-@result{} @error{} Expecting an integer expression, got an expression of
-@result{} type: preal
+@result{} @error{} Expression must be of type int
 @end example
 
 Multidimensional arrays are specified by additional square brackets. Two
@@ -996,16 +1018,16 @@ which indicates that array @code{m} is to be instantiated at positions
 Unlike ordinary instances, array instantiations cannot be followed by
 initializers (@pxref{Array Connections}).
 
-@kindex Can't have connections in an array instance.
+@kindex Connection can only be specified for non-array instances
 @example
 bool x[10];
 bool y[10] = x;
-@result{} @error{} Can't have connections in an array instance.
+@result{} @error{} Connection can only be specified for non-array instances
 @end example
 
 For type-checking purposes, an array is defined by its base type
-(@code{bool} in the example above), number of dimensions, and the total
-number of elements in the array.
+(@code{bool} in the example above), number of dimensions, and the
+shape of the array in each dimension.
 
 
 @c ------------------------------------------------------------------------
@@ -1023,10 +1045,10 @@ number of elements in the array.
 
 User-defined type can be used to create complex circuit structures.  A
 new user-defined type name is introduced by using @code{defproc},
-@code{defcell}, @code{defchan}, @code{deftype}, or @code{defenum}
+@code{defcell}, @code{defchan}, or @code{deftype}
 statements. All user-defined types have the same basic structure: (i)
 a type signature, that provides information about the interface to the
-type and the ports that are externally visible; (ii) a @dfn{body},
+type and the ports that are externally visible; and (ii) a @dfn{body},
 contained in braces, that specifies the detailed definition of the
 user-defined type. The type chosen for each port must be the most
 specific type used by that port in the body (@pxref{User-defined Connections}).
@@ -1054,10 +1076,11 @@ The definition above creates a new process, called @code{test}, that has
 a port list consisting of four @code{bool}s. This port list cannot
 contain any parameter types (@code{pint}, etc).
 
-If the body of the user-defined type is replaced by a single semi-colon,
-the statement corresponds to a type @dfn{declaration}. Declarations are
-typically used when defining mutually recursive types. The declaration
-corresponding to type @code{test} is
+If the body of the user-defined type is replaced by a single
+semi-colon or is empty, the statement corresponds to a type
+@dfn{declaration}. Declarations are typically used when defining
+mutually recursive types. The declaration corresponding to type
+@code{test} is:
 
 @example
 defproc test (bool n, m; bool p, q);
@@ -1067,22 +1090,25 @@ If the process is never defined, @sc{act} assumes that it has an empty
 body. If a process declaration is followed by a definition, the type
 signature must match exactly.
 
-@kindex Duplicate type `@var{type}' in namespace `@var{nm}'; incompatible signature
+@kindex Name `@var{type}' previously defined as a different process
+
 @example
 defproc test (bool n, m; bool p, q);
 defproc test (bool n, m; bool p) @{ @}
-@result{} @error{} Duplicate type `test' in namespace `-global-'; 
-incompatible signature
+@result{} @error{} Name `test' previously defined as a different process
+
 @end example
 
 @noindent
 A type can only have one definition in a given scope.
 
-@kindex Process `@var{proc}': duplicate definition!
+@kindex Process `@var{type}': duplicate definition with the same type signature
+
 @example
 defproc test (bool n) @{ @dots{} @}
 defproc test (bool n) @{ @dots{} @}
-@result{} @error{} Process `-global-::test': duplicate definition!
+@result{} @error{} Process `test': duplicate definition with the same
+@result{} type signature
 @end example
 
 @cindex scope, type names
@@ -1097,7 +1123,8 @@ also be used to construct a process.
 @cindex ports
 
 Port lists have a syntax similar to instantiations. A type
-specifier can be followed by a list of identifiers. Semicolons are used
+specifier can be followed by a list of identifiers rather than just a
+single identifier, similar to an instantiation. Semicolons are used
 to separate parameters of differing types, as shown in the example
 below.
 
@@ -1108,7 +1135,8 @@ defproc test2(bool n,m; d1of2 p,q) @{ @dots{} @}
 In this example we assumed that there was a user-defined type (or
 channel) called @code{d1of2} that was used in the port list. Any
 user-defined type in the port list must be either a data or channel
-type.
+type. Processes are supposed to correspond to circuit blocks, and so
+cannot be port parameters to other circuit blocks.
 
 @cindex array, within parameter lists
 
@@ -1128,18 +1156,17 @@ defproc test2 (bool a,b,c, d[0..9]) @{ @}
 @result{} @error{} Expecting token `]', got `.'
 @end example
 
-The ports themselves cannot be sparse arrays. This means that the
-following is illegal:
+The ports themselves cannot be converted to sparse arrays within the
+body of a definition. This means that the following is illegal:
 
-@kindex Could not create instance `@var{var}'. Array instance: Cannot extend port parameter type
+@kindex Array instance for `@var{var}': cannot extend a port array
 @example
 defproc test1 (bool a, b, c, d[10])
 @{
   bool d[11..12];
   ...
 @}
-@result{} @error{} Could not create instance `d'
-@result{} Array instance: Cannot extend port parameter type
+@result{} @error{} Array instance for `d': cannot extend a port array
 @end example
 
 Type names and variable names do not share the same name space.
@@ -1149,7 +1176,7 @@ vice versa is allowed, but deprecated.
 @cindex cell
 Cells follow the same rules for definition as processes, except the
 keyword @code{defcell} is used in place of @code{defproc}. The reason
-for separating cells from processes, is that processes are supposed to
+for separating cells from processes is that processes are supposed to
 correspond to logical entities that are meaningful semantic
 objects. For example, a process ordinarily has its origins in a CHP
 language description (@pxref{Languages}). Cells, on the other hand,
@@ -1158,24 +1185,30 @@ gates like C-elements, NAND, or NOR gates, or commonly used circuit
 structures like completion detection logic. Cells are distinguished
 from processes to make it easier to write automation tools.
 
-@subsection Datatypes
+@subsection Data types
 
-The rules for processes apply to user-defined data types as well. Data
-types have some additional structure that is not required for a
-process. In particular, the body of the data type and its type signature
-provide information that relates a user-defined data type to a built-in
-data type. When a user-defined data type is specified, a method for
-setting the value of the data type and reading its value must also be
-specified.
+A data type is defined using @code{deftype}. A data type corresponds
+to an integer or Boolean value, although it could also be a composite
+construct like a record or structure (from software programming
+languages). The syntax is similar to a process, and the constraints
+about declarations/etc. apply here as well.
+
+Data types have some additional structure that is not required for a
+process. In particular, the body of the data type and its type
+signature provide information that relates a user-defined data type to
+a previously defined or built-in data type. When a user-defined data
+type is specified, a method for setting the value of the data type and
+reading its value must also be specified. If omitted, certain features
+of data types will not be enabled for the defined type.
 
 The following is a simple example of a datatype that creates a dual-rail
 representation for a Boolean variable. The first line specifies that
-@code{d1of2} is a new data type, and it corresponds to the built-in type
+@code{d1of2} is a new data type, and it implements the built-in type
 @code{int<1>}---a one-bit integer (@pxref{Parameterized types}).
 
 @cindex deftype
 @example
-deftype d1of2 = int<1> (bool d0,d1)
+deftype d1of2 <: int<1> (bool d0,d1)
 @{
   spec @{
     exclhi(d0,d1)
@@ -1187,7 +1220,7 @@ The body of the type is similar to a process, except it can only contain
 connections, @code{spec} bodies, and special @dfn{methods}. The
 following would result in an error:
 
-@kindex Expecting bnf-item `@code{set_method}', got `@code{bool}'
+@kindex Expecting bnf-item `@code{methods_body}', got `@code{bool}'
 @example
 deftype d1of2 = int<1> (bool d0,d1)
 @{
@@ -1196,10 +1229,10 @@ deftype d1of2 = int<1> (bool d0,d1)
     exclhi(d0,d1)
   @}
 @}
-@result{} @error{} Expecting bnf-item `set_method', got `bool'
+@result{} @error{} Expecting bnf-item `methods_body', got `bool'
 @end example
 
-There are two methods that are specified for a data type: (i) a @dfn{set
+There are two methods that can be specified for a data type: (i) a @dfn{set
 method}, used to write a value to the type; (ii) a @dfn{get method},
 used to read the value of the type. One can think of these as type
 conversion methods invoked automatically to read or write the data
@@ -1216,11 +1249,13 @@ deftype d1of2 = int<1> (bool d0,d1)
    spec @{
     exclhi(d0,d1)
    @}
-   set @{
-     [self=1->d1-;d0+ [] self=0->d0-;d1+]
-   @}
-   get @{
-     [d0->self:=1 [] d1->self:=0]
+   methods @{
+     set @{
+       [self=1->d1-;d0+ [] self=0->d0-;d1+]
+     @}
+     get @{
+       [d0->self:=1 [] d1->self:=0]
+     @}
    @}
 @}
 @end example
@@ -1234,75 +1269,123 @@ the methods specify conversion operations.
 The selection statement in the @code{get} method uses the
 deterministic selection operator @code{[]} (@pxref{Languages}). This is an
 implicit check that when the @code{get} method is invoked, signals
-@code{d0} and @code{d1} cannot both be @code{true}.
+@code{d0} and @code{d1} cannot both be @code{true}. We have also made
+this explicit in the specification body.
 
 Port lists for data types can be either built-in data types or
 user-defined data types. Channels (built-in or user-defined) and
-processes are not valid types for ports of a data type.
-
-
-@subsection Enumerations
-
-Enumerations are special cases of data types, where symbolic names can
-be used instead of integer values. The syntax to define an enumeration
-type is
-
-@example
-defenum my_enum @{ ONE, TWO, THREE, FOUR @};
-@end example
-
-The enumeration implicitly implements the type @code{enum<4>}
-(@pxref{Parameterized types}).
+processes are not valid types for ports of a data type, since a data
+type is supposed to represent a circuit structure that is used to
+represent a data value.
 
 @subsection Channels
 
 Channels are similar to data types. Instead of relating a user-defined
 channel to built-in data, we relate them to a built-in channel types
 instead. The methods required for supporting the full functionality of
-a channel are send and receive, rather than a read and write operation.
+a channel are operations necessary to send and receive data on the
+channel, rather than a read and write operation on a data value.
+
+There are six possible methods that can be defined for a channel type:
+
+@itemize @bullet
+@item Methods for sending and receiving values on the channel
+@itemize @minus
+@item @code{set}, @code{send_rest}: together these two operations
+implement a send operation on the channel. The send operation consists
+of two parts: (i) setting the data value to be sent (@code{set}); and
+(ii) completing the synchronization operation (@code{send_rest}).
+@item @code{get}, @code{recv_rest}: together these two operations
+implement a receive operation on the channel. The receive operation
+consists of two parts: (i) getting the value that has been transmitted
+along the channel (@code{get}); and (ii) completing the
+synchronization operation.
+@end itemize
+@item Methods for probing a channel to determine if there is
+synchronization operation being attempted.
+@itemize @minus
+@item @code{send_probe}: this is the probe operation for the sending
+end of the channel. It corresponds to the receiver being ready to communicate.
+@item @code{recv_probe}: this is the probe operation for the receiving
+end of the channel. It corresponds to the sending being ready to communicate.
+@end itemize
+@end itemize
+
+The send operation @code{X!e}@ in the CHP language corresponds to two
+parts: setting the data value, followed by the synchronization
+operation. Setting the data value also indicates that the sender is
+ready to communicate. It is illegal to set the data value multiple
+times without an intervening synchronization operation. Finally,
+attempting to set the data value might block if the previous channel
+operation has not completed as yet. Whether or not this could occur
+depends on the channel protocol.
+
+The receive operation @code{X?v}@ in the CHP language corresponds to
+two parts: receiving the data value, followed by the synchronization
+operation. Attempting to get the data value from the channel will
+block if the sender has not provided any value. Once a value has been
+extracted from the channel, the synchronization operation can be
+executed. Prior to the synchronization, multiple get operations can be
+executed; the channel must be designed so that subsequent get
+operations will return the same value as the first one, and will be
+guaranteed not to block. The get operation is used to implement a CHP
+value probe, where the receiver can peek at the value pending in the
+channel without attempting a synchronization operation.
+
+An example definition of a Boolean channel where the channel has an
+lazy-active send and passive receive is below.
 
 @example
-defchan e1of2 = chan(bool) (bool d0,d1,e)
+defchan e1of2 <: chan(bool) (bool d0,d1,e)
 @{
    spec @{
     exclhi(d0,d1)
    @}
-   send @{
-     [e];[self->d1+[]~self->d0+];[~e];d0-;d1-
-   @}
-   recv @{
-     [d0->self-[]d1->self+];e-;[~d0&~d1];e+
+   methods @{
+    set @{
+      [e];[self->d1+[]~self->d0+]
+    @}
+    send_rest @{
+      [~e];d0-,d1-
+    @}
+    get @{
+     [d0->self-[]d1->self+]
+    @}
+    recv_rest @{
+     e-;[~d0&~d1];e+
+    @}
+    recv_probe = (d0|d1);
    @}
 @}
 @end example
 
-@cindex send method
-@cindex recv method
-@cindex method, send
-@cindex method, recv
+@cindex send_rest method
+@cindex recv_rest method
+@cindex method, send_rest
+@cindex method, recv_rest
 
-In the example above, the @code{send} method specifies the sequence of
-operations on the channel variables that are invoked for a send
-action. The @code{recv} method specifies the sequence of operations
-used to perform a receive. The special variable @code{self} is used to
-specify the @code{bool} value that is being either sent or received on
-the channel.
+In the example above, the @code{set} and @code{send_rest} methods
+specify the sequence of operations on the channel variables that are
+invoked for a send action. The @code{get} and @code{recv_rest} methods
+specify the sequence of operations used to perform a receive. The
+special variable @code{self} is used to specify the @code{bool} value
+that is being either sent or received on the channel.
+
+This channel has an active send and passive receive, and hence probes
+are only supported at the receiver. The @code{recv_probe} method
+expression specifies the Boolean expression corresponding to the probe
+at the receiver end of the channel. A @code{send_probe} can be
+specified in a similar way when the sender is passive and receiver is
+active.
 
 The @code{e1of2} channel has been specified to perform a four-phase
 handshake protocol. If the channel were to correspond to a two-phase
-protocol, a different sequence of actions for @code{send}@ and
-@code{recv} would be required.
+protocol, a different sequence of actions can be specified instead.
 
 Port lists for channel types can be data types (built-in or
 user-defined) or channels. Processes are not valid types for ports of a
 channel type.
 
-If a channel has multiple types like @code{chan(bool,bool)}, then the
-@code{self} variable is an array whose size is determined by the
-number of types separated by commas. Array indexing can be used to
-access the values corresponding to each position (so @code{self[0]}
-would be the first @code{bool}, and @code{self[1]} would be the second
-@code{bool}).
 
 @c --------------------------------
 
@@ -1478,43 +1561,6 @@ parameters are more completely specified as @code{fulladder<>},
 although the angle brackets can be omitted. Arrays can only correspond
 to instances of the same type---so an array cannot contain a three-bit
 adder and five-bit adder.
-
-@subsection Relaxed Parameters
-
-In addition to ordinary template parameters, one can also specify
-@dfn{relaxed parameters}. Relaxed parameters are like ordinary
-parameters, with one exception: arrays can contain instances with
-different relaxed parameters. To make sure this does not create
-strange situations, port parameters cannot depend on the value of
-relaxed parameters.
-
-The example below shows the syntax for defining relaxed parameters:
-
-@example
-template<pint N | pint D>
-defproc adder (e1of2 a[N], b[N]; e1of2 s[N]) @{ @dots{} @}
-@end example
-
-The vertical bar separates the list of ordinary parameters from
-relaxed parameters. Relaxed parameters are useful for parameters that
-specify auxillary information about the circuit that is not necessary
-critical for functionality. For instance, a relaxed parameter might be
-suitable for specifying transistor sizing information or delays for
-production rules.
-
-Relaxed parameters combined with sparse arrays provide a way to have
-an array of instances which are almost alike. For the adder example,
-we could have the following scenario:
-
-@example
-adder<8,1> a[3];
-adder<8,2> a[3..5];
-adder<8,4> a[6..7];
-@end example
-
-By itself, @code{a}@ is an array of adders which all have identical port
-signatures though their internals may be different due to different
-relaxed parameters.
 
 @node Directionality, Subtyping, Parameterized types, Types
 @comment  node-name,  next,  previous,  up
@@ -1820,7 +1866,7 @@ defproc ripple_adder (e1of2? a[32], b[32], cin; e1of2! out[32], cout)
 
 @cindex expressions
 
-Typing rules for integers (what happens when you mix int, ints, pint).
+Typing rules for integers (what happens when you mix int, pint).
 
 Signed and unsigned, and what happens if you mix them.
 

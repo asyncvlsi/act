@@ -306,6 +306,11 @@ char *file_tokenstring (LFILE *l)
   return lex_tokenstring (l->l->l);
 }
 
+const char *file_tokenname (LFILE *l, int tok)
+{
+  return lex_tokenname (l->l->l, tok);
+}
+
 char *file_prev (LFILE *l)
 {
   return lex_prev (l->l->l);

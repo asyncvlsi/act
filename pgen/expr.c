@@ -908,84 +908,9 @@ Expr *expr_parse_real (LFILE *l)
 }
 
 
-static char *opsym (int t)
+static const char *opsym (int t)
 {
-  char *s;
-
-  switch (t) {
-  case E_AND:
-    s = "&";
-    break;
-
-  case E_OR:
-    s = "|";
-    break;
-
-  case E_PLUS:
-    s = "+";
-    break;
-
-  case E_MINUS:
-    s = "-";
-    break;
-
-  case E_MULT:
-    s = "*";
-    break;
-
-  case E_DIV:
-    s = "/";
-    break;
-
-  case E_MOD:
-    s = "%";
-    break;
-
-  case E_LSL:
-    s = "<<";
-    break;
-
-  case E_LSR:
-    s = ">>";
-    break;
-
-  case E_ASR:
-    s = ">>";
-    break;
-
-  case E_XOR:
-    s = "^";
-    break;
-
-  case E_LT:
-    s = "<";
-    break;
-
-  case E_GT:
-    s = ">";
-    break;
-
-  case E_LE:
-    s = "<=";
-    break;
-
-  case E_GE:
-    s = ">=";
-    break;
-
-  case E_EQ:
-    s = "==";
-    break;
-
-  case E_NE:
-    s = "!=";
-    break;
-
-  default:
-    s = "------";
-    break;
-  }
-  return s;
+  return file_tokenname (Tl, T[t]);
 }
 
 const char *expr_operator_name (int t)

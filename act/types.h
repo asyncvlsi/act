@@ -412,7 +412,9 @@ class Channel : public UserDef {
   ~Channel();
   
   void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
+  void setMethod (datatype_methods t, Expr *e) { emethods[t] = e; }
   act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
+  Expr *geteMethod(datatype_methods t) { return emethods[t]; }
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
@@ -420,6 +422,7 @@ class Channel : public UserDef {
   
  private:
   struct act_chp_lang *methods[6];
+  Expr *emethods[6];
 };
 
 class TypeFactory {
