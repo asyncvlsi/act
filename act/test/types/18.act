@@ -1,0 +1,18 @@
+defchan e1of2 <: chan(bool) (bool d0, d1, e)
+{
+  spec {
+   exclhi (d0,d1)
+  }
+  methods {
+    set {
+     [e];[self->d1+ [] ~self->d0+]
+    }
+    send_rest {
+     [~e];d0-,d1-
+    }
+    get {
+      [d0->self+ [] d1->self-]
+    }
+    recv_probe = (d0|d1);
+  }
+}
