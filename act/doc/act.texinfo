@@ -1221,6 +1221,7 @@ connections, @code{spec} bodies, and special @dfn{methods}. The
 following would result in an error:
 
 @kindex Expecting bnf-item `@code{methods_body}', got `@code{bool}'
+
 @example
 deftype d1of2 = int<1> (bool d0,d1)
 @{
@@ -1267,10 +1268,16 @@ In the example above, the @code{set} method says that the way to set a
 the methods specify conversion operations.
 
 The selection statement in the @code{get} method uses the
-deterministic selection operator @code{[]} (@pxref{Languages}). This is an
-implicit check that when the @code{get} method is invoked, signals
-@code{d0} and @code{d1} cannot both be @code{true}. We have also made
-this explicit in the specification body.
+deterministic selection operator @code{[]} (@pxref{Languages}). This
+is an implicit check that when the @code{get} method is invoked,
+signals @code{d0} and @code{d1} cannot both be @code{true}. We have
+also made this explicit in the specification body. Also, if both
+@code{d0} and @code{d1}@ are false (i.e. an illegal state in which to
+execute a get operation), the variable @code{self} is not assigned;
+the operation waits for at least one of @code{d0} or @code{d1} to be
+true. This is viewed as an error for a data type. (This is different
+in the case of a channel, where the semantics of the channel permit
+waiting.)
 
 Port lists for data types can be either built-in data types or
 user-defined data types. Channels (built-in or user-defined) and
@@ -1411,7 +1418,30 @@ well as creating whatever is specified by the body of the type
 definition. The list of ports of a user-defined type can be
 accessed from the scope outside the type definition by using
 dot-notation. These externally visible ports are analogous to the
-@dfn{fields} of structures or record types in standard programming languages.
+@dfn{fields} of structures or record types in standard programming
+languages.
+
+This analogy to records can be used to build complex data types,
+albeit with slightly different syntax compared to traditional
+programming languages. The following is a simple example that
+illustrates this. 
+
+@example
+deftype mystruct <: int<16> (int<4> f1, f2; int<8> f3)
+@{
+  methods @{
+   set @{
+     f1:=self >> 12;
+     f2:=(self >> 8) & 0xf;
+     f3:=self & 0xff
+   @}
+   get @{
+     self:=(f1 << 12) | (f2 << 8) | f3
+   @}
+  @}
+@}
+@end example
+
 
 @c ------------------------------------------------------------------------
 
@@ -1448,12 +1478,12 @@ int<37> y; // y @r{is a thirty-seven bit integer}
 When interpreting these bits as integers, @sc{act} assumes an unsigned
 binary representation. The default bit-width is thirty-two.
 
-The channel type @code{chan} can be parameterized by the list of types
-that can be sent and received on the channel. 
+The channel type @code{chan} can be parameterized by the type that is
+being sent and received on the channel.
 
 @example
 chan(bool) x; // x @r{is a Boolean channel}
-chan(bool,int<16>) y; // @r{a Boolean and 16-bit integer pair}
+chan(int<16>) y; // @r{is a 16-bit integer channel}
 @end example 
 
 The default data type for a channel is assumed to be the default
@@ -1467,10 +1497,11 @@ restricted range.
 enum<5> x; // x @r{can take on values 0, 1, 2, 3, 4}
 @end example
 
-For convenience, these values can be treated as integers for the
-purposes of expressions. Also, enumerations that have power-of-two
-ranges are type-equivalent to the approprate @code{int} type. For
-instance, @code{enum<2>}@ is equivalent to @code{int<1>}.
+For convenience, these values are treated as integers for the purposes
+of expressions. Also, enumerations that have power-of-two ranges are
+type-equivalent to the approprate @code{int} type. For instance,
+@code{enum<2>}@ is equivalent to @code{int<1>}. Enumerations are
+useful when specifying a data value that is a one-hot code.
 
 @subsection User-defined Types
 
@@ -1518,7 +1549,7 @@ template<pint N>
 defproc adder (e1of2 a[N], b[N]; e1of2 s[N])
 @{
    fulladder fa[N];
-   (; i : N-1 : fa[i].a = a[i]; fa[i].b = b[i]; fa[i].s = s[i];
+   ( i : N-1 : fa[i].a = a[i]; fa[i].b = b[i]; fa[i].s = s[i];
                 fa[i].co = fa[i+1].ci; )
    zerosource z;
    bitbucket w;
@@ -1531,10 +1562,11 @@ This creates a parameterized ripple-carry adder. Notice the use of
 loops and arrays to connect the carry chain for the adder, and the
 inputs and outputs of the process to the @code{fulladder} ports.
 
-As shown in the example above, the arguments in the first parameter list
-can be specified by listing them next to the type name
+As shown in the example above, the arguments in the template parameter
+list are specified by listing them next to the type name
 (@pxref{User-defined Connections}). Trailing arguments can be omitted
-from the parameter list attached to the type as shown in the example below.
+from the parameter list attached to the type as shown in the example
+below.
 
 @example
 template<pint N; preal w[N]>
@@ -1548,14 +1580,15 @@ example, the following might be an N-bit dual rail definition.
 
 @example
 template<pint N>
-deftype d1of2 = int<N> (bool d0[N], d1[N]) @{ @dots{} @}
+deftype d1of2 <: int<N> (bool d0[N], d1[N]) @{ @dots{} @}
 @end example
 
-As seen above, changing the parameters for the type can completely
-change the structure of the circuit that results. It can also change
-the ports for the type. Hence, when checking for type compatibility,
-the values of parameters are also taken into account. Hence, the full
-type for instance @code{a2} above is in fact @code{adder<5>}, not just
+Since the body of the type can use loops and selection statements in
+arbitrary ways, changing the parameters for the type can completely
+change the structure of the circuit. It can also change the ports for
+the type. Hence, when checking for type compatibility, the values of
+parameters are also taken into account. Hence, the full type for
+instance @code{a2} above is in fact @code{adder<5>}, not just
 @code{adder}. Types such as @code{fulladder} that do not have
 parameters are more completely specified as @code{fulladder<>},
 although the angle brackets can be omitted. Arrays can only correspond
@@ -1604,24 +1637,35 @@ chan?(int) z; // @r{Only receives permitted}
 @end example
 
 Again, the same syntax is valid for user-defined channels. These
-constructs are useful in libraries for additional error checking.
+constructs are useful in libraries for additional error checking, and
+conveying more information to the user of the library.
 
 @subsection Interaction with user-defined types
 
 Direction specifications can be used for built-in data and channel
 types, as well as user-defined types. Consider the @code{e1of2}
 user-defined channel type that we saw earlier:
+
 @example
-defchan e1of2 = chan(bool) (bool d0,d1,e)
+defchan e1of2 <: chan(bool) (bool d0,d1,e)
 @{
    spec @{
     exclhi(d0,d1)
    @}
-   send @{
-     [e];[self->d1+[]~self->d0+];[~e];d0-;d1-
-   @}
-   recv @{
-     [d0->self-[]d1->self+];e-;[~d0&~d1];e+
+   methods @{
+    set @{
+      [e];[self->d1+[]~self->d0+]
+    @}
+    send_rest @{
+      [~e];d0-,d1-
+    @}
+    get @{
+     [d0->self-[]d1->self+]
+    @}
+    recv_rest @{
+     e-;[~d0&~d1];e+
+    @}
+    recv_probe = (d0|d1);
    @}
 @}
 @end example
@@ -1639,32 +1683,31 @@ bool?! d0; // @r{@code{e1of2?} has @code{bool?} permissions, and @code{e1of2!} h
 bool!? d0; // @r{@code{e1of2?} has @code{bool!} permissions, and @code{e1of2!} has @code{bool?} permissions}
 @end example
 
-Hence, a better definition of an @code{e1of2} channel would be:
+@cindex types, !?
+@cindex types, ?!
+
+Hence, a better definition of an @code{e1of2} channel would more
+completely specify the access permissions for the port parameters in
+the following way.
 
 @example
-defchan e1of2 = chan(bool) (bool?! d0,d1; bool!? e)
-@{
-   spec @{
-    exclhi(d0,d1)
-   @}
-   send @{
-     [e];[self->d1+[]~self->d0+];[~e];d0-;d1-
-   @}
-   recv @{
-     [d0->self-[]d1->self+];e-;[~d0&~d1];e+
-   @}
-@}
+defchan e1of2 <: chan(bool) (bool?! d0,d1; bool!? e) @{ ... @}
 @end example
 
+A careful examination of the type signature reveals that the sender
+and receiver have the appropriate permissions. There is a subtle
+interaction between connections and directional
+types in @sc{act}. This is detailed in @pxref{User-defined Connections}.
 
 @node  Subtyping,  ptype type, Directionality, Types
 @comment  node-name,  next,  previous,  up
 
-@section Implementation, Subtyping and Skeletons
+@section Implementation and refinement
+
 
 When types are created using either @code{deftype} or @code{defchan},
-they are defined as either the implementation of a type, or a subtypes
-of an existing type.
+they are defined as the implementation of a type. This is also
+possible for processes defined using @code{defproc}.
 
 @subsection Implementation
 
@@ -1676,14 +1719,21 @@ of a built-in data type. In the example above, the channel
 @code{chan(bool)}. The implementation has additional port parameters,
 and it specifies the communication protocols for a send and receive
 action. The syntax that is used to say that we have an implementation
-is the @code{=} sign between the name of the type and the base type it
-is related to. When the @code{=} sign is used, the right hand side
-must be a built-in type.
+is the @code{<:} symbol between the name of the type and the parent type
+that it is related to.
 
-When a type implements a built-in type, the two can be used
-interchangeably.  The implementation of data and channel types both
-include methods that permit conversion between the built-in
-representation and the user-defined implementation.
+When a type implements another one, the new type can be used in places
+the old type was used. While this is superficially similar to
+subtyping in programming languages, it is better viewed as a
+refinement relationship. So, if type @code{tA} implements type
+@code{tB}, then @code{tA} has a more detailed description of the
+implementation compared to @code{tB}. Type @code{tB} is the
+@dfn{parent type} for type @code{tA}. As seen earlier, each data type
+or channel type can have a method body that specifies all the
+operations that can be performed using the type. These method bodies
+relate operations on the type to operations on the parent type
+(through @code{self}).
+
 
 Different implementations of the same type are not equivalent or
 interchangeable. For example, one can imagine two different
@@ -1691,46 +1741,137 @@ implementations of an @code{int<2>}: two dual-rail codes, or a
 one-of-four code. Both are implementations, but they are not
 equivalent to each other.
 
-@subsection Subtyping
 
-A more interesting option is to use sub-typing. Sub-typing is used to
-create related versions of an existing type. If type @code{foo} is a
-subtype of @code{bar}, then the basic rule says that one can use
-@code{foo} instances in all the same contexts where @code{bar}
-instances can be used.
+A more interesting option is to use refinement between two
+user-defined types. Refinement is used to create related versions of
+an existing type. If type @code{foo} implements @code{bar}, then the
+basic rule is that one can use @code{foo} instances in all the same
+contexts where @code{bar} instances can be used. The meaning of
+defining one type to be an implementation of another is discussed in
+detail below.
 
-Sub-typing is only supported on processes and cells. The reason for
-this restriction is that subtyping on channels and data types means
-that the types have to be equivalent. (Note: this is not true for
-types with @code{!} or @code{?} decorators, but we are ignoring this
-for the moment.)  In addition, if a process/cell is defined as a
-sub-type of another, the sub-type cannot @emph{conflict} with the
-original type.
 
-Type conflicts occur when the same language body is repeated. For
-example, if the original type and the new type contain a @code{prs}
-language body (@pxref{Languages}), then a type conflict is said
-to occur. One way to always avoid a type conflict is to only use
-user-defined types that have empty definitions. Such user-defined
-types that only exist to be used on the right-hand side of sub-typing
-relationships are called @emph{skeletons}.
+@subsection Refinement
+
+When a user defined type implements another, there are several items
+to consider: (i) the template parameters (if any); (ii) the port
+parameters; and the body of the new type. Since the new type is
+supposed to implement the old one, @sc{act} defines the template
+parameters and port parameters for the new type using the old type as
+a starting point.
 
 The port list of the new type consists of the original port list in
 the base type plus the additional ports specified in the type
 definition---in other words, the new type @emph{extends} the original
-port list. The definition of the new type is the union of the original
-type definition and the new body.
+port list. As an illustration, consider:
+
+@example
+defproc type1 (bool a, b) @{ ... @}
+defproc type2 <: type1 (bool c) @{ ... @}
+@end example
+
+In this case @code{type2} would have ports @code{a}, @code{b}, and
+@code{c}, since it is an implementation of @code{type1}.
+
+Template parameters are handled in a similar fashion, except there is
+a complication. In the example below, @code{type2} would have two
+template parameters @code{N} and @code{M}, as might be expected from
+the port list example above.
+
+@example
+template<pint N>
+defproc type1 (bool a, b) @{ ... @}
+
+template<pint M>
+defproc type2 <: type1 (bool c) @{ ... @}
+@end example
+
+However, we can also define @code{type2} in the following manner:
+
+@example
+template<pint N>
+defproc type1 (bool a, b) @{ ... @}
+
+template<pint M>
+defproc type2 <: type1<4> (bool c) @{ ... @}
+@end example
+
+In this version, the template paramter from @code{type1} has been
+specified in the type definition for @code{type2}. To permit this
+feature, template parameters for the new type are defined in the
+following manner:
+@itemize @bullet
+@item Template parameters are categorized as @dfn{definable parameters} versus
+@dfn{pre-specified parameters}. Fresh template parameters are always
+definable.
+@item Pre-specified parameters are not part of the parameter set that
+can be specified when a type is created.
+@item The value of the pre-specified parameter is computed based on
+the type signature.
+@item The list of parameters accessible in the body of the type and
+outside the type is the combination of the ones defined by the new
+type and the parent type.
+@item The order of template parameters in the new type corresponds to
+the new parameters first (in the order specified), followed by any
+definable parameters left in the parent type.
+@end itemize
+
+So in the example above, we could create an instance of @code{type2}
+as follows:
+
+@example
+type2<5> x;
+// x.N, x.M @r{are both accessible!}
+@end example
+
+The parameter @code{N} for @code{x} will be @code{4}, since that has
+been pre-specified in the type definition for @code{type2}. If instead
+we had specified @code{type2 <: type1} as in the earlier example, then
+the instance
+
+@example
+type2<5,7> x;
+// x.M=5, x.N=7
+@end example
+
+would set @code{N} (the new template parameter) to @code{5}, and
+@code{M} (the parent, still definable parameter) to @code{7}. Finally,
+the following would be an error:
+
+@kindex Duplicate meta-parameter name in port list: `@var{N}'
+@kindex Conflict occurs due to parent type: @var{type}
+
+@example
+template<pint N> defproc type1 (bool a, b) @{ ... @}
+template<pint N> defproc type2 <: type1 (bool c) @{ ... @}
+@result @error{} Duplicate meta-parameter name in port list: `N'
+@result Conflict occurs due to parent type: type1
+@end example
+since the name of the template parameter is repeated.
+
+
+
+The body of the new type is the union of the original type definition
+and the new body. As an example to illustrate how this might be used,
+consider the following example: 
 
 @example
 defproc buffer (e1of2? l, e1of2! r)
 @{
+   bool x;
+
    chp @{
-     int x;
      *[ l?x;r!x ]
    @}
 @}
+@end example
 
-defproc wchb <: buffer
+@code{buffer} specifies the CHP description for a one-place FIFO. This
+can be implemented using a variety of circuits, and hence we could
+define a specific implementation as follows:
+
+@example
+defproc wchb <: buffer ()
 @{
    prs @{
      ...
@@ -1738,17 +1879,24 @@ defproc wchb <: buffer
 @}
 @end example
 
+The process @code{wchb} is a specific implementation of the buffer
+(without any extra ports) that contains a particular production-rule
+implementation of the same buffer.
+
+@subsection Overrides
+
+@b{XXX: here}
+
 The port list can also be used to @emph{override} the original
 variable in the port list of the base type, but in this situation the
-new variable must either implement or be a sub-type of the
-original. For example, an alternate way to specify the buffer example
-is the following:
+new variable must be an implementation of the original. For example,
+an alternate way to specify the buffer example is the following:
 
 @example
 defproc buffer (chan?(int<1>) l, chan!(int<1>) r)
 @{
+   int<1> x;
    chp @{
-     int x;
      *[ l?x;r!x ]
    @}
 @}

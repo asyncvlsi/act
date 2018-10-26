@@ -1,0 +1,3 @@
+ERROR: File `21.act', line 5, col 9
+	Duplicate meta-parameter name in port list: `N'
+	Conflict occurs due to parent type: type1
