@@ -1,0 +1,6 @@
+template <pint N>
+deftype type1 <: int<N> (bool a, b) {  }
+
+
+template<pint M>
+deftype type2 <: type1<M*2> (bool p) { }

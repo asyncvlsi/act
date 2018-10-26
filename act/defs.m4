@@ -176,41 +176,52 @@ def_or_proc ID
     /*printf ("Orig scope: %x\n", $0->scope);*/
     $0->scope = $0->u_p->CurScope ();
 }}
-[ is_a physical_inst_type ]
+[ "<:" physical_inst_type ]
 {{X:
     if (!OPT_EMPTY ($4)) {
       ActRet *r;
-      void *v1, *v2;
-      listitem_t *li;
-      int v;
+      void *v;
       InstType *it;
 
       r = OPT_VALUE ($4);
-      $A(r->type == R_LIST);
-      
-      li = list_first (r->u.l);
-      $A(li);
-      v1 = list_value (li);
-
-      $A(list_next (li));
-      li = list_next (li);
-      v2 = list_value (li);
-      
-      $A(list_next (li) == NULL);
-      list_free (r->u.l);
-      FREE (r);
-
-      r = (ActRet *) v1;
-      $A(r->type == R_INT);
-      v = r->u.ival;
-      FREE (r);
-      
-      r = (ActRet *)v2;
       $A(r->type == R_INST_TYPE);
       it = r->u.inst;
+
+      if (it->hasinstGlobal()) {
+	$E("Type specifier in implementation relation cannot use globals");
+      }
+      
       FREE (r);
 
+      if (!TypeFactory::isProcessType (it)) {
+	$e("Parent type of a process must be a process type!");
+	fprintf ($f, "\nParent type: ");
+	it->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      if (it->getDir() != Type::direction::NONE) {
+	$E("Direction flags not permitted on parent type");
+      }
+
       /* XXX: inheritence type v, parent it */
+      $0->u_p->SetParent (it);
+
+      /* now merge parameters */
+      Process *pp = dynamic_cast<Process *>(it->BaseType());
+      $A(pp);
+
+      for (int i=0; i < pp->getNumParams(); i++) {
+	const char *s = pp->getPortName (-(i+1));
+	InstType *st = pp->getPortType (-(i+1));
+	if ($0->u_p->AddMetaParam (st, s) != 1) {
+	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  it->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
     }
     OPT_FREE ($4);
 }}
@@ -458,7 +469,7 @@ defdata: [ template_spec ]
     $0->u_d = d;
     $0->scope = d->CurScope ();
 }}
-is_a physical_inst_type
+"<:" physical_inst_type
 {{X:
     InstType *ir;
     /* parent type cannot be
@@ -467,30 +478,45 @@ is_a physical_inst_type
        
        Note that meta-params are ruled out by parser rules 
     */
+    
+    if ($5->hasinstGlobal()) {
+      $E("Type specifier in implementation relation cannot use globals");
+    }
+    
     if (TypeFactory::isProcessType ($5->BaseType())) {
       $E("A data type cannot be related to a process");
     }
     if (TypeFactory::isChanType ($5->BaseType())) {
       $E("A data type cannot be related to a channel");
     }
-    if (TypeFactory::isUserType ($5->BaseType ())) {
-      UserDef *u;
-      u = dynamic_cast<UserDef *>($5->BaseType());
+    ir = $5;
 
-      /*--- XXX: FIXME we need to add parameters */
-
-      $0->scope->Merge (u->CurScope ());
-      ir = $5;
+    if (ir->getDir() != Type::direction::NONE) {
+      $E("Direction flags not permitted on parent type");
     }
-    else {
-      ir = $5;
+    
+    if (TypeFactory::isUserType ($5->BaseType ())) {
+
+      Data *dp = dynamic_cast<Data *>(ir->BaseType());
+      $A(dp);
+
+      for (int i=0; i < dp->getNumParams(); i++) {
+	const char *s = dp->getPortName (-(i+1));
+	InstType *st = dp->getPortType (-(i+1));
+	if ($0->u_d->AddMetaParam (st, s) != 1) {
+	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  ir->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
     }
     if (!ir) {
       $E("Cannot find root built-in type");
     }
     $0->scope->Add ("self", ir);
-
-    $0->u_d->SetParent ($5, $4);
+    $0->u_d->SetParent ($5);
 }}
 "(" [ port_formal_list ] ")"
 {{X:
@@ -519,16 +545,6 @@ data_chan_body
     $0->u_d = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;
-}}
-;
-
-is_a[int]: "<:" 
-{{X:
-    return 0;
-}}
-| "="
-{{X:
-    return 1;
 }}
 ;
 
@@ -744,27 +760,53 @@ defchan: [ template_spec ]
     $0->u_c = c;
     $0->scope = $0->u_c->CurScope ();
 }}
-is_a physical_inst_type
+"<:" physical_inst_type
 {{X:
     InstType *ir;
+
+    if ($5->hasinstGlobal()) {
+      $E("Type specifier in implementation relation cannot use globals");
+    }
+    
     if (TypeFactory::isProcessType ($5->BaseType())) {
       $E("A channel type cannot be related to a process");
     }
     if (TypeFactory::isDataType ($5->BaseType())) {
       $E("A channel type cannot be related to a data type");
     }
-    if (TypeFactory::isUserType ($5->BaseType ())) {
-      UserDef *u;
-      u = dynamic_cast<UserDef *>($5->BaseType());
-      $0->scope->Merge (u->CurScope ());
-      /* XXX: FIXME */
-      ir = $5;
+    ir = $5;
 
+    if (ir->getDir() != Type::direction::NONE) {
+      $E("Direction flags not permitted on parent type");
+    }
+    
+    if (TypeFactory::isUserType ($5->BaseType ())) {
       Channel *ch = dynamic_cast<Channel *>($5->BaseType());
       $A(ch);
 
-      $A(ch->getNumParams() == 1);
-      ir = ch->getPortType (-1);
+      for (int i=0; i < ch->getNumParams(); i++) {
+	const char *s = ch->getPortName (-(i+1));
+	InstType *st = ch->getPortType (-(i+1));
+	if ($0->u_c->AddMetaParam (st, s) != 1) {
+	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  ir->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
+
+      InstType *chparent = NULL;
+      while (ch->getParent()) {
+	chparent = ch->getParent ();
+	ch = dynamic_cast<Channel *>(chparent->BaseType());
+	if (!ch) break;
+      }
+      $A(chparent);
+
+      Chan *rootchan = dynamic_cast<Chan *>(chparent->BaseType());
+      $A(rootchan);
+      ir = chparent->getTypeParam (0);
     }
     else {
       ir = $5->getTypeParam (0);
@@ -773,7 +815,7 @@ is_a physical_inst_type
       $E("Cannot find root built-in type");
     }
     $0->scope->Add ("self", ir);
-    $0->u_c->SetParent ($5, $4);
+    $0->u_c->SetParent ($5);
 }}
  "(" [ port_formal_list ] ")" 
 {{X:

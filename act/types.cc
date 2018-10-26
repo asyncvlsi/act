@@ -958,7 +958,6 @@ int UserDef::FindPort (const char *id)
 UserDef::UserDef (ActNamespace *ns)
 {
   parent = NULL;
-  parent_eq = 0;
 
   defined = 0;
   expanded = 0;
@@ -1023,8 +1022,6 @@ UserDef::~UserDef()
 void UserDef::MkCopy (UserDef *u)
 {
   parent = u->parent; u->parent = NULL;
-  parent_eq = u->parent_eq; u->parent_eq = 0;
-  
   defined  = u->defined; u->defined = 0;
   expanded = u->expanded; u->expanded = 0;
   pending = u->pending; u->pending = 0;
@@ -1090,10 +1087,9 @@ Function::~Function ()
 
 
 
-void UserDef::SetParent (InstType *t, unsigned int eq)
+void UserDef::SetParent (InstType *t)
 {
   parent = t;
-  parent_eq = eq;
 }
 
 
@@ -1182,8 +1178,6 @@ int UserDef::isEqual (UserDef *u)
       return 0;
     }
   }
-  if (parent_eq != u->parent_eq) return 0;
-
   if (nt != u->nt) return 0;
   if (mt != u->mt) return 0;
   if (nports != u->nports) return 0;
@@ -1800,7 +1794,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   FREE (buf);
 
   if (parent) {
-    ux->SetParent (parent->Expand (ns, ux->CurScope()), parent_eq);
+    ux->SetParent (parent->Expand (ns, ux->CurScope()));
   }
   ux->exported = exported;
 
@@ -2218,12 +2212,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   }
 
   if (parent) {
-    if (parent_eq) {
-      fprintf (fp, "= ");
-    }
-    else {
-      fprintf (fp, "<: ");
-    }
+    fprintf (fp, "<: ");
     parent->Print (fp);
     fprintf (fp, " ");
   }

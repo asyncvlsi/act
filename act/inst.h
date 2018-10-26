@@ -122,6 +122,12 @@ class InstType {
   UserDef *getUserDef () { return s->getUserDef(); }
 
   int isParamAType (int k);
+
+
+  /* XXX: Return 1 if any template parameter in inst_param involves global
+     symbols */
+  int hasinstGlobal() { return 0; }
+  
  private:
 
 
