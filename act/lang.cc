@@ -8,6 +8,7 @@
 #include <act/types.h>
 #include <act/lang.h>
 #include <act/inst.h>
+#include <act/body.h>
 #include "prs.h"
 #include "qops.h"
 #include "config.h"

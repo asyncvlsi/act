@@ -147,7 +147,7 @@ char *path_open (char *name)
 
   p = hd;
   try = expand(name);
-  if (fp = fopen (try, "r")) {
+  if ((fp = fopen (try, "r"))) {
     fclose (fp);
     return try;
   }
