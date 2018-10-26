@@ -15,7 +15,26 @@ class Scope;
 class Type;
 class Array;
 class AExpr;
-union inst_param;
+class InstType;
+
+/*
+ * Template parameters can be either a single expression or types
+ */
+union inst_param {
+  AExpr *tp;			/**< template parameters, for
+				   user-defined types;
+				   could be a single expression for
+				   int<>;
+				*/
+
+  InstType *tt;			/**< could be types themselves, for
+				   channels; can also be a type
+				   signature for ptypes
+				*/
+
+  /* if both are NULL, it means the parameter was omitted */
+};
+
 
 /**
  * Instance type

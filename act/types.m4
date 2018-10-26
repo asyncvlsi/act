@@ -193,7 +193,7 @@ inst_type[InstType *]: physical_inst_type
  *
  *------------------------------------------------------------------------
  */
-user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
+user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 {{X:
     InstType *ui;
     ActRet *r;
@@ -207,8 +207,8 @@ user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
     ui = new InstType ($0->scope, ud);
 
     /* begin: set template parameters, if they exist */
-    if (!OPT_EMPTY ($2)) {
-      r = OPT_VALUE ($2);
+    if (!OPT_EMPTY ($3)) {
+      r = OPT_VALUE ($3);
       $A(r->type == R_LIST);
       l = r->u.l;
       FREE (r);
@@ -234,13 +234,13 @@ user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
       }
       list_free (l);
     }
-    OPT_FREE ($2);
+    OPT_FREE ($3);
     /* end: set template params */
 
     /* begin: set direction flags for type */
     Type::direction d;
-    if (!OPT_EMPTY ($3)) {
-      r = OPT_VALUE ($3);
+    if (!OPT_EMPTY ($2)) {
+      r = OPT_VALUE ($2);
       $A(r->type == R_DIR);
       d = r->u.dir;
       FREE (r);
@@ -248,7 +248,7 @@ user_type[InstType *]: qualified_type [ template_args ] [ chan_dir ]
     else {
       d = Type::NONE;
     }
-    OPT_FREE ($3);
+    OPT_FREE ($2);
     ui->SetDir (d);
     /* end: set dir flags */
     return $0->tf->NewUserDef ($0->scope, ui);
