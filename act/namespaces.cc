@@ -11,6 +11,7 @@
 #include <act/inst.h>
 #include <act/iter.h>
 #include <act/act.h>
+#include <act/body.h>
 #include <string.h>
 #include "misc.h"
 #include "array.h"

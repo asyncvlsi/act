@@ -20,6 +20,7 @@
 #include <act/namespaces.h>
 #include <act/types.h>
 #include <act/inst.h>
+#include <act/body.h>
 #include "treetypes.h"
 
 #define OPT_EXISTS(x)    !list_isempty (x)

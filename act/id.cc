@@ -7,6 +7,7 @@
  */
 #include <act/types.h>
 #include <act/inst.h>
+#include <act/body.h>
 #include <string.h>
 
 
