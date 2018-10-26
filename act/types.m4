@@ -212,12 +212,50 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
       $A(r->type == R_LIST);
       l = r->u.l;
       FREE (r);
-      if (ud->getNumParams() < list_length (l)) {
-	$E("Number of template parameters specified (%d) > available parameters (%d) for `%s'", list_length (l), ud->getNumParams(), ud->getName());
-      }
+    }
+    else {
+      l = list_new ();
+    }
+    OPT_FREE ($3);
+   
+    if (ud->getNumParams() < list_length (l)) {
+      $E("Number of template parameters specified (%d) > available parameters (%d) for `%s'", list_length (l), ud->getNumParams(), ud->getName());
+    }
       
-      int i = 0;
+    /* 
+       Now we have to examine the qualified_type to see if there are
+       any derived parameters.
 
+       For the *base* parameters for the type, we pass through the
+       template arguments.
+
+       For all the rest, we have to figure out which parameters are
+       pre-specified.
+
+
+
+    */
+
+    /* XXX: need to convert l to a new list 
+
+       we have:
+        START:
+         current userdef, location within userdef template params
+	 
+	 if template param is in its parent:
+	    look at parent instance type and its parameters
+	       for each parameter: add binding
+	    switch userdef to parent userdef, go to START
+	 else
+            add binding from user-specified params, increment both
+            if list of params is over: look at parent if any and add
+	    bindings to the specified parameters
+     */
+    
+    
+
+    if (list_length (l) > 0) {
+      int i = 0;
       ui->setNumParams (list_length (l));
 
       type_set_position ($l, $c, $n);
@@ -232,9 +270,8 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 	delete lhs;
 	delete rhs;
       }
-      list_free (l);
     }
-    OPT_FREE ($3);
+    list_free (l);
     /* end: set template params */
 
     /* begin: set direction flags for type */

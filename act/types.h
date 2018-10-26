@@ -217,7 +217,8 @@ class UserDef : public Type {
    * subtyping
    *
    */
-  void SetParent (InstType *t, unsigned int eq);
+  void SetParent (InstType *t);
+  InstType *getParent () { return parent; }
 
   /**
    * Specify if this type has been fully defined yet or not. It may
@@ -291,9 +292,7 @@ class UserDef : public Type {
   InstType *root();
 
  protected:
-  InstType *parent;		/**< Sub-typing relationship, if any */
-  unsigned int parent_eq:1;	/**< 1 if this is an equality, 0 if it
-				   is a subtype */
+  InstType *parent;		/**< implementation relationship, if any */
   
   unsigned int defined:1;	/**< 1 if this has been defined, 0
 				   otherwise */

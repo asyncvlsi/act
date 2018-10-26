@@ -1,0 +1,6 @@
+template <pint N>
+defproc type1 (bool a, b) {  }
+
+
+template<pint M>
+defproc type2 <: type1 (bool p) { }
