@@ -10,6 +10,7 @@
 
 #include <act/types.h>
 #include <act/lang.h>
+#include <act/body.h>
 
 /**
  * @file act.h
