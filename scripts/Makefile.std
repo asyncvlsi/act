@@ -88,7 +88,7 @@ clean: move-in
 		done
 
 realclean: clean
-	-/bin/rm $(TARGETS) $(TARGETLIBS)
+	-/bin/rm $(TARGETS) $(filter-out %.c %.h,$(TARGETLIBS))
 	@for i in dummy_bad_name $(SUBDIRS); \
 		do \
                 if [ $$i != "dummy_bad_name" ]; \
