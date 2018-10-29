@@ -798,11 +798,11 @@ InstType::~InstType ()
 
   if (nt > 0) {
     for (i=0; i < nt; i++) {
-      if (isParamAType (i)) {
-	delete u[i].tt;
+      if (u[i].isatype) {
+	delete u[i].u.tt;
       }
       else {
-	delete u[i].tp;
+	delete u[i].u.tp;
       }
     }
     FREE (u);
@@ -1245,32 +1245,33 @@ int InstType::isEqual (InstType *it, int weak)
 
   /* check that the template parameters of the type are the same */
   for (int i=0; i < nt; i++) {
-    if (isParamAType (i)) {
-      if ((u[i].tt && !it->u[i].tt) ||
-	  (!u[i].tt && it->u[i].tt)) return 0;
-      if (u[i].tt && it->u[i].tt) {
-	if (!u[i].tt->isEqual (it->u[i].tt)) return 0;
+    if (u[i].isatype != it->u[i].isatype) return 0;
+    if (u[i].isatype) {
+      if ((u[i].u.tt && !it->u[i].u.tt) ||
+	  (!u[i].u.tt && it->u[i].u.tt)) return 0;
+      if (u[i].u.tt && it->u[i].u.tt) {
+	if (!u[i].u.tt->isEqual (it->u[i].u.tt)) return 0;
       }
     }
     else {
       AExpr *constexpr;
-      if (!u[i].tp || !it->u[i].tp) {
+      if (!u[i].u.tp || !it->u[i].u.tp) {
 	constexpr = new AExpr (const_expr (32));
       }
       else {
 	constexpr = NULL;
       }
       /* being NULL is the same as const 32 */
-      if (u[i].tp && !it->u[i].tp) {
-	if (valcheck && (!u[i].tp->isEqual (constexpr))) return 0;
+      if (u[i].u.tp && !it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (constexpr))) return 0;
 	delete constexpr;
       }
-      else if (it->u[i].tp && !u[i].tp) {
-	if (valcheck && (!constexpr->isEqual (it->u[i].tp))) return 0;
+      else if (it->u[i].u.tp && !u[i].u.tp) {
+	if (valcheck && (!constexpr->isEqual (it->u[i].u.tp))) return 0;
 	delete constexpr;
       }
-      else if (u[i].tp && it->u[i].tp) {
-	if (valcheck && (!u[i].tp->isEqual (it->u[i].tp))) return 0;
+      else if (u[i].u.tp && it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return 0;
       }
       else {
 	delete constexpr;
@@ -1339,15 +1340,15 @@ static void sPrintInstType (char *buf, int sz, InstType *it,
     PRINT_STEP;
     
     for (int i=0; i < nt; i++) {
-      if (it->isParamAType (i)) {
-	if (u[i].tt) {
-	  u[i].tt->sPrint (buf+k, sz);
+      if (u[i].isatype) {
+	if (u[i].u.tt) {
+	  u[i].u.tt->sPrint (buf+k, sz);
 	}
 	PRINT_STEP;
       }
       else {
-	if (u[i].tp) {
-	  u[i].tp->sPrint (buf+k, sz);
+	if (u[i].u.tp) {
+	  u[i].u.tp->sPrint (buf+k, sz);
 	}
 	PRINT_STEP;
       }
@@ -1412,15 +1413,15 @@ void InstType::sPrint (char *buf, int sz)
     PRINT_STEP;
     
     for (int i=0; i < nt; i++) {
-      if (isParamAType (i)) {
-	if (u[i].tt) {
-	  u[i].tt->sPrint (buf+k, sz);
+      if (u[i].isatype) {
+	if (u[i].u.tt) {
+	  u[i].u.tt->sPrint (buf+k, sz);
 	}
 	PRINT_STEP;
       }
       else {
-	if (u[i].tp) {
-	  u[i].tp->sPrint (buf+k, sz);
+	if (u[i].u.tp) {
+	  u[i].u.tp->sPrint (buf+k, sz);
 	}
 	PRINT_STEP;
       }
@@ -1477,20 +1478,21 @@ InstType::InstType (InstType *i, int skip_array)
     MALLOC (u, inst_param, i->nt);
     /* clone this too */
     for (int k = 0; k < nt; k++) {
-      if (i->isParamAType (k)) {
-	if (i->u[k].tt) {
-	  u[k].tt = new InstType (i->u[k].tt);
+      u[k].isatype = i->u[k].isatype;
+      if (i->u[k].isatype) {
+	if (i->u[k].u.tt) {
+	  u[k].u.tt = new InstType (i->u[k].u.tt);
 	}
 	else {
-	  u[k].tt = NULL;
+	  u[k].u.tt = NULL;
 	}
       }
       else {
-	if (i->u[k].tp) {
-	  u[k].tp = i->u[k].tp->Clone ();
+	if (i->u[k].u.tp) {
+	  u[k].u.tp = i->u[k].u.tp->Clone ();
 	}
 	else {
-	  u[k].tp = NULL;
+	  u[k].u.tp = NULL;
 	}
       }
     }
@@ -1512,32 +1514,36 @@ void InstType::setNumParams (int n)
   nt = n;
   MALLOC (u, inst_param, nt);
   for (int k=0; k < nt; k++) {
-    u[k].tp = NULL;
+    u[k].isatype = 0;
+    u[k].u.tp = NULL;
   }
 }
 
 void InstType::setParam (int pn, AExpr *a)
 {
   Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].tp == NULL, "setParam() changing an existing parameter!");
+  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
   /*printf ("setting param %d to %x\n", pn, a);*/
-  u[pn].tp = a;
+  u[pn].isatype = 0;
+  u[pn].u.tp = a;
 }
 
 void InstType::setParam (int pn, Expr *a)
 {
   Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].tp == NULL, "setParam() changing an existing parameter!");
+  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
   if (a) {
-    u[pn].tp = new AExpr (a);
+    u[pn].isatype = 0;
+    u[pn].u.tp = new AExpr (a);
   }
 }
 
 void InstType::setParam (int pn, InstType *t)
 {
   Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].tt == NULL, "setParam() changing an existing parameter!");
-  u[pn].tt = t;
+  Assert (u[pn].u.tt == NULL, "setParam() changing an existing parameter!");
+  u[pn].isatype = 1;
+  u[pn].u.tt = t;
 }
 
 
@@ -1599,16 +1605,16 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       ux->AddMetaParam (x, pn[i], (i < mt ? 0 : 1));
 
       if (TypeFactory::isPTypeType (p->BaseType())) {
-	if (i < spec_nt && u[i].tt) {
-	  x = u[i].tt /*->Expand (ns, ux->I)*/;
+	if (i < spec_nt && u[i].u.tt) {
+	  x = u[i].u.tt /*->Expand (ns, ux->I)*/;
 	  ux->I->BindParam (pn[i], x);
 	}
       }
       else {
 	Assert (TypeFactory::isParamType (x), "What?");
-	if (i < spec_nt && u[i].tp) {
+	if (i < spec_nt && u[i].u.tp) {
 	  InstType *rhstype;
-	  AExpr *rhsval = u[i].tp /*->Expand (ns, ux->I)*/;
+	  AExpr *rhsval = u[i].u.tp /*->Expand (ns, ux->I)*/;
 	  rhstype = rhsval->getInstType (s, 1);
 	  if (!type_connectivity_check (x, rhstype)) {
 	    act_error_ctxt (stderr);
@@ -1657,7 +1663,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	fatal_error ("ptype array parameters not supported");
       }
 
-      x = (i < spec_nt ? u[i].tt : NULL);
+      x = (i < spec_nt ? u[i].u.tt : NULL);
       /* x is now the value of the parameter */
       if (x) {
 	sz += strlen (x->BaseType()->getName()) + 2;
@@ -1666,7 +1672,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     }
     else {
       /* check array info */
-      if (i < spec_nt && u[i].tp) {
+      if (i < spec_nt && u[i].u.tp) {
 	if (xa) {
 	  Assert (xa->isExpanded(), "Array info is not expanded");
 	  sz += 16*xa->size()+2;
@@ -1698,7 +1704,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
-      x = (i < spec_nt ? u[i].tt : NULL);
+      x = (i < spec_nt ? u[i].u.tt : NULL);
       if (x) {
 	snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
 		  Type::dirstring (x->getDir()));
@@ -1706,7 +1712,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       }
     }
     else {
-      if (i < spec_nt && u[i].tp) {
+      if (i < spec_nt && u[i].u.tp) {
 	if (xa) {
 	  Arraystep *as;
 	  
@@ -1944,16 +1950,22 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   if (nt > 0) {
     MALLOC (xu, inst_param, nt);
     for (i=0; i < nt; i++) {
-      if (isParamAType (i)) {
-	xu[i].tt = u[i].tt->Expand (ns, s);
-      }
-      else {
-	if (!u[i].tp) {
-	  /* only for int<> */
-	  xu[i].tp = new AExpr (const_expr (32));
+      xu[i].isatype = u[i].isatype;
+      if (u[i].isatype) {
+	if (u[i].u.tt) {
+	  xu[i].u.tt = u[i].u.tt->Expand (ns, s);
 	}
 	else {
-	  xu[i].tp = u[i].tp->Expand (ns, s);
+	  xu[i].u.tt = NULL;
+	}
+      }
+      else {
+	if (!u[i].u.tp) {
+	  /* only for int<> */
+	  xu[i].u.tp = new AExpr (const_expr (32));
+	}
+	else {
+	  xu[i].u.tp = u[i].u.tp->Expand (ns, s);
 	}
       }
     }
@@ -2017,7 +2029,7 @@ PType *PType::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Assert (nt == 1, "What?");
 
-  return TypeFactory::Factory()->NewPType (u[0].tt->Expand (ns, s));
+  return TypeFactory::Factory()->NewPType (u[0].u.tt->Expand (ns, s));
 }
 
 const char *PType::getName ()
@@ -2046,8 +2058,8 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   
   Assert (nt == 1, "What?");
 
-  if (u[0].tp) {
-    ae = u[0].tp->Expand (ns, s);
+  if (u[0].u.tp) {
+    ae = u[0].u.tp->Expand (ns, s);
   }
   else {
     ae = new AExpr (const_expr (32));
@@ -2128,7 +2140,7 @@ Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   InstType *cp;
 
   Assert (nt == 1, "Hmm");
-  cp = u[0].tt->Expand (ns, s);
+  cp = u[0].u.tt->Expand (ns, s);
   if (TypeFactory::isParamType (cp)) {
     act_error_ctxt (stderr);
     fprintf (stderr, "Parameter to channel type is not a datatype\n");
@@ -2304,5 +2316,13 @@ void Data::Print (FILE *fp)
 
 InstType *InstType::getTypeParam (int pn)
 {
-  return u[pn].tt;
+  Assert (u[pn].isatype, "getTypeParam() called for non-type!");
+  return u[pn].u.tt;
+}
+
+
+AExpr *InstType::getAExprParam (int pn)
+{
+  Assert (!u[pn].isatype, "getAExprParam() called for non-AExpr!");
+  return u[pn].u.tp;
 }

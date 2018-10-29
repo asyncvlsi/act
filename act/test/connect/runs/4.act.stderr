@@ -1,2 +1,6 @@
 In expanding ::<Global>
+Connection: x = y
+  LHS: int<32>[ [4][2][4]+[4][2][7..8]+[4][2..3][4] ]
+  RHS: int<32>[5][4][4]
+FATAL: Type-checking failed on connection
 	Types `int<32>[ [4][2][4]+[4][2][7..8]+[4][2..3][4] ]' and `int<32>[5][4][4]' are not compatible

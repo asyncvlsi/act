@@ -1,2 +1,6 @@
 In expanding ::<Global>
+Connection: {{N[3]},{x}} = M
+  LHS: int<32>[1][2]
+  RHS: int<32>[2][1]
+FATAL: Type-checking failed on connection
 	Types `int<32>[1][2]' and `int<32>[2][1]' are not compatible

@@ -231,29 +231,63 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 
        For all the rest, we have to figure out which parameters are
        pre-specified.
-
-
-
     */
+    InstType *instparent;
+    UserDef *uparent;
+    int param = 0;
+    int *param_map;
 
-    /* XXX: need to convert l to a new list 
+    instparent = ud->getParent();
+    if (instparent) {
+      uparent = dynamic_cast<UserDef *>(instparent->BaseType());
+      /* could be NULL, if parent type is not user-defined */
+    }
+    else {
+      uparent = NULL;
+    }
 
-       we have:
-        START:
-         current userdef, location within userdef template params
-	 
-	 if template param is in its parent:
-	    look at parent instance type and its parameters
-	       for each parameter: add binding
-	    switch userdef to parent userdef, go to START
-	 else
-            add binding from user-specified params, increment both
-            if list of params is over: look at parent if any and add
-	    bindings to the specified parameters
-     */
-    
-    
+    if (list_length (l) > 0) {
+      MALLOC (param_map, int, list_length (l));
+      for (int i=0; i < list_length (l); i++) {
+	param_map[i] = -1;
+      }
+    }
+    else {
+      param_map = NULL;
+    }
 
+    li = list_first (l);
+    int li_count = 0;
+    while (1) {
+      if (param > ud->getNumParams()) {
+	$E("Number of template parameters specified (%d) > defineable parameters for `%s'", list_length (l), ud->getName());
+      }
+      if (uparent && uparent->isPort (ud->getPortName (-(param+1)))) {
+	/* walk through instparent and populate m */
+	if (instparent->getNumParams() > 0) {
+	  /* keep adding parameters from here into m */
+	  /* increment param as you go */
+	  param += instparent->getNumParams();
+	}
+	/* move to parent's parent */
+	instparent = uparent->getParent();
+	if (instparent) {
+	  uparent = dynamic_cast<UserDef *>(instparent->BaseType());
+	}
+	else {
+	  uparent = NULL;
+	}
+      }
+      else {
+	if (!li) {
+	  break;
+	}
+	li = list_next (li);
+	param_map[li_count++] = param;
+	param++;
+      }
+    }
+	
     if (list_length (l) > 0) {
       int i = 0;
       ui->setNumParams (list_length (l));
@@ -262,16 +296,20 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
       for (li = list_first (l); li; li = list_next (li)) {
 	InstType *lhs, *rhs;
 	ui->setParam (i++, (AExpr *)list_value (li));
-	lhs = ud->getPortType (-i);
+	lhs = ud->getPortType (-(1+param_map[i-1]));
 	rhs = ((AExpr *)list_value (li))->getInstType ($0->scope);
 	if (!type_connectivity_check (lhs, rhs)) {
-	  $E("Typechecking failed for template parameter #%d\n", (i-1));
+	  $E("Typechecking failed for template parameter #%d\n\t%s", (i-1),
+	     act_type_errmsg());
 	}
 	delete lhs;
 	delete rhs;
       }
     }
     list_free (l);
+    if (param_map) {
+      FREE (param_map);
+    }
     /* end: set template params */
 
     /* begin: set direction flags for type */

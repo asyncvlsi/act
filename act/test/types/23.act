@@ -1,0 +1,7 @@
+template <pint N; pbool Y>
+defproc foo (bool x[N])
+{ 
+   x[0] = x[1];
+}
+
+foo<5,3> x;

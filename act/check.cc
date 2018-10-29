@@ -31,6 +31,19 @@ static void typecheck_err (const char *s, ...)
   va_end (ap);
 }
 
+static void typecheck_errappend (const char *s, ...)
+{
+  va_list ap;
+  int len = strlen (typecheck_errmsg);
+
+  va_start (ap, s);
+  vsnprintf (typecheck_errmsg + len, 10239-len,  s, ap);
+  typecheck_errmsg[10239] = '\0';
+  va_end (ap);
+}
+
+
+
 const char *act_type_errmsg (void)
 {
   return typecheck_errmsg;
@@ -570,6 +583,20 @@ void type_set_position (int l, int c, char *n)
   stype_file_name = n;
 }
 
+static void type_errctxt (int expanded, const char *msg)
+{
+  if (expanded) {
+    act_error_ctxt (stderr);
+  }
+  else {
+    act_position p;
+    p.l = stype_line_no;
+    p.c = stype_col_no;
+    p.f = stype_file_name;
+    act_parse_msg (&p, msg);
+  }
+}
+
 /* 
    are these two types compatible? connectable?
 
@@ -583,6 +610,8 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 {
   struct act_position p;
   if (lhs == rhs) return 1;
+
+  typecheck_errmsg[0] = '\0';
 
 #if 0
   printf ("check: ");
@@ -611,25 +640,17 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
     p.c = stype_col_no;
     p.f = stype_file_name;
 
-    if (conn_msg) {
-      act_parse_msg (&p, "%s\n", conn_msg);
-    }
-    else {
-      act_parse_msg (&p, "Type checking failed in connection\n");
+    if (!conn_msg) {
+      conn_msg = "Type checking failed in connection";
     }
   }
-  else {
-    act_error_ctxt (stderr);
-    if (conn_msg) {
-      fprintf (stderr, "%s\n", conn_msg);
-    }
-  }
-  fprintf (stderr, "\tTypes `");
-  lhs->Print (stderr);
-  fprintf (stderr, "' and `");
-  rhs->Print (stderr);
-  fprintf (stderr, "' are not compatible\n");
-  exit (1);
+  /* append this */
+  char buf1[1024], buf2[1024];
+  lhs->sPrint (buf1, 1024);
+  rhs->sPrint (buf2, 1024);
+  
+  typecheck_errappend ("Types `%s' and `%s' are not compatible",
+		       buf1, buf2);
 
   return 0;
 }
@@ -678,14 +699,13 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
       }
       
       if (tmp->arrayInfo() && tmp->arrayInfo()->isSparse()) {
-	act_error_ctxt (stderr);
-	fatal_error ("Cannot have a sparse array within an array expression");
+	type_errctxt (expanded, "Cannot have a sparse array within an array expression");
+	exit (1);
       }
 
       if (!tmp->arrayInfo() && t == AExpr::CONCAT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Array concatenation requires arrays\n");
-	fprintf (stderr, " array expr: ");
+	type_errctxt (expanded, "Array concatenation requires arrays");
+	fprintf (stderr, "\n   array expr: ");
 	this->Print (stderr);
 	fprintf (stderr, "\n   sub-expr: ");
 	ae->GetLeft()->Print (stderr);
@@ -698,13 +718,12 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 
       conn_msg = "Array expression, components are not compatible";
       if (!type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0))) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Array expression, components are not compatible\n");
-	fprintf (stderr, "\t");
+	type_errctxt (expanded, "Array expression, components are not compatible");
+	fprintf (stderr, " (");
 	cur->Print (stderr);
 	fprintf (stderr, "  v/s  ");
 	tmp->Print (stderr);
-	fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	fprintf (stderr, ")\n\t%s\n", act_type_errmsg());
 	exit (1);
 #if 0
 	delete cur;
@@ -820,6 +839,7 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
   Assert (s, "NULL scope");
   Assert (ae, "NULL AExpr");
   Assert (rae, "NULL AExpr");
+  typecheck_errmsg[0] = '\0';
 
   /*
   printf ("Here: checking: ");
@@ -869,6 +889,7 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   Assert (s, "NULL scope");
   Assert (id, "NULL id");
   Assert (rae, "NULL AExpr");
+  typecheck_errmsg[0] = '\0';
 
   /*
   printf ("Here2: checking: ");
