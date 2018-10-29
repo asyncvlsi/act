@@ -10,7 +10,7 @@
 
 class ActNamespace;
 class Scope;
-union inst_param;
+struct inst_param;
 
 /**
  * The base class for all types in the system

@@ -20,18 +20,20 @@ class InstType;
 /*
  * Template parameters can be either a single expression or types
  */
-union inst_param {
-  AExpr *tp;			/**< template parameters, for
+struct inst_param {
+  unsigned int isatype:1; /* 1 if type, 0 otherwise */
+  union {
+    AExpr *tp;			/**< template parameters, for
 				   user-defined types;
 				   could be a single expression for
 				   int<>;
 				*/
 
-  InstType *tt;			/**< could be types themselves, for
+    InstType *tt;		/**< could be types themselves, for
 				   channels; can also be a type
 				   signature for ptypes
 				*/
-
+  } u;
   /* if both are NULL, it means the parameter was omitted */
 };
 
@@ -90,6 +92,8 @@ class InstType {
 
   void setParam (int pn, InstType *t); /**< for ptype and chans */
   InstType *getTypeParam (int pn);
+  AExpr *getAExprParam (int pn);
+  int getNumParams() { return nt; }
 
   /**
    * Set direction flags

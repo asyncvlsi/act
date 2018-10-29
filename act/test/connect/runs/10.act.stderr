@@ -1,3 +1,4 @@
-Array concatenation requires arrays
- array expr: N#M[0][1]
+ERROR: File `10.act', line 10, col 2
+	Array concatenation requires arrays
+   array expr: N#M[0][1]
    sub-expr: M[0][1] isn't an array
