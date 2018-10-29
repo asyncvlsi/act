@@ -1144,7 +1144,9 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       fprintf (stderr, "\n  RHS: ");
       trhs->Print (stderr);
       fprintf (stderr, "\n");
-      fatal_error ("Type-checking failed on connection");
+      
+      fatal_error ("Type-checking failed on connection\n\t%s",
+		   act_type_errmsg());
     }
 
     if (TypeFactory::isParamType (tlhs)) {
@@ -1320,7 +1322,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     if (!type_connectivity_check (tlhs, trhs)) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Connection: ");
-      ex->Print (stderr);
+      alhs->Print (stderr);
       fprintf (stderr, " = ");
       arhs->Print (stderr);
       fprintf (stderr, "\n  LHS: ");
@@ -1328,7 +1330,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       fprintf (stderr, "\n  RHS: ");
       trhs->Print (stderr);
       fprintf (stderr, "\n");
-      fatal_error ("Type-checking failed on connection");
+      fatal_error ("Type-checking failed on connection\n\t%s", act_type_errmsg());
     }
 
     if (TypeFactory::isParamType (tlhs)) {
