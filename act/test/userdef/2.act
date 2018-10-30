@@ -1,0 +1,19 @@
+template<pint N>
+deftype d1of <: enum<N> (bool d[N])
+{
+  methods {
+   set { 
+    [self=0 -> d[0]+]
+   }
+   get {
+    [d[0]->self:=0]
+   }
+  }
+}
+
+deftype d1of2 <: d1of<2> ()
+{
+
+}
+
+d1of<4> x;
