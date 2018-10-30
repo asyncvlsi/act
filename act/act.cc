@@ -153,8 +153,6 @@ Act::Act (const char *s)
 
   tr.u = NULL;
 
-  tr.param_mode = 0;
-
   tr.u_p = NULL;
   tr.u_d = NULL;
   tr.u_c = NULL;
@@ -260,8 +258,6 @@ void Act::Merge (const char *s)
   tr.scope = tr.curns->CurScope ();
 
   tr.u = NULL;
-
-  tr.param_mode = 0;
 
   tr.u_p = NULL;
   tr.u_d = NULL;

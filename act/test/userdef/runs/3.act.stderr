@@ -1,0 +1,8 @@
+In expanding foo<3,4>
+In expanding bar<4>
+In expanding ::<Global>
+Connection: x = y
+  LHS: bool[3]
+  RHS: bool[4]
+FATAL: Type-checking failed on connection
+	Types `bool[3]' and `bool[4]' are not compatible
