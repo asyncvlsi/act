@@ -80,6 +80,9 @@ class InstType {
   Type *BaseType ()  { return t; } /**< Return root type */
 
   void setNumParams (int n);  /**< Create template parameter values */
+  
+  void appendParams (int na, inst_param *a); /**< append params to the
+						list */
 
   /* 
      All these functions create a reference to the pointer passed in;

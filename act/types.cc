@@ -723,7 +723,7 @@ const char *UserDef::getName()
 }
 
 
-int UserDef::AddMetaParam (InstType *t, const char *id, int opt)
+int UserDef::AddMetaParam (InstType *t, const char *id)
 {
   int i;
 
@@ -746,9 +746,6 @@ int UserDef::AddMetaParam (InstType *t, const char *id, int opt)
   }
 
   nt++;
-  if (opt == 0) {
-    mt++;
-  }
   
   if (pn) {
     REALLOC (pn, const char *, nt);
@@ -867,7 +864,6 @@ UserDef::UserDef (ActNamespace *ns)
   expanded = 0;
 
   nt = 0;
-  mt = 0;
   pt = NULL;
   pn = NULL;
   exported = 0;
@@ -931,7 +927,6 @@ void UserDef::MkCopy (UserDef *u)
   pending = u->pending; u->pending = 0;
 
   nt = u->nt; u->nt = 0;
-  mt = u->mt; u->mt = 0;
   
   pt = u->pt; u->pt = NULL;
   pn = u->pn; u->pn = NULL;
@@ -1003,7 +998,7 @@ int UserDef::isStrictPort (const  char *s)
 
   /*printf ("mt = %d, nt = %d [%x]\n", mt, nt, this);*/
 
-  for (i=0; i < mt; i++) {
+  for (i=0; i < nt; i++) {
     if (strcmp (s, pn[i]) == 0) {
       return 1;
     }
@@ -1083,7 +1078,6 @@ int UserDef::isEqual (UserDef *u)
     }
   }
   if (nt != u->nt) return 0;
-  if (mt != u->mt) return 0;
   if (nports != u->nports) return 0;
 
   if (exported != u->exported) return 0;
@@ -1107,6 +1101,7 @@ int UserDef::isEqual (UserDef *u)
   
 
 static int recursion_depth = 0;
+
 /*------------------------------------------------------------------------
  *
  *   Expand user-defined type! 
@@ -1148,31 +1143,92 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   ux->pending = 1;
   ux->expanded = 1;
 
+  InstType *instparent;
+  UserDef *uparent;
+
+  instparent = parent;
+  if (instparent) {
+    uparent = dynamic_cast <UserDef *> (instparent->BaseType());
+  }
+  else {
+    uparent = NULL;
+  }
+
   /* create bindings for type parameters */
-  int i;
+  int i, ii;
+
+  ii = 0;
   for (i=0; i < nt; i++) {
     p = getPortType (-(i+1));
     if (!p)  {
+      Assert (0, "Enumeration?");
       /* this is an enumeration type, there is nothing to be done here */
-      ux->AddMetaParam (NULL, pn[i], (i < mt ? 0 : 1));
+      ux->AddMetaParam (NULL, pn[i]);
     }
     else {
       x = p->Expand (ns, ux->I); // this is the real type of the parameter
 
       /* add parameter to the scope */
-      ux->AddMetaParam (x, pn[i], (i < mt ? 0 : 1));
+      ux->AddMetaParam (x, pn[i]);
+
+      while (uparent && uparent->isPort (getPortName (-(i+1)))) {
+	/* walk through instparent and continue bindings */
+	if (instparent->getNumParams() > 0) {
+	  /* walk through this list, incrementing i and repeating the
+	     param stuff */
+	  for (int j=0; j < instparent->getNumParams(); j++) {
+	    if (TypeFactory::isPTypeType (p->BaseType())) {
+	      x = instparent->getTypeParam (j);
+	      x = x->Expand (ns, ux->I);
+	      ux->I->BindParam (pn[i], x);
+	    }
+	    else {
+	      InstType *rhstype;
+	      AExpr *rhsval = instparent->getAExprParam (j);
+	      rhsval = rhsval->Expand (ns, ux->I);
+	      rhstype = rhsval->getInstType (ux->I, 1);
+	      if (!type_connectivity_check (x, rhstype)) {
+		act_error_ctxt (stderr);
+		fprintf (stderr, "Typechecking failed, ");
+		x->Print (stderr);
+		fprintf (stderr, "  v/s ");
+		rhstype->Print (stderr);
+		fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+		exit (1);
+	      }
+	      ux->I->BindParam (pn[i], rhsval);
+	      delete rhstype;
+	      delete rhsval;
+	    }
+	    i++;
+	    p = getPortType (-(i+1));
+	    Assert (p, "Hmm");
+	    x = p->Expand (ns, ux->I);
+	    ux->AddMetaParam (x, pn[i]);
+	  }
+	}
+	instparent = uparent->getParent();
+	if (instparent) {
+	  uparent = dynamic_cast<UserDef *>(instparent->BaseType());
+	}
+	else {
+	  uparent = NULL;
+	}
+      }
+
 
       if (TypeFactory::isPTypeType (p->BaseType())) {
-	if (i < spec_nt && u[i].u.tt) {
-	  x = u[i].u.tt /*->Expand (ns, ux->I)*/;
+	if (ii < spec_nt && u[ii].u.tt) {
+	  x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
 	  ux->I->BindParam (pn[i], x);
+	  ii++;
 	}
       }
       else {
 	Assert (TypeFactory::isParamType (x), "What?");
-	if (i < spec_nt && u[i].u.tp) {
+	if (i < spec_nt && u[ii].u.tp) {
 	  InstType *rhstype;
-	  AExpr *rhsval = u[i].u.tp /*->Expand (ns, ux->I)*/;
+	  AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
 	  rhstype = rhsval->getInstType (s, 1);
 	  if (!type_connectivity_check (x, rhstype)) {
 	    act_error_ctxt (stderr);
@@ -1184,6 +1240,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	    exit (1);
 	  }
 	  ux->I->BindParam (pn[i], rhsval);
+	  ii++;
 	  delete rhstype;
 	  delete rhsval;
 	}
@@ -1358,7 +1415,26 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   FREE (buf);
 
   if (parent) {
-    ux->SetParent (parent->Expand (ns, ux->CurScope()));
+    uparent = dynamic_cast <UserDef *> (parent->BaseType());
+    if (uparent) {
+      for (i=0; i < spec_nt; i++) {
+	if (uparent->isPort (pn[i])) {
+	  break;
+	}
+      }
+      if (i < spec_nt) {
+	InstType *parent2 = new InstType (parent);
+	parent2->appendParams (spec_nt - i, u+i);
+	ux->SetParent (parent2->Expand (ns, ux->CurScope()));
+	delete parent2;
+      }
+      else {
+	ux->SetParent (parent->Expand (ns, ux->CurScope()));
+      }
+    }
+    else {
+      ux->SetParent (parent->Expand (ns, ux->CurScope()));
+    }
   }
   ux->exported = exported;
 
@@ -1694,6 +1770,16 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   fprintf (fp, ")\n");
 }
 
+
+/*------------------------------------------------------------------------
+ *
+ *  Returns first built-in type in the parent type hierarchy.
+ *
+ *     THIS SHOULD ONLY BE CALLED FOR user-defined channels and data
+ *     types. 
+ *
+ *------------------------------------------------------------------------
+ */
 InstType *UserDef::root ()
 {
   if (!parent) {
@@ -1706,6 +1792,11 @@ InstType *UserDef::root ()
   return parent;
 }
 
+
+/*------------------------------------------------------------------------
+ *  Printing functions
+ *------------------------------------------------------------------------
+ */
 void Process::Print (FILE *fp)
 {
   PrintHeader (fp, "defproc");
@@ -1759,4 +1850,3 @@ void Data::Print (FILE *fp)
   }
   fprintf (fp, "}\n\n");
 }
-
