@@ -12,75 +12,6 @@
 
 Expr *const_expr (int val);
 
-static void sPrintInstType (char *buf, int sz, InstType *it, 
-			    int nt, inst_param *u,
-			    Type::direction dir)
-{
-  UserDef *ud;
-  InstType *x;
-  int k = 0;
-  int l;
-
-#define PRINT_STEP				\
-  do {						\
-    l = strlen (buf+k);				\
-    k += l;					\
-    sz -= l;					\
-    if (sz <= 0) return;			\
-  } while (0)
-    
-  snprintf (buf+k, sz, "%s", it->BaseType()->getName());
-  PRINT_STEP;
-  
-  if (nt > 0) {
-    /* templates are used for int, chan, ptype, and userdef */
-    snprintf (buf+k, sz, "<");
-    PRINT_STEP;
-    
-    for (int i=0; i < nt; i++) {
-      if (u[i].isatype) {
-	if (u[i].u.tt) {
-	  u[i].u.tt->sPrint (buf+k, sz);
-	}
-	PRINT_STEP;
-      }
-      else {
-	if (u[i].u.tp) {
-	  u[i].u.tp->sPrint (buf+k, sz);
-	}
-	PRINT_STEP;
-      }
-      if (i < nt-1) {
-	snprintf (buf+k, sz, ",");
-	PRINT_STEP;
-      }
-    }
-    snprintf (buf+k, sz, ">");
-    PRINT_STEP;
-  }
-  switch (dir) {
-  case Type::NONE:
-    break;
-  case Type::IN:
-    snprintf (buf+k, sz, "?");
-    PRINT_STEP;
-    break;
-  case Type::OUT:
-    snprintf (buf+k, sz, "!");
-    PRINT_STEP;
-    break;
-  case Type::INOUT:
-    snprintf (buf+k, sz, "?!");
-    PRINT_STEP;
-    break;
-  case Type::OUTIN:
-    snprintf (buf+k, sz, "!?");
-    PRINT_STEP;
-    break;
-  }
-}
-
-
 InstType::InstType (Scope *_s, Type *_t, int is_temp)
 {
   expanded = 0;
@@ -92,6 +23,48 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
   s = _s;
   temp_type = (is_temp ? 1 : 0);
 }
+
+/*
+  Clone an InstType
+*/
+InstType::InstType (InstType *i, int skip_array)
+{
+  t = i->t;
+  dir = i->dir;
+  s = i->s;
+  expanded = i->expanded;
+  if (!skip_array) {
+    Assert (i->a == NULL, "Replication in the presence of arrays?");
+  }
+  a = NULL;
+  nt = 0;
+  if (i->nt > 0) {
+    nt = i->nt;
+    MALLOC (u, inst_param, i->nt);
+    /* clone this too */
+    for (int k = 0; k < nt; k++) {
+      u[k].isatype = i->u[k].isatype;
+      if (i->u[k].isatype) {
+	if (i->u[k].u.tt) {
+	  u[k].u.tt = new InstType (i->u[k].u.tt);
+	}
+	else {
+	  u[k].u.tt = NULL;
+	}
+      }
+      else {
+	if (i->u[k].u.tp) {
+	  u[k].u.tp = i->u[k].u.tp->Clone ();
+	}
+	else {
+	  u[k].u.tp = NULL;
+	}
+      }
+    }
+  }
+  temp_type = 1;
+}
+
 
 /*
   @return 1 if the kth parameter is a type, 0 if it is an AExpr 
@@ -369,93 +342,85 @@ void InstType::sPrint (char *buf, int sz)
   }
 }
 
-/*
-  Clone an InstType
-*/
-InstType::InstType (InstType *i, int skip_array)
-{
-  t = i->t;
-  dir = i->dir;
-  s = i->s;
-  expanded = i->expanded;
-  if (!skip_array) {
-    Assert (i->a == NULL, "Replication in the presence of arrays?");
-  }
-  a = NULL;
-  nt = 0;
-  if (i->nt > 0) {
-    nt = i->nt;
-    MALLOC (u, inst_param, i->nt);
-    /* clone this too */
-    for (int k = 0; k < nt; k++) {
-      u[k].isatype = i->u[k].isatype;
-      if (i->u[k].isatype) {
-	if (i->u[k].u.tt) {
-	  u[k].u.tt = new InstType (i->u[k].u.tt);
-	}
-	else {
-	  u[k].u.tt = NULL;
-	}
-      }
-      else {
-	if (i->u[k].u.tp) {
-	  u[k].u.tp = i->u[k].u.tp->Clone ();
-	}
-	else {
-	  u[k].u.tp = NULL;
-	}
-      }
-    }
-  }
-  temp_type = 1;
-}
+
 
 /*------------------------------------------------------------------------
- *`
- *   InstType::setNumParams --
- *
- *   Create slots for the template parameters for an instance type
- *
+ *  Used to print the name of the instance type into a buffer
+ *   buf: buffer
+ *    sz: size of buffer
+ *     t: Type to be printed
+ *  u,nt: template parameters
+ *   dir: direction
  *------------------------------------------------------------------------
  */
-void InstType::setNumParams (int n)
+
+static void sPrintTypeName (char *buf, int sz, Type *t, 
+			    int nt, inst_param *u,
+			    Type::direction dir)
 {
-  Assert (nt == 0, "Modifying the number of template parameters specified in an instance type??");
-  nt = n;
-  MALLOC (u, inst_param, nt);
-  for (int k=0; k < nt; k++) {
-    u[k].isatype = 0;
-    u[k].u.tp = NULL;
+  UserDef *ud;
+  InstType *x;
+  int k = 0;
+  int l;
+
+#define PRINT_STEP				\
+  do {						\
+    l = strlen (buf+k);				\
+    k += l;					\
+    sz -= l;					\
+    if (sz <= 0) return;			\
+  } while (0)
+    
+  snprintf (buf+k, sz, "%s", t->getName());
+  PRINT_STEP;
+  switch (dir) {
+  case Type::NONE:
+    break;
+  case Type::IN:
+    snprintf (buf+k, sz, "?");
+    PRINT_STEP;
+    break;
+  case Type::OUT:
+    snprintf (buf+k, sz, "!");
+    PRINT_STEP;
+    break;
+  case Type::INOUT:
+    snprintf (buf+k, sz, "?!");
+    PRINT_STEP;
+    break;
+  case Type::OUTIN:
+    snprintf (buf+k, sz, "!?");
+    PRINT_STEP;
+    break;
+  }
+  
+  if (nt > 0) {
+    /* templates are used for int, chan, ptype, and userdef */
+    snprintf (buf+k, sz, "<");
+    PRINT_STEP;
+    
+    for (int i=0; i < nt; i++) {
+      if (u[i].isatype) {
+	if (u[i].u.tt) {
+	  u[i].u.tt->sPrint (buf+k, sz);
+	}
+	PRINT_STEP;
+      }
+      else {
+	if (u[i].u.tp) {
+	  u[i].u.tp->sPrint (buf+k, sz);
+	}
+	PRINT_STEP;
+      }
+      if (i < nt-1) {
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
+      }
+    }
+    snprintf (buf+k, sz, ">");
+    PRINT_STEP;
   }
 }
-
-void InstType::setParam (int pn, AExpr *a)
-{
-  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
-  /*printf ("setting param %d to %x\n", pn, a);*/
-  u[pn].isatype = 0;
-  u[pn].u.tp = a;
-}
-
-void InstType::setParam (int pn, Expr *a)
-{
-  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
-  if (a) {
-    u[pn].isatype = 0;
-    u[pn].u.tp = new AExpr (a);
-  }
-}
-
-void InstType::setParam (int pn, InstType *t)
-{
-  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
-  Assert (u[pn].u.tt == NULL, "setParam() changing an existing parameter!");
-  u[pn].isatype = 1;
-  u[pn].u.tt = t;
-}
-
 
 
 /*------------------------------------------------------------------------
@@ -518,7 +483,7 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   }
   
   /* now change the tmp name! */
-  sPrintInstType (tmp, 10240, this, nt, xu, dir);
+  sPrintTypeName (tmp, 10240, this->BaseType(), nt, xu, dir);
 
   /* Expand the core type using template parameters, if any */
 
@@ -536,6 +501,7 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
     c_ns = ns;
     c_s = s;
   }
+
   xt = t->Expand (c_ns, c_s, nt, xu);
 
 #if 0
@@ -571,6 +537,64 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 }
 
 
+
+
+/*------------------------------------------------------------------------
+ *
+ *   InstType::setNumParams --
+ *
+ *   Create slots for the template parameters for an instance type
+ *
+ *------------------------------------------------------------------------
+ */
+void InstType::setNumParams (int n)
+{
+  Assert (nt == 0, "Modifying the number of template parameters specified in an instance type??");
+  nt = n;
+  MALLOC (u, inst_param, nt);
+  for (int k=0; k < nt; k++) {
+    u[k].isatype = 0;
+    u[k].u.tp = NULL;
+  }
+}
+
+/*------------------------------------------------------------------------
+ *
+ *  InstType::setParam -- 
+ *    set parameter for slot "pn" to value "a".
+ *    Also sets the type of the parameter depending on which method
+ *    was used.
+ *
+ *------------------------------------------------------------------------
+ */
+void InstType::setParam (int pn, AExpr *a)
+{
+  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
+  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
+  /*printf ("setting param %d to %x\n", pn, a);*/
+  u[pn].isatype = 0;
+  u[pn].u.tp = a;
+}
+
+void InstType::setParam (int pn, Expr *a)
+{
+  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
+  Assert (u[pn].u.tp == NULL, "setParam() changing an existing parameter!");
+  if (a) {
+    u[pn].isatype = 0;
+    u[pn].u.tp = new AExpr (a);
+  }
+}
+
+void InstType::setParam (int pn, InstType *t)
+{
+  Assert (pn < nt && pn >= 0, "setParam() called with an invalid value");
+  Assert (u[pn].u.tt == NULL, "setParam() changing an existing parameter!");
+  u[pn].isatype = 1;
+  u[pn].u.tt = t;
+}
+
+
 InstType *InstType::getTypeParam (int pn)
 {
   Assert (u[pn].isatype, "getTypeParam() called for non-type!");
@@ -583,3 +607,17 @@ AExpr *InstType::getAExprParam (int pn)
   Assert (!u[pn].isatype, "getAExprParam() called for non-AExpr!");
   return u[pn].u.tp;
 }
+
+
+void InstType::appendParams (int na, inst_param *a)
+{
+  if (na <= 0) return;
+
+  REALLOC (u, inst_param, na+nt);
+  for (int i=0; i < na; i++) {
+    u[nt++] = a[i];
+  }
+}
+
+  
+  

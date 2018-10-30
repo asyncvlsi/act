@@ -141,16 +141,11 @@ class UserDef : public Type {
    *
    *  @param t is the type of the parameter
    *  @param id is the the identifier for this parameter
-   *  @param opt is 1 if this is one of the optional parameters.
    *
    *  @return 1 on success, 0 on error (duplicate parameter name)
    *
-   * The function only succeeds if the opt parameter is initially 0,
-   * then switches over to 1, and stays 1 for multiple calls to the
-   * for the same userdef type.
-   *
    */
-  int AddMetaParam (InstType *t, const char *id, int opt = 0);
+  int AddMetaParam (InstType *t, const char *id);
 
   /**
    * Allocate space for meta parameters
@@ -303,9 +298,6 @@ class UserDef : public Type {
 				   expanded, 0 otherwise. */
 
   int nt;			/**< number of template parameters */
-  int mt;			/**< always <= nt; corresponds to the
-				   number of parameters that can
-				   impact the type signature */
   InstType **pt;		/**< parameter types */
   const char **pn;		/**< parameter names */
   int exported;			/**< 1 if the type is exported, 0 otherwise */

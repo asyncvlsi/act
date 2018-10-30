@@ -94,8 +94,6 @@ typedef struct {
    * User-defined type that is currently being defined
    */
   UserDef *u;
-  int param_mode; /**< used to specify the kind of parameter during template
-		     definitions */
   Process *u_p;			/* process */
   Data *u_d;			/* data */
   Channel *u_c;			/* user-defined channel */

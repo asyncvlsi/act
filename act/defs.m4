@@ -41,14 +41,12 @@ template_spec: [ "export" ] "template"
     if (!OPT_EMPTY ($1)) {
       $0->u->MkExported();
     }
-    $0->param_mode = 0;
     OPT_FREE ($1);
     $0->strict_checking = 1;
     $0->scope = $0->u->CurScope ();
 }}
 "<" { param_inst ";" }* ">"
 {{X:
-    $0->param_mode = 1;
     list_free ($4);
     return NULL;
 }}
@@ -99,7 +97,7 @@ param_inst: param_type id_list
       }
       list_free (m);
 
-      if ($0->u->AddMetaParam (it, id_name, $0->param_mode) != 1) {
+      if ($0->u->AddMetaParam (it, id_name) != 1) {
 	$E("Duplicate meta-parameter name in port list: ``%s''", id_name);
       }
     }
