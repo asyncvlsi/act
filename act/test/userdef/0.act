@@ -1,0 +1,22 @@
+defchan e1of2 <: chan(bool) (bool d[2]; bool t, f, e)
+{
+  d[0] = f;
+  d[1] = t;
+
+  methods {
+   set {
+     [e]; [ self -> t+ [] ~self -> f+ ]
+   }
+   get {
+     [t -> self+ [] f -> self- ]
+   }
+   send_rest {
+     [~e];t-,f-
+   }
+   recv_rest { 
+     e-;[~t&~f];e+
+   }
+  }
+}
+
+e1of2 x;

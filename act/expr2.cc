@@ -1029,8 +1029,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     break;
 #endif
 
+  case E_SELF:
+    break;
+
   default:
-    fatal_error ("Unknown expression type!");
+    fatal_error ("Unknown expression type (%d)!", e->type);
     break;
   }
   

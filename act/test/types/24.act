@@ -1,0 +1,3 @@
+template<pint N, M> defproc foo (bool x) { bool w[N]; }
+
+foo<5> w;

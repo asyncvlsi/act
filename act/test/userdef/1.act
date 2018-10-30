@@ -1,0 +1,13 @@
+deftype dualrail <: int<1> (bool t, f)
+{
+  methods {
+   set { 
+    [self=1 -> f-;t+ [] self=0 -> t-;f+ ]
+   }
+   get {
+    [t -> self:=1 [] f -> self:=0 ]
+   }
+  }
+}
+
+dualrail d;

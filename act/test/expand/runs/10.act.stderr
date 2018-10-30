@@ -1,0 +1,8 @@
+In expanding foo<0>
+In expanding foo<1>
+In expanding foo<2>
+In expanding foo<3>
+In expanding ::<Global>
+ id: x[0]
+ type: bool[0]
+FATAL: Dereference out of range
