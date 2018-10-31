@@ -221,6 +221,9 @@ class Scope {
   void BindParam (ActId *id, AExpr *ae);
 
   void BindParam (ActId *id, AExprstep *aes, int idx = -1);
+
+  void playBody (ActBody *b); /* create instances in the scope based
+				 on what is in the body */
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

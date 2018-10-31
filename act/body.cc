@@ -1885,3 +1885,99 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
     b->Expand (ns, s);
   }
 }
+
+
+ActBody *ActBody_Conn::Clone ()
+{
+  ActBody_Conn *ret;
+
+  if (type == 0) {
+    ret = new ActBody_Conn (u.basic.lhs, u.basic.rhs);
+  }
+  else {
+    ret = new ActBody_Conn (u.general.lhs, u.general.rhs);
+  }
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Inst::Clone ()
+{
+  ActBody_Inst *ret = new ActBody_Inst(t,id);
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Lang::Clone ()
+{
+  ActBody_Lang *ret;
+
+  ret = new ActBody_Lang (t, lang);
+
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Loop::Clone ()
+{
+  ActBody_Loop *ret;
+
+  ret = new ActBody_Loop (t, id, lo, hi, b->Clone());
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+
+ActBody *ActBody_Select::Clone ()
+{
+  ActBody_Select *ret;
+
+  ret = new ActBody_Select (gc);  // XXX: clone gc here if you free
+				  // body
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Attribute::Clone()
+{
+  ActBody_Attribute *ret;
+  ret = new ActBody_Attribute (inst, a, arr);
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Namespace::Clone()
+{
+  ActBody_Namespace *ret;
+
+  ret = new ActBody_Namespace (ns);
+
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+ActBody *ActBody_Assertion::Clone()
+{
+  ActBody_Assertion *ret;
+
+  ret = new ActBody_Assertion (e, msg);
+
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}

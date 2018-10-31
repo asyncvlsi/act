@@ -220,6 +220,18 @@ def_or_proc ID
 	  exit (1);
 	}
       }
+      /* now add in port parameters */
+      for (int i=0; i < pp->getNumPorts(); i++) {
+	const char *s = pp->getPortName (i);
+	InstType *st = pp->getPortType (i);
+	if ($0->u_p->AddPort (st, s) != 1) {
+	  $e("Duplicate port name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  it->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
     }
     OPT_FREE ($4);
 }}
@@ -245,6 +257,15 @@ def_or_proc ID
     OPT_FREE ($6);
     $0->scope = $0->u_p->CurScope ();
     $0->strict_checking = 0;
+
+    if ($0->u_p->getParent()) {
+      UserDef *ux = dynamic_cast <UserDef *> ($0->u_p->getParent()->BaseType());
+      /* re-play the body, and copy it in */
+      if (ux->getBody()) {
+	$0->scope->playBody (ux->getBody());
+	$0->u_p->AppendBody (ux->getBody()->Clone());
+      }
+    }
 }}
 proc_body
 {{X:
@@ -509,6 +530,25 @@ defdata: [ template_spec ]
 	  exit (1);
 	}
       }
+
+      /* now add in port parameters */
+      for (int i=0; i < dp->getNumPorts(); i++) {
+	const char *s = dp->getPortName (i);
+	InstType *st = dp->getPortType (i);
+	if ($0->u_d->AddPort (st, s) != 1) {
+	  $e("Duplicate port name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  $5->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
+
+      if (dp->getBody()) {
+	$0->scope->playBody (dp->getBody());
+	$0->u_d->AppendBody (dp->getBody()->Clone());
+      }
+      $0->u_d->copyMethods (dp);
     }
     if (!ir) {
       $E("Cannot find root built-in type");
@@ -557,14 +597,14 @@ data_chan_body: ";"
 	$E("Channel definition ``%s'': duplicate definition with the same type signature", $0->u_c->getName ());
       }
       $0->u_c->MkDefined ();
-      $0->u_c->setBody ($2);
+      $0->u_c->AppendBody ($2);
     }
     else if ($0->u_d) {
       if ($0->u_d->isDefined ()) {
 	$E("Data definition ``%s'': duplicate definition with the same type signature", $0->u_d->getName ());
       }
       $0->u_d->MkDefined();
-      $0->u_d->setBody ($2);
+      $0->u_d->AppendBody ($2);
     }
     else {
       $A(0);
@@ -793,6 +833,25 @@ defchan: [ template_spec ]
 	  exit (1);
 	}
       }
+
+      /* now add in port parameters */
+      for (int i=0; i < ch->getNumPorts(); i++) {
+	const char *s = ch->getPortName (i);
+	InstType *st = ch->getPortType (i);
+	if ($0->u_c->AddPort (st, s) != 1) {
+	  $e("Duplicate port name in port list: ``%s''", s);
+	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
+	  $5->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
+
+      if (ch->getBody()) {
+	$0->scope->playBody (ch->getBody());
+	$0->u_c->AppendBody (ch->getBody()->Clone());
+      }      
+      $0->u_c->copyMethods (ch);
 
       InstType *chparent = NULL;
       while (ch->getParent()) {
@@ -1097,7 +1156,7 @@ alias_or_inst[ActBody *]: alias
  */
 def_body: base_item_list 
 {{X:
-    $0->u_p->setBody ($1);
+    $0->u_p->AppendBody ($1);
     return NULL;
 }}
 | /* nothing */;
