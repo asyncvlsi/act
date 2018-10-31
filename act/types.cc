@@ -1116,7 +1116,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   Array *xa;
 
   recursion_depth++;
-  
+
   if (recursion_depth >= Act::max_recurse_depth) {
     act_error_ctxt (stderr);
     fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
@@ -1128,6 +1128,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 #if 0
   printf ("Hello, expand userdef %s\n", getName());
   printf ("Expanding userdef, nt=%d, spec_nt=%d\n", nt, spec_nt);
+  for (int i=0; i < spec_nt; i++) {
+    printf (" param %d: ", i);
+    u[i].u.tp->Print (stdout);
+    printf (" [u+i=%x]\n", u+i);
+  }
 #endif
 
   /* create a new userdef type */
@@ -1159,6 +1164,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
   ii = 0;
   for (i=0; i < nt; i++) {
+#if 0
+    printf ("i=%d, ii=%d\n", i, ii);
+#endif    
     p = getPortType (-(i+1));
     if (!p)  {
       Assert (0, "Enumeration?");
@@ -1172,11 +1180,17 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       ux->AddMetaParam (x, pn[i]);
 
       while (uparent && uparent->isPort (getPortName (-(i+1)))) {
+#if 0
+	printf ("uparent: i=%d, ii=%d\n", i, ii);
+#endif
 	/* walk through instparent and continue bindings */
 	if (instparent->getNumParams() > 0) {
 	  /* walk through this list, incrementing i and repeating the
 	     param stuff */
 	  for (int j=0; j < instparent->getNumParams(); j++) {
+#if 0
+	    printf ("[j=%d] Bind: %s\n", j, pn[i]);
+#endif
 	    if (TypeFactory::isPTypeType (p->BaseType())) {
 	      x = instparent->getTypeParam (j);
 	      x = x->Expand (ns, ux->I);
@@ -1215,8 +1229,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	  uparent = NULL;
 	}
       }
-
-
+      
+#if 0
+      printf ("Bind: [%d] %s (ii=%d, spec_nt=%d)\n", i, pn[i], ii, spec_nt);
+#endif
       if (TypeFactory::isPTypeType (p->BaseType())) {
 	if (ii < spec_nt && u[ii].u.tt) {
 	  x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
@@ -1226,7 +1242,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       }
       else {
 	Assert (TypeFactory::isParamType (x), "What?");
-	if (i < spec_nt && u[ii].u.tp) {
+	if (ii < spec_nt && u[ii].u.tp) {
 	  InstType *rhstype;
 	  AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
 	  rhstype = rhsval->getInstType (s, 1);
@@ -1242,7 +1258,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	  ux->I->BindParam (pn[i], rhsval);
 	  ii++;
 	  delete rhstype;
-	  delete rhsval;
 	}
       }
     }
@@ -1435,6 +1450,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     else {
       ux->SetParent (parent->Expand (ns, ux->CurScope()));
     }
+  }
+  if (ux->parent) {
+    ux->parent->MkCached ();
   }
   ux->exported = exported;
 
@@ -1849,4 +1867,31 @@ void Data::Print (FILE *fp)
     CurScope()->Print (fp);
   }
   fprintf (fp, "}\n\n");
+}
+
+
+void UserDef::AppendBody (ActBody *x)
+{
+  if (b) {
+    b->Append (x);
+  }
+  else {
+    b = x;
+  }
+}
+
+
+void Data::copyMethods (Data *d)
+{
+  for (int i=0; i < 2; i++) {
+    methods[i] = d->getMethod ((datatype_methods)i);
+  }
+}
+
+void Channel::copyMethods (Channel *c)
+{
+  for (int i=0; i < 6; i++) {
+    methods[i] = c->getMethod ((datatype_methods)i);
+    emethods[i] = c->geteMethod ((datatype_methods)i);
+  }
 }

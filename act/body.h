@@ -92,6 +92,8 @@ class ActBody {
   ActBody *Tail ();
   ActBody *Next () { return next; }
 
+  virtual ActBody *Clone() { return NULL; }
+
   virtual void Expand (ActNamespace *, Scope *) { fatal_error ("Need to define Expand() method!"); }
 
   void Expandlist (ActNamespace *, Scope *);
@@ -113,6 +115,11 @@ class ActBody_Inst : public ActBody {
   Type *BaseType ();
   void Print (FILE *fp);
 
+  InstType *getType () { return t; }
+  const char *getName() { return id; }
+
+  ActBody *Clone ();
+
  private:
   InstType *t;
   const char *id;
@@ -125,6 +132,8 @@ public:
   }
   void Expand (ActNamespace *, Scope *);
   //void Print (FILE *fp);
+
+  ActBody *Clone ();
 
 private:
   const char *inst;
@@ -149,6 +158,8 @@ class ActBody_Conn : public ActBody {
 
   void Print (FILE *fp);
   void Expand (ActNamespace *, Scope *);
+
+  ActBody *Clone();
   
  private:
   union {
@@ -190,6 +201,8 @@ class ActBody_Loop : public ActBody {
 
   void Print (FILE *fp);
 
+  ActBody *Clone();
+
  private:
   ActBody_Loop::type t;			/**< type of loop */
   const char *id;			/**< loop variable */
@@ -215,7 +228,10 @@ class ActBody_Select_gc {
     delete s;
   }
 #endif
- private:
+
+  ActBody *Clone();
+
+private:
   Expr *g;			/**< guard */
   ActBody *s;			/**< statement */
   ActBody_Select_gc *next;		/**< rest of the selection */
@@ -238,7 +254,9 @@ class ActBody_Select : public ActBody {
 
   void Expand (ActNamespace *, Scope *);
 
- private:
+  ActBody *Clone();
+
+private:
   ActBody_Select_gc *gc;
 };
 
@@ -254,6 +272,7 @@ public:
     }
   }
   void Expand (ActNamespace *, Scope *);
+  ActBody *Clone();
 private:
   Expr *e;
   const char *msg;
@@ -267,6 +286,7 @@ public:
   }
 
   void Expand (ActNamespace *, Scope *);
+  ActBody *Clone();
   
 private:
   ActNamespace *ns;
@@ -281,6 +301,17 @@ struct act_chp;
  */
 class ActBody_Lang : public ActBody {
  public:
+
+  enum langtype {
+    LANG_PRS,
+    LANG_CHP,
+    LANG_HSE,
+    LANG_SPEC,
+
+    LANG_SIZE,
+    LANG_SPICE
+  };
+
   ActBody_Lang (act_prs *p) {
     t = LANG_PRS;
     lang = p;
@@ -299,20 +330,18 @@ class ActBody_Lang : public ActBody {
     t = LANG_SPEC;
     lang = s;
   }
+  
+  ActBody_Lang (enum langtype _t, void *l) {
+    t = _t;
+    lang = l;
+  }
 
   void Expand (ActNamespace *, Scope *);
   void Print (FILE *fp);
+  ActBody *Clone();
 
  private:
-  enum {
-    LANG_PRS,
-    LANG_CHP,
-    LANG_HSE,
-    LANG_SPEC,
-
-    LANG_SIZE,
-    LANG_SPICE
-  } t;
+  enum langtype t;
   void *lang;
 };
 

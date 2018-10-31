@@ -613,11 +613,32 @@ void InstType::appendParams (int na, inst_param *a)
 {
   if (na <= 0) return;
 
-  REALLOC (u, inst_param, na+nt);
+  if (nt > 0) {
+    REALLOC (u, inst_param, na+nt);
+  }
+  else {
+    MALLOC (u, inst_param, na+nt);
+  }
+
   for (int i=0; i < na; i++) {
-    u[nt++] = a[i];
+    u[nt].isatype = a[i].isatype;
+    if (a[i].isatype) {
+      if (a[i].u.tt) {
+	u[nt].u.tt = new InstType (a[i].u.tt);
+      }
+      else {
+	u[nt].u.tt = NULL;
+      }
+    }
+    else {
+      if (a[i].u.tp) {
+	u[nt].u.tp = a[i].u.tp->Clone();
+      }
+      else {
+	u[nt].u.tp = NULL;
+      }
+    }
+    nt++;
   }
 }
 
-  
-  

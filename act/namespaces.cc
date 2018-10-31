@@ -1662,3 +1662,17 @@ void ActNamespace::Print (FILE *fp)
     }
   }
 }
+
+
+
+void Scope::playBody (ActBody *b)
+{
+  for (; b; b = b->Next()) {
+    ActBody_Inst *inst = dynamic_cast<ActBody_Inst *> (b);
+    if (inst) {
+      if (!Lookup (inst->getName())) {
+	Add (inst->getName(), inst->getType());
+      }
+    }
+  }
+}
