@@ -11,6 +11,8 @@ EXTRA=netgen.o
 TARGETINCS=netlist.h
 TARGETINCSUBDIR=act/passes
 
+SRCS=netlist.cc emit.cc
+
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 netgen.o: netlist.o emit.o

@@ -261,8 +261,11 @@ class UserDef : public Type {
   virtual void Print (FILE *fp) { }
   void PrintHeader (FILE *fp, const char *type);
 
-  void setBody (ActBody *x) { b = x; } /**< Set the body of the process */
-
+  void setBody (ActBody *x) { b = x; } /**< Set the body of the
+					  process */
+  void AppendBody (ActBody *x);
+  ActBody *getBody () { return b; }
+  
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     Assert (0, "Don't call this ever");
   }
@@ -387,6 +390,7 @@ class Data : public UserDef {
     methods[t] = h;
   }
   struct act_chp_lang *getMethod (datatype_methods t) { return methods[t]; }
+  void copyMethods (Data *d);
  
   Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
@@ -406,6 +410,7 @@ class Channel : public UserDef {
   void setMethod (datatype_methods t, Expr *e) { emethods[t] = e; }
   act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
   Expr *geteMethod(datatype_methods t) { return emethods[t]; }
+  void copyMethods (Channel *c);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
