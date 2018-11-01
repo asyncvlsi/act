@@ -38,6 +38,11 @@ class Act {
   static int max_recurse_depth;
 
   /**
+   * Maximum number of iterations for general loops
+   */
+  static int max_loop_iterations;
+
+  /**
    * Create an act data structure for the specified input file
    *
    * @param s is the name of the file containing the top-level ACT

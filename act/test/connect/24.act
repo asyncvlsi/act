@@ -1,0 +1,7 @@
+deftype dualrail <: bool (bool d0, d1, a) { }
+
+dualrail x[4];
+
+bool xd1, xd0;
+
+x[0](.d1=xd1, .d0=xd0);

@@ -1607,6 +1607,46 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
   warning ("All guards in selection are false.");
 }
 
+void ActBody_Genloop::Expand (ActNamespace *ns, Scope *s)
+{
+  ActBody_Select_gc *igc;
+  ActBody *bi;
+  Expr *guard;
+  int flag;
+  int loopcount = 0;
+
+  flag = 1;
+  while (flag) {
+    loopcount++;
+    if (loopcount > Act::max_loop_iterations) {
+      act_error_ctxt (stderr);
+      fatal_error ("# of loop iterations exceeded limit (%d)", Act::max_loop_iterations);
+    }
+    flag = 0;
+    for (igc = gc; igc; igc = igc->next) {
+      if (!igc->g) {
+	fatal_error ("Should not be here!");
+      }
+      guard = expr_expand (igc->g, ns, s);
+      if (!expr_is_a_const (guard)) {
+	act_error_ctxt (stderr);
+	print_expr (stderr, igc->g);
+	fprintf (stderr, "\n");
+	fatal_error ("Not a constant expression");
+      }
+      Assert (guard->type == E_TRUE || guard->type == E_FALSE,
+	      "Should have been caught earlier");
+      if (guard->type == E_TRUE) {
+	igc->s->Expandlist (ns, s);
+	flag = 1;
+	break;
+      }
+    }
+  }
+  /* all guards false, return */
+}
+
+
 void ActBody_Lang::Print (FILE *fp)
 {
   switch (t) {
@@ -1947,6 +1987,20 @@ ActBody *ActBody_Select::Clone ()
   }
   return ret;
 }
+
+ActBody *ActBody_Genloop::Clone ()
+{
+  ActBody_Genloop *ret;
+
+  ret = new ActBody_Genloop (gc);  // XXX: clone gc here if you free
+				  // body
+  if (Next()) {
+    ret->Append (Next()->Clone());
+  }
+  return ret;
+}
+
+
 
 ActBody *ActBody_Attribute::Clone()
 {
