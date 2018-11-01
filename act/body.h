@@ -228,6 +228,7 @@ class ActBody_Select_gc {
     delete s;
   }
 #endif
+  int isElse() { return g == NULL ? 1 : 0; }
 
   ActBody *Clone();
 
@@ -237,6 +238,7 @@ private:
   ActBody_Select_gc *next;		/**< rest of the selection */
 
   friend class ActBody_Select;
+  friend class ActBody_Genloop;
 };
 
 class ActBody_Select : public ActBody {
@@ -254,6 +256,18 @@ class ActBody_Select : public ActBody {
 
   void Expand (ActNamespace *, Scope *);
 
+  ActBody *Clone();
+
+private:
+  ActBody_Select_gc *gc;
+};
+
+class ActBody_Genloop : public ActBody {
+ public:
+  ActBody_Genloop (ActBody_Select_gc *_gc) {
+    gc = _gc;
+  }
+  void Expand (ActNamespace *, Scope *);
   ActBody *Clone();
 
 private:

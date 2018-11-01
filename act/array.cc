@@ -289,6 +289,45 @@ void Array::Concat (Array *a)
 }
 
 
+
+/*------------------------------------------------------------------------
+ *  Increase size of this array by pre-pending dimensions from "a"
+ *------------------------------------------------------------------------
+ */
+void Array::preConcat (Array *a)
+{
+  int i;
+
+  Assert (isSparse() == 0, "Array::preConcat() only supported for dense arrays");
+  Assert (a->isSparse() == 0, "Array::preConcat() only works for dense arrays");
+  Assert (a->isExpanded () == expanded, "Array::preConcat() must have same expanded state");
+
+  dims += a->dims;
+
+  if (dims == a->dims) {
+    MALLOC (r, struct range, dims);
+  }
+  else {
+    REALLOC (r, struct range, dims);
+  }
+
+  for (i=dims-a->dims-1; i >= 0; i--) {
+    r[i+a->dims] = r[i];
+  }
+
+  for (i=0; i < a->dims; i++) {
+    r[i] = a->r[i];
+  }
+
+  /* if any part is not a deref, it is a subrange */
+  if (a->deref == 0) {
+    deref = 0;
+  }
+
+  range_sz = -1;
+}
+
+
 /*------------------------------------------------------------------------
  *  Given an array, this returns the linear offset within the array of
  *  the deref "a".

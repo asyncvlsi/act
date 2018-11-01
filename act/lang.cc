@@ -17,7 +17,7 @@
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
 extern const char *act_fet_value_to_string (int);
 
-static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
+static ActId *fullexpand_var (ActId *id, ActNamespace *ns, Scope *s)
 {
   ActId *idtmp;
   Expr *etmp;
@@ -25,6 +25,34 @@ static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
   if (!id) return NULL;
   
   idtmp = id->Expand (ns, s);
+  
+  etmp = idtmp->Eval (ns, s);
+  Assert (etmp->type == E_VAR, "Hmm");
+  if ((ActId *)etmp->u.e.l != idtmp) {
+    delete idtmp;
+  }
+  idtmp = (ActId *)etmp->u.e.l;
+  /* check that type is a bool */
+  FREE (etmp);
+  return idtmp;
+}
+
+/*
+ * This is a chp variable to be read. So it can have array
+ * dereferences
+ */
+static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
+{
+  ActId *idtmp;
+  Expr *etmp;
+  
+  if (!id) return NULL;
+
+  /* this needs to be changed  to: expand as much as possible, not
+     full expand. It needs to be a non-array variable type.
+  */
+  idtmp = id->Expand (ns, s);
+  
   etmp = idtmp->Eval (ns, s);
   Assert (etmp->type == E_VAR, "Hmm");
   if ((ActId *)etmp->u.e.l != idtmp) {
@@ -54,10 +82,10 @@ act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
 
   NEW (ret, act_prs);
 
-  ret->vdd = expand_var_read (p->vdd, ns, s);
-  ret->gnd = expand_var_read (p->gnd, ns, s);
-  ret->psc = expand_var_read (p->psc, ns, s);
-  ret->nsc = expand_var_read (p->nsc, ns, s);
+  ret->vdd = fullexpand_var (p->vdd, ns, s);
+  ret->gnd = fullexpand_var (p->gnd, ns, s);
+  ret->psc = fullexpand_var (p->psc, ns, s);
+  ret->nsc = fullexpand_var (p->nsc, ns, s);
   ret->p = prs_expand (p->p, ns, s);
   if (p->next) {
     ret->next = prs_expand (p->next, ns, s);
@@ -632,10 +660,10 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
 
   NEW (ret, act_chp);
   
-  ret->vdd = expand_var_read (c->vdd, ns, s);
-  ret->gnd = expand_var_read (c->gnd, ns, s);
-  ret->psc = expand_var_read (c->psc, ns, s);
-  ret->nsc = expand_var_read (c->nsc, ns, s);
+  ret->vdd = fullexpand_var (c->vdd, ns, s);
+  ret->gnd = fullexpand_var (c->gnd, ns, s);
+  ret->psc = fullexpand_var (c->psc, ns, s);
+  ret->nsc = fullexpand_var (c->nsc, ns, s);
   ret->c = chp_expand (c->c, ns, s);
   
   return ret;

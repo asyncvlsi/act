@@ -1,0 +1,5 @@
+deftype dualrail <: bool (bool d0, d1, a) { }
+
+bool d0, d1, a;
+
+dualrail c(d0,d1,a);

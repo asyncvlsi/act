@@ -23,6 +23,7 @@ struct command_line_defs {
 };
 
 int Act::max_recurse_depth;
+int Act::max_loop_iterations;
 
 L_A_DECL (struct command_line_defs, vars);
 
@@ -64,8 +65,10 @@ void Act::Init (int *iargc, char ***iargv)
 
   config_std_path ("act");
   config_set_default_int ("act.max_recurse_depth", 1000);
+  config_set_default_int ("act.max_loop_iterations", 1000);
   config_read ("global.conf");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
+  Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
 
   A_INIT (vars);
 

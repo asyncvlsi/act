@@ -126,9 +126,6 @@ typedef struct {
   int column;
   char *file;
 
-  /* instance override */
-  int override;
-
   /* attributes */
   int attr_num;
   char **attr_table;

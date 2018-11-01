@@ -92,9 +92,6 @@ ns_body_item[ActBody *]
 namespace_other[ActBody *]: instance
 {{X:
     ActBody_Inst *b;
-    if ($0->override) {
-      $E("Can't have override types at the top-level in a namespace");
-    }
     $A($1);
     b = dynamic_cast <ActBody_Inst*>($1);
     $A(b);

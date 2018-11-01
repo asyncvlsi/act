@@ -71,6 +71,12 @@ class Array {
   void Concat (Array *a);
 
   /**
+   * Same as Concat(), except append dimensions starting from position
+   * 0, rather than adding to the dimensions at the end
+   */
+  void preConcat (Array *a);
+
+  /**
    * Check if two array derefes are identical
    * @param strict is 1 if the low and high indices must match; 0
    * means the sizes must match.
