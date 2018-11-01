@@ -297,28 +297,19 @@ port_formal_list: { single_port_item ";" }*
 }}
 ;
 
-single_port_item: [ "+" ] /* override */  physical_inst_type id_list
+single_port_item: physical_inst_type id_list
 {{X:
     listitem_t *li;
     ActRet *r;
     InstType *it;
     UserDef *u;
-    int is_override;
-
-    if (OPT_EMPTY ($1)) {
-      is_override = 0;
-    }
-    else {
-      is_override = 1;
-    }
-    OPT_FREE ($1);
 
     /* Make sure that port types are acceptable */
     if ($0->u_p) {
       /* We are currently processing a defproc port list */
       u = $0->u_p;
-      if (TypeFactory::isProcessType ($2->BaseType())) {
-	r = (ActRet *) list_value (list_first ($3));
+      if (TypeFactory::isProcessType ($1->BaseType())) {
+	r = (ActRet *) list_value (list_first ($2));
 	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a process cannot be a process", r->u.str);
       }
@@ -328,14 +319,14 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
       u = $0->u_d;
       const char *err = NULL;
 
-      if (TypeFactory::isProcessType ($2->BaseType())) {
+      if (TypeFactory::isProcessType ($1->BaseType())) {
 	err = "process";
       }
-      else if (TypeFactory::isChanType ($2->BaseType())) {
+      else if (TypeFactory::isChanType ($1->BaseType())) {
 	err = "channel";
       }
       if (err) {
-	r = (ActRet *) list_value (list_first ($3));
+	r = (ActRet *) list_value (list_first ($2));
 	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a function cannot be a %s",
 	   r->u.str, err);
@@ -346,14 +337,14 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
       u = $0->u_f;
       const char *err = NULL;
 
-      if (TypeFactory::isProcessType ($2->BaseType())) {
+      if (TypeFactory::isProcessType ($1->BaseType())) {
 	err = "process";
       }
-      else if (TypeFactory::isChanType ($2->BaseType())) {
+      else if (TypeFactory::isChanType ($1->BaseType())) {
 	err = "channel";
       }
       if (err) {
-	r = (ActRet *) list_value (list_first ($3));
+	r = (ActRet *) list_value (list_first ($2));
 	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a data-type cannot be a %s",
 	   r->u.str, err);
@@ -362,8 +353,8 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
     else if ($0->u_c) {
       /* This is a user-defined channel type */
       u = $0->u_c;
-      if (TypeFactory::isProcessType ($2->BaseType())) {
-	r = (ActRet *) list_value (list_first ($3));
+      if (TypeFactory::isProcessType ($1->BaseType())) {
+	r = (ActRet *) list_value (list_first ($2));
 	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a channel cannot be a process", r->u.str);
       }
@@ -374,7 +365,7 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
     }
 
     /* Walk through identifiers */
-    for (li = list_first ($3); li; li = list_next (li)) {
+    for (li = list_first ($2); li; li = list_next (li)) {
       r = (ActRet *) list_value (li);
       $A(r->type == R_STRING);
       const char *id_name = r->u.str;
@@ -389,11 +380,11 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
 
       if (OPT_EMPTY (m)) {
 	/* nothing---use the base insttype directly */
-	it = $2;
+	it = $1;
       }
       else {
 	/* we need to replicate the insttype */
-	it = new InstType ($2);
+	it = new InstType ($1);
 	r = OPT_VALUE (m);
 	$A(r->type == R_ARRAY);
 	r->u.array->mkArray ();
@@ -404,30 +395,15 @@ single_port_item: [ "+" ] /* override */  physical_inst_type id_list
       list_free (m);
 
       if (u->AddPort (it, id_name) != 1) {
-	/* XXX: might be an override */
-	if (is_override) {
-	  $E("Could be an override, so fix it!\n");
+	if ($0->u_f) {
+	  $E("Duplicate parameter name in argument list: ``%s''", id_name);
 	}
 	else {
-	  if ($0->u_f) {
-	    $E("Duplicate parameter name in argument list: ``%s''", id_name);
-	  }
-	  else {
-	    $E("Duplicate parameter name in port list: ``%s''", id_name);
-	  }
-	}
-      }
-      else {
-	if (is_override && $0->u_f) {
-	  $E("Overrides not permitted for function definitions");
-	}
-	if (is_override) {
-	  $E("Override specified, but parameter ``%s'' does not exist!", 
-	     id_name);
+	  $E("Duplicate parameter name in port list: ``%s''", id_name);
 	}
       }
     }
-    list_free ($3);
+    list_free ($2);
     return NULL;
 }}
 ;
@@ -1221,16 +1197,9 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
 ;
 
 
-instance[ActBody *]: [ "+" ] inst_type
+instance[ActBody *]: inst_type
 {{X:
-    if (!OPT_EMPTY ($1)) {
-      $0->override = 1;
-    }
-    else {
-      $0->override = 0;
-    }
-    OPT_FREE ($1);
-    $0->t = $2;
+    $0->t = $1;
 }}
 { instance_id "," }* ";" 
 {{X:
@@ -1250,7 +1219,7 @@ instance[ActBody *]: [ "+" ] inst_type
     ret = NULL;
     tl = NULL;
 
-    for (li = list_first ($3); li; li = list_next (li)) {
+    for (li = list_first ($2); li; li = list_next (li)) {
       cur = (ActBody *)list_value (li);
       if (!cur) continue;
 
@@ -1263,7 +1232,7 @@ instance[ActBody *]: [ "+" ] inst_type
 	tl = tl->Tail ();
       }
     }
-    list_free ($3);
+    list_free ($2);
     return ret;
 }}
 ;
@@ -1339,11 +1308,6 @@ instance_id[ActBody *]: ID [ sparse_range ]
 {{X:
     InstType *it;
     ActRet *r;
-
-    if ($0->override) {
-      /* XXX: IT IS AN OVERRIDE */
-      $W("Override, figure out what to do!\n");
-    }
 
     $0->i_t = NULL;
     $0->i_id = $1;
@@ -1567,13 +1531,26 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
     
     $A($0->i_t);
     $A($0->i_id);
-    
+
     ud = dynamic_cast<UserDef *>($0->i_t->BaseType());
 
     if (!ud) {
       $E("Connection specifier used for instance ``%s'' whose root type is ``%s''\n\tnot a user-defined type", $0->i_id, ud->getName());
     }
 
+    if ($0->i_t->arrayInfo()) {
+      if (!$0->a_id) {
+	$E("Connection specifier for an array instance ``%s''", $0->i_id);
+      }
+      else {
+	$A($0->a_id->arrayInfo ());
+	if ($0->a_id->arrayInfo()->nDims() !=
+	    $0->i_t->arrayInfo()->nDims()) {
+	  $E("Array de-reference for ``%s'': mismatch in dimensions (%d v/s %d)", $0->i_id, $0->i_t->arrayInfo()->nDims (), $0->a_id->arrayInfo()->nDims());
+	}
+      }
+    }
+	
     b = NULL;
     ret = NULL;
 
@@ -1599,7 +1576,15 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 	$E("``%s'' is not a valid port name for type ``%s''", str, 
 	   ud->getName ());
       }
-      ActId *id  = new ActId ($0->i_id, NULL);
+
+      ActId *id;
+
+      if ($0->a_id) {
+	id = $0->a_id->Clone();
+      }
+      else {
+	id  = new ActId ($0->i_id, NULL);
+      }
       id->Append (new ActId (str, NULL));
       type_set_position ($l, $c, $n);
       if (!act_type_conn ($0->scope, id, ae)) {
@@ -1774,6 +1759,28 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
       return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, r->u.exp, $8);
     }
 }}
+| "*[" { gc_1 "[]" }* "]"
+{{X:
+    listitem_t *li;
+    ActBody_Select_gc *ret, *prev, *stmp;
+
+    ret = NULL;
+    for (li = list_first ($2); li; li = list_next (li)) {
+      stmp = (ActBody_Select_gc *) list_value (li);
+      if (stmp->isElse()) {
+	$E("`else' clause not permitted in a looping construct!");
+      }
+      if (!ret) {
+	ret = stmp;
+	prev = stmp;
+      }
+      else {
+	prev->Append (stmp);
+	prev = stmp;
+      }
+    }
+    return new ActBody_Genloop (ret);
+}}
 ;
 
 conditional[ActBody *]: "[" guarded_cmds "]"
@@ -1797,6 +1804,9 @@ guarded_cmds[ActBody *]: { gc_1 "[]" }*
       else {
 	prev->Append (stmp);
 	prev = stmp;
+      }
+      if (stmp->isElse() && list_next (li)) {
+	$E("`else' clause can only be the last clause in a selection");
       }
     }
     return new ActBody_Select (ret);

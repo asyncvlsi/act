@@ -12,5 +12,5 @@ f.write("import \"{0}\";\n".format(sys.argv[1]))
 f.write("{0} f;\n".format(sys.argv[2]))
 f.close()
 
-os.system("aflat -lvs __tmp.act | sed s/\"f\./\"/g > {0}.lvprs".format(sys.argv[2]))
+os.system("aflat -lvs __tmp.act | sed 's,\"f\.,\",g' > {0}.lvprs".format(sys.argv[2]))
 os.unlink("__tmp.act")

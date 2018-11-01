@@ -71,7 +71,7 @@ Select a chapter using the `m' key
 
 * Connections::         Aliasing and initialization.
 
-* Control Flow::        Looping and IF constructs.
+* Control Flow::        Looping and IF constructs for circuit construction.
 
 * Namespaces::          The care and feeding of namespaces.
 
@@ -1844,8 +1844,8 @@ the following would be an error:
 @example
 template<pint N> defproc type1 (bool a, b) @{ ... @}
 template<pint N> defproc type2 <: type1 (bool c) @{ ... @}
-@result @error{} Duplicate meta-parameter name in port list: `N'
-@result Conflict occurs due to parent type: type1
+@result{} @error{} Duplicate meta-parameter name in port list: `N'
+@result{} Conflict occurs due to parent type: type1
 @end example
 since the name of the template parameter is repeated.
 
@@ -1885,23 +1885,36 @@ implementation of the same buffer.
 
 @subsection Overrides
 
-@b{XXX: here}
-
-The port list can also be used to @emph{override} the original
-variable in the port list of the base type, but in this situation the
-new variable must be an implementation of the original. For example,
-an alternate way to specify the buffer example is the following:
+Consider the buffer example above. A better and more abstract
+specification for a buffer at the CHP level of abstraction would be:
 
 @example
-defproc buffer (chan?(int<1>) l, chan!(int<1>) r)
+defproc buffer (chan?(bool) l, chan!(bool) r)
 @{
-   int<1> x;
+   bool x;
+
    chp @{
      *[ l?x;r!x ]
    @}
 @}
+@end example
 
-defproc wchb <: buffer (+e1of2? l, +e1of2! r)
+The production rules for this buffer use the fact that the Boolean
+channel for @code{l} and @code{r} is in fact an @code{e1of2}
+channel. Because an @code{e1of2} channel implements a
+@code{chan(bool)}, @sc{act} provides a mechanism to say that an
+implementation of a process also replaces existing types with new
+implementations of the same type. This mechanism is called an
+@dfn{override}, because old types can be @emph{overridden} with new
+ones that implement them.
+
+Variables in the port list as well as the body of a type can be
+overridden. For this to be sound, the new type must be an
+implementation of the original. The syntax for this is shown below:
+
+@example
+defproc wchb <: buffer
++@{ e1of2 l, r; @} // override block
 @{
    prs @{
      ...
@@ -1909,40 +1922,53 @@ defproc wchb <: buffer (+e1of2? l, +e1of2! r)
 @}
 @end example
 
-In this version, the original process implements a buffer with channels,
-and the @code{wchb} specifies the channel protocol as well.  The first
-abstract buffer can be used with different handshake protocols on
-channels. The ``@code{+}'' indicates that the type of the instance is
-being over-ridden in the @code{wchb}. While the @code{+} isn't
-necessary, @sc{act} forces a user to be explicit when overriding types
-in a subtype so that it is clear this was intentional.
+In this version, the original process implements a buffer with
+channels, and the @code{wchb} specifies that the channel is a
+@code{e1of2}.  The first abstract buffer can be used with different
+handshake protocols on channels, or with different circuits.
 
-Sub-typing relations introduced when the right hand side is not a
-skeleton should be handled with care. For example, suppose one has two
-definitions of a buffer: one using the CHP language, and the other
-using the PRS language (as above), and consider the variable @code{x}. Now
-this internal variable, while required for the CHP language, is not
-part of the PRS for the WCHB reshuffling. In other words, the
-@code{wchb} process will not have any internal variable that
-corresponds to @code{x} in the CHP language! Similarly, the
-@code{wchb} PRS language will contain additional variables that are
-not present in the CHP language. The relation between such variables
-is unspecified by the sub-typing relationship.
+The ``@code{+@{ ... @}}'' indicates the override block. The override
+block uses the instantiation syntax to specify override types. The
+only syntax permited is of the form within an override block is
+
+@example
++@{
+    @var{type} @var{list-of-ids};
+    ...
+ @}
+@end example
+
+The identifiers cannot contain array specifiers, and the types canot
+have any direction flags. The identifier names must match names in the
+parent type (either in the port list or in the body of the type). If
+the original identifier was declared as an array, the entire array
+will be overridden. Direction flags from the parent type will be
+inherited by the overridden type.
+
+Implemetation relations introduced should be handled with care. For
+example, suppose one has two definitions of a buffer: one using the
+CHP language, and the other using the PRS language (as above), and
+consider the variable @code{x}. Now this internal variable which is in
+the CHP language may not be part of the PRS for the WCHB
+reshuffling. In other words, the @code{wchb} process will not have any
+internal variable that corresponds to @code{x} in the CHP language!
+Similarly, the @code{wchb} PRS language will contain additional
+variables that are not present in the CHP language. The relation
+between such variables is unspecified by the implementation
+relationship.
 
 An additional complication arises if the process @code{wchb} ends up
 introducing a state variable @code{x} in the PRS language that does
-correspond to the @code{int x} from the CHP language. Again, the
-sub-typing relation is silent about how those variables relate to each
-other. In other words, while sub-typing can be used to conveniently
-describe a number of relationships between various processes and
-definitions, the @sc{act} language does not enforce semantic
-properties; the only thing enforced is signature sub-typing---i.e.,
-sub-types support all the @sc{act} operations as the base type.
+correspond to the @code{bool x} in the CHP language. In this case, one
+should override @code{x} as well with the appropriate detailed
+representation of the Boolean variable.
 
 @node ptype type,  Expressions, Subtyping, Types
 @comment  node-name,  next,  previous,  up
 
 @section The ptype type
+
+@b{XXX: this section not yet implemented}
 
 The special @code{ptype} meta-parameter type is used to pass in types
 into a process definition. These types can be used to build a process
@@ -1950,7 +1976,7 @@ using other processes as building blocks. The syntax for using a
 @code{ptype} is the following:
 
 @example
-ptype<foo> x;
+ptype(foo) x;
 @end example
 
 This says that @code{x} is a variable that is a type, with the
@@ -1971,7 +1997,7 @@ defproc bitslice (e1of2? rin[W]; e1of2! rout[W];
                   e1of2? in[M]; e1of2! out) @{ @}
 
 // the constructor
-template<pint N, pint M, pint W, ptype<bitslice<W,M>> t>
+template<pint N, pint M, pint W, ptype(bitslice<W,M>) t>
 defproc build_dpath (e1of2? rin[W]; e1of2! rout[W]; 
                      e1of2? in[M*N]; e1of2! out[N])
 @{
@@ -2014,19 +2040,35 @@ defproc ripple_adder (e1of2? a[32], b[32], cin; e1of2! out[32], cout)
 
 @cindex expressions
 
+Expression syntax in @sc{act} is similar to expressions in the C
+language. Operators that are supported include @code{+}, @code{-},
+@code{*}, @code{/}, and @code{%} for integer arithmetic operations,
+and @code{&}, @code{|}, and @code{~} for bit-wise logical operations
+between integers.
+
+Boolean expressions can be constructed from Boolean variables, the
+constants @code{true} and @code{false}, and the Boolean operators
+@code{&}, @code{|}, and @code{~} denoting the and, or, and negation
+operations respectively. (This is a departure from C, where and/or
+operations between conditions use @code{&&} and @code{||}.)
+
+Numeric expressions can be compared using
+@code{<}, @code{<=}, @code{>}, @code{>=}, @code{=}, and @code{!=} for
+the operators less than, less than or equal to, greater than, greater
+than or equal to, equal to, and not equal to respectively.
+
+Finally, there are the logical shift operators @code{<<} and
+@code{>>}, along with the arithmetic right shift operator @code{>>>}.
+
+Expressions can also include function calls, with the usual function
+call syntax.
+
 Typing rules for integers (what happens when you mix int, pint).
 
 Signed and unsigned, and what happens if you mix them.
 
 Type coersions (enum, int, bool).
 
-Boolean expressions can be constructed from Boolean variables, the
-constants @code{true} and @code{false}, and the Boolean operators
-@code{&}, @code{|}, and @code{~} denoting the and, or, and negation
-operations respectively.  Numeric expressions can be compared using
-@code{<}, @code{<=}, @code{>}, @code{>=}, @code{=}, and @code{!=} for
-the operators less than, less than or equal to, greater than, greater
-than or equal to, equal to, and not equal to respectively.
 
 @c ------------------------------------------------------------------------
 @c   Connections
@@ -2094,27 +2136,47 @@ y=x*1+2;         // @r{success}
 Whereas connecting nodes is a symmetric operation, connecting
 meta-language variables is not symmetric, as illustrated below.
 
-@kindex  Uninitialized parameter @var{varname}
-@kindex  Reinitializing @var{varname} with different value
+@kindex  Uninitialized identifier
+
 @example
 pint x, y;
 x=5;
 x=y*1+2;
-@result{} @error{} Uninitialized parameter `y'
+@result{} @error{}  id: y
+@result{} FATAL: Uninitialized identifier
 @end example
 
 @noindent
 Meta-language parameter connections correspond to assignment statements.
 @sc{Act} permits assigning floating-point values to integer-valued
-variables, and vice versa.  However, a meta-language variable can only
-be assigned one value.
+variables, and vice versa.  However, there are some restrictions on
+meta-language variable assignments.
+
+@kindex Setting immutable parameter that has already been set
 
 @example
 pint x;
 x=5;
 x=8;
-@result{} @error{} Reinitializing `x' with different value
+@result{} @error{}  Id: x
+@result{} FATAL: Setting immutable parameter that has already been set
 @end example
+
+In this example, @code{x} has been declared and then defined twice at
+the top-level of the @sc{act} file. This makes @code{x} a global
+variable, which means @code{x} can be used in types defined later in
+the @sc{act} file. This potentially makes @code{x} an @dfn{implicit
+parameter} for all types, even though @code{x} does not appear in the
+template parameter list for any of them. To prevent the situation
+where @code{x} might have different values depending on when a type is
+used, global parameters can only be defined once in @sc{act}. This
+constraint also applies to template parameters for the same reason.
+
+However, for parameters defined within the body of a type, they can be
+defined multiple types since they are not in the scope of any other
+type. @sc{act} defines global parameter variables and template
+parameter variables as @dfn{immutable types}---they can only be
+defined once.
 
 
 @c ------------------------------------------------------------------------
@@ -2138,7 +2200,7 @@ example below, nodes @code{x[0]}, @dots{}, @code{x[9]} are connected to
 nodes @code{y[10]}, @dots{}, @code{y[19]} respectively.
 
 @example
-bool[10] x;
+bool x[10];
 bool y[10..19];
 x=y;
 @end example
@@ -2146,13 +2208,17 @@ x=y;
 @noindent
 Connecting two arrays of differing sizes is an error.
 
-@kindex Attempt to connect two arrays @var{varname1} and @var{varname2} of incompatible size (@var{sz1} v/s @var{sz2})
+@kindex Types `@var{type1}' and `@var{type2}' are not compatible
+
 @example
-bool[10] x;
+bool x[10];
 bool y[10..20];
 x=y;
-@result{} @error{} Attempt to connect two arrays `x' and `y' of incompatible
-                   size (10 v/s 11)
+@result{} @error{} Connection: x = y
+@result{}  LHS: bool[10]
+@result{}  RHS: bool[10..20]
+@result{} FATAL: Type-checking failed on connection
+@result{}    Types `bool[10]' and `bool[10..20]' are not compatible
 @end example
 
 @cindex array, subrange
@@ -2168,15 +2234,18 @@ x[3..7] = y[12..16];
 @noindent
 Connections between two arrays with differing numbers of dimensions is
 not permitted. When a connection between multidimensional arrays is
-specified where the shape of the two arrays is not identical, the
-ranges to be connected are sorted in lexicographic order 
-(with indices closer to the variable having higher weight) and the
-corresponding array elements are connected. For example, in the example
-below @code{x[1][0]} would be connected to @code{y[0,1]}.
+specified where the shape of the two arrays is not identical, this is
+also reported as an error. However, it is possible that two arrays
+have the same shape but where the elements have differing indices.  In
+this case, the ranges to be connected are sorted in lexicographic
+order (with indices closer to the variable having higher weight) and
+the corresponding array elements are connected. For example, in the
+example below @code{x[3][5]} would be connected to @code{y[0][0]} and
+so on.
 
 @example
-bool[4][1] x;
-bool[2][2] y;
+bool x[3..4][5..6];
+bool y[2][2];
 x = y;         
 @end example
 
@@ -2184,7 +2253,7 @@ A list of variables can be treated as a single array by enclosing it in
 braces. 
 
 @example
-bool[3] x;
+bool x[3];
 bool x0,x1,x2;
 x = @{x0,x1,x2@};
 @end example
@@ -2251,11 +2320,11 @@ or the right hand side of a connection statement. This means that the
 following is a valid connection statement:
 
 @example
-bool a[2][2];
-bool b[3][4..5];
-bool c[10];
+bool a[2][4];
+bool b[4..4][4..7];
+bool c0[4],c1[4],c2[4];
 
-@{c@} = a # b; // @r{success!}
+@{c0,c1,c2@} = a # b; // @r{success, both sides are} bool[3][4]
 @end example
 
 
@@ -2280,6 +2349,8 @@ If two variables have identical types, then connecting them to each
 other is a simple aliasing operation.
 
 @subsection Connecting types to their implementation
+
+@b{XXX: this section not implemented yet}
 
 If one type is an implementation of a built-in type, then they can be
 connected to each other. The combined object corresponds to the
@@ -2341,8 +2412,6 @@ the following constraint: if a port parameter is aliased within the
 definition of a type, then the type in the port list must be the most
 specific one possible. This prevents this problem from crossing type
 definition boundaries.
-
-@subsection Connecting subtypes
 
 Connecting subtypes is a bit more complicated, but not that different
 from the rules for connecting implementations. Consider the following
@@ -2418,7 +2487,7 @@ example, consider the following scenario:
 dualrail c[4];
 bool d1[4];
 
-(;i:4: c[i](,d1[i],); )
+(i:4: c[i](,d1[i],); )
 @end example
 
 A second mechanism is useful to avoid having to remember the order of
@@ -2447,7 +2516,7 @@ x[0](.d1=xd1,.d0=xd0);
 @node  Control Flow,  Loops,  User-defined Connections, Top
 @comment  node-name,  next,  previous,  up
 
-@chapter Control Flow
+@chapter Control Flow 
 
 Complex datapath elements are usually comprised of arrayed versions of
 simpler cells. Although arrays can be created directly using arrayed

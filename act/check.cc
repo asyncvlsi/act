@@ -799,7 +799,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 	  Assert (!a->isExpanded(), "Hmm");
 	}
 	a = a->Clone ();
-	a->Concat (tmpa);
+	a->preConcat (tmpa);
 	delete tmpa;
       }
       tmp->MkArray (a);

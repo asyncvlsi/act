@@ -1,0 +1,7 @@
+deftype dualrail <: bool (bool d0, d1, a) { }
+
+dualrail c[4];
+
+bool d1[4];
+
+(i:4: c[i](,d1[i],); )
