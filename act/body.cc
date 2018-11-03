@@ -123,6 +123,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
     vx->t->clrArray();
 
     if (!it->isEqual (vx->t)) {
+      act_error_ctxt (stderr);
       fprintf (stderr, "Sparse array type error on %s\n", id);
       fprintf (stderr, "\tOrig type: ");
       vx->t->Print (stderr);

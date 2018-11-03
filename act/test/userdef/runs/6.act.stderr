@@ -1,0 +1,3 @@
+ERROR: File `6.act', line 13, col 10
+	Override specification must not have direction flags
+	Override: e1of2?

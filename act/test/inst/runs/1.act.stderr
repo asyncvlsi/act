@@ -1,3 +1,4 @@
+In expanding ::<Global>
 Sparse array type error on x
 	Orig type: int<22>
 	New type: int<32>
