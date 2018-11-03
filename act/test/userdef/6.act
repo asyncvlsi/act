@@ -1,0 +1,19 @@
+defchan e1of2 <: chan(bool) (bool t, f, e) { }
+
+defproc buffer (chan(bool) l, r)
+{
+  int x;
+  chp {
+    *[ l?x; r!x ]
+  }
+}
+
+
+defproc wchb <: buffer  ()
++{ e1of2? l, r; }
+{
+  prs {
+
+  }
+}
+

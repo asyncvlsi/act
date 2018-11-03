@@ -1,0 +1,14 @@
+defproc test ()
+{
+  bool x[1];
+
+  pint y = 1;
+
+  *[ y < 10 -> bool x[y..y]; y = y + 1; ]
+
+  bool w[10];
+
+  x = w;
+}
+
+test t;

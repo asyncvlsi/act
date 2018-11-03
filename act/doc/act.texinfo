@@ -537,7 +537,6 @@ bool x[10], y[10], z[10];
 @end example
 
 
-
 @c ------------------------------------------------------------------------
 
 @node     Scoping,  Intro to Namespaces, Loops and Conditionals, Introduction
@@ -1164,7 +1163,7 @@ body of a definition. This means that the following is illegal:
 defproc test1 (bool a, b, c, d[10])
 @{
   bool d[11..12];
-  ...
+  @dots{}
 @}
 @result{} @error{} Array instance for `d': cannot extend a port array
 @end example
@@ -1691,7 +1690,7 @@ completely specify the access permissions for the port parameters in
 the following way.
 
 @example
-defchan e1of2 <: chan(bool) (bool?! d0,d1; bool!? e) @{ ... @}
+defchan e1of2 <: chan(bool) (bool?! d0,d1; bool!? e) @{ @dots{} @}
 @end example
 
 A careful examination of the type signature reveals that the sender
@@ -1766,8 +1765,8 @@ definition---in other words, the new type @emph{extends} the original
 port list. As an illustration, consider:
 
 @example
-defproc type1 (bool a, b) @{ ... @}
-defproc type2 <: type1 (bool c) @{ ... @}
+defproc type1 (bool a, b) @{ @dots{} @}
+defproc type2 <: type1 (bool c) @{ @dots{} @}
 @end example
 
 In this case @code{type2} would have ports @code{a}, @code{b}, and
@@ -1780,20 +1779,20 @@ the port list example above.
 
 @example
 template<pint N>
-defproc type1 (bool a, b) @{ ... @}
+defproc type1 (bool a, b) @{ @dots{} @}
 
 template<pint M>
-defproc type2 <: type1 (bool c) @{ ... @}
+defproc type2 <: type1 (bool c) @{ @dots{} @}
 @end example
 
 However, we can also define @code{type2} in the following manner:
 
 @example
 template<pint N>
-defproc type1 (bool a, b) @{ ... @}
+defproc type1 (bool a, b) @{ @dots{} @}
 
 template<pint M>
-defproc type2 <: type1<4> (bool c) @{ ... @}
+defproc type2 <: type1<4> (bool c) @{ @dots{} @}
 @end example
 
 In this version, the template paramter from @code{type1} has been
@@ -1842,8 +1841,8 @@ the following would be an error:
 @kindex Conflict occurs due to parent type: @var{type}
 
 @example
-template<pint N> defproc type1 (bool a, b) @{ ... @}
-template<pint N> defproc type2 <: type1 (bool c) @{ ... @}
+template<pint N> defproc type1 (bool a, b) @{ @dots{} @}
+template<pint N> defproc type2 <: type1 (bool c) @{ @dots{} @}
 @result{} @error{} Duplicate meta-parameter name in port list: `N'
 @result{} Conflict occurs due to parent type: type1
 @end example
@@ -1874,7 +1873,7 @@ define a specific implementation as follows:
 defproc wchb <: buffer ()
 @{
    prs @{
-     ...
+     @dots{}
    @}
 @}
 @end example
@@ -1917,7 +1916,7 @@ defproc wchb <: buffer
 +@{ e1of2 l, r; @} // override block
 @{
    prs @{
-     ...
+     @dots{}
    @}
 @}
 @end example
@@ -1927,14 +1926,14 @@ channels, and the @code{wchb} specifies that the channel is a
 @code{e1of2}.  The first abstract buffer can be used with different
 handshake protocols on channels, or with different circuits.
 
-The ``@code{+@{ ... @}}'' indicates the override block. The override
+The ``@code{+@{ @dots{} @}}'' indicates the override block. The override
 block uses the instantiation syntax to specify override types. The
 only syntax permited is of the form within an override block is
 
 @example
 +@{
     @var{type} @var{list-of-ids};
-    ...
+    @dots{}
  @}
 @end example
 
@@ -2014,7 +2013,7 @@ defproc build_dpath (e1of2? rin[W]; e1of2! rout[W];
 @}
 
 // A one-bit adder
-defproc onebit (e1of2? in[2], rin[1]; e1of2! out, rout[1]) @{ ... @}
+defproc onebit (e1of2? in[2], rin[1]; e1of2! out, rout[1]) @{ @dots{} @}
 
 defproc ripple_adder (e1of2? a[32], b[32], cin; e1of2! out[32], cout)
 @{
@@ -2553,7 +2552,7 @@ x[i..i];}. The effect of this statement is the same as
 @example
 bool x[0..0];
 bool x[1..1];
-...
+@dots{}
 bool x[9..9];
 @end example
 
@@ -2577,18 +2576,26 @@ Since loops are part of @sc{act} bodies, they can occur in the body of
 another loop. Thus, nested loops are also supported. However, types
 cannot be defined in the body of a loop.
 
-Loops are a special case of syntactic replication. The general loop
-syntax can include a @emph{separator}. For example, the statement
+A second more general looping construct is borrowed from the guarded
+command language.
+
 @example
-(;i:1..8:bool x[i..i])
+pint i;
+i=0;
+*[ i < 10 -> bool x[i..i]; i = i + 1; ]
 @end example
-is equivalent to
-@example
-bool x[1..1]; bool x[2..2]; ... ; bool x[8..8]
-@end example
-without a trailing semicolon. 
-This distinction becomes important when
-loop constructs are used for expressions. For example, the loop
+
+This builds an array element by element, using the guarded command
+syntax for a general while loop. Note that in this case we are
+modifying a @code{pint} variable @code{i}. This sort of construct can
+only be used in the body of a type definition, since @code{pint} types
+are immutable in global scopes.
+
+The first form of a loop is a special case of syntactic
+replication. The general loop syntax can include a @emph{separator},
+which is used in other contexts.
+
+In production rule bodies, the loop
 @example
 (&i:3: x[i])
 @end example
@@ -2597,7 +2604,8 @@ expands to
 x[0] & x[1] & x[2]
 @end example
 (notice the absence of a trailing @code{&} is critical for the correct
-syntax).
+syntax). The @code{&} symbol separates the body of the loop that is
+instantiated for different values of @code{i}. 
 
 @node Selections, Recursion, Loops, Control Flow
 @comment  node-name,  next,  previous,  up
@@ -2696,14 +2704,13 @@ An @sc{act} type or instance is first evaluated in the current
 namespace; if it doesn't exist in the current namespace, then the
 global namespace is searched next.
 
-A namespace (other than the default global namespace) can only contain
-user-defined types. By default, these types are only visible within
-the current namespace. To allow a type to be visible in any other
-namespace, it must be prefaced by the @code{export} keyword (as
-above). 
+A namespace typically contains user-defined types. By default, these
+types are only visible within the current namespace. To allow a type
+to be visible in any other namespace, it must be prefaced by the
+@code{export} keyword (as above).
 
 A namespace can also contain another namespace. However, these
-namespaces do not have special priviledges. An example of nested
+namespaces do not have special privileges. An example of nested
 namespaces is shown below.
 
 @example
@@ -2714,19 +2721,43 @@ namespace datapath @{
         bus_interface b;
       @}
     @}
-    export defproc adder::alu;
+    @dots{}
 @}
 @end example
 
-@code{alu} can be referenced from the global namespace using
-@code{datapath::adder::alu}, once again using a C++-style
-syntax. Nesting does not give a namespace special permissions; if the
+Nesting does not give a namespace special permissions; if the
 @code{bus_interface} definition was not @code{export}ed, then the
 namespace @code{adder} within it would not be able to reference
 @code{bus_interface}. However, notice that the type
 @code{bus_interface} within @code{alu} did not require its fully
 qualified name, due to the fact that the definition is in scope due to
 nesting.
+
+@code{alu} cannot be referenced from the global namespace using
+@code{datapath::adder::alu}. Although @code{alu} is exported from the
+namespace @code{datapath::adder}, the @code{export} directive only
+exports the definition one level up. To export this another level out,
+the entire namespace @code{adder} can be exported as follows:
+
+@example
+namespace datapath @{
+    export defproc bus_interface(@dots{}) @{ @dots{} @}
+    export namespace adder @{
+      export defproc alu(@dots{}) @{
+        bus_interface b;
+      @}
+    @}
+    @dots{}
+@}
+@end example
+
+Now @code{datapath::adder::alu} can be accessed from the global
+namespace.
+
+@dfn{Namespace globals} are instances that are defined outside any type
+definition. While the @code{Global} namespace can have any instances
+or other constructs used to construct circuits, other namespaces can
+only have global data types or channels---i.e. no circuits.
 
 @section Importing Namespaces
 
