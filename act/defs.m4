@@ -198,7 +198,7 @@ def_or_proc ID
 	fprintf ($f, "\n");
 	exit (1);
       }
-      if (it->getDir() != Type::direction::NONE) {
+      if (it->getDir() != Type::NONE) {
 	$E("Direction flags not permitted on parent type");
       }
 
@@ -279,12 +279,84 @@ proc_body: ";"
 {{X:
     return NULL;
 }}
-| "{" def_body  "}"
+| [ "+{" override_spec "}" ]
+  "{" def_body  "}"
 {{X:
+    OPT_FREE ($1);
     if ($0->u_p->isDefined()) {
       $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
     }
     $0->u_p->MkDefined ();
+    return NULL;
+}}
+;
+
+override_spec: override_one_spec override_spec
+{{X: return NULL; }}
+| override_one_spec
+{{X: return NULL; }}
+;
+
+override_one_spec: physical_inst_type bare_id_list ";"
+{{X:
+    if ($1->getDir() != Type::NONE) {
+      $e("Override specification must not have direction flags\n");
+      fprintf ($f, "\tOverride: ");
+      $1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    listitem_t *li;
+    for (li = list_first ($2); li; li = list_next (li)) {
+      const char *s = (char *)list_value (li);
+      InstType *it = $0->scope->Lookup (s);
+      if (!it) {
+	$E("Override specified for ``%s'': not found in type", s);
+      }
+      /* XXX: now check if $1 can be a valid override for it */
+      InstType *chk = $1;
+      $A(chk->arrayInfo() == NULL);
+      if (chk->isEqual (it)) {
+	$e("Override is not necessary if type is not being refined!\n");
+	fprintf ($f, "\tOverride: ");
+	$1->Print ($f);
+	fprintf ($f, "\n\tOriginal: ");
+	it->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      while (chk) {
+	if (chk->isEqual (it)) {
+	  break;
+	}
+	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
+	if (!ux) {
+	  chk = NULL;
+	}
+	else {
+	  chk = ux->getParent();
+	}
+	if (chk) {
+	  $A(chk->arrayInfo() == NULL);
+	}
+      }
+      if (!chk) {
+	$e("Illegal override; the new type doesn't implement the original.\n");
+	fprintf ($f, "\tOriginal: ");
+	it->Print ($f);
+	fprintf ($f, "\n\tNew: ");
+	$1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+    }
+    /* XXX: here: now actually perform the override! */
+
+    for (li = list_first (li); li; li = list_next (li)) {
+      
+    }
+    
+    
     return NULL;
 }}
 ;
@@ -486,7 +558,7 @@ defdata: [ template_spec ]
     }
     ir = $5;
 
-    if (ir->getDir() != Type::direction::NONE) {
+    if (ir->getDir() != Type::NONE) {
       $E("Direction flags not permitted on parent type");
     }
     
@@ -566,26 +638,27 @@ data_chan_body: ";"
 {{X:
     return NULL;
 }}
-| "{" base_body [ methods_body ] "}"
+| [ "+{" override_spec "}" ]
+"{" base_body [ methods_body ] "}"
 {{X:
     if ($0->u_c) {
       if ($0->u_c->isDefined ()) {
 	$E("Channel definition ``%s'': duplicate definition with the same type signature", $0->u_c->getName ());
       }
       $0->u_c->MkDefined ();
-      $0->u_c->AppendBody ($2);
+      $0->u_c->AppendBody ($3);
     }
     else if ($0->u_d) {
       if ($0->u_d->isDefined ()) {
 	$E("Data definition ``%s'': duplicate definition with the same type signature", $0->u_d->getName ());
       }
       $0->u_d->MkDefined();
-      $0->u_d->AppendBody ($2);
+      $0->u_d->AppendBody ($3);
     }
     else {
       $A(0);
     }
-    OPT_FREE ($3);
+    OPT_FREE ($4);
     return NULL;
 }}
 ;
@@ -790,7 +863,7 @@ defchan: [ template_spec ]
     }
     ir = $5;
 
-    if (ir->getDir() != Type::direction::NONE) {
+    if (ir->getDir() != Type::NONE) {
       $E("Direction flags not permitted on parent type");
     }
     

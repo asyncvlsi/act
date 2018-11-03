@@ -1,0 +1,4 @@
+ERROR: File `8.act', line 13, col 18
+	Illegal override; the new type doesn't implement the original.
+	Original: chan<bool>
+	New: bool

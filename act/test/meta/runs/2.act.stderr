@@ -1,0 +1,4 @@
+In expanding ::<Global>
+Sparse array type error on f
+	Orig type: foo<4>
+	New type: foo<3>

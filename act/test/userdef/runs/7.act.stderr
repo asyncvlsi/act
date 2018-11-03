@@ -1,0 +1,2 @@
+ERROR: File `7.act', line 13, col 10
+	Override specified for `rr': not found in type
