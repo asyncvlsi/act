@@ -35,7 +35,7 @@ fi
 
 myecho "test"
 num=0
-lim=6
+lim=8
 for i in [0-9]*.act
 do
 	num=`expr $num + 1`
@@ -44,12 +44,18 @@ do
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
-		myecho " stdout"
+		echo 
+		myecho "** FAIL $i: stdout"
 		fail=`expr $fail + 1`
 		ok=0
 	fi
 	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
 	then
+		if [ $ok -eq 1 ]
+		then
+			echo
+			myecho "** FAIL $i:"
+		fi
 		myecho " stderr"
 		fail=`expr $fail + 1`
 		ok=0
@@ -58,12 +64,12 @@ do
 	then
 		if [ $num -eq $lim ]
 		then
-			echo
+			echo 
 			myecho "    "
 			num=0
 		fi
 	else
-		echo " **FAIL"
+		echo " **"
 		myecho "    "
 		num=0
 	fi
