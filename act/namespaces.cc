@@ -1676,3 +1676,31 @@ void Scope::playBody (ActBody *b)
     }
   }
 }
+
+
+void Scope::refineBaseType (const char *s, InstType *u)
+{
+  hash_bucket_t *b;
+  InstType *ni;
+
+  b = hash_lookup (H, s);
+  if (!b) return;
+  if (!expanded) {
+    InstType *x = (InstType *)b->v;
+    ni = new InstType (x, 1);
+    if (x->arrayInfo()) {
+      ni->MkArray (x->arrayInfo()->Clone());
+      ni->refineBaseType (u);
+    }
+    b->v = ni;
+  }
+  else {
+    ValueIdx *vx = (ValueIdx *)b->v;
+    ni = new InstType (vx->t, 1);
+    if (vx->t->arrayInfo()) {
+      ni->MkArray (vx->t->arrayInfo()->Clone());
+      ni->refineBaseType (u);
+    }
+    vx->t = ni;
+  }
+}

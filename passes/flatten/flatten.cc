@@ -205,7 +205,8 @@ static void _flat_connections_bool (ValueIdx *vx)
     if (tmp == c) continue;
 
     ig = tmp->isglobal();
-    if (!(!is_global || ig == is_global)) continue;
+    //if (!(!is_global || ig == is_global)) continue;
+    if (ig != is_global) continue;
     
     if (vx->t->arrayInfo()) {
       Arraystep *s1 = vx->t->arrayInfo()->stepper();
@@ -342,6 +343,7 @@ static void _flat_connections_bool (ValueIdx *vx)
     for (int i=0; i < c->numSubconnections(); i++) {
       act_connection *d = c->a[i];
       if (!d) continue;
+      if (!d->isPrimary()) continue;
 
       ActConniter iter2(d);
       ActId *id1, *id2;
@@ -369,7 +371,8 @@ static void _flat_connections_bool (ValueIdx *vx)
 	if (tmp == d) continue;
 
 	ig = tmp->isglobal();
-	if (!(!ig || ig == is_global)) continue;
+	//if (!(!ig || ig == is_global)) continue;
+	if (ig != is_global) continue;
 
 	id2 = tmp->toid();
 	if (hd2) {
@@ -821,7 +824,7 @@ static void _flat_scope (Scope *s)
 		  delete one;
 		}
 		else {
-		  if (g_apply_fn) {
+		  if (g_apply_fn && !c->a[i]->isglobal()) {
 		    _any_global_conns (c->a[i]);
 		  }
 		}

@@ -642,3 +642,12 @@ void InstType::appendParams (int na, inst_param *a)
   }
 }
 
+
+void InstType::refineBaseType (InstType *ut)
+{
+  /* XXX: do something fun! */
+  nt = ut->nt;
+  u = ut->u;
+  t = ut->t;
+}
+

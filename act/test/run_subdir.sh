@@ -33,19 +33,20 @@ then
 	mkdir runs
 fi
 
-myecho "test"
+myecho " "
 num=0
-lim=8
+lim=10
 for i in [0-9]*.act
 do
+	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
-	myecho ".[$i]"
+	myecho ".[$bname]"
 	$ACT -e $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
 		echo 
-		myecho "** FAIL $i: stdout"
+		myecho "** FAILED TEST $i: stdout"
 		fail=`expr $fail + 1`
 		ok=0
 	fi
@@ -54,7 +55,7 @@ do
 		if [ $ok -eq 1 ]
 		then
 			echo
-			myecho "** FAIL $i:"
+			myecho "** FAILED TEST $i:"
 		fi
 		myecho " stderr"
 		fail=`expr $fail + 1`
@@ -78,7 +79,6 @@ done
 if [ $num -ne 0 ]
 then
 	echo
-	myecho "    "
 fi
 
 
@@ -91,6 +91,4 @@ then
 		echo "--- Summary: $fail tests failed ---"
 	fi
 	exit 1
-else
-	echo "--- All tests passed! ---"
 fi
