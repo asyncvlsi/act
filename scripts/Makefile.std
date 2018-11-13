@@ -49,96 +49,54 @@ DEPEND_FLAGS=-I.
 endif
 CFLAGS=$(C_COMPILER_FLAGS) 
 
+
 all: allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out
 
-allsub:
-	@for i in dummy_bad_name $(SUBDIRS); \
-		do \
-                if [ $$i != "dummy_bad_name" ]; \
-                then \
-			echo ; \
-			echo [Building in $$i, depth $(LEVEL)]; \
-			echo ; \
-			if [ -d $$i ]; \
-			then \
-			(cd $$i; $(MAKE) all LEVEL=`expr $(LEVEL) + 1` "CFLAGS=$(CFLAGS)"); \
-			fi; \
-			echo ; \
-			echo [Done]; \
-		fi; \
-		done
+SUBDIRS_ALL=$(patsubst %,%_all,$(SUBDIRS))
+SUBDIRS_CLEAN=$(patsubst %,%_clean,$(SUBDIRS))
+SUBDIRS_REALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
+SUBDIRS_DEPEND=$(patsubst %,%_depend,$(SUBDIRS))
+SUBDIRS_INSTALL=$(patsubst %,%_install,$(SUBDIRS))
 
-clean: move-in
+.PHONY: all move-in move-out install_lib install_inc depend \
+	allsub 	$(SUBDIRS_ALL) \
+	cleansub $(SUBDIRS_CLEAN) \
+	realcleansub $(SUBDIRS_REALCLEAN) \
+	dependsub $(SUBDIRS_DEPEND) \
+	installsub $(SUBDIRS_DEPEND)
+
+allsub: $(SUBDIRS_ALL)
+cleansub:  $(SUBDIRS_CLEAN)
+realcleansub:  $(SUBDIRS_REALCLEAN)
+dependsub:  $(SUBDIRS_DEPEND)
+installsub:  $(SUBDIRS_INSTALL)
+
+$(SUBDIRS_ALL):
+	@$(MAKE) -C $(patsubst %_all,%,$@) all "CFLAGS=$(CFLAGS)"
+
+$(SUBDIRS_CLEAN):
+	@$(MAKE) -C $(patsubst %_clean,%,$@) clean
+
+$(SUBDIRS_REALCLEAN):
+	@$(MAKE) -C $(patsubst %_realclean,%,$@) realclean
+
+$(SUBDIRS_DEPEND):
+	@$(MAKE) -C $(patsubst %_depend,%,$@) depend
+
+$(SUBDIRS_INSTALL):
+	@$(MAKE) -C $(patsubst %_install,%,$@) install
+
+clean: move-in cleansub
 	-/bin/rm $(OBJS) *~ Makefile.deps $(CLEAN)
 	-rmdir $(EXT)
-	@for i in dummy_bad_name $(SUBDIRS); \
-		do \
-                if [ $$i != "dummy_bad_name" ]; \
-                then \
-			echo ; \
-			echo [Cleaning $$i, depth $(LEVEL)]; \
-			echo ; \
-			if [ -d $$i ]; \
-			then \
-			(cd $$i; $(MAKE) clean LEVEL=`expr $(LEVEL) + 1`); \
-			fi; \
-			echo ; \
-			echo [Done]; \
-		fi; \
-		done
 
-realclean: clean
+realclean: clean realcleansub
 	-/bin/rm $(TARGETS) $(filter-out %.c %.h,$(TARGETLIBS))
-	@for i in dummy_bad_name $(SUBDIRS); \
-		do \
-                if [ $$i != "dummy_bad_name" ]; \
-                then \
-			echo ; \
-			echo [Really cleaning $$i, depth $(LEVEL)]; \
-			echo ; \
-			if [ -d $$i ]; \
-			then \
-			(cd $$i; $(MAKE) realclean LEVEL=`expr $(LEVEL) + 1`); \
-			fi; \
-			echo ; \
-			echo [Done]; \
-		fi; \
-		done
 
-depend: $(GENERATED)
+depend: $(GENERATED) dependsub
 	-$(VLSI_TOOLS_SRC)/scripts/mymakedepend "$(SRCS)" $(DFLAGS) $(DEPEND_FLAGS)
-	@for i in dummy_bad_name $(SUBDIRS); \
-		do \
-                if [ $$i != "dummy_bad_name" ]; \
-                then \
-			echo ; \
-			echo [Depend in $$i, depth $(LEVEL)]; \
-			echo ; \
-			if [ -d $$i ]; \
-			then \
-			(cd $$i; $(MAKE) depend LEVEL=`expr $(LEVEL) + 1`); \
-			fi ;\
-			echo ; \
-			echo [Done]; \
-		fi; \
-		done
 
-install: move-in install_bin install_lib install_inc move-out
-	@for i in dummy_bad_name $(SUBDIRS); \
-		do \
-                if [ $$i != "dummy_bad_name" ]; \
-                then \
-			echo ; \
-			echo [Install in $$i, depth $(LEVEL)]; \
-			echo ; \
-			if [ -d $$i ]; \
-			then \
-			(cd $$i; $(MAKE) install LEVEL=`expr $(LEVEL) + 1`); \
-			fi ;\
-			echo ; \
-			echo [Done]; \
-		fi; \
-		done
+install: move-in install_bin install_lib install_inc move-out installsub
 
 install_bin: $(TARGETS)
 	@for i in dummy_bad_name $(TARGETS); \

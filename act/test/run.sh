@@ -7,7 +7,9 @@ faildirs=""
 for i in *
 do
 	if [ -d $i -a -f $i/0.act ]; then
-	echo "======= Directory $i ======"
+	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	echo "    Directory $i"
+	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	if (cd $i; ../run_subdir.sh)
 	then
 		:
@@ -15,12 +17,16 @@ do
 		fail=`expr $fail + 1`
 		faildirs="$i $faildirs"
 	fi
-	echo "=============================="
 	fi
 done
 
 if [ $fail -ne 0 ]
 then
+	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	echo "** Number of directories that failed: $fail"
 	echo "** Directories: $faildirs"
+else
+	echo
+	echo "SUCCESS! All tests passed."
+	echo
 fi

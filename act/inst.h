@@ -134,6 +134,8 @@ class InstType {
   /* XXX: Return 1 if any template parameter in inst_param involves global
      symbols */
   int hasinstGlobal() { return 0; }
+
+  void refineBaseType (InstType *update);
   
  private:
 

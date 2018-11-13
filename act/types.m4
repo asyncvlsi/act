@@ -262,7 +262,7 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
       if (param > ud->getNumParams()) {
 	$E("Number of template parameters specified (%d) > defineable parameters for `%s'", list_length (l), ud->getName());
       }
-      if (uparent && uparent->isPort (ud->getPortName (-(param+1)))) {
+      if (uparent && (param >= ud->getNumParams() || uparent->isPort (ud->getPortName (-(param+1))))) {
 	/* walk through instparent and populate m */
 	if (instparent->getNumParams() > 0) {
 	  /* keep adding parameters from here into m */
