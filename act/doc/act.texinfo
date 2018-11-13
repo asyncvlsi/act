@@ -2632,7 +2632,7 @@ executed. For instance, we can create 32 registers with
 something special for register 0 as follows:
 
 @example
-(; i : 32 : 
+(i : 32 : 
     [ i = 0 -> r0(in[i],out[i],control)
    [] else -> r[i](in[i],out[i],control)
     ]

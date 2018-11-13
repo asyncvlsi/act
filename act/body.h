@@ -117,6 +117,7 @@ class ActBody_Inst : public ActBody {
 
   InstType *getType () { return t; }
   const char *getName() { return id; }
+  void updateInstType (InstType *u);
 
   ActBody *Clone ();
 
@@ -277,19 +278,35 @@ private:
 class ActBody_Assertion : public ActBody {
 public:
   ActBody_Assertion (Expr *_e, const char *_msg = NULL) {
-    e = _e;
-    msg = _msg;
+    type = 0;
+    u.t0.e = _e;
+    u.t0.msg = _msg;
+  }
+  ActBody_Assertion (InstType *nu, InstType *old) {
+    type = 1;
+    u.t1.nu = nu;
+    u.t1.old = old;
   }
   ~ActBody_Assertion () {
-    if (e) {
-      expr_free (e);
+    if (type == 0) {
+      if (u.t0.e) {
+	expr_free (u.t0.e);
+      }
     }
   }
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone();
 private:
-  Expr *e;
-  const char *msg;
+  union {
+    struct {
+      Expr *e;
+      const char *msg;
+    } t0;
+    struct {
+      InstType *nu, *old;
+    } t1;
+  } u;
+  int type;
 };
   
 

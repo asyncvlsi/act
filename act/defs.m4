@@ -349,14 +349,45 @@ override_one_spec: physical_inst_type bare_id_list ";"
 	fprintf ($f, "\n");
 	exit (1);
       }
+      /* insert expansion-time assertion that $1 <: it */
     }
     /* XXX: here: now actually perform the override! */
 
-    for (li = list_first (li); li; li = list_next (li)) {
-      
+    /* 1. Walk through the body, replace the instances.
+       2. Replace in scope table, port table if necessary.
+    */
+    ActBody *b;
+    if ($0->u_p) {
+      b = $0->u_p->getBody();
     }
-    
-    
+    else if ($0->u_d) {
+      b = $0->u_d->getBody();
+    }
+    else if ($0->u_c) {
+      b = $0->u_c->getBody();
+    }
+    else {
+      $A(0);
+    }
+    while (b) {
+      ActBody_Inst *bi;
+      bi = dynamic_cast <ActBody_Inst *> (b);
+      if (bi) {
+	for (li = list_first ($2); li; li = list_next (li)) {
+	  if (strcmp ((char *)list_value (li), bi->getName()) == 0) {
+	    break;
+	  }
+	}
+	if (li) {
+	  bi->updateInstType ($1);
+	}
+      }
+      b = b->Next();
+    }
+    for (li = list_first ($2); li; li = list_next (li)) {
+      $0->scope->refineBaseType ((char *)list_value (li), $1);
+    }
+    list_free ($2);
     return NULL;
 }}
 ;

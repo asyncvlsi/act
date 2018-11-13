@@ -279,26 +279,52 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
 {
   Expr *ex;
 
-  ex = expr_expand (e, ns, s);
-  if (ex->type != E_TRUE && ex->type != E_FALSE) {
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Expression: ");
-    print_expr (stderr, e);
-    fprintf (stderr, "\n");
-    fatal_error ("Not a Boolean constant!");
-  }
-  if (ex->type == E_FALSE) {
-    act_error_ctxt (stderr);
-    fprintf (stderr, "*** Assertion failed ***\n");
-    fprintf (stderr, " assertion: ");
-    print_expr (stderr, e);
-    fprintf (stderr, "\n");
-    if (msg) {
-      char *s = Strdup (msg+1);
-      s[strlen(s)-1] = '\0';
-      fprintf (stderr, "   message: %s\n", s);
+  if (type == 0) {
+    ex = expr_expand (u.t0.e, ns, s);
+    if (ex->type != E_TRUE && ex->type != E_FALSE) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Expression: ");
+      print_expr (stderr, u.t0.e);
+      fprintf (stderr, "\n");
+      fatal_error ("Not a Boolean constant!");
     }
-    fatal_error ("Aborted execution on failed assertion");
+    if (ex->type == E_FALSE) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "*** Assertion failed ***\n");
+      fprintf (stderr, " assertion: ");
+      print_expr (stderr, u.t0.e);
+      fprintf (stderr, "\n");
+      if (u.t0.msg) {
+	char *s = Strdup (u.t0.msg+1);
+	s[strlen(s)-1] = '\0';
+	fprintf (stderr, "   message: %s\n", s);
+      }
+      fatal_error ("Aborted execution on failed assertion");
+    }
+  }
+  else if (type == 1) {
+    InstType *xo, *xn, *tmp;
+    xo = u.t1.old->Expand (ns, s);
+    xn = u.t1.nu->Expand (ns, s);
+    tmp = xn;
+    while (tmp) {
+      if (xo->BaseType() == tmp->BaseType()) return;
+      UserDef *ux = dynamic_cast <UserDef *> (tmp->BaseType());
+      if (!ux) {
+	tmp = NULL;
+      }
+      else {
+	tmp = ux->getParent();
+      }
+    }
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Illegal override during expansion; new type doesn't implement the original.\n");
+    fprintf (stderr, "\tOriginal: ");
+    xo->Print (stderr);
+    fprintf (stderr, "\n\tNew: ");
+    xn->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
   }
 }
 
@@ -2029,10 +2055,29 @@ ActBody *ActBody_Assertion::Clone()
 {
   ActBody_Assertion *ret;
 
-  ret = new ActBody_Assertion (e, msg);
-
+  if (type == 0) {
+    ret = new ActBody_Assertion (u.t0.e, u.t0.msg);
+  }
+  else {
+    ret = new ActBody_Assertion (u.t1.nu, u.t1.old);
+  }
   if (Next()) {
     ret->Append (Next()->Clone());
   }
   return ret;
+}
+
+
+void ActBody_Inst::updateInstType (InstType *u)
+{
+  InstType *n = new InstType (t,1);
+
+  /* copy array over too! */
+  if (t->arrayInfo()) {
+    n->MkArray (t->arrayInfo()->Clone());
+  }
+
+  n->refineBaseType (u);
+
+  t = n;
 }

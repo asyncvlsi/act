@@ -17,3 +17,6 @@ defproc wchb <: buffer  ()
   }
 }
 
+
+
+wchb x;

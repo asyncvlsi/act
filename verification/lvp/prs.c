@@ -674,7 +674,7 @@ void fix_aliases (VAR_T *V)
       pp_printf (PPout, " . . . taking OR-combination");
       pp_forced (PPout, 0);
       t = v;
-      while (t->alias) {
+      while (t) {
 	if (t->up[PRSFILE] || t->dn[PRSFILE]) {
 	  if (t != err[0]) {
 	    /* or-combination */
