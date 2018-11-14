@@ -784,16 +784,18 @@ static void _flat_scope (Scope *s)
 
 		  one = c->a[i]->toid();
 		  for (ci = ci.begin(); ci != ci.end(); ci++) {
+		    int type2;
 		    if (*ci == c->a[i]) continue;
 
 		    ig = (*ci)->isglobal();
 		    if (!(!ig || ig == is_global_conn)) continue;
 		  
 		    two = (*ci)->toid();
+		    type2 = (*ci)->getctype();
 		    if (TypeFactory::isUserType (xit)) {
 		      suffixes = list_new ();
 		      suffix_array = list_new ();
-		      if (type == 1) {
+		      if (type == 1 || type2 == 1) {
 			_flat_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
 		      }
 		      else {
@@ -807,7 +809,7 @@ static void _flat_scope (Scope *s)
 		      suffix_array = NULL;
 		    }
 		    else if (TypeFactory::isBoolType (xit)) {
-		      if (type == 1) {
+		      if (type == 1 || type2 == 1) {
 			_flat_single_connection (one, NULL,
 						 two, NULL,
 						 NULL, NULL, NULL);
