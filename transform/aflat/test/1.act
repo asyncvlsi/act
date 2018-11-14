@@ -1,0 +1,30 @@
+bool a[2], b;
+
+prs { 
+   a[1] -> b-
+   a[0] -> b+
+}
+
+defproc barp (bool p, q)
+{
+  bool r;
+
+  prs {
+    p => r-
+    q & p #> r+
+  }
+}
+
+defproc foo (bool a, b)
+{
+  prs {
+    a -> b-
+  }
+  barp z[6..8];
+}
+
+foo f[2];
+
+foo g[1];
+
+g[0] = f[1];

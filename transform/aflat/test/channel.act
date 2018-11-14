@@ -1,0 +1,78 @@
+export defchan e1of1 <: chan(bool) (bool d, e) 
+{
+}
+
+export defchan a1of1 <: chan(bool) (bool r, a)
+{
+}
+
+export defchan r1of2 <: chan(bool) (bool r; bool t, f)
+{
+}
+
+export template<pint N>
+deftype d1of <: int<N> (bool d[N])
+{ 
+}
+
+export defchan e1of2 <: chan(bool) (bool d[2]; bool t, f, e)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t, f)
+  }
+}
+
+
+export template<pint N>
+defchan e1of <: chan(int<N>) (bool d[N]; bool e)
+{
+}
+
+
+export defchan a1of2 <: chan(bool) (bool d[2]; bool t, f, a)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t, f)
+  }
+}
+
+export deftype dualrail <: int<1> (bool d[2]; bool t, f)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t,f)
+  }
+}
+
+export template<pint N>
+defchan aN1of2 <: chan(int<N>) (dualrail d[N]; bool a)
+{
+}
+
+
+export deftype _dualrail <: int<1> (bool d[2]; bool t, f)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    excllo (t,f)
+  }
+}
+
+export defchan a4x1of2 <: chan(int<4>) (dualrail b[4]; bool a)
+{
+}
+ 
+export template<pint N>
+defchan eNx1of2 <: chan(int<N>) (dualrail b[N]; bool e)
+{
+}
+
+export defchan e32x1of2 <: chan(int<32>) (dualrail b[32]; bool e)
+{
+}
