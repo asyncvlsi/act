@@ -50,11 +50,11 @@ endif
 CFLAGS=$(C_COMPILER_FLAGS) 
 
 
-all: allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out
+all: dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out
 
 SUBDIRS_ALL=$(patsubst %,%_all,$(SUBDIRS))
 SUBDIRS_CLEAN=$(patsubst %,%_clean,$(SUBDIRS))
-SUBDIRS_REALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
+SUBDIRS_eEALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
 SUBDIRS_DEPEND=$(patsubst %,%_depend,$(SUBDIRS))
 SUBDIRS_INSTALL=$(patsubst %,%_install,$(SUBDIRS))
 
