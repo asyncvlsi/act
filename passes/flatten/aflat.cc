@@ -921,16 +921,19 @@ static void aflat_prs_scope (Scope *s)
 
 		  one = c->a[i]->toid();
 		  for (ci = ci.begin(); ci != ci.end(); ci++) {
+		    int type2;
 		    if (*ci == c->a[i]) continue;
 
 		    ig = (*ci)->isglobal();
 
 		    if (!(!ig || ig == is_global_conn)) continue;
 
+		    type2 = (*ci)->getctype();
+
 		    two = (*ci)->toid();
 		    if (TypeFactory::isUserType (xit)) {
 		      suffixes = list_new ();
-		      if (type == 1) {
+		      if (type == 1 || type2 == 1) {
 			_print_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
 		      }
 		      else {
@@ -942,7 +945,7 @@ static void aflat_prs_scope (Scope *s)
 		      suffixes = NULL;
 		    }
 		    else if (TypeFactory::isBoolType (xit)) {
-		      if (type == 1) {
+		      if (type == 1 || type2 == 1) {
 			_print_single_connection (one, NULL,
 						  two, NULL,
 						  NULL, NULL, NULL);
