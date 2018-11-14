@@ -1,0 +1,20 @@
+bool a, b;
+
+bool d, e, f;
+
+d=e;
+d=f;
+a=b;
+
+
+
+defproc foo(bool p, q)
+{
+  bool r;
+
+  p=r;
+}
+
+
+foo ff;
+

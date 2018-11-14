@@ -1,0 +1,58 @@
+import "syn.act";
+import "bundled.act";
+
+defproc toplevel (a1of1 go)
+{
+  /* --- declaring all variables and channels --- */
+  syn_var_init_false var_x[8];
+  syn_var_init_false var_y[8];
+  syn_var_init_false var_z[8];
+  /* --- end of declarations --- */
+
+  /* assign */
+  syn_var_init_false const_0;
+  syn_var_init_true const_1;
+  syn_expr_vararray<8> e_1;
+  e_1.v[0] = const_0.v;
+  e_1.v[1] = const_0.v;
+  e_1.v[2] = const_0.v;
+  e_1.v[3] = const_1.v;
+  e_1.v[4] = const_0.v;
+  e_1.v[5] = const_0.v;
+  e_1.v[6] = const_0.v;
+  e_1.v[7] = const_0.v;
+  syn_expr_vararray<8> e_2;
+  (i:8: e_2.v[i] = var_y[i].v;)
+  e_2.go_r = e_1.go_r;
+  bundled_add_N<8> e_3;
+  (i:8: e_3.in1[i] = e_1.out[i];)
+  (i:8: e_3.in2[i] = e_2.out[i];)
+  e_3.go_r = e_1.go_r;
+  e_3.c_in = const_0.v;
+  a1of1 c_0;
+  syn_fullseq s_1;
+  c_0.r = s_1.go.r;
+  syn_recv rtv_1[8];
+  syn_expr_vararray<8> e_4;
+  syn_var_init_false tv_1[8];
+  (i:8: e_4.v[i] = tv_1[i].v; e_4.v[i] = rtv_1[i].v;)
+  s_1.r.r = e_1.go_r;
+  (i:8: s_1.r.r = rtv_1[i].go.r;)
+  syn_ctree<8> ct_1;
+  (i:8: ct_1.in[i] = rtv_1[i].go.a;)
+  s_1.r.a = ct_1.out;
+  (i:8: e_3.out[i].t = rtv_1[i].in.t; e_3.out[i].f = rtv_1[i].in.f;)
+  s_1.go.a = e_4.go_r;
+  syn_recv s_0[8];
+  (i:8: s_0[i].go.r = c_0.r;)
+  syn_ctree<8> ct_0;
+  (i:8: ct_0.in[i] = s_0[i].go.a;)
+  ct_0.out = c_0.a;
+  (i:8: s_0[i].in.t = e_4.out[i].t;
+         s_0[i].in.f = e_4.out[i].f;
+         s_0[i].v = var_z[i].v; )
+
+  go = c_0;
+}
+
+toplevel t;

@@ -1,0 +1,9 @@
+import "channel.act";
+
+defproc foo (a1of2 x)
+{
+}
+
+
+foo f;
+foo g(f.x);

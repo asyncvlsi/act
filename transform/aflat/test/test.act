@@ -1,0 +1,7 @@
+defproc nand2 (bool a, b, out)
+{
+  prs {
+    a & b -> out-
+   ~a | ~b -> out+
+  }
+}
