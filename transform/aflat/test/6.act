@@ -1,0 +1,34 @@
+bool a[2], b;
+
+prs { 
+   a[1] -> b-
+   a[0] -> b+
+}
+
+bool Reset;
+
+defproc barp (bool p, q)
+{
+  bool r;
+
+  bool rr;
+ 
+  bool lReset = Reset;
+
+  r = rr;
+
+  prs {
+    lReset | p => r-
+    q & p #> r+
+  }
+}
+
+defproc foo (bool a, b)
+{
+  prs {
+    a -> b-
+  }
+  barp z[6..8];
+}
+
+foo f;

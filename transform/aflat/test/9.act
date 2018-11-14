@@ -1,0 +1,14 @@
+bool GND;
+
+deftype dualrail <: int<1> (bool t, f)
+{
+}
+
+defproc blah (dualrail d)
+{
+  bool q;
+
+ d.t = GND;
+}
+
+blah b;

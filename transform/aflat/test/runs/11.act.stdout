@@ -1,0 +1,132 @@
+~"Reset"&("snk.l.f"|"snk.l.t")->"snk.l.e"-
+"Reset"|~"snk.l.f"&~"snk.l.t"->"snk.l.e"+
+= "snk.l.d[0]" "snk.l.f"
+= "snk.l.d[1]" "snk.l.t"
+= "snk.l.f" "src.r.f"
+= "snk.l.d[0]" "src.r.d[0]"
+= "snk.l.d[1]" "src.r.d[1]"
+= "snk.l.e" "src.r.e"
+= "snk.l.t" "src.r.t"
+"src.src.s.d[0]"->"src.src.r.d[0]"+
+"src.src.s.d[1]"->"src.src.r.d[1]"+
+"src.src.s.d[2]"->"src.src.r.d[1]"+
+"src.src.s.d[3]"->"src.src.r.d[0]"+
+"src.src.s.d[4]"->"src.src.r.d[0]"+
+"src.src.s.d[5]"->"src.src.r.d[1]"+
+~"src.src.s.d[0]"&~"src.src.s.d[1]"&~"src.src.s.d[2]"&~"src.src.s.d[3]"&~"src.src.s.d[4]"&~"src.src.s.d[5]"->"src.src.r.d[0]"-
+~"src.src.s.d[0]"&~"src.src.s.d[1]"&~"src.src.s.d[2]"&~"src.src.s.d[3]"&~"src.src.s.d[4]"&~"src.src.s.d[5]"->"src.src.r.d[1]"-
+"src.src.r.d[0]"->"src.src.rr.d[0]"+
+"src.src.r.d[1]"->"src.src.rr.d[1]"+
+~"src.src.r.d[0]"->"src.src.rr.d[0]"-
+~"src.src.r.d[1]"->"src.src.rr.d[1]"-
+= "src.src.rr.e" "src.src.sc[5].se"
+= "src.src.rr.e" "src.src.sc[4].se"
+= "src.src.rr.e" "src.src.sc[3].se"
+= "src.src.rr.e" "src.src.sc[2].se"
+= "src.src.rr.e" "src.src.sc[1].se"
+= "src.src.rr.e" "src.src.sc[0].se"
+= "src.src.rr.e" "src.src.s.e"
+~"Reset"&~"src.src.sc[0].x"&~"src.src.sc[0].y"&"src.src.sc[0].l"->"src.src.sc[0].le"-
+~"Reset"&~"src.src.sc[0].y"&~"src.src.sc[0].le"->"src.src.sc[0].x"+
+"Reset"|"src.src.sc[0].x"&~"src.src.sc[0].y"&~"src.src.sc[0].l"->"src.src.sc[0].le"+
+~"Reset"&"src.src.sc[0].x"&"src.src.sc[0].le"->"src.src.sc[0].y"+
+~"Reset"&"src.src.sc[0].x"&"src.src.sc[0].y"&"src.src.sc[0].se"&"src.src.sc[0].re"->"src.src.sc[0].s"+
+"Reset"|"src.src.sc[0].y"&"src.src.sc[0].s"->"src.src.sc[0].x"-
+"Reset"|~"src.src.sc[0].x"&"src.src.sc[0].y"&~"src.src.sc[0].se"&~"src.src.sc[0].re"->"src.src.sc[0].s"-
+"Reset"|~"src.src.sc[0].x"&~"src.src.sc[0].s"->"src.src.sc[0].y"-
+= "src.src.sc[0].s" "src.src.sc[0].r"
+~"Reset"&~"src.src.sc[1].x"&~"src.src.sc[1].y"&"src.src.sc[1].l"->"src.src.sc[1].le"-
+~"Reset"&~"src.src.sc[1].y"&~"src.src.sc[1].le"->"src.src.sc[1].x"+
+"Reset"|"src.src.sc[1].x"&~"src.src.sc[1].y"&~"src.src.sc[1].l"->"src.src.sc[1].le"+
+~"Reset"&"src.src.sc[1].x"&"src.src.sc[1].le"->"src.src.sc[1].y"+
+~"Reset"&"src.src.sc[1].x"&"src.src.sc[1].y"&"src.src.sc[1].se"&"src.src.sc[1].re"->"src.src.sc[1].s"+
+"Reset"|"src.src.sc[1].y"&"src.src.sc[1].s"->"src.src.sc[1].x"-
+"Reset"|~"src.src.sc[1].x"&"src.src.sc[1].y"&~"src.src.sc[1].se"&~"src.src.sc[1].re"->"src.src.sc[1].s"-
+"Reset"|~"src.src.sc[1].x"&~"src.src.sc[1].s"->"src.src.sc[1].y"-
+= "src.src.sc[1].s" "src.src.sc[1].r"
+~"Reset"&~"src.src.sc[2].x"&~"src.src.sc[2].y"&"src.src.sc[2].l"->"src.src.sc[2].le"-
+~"Reset"&~"src.src.sc[2].y"&~"src.src.sc[2].le"->"src.src.sc[2].x"+
+"Reset"|"src.src.sc[2].x"&~"src.src.sc[2].y"&~"src.src.sc[2].l"->"src.src.sc[2].le"+
+~"Reset"&"src.src.sc[2].x"&"src.src.sc[2].le"->"src.src.sc[2].y"+
+~"Reset"&"src.src.sc[2].x"&"src.src.sc[2].y"&"src.src.sc[2].se"&"src.src.sc[2].re"->"src.src.sc[2].s"+
+"Reset"|"src.src.sc[2].y"&"src.src.sc[2].s"->"src.src.sc[2].x"-
+"Reset"|~"src.src.sc[2].x"&"src.src.sc[2].y"&~"src.src.sc[2].se"&~"src.src.sc[2].re"->"src.src.sc[2].s"-
+"Reset"|~"src.src.sc[2].x"&~"src.src.sc[2].s"->"src.src.sc[2].y"-
+= "src.src.sc[2].s" "src.src.sc[2].r"
+~"Reset"&~"src.src.sc[3].x"&~"src.src.sc[3].y"&"src.src.sc[3].l"->"src.src.sc[3].le"-
+~"Reset"&~"src.src.sc[3].y"&~"src.src.sc[3].le"->"src.src.sc[3].x"+
+"Reset"|"src.src.sc[3].x"&~"src.src.sc[3].y"&~"src.src.sc[3].l"->"src.src.sc[3].le"+
+~"Reset"&"src.src.sc[3].x"&"src.src.sc[3].le"->"src.src.sc[3].y"+
+~"Reset"&"src.src.sc[3].x"&"src.src.sc[3].y"&"src.src.sc[3].se"&"src.src.sc[3].re"->"src.src.sc[3].s"+
+"Reset"|"src.src.sc[3].y"&"src.src.sc[3].s"->"src.src.sc[3].x"-
+"Reset"|~"src.src.sc[3].x"&"src.src.sc[3].y"&~"src.src.sc[3].se"&~"src.src.sc[3].re"->"src.src.sc[3].s"-
+"Reset"|~"src.src.sc[3].x"&~"src.src.sc[3].s"->"src.src.sc[3].y"-
+= "src.src.sc[3].s" "src.src.sc[3].r"
+~"Reset"&~"src.src.sc[4].x"&~"src.src.sc[4].y"&"src.src.sc[4].l"->"src.src.sc[4].le"-
+~"Reset"&~"src.src.sc[4].y"&~"src.src.sc[4].le"->"src.src.sc[4].x"+
+"Reset"|"src.src.sc[4].x"&~"src.src.sc[4].y"&~"src.src.sc[4].l"->"src.src.sc[4].le"+
+~"Reset"&"src.src.sc[4].x"&"src.src.sc[4].le"->"src.src.sc[4].y"+
+~"Reset"&"src.src.sc[4].x"&"src.src.sc[4].y"&"src.src.sc[4].se"&"src.src.sc[4].re"->"src.src.sc[4].s"+
+"Reset"|"src.src.sc[4].y"&"src.src.sc[4].s"->"src.src.sc[4].x"-
+"Reset"|~"src.src.sc[4].x"&"src.src.sc[4].y"&~"src.src.sc[4].se"&~"src.src.sc[4].re"->"src.src.sc[4].s"-
+"Reset"|~"src.src.sc[4].x"&~"src.src.sc[4].s"->"src.src.sc[4].y"-
+= "src.src.sc[4].s" "src.src.sc[4].r"
+~"Reset"&~"src.src.sc[5].x"&~"src.src.sc[5].y"&"src.src.sc[5].l"->"src.src.sc[5].le"-
+~"Reset"&~"src.src.sc[5].y"&~"src.src.sc[5].le"->"src.src.sc[5].x"+
+"Reset"|"src.src.sc[5].x"&~"src.src.sc[5].y"&~"src.src.sc[5].l"->"src.src.sc[5].le"+
+~"Reset"&"src.src.sc[5].x"&"src.src.sc[5].le"->"src.src.sc[5].y"+
+~"Reset"&"src.src.sc[5].x"&"src.src.sc[5].y"&"src.src.sc[5].se"&"src.src.sc[5].re"->"src.src.sc[5].s"+
+"Reset"|"src.src.sc[5].y"&"src.src.sc[5].s"->"src.src.sc[5].x"-
+"Reset"|~"src.src.sc[5].x"&"src.src.sc[5].y"&~"src.src.sc[5].se"&~"src.src.sc[5].re"->"src.src.sc[5].s"-
+"Reset"|~"src.src.sc[5].x"&~"src.src.sc[5].s"->"src.src.sc[5].y"-
+= "src.src.sc[5].s" "src.src.sc[5].r"
+= "src.src.l[0]" "src.src.startc.r"
+= "src.src.l[0]" "src.src.sc[0].l"
+= "src.src.l[1]" "src.src.sc[1].l"
+= "src.src.l[1]" "src.src.sc[0].s"
+= "src.src.l[1]" "src.src.s.d[0]"
+= "src.src.l[2]" "src.src.sc[2].l"
+= "src.src.l[2]" "src.src.sc[1].s"
+= "src.src.l[2]" "src.src.s.d[1]"
+= "src.src.l[3]" "src.src.sc[3].l"
+= "src.src.l[3]" "src.src.sc[2].s"
+= "src.src.l[3]" "src.src.s.d[2]"
+= "src.src.l[4]" "src.src.sc[4].l"
+= "src.src.l[4]" "src.src.sc[3].s"
+= "src.src.l[4]" "src.src.s.d[3]"
+= "src.src.l[5]" "src.src.sc[5].l"
+= "src.src.l[5]" "src.src.sc[4].s"
+= "src.src.l[5]" "src.src.s.d[4]"
+= "src.src.l[6]" "src.src.startc.l"
+= "src.src.l[6]" "src.src.sc[5].s"
+= "src.src.l[6]" "src.src.s.d[5]"
+~"Reset"&~"src.src.startc.x"&~"src.src.startc.y"&"src.src.startc.re"->"src.src.startc.r"+
+~"Reset"&~"src.src.startc.y"&"src.src.startc.r"->"src.src.startc.x"+
+"Reset"|"src.src.startc.x"&~"src.src.startc.y"&~"src.src.startc.re"->"src.src.startc.r"-
+~"Reset"&"src.src.startc.x"&~"src.src.startc.r"->"src.src.startc.y"+
+~"Reset"&"src.src.startc.x"&"src.src.startc.y"&"src.src.startc.l"->"src.src.startc.le"-
+"Reset"|"src.src.startc.y"&~"src.src.startc.le"->"src.src.startc.x"-
+"Reset"|~"src.src.startc.x"&"src.src.startc.y"&~"src.src.startc.l"->"src.src.startc.le"+
+"Reset"|~"src.src.startc.x"&"src.src.startc.le"->"src.src.startc.y"-
+= "src.src.le[0]" "src.src.startc.re"
+= "src.src.le[0]" "src.src.sc[0].le"
+= "src.src.le[1]" "src.src.sc[1].le"
+= "src.src.le[1]" "src.src.sc[0].re"
+= "src.src.le[2]" "src.src.sc[2].le"
+= "src.src.le[2]" "src.src.sc[1].re"
+= "src.src.le[3]" "src.src.sc[3].le"
+= "src.src.le[3]" "src.src.sc[2].re"
+= "src.src.le[4]" "src.src.sc[4].le"
+= "src.src.le[4]" "src.src.sc[3].re"
+= "src.src.le[5]" "src.src.sc[5].le"
+= "src.src.le[5]" "src.src.sc[4].re"
+= "src.src.le[6]" "src.src.startc.le"
+= "src.src.le[6]" "src.src.sc[5].re"
+= "src.s.d[0]" "src.src.rr.d[0]"
+= "src.s.d[1]" "src.src.rr.d[1]"
+= "src.s.e" "src.src.rr.e"
+= "src.r.d[0]" "src.r.f"
+= "src.r.d[1]" "src.r.t"
+= "src.r.e" "src.s.e"
+= "src.r.d[0]" "src.s.d[0]"
+= "src.r.d[1]" "src.s.d[1]"

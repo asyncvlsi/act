@@ -1,0 +1,27 @@
+import "channel.act";
+
+defproc bar (bool m)
+{
+}
+
+template<pint w>
+defproc foo (bool x)
+{ 
+   e1of<w> m;
+
+   bool w1, w2;
+  
+   bar q[w];
+
+   (;i:w: q[i](m.d[i]); )
+//   (;i:w: q[i].m = m.d[i]; )
+
+
+   prs {
+     x -> m.d[0]-
+    m.d[1] -> x-
+   }
+}
+
+
+foo<4> f;

@@ -1,0 +1,4 @@
+import "env.act";
+
+env::source_e1of2<6,{0,1,1,0,0,1}> src;
+env::sink_e1of2 snk(src.r);
