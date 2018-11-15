@@ -127,6 +127,6 @@
 = "src.s.e" "src.src.rr.e"
 = "src.r.d[0]" "src.r.f"
 = "src.r.d[1]" "src.r.t"
-= "src.r.e" "src.s.e"
 = "src.r.d[0]" "src.s.d[0]"
 = "src.r.d[1]" "src.s.d[1]"
+= "src.r.e" "src.s.e"

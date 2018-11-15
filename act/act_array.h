@@ -293,6 +293,7 @@ public:
 
   /* get an identifier */
   void getID (ActId **id, int *idx, int *typesize);
+  void getsimpleID (ActId **id, int *idx, int *typesize);
 
   int isSimpleID ();
 
@@ -310,6 +311,7 @@ private:
       ActId *act_id;		// identifier
       Arraystep *a;		// array deref within the id, in case
 				// it is an array
+      int issimple:1;		// 1 if this is a raw id
     } id;
     struct {
       /* this is used for arrays of parameters */
