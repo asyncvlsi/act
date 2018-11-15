@@ -1215,11 +1215,11 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  int ridx;
 	  ActId *rid;
 	  int rsize;
-
+	  
 	  done_conn = 1;
 
 	  lcx = id->Canonical (s);
-	  rhsstep->getID (&rid, &ridx, &rsize);
+	  rhsstep->getsimpleID (&rid, &ridx, &rsize);
 	  rcx = rid->Canonical (s);
 
 	  if (ridx == -1) {

@@ -1056,6 +1056,7 @@ void AExprstep::step()
 	    if (!leaf->arrayInfo()) {
 	      /* dense array */
 	      u.id.a = it->arrayInfo()->stepper();
+	      u.id.issimple = 1;
 	    }
 	    else {
 	      if (leaf->arrayInfo()->isDeref()) {
@@ -1064,6 +1065,7 @@ void AExprstep::step()
 	      else {
 		/* sparse array */
 		u.id.a = it->arrayInfo()->stepper (leaf->arrayInfo());
+		u.id.issimple = 0;
 	      }
 	    }
 	  }
@@ -1287,6 +1289,46 @@ void AExprstep::getID (ActId **id, int *idx, int *size)
     break;
   }
 }
+
+void AExprstep::getsimpleID (ActId **id, int *idx, int *size)
+{
+  Assert (type != 0, "AExprstep::getsimpleID() called without step or on end");
+
+  switch (type) {
+  case 1:
+  case 3:
+    Assert (0, "getsimpleID: should be an ID!");
+    break;
+  case 2:
+    *id = u.id.act_id;
+    if (!u.id.a) {
+      *idx = -1;
+      if (size) {
+	*size = 0;
+      }
+    }
+    else {
+      if (u.id.issimple) {
+	*idx = -1;
+	if (size) {
+	  *size = 0;
+	}
+      }
+      else {
+	*idx = u.id.a->index();
+	if (size) {
+	  *size = u.id.a->typesize();
+	  Assert ((0 <= *idx) && (*idx < *size), "What?");
+	}
+      }
+    }
+    break;
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+}
+
 
 int Array::overlapping (struct range *a, struct range *b)
 {
@@ -1598,6 +1640,7 @@ ActId *AExpr::toid ()
 int AExprstep::isSimpleID ()
 {
   ActId *xid;
+
   if (type != 2) return 0;
 
   xid = u.id.act_id;
@@ -1605,7 +1648,7 @@ int AExprstep::isSimpleID ()
     xid = xid->Rest();
   }
 
-  if (!u.id.a
+  if (!u.id.a || u.id.issimple
       || (xid->arrayInfo() && xid->arrayInfo()->isDeref())) {
     return 1;
   }
