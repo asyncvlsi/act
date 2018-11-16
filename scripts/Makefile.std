@@ -72,7 +72,7 @@ dependsub:  $(SUBDIRS_DEPEND)
 installsub:  $(SUBDIRS_INSTALL)
 
 $(SUBDIRS_ALL):
-	@$(MAKE) -C $(patsubst %_all,%,$@) all "CFLAGS=$(CFLAGS)"
+	@$(MAKE) -C $(patsubst %_all,%,$@) "CFLAGS=$(CFLAGS)"
 
 $(SUBDIRS_CLEAN):
 	@$(MAKE) -C $(patsubst %_clean,%,$@) clean

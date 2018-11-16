@@ -334,6 +334,7 @@ class Process : public UserDef {
   Process (UserDef *u);		/**< Construct a process from a userdef */
   ~Process ();
   void MkCell () { is_cell = 1; } /**< Mark this as a cell */
+  int isCell() { return is_cell; } 
 
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 

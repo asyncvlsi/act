@@ -1,0 +1,86 @@
+import "syn.act";
+import "bundled.act";
+
+defproc toplevel (a1of1 go)
+{
+  /* --- declaring all variables and channels --- */
+  syn_var_init_false var_x[8];
+  syn_var_init_false var_y[8];
+  syn_var_init_false var_z[8];
+  /* --- end of declarations --- */
+
+  /* semicolon */
+  a1of1 c_0;
+
+  /* assign */
+  syn_var_init_false const_0;
+  syn_var_init_true const_1;
+  syn_expr_vararray<8> e_1;
+  e_1.v[0] = const_1.v;
+  e_1.v[1] = const_1.v;
+  e_1.v[2] = const_0.v;
+  e_1.v[3] = const_0.v;
+  e_1.v[4] = const_0.v;
+  e_1.v[5] = const_0.v;
+  e_1.v[6] = const_0.v;
+  e_1.v[7] = const_0.v;
+  a1of1 c_1;
+  syn_fullseq s_1;
+  c_1.r = s_1.go.r;
+  syn_recv rtv_1[8];
+  syn_expr_vararray<8> e_2;
+  syn_var_init_false tv_1[8];
+  (i:8: e_2.v[i] = tv_1[i].v; e_2.v[i] = rtv_1[i].v;)
+  s_1.r.r = e_1.go_r;
+  (i:8: s_1.r.r = rtv_1[i].go.r;)
+  syn_ctree<8> ct_1;
+  (i:8: ct_1.in[i] = rtv_1[i].go.a;)
+  s_1.r.a = ct_1.out;
+  (i:8: e_1.out[i].t = rtv_1[i].in.t; e_1.out[i].f = rtv_1[i].in.f;)
+  s_1.go.a = e_2.go_r;
+  syn_recv s_0[8];
+  (i:8: s_0[i].go.r = c_1.r;)
+  syn_ctree<8> ct_0;
+  (i:8: ct_0.in[i] = s_0[i].go.a;)
+  ct_0.out = c_1.a;
+  (i:8: s_0[i].in.t = e_2.out[i].t;
+        s_0[i].in.f = e_2.out[i].f;
+        s_0[i].v = var_x[i].v;)
+
+  syn_seq s_2(c_0);
+  s_2.s1 = c_1;
+
+  /* assign */
+  syn_expr_vararray<8> e_3;
+  (i:8: e_3.v[i] = var_x[i].v;)
+  syn_expr_uminus<8> e_4;
+  (i:8: e_4.v[i] = e_3.out[i];)
+  a1of1 c_2;
+  syn_fullseq s_4;
+  c_2.r = s_4.go.r;
+  syn_recv rtv_4[8];
+  syn_expr_vararray<8> e_5;
+  syn_var_init_false tv_4[8];
+  (i:8: e_5.v[i] = tv_4[i].v; e_5.v[i] = rtv_4[i].v;)
+  s_4.r.r = e_3.go_r;
+  (i:8: s_4.r.r = rtv_4[i].go.r;)
+  syn_ctree<8> ct_4;
+  (i:8: ct_4.in[i] = rtv_4[i].go.a;)
+  s_4.r.a = ct_4.out;
+  (i:8: e_4.out[i].t = rtv_4[i].in.t; e_4.out[i].f = rtv_4[i].in.f;)
+  s_4.go.a = e_5.go_r;
+  syn_recv s_3[8];
+  (i:8: s_3[i].go.r = c_2.r;)
+  syn_ctree<8> ct_3;
+  (i:8: ct_3.in[i] = s_3[i].go.a;)
+  ct_3.out = c_2.a;
+  (i:8: s_3[i].in.t = e_5.out[i].t;
+        s_3[i].in.f = e_5.out[i].f;
+        s_3[i].v = var_x[i].v;)
+
+  s_2.s2 = c_2;
+
+  go = c_0;
+}
+
+toplevel t;
