@@ -863,6 +863,7 @@ void Arraystep::step()
 	idx = base->Offset (deref);
 	return;
       }
+      deref[i] = subrange->r[i].u.ex.lo;
     }
     idx = -1;
     return;
