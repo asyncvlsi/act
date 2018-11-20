@@ -105,7 +105,13 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 
     vx = s->LookupVal (id);
     Assert (vx && vx->t == x, "What?");
-    old = x->arrayInfo()->Clone();
+    if (x->arrayInfo()) {
+      old = x->arrayInfo()->Clone();
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("Instance `%s' being created multiple times!", id);
+    }
 
 #if 0
     fprintf (stderr, "Original: ");
