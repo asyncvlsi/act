@@ -1,0 +1,23 @@
+defproc AND(bool a, b, c)
+{
+  prs {
+    a & b -> c-
+  }
+}
+
+defproc XOR(bool a, b, c)
+{
+  prs {
+    a & b -> c-
+  }
+}
+
+          defproc foo(bool A, B, Z) {
+            bool C;
+          
+            AND a0(A, B, C);
+            XOR a1(A,C, Z);
+          }
+
+
+foo x;

@@ -1,0 +1,88 @@
+*
+*---- act defproc: foo<> -----
+* raw ports:  a[0] a[1] a[2] a[3] a[5] a[6] a[7] a[8] a[9] b[0] b[1] b[2] b[3] b[4] b[5] b[6] b[7] b[8] b[9]
+*
+.subckt foo a_20_3 a_21_3 a_22_3 a_23_3 a_25_3 a_26_3 a_27_3 a_28_3 a_29_3 b_20_3 b_21_3 b_22_3 b_23_3 b_24_3 b_25_3 b_26_3 b_27_3 b_28_3 b_29_3
+*.PININFO a_20_3:I a_21_3:I a_22_3:I a_23_3:I a_25_3:I a_26_3:I a_27_3:I a_28_3:I a_29_3:I b_20_3:O b_21_3:O b_22_3:O b_23_3:O b_24_3:O b_25_3:O b_26_3:O b_27_3:O b_28_3:O b_29_3:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* b_20_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_21_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_22_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_23_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_24_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_25_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_26_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_27_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_28_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+* b_29_3 (state-holding): pup_reff=-1; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #fb21# b_20_3 Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #22 GND Vdd Vdd pch W=0.12U L=0.12U
+M2_ #fb23# b_21_3 Vdd Vdd pch W=0.15U L=0.06U
+M3_keeper #24 GND Vdd Vdd pch W=0.12U L=0.12U
+M4_ #fb25# b_22_3 Vdd Vdd pch W=0.15U L=0.06U
+M5_keeper #26 GND Vdd Vdd pch W=0.12U L=0.12U
+M6_ #fb27# b_23_3 Vdd Vdd pch W=0.15U L=0.06U
+M7_keeper #28 GND Vdd Vdd pch W=0.12U L=0.12U
+M8_ #fb29# b_24_3 Vdd Vdd pch W=0.15U L=0.06U
+M9_keeper #30 GND Vdd Vdd pch W=0.12U L=0.12U
+M10_ #fb31# b_25_3 Vdd Vdd pch W=0.15U L=0.06U
+M11_keeper #32 GND Vdd Vdd pch W=0.12U L=0.12U
+M12_ #fb33# b_26_3 Vdd Vdd pch W=0.15U L=0.06U
+M13_keeper #34 GND Vdd Vdd pch W=0.12U L=0.12U
+M14_ #fb35# b_27_3 Vdd Vdd pch W=0.15U L=0.06U
+M15_keeper #36 GND Vdd Vdd pch W=0.12U L=0.12U
+M16_ #fb37# b_28_3 Vdd Vdd pch W=0.15U L=0.06U
+M17_keeper #38 GND Vdd Vdd pch W=0.12U L=0.12U
+M18_ #fb39# b_29_3 Vdd Vdd pch W=0.15U L=0.06U
+M19_keeper #40 GND Vdd Vdd pch W=0.12U L=0.12U
+M20_ b_20_3 a_20_3 GND GND nch W=0.15U L=0.06U
+M21_ b_21_3 a_21_3 GND GND nch W=0.15U L=0.06U
+M22_ b_22_3 a_22_3 GND GND nch W=0.15U L=0.06U
+M23_ b_23_3 a_23_3 GND GND nch W=0.15U L=0.06U
+M24_ b_24_3 a_23_3 GND GND nch W=0.15U L=0.06U
+M25_ b_25_3 a_25_3 GND GND nch W=0.15U L=0.06U
+M26_ b_26_3 a_26_3 GND GND nch W=0.15U L=0.06U
+M27_ b_27_3 a_27_3 GND GND nch W=0.15U L=0.06U
+M28_ b_28_3 a_28_3 GND GND nch W=0.15U L=0.06U
+M29_ b_29_3 a_29_3 GND GND nch W=0.15U L=0.06U
+M30_ #fb21# b_20_3 GND GND nch W=0.15U L=0.06U
+M31_keeper b_20_3 #fb21# GND GND nch W=0.12U L=0.06U
+M32_ #fb23# b_21_3 GND GND nch W=0.15U L=0.06U
+M33_keeper b_21_3 #fb23# GND GND nch W=0.12U L=0.06U
+M34_ #fb25# b_22_3 GND GND nch W=0.15U L=0.06U
+M35_keeper b_22_3 #fb25# GND GND nch W=0.12U L=0.06U
+M36_ #fb27# b_23_3 GND GND nch W=0.15U L=0.06U
+M37_keeper b_23_3 #fb27# GND GND nch W=0.12U L=0.06U
+M38_ #fb29# b_24_3 GND GND nch W=0.15U L=0.06U
+M39_keeper b_24_3 #fb29# GND GND nch W=0.12U L=0.06U
+M40_ #fb31# b_25_3 GND GND nch W=0.15U L=0.06U
+M41_keeper b_25_3 #fb31# GND GND nch W=0.12U L=0.06U
+M42_ #fb33# b_26_3 GND GND nch W=0.15U L=0.06U
+M43_keeper b_26_3 #fb33# GND GND nch W=0.12U L=0.06U
+M44_ #fb35# b_27_3 GND GND nch W=0.15U L=0.06U
+M45_keeper b_27_3 #fb35# GND GND nch W=0.12U L=0.06U
+M46_ #fb37# b_28_3 GND GND nch W=0.15U L=0.06U
+M47_keeper b_28_3 #fb37# GND GND nch W=0.12U L=0.06U
+M48_ #fb39# b_29_3 GND GND nch W=0.15U L=0.06U
+M49_keeper b_29_3 #fb39# GND GND nch W=0.12U L=0.06U
+M50_keeper b_20_3 #fb21# #22 Vdd pch W=0.12U L=0.06U
+M51_keeper b_21_3 #fb23# #24 Vdd pch W=0.12U L=0.06U
+M52_keeper b_22_3 #fb25# #26 Vdd pch W=0.12U L=0.06U
+M53_keeper b_23_3 #fb27# #28 Vdd pch W=0.12U L=0.06U
+M54_keeper b_24_3 #fb29# #30 Vdd pch W=0.12U L=0.06U
+M55_keeper b_25_3 #fb31# #32 Vdd pch W=0.12U L=0.06U
+M56_keeper b_26_3 #fb33# #34 Vdd pch W=0.12U L=0.06U
+M57_keeper b_27_3 #fb35# #36 Vdd pch W=0.12U L=0.06U
+M58_keeper b_28_3 #fb37# #38 Vdd pch W=0.12U L=0.06U
+M59_keeper b_29_3 #fb39# #40 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: foo<> -----

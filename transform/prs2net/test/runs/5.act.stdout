@@ -1,0 +1,62 @@
+*
+*---- act defproc: XOR<> -----
+* raw ports:  a b c
+*
+.subckt XOR a b c
+*.PININFO a:I b:I c:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* c (state-holding): pup_reff=-1; pdn_reff=0.8
+*
+* --- end node flags ---
+*
+M0_ #fb6# c Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #7 GND Vdd Vdd pch W=0.12U L=0.33U
+M2_ #3 a GND GND nch W=0.15U L=0.06U
+M3_ #fb6# c GND GND nch W=0.15U L=0.06U
+M4_keeper c #fb6# GND GND nch W=0.12U L=0.06U
+M5_ c b #3 GND nch W=0.15U L=0.06U
+M6_keeper c #fb6# #7 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: XOR<> -----
+*
+*---- act defproc: AND<> -----
+* raw ports:  a b c
+*
+.subckt AND a b c
+*.PININFO a:I b:I c:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* c (state-holding): pup_reff=-1; pdn_reff=0.8
+*
+* --- end node flags ---
+*
+M0_ #fb6# c Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #7 GND Vdd Vdd pch W=0.12U L=0.33U
+M2_ #3 a GND GND nch W=0.15U L=0.06U
+M3_ #fb6# c GND GND nch W=0.15U L=0.06U
+M4_keeper c #fb6# GND GND nch W=0.12U L=0.06U
+M5_ c b #3 GND nch W=0.15U L=0.06U
+M6_keeper c #fb6# #7 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: AND<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports:  A B Z
+*
+.subckt foo A B Z
+*.PININFO A:I B:I Z:O
+xa1 A C Z XOR
+xa0 A B C AND
+.ends
+*---- end of process: foo<> -----

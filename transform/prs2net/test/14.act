@@ -1,0 +1,11 @@
+defproc foo(bool x)
+{
+   bool en, de, a0, a1, b0, b1, c0, c1, _d0, _d1;
+
+   prs {
+     en & de -> @x-
+   [keeper=0] ~@x & a1 -> _d0-
+   }
+}
+
+foo f;

@@ -1,0 +1,47 @@
+*
+*---- act defproc: bar<> -----
+* raw ports:  a b c
+*
+.subckt bar a b c
+*.PININFO a:I b:O c:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* c (state-holding): pup_reff=0.16; pdn_reff=0.4
+* b (state-holding): pup_reff=-1; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #6 a Vdd Vdd pch W=0.75U L=0.06U
+M1_ #fb7# c Vdd Vdd pch W=0.15U L=0.06U
+M2_ckeeper #8 a Vdd Vdd pch W=0.15U L=0.06U
+M3_ckeeper #8 b Vdd Vdd pch W=0.15U L=0.06U
+M4_ #fb10# b Vdd Vdd pch W=0.15U L=0.06U
+M5_keeper #11 GND Vdd Vdd pch W=0.12U L=0.12U
+M6_ #3 a GND GND nch W=0.3U L=0.06U
+M7_ b a GND GND nch W=0.15U L=0.06U
+M8_ #fb7# c GND GND nch W=0.15U L=0.06U
+M9_ckeeper #9 a GND GND nch W=0.15U L=0.06U
+M10_ckeeper #9 b GND GND nch W=0.15U L=0.06U
+M11_ #fb10# b GND GND nch W=0.15U L=0.06U
+M12_keeper b #fb10# GND GND nch W=0.12U L=0.06U
+M13_ c b #3 GND nch W=0.3U L=0.06U
+M14_ c b #6 Vdd pch W=0.75U L=0.06U
+M15_ckeeper c #fb7# #8 Vdd pch W=0.12U L=0.06U
+M16_ckeeper c #fb7# #9 GND nch W=0.12U L=0.06U
+M17_keeper b #fb10# #11 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: bar<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports:  p q r
+*
+.subckt foo p q r
+*.PININFO p:I q:O r:O
+xx p q r bar
+.ends
+*---- end of process: foo<> -----
