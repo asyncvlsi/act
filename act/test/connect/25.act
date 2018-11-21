@@ -1,0 +1,7 @@
+
+deftype dualrail <: int<1> (bool t, f) { }
+
+dualrail x[2][8];
+dualrail y[2][8];
+
+x[0..1][0..7] = y[0..1][0..7];
