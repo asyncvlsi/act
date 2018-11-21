@@ -1,0 +1,27 @@
+*
+*---- act defproc: foo<> -----
+* raw ports:  a b c
+*
+.subckt foo a b c
+*.PININFO a:I b:I c:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* c (state-holding): pup_reff=-1; pdn_reff=0.1
+*
+* --- end node flags ---
+*
+M0_ #fb7# c Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper c #fb7# Vdd Vdd pch W=0.12U L=0.06U
+M2_ #3 a GND GND nch W=0.6U L=0.06U
+M3_ #6 b GND GND nch W=0.6U L=0.06U
+M4_ #fb7# c GND GND nch W=0.15U L=0.06U
+M5_keeper c #fb7# GND GND nch W=0.12U L=0.06U
+M6_ c b #3 GND nch W=0.6U L=0.06U
+M7_ c a #6 GND nch W=0.6U L=0.06U
+.ends
+*---- end of process: foo<> -----

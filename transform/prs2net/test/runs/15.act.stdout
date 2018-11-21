@@ -1,0 +1,14 @@
+*
+*---- act defproc: nand2<> -----
+* raw ports: 
+*
+.subckt nand2
+.ends
+*---- end of process: nand2<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+.ends
+*---- end of process: foo<> -----

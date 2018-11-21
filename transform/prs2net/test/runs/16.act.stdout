@@ -1,0 +1,29 @@
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* __d1 (combinational)
+* __d0 (combinational)
+*
+* --- end node flags ---
+*
+M0_ #3 en GND GND nch W=0.15U L=0.06U
+M1_ #2 de #3 GND nch W=0.15U L=0.06U
+M2_ #6 a1 #2 GND nch W=0.15U L=0.06U
+M3_ #8 a0 #2 GND nch W=0.15U L=0.06U
+M4_ #10 b0 #6 GND nch W=0.15U L=0.06U
+M5_ __d1 b1 #6 GND nch W=0.15U L=0.06U
+M6_ __d0 b0 #6 GND nch W=0.15U L=0.06U
+M7_ #10 b1 #8 GND nch W=0.15U L=0.06U
+M8_ __d1 c1 #10 GND nch W=0.15U L=0.06U
+M9_ __d0 c0 #10 GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: foo<> -----

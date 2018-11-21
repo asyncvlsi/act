@@ -1,0 +1,10 @@
+defproc  foo(bool a, b)
+{
+
+  prs {
+
+   [loadcap=3.0] a -> b-
+  }
+}
+
+foo f;

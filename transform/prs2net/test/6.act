@@ -1,0 +1,8 @@
+defproc foo(bool a, b, c)
+{
+  prs {
+    a & b -> c-
+  }
+}
+
+foo x;

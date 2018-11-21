@@ -1,0 +1,8 @@
+defproc foo(bool a, b, c)
+{
+  prs {
+    [N_reff=0.1] (a <20> & b <20> | b<20> & a<20> ) -> c-
+  }
+}
+
+foo x;

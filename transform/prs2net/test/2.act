@@ -1,0 +1,9 @@
+defproc foo(bool a[10], b[10])
+{
+  prs {
+   (i:10: a[i] -> b[i]-)
+  }
+  a[3] = a[4];
+}
+
+foo x;

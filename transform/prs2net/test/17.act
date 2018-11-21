@@ -1,0 +1,10 @@
+defproc foo(bool a, b)
+{
+  bool c, d;
+  prs {
+   a <10,hvt> -> b-
+   c <10,hvt> -> d-
+  }
+}
+
+foo f;

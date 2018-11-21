@@ -203,6 +203,7 @@ int main (int argc, char **argv)
   
   a = new Act (argv[1]);
   a->Expand ();
+  config_read ("prs2net.conf");
   if (config_exists ("net.mangle_chars")) {
     a->mangle (config_get_string ("net.mangle_chars"));
   }

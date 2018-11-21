@@ -1,0 +1,10 @@
+defproc nand2 (bool a, b, c)
+{ }
+
+defproc foo (bool p, q, r)
+{
+  nand2 n(p,q,);
+  nand2 n2(q,r,);
+}
+
+foo f;
