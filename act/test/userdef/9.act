@@ -1,0 +1,8 @@
+defchan test <: chan(bool) (bool x, y)
+{
+  methods {
+    set {
+       x:=self
+    }
+  }
+}

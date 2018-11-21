@@ -35,9 +35,12 @@ fi
 
 myecho " "
 num=0
+count=0
 lim=10
-for i in [0-9]*.act
+while [ -f ${count}.act ]
 do
+	i=${count}.act
+	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
 	myecho ".[$bname]"
@@ -66,12 +69,12 @@ do
 		if [ $num -eq $lim ]
 		then
 			echo 
-			myecho "    "
+			myecho " "
 			num=0
 		fi
 	else
 		echo " **"
-		myecho "    "
+		myecho " "
 		num=0
 	fi
 done
