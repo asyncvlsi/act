@@ -1,0 +1,16 @@
+defproc bar (bool a, b, c)
+{
+ prs {
+   [comb=1] a <10> & b<10> -> c-
+   ~a <25> & ~b <25> -> c+
+
+   a -> b-
+ }
+}
+
+defproc foo (bool p, q, r)
+{
+  bar x(p,q,r);
+}
+
+foo c;

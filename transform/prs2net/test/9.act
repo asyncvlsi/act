@@ -1,0 +1,12 @@
+defproc foo (bool a, b)
+{
+  preal S = 1.0;
+  preal S0 = 1.33;
+
+  prs {
+    a <S0 * S * 9> -> b-
+   ~a <S0 * S * 6> -> b+
+  }
+}
+
+foo t;
