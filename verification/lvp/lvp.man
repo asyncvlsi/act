@@ -1,0 +1,434 @@
+.\"
+.\" $Id: lvp.man,v 1.24 1998/09/11 03:12:16 rajit Exp $
+.\"
+.TH LVP 1 "August 2018" "version 1-and-only" "ACT"
+.SH NAME
+lvp \- compare an extract or sim file
+against a production rule set (layout versus prs).
+
+.SH SYNOPSIS
+lvp [options] \fIinfile\fR \fI[prsfile]\fR
+.SH DESCRIPTION
+.PP
+lvp reads a layout description and production rule description and
+compares them against each other. The program can be given either sim
+files (default) or extract files as input to describe layout. If the
+\fIprsfile\fR is omitted, lvp reads the production rules from
+standard input.
+.PP
+Connections in the prs file and layout are checked as follows. If
+there is a connection between two nodes both of which occur in the prs
+file and in the layout, they are checked against each other. Once
+connection  checking is complete, the alias lists from the layout and
+prs file are merged even if there are errors. This permits
+unwired/partially wired layout to be checked against a production rule
+set.
+.PP
+lvp generates a production rule set from the layout by finding all
+paths from a power supply to an output node. By default, paths are
+truncated at output nodes (i.e. it assumes there are no pass gates).
+lvp can be used to check that all state-holding nodes are staticized.
+Dangling inverters with weak feedback are assumed to be part of
+staticizers.
+.PP
+When staticizers are checked, lvp will look for reset transistors on
+state-holding nodes and check either that the opposing staticizer is
+cut-off on reset or that the staticizer will be overpowered by the
+reset transistor.
+.PP
+lvp looks for sneak paths in the layout, i.e., paths between output
+nodes that do not go through a power supply and which are not always
+cut-off. lvp prints out at most one sneak path per pair of output
+nodes; if there is a sneak path to an output node, lvp will print
+at least one sneak path containing the offending node.
+You might want to turn off sneak path checking if your design
+uses pass-gates.
+.PP
+lvp translates parentheses to square brackets. For instance "x(4)" would be
+translated to "x[4]". If a cell named "x(4)" is arrayed twice, the
+name "x(4)[0]" is translated to "x[4]" and "x(4)[1]" is translated to
+"x[5]". The value in parentheses is treated as an offset to the array
+index. The same feature is supported for two-dimensional arrays. This
+feature is useful when using sparse arrays in ACT.
+
+.SH OPTIONS
+.TP
+\-a
+Print alias information. Statements of the form "= a b" are printed
+out which specify that nodes "a" and "b" are aliased. These statements
+are of a format which prsim can understand.
+.TP
+\-b
+Pretend all global nodes are present in the prs file and are connected
+together. If global nodes are not connected in the layout, this option
+will produce a connection error. However, for the purpose of
+production-rule checking all globals will be connected.
+.TP
+\-c
+Do not set the exit status when connections are missing from the
+layout. This is useful when used in Makefiles to check that 
+the transistors corresponding to the production rules are in the layout.
+.TP
+\-d
+Don't check for charge sharing. Speeds up the program quite a bit.
+.TP
+\-e
+Echo all charge-sharing bumps. This option displays charge-sharing
+bumps that lvp does not think are problematic in addition to those
+that are reported as problems.
+.TP
+\-f
+Print more detailed difference information when production rules
+don't match layout. Normally (with the -v option) the boolean
+expression for the guard that didn't match is printed out. Specifying
+this option causes the program to print out the boolean expression
+which represents the difference between the two guards.
+.TP
+\-g
+Keep trailing "!" for global nodes. Normally the trailing "!" is
+stripped. Note that if you specify this option, the power supplies
+may have to be changed to "Vdd!" and "GND!". 
+.TP
+\-h
+Treat nodes ending in "&" as internal nodes. This option can be used
+for limited pass-gate production-rule generation.
+.TP
+\-n
+Treat named nodes as output nodes. A node is normally treated as an
+output node if it has a pull-up and pull-down connected to it (other
+than "&" nodes with the -h option). This option can be used to treat
+all named nodes (all those whose names don't end in "#") as output
+nodes.
+.TP
+\-o ratio
+When calculating charge sharing, take this fraction of capacitive
+coupling into account.
+.TP
+\-p
+Print production rules from layout. The \fIprsfile\fR should not be
+specified when this option is used.
+.TP
+\-r \fIratio\fR
+Treat transistors with a width/length ratio less than
+\fIratio\fR as weak transistors. This option is exclusive with -w.
+.TP
+\-s
+Check that all state-holding nodes in the layout are staticized.
+Staticizer configurations that are recognized are cross-coupled
+inverters, and cross-coupled inverters that are gated
+by "Reset"/"Reset_" transistors.
+.TP
+\-v
+Be verbose. Use this option when lvp complains about an error
+to find out more about the error. Repeat this option twice for
+more detailed information about connection errors.
+.TP
+\-w \fIwidth\fR
+Treat transistors with a width less than \fIwidth\fR as weak
+transistors. This option is exclusive with -r.
+.TP
+\-z level
+Change the debugging level in the output. Not for general use :)
+.TP
+\-B
+Automagically connect global nodes. A node is global if it contains a
+"!" in its name. The global name is generated by stripping all
+characters after the "!" and the pathname to the node. For instance,
+"a/x/Vdd!" would be turned into "Vdd!". 
+.TP
+\-C
+Terminate after checking connectivity of layout against the production
+rule set. Using -vv might be useful if you have trouble debugging
+the error reported.
+.TP
+\-D
+Use a dot as a separator for subcells rather than slash. If this
+option is used, the layout name for a node can contain at most one dot.
+In addition, the dot must be located at the same place in all occurrences 
+of the name in the layout. Otherwise the circuit may not be correctly
+wired up even though lvp thinks your circuit
+matches the production rule file and there are no extract warnings.
+.TP
+\-E
+The input is an extract file. The default is to assume the input
+is a sim file.
+.TP
+\-G \fIGND\fR
+Change ground to \fIGND\fR.
+.TP
+\-H
+Save summary file for hierarchical analysis. lvp reads this file
+automatically (if present) when analyzing subcells. This option must
+be accompanied by -sE, and without -cBSp. Repeating -H permits this
+option to be used with -B.
+.TP
+\-K
+Overkill mode for charge-sharing analysis. Instead of estimating the
+worst case and then using spice to calculate the charge-sharing, it
+calculates the worst case using spice as well.
+.TP
+\-P
+Generate rules for pass-gate transistors. lvp assumes that
+n-type transistors can only pass GND, and p-type transistors can only
+pass Vdd.
+.TP
+\-S
+Don't look for sneak paths.
+.TP
+\-T name
+Read configuration file for technology `name'. Default technology is
+scn06.
+.TP
+\-V \fIVdd\fR
+Change power supply node to \fIVdd\fR.
+.TP
+\-W
+Return a non-zero exit status when there are warnings in the output.
+
+.SH INPUT FORMAT
+The layout can be specified using both ext and sim formats. The
+production rule file has the usual format. Additional directives
+that can be specified in the production rule file are
+.PP
+exclhi(node1,node2,...,nodeN)
+.br
+excllo(node1,node2,...,nodeN)
+.PP
+These indicate that the specified nodes are exclusive high or
+exclusive low respectively. This is useful when comparing production
+rules against layout which uses shared gate networks.
+.PP
+If a gate has the attribute "weak" attached to it (label the gate in
+magic with "weak^"), then any pull-up (or pull-down depending on
+the transistor type) that passes through that gate is considered to be
+weak. The production rule for the pull-up (pull-down) is generated by
+strengthening the pull-up (pull-down) with the negation of the
+pull-down (pull-up).  This is useful when cross-coupled inverters are
+used as state-holding nodes and the write to the state bit involves
+overpowering the weaker state bit inverter.
+.PP
+If a node has the attribute "pchg" attached to it (label the node
+with "pchg@" in magic), then it is assumed to be an internal node that
+is precharged to combat charge-sharing. lvp takes this into account when
+estimating the worst-case charge-sharing problem on a node.
+.PP
+order(a,b,c,...)
+.PP
+Used to specify a variable ordering for the bdds used internally
+as a canonical form. Can be used to make some really slow checks run
+orders of magnitude faster.
+.PP
+cross_coupled_inverters(a,b)
+.PP
+Specifies that the pair (a,b) are formed by cross-coupled inverters
+with additional pull-downs.
+.PP
+filter(a,b)
+.PP
+Specifies that the pair (a,b) is the output of an arbiter filter.
+.PP
+export(x)
+.PP
+The node "x" should be output in the summary file. By default,
+all nodes that are driven or gate transistors are produced in the
+summary file. When export directives are present, however, only
+the list of specified nodes are exported. Using these directives
+can significantly reduce the size of the .hxt file.
+.PP
+attrib unstaticized (n)
+.PP
+The node ``n'' is state-holding and should not have a staticizer.
+Useful for specifying tri-state drivers.
+
+.SH OUTPUT
+.PP
+Apart from the self-explanatory error messages that specifically
+inform the user about the presence/absence of production rules and
+staticizers, production rule differences, etc, lvp might produce the
+following error/warning messages:
+.RS
+.TP 2
+* \fIWARNING: in name `nm'; too many dimensions!\fR. 
+The layout contains a n-dimensional array with n at least three.
+lvp only supports two dimensional arrays in the layout.
+.TP
+* \fIWARNING: dimension mismatch in name `nm'\fR.
+The number of array dimensions does not match the number of
+dimensions specified in the parentheses specification (see above).
+.TP
+* \fIWARNING: missing Vdd node [nm]\fR.
+Vdd (named `nm') not found in layout.
+.TP
+* \fIWARNING: missing GND node [nm]\fR.
+GND (named `nm') not found in layout.
+.TP
+* \fIWARNING: multiple aliased nodes have a prs rule ... taking OR-combination\fR.
+Two nodes with differing names have production rules associated with
+them and they are connected. Typically arises because of a connection
+error (see above).
+.TP
+* \fIWARNING: summary file for `nm' may have unconnected globals\fR.
+The summary file for cell `nm' was generated with -B or -b. This means
+that global nodes may not be connected, even if lvp thinks they are.
+.TP
+* \fIWARNING: summary file out-of-date for cell `nm'\fR.
+The summary file for cell `nm' was older than the extract file and was
+not used.
+.TP
+* \fIWARNING: Subcell `nm' is newer than parent\fR.
+The extract file for cell `nm' has a more recent timestamp than its
+parent. This typically means that a subcell has been re-extracted without
+its parent being extracted. Magic's extract all command can botch up
+timestamps as well.
+.TP 
+* \fIERROR: name validation failed for `nm'\fR 
+Only applicable if -D is specified. When slashes are converted into
+dots, two nodes might get aliased whereas they are not connected in
+the layout. This error indicates that this might be the case.
+.TP 
+* \fIERROR: name `nm' appears with and without `!'\fR 
+Both `nm' and `nm!' appear in the layout. Since `!' is used to
+identify global names, the appearence of both these names is indicative
+of an error.
+.TP
+* \fIERROR: transistor connected to input `nm'\fR
+Node `nm' is an input
+in the prs file and is connected to the source or drain of a
+transistor.
+.TP
+* \fIERROR: node `nm' driven at multiple levels of hierarchy\fR.
+Node `nm' is the output of a subcell with summary information and 
+also an output of another subcell or the top level cell.
+.TP
+* \fI`nm': weak feedback is not an inverter\fR.
+The weak production rule associated with node `nm' is not an
+inverter. lvp expects all weak feedback transistors to be inverters
+after reset becomes low.
+.TP
+* \fI`nm': input to weak inverter (`nm2') is non-standard\fR.
+Node `nm' has weak inverter feedback (driven by `nm2'), but `nm2' is
+not the inverted version of `nm'.
+.TP
+* \fI`nm': staticizer might overpower reset transistor\fR.
+The reset transistor associated with a node is not strong enough to
+fight the opposing staticizer. Typically the opposing staticizer
+should be cut-off on reset.
+.TP
+* \fI`nm': staticizer might overpower p network\fR.
+The ratio of transistor widths in the p network to the opposing n
+staticizer isn't large enough. The specified pull-up has insufficient
+drive.
+.TP
+* \fI`nm': staticizer might overpower n network\fR.
+The ratio of transistor widths in the n network to the opposing p
+staticizer isn't large enough. The specified pull-down has
+insufficient drive.
+.TP
+* \fI`nm': staticized node has `unstaticized' attribute\fR.
+The ``unstaticized'' attribute was associated with a node that had
+a staticizer.
+.TP
+* \fI`nm': combinational node has `unstaticized' attribute\fR.
+The ``unstaticized'' attribute was associated with a node that was
+combinational.
+.TP
+* \fI`nm': pull-dn(up) too weak for ^weak pull-up(dn)\fR.
+A ^weak gate was used, but the strength ratios of the pull-up and
+pull-down are not conservative enough.
+.TP
+* \fI`nm': N(P) up/dn chg-sharing `n1' vt=nopt [`n2'%]\fR.
+The node can have a charge-sharing bump through N/P transistors 
+of `n1' volts. The direction of the bump is either up or dn, depending on
+the direction the output would be driven by charge-sharing. The message
+`vt=number' is optional, and is used to indicate non-standard
+thresholds computed for the fanout of node `nm'.
+.RE
+
+.SH HINTS
+.PP
+If you think your layout is correct and lvp doesn't, here are some things
+you might want to check.
+.RS
+.TP 2
+*
+Try and see what lvp thinks your layout corresponds to using the -p
+option. This will help narrow down the cause of the complaint. Use -a
+to print the list of names that are aliased in the layout.
+.TP
+*
+If you're using ACT files rather than old style hierarchical prs
+files, the pathnames to nodes look like cell.cell.cell.node, rather
+than cell/cell/cell/node. You will need the -D option to replace
+the slashes in the layout with dots.
+.TP
+*
+lvp handles weak and strong transistors differently. So if, for instance,
+you have a disjunct in a production rule that is from a staticizer, it
+probably means that lvp didn't think the staticizer was weak. Specify
+the appropriate -w and -r options.
+.TP
+*
+Make sure power supplies in subcells are connected to the
+top-level power supply. If they aren't and you want lvp to generate
+production rules anyway, use the -B option to automagically connect
+global names.
+.TP
+*
+The boolean expressions printed out by lvp for the extracted
+production rule expressions are not necessarily in simplified form.
+For instance, you may see a rule of the form "E | E&F -> v-" when the
+rule is just "E -> v-". lvp does some simple expression
+simplification (it is the slowest part of the program), but nothing
+very major. So if you see a disjunct of the form "a&b&c&d" in a rule
+for "v-", don't assume that there is a path gated by "a", "b", "c",
+"d" in series that connects "v" to ground. All that is guaranteed is
+that the boolean expression for the guard printed out is logically
+equivalent to the expression extracted from the layout.
+.TP
+*
+lvp prunes its path generation algorithm at output nodes. By
+default, lvp thinks a node is of type output if it is connected to
+both an n-type and p-type transistor (i.e. a pull-up/pull-down chain).
+So if you use an internal p-precharge to combat charge-sharing on an
+internal node in an n-diffusion stack, lvp might think that the
+internal node is in fact an output node. As a result the actual output
+may not be connected to either Vdd or GND, causing incorrect
+production rule generation. To circumvent this, use
+the -h (for hack) option.
+
+Another alternative is to use -P and generate all pass-transistor
+production rules as well. Note that GND is only passed through
+n-transistors and and Vdd is only passed through p-transistors.
+
+Yet another alternative is to use -n and make sure all internal nodes
+end with a "#" (magic names for unlabelled nodes end in a "#").
+
+The real problem here is that extracted layout really doesn't have
+much information about what constitutes an internal node and what
+constitutes an output node (unless you adopt the magic naming
+convention and use the -n option).  Unfortunately lvp can't read your
+mind. Yet.
+.TP
+*
+Believe it or not, the program might actually be right and there might
+actually be an error in the layout or production-rule file.
+.TP
+*
+You might have found a bug in the program. To make sure, try and
+reduce your layout to the smallest possible circuit that exhibits the
+problem.
+.RE
+
+.SH SEE ALSO
+ext(5), sim(5)
+.SH AUTHOR
+Rajit Manohar <rajit.manohar@yale.edu>
+
+.SH BUGS
+Extract file/sim file lines that are longer than 1K cause the program to
+halt with a fatal error. However, note that current magic versions will
+not generate such long lines (they will die a horrible death first).
+
+Multiple exclhi(...) and excllo(...) lists are not taken into account
+when simplifying the boolean expression for guards in production rules
+when comparing production rules against the layout.
