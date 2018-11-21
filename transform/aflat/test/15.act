@@ -1,0 +1,29 @@
+bool a, b;
+
+namespace test {
+
+export defproc bar (bool a, b)
+{
+  prs {
+    a -> b-
+  } 
+}
+
+}
+
+
+defchan e1of2 <: chan(bool) (bool t[4], f[9], e)
+{
+
+}
+
+defproc foo (e1of2 p, q)
+{
+  p = q;
+  test::bar x, y;
+  x = y;
+}
+
+a = b;
+
+foo f;

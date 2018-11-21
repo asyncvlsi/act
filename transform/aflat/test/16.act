@@ -1,0 +1,10 @@
+template <pint N>
+defproc foo ()
+{
+  bool x[N];
+  bool y[N];
+
+  (i:N:x[i]=y[i];)
+}
+
+foo<8> f;

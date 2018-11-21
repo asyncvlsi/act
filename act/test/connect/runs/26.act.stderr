@@ -1,0 +1,2 @@
+ERROR: File `26.act', line 13, col 6
+	`p' is not a port for `foo'
