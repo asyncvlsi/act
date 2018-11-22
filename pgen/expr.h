@@ -121,6 +121,10 @@ void expr_settoken (int name, int value);
      to -1.
   */
 
+  
+int expr_parse_isany (LFILE *l);
+  /* return 0 if this is definitely not an expression */
+
 Expr *expr_parse_any (LFILE *l);
   /*
     Parse any expression

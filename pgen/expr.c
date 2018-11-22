@@ -154,6 +154,20 @@ void expr_settoken (int x, int v)
 }
 
 
+int expr_parse_isany (LFILE *l)
+{
+  if (file_sym (l) == f_id || file_sym (l) == f_integer ||
+      file_sym (l) == f_real ||
+      file_sym (l) == T[E_LPAR] ||
+      file_sym (l) == T[E_UMINUS] ||
+      file_sym (l) == T[E_NOT] ||
+      file_sym (l) == T[E_PROBE]) {
+    return 1;
+  }
+  return 0;
+}  
+
+
 /*
   Helper functions for parser
 */
