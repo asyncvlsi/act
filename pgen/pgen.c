@@ -2045,6 +2045,15 @@ void emit_parser (void)
   pp_nl;
   pp_nl;
   if (found_expr) {
+    pp_puts (pp, "static int is_expr_parse_any (LFILE *l) { return expr_parse_isany (l); }");
+    pp_nl;
+    pp_puts (pp, "static int is_expr_parse_bool (LFILE *l) { return expr_parse_isany (l); }");
+    pp_nl;
+    pp_puts (pp, "static int is_expr_parse_int (LFILE *l) { return expr_parse_isany (l); }");
+    pp_nl;
+    pp_puts (pp, "static int is_expr_parse_real (LFILE *l) { return expr_parse_isany (l); }");
+    pp_nl;
+#if 0
     pp_puts (pp, "static int is_expr_parse_bool (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_bool (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
     pp_puts (pp, "static int is_expr_parse_int (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_int (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
@@ -2053,6 +2062,7 @@ void emit_parser (void)
     pp_nl;
     pp_puts (pp, "static int is_expr_parse_any (LFILE *l) { Expr *e; file_push_position (l); if ((e = expr_parse_any (l))) { expr_free (e); file_set_position (l); file_pop_position (l); return 1; } else { file_set_position (l); file_pop_position (l); return 0; } }");
     pp_nl;
+#endif
     pp_puts (pp, "static Node_expr_id *parse_a_expr__id (LFILE *l) { int opt = 0; Node_expr_id *e = NULL; while (opt != -1 && !e) { e = parse_a_expr_id (l, &opt); } return e; }");
     pp_nl;
     pp_puts (pp, "void free_a_expr__id (void *v) { free_a_expr_id ((Node_expr_id *)v); }"); 
