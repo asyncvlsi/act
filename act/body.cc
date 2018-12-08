@@ -855,82 +855,74 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
   }
 }
 
-static void _merge_subtrees (UserDef *ux, act_connection *c1, act_connection *c2)
+static void _merge_subtrees (act_connection *c1, act_connection *c2)
 {
   ValueIdx *vx;
+  int sz;
 
   vx = c1->getvx();
 
   if (!c1->a) {
     if (c2->a) {
+      c1->a = c2->a;
+      c2->a = NULL;
+      /* now fix parent pointers */
       if (vx->t->arrayInfo()) {
-	int sz;
-	
-	sz = vx->t->arrayInfo()->size();
-	c1->a = c2->a;
-	c2->a = NULL;
-	for (int i=0; i < sz; i++) {
-	  if (c1->a[i]) {
-	    c1->a[i]->parent = c1;
-	  }
+	/* the value is an array, but are we connecting arrays or derefs? */
+	if (c1->getctype() == 1) {
+	  UserDef *ux;
+	  ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+	  Assert (ux, "Why are we here?!");
+	  sz = ux->getNumPorts();
+	}
+	else {
+	  sz = vx->t->arrayInfo()->size();
 	}
       }
       else {
 	UserDef *ux;
-	int sz;
-	
 	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-
-	c1->a = c2->a;
-	c2->a = NULL;
+	Assert (ux, "Hmm!");
 	sz = ux->getNumPorts();
-	for (int i=0; i < sz; i++) {
-	  if (c1->a[i]) {
-	    c1->a[i]->parent = c1;
-	  }
+      }
+      for (int i=0; i < sz; i++) {
+	if (c1->a[i]) {
+	  c1->a[i]->parent = c1;
 	}
       }
     }
   }
   else if (c2->a) {
-    int i, sz;
     if (vx->t->arrayInfo()) {
-      sz = vx->t->arrayInfo()->size();
-      for (i=0; i < sz; i++) {
-	/* connect c1->a[i] with c2->a[i] */
-	if (c1->a[i] && c2->a[i]) {
-	  /* you might have the same thing repeated... */
-	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
-	}
-	else if (c2->a[i]) {
-	  c1->a[i] = c2->a[i];
-	  c2->a[i] = NULL;
-	}
-	c1->a[i]->parent = c1;
+      if (c1->getctype() == 1) {
+	UserDef *ux;
+	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+	Assert (ux, "Why are we here?!");
+	sz = ux->getNumPorts();
       }
-      FREE (c2->a);
+      else {
+	sz = vx->t->arrayInfo()->size();
+      }
     }
     else {
       UserDef *ux;
-      int sz;
-
       ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-      
+      Assert (ux, "Hmm?!");
       sz = ux->getNumPorts();
-      for (i=0; i < sz; i++) {
-	if (c1->a[i] && c2->a[i]) {
-	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
-	}
-	else if (c2->a[i]) {
-	  c1->a[i] = c2->a[i];
-	  c2->a[i] = NULL;
-	}
-	if (c1->a[i]) {
-	  c1->a[i]->parent = c1;
-	}
-      }
-      FREE (c2->a);
     }
+    for (int i=0; i < sz; i++) {
+      /* connect c1->a[i] with c2->a[i] */
+      if (c1->a[i] && c2->a[i]) {
+	/* you might have the same thing repeated... */
+	mk_raw_skip_connection (c1->a[i], c2->a[i]);
+      }
+      else if (c2->a[i]) {
+	c1->a[i] = c2->a[i];
+	c2->a[i] = NULL;
+      }
+      c1->a[i]->parent = c1;
+    }
+    FREE (c2->a);  
   }
 }
 
@@ -1132,7 +1124,7 @@ static void mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   mk_raw_connection (c1, c2);
   
   /* now merge any subtrees */
-  _merge_subtrees (ux, c1, c2);
+  _merge_subtrees (c1, c2);
 }
 
 void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
