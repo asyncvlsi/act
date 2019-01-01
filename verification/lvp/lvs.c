@@ -501,7 +501,6 @@ lvs (char *name, FILE *sim, FILE *prs, FILE *aliases, FILE *dump)
     ext_validate_timestamp (name);
     //ext = parse_ext_file (sim, NULL, NULL);
     ext = ext_read (name);
-    width_length_lambda (ext);
     flatten_ext_file (ext, V);
   }
   else {
