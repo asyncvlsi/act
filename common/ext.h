@@ -64,7 +64,6 @@ struct ext_alias {
 struct ext_fets {
   char *g, *t1, *t2;
   double length, width;
-  int il, iw;
   int type;
   int isweak;
   struct ext_fets *next;

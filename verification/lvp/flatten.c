@@ -221,27 +221,29 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     e->isweak = fet->isweak;
     e->gate = v1; e->t1 = v3;
     e->type = fet->type;
-    e->length = fet->il;
-    e->width = fet->iw;
+    e->length = fet->length/lambda;
+    if (e->length < 2) { e->length = 2; }
+    e->width = fet->width/lambda;
     e->next = v2->edges; v2->edges = e;
 
     MALLOC (e, edgelist_t, 1);
     e->isweak = fet->isweak;
     e->gate = v1; e->t1 = v2;
     e->type = fet->type;
-    e->length = fet->il;
-    e->width = fet->iw;
+    e->length = fet->length/lambda;
+    if (e->length < 2) { e->length = 2; }
+    e->width = fet->width/lambda;
     e->next = v3->edges; v3->edges = e;
 
 #ifndef DIGITAL_ONLY
     /* add capacitances */
     if (fet->type == P_TYPE) {
-      v1->c.p_gA += (fet->iw*fet->il);
-      v1->c.p_gP += 2*(fet->iw+fet->il);
+      v1->c.p_gA += (e->width*e->length);
+      v1->c.p_gP += 2*(e->width+e->length);
     }
     else {
-      v1->c.n_gA += (fet->iw*fet->il);
-      v1->c.n_gP += 2*(fet->iw+fet->il);
+      v1->c.n_gA += (e->width*e->length);
+      v1->c.n_gP += 2*(e->width+e->length);
     }
 #endif
     /* if strong */
@@ -251,7 +253,7 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
       v1->flags |= VAR_INPUT;
     if (debug_level > 60) {
       pp_printf (PPout, "edge: %s - %s - %s [%c,weak=%d] w=%d, l=%d", var_name(v2), 
-		 var_name(v1), var_name(v3), fet->type == P_TYPE ? 'p' : 'n', fet->isweak, fet->iw, fet->il);
+		 var_name(v1), var_name(v3), fet->type == P_TYPE ? 'p' : 'n', fet->isweak, e->width, e->length);
       pp_forced (PPout,0);
     }
   }
@@ -422,26 +424,6 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
 }
 
 
-/*------------------------------------------------------------------------
- *
- *  flatten_ext_file --
- *
- *      Flatten the extract file into the variable table
- *
- *------------------------------------------------------------------------
- */
-void flatten_ext_file (struct ext_file *ext, VAR_T *V)
-{
-  flatten_errors = 0;
-  num_fets = 0;
-  _flatten_ext_file (ext, V, "", 0);
-  if (flatten_errors) 
-    fatal_error ("%d hierarchy error%s, cannot continue.", flatten_errors,
-		 flatten_errors > 1 ? "s" : "");
-}
-
-
-
 static void _clear_mark (struct ext_file *ext)
 {
   struct ext_list *subcells;
@@ -460,39 +442,24 @@ static void _clear_mark (struct ext_file *ext)
   }
 }
 
-static void _width_length_lambda (struct ext_file *ext)
-{
-  struct ext_list *subcells;
-  struct ext_fets *fet;
-  
-  if (ext->mark) return;
-  ext->mark = 1;
-  
-  if (ext->h) {
-    /* summary, we're done */
-    return;
-  }
-
-  for (fet = ext->fet; fet; fet = fet->next) {
-    /* convert w, l into lambda units */
-    fet->il = fet->length/lambda;
-    fet->iw = fet->width/lambda;
-    if (fet->il < 2) { fet->il = 2; }
-  }
-
-  for (subcells = ext->subcells; subcells; subcells = subcells->next) {
-    _width_length_lambda (subcells->ext);
-  }
-}
-
 /*------------------------------------------------------------------------
  *
- * Convert dimensions into lambda units
+ *  flatten_ext_file --
+ *
+ *      Flatten the extract file into the variable table
  *
  *------------------------------------------------------------------------
  */
-void width_length_lambda (struct ext_file *ext)
+void flatten_ext_file (struct ext_file *ext, VAR_T *V)
 {
-  _width_length_lambda (ext);
+  flatten_errors = 0;
+  num_fets = 0;
+  _flatten_ext_file (ext, V, "", 0);
+  if (flatten_errors) 
+    fatal_error ("%d hierarchy error%s, cannot continue.", flatten_errors,
+		 flatten_errors > 1 ? "s" : "");
   _clear_mark (ext);
 }
+
+
+
