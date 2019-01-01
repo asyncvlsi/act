@@ -10,8 +10,8 @@ BIN2=extfix.$(EXT)
 TARGETS=$(BINARY) $(BIN2)
 
 OBJS1=main.o lvs.o dots.o excl.o flatten.o \
-	parse_ext.o hier.o parse.o \
-	sneak.o table.o var.o prs.o print.o path.o \
+	hier.o parse.o \
+	sneak.o table.o var.o prs.o print.o \
 	pchg.o 
 
 OBJS2=extfix.o

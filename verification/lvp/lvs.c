@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include "lex.h"
 #include "parse.h"
-#include "parse_ext.h"
+#include "ext.h"
 #include "pp.h"
 #include "lvs.h"
 #include "misc.h"
@@ -479,7 +479,7 @@ void lvs_parse_sim_line (VAR_T *V, char *line)
  *------------------------------------------------------------------------
  */
 void
-lvs (FILE *sim, FILE *prs, FILE *aliases, FILE *dump)
+lvs (char *name, FILE *sim, FILE *prs, FILE *aliases, FILE *dump)
 {
   LEX_T *L; VAR_T *V;
   BOOL_T *B;
@@ -498,8 +498,9 @@ lvs (FILE *sim, FILE *prs, FILE *aliases, FILE *dump)
 
   /* parse extract/sim file */
   if (extract_file) {
-    check_ext_timestamp (sim);
-    ext = parse_ext_file (sim, NULL, NULL);
+    ext_validate_timestamp (name);
+    //ext = parse_ext_file (sim, NULL, NULL);
+    ext = ext_read (name);
     flatten_ext_file (ext, V);
   }
   else {

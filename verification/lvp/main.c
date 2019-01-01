@@ -61,7 +61,9 @@ pp_t *PPdump;			/* normal output stream */
 
 int exit_status;		/* exit status */
 
+#if 0
 int warnings;			/* warning option */
+#endif
 
 int only_check_connects;        /* check alias lists only */
 
@@ -157,9 +159,9 @@ static
 void usage (void)
 {
   char *usage_str[] = {
-    "Usage: lvs [options] <sim|ext file> [<prsfile>]",
+    "Usage: lvp [options] <sim|ext file> [<prsfile>]",
     "",
-    "lvs compares a flat sim or extract file against a production rule file",
+    "lvp compares a flat sim or extract file against a production rule file",
     "(<prsfile>). If the <prsfile> is omitted, it is read from stdin.",
     "",
     "The program handles shared gate networks. To enable correct gate",
@@ -205,7 +207,9 @@ void usage (void)
     " -R         merge _xResety signals with _Reset [off]",
     " -S         don't look for sneak paths [off]",
     " -V name    use \"name\" as Vdd [Vdd]",
+#if 0
     " -W         return non-zero exit status on any warnings [off]",
+#endif
     "",
     "Options -r and -w are exclusive. Defaults are in square brackets.",
     "If the -p option is used, only one filename argument is accepted.",
@@ -312,7 +316,9 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   outputs_by_name = 0;
   print_differences = 0;
   extract_file = 0;
+#if 0
   warnings = 0;
+#endif
   only_check_connects = 0;
   use_dot_separator = 0;
   strength_ratio_up = 20;
@@ -348,7 +354,7 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   prefix_reset = 0;
 
   opterr = 0;
-  while ((ch=getopt (argc,argv,"bHcCWEfnBapgRPDz:hvr:w:sV:G:SZo:deKi"))!=-1){
+  while ((ch=getopt (argc,argv,"bHcCEfnBapgRPDz:hvr:w:sV:G:SZo:deKi"))!=-1){
     switch (ch) {
     case 'R':
       prefix_reset = 1;
@@ -388,9 +394,11 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
     case 'C':
       only_check_connects = 1;
       break;
+#if 0
     case 'W':
       warnings = 1;
       break;
+#endif
     case 'E':
       extract_file = 1;
       break;
@@ -624,7 +632,7 @@ int main (int argc, char **argv)
     PPdump = pp_init (stdout, 72);
   else
     PPdump = NULL;
-  lvs (fp1, fp2, al, dmp);
+  lvs (file1, fp1, fp2, al, dmp);
   pp_close (PPout);
   if (print_only || pr_aliases) pp_close (PPdump);
   if (dmp) fclose (dmp);

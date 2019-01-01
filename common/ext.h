@@ -3,12 +3,18 @@
  *  (c) 1996-2018 Rajit Manohar
  *
  *************************************************************************/
-#ifndef __PARSE_EXT_H__
-#define __PARSE_EXT_H__
+#ifndef __EXT_FILE_H__
+#define __EXT_FILE_H__
 
 #include <stdio.h>
-#include "var.h"
-#include "hier.h"
+#include "hash.h"
+
+#define EXT_ATTR_PCHG 0x01 /* @pchg */
+#define EXT_ATTR_NUP  0x02 /* @nup */
+#define EXT_ATTR_NDN  0x04 /* @ndn */
+#define EXT_ATTR_PUP  0x08 /* @pup */
+#define EXT_ATTR_PDN  0x10 /* @pdn */
+#define EXT_ATTR_VC   0x20 /* @voltage_converter */
 
 struct ext_file;
 
@@ -52,6 +58,9 @@ struct ext_alias {
   struct ext_alias *next;
 };
 
+#define EXT_FET_PTYPE 1
+#define EXT_FET_NTYPE 0
+
 struct ext_fets {
   char *g, *t1, *t2;
   int length, width;
@@ -66,10 +75,18 @@ struct ext_attr {
   struct ext_attr *next;
 };
 
+#define HIER_IS_INPUT 1
+#define HIER_IS_SEEN  2
+
+struct hier_cell_val {
+  unsigned int flags;		/* flags used */
+  hash_bucket_t *root;
+};
+  
 struct ext_file {
   int mark;
   unsigned long timestamp;
-  struct hier_table *h;		/* if hierarchical */
+  struct Hashtable *h;		/* if hierarchical */
   struct ext_fets *fet;		/* fets */
   struct ext_list *subcells;	/* subcells */
   struct ext_alias *aliases;	/* aliases */
@@ -78,9 +95,8 @@ struct ext_file {
   struct ext_ap *ap;		/* area/perim */
 };
 
-extern struct ext_file *parse_ext_file (FILE *, FILE *dumpfile, char *name);
-extern FILE *mag_path_open (char *, FILE **);
-extern void flatten_ext_file (struct ext_file *, VAR_T *);
-extern void check_ext_timestamp (FILE *fp);
+/* parse hierarchical extract file */
+extern struct ext_file *ext_read (const char *name);
+extern void ext_validate_timestamp (const char *name);
 
 #endif /* __PARSE_EXT_H__ */

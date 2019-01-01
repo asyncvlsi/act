@@ -3,21 +3,214 @@
  *  (c) 1996-2018 Rajit Manohar
  *
  *************************************************************************/
-#include "parse_ext.h"
+#include <stdio.h>
+#include <pwd.h>
+#include <ctype.h>
+#include <string.h>
+#include "ext.h"
 #include "lex.h"
 #include "misc.h"
-#include "var.h"
-#include "lvs.h"
 
 #define MAXLINE 1024
 
-static char *mystrdup (char *s)
+
+static int path_first_time = 1;
+
+static
+struct pathlist {
+  char *path;
+  struct pathlist *next;
+} *hd = NULL, *tl;
+
+static char *expand (char *s)
+{
+  char *path;
+  char *t;
+  char *ret;
+  struct passwd *pwd;
+
+  if (s[0] == '~' && *(s+1) == '/') {
+    path = getenv ("HOME");
+    if (!path) path = "";
+    MALLOC (ret, char, strlen (s) + strlen(path) + 4);
+    strcpy (ret, path);
+    strcat (ret, s+1);
+  }
+  else if (s[0] == '~') {
+    t = s+1;
+    while (*t && *t != '/') t++;
+    if (!*t) fatal_error ("Invalid pathname!");
+    *t = '\0';
+    if (strcmp (s+1, "cad") == 0 && getenv ("CAD_HOME"))
+      path = getenv ("CAD_HOME");
+    else {
+      pwd  = getpwnam (s+1);
+      if (!pwd) {
+	fprintf (stderr, "WARNING: could not find user `%s' for path name expansion\n", s+1);
+	path = "";
+      }
+      else {
+	if (pwd->pw_dir == NULL) path = "";
+	else path = pwd->pw_dir;
+      }
+      endpwent ();
+    }
+    *t = '/';
+    MALLOC (ret, char, strlen (t) + strlen (path) + 5);
+    strcpy (ret, path);
+    strcat (ret, t);
+  }
+  else {
+    MALLOC (ret, char, strlen (s) + 5);
+    strcpy (ret, s);
+  }
+  return ret;
+}
+
+static
+int skipblanks (char *s, int i)
+{
+  while (s[i] && isspace (s[i]))
+    i++;
+  return i;
+}
+
+static
+int addpath (char *s, int i)
 {
   char *t;
-  MALLOC (t, char, strlen(s)+1);
-  strcpy (t, s);
-  return t;
+  char c;
+
+  if (s[i] == '"') i++;
+  i--;
+  do {
+    i++;
+    t = s+i;
+    while (s[i] && !isspace(s[i]) && s[i] != '"' && s[i] != ':')
+      i++;
+    if (s[i]) {
+      c = s[i];
+      s[i] = '\0';
+      if (!hd) {
+	MALLOC (hd, struct pathlist, 1);
+	tl = hd;
+	tl->next = NULL;
+      }
+      else {
+	MALLOC (tl->next, struct pathlist, 1);
+	tl = tl->next;
+	tl->next = NULL;
+      }
+      MALLOC (tl->path, char, strlen (t)+1);
+      strcpy (tl->path, t);
+      s[i] = c;
+    }
+  } while (s[i] == ':');
+  if (s[i] == '"') i++;
+  return i;
 }
+
+static
+void read_dotmagic (char *file)
+{
+  FILE *fp;
+  char buf[MAXLINE];
+  int i;
+
+  file = expand (file);
+  fp = fopen (file, "r");
+  FREE (file);
+  if (!fp) return;
+  buf[MAXLINE-1] = '\n';
+  while (fgets (buf, MAXLINE, fp)) {
+    if (buf[MAXLINE-1] == '\0') fatal_error ("FIX THIS!");
+    i=-1;
+    do {
+      i++;
+      i = skipblanks (buf, i);
+      if (strncmp (buf+i, "path", 4) == 0) {
+        hd = NULL;
+        i+=4;
+        i = skipblanks(buf,i);
+        i = addpath (buf, i);
+        i = skipblanks (buf, i);
+      }
+      else if (strncmp (buf+i, "addpath", 7) == 0) {
+        i += 7;
+        i = skipblanks(buf,i);
+        i = addpath (buf, i);
+        i = skipblanks (buf, i);
+      }
+      else {
+	while (buf[i] && buf[i] != ';') {
+	  if (buf[i] == '"') {
+	    i++;
+	    while (buf[i] && buf[i] != '"') {
+	      if (buf[i] == '\\') {
+		i++;
+		if (!buf[i]) fatal_error ("Malformed input");
+	      }
+	      i++;
+	    }
+	  }
+	  else if (buf[i] == '\'')
+	    if (buf[i+1] && buf[i+2] == '\'')
+	      i+=2;
+	  i++;
+	}
+      }
+    } while (buf[i] == ';');
+  }
+}
+
+
+static
+FILE *mag_path_open (const char *name, FILE **dumpfile)
+{
+  struct pathlist *p;
+  char *file, *try;
+  FILE *fp;
+
+  *dumpfile = NULL;
+  if (path_first_time) {
+    addpath(Strdup("\".\""), 0);
+    read_dotmagic (Strdup("~cad/lib/magic/sys/.magicrc"));
+    read_dotmagic (Strdup("~/.magicrc"));
+    read_dotmagic (Strdup(".magicrc"));
+  }
+  path_first_time = 0;
+  p = hd;
+
+  while (p) {
+    MALLOC (file, char, strlen (p->path)+strlen(name)+6);
+    strcpy (file, p->path);
+    strcat (file, "/");
+    strcat (file, name);
+    try = expand (file);
+    FREE (file);
+
+    fp = fopen (try, "r");
+    if (fp) {
+      sprintf (try + strlen (try) - 3, "hxt");
+      *dumpfile = fopen (try, "r");
+      FREE (try);
+      return fp; 
+    }
+    strcat (try, ".ext");
+    fp = fopen (try, "r");
+    if (fp) {
+      sprintf (try + strlen(try)-3, "hxt");
+      *dumpfile = fopen (try, "r");
+      FREE (try);
+      return fp;
+    }
+    FREE (try);
+    p = p->next;
+  }
+  fatal_error ("Could not find cell %s", name);
+  return NULL;
+}
+
 
 /*
  *
@@ -149,10 +342,24 @@ void addattr (struct ext_file *ext, char *n, char *attr)
   MALLOC (a, struct ext_attr, 1);
   a->n = n;
   a->attr = 0;
-#define ATTR(p,q) if (strcmp (attr,p) == 0) { a->attr |= q; goto attrdone; }
-#include "attr.def"
-#undef ATTR
-attrdone:
+  if (strcmp (attr, "pchg") == 0) {
+    a->attr |= EXT_ATTR_PCHG;
+  }
+  else if (strcmp (attr, "pup") == 0) {
+    a->attr |= EXT_ATTR_PUP;
+  }
+  else if (strcmp (attr, "pdn") == 0) {
+    a->attr |= EXT_ATTR_PDN;
+  }
+  else if (strcmp (attr, "nup") == 0) {
+    a->attr |= EXT_ATTR_NUP;
+  }
+  else if (strcmp (attr, "ndn") == 0) {
+    a->attr |= EXT_ATTR_NDN;
+  }
+  else if (strcmp (attr, "voltage_converter") == 0) {
+    a->attr |= EXT_ATTR_VC;
+  }
   a->next = ext->attr;
   ext->attr = a;
 }
@@ -184,12 +391,12 @@ void expand_aliases (char *a, char *b, struct ext_file *ext, double cap)
   while (*t && *t != '[') t++;
   if (!*s || !*t) {
     MALLOC (alias, struct ext_alias, 1);
-    alias->n1 = mystrdup(a);
-    alias->n2 = mystrdup(b);
+    alias->n1 = Strdup(a);
+    alias->n2 = Strdup(b);
     alias->next = ext->aliases;
     ext->aliases = alias;
     if (cap != 0) 
-      addcap (ext,mystrdup(alias->n1), mystrdup(alias->n2), cap, CAP_CORRECT);
+      addcap (ext,Strdup(alias->n1), Strdup(alias->n2), cap, CAP_CORRECT);
   }
   else {
     sta = s+1;
@@ -223,13 +430,13 @@ void expand_aliases (char *a, char *b, struct ext_file *ext, double cap)
       *(sta-1) = '[';
       *(stb-1) = '[';
       MALLOC (alias, struct ext_alias, 1);
-      alias->n1 = mystrdup(a);
-      alias->n2 = mystrdup(b);
+      alias->n1 = Strdup(a);
+      alias->n2 = Strdup(b);
       alias->next = ext->aliases;
       ext->aliases = alias;
       if (cap != 0) 
 	addcap (ext,
-		mystrdup(alias->n1), mystrdup(alias->n2), cap, CAP_CORRECT);
+		Strdup(alias->n1), Strdup(alias->n2), cap, CAP_CORRECT);
       FREE (a);
       FREE (b);
       return;
@@ -283,7 +490,7 @@ void expand_aliases (char *a, char *b, struct ext_file *ext, double cap)
 	ext->aliases = alias;
 	if (cap != 0) 
 	  addcap (ext,
-		  mystrdup(alias->n1), mystrdup(alias->n2), cap, CAP_CORRECT);
+		  Strdup(alias->n1), Strdup(alias->n2), cap, CAP_CORRECT);
       }
     else {
       for (i=0; i < xrange; i++)
@@ -297,7 +504,7 @@ void expand_aliases (char *a, char *b, struct ext_file *ext, double cap)
 	  ext->aliases = alias;
 	  if (cap != 0) 
 	    addcap (ext,
-		    mystrdup(alias->n1), mystrdup(alias->n2), cap,CAP_CORRECT);
+		    Strdup(alias->n1), Strdup(alias->n2), cap,CAP_CORRECT);
 	}
     }
   }
@@ -339,12 +546,7 @@ void _check_ext_timestamp (FILE *fp, unsigned long tm)
 	fatal_error ("Subcell `%s' has incorrect .ext format", cell);
       sscanf (buf+10, "%lu", &t);
       if (t > tm) {
-	if (warnings)
-	  exit_status = 1;
-	pp_printf (PPout, 
-		   "WARNING: Subcell `%s' is newer than parent",
-		   cell);
-	pp_forced (PPout, 0);
+	warning ("`%s' is newer than parent", cell);
       }
       _check_ext_timestamp (subcell, t);
       fclose (subcell);
@@ -354,17 +556,25 @@ void _check_ext_timestamp (FILE *fp, unsigned long tm)
 
 
 void
-check_ext_timestamp (FILE *fp)
+ext_validate_timestamp (const char *file)
 {
+  FILE *fp;
   static char buf[MAXLINE];
   unsigned long tm;
 
+  fp = fopen (file, "r");
+  if (!fp) {
+    fp = mag_path_open (file, NULL);
+  }
+  if (!fp) {
+    fatal_error ("File `%s' not found", file);
+  }
   if (!fgets (buf, MAXLINE, fp) ||
       strncmp (buf, "timestamp ", 10) != 0)
     fatal_error ("Top level file has incorrect .ext format");
   sscanf (buf+10, "%lu", &tm);
   _check_ext_timestamp (fp, tm);
-  fseek (fp, 0, 0 /* SEEK_SET */);
+  fclose (fp);
 }
 
 /*------------------------------------------------------------------------
@@ -373,8 +583,9 @@ check_ext_timestamp (FILE *fp)
  *
  *------------------------------------------------------------------------
  */
-struct ext_file *parse_ext_file (FILE *fp, FILE *dump, char *path)
+struct ext_file *ext_read (const char *name)
 {
+  FILE *fp, *dump;
   static char buf[MAXLINE];
   static char tok1[MAXLINE], tok2[MAXLINE];
   struct ext_file *ext = NULL;
@@ -384,13 +595,26 @@ struct ext_file *parse_ext_file (FILE *fp, FILE *dump, char *path)
   int l_comma;
   char *s, *t;
   int line = 0;
-  FILE *tmp1, *tmp2;
   unsigned long timestamp;
   unsigned long fpos;
   double cscale;
   double lscale;
   double x;
   double n_a, n_p, p_a, p_p;
+  static int depth = 0;
+
+  dump = NULL;
+  fp = NULL;
+  if (depth == 0) {
+    fp = fopen (name, "r");
+  }
+  if (!fp) {
+    fp = mag_path_open (name, &dump);
+  }
+  if (!fp) {
+    fatal_error ("Could not find extract file for `%s'", name);
+  }
+  depth++;
 
   l = lex_string ("boo");
   l_comma = lex_addtoken (l, ",");
@@ -418,50 +642,35 @@ struct ext_file *parse_ext_file (FILE *fp, FILE *dump, char *path)
     fclose (fp);
     if (dump) fclose (dump);
     lex_free (l);
+    depth--;
     return ext;
   }
 
   if (dump) {
-    struct hash_cell *hc, *root;
+    hash_bucket_t *b, *root;
+    struct hier_cell_val *hc;
     if (fgets (buf, MAXLINE, dump)) {
       l = lex_restring (l, buf);
       lex_getsym (l);
       if (!lex_have_keyw (l, "timestamp")) {
 	if (!lex_have_keyw (l, "timestampF")) {
 	  fclose (dump);
-	  if (warnings)
-	    exit_status = 1;
-	  if (path)
-	    pp_printf (PPout, "WARNING: summary file for `%s' not used [format err]", path);
-	  else
-	    pp_printf (PPout, "WARNING: summary file for top cell not used [format err]");
-	  pp_forced (PPout, 0);
+	  warning ("summary file for `%s' not used [format err]", name);
 	  goto readext;
 	}
-	if (warnings)
-	  exit_status = 1;
-	if (path)
-	  pp_printf (PPout, "WARNING: summary file for `%s' may have unconnected globals", path);
-	else
-	  pp_printf (PPout, "WARNING: summary file for top cell may have unconnected globals");
-	pp_forced (PPout, 0);
+	warning ("summary file for `%s' may have unconnected globals", name);
       }
       sscanf (buf+11, "%lu", &timestamp);
       if (timestamp < ext->timestamp) {
 	fclose (dump);
-	if (path)
-	  pp_printf (PPout, "WARNING: summary file out-of-date for cell `%s'",
-		     path);
-	else
-	  pp_printf (PPout, "WARNING: summary file out-of-date for top cell");
-	pp_forced (PPout, 0);
+	warning ("summary file out-of-date for cell `%s'", name);
 	goto readext;
       }
       fclose (fp);
       lex_free (l);
       l = lex_file (dump);
       lex_getsym (l);
-      ext->h = hier_create (16);
+      ext->h = hash_new (8);
       while (lex_sym (l) == l_id) {
 	if (strcmp (lex_id (l), "i") == 0)
 	  line = 1;
@@ -474,34 +683,31 @@ struct ext_file *parse_ext_file (FILE *fp, FILE *dump, char *path)
 	root = NULL;
 	while (lex_sym (l) == l_string) {
 	  lex_tokenstring(l)[strlen(lex_tokenstring(l))-1] = '\0';
-	  if (!hier_find (ext->h, lex_tokenstring(l)+1)) {
-	    hc = hier_add (ext->h, lex_tokenstring(l)+1, line);
-	    if (!root) 
-	      root = hc;
-	    else
-	      hc->root = root;
+	  if (!hash_lookup (ext->h, lex_tokenstring(l)+1)) {
+	    b = hash_add (ext->h, lex_tokenstring(l)+1);
+	    NEW (hc, struct hier_cell_val);
+	    b->v = hc;
+	    hc->root = root;
+	    hc->flags = line ? HIER_IS_INPUT : 0;
+	    if (!root)
+	      root = b;
 	  }
 	  lex_getsym (l);
 	}
       }
       lex_free (l);
+      depth--;
       return ext;
     }
     else {
-      if (warnings)
-	exit_status = 1;
-      if (path)
-	pp_printf (PPout, "WARNING: summary file for `%s' not used [empty]", path);
-	else
-	  pp_printf (PPout, "WARNING: summary file for top cell not used [empty]");
-      pp_forced (PPout, 0);
+      warning ("summary file for `%s' not used [empty]", name);
       fclose (dump);
     }
   }
   /* dump file is closed */
 readext:
   cscale = 1;
-  lscale = 1e-8/lambda;		/* 1 centimicron / lambda */
+  lscale = 1e-8;		/* 1 centimicron */
   while (fgets (buf, MAXLINE, fp)) {
     line++;
     if (buf[MAXLINE-1] == '\0')
@@ -512,18 +718,17 @@ readext:
       lex_mustbe (l, l_integer);
       cscale = lex_integer (l);
       lex_mustbe (l, l_integer);
-      lscale = lex_integer (l)*1e-8/lambda;
+      lscale = lex_integer (l)*1e-8;
       lex_mustbe (l, l_integer);
     }
     else if (lex_have_keyw (l, "use")) {
       int i;
       MALLOC (subcell, struct ext_list, 1);
       sscanf (buf+4, "%s%s", tok1, tok2);
-      /*subcell->file = mystrdup (tok1);*/
       MALLOC (subcell->file, char, strlen(tok1)+5);
       strcpy (subcell->file, tok1);
       strcat (subcell->file, ".ext");
-      subcell->id = mystrdup (tok2);
+      subcell->id = Strdup (tok2);
       subcell->xlo = 0; subcell->xhi = 0;
       subcell->ylo = 0; subcell->yhi = 0;
       for (s=subcell->id; *s; s++)
@@ -576,18 +781,17 @@ readext:
       }
       subcell->next = ext->subcells;
       ext->subcells = subcell;
-      tmp1 = mag_path_open (subcell->file, &tmp2);
-      subcell->ext = parse_ext_file (tmp1, tmp2, subcell->file);
+      subcell->ext = ext_read (subcell->file);
     }
     else if (lex_have_keyw (l, "fet")) {
       double gperim, t1perim, t2perim;
 
       MALLOC (fet, struct ext_fets, 1);
       if (lex_have_keyw (l, "nfet"))
-	fet->type = N_TYPE;
+	fet->type = EXT_FET_NTYPE;
       else {
 	lex_mustbe_keyw (l, "pfet");
-	fet->type = P_TYPE;
+	fet->type = EXT_FET_PTYPE;
       }
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
@@ -596,9 +800,9 @@ readext:
       lex_mustbe_string_id (l);
 
       /* gate */
-      fet->g = mystrdup(lex_mustbe_string_id (l));
+      fet->g = Strdup(lex_mustbe_string_id (l));
 
-      gperim = lex_mustbe_number (l)*lscale; /* convert to lambda */
+      gperim = lex_mustbe_number (l)*lscale; /* convert to SI units */
       fet->isweak = 0;
       if (strcmp (lex_tokenstring(l), "0") == 0)
 	lex_getsym (l);
@@ -610,8 +814,8 @@ readext:
 	} while (lex_have (l,l_comma));
 
       /* t1 */
-      fet->t1 = mystrdup(lex_mustbe_string_id (l));
-      t1perim = lex_mustbe_number (l)*lscale; /* convert to lambda */
+      fet->t1 = Strdup(lex_mustbe_string_id (l));
+      t1perim = lex_mustbe_number (l)*lscale; /* convert to SI units */
       if (strcmp (lex_tokenstring (l), "0") == 0)
 	lex_getsym (l);
       else
@@ -622,8 +826,8 @@ readext:
       if (!fet->t2) {
 	fatal_error ("fet in layout does not have enough terminals; t=%s; gate=%s", fet->t1, fet->g);
       }
-      fet->t2 = mystrdup(fet->t2);
-      t2perim = lex_mustbe_number (l)*lscale; /* convert to lambda */
+      fet->t2 = Strdup(fet->t2);
+      t2perim = lex_mustbe_number (l)*lscale; /* convert to SI unitS */
 
       fet->width = (t1perim + t2perim)/2;
       fet->length = gperim/2;
@@ -633,13 +837,13 @@ readext:
       ext->fet = fet;
     }
     else if (lex_have_keyw (l, "equiv")) {
-      s = mystrdup(lex_mustbe_string_id (l));
-      t = mystrdup(lex_mustbe_string_id (l));
+      s = Strdup(lex_mustbe_string_id (l));
+      t = Strdup(lex_mustbe_string_id (l));
       expand_aliases (s, t, ext, 0);
     }
     else if (lex_have_keyw (l, "merge")) {
-      s = mystrdup(lex_mustbe_string_id (l));
-      t = mystrdup(lex_mustbe_string_id (l));
+      s = Strdup(lex_mustbe_string_id (l));
+      t = Strdup(lex_mustbe_string_id (l));
       if (lex_sym (l) == l_integer || lex_sym (l) == l_real)
 	x = cscale*lex_mustbe_number (l);
       else
@@ -647,45 +851,32 @@ readext:
       expand_aliases (s, t, ext, x);
     }
     else if (lex_have_keyw (l, "node")) {
-      s = mystrdup (lex_mustbe_string_id (l));
+      s = Strdup (lex_mustbe_string_id (l));
       lex_mustbe_number (l); /* R */
       x = lex_mustbe_number(l)*cscale; /* C */
       /* FIXME: resistclass 1 = ndiff, 2 = pdiff -- hardcoded */
       lex_mustbe_number (l); /* x */
       lex_mustbe_number (l); /* y */
-#if 0
-      lex_mustbe_string_id (l); /* type */
-#endif
       lex_mustbe_string_contiguous_id (l); /* type */
-#if 0
-      x += lex_mustbe_number(l)*lscale*lscale*N_diff_cap; /* a1 */
-      lex_mustbe_number (l); /* p1 */
-      x += lex_mustbe_number(l)*lscale*lscale*P_diff_cap; /* a2 */
-      addcap (ext, mystrdup (s), NULL, x, CAP_GND);
-#endif
 
-#ifndef DIGITAL_ONLY
-      n_a = lex_mustbe_number(l)*(lscale*lambda)*(lscale*lambda);
-      n_p = lex_mustbe_number (l)*(lscale*lambda);
+      n_a = lex_mustbe_number(l)*lscale*lscale;
+      n_p = lex_mustbe_number (l)*lscale;
 
-      p_a = lex_mustbe_number(l)*(lscale*lambda)*(lscale*lambda);
-      p_p = lex_mustbe_number (l)*(lscale*lambda);
+      p_a = lex_mustbe_number(l)*lscale*lscale;
+      p_p = lex_mustbe_number (l)*lscale;
 
-      addcap (ext, mystrdup (s), NULL, x, CAP_GND);
-      add_ap (ext, mystrdup (s), p_a, p_p, n_a, n_p);
-#endif
-      expand_aliases (s, mystrdup(s), ext, 0);
+      addcap (ext, Strdup (s), NULL, x, CAP_GND);
+      add_ap (ext, Strdup (s), p_a, p_p, n_a, n_p);
+      expand_aliases (s, Strdup(s), ext, 0);
     }
     else if (lex_have_keyw (l, "cap")) {
-#ifndef DIGITAL_ONLY
-      s = mystrdup (lex_mustbe_string_id (l));
-      t = mystrdup (lex_mustbe_string_id (l));
+      s = Strdup (lex_mustbe_string_id (l));
+      t = Strdup (lex_mustbe_string_id (l));
       x = lex_mustbe_number (l)*cscale;
       addcap (ext, s, t, x, CAP_INTERNODE);
-#endif
     }
     else if (lex_have_keyw (l, "attr")) {
-      s = mystrdup (lex_mustbe_string_id (l));
+      s = Strdup (lex_mustbe_string_id (l));
       while (lex_whitespace (l)[0] == '\0' && !lex_eof (l)) {
 	REALLOC (s, char, strlen(s)+strlen(lex_tokenstring(l))+1);
 	strcat (s, lex_tokenstring (l));
@@ -701,5 +892,6 @@ readext:
   }
   fclose (fp);
   lex_free (l);
+  depth--;
   return ext;
 }

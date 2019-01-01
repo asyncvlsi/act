@@ -5,7 +5,7 @@
  *************************************************************************/
 
 #include <stdio.h>
-#include "parse_ext.h"
+#include "ext.h"
 #include "lvs.h"
 #include "var.h"
 #include "misc.h"
@@ -61,7 +61,8 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
   len = strlen (path) + 1;
 
   if (ext->h) {
-    struct hash_cell *cell;
+    /*struct hash_cell *cell;*/
+    hash_bucket_t *cell;
 
     /* process hierarchical file */
     MALLOC (name, char, strlen (path)+1);
@@ -73,11 +74,11 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     v1 = var_enter (V, name);
     validate_name (v1, &d);
     v1->hcell = 1;
-    v1->hc = (struct hash_cell *)ext->h;
+    v1->hc = (hash_bucket_t *)ext->h;
     if (!var_locate (V, path)) {
       v1 = var_enter (V, path);
       v1->hcell = 1;
-      v1->hc = (struct hash_cell *)ext->h;
+      v1->hc = (hash_bucket_t *)ext->h;
     }
     FREE (name);
 
@@ -99,11 +100,11 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
 	if (!v1) {
 	  if (bang_exists (KEY(cell)))
 	    /* global nodes */
-	    MK_SEEN (cell->root);
+	    MK_SEEN (ROOT(cell));
 	  v1 = var_enter (V, name);
 	}
 	else
-	  MK_SEEN(cell->root);
+	  MK_SEEN(ROOT(cell));
 	FREE (name);
 	Assert (v1, "Hmm");
 	if (v1) {
@@ -115,7 +116,7 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     
     for (i=0; i < ext->h->size; i++)
       for (cell = ext->h->head[i]; cell; cell = cell->next) {
-	if (cell->root != cell) {
+	if (ROOT(cell) != cell) {
 	  MALLOC (name, char, len + strlen (KEY(cell)) + 1);
 	  sprintf (name, "%s/%s", path, KEY(cell));
 	  name_convert (name, &d);
@@ -123,8 +124,8 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
 	  validate_name (v1, &d);
 	  FREE (name);
 
-	  MALLOC (name, char, len + strlen (KEY(cell->root)) + 1);
-	  sprintf (name, "%s/%s", path, KEY(cell->root));
+	  MALLOC (name, char, len + strlen (KEY(ROOT(cell))) + 1);
+	  sprintf (name, "%s/%s", path, KEY(ROOT(cell)));
 	  name_convert (name, &d);
 	  v2 = var_enter (V, name);
 	  validate_name (v2, &d);
@@ -271,9 +272,9 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     array_fixup (name);
     if ((name3 = hier_subcell_node (V, nm, &v4, '/'))) {
       /* FIXME: check dots to subcell name */
-      if (!hier_find ((struct hier_table*)v4->hc, name3)) {
+      if (!hash_lookup ((struct Hashtable *)v4->hc, name3)) {
 	pp_printf (PPout, "Connection `%s' =* `%s' to non i/o node in subcell.",
-		     name, nm);
+		   name, nm);
 	pp_forced (PPout, 0);
 	flatten_errors++;
 	continue;
@@ -283,7 +284,7 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     }
     if ((name3 = hier_subcell_node (V, name, &v4, '/'))) {
       /* FIXME: check dots to subcell name */
-      if (!hier_find ((struct hier_table*)v4->hc, name3)) {
+      if (!hash_lookup ((struct Hashtable*)v4->hc, name3)) {
 	pp_printf (PPout, "Connection `%s' *= `%s' to non i/o node in subcell.",
 		   name, nm);
 	pp_forced (PPout, 0);

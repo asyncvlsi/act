@@ -193,8 +193,8 @@ typedef struct var {
 
   dots_t name_convert;		/* info about position of dots */
 
-  struct hash_cell *hc;		/* hash cell */
-
+  hash_bucket_t *hc;		/* hash cell */
+  
 #ifndef DIGITAL_ONLY
   struct capacitance c;		/* capacitance */
   double pthresh, nthresh;	/* thresholds for p and n type chargesharing*/
