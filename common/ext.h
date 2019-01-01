@@ -21,6 +21,7 @@ struct ext_file;
 struct ext_list {
   char *file;
   char *id;
+  float mult;			/* subcircuit multiplier */
   int xlo, xhi, ylo, yhi;
   struct ext_file *ext;
   struct ext_list *next;
@@ -62,7 +63,7 @@ struct ext_alias {
 #define EXT_FET_NTYPE 0
 
 struct ext_fets {
-  char *g, *t1, *t2;
+  char *g, *t1, *t2, *sub;
   double length, width;
   int type;
   int isweak;
@@ -99,4 +100,4 @@ struct ext_file {
 extern struct ext_file *ext_read (const char *name);
 extern void ext_validate_timestamp (const char *name);
 
-#endif /* __PARSE_EXT_H__ */
+#endif /* __EXT_FILE_H__ */

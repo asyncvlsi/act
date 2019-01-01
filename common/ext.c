@@ -780,9 +780,14 @@ readext:
        * Strip the subcircuit multiplier
        */
       i = strlen (subcell->id) - 1;
+      subcell->mult = 1;
       while (i > 0) {
 	if (subcell->id[i] == '/') break;
-	if (subcell->id[i] == '*') { subcell->id[i] = '\0'; break; }
+	if (subcell->id[i] == '*') {
+	  subcell->id[i] = '\0';
+	  sscanf (subcell->id + i + 1, "%f", &subcell->mult);
+	  break;
+	}
 	i--;
       }
       subcell->next = ext->subcells;
@@ -803,7 +808,7 @@ readext:
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
 
       /* substrate */
-      lex_mustbe_string_id (l);
+      fet->sub = Strdup (lex_mustbe_string_id (l));
 
       /* gate */
       fet->g = Strdup(lex_mustbe_string_id (l));
