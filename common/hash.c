@@ -47,14 +47,14 @@ int hash_function (int size, const char *k)
   if (size <= (1<<8)) {
     /* byte index */
     sum = 0;
-    for (s=k; c=*s++; ) {
+    for (s=k; (c=*s++); ) {
       sum = T[sum^c];
     }
   } else if (size <= (1<<16)) {
     unsigned int sum1;
     sum = T[*k];
     sum1 = T[0xff & (1+*k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum^c];
       sum1 = T[sum1^c];
     }
@@ -64,7 +64,7 @@ int hash_function (int size, const char *k)
     sum = T[*k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -76,7 +76,7 @@ int hash_function (int size, const char *k)
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     sum3 = T[0xff & (3 + *k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -125,7 +125,7 @@ hash_function_continue (unsigned int size, const unsigned char *k, int len,
       k++;
     }
     for (s=k; len > 0; len--) {
-      c=*s++;
+      (c=*s++);
       sum = T[sum^c];
       sum1 = T[sum1^c];
     }
@@ -145,7 +145,7 @@ hash_function_continue (unsigned int size, const unsigned char *k, int len,
       k++;
     }
     for (s=k; len > 0; len--) {
-      c=*s++;
+      (c=*s++);
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -168,7 +168,7 @@ hash_function_continue (unsigned int size, const unsigned char *k, int len,
       k++;
     }
     for (s=k; len > 0; len--) {
-      c=*s++;
+      (c=*s++);
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -200,14 +200,14 @@ static int hash (struct Hashtable *h, const char *k)
   if (size <= (1<<8)) {
     /* byte index */
     sum = 0;
-    for (s=k; c=*s++; ) {
+    for (s=k; (c=*s++); ) {
       sum = T[sum^c];
     }
   } else if (size <= (1<<16)) {
     unsigned int sum1;
     sum = T[*k];
     sum1 = T[0xff & (1+*k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum^c];
       sum1 = T[sum1^c];
     }
@@ -217,7 +217,7 @@ static int hash (struct Hashtable *h, const char *k)
     sum = T[*k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -229,7 +229,7 @@ static int hash (struct Hashtable *h, const char *k)
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     sum3 = T[0xff & (3 + *k)];
-    for (s=k+1; c=*s++; ) {
+    for (s=k+1; (c=*s++); ) {
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -333,6 +333,7 @@ static void icheck_table (struct iHashtable *H)
   }
 }
 
+#if 0
 static void ccheck_table (struct cHashtable *H)
 {
   int i;
@@ -355,6 +356,7 @@ static void ccheck_table (struct cHashtable *H)
     }
   }
 }
+#endif
 
 
 static void resize_table (struct Hashtable *H)
