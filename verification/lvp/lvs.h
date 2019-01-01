@@ -70,7 +70,9 @@ extern pp_t *PPdump;		        /* output stream */
 
 extern int exit_status;		        /* exit status */
 
+#if 0
 extern int warnings;		        /* warnings */
+#endif
 
 extern int only_check_connects;	        /* check connections only */
 
@@ -115,7 +117,7 @@ extern int display_all_bumps;	/* show all scenario/bump combinations */
 
 extern int prefix_reset;	/* special _xResety! connection directive */
 
-extern void lvs (FILE *, FILE *, FILE *, FILE *);
+extern void lvs (char *name, FILE *, FILE *, FILE *, FILE *);
 extern void gen_prs (VAR_T *, BOOL_T *);
 extern void check_prs (VAR_T *, BOOL_T *);
 extern void print_prs (VAR_T *, BOOL_T *);

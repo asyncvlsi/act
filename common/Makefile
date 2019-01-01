@@ -17,11 +17,11 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	names.h mstring.h mytime.h \
 	channel.h hconfig.h checkpoint.h contexts.h count.h \
 	machine.h mem.h mutex.h queue.h tasking.h thread.h sim.h \
-	log.h
+	log.h ext.h
 
 # general library support
 OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
-	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o 
+	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o
 
 # shared libs hsim integration
 OBJS2=hash2.os atrace2.os ns.os misc.os

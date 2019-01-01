@@ -661,8 +661,10 @@ void fix_aliases (VAR_T *V)
     root->flags2 |= flags2;
 
     if (prs_found > 1) {
+#if 0
       if (warnings)
 	exit_status = 1;
+#endif
       pp_printf (PPout, "WARNING: multiple aliased nodes have a prs rule");
       pp_forced (PPout, 5);
       t = v;
@@ -1344,7 +1346,7 @@ void validate_io (VAR_T *V)
   var_t *u;
   int inprs;
   var_t *vdd, *gnd;
-  struct hash_cell *hc;
+  hash_bucket_t *hc;
   int nouts;
   var_t *w;
 
@@ -1368,7 +1370,7 @@ void validate_io (VAR_T *V)
 	do {
 	  if (w->hname) {
 	    hc = w->hc;
-	    if (hc == hc->root && !IS_INPUT (hc))
+	    if (hc == ROOT(hc) && !IS_INPUT (hc))
 	      nouts++;
 	  }
 	  w = w->alias_ring;
@@ -1978,16 +1980,20 @@ void gen_prs (VAR_T *V, BOOL_T *B)
   if (!vdd) {
     pp_printf (PPout, "WARNING: missing Vdd node [%s]", Vddnode);
     pp_forced (PPout, 0);
+#if 0
     if (warnings)
       exit_status = 1;
+#endif
   }
   else
     vdd->inprs = 1;
   if (!gnd) {
     pp_printf (PPout, "WARNING: missing GND node [%s]", GNDnode);
     pp_forced (PPout, 0);
+#if 0
     if (warnings)
       exit_status = 1;
+#endif
   }
   else 
     gnd->inprs = 1;
@@ -3534,8 +3540,10 @@ void check_prs (VAR_T *V, BOOL_T *B)
 	  pp_forced (PPout, 0);
 	}
 	extra_staticizers ++;
+#if 0
 	if (warnings)
 	  exit_status = 1;
+#endif
       }
       else if (staterr == 5) {
 	if (verbose) {
@@ -3573,8 +3581,10 @@ void check_prs (VAR_T *V, BOOL_T *B)
 	  pp_forced (PPout, 0);
 	}
 	extra_staticizers++;
+#if 0
 	if (warnings)
 	  exit_status = 1;
+#endif
       }
       else if (staterr == 9) {
 	if (verbose) {
@@ -3583,8 +3593,10 @@ void check_prs (VAR_T *V, BOOL_T *B)
 	  pp_forced (PPout, 0);
 	}
 	bad_staticizers++;
+#if 0
 	if (warnings)
 	  exit_status = 1;
+#endif
       }
     }
     bool_free (B, b0);
