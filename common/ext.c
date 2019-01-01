@@ -171,7 +171,9 @@ FILE *mag_path_open (const char *name, FILE **dumpfile)
   char *file, *try;
   FILE *fp;
 
-  *dumpfile = NULL;
+  if (dumpfile) {
+    *dumpfile = NULL;
+  }
   if (path_first_time) {
     addpath(Strdup("\".\""), 0);
     read_dotmagic (Strdup("~cad/lib/magic/sys/.magicrc"));
@@ -191,16 +193,20 @@ FILE *mag_path_open (const char *name, FILE **dumpfile)
 
     fp = fopen (try, "r");
     if (fp) {
-      sprintf (try + strlen (try) - 3, "hxt");
-      *dumpfile = fopen (try, "r");
+      if (dumpfile) {
+	sprintf (try + strlen (try) - 3, "hxt");
+	*dumpfile = fopen (try, "r");
+      }
       FREE (try);
       return fp; 
     }
     strcat (try, ".ext");
     fp = fopen (try, "r");
     if (fp) {
-      sprintf (try + strlen(try)-3, "hxt");
-      *dumpfile = fopen (try, "r");
+      if (dumpfile) {
+	sprintf (try + strlen(try)-3, "hxt");
+	*dumpfile = fopen (try, "r");
+      }
       FREE (try);
       return fp;
     }
@@ -832,7 +838,7 @@ readext:
       fet->width = (t1perim + t2perim)/2;
       fet->length = gperim/2;
 
-      if (fet->length < 2) { fet->length = 2; }
+      //if (fet->length < 2) { fet->length = 2; }
       fet->next = ext->fet;
       ext->fet = fet;
     }

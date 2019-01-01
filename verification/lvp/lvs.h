@@ -13,6 +13,7 @@
 #include "pp.h"
 #include "bool.h"
 #include "table.h"
+#include "ext.h"
 
 /*
  *
@@ -148,6 +149,11 @@ extern void check_precharges (VAR_T *V, var_t *vdd, var_t *gnd);
 extern void inc_pchg_errors (void);
 extern void inc_naming_violations (void);
 extern void inc_sneak_paths (void);
+
+void width_length_lambda (struct ext_file *ext);
+void flatten_ext_file (struct ext_file *ext, VAR_T *V);
+void initialize (int *argc, char ***argv);
+
 
 #define MAXLINE 1024
 #define MAXNAME 1024
