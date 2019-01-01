@@ -9,13 +9,14 @@
 #include "hash.h"
 #include "bool.h"
 #include "dots.h"
+#include "ext.h"
 
 #define VAR_INIT_SIZE 128
 
 typedef struct edgelist edgelist_t;
 
-#define N_TYPE 0
-#define P_TYPE 1
+#define N_TYPE EXT_FET_NTYPE
+#define P_TYPE EXT_FET_PTYPE
 
 #define VAR_OUTPUT   0x1	/* node is the output of an operator */
 #define VAR_INPUT    0x2	/* node is an input to an operator */
@@ -83,12 +84,12 @@ typedef struct edgelist edgelist_t;
    Flags from the flags2 field
 */
 
-#define VAR_PCHG         0x1	/* precharged internal nodes */
-#define VAR_PCHG_NUP     0x2
-#define VAR_PCHG_NDN     0x4
-#define VAR_PCHG_PUP     0x8
-#define VAR_PCHG_PDN     0x10
-#define VAR_VOLTAGE_CONV 0x20   /* n->vdd path for voltage converter; skip */
+#define VAR_PCHG         EXT_ATTR_PCHG	/* precharged internal nodes */
+#define VAR_PCHG_NUP     EXT_ATTR_NUP
+#define VAR_PCHG_NDN     EXT_ATTR_NDN
+#define VAR_PCHG_PUP     EXT_ATTR_PUP
+#define VAR_PCHG_PDN     EXT_ATTR_PDN
+#define VAR_VOLTAGE_CONV EXT_ATTR_VC   /* n->vdd path for voltage converter; skip */
 
 #define VAR_PCHG_ALL (VAR_PCHG|VAR_PCHG_NUP|VAR_PCHG_NDN|VAR_PCHG_PUP|VAR_PCHG_PDN)
 
