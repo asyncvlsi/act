@@ -17,3 +17,16 @@ Language history:
   * 2017, major revisions made
   * 2018, Most features of ACT v1 ready
   
+
+
+Synopsys linkages:
+
+If you would like to build the appropriate shared object file
+for creating the ALINT trace file format using HSIM, then
+you will need to do the following:
+   - copy over coi.h and NSOutputInt.h to the common/ directory
+   - uncomment two lines: 
+	#LIBS2=....
+     and
+        #OBJS2=...
+
