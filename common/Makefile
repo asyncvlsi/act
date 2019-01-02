@@ -6,8 +6,7 @@
 #-------------------------------------------------------------------------
 
 LIB1=libvlsilib_$(EXT).a
-LIB2=libALINT_$(EXT).so
-#LIB3=libssim_$(EXT).a
+#LIB2=libALINT_$(EXT).so
 LIB4=libasim_$(EXT).a
 
 TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
@@ -24,12 +23,7 @@ OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
 	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o
 
 # shared libs hsim integration
-OBJS2=hash2.os atrace2.os ns.os misc.os
-
-# synchronous simulation
-#OBJS3CPP=queue.o tasking.o wakeupcall.o hconfig.o
-#OBJS3C2=contexts_uf.o
-#OBJS3CPP2=slog.o smem.o ssim.o scheckpoint.o
+#OBJS2=hash2.os atrace2.os ns.os misc.os
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
@@ -44,7 +38,7 @@ OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
 	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc)
 
-OBJS=$(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4)
+OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 
 
 DEPEND_FLAGS=-DASYNCHRONOUS -DFAIR
