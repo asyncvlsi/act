@@ -35,8 +35,8 @@ OBJS3=$(OBJS3C) $(OBJS3C2) $(OBJS3CPP) $(OBJS3CPP2)
 
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 
-SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
-	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc)
+SRCS=$(OBJS1:.o=.c) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
+	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc) # ns.c
 
 OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 

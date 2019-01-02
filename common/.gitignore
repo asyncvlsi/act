@@ -24,3 +24,10 @@ view.h
 # build dirs
 i386_*
 x86_64*
+
+
+#
+# proprietary files
+#
+coi.h
+NSOutputInt.h
