@@ -16,7 +16,7 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
 	names.h mstring.h mytime.h \
 	channel.h hconfig.h checkpoint.h contexts.h count.h \
-	machine.h mem.h mutex.h queue.h tasking.h thread.h sim.h \
+	machine.h mem.h mutex.h  thread.h sim.h \
 	log.h ext.h
 
 # general library support
