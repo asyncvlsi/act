@@ -603,7 +603,7 @@ struct ext_file *ext_read (const char *name)
   int line = 0;
   unsigned long timestamp;
   unsigned long fpos;
-  double cscale;
+  double cscale, rscale;
   double lscale;
   double x;
   double n_a, n_p, p_a, p_p;
@@ -713,6 +713,7 @@ struct ext_file *ext_read (const char *name)
   /* dump file is closed */
 readext:
   cscale = 1;
+  rscale = 1;
   lscale = 1e-8;		/* 1 centimicron */
   while (fgets (buf, MAXLINE, fp)) {
     line++;
@@ -721,6 +722,7 @@ readext:
     l = lex_restring (l, buf);
     lex_getsym (l);
     if (lex_have_keyw (l, "scale")) {
+      rscale = lex_integer (l);
       lex_mustbe (l, l_integer);
       cscale = lex_integer (l);
       lex_mustbe (l, l_integer);
@@ -861,7 +863,7 @@ readext:
 	x = 0;
       expand_aliases (s, t, ext, x);
     }
-    else if (lex_have_keyw (l, "node")) {
+    else if (lex_have_keyw (l, "node") || lex_have_keyw (l, "substrate")) {
       s = Strdup (lex_mustbe_string_id (l));
       lex_mustbe_number (l); /* R */
       x = lex_mustbe_number(l)*cscale; /* C */
@@ -880,7 +882,7 @@ readext:
       add_ap (ext, Strdup (s), p_a, p_p, n_a, n_p);
       expand_aliases (s, Strdup(s), ext, 0);
     }
-    else if (lex_have_keyw (l, "cap")) {
+    else if (lex_have_keyw (l, "cap") || lex_have_keyw (l, "subcap")) {
       s = Strdup (lex_mustbe_string_id (l));
       t = Strdup (lex_mustbe_string_id (l));
       x = lex_mustbe_number (l)*cscale;
