@@ -7,7 +7,7 @@
 
 LIB1=libvlsilib_$(EXT).a
 LIB2=libALINT_$(EXT).so
-LIB3=libssim_$(EXT).a
+#LIB3=libssim_$(EXT).a
 LIB4=libasim_$(EXT).a
 
 TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
@@ -27,9 +27,9 @@ OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
 OBJS2=hash2.os atrace2.os ns.os misc.os
 
 # synchronous simulation
-OBJS3CPP=queue.o tasking.o wakeupcall.o hconfig.o
-OBJS3C2=contexts_uf.o
-OBJS3CPP2=slog.o smem.o ssim.o scheckpoint.o
+#OBJS3CPP=queue.o tasking.o wakeupcall.o hconfig.o
+#OBJS3C2=contexts_uf.o
+#OBJS3CPP2=slog.o smem.o ssim.o scheckpoint.o
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
@@ -47,7 +47,7 @@ SRCS=$(OBJS1:.o=.c) ns.c $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
 OBJS=$(OBJS1) $(OBJS2) $(OBJS3) $(OBJS4)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 
 
-DEPEND_FLAGS=-DSYNCHRONOUS
+DEPEND_FLAGS=-DASYNCHRONOUS -DFAIR
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
@@ -62,8 +62,8 @@ atrace2.c: atrace.c
 atrace2.h: atrace.h
 	sed 's/hash\.h/hash2.h/' $< > atrace2.h
 
-contexts_uf.o: contexts.c 
-	$(CC) -c $(CFLAGS) $(DFLAGS)  $< -o contexts_uf.o
+#contexts_uf.o: contexts.c 
+#	$(CC) -c $(CFLAGS) $(DFLAGS)  $< -o contexts_uf.o
 
 contexts_f.o: contexts.c 
 	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR  $< -o contexts_f.o
@@ -81,17 +81,17 @@ count.o: count.c
 channel.o: channel.c 
 	$(CC) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS -DCLASS_HACKERY $< 
 
-ssim.o: sim.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
+#ssim.o: sim.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o ssim.o
 
-smem.o: mem.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o smem.o
+#smem.o: mem.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DSYNCHRONOUS $< -o smem.o
 
-slog.o: log.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $< -o slog.o
+#slog.o: log.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $< -o slog.o
 
-scheckpoint.o: checkpoint.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
+#scheckpoint.o: checkpoint.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
 
 asim.o: sim.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o asim.o
@@ -105,8 +105,8 @@ alog.o: log.cc
 acheckpoint.o: checkpoint.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
 
-queue.o: queue.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
+#queue.o: queue.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
 
 $(LIB1): $(OBJS1)
 	ar ruv $(LIB1) $(OBJS1)
