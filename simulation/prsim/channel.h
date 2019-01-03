@@ -81,6 +81,29 @@ struct Channel {
 
 struct prs_node_extra *prs_node_extra_init (void);
 
+void channel_checkpoint (struct Channel *C, FILE *fp);
+void channel_restore (struct Channel *C, FILE *fp);
+
+  /* Create a new channel */
+void create_channel(Prs *, struct Channel *, char *, int , char *);
+
+  /* Drive this channel with values from a file. */
+void channel_injectfile(Prs *, struct Channel *, char *, char *, int );
+
+  /* Check that values on this channel match those in a file */
+void channel_expectfile(Prs *, struct Channel *, char *, char *, int );
+
+  /* Put this channel's values into a file */ 
+void channel_dumpfile(Prs *,  struct Channel *, char *, char *);
+
+  /* Called by prsim whenever an enable switches.  Go through all of
+     the channels and call appropriate functions for any channels
+     associated with this enable. */
+void channel_enableSwitched(Prs *, struct Channel *, PrsNode *);
+
+void channel_resetSwitched(Prs *, struct Channel *);
+
+
 #ifdef __cplusplus
 }
 #endif

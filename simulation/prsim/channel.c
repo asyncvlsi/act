@@ -9,7 +9,9 @@
 
 #define MAX_NAME_LENGTH 300
 
-#define INTERRUPT signal_handler()
+extern void signal_handler (int sig);
+
+#define INTERRUPT signal_handler(0)
 //#define INTERRUPT exit(1)
 
 typedef enum {
@@ -19,23 +21,6 @@ typedef enum {
 //-----------------------------------------------------------------------------
 // Called by the outside world...
 
-// Create a new channel
-void create_channel(Prs *, struct Channel *, char *, int , char *);
-
-// Drive this channel with values from a file.
-void channel_injectfile(Prs *, struct Channel *, char *, char *, int );
-
-// Check that values on this channel match those in a file
-void channel_expectfile(Prs *, struct Channel *, char *, char *, int );
-
-// Put this channel's values into a file
-void channel_dumpfile(Prs *,  struct Channel *, char *, char *);
-
-// Called by prsim whenever an enable switches.  Go through all of the channels
-// and call appropriate functions for any channels associated with this enable.
-void channel_enableSwitched(Prs *, struct Channel *, PrsNode *);
-
-void channel_resetSwitched(Prs *, struct Channel *);
 
 //-----------------------------------------------------------------------------
 // Internal stuff
@@ -852,7 +837,10 @@ static ValFromSimType channel_getValueFromSim (Prs *P, PrsChannel *chan, unsigne
 			}
 
 			// Need to convert valArray into a real number
-			convert_baseNarray2dec(valArray, chan->size, &railval, 2);
+			{ unsigned int rv;
+			convert_baseNarray2dec(valArray, chan->size, &rv, 2);
+			railval = rv;
+			}
 			FREE(valArray);
 			*val = railval;
 			return VAL_FROM_SIM_VALID;
@@ -889,7 +877,11 @@ static ValFromSimType channel_getValueFromSim (Prs *P, PrsChannel *chan, unsigne
 			}
 
 			// Need to convert valArray into a real number
-			convert_baseNarray2dec(valArray, chan->size, &railval, 4);
+			{
+			  unsigned int rv;
+			  convert_baseNarray2dec(valArray, chan->size, &rv, 4);
+			  railval = rv;
+			}
 			FREE(valArray);
 			*val = railval;
 			return VAL_FROM_SIM_VALID;
@@ -987,10 +979,10 @@ void channel_checkpoint (struct Channel *C, FILE *fp)
       pc = (PrsChannel *)b->v;
       fprintf (fp, "%s ", b->key);
       if (pc->fpInject) {
-	fprintf (fp, "%u ", ftell (pc->fpInject));
+	fprintf (fp, "%lu ", ftell (pc->fpInject));
       }
       if (pc->fpExpect) {
-	fprintf (fp, "%u ", ftell (pc->fpExpect));
+	fprintf (fp, "%lu ", ftell (pc->fpExpect));
       }
       fprintf (fp, "\n");
     }
@@ -1016,11 +1008,11 @@ void channel_restore (struct Channel *C, FILE *fp)
       fatal_error ("Channel %s doesn't exist", buf);
     }
     if (pc->fpInject) {
-      if (fscanf (fp, "%u", &loc) != 1) Assert (0, "Checkpoint read error");
+      if (fscanf (fp, "%lu", &loc) != 1) Assert (0, "Checkpoint read error");
       fseek (pc->fpInject, loc, SEEK_SET);
     }
     if (pc->fpExpect) {
-      if (fscanf (fp, "%u", &loc) != 1) Assert (0, "Checkpoint read error");
+      if (fscanf (fp, "%lu", &loc) != 1) Assert (0, "Checkpoint read error");
       fseek (pc->fpExpect, loc, SEEK_SET);
     }
   }

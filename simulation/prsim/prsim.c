@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
+#include <unistd.h>
 #include "prs.h"
 #include "misc.h"
 #include "array.h"
@@ -305,7 +306,7 @@ void add_watchpoint (PrsNode *n)
 {
   struct watchlist *l;
 
-  if (l = in_watchlist (n))
+  if ((l = in_watchlist (n)))
     return;
   
   MALLOC (l, struct watchlist, 1);
@@ -359,13 +360,13 @@ void del_watchpoint (PrsNode *n)
 }
 
 
-#define GET_ARG(msg)  do { s = strtok (NULL, " \t"); if (!s) { printf msg; return; } } while(0)
+#define GET_ARG(msg)  do { s = strtok (NULL, " \t"); if (!s) { printf ("%s", msg); return; } } while(0)
 
-#define GET_ARGCOLON(msg)  do { s = strtok (NULL, " \t:"); if (!s) { printf msg; return; } } while(0)
+#define GET_ARGCOLON(msg)  do { s = strtok (NULL, " \t:"); if (!s) { printf ("%s",msg); return; } } while(0)
 
 #define GET_OPTARG  do { s = strtok (NULL, " \t"); } while (0)
 
-#define CHECK_TRAILING(msg) do { s = strtok (NULL, " \t"); if (s && s[0] != '#') { printf msg; return; } } while (0)
+#define CHECK_TRAILING(msg) do { s = strtok (NULL, " \t"); if (s && s[0] != '#') { printf ("%s",msg); return; } } while (0)
 
 
 static char *match_string;
@@ -416,7 +417,7 @@ void process_vector (void)
   int count;
   char *t;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     vH = hash_new (32);
   }
@@ -557,11 +558,11 @@ void process_trace (void)
     return;
   }
 
-  GET_ARG ((usage));
+  GET_ARG (usage);
   
   f = Strdup (s);
 
-  GET_ARG ((usage));
+  GET_ARG (usage);
 
   if (sscanf (s, "%f", &tm) != 1) {
     printf ("%s", usage);
@@ -601,7 +602,7 @@ void process_vset (void)
   unsigned long val;
   int i;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
     return;
@@ -612,11 +613,11 @@ void process_vset (void)
     return;
   }
   v = (Vector *)b->v;
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (v->vtype == V_DUALRAIL || v->vtype == V_1OFN) {
     if (strcmp (s, "neutral") == 0) {
       /* this has meaning! */
-      CHECK_TRAILING((usage));
+      CHECK_TRAILING(usage);
       for (i=0; i < A_LEN (v->n); i++) 
 	prs_set_node (P, v->n[i], PRS_VAL_F);
       return;
@@ -625,7 +626,7 @@ void process_vset (void)
   sscanf (s, "%lu", &val);
 
   if (v->vtype == V_BOOL || v->vtype == V_DUALRAIL) {
-    CHECK_TRAILING((usage));
+    CHECK_TRAILING(usage);
   }
   if (v->vtype == V_BOOL) {
     for (i=A_LEN(v->n)-1; i >= 0; i--) {
@@ -663,10 +664,10 @@ void process_vset (void)
 	}
       }
       if (i+1 == A_LEN(v->n)/v->num) {
-	CHECK_TRAILING((usage));
+	CHECK_TRAILING(usage);
       }
       else {
-	GET_ARG((usage));
+	GET_ARG(usage);
 	sscanf (s, "%lu", &val);
       }
     }
@@ -681,7 +682,7 @@ void process_vget (void)
   hash_bucket_t *b;
   Vector *v;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
     return;
@@ -692,7 +693,7 @@ void process_vget (void)
     return;
   }
   v = (Vector *)b->v;
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   fprint_vector (stdout, v);
   printf ("\n");
 }
@@ -706,7 +707,7 @@ void process_vclear (void)
   Vector *v;
   int i;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
     return;
@@ -717,7 +718,7 @@ void process_vclear (void)
     return;
   }
   v = (Vector *)b->v;
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   for (i=0; i < A_LEN (v->n); i++) {
     CHINFO(v->n[i])->inVector = NULL;
   }
@@ -736,7 +737,7 @@ void process_vwatch (void)
   Vector *v;
   int i;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
     return;
@@ -747,7 +748,7 @@ void process_vwatch (void)
     return;
   }
   v = (Vector *)b->v;
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   for (i=0; i < A_LEN (v->n); i++) {
     add_watchpoint (v->n[i]);
   }
@@ -763,7 +764,7 @@ void process_vunwatch (void)
   Vector *v;
   int i;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
     return;
@@ -774,7 +775,7 @@ void process_vunwatch (void)
     return;
   }
   v = (Vector *)b->v;
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   for (i=0; i < A_LEN (v->n); i++) {
     del_watchpoint (v->n[i]);
   }
@@ -785,7 +786,7 @@ void process_watchall (void)
 {
   char *s;
   char *usage = "Usage: watchall\n";
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   prs_apply (P, NULL, add_watchpoint_wrapper);
 
@@ -804,7 +805,7 @@ void process_status (void)
   int v;
   int type;
   
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (s[0] == 'T' || s[0] == '1')
     v = PRS_VAL_T;
   else if (s[0] == 'F' || s[0] == '0')
@@ -812,11 +813,11 @@ void process_status (void)
   else if (s[0] == 'X' || s[0] == 'U')
     v = PRS_VAL_X;
   else {
-    printf (usage);
+    printf ("%s", usage);
     return;
   }
   if (s[1]) {
-    printf (usage);
+    printf ("%s", usage);
     return;
   }
   GET_OPTARG;
@@ -839,13 +840,13 @@ void process_set (void)
   int val;
   char *usage = "Usage: set <var> <value>\n";
 
-  GET_ARGCOLON((usage));
+  GET_ARGCOLON(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (strcmp (s, "0") == 0)
     val = PRS_VAL_F;
   else if (strcmp (s, "1") == 0)
@@ -856,7 +857,7 @@ void process_set (void)
     printf ("Value must be `0', `1', or `X'\n");
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   prs_set_node (P, n, val);
 }
 
@@ -872,13 +873,13 @@ void process_seu (void)
   int start, duration;
   char *usage = "Usage: set <var> <value> <start-delay> <dur>\n";
 
-  GET_ARGCOLON((usage));
+  GET_ARGCOLON(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (strcmp (s, "0") == 0)
     val = PRS_VAL_F;
   else if (strcmp (s, "1") == 0)
@@ -889,11 +890,11 @@ void process_seu (void)
     printf ("Value must be `0', `1', or `X'\n");
     return;
   }
-  GET_ARG ((usage));
+  GET_ARG (usage);
   start = atoi (s);
-  GET_ARG ((usage));
+  GET_ARG (usage);
   duration = atoi (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   prs_set_seu (P, n, val, P->time + start, duration);
 }
 
@@ -908,13 +909,13 @@ void process_alias (void)
   int val;
   char *usage = "Usage: alias <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   r = (RawPrsNode *)n;
   printf ("Aliases:");
   do {
@@ -935,7 +936,7 @@ void process_set_principal (void)
   int val;
   char *usage = "Usage: set_principal <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
@@ -969,7 +970,7 @@ void process_set_principal (void)
     r->b = n->b;
     n->b = b;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 }
 
 
@@ -983,14 +984,14 @@ void process_get (void)
   int val;
   char *usage = "Usage: get <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
   printf ("%s: %c\n", s, prs_nodechar (prs_nodeval (n)));
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 }
 
 /*
@@ -1003,14 +1004,14 @@ void process_uget (void)
   int val;
   char *usage = "Usage: uget <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
   printf ("%s: %c\n", prs_nodename (P,n), prs_nodechar (prs_nodeval (n)));
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 }
 
 /**
@@ -1024,14 +1025,14 @@ process_assert(void) {
   char *node_name;
   PrsNode *n;
   int val, expect;
-  GET_ARG((usage));
+  GET_ARG(usage);
   node_name = s;
   n = prs_node (P, node_name);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (strcmp (s, "0") == 0)
     expect = PRS_VAL_F;
   else if (strcmp (s, "1") == 0)
@@ -1049,7 +1050,7 @@ process_assert(void) {
 	// how does error handling work in this???
 	// abort(), exit(), throw?
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 }
 
 /*
@@ -1062,13 +1063,13 @@ void process_fanin (void)
   int val;
   char *usage = "Usage: fanin <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   prs_printrule (P,n,0);
 }
 
@@ -1079,13 +1080,13 @@ void process_fanin2 (void)
   int val;
   char *usage = "Usage: fanin-get <var>\n";
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   /* prs_dump_node (P,n);*/
   prs_printrule (P,n,1);
 }
@@ -1101,13 +1102,13 @@ void process_fanout (void)
   char *usage = "Usage: fanout <var>\n";
   PrsExpr **l;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   num = prs_num_fanout (n);
   if (num == 0) return;
@@ -1166,7 +1167,7 @@ void process_cycle (void)
   int flag;
   int seu;
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
 #if 0
   interrupted = 0;
@@ -1244,7 +1245,7 @@ void process_step (void)
     i = 1;
   else
     i = atoi (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
 #if 0
   interrupted = 0;
@@ -1326,7 +1327,7 @@ void process_advance (void)
     i = 1;
   else
     i = atoi (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
 #if 0
   interrupted = 0;
@@ -1395,7 +1396,7 @@ void process_watch (void)
   char *s;
   char *usage = "Usage: watch node\n";
   
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
@@ -1405,7 +1406,7 @@ void process_watch (void)
     printf ("Node `%s' already in a breakpoint/watchpoint\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   add_watchpoint (n);
 }
 
@@ -1414,7 +1415,7 @@ void process_break (void)
   PrsNode *n;
   char *s;
   char *usage = "Usage: breakpt node\n";
-  GET_ARG((usage));
+  GET_ARG(usage);
   
   n = prs_node (P, s);
   if (!n) {
@@ -1425,7 +1426,7 @@ void process_break (void)
     printf ("Node `%s' already in watch list\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   n->bp = 1;
 }
   
@@ -1436,13 +1437,13 @@ void process_unwatch (void)
   char *s;
   char *usage = "Usage: unwatch node\n";
   
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   del_watchpoint (n);
 }
 
@@ -1453,7 +1454,7 @@ void process_mode (void)
   char *usage = "Usage: mode reset|run|unstab|nounstab\n";
   int v;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   if (strcmp (s, "run") == 0)
     v = 0;
   else if (strcmp (s, "reset") == 0)
@@ -1463,10 +1464,10 @@ void process_mode (void)
   else if (strcmp (s, "nounstab") == 0)
     v = 3;
   else {
-    printf (usage);
+    printf ("%s", usage);
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   if (v == 0)
     P->flags &= ~PRS_NO_WEAK_INTERFERENCE;
@@ -1485,11 +1486,11 @@ void process_timescale (void)
   float f;
   int v;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
 
   sscanf (s, "%f", &f);
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   prs_timescale = f * 1e-12;
   
@@ -1539,7 +1540,7 @@ void process_pairtc (void)
     printf ("Already set.\n");
     return;
   }
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   pairwise_transition_counts = 1;
   prs_apply (P, NULL, _init_tracing);
   P->flags |= PRS_TRACE_PAIRS;
@@ -1553,9 +1554,9 @@ void process_dumptc (void)
   FILE *fp;
   char *t;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   t = Strdup (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   if (!(fp = fopen (t, "w"))) {
     fprintf (stderr, "Error: could not open file `%s' for dump; dump aborted\n", t);
@@ -1620,9 +1621,9 @@ void process_checkpoint (void)
   char *usage = "Usage: chk-save filename\n";
   int count;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   fname = Strdup (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   fp = fopen (fname, "w");
   if (!fp) {
@@ -1642,9 +1643,9 @@ void process_restore (void)
   char *usage = "Usage: chk-restore filename\n";
   int count;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   fname = Strdup (s);
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   fp = fopen (fname, "r");
   if (!fp) {
@@ -1665,7 +1666,7 @@ void process_source (void)
   char *usage = "Usage: source filename [<repeat-count>]\n";
   int count;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   fname = Strdup (s);
   
   GET_OPTARG;
@@ -1684,7 +1685,7 @@ void process_source (void)
       return;
     }
     push_file (fname);
-    CHECK_TRAILING((usage));
+    CHECK_TRAILING(usage);
     Assert (flist, "yow");
     fp = fopen (flist->name, "r");
     if (!fp) {
@@ -1706,7 +1707,7 @@ void process_initialize (void)
   char *s;
   char *usage = "Usage: initialize\n";
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   prs_initialize (P);
   prs_reset_time (P);
 }
@@ -1720,16 +1721,16 @@ void process_channel (void)
   char *usage = "Usage: channel channeltype size channelname\n";
   int size;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sChannelType = s;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   size = atoi(s);
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sName = s;
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   //printf("Trying to create channel %s (%d) %s \n", sChannelType, size, sName);
 
@@ -1742,13 +1743,13 @@ void process_injectfile (int isLoop) {
   char *usage = "Usage: [loop-]injectfile channelname file\n";
   char *sChanName, *sFileName;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sChanName = s;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sFileName = s;
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   channel_injectfile(P, &C, sChanName, sFileName, isLoop);
 }
@@ -1759,13 +1760,13 @@ void process_expectfile (int isLoop)
   char *usage = "Usage: [loop-]expectfile channelname file\n";
   char *sChanName, *sFileName;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sChanName = s;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sFileName = s;
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   channel_expectfile(P, &C, sChanName, sFileName, isLoop);
 }
@@ -1776,13 +1777,13 @@ void process_dumpfile (void)
   char *usage = "Usage: dumpfile channelname file\n";
   char *sChanName, *sFileName;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sChanName = s;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   sFileName = s;
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
 
   channel_dumpfile(P, &C, sChanName, sFileName);
 }
@@ -1799,7 +1800,7 @@ void process_pending (void)
 
   GET_OPTARG;
   if (s == NULL) {
-    CHECK_TRAILING((usage));
+    CHECK_TRAILING(usage);
 
     PrsEvent *ev = (PrsEvent *)heap_peek_min (P->eventQueue);
     Time_t t = (heap_key_t)heap_peek_minkey (P->eventQueue);
@@ -1909,7 +1910,7 @@ static void process_after (void)
   PrsNode *n;
   unsigned int min_u, max_u, min_d, max_d;
 
-  GET_ARG((usage));
+  GET_ARG(usage);
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
@@ -1918,9 +1919,9 @@ static void process_after (void)
   if (n->up[1] || n->dn[1]) {
     printf ("Node `%s' has weak rules; cannot use this feature\n", s);
   }
-  GET_ARG((usage));
+  GET_ARG(usage);
   min_u = atoi(s);
-  GET_ARG((usage));
+  GET_ARG(usage);
   max_u = atoi(s);
   if (min_u > max_u) {
     printf ("min up delay should be <= max up delay\n");
@@ -1930,9 +1931,9 @@ static void process_after (void)
     printf ("min up delay cannot be less than 1\n");
     return;
   }
-  GET_ARG((usage));
+  GET_ARG(usage);
   min_d = atoi(s);
-  GET_ARG((usage));
+  GET_ARG(usage);
   max_d = atoi(s);
   if (min_d > max_d) {
     printf ("min dn delay should be <= max dn delay\n");
@@ -1965,7 +1966,7 @@ static void process_random (void)
   }
   else {
     min_d = atoi (s);
-    GET_ARG ((usage));
+    GET_ARG (usage);
     max_d = atoi (s);
     if (min_d > max_d) {
       printf ("min delay should be <= max delay\n");
@@ -1984,7 +1985,7 @@ static void process_random_seed (void)
   char *usage = "Usage: random_seed seed\n";
   int v;
 
-  GET_ARG ((usage));
+  GET_ARG (usage);
   v = atoi (s);
   P->seed = v;
 }
@@ -1995,7 +1996,7 @@ static void process_random_excl (void)
   char *usage = "Usage: random_seed on|off\n";
   int v;
 
-  GET_ARG ((usage));
+  GET_ARG (usage);
   if (strcmp (s, "on") == 0) {
     P->flags |= PRS_RANDOM_EXCL;
   }
@@ -2003,7 +2004,7 @@ static void process_random_excl (void)
     P->flags &= ~PRS_RANDOM_EXCL;
   }
   else {
-    printf (s);
+    printf ("%s", usage);
     return;
   }
 }
@@ -2020,7 +2021,7 @@ static void process_break_on_warn (void)
   char *s;
   char *usage = "Usage: break-on-warn\n";
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   
   if (P->flags & PRS_STOP_ON_WARNING) {
     P->flags &= ~PRS_STOP_ON_WARNING;
@@ -2037,7 +2038,7 @@ static void process_exit_on_warn (void)
   char *s;
   char *usage = "Usage: exit-on-warn\n";
 
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   
   if (P->flags & PRS_STOP_ON_WARNING) {
     P->flags &= ~PRS_STOP_ON_WARNING;
@@ -2125,7 +2126,7 @@ static void process_help (void)
   char *usage = "Usage: help\n";
   int i;
   
-  CHECK_TRAILING((usage));
+  CHECK_TRAILING(usage);
   for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
     if (!Cmds[i].name) {
       printf ("\n== %s ==\n", Cmds[i].help);
@@ -2172,7 +2173,7 @@ void handle_user_input (FILE *fp)
   char buf[10240];
   char *s, *t;
 
-  while (s = read_input_line (fp, PROMPT, buf, 10240)) {
+  while ((s = read_input_line (fp, PROMPT, buf, 10240))) {
     if (interrupted) {
       if (flist) {
 	return;
