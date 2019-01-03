@@ -738,7 +738,7 @@ PrsNode *prs_cycle (Prs *p)
 {
   PrsNode *n;
 
-  while (n = prs_step (p)) {
+  while ((n = prs_step (p))) {
     if (n->bp || (p->flags & PRS_STOP_SIMULATION))
       break;
   }
@@ -749,7 +749,7 @@ PrsNode *prs_cycle_cause (Prs *p, PrsNode **m, int *seu)
 {
   PrsNode *n;
 
-  while (n = prs_step_cause (p, m, seu)) {
+  while ((n = prs_step_cause (p, m, seu))) {
     if (n->bp || (p->flags & PRS_STOP_SIMULATION))
       break;
   }
@@ -1373,9 +1373,9 @@ static int unlink_seu_expr (PrsEvent *pe)
 
 static void print_event (Prs *P, PrsEvent *e)
 {
-  printf ("--- event ---\n", e);
+  printf ("--- event ---\n");
   /*printf ("  node: %s;", prs_nodename (P,e->n));*/
-  printf ("  node: %x;", e->n);
+  printf ("  node: %lx;", (unsigned long)e->n);
   printf (" val: %c\n", __prs_nodechboolv[e->val]);
   printf ("  weak: %d; ", e->weak);
   printf ("force: %d; ", e->force);
@@ -2042,7 +2042,7 @@ static void propagate_up (Prs *p, PrsNode *root, PrsExpr *e, int prev, int val,
 #endif
 
       if (!eu->vacuous) {
-	if (eu->unstab && !UNSTAB_NODE (p,n) || eu->interf) {
+	if ((eu->unstab && !UNSTAB_NODE (p,n)) || eu->interf) {
 	  if (eu->interf) {
 	    /* now the question is: is this real? It should be checked
 	       by the pending queue...
@@ -2188,7 +2188,7 @@ static void propagate_up (Prs *p, PrsNode *root, PrsExpr *e, int prev, int val,
       }
       eu = &prs_dnguard[val][n->queue->val];
       if (!eu->vacuous) {
-	if (eu->unstab && !UNSTAB_NODE(p,n) || eu->interf) {
+	if ((eu->unstab && !UNSTAB_NODE(p,n)) || eu->interf) {
 	  if (eu->interf) {
 	    /* insert into pending queue! */
 	    if (!weak && n->queue->weak) {
@@ -3300,7 +3300,7 @@ void prs_initialize (Prs *p)
 
   prs_apply (p, (void*)p, setX);
 
-  while (n = prs_step (p)) {
+  while ((n = prs_step (p))) {
     ;
   }
 }

@@ -1034,7 +1034,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 
     p->flags |= PRS_NO_WEAK_INTERFERENCE;
 
-    while (pn = prs_step_cause (p, NULL, NULL)) {
+    while ((pn = prs_step_cause (p, NULL, NULL))) {
       cnt++;
 
       add_init_firing (pn, pn->val);
