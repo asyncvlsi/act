@@ -132,12 +132,12 @@ static void prs_trace_pairs (PrsNode *n, PrsNode *cause)
     t->max[idx] = 3;
     t->sz[idx] = 0;
     MALLOC (t->in[idx], PrsNode *, t->max[idx]);
-    MALLOC (t->count[idx], int, t->max[idx]);
+    MALLOC (t->count[idx], unsigned long, t->max[idx]);
   }
   else if (t->max[idx] == t->sz[idx]) {
     t->max[idx] += 4;
     REALLOC (t->in[idx], PrsNode *, t->max[idx]);
-    REALLOC (t->count[idx], int, t->max[idx]);
+    REALLOC (t->count[idx], unsigned long, t->max[idx]);
   }
   t->in[idx][i] = cause;
   t->count[idx][i] = 1;

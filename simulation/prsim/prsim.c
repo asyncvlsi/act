@@ -824,7 +824,7 @@ void process_status (void)
   if (s) {
     match_len = strlen (s);
   }
-  prs_apply (P, (void*)v, check_nodeval);
+  prs_apply (P, (void*)(long)v, check_nodeval);
   prs_apply (P, (void*)NULL, clear_nodeflag);
   printf ("\n");
 }
