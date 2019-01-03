@@ -151,13 +151,13 @@ int Mem::create_new_chunk (LL addr, int ch)
     if (numchunks == 0) {
       numchunks = 4;
       MALLOC (mem, LL *, numchunks);
-      MALLOC (mem_len, LL, numchunks);
+      MALLOC (mem_len, unsigned long, numchunks);
       MALLOC (mem_addr, LL, numchunks);
     }
     else {
       numchunks *= 2;
       REALLOC (mem, LL *, numchunks);
-      REALLOC (mem_len, LL, numchunks);
+      REALLOC (mem_len, unsigned long, numchunks);
       REALLOC (mem_addr, LL, numchunks);
     }
   }
@@ -472,11 +472,11 @@ Mem::MergeImage (FILE *fp)
 	 "data"
       */
 #if MEM_ALIGN == 3
-      sscanf (buf+1, "0x%8x%8x 0x%8x%8x %lu", &a0, &a1, &v0, &v1, &len);
+      sscanf (buf+1, "0x%8lx%8lx 0x%8lx%8lx %lu", &a0, &a1, &v0, &v1, &len);
       a = ((LL)a0 << 32) | (LL)a1;
       v = ((LL)v0 << 32) | (LL)v1;
 #elif MEM_ALIGN == 2
-      sscanf (buf+1, "0x%8x 0x%8x %lu", &a, &v, &len);
+      sscanf (buf+1, "0x%8lx 0x%8lx %lu", &a, &v, &len);
 #else
 #error Unknown memory format
 #endif
@@ -496,19 +496,19 @@ Mem::MergeImage (FILE *fp)
 	 specified in the following "length" lines.
       */
 #if MEM_ALIGN == 3
-      sscanf (buf+1, "0x%8x%8x %lu", &a0, &a1, &len);
+      sscanf (buf+1, "0x%8lx%8lx %lu", &a0, &a1, &len);
       a = ((LL)a0 << 32) | (LL)a1;
 #elif MEM_ALIGN == 2
-      sscanf (buf+1, "0x%8x %lu", &a, &len);
+      sscanf (buf+1, "0x%8lx %lu", &a, &len);
 #else
 #error Unknown memory format
 #endif
       while (len > 0 && fgets (buf, 1024, fp)) {
 #if MEM_ALIGN == 3
-	sscanf (buf, "0x%8x%8x", &v0, &v1);
+	sscanf (buf, "0x%8lx%8lx", &v0, &v1);
 	v = ((LL)v0 << 32) | (LL)v1;
 #elif MEM_ALIGN == 2
-	sscanf (buf, "0x%8x", &v);
+	sscanf (buf, "0x%8lx", &v);
 #else
 #error Unknown memory format
 #endif
@@ -542,19 +542,19 @@ Mem::MergeImage (FILE *fp)
       else
 	endian = 0; /* little-endian */
 #if MEM_ALIGN == 3
-      sscanf (buf+1, "0x%8x%8x %lu", &a0, &a1, &len);
+      sscanf (buf+1, "0x%8lx%8lx %lu", &a0, &a1, &len);
       a = ((LL)a0 << 32) | (LL)a1;
 #elif MEM_ALIGN == 2
-      sscanf (buf+1, "0x%8x %lu", &a, &len);
+      sscanf (buf+1, "0x%8lx %lu", &a, &len);
 #else
 #error Unknown memory format
 #endif
       while (len > 0 && fgets (buf, 1024, fp)) {
 #if MEM_ALIGN == 3
-	sscanf (buf, "0x%2x", &v0);
+	sscanf (buf, "0x%2lx", &v0);
 	v = v0;
 #elif MEM_ALIGN == 2
-	sscanf (buf, "0x%2x", &v);
+	sscanf (buf, "0x%2lx", &v);
 #else
 #error Unknown memory format
 #endif
@@ -576,11 +576,11 @@ Mem::MergeImage (FILE *fp)
       continue;
     }
 #if MEM_ALIGN == 3
-    sscanf (buf, "0x%8x%8x 0x%8x%8x", &a0, &a1, &v0, &v1);
+    sscanf (buf, "0x%8lx%8lx 0x%8lx%8lx", &a0, &a1, &v0, &v1);
     a = ((LL)a0 << 32) | (LL)a1;
     v = ((LL)v0 << 32) | (LL)v1;
 #elif MEM_ALIGN == 2
-    sscanf (buf, "0x%8x 0x%8x", &a, &v);
+    sscanf (buf, "0x%8lx 0x%8lx", &a, &v);
 #else
 #error Unknown memory format
 #endif
@@ -615,13 +615,13 @@ Mem::DumpImage (FILE *fp)
       data = mem[i][0];
       len = mem_len[i];
 #if MEM_ALIGN == 3
-      fprintf (fp, "@0x%08x%08x 0x%08x%08x %lu\n",
+      fprintf (fp, "@0x%08lx%08lx 0x%08lx%08lx %lu\n",
 	       (unsigned long)(addr >> 32),
 	       (unsigned long)(addr & 0xffffffff),
 	       (unsigned long)(data >> 32),
 	       (unsigned long)(data & 0xffffffff), len);
 #elif MEM_ALIGN == 2
-      fprintf (fp, "@0x%08x 0x%08x %lu\n", (unsigned long)addr,
+      fprintf (fp, "@0x%08lx 0x%08lx %lu\n", (unsigned long)addr,
 	       (unsigned long) data, len);
 #else
 #error What?
@@ -629,12 +629,12 @@ Mem::DumpImage (FILE *fp)
     }
     else {
 #if MEM_ALIGN == 3
-	fprintf (fp, "*0x%08x%08x %lu\n",
+	fprintf (fp, "*0x%08lx%08lx %lu\n",
 		 (unsigned long)(addr >> 32),
 		 (unsigned long)(addr & 0xffffffff),
 		 (unsigned long) mem_len[i]);
 #elif MEM_ALIGN == 2
-	fprintf (fp, "*0x%08x 0x%08x\n", (unsigned long)addr,
+	fprintf (fp, "*0x%08lx 0x%08lx\n", (unsigned long)addr,
 		 (unsigned long) mem_len[i]);
 #else
 #error Unknown mem format
@@ -642,11 +642,11 @@ Mem::DumpImage (FILE *fp)
 	for (j=0; j < mem_len[i]; j++) {
 	  data = mem[i][j];
 #if MEM_ALIGN == 3
-	fprintf (fp, "0x%08x%08x\n",
+	fprintf (fp, "0x%08lx%08lx\n",
 		 (unsigned long)(data >> 32),
 		 (unsigned long)(data & 0xffffffff));
 #elif MEM_ALIGN == 2
-	fprintf (fp, "0x%08x\n", (unsigned long) data);
+	fprintf (fp, "0x%08lx\n", (unsigned long) data);
 #else
 #error Unknown mem format
 #endif

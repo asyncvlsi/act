@@ -6,8 +6,11 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include "names.h"
 #include "misc.h"
+#include "hash.h"
 
 /*
   IDX table:

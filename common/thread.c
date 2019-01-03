@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "thread.h"
 #include "qops.h"
 
@@ -135,8 +136,8 @@ void context_destroy (lthread_t *t)
   thread_print_name (t);
   printf ("EXIT CODE: %d\n", t->exit_code);
 #endif
-  if (t->name) free (t->name);
-  if (t->file) free (t->file);
+  if (t->name) free ((void *)t->name);
+  if (t->file) free ((void *)t->file);
 #endif /* DEBUG_MODE */
   if (t->c.sz == DEFAULT_STACK_SIZE) {
     t->next = thread_freeq;
@@ -243,23 +244,25 @@ _thread_new (void (*f)(void), int stksz, const char *name, int ready,
 
   /*#ifdef DEBUG_MODE*/
   if (file) {
-    t->file = (char*)malloc(1+strlen(file));
+    char *tmp = (char*)malloc(1+strlen(file));
+    t->file = tmp;
     if (!t->file) {
       printf ("MALLOC failed\n");
       exit (1);
     }
-    strcpy (t->file, file);
+    strcpy (tmp, file);
   }
   else {
     t->file = NULL;
   }
   if (name) {
-    t->name = (char*)malloc(1+strlen(name));
+    char *tmp = (char*)malloc(1+strlen(name));
+    t->name = tmp;
     if (!t->name) {
       printf ("MALLOC failed\n");
       exit (1);
     }
-    strcpy (t->name, name);
+    strcpy (tmp, name);
   }
   else
     t->name = NULL;

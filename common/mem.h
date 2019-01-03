@@ -130,7 +130,7 @@ public:
 	  count--;
 	  if (count == 0) goto err;
 	  if (verbose) {
-	    printf ("[0x%08x%08x]  0x%08x%08x  != 0x%08x%08x\n",
+	    printf ("[0x%08lx%08lx]  0x%08lx%08lx  != 0x%08lx%08lx\n",
 		    (unsigned long)(((j+mem_addr[i])<<MEM_ALIGN) >> 32),
 		    (unsigned long)(((j+mem_addr[i])<<MEM_ALIGN) & 0xffffffff),
 		    (unsigned long) (mem[i][j] >> 32),
@@ -148,17 +148,17 @@ public:
     if (verbose) {
       printf ("First mem:\n");
       for (i=0; i < chunks; i++) {
-	printf ("\t*0x%08x%08x %lu\n",
+	printf ("\t*0x%08lx%08lx %lu\n",
 		(unsigned long)((mem_addr[i]<<MEM_ALIGN) >> 32),
 		(unsigned long)((mem_addr[i]<<MEM_ALIGN) & 0xffffffff),
-		mem_len[i]);
+		(unsigned long)mem_len[i]);
       }
       printf ("Second mem:\n");
       for (i=0; i < m->chunks; i++) {
-	printf ("\t*0x%08x%08x %lu\n",
+	printf ("\t*0x%08lx%08lx %lu\n",
 		(unsigned long)((m->mem_addr[i]<<MEM_ALIGN) >> 32),
 		(unsigned long)((m->mem_addr[i]<<MEM_ALIGN) & 0xffffffff),
-		m->mem_len[i]);
+		(unsigned long)m->mem_len[i]);
       }
     }
     return 0;
@@ -173,7 +173,7 @@ private:
   LL **mem;
 
   // length of each block
-  LL *mem_len;
+  unsigned long *mem_len;
 
   // size of each block
   // LL *mem_sz;

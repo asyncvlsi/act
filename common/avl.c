@@ -48,7 +48,7 @@ static int do_insert (avl_t *a, int val, void *I)
     a->info = I;
     return tag;
   }
-  if (a->key > val) {
+  else if (a->key > val) {
     /* go left */
     if (!a->left) {
       /* nothing left */
@@ -189,7 +189,7 @@ static int do_insert (avl_t *a, int val, void *I)
       return tag;
     }
   }
-  if (a->key < val) {
+  else /*if (a->key < val)*/ {
     /* go right */
     if (!a->right) {
       /* nothing right */
@@ -331,7 +331,6 @@ static int do_insert (avl_t *a, int val, void *I)
       return tag;
     }
   }
-
 }
 
 
@@ -358,11 +357,11 @@ int avl_height (avl_t *a)
   l = avl_height (a->left);
   r = avl_height (a->right);
   if (l == r) return l+1;
-  if (l > r) {
+  else if (l > r) {
 	if (l != r+1) { printf ("hmm...\n"); }
 	return l+1;
   }
-  if (r > l) {
+  else /*if (r > l)*/ {
 	if (r != l+1) { printf ("hmm...\n"); }
 	return r+1;
   }

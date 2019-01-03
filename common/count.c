@@ -54,7 +54,7 @@ void count_await (countw_t *c, unsigned int val)
 {
   context_disable ();
   if (c->cnt < val) {
-    current_process->cdata1 = (void*)val;
+    current_process->cdata1 = (void*)(long)val;
     q_ins (c->hd, c->tl, current_process);
     context_switch (context_select ());
   }

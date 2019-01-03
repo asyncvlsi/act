@@ -218,8 +218,8 @@ SPEW_INTOPERATOR(long long unsigned int, "%qu","%qx")
 #else
 SPEW_INTOPERATOR(long long unsigned int, "%llu","%llx")
 #endif
-SPEW_INTOPERATOR(long unsigned int, "%lu","%x")
-SPEW_INTOPERATOR(long, "%ld","%x")
+SPEW_INTOPERATOR(long unsigned int, "%lu","%lx")
+SPEW_INTOPERATOR(long, "%ld","%lx")
 
 #include <stdarg.h>
 
@@ -340,11 +340,11 @@ Log &Log::printfllx (unsigned long long v)
   Log::Prefix ();
 
   if ((v >> 32) & 0xffffffffLL) {
-    fprintf (Log::fp, "%x%08x", (unsigned long)((v>>32)&0xffffffffLL),
+    fprintf (Log::fp, "%lx%08lx", (unsigned long)((v>>32)&0xffffffffLL),
 	      (unsigned long)(v & 0xffffffffLL));
   }
   else {
-    fprintf (Log::fp, "%x", (unsigned long)(v & 0xffffffffLL));
+    fprintf (Log::fp, "%lx", (unsigned long)(v & 0xffffffffLL));
   }
 
   NormalUpdate ();

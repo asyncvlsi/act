@@ -159,6 +159,12 @@ char *special_user_ret_id (int i);
 char *tok_type_to_parser_type (token_type_t *t);
 
 
+void print_walker_prolog (pp_t *);
+void print_walker_main (pp_t *);
+void print_walker_recursive (pp_t *, pp_t *);
+void print_walker_apply_fns (pp_t *);
+void print_walker_local_apply_fns (pp_t *);
+void emit_walker (void);
 
 #define Tok_ID_offset 0
 #define Tok_STRING_offset 1

@@ -1983,7 +1983,7 @@ void emit_parser (void)
   pp_puts (pp, " va_end (ap);"); pp_nl;
   pp_puts (pp, "}"); pp_nl; pp_nl;
 
-  pp_printf_text (pp, "static void __free_token_helper (void *x, void *t) { %s_parse_free ((%s_Token *)t); }\n\n", prefix, prefix);
+  pp_printf_text (pp, "static void __free_token_helper (void *x, const void *t) { %s_parse_free ((%s_Token *)t); }\n\n", prefix, prefix);
 
   pp_printf (pp, "void %s_parse_msg (struct %s_position *p, const char *fmt, ...)", prefix, prefix);
   pp_nl;

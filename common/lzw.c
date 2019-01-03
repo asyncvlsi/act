@@ -46,6 +46,7 @@
 
 
 #include <stdio.h>
+#include <unistd.h>
 #include "misc.h"
 #include "lzw.h"
 #include "avl.h"
@@ -331,7 +332,7 @@ int c_fwrite (char *buf, int sz, int n, FILE *fp)
   /* hmm... */
   /* do compression stuff */
   for (i=st; i < sz*n; i++) {
-    if (pos = (int)avl_search (t->u.c.forw[t->u.c.location],(int)buf[i])) 
+    if ((pos = (int)avl_search (t->u.c.forw[t->u.c.location],(int)buf[i]))) 
       t->u.c.location = pos-1;
     else {
       if (t->size < (MAX_TABLE_SIZE-1)) {
@@ -506,4 +507,5 @@ char *c_fgets (char *buf, int len, FILE *fp)
     }
     buf++;
   }
+  return NULL;
 }

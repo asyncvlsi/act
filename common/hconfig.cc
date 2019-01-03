@@ -327,6 +327,11 @@ LL ParamGetLL (const char *name)
        return l;
      else
        return h->dLL;
+#else
+     if (sscanf (h->s, "%lld", &l) == 1)
+       return l;
+     else
+       return h->dLL;
 #endif
   }
   else {

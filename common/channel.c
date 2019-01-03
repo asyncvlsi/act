@@ -18,6 +18,7 @@
  *
  *************************************************************************/
 #include <stdio.h>
+#include <string.h>
 #include "thread.h"
 #include "qops.h"
 #include "channel.h"
@@ -668,7 +669,7 @@ static void _ch_fsend (ch_t *c, void *msg)
     q_del (c->qr.hd, c->qr.tl, t);
     q_ins (readyQh, readyQt, t);
     t->in_readyq = 1;
-    bcopy (msg, c->msgptr, c->sz);
+    bcopy (msg, (void *)c->msgptr, c->sz);
     id = c->recvid % (1+c->slack);
     t->time = time_max (t->time, c->tm[id]);
     c->tm[id] = t->time;
@@ -695,7 +696,7 @@ void ch_dump_time (ch_t *c, char *type)
 {
   lthread_t *t = (lthread_t*)current_process;
 
-  fprintf (timer_fp, "%s %d %8x %s ", thread_name (), t->tid, c, type);
+  fprintf (timer_fp, "%s %d %8lx %s ", thread_name (), t->tid, (unsigned long)c, type);
   time_print (timer_fp, t->time);
   fputc ('\n', timer_fp);
 }
@@ -707,7 +708,7 @@ static void dump_time (ch_t *c, char *type)
 {
   lthread_t *t = (lthread_t*)current_process;
 
-  fprintf (timer_fp, "%s %d %8x %s ", thread_name (), t->tid, c, type);
+  fprintf (timer_fp, "%s %d %8lx %s ", thread_name (), t->tid, (unsigned long)c, type);
   time_print (timer_fp, t->time);
   fputc ('\n', timer_fp);
 }

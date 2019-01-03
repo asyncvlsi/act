@@ -446,7 +446,7 @@ static bool_t *_bool_and (BOOL_T *B, bool_t *b1, bool_t *b2)
     b1 = b2;
     b2 = l;
   }
-  if (b = thash_locate (pairvisited, PMIN(b1,b2), PMAX(b1,b2))) {
+  if ((b = thash_locate (pairvisited, PMIN(b1,b2), PMAX(b1,b2)))) {
     INC_REF(b);
     return b;
   }
@@ -463,7 +463,7 @@ static bool_t *_bool_and (BOOL_T *B, bool_t *b1, bool_t *b2)
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),l);
     return l;
   }
-  if (b = hash_locate (B->H[b1->id], l, r)) {
+  if ((b = hash_locate (B->H[b1->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b);
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),b);
@@ -506,7 +506,7 @@ static bool_t *_bool_or (BOOL_T *B, bool_t *b1, bool_t *b2)
   if (b1 == B->bfalse){ INC_REF (b2); return b2; } /* false is an id */
   if (b2 == B->bfalse){ INC_REF (b1); return b1; } /* false is an id */
 
-  if (b = thash_locate (pairvisited,PMIN(b1,b2),PMAX(b1,b2))) {
+  if ((b = thash_locate (pairvisited,PMIN(b1,b2),PMAX(b1,b2)))) {
     INC_REF (b);
     return b;
   }
@@ -529,7 +529,7 @@ static bool_t *_bool_or (BOOL_T *B, bool_t *b1, bool_t *b2)
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),r);
     return l;
   }
-  if (b = hash_locate (B->H[b1->id], l, r)) {
+  if ((b = hash_locate (B->H[b1->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b);
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),b);
@@ -583,7 +583,7 @@ static bool_t *_bool_xor (BOOL_T *B, bool_t *b1, bool_t *b2)
     }
   }
 
-  if (b = thash_locate(pairvisited,PMIN(b1,b2),PMAX(b1,b2))) {
+  if ((b = thash_locate(pairvisited,PMIN(b1,b2),PMAX(b1,b2)))) {
     INC_REF(b);
     return b;
   }
@@ -606,7 +606,7 @@ static bool_t *_bool_xor (BOOL_T *B, bool_t *b1, bool_t *b2)
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),r);
     return l;
   }
-  if (b = hash_locate (B->H[b1->id], l, r)) {
+  if ((b = hash_locate (B->H[b1->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b);
     thash_insert (pairvisited,PMIN(b1,b2),PMAX(b1,b2),b);
@@ -650,7 +650,7 @@ static bool_t *_bool_implies (BOOL_T *B, bool_t *b1, bool_t *b2)
   if (b1 == B->bfalse){ INC_REF (B->btrue); return B->btrue; }
   if (b2 == B->btrue) { INC_REF (B->btrue); return B->btrue; }
 
-  if (b = thash_locate (pairvisited,b1,b2)) {
+  if ((b = thash_locate (pairvisited,b1,b2))) {
     INC_REF(b);
     return b;
   }
@@ -675,7 +675,7 @@ static bool_t *_bool_implies (BOOL_T *B, bool_t *b1, bool_t *b2)
     thash_insert (pairvisited,b1,b2,r);
     return l;
   }
-  if (b = hash_locate (B->H[id], l, r)) {
+  if ((b = hash_locate (B->H[id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b);
     thash_insert (pairvisited,b1,b2,b);
@@ -716,14 +716,14 @@ bool_t *_bool_not (BOOL_T *B, bool_t *b1)
   if (b1 == B->btrue) { INC_REF (B->bfalse); return B->bfalse; }
   if (b1 == B->bfalse) { INC_REF (B->btrue); return B->btrue; }
 
-  if (b = thash_locate(pairvisited,b1,B->btrue)) {
+  if ((b = thash_locate(pairvisited,b1,B->btrue))) {
     INC_REF(b);
     return b;
   }
 
   l = _bool_not (B, b1->l);
   r = _bool_not (B, b1->r);
-  if (b = hash_locate (B->H[b1->id], l, r)) {
+  if ((b = hash_locate (B->H[b1->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b);
     thash_insert (pairvisited,b1,B->btrue,b);
@@ -777,17 +777,17 @@ static bool_t *_bool_maketrue (BOOL_T *B, bool_t *b, bool_t *v)
     return b->l;
   }
   else {
-    if (b1 = thash_locate (pairvisited, b, v)) {
+    if ((b1 = thash_locate (pairvisited, b, v))) {
        INC_REF (b1);
        return b1;
     }
-    if (l = thash_locate (pairvisited, b->l, v)) {
+    if ((l = thash_locate (pairvisited, b->l, v))) {
       INC_REF (l);
     }
     else {
       l = _bool_maketrue (B, b->l, v);
     }
-    if (r = thash_locate (pairvisited, b->r, v)) {
+    if ((r = thash_locate (pairvisited, b->r, v))) {
       INC_REF (r);
     }
     else {
@@ -799,7 +799,7 @@ static bool_t *_bool_maketrue (BOOL_T *B, bool_t *b, bool_t *v)
     thash_insert (pairvisited,b,v,l);
     return l;
   }
-  if (b1 = hash_locate (B->H[b->id], l, r)) {
+  if ((b1 = hash_locate (B->H[b->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b1);
     thash_insert (pairvisited,b,v,b1);
@@ -845,17 +845,17 @@ static bool_t *_bool_makefalse (BOOL_T *B, bool_t *b, bool_t *v)
     return b->r;
   }
   else {
-    if (b1 = thash_locate (pairvisited, b, v)) {
+    if ((b1 = thash_locate (pairvisited, b, v))) {
        INC_REF (b1);
        return b1;
     }
-    if (l = thash_locate (pairvisited, b->l, v)) {
+    if ((l = thash_locate (pairvisited, b->l, v))) {
       INC_REF (l);
     }
     else {
       l = _bool_makefalse (B, b->l, v);
     }
-    if (r = thash_locate (pairvisited, b->r, v)) {
+    if ((r = thash_locate (pairvisited, b->r, v))) {
       INC_REF (r);
     }
     else {
@@ -867,7 +867,7 @@ static bool_t *_bool_makefalse (BOOL_T *B, bool_t *b, bool_t *v)
     thash_insert (pairvisited,b,v,l);
     return l;
   }
-  if (b1 = hash_locate (B->H[b->id], l, r)) {
+  if ((b1 = hash_locate (B->H[b->id], l, r))) {
     DEC_REF (l); DEC_REF (r);
     INC_REF (b1);
     thash_insert (pairvisited,b,v,b1);
@@ -959,13 +959,13 @@ static bool_t *_bool_substitute (BOOL_T *B, bool_list_t *l1, bool_list_t *l2,
     INC_REF (b);
     return b;
   }
-  if (b1 = thash_locate (pairvisited, b, b))
+  if ((b1 = thash_locate (pairvisited, b, b)))
     INC_REF (b1);
   else {
     if (loc < l1->n && b->id == l1->v[loc]) {
       l = _bool_substitute (B, l1, l2, b->l, loc+1);
       r = _bool_substitute (B, l1, l2, b->r, loc+1);
-      if (b1 = hash_locate (B->H[l2->v[loc]], l, r)) {
+      if ((b1 = hash_locate (B->H[l2->v[loc]], l, r))) {
 	DEC_REF (l); DEC_REF (r);
 	INC_REF (b1);
       }
@@ -982,7 +982,7 @@ static bool_t *_bool_substitute (BOOL_T *B, bool_list_t *l1, bool_list_t *l2,
     else {
       l = _bool_substitute (B, l1, l2, b->l, loc);
       r = _bool_substitute (B, l1, l2, b->r, loc);
-      if (b1 = hash_locate (B->H[b->id], l, r)) {
+      if ((b1 = hash_locate (B->H[b->id], l, r))) {
 	DEC_REF (l); DEC_REF (r);
 	INC_REF (b1);
       }
@@ -1034,7 +1034,7 @@ static bool_t *_bool_exists (BOOL_T *B, bool_list_t *l1, bool_t *b, int loc)
     INC_REF (b);
     return b;
   }
-  if (b1 = thash_locate (pairvisited, b, b)) {
+  if ((b1 = thash_locate (pairvisited, b, b))) {
     INC_REF (b1);
     return b1;
   }
@@ -1050,7 +1050,7 @@ static bool_t *_bool_exists (BOOL_T *B, bool_list_t *l1, bool_t *b, int loc)
     else {
       l = _bool_exists (B, l1, b->l, loc);
       r = _bool_exists (B, l1, b->r, loc);
-      if (b1 = hash_locate (B->H[b->id], l, r)) {
+      if ((b1 = hash_locate (B->H[b->id], l, r))) {
 	DEC_REF (l); DEC_REF (r);
 	INC_REF (b1);
       }
@@ -1168,7 +1168,7 @@ extern void bool_print (bool_t *b)
  *-----------------------------------------------------------------------*/
 extern void bool_info (BOOL_T *B)
 {
-  printf ("memory per node: %d\n", sizeof(bool_t));
+  printf ("memory per node: %lu\n", sizeof(bool_t));
   printf ("max. num. of vars: %ld\n", (1UL<<(sizeof(bool_var_t)*8-1)));
   printf ("init. hashtable size: %d\n", HASH_BLOCK);
   printf ("var. block size: %d\n", VAR_BLOCK);

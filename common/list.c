@@ -130,7 +130,7 @@ void list_free (list_t *l)
  *
  *------------------------------------------------------------------------
  */
-list_t *list_map (list_t *l, void *(*f)(void *))
+list_t *list_map (list_t *l, void *(*f)(const void *))
 {
   listitem_t *x = l->hd;
   list_t *m = list_new ();
@@ -143,7 +143,7 @@ list_t *list_map (list_t *l, void *(*f)(void *))
 }
 
 list_t *list_map_cookie (list_t *l, void *cookie, 
-			 void *(*f)(void *, void *))
+			 void *(*f)(void *, const void *))
 {
   listitem_t *x = l->hd;
   list_t *m = list_new ();
@@ -161,7 +161,7 @@ list_t *list_map_cookie (list_t *l, void *cookie,
  *
  *------------------------------------------------------------------------
  */
-void list_apply (list_t *l, void *cookie, void (*f)(void *, void *))
+void list_apply (list_t *l, void *cookie, void (*f)(void *, const void *))
 {
   listitem_t *x = l->hd;
 
@@ -190,9 +190,9 @@ void stack_push (list_t *l, const void *item)
   }
 }
 
-void *stack_pop (list_t *l)
+const void *stack_pop (list_t *l)
 {
-  void *item = l->hd->data;
+  const void *item = l->hd->data;
   listitem_t *li = l->hd;
 
   l->hd = l->hd->next;
@@ -210,11 +210,11 @@ void *stack_pop (list_t *l)
  *
  *------------------------------------------------------------------------
  */
-void *list_delete_tail (list_t *l)
+const void *list_delete_tail (list_t *l)
 {
   listitem_t *li;
   listitem_t *prev;
-  void *data;
+  const void *data;
 
   if (list_isempty (l)) return NULL;
   prev = NULL;
