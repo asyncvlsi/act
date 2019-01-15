@@ -9,6 +9,8 @@ BIN2=extfix.$(EXT)
 
 TARGETS=$(BINARY) $(BIN2)
 
+weird: all install_conf
+
 OBJS1=main.o lvs.o dots.o excl.o flatten.o \
 	hier.o parse.o \
 	sneak.o table.o var.o prs.o print.o \
@@ -24,6 +26,10 @@ SRCS=$(OBJS:.o=.c) init.cc
 
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+install_conf: lvp.conf
+	@$(VLSI_TOOLS_SRC)/scripts/install lvp.conf $(INSTALLLIB)/act/lvp.conf
+
 
 DFLAGS+=-DDIGITAL_ONLY
 

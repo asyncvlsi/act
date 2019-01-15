@@ -32,10 +32,11 @@ static int T[] =
 
 int hash_function (int size, const char *k)
 {
-  register unsigned int sum=0;
+  unsigned int sum;
   const char *s;
   unsigned char c;
 
+  sum = 0;
 /*
  * 8, 16, 24, or 32 bit hashing function--- from CACM June 1990, p.679
  */
@@ -46,15 +47,18 @@ int hash_function (int size, const char *k)
 
   if (size <= (1<<8)) {
     /* byte index */
-    sum = 0;
-    for (s=k; (c=*s++); ) {
+    sum = T[*k];
+    for (s=k+1; *s; s++) {
+      c = *s;
       sum = T[sum^c];
     }
-  } else if (size <= (1<<16)) {
+  } 
+  else if (size <= (1<<16)) {
     unsigned int sum1;
     sum = T[*k];
     sum1 = T[0xff & (1+*k)];
-    for (s=k+1; (c=*s++); ) {
+    for (s=k+1; *s; s++) {
+      c = *s;
       sum = T[sum^c];
       sum1 = T[sum1^c];
     }
@@ -64,7 +68,8 @@ int hash_function (int size, const char *k)
     sum = T[*k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
-    for (s=k+1; (c=*s++); ) {
+    for (s=k+1; *s; s++) {
+      c = *s;
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -76,7 +81,8 @@ int hash_function (int size, const char *k)
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     sum3 = T[0xff & (3 + *k)];
-    for (s=k+1; (c=*s++); ) {
+    for (s=k+1; *s; s++) {
+      c = *s;
       sum = T[sum ^ c];
       sum1 = T[sum1 ^ c];
       sum2 = T[sum2 ^ c];
@@ -184,61 +190,10 @@ hash_function_continue (unsigned int size, const unsigned char *k, int len,
 
 static int hash (struct Hashtable *h, const char *k)
 {
-  register unsigned int sum=0;
-  int size = h->size;
-  const char *s;
-  unsigned char c;
-
-/*
- * 8, 16, 24, or 32 bit hashing function--- from CACM June 1990, p.679
- */
   if (*k == 0) {
-    /* empty string! */
     return 0;
   }
-
-  if (size <= (1<<8)) {
-    /* byte index */
-    sum = 0;
-    for (s=k; (c=*s++); ) {
-      sum = T[sum^c];
-    }
-  } else if (size <= (1<<16)) {
-    unsigned int sum1;
-    sum = T[*k];
-    sum1 = T[0xff & (1+*k)];
-    for (s=k+1; (c=*s++); ) {
-      sum = T[sum^c];
-      sum1 = T[sum1^c];
-    }
-    sum |= sum1 << 8;
-  } else if (size <= (1<<24)) {
-    unsigned int sum1, sum2;
-    sum = T[*k];
-    sum1 = T[0xff & (1 + *k)];
-    sum2 = T[0xff & (2 + *k)];
-    for (s=k+1; (c=*s++); ) {
-      sum = T[sum ^ c];
-      sum1 = T[sum1 ^ c];
-      sum2 = T[sum2 ^ c];
-    }
-    sum |= (sum1 << 8) | (sum2 << 16);
-  } else {
-    unsigned int sum1, sum2, sum3;
-    sum = T[*k];
-    sum1 = T[0xff & (1 + *k)];
-    sum2 = T[0xff & (2 + *k)];
-    sum3 = T[0xff & (3 + *k)];
-    for (s=k+1; (c=*s++); ) {
-      sum = T[sum ^ c];
-      sum1 = T[sum1 ^ c];
-      sum2 = T[sum2 ^ c];
-      sum3 = T[sum3 ^ c];
-    }
-    sum |= (sum1 << 8) | (sum2 << 16) | (sum3 << 24);
-  }
-  /* assumes sum is a power of 2, so calculates MOD */
-  return sum & (size-1);
+  return hash_function (h->size, k);
 }
 
 static int ihash (struct iHashtable *h, long k)

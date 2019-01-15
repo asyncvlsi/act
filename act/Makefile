@@ -5,7 +5,7 @@
 #
 #-------------------------------------------------------------------------
 
-weird: install_inc all
+weird: install_inc all install_conf
 
 LIB=libact_$(EXT).a
 
@@ -32,6 +32,10 @@ CLEAN=act_parse.cc act_walk_X.cc expr.c expr.h act_parse.h \
 	act.cy act_parse_id.h
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+install_conf:
+	@[ -d $(INSTALLLIB)/act ] || mkdir $(INSTALLLIB)/act
+	@$(VLSI_TOOLS_SRC)/scripts/install global.conf $(INSTALLLIB)/act/global.conf
 
 $(LIB): $(OBJS)
 	ar ruv $(LIB) $(OBJS)
