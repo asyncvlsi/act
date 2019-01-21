@@ -30,3 +30,14 @@ you will need to do the following:
      and
         #OBJS2=...
 
+Build instructions:
+
+   * Create a directory where you'd like the tools to be installed. Example
+     common locations include /usr/local/cad, /opt/cad, /opt/async
+   * Set the environment variable ACT_HOME to point to the install directory.
+   * Set the environment variable VLSI_TOOLS_SRC to the root of the source tree
+     (i.e. the /path/to/act).
+   * From the $VLSI_TOOS_SRC directory, run
+        ./configure $ACT_HOME
+   * Run ./build
+
