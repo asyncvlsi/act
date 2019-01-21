@@ -29,6 +29,7 @@ Language history:
   * 2011, initial template for the core language based on ACT v0 developed
   * 2017, actual implementation of the new features started
   * 2018, Most features of ACT v1 ready
+  * 1/2019, first open-source release
   
 
 
