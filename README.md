@@ -32,6 +32,8 @@ you will need to do the following:
 
 Build instructions:
 
+   * The system must have libedit installed. For the yum package manager, the
+     package is called libedit-devel; for apt-get, it is libeditline-dev
    * Create a directory where you'd like the tools to be installed. Example
      common locations include /usr/local/cad, /opt/cad, /opt/async
    * Set the environment variable ACT_HOME to point to the install directory.
