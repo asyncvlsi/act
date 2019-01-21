@@ -3,6 +3,19 @@
 This is the implementation of the ACT hardware description language.
 (ACT = asynchronous circuit/compiler tools)
 
+Build instructions:
+
+   * The system must have libedit installed. For the yum package manager, the
+     package is called libedit-devel; for apt-get, it is libeditline-dev
+   * Create a directory where you'd like the tools to be installed. Example
+     common locations include /usr/local/cad, /opt/cad, /opt/async
+   * Set the environment variable ACT_HOME to point to the install directory.
+   * Set the environment variable VLSI_TOOLS_SRC to the root of the source tree
+     (i.e. the /path/to/act).
+   * From the $VLSI_TOOLS_SRC directory, run
+        ./configure $ACT_HOME
+   * Run ./build
+
 Language history:
   * ~1991 (?), a language for hierarchical production rules was developed at Caltech (A.J. Martin's group). This was dubbed "CAST" for Caltech Asynchronous Synthesis Tools.
   * ~1995, a new CAST language was designed and implemented by Rajit Manohar (student in A.J. Martin's group). This was used to implement the first high-performance asynchronous microprocessor
@@ -29,17 +42,4 @@ you will need to do the following:
 	#LIBS2=....
      and
         #OBJS2=...
-
-Build instructions:
-
-   * The system must have libedit installed. For the yum package manager, the
-     package is called libedit-devel; for apt-get, it is libeditline-dev
-   * Create a directory where you'd like the tools to be installed. Example
-     common locations include /usr/local/cad, /opt/cad, /opt/async
-   * Set the environment variable ACT_HOME to point to the install directory.
-   * Set the environment variable VLSI_TOOLS_SRC to the root of the source tree
-     (i.e. the /path/to/act).
-   * From the $VLSI_TOOS_SRC directory, run
-        ./configure $ACT_HOME
-   * Run ./build
 
