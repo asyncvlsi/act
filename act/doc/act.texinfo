@@ -1222,7 +1222,7 @@ following would result in an error:
 @kindex Expecting bnf-item `@code{methods_body}', got `@code{bool}'
 
 @example
-deftype d1of2 = int<1> (bool d0,d1)
+deftype d1of2 <: int<1> (bool d0,d1)
 @{
   bool p;
   spec @{
@@ -1244,7 +1244,7 @@ type.
 @cindex method, get
 
 @example
-deftype d1of2 = int<1> (bool d0,d1)
+deftype d1of2 <: int<1> (bool d0,d1)
 @{
    spec @{
     exclhi(d0,d1)
