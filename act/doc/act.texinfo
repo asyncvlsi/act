@@ -1956,11 +1956,14 @@ variables that are not present in the CHP language. The relation
 between such variables is unspecified by the implementation
 relationship.
 
+@b{XXX: test this}
+
 An additional complication arises if the process @code{wchb} ends up
 introducing a state variable @code{x} in the PRS language that does
 correspond to the @code{bool x} in the CHP language. In this case, one
 should override @code{x} as well with the appropriate detailed
 representation of the Boolean variable.
+
 
 @node ptype type,  Expressions, Subtyping, Types
 @comment  node-name,  next,  previous,  up
