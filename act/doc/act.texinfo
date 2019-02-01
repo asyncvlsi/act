@@ -355,7 +355,7 @@ result in the following message:
 @example
 bitbucket b;
 a1of2 c;
-b.p = c.0;
+b.p = c.d0;
 @result{} @error{} `p' is not a port for `bitbucket'
 @end example
 
