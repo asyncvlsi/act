@@ -1,22 +1,26 @@
-/*-*-mode:c++-*-**********************************************************
+/*************************************************************************
  *
- *  Copyright (c) 1999 Cornell University
- *  Computer Systems Laboratory
- *  Ithaca, NY 14853
- *  All Rights Reserved
+ *  Checkpointing code/support for simulation library.
  *
- *  Permission to use, copy, modify, and distribute this software
- *  and its documentation for any purpose and without fee is hereby
- *  granted, provided that the above copyright notice appear in all
- *  copies. Cornell University makes no representations
- *  about the suitability of this software for any purpose. It is
- *  provided "as is" without express or implied warranty. Export of this
- *  software outside of the United States of America may require an
- *  export license.
+ *  Copyright (c) 1999, 2019 Rajit Manohar
  *
- *  $Id: checkpoint.h,v 1.4 2000/08/07 23:50:09 rajit Exp $
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
  *
- *************************************************************************/
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA  02110-1301, USA.
+ *
+ **************************************************************************
+ */
 #ifndef __CHECKPOINT_H__
 #define __CHECKPOINT_H__
 

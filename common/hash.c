@@ -1,7 +1,23 @@
 /*************************************************************************
  *
- *  Copyright (c) 2003-2010 Rajit Manohar
- *  All Rights Reserved
+ *  Hash functions: from CACM, p. 679, (June 1990)
+ *
+ *  Copyright (c) 2003-2010, 2019 Rajit Manohar
+ *
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA  02110-1301, USA.
  *
  **************************************************************************
  */
@@ -13,22 +29,24 @@
 #include "misc.h"
 
 static int T[] =
-{  1, 87, 49, 12,176,178,102,166,121,193,  6, 84,249,230, 44,163,
-  14,197,213,181,161, 85,218, 80, 64,239, 24,226,236,142, 38,200,
- 110,177,104,103,141,253,255, 50, 77,101, 81, 18, 45, 96, 31,222,
-  25,107,190, 70, 86,237,240, 34, 72,242, 20,214,244,227,149,235,
-  97,234, 57, 22, 60,250, 82,175,208,  5,127,199,111, 62,135,248,
- 174,169,211, 58, 66,154,106,195,245,171, 17,187,182,179,  0,243,
- 132, 56,148, 75,128,133,158,100,130,126, 91, 13,153,246,216,219,
- 119, 68,223, 78, 83, 88,201, 99,122, 11, 92, 32,136,114, 52, 10,
- 138, 30, 48,183,156, 35, 61, 26,143, 74,251, 94,129,162, 63,152,
- 170,  7,115,167,241,206,  3,150, 55, 59,151,220, 90, 53, 23,131,
- 125,173, 15,238, 79, 95, 89, 16,105,137,225,224,217,160, 37,123,
- 118, 73,  2,157, 46,116,  9,145,134,228,207,212,202,215, 69,229,
-  27,188, 67,124,168,252, 42,  4, 29,108, 21,247, 19,205, 39,203,
- 233, 40,186,147,198,192,155, 33,164,191, 98,204,165,180,117, 76,
- 140, 36,210,172, 41, 54,159,  8,185,232,113,196,231, 47,146,120,
-  51, 65, 28,144,254,221, 93,189,194,139,112, 43, 71,109,184,209};
+{
+  103,152,181,  5,117,148,142, 43, 25, 16, 78, 58,114,155,197, 63,
+  76,241,160, 74, 59,199,  2, 62,150,240,  3,191, 71,147,129, 11,
+  70,  7, 51,221,109, 50,201,118,253, 36,115,213,116,226,234, 56,
+  91, 79, 28,177, 95,124, 94,157, 39,  0,206,149, 69,  9, 44,231,
+  8, 52,242,106,153,202, 88, 37, 54,193,168,167, 24,  6,247, 64,
+  175,189,166,111, 19,169,209,204,138, 61,184,121,128,215,239,222,
+  162,196,174,237,127,136,154,212,187,164, 68,248,145,214,176, 34,
+  245, 80,188,137, 35,251,194, 66,144,190,163,110,108,252, 42, 81,
+  133,233, 85, 99,130,244, 57, 97,119,250,183, 83, 87,125,141,140,
+  113,210, 82, 22,200,223, 26, 18,180,192,216,134, 60,235, 32, 46,
+  219, 41, 77,143, 86, 96, 72,151,159,179,230,126, 15, 45, 38,211,
+  243,229, 10,207,208,132,255,104,123, 47, 49, 14,198,217, 98,  1,
+  203,105,135,205, 21,139,156, 20,107,170,227,220,131, 75, 13, 73,
+  89,249, 48,158, 30, 40,225, 93, 67, 55, 92,238,246,182,186, 90,
+  236, 65,172,101,171,112,  4,195,173,120, 33,228, 53, 12,161,100,
+  102,218, 23, 29,254,232, 31,224,122, 84,185,165,146,178, 17, 27
+};
 
 int hash_function (int size, const char *k)
 {
@@ -37,14 +55,10 @@ int hash_function (int size, const char *k)
   unsigned char c;
 
   sum = 0;
-/*
- * 8, 16, 24, or 32 bit hashing function--- from CACM June 1990, p.679
- */
   if (*k == 0) {
     /* empty string! */
     return 0;
   }
-
   if (size <= (1<<8)) {
     /* byte index */
     sum = T[*k];
@@ -103,14 +117,10 @@ hash_function_continue (unsigned int size, const unsigned char *k, int len,
   const unsigned char *s;
   unsigned char c;
 
-/*
- * 8, 16, 24, or 32 bit hashing function--- from CACM June 1990, p.679
- */
   if (len == 0) {
     /* empty string! */
     return (iscont ? sumprev : 0);
   }
-
   if (size <= (1<<8)) {
     /* byte index */
     sum = iscont ? sumprev : 0;
@@ -214,9 +224,6 @@ static int ihash (struct iHashtable *h, long k)
     (var) = T[(var)^c3];			\
   } while (0)
 
-/*
- * 8, 16, 24, or 32 bit hashing function--- from CACM June 1990, p.679
- */
   if (size <= (1<<8)) {
     /* byte index */
     sum = T[c0];

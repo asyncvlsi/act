@@ -1,18 +1,26 @@
 /*************************************************************************
  *
- *  (c) 1995 Rajit Manohar
- *  All Rights Reserved
+ *  Info: package for manipulating boolean functions (BDDs)
  *
- *  Author: Rajit Manohar
- *  Date: Sat Mar 25 14:10:06 PST 1995
- *  Info: an implementation of bdds
+ *  Copyright (c) 1995 Rajit Manohar
  *
- *  Updated: Sun Mar 26 16:00:32 PST 1995
- *  Update Info: added caching temporary tables across procedure calls.
+ *  This program is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU General Public License
+ *  as published by the Free Software Foundation; either version 2
+ *  of the License, or (at your option) any later version.
  *
- *  $Id: bool.c,v 1.1 2006/11/15 23:18:41 rajit Exp $
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
  *
- *************************************************************************/
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA  02110-1301, USA.
+ *
+ **************************************************************************
+ */
 #include <stdio.h>
 
 #define BOOL_INTERNAL_H
