@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Connection: x = y
+  LHS: bool[ [7]+[9..11] ]
+  RHS: bool[ [1..8]+[10..11] ]
+FATAL: Type-checking failed on connection
+	Types `bool[ [7]+[9..11] ]' and `bool[ [1..8]+[10..11] ]' are not compatible

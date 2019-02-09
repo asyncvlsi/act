@@ -1,0 +1,3 @@
+In expanding ::<Global>
+Array being extended after it has participated in a connection.
+	Type: bool[ [1..8]+[15..16] ]

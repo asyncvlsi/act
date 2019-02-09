@@ -277,8 +277,14 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
         bitset_free (b);
       }
       else {
-	/* XXX: HERE: WORK ON THIS ONCE CONNECTIONS ARE DONE */
-	warning ("Sparse array: Fix this please");
+	/* vx->init means some connection was processed. We have a
+	   problem! */
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Array being extended after it has participated in a connection.\n");
+	fprintf (stderr, "\tType: ");
+	vx->t->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
       }
     }
     else {
