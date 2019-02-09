@@ -316,12 +316,19 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: expr_id "!" send_data
+send_stmt[act_chp_lang_t *]: expr_id snd_typ send_data
 {{X:
     $3->u.comm.chan = $1;
     return $3;
 }}
-    
+;
+
+snd_typ[int]: "!"
+{{X: return 0; }}
+| "!+"
+{{X: return 1; }}
+| "!-"
+{{X: return 2; }}
 ;
 
 send_data[act_chp_lang_t *]: w_expr 
@@ -345,11 +352,19 @@ send_data[act_chp_lang_t *]: w_expr
 }}
 ;
 
-recv_stmt[act_chp_lang_t *]: expr_id "?" recv_id
+recv_stmt[act_chp_lang_t *]: expr_id rcv_type recv_id
 {{X:
     $3->u.comm.chan = $1;
     return $3;
 }}
+;
+
+rcv_type[int]: "?"
+{{X: return 0; }}
+| "?+"
+{{X: return 1; }}
+| "?-"
+{{X: return 2; }}
 ;
 
 recv_id[act_chp_lang_t *]: expr_id

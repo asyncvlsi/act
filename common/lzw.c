@@ -33,8 +33,8 @@
  *
  *  The compression scheme used is a modified version of the scheme outlined
  *  in the article:
- *  Welsh, T. "A High Performance Algorithm for Data Compression", 
- *  Computer, July 1994. Pages 8-17.
+ *  Welch, T. "A High Performance Algorithm for Data Compression", 
+ *  Computer, June 1984. Pages 8-19.
  *
  *  The following functions are provided:
  *
