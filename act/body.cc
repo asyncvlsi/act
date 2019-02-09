@@ -279,12 +279,54 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
       else {
 	/* vx->init means some connection was processed. We have a
 	   problem! */
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Array being extended after it has participated in a connection.\n");
-	fprintf (stderr, "\tType: ");
-	vx->t->Print (stderr);
-	fprintf (stderr, "\n");
-	exit (1);
+	if (vx->hasConnection()) {
+	  if (vx->connection()->hasDirectconnections()) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Array being extended after it has participated in a connection.\n");
+	    fprintf (stderr, "\tType: ");
+	    vx->t->Print (stderr);
+	    fprintf (stderr, "\n");
+	    exit (1);
+	  }
+	  else {
+	    /* XXX: this has to be fixed properly. 
+	       need to re-adjust connection structure based on old vs new
+	       If we are connected at the base type (i.e. x = y), then
+	       this is an error
+	    */
+	    act_connection **ca;
+
+	    Assert (vx->connection()->hasSubconnections(), "What?");
+#if 0	    
+	    fatal_error ("Sparse array connected and then extended. Needs to be fixed.");
+#endif
+	    MALLOC (ca, act_connection *, x->arrayInfo()->size());
+	    for (int i=0; i < x->arrayInfo()->size(); i++) {
+	      ca[i] = NULL;
+	    }
+
+	    Arraystep *newstep = x->arrayInfo()->stepper (old);
+	    Arraystep *oldstep = old->stepper();
+	    int idx = 0;
+
+	    while (!oldstep->isend()) {
+	      Assert (idx == oldstep->index(), "Hmm");
+	      if (vx->connection()->a[idx]) {
+		/* something to do */
+		ca[newstep->index()] = vx->connection()->a[idx];
+		ca[newstep->index()]->up = ca[newstep->index()];
+	      }
+	      idx++;
+	      oldstep->step();
+	      newstep->step();
+	    }
+	    Assert (newstep->isend(), "Hmm...");
+	    delete oldstep;
+	    delete newstep;
+	    FREE (vx->connection()->a);
+	    vx->connection()->a = ca;
+	  }
+	}
       }
     }
     else {
