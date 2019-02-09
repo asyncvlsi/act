@@ -312,9 +312,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 	    while (!oldstep->isend()) {
 	      Assert (idx == oldstep->index(), "Hmm");
 	      if (vx->connection()->a[idx]) {
-		/* something to do */
 		ca[newstep->index()] = vx->connection()->a[idx];
-		ca[newstep->index()]->up = ca[newstep->index()];
 	      }
 	      idx++;
 	      oldstep->step();
