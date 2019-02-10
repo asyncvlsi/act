@@ -2235,7 +2235,11 @@ x[3..7] = y[12..16];
 
 @noindent
 Connections between two arrays with differing numbers of dimensions is
-not permitted. When a connection between multidimensional arrays is
+not permitted.
+
+@subsection Array shapes
+
+When a connection between multidimensional arrays is
 specified where the shape of the two arrays is not identical, this is
 also reported as an error. However, it is possible that two arrays
 have the same shape but where the elements have differing indices.  In
@@ -2251,8 +2255,46 @@ bool y[2][2];
 x = y;         
 @end example
 
-A list of variables can be treated as a single array by enclosing it in
-braces. 
+When two arrays are connected by name as in the example above, they
+become aliases for each other. So while the connection statement
+
+@example
+x[3..4][5..6] = y[0..1][0..1];
+@end example
+
+is the same as @code{x=y} earlier, the two are actually logically
+different. The first one says that the two arrays are the same, while
+the second is an element-by-element connection. This difference is visible in the case of sparse arrays.
+
+@kindex Array being extended after it has participated in a connection
+@example
+bool x[3..4][5..6];
+bool y[2][2];
+x = y;
+bool x[5..5][5..5];
+@result{} @error{} Array being extended after it has participated in a connection
+@result{}      Type: bool[ [3..4][5..6]+[5..5][5..5] ]
+@end example
+
+In the example above, the arrays @code{x} and @code{y} are connected
+to each other. After the connection, the array @code{x} is being
+extended in size using the sparse array functionality. This is not
+allowed, because this would also make @code{y} a sparse
+array---except, the way @code{y} is to be extended is unspecifed. On
+the other hand, the same sparse array extension is valid if instead
+the element-by-element connection is performed. This is because array
+@code{y} has fewer elements compared to @code{x}, and only a subset of
+@code{x} is connected to the elements of @code{y}.
+
+Finally, two sparse arrays can be connected to each other as long as
+they have the same shape. The shape is determined by viewing a sparse
+array as an ordered collection of dense sub-arrays. Two sparse arrays
+have the same shape if they have the same number of dense sub-arrays,
+and the corresponding dense sub-arrays have the same shape.
+
+Finally, arrays can be re-shaped. The most common example of this is
+that a list of variables can be treated as a single array by enclosing
+it in braces.
 
 @example
 bool x[3];
