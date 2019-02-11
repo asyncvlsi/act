@@ -59,6 +59,11 @@ class Act {
   static int max_loop_iterations;
 
   /**
+   * Parser flags 
+   */
+  static int emit_depend;
+
+  /**
    * Create an act data structure for the specified input file
    *
    * @param s is the name of the file containing the top-level ACT

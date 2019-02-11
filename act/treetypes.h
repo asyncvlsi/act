@@ -146,6 +146,9 @@ typedef struct {
   int attr_num;
   char **attr_table;
 
+  /* depend flags */
+  int emit_depend;
+
 } ActTree;
 
 #ifdef __cplusplus

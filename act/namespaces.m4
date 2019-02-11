@@ -62,6 +62,10 @@ import_item: "import" STRING ";"
        file */
     act_push_import (s);
 
+    if ($0->emit_depend) {
+      printf ("%s ", s);
+    }
+
     /* Process the new file */
     TRY {
       t = act_parse (s);

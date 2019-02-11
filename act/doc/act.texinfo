@@ -2286,6 +2286,11 @@ the element-by-element connection is performed. This is because array
 @code{y} has fewer elements compared to @code{x}, and only a subset of
 @code{x} is connected to the elements of @code{y}.
 
+@b{Performance note:} Extending an array after it has connections
+can be expensive as the array connections have to be moved. If you have
+an array of size N with internal connections that is extended by a constant
+amount M times, the current implementation can take time complexity MN.
+
 Finally, two sparse arrays can be connected to each other as long as
 they have the same shape. The shape is determined by viewing a sparse
 array as an ordered collection of dense sub-arrays. Two sparse arrays

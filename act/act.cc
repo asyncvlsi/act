@@ -40,6 +40,7 @@ struct command_line_defs {
 
 int Act::max_recurse_depth;
 int Act::max_loop_iterations;
+int Act::emit_depend;
 
 L_A_DECL (struct command_line_defs, vars);
 
@@ -85,6 +86,7 @@ void Act::Init (int *iargc, char ***iargv)
   config_read ("global.conf");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
+  Act::emit_depend = 0;
 
   A_INIT (vars);
 
@@ -196,6 +198,8 @@ Act::Act (const char *s)
 
   tr.attr_num = config_get_table_size ("act.instance_attr");
   tr.attr_table = config_get_table_string ("act.instance_attr");
+
+  tr.emit_depend = Act::emit_depend;
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
