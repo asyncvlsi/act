@@ -7,7 +7,8 @@ Build instructions:
 
    * The system must have libedit installed. For the yum package manager, the
      package is called libedit-devel; for apt-get, it is libeditline-dev
-   * The system should also have zlib installed				
+   * The system should also have zlib installed	
+   * The system should have the macro pre-processing package m4 installed
    * Create a directory where you'd like the tools to be installed. Example
      common locations include /usr/local/cad, /opt/cad, /opt/async
    * Set the environment variable ACT_HOME to point to the install directory.
@@ -16,6 +17,9 @@ Build instructions:
    * From the $VLSI_TOOLS_SRC directory, run
         ./configure $ACT_HOME
    * Run ./build
+
+If there is an issue building the software and you want to do a clean build, use
+"make realclean"
 
 Language history:
   * ~1991 (?), a language for hierarchical production rules was developed at Caltech (A.J. Martin's group). This was dubbed "CAST" for Caltech Asynchronous Synthesis Tools.
