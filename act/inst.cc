@@ -221,27 +221,27 @@ int InstType::isEqual (InstType *it, int weak)
       }
     }
     else {
-      AExpr *constexpr;
+      AExpr *xconstexpr;
       if (!u[i].u.tp || !it->u[i].u.tp) {
-	constexpr = new AExpr (const_expr (32));
+	xconstexpr = new AExpr (const_expr (32));
       }
       else {
-	constexpr = NULL;
+	xconstexpr = NULL;
       }
       /* being NULL is the same as const 32 */
       if (u[i].u.tp && !it->u[i].u.tp) {
-	if (valcheck && (!u[i].u.tp->isEqual (constexpr))) return 0;
-	delete constexpr;
+	if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return 0;
+	delete xconstexpr;
       }
       else if (it->u[i].u.tp && !u[i].u.tp) {
-	if (valcheck && (!constexpr->isEqual (it->u[i].u.tp))) return 0;
-	delete constexpr;
+	if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return 0;
+	delete xconstexpr;
       }
       else if (u[i].u.tp && it->u[i].u.tp) {
 	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return 0;
       }
       else {
-	delete constexpr;
+	delete xconstexpr;
       }
     }
   }
