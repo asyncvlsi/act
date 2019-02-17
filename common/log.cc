@@ -23,6 +23,7 @@
  */
 #include "log.h"
 #include "sim.h"
+#include "thread.h"
 
 FILE *Log::fp;
 int Log::newline = 1;
@@ -31,15 +32,7 @@ Time_t Log::last_log_time = 0; // time of last log message
 
 int Log::log_level[256];	// initialized by config file
 
-#if defined(ASYNCHRONOUS)
-#define log_prefix_changed   ((last_log != this || last_log_time != CurrentTime()))
-#elif defined(SYNCHRONOUS)
-#define log_prefix_changed   ((last_log != this || last_log_time != get_time()))
-#endif
-
-#ifdef SYNCHRONOUS
-volatile unsigned int logTimer;
-#endif
+#define log_prefix_changed   ((last_log != this || last_log_time != Sim::Now()))
 
 /*------------------------------------------------------------------------
  *
@@ -49,18 +42,12 @@ volatile unsigned int logTimer;
  *
  *------------------------------------------------------------------------
  */
-#if defined(__OMIT_DEFAULT_PARAMS__)
-Log::Log(char level)
-#else
-Log::Log(char level, int num)
-#endif
+Log::Log(Sim *s, char level, int num)
 {
   levtype = level;
   lev = num;
   hex_int = 0;
-#ifdef SYNCHRONOUS
-  startLogging = logTimer;
-#endif
+  proc = s;
 }
 
 
@@ -139,35 +126,16 @@ void Log::Prefix (void)
     else
       return;
   }
-#if defined (ASYNCHRONOUS)
-#if defined(__FreeBSD__)
-  fprintf (Log::fp, "%qu <%s> ", CurrentTime (), thread_name ());
-#else
-  fprintf (Log::fp, "%lu <%s> ", (unsigned long)CurrentTime (), thread_name ());
-#endif
-#elif defined (SYNCHRONOUS)
-#if defined(__FreeBSD__)
-  fprintf (Log::fp, "%qu %d:<%s> ", get_time ()/2,
-	   (int)(get_time()&1), get_tname ());
-#else
-  fprintf (Log::fp, "%lu %d:<%s> ", (unsigned long)get_time ()/2,
-	   (int)(get_time()&1), get_tname ());
-#endif
-#endif
+  fprintf (Log::fp, "%llu <%s> ", Sim::Now(), proc->Name());
 }
 
 #define no_logging(tipe,num) \
                 ((tipe != '*' && (Log::log_level[tipe] < num)) || !Log::fp)
 
-
 void Log::NormalUpdate (void)
 {
   last_log = this;
-#if defined(ASYNCHRONOUS)
-  last_log_time = CurrentTime();
-#elif defined (SYNCHRONOUS)
-  last_log_time = get_time ();
-#endif
+  last_log_time = Sim::Now();
   newline = 0;
 }
 
@@ -231,11 +199,7 @@ Log &Log::operator <<(const char *s)
 
 SPEW_INTOPERATOR(int,"%d","%x")                                    
 SPEW_INTOPERATOR(unsigned int,"%u","%x")                                    
-#if defined(__FreeBSD__)
-SPEW_INTOPERATOR(long long unsigned int, "%qu","%qx")
-#else
 SPEW_INTOPERATOR(long long unsigned int, "%llu","%llx")
-#endif
 SPEW_INTOPERATOR(long unsigned int, "%lu","%lx")
 SPEW_INTOPERATOR(long, "%ld","%lx")
 
@@ -277,14 +241,10 @@ Log &Log::print (const char *format, ...)
 {
   va_list ap;
   if (no_logging (levtype,lev)) return *this;
-#ifdef SYNCHRONOUS
-  if ((unsigned int)(get_time()/2) < startLogging) return *this;
-#endif
 
   context_disable ();
 
   Log::Prefix ();
-
   va_start (ap, format);
   vfprintf (Log::fp, format, ap);
   fputc ('\n', Log::fp);
@@ -299,9 +259,6 @@ Log &Log::myprint (const char *format, ...)
 {
   va_list ap;
   if (no_logging ('$',1)) return *this;
-#ifdef SYNCHRONOUS
-  if ((unsigned int)(get_time()/2) < startLogging) return *this;
-#endif
 
   context_disable ();
 

@@ -25,33 +25,12 @@
 #include "mem.h"
 #include "misc.h"
 #include "sim.h"
-
-#ifdef SYNCHRONOUS
-
-#define CHUNK_SIZE 1024		 /*Ocean: 8192*/ 
-/*
-#define CHUNK_SIZE 16384*/
-
-#define CHUNK_THRESHOLD 16 /* gc threshold */
-
-static int adj_merge_size = CHUNK_SIZE;
-
-/*
-#define ADJ_LIMIT 1024*1024*32
-*/
-
-#define ADJ_LIMIT CHUNK_SIZE	 /*Ocean*/ 
-/*
-#define ADJ_LIMIT 1024*32*/
-
-#else 
+#include "thread.h"
 
 #define CHUNK_SIZE 16384
 #define CHUNK_THRESHOLD 16 /* gc threshold */
 static int adj_merge_size = 16384;
 #define ADJ_LIMIT 1024*32
-
-#endif
 
 #define DOUBLE_THRESHOLD (1024*1024*256)
 

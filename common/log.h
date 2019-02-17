@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "mytime.h"
+#include "sim.h"
 
 using std::ostream;
 
@@ -44,13 +45,10 @@ class LogDecInt { };
 
 extern LogHexInt LogHEX;
 extern LogDecInt LogDEC;
-#ifdef SYNCHRONOUS
-extern volatile unsigned int logTimer;
-#endif
 
 class Log {
  public:
-  Log(char level = '*', int num = 1); 
+  Log(Sim *s, char level = '*', int num = 1); 
   // Use "level" to filter log messages by type. The level is
   // checked against variable LogLevel in the configuration file.
 				
@@ -93,10 +91,6 @@ class Log {
 
   static int log_level[256];	// Initialized by configuration file
 
-#ifdef SYNCHRONOUS
-  unsigned int startLogging;
-#endif
-
  private:
   // fields that are initialized once
   // static ofstream file;
@@ -112,6 +106,8 @@ class Log {
   int  lev;
 
   int hex_int;
+
+  Sim *proc;
   
   void Prefix (void);
 

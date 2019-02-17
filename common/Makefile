@@ -28,20 +28,20 @@ TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
 TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
 	names.h mstring.h mytime.h \
-	channel.h hconfig.h checkpoint.h contexts.h count.h \
+	channel.h hconfig.h contexts.h count.h \
 	machine.h mem.h mutex.h  thread.h sim.h \
-	log.h ext.h
+	log.h ext.h simthread.h simdes.h
 
 # general library support
 OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
-	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o
+	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o \
 
 # shared libs hsim integration
 #OBJS2=hash2.os atrace2.os ns.os misc.os
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
-OBJS4CPP2=alog.o amem.o asim.o
+OBJS4CPP2=alog.o amem.o asim.o simthread.o simdes.o
 OBJS4C=thread.o mutex.o count.o channel.o
 OBJS4C2=contexts_f.o 
 
@@ -110,8 +110,8 @@ amem.o: mem.cc
 alog.o: log.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $< -o alog.o
 
-acheckpoint.o: checkpoint.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
+#acheckpoint.o: checkpoint.cc
+#	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
 
 #queue.o: queue.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
