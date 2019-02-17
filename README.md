@@ -6,7 +6,8 @@ This is the implementation of the ACT hardware description language.
 Build instructions:
 
    * The system must have libedit installed. For the yum package manager, the
-     package is called libedit-devel; for apt-get, it is libeditline-dev
+     package is called libedit-devel; for apt-get, it is libeditline-dev. Some
+     systems have *both* packages. In that case please use libedit, not libeditline.
    * The system should also have zlib installed	
    * The system should have the macro pre-processing package m4 installed
    * Create a directory where you'd like the tools to be installed. Example
