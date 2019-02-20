@@ -6,8 +6,13 @@ defproc foo (bool a[N], b[N])
 
 defproc bar <: foo<5> ( ) 
 { 
+  { N = 5 : "what?" };
 }
 
 //foo<10> f;
 
 bar b;
+
+bool w[b.N];
+
+w = b.a;
