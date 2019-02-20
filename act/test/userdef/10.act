@@ -1,0 +1,13 @@
+deftype mystruct <: int<16> (int<4> f1, f2; int<8> f3)
+{
+  methods {
+    set {
+     f1 := self>>12;
+     f2 := (self>>8) & 0xf;
+     f3 := self & 0xff
+    }
+    get {
+     self:=(f1<<12)|(f2<<8)|f3
+    }
+  }
+}

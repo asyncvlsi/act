@@ -1231,10 +1231,15 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	      delete rhsval;
 	    }
 	    i++;
-	    p = getPortType (-(i+1));
-	    Assert (p, "Hmm");
-	    x = p->Expand (ns, ux->I);
-	    ux->AddMetaParam (x, pn[i]);
+	    if (i < nt) {
+	      p = getPortType (-(i+1));
+	      Assert (p, "Hmm");
+	      x = p->Expand (ns, ux->I);
+	      ux->AddMetaParam (x, pn[i]);
+	    }
+	    else {
+	      p = NULL;
+	    }
 	  }
 	}
 	instparent = uparent->getParent();
@@ -1249,31 +1254,33 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 #if 0
       printf ("Bind: [%d] %s (ii=%d, spec_nt=%d)\n", i, pn[i], ii, spec_nt);
 #endif
-      if (TypeFactory::isPTypeType (p->BaseType())) {
-	if (ii < spec_nt && u[ii].u.tt) {
-	  x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
-	  ux->I->BindParam (pn[i], x);
-	  ii++;
-	}
-      }
-      else {
-	Assert (TypeFactory::isParamType (x), "What?");
-	if (ii < spec_nt && u[ii].u.tp) {
-	  InstType *rhstype;
-	  AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
-	  rhstype = rhsval->getInstType (s, 1);
-	  if (!type_connectivity_check (x, rhstype)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, "Typechecking failed, ");
-	    x->Print (stderr);
-	    fprintf (stderr, "  v/s ");
-	    rhstype->Print (stderr);
-	    fprintf (stderr, "\n\t%s\n", act_type_errmsg());
-	    exit (1);
+      if (i < nt) {
+	if (TypeFactory::isPTypeType (p->BaseType())) {
+	  if (ii < spec_nt && u[ii].u.tt) {
+	    x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
+	    ux->I->BindParam (pn[i], x);
+	    ii++;
 	  }
-	  ux->I->BindParam (pn[i], rhsval);
-	  ii++;
-	  delete rhstype;
+	}
+	else {
+	  Assert (TypeFactory::isParamType (x), "What?");
+	  if (ii < spec_nt && u[ii].u.tp) {
+	    InstType *rhstype;
+	    AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
+	    rhstype = rhsval->getInstType (s, 1);
+	    if (!type_connectivity_check (x, rhstype)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "Typechecking failed, ");
+	      x->Print (stderr);
+	      fprintf (stderr, "  v/s ");
+	      rhstype->Print (stderr);
+	      fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	      exit (1);
+	    }
+	    ux->I->BindParam (pn[i], rhsval);
+	    ii++;
+	    delete rhstype;
+	  }
 	}
       }
     }

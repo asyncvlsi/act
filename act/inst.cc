@@ -272,6 +272,87 @@ int InstType::isEqual (InstType *it, int weak)
   return 1;
 }
 
+/* XXX: FIXME */
+int InstType::isConnectable (InstType *it, int weak)
+{
+  int valcheck;
+
+  valcheck = isExpanded();
+  if (weak == 0) valcheck = 1;
+
+#if 0
+  printf ("valcheck = %d\n", valcheck);
+#endif
+
+  if (t != it->t) return 0;   /* same base type */
+
+  if (nt != it->nt) return 0; /* same number of template params, if
+				 any */
+
+  /* check that the template parameters of the type are the same */
+  for (int i=0; i < nt; i++) {
+    if (u[i].isatype != it->u[i].isatype) return 0;
+    if (u[i].isatype) {
+      if ((u[i].u.tt && !it->u[i].u.tt) ||
+	  (!u[i].u.tt && it->u[i].u.tt)) return 0;
+      if (u[i].u.tt && it->u[i].u.tt) {
+	if (!u[i].u.tt->isEqual (it->u[i].u.tt)) return 0;
+      }
+    }
+    else {
+      AExpr *xconstexpr;
+      if (!u[i].u.tp || !it->u[i].u.tp) {
+	xconstexpr = new AExpr (const_expr (32));
+      }
+      else {
+	xconstexpr = NULL;
+      }
+      /* being NULL is the same as const 32 */
+      if (u[i].u.tp && !it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return 0;
+	delete xconstexpr;
+      }
+      else if (it->u[i].u.tp && !u[i].u.tp) {
+	if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return 0;
+	delete xconstexpr;
+      }
+      else if (u[i].u.tp && it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return 0;
+      }
+      else {
+	delete xconstexpr;
+      }
+    }
+  }
+
+  if ((a && !it->a) || (!a && it->a)) return 0; /* both are either
+						   arrays or not
+						   arrays */
+
+
+  /* dimensions must be compatible no matter what */
+  if (a && !a->isDimCompatible (it->a)) return 0;
+
+  if (!a || (weak == 1)) return 1; /* we're done */
+
+#if 0
+  printf ("checking arrays [weak=%d]\n", weak);
+#endif
+
+  if (weak == 0) {
+    if (!a->isEqual (it->a, 1)) return 0;
+  }
+  else if (weak == 2) {
+    if (!a->isEqual (it->a, 0)) return 0;
+  }
+  else if (weak == 3) {
+    if (!a->isEqual (it->a, -1)) return 0;
+  }
+  return 1;
+}
+
+
+
 void InstType::Print (FILE *fp)
 {
   char buf[10240];

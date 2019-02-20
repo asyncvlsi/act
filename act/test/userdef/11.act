@@ -1,0 +1,13 @@
+template<pint N>
+defproc foo (bool a[N], b[N])
+{
+  a = b;
+}
+
+defproc bar <: foo<5> ( ) 
+{ 
+}
+
+//foo<10> f;
+
+bar b;

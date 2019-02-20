@@ -87,7 +87,10 @@ class InstType {
   void clrArray () { a = NULL; }
 
   int isEqual (InstType *t, int weak = 0); /**< check if two instance types are
-				   identical */
+					      identical */
+  int isConnectable (InstType *t, int weak = 0); /**< check if two types are
+						    compatible for
+						    connections */
 
   void Print (FILE *fp);	/**< print inst type string */
 

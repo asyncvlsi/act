@@ -640,13 +640,13 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 
   if (lhs->isExpanded ()) {
     /* the connectivity check is now strict */
-    if (lhs->isEqual (rhs, (skip_last_array ? 3: 2))) {
+    if (lhs->isConnectable (rhs, (skip_last_array ? 3: 2))) {
       return 1;
     }
   }
   else {
     /* check dim compatibility */
-    if (lhs->isEqual (rhs, 1)) {
+    if (lhs->isConnectable (rhs, 1)) {
       return 1;
     }
   }
