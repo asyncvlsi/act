@@ -88,9 +88,10 @@ class InstType {
 
   int isEqual (InstType *t, int weak = 0); /**< check if two instance types are
 					      identical */
-  int isConnectable (InstType *t, int weak = 0); /**< check if two types are
-						    compatible for
-						    connections */
+  Type *isConnectable (InstType *t, int weak = 0);
+  /**< check if two types are compatible for connections.  Returns
+     NULL if error, otherwise returns the most specific type.
+  */
 
   void Print (FILE *fp);	/**< print inst type string */
 
