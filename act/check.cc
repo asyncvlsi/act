@@ -857,13 +857,13 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
   Assert (rae, "NULL AExpr");
   typecheck_errmsg[0] = '\0';
 
-  /*
+#if 0
   printf ("Here: checking: ");
   ae->Print (stdout);
   printf (" v/s ");
   rae->Print (stdout);
   printf ("\n");
-  */
+#endif
 
   InstType *lhs = ae->getInstType (s);
   if (!lhs) return T_ERR;
@@ -873,23 +873,23 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
     delete lhs;
     return T_ERR;
   }
-  
-  /*
+
+#if 0
   printf ("Types: ");
   lhs->Print (stdout);
   printf (" -vs- ");
   rhs->Print (stdout);
   printf ("\n");
   fflush (stdout);
-  */
+#endif  
   
   /* now check type compatibility between it, id, and rhs */
   ret = type_connectivity_check (lhs, rhs);
 
-  /*
-  printf ("Ok, here\n");
+#if 0
+  printf ("Ok, here, result=%d\n", ret);
   fflush (stdout);
-  */
+#endif
 
   delete lhs;
   delete rhs;

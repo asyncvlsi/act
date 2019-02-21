@@ -277,6 +277,7 @@ Type *InstType::isConnectable (InstType *it, int weak)
 {
   int valcheck;
   Type *retval;
+  int subtype;
 
   valcheck = isExpanded();
   if (weak == 0) valcheck = 1;
@@ -285,21 +286,39 @@ Type *InstType::isConnectable (InstType *it, int weak)
   printf ("valcheck = %d\n", valcheck);
 #endif
 
-  /* XXX: have to fix this. Even if the base types are not the same,
+  /* Even if the base types are not the same,
      they might be connectable because they have a common root */
   if (t != it->t) {
+    subtype = 1;
+#if 0
+    printf (" -- In the subtype check.\n");
+#endif
     if (TypeFactory::isUserType (t) ||
 	TypeFactory::isUserType (it->t)) {
       Type *t1, *t2;
       t1 = t;
       t2 = it->t;
+#if 0
+      printf ("Usertypes, there's hope\n");
+#endif
       if (!TypeFactory::isUserType (t1)) {
 	t1 = it->t;
 	t2 = t;
       }
+
+#if 0
+      printf ("Check: t1=%s, t2=%s; is t2 a parent of t1?\n", t1->getName(), t2->getName());
+      fflush (stdout);
+#endif
+      
       UserDef *u = dynamic_cast<UserDef *>(t1);
       InstType *pit = u->getParent();
       while (pit) {
+#if 0
+	printf ("checking t1's parent: ");
+	pit->Print (stdout);
+	printf ("\n");
+#endif
 	if (pit->t == t2)
 	  break;
 	if (TypeFactory::isUserType (pit)) {
@@ -310,14 +329,25 @@ Type *InstType::isConnectable (InstType *it, int weak)
 	  pit = NULL;
 	}
       }
+#if 0
+      printf ("Here, %s\n", pit ? "ok!" : "NULL");
+#endif
       if (pit) {
 	retval = t1;
       }
       else {
 	if (TypeFactory::isUserType (t2)) {
+#if 0
+	  printf ("Check the other way\n");
+#endif
 	  u = dynamic_cast<UserDef *>(t2);
 	  pit = u->getParent();
 	  while (pit) {
+#if 0
+	    printf ("checking t2's parent: ");
+	    pit->Print (stdout);
+	    printf ("\n");
+#endif
 	    if (pit->t == t1)
 	      break;
 	    if (TypeFactory::isUserType (pit)) {
@@ -343,16 +373,32 @@ Type *InstType::isConnectable (InstType *it, int weak)
     }
   }
   else {
+    subtype = 0;
     retval = t;
   }
 
   Assert (retval, "HMM!");
 
-  if (nt != it->nt) return NULL; /* same number of template params, if
-				 any */
+#if 0
+  printf ("Made it through the check!\n");
+  printf ("nt=%d, it->nt=%d\n", nt, it->nt);
+#endif
+
+  /* same number of template params, if any. 
+     if it is an unexpanded subtype, then common parameters must be
+     the same.
+   */
+  if (nt != it->nt) {
+    if (isExpanded() || subtype == 0) {
+      return NULL;
+    }
+  }
+
+  int ntchk = (nt < it->nt) ? nt : it->nt;
+  
 
   /* check that the template parameters of the type are the same */
-  for (int i=0; i < nt; i++) {
+  for (int i=0; i < ntchk; i++) {
     if (u[i].isatype != it->u[i].isatype) return NULL;
     if (u[i].isatype) {
       if ((u[i].u.tt && !it->u[i].u.tt) ||
