@@ -27,6 +27,7 @@
 #include <act/inst.h>
 #include <act/lang.h>
 #include <act/body.h>
+#include <act/value.h>
 #include <string.h>
 #include "misc.h"
 #include "hash.h"

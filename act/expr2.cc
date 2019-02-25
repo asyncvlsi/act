@@ -23,6 +23,7 @@
  */
 #include <act/types.h>
 #include <act/body.h>
+#include <act/value.h>
 #include <string.h>
 
 #define PRINT_STEP				\

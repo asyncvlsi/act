@@ -26,14 +26,14 @@ LIB=libact_$(EXT).a
 TARGETLIBS=$(LIB)
 
 TARGETINCS=lang.h expr.h act_parse_id.h path.h namespaces.h act.h \
-	types.h inst.h iter.h act_array.h basetype.h body.h
+	types.h inst.h iter.h act_array.h basetype.h body.h value.h
 
 TARGETINCSUBDIR=act
 
 OBJS1=expr.o path.o
 OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 	body.o check.o error.o array.o expr2.o id.o lang.o iter.o \
-	mangle.o inst.o
+	mangle.o inst.o scope.o
 
 OBJS=$(OBJS1) $(OBJS2)
 

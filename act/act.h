@@ -27,6 +27,7 @@
 #include <act/types.h>
 #include <act/lang.h>
 #include <act/body.h>
+#include <act/value.h>
 
 /**
  * @file act.h

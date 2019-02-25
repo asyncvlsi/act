@@ -24,6 +24,7 @@
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/body.h>
+#include <act/value.h>
 #include <string.h>
 #include "list.h"
 #include "misc.h"

@@ -27,6 +27,7 @@
 #include <act/lang.h>
 #include <act/act.h>
 #include <act/body.h>
+#include <act/value.h>
 #include <string.h>
 #include "misc.h"
 #include "config.h"

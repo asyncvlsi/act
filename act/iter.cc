@@ -22,6 +22,7 @@
  **************************************************************************
  */
 #include <act/iter.h>
+#include <act/value.h>
 
 ActNamespaceiter::ActNamespaceiter (ActNamespace *ns)
 {

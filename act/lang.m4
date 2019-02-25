@@ -1021,6 +1021,59 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     for (li = list_first ($3); li; li = list_next (li)) {
       s->ids[i++] = (ActId *)list_value (li);
     }
+    s->extra = NULL;
+    s->next = NULL;
+    return s;
+}}
+| "timing" [ bool_expr_id ":" ] bool_expr_id_or_array [ dir ] "<" bool_expr_id_or_array [ dir ]
+{{X:
+    /* a timing fork */
+    act_spec *s;
+    int i;
+    
+    NEW (s, act_spec);
+    s->type = -1;
+    s->count = 3;
+    MALLOC (s->ids, ActId *, s->count);
+    MALLOC (s->extra, int, s->count);
+    i = 0;
+    if (!OPT_EMPTY ($2)) {
+      ActRet *r;
+      r = OPT_VALUE ($2);
+      $A(r->type == R_ID);
+      s->extra[i] = -1;
+      s->ids[i++] = r->u.id;
+      FREE (r);
+    }
+    else {
+      s->extra[i] = -1;
+      s->ids[i++] = NULL;
+    }
+    OPT_FREE ($2);
+    if (!OPT_EMPTY ($4)) {
+      ActRet *r;
+      r = OPT_VALUE ($4);
+      $A(r->type == R_INT);
+      s->extra[i] = r->u.ival;
+      FREE (r);
+    }
+    else {
+      s->extra[i] = -1;
+    }
+    OPT_FREE ($4);
+    s->ids[i++] = $3;
+    if (!OPT_EMPTY ($7)) {
+      ActRet *r;
+      r = OPT_VALUE ($7);
+      $A(r->type == R_INT);
+      s->extra[i] = r->u.ival;
+      FREE (r);
+    }
+    else {
+      s->extra[i] = -1;
+    }
+    OPT_FREE ($7);
+    s->ids[i++] = $6;
     s->next = NULL;
     return s;
 }}
@@ -1029,7 +1082,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 /*
   Sizing body: specify drive strength for rules
 */
-lang_size: "size" "{" [ size_body ] "}"
+lang_size: "sizing" "{" [ size_body ] "}"
 ;
 
 strength_directive: bool_expr_id dir "->" wint_expr

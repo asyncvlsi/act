@@ -200,9 +200,10 @@ struct act_chp {
 
 
 struct act_spec {
-  int type;
+  int type;  /* -1 = timing */
   int count;
   ActId **ids;
+  int *extra;
   struct act_spec *next;
 };
 

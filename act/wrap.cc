@@ -56,7 +56,7 @@ const char *act_fet_value_to_string (int f)
 #define NULL_WRAP(nm,t) ActRet *act_wrap_X_##nm (t v) { return NULL; }
 
 NULL_WRAP(double,double)
-NULL_WRAP(int,int)
+//NULL_WRAP(int,int)
 NULL_WRAP(extern, void *)
 NULL_WRAP(ActNamespace_p, ActNamespace *)
 NULL_WRAP(Type_p, Type *)
@@ -83,6 +83,7 @@ NULL_WRAP(act_size_spec_t_p, act_size_spec_t *)
   return r;					\
   }
 
+GENERIC_WRAP(int,int,ival,R_INT)
 GENERIC_WRAP(string,const char *,str,R_STRING)
 GENERIC_WRAP(list,list_t *,l,R_LIST)
 GENERIC_WRAP(Type__direction,Type::direction,dir,R_DIR)
