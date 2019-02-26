@@ -47,7 +47,7 @@ M2_ b a GND GND nch W=0.15U L=0.06U
 M3_ #fb4# b GND GND nch W=0.15U L=0.06U
 M4_keeper b #fb4# GND GND nch W=0.12U L=0.06U
 M5_keeper b #fb4# #5 Vdd pch W=0.12U L=0.06U
-xz z_4q z_4r z_4s bar
 xzz zz_4q zz_4r zz_4s bar
+xz z_4q z_4r z_4s bar
 .ends
 *---- end of process: foo<> -----

@@ -45,8 +45,10 @@ do
 	num=`expr $num + 1`
 	myecho ".[$bname]"
 	$ACTTOOL $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	sort < runs/$i.t.stdout > runs/$i.x.t.stdout
+ 	sort < runs/$i.stdout > runs/$i.y.t.stdout
 	ok=1
-	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
+	if ! cmp runs/$i.x.t.stdout runs/$i.y.t.stdout >/dev/null 2>/dev/null
 	then
 		echo 
 		myecho "** FAILED TEST $i: stdout"

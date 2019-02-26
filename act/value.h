@@ -29,6 +29,7 @@ class ActNamespace;
 class InstType;
 class ActId;
 struct ValueIdx;
+struct act_attr;
 
 /*
   Connections
@@ -120,4 +121,10 @@ struct ValueIdx {
   const char *getName() { return u.obj.name; }
 };
 
+void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
+		    const char *s2, act_connection *c2);
+
+void act_merge_attributes (struct act_attr **x, act_attr *a);
+
 #endif /* __ACT_VALUE_H__ */
+
