@@ -200,10 +200,14 @@ struct act_chp {
 
 
 struct act_spec {
-  int type;  /* -1 = timing */
+  int type;    /* -1 = timing */
   int count;
   ActId **ids;
-  int *extra;
+  int *extra;  /*  Flags
+
+		   0x03 : 0 = no dir, 1 = +, 2 = -
+		   0x04 : 1 = ?, 0 = nothing
+	       */
   struct act_spec *next;
 };
 

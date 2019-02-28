@@ -1025,7 +1025,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     s->next = NULL;
     return s;
 }}
-| "timing" [ bool_expr_id ":" ] bool_expr_id_or_array [ dir ] "<" bool_expr_id_or_array [ dir ]
+| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ dir ] "<" bool_expr_id_or_array [ dir ]
 {{X:
     /* a timing fork */
     act_spec *s;
@@ -1041,39 +1041,55 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       ActRet *r;
       r = OPT_VALUE ($2);
       $A(r->type == R_ID);
-      s->extra[i] = -1;
+      s->extra[i] = 0;
       s->ids[i++] = r->u.id;
+      FREE (r);
+
+      r = OPT_VALUE2 ($2);
+      $A(r->type == R_LIST);
+      if (!OPT_EMPTY (r->u.l)) {
+	ActRet *r2;
+	r2 = OPT_VALUE (r->u.l);
+	$A(r2->type == R_INT);
+	s->extra[i-1] = r2->u.ival ? 1 : 2;
+	FREE (r2);
+      }
+      OPT_FREE (r->u.l);
       FREE (r);
     }
     else {
-      s->extra[i] = -1;
+      s->extra[i] = 0;
       s->ids[i++] = NULL;
     }
     OPT_FREE ($2);
-    if (!OPT_EMPTY ($4)) {
+    if (!OPT_EMPTY ($5)) {
       ActRet *r;
-      r = OPT_VALUE ($4);
+      r = OPT_VALUE ($5);
       $A(r->type == R_INT);
-      s->extra[i] = r->u.ival;
+      s->extra[i] = r->u.ival ? 1 : 2;
       FREE (r);
     }
     else {
-      s->extra[i] = -1;
+      s->extra[i] = 0;
     }
-    OPT_FREE ($4);
-    s->ids[i++] = $3;
-    if (!OPT_EMPTY ($7)) {
+    OPT_FREE ($5);
+    if (!OPT_EMPTY ($3)) {
+      s->extra[i] |= 0x4;
+    }
+    OPT_FREE ($3);
+    s->ids[i++] = $4;
+    if (!OPT_EMPTY ($8)) {
       ActRet *r;
-      r = OPT_VALUE ($7);
+      r = OPT_VALUE ($8);
       $A(r->type == R_INT);
-      s->extra[i] = r->u.ival;
+      s->extra[i] = r->u.ival ? 1 : 2;
       FREE (r);
     }
     else {
-      s->extra[i] = -1;
+      s->extra[i] = 0;
     }
-    OPT_FREE ($7);
-    s->ids[i++] = $6;
+    OPT_FREE ($8);
+    s->ids[i++] = $7;
     s->next = NULL;
     return s;
 }}

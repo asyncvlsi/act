@@ -1,8 +1,0 @@
-defproc testme (chan l, r)
-{
-  int x;
-
-  chp {
-    *[ l?x; r!x ]
-  }
-}
