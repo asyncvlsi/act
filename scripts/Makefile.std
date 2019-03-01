@@ -64,26 +64,29 @@ endif
 CFLAGS=$(C_COMPILER_FLAGS) 
 
 
-all: dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out
+all: dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out 
 
 SUBDIRS_ALL=$(patsubst %,%_all,$(SUBDIRS))
 SUBDIRS_CLEAN=$(patsubst %,%_clean,$(SUBDIRS))
-SUBDIRS_eEALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
+SUBDIRS_REALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
 SUBDIRS_DEPEND=$(patsubst %,%_depend,$(SUBDIRS))
 SUBDIRS_INSTALL=$(patsubst %,%_install,$(SUBDIRS))
+SUBDIRS_RUNTEST=$(patsubst %,%_runtest,$(SUBDIRS))
 
 .PHONY: all move-in move-out install_lib install_inc depend \
 	allsub 	$(SUBDIRS_ALL) \
 	cleansub $(SUBDIRS_CLEAN) \
 	realcleansub $(SUBDIRS_REALCLEAN) \
 	dependsub $(SUBDIRS_DEPEND) \
-	installsub $(SUBDIRS_DEPEND)
+	installsub $(SUBDIRS_INSTALL) \
+	runtest $(SUBDIRS_RUNTEST)
 
 allsub: $(SUBDIRS_ALL)
 cleansub:  $(SUBDIRS_CLEAN)
 realcleansub:  $(SUBDIRS_REALCLEAN)
 dependsub:  $(SUBDIRS_DEPEND)
 installsub:  $(SUBDIRS_INSTALL)
+runtestsub: $(SUBDIRS_RUNTEST)
 
 $(SUBDIRS_ALL):
 	@$(MAKE) -C $(patsubst %_all,%,$@) "CFLAGS=$(CFLAGS)"
@@ -99,6 +102,9 @@ $(SUBDIRS_DEPEND):
 
 $(SUBDIRS_INSTALL):
 	@$(MAKE) -C $(patsubst %_install,%,$@) install
+
+$(SUBDIRS_RUNTEST):
+	@$(MAKE) -C $(patsubst %_runtest,%,$@) runtest
 
 clean: move-in cleansub
 	-/bin/rm $(OBJS) *~ Makefile.deps $(CLEAN)
@@ -176,6 +182,12 @@ install_inc: $(TARGETINCS)
                         fi; \
                 fi; \
                 done
+
+runtest: runtestsub
+	@if [ -d test -a -x test/run.sh ]; \
+	then \
+		(cd test; ./run.sh); \
+	fi
 
 move-in:
 	@$(VLSI_TOOLS_SRC)/scripts/move-in

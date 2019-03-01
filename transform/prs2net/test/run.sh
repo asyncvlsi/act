@@ -1,5 +1,12 @@
 #!/bin/sh
 
+echo
+echo "************************************************************************"
+echo "*               Testing tool: netgen                                   *"
+echo "************************************************************************"
+echo
+
+
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
@@ -98,3 +105,4 @@ else
 	echo
 	echo "SUCCESS! All tests passed."
 fi
+echo
