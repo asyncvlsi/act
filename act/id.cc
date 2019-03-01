@@ -486,15 +486,9 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 
   if (!vx->init) {
     vx->init = 1;
-    NEW (cx, act_connection);
+    cx = new act_connection (NULL);
     vx->u.obj.c = cx;
     cx->vx = vx;
-    cx->parent = NULL;  /* no parent pointer; this is the root */
-    cx->a = NULL;	/* no slots; lazy allocation */
-
-    /* union-find tree and search list */
-    cx->up = NULL;
-    cx->next = cx;
     vx->u.obj.name = getName();
   }
 
@@ -860,34 +854,11 @@ act_connection *ActId::Canonical (Scope *s)
     if (id->arrayInfo() && id->arrayInfo()->isDeref()) {
       /* find array slot, make vx the value, cx the connection id for
 	 the canonical value */
-      if (!cx->a) {
-	/* no slots */
-	int sz = vx->t->arrayInfo()->size();
-	MALLOC (cx->a, act_connection *, sz);
-	for (int i=0; i < sz; i++) {
-	  cx->a[i] = NULL;
-	}
-      }
 
       int idx = vx->t->arrayInfo()->Offset (id->arrayInfo());
       Assert (idx != -1, "This should have been caught earlier");
 
-      if (!cx->a[idx]) {
-	/* slot is empty, need to allocate it */
-	NEW (cx->a[idx], act_connection);
-
-	cx->a[idx]->vx = NULL; /* get array valueidx slot from the parent */
-	cx->a[idx]->parent = cx;
-
-	/* no connections */
-	cx->a[idx]->up = NULL;
-	cx->a[idx]->next = cx->a[idx];
-
-	/* no subslots */
-	cx->a[idx]->a = NULL;
-      }
-
-      cx = cx->a[idx];
+      cx = cx->getsubconn(idx, vx->t->arrayInfo()->size());
       cx = cx->primary();
 
       /* find the value slot for the canonical name */
@@ -943,28 +914,11 @@ act_connection *ActId::Canonical (Scope *s)
 
       portid--;
 
-      if (!cx->a) {
-	MALLOC (cx->a, act_connection *, ux->getNumPorts());
-	for (int i=0; i < ux->getNumPorts(); i++) {
-	  cx->a[i] = NULL;
-	}
-      }
+      cx = cx->getsubconn (portid, ux->getNumPorts());
 
-      if (!cx->a[portid]) {
-	/* slot empty */
-	NEW (cx->a[portid], act_connection);
-
-	cx->a[portid]->vx = NULL;
-	cx->a[portid]->parent = cx;
-	cx->a[portid]->up = NULL;
-	cx->a[portid]->next = cx->a[portid];
-	cx->a[portid]->a = NULL;
-
-	/* WWW: is this right?! */
-	cx->a[portid]->vx = idrest->rawValueIdx (ux->CurScope());
-      }
+      /* WWW: is this right?! */
+      cx->vx = idrest->rawValueIdx (ux->CurScope());
       
-      cx = cx->a[portid];
       cx = cx->primary();
       
       if (cx->vx) {

@@ -767,3 +767,17 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
   }
 }
 
+act_connection *act_connection::getsubconn(int idx, int sz)
+{
+  Assert (0 <= idx && idx < sz, "What?");
+  if (!a) {
+    MALLOC (a, act_connection *, sz);
+    for (int i=0; i < sz; i++) {
+      a[i] = NULL;
+    }
+  }
+  if (!a[idx]) {
+    a[idx] = new act_connection(this);
+  }
+  return a[idx];
+}

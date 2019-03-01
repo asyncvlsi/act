@@ -656,22 +656,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  else {
 	    //Assert (trhs->arrayInfo(), "What?");
 	    //Assert (rsize == trhs->arrayInfo()->size(), "What?");
-	    if (!rcx->a) {
-	      MALLOC (rcx->a, act_connection *, rsize);
-	      for (int i=0; i < rsize; i++) {
-		rcx->a[i] = NULL;
-	      }
-	    }
-	    Assert (0 <= ridx && ridx < rsize, "What?");
-	    if (!rcx->a[ridx]) {
-	      NEW (rcx->a[ridx], act_connection);
-	      rcx->a[ridx]->vx = NULL;
-	      rcx->a[ridx]->parent = rcx;
-	      rcx->a[ridx]->up = NULL;
-	      rcx->a[ridx]->next = rcx->a[ridx];
-	      rcx->a[ridx]->a = NULL;
-	    }
-	    rcx = rcx->a[ridx]->primary();
+	    rcx = rcx->getsubconn (ridx, rsize)->primary();
 
 	    act_mk_connection (s->getUserDef(),
 			       id->getName(), lcx,
@@ -700,38 +685,10 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  rx = rid->Canonical (s);
 
 	  if (lidx != -1) {
-	    if (!lx->a) {
-	      MALLOC (lx->a, act_connection *, lsize);
-	      for (int i=0; i < lsize; i++) {
-		lx->a[i] = NULL;
-	      }
-	    }
-	    if (!lx->a[lidx]) {
-	      NEW (lx->a[lidx], act_connection);
-	      lx->a[lidx]->vx = NULL;
-	      lx->a[lidx]->parent = lx;
-	      lx->a[lidx]->up = NULL;
-	      lx->a[lidx]->next = lx->a[lidx];
-	      lx->a[lidx]->a = NULL;
-	    }
-	    lx = lx->a[lidx];
+	    lx = lx->getsubconn (lidx, lsize);
 	  }
 	  if (ridx != -1) {
-	    if (!rx->a) {
-	      MALLOC (rx->a, act_connection *, rsize);
-	      for (int i=0; i < rsize; i++) {
-		rx->a[i] = NULL;
-	      }
-	    }
-	    if (!rx->a[ridx]) {
-	      NEW (rx->a[ridx], act_connection);
-	      rx->a[ridx]->vx = NULL;
-	      rx->a[ridx]->parent = rx;
-	      rx->a[ridx]->up = NULL;
-	      rx->a[ridx]->next = rx->a[ridx];
-	      rx->a[ridx]->a = NULL;
-	    }
-	    rx = rx->a[ridx];
+	    rx = rx->getsubconn (ridx, rsize);
 	  }
 
 	  act_mk_connection (s->getUserDef(),
@@ -862,38 +819,10 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  rx = rid->Canonical (s);
 
 	  if (lidx != -1) {
-	    if (!lx->a) {
-	      MALLOC (lx->a, act_connection *, lsize);
-	      for (int i=0; i < lsize; i++) {
-		lx->a[i] = NULL;
-	      }
-	    }
-	    if (!lx->a[lidx]) {
-	      NEW (lx->a[lidx], act_connection);
-	      lx->a[lidx]->vx = NULL;
-	      lx->a[lidx]->parent = lx;
-	      lx->a[lidx]->up = NULL;
-	      lx->a[lidx]->next = lx->a[lidx];
-	      lx->a[lidx]->a = NULL;
-	    }
-	    lx = lx->a[lidx];
+	    lx = lx->getsubconn (lidx, lsize);
 	  }
 	  if (ridx != -1) {
-	    if (!rx->a) {
-	      MALLOC (rx->a, act_connection *, rsize);
-	      for (int i=0; i < rsize; i++) {
-		rx->a[i] = NULL;
-	      }
-	    }
-	    if (!rx->a[ridx]) {
-	      NEW (rx->a[ridx], act_connection);
-	      rx->a[ridx]->vx = NULL;
-	      rx->a[ridx]->parent = rx;
-	      rx->a[ridx]->up = NULL;
-	      rx->a[ridx]->next = rx->a[ridx];
-	      rx->a[ridx]->a = NULL;
-	    }
-	    rx = rx->a[ridx];
+	    rx = rx->getsubconn (ridx, rsize);
 	  }
 
 	  act_mk_connection (s->getUserDef(),

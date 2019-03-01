@@ -54,6 +54,26 @@ struct act_connection {
 
   bool isPrimary() { return (up == NULL) ? 1 : 0; }
   bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
+
+  act_connection(act_connection *_parent = NULL) {
+    // value pointer
+    vx = NULL;
+
+    // parent connection object
+    parent = _parent;
+
+    // unioln-find tree
+    up = NULL;
+
+    // circular list of aliases
+    next = this;
+
+    // no subconnection slots; lazy allocation
+    a = NULL;
+  }
+
+  /* return subconnection pointer; allocate slots if necessary */
+  act_connection *getsubconn(int idx, int sz);
   
   
   // returns true when there are other things connected to it
