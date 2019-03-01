@@ -47,6 +47,11 @@ struct act_connection {
   act_connection *next;
   act_connection **a;	// slots for root arrays and root userdefs
 
+
+  act_connection(act_connection *_parent = NULL);
+
+  
+
   ActId *toid();		// the ActId name for this connection entity
   
   bool isglobal();		// returns true if this is a global
@@ -55,26 +60,16 @@ struct act_connection {
   bool isPrimary() { return (up == NULL) ? 1 : 0; }
   bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
 
-  act_connection(act_connection *_parent = NULL) {
-    // value pointer
-    vx = NULL;
-
-    // parent connection object
-    parent = _parent;
-
-    // unioln-find tree
-    up = NULL;
-
-    // circular list of aliases
-    next = this;
-
-    // no subconnection slots; lazy allocation
-    a = NULL;
-  }
-
+  
   /* return subconnection pointer; allocate slots if necessary */
   act_connection *getsubconn(int idx, int sz);
-  
+
+  /* return offset of subconnection c within current connection
+     object */
+  int suboffset (act_connection *c);
+
+  /* return my offset within my parent! */
+  int myoffset () { return parent->suboffset (this); }
   
   // returns true when there are other things connected to it
   bool hasDirectconnections() { return next != this; }
@@ -91,7 +86,6 @@ struct act_connection {
   // 1 = array element "x[i]"
   // 2 = port "x.y" 
   // 3 = array element + port "x[i].y"
-
 
   act_connection *primary(); // return primary designee for this connection
   

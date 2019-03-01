@@ -26,7 +26,11 @@
 #include "config.h"
 
 
-static int offset (act_connection **a, act_connection *c)
+/*
+  Given a subconnection of the current type,
+  search for it and return its index.
+*/
+int act_connection::suboffset (act_connection *c)
 {
   int i;
   i = 0;
@@ -103,7 +107,7 @@ ActId *act_connection::toid()
       vx = c->parent->vx;
       if (vx->t->arrayInfo()) {
 	Array *tmp;
-	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	tmp = vx->t->arrayInfo()->unOffset (c->myoffset());
 	t = new ActId (vx->u.obj.name, tmp);
       }
       else {
@@ -111,7 +115,7 @@ ActId *act_connection::toid()
 	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
 
 	t = new ActId (vx->u.obj.name);
-	t->Append (new ActId (ux->getPortName (offset (c->parent->a, c))));
+	t->Append (new ActId (ux->getPortName (c->myoffset())));
       }
     }
     else {
@@ -119,13 +123,13 @@ ActId *act_connection::toid()
       Assert (vx, "What?");
       
       Array *tmp;
-      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      tmp = vx->t->arrayInfo()->unOffset (c->parent->myoffset());
       UserDef *ux;
       ux = dynamic_cast<UserDef *> (vx->t->BaseType());
       Assert (ux, "what?");
 
       t = new ActId (vx->u.obj.name, tmp);
-      t->Append (new ActId (ux->getPortName (offset (c->parent->a, c))));
+      t->Append (new ActId (ux->getPortName (c->myoffset())));
     }
 
     if (!ret) {
@@ -591,7 +595,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       }
       else {
 	if (c1->parent->vx && (c1->parent->vx == vx1) && vx1->t->arrayInfo()) {
-	  int i = offset (c1->parent->a, c1);
+	  int i = c1->myoffset ();
 
 	  if (!vx1->array_spec) {
 	    int sz;
@@ -620,7 +624,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   }
   else if (c2->parent->vx && (c2->parent->vx == vx2) && vx2->t->arrayInfo()) {
     /* array reference, look at attributes on vx2->array_info[i] */
-    int i = offset (c2->parent->a, c2);
+    int i = c2->myoffset ();
 
     if (vx1 == c1->vx) {
       if (!c1->parent) {
@@ -632,7 +636,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       }
       else {
 	if (c1->parent->vx && (c1->parent->vx == vx1) && (vx1->t->arrayInfo())) {
-	  int j = offset (c1->parent->a, c1);
+	  int j = c1->myoffset ();
 
 	  if (vx2->array_spec && vx2->array_spec[i]) {
 	    if (!vx1->array_spec) {
@@ -767,6 +771,9 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
   }
 }
 
+/*
+  Get subconnection pointer, allocating various pieces as necessary 
+*/
 act_connection *act_connection::getsubconn(int idx, int sz)
 {
   Assert (0 <= idx && idx < sz, "What?");
@@ -780,4 +787,26 @@ act_connection *act_connection::getsubconn(int idx, int sz)
     a[idx] = new act_connection(this);
   }
   return a[idx];
+}
+
+/*
+  Constructor
+*/
+act_connection::act_connection (act_connection *_parent)
+{
+  // value pointer
+  vx = NULL;
+
+  // parent connection object
+  parent = _parent;
+
+  // union-find tree
+  up = NULL;
+
+  // circular list of aliases
+  next = this;
+
+  // no subconnection slots; lazy allocation
+  // getsubconn() does the allocation as needed
+  a = NULL;
 }

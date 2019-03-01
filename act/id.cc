@@ -496,18 +496,6 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 }  
 
 
-static int offset (act_connection **a, act_connection *c)
-{
-  int i;
-  i = 0;
-  while (1) {
-    if (a[i] == c) return i;
-    i++;
-    if (i > 10000) return -1;
-  }
-  return -1;
-}
-    
 static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();
@@ -538,7 +526,7 @@ static void print_id (act_connection *c)
       vx = c->parent->vx;
       if (vx->t->arrayInfo()) {
 	Array *tmp;
-	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	tmp = vx->t->arrayInfo()->unOffset (c->myoffset());
 	printf ("%s", vx->u.obj.name);
 	tmp->Print (stdout);
 	delete tmp;
@@ -547,7 +535,7 @@ static void print_id (act_connection *c)
 	UserDef *ux;
 	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
 	Assert (ux, "what?");
-	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (c->myoffset()));
       }
     }
     else {
@@ -555,14 +543,14 @@ static void print_id (act_connection *c)
       Assert (vx, "What?");
       
       Array *tmp;
-      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      tmp = vx->t->arrayInfo()->unOffset (c->parent->myoffset());
       UserDef *ux;
       ux = dynamic_cast<UserDef *> (vx->t->BaseType());
       Assert (ux, "what?");
 
       printf ("%s", vx->u.obj.name);
       tmp->Print (stdout);
-      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+      printf (".%s", ux->getPortName (c->myoffset()));
 
       delete tmp;
     }
@@ -783,7 +771,7 @@ act_connection *ActId::Canonical (Scope *s)
 	vxrest = cxrest->parent->vx;
 	if (vxrest->t->arrayInfo()) {
 	  Array *tmp;
-	  tmp = vxrest->t->arrayInfo()->unOffset (offset (cxrest->parent->a, cxrest));
+	  tmp = vxrest->t->arrayInfo()->unOffset (cxrest->myoffset());
 	  if (!fresh) {
 	    fresh = new ActId (vxrest->u.obj.name, tmp);
 	    topf = fresh;
@@ -814,7 +802,7 @@ act_connection *ActId::Canonical (Scope *s)
 	Assert (vxrest, "???");
 
 	Array *tmp;
-	tmp = vxrest->t->arrayInfo()->unOffset (offset (cxrest->parent->parent->a, cxrest->parent));
+	tmp = vxrest->t->arrayInfo()->unOffset (cxrest->parent->myoffset());
 	UserDef *ux;
 	ux = dynamic_cast<UserDef *> (vxrest->t->BaseType());
 	Assert (ux, "what?");
@@ -826,7 +814,7 @@ act_connection *ActId::Canonical (Scope *s)
 	else {
 	  fresh->Append (new ActId (vxrest->u.obj.name, tmp));
 	  fresh = fresh->Rest();
-	  fresh->Append (new ActId (ux->getPortName (offset (cxrest->parent->a, cxrest))));
+	  fresh->Append (new ActId (ux->getPortName (cxrest->myoffset())));
 	}
       }
     }
