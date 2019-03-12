@@ -180,8 +180,6 @@ int act_connection::numSubconnections()
     Assert (ux, "hmm...");
     return ux->getNumPorts ();
   }
-
-    
 }
 
 ValueIdx *act_connection::getvx()
@@ -464,12 +462,104 @@ static void _merge_subtrees (act_connection *c1, act_connection *c2)
   }
 }
 
+/* debugging */
+static void print_id (act_connection *c)
+{
+  list_t *stk = list_new ();
+  ValueIdx *vx;
+
+  while (c) {
+    stack_push (stk, c);
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      c = c->parent->parent->parent;
+    }
+    
+  }
+
+  while (!stack_isempty (stk)) {
+    c = (act_connection *) stack_pop (stk);
+    if (c->vx) {
+      vx = c->vx;
+      printf ("%s", vx->u.obj.name);
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      if (vx->t->arrayInfo()) {
+	Array *tmp;
+	tmp = vx->t->arrayInfo()->unOffset (c->myoffset());
+	printf ("%s", vx->u.obj.name);
+	tmp->Print (stdout);
+	delete tmp;
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	Assert (ux, "what?");
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (c->myoffset()));
+      }
+    }
+    else {
+      vx = c->parent->parent->vx;
+      Assert (vx, "What?");
+      
+      Array *tmp;
+      tmp = vx->t->arrayInfo()->unOffset (c->parent->myoffset());
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+      Assert (ux, "what?");
+
+      printf ("%s", vx->u.obj.name);
+      tmp->Print (stdout);
+      printf (".%s", ux->getPortName (c->myoffset()));
+
+      delete tmp;
+    }
+    if (vx->global) {
+      printf ("(g)");
+    }
+    if (!stack_isempty (stk)) {
+      printf (".");
+    }
+  }
+  
+  list_free (stk);
+}
+
+static void dump_conn (act_connection *c)
+{
+  act_connection *tmp, *root;
+
+  root = c;
+  while (root->up) root = root->up;
+
+  tmp = c;
+
+  printf ("conn: ");
+  do {
+    print_id (tmp);
+    if (tmp == root) {
+      printf ("*");
+    }
+    printf (" , ");
+    tmp = tmp->next;
+  } while (tmp != c);
+  printf("\n");
+}
+
+
 
 static void _merge_attributes (act_attr_t **x, act_attr *a);
 
 
 void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
-		    const char *s2, act_connection *c2)
+			const char *s2, act_connection *c2)
 {
   int p1, p2;
   act_connection *tmp;
@@ -500,7 +590,12 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   vx2 = tmp->vx;
 
   if (vx1->global || vx2->global) {
+    /* set p1, p2 to -1, -1 if a priority has been set;
+       0, 0 otherwise
+    */
     if (vx2->global && !vx1->global) {
+      /* c2 is primary, so swap(c1,c2) */
+      
       tmp = c1;
       c1 = c2;
       c2 = tmp;
@@ -512,10 +607,12 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       vx2 = vxtmp;
     }
     else if (vx1->global && !vx2->global) {
+      /* nothing has to be done; c1 is primary */
       p1 = -1;
       p2 = -1;
     }
     else {
+      /* this test is insufficient */
       p1 = 0;
       p2 = 0;
     }
@@ -526,6 +623,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       p1 = ux->FindPort (s1);
       p2 = ux->FindPort (s2);
       if (p1 > 0 || p2 > 0) {
+	/* this should be enough to determine which one is primary */
 	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
 	  tmp = c1;
 	  c1 = c2;
@@ -538,19 +636,59 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     }
   }
   if (!ux || (p1 == 0 && p2 == 0)) {
-    p1 = strlen (s1);
-    p2 = strlen (s2);
-    if (p2 < p1) {
-      tmp = c1;
-      c1 = c2;
-      c2 = tmp;
-      vxtmp = vx1;
-      vx1 = vx2;
-      vx2 = vxtmp;
+    /* without refinement, this would be resolved by string
+       comparisons. we need to check subtyping relationship at this
+       point */
+    InstType *it1, *it2;
+    int ct;
+    ct = c1->getctype();
+    it1 = c1->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it1->BaseType());
+      Assert (ux, "Hmm");
+      it1 = ux->getPortType (c1->myoffset());
+      Assert (it1, "Hmm");
     }
-    else if (p1 == p2) {
-      p1 = strcmp (s1, s2);
-      if (p1 > 0) {
+    ct = c2->getctype();
+    it2 = c2->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it2->BaseType());
+      Assert (ux, "Hmm");
+      it2 = ux->getPortType (c2->myoffset());
+      Assert (it2, "Hmm");
+    }
+
+    if (it1->BaseType() == it2->BaseType()) {
+      /* ok, use string names! */
+      p1 = strlen (s1);
+      p2 = strlen (s2);
+      if (p2 < p1) {
+	tmp = c1;
+	c1 = c2;
+	c2 = tmp;
+	vxtmp = vx1;
+	vx1 = vx2;
+	vx2 = vxtmp;
+      }
+      else if (p1 == p2) {
+	p1 = strcmp (s1, s2);
+	if (p1 > 0) {
+	  tmp = c1;
+	  c1 = c2;
+	  c2 = tmp;
+	  vxtmp = vx1;
+	  vx1 = vx2;
+	  vx2 = vxtmp;
+	}
+      }
+    }
+    else {
+      /* more specific type wins */
+      Type *t = it1->isConnectable (it2, 2);
+      Assert (t, "Why am I here?");
+      if (it2->BaseType() == t) {
 	tmp = c1;
 	c1 = c2;
 	c2 = tmp;

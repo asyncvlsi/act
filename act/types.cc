@@ -1217,8 +1217,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	      InstType *rhstype;
 	      AExpr *rhsval = instparent->getAExprParam (j);
 	      rhsval = rhsval->Expand (ns, ux->I);
-	      rhstype = rhsval->getInstType (ux->I, 1);
-	      if (!type_connectivity_check (x, rhstype)) {
+	      rhstype = rhsval->getInstType (ux->I, NULL, 1);
+	      if (type_connectivity_check (x, rhstype) != 1) {
 		act_error_ctxt (stderr);
 		fprintf (stderr, "Typechecking failed, ");
 		x->Print (stderr);
@@ -1268,8 +1268,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	  if (ii < spec_nt && u[ii].u.tp) {
 	    InstType *rhstype;
 	    AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
-	    rhstype = rhsval->getInstType (s, 1);
-	    if (!type_connectivity_check (x, rhstype)) {
+	    rhstype = rhsval->getInstType (s, NULL, 1);
+	    if (type_connectivity_check (x, rhstype) != 1) {
 	      act_error_ctxt (stderr);
 	      fprintf (stderr, "Typechecking failed, ");
 	      x->Print (stderr);
@@ -1628,7 +1628,7 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   else {
     ae = new AExpr (const_expr (32));
   }
-  it = ae->getInstType (s);
+  it = ae->getInstType (s, NULL);
   if (!TypeFactory::isPIntType (it->BaseType()) ||
       it->arrayInfo()) {
     act_error_ctxt (stderr);

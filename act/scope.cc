@@ -896,15 +896,15 @@ void Scope::BindParam (ActId *id, AExpr *ae)
   AExprstep *aes;
 
   if (subrange_info) {
-    actual = actual_insttype (this, id);
+    actual = act_actual_insttype (this, id, NULL);
   }
   else {
     actual = vx->t;
   }
   
   if (ae) {
-    xrhs = ae->getInstType (this, 1 /* expanded */);
-    if (!type_connectivity_check (actual, xrhs)) {
+    xrhs = ae->getInstType (this, NULL, 1 /* expanded */);
+    if (type_connectivity_check (actual, xrhs) != 1) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Typechecking failed, ");
       actual->Print (stderr);

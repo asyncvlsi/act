@@ -584,7 +584,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 
     /* rhs */
     arhs = u.basic.rhs->Expand (ns, s);
-    trhs = arhs->getInstType (s, 1);
+    trhs = arhs->getInstType (s, NULL, 1);
 
     if (!type_connectivity_check (tlhs, trhs)) {
       act_error_ctxt (stderr);
@@ -723,11 +723,11 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 
     /* lhs */
     alhs = u.general.lhs->Expand (ns, s, 1); /* an lval */
-    tlhs = alhs->getInstType (s, 1);
+    tlhs = alhs->getInstType (s, NULL, 1);
 
     /* rhs */
     arhs = u.basic.rhs->Expand (ns, s);
-    trhs = arhs->getInstType (s, 1);
+    trhs = arhs->getInstType (s, NULL, 1);
 
     if (!type_connectivity_check (tlhs, trhs)) {
       act_error_ctxt (stderr);

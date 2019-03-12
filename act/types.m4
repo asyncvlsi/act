@@ -313,8 +313,8 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 	InstType *lhs, *rhs;
 	ui->setParam (i++, (AExpr *)list_value (li));
 	lhs = ud->getPortType (-(1+param_map[i-1]));
-	rhs = ((AExpr *)list_value (li))->getInstType ($0->scope);
-	if (!type_connectivity_check (lhs, rhs)) {
+	rhs = ((AExpr *)list_value (li))->getInstType ($0->scope, NULL);
+	if (type_connectivity_check (lhs, rhs) != 1) {
 	  $E("Typechecking failed for template parameter #%d\n\t%s", (i-1),
 	     act_type_errmsg());
 	}

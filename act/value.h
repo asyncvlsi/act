@@ -61,26 +61,33 @@ struct act_connection {
   bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
 
   
-  /* return subconnection pointer; allocate slots if necessary */
+  /* return subconnection pointer; allocate slots if necessary. 
+        sz = # of subconnections possible for this object
+       idx = index of subconnection
+   */
   act_connection *getsubconn(int idx, int sz);
 
-  /* return offset of subconnection c within current connection
-     object */
+  /* return offset of subconnection c within current connection object */
   int suboffset (act_connection *c);
 
-  /* return my offset within my parent! */
+  /* return my offset within my parent */
   int myoffset () { return parent->suboffset (this); }
   
-  // returns true when there are other things connected to it
+  // returns true when there are other things connected to
+  // the object directly
   bool hasDirectconnections() { return next != this; }
-  bool hasDirectconnections(int i) { return a[i] && a[i]->hasDirectconnections(); }
+
+  // returns true when there is a subconnection at index i
+  bool hasDirectconnections(int i) { return a && a[i] && a[i]->hasDirectconnections(); }
   
   // returns true if this is a complex object (array or user-defined)
   // with potential subconnections to it
   bool hasSubconnections() { return a != NULL; }
   int numSubconnections();
-  ValueIdx *getvx();
-
+  
+  ValueIdx *getvx();		/* this returns the root ValueIdx for
+				   this particular connection */
+  
   unsigned int getctype();
   // 0 = standard  "x"
   // 1 = array element "x[i]"

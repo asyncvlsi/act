@@ -399,10 +399,27 @@ int act_type_expr (Scope *s, Expr *e)
 }
 
 
-
-InstType *actual_insttype (Scope *s, ActId *id)
+/*
+  Returns the insttype for the ID. 
+  If islocal != NULL, set to 1 if this is a local id within the scope
+*/
+InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
 {
   InstType *it;
+
+  if (islocal) {
+    *islocal = 1;
+    if (s->Lookup (id->getName())) {
+      UserDef *ux;
+      ux = s->getUserDef ();
+      if (ux && ux->isPort (id->getName())) {
+	*islocal = 0;
+      }
+    }
+    else {
+      *islocal = 0;
+    }
+  }
 
   it = s->FullLookup (id->getName());
   Assert (it, "This should have been caught earlier!");
@@ -535,10 +552,14 @@ InstType *actual_insttype (Scope *s, ActId *id)
   return it;
 }
 
-InstType *act_expr_insttype (Scope *s, Expr *e)
+InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
 {
   int ret;
   InstType *it;
+
+  if (islocal) {
+    *islocal = 1;
+  }
 
   if (!e) {
     typecheck_err ("NULL expression??");
@@ -546,7 +567,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e)
   }
   if (e->type == E_VAR) {
     /* special case */
-    it = actual_insttype (s, (ActId *)e->u.e.l);
+    it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
     return it;
   }
   ret = act_type_expr (s, e);
@@ -620,12 +641,22 @@ static void type_errctxt (int expanded, const char *msg)
    skip_last_array = 1 : for array dimensions, skip the last dimension
    check. Check that # of dimensions are equal, and for expanded
    types, check all dims are equal except for the first one.
-   
+
+
+   Return value:
+     1 = they are compatible
+     0 = they are not compatible
+     2 = they are compatible, lhs is more specific
+     3 = they are compatible, rhs is more specific
 */
 static const char *conn_msg = NULL;
-int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
+int type_connectivity_check (InstType *lhs, 
+			     InstType *rhs, 
+			     int skip_last_array)
 {
   struct act_position p;
+  Type *tmp;
+  
   if (lhs == rhs) return 1;
 
   typecheck_errmsg[0] = '\0';
@@ -641,13 +672,27 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
 
   if (lhs->isExpanded ()) {
     /* the connectivity check is now strict */
-    if (lhs->isConnectable (rhs, (skip_last_array ? 3: 2))) {
+    if ((tmp = lhs->isConnectable (rhs, (skip_last_array ? 3: 2)))) {
+      if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
+	return 2;
+      }
+      else if (tmp == rhs->BaseType() && tmp != lhs->BaseType()) {
+	return 3;
+      }
+      Assert (tmp == lhs->BaseType() && tmp == rhs->BaseType(), "Hmm.");
       return 1;
     }
   }
   else {
     /* check dim compatibility */
-    if (lhs->isConnectable (rhs, 1)) {
+    if ((tmp = lhs->isConnectable (rhs, 1))) {
+      if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
+	return 2;
+      }
+      else if (tmp == rhs->BaseType() && tmp != lhs->BaseType()) {
+	return 3;
+      }
+      Assert (tmp == lhs->BaseType() && tmp == rhs->BaseType(), "Hmm.");
       return 1;
     }
   }
@@ -672,18 +717,26 @@ int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array)
   return 0;
 }
 
-InstType *AExpr::getInstType (Scope *s, int expanded)
+InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
 {
   InstType *cur, *tmp;
   AExpr *ae;
   int count;
+  int xlocal;
+
+  if (islocal) {
+    *islocal = 1;
+  }
   
   count = 0;
   switch (t) {
   case AExpr::CONCAT:
   case AExpr::COMMA:
-    cur = l->getInstType (s, expanded);
+    cur = l->getInstType (s, &xlocal, expanded);
     if (!cur) return NULL;
+    if (islocal) {
+      *islocal &= xlocal;
+    }
 
     if (t == AExpr::CONCAT && !cur->arrayInfo()) {
       act_error_ctxt (stderr);
@@ -708,7 +761,10 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
     }
     while (ae) {
       Assert (ae->GetLeft (), "Hmm");
-      tmp = ae->GetLeft ()->getInstType (s, expanded);
+      tmp = ae->GetLeft ()->getInstType (s, &xlocal, expanded);
+      if (islocal) {
+	*islocal &= xlocal;
+      }
 
       if (!tmp) {
 	delete cur;
@@ -734,7 +790,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
       }
 
       conn_msg = "Array expression, components are not compatible";
-      if (!type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0))) {
+      if (type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0)) != 1) {
 	type_errctxt (expanded, "Array expression, components are not compatible");
 	fprintf (stderr, " (");
 	cur->Print (stderr);
@@ -827,7 +883,10 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
     break;
 
   case AExpr::EXPR:
-    { InstType *it = act_expr_insttype (s, (Expr *)l);
+    { InstType *it = act_expr_insttype (s, (Expr *)l, &xlocal);
+      if (islocal) {
+	*islocal &= xlocal;
+      }
       if (expanded && it) {
 	it->mkExpanded();
       }
@@ -838,7 +897,7 @@ InstType *AExpr::getInstType (Scope *s, int expanded)
 #if 0
   case AExpr::SUBRANGE:
     fatal_error ("Should not be here");
-    return actual_insttype (s, (ActId *)l);
+    return act_actual_insttype (s, (ActId *)l, NULL);
 #endif
 
   default:
@@ -866,10 +925,12 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
   printf ("\n");
 #endif
 
-  InstType *lhs = ae->getInstType (s);
+  int lhslocal;
+  InstType *lhs = ae->getInstType (s, &lhslocal);
   if (!lhs) return T_ERR;
 
-  InstType *rhs = rae->getInstType (s);
+  int rhslocal;
+  InstType *rhs = rae->getInstType (s, &rhslocal);
   if (!rhs) {
     delete lhs;
     return T_ERR;
@@ -895,6 +956,13 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
   delete lhs;
   delete rhs;
 
+#if 0
+  printf ("ret=%d, lhslocal=%d, rhslocal=%d\n", ret, lhslocal, rhslocal);
+#endif  
+
+  if (ret == 2 && !lhslocal) return 0;
+  if (ret == 3 && !rhslocal) return 0;
+
   return ret;
 }
 
@@ -916,10 +984,12 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   printf ("\n");
   */
 
-  InstType *lhs = actual_insttype (s, id);
+  int lhslocal;
+  InstType *lhs = act_actual_insttype (s, id, &lhslocal);
   if (!lhs) return T_ERR;
 
-  InstType *rhs = rae->getInstType (s);
+  int rhslocal;
+  InstType *rhs = rae->getInstType (s, &rhslocal);
   if (!rhs) {
     delete lhs;
     return T_ERR;
@@ -944,6 +1014,12 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   printf ("Ok, here2\n");
   fflush (stdout);
   */
+#if 0
+  printf ("ret=%d, lhslocal=%d, rhslocal=%d\n", ret, lhslocal, rhslocal);
+#endif
+  
+  if (ret == 2 && !lhslocal) return 0;
+  if (ret == 3 && !rhslocal) return 0;
 
   return ret;
 }
