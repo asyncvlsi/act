@@ -3,13 +3,16 @@
 This is the implementation of the ACT hardware description language.
 (ACT = asynchronous circuit/compiler tools)
 
-Build instructions:
+System requirements:
 
    * The system must have libedit installed. For the yum package manager, the
      package is called libedit-devel; for apt-get, it is libeditline-dev. Some
      systems have *both* packages. In that case please use libedit, not libeditline.
-   * The system should also have zlib installed	
+   * The system should have zlib installed	
    * The system should have the macro pre-processing package m4 installed
+
+Build instructions:
+
    * Create a directory where you'd like the tools to be installed. Example
      common locations include /usr/local/cad, /opt/cad, /opt/async
    * Set the environment variable ACT_HOME to point to the install directory.
