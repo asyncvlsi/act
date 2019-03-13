@@ -25,6 +25,8 @@ Build instructions:
 If there is an issue building the software and you want to do a clean build, use
 "make realclean"
 
+Once you've built the tools, run "make install" to install the files, and  "make runtest" to run through a set of test cases.
+
 Language history:
   * ~1991 (?), a language for hierarchical production rules was developed at Caltech (A.J. Martin's group). This was dubbed "CAST" for Caltech Asynchronous Synthesis Tools.
   * ~1995, a new CAST language was designed and implemented by Rajit Manohar (student in A.J. Martin's group). This was used to implement the first high-performance asynchronous microprocessor
