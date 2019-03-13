@@ -659,7 +659,6 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       it2 = ux->getPortType (c2->myoffset());
       Assert (it2, "Hmm");
     }
-
     if (it1->BaseType() == it2->BaseType()) {
       /* ok, use string names! */
       p1 = strlen (s1);
@@ -686,8 +685,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     }
     else {
       /* more specific type wins */
-      Type *t = it1->isConnectable (it2, 2);
-      Assert (t, "Why am I here?");
+      Type *t = it1->isRelated (it2);
       if (it2->BaseType() == t) {
 	tmp = c1;
 	c1 = c2;
@@ -698,6 +696,43 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       }
     }
   }
+
+  /* verify that c1 can be the primary! */
+#if 1
+  {
+    InstType *it1, *it2;
+    int ct;
+    ct = c1->getctype();
+    it1 = c1->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it1->BaseType());
+      Assert (ux, "Hmm");
+      it1 = ux->getPortType (c1->myoffset());
+      Assert (it1, "Hmm");
+    }
+    ct = c2->getctype();
+    it2 = c2->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it2->BaseType());
+      Assert (ux, "Hmm");
+      it2 = ux->getPortType (c2->myoffset());
+      Assert (it2, "Hmm");
+    }
+    Type *t = it1->isRelated (it2);
+    if (t != it1->BaseType()) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);
+      fprintf (stderr, "\tType 1: ");
+      it1->Print (stderr);
+      fprintf (stderr, "\n\tType 2: ");
+      it2->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Illegal combination of types");
+    }
+  }
+#endif
 
   /* NOTE: attributes can only show up on raw identifiers, or raw
      identifiers followed by a deref */

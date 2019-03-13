@@ -272,6 +272,97 @@ int InstType::isEqual (InstType *it, int weak)
   return 1;
 }
 
+Type *InstType::isRelated (InstType *it)
+{
+  Type *retval;
+  
+  if (t == it->t) return t;
+
+#if 0
+    printf (" -- In the subtype check.\n");
+#endif
+    
+  if (TypeFactory::isUserType (t) ||
+      TypeFactory::isUserType (it->t)) {
+    Type *t1, *t2;
+    t1 = t;
+    t2 = it->t;
+
+    if (!TypeFactory::isUserType (t1)) {
+      t1 = it->t;
+      t2 = t;
+    }
+
+#if 0
+    printf ("Check: t1=%s, t2=%s; is t2 a parent of t1?\n", t1->getName(), t2->getName());
+    fflush (stdout);
+#endif
+
+    UserDef *u = dynamic_cast<UserDef *>(t1);
+    InstType *pit = u->getParent();
+    while (pit) {
+#if 0
+      printf ("checking t1's parent: ");
+      pit->Print (stdout);
+      printf ("\n");
+#endif
+      if (pit->t == t2)
+	break;
+      if (TypeFactory::isUserType (pit)) {
+	u = dynamic_cast<UserDef *>(pit->t);
+	pit = u->getParent();
+      }
+      else {
+	pit = NULL;
+      }
+    }
+#if 0
+    printf ("Here, %s\n", pit ? "ok!" : "NULL");
+#endif
+    if (pit) {
+      retval = t1;
+    }
+    else {
+      if (TypeFactory::isUserType (t2)) {
+#if 0
+	printf ("Check the other way\n");
+#endif
+	u = dynamic_cast<UserDef *>(t2);
+	pit = u->getParent();
+	while (pit) {
+#if 0
+	  printf ("checking t2's parent: ");
+	  pit->Print (stdout);
+	  printf ("\n");
+#endif
+	  if (pit->t == t1)
+	    break;
+	  if (TypeFactory::isUserType (pit)) {
+	    u = dynamic_cast<UserDef *>(pit->t);
+	    pit = u->getParent();
+	  }
+	  else {
+	    pit = NULL;
+	  }
+	}
+	if (!pit) {
+	  return NULL;
+	}
+      }
+      else {
+	return NULL;
+      }
+      retval = t2;
+    }
+  }
+  else {
+    retval = NULL;
+  }
+  return retval;
+}
+
+
+
 /* XXX: FIXME */
 Type *InstType::isConnectable (InstType *it, int weak)
 {
@@ -290,87 +381,8 @@ Type *InstType::isConnectable (InstType *it, int weak)
      they might be connectable because they have a common root */
   if (t != it->t) {
     subtype = 1;
-#if 0
-    printf (" -- In the subtype check.\n");
-#endif
-    if (TypeFactory::isUserType (t) ||
-	TypeFactory::isUserType (it->t)) {
-      Type *t1, *t2;
-      t1 = t;
-      t2 = it->t;
-#if 0
-      printf ("Usertypes, there's hope\n");
-#endif
-      if (!TypeFactory::isUserType (t1)) {
-	t1 = it->t;
-	t2 = t;
-      }
-
-#if 0
-      printf ("Check: t1=%s, t2=%s; is t2 a parent of t1?\n", t1->getName(), t2->getName());
-      fflush (stdout);
-#endif
-      
-      UserDef *u = dynamic_cast<UserDef *>(t1);
-      InstType *pit = u->getParent();
-      while (pit) {
-#if 0
-	printf ("checking t1's parent: ");
-	pit->Print (stdout);
-	printf ("\n");
-#endif
-	if (pit->t == t2)
-	  break;
-	if (TypeFactory::isUserType (pit)) {
-	  u = dynamic_cast<UserDef *>(pit->t);
-	  pit = u->getParent();
-	}
-	else {
-	  pit = NULL;
-	}
-      }
-#if 0
-      printf ("Here, %s\n", pit ? "ok!" : "NULL");
-#endif
-      if (pit) {
-	retval = t1;
-      }
-      else {
-	if (TypeFactory::isUserType (t2)) {
-#if 0
-	  printf ("Check the other way\n");
-#endif
-	  u = dynamic_cast<UserDef *>(t2);
-	  pit = u->getParent();
-	  while (pit) {
-#if 0
-	    printf ("checking t2's parent: ");
-	    pit->Print (stdout);
-	    printf ("\n");
-#endif
-	    if (pit->t == t1)
-	      break;
-	    if (TypeFactory::isUserType (pit)) {
-	      u = dynamic_cast<UserDef *>(pit->t);
-	      pit = u->getParent();
-	    }
-	    else {
-	      pit = NULL;
-	    }
-	  }
-	  if (!pit) {
-	    return NULL;
-	  }
-	}
-	else {
-	  return NULL;
-	}
-	retval = t2;
-      }
-    }
-    else {
-      return NULL; /* not the same base type */
-    }
+    retval = isRelated (it);
+    if (!retval) return NULL;
   }
   else {
     subtype = 0;

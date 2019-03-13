@@ -150,6 +150,7 @@ class InstType {
 
   int isParamAType (int k);
 
+  Type *isRelated (InstType *it);
 
   /* XXX: Return 1 if any template parameter in inst_param involves global
      symbols */
