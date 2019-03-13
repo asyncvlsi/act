@@ -564,6 +564,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   int p1, p2;
   act_connection *tmp;
   ValueIdx *vx1, *vx2, *vxtmp;
+  int do_swap = 0;
 
 #if 0
   printf ("connect: %s and %s\n", s1, s2);
@@ -595,16 +596,10 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     */
     if (vx2->global && !vx1->global) {
       /* c2 is primary, so swap(c1,c2) */
-      
-      tmp = c1;
-      c1 = c2;
-      c2 = tmp;
+      do_swap = 1;
       p1 = -1;
       p2 = -1;
 
-      vxtmp = vx1;
-      vx1 = vx2;
-      vx2 = vxtmp;
     }
     else if (vx1->global && !vx2->global) {
       /* nothing has to be done; c1 is primary */
@@ -625,12 +620,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       if (p1 > 0 || p2 > 0) {
 	/* this should be enough to determine which one is primary */
 	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
-	  tmp = c1;
-	  c1 = c2;
-	  c2 = tmp;
-	  vxtmp = vx1;
-	  vx1 = vx2;
-	  vx2 = vxtmp;
+	  do_swap = 1;
 	}
       }
     }
@@ -664,22 +654,12 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       p1 = strlen (s1);
       p2 = strlen (s2);
       if (p2 < p1) {
-	tmp = c1;
-	c1 = c2;
-	c2 = tmp;
-	vxtmp = vx1;
-	vx1 = vx2;
-	vx2 = vxtmp;
+	do_swap = 1;
       }
       else if (p1 == p2) {
 	p1 = strcmp (s1, s2);
 	if (p1 > 0) {
-	  tmp = c1;
-	  c1 = c2;
-	  c2 = tmp;
-	  vxtmp = vx1;
-	  vx1 = vx2;
-	  vx2 = vxtmp;
+	  do_swap = 1;
 	}
       }
     }
@@ -687,18 +667,21 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       /* more specific type wins */
       Type *t = it1->isRelated (it2);
       if (it2->BaseType() == t) {
-	tmp = c1;
-	c1 = c2;
-	c2 = tmp;
-	vxtmp = vx1;
-	vx1 = vx2;
-	vx2 = vxtmp;
+	do_swap = 1;
       }
     }
   }
 
+  if (do_swap) {
+    tmp = c1;
+    c1 = c2;
+    c2 = tmp;
+    vxtmp = vx1;
+    vx1 = vx2;
+    vx2 = vxtmp;
+  }
+  
   /* verify that c1 can be the primary! */
-#if 1
   {
     InstType *it1, *it2;
     int ct;
@@ -732,7 +715,6 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       fatal_error ("Illegal combination of types");
     }
   }
-#endif
 
   /* NOTE: attributes can only show up on raw identifiers, or raw
      identifiers followed by a deref */
