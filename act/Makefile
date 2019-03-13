@@ -19,7 +19,7 @@
 #
 #-------------------------------------------------------------------------
 
-weird: install_inc all install_conf allsub
+weird: install_inc all install_conf install allsub
 
 LIB=libact_$(EXT).a
 
@@ -44,7 +44,6 @@ GENERATED=act_parse.cc act_walk_X.cc
 CLEAN=act_parse.cc act_walk_X.cc expr.c expr.h act_parse.h \
 	act_walk_X.h act_parse_int.h act_parse.def act_parse.gram \
 	act.cy act_parse_id.h
-
 
 SUBDIRS=test
 

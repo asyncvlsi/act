@@ -1,0 +1,3 @@
+ERROR: File `14.act', line 20, col 5
+	Typechecking failed on connection!
+	Connection is compatible, but requires non-local instance (LHS) to be specialized

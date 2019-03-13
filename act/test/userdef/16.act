@@ -1,0 +1,20 @@
+template<pint N>
+deftype foo <: int<1> (bool a[N], b[N])
+{
+  a = b;
+}
+
+deftype bar <: foo<5> ( ) 
+{ 
+}
+
+
+
+defproc testme (foo <5> f)
+{
+bar b;
+
+  f = b;
+}
+
+testme t;

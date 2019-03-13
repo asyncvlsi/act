@@ -649,7 +649,6 @@ static void type_errctxt (int expanded, const char *msg)
      2 = they are compatible, lhs is more specific
      3 = they are compatible, rhs is more specific
 */
-static const char *conn_msg = NULL;
 int type_connectivity_check (InstType *lhs, 
 			     InstType *rhs, 
 			     int skip_last_array)
@@ -701,10 +700,6 @@ int type_connectivity_check (InstType *lhs,
     p.l = stype_line_no;
     p.c = stype_col_no;
     p.f = stype_file_name;
-
-    if (!conn_msg) {
-      conn_msg = "Type checking failed in connection";
-    }
   }
   /* append this */
   char buf1[1024], buf2[1024];
@@ -789,7 +784,6 @@ InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
 	return NULL;
       }
 
-      conn_msg = "Array expression, components are not compatible";
       if (type_connectivity_check (cur, tmp, (t == AExpr::CONCAT ? 1 : 0)) != 1) {
 	type_errctxt (expanded, "Array expression, components are not compatible");
 	fprintf (stderr, " (");
@@ -804,7 +798,6 @@ InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
 	return NULL;
 #endif	
       }
-      conn_msg = NULL;
       
       /* cur has the base type.
 	 for comma expresisons, the next type simply is a higher
@@ -927,13 +920,13 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 
   int lhslocal;
   InstType *lhs = ae->getInstType (s, &lhslocal);
-  if (!lhs) return T_ERR;
+  if (!lhs) return 0;
 
   int rhslocal;
   InstType *rhs = rae->getInstType (s, &rhslocal);
   if (!rhs) {
     delete lhs;
-    return T_ERR;
+    return 0;
   }
 
 #if 0
@@ -958,11 +951,16 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 
 #if 0
   printf ("ret=%d, lhslocal=%d, rhslocal=%d\n", ret, lhslocal, rhslocal);
-#endif  
+#endif
 
-  if (ret == 2 && !lhslocal) return 0;
-  if (ret == 3 && !rhslocal) return 0;
-
+  if (ret == 3 && !lhslocal) {
+    typecheck_err ("Connection is compatible, but requires non-local instance (LHS) to be specialized");
+    return 0;
+  }
+  if (ret == 2 && !rhslocal) {
+    typecheck_err ("Connection is compatible, but requires non-local instance (RHS) to be specialized");
+    return 0;
+  }
   return ret;
 }
 
@@ -1018,8 +1016,13 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   printf ("ret=%d, lhslocal=%d, rhslocal=%d\n", ret, lhslocal, rhslocal);
 #endif
   
-  if (ret == 2 && !lhslocal) return 0;
-  if (ret == 3 && !rhslocal) return 0;
-
+  if (ret == 3 && !lhslocal) {
+    typecheck_err ("Connection is compatible, but requires non-local instance (LHS) to be specialized");
+    return 0;
+  }
+  if (ret == 2 && !rhslocal) {
+    typecheck_err ("Connection is compatible, but requires non-local instance (RHS) to be specialized");
+    return 0;
+  }
   return ret;
 }
