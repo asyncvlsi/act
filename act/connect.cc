@@ -1046,3 +1046,26 @@ Type::direction act_connection::getDir ()
   }
   return Type::NONE;
 }
+
+
+act_connection *act_connection::primary()
+{
+  act_connection *root = NULL;
+  act_connection *tmp;
+  act_connection *c = this;
+
+  tmp = c;
+  /* find root */
+  while (tmp->up) {
+    tmp = tmp->up;
+  }
+  root = tmp;
+
+  /* flatten connection */
+  while (c->up) {
+    tmp = c->up;
+    c->up = root;
+    c = tmp;
+  }
+  return root;
+}

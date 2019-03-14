@@ -1,0 +1,8 @@
+bool? a, b;
+bool? c;
+pint w;
+
+prs {
+
+ (i:0..3:a<i> & b -> c-)
+}

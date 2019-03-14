@@ -1,0 +1,3 @@
+In expanding ::<Global>
+	c has a directional type that is not writable.
+FATAL: A `bool?' cannot be on the RHS of a production rule.

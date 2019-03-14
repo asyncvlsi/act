@@ -493,11 +493,22 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       tmp->u.one.e = prs_expr_expand (p->u.one.e, ns, s);
 
       if (p->u.one.label == 0) {
+	act_connection *ac;
+	
 	idtmp = p->u.one.id->Expand (ns, s);
 	etmp = idtmp->Eval (ns, s);
 	Assert (etmp->type == E_VAR, "Hmm");
 	tmp->u.one.id = (ActId *)etmp->u.e.l;
 	FREE (etmp);
+
+	ac = idtmp->Canonical (s);
+	if (ac->getDir() == Type::IN) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\t");
+	  idtmp->Print (stderr);
+	  fprintf (stderr, " has a directional type that is not writable.\n");
+	  fatal_error ("A `bool?' cannot be on the RHS of a production rule.");
+	}
       }
       else {
 	/* it is a char* */
