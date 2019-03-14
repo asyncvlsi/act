@@ -4,18 +4,18 @@
 "f.z[6].lReset"|"f.z[6].p"->"f.z[6].r"-
 ~("f.z[6].lReset"|"f.z[6].p")->"f.z[6].r"+
 "f.z[6].q"&"f.z[6].p"->"f.z[6].r"+
-"f.z[6].q"&"f.z[6].p"->"f.z[6].r"-
+~"f.z[6].q"&~"f.z[6].p"->"f.z[6].r"-
 = "Reset" "f.z[6].lReset"
 = "f.z[6].r" "f.z[6].rr"
 "f.z[7].lReset"|"f.z[7].p"->"f.z[7].r"-
 ~("f.z[7].lReset"|"f.z[7].p")->"f.z[7].r"+
 "f.z[7].q"&"f.z[7].p"->"f.z[7].r"+
-"f.z[7].q"&"f.z[7].p"->"f.z[7].r"-
+~"f.z[7].q"&~"f.z[7].p"->"f.z[7].r"-
 = "Reset" "f.z[7].lReset"
 = "f.z[7].r" "f.z[7].rr"
 "f.z[8].lReset"|"f.z[8].p"->"f.z[8].r"-
 ~("f.z[8].lReset"|"f.z[8].p")->"f.z[8].r"+
 "f.z[8].q"&"f.z[8].p"->"f.z[8].r"+
-"f.z[8].q"&"f.z[8].p"->"f.z[8].r"-
+~"f.z[8].q"&~"f.z[8].p"->"f.z[8].r"-
 = "Reset" "f.z[8].lReset"
 = "f.z[8].r" "f.z[8].rr"
