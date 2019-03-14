@@ -650,16 +650,27 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       Assert (it2, "Hmm");
     }
     if (it1->BaseType() == it2->BaseType()) {
-      /* ok, use string names! */
-      p1 = strlen (s1);
-      p2 = strlen (s2);
-      if (p2 < p1) {
+      Type::direction d1, d2;
+      d1 = c1->getDir();
+      d2 = c2->getDir();
+      if (d2 != Type::NONE && d1 != Type::NONE && d1 != d2) {
+	/* error */
+      }
+      if (d1 != Type::NONE && d2 == Type::NONE) {
 	do_swap = 1;
       }
-      else if (p1 == p2) {
-	p1 = strcmp (s1, s2);
-	if (p1 > 0) {
+      else {
+	/* ok, use string names! */
+	p1 = strlen (s1);
+	p2 = strlen (s2);
+	if (p2 < p1) {
 	  do_swap = 1;
+	}
+	else if (p1 == p2) {
+	  p1 = strcmp (s1, s2);
+	  if (p1 > 0) {
+	    do_swap = 1;
+	  }
 	}
       }
     }
@@ -712,6 +723,30 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       fprintf (stderr, "\n\tType 2: ");
       it2->Print (stderr);
       fprintf (stderr, "\n");
+      fatal_error ("Illegal combination of types");
+    }
+
+    /* now check direction flags */
+    Type::direction d1, d2;
+
+    d1 = c1->getDir();
+    d2 = c2->getDir();
+#if 0
+    printf ("dir flags: %s, %s\n", Type::dirstring (d1),
+	    Type::dirstring (d2));
+    dump_conn (c1);
+    dump_conn (c2);
+#endif
+    
+    if (d1 != d2 && d1 != Type::NONE) {
+      /* error */
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);
+      fprintf (stderr, "\tType 1: ");
+      it1->Print (stderr);
+      fprintf (stderr, " [dir=%s]\n\tType 2: ", Type::dirstring (d1));
+      it2->Print (stderr);
+      fprintf (stderr, " [dir=%s]\n", Type::dirstring (d2));
       fatal_error ("Illegal combination of types");
     }
   }
@@ -964,4 +999,50 @@ act_connection::act_connection (act_connection *_parent)
   // no subconnection slots; lazy allocation
   // getsubconn() does the allocation as needed
   a = NULL;
+}
+
+
+Type::direction act_connection::getDir ()
+{
+  act_connection *tmp;
+  int polarity;
+
+  // to identify my direction flag:
+  //   go to the root of the connection. that type has a direction
+  //   if anything in the hierarchy doesn't have a direction flag
+  tmp = this;
+
+  polarity = 0;
+  while (tmp) {
+    if (tmp->vx) {
+      if (tmp->vx->t->getDir() == Type::NONE ||
+	  tmp->vx->t->getDir() == Type::IN  ||
+	  tmp->vx->t->getDir() == Type::OUT) {
+	if (tmp->vx->t->getDir() == Type::NONE) {
+	  return Type::NONE;
+	}
+	else if (tmp->vx->t->getDir() == Type::IN) {
+	  if (polarity) {
+	    return Type::OUT;
+	  }
+	  else {
+	    return Type::IN;
+	  }
+	}
+	else {
+	  if (polarity) {
+	    return Type::IN;
+	  }
+	  else {
+	    return Type::OUT;
+	  }
+	}
+      }
+      if (tmp->vx->t->getDir() == Type::OUTIN) {
+	polarity = 1 - polarity;
+      }
+    }
+    tmp = tmp->parent;
+  }
+  return Type::NONE;
 }

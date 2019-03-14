@@ -31,6 +31,8 @@ class ActId;
 struct ValueIdx;
 struct act_attr;
 
+#include <act/basetype.h>
+
 /*
   Connections
 
@@ -95,7 +97,8 @@ struct act_connection {
   // 3 = array element + port "x[i].y"
 
   act_connection *primary(); // return primary designee for this connection
-  
+
+  Type::direction getDir(); // get direction flags: none, in, or out.
 };
 
 
