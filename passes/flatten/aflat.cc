@@ -196,7 +196,7 @@ static void prefix_connid_print (act_connection *c, const char *s = "")
   2 = &
   1 = |
 */
-static void _print_prs_expr (Scope *s, act_prs_expr_t *e, int prec, int flip = 0)
+static void _print_prs_expr (Scope *s, act_prs_expr_t *e, int prec, int flip)
 {
   hash_bucket_t *b;
   act_prs_lang_t *pl;
@@ -378,7 +378,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
       }
       else {
 	print_attr_prefix (p->u.one.attr);
-	_print_prs_expr (s, p->u.one.e, 0);
+	_print_prs_expr (s, p->u.one.e, 0, 0);
 	printf ("->");
 	prefix_id_print (s, p->u.one.id);
 	if (p->u.one.dir) {
@@ -390,7 +390,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	if (p->u.one.arrow_type == 1) {
 	  print_attr_prefix (p->u.one.attr);
 	  printf ("~(");
-	  _print_prs_expr (s, p->u.one.e, 0);
+	  _print_prs_expr (s, p->u.one.e, 0, 0);
 	  printf (")");
 	  printf ("->");
 	  prefix_id_print (s, p->u.one.id);
@@ -403,7 +403,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	}
 	else if (p->u.one.arrow_type == 2) {
 	  print_attr_prefix (p->u.one.attr);
-	  _print_prs_expr (s, p->u.one.e, 1);
+	  _print_prs_expr (s, p->u.one.e, 0, 1);
 	  printf ("->");
 	  prefix_id_print (s, p->u.one.id);
 	  if (p->u.one.dir) {

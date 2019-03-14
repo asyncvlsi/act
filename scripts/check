@@ -1,0 +1,45 @@
+#!/bin/sh
+
+cat > '__tst1.c' <<EOM
+
+#include <stdio.h>
+#include <histedit.h>
+
+int main (void)
+{
+  printf ("Hello!\n");
+  return 0;
+}
+
+EOM
+
+. $VLSI_TOOLS_SRC/scripts/config
+
+echo "  ... looking for editline"
+if ! $C_COMPILER_NAME -c __tst1.c  >/dev/null 2>&1
+then
+	rm -f __tst1.c
+	echo "Did not find libeditline on the system"
+	exit 1
+fi
+
+echo "  ... looking for zlib"
+if ! $C_COMPILER_NAME __tst1.o -lz >/dev/null 2>&1
+then
+	rm -f __tst1.c
+	echo "Did not find zlib on the system"
+	exit 1
+fi
+rm -f __tst1.o
+rm -f a.out
+
+echo "  ... looking for m4 macro preprocessor"
+if ! m4 __tst1.c >/dev/null 2>&1
+then
+	rm -f __tst1.c
+	echo "Did not find the m4 macro preprocessor package on the system"
+	exit 1
+fi
+
+rm -f __tst1.c
+exit 0
