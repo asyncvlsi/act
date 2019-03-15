@@ -1,0 +1,6 @@
+In expanding foo
+In expanding ::<Global>
+Connecting `y' and `z' failed.
+	Type 1: bool! [dir=!]
+	Type 2: bool?! [dir=?!]
+FATAL: Illegal combination of types

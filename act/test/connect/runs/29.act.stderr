@@ -1,0 +1,2 @@
+ERROR: File `29.act', line 3, col 5
+	!? and ?! direction specifiers are reserved for port lists

@@ -1006,6 +1006,11 @@ Type::direction act_connection::getDir ()
 {
   act_connection *tmp;
   int polarity;
+  int isfirst;
+  Type::direction ret;
+
+  ret = Type::NONE;
+  isfirst = 1;
 
   // to identify my direction flag:
   //   go to the root of the connection. that type has a direction
@@ -1038,13 +1043,17 @@ Type::direction act_connection::getDir ()
 	  }
 	}
       }
+      if (isfirst) {
+	ret = tmp->vx->t->getDir();
+	isfirst = 0;
+      }
       if (tmp->vx->t->getDir() == Type::OUTIN) {
 	polarity = 1 - polarity;
       }
     }
     tmp = tmp->parent;
   }
-  return Type::NONE;
+  return ret;
 }
 
 

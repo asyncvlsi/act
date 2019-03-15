@@ -1,0 +1,2 @@
+ERROR: File `30.act', line 1, col 28
+	Parameter `y': !? and ?! direction flags only used by data and channel types

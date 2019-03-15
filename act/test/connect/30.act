@@ -1,0 +1,6 @@
+defproc foo (bool! z; bool?! y)
+{
+  y = z;
+}
+
+foo x;

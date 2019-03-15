@@ -1,0 +1,6 @@
+defchan foo <: chan(bool) (bool! z; bool?! y)
+{
+  y = z;
+}
+
+foo x;

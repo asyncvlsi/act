@@ -432,6 +432,12 @@ single_port_item: physical_inst_type id_list
 	$A(r->type == R_STRING);
 	$E("Parameter ``%s'': port parameter for a process cannot be a process", r->u.str);
       }
+      if ($1->getDir() == Type::INOUT ||
+	  $1->getDir() == Type::OUTIN) {
+	r = (ActRet *) list_value (list_first ($2));
+	$A(r->type == R_STRING);
+	$E("Parameter ``%s'': !? and ?! direction flags only used by data and channel types", r->u.str);
+      }
     }
     else if ($0->u_d) {
       /* This is a user-defined data type */
@@ -1320,6 +1326,9 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
 instance[ActBody *]: inst_type
 {{X:
     $0->t = $1;
+    if ($1->getDir() == Type::INOUT || $1->getDir() == Type::OUTIN) {
+      $E("`!?' and `?!' direction specifiers are reserved for port lists");
+    }
 }}
 { instance_id "," }* ";" 
 {{X:

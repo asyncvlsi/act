@@ -1,0 +1,8 @@
+bool! z;
+bool x;
+bool?! y;
+
+
+x = z;
+
+x = y;
