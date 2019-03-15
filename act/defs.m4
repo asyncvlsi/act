@@ -1883,10 +1883,11 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
     else {
       ActRet *r;
       r = OPT_VALUE ($6);
-      OPT_FREE ($6);
       $A(r->type == R_EXPR);
       return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, r->u.exp, $8);
+      FREE (r);
     }
+    OPT_FREE ($6);
 }}
 | "*[" { gc_1 "[]" }* "]"
 {{X:
@@ -1945,6 +1946,27 @@ guarded_cmds[ActBody *]: { gc_1 "[]" }*
 gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
 {{X:
     return new ActBody_Select_gc ($1, $3);
+}}
+| "(" "[]" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" base_item_list ")"
+{{X:
+    ActRet *r;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+    return new ActBody_Select_gc ($3, $5, hi, $8, $10);
 }}
 | "else" "->" base_item_list
 {{X:

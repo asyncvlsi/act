@@ -456,8 +456,41 @@ guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
 {{X:
     act_chp_gc_t *gc;
     NEW (gc, act_chp_gc_t);
+    gc->id = NULL;
+    gc->lo = NULL;
+    gc->hi = NULL;
     gc->g = $1;
     gc->s = $3;
+    gc->next = NULL;
+    return gc;
+}}
+| "(" "[]" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" chp_body ")"
+{{X:
+    ActRet *r;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+    
+    act_chp_gc_t *gc;
+    NEW (gc, act_chp_gc_t);
+    gc->id = $3;
+    gc->lo = $5;
+    gc->hi = hi;
+    gc->g = $8;
+    gc->s = $10;
     gc->next = NULL;
     return gc;
 }}
@@ -465,6 +498,9 @@ guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
 {{X:
     act_chp_gc_t *gc;
     NEW (gc, act_chp_gc_t);
+    gc->id = NULL;
+    gc->lo = NULL;
+    gc->hi = NULL;
     gc->g = NULL;
     gc->s = $3;
     gc->next = NULL;
@@ -542,9 +578,20 @@ hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
 {{X:
     return apply_X_guarded_cmd_opt0 ($0, $1, $3);
 }}
+| "(" "[]" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" chp_body ")"
+{{X:
+    return apply_X_guarded_cmd_opt1 ($0, $3, $5, $6, $8, $10);
+}}
 | "else" "->" hse_body
 {{X:
-    return apply_X_guarded_cmd_opt1 ($0, $3);
+    return apply_X_guarded_cmd_opt2 ($0, $3);
 }}
 ;
 

@@ -963,6 +963,8 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
   ActBody_Select_gc *igc;
   ActBody *bi;
   Expr *guard;
+  int ilo, ihi;
+  ValueIdx *vx;
   
   for (igc = gc; igc; igc = igc->next) {
     if (!igc->g) {
@@ -970,18 +972,67 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
       igc->s->Expandlist (ns, s);
       return;
     }
-    guard = expr_expand (igc->g, ns, s);
-    if (!expr_is_a_const (guard)) {
-      act_error_ctxt (stderr);
-      print_expr (stderr, igc->g);
-      fprintf (stderr, "\n");
-      fatal_error ("Not a constant expression");
+
+    ilo = 0; ihi = 0;
+    if (igc->id) {
+      Assert (s->Add (igc->id,
+		      TypeFactory::Factory()->NewPInt()),
+	      "Should have been caught earlier");
+      vx = s->LookupVal (igc->id);
+      vx->init = 1;
+      vx->u.idx = s->AllocPInt();
+      
+      Expr *e = expr_expand (igc->lo, ns, s);
+      if (!expr_is_a_const (e)) {
+	act_error_ctxt (stderr);
+	print_expr (stderr, igc->lo);
+	fprintf (stderr, "\n");
+	fatal_error ("Isn't a constant expression");
+      }
+      Assert (e->type == E_INT, "What?");
+      ilo = e->u.v;
+
+      if (igc->hi) {
+	e = expr_expand (igc->hi, ns, s);
+	if (!expr_is_a_const (e)) {
+	  act_error_ctxt (stderr);
+	  print_expr (stderr, igc->hi);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Isn't a constant expression");
+	}
+	Assert (e->type == E_INT, "Hmm");
+	ihi = e->u.v;
+      }
+      else {
+	ihi = ilo-1;
+	ilo = 0;
+      }
     }
-    Assert (guard->type == E_TRUE || guard->type == E_FALSE,
-	    "Should have been caught earlier");
-    if (guard->type == E_TRUE) {
-      igc->s->Expandlist (ns, s);
-      return;
+    for (int iter=ilo; iter <= ihi; iter++) {
+      if (igc->id) {
+	s->setPInt (vx->u.idx, iter);
+      }
+      guard = expr_expand (igc->g, ns, s);
+      if (!expr_is_a_const (guard)) {
+	act_error_ctxt (stderr);
+	print_expr (stderr, igc->g);
+	fprintf (stderr, "\n");
+	fatal_error ("Not a constant expression");
+      }
+      Assert (guard->type == E_TRUE || guard->type == E_FALSE,
+	      "Should have been caught earlier");
+      if (guard->type == E_TRUE) {
+	igc->s->Expandlist (ns, s);
+	if (igc->id) {
+	  s->DeallocPInt (vx->u.idx, 1);
+	  s->Del (igc->id);
+	}
+	return;
+      }
+    }
+    if (igc->id) {
+      s->DeallocPInt (vx->u.idx, 1);
+      s->Del (igc->id);
     }
   }
   /* all guards false, skip it */
@@ -1034,6 +1085,12 @@ void ActBody_Lang::Print (FILE *fp)
   switch (t) {
   case ActBody_Lang::LANG_PRS:
     prs_print (fp, (act_prs *)lang);
+    break;
+  case ActBody_Lang::LANG_HSE:
+    hse_print (fp, (act_chp *)lang);
+    break;
+  case ActBody_Lang::LANG_CHP:
+    chp_print (fp, (act_chp *)lang);
     break;
   }
 }

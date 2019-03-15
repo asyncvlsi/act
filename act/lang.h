@@ -156,6 +156,8 @@ enum act_chp_lang_type {
 struct act_chp_lang;
 
 typedef struct act_chp_gc {
+  const char *id;
+  Expr *lo, *hi;
   Expr *g;			/* guard */
   struct act_chp_lang *s;	/* statement */
   struct act_chp_gc *next;
@@ -215,14 +217,17 @@ class ActNamespace;
 class Scope;
 
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
-act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
-act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
+
 void prs_print (FILE *, act_prs *);
+void chp_print (FILE *, act_chp *);
+void hse_print (FILE *, act_chp *);
 
 const char *act_spec_string (int type);
 
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
+
+act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 
 #endif /* __LANG_H__ */

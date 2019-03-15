@@ -64,7 +64,7 @@ endif
 CFLAGS=$(C_COMPILER_FLAGS) 
 
 
-all: dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out 
+all: dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out postsub
 
 SUBDIRS_ALL=$(patsubst %,%_all,$(SUBDIRS))
 SUBDIRS_CLEAN=$(patsubst %,%_clean,$(SUBDIRS))
@@ -72,6 +72,7 @@ SUBDIRS_REALCLEAN=$(patsubst %,%_realclean,$(SUBDIRS))
 SUBDIRS_DEPEND=$(patsubst %,%_depend,$(SUBDIRS))
 SUBDIRS_INSTALL=$(patsubst %,%_install,$(SUBDIRS))
 SUBDIRS_RUNTEST=$(patsubst %,%_runtest,$(SUBDIRS))
+SUBDIRS_POST=$(patsubst %,%_post,$(SUBDIRSPOST))
 
 .PHONY: all move-in move-out install_lib install_inc depend \
 	allsub 	$(SUBDIRS_ALL) \
@@ -79,8 +80,10 @@ SUBDIRS_RUNTEST=$(patsubst %,%_runtest,$(SUBDIRS))
 	realcleansub $(SUBDIRS_REALCLEAN) \
 	dependsub $(SUBDIRS_DEPEND) \
 	installsub $(SUBDIRS_INSTALL) \
-	runtest $(SUBDIRS_RUNTEST)
+	runtest $(SUBDIRS_RUNTEST) \
+        postsub $(SUBDIRS_POST)
 
+postsub: $(SUBDIRS_POST)
 allsub: $(SUBDIRS_ALL)
 cleansub:  $(SUBDIRS_CLEAN)
 realcleansub:  $(SUBDIRS_REALCLEAN)
@@ -90,6 +93,9 @@ runtestsub: $(SUBDIRS_RUNTEST)
 
 $(SUBDIRS_ALL):
 	@$(MAKE) -C $(patsubst %_all,%,$@) "CFLAGS=$(CFLAGS)"
+
+$(SUBDIRS_POST):
+	@$(MAKE) -C  $(patsubst %_post,%,$@) "CFLAGS=$(CFLAGS)"
 
 $(SUBDIRS_CLEAN):
 	@$(MAKE) -C $(patsubst %_clean,%,$@) clean

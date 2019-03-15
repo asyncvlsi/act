@@ -228,7 +228,19 @@ class ActBody_Loop : public ActBody {
 
 class ActBody_Select_gc {
  public:
+  ActBody_Select_gc (const char *_id, Expr *_lo, Expr *_hi,
+		     Expr *_g, ActBody *_s) {
+    id = _id;
+    lo = _lo;
+    hi = _hi;
+    g = _g;
+    s = _s;
+    next = NULL;
+  }
   ActBody_Select_gc (Expr *_g, ActBody *_s) {
+    id = NULL;
+    lo = NULL;
+    hi = NULL;
     g = _g;
     s = _s;
     next = NULL;
@@ -249,6 +261,8 @@ class ActBody_Select_gc {
   ActBody *Clone();
 
 private:
+  const char *id;
+  Expr *lo, *hi;
   Expr *g;			/**< guard */
   ActBody *s;			/**< statement */
   ActBody_Select_gc *next;		/**< rest of the selection */

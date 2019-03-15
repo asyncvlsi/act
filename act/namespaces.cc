@@ -486,6 +486,12 @@ void ActNamespace::Print (FILE *fp)
     if (lang.prs) {
       prs_print (fp, lang.prs);
     }
+    if (lang.chp) {
+      chp_print (fp, lang.chp);
+    }
+    if (lang.hse) {
+      hse_print (fp, lang.hse);
+    }
   }
 }
 

@@ -31,6 +31,8 @@
 #include "config.h"
 #include <string.h>
 
+act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
+
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
 extern const char *act_fet_value_to_string (int);
 
@@ -702,6 +704,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   act_chp_lang_t *ret;
   act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
   listitem_t *li;
+  ValueIdx *vx;
   
   if (!c) return NULL;
   NEW (ret, act_chp_lang_t);
@@ -720,11 +723,55 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     gchd = NULL;
     gctl = NULL;
     for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
-      NEW (tmp, act_chp_gc_t);
-      tmp->next = NULL;
-      tmp->g = expr_expand (gctmp->g, ns, s);
-      tmp->s = chp_expand (gctmp->s, ns, s);
-      q_ins (gchd, gctl, tmp);
+      if (gctmp->id) {
+	int ilo, ihi;
+	Expr *ix;
+	Assert (s->Add (gctmp->id, TypeFactory::Factory()->NewPInt()),
+		"What?");
+	vx = s->LookupVal (gctmp->id);
+	vx->init = 1;
+	vx->u.idx = s->AllocPInt();
+	ix = expr_expand (gctmp->lo, ns, s);
+	if (!expr_is_a_const (ix)) {
+	  act_error_ctxt (stderr);
+	  print_expr (stderr, gctmp->lo);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Isn't a constant expression");
+	}
+	ilo = ix->u.v;
+	if (gctmp->hi) {
+	  ix = expr_expand (gctmp->lo, ns, s);
+	  if (!expr_is_a_const (ix)) {
+	    act_error_ctxt (stderr);
+	    print_expr (stderr, gctmp->lo);
+	    fprintf (stderr, "\n");
+	    fatal_error ("Isn't a constant expression");
+	  }
+	  ihi = ix->u.v;
+	}
+	else {
+	  ihi = ilo-1;
+	  ilo = 0;
+	}
+	for (int iter=ilo; iter <= ihi; iter++) {
+	  s->setPInt (vx->u.idx, iter);
+	  NEW (tmp, act_chp_gc_t);
+	  tmp->next = NULL;
+	  tmp->id = NULL;
+	  tmp->g = expr_expand (gctmp->g, ns, s);
+	  tmp->s = chp_expand (gctmp->s, ns, s);
+	  q_ins (gchd, gctl, tmp);
+	}
+	s->DeallocPInt (vx->u.idx, 1);
+	s->Del (gctmp->id);
+      }
+      else {	
+	NEW (tmp, act_chp_gc_t);
+	tmp->next = NULL;
+	tmp->g = expr_expand (gctmp->g, ns, s);
+	tmp->s = chp_expand (gctmp->s, ns, s);
+	q_ins (gchd, gctl, tmp);
+      }
     }
     ret->u.gc = gchd;
     break;
@@ -1081,3 +1128,121 @@ void prs_print (FILE *fp, act_prs *prs)
     prs = prs->next;
   }
 }
+
+void chp_print (FILE *fp, act_chp_lang_t *c)
+{
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	chp_print (fp, (act_chp_lang_t *)list_value (li));
+	if (list_next (li)) {
+	  if (c->type == ACT_CHP_COMMA) {
+	    fprintf (fp, ",");
+	  }
+	  else {
+	    fprintf (fp, ";");
+	  }
+	}
+      }
+    }
+    break;
+
+  case ACT_CHP_LOOP:
+    fprintf (fp, "*");
+  case ACT_CHP_SELECT:
+    fprintf (fp, "[");
+    {
+      act_chp_gc_t *gc = c->u.gc;
+      while (gc) {
+	if (!gc->g) {
+	  fprintf (fp, "else");
+	}
+	else {
+	  print_expr (fp, gc->g);
+	}
+	fprintf (fp, " -> ");
+	chp_print (fp, gc->s);
+	if (gc->next) {
+	  fprintf (fp, " [] ");
+	}
+	gc = gc->next;
+      }
+    }
+    fprintf (fp, "]");
+    break;
+    
+  case ACT_CHP_SKIP:
+    fprintf (fp, "skip");
+    break;
+
+  case ACT_CHP_ASSIGN:
+    c->u.assign.id->Print (fp);
+    fprintf (fp, ":=");
+    print_expr (fp, c->u.assign.e);
+    break;
+    
+  case ACT_CHP_SEND:
+    c->u.comm.chan->Print (fp);
+    fprintf (fp, "!");
+    if (list_length (c->u.comm.rhs) > 1) {
+      fprintf (fp, "(");
+    }
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	print_expr (fp, (Expr *)list_value (li));
+	if (list_next (li)) {
+	  fprintf (fp, ",");
+	}
+      }
+    }
+    if (list_length (c->u.comm.rhs) > 1) {
+      fprintf (fp, ")");
+    }
+    break;
+    
+  case ACT_CHP_RECV:
+    c->u.comm.chan->Print (fp);
+    fprintf (fp, "?");
+    if (list_length (c->u.comm.rhs) > 1) {
+      fprintf (fp, "(");
+    }
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	((ActId *)list_value (li))->Print (fp);
+	if (list_next (li)) {
+	  fprintf (fp, ",");
+	}
+      }
+    }
+    if (list_length (c->u.comm.rhs) > 1) {
+      fprintf (fp, ")");
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+  default:
+    fatal_error ("Unknown type");
+    break;
+  }
+}
+
+void chp_print (FILE *fp, act_chp *chp)
+{
+  fprintf (fp, "chp {\n");
+  chp_print (fp, chp->c);
+  fprintf (fp, "\n}\n");
+}
+
+void hse_print (FILE *fp, act_chp *chp)
+{
+  fprintf (fp, "hse {\n");
+  chp_print (fp, chp->c);
+  fprintf (fp, "\n}\n");
+}
+
