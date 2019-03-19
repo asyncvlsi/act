@@ -105,6 +105,18 @@ char *Strdup (const char *);
      }						\
   } while (0)
 
+
+
+void mymergesort (const void **a, int sz,
+		  int (*cmpfn)(const void *, const void *));
+
+/* p is an array of size sz. 
+   aux = allocated array of size sz+1, with aux[0] = -1
+   Call to return a permutation of p. Call repeatedly until you get 0
+*/
+int mypermutation (int *p, int *aux, int sz);
+  
+
 #ifdef __cplusplus
 }
 #endif

@@ -111,3 +111,155 @@ char *Strdup (const char *s)
   return t;
 }
 
+
+
+/*------------------------------------------------------------------------
+ *
+ *  mergesort --
+ *
+ *   Sort an array: input is in a, output is in a if return value = 0, 
+ *                                 output is in b if return value = 1
+ *
+ *------------------------------------------------------------------------
+ */
+static int  _mysort (const void **a, const void **b,
+		     int sz, int (*cmpfn)(const void *, const void *))
+{
+  const void **x, **y, **z;
+  int i, j;
+  int p;
+  
+  if (sz == 1) {
+    return 0;
+  }
+  if ((p = _mysort (a, b, sz/2, cmpfn))) {
+    x = b;
+    z = a;
+  }
+  else {
+    x = a;
+    z = b;
+  }
+  if (_mysort (a+sz/2, b+sz/2, sz-sz/2, cmpfn)) {
+    if (p == 0) {
+      /* copy */
+      y = a+sz/2;
+      for (i=0; i < sz-sz/2; i++) {
+	y[i] = (b+sz/2)[i];
+      }
+    }
+    else {
+      y = b+sz/2;
+    }
+  }
+  else {
+    if (p == 1) {
+      /* copy */
+      y = b+sz/2;
+      for (i=0; i < sz-sz/2; i++) {
+	y[i] = (a+sz/2)[i];
+      }
+    }
+    else {
+      y = a+sz/2;
+    }
+  }
+
+  /* -- merge -- */
+  i = 0;
+  j = 0;
+  while (i < sz/2 || j < (sz-sz/2)) {
+    if (i < sz/2) {
+      if (j < (sz-sz/2)) {
+	if ((*cmpfn) (x[i], y[j]) < 0) {
+	  z[i+j] = x[i];
+	  i++;
+	}
+	else {
+	  z[i+j] = y[j];
+	  j++;
+	}
+      }
+      else {
+	z[i+j] = x[i];
+	i++;
+      }
+    }
+    else {
+      z[i+j] = y[j];
+      j++;
+    }
+  }
+  return (1-p);
+}
+		     
+void mymergesort (const void **a, int sz,
+		  int (*cmpfn)(const void *, const void *))
+{
+  const void **b;
+  
+  Assert (sz > 1, "What");
+
+  MALLOC (b, const void *, sz);
+
+  if (_mysort (a, b, sz, cmpfn)) {
+    for (int i=0; i < sz; i++) {
+      a[i] = b[i];
+    }
+  }
+  FREE (b);
+}
+
+
+/*
+  p has size sz
+  aux has size sz+1
+  Uses Heap's algorithm.
+*/
+int mypermutation (int *p, int *aux, int sz)
+{
+  int i;
+
+  if (sz == 0) return -1;
+  
+  if (sz == 1) {
+    return 0;
+  }
+  
+  if (aux[0] == -1) {
+    aux[0] = 0;
+    /* initialize */
+    for (i=0; i < sz; i++) {
+      aux[i+1] = 0;
+    }
+    return 1;
+  }
+  i = aux[0];
+  while (i < sz) {
+    if (aux[i+1] < i) {
+      int tmp;
+      if (i % 2) {
+	/* i sz */
+	tmp = p[i];
+	p[i] = p[aux[i+1]];
+	p[aux[i+1]] = tmp;
+      }
+      else {
+	/* 0 sz */
+	tmp = p[0];
+	p[0] = p[i];
+	p[i] = tmp;
+      }
+      aux[i+1]++;
+      i = 0;
+      aux[0] = i;
+      return 1;
+    }
+    else {
+      aux[i+1] = 0;
+      i++;
+    }
+  }
+  aux[0] = -1;
+  return 0;
+}
