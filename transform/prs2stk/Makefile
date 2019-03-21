@@ -18,7 +18,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-BINARY=prs2stk.$(EXT)
+BINARY=generic_eg.$(EXT)
 
 TARGETS=$(BINARY)
 

@@ -31,7 +31,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s <actfile> <process> <stkfile>\n", name);
+  fprintf (stderr, "Usage: %s <actfile> <process> <outfile>\n", name);
   exit (1);
 }
 
@@ -41,16 +41,24 @@ int main (int argc, char **argv)
   Act *a;
   char *proc;
 
+  /* initialize ACT library */
   Act::Init (&argc, &argv);
 
+  /* some usage check */
   if (argc != 4) {
     usage (argv[0]);
   }
 
+  /* read in the ACT file */
   a = new Act (argv[1]);
+
+  /* expand it */
   a->Expand ();
+ 
+  /* read configuration file, if any */
   config_read ("prs2net.conf");
 
+  /* find the process specified on the command line */
   Process *p = a->findProcess (argv[2]);
 
   if (!p) {
@@ -61,9 +69,7 @@ int main (int argc, char **argv)
     fatal_error ("Process `%s' is not expanded.", argv[2]);
   }
 
-  act_prs_to_netlist (a, p);
-
-  /* stack generation! */
+  /* do stuff here */
 
   return 0;
 }
