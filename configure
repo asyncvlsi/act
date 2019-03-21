@@ -43,11 +43,6 @@ then
      exit 1
 fi
 
-if ! $full_pathname/scripts/check
-then
-	exit 1
-fi
-
 echo "Configuring for [$arch] architecture, os [${os}]"
 echo "Install directory: [$installdir]"
 
@@ -92,3 +87,9 @@ C_COMPILER_FLAGS=$c_compiler_flags
 SH_BUILD_OPTIONS="-shared -DPIC -fPIC"
 SH_LINK_OPTIONS="-shared -Wl,-x"
 EOF
+
+if ! $full_pathname/scripts/check
+then
+	exit 1
+fi
+
