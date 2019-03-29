@@ -197,13 +197,14 @@ void mymergesort (const void **a, int sz,
 		  int (*cmpfn)(const void *, const void *))
 {
   const void **b;
+  int i;
   
   Assert (sz > 1, "What");
 
   MALLOC (b, const void *, sz);
 
   if (_mysort (a, b, sz, cmpfn)) {
-    for (int i=0; i < sz; i++) {
+    for (i=0; i < sz; i++) {
       a[i] = b[i];
     }
   }
