@@ -1,0 +1,5 @@
+defproc foo(bool ar[3]; bool ar_0, ar_1, ar_2) {
+    ar = {ar_0, ar_1, ar_2};
+}
+
+foo x;
