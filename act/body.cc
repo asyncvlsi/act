@@ -586,6 +586,15 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     arhs = u.basic.rhs->Expand (ns, s);
     trhs = arhs->getInstType (s, NULL, 1);
 
+
+#if 0
+    fprintf (stderr, "Conn-ex: ");
+    ex->Print (stderr);
+    fprintf (stderr, " = ");
+    arhs->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
+
     if (!type_connectivity_check (tlhs, trhs)) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Connection: ");
@@ -634,10 +643,12 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
 
       done_conn = 0;
+
       if (!tid->arrayInfo() || tid->arrayInfo()->isDeref()) {
+
 	/* this is a direct connection */
 	/* check for special case for rhs */
-	if (rhsstep->isSimpleID()) {
+	if (rhsstep->isSimpleID() && arhs->isBase()) {
 	  int ridx;
 	  ActId *rid;
 	  int rsize;
@@ -665,7 +676,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	}
       }
       if (!done_conn) {
-	Arraystep *lhsstep = tlhs->arrayInfo()->stepper (id->arrayInfo());
+	Arraystep *lhsstep = tlhs->arrayInfo()->stepper (tid->arrayInfo());
 	/* element by element array connection */
 
 	while (!lhsstep->isend()) {

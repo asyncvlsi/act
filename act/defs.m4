@@ -1444,7 +1444,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
     $A($0->t);
 
     /* Create the instance */
-    $0->i_t = $0->t;
+    //$0->i_t = $0->t;
 
     if (!OPT_EMPTY ($2)) {
       $A($0->t->arrayInfo() == NULL);
@@ -1468,6 +1468,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
       }
       */
     }
+    $0->i_t = it;
 
     $A($0->scope);
       

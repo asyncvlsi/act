@@ -1,0 +1,13 @@
+defproc and22 (bool a, b; bool c){
+	prs{
+		~a | ~b -> c+
+		 a &  b -> c-
+	}
+}
+
+defproc foo(bool a22[4], c2[2]) {
+  and22 and22[2];
+  (i:0..1: and22[i](a22[2*i],a22[2*i+1], c2[i]);) 
+}
+
+foo x;

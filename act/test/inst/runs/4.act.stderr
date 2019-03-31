@@ -1,3 +1,2 @@
-In expanding ::<Global>
- id: f.a
-FATAL: Missing array dereference for ``f''.
+ERROR: File `4.act', line 5, col 14
+	Connection specifier for an array instance `f'
