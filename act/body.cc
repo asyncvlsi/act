@@ -796,7 +796,8 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       aes = alhs->stepper();
       bes = arhs->stepper();
 
-      if (aes->isSimpleID() && bes->isSimpleID()) {
+      if (aes->isSimpleID() && bes->isSimpleID() &&
+	  alhs->isBase() && arhs->isBase()) {
 	/* a simple ID is either foo without array specifier,
 	   or foo[complete deref] (i.e. not a subrange)
 	*/

@@ -198,8 +198,8 @@ void mymergesort (const void **a, int sz,
 {
   const void **b;
   int i;
-  
-  Assert (sz > 1, "What");
+
+  if (sz <= 1) return;
 
   MALLOC (b, const void *, sz);
 

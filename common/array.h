@@ -121,13 +121,13 @@
 
 #define A_NEWP(name,type,sz)			\
     do {					\
-      if (A_LEN(name) + (sz) >= A_MAX(name)) {	\
+      if (A_LEN(name) + (sz) > A_MAX(name)) {	\
 	if (A_MAX(name) == 0) {			\
-	  A_MAX(name) = (sz)+1;			\
+	  A_MAX(name) = (sz);			\
 	  MALLOC (name, type, A_MAX(name));	\
 	}					\
 	else {					\
-	  A_MAX(name) = A_MAX(name) + (sz) + 1;	\
+	  A_MAX(name) = A_MAX(name) + (sz);	\
 	  REALLOC (name, type, A_MAX(name));	\
 	}					\
       }						\

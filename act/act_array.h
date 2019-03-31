@@ -281,6 +281,8 @@ class AExpr {
 
   ActId *toid ();
 
+  int isBase() { return t == EXPR ? 1 : 0; }
+
   AExprstep *stepper();  /* return stepper! */
 
  private:
