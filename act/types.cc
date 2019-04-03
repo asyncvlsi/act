@@ -1507,7 +1507,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
 
   /*-- expand body --*/
-  b->Expandlist (ns, ux->I);
+  if (b) {
+    b->Expandlist (ns, ux->I);
+  }
 
   ux->pending = 0;
   recursion_depth--;
