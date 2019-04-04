@@ -496,7 +496,7 @@ void InstType::sPrint (char *buf, int sz)
     l = strlen (buf+k);				\
     k += l;					\
     sz -= l;					\
-    if (sz <= 0) return;			\
+    if (sz <= 1) return;			\
   } while (0)
     
 #if 0
@@ -586,7 +586,7 @@ static void sPrintTypeName (char *buf, int sz, Type *t,
     l = strlen (buf+k);				\
     k += l;					\
     sz -= l;					\
-    if (sz <= 0) return;			\
+    if (sz <= 1) return;			\
   } while (0)
     
   snprintf (buf+k, sz, "%s", t->getName());

@@ -31,7 +31,7 @@
     len = strlen (buf+k);			\
     k += len;					\
     sz -= len;					\
-    if (sz <= 0) return;			\
+    if (sz <= 1) return;			\
   } while (0)
 
 /*

@@ -417,7 +417,7 @@ void ActId::Print (FILE *fp, ActId *end, int style)
     len = strlen (buf+k);			\
     k += len;					\
     sz -= len;					\
-    if (sz <= 0) return;			\
+    if (sz <= 1) return;			\
   } while (0)
 
 void ActId::sPrint (char *buf, int sz, ActId *end, int style)

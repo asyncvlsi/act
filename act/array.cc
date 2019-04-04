@@ -553,7 +553,7 @@ void Array::sPrint (char *buf, int sz, int style)
     l = strlen (buf+k);				\
     k += l;					\
     sz -= l;					\
-    if (sz <= 0) return;			\
+    if (sz <= 1) return;			\
   } while (0)
 
   if (next) {
