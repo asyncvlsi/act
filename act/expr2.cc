@@ -64,6 +64,8 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
   int len;
   char *s;
   if (!e) return;
+
+  if (sz <= 1) return;
  
 #define PREC_BEGIN(myprec)			\
   do {						\
@@ -222,6 +224,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 	if (!first) {
 	  snprintf (buf+k, sz, ",");
 	  k++, sz--;
+	  if (sz <= 1) return;
 	}
 	first = 0;
 	if (type == 0) {
@@ -264,6 +267,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
  */
 void sprint_expr (char *buf, int sz, Expr *e)
 {
+  if (sz <= 1) return;
   _print_expr (buf, sz, e, 0);
 }
   
@@ -1122,6 +1126,8 @@ void AExpr::sPrint (char *buf, int sz)
 {
   int k = 0;
   int len;
+
+  if (sz <= 1) return;
   
   AExpr *a;
   switch (t) {

@@ -665,8 +665,8 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   Assert (t, "Missing parent type?");
 
   char *tmp;
-  MALLOC (tmp, char, 1024);
-  sPrint (tmp, 1024);
+  MALLOC (tmp, char, 10240);
+  sPrint (tmp, 10240);
   act_error_push (tmp, NULL, 0);
 
   /* expand template parameters, and then expand the type */

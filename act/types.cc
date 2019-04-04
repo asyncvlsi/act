@@ -1339,6 +1339,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
 
   char *buf;
+  int orig_sz = sz;
   MALLOC (buf, char, sz);
   k = 0;
   buf[k] = '\0';
@@ -1352,6 +1353,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     if (i != 0) {
       snprintf (buf+k, sz, ",");
       len = strlen (buf+k); k += len; sz -= len;
+    }
+    if (sz <= 32) {
+      sz += orig_sz;
+      orig_sz *= 2;
+      REALLOC (buf, char, orig_sz);
     }
     Assert (sz > 0, "Check");
     x = ux->getPortType (-(i+1));
@@ -1375,6 +1381,12 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
 	  as = xa->stepper();
 	  while (!as->isend()) {
+	    if (sz <= 32) {
+	      sz += orig_sz;
+	      orig_sz *= 2;
+	      REALLOC (buf, char, orig_sz);
+	    }
+	    
 	    if (TypeFactory::isPIntType (x->BaseType())) {
 	      snprintf (buf+k, sz, "%lu",
 			ux->I->getPInt (vx->u.idx + as->index()));
