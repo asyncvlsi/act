@@ -651,7 +651,7 @@ int Scope::getPBool(unsigned long id)
   if (id >= vpbool_len) {
     fatal_error ("Scope::setPBool(): invalid identifier!");
   }
-  return bitset_tst (vpbool, id);
+  return bitset_tst (vpbool, id) ? 1 : 0;
 }
 
 
