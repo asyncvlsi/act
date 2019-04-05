@@ -1,0 +1,19 @@
+pint ginit = 1024;
+
+template <pbool M[1024]>
+defproc foo (bool v0, v1) {
+	pbool K[512];
+	pbool L[512];
+	(i:512: K[i] = false;)
+	(i:512: L[i] = false;)
+	K = M[0..511];
+//	{K} = {M[0..511]};
+	L = M[512..1023];
+//	{L} = {M[512..1023]};
+	v0 = v1;
+}
+
+pbool binit[ginit];
+(i:ginit: binit[i] = true;)
+
+foo<binit> x;
