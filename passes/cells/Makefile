@@ -26,6 +26,7 @@ TARGETINCS=cells.h
 TARGETINCSUBDIR=act/passes
 
 SRCS=$(EXTRA:.o=.cc)
+OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
