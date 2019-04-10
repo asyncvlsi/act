@@ -21,33 +21,44 @@
  *
  **************************************************************************
  */
-#ifndef __ACT_PASSES_H__
-#define __ACT_PASSES_H__
-
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <act/act.h>
-
-void act_expand (Act *a);
-
-/* emit flattened production rule set */
-void act_prsflat_prsim (Act *a);
-void act_prsflat_lvs (Act *a);
-
-/* flat connection pair pass */
-void act_flat_apply_conn_pairs (Act *a, void *cookie,
-				void (*f)(void *c, ActId *one, ActId *two));
-
-/* flat process pass */
-void act_flat_apply_processes (Act *a, void *cookie,
-			       void (*f)(void *c, ActId *name, Process *p));
-
-/* create netlist */  
-void act_prs_to_netlist (Act *, Process *);
-
-/* create unique boolean port list */
-void act_create_bool_ports (Act *, Process *);
-
-/* create cells from processes */
-void act_prs_to_cells (Act *a, Process *p, int add_cells = -1);
+#include <act/passes.h>
+#include "config.h"
 
 
-#endif /* __ACT_PASSES_H__ */
+static void usage (char *name)
+{
+  fprintf (stderr, "Usage: %s <actfile> <cellin> <cellout>\n", name);
+  exit (1);
+}
+
+
+int main (int argc, char **argv)
+{
+  Act *a;
+  char *proc;
+
+  Act::Init (&argc, &argv);
+
+  if (argc != 4) {
+    usage (argv[0]);
+  }
+
+  a = new Act (argv[1]);
+  a->Merge (argv[2]);
+  a->Expand ();
+  /* for each expanded ACT process, read in cells */
+
+  /* for each ACT process, find production rules and try and match
+     to cells */
+
+  act_prs_to_cells (a, NULL, 0);
+
+  /* now emit new cells file */
+  
+
+  return 0;
+}
