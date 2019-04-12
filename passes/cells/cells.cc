@@ -947,21 +947,15 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   printf ("-------\n");
 }
 
-static int _dump_prs_cell (FILE *fp, struct act_prsinfo *p, int cmax)
+static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
 {
-  if (p->cell) {
-    const char *s = p->cell->getName();
-    fprintf (fp, "export defcell ");
-    while (*s && *s != '<') {
-      fputc (*s, fp);
-      s++;
-    }
-    fprintf (fp, " (");
+  const char *s = name;
+  fprintf (fp, "export defcell ");
+  while (*s && *s != '<') {
+    fputc (*s, fp);
+    s++;
   }
-  else {
-    fprintf (fp, "export defcell g%d (", cmax);
-    cmax++;
-  }
+  fprintf (fp, " (");
   fprintf (fp, "bool? in[%d]; bool! out", p->nvars - p->nout - p->nat);
   if (p->nout > 1) {
     fprintf (fp, "[%d]", p->nout);
@@ -1018,8 +1012,22 @@ static int _dump_prs_cell (FILE *fp, struct act_prsinfo *p, int cmax)
   printf ("-------\n");
 #endif
   fprintf (fp, "   }\n}\n\n");
-  return cmax+1;
 }
+
+
+struct cell_name {
+  struct act_prsinfo *p;
+  const char *name;
+};
+
+static int _cmp_cells (const void *a, const void *b)
+{
+  const struct cell_name *xa, *xb;
+  xa = (struct cell_name *)a;
+  xb = (struct cell_name *)b;
+  return strcmp (xa->name, xb->name);
+}
+
 
 static void dump_celldb (FILE *fp)
 {
@@ -1028,7 +1036,9 @@ static void dump_celldb (FILE *fp)
   struct act_prsinfo *pi;
   int cellmax = 0;
   int id, version;
-  
+  A_DECL (struct cell_name *, cells);
+  A_INIT (cells);
+
   if (!cell_table) return;
 
   for (i=0; i < cell_table->size; i++) {
@@ -1041,15 +1051,40 @@ static void dump_celldb (FILE *fp)
     }
   }
   cellmax++;
-  
-  fprintf (fp, "namespace cell {\n\n");
 
   for (i=0; i < cell_table->size; i++) {
     for (b = cell_table->head[i]; b; b = b->next) {
       pi = (struct act_prsinfo *)b->v;
-      cellmax = _dump_prs_cell (fp, pi, cellmax);
+      A_NEW (cells, struct cell_name *);
+      NEW (A_NEXT (cells), struct cell_name);
+      A_NEXT (cells)->p = pi;
+      if (pi->cell) {
+	A_NEXT (cells)->name = pi->cell->getName();
+      }
+      else {
+	char buf[100];
+	snprintf (buf, 100, "g%dx0", cellmax++);
+	A_NEXT (cells)->name = Strdup (buf);
+      }
+      A_INC (cells);
     }
   }
+
+  /* lets sort the cell names */
+  mymergesort ((const void **)cells, A_LEN (cells), _cmp_cells);
+
+  fprintf (fp, "namespace cell {\n\n");
+  
+  /* print */
+  for (i=0; i < A_LEN (cells); i++) {
+    pi = cells[i]->p;
+    _dump_prs_cell (fp, pi, cells[i]->name);
+    if (!pi->cell) {
+      FREE ((void*)cells[i]->name);
+    }
+    FREE (cells[i]);
+  }
+  A_FREE (cells);
   fprintf (fp, "\n\n}\n");
 }
   
