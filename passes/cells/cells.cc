@@ -33,8 +33,6 @@ static std::set<Process *> *visited_procs = NULL;
 static ActNamespace *cell_ns = NULL;
 
 
-L_A_DECL (act_prs_expr_t *, pending);
-
 static int cell_hashfn (int sz, void *key)
 {
   struct act_prsinfo *ckey = (struct act_prsinfo *)key;
@@ -105,8 +103,11 @@ static void _propagate_sz (act_prs_expr_t *e, act_size_spec_t **sz)
 
   flip = 0, compare a to b
   flip = 1, compare a to NOT b
+
+  chk_width = 1 : check widths of gates
 */
-static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b, int *perm, int flip)
+static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
+			int *perm, int flip, int chk_width)
 {
   int bid;
   int btype;
@@ -131,10 +132,10 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b, int *perm, int fli
   }
   if ((a->type != b->type) && (flip == 0)) {
     if (a->type == ACT_PRS_EXPR_NOT) {
-      return _equal_expr (a->u.e.l, b, perm, 1);
+      return _equal_expr (a->u.e.l, b, perm, 1, chk_width);
     }
     else if (b->type == ACT_PRS_EXPR_NOT) {
-      return _equal_expr (a, b->u.e.l, perm, 1);
+      return _equal_expr (a, b->u.e.l, perm, 1, chk_width);
     }
     return 0;
   }
@@ -142,23 +143,23 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b, int *perm, int fli
   
   switch (a->type) {
   case ACT_PRS_EXPR_AND:
-    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip) &&
-      _equal_expr (a->u.e.r, b->u.e.r, perm, flip) &&
-      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0) &&
+    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width) &&
+      _equal_expr (a->u.e.r, b->u.e.r, perm, flip, chk_width) &&
+      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0, chk_width) &&
       (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
     break;
 
   case ACT_PRS_EXPR_OR:
-    return ((_equal_expr (a->u.e.l, b->u.e.l, perm, flip) &&
-	    _equal_expr (a->u.e.r, b->u.e.r, perm, flip)) ||
-	    (_equal_expr (a->u.e.l, b->u.e.r, perm, flip) &&
-	     _equal_expr (a->u.e.r, b->u.e.l, perm, flip))) &&
-      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0) &&
+    return ((_equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width) &&
+	     _equal_expr (a->u.e.r, b->u.e.r, perm, flip, chk_width)) ||
+	    (_equal_expr (a->u.e.l, b->u.e.r, perm, flip, chk_width) &&
+	     _equal_expr (a->u.e.r, b->u.e.l, perm, flip, chk_width))) &&
+      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0, chk_width) &&
       (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
     break;
     
   case ACT_PRS_EXPR_NOT:
-    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip);
+    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width);
     break;
 
   case ACT_PRS_EXPR_VAR:
@@ -166,12 +167,14 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b, int *perm, int fli
     if (perm) bid = perm[bid];
     //if (!a->u.v.id->isEqual (b->u.v.id)) return 0;
     if ((unsigned long long)a->u.v.id != bid) return 0;
-    if (a->u.v.sz && !b->u.v.sz) return 0;
-    if (!a->u.v.sz && b->u.v.sz) return 0;
-    if (a->u.v.sz && b->u.v.sz) {
-      if (a->u.v.sz->flavor != b->u.v.sz->flavor) return 0;
-      if (!expr_equal (a->u.v.sz->w, b->u.v.sz->w)) return 0;
-      if (!expr_equal (a->u.v.sz->l, b->u.v.sz->l)) return 0;
+    if (chk_width) {
+      if (a->u.v.sz && !b->u.v.sz) return 0;
+      if (!a->u.v.sz && b->u.v.sz) return 0;
+      if (a->u.v.sz && b->u.v.sz) {
+	if (a->u.v.sz->flavor != b->u.v.sz->flavor) return 0;
+	if (!expr_equal (a->u.v.sz->w, b->u.v.sz->w)) return 0;
+	if (!expr_equal (a->u.v.sz->l, b->u.v.sz->l)) return 0;
+      }
     }
     break;
 
@@ -198,8 +201,8 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b, int *perm, int fli
   perm: permutation of k2; var i from k1 -> perm[i] in k2
 */
 static int match_prsinfo (struct act_prsinfo *k1,
-			   struct act_prsinfo *k2,
-			   int *perm)
+			  struct act_prsinfo *k2,
+			  int *perm, int chk_width)
 {
   int i;
 
@@ -233,18 +236,18 @@ static int match_prsinfo (struct act_prsinfo *k1,
 
   if (perm) {
     for (i=0; i < A_LEN (k1->up); i++) {
-      if (!_equal_expr (k1->up[i], k2->up[perm[i]], perm, 0)) return 0;
+      if (!_equal_expr (k1->up[i], k2->up[perm[i]], perm, 0, chk_width)) return 0;
     }
     for (i=0; i < A_LEN (k1->dn); i++) {
-      if (!_equal_expr (k1->dn[i], k2->dn[perm[i]], perm, 0)) return 0;
+      if (!_equal_expr (k1->dn[i], k2->dn[perm[i]], perm, 0, chk_width)) return 0;
     }
   }
   else {
     for (i=0; i < A_LEN (k1->up); i++) {
-      if (!_equal_expr (k1->up[i], k2->up[i], perm, 0)) return 0;
+      if (!_equal_expr (k1->up[i], k2->up[i], perm, 0, chk_width)) return 0;
     }
     for (i=0; i < A_LEN (k1->dn); i++) {
-      if (!_equal_expr (k1->dn[i], k2->dn[i], perm, 0)) return 0;
+      if (!_equal_expr (k1->dn[i], k2->dn[i], perm, 0, chk_width)) return 0;
     }
   }
   return 1;
@@ -258,7 +261,7 @@ static int cell_matchfn (void *key1, void *key2)
   k1 = (struct act_prsinfo *)key1;
   k2 = (struct act_prsinfo *)key2;
 
-  return match_prsinfo (k1, k2, NULL);
+  return match_prsinfo (k1, k2, NULL, 1);
 }
 
 static void *cell_dupfn (void *key)
@@ -279,11 +282,14 @@ static void cell_freefn (void *key)
 }
 
 
+L_A_DECL (act_prs_lang_t *, pending);
+
 
 static void flush_pending (void)
 {
   /* convert pending gates into cells too */
   A_FREE (pending);
+  A_INIT (pending);
 }
 
 
@@ -540,47 +546,75 @@ static int _collect_depths (struct act_prsinfo *info,
   return v;
 }
 
-static void _dump_expr (act_prs_expr_t *e)
+
+static void _dump_expr (act_prs_expr_t *e, struct act_prsinfo *pi, int prec = 0)
 {
   int v;
-  
+
   if (!e) return;
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
+    if (prec > 2) {
+      printf ("(");
+    }
+    _dump_expr (e->u.e.l, pi, 2);
+    printf (" & ");
+    _dump_expr (e->u.e.r, pi, 2);
+    if (prec > 2) {
+      printf (")");
+    }
+    /* XXX: precharges? */
+    break;
+    
   case ACT_PRS_EXPR_OR:
-    printf ("(");
-    _dump_expr (e->u.e.l);
-    if (e->type == ACT_PRS_EXPR_OR) {
-      printf (" | ");
+    if (prec > 1) {
+      printf ("(");
     }
-    else {
-      printf (" & ");
+    _dump_expr (e->u.e.l, pi, 1);
+    printf (" | ");
+    _dump_expr (e->u.e.r, pi, 1);
+    if (prec > 1) {
+      printf (")");
     }
-    _dump_expr (e->u.e.r);
-    printf (")");
     break;
 
   case ACT_PRS_EXPR_NOT:
     printf ("~");
-    _dump_expr (e->u.e.l);
+    _dump_expr (e->u.e.l, pi, 3);
     break;
 
   case ACT_PRS_EXPR_VAR:
     v = (unsigned long)e->u.v.id;
-    printf ("%d", v);
+    if (v < pi->nout) {
+      if (pi->nout == 1) {
+	printf ("out");
+      }
+      else {
+	printf ("out[%d]", v);
+      }
+    }
+    else if (v >= (pi->nout + pi->nat)) {
+      printf ("in[%d]", v-pi->nout-pi->nat);
+    }
+    else {
+      printf ("@x%d", v-pi->nout);
+    }
+    if (e->u.v.sz) {
+      act_print_size (stdout, e->u.v.sz);
+    }
     break;
 
   case ACT_PRS_EXPR_LABEL:
     v = (long)e->u.l.label;
-    printf ("%d", v);
+    printf ("@x%d", v-pi->nout);
     break;
 
   case ACT_PRS_EXPR_TRUE:
-    printf ("T");
+    printf ("true");
     break;
     
   case ACT_PRS_EXPR_FALSE:
-    printf ("F");
+    printf ("false");
     break;
 
   case ACT_PRS_EXPR_ANDLOOP:
@@ -894,10 +928,10 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   for (int i=0; i < A_LEN (p->up); i++) {
     printf (" %d: up = ", i);
     if (!p->up[i]) { printf ("n/a"); }
-    else { _dump_expr (p->up[i]); }
+    else { _dump_expr (p->up[i], p); }
     printf (" ; dn = ");
     if (!p->dn[i]) { printf ("n/a"); }
-    else { _dump_expr (p->dn[i]); }
+    else { _dump_expr (p->dn[i], p); }
     printf ("\n");
   }
   for (int i=0; i < A_LEN (p->attrib); i++) {
@@ -912,17 +946,153 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   printf ("-------\n");
 }
 
+static void _dump_prs_cell (struct act_prsinfo *p)
+{
+  if (p->cell) {
+    const char *s = p->cell->getName();
+    printf ("export defproc ");
+    while (*s && *s != '<') {
+      fputc (*s, stdout);
+      s++;
+    }
+    printf (" (");
+  }
+  else {
+    printf (" -new-cell- (\n");
+  }
+  printf ("bool? in[%d]; bool! out", p->nvars - p->nout - p->nat);
+  if (p->nout > 1) {
+    printf ("[%d]", p->nout);
+  }
+  printf (")\n{\n   prs {\n");
+
+  for (int i=0; i < A_LEN (p->up); i++) {
+    if (p->up[i]) {
+      printf ("   ");
+      _dump_expr (p->up[i], p);
+      printf (" -> ");
+      if (i < p->nout) {
+	if (p->nout == 1) {
+	  printf ("out+");
+	}
+	else {
+	  printf ("out[%d]+", i);
+	}
+      }
+      else {
+	printf ("@x%d+", i-p->nout);
+      }
+      printf ("\n");
+    }
+    
+    if (p->dn[i]) {
+      printf ("   ");
+      _dump_expr (p->dn[i], p);
+      printf (" -> ");
+      if (i < p->nout) {
+	if (p->nout == 1) {
+	  printf ("out-");
+	}
+	else {
+	  printf ("out[%d]-", i);
+	}
+      }
+      else {
+	printf ("@x%d-", i-p->nout);
+      }
+      printf ("\n");
+    }
+  }
+#if 0  
+  for (int i=0; i < A_LEN (p->attrib); i++) {
+    printf (" var %d: ", i);
+    printf ("nup %d, ndn %d; ", p->attrib[i].nup, p->attrib[i].ndn);
+    printf (" depths: ");
+    for (int k=0; k < p->attrib[i].nup + p->attrib[i].ndn; k++) {
+      printf ("%d ", p->attrib[i].depths[k]);
+    }
+    printf ("\n");
+  }
+  printf ("-------\n");
+#endif
+  printf ("   }\n}\n\n");
+}
+
+static void dump_celldb (void)
+{
+  int i;
+  chash_bucket_t *b;
+  struct act_prsinfo *pi;
+  
+  if (!cell_table) return;
+
+  printf ("namespace cell {\n\n");
+
+  for (i=0; i < cell_table->size; i++) {
+    for (b = cell_table->head[i]; b; b = b->next) {
+      pi = (struct act_prsinfo *)b->v;
+      _dump_prs_cell (pi);
+    }
+  }
+  printf ("\n\n}\n");
+}
+  
 
 static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
 {
+  int i;
+  struct act_prsinfo *pi;
+  act_prs_lang_t newprs, newprs2;
+  chash_bucket_t *b;
+  
+  // add this prs to the list, if it is paired then we can find a gate
+  Assert (prs->type == ACT_PRS_RULE, "Hmm.");
 
+  if (prs->u.one.arrow_type != 0) {
+    /* we're good, let's do this! */
+    newprs = *prs;
+    newprs.next = NULL;
+  }
+  else {
+    for (i=0; i < A_LEN (pending); i++) {
+      if (prs->u.one.id == pending[i]->u.one.id ||
+	  prs->u.one.id->isEqual (pending[i]->u.one.id)) {
+	break;
+      }
+    }
+    if (i == A_LEN (pending)) {
+      A_NEW (pending, act_prs_lang_t *);
+      A_NEXT (pending) = prs;
+      A_INC (pending);
+      return;
+    }
+    newprs = *(pending[i]);
+    newprs.next = &newprs2;
+    newprs2 = *prs;
+    newprs2.next = NULL;
+    i++;
+    for (; i < A_LEN (pending); i++) {
+      pending[i-1] = pending[i];
+    }
+    A_LEN(pending)--;
+  }
+  pi = _gen_prs_attributes (&newprs);
+  if (cell_table) {
+    b = chash_lookup (cell_table, pi);
+    if (b) {
+      /* found match! */
+    }
+    else {
+      b = chash_add (cell_table, pi);
+    }
+  }
 }
 
 
 static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
 {
   Assert (tval > 0, "tree<> directive with <= 0 value?");
-  
+  // mark these rules as part of a tree
 }
   
 
@@ -1019,6 +1189,7 @@ static void prs_to_cells (Act *a, Process *p, int add_cells)
 
   A_INIT (pending);
   act_prs *prs = p->getprs();
+  
   while (prs) {
     /*
       1. group all gates.
@@ -1259,6 +1430,8 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
       add_cells = add_cells > res ? add_cells : res;
     }
   }
+
+  dump_celldb ();
   
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
