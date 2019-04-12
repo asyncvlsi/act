@@ -130,6 +130,8 @@ class Array {
 
   Array *Clone ();		/* returns a deep copy */
   Array *CloneOne ();		/* only copy current range */
+  Array *Reduce();		// return a deep copy, but elide
+				// dimensions that are derefs
 
   int isExpanded() { return expanded; }	
   /* returns 1 if expanded array, 0 otherwise */

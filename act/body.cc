@@ -735,10 +735,32 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     /* lhs */
     alhs = u.general.lhs->Expand (ns, s, 1); /* an lval */
     tlhs = alhs->getInstType (s, NULL, 1);
+    if (tlhs->arrayInfo()) {
+      Array *tmp;
+      tmp = tlhs->arrayInfo();
+      tlhs->clrArray();
+      tlhs->MkArray (tmp->Reduce());
+      delete tmp;
+    }
 
     /* rhs */
     arhs = u.basic.rhs->Expand (ns, s);
     trhs = arhs->getInstType (s, NULL, 1);
+    if (trhs->arrayInfo()) {
+      Array *tmp;
+      tmp = trhs->arrayInfo();
+      trhs->clrArray();
+      trhs->MkArray (tmp->Reduce());
+      delete tmp;
+    }
+    
+#if 0
+    fprintf (stderr, "Conn2x: ");
+    alhs->Print (stderr);
+    fprintf (stderr, " = ");
+    arhs->Print (stderr);
+    fprintf (stderr, "\n");
+#endif
 
     if (!type_connectivity_check (tlhs, trhs)) {
       act_error_ctxt (stderr);

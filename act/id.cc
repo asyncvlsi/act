@@ -305,7 +305,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 	ret->u.e.l = (Expr *) vx;
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->u.e.l = (Expr *)s;
-	ret->u.e.r->u.e.r = (Expr *)id->arrayInfo()->Clone();
+	ret->u.e.r->u.e.r = (Expr *)id->arrayInfo()->Clone ();
       }
       return ret;
     }

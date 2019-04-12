@@ -185,6 +185,54 @@ Array *Array::Clone ()
   return ret;
 }
 
+
+/*------------------------------------------------------------------------
+ *
+ *  Array::Reduce --
+ *
+ *   Deep copy of array, deleting parameters that are derefs
+ *
+ *------------------------------------------------------------------------
+ */
+Array *Array::Reduce ()
+{
+  Array *ret;
+
+  Assert (expanded, "What are we doing here?");
+  
+  ret = new Array();
+
+  ret->deref = deref;
+  ret->expanded = expanded;
+  
+  if (next) {
+    ret->next = next->Reduce ();
+  }
+  else {
+    ret->next = NULL;
+  }
+
+  ret->dims = 0;
+  for (int i=0; i < dims; i++) {
+    if (r[i].u.ex.isrange) {
+      ret->dims++;
+    }
+  }
+
+  if (ret->dims > 0) {
+    int j;
+    MALLOC (ret->r, struct range, ret->dims);
+    j = 0;
+    for (int i=0; i < dims; i++) {
+      if (r[i].u.ex.isrange) {
+	ret->r[j++] = r[i];
+      }
+    }
+    Assert (j == ret->dims, "What?");
+  }
+  return ret;
+}
+
 /*------------------------------------------------------------------------
  *  Only clone this range 
  *------------------------------------------------------------------------
