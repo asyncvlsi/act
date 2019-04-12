@@ -152,6 +152,8 @@ class Scope {
 
   void playBody (ActBody *b); /* create instances in the scope based
 				 on what is in the body */
+
+  const char *getName();
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

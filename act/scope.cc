@@ -1255,3 +1255,15 @@ void Scope::refineBaseType (const char *s, InstType *u)
     vx->t = ni;
   }
 }
+
+
+const char *Scope::getName ()
+{
+  if (u) {
+    return u->getName();
+  }
+  if (ns) {
+    return (ns == ActNamespace::Global()) ? "-global-" : ns->getName();
+  }
+  return "-unknown-";
+}

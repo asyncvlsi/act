@@ -634,10 +634,31 @@ act_connection *ActId::Canonical (Scope *s)
   
   Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
 
+#if 0
+  printf ("=== Canonical: ");
+  Print (stdout);
+  printf (" [scope=%s]\n", s->getName());
+#endif
+
   vx = rawValueIdx(s);
   cx = vx->u.obj.c;
 
   cx = cx->primary();
+
+#if 0
+  printf (" --> conn-list: ");
+  print_id (cx);
+  {
+    act_connection *tx;
+    tx = cx;
+    while (tx->next != cx) {
+      tx = tx->next;
+      printf ("=");
+      print_id (tx);
+    }
+  }
+  printf ("\n");
+#endif  
 
   /* now cx could be something else; but it has the same type has the
      id's core name 
@@ -688,6 +709,15 @@ act_connection *ActId::Canonical (Scope *s)
     id->Rest()->Print (stdout);
     printf ("\nUnique name: ");
     print_id (cxrest);
+    {
+      act_connection *tx;
+      tx = cxrest;
+      while (tx->next != cxrest) {
+	tx = tx->next;
+	printf ("=");
+	print_id (tx);
+      }
+    }
     printf("\n");
     dump_conn (cxrest);
     printf ("------\n");

@@ -563,6 +563,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 {
   int p1, p2;
   act_connection *tmp;
+  act_connection *d1, *d2;
   ValueIdx *vx1, *vx2, *vxtmp;
   int do_swap = 0;
 
@@ -572,18 +573,21 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   dump_conn (c1);
   dump_conn (c2);
 #endif
+  
   if (c1 == c2) return;
-  if (c1->primary() == c2->primary()) return;
+  d1 = c1->primary();
+  d2 = c2->primary();
+  if (d1 == d2) return;
 
   /* for global flag, find the root value */
-  tmp = c1;
+  tmp = d1;
   while (tmp->parent) {
     tmp = tmp->parent;
   }
   Assert (tmp->vx, "What?");
   vx1 = tmp->vx;
 
-  tmp = c2;
+  tmp = d2;
   while (tmp->parent) {
     tmp = tmp->parent;
   }
@@ -613,10 +617,18 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     }
   }
   else {
+    /* not global */
     if (ux) {
+      
       /* user defined type */
-      p1 = ux->FindPort (s1);
-      p2 = ux->FindPort (s2);
+      p1 = ux->FindPort (vx1->getName());
+      p2 = ux->FindPort (vx2->getName());
+
+#if 0
+      printf ("in this case: p1=%d [s1=%s], p2=%d [s2=%s]\n", p1, s1,
+	      p2, s2);
+#endif      
+    
       if (p1 > 0 || p2 > 0) {
 	/* this should be enough to determine which one is primary */
 	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
@@ -850,9 +862,16 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 
   /* actually connect them! */
   mk_raw_connection (c1, c2);
+
   
   /* now merge any subtrees */
   _merge_subtrees (c1, c2);
+
+#if 0
+  printf ("after-connect:\n");
+  c1 = c1->primary();
+  dump_conn (c1);
+#endif
 }
 
 void act_merge_attributes (act_attr_t **x, act_attr *a)

@@ -838,6 +838,14 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	aes->getID (&lid, &lidx, &lsize);
 	bes->getID (&rid, &ridx, &rsize);
 
+#if 0
+	fprintf (stderr, "LID: ");
+	lid->Print (stderr);
+	fprintf (stderr, "; RID: ");
+	rid->Print (stderr);
+	fprintf (stderr, "\n");
+#endif
+
 	lx = lid->Canonical (s);
 	rx = rid->Canonical (s);
 

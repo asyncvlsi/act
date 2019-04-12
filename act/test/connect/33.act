@@ -1,0 +1,14 @@
+defproc proc2 (bool B[2], Bf[2]) { B = Bf; }
+defproc proc3 (bool IM[2]) { }
+defproc proc1 (bool tb_in[2])
+{
+   proc2 cond(tb_in);
+   proc3 ba(cond.Bf);
+}
+
+bool w[2];
+proc1 p;
+
+p.tb_in = w;
+
+(i:2: p.tb_in[i] = w[i];)
