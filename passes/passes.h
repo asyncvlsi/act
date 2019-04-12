@@ -48,6 +48,7 @@ void act_create_bool_ports (Act *, Process *);
 
 /* create cells from processes */
 void act_prs_to_cells (Act *a, Process *p, int add_cells = -1);
+void act_emit_celltable (FILE *fp, Act *a);
 
 
 #endif /* __ACT_PASSES_H__ */

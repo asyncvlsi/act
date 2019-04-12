@@ -40,6 +40,7 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *proc;
+  FILE *fp;
 
   Act::Init (&argc, &argv);
 
@@ -58,7 +59,12 @@ int main (int argc, char **argv)
   act_prs_to_cells (a, NULL, 0);
 
   /* now emit new cells file */
-  
+  fp = fopen (argv[3], "w");
+  if (!fp) {
+    fatal_error ("Could not open file `%s' for writing", argv[3]);
+  }
+  act_emit_celltable (fp, a);
+  fclose (fp);
 
   return 0;
 }

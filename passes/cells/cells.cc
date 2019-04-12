@@ -547,7 +547,8 @@ static int _collect_depths (struct act_prsinfo *info,
 }
 
 
-static void _dump_expr (act_prs_expr_t *e, struct act_prsinfo *pi, int prec = 0)
+static void _dump_expr (FILE *fp,
+			act_prs_expr_t *e, struct act_prsinfo *pi, int prec = 0)
 {
   int v;
 
@@ -555,66 +556,66 @@ static void _dump_expr (act_prs_expr_t *e, struct act_prsinfo *pi, int prec = 0)
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
     if (prec > 2) {
-      printf ("(");
+      fprintf (fp, "(");
     }
-    _dump_expr (e->u.e.l, pi, 2);
-    printf (" & ");
-    _dump_expr (e->u.e.r, pi, 2);
+    _dump_expr (fp, e->u.e.l, pi, 2);
+    fprintf (fp, " & ");
+    _dump_expr (fp, e->u.e.r, pi, 2);
     if (prec > 2) {
-      printf (")");
+      fprintf (fp, ")");
     }
     /* XXX: precharges? */
     break;
     
   case ACT_PRS_EXPR_OR:
     if (prec > 1) {
-      printf ("(");
+      fprintf (fp, "(");
     }
-    _dump_expr (e->u.e.l, pi, 1);
-    printf (" | ");
-    _dump_expr (e->u.e.r, pi, 1);
+    _dump_expr (fp, e->u.e.l, pi, 1);
+    fprintf (fp, " | ");
+    _dump_expr (fp, e->u.e.r, pi, 1);
     if (prec > 1) {
-      printf (")");
+      fprintf (fp, ")");
     }
     break;
 
   case ACT_PRS_EXPR_NOT:
-    printf ("~");
-    _dump_expr (e->u.e.l, pi, 3);
+    fprintf (fp, "~");
+    _dump_expr (fp, e->u.e.l, pi, 3);
     break;
 
   case ACT_PRS_EXPR_VAR:
     v = (unsigned long)e->u.v.id;
     if (v < pi->nout) {
       if (pi->nout == 1) {
-	printf ("out");
+	fprintf (fp, "out");
       }
       else {
-	printf ("out[%d]", v);
+	fprintf (fp, "out[%d]", v);
       }
     }
     else if (v >= (pi->nout + pi->nat)) {
-      printf ("in[%d]", v-pi->nout-pi->nat);
+      fprintf (fp, "in[%d]", v-pi->nout-pi->nat);
     }
     else {
-      printf ("@x%d", v-pi->nout);
+      fprintf (fp, "@x%d", v-pi->nout);
     }
     if (e->u.v.sz) {
-      act_print_size (stdout, e->u.v.sz);
+      act_print_size (fp, e->u.v.sz);
     }
     break;
 
   case ACT_PRS_EXPR_LABEL:
     v = (long)e->u.l.label;
-    printf ("@x%d", v-pi->nout);
+    fprintf (fp, "@x%d", v-pi->nout);
     break;
 
   case ACT_PRS_EXPR_TRUE:
-    printf ("true");
+    fprintf (fp, "true");
     break;
     
   case ACT_PRS_EXPR_FALSE:
-    printf ("false");
+    fprintf (fp, "false");
     break;
 
   case ACT_PRS_EXPR_ANDLOOP:
@@ -928,10 +929,10 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   for (int i=0; i < A_LEN (p->up); i++) {
     printf (" %d: up = ", i);
     if (!p->up[i]) { printf ("n/a"); }
-    else { _dump_expr (p->up[i], p); }
+    else { _dump_expr (stdout, p->up[i], p); }
     printf (" ; dn = ");
     if (!p->dn[i]) { printf ("n/a"); }
-    else { _dump_expr (p->dn[i], p); }
+    else { _dump_expr (stdout, p->dn[i], p); }
     printf ("\n");
   }
   for (int i=0; i < A_LEN (p->attrib); i++) {
@@ -946,61 +947,62 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   printf ("-------\n");
 }
 
-static void _dump_prs_cell (struct act_prsinfo *p)
+static int _dump_prs_cell (FILE *fp, struct act_prsinfo *p, int cmax)
 {
   if (p->cell) {
     const char *s = p->cell->getName();
-    printf ("export defproc ");
+    fprintf (fp, "export defcell ");
     while (*s && *s != '<') {
-      fputc (*s, stdout);
+      fputc (*s, fp);
       s++;
     }
-    printf (" (");
+    fprintf (fp, " (");
   }
   else {
-    printf (" -new-cell- (\n");
+    fprintf (fp, "export defcell g%d (", cmax);
+    cmax++;
   }
-  printf ("bool? in[%d]; bool! out", p->nvars - p->nout - p->nat);
+  fprintf (fp, "bool? in[%d]; bool! out", p->nvars - p->nout - p->nat);
   if (p->nout > 1) {
-    printf ("[%d]", p->nout);
+    fprintf (fp, "[%d]", p->nout);
   }
-  printf (")\n{\n   prs {\n");
+  fprintf (fp, ")\n{\n   prs {\n");
 
   for (int i=0; i < A_LEN (p->up); i++) {
     if (p->up[i]) {
-      printf ("   ");
-      _dump_expr (p->up[i], p);
-      printf (" -> ");
+      fprintf (fp, "   ");
+      _dump_expr (fp, p->up[i], p);
+      fprintf (fp, " -> ");
       if (i < p->nout) {
 	if (p->nout == 1) {
-	  printf ("out+");
+	  fprintf (fp, "out+");
 	}
 	else {
-	  printf ("out[%d]+", i);
+	  fprintf (fp, "out[%d]+", i);
 	}
       }
       else {
-	printf ("@x%d+", i-p->nout);
+	fprintf (fp, "@x%d+", i-p->nout);
       }
-      printf ("\n");
+      fprintf (fp, "\n");
     }
     
     if (p->dn[i]) {
-      printf ("   ");
-      _dump_expr (p->dn[i], p);
-      printf (" -> ");
+      fprintf (fp, "   ");
+      _dump_expr (fp, p->dn[i], p);
+      fprintf (fp, " -> ");
       if (i < p->nout) {
 	if (p->nout == 1) {
-	  printf ("out-");
+	  fprintf (fp, "out-");
 	}
 	else {
-	  printf ("out[%d]-", i);
+	  fprintf (fp, "out[%d]-", i);
 	}
       }
       else {
-	printf ("@x%d-", i-p->nout);
+	fprintf (fp, "@x%d-", i-p->nout);
       }
-      printf ("\n");
+      fprintf (fp, "\n");
     }
   }
 #if 0  
@@ -1015,26 +1017,40 @@ static void _dump_prs_cell (struct act_prsinfo *p)
   }
   printf ("-------\n");
 #endif
-  printf ("   }\n}\n\n");
+  fprintf (fp, "   }\n}\n\n");
+  return cmax+1;
 }
 
-static void dump_celldb (void)
+static void dump_celldb (FILE *fp)
 {
   int i;
   chash_bucket_t *b;
   struct act_prsinfo *pi;
+  int cellmax = 0;
+  int id, version;
   
   if (!cell_table) return;
-
-  printf ("namespace cell {\n\n");
 
   for (i=0; i < cell_table->size; i++) {
     for (b = cell_table->head[i]; b; b = b->next) {
       pi = (struct act_prsinfo *)b->v;
-      _dump_prs_cell (pi);
+      if (pi->cell) {
+	sscanf (pi->cell->getName()+1, "%dx%d", &id, &version);
+	cellmax = (cellmax > id) ? cellmax : id;
+      }
     }
   }
-  printf ("\n\n}\n");
+  cellmax++;
+  
+  fprintf (fp, "namespace cell {\n\n");
+
+  for (i=0; i < cell_table->size; i++) {
+    for (b = cell_table->head[i]; b; b = b->next) {
+      pi = (struct act_prsinfo *)b->v;
+      cellmax = _dump_prs_cell (fp, pi, cellmax);
+    }
+  }
+  fprintf (fp, "\n\n}\n");
 }
   
 
@@ -1084,6 +1100,7 @@ static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
     }
     else {
       b = chash_add (cell_table, pi);
+      b->v = pi;
     }
   }
 }
@@ -1092,7 +1109,7 @@ static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
 static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
 {
   Assert (tval > 0, "tree<> directive with <= 0 value?");
-  // mark these rules as part of a tree
+  // mark these rules as part of a tree: needs to be fixed
 }
   
 
@@ -1431,8 +1448,6 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
     }
   }
 
-  dump_celldb ();
-  
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
     ActInstiter i(g->CurScope());
@@ -1450,7 +1465,20 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
   else {
     prs_to_cells (a, p, add_cells);
   }
+
   delete visited_procs;
   cell_table = NULL;
   cell_ns = NULL;
+}
+
+
+void act_emit_celltable (FILE *fp, Act *a)
+{
+  cell_table = (struct cHashtable *) a->aux_find ("prs2cells");
+  if (!cell_table) {
+    return;
+  }
+  dump_celldb (fp);
+  
+  cell_table = NULL;
 }
