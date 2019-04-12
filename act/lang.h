@@ -229,5 +229,6 @@ const char *act_spec_string (int type);
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
+void act_print_size (FILE *fp, act_size_spec_t *sz);
 
 #endif /* __LANG_H__ */

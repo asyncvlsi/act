@@ -18,20 +18,16 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-TARGETLIBS=libactpass_$(EXT).a
-TARGETINCS=passes.h
-TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen cells
 
-USEOBJS=flatten/$(EXT)/aflat.o \
-	netgen/$(EXT)/netgen.o \
- 	flatten/$(EXT)/flatten.o \
-	cells/$(EXT)/cells.o
+weird: install_inc all
+
+EXTRA=cells.o 
+TARGETINCS=cells.h
+TARGETINCSUBDIR=act/passes
+
+SRCS=$(EXTRA:.o=.cc)
+OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
-
-$(TARGETLIBS): $(USEOBJS)
-	ar ruv $(TARGETLIBS) $(USEOBJS)
-	$(RANLIB) $(TARGETLIBS)
 
 -include Makefile.deps

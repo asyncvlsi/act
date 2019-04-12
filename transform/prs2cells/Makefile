@@ -18,20 +18,17 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-TARGETLIBS=libactpass_$(EXT).a
-TARGETINCS=passes.h
-TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen cells
+BINARY=prs2cells.$(EXT)
 
-USEOBJS=flatten/$(EXT)/aflat.o \
-	netgen/$(EXT)/netgen.o \
- 	flatten/$(EXT)/flatten.o \
-	cells/$(EXT)/cells.o
+TARGETS=$(BINARY)
+
+OBJS=main.o
+
+SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(TARGETLIBS): $(USEOBJS)
-	ar ruv $(TARGETLIBS) $(USEOBJS)
-	$(RANLIB) $(TARGETLIBS)
+$(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
 
 -include Makefile.deps

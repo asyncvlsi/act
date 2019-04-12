@@ -93,6 +93,11 @@ static ActId *expand_var_chan (ActId *id, ActNamespace *ns, Scope *s)
   return expand_var_read (id, ns, s);
 }
 
+void _merge_duplicate_rules (act_prs_lang_t *p)
+{
+  /* XXX: fix this */
+}
+
 act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
 {
   act_prs *ret;
@@ -105,7 +110,9 @@ act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
   ret->gnd = fullexpand_var (p->gnd, ns, s);
   ret->psc = fullexpand_var (p->psc, ns, s);
   ret->nsc = fullexpand_var (p->nsc, ns, s);
-  ret->p = prs_expand (p->p, ns, s);
+  ret->p = prs_expand (p->p, ns, s); 
+  _merge_duplicate_rules (ret->p);
+ 
   if (p->next) {
     ret->next = prs_expand (p->next, ns, s);
   }
@@ -476,6 +483,12 @@ act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *
   return ret;
 }
 
+struct act_prsmerge {
+  act_prs_lang_t *vup;		/* previous prs */
+  act_prs_lang_t *vdn;		/* previous prs */
+};
+  
+  
 act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 {
   act_prs_lang_t *hd = NULL;
@@ -902,6 +915,11 @@ static void _print_size (FILE *fp, act_size_spec_t *sz)
   }
 }
 
+void act_print_size (FILE *fp, act_size_spec_t *sz)
+{
+  _print_size (fp, sz);
+}
+
 static void _print_prs_expr (FILE *fp, act_prs_expr_t *e, int prec)
 {
   if (!e) return;
@@ -1245,4 +1263,3 @@ void hse_print (FILE *fp, act_chp *chp)
   chp_print (fp, chp->c);
   fprintf (fp, "\n}\n");
 }
-
