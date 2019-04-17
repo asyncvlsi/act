@@ -107,8 +107,8 @@ typedef struct act_prs_lang {
   unsigned int type:3;
   union {
     struct {
-      act_attr_t *attr;
-      act_prs_expr_t *e;
+      act_attr_t *attr;  /* after, weak, and unstab need u/d versions */
+      act_prs_expr_t *e, *eopp;
       ActId *id; /* is a char * if it is a label */
       unsigned int arrow_type:2; /* -> = 0, => = 1, #> = 2 */
       unsigned int dir:1;	/* 0 = -, 1 = + */
