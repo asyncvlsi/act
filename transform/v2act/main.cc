@@ -40,7 +40,7 @@ char *find_library (char *s)
 
   ret = NULL;
   if (getenv ("CAD_HOME")) {
-    sprintf (buf, "%s/lib/vnet2act/%s", getenv ("CAD_HOME"), s);
+    sprintf (buf, "%s/lib/v2act/%s", getenv ("CAD_HOME"), s);
     tmp = fopen (buf, "r");
     if (tmp) {
       fclose (tmp);
@@ -48,7 +48,7 @@ char *find_library (char *s)
     }
   }
   if (!ret && getenv ("ACT_HOME")) {
-    sprintf (buf, "%s/lib/vnet2act/%s", getenv ("ACT_HOME"), s);
+    sprintf (buf, "%s/lib/v2act/%s", getenv ("ACT_HOME"), s);
     tmp = fopen (buf, "r");
     if (tmp) {
       fclose (tmp);
@@ -62,40 +62,6 @@ char *find_library (char *s)
     return NULL;
   }
 }
-
-
-static
-char *find_exepath (const char *s)
-{
-  char buf[10240];
-  char *ret;
-  FILE *tmp;
-
-  ret = NULL;
-  if (getenv ("CAD_HOME")) {
-    sprintf (buf, "%s/bin/%s", getenv ("CAD_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (!ret && getenv ("ACT_HOME")) {
-    sprintf (buf, "%s/bin/%s", getenv ("ACT_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (ret) {
-    return Strdup (ret);
-  }
-  else {
-    return NULL;
-  }
-}
-
 
 static void usage (char *s)
 {
@@ -121,7 +87,6 @@ int main (int argc, char **argv)
   char *clkname;
   char *fname;
   char *libname;
-  char buf[10240];
   int i, j;
 
   Act::Init (&argc, &argv);
@@ -208,28 +173,6 @@ int main (int argc, char **argv)
     }
   }
 
-#if 0  
-  if (j == -1) {
-    char *s;
-
-    s = find_exepath ("vnet2act_quote.sed");
-    if (!s) {
-      fatal_error ("Could not find `vnet2act_quote.sed'");
-    }
-    sprintf (buf, "sed -f %s %s > %sp", s, argv[optind], argv[optind]);
-    FREE (s);
-  }
-  else {
-    char *t = Strdup (argv[0]);
-    t[j] = '\0';
-    sprintf (buf, "sed -f %s/vnet2act_quote.sed %s > %sp", t, argv[optind], argv[optind]);
-    FREE (t);
-  }
-  system (buf);
-  sprintf (buf, "%sp", argv[optind]);
-  t = v_parse (buf);
-#endif  
-
   t = v_parse (argv[optind]);
 
   NEW (w, VWalk);
@@ -263,10 +206,6 @@ int main (int argc, char **argv)
   emit_types (w);
 
   fclose (w->out);
-
-#if 0
-  unlink (buf);
-#endif  
 
   return 0;
 }
