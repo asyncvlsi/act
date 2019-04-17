@@ -108,6 +108,7 @@ A_DECL(char *, return_type);
 
 int gen_parse;
 int verbose;
+int verilog_ids;
 
 A_DECL(char *, GWALK);
 
@@ -2093,6 +2094,10 @@ void emit_parser (void)
   pp_printf_text (pp, "#define TOKEN(a,b)  a = file_addtoken (l, b);");
   pp_nl;
   pp_printf_text (pp, "#include \"%s_parse.def\"", prefix); pp_nl;
+  if (verilog_ids) {
+    pp_printf_text (pp, "  file_setflags (l, FILE_FLAGS_ESCAPEID);");
+    pp_nl;
+  }
   if (found_expr) {
     pp_printf_text (pp, "  expr_init (l);");
     pp_nl;
@@ -2717,11 +2722,12 @@ No options:
 */
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s <grammar> [-v] [-p] [-g] [-c] [-n prefix] { -w walk }*\n", s);
+  fprintf (stderr, "Usage: %s <grammar> [-vpgcV] [-n prefix] { -w walk }*\n", s);
   fprintf (stderr, "  -v : verbose warnings\n");
   fprintf (stderr, "  -p : generate parser\n");
   fprintf (stderr, "  -g : only print out grammar in the .gram file\n");
   fprintf (stderr, "  -c : emit cyclone code instead of C\n");
+  fprintf (stderr, "  -V : support Verilog escaped IDs\n");
   fprintf (stderr, "  -w <walk> : specify walker that should be generated\n");
   fprintf (stderr, "  -n <name> : prefix used (default: std)\n");
   exit (1);
@@ -2753,6 +2759,7 @@ int main (int argc, char **argv)
 #include "pgen.def"
 
   verbose = 0;
+  verilog_ids = 0;
   gen_parse = 1;
   gen_allwalk = 1;
   gram_only = 0;
@@ -2766,6 +2773,9 @@ int main (int argc, char **argv)
     for (i=2; i < argc; i++) {
       if (strcmp (argv[i], "-v") == 0) {
 	verbose++;
+      }
+      if (strcmp (argv[i], "-V") == 0) {
+	verilog_ids = 1;
       }
       else if (strcmp (argv[i], "-g") == 0) {
 	gram_only = 1;

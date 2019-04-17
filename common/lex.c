@@ -191,7 +191,9 @@ static void addtok (LEX_T *l, char c)
   }
 }
 
+#define isidstart(l,x) (((x) == '_') || isalpha(x) || (((x) == '\\') && ((l)->flags & LEX_FLAGS_ESCAPEID)))
 #define isid(x) (((x) == '_') || isalpha(x))
+
 
 /*-------------------------------------------------------------------------
  * allocate LEX_T structure and initialize fields
@@ -789,11 +791,19 @@ extern int lex_getsym (LEX_T *l)
 	getch (l);
       }
       l->integer *= tsign;
-      if (tsign == 1 && isid (l->ch) && (lex_flags (l) & LEX_FLAGS_DIGITID)) {
-	while (isid (l->ch) || isdigit (l->ch) ||
-	       ((lex_flags (l)&LEX_FLAGS_IDSLASH) && l->ch == '/')) {
-	  addtok (l, l->ch);
-	  getch (l);
+      if (tsign == 1 && isidstart (l,l->ch) && (lex_flags (l) & LEX_FLAGS_DIGITID)) {
+	if (l->ch == '\\') {
+	  do {
+	    addtok (l, l->ch);
+	    getch (l);
+	  } while (!lex_eof (l) && !isspace (l->ch));
+	}
+	else {
+	  while (isid (l->ch) || isdigit (l->ch) ||
+		 ((lex_flags (l)&LEX_FLAGS_IDSLASH) && l->ch == '/')) {
+	    addtok (l, l->ch);
+	    getch (l);
+	  }
 	}
 	return l->sym = l_id;
       }
@@ -880,12 +890,20 @@ extern int lex_getsym (LEX_T *l)
       else
 	return l->sym = l_integer;
     }
-    else if (isid (l->ch)) {
+    else if (isidstart (l,l->ch)) {
       /* identifier */
-      while (isid (l->ch) || isdigit (l->ch) ||
-	     ((lex_flags (l)&LEX_FLAGS_IDSLASH) && l->ch == '/')) {
-	addtok (l, l->ch);
-	getch (l);
+      if (l->ch == '\\') {
+	do {
+	  addtok (l, l->ch);
+	  getch (l);
+	} while (!lex_eof (l) && !isspace (l->ch));
+      }
+      else {
+	do {
+	  addtok (l, l->ch);
+	  getch (l);
+	} while (isid (l->ch) || isdigit (l->ch) ||
+		 ((lex_flags (l)&LEX_FLAGS_IDSLASH) && l->ch == '/'));
       }
       return l->sym = l_id;
     }
