@@ -1997,7 +1997,7 @@ static void process_random_seed (void)
 static void process_random_excl (void)
 {
   char *s;
-  char *usage = "Usage: random_seed on|off\n";
+  char *usage = "Usage: random_excl on|off\n";
   int v;
 
   GET_ARG (usage);
