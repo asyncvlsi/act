@@ -40,7 +40,7 @@ extern "C" {
      <file>_idx.dat  <- index table
 */
 
-#define IDX_TYPE unsigned long
+#define IDX_TYPE unsigned int
 #define IDX_SIZE 4
 
 #define NAMES_WRITE 1
