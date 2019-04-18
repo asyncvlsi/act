@@ -30,6 +30,7 @@
 #include "array.h"
 #include "atrace.h"
 #include "channel.h"
+#include "mytime.h"
 
 #include <histedit.h>
 
@@ -42,6 +43,7 @@
 static History *el_hist;
 static EditLine *el_ptr;
 static char *prompt_val;
+static int profile_cmd = 0;
 
 
 enum vector_type {
@@ -2176,6 +2178,7 @@ void handle_user_input (FILE *fp)
 {
   char buf[10240];
   char *s, *t;
+  double tm;
 
   while ((s = read_input_line (fp, PROMPT, buf, 10240))) {
     if (interrupted) {
@@ -2204,7 +2207,14 @@ void handle_user_input (FILE *fp)
       }
     }
     if (!*s) goto done;
+    if (profile_cmd) {
+      tm = cputime_msec ();
+    }
     do_command (s);
+    if (profile_cmd) {
+      tm = cputime_msec ();
+      printf ("time = %g ms\n", tm);
+    }
   done:
     if (s != buf) {
       free (s);
@@ -2242,13 +2252,17 @@ int main (int argc, char **argv)
   names = NULL;
   opterr = 0;
   no_readline = 0;
-  while ((ch = getopt (argc, argv, "rn:")) != -1) {
+  profile_cmd = 0;
+  while ((ch = getopt (argc, argv, "prn:")) != -1) {
     switch (ch) {
     case 'r':
       no_readline = 1;
       break;
     case 'n':
       names = Strdup (optarg);
+      break;
+    case 'p':
+      profile_cmd = 1;
       break;
     default:
       fatal_error ("getopt() is broken");
@@ -2277,6 +2291,7 @@ int main (int argc, char **argv)
     fprintf (stderr, "Usage: %s [options] [prsfile]\n", argv[0]);
     fprintf (stderr, "  -r : no readline\n");
     fprintf (stderr, "  -n names: packed file with names file\n");
+    fprintf (stderr, "  -p : profile each prsim command\n");
     exit (1);
   }
 
