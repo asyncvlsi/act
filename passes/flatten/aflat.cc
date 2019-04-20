@@ -302,7 +302,7 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
 	 (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0)) ||
 	(export_format == LVS_FMT &&
 	 (strcmp (tmp, "exclhi") == 0 || strcmp (tmp, "excllo") == 0))) {
-      if (spec->count > 1) {
+      if (spec->count > 0) {
 	int comma = 0;
 	printf ("%s(", tmp);
 	for (int i=0; i < spec->count; i++) {
@@ -319,12 +319,18 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
 	  }
 	  /* spec->ids[i] might be a bool, or a bool array! fix bool
 	     array case */
-	  if (it->arrayInfo()) {
+	  if (it->arrayInfo() &&
+	      (!id->arrayInfo() || !id->arrayInfo()->isDeref())) {
+	    Arraystep *astep;
 	    Array *a = it->arrayInfo();
 	    if (id->arrayInfo()) {
+	      astep = a->stepper (id->arrayInfo());
 	      a = id->arrayInfo();
 	    }
-	    Arraystep *astep = a->stepper();
+	    else {
+	      astep = a->stepper();
+	      a = NULL;
+	    }
 	    int restore = 0;
 	    if (id->arrayInfo()) {
 	      id->setArray (NULL);

@@ -1,0 +1,12 @@
+
+bool x, y[10];
+
+prs {
+  x -> y[0]-
+}
+
+spec {
+  mk_exclhi(x,y[0])
+  mk_exclhi(y[3..4])
+  mk_exclhi(y)
+}

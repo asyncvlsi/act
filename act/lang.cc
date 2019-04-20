@@ -1282,7 +1282,7 @@ void spec_print (FILE *fp, act_spec *spec)
 	}
 	spec->ids[i]->Print (fp);
       }
-      fprintf (fp, ")");
+      fprintf (fp, ")\n");
     }
     spec = spec->next;
   }
