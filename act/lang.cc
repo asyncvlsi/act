@@ -34,7 +34,6 @@
 act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
-extern const char *act_fet_value_to_string (int);
 
 static ActId *fullexpand_var (ActId *id, ActNamespace *ns, Scope *s)
 {
@@ -908,7 +907,7 @@ static void _print_size (FILE *fp, act_size_spec_t *sz)
 	print_expr (fp, sz->l);
       }
       if (sz->flavor != 0) {
-	fprintf (fp, ",%s", act_fet_value_to_string (sz->flavor));
+	fprintf (fp, ",%s", act_dev_value_to_string (sz->flavor));
       }
     }
     fprintf (fp, ">");
@@ -1262,4 +1261,30 @@ void hse_print (FILE *fp, act_chp *chp)
   fprintf (fp, "hse {\n");
   chp_print (fp, chp->c);
   fprintf (fp, "\n}\n");
+}
+
+
+void spec_print (FILE *fp, act_spec *spec)
+{
+  int count = config_get_table_size ("act.spec_types");
+  char **specs = config_get_table_string ("act.spec_types");
+  fprintf (fp, "spec {\n");
+  while (spec) {
+    if (spec->type == -1) {
+      fprintf (fp, "   timing");
+    }
+    else {
+      Assert (spec->type >= 0 && spec->type < count, "What?");
+      fprintf (fp, "   %s(", specs[spec->type]);
+      for (int i=0; i < spec->count; i++) {
+	if (i != 0) {
+	  fprintf (fp, ", ");
+	}
+	spec->ids[i]->Print (fp);
+      }
+      fprintf (fp, ")");
+    }
+    spec = spec->next;
+  }
+  fprintf (fp, "}\n");
 }

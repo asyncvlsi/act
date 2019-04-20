@@ -492,6 +492,9 @@ void ActNamespace::Print (FILE *fp)
     if (lang.hse) {
       hse_print (fp, lang.hse);
     }
+    if (lang.spec) {
+      spec_print (fp, lang.spec);
+    }
   }
 }
 

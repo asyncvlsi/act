@@ -1134,6 +1134,9 @@ void ActBody_Lang::Print (FILE *fp)
   case ActBody_Lang::LANG_CHP:
     chp_print (fp, (act_chp *)lang);
     break;
+  case ActBody_Lang::LANG_SPEC:
+    spec_print (fp, (act_spec *)lang);
+    break;
   }
 }
 

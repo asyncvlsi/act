@@ -1009,9 +1009,9 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] "
       r = OPT_VALUE ($4);
       $A(r->type == R_STRING);
 
-      s->flavor = act_fet_string_to_value (r->u.str);
+      s->flavor = act_dev_string_to_value (r->u.str);
       if (s->flavor == -1) {
-	$E("Unknown transistor flavor ``%s''", r->u.str);
+	$E("Unknown device flavor ``%s''", r->u.str);
       }
       FREE (r);
     }

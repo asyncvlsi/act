@@ -223,8 +223,11 @@ act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 void prs_print (FILE *, act_prs *);
 void chp_print (FILE *, act_chp *);
 void hse_print (FILE *, act_chp *);
+void spec_print (FILE *, act_spec *);
 
 const char *act_spec_string (int type);
+const char *act_dev_value_to_string (int);
+int act_dev_string_to_value (const char *s);
 
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 

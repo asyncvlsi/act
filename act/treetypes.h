@@ -151,13 +151,5 @@ typedef struct {
 
 } ActTree;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-int act_fet_string_to_value (const char *s);
-#ifdef __cplusplus
-}
-#endif
-
 
 #endif /* __STD_TREE_TYPES_H__ */

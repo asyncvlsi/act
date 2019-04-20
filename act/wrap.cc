@@ -26,31 +26,32 @@
 #include <act/lang.h>
 #include "config.h"
 
-static char **fet_flavors = NULL;
-static int num_fets = -1;
-int act_fet_string_to_value (const char *s)
+static char **dev_flavors = NULL;
+static int num_devs = -1;
+
+int act_dev_string_to_value (const char *s)
 {
-  if (num_fets == -1) {
-    num_fets = config_get_table_size ("act.fet_flavors");
-    fet_flavors = config_get_table_string ("act.fet_flavors");
+  if (num_devs == -1) {
+    num_devs = config_get_table_size ("act.dev_flavors");
+    dev_flavors = config_get_table_string ("act.dev_flavors");
   }
-  for (int i=0; i < num_fets; i++) {
-    if (strcmp (s, fet_flavors[i]) == 0)
+  for (int i=0; i < num_devs; i++) {
+    if (strcmp (s, dev_flavors[i]) == 0)
       return i;
   }
   return -1;
 }
 
-const char *act_fet_value_to_string (int f)
+const char *act_dev_value_to_string (int f)
 {
-  if (num_fets == -1) {
-    num_fets = config_get_table_size ("act.fet_flavors");
-    fet_flavors = config_get_table_string ("act.fet_flavors");
+  if (num_devs == -1) {
+    num_devs = config_get_table_size ("act.dev_flavors");
+    dev_flavors = config_get_table_string ("act.dev_flavors");
   }
-  if (f < 0 || f >= num_fets) {
+  if (f < 0 || f >= num_devs) {
     return NULL;
   }
-  return fet_flavors[f];
+  return dev_flavors[f];
 }
 
 #define NULL_WRAP(nm,t) ActRet *act_wrap_X_##nm (t v) { return NULL; }

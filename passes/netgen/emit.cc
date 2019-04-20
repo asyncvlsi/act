@@ -619,7 +619,6 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   /*-- emit local netlist --*/
   int fets = 0;
   int ncaps = 0;
-  char **fetnames = config_get_table_string ("act.fet_flavors");
   char devname[1024];
   int repnodes = 0;
 
@@ -740,7 +739,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	  aemit_node (a, n, fp, e->bulk);
 
 	  sprintf (devname, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
-		   fetnames[e->flavor]);
+		   act_dev_value_to_string (e->flavor));
 	  if (!config_exists (devname)) {
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }

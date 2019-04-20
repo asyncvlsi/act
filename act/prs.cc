@@ -295,7 +295,7 @@ static act_prs_expr_t *atom (LFILE *l)
       e->u.v.sz = sz;
       if (file_have (l, COMMA)) {
 	if (file_have (l, f_id)) {
-	  sz->flavor = act_fet_string_to_value (file_prev (l));
+	  sz->flavor = act_dev_string_to_value (file_prev (l));
 	  if (sz->flavor == -1) {
 	    _freeexpr (e);
 	    return NULL;
@@ -312,7 +312,7 @@ static act_prs_expr_t *atom (LFILE *l)
 	      _freeexpr (e);
 	      return NULL;
 	    }
-	    sz->flavor = act_fet_string_to_value (file_prev (l));
+	    sz->flavor = act_dev_string_to_value (file_prev (l));
 	  }
 	}
       }
