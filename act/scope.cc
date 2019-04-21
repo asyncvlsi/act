@@ -1165,16 +1165,15 @@ void Scope::Print (FILE *fp)
 
     if (!TypeFactory::isParamType (vx->t)) {
       if (!u || (u->FindPort (vx->getName()) == 0)) {
-	a = NULL;
+	a = vx->t->arrayInfo();
+	if (a) {
+	  vx->t->clrArray();
+	}
 	if (vx->t->isExpanded()) {
 	  vx->t->sPrint (buf, 10240);
 	  ActNamespace::Act()->mfprintf (fp, "%s", buf);
 	}
 	else {
-	  a = vx->t->arrayInfo();
-	  if (a) {
-	    vx->t->clrArray();
-	  }
 	  vx->t->Print (fp);
 	}
 	fprintf (fp, " %s", vx->getName());
