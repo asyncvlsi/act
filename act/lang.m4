@@ -447,10 +447,10 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     c->u.gc->g = $2;
     c->u.gc->s = NULL;
     c->u.gc->next = NULL;
+    c->u.gc->id = NULL;
     return c;
 }}
 ;
-
 
 guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
 {{X:
@@ -515,6 +515,7 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body "]"
     c->type = ACT_CHP_LOOP;
     NEW (c->u.gc, act_chp_gc_t);
     c->u.gc->next = NULL;
+    c->u.gc->id = NULL;
     c->u.gc->g = NULL;
     c->u.gc->s = $2;
     return c;

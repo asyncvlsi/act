@@ -779,6 +779,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       }
       else {	
 	NEW (tmp, act_chp_gc_t);
+	tmp->id = NULL;
 	tmp->next = NULL;
 	tmp->g = expr_expand (gctmp->g, ns, s);
 	tmp->s = chp_expand (gctmp->s, ns, s);

@@ -211,7 +211,7 @@ unsigned int act_connection::getctype()
   return 3;
 }
 
-static void mk_raw_connection (act_connection *c1, act_connection *c2)
+void _act_mk_raw_connection (act_connection *c1, act_connection *c2)
 {
   /* c1 is the root, not c2 */
   while (c2->up) {
@@ -228,15 +228,23 @@ static void mk_raw_connection (act_connection *c1, act_connection *c2)
   c2->next = t1;
 }
 
+/*
+  merge c2 into c1 (primary)
+
+  NOTE: their parents are already connected
+*/
 static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
 {
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
 
   if (c2->next == c2) {
-    /* nothing to do */
+    /* nothing to do: c2 has no other connections */
   }
   else {
+    /* c2 has connections; merge them into c1, but remove c2 from the
+       connection list */
+
     act_connection *t1, *t2;
     int in_ring = 0;
 
@@ -251,14 +259,20 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
     }
 
     if (!in_ring) {
+      /* not already connected: merge union/find trees */
       while (c2->up) {
 	c2 = c2->up;
       }
       c2->up = c1;
+      c2 = tmp;
     }
 
-    t1 = tmp->next;
-    while (t1 != tmp) {
+    /* union-find trees are merged at this point */
+
+    /* any up pointers in c2's union-find tree connection ring that point to c2
+       should be updated to c2->up */
+    t1 = c2->next;
+    while (t1 != c2) {
       if (t1->up == c2) {
 	t1->up = c2->up;
       }
@@ -270,24 +284,25 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
     if (!in_ring) {
       /* merge c1, c2 connection ring, and drop c2 itself */
       t1 = c1->next;
-      t2 = c2->next->next;
+      t2 = c2->next;
       c1->next = t2;
-      c2->next->next = t1;
+      c2->next = t1;
     }
-    else {
-      /* the rings are already merged. we need to delete c2 from it */
-      t1 = c2;
-      while (t1->next != c2) {
-	t1 = t1->next;
-      }
-      t1->next = t1->next->next;
+    t1 = c2;
+    while (t1->next != c2) {
+      t1 = t1->next;
     }
+    t1->next = t1->next->next;
+
+    c2->next = NULL;
+    c2->up = NULL;
   }
+  
   /* now we need to merge any further subconnections between the array
      elements of c1->a and c2->a, if any */
 
   if (!c1->a && !c2->a) {
-    FREE (c2);
+    delete c2;
     return;
   }
   
@@ -295,7 +310,7 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
 
   if (c1->vx) {
     /* direct */
-    FREE (c2);
+    delete c2;
     return;
   }
   else if (c1->parent->vx) {
@@ -456,9 +471,12 @@ static void _merge_subtrees (act_connection *c1, act_connection *c2)
 	c1->a[i] = c2->a[i];
 	c2->a[i] = NULL;
       }
-      c1->a[i]->parent = c1;
+      if (c1->a[i]) {
+	c1->a[i]->parent = c1;
+      }
     }
-    FREE (c2->a);  
+    FREE (c2->a);
+    c2->a = NULL;
   }
 }
 
@@ -861,7 +879,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   }
 
   /* actually connect them! */
-  mk_raw_connection (c1, c2);
+  _act_mk_raw_connection (c1, c2);
 
   
   /* now merge any subtrees */

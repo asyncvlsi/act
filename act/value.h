@@ -85,6 +85,7 @@ struct act_connection {
   // returns true if this is a complex object (array or user-defined)
   // with potential subconnections to it
   bool hasSubconnections() { return a != NULL; }
+  bool hasSubconnections(int i) { return a && a[i]; }
   int numSubconnections();
   
   ValueIdx *getvx();		/* this returns the root ValueIdx for
@@ -149,6 +150,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 		    const char *s2, act_connection *c2);
 
 void act_merge_attributes (struct act_attr **x, act_attr *a);
+void _act_mk_raw_connection (act_connection *c1, act_connection *c2);
 
 #endif /* __ACT_VALUE_H__ */
 
