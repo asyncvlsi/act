@@ -228,6 +228,8 @@ void _act_mk_raw_connection (act_connection *c1, act_connection *c2)
   c2->next = t1;
 }
 
+static void _merge_subtrees (act_connection *c1, act_connection *c2);
+
 /*
   merge c2 into c1 (primary)
 
@@ -301,11 +303,29 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
   /* now we need to merge any further subconnections between the array
      elements of c1->a and c2->a, if any */
 
-  if (!c1->a && !c2->a) {
+  if (!c2->a) {
+    /* no subconnections. done. */
     delete c2;
     return;
   }
+
+  if (!c1->a) {
+    c1->a = c2->a;
+    for (int i=0; i < c2->numSubconnections(); i++) {
+      if (c1->a[i]) {
+	c1->a[i]->parent = c1;
+      }
+    }
+    c2->a = NULL;
+    delete c2;
+    return;
+  }
+
+  _merge_subtrees (c1, c2);
+  delete c2;
+  return;
   
+  /* RM: old code */
   ValueIdx *vx;
 
   if (c1->vx) {
@@ -328,8 +348,12 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
     }
     if (!c1->a) {
       c1->a = c2->a;
-      for (int i=0; i < sz; i++) {
-	c1->a[i]->parent = c1;
+      if (c1->a) {
+	for (int i=0; i < sz; i++) {
+	  if (c1->a[i]) {
+	    c1->a[i]->parent = c1;
+	  }
+	}
       }
     }
     else if (c2->a) {
@@ -364,13 +388,18 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
       c1->a = c2->a;
       if (c1->a) {
 	for (int i=0; i < sz1; i++) {
-	  c1->a[i]->parent = c1;
-	  if (c1->a[i]->a) {
-	    for (int j=0; j < sz2; j++) {
-	      if (c1->a[i]->a[j]) {
-		c1->a[i]->a[j]->parent = c1->a[i];
+	  if (c1->a[i]) {
+	    c1->a[i]->parent = c1;
+#if 0	    
+	    /* XXX: is this necessary?! */
+	    if (c1->a[i]->a) {
+	      for (int j=0; j < sz2; j++) {
+		if (c1->a[i]->a[j]) {
+		  c1->a[i]->a[j]->parent = c1->a[i];
+		}
 	      }
 	    }
+#endif	    
 	  }
 	}
       }
@@ -394,11 +423,14 @@ static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
 	}
 	else {
 	  c1->a[i] = c2->a[i];
+#if 0
+	  /* not necessary */
 	  if (c2->a[i]) {
 	    for (int j=0; j < sz2; j++) {
 	      c1->a[i]->a[j]->parent = c1->a[i];
 	    }
 	  }
+#endif	  
 	}
       }
       FREE (c2->a);

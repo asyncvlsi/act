@@ -27,6 +27,7 @@
 #include <act/value.h>
 #include <string.h>
 
+static void print_id (act_connection *c);
 
 /*------------------------------------------------------------------------
  *
@@ -531,9 +532,21 @@ static void _import_conn_rec (act_connection *cxroot,
 			      UserDef *ux)
 {
   if (!px->isPrimary()) {
+
     /* have to do something */
     act_connection *ppx = px->primary();
     Assert (ppx != px, "What");
+
+#if 0
+    printf ("Importing connections up\n");
+    printf (" From: %s\n", ux->getName());
+    printf (" cxroot: "); print_id (cxroot);
+    printf ("\n cx: "); print_id (cx);
+    printf ("\n px: "); print_id (px);
+    printf ("\n ppx: "); print_id (ppx);
+    printf ("\n");
+#endif    
+    
     if (ppx->isglobal()) {
       /* ok, easy */
       _act_mk_raw_connection (ppx, cx);
@@ -552,25 +565,27 @@ static void _import_conn_rec (act_connection *cxroot,
     }
   }
   else if (px->hasSubconnections()) {
-    return;
-    
     /* have to do something else */
     act_connection *tmp, *tmp2;
+    ValueIdx *vx = px->getvx();
+    int ct = px->getctype ();
+    Assert (ct == 0 || ct == 1, "Hmm");
+    /* 0 = array; 1 = userdef */
+
+    return; /* FIX THIS */
+    
     for (int i=0; i < px->numSubconnections(); i++) {
-      if (px->hasSubconnections (i)) {
-	int ct;
-	tmp = px->getsubconn (i, px->numSubconnections());
-	if (tmp->isPrimary() && !tmp->hasSubconnections())
+      if (px->a[i]) {
+	if (px->a[i]->isPrimary() && !px->a[i]->hasSubconnections())
 	  continue;
 	tmp2 = cx->getsubconn (i, px->numSubconnections());
-	ct = tmp->getctype();
-	if (!tmp2->vx && (ct == 2 || ct == 3)) {
-	  tmp2->vx = tmp->vx;
+	if (ct == 1) {
+	  if (!tmp2->vx) {
+	    tmp2->vx = px->a[i]->vx;
+	  }
+	  Assert (tmp2->vx && tmp2->vx == px->a[i]->vx, "Hmm");
 	}
-	if (ct == 2 || ct == 3) {
-	  Assert (tmp2->vx == tmp->vx, "Hmm");
-	}
-	_import_conn_rec (cxroot, tmp2, tmp, ux);
+	_import_conn_rec (cxroot, tmp2, px->a[i], ux);
       }
     }
   }
