@@ -1,0 +1,42 @@
+/*
+   x.e connected to y.e within a subprocess through different ports
+
+x unique, done
+
+x.<unique port>, done
+
+x is the canonical name, but x is also connected to a, b, c, d.
+
+*/
+
+
+defchan c1 <: chan(bool) (bool x) { }
+
+defproc sub (c1 a, b)
+{
+  a.x = b.x;
+
+  prs {
+    [keeper=0] a.x -> b.x-
+  }
+}
+
+defproc sub2 (c1 a)
+{
+  bool b;
+  prs {
+    [keeper=0] a.x -> b-
+  }
+}
+
+defproc foo ()
+{
+   c1 l, m;
+
+   sub s(l,m);
+
+   sub2 t(l);
+   sub2 u(m);
+}
+
+foo f;

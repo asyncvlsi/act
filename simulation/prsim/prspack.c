@@ -100,13 +100,13 @@ int main (int argc, char **argv)
 	b = hash_lookup (H, s1);
 	if (!b) {
 	  b = hash_add (H, s1);
-	  b->v = (void *)names_newname (N, s1);
+	  b->v = (void *)(long)names_newname (N, s1);
 	}
 	idx1 = (IDX_TYPE) b->v;
 	b = hash_lookup (H, s2);
 	if (!b) {
 	  b = hash_add (H, s2);
-	  b->v = (void *)names_newname (N, s2);
+	  b->v = (void *)(long)names_newname (N, s2);
 	}
 	idx2 = (IDX_TYPE) b->v;
 
@@ -138,7 +138,7 @@ int main (int argc, char **argv)
 	b = hash_lookup (H, s);
 	if (!b) {
 	  b = hash_add (H, s);
-	  b->v = (void *)names_newname (N, s);
+	  b->v = (void *)(long)names_newname (N, s);
 	}
 	FREE (s);
 	idx = (IDX_TYPE)b->v;
@@ -173,7 +173,7 @@ int main (int argc, char **argv)
       }
       else {
 	b = hash_add (H, s);
-	b->v = (void *)names_newname (N, s);
+	b->v = (void *)(long)names_newname (N, s);
       }
       FREE (s);
       idx = (IDX_TYPE)b->v;

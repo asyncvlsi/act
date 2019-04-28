@@ -211,307 +211,6 @@ unsigned int act_connection::getctype()
   return 3;
 }
 
-void _act_mk_raw_connection (act_connection *c1, act_connection *c2)
-{
-  /* c1 is the root, not c2 */
-  while (c2->up) {
-    c2 = c2->up;
-  }
-  c2->up = c1;
-
-  act_connection *t1, *t2;
-
-  /* merge c1, c2 connection ring */
-  t1 = c1->next;
-  t2 = c2->next;
-  c1->next = t2;
-  c2->next = t1;
-}
-
-static void _merge_subtrees (act_connection *c1, act_connection *c2);
-
-/*
-  merge c2 into c1 (primary)
-
-  NOTE: their parents are already connected
-*/
-static void mk_raw_skip_connection (act_connection *c1, act_connection *c2)
-{
-  act_connection *tmp = c2;
-  /* c1 is the root, not c2 */
-
-  if (c2->next == c2) {
-    /* nothing to do: c2 has no other connections */
-  }
-  else {
-    /* c2 has connections; merge them into c1, but remove c2 from the
-       connection list */
-
-    act_connection *t1, *t2;
-    int in_ring = 0;
-
-    t1 = c1->primary();
-    t2 = c2->primary();
-
-    if (t1 == t2) {
-      in_ring = 1;
-    }
-    else {
-      in_ring = 0;
-    }
-
-    if (!in_ring) {
-      /* not already connected: merge union/find trees */
-      while (c2->up) {
-	c2 = c2->up;
-      }
-      c2->up = c1;
-      c2 = tmp;
-    }
-
-    /* union-find trees are merged at this point */
-
-    /* any up pointers in c2's union-find tree connection ring that point to c2
-       should be updated to c2->up */
-    t1 = c2->next;
-    while (t1 != c2) {
-      if (t1->up == c2) {
-	t1->up = c2->up;
-      }
-      t1 = t1->next;
-    }
-
-    c2 = tmp;
-
-    if (!in_ring) {
-      /* merge c1, c2 connection ring, and drop c2 itself */
-      t1 = c1->next;
-      t2 = c2->next;
-      c1->next = t2;
-      c2->next = t1;
-    }
-    t1 = c2;
-    while (t1->next != c2) {
-      t1 = t1->next;
-    }
-    t1->next = t1->next->next;
-
-    c2->next = NULL;
-    c2->up = NULL;
-  }
-  
-  /* now we need to merge any further subconnections between the array
-     elements of c1->a and c2->a, if any */
-
-  if (!c2->a) {
-    /* no subconnections. done. */
-    delete c2;
-    return;
-  }
-
-  if (!c1->a) {
-    c1->a = c2->a;
-    for (int i=0; i < c2->numSubconnections(); i++) {
-      if (c1->a[i]) {
-	c1->a[i]->parent = c1;
-      }
-    }
-    c2->a = NULL;
-    delete c2;
-    return;
-  }
-
-  _merge_subtrees (c1, c2);
-  delete c2;
-  return;
-  
-  /* RM: old code */
-  ValueIdx *vx;
-
-  if (c1->vx) {
-    /* direct */
-    delete c2;
-    return;
-  }
-  else if (c1->parent->vx) {
-    int sz;
-    /* just an array or just a subport */
-    vx = c1->parent->vx;
-
-    if (vx->t->arrayInfo()) {
-      sz = vx->t->arrayInfo()->size();
-    }
-    else {
-      UserDef *ux;
-      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-      sz = ux->getNumPorts();
-    }
-    if (!c1->a) {
-      c1->a = c2->a;
-      if (c1->a) {
-	for (int i=0; i < sz; i++) {
-	  if (c1->a[i]) {
-	    c1->a[i]->parent = c1;
-	  }
-	}
-      }
-    }
-    else if (c2->a) {
-      for (int i=0; i < sz; i++) {
-	if (!c1->a[i]) {
-	  c1->a[i] = c2->a[i];
-	  if (c1->a[i]) {
-	    c1->a[i]->parent = c1->a[i];
-	  }
-	}
-	else if (c2->a[i]) {
-	  mk_raw_skip_connection (c1->a[i], c2->a[i]);
-	}
-      }
-      FREE (c2->a);
-    }
-  }
-  else {
-    int sz1, sz2;
-    /* array and sub-port */
-    vx = c1->parent->parent->vx;
-    Assert (vx, "What?");
-    
-    sz1 = vx->t->arrayInfo()->size();
-
-    UserDef *ux;
-    ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-
-    sz2 = ux->getNumPorts();
-
-    if (!c1->a) {
-      c1->a = c2->a;
-      if (c1->a) {
-	for (int i=0; i < sz1; i++) {
-	  if (c1->a[i]) {
-	    c1->a[i]->parent = c1;
-#if 0	    
-	    /* XXX: is this necessary?! */
-	    if (c1->a[i]->a) {
-	      for (int j=0; j < sz2; j++) {
-		if (c1->a[i]->a[j]) {
-		  c1->a[i]->a[j]->parent = c1->a[i];
-		}
-	      }
-	    }
-#endif	    
-	  }
-	}
-      }
-    }
-    else if (c2->a) {
-      for (int i=0; i < sz1; i++) {
-	if (c1->a[i]) {
-	  if (c2->a[i]) {
-	    for (int j=0; j < sz2; j++) {
-	      if (c1->a[i]->a[j]) {
-		if (c2->a[i]->a[j]) {
-		  mk_raw_skip_connection (c1->a[i]->a[j], c2->a[i]->a[j]);
-		}
-	      }
-	      else if (c2->a[i]->a[j]) {
-		c1->a[i]->a[j] = c2->a[i]->a[j];
-		c1->a[i]->a[j]->parent = c1->a[i];
-	      }
-	    }
-	  }
-	}
-	else {
-	  c1->a[i] = c2->a[i];
-#if 0
-	  /* not necessary */
-	  if (c2->a[i]) {
-	    for (int j=0; j < sz2; j++) {
-	      c1->a[i]->a[j]->parent = c1->a[i];
-	    }
-	  }
-#endif	  
-	}
-      }
-      FREE (c2->a);
-    }
-  }
-}
-
-static void _merge_subtrees (act_connection *c1, act_connection *c2)
-{
-  ValueIdx *vx;
-  int sz;
-
-  vx = c1->getvx();
-
-  if (!c1->a) {
-    if (c2->a) {
-      c1->a = c2->a;
-      c2->a = NULL;
-      /* now fix parent pointers */
-      if (vx->t->arrayInfo()) {
-	/* the value is an array, but are we connecting arrays or derefs? */
-	if (c1->getctype() == 1) {
-	  UserDef *ux;
-	  ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	  Assert (ux, "Why are we here?!");
-	  sz = ux->getNumPorts();
-	}
-	else {
-	  sz = vx->t->arrayInfo()->size();
-	}
-      }
-      else {
-	UserDef *ux;
-	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	Assert (ux, "Hmm!");
-	sz = ux->getNumPorts();
-      }
-      for (int i=0; i < sz; i++) {
-	if (c1->a[i]) {
-	  c1->a[i]->parent = c1;
-	}
-      }
-    }
-  }
-  else if (c2->a) {
-    if (vx->t->arrayInfo()) {
-      if (c1->getctype() == 1) {
-	UserDef *ux;
-	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	Assert (ux, "Why are we here?!");
-	sz = ux->getNumPorts();
-      }
-      else {
-	sz = vx->t->arrayInfo()->size();
-      }
-    }
-    else {
-      UserDef *ux;
-      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-      Assert (ux, "Hmm?!");
-      sz = ux->getNumPorts();
-    }
-    for (int i=0; i < sz; i++) {
-      /* connect c1->a[i] with c2->a[i] */
-      if (c1->a[i] && c2->a[i]) {
-	/* you might have the same thing repeated... */
-	mk_raw_skip_connection (c1->a[i], c2->a[i]);
-      }
-      else if (c2->a[i]) {
-	c1->a[i] = c2->a[i];
-	c2->a[i] = NULL;
-      }
-      if (c1->a[i]) {
-	c1->a[i]->parent = c1;
-      }
-    }
-    FREE (c2->a);
-    c2->a = NULL;
-  }
-}
-
 /* debugging */
 static void print_id (act_connection *c)
 {
@@ -604,31 +303,245 @@ static void dump_conn (act_connection *c)
 }
 
 
+static void dump_conn_rec (act_connection *c)
+{
+  act_connection *tmp, *root;
+  static int level = 0;
+
+  level++;
+
+  if (level == 1) printf ("-- conn block --\n");
+  dump_conn (c);
+  if (c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      if (c->a[i]) {
+	dump_conn_rec (c->a[i]);
+      }
+    }
+  }
+  level--;
+  if (level == 0) printf ("^^^^^^^^^^^^^^^^\n");
+}
+
+void _act_mk_raw_connection (act_connection *c1, act_connection *c2)
+{
+  /* c1 is the root, not c2 */
+  while (c2->up) {
+    c2 = c2->up;
+  }
+  c2->up = c1;
+
+  act_connection *t1, *t2;
+
+  /* merge c1, c2 connection ring */
+  t1 = c1->next;
+  t2 = c2->next;
+  c1->next = t2;
+  c2->next = t1;
+
+#if 0
+  printf ("after_ack_mk_raw: ");
+  c1 = c1->primary();
+  dump_conn (c1);
+#endif
+}
+
+static void _merge_subtrees (UserDef *ux,
+			     act_connection *c1, act_connection *c2);
+static int _should_swap (UserDef *ux, act_connection *c1,
+			 act_connection *c2);
+
+/*
+  merge c2 into c1 (primary)
+
+  NOTE: their parents are already connected
+*/
+static void mk_raw_skip_connection (UserDef *ux,
+				    act_connection *c1, act_connection *c2)
+{
+  act_connection *tmp = c2;
+  /* c1 is the root, not c2 */
+
+  if (c2->next == c2) {
+    /* nothing to do: c2 has no other connections */
+  }
+  else {
+    /* c2 has connections; merge them into c1, but remove c2 from the
+       connection list */
+
+    act_connection *t1, *t2;
+    int in_ring = 0;
+
+    t1 = c1->primary();
+    t2 = c2->primary();
+
+    if (t1 == t2) {
+      in_ring = 1;
+    }
+    else {
+      in_ring = 0;
+    }
+
+    if (!in_ring) {
+      /* not already connected: merge union/find trees */
+      int do_swap = _should_swap (ux, c1, c2);
+      if (do_swap) {
+	t1->up = t2;
+      }
+      else {
+	t2->up = t1;
+      }
+    }
+
+    /* union-find trees are merged at this point */
+
+    /* any up pointers in c2's union-find tree connection ring that point to c2
+       should be updated to c2->up */
+    t1 = c2->next;
+    while (t1 != c2) {
+      if (t1->up == c2) {
+	t1->up = c2->up;
+      }
+      t1 = t1->next;
+    }
+
+    c2 = tmp;
+
+    if (!in_ring) {
+      /* merge c1, c2 connection ring, and drop c2 itself */
+      t1 = c1->next;
+      t2 = c2->next;
+      c1->next = t2;
+      c2->next = t1;
+    }
+    t1 = c2;
+    while (t1->next != c2) {
+      t1 = t1->next;
+    }
+    t1->next = t1->next->next;
+
+    c2->next = NULL;
+    c2->up = NULL;
+  }
+  
+  /* now we need to merge any further subconnections between the array
+     elements of c1->a and c2->a, if any */
+
+  if (!c2->a) {
+    /* no subconnections. done. */
+    delete c2;
+    return;
+  }
+
+  if (!c1->a) {
+    c1->a = c2->a;
+    for (int i=0; i < c2->numSubconnections(); i++) {
+      if (c1->a[i]) {
+	c1->a[i]->parent = c1;
+      }
+    }
+    c2->a = NULL;
+    delete c2;
+    return;
+  }
+
+  _merge_subtrees (ux, c1, c2);
+  delete c2;
+  return;
+}
+
+static void _merge_subtrees (UserDef *ux,
+			     act_connection *c1, act_connection *c2)
+{
+  ValueIdx *vx;
+  int sz;
+
+  vx = c1->getvx();
+
+  if (!c1->a) {
+    if (c2->a) {
+      c1->a = c2->a;
+      c2->a = NULL;
+      /* now fix parent pointers */
+      if (vx->t->arrayInfo()) {
+	/* the value is an array, but are we connecting arrays or derefs? */
+	if (c1->getctype() == 1) {
+	  UserDef *ux;
+	  ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+	  Assert (ux, "Why are we here?!");
+	  sz = ux->getNumPorts();
+	}
+	else {
+	  sz = vx->t->arrayInfo()->size();
+	}
+      }
+      else {
+	UserDef *ux;
+	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+	Assert (ux, "Hmm!");
+	sz = ux->getNumPorts();
+      }
+      for (int i=0; i < sz; i++) {
+	if (c1->a[i]) {
+	  c1->a[i]->parent = c1;
+	}
+      }
+    }
+  }
+  else if (c2->a) {
+    if (vx->t->arrayInfo()) {
+      if (c1->getctype() == 1) {
+	UserDef *ux;
+	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+	Assert (ux, "Why are we here?!");
+	sz = ux->getNumPorts();
+      }
+      else {
+	sz = vx->t->arrayInfo()->size();
+      }
+    }
+    else {
+      UserDef *ux;
+      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
+      Assert (ux, "Hmm?!");
+      sz = ux->getNumPorts();
+    }
+    for (int i=0; i < sz; i++) {
+      /* connect c1->a[i] with c2->a[i] */
+      if (c1->a[i] && c2->a[i]) {
+	/* you might have the same thing repeated... */
+	mk_raw_skip_connection (ux, c1->a[i], c2->a[i]);
+      }
+      else if (c2->a[i]) {
+	c1->a[i] = c2->a[i];
+	c2->a[i] = NULL;
+      }
+      if (c1->a[i]) {
+	c1->a[i]->parent = c1;
+      }
+    }
+    FREE (c2->a);
+    c2->a = NULL;
+  }
+}
+
+
+
+
 
 static void _merge_attributes (act_attr_t **x, act_attr *a);
 
 
-void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
-			const char *s2, act_connection *c2)
+static int _should_swap (UserDef *ux, act_connection *c1,
+			 act_connection *c2)
 {
-  int p1, p2;
+  act_connection *d1 = c1->primary();
+  act_connection *d2 = c2->primary();
   act_connection *tmp;
-  act_connection *d1, *d2;
-  ValueIdx *vx1, *vx2, *vxtmp;
-  int do_swap = 0;
+  ValueIdx *vx1, *vx2;
 
-#if 0
-  printf ("connect: %s and %s\n", s1, s2);
+  int p1, p2;
   
-  dump_conn (c1);
-  dump_conn (c2);
-#endif
-  
-  if (c1 == c2) return;
-  d1 = c1->primary();
-  d2 = c2->primary();
-  if (d1 == d2) return;
-
   /* for global flag, find the root value */
   tmp = d1;
   while (tmp->parent) {
@@ -650,15 +563,11 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     */
     if (vx2->global && !vx1->global) {
       /* c2 is primary, so swap(c1,c2) */
-      do_swap = 1;
-      p1 = -1;
-      p2 = -1;
-
+      return 1;
     }
     else if (vx1->global && !vx2->global) {
       /* nothing has to be done; c1 is primary */
-      p1 = -1;
-      p2 = -1;
+      return 0;
     }
     else {
       /* this test is insufficient */
@@ -669,20 +578,14 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   else {
     /* not global */
     if (ux) {
-      
       /* user defined type */
       p1 = ux->FindPort (vx1->getName());
       p2 = ux->FindPort (vx2->getName());
 
-#if 0
-      printf ("in this case: p1=%d [s1=%s], p2=%d [s2=%s]\n", p1, s1,
-	      p2, s2);
-#endif      
-    
       if (p1 > 0 || p2 > 0) {
 	/* this should be enough to determine which one is primary */
 	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
-	  do_swap = 1;
+	  return 1;
 	}
       }
     }
@@ -719,19 +622,38 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 	/* error */
       }
       if (d1 != Type::NONE && d2 == Type::NONE) {
-	do_swap = 1;
+	return 1;
       }
       else {
-	/* ok, use string names! */
-	p1 = strlen (s1);
-	p2 = strlen (s2);
-	if (p2 < p1) {
-	  do_swap = 1;
+	/* find depth: use lower depth name */
+	int l1, l2;
+	l1 = 0; tmp = c1;
+	while (tmp) { l1++; tmp = tmp->parent; }
+	l2 = 0; tmp = c2;
+	while (tmp) { l2++; tmp = tmp->parent; }
+	if (l2 < l1) {
+	  return 1;
 	}
-	else if (p1 == p2) {
-	  p1 = strcmp (s1, s2);
-	  if (p1 > 0) {
-	    do_swap = 1;
+	else if (l1 < l2) {
+	    return 0;
+	}
+	else {
+	  const char *s1, *s2;
+
+	  s1 = vx1->getName();
+	  s2 = vx2->getName();
+	  
+	  /* ok, use string names! */
+	  p1 = strlen (s1);
+	  p2 = strlen (s2);
+	  if (p2 < p1) {
+	    return 1;
+	  }
+	  else if (p1 == p2) {
+	    p1 = strcmp (s1, s2);
+	    if (p1 > 0) {
+	      return 1;
+	    }
 	  }
 	}
       }
@@ -740,10 +662,50 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       /* more specific type wins */
       Type *t = it1->isRelated (it2);
       if (it2->BaseType() == t) {
-	do_swap = 1;
+	return 1;
       }
     }
   }
+  return 0;
+}
+
+
+void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
+			const char *s2, act_connection *c2)
+{
+  act_connection *tmp;
+  act_connection *d1, *d2;
+  ValueIdx *vx1, *vx2, *vxtmp;
+  int do_swap = 0;
+
+#if 0
+  printf ("before-connect: %s and %s\n", s1, s2);
+  
+  dump_conn_rec (c1);
+  dump_conn_rec (c2);
+#endif
+  
+  if (c1 == c2) return;
+  d1 = c1->primary();
+  d2 = c2->primary();
+  if (d1 == d2) return;
+
+  /* for global flag, find the root value */
+  tmp = d1;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?");
+  vx1 = tmp->vx;
+
+  tmp = d2;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?!");
+  vx2 = tmp->vx;
+  
+  do_swap = _should_swap (ux, c1, c2);
 
   if (do_swap) {
     tmp = c1;
@@ -915,12 +877,12 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 
   
   /* now merge any subtrees */
-  _merge_subtrees (c1, c2);
+  _merge_subtrees (ux, c1, c2);
 
 #if 0
-  printf ("after-connect:\n");
+  printf ("after-connect: ");
   c1 = c1->primary();
-  dump_conn (c1);
+  dump_conn_rec (c1);
 #endif
 }
 

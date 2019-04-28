@@ -1,0 +1,50 @@
+*
+*---- act defproc: sub2<> -----
+* raw ports:  a.x
+*
+.subckt sub2 a_4x
+*.PININFO a_4x:I
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* b (combinational)
+*
+* --- end node flags ---
+*
+M0_ b a_4x GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: sub2<> -----
+*
+*---- act defproc: sub<> -----
+* raw ports:  a.x
+*
+.subckt sub a_4x
+*.PININFO a_4x:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* a_4x (combinational)
+*
+* --- end node flags ---
+*
+M0_ a_4x a_4x GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: sub<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+xu l_4x sub2
+xt l_4x sub2
+xs l_4x sub
+.ends
+*---- end of process: foo<> -----

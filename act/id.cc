@@ -522,6 +522,27 @@ static act_connection *_find_corresponding_slot (UserDef *ux,
   return pcx;
 }
 
+static void dump_conn (act_connection *c)
+{
+  act_connection *tmp, *root;
+
+  root = c;
+  while (root->up) root = root->up;
+
+  tmp = c;
+
+  printf ("conn: ");
+  do {
+    print_id (tmp);
+    if (tmp == root) {
+      printf ("*");
+    }
+    printf (" , ");
+    tmp = tmp->next;
+  } while (tmp != c);
+  printf("\n");
+}
+
 
 /*
   replicate connection px into cx, in the context of user-defined type
@@ -532,7 +553,6 @@ static void _import_conn_rec (act_connection *cxroot,
 			      UserDef *ux)
 {
   if (!px->isPrimary()) {
-
     /* have to do something */
     act_connection *ppx = px->primary();
     Assert (ppx != px, "What");
@@ -542,9 +562,8 @@ static void _import_conn_rec (act_connection *cxroot,
     printf (" From: %s\n", ux->getName());
     printf (" cxroot: "); print_id (cxroot);
     printf ("\n cx: "); print_id (cx);
-    printf ("\n px: "); print_id (px);
-    printf ("\n ppx: "); print_id (ppx);
-    printf ("\n");
+    printf ("; px: "); print_id (px);
+    printf ("\n  "); dump_conn (ppx);
 #endif    
     
     if (ppx->isglobal()) {
@@ -563,6 +582,12 @@ static void _import_conn_rec (act_connection *cxroot,
 
       list_free (l);
     }
+
+#if 0
+    printf ("-- after importing connections up");
+    printf ("\n cx: "); print_id (cx);
+    printf (";  "); dump_conn (cx);
+#endif    
   }
   else if (px->hasSubconnections()) {
     /* have to do something else */
@@ -572,7 +597,7 @@ static void _import_conn_rec (act_connection *cxroot,
     Assert (ct == 0 || ct == 1, "Hmm");
     /* 0 = array; 1 = userdef */
 
-    return; /* FIX THIS */
+    //return; /* FIX THIS */
     
     for (int i=0; i < px->numSubconnections(); i++) {
       if (px->a[i]) {
@@ -626,7 +651,6 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
     if (pcx->isPrimary () && !pcx->hasSubconnections())
       continue;
 
-#if 1
     if (sz > 0) {
       for (int arr = 0; arr < sz; arr++) {
 	act_connection *imp = cx->getsubconn (arr, sz);
@@ -647,89 +671,6 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
       Assert (imp->vx == pvx, "Hmm...");
       _import_conn_rec (cx, imp, pcx, ux);
     }
-#else
-    if (!pcx->isPrimary()) {
-      /* .. and this port isn't primary, so we should just
-	 replicate this up the stack */
-      pcx = pcx->primary();
-      
-      act_connection *imp_x;
-      Assert (pcx != pvx->connection(), "Hmm.");
-      if (pcx->isglobal()) {
-	/* ok, great, connect to the global */
-	if (sz > 0) {
-	  for (int arr=0; arr < sz; arr++) {
-	    act_connection *imp_x2;
-	    imp_x2  = cx->getsubconn (arr, sz); // array deref
-	    imp_x = imp_x2->getsubconn (i, ux->getNumPorts()); // port deref
-	    imp_x->vx = pvx;
-	    _act_mk_raw_connection (pcx, imp_x);
-	  }
-	}
-	else {
-	  imp_x = cx->getsubconn (i, ux->getNumPorts()); // just port deref
-	  imp_x->vx = pvx;
-	  _act_mk_raw_connection (pcx, imp_x);
-	}
-      }
-      else {
-	list_t *l;
-	const char *name;
-
-	l = _create_connection_stackidx (pcx, &pcx);
-	name = pcx->vx->getName();
-
-	if (sz > 0) {
-	  for (int arr=0; arr < sz; arr++) {
-	    act_connection *tx = cx->getsubconn (arr, sz);
-	    act_connection *imp_x = tx->getsubconn (i, ux->getNumPorts());
-	    pcx = _find_corresponding_slot (ux, tx, name, l);
-	    _act_mk_raw_connection (pcx, imp_x);
-	  }
-	}
-	else {
-	  act_connection *imp_x = cx->getsubconn (i, ux->getNumPorts());
-	  pcx = _find_corresponding_slot (ux, cx, name, l);
-	  _act_mk_raw_connection (pcx, imp_x);
-	}
-	list_free (l);
-      }
-    }
-    else {
-      /* it is primary; does it have subconnections? */
-      if (pvx->hasSubconnections()) {
-	act_connection *pcx = pvx->connection();
-	act_connection *px;
-	InstType *pinst = pvx->t;
-
-	for (int sub=0; sub < pcx->numSubconnections(); sub++) {
-	  /* for built-in types, make the conection; for everything
-	     else, call the function recursively */
-	  if (pcx->hasSubconnections (sub)) {
-	    /* ok we need to deal with this.
-	       two options
-	       1. array deref. In that case, we create the
-	       corresponding connection id in cx, and then call this
-	       function recursively with the dereferenced value
-	       
-	       2. this is a port for some user defined type. In this
-	       case, we call this function recursively!
-	    */
-	    px = pcx->getsubconn (sub, pcx->numSubconnections());
-	    /* check if this is connected to something else! */
-	    if (!px->isPrimary()) {
-	      /* we need to replicate this */
-	    }
-	    else {
-	      if (px->hasSubconnections()) {
-		/* must be user-defined; need to call recursively */
-	      }
-	    }
-	  }
-	}
-      }
-    }
-#endif    
   }
 }
 
@@ -766,7 +707,13 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
     if (TypeFactory::isUserType (vx->t)) {
       UserDef *ux = dynamic_cast<UserDef *>(vx->t->BaseType());
       Assert (ux, "Hmm");
+#if 0      
+      printf ("== Import from: %s\n", ux->getName());
+#endif      
       _import_connections (cx, ux, vx->t->arrayInfo());
+#if 0      
+      printf ("== End import\n");
+#endif      
     }
   }
   return vx;
@@ -897,26 +844,6 @@ static void print_id (act_connection *c)
 #endif  
 }
 
-static void dump_conn (act_connection *c)
-{
-  act_connection *tmp, *root;
-
-  root = c;
-  while (root->up) root = root->up;
-
-  tmp = c;
-
-  printf ("conn: ");
-  do {
-    print_id (tmp);
-    if (tmp == root) {
-      printf ("*");
-    }
-    printf (" , ");
-    tmp = tmp->next;
-  } while (tmp != c);
-  printf("\n");
-}
     
 /*
   Return canonical connection slot for identifier in scope.

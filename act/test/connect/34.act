@@ -1,0 +1,7 @@
+defproc foo (bool a, b) { }
+
+foo b, f;
+b.a = b.b;
+f.a = f.b;
+f = b;
+
