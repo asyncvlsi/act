@@ -1147,6 +1147,36 @@ void Scope::BindParam (const char *s, AExpr *ae)
 }
 
 
+static void _print_connections (FILE *fp, act_connection *cx)
+{
+  ActConniter ci(cx);
+  ActId *id;
+  int first = 1;
+
+  if (cx->isPrimary()) {
+    if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
+      for (ci = ci.begin(); ci != ci.end(); ci++) {
+	act_connection *c = *ci;
+	if (!first) {
+	  fprintf (fp, "=");
+	}
+	id = c->toid();
+	first = 0;
+	id->Print (fp);
+	delete id;
+      }
+      fprintf (fp, ";\n");
+    }
+  }
+  if (cx->hasSubconnections()) {
+    for (int i=0; i < cx->numSubconnections(); i++) {
+      if (cx->hasSubconnections(i)) {
+	_print_connections (fp, cx->getsubconn (i, cx->numSubconnections()));
+      }
+    }
+  }
+}
+
 void Scope::Print (FILE *fp)
 {
   char buf[10240];
@@ -1164,6 +1194,7 @@ void Scope::Print (FILE *fp)
     Array *a;
 
     if (!TypeFactory::isParamType (vx->t)) {
+      if (strcmp (vx->getName(), "self") == 0) continue;
       if (!u || (u->FindPort (vx->getName()) == 0)) {
 	a = vx->t->arrayInfo();
 	if (a) {
@@ -1191,26 +1222,31 @@ void Scope::Print (FILE *fp)
      * subconnections should be reported 
      */
     if (vx->hasConnection()) {
+      _print_connections (fp, vx->connection());
+#if 0      
       ActConniter ci(vx->connection());
       ActId *id;
 
       if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
-
-      fprintf (fp, "%s", vx->getName());
-      for (ci = ci.begin(); ci != ci.end(); ci++) {
-	act_connection *c = *ci;
-	if (c == vx->connection()) continue;
-	id = c->toid();
-	fprintf (fp, "=");
-	id->Print (fp);
-	delete id;
+	fprintf (fp, "%s", vx->getName());
+	for (ci = ci.begin(); ci != ci.end(); ci++) {
+	  act_connection *c = *ci;
+	  if (c == vx->connection()) continue;
+	  id = c->toid();
+	  fprintf (fp, "=");
+	  id->Print (fp);
+	  delete id;
+	}
+	fprintf (fp, ";\n");
       }
-      fprintf (fp, ";\n");
-      }
-
       if (vx->hasSubconnections()) {
-	/* do something! */
+	act_connection *cx = vx->connection();
+	for (int i=0; i < cx->numSubconnections(); i++) {
+	  
+	  /* do something! */
+	}
       }
+#endif      
     }
   }
 }

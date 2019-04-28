@@ -386,6 +386,7 @@ static void mk_raw_skip_connection (UserDef *ux,
       /* not already connected: merge union/find trees */
       int do_swap = _should_swap (ux, c1, c2);
       if (do_swap) {
+	Assert (t2 != c2, "Hmm...");
 	t1->up = t2;
       }
       else {

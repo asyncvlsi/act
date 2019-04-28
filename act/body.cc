@@ -932,11 +932,12 @@ void ActBody_Loop::Print (FILE *fp)
   }
   fprintf (fp, "%s", id);
   fprintf (fp, ":");
-  print_expr (fp, lo);
-  if (hi) {
+  if (lo) {
+    print_expr (fp, lo);
+    //if (hi) {
     fprintf (fp, " .. ");
-    print_expr (fp, hi);
   }
+  print_expr (fp, hi);
   fprintf (fp, ": ");
 
   ActBody *bi;
