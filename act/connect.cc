@@ -25,7 +25,6 @@
 #include <string.h>
 #include "config.h"
 
-
 /*
   Given a subconnection of the current type,
   search for it and return its index.
@@ -69,6 +68,8 @@ bool act_connection::isglobal()
   return vx->global ? 1 : 0;
 }
 
+
+list_t *_act_create_connection_stackidx (act_connection *c, act_connection **cret);
 
 ActId *act_connection::toid()
 {
@@ -538,7 +539,7 @@ static int _should_swap (UserDef *ux, act_connection *c1,
 {
   act_connection *d1 = c1->primary();
   act_connection *d2 = c2->primary();
-  act_connection *tmp;
+  act_connection *tmp, *tmp2;
   ValueIdx *vx1, *vx2;
 
   int p1, p2;
@@ -585,9 +586,49 @@ static int _should_swap (UserDef *ux, act_connection *c1,
 
       if (p1 > 0 || p2 > 0) {
 	/* this should be enough to determine which one is primary */
-	if (p2 > 0 && (p1 == 0 || (p2 < p1))) {
+	if (p2 == 0) return 0;
+	/* p2 > 0 */
+	if (p1 == 0 || (p2 < p1)) {
 	  return 1;
 	}
+	/* p1 > 0 */
+	if (p1 < p2) {
+	  return 0;
+	}
+	/* p1 = p2: find "earlier" connections */
+	list_t *l1 = _act_create_connection_stackidx (c1, NULL);
+	list_t *l2 = _act_create_connection_stackidx (c2, NULL);
+	listitem_t *li1, *li2;
+	li1 = list_first (l1);
+	li2 = list_first (l2);
+	while (li1 && li2) {
+	  int x1, x2;
+	  x1 = (int)(long)list_value (li1);
+	  x2 = (int)(long)list_value (li2);
+	  if (x1 < x2) {
+	    list_free (l1);
+	    list_free (l2);
+	    return 0;
+	  }
+	  else if (x1 > x2) {
+	    list_free (l1);
+	    list_free (l2);
+	    return 1;
+	  }
+	  li1 = list_next (li1);
+	  li2 = list_next (li2);
+	}
+	if (li1) {
+	  list_free (l1);
+	  list_free (l2);
+	  return 1;
+	}
+	else if (li2) {
+	  list_free (l1);
+	  list_free (l2);
+	  return 0;
+	}
+	Assert (0, "Should not be here");
       }
     }
   }

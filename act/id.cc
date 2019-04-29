@@ -443,11 +443,9 @@ void ActId::sPrint (char *buf, int sz, ActId *end, int style)
 }
 
 
-static list_t *_create_connection_stackidx (act_connection *c, act_connection **cret)
+list_t *_act_create_connection_stackidx (act_connection *c, act_connection **cret)
 {
   list_t *l = list_new ();
-
-  Assert (cret, "Hmm");
 
   while (c->parent) {
     int x = c->myoffset ();
@@ -455,7 +453,9 @@ static list_t *_create_connection_stackidx (act_connection *c, act_connection **
     c = c->parent;
   }
   Assert (c->vx, "Huh?");
-  *cret = c;
+  if (cret) {
+    *cret = c;
+  }
   return l;
 }
 
@@ -574,7 +574,7 @@ static void _import_conn_rec (act_connection *cxroot,
       list_t *l;
       const char *name;
 
-      l = _create_connection_stackidx (ppx, &ppx);
+      l = _act_create_connection_stackidx (ppx, &ppx);
       name = ppx->vx->getName();
 
       ppx = _find_corresponding_slot (ux, cxroot, name, l);
