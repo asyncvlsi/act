@@ -27,6 +27,10 @@
 #include <stdio.h>
 #include "hash.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define EXT_ATTR_PCHG 0x01 /* @pchg */
 #define EXT_ATTR_NUP  0x02 /* @nup */
 #define EXT_ATTR_NDN  0x04 /* @ndn */
@@ -117,5 +121,9 @@ struct ext_file {
 /* parse hierarchical extract file */
 extern struct ext_file *ext_read (const char *name);
 extern void ext_validate_timestamp (const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __EXT_FILE_H__ */
