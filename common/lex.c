@@ -821,7 +821,8 @@ extern int lex_getsym (LEX_T *l)
 	  getch (l);
 	}
 	l->real /= (m+0.0);
-	l->real += l->integer;
+	l->real *= tsign;
+	l->real = l->real + (signed)l->integer;
       }
       if ((found || (lex_flags (l) & LEX_FLAGS_INTREALS)) && 
 	  (l->ch == 'e' || l->ch == 'E') &&
