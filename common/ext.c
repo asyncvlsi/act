@@ -257,7 +257,7 @@ double lex_mustbe_number (LEX_T *L)
 }
 
 static
-char *lex_mustbe_string_id (LEX_T *L)
+char *lex_mustbe_string_id (LEX_T *L, const char *name, int line)
 {
   char *s;
   if (lex_have (L, l_id)) {
@@ -269,7 +269,7 @@ char *lex_mustbe_string_id (LEX_T *L)
     return s+1;
   }
   else {
-    fatal_error ("Error in file, expected string/id.");
+    fatal_error ("Error in file %s:%d, expected string/id.", name, line);
     return NULL;
   }
 }
@@ -763,37 +763,37 @@ readext:
 	  t = s+1;
 	  while (*t && *t != ':') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  *t = '\0'; subcell->xlo = atoi (s+1);
 	  s = t;
 	  t++;
 	  while (*t && *t != ':') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  *t = '\0'; subcell->xhi = atoi (s+1);
 	  s = t;
 	  t++;
 	  while (*t && *t != ']') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  t++;
 	  if (*t != '[')
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  s = t;
 	  while (*t && *t != ':') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  *t = '\0'; subcell->ylo = atoi (s+1);
 	  s = t;
 	  t++;
 	  while (*t && *t != ':') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  *t = '\0'; subcell->yhi = atoi (s+1);
 	  t++;
 	  while (*t && *t != ']') t++;
 	  if (!*t)
-	    fatal_error ("Error parsing line %d, array syntax", line);
+	    fatal_error ("Error parsing line %s:%d, array syntax", name, line);
 	  break;
 	}
       /* 
@@ -828,10 +828,10 @@ readext:
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
 
       /* substrate */
-      fet->sub = Strdup (lex_mustbe_string_id (l));
+      fet->sub = Strdup (lex_mustbe_string_id (l, name, line));
 
       /* gate */
-      fet->g = Strdup(lex_mustbe_string_id (l));
+      fet->g = Strdup(lex_mustbe_string_id (l, name, line));
 
       gperim = lex_mustbe_number (l)*lscale; /* convert to SI units */
       fet->isweak = 0;
@@ -845,7 +845,7 @@ readext:
 	} while (lex_have (l,l_comma));
 
       /* t1 */
-      fet->t1 = Strdup(lex_mustbe_string_id (l));
+      fet->t1 = Strdup(lex_mustbe_string_id (l, name, line));
       t1perim = lex_mustbe_number (l)*lscale; /* convert to SI units */
       if (strcmp (lex_tokenstring (l), "0") == 0)
 	lex_getsym (l);
@@ -868,13 +868,13 @@ readext:
       ext->fet = fet;
     }
     else if (lex_have_keyw (l, "equiv")) {
-      s = Strdup(lex_mustbe_string_id (l));
-      t = Strdup(lex_mustbe_string_id (l));
+      s = Strdup(lex_mustbe_string_id (l, name, line));
+      t = Strdup(lex_mustbe_string_id (l, name, line));
       expand_aliases (s, t, ext, 0);
     }
     else if (lex_have_keyw (l, "merge")) {
-      s = Strdup(lex_mustbe_string_id (l));
-      t = Strdup(lex_mustbe_string_id (l));
+      s = Strdup(lex_mustbe_string_id (l, name, line));
+      t = Strdup(lex_mustbe_string_id (l, name, line));
       if (lex_sym (l) == l_integer || lex_sym (l) == l_real)
 	x = cscale*lex_mustbe_number (l);
       else
@@ -882,7 +882,7 @@ readext:
       expand_aliases (s, t, ext, x);
     }
     else if (lex_have_keyw (l, "node") || lex_have_keyw (l, "substrate")) {
-      s = Strdup (lex_mustbe_string_id (l));
+      s = Strdup (lex_mustbe_string_id (l, name, line));
       lex_mustbe_number (l); /* R */
       x = lex_mustbe_number(l)*cscale; /* C */
       /* FIXME: resistclass 1 = ndiff, 2 = pdiff -- hardcoded */
@@ -900,14 +900,20 @@ readext:
       add_ap (ext, Strdup (s), p_a, p_p, n_a, n_p);
       expand_aliases (s, Strdup(s), ext, 0);
     }
-    else if (lex_have_keyw (l, "cap") || lex_have_keyw (l, "subcap")) {
-      s = Strdup (lex_mustbe_string_id (l));
-      t = Strdup (lex_mustbe_string_id (l));
+    else if (lex_have_keyw (l, "cap")) {
+      s = Strdup (lex_mustbe_string_id (l, name, line));
+      t = Strdup (lex_mustbe_string_id (l, name, line));
       x = lex_mustbe_number (l)*cscale;
       addcap (ext, s, t, x, CAP_INTERNODE);
     }
+    else if (lex_have_keyw (l, "subcap")) {
+      /* figure out what to do */
+      s = Strdup (lex_mustbe_string_id (l, name, line));
+      x = lex_mustbe_number (l)*cscale;
+      addcap (ext, s, NULL, x, CAP_SUBSTRATE);
+    }
     else if (lex_have_keyw (l, "attr")) {
-      s = Strdup (lex_mustbe_string_id (l));
+      s = Strdup (lex_mustbe_string_id (l, name, line));
       while (lex_whitespace (l)[0] == '\0' && !lex_eof (l)) {
 	REALLOC (s, char, strlen(s)+strlen(lex_tokenstring(l))+1);
 	strcat (s, lex_tokenstring (l));
@@ -917,8 +923,8 @@ readext:
       lex_mustbe_number (l);
       lex_mustbe_number (l);
       lex_mustbe_number (l);
-      lex_mustbe_string_id (l);
-      addattr (ext, s, lex_mustbe_string_id (l));
+      lex_mustbe_string_id (l, name, line);
+      addattr (ext, s, lex_mustbe_string_id (l, name, line));
     }
   }
   fclose (fp);

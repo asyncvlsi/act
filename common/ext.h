@@ -54,11 +54,13 @@ struct ext_list {
  *   1. cap to ground (n1 = node, n2 = NULL)
  *   2. cap correction (n1, n2 nodes being corrected)
  *   3. inter-node capacitance (n1,n2 nodes)
+ *   4. cap to substrate (n2 = NULL)
  */
 enum cap_type {
   CAP_GND,
   CAP_CORRECT,
-  CAP_INTERNODE
+  CAP_INTERNODE,
+  CAP_SUBSTRATE
 };
 
 struct ext_cap {
