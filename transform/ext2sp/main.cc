@@ -26,7 +26,9 @@
 #include "ext.h"
 #include "hash.h"
 #include "array.h"
+#include "config.h"
 #include "misc.h"
+#include <act/act.h>
 
 double mincap = 0.1e-15;
 const char *gnd_node = "GND";
@@ -258,12 +260,15 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   int l;
   struct Hashtable *N;
   int devcount = 1;
+  static char **devnames = NULL;
+  static int num_devices = 0;
   
   b = hash_lookup (seen, name);
   if (b) {
     return;
   }
   b = hash_add (seen, name);
+
 
   for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
     ext2spice (lst->file, lst->ext, 0);
@@ -336,6 +341,23 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   }
 
   /*--- now print out fets ---*/
+
+  if (!devnames) {
+    if (config_exists ("net.ext_map")) {
+      char **rawdevs;
+      int j;
+      num_devices = config_get_table_size ("net.ext_map");
+      Assert (config_get_table_size ("net.ext_map") ==
+	      config_get_table_size ("net.ext_devs"), "Inconsistency in config");
+      rawdevs = config_get_table_string ("net.ext_map");
+      MALLOC (devnames, char *, num_devices);
+      for (j=0; j < num_devices; j++) {
+	MALLOC (devnames[j], char, strlen (rawdevs[j]) + 4 + 1);
+	sprintf (devnames[j], "net.%s", rawdevs[j]);
+      }
+    }
+  }
+  
   if (E->fet) {
     printf ("* -- fets ---\n");
     for (struct ext_fets *fl = E->fet; fl; fl = fl->next) {
@@ -349,11 +371,16 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
       printf ("%s ", tsrc->name);
       t = getname (N, fl->sub);
       printf ("%s ", t->name);
-      if (fl->type == EXT_FET_PTYPE) {
-	printf ("pfet ");
+      if (devnames) {
+	printf ("%s ", config_get_string (devnames[fl->type]));
       }
       else {
-	printf ("nfet ");
+	if (fl->type == EXT_FET_PTYPE) {
+	  printf ("pfet ");
+	}
+	else {
+	  printf ("nfet ");
+	}
       }
       printf ("W=%gU L=%gU", fl->width*1e6, fl->length*1e6);
       if (fl->type == EXT_FET_PTYPE) {
@@ -480,6 +507,8 @@ int main (int argc, char **argv)
   struct ext_file *E;
 
   A_INIT (globals);
+
+  Act::Init (&argc, &argv);
 
   while ((ch = getopt (argc, argv, "c:")) != -1) {
     switch (ch) {

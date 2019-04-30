@@ -27,11 +27,14 @@
 #include <string.h>
 #include "ext.h"
 #include "lex.h"
+#include "config.h"
 #include "hash.h"
 #include "misc.h"
 
 #define MAXLINE 1024
 
+static int num_devices = 0;
+static char **device_names = NULL;
 
 static int path_first_time = 1;
 
@@ -635,6 +638,13 @@ struct ext_file *ext_read (const char *name)
   if (depth == 0) {
     ehash = hash_new (2);
     fp = fopen (name, "r");
+
+    if (!device_names) {
+      if (config_exists ("net.ext_devs")) {
+	num_devices = config_get_table_size ("net.ext_devs");
+	device_names = config_get_table_string ("net.ext_devs");
+      }
+    }
   }
 
   eb = hash_lookup (ehash, name);
@@ -838,13 +848,28 @@ readext:
     }
     else if (lex_have_keyw (l, "fet")) {
       double gperim, t1perim, t2perim;
+      int dev;
 
       MALLOC (fet, struct ext_fets, 1);
-      if (lex_have_keyw (l, "nfet"))
-	fet->type = EXT_FET_NTYPE;
+      if (device_names) {
+	for (dev = 0; dev < num_devices; dev++) {
+	  if (lex_have_keyw (l, device_names[dev])) {
+	    break;
+	  }
+	}
+	if (dev == num_devices) {
+	  fatal_error ("fet %s: unknown device type at %s:%d\n",
+		       lex_tokenstring (l), name, line);
+	}
+	fet->type = dev;
+      }
       else {
-	lex_mustbe_keyw (l, "pfet");
-	fet->type = EXT_FET_PTYPE;
+	if (lex_have_keyw (l, "nfet"))
+	  fet->type = EXT_FET_NTYPE;
+	else {
+	  lex_mustbe_keyw (l, "pfet");
+	  fet->type = EXT_FET_PTYPE;
+	}
       }
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
       lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
