@@ -348,18 +348,17 @@ void addcap (struct ext_file *ext, char *a, char *b, double cap, int type)
   ext->cap = c;
 }
 
-static void add_ap (struct ext_file *ext, char *s, double p_a, double p_p,
-		    double n_a, double n_p)
+struct ext_ap *add_ap_empty (struct ext_file *ext, char *s)
 {
   struct ext_ap *a;
   MALLOC (a, struct ext_ap, 1);
   a->node = s;
-  a->p_perim = p_p;
-  a->p_area = p_a;
-  a->n_perim = n_p;
-  a->n_area = n_a;
+  a->perim = NULL;
+  a->area = NULL;
   a->next = ext->ap;
   ext->ap = a;
+
+  return a;
 }
 
 static
@@ -929,6 +928,7 @@ readext:
       expand_aliases (s, t, ext, x);
     }
     else if (lex_have_keyw (l, "node") || lex_have_keyw (l, "substrate")) {
+      struct ext_ap *ap;
       s = Strdup (lex_mustbe_string_id (l, name, line));
       lex_mustbe_number (l); /* R */
       x = lex_mustbe_number(l)*cscale; /* C */
@@ -937,14 +937,27 @@ readext:
       lex_mustbe_number (l); /* y */
       lex_mustbe_string_contiguous_id (l); /* type */
 
-      n_a = lex_mustbe_number(l)*lscale*lscale;
-      n_p = lex_mustbe_number (l)*lscale;
-
-      p_a = lex_mustbe_number(l)*lscale*lscale;
-      p_p = lex_mustbe_number (l)*lscale;
-
       addcap (ext, Strdup (s), NULL, x, CAP_GND);
-      add_ap (ext, Strdup (s), p_a, p_p, n_a, n_p);
+
+      ap = add_ap_empty (ext, Strdup (s));
+      if (device_names) {
+	int j;
+	MALLOC (ap->area, double, num_devices);
+	MALLOC (ap->perim, double, num_devices);
+	for (j = 0; j < num_devices; j++) {
+	  ap->area[j] = lex_mustbe_number(l)*lscale*lscale;
+	  ap->perim[j] = lex_mustbe_number (l)*lscale;
+	}
+      }
+      else {
+	MALLOC (ap->area, double, 2);
+	MALLOC (ap->perim, double, 2);
+	ap->area[0] = lex_mustbe_number(l)*lscale*lscale;
+	ap->perim[0] = lex_mustbe_number (l)*lscale;
+
+	ap->area[1] = lex_mustbe_number(l)*lscale*lscale;
+	ap->perim[1] = lex_mustbe_number (l)*lscale;
+      }
       expand_aliases (s, Strdup(s), ext, 0);
     }
     else if (lex_have_keyw (l, "cap")) {

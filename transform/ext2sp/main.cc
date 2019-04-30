@@ -36,7 +36,8 @@ const char *gnd_node = "GND";
 #define SEP_CHAR ':'
 
 L_A_DECL (char *, globals);
-
+static char **devnames = NULL;
+static int num_devices = 0;
 
 void addglobal (char *name)
 {
@@ -101,7 +102,7 @@ struct alias_tree {
   struct alias_tree *up;
   char *name;
   double cap_gnd;
-  double p_perim, p_area, n_perim, n_area;
+  double *perim, *area;
 };
 
 
@@ -147,6 +148,24 @@ void print_substr (const char *name, int s, int e)
   }
 }
 
+static struct alias_tree *newnode ()
+{
+  struct alias_tree *a;
+  
+  NEW (a, struct alias_tree);
+  a->global = 0;
+  a->up = NULL;
+  a->name = NULL;
+  a->cap_gnd = 0;
+  MALLOC (a->area, double, num_devices);
+  MALLOC (a->perim, double, num_devices);
+  for (int i=0; i < num_devices; i++) {
+    a->area[i] = 0;
+    a->perim[i] = 0;
+  }
+  return a;
+}
+  
 
 /*
   name is in the EXT file namespace 
@@ -160,15 +179,8 @@ struct alias_tree *getname (struct Hashtable *N, const char *name)
   b = hash_lookup (N, name);
   if (!b) {
     b = hash_add (N, name);
-    NEW (a, struct alias_tree);
-    a->global = 0;
-    a->up = NULL;
+    a = newnode ();
     a->name = name_munge (b->key);
-    a->cap_gnd = 0;
-    a->n_area = 0;
-    a->n_perim = 0;
-    a->p_area = 0;
-    a->p_perim = 0;
     b->v = a;
     l = strlen (b->key);
     while (l > 0) {
@@ -203,12 +215,10 @@ struct alias_tree *getname (struct Hashtable *N, const char *name)
 	g = hash_lookup (N, tmp);
 	if (!g) {
 	  g = hash_add (N, tmp);
-	  NEW (x, struct alias_tree);
+	  x = newnode ();
 	  x->global = 2;
 	  x->name = g->key;
 	  addglobal (x->name);
-	  x->cap_gnd = 0;
-	  x->up = NULL;
 	  g->v = x;
 	}
 	x = (struct alias_tree *)g->v;
@@ -260,8 +270,6 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   int l;
   struct Hashtable *N;
   int devcount = 1;
-  static char **devnames = NULL;
-  static int num_devices = 0;
   
   b = hash_lookup (seen, name);
   if (b) {
@@ -312,10 +320,10 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   /*-- process area/perim --*/
   for (struct ext_ap *a = E->ap; a; a = a->next) {
     struct alias_tree *t = getname (N, a->node);
-    t->n_area += a->n_area;
-    t->n_perim += a->n_perim;
-    t->p_area += a->p_area;
-    t->p_perim += a->p_perim;
+    for (int i=0; i < num_devices; i++) {
+      t->area[i] += a->area[i];
+      t->perim[i] += a->perim[i];
+    }
   }
   
   /*--- now print out aliases ---*/
@@ -342,22 +350,6 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
 
   /*--- now print out fets ---*/
 
-  if (!devnames) {
-    if (config_exists ("net.ext_map")) {
-      char **rawdevs;
-      int j;
-      num_devices = config_get_table_size ("net.ext_map");
-      Assert (config_get_table_size ("net.ext_map") ==
-	      config_get_table_size ("net.ext_devs"), "Inconsistency in config");
-      rawdevs = config_get_table_string ("net.ext_map");
-      MALLOC (devnames, char *, num_devices);
-      for (j=0; j < num_devices; j++) {
-	MALLOC (devnames[j], char, strlen (rawdevs[j]) + 4 + 1);
-	sprintf (devnames[j], "net.%s", rawdevs[j]);
-      }
-    }
-  }
-  
   if (E->fet) {
     printf ("* -- fets ---\n");
     for (struct ext_fets *fl = E->fet; fl; fl = fl->next) {
@@ -383,22 +375,14 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
 	}
       }
       printf ("W=%gU L=%gU", fl->width*1e6, fl->length*1e6);
-      if (fl->type == EXT_FET_PTYPE) {
-	printf ("\n+ AS=%gP PS=%gU", tsrc->p_area*1e12, tsrc->p_perim*1e6);
-	tsrc->p_perim = 0;
-	tsrc->p_area = 0;
-	printf (" AD=%gP PD=%gU", tdrain->p_area*1e12, tdrain->p_perim*1e6);
-	tdrain->p_perim = 0;
-	tdrain->p_area = 0;
-      }
-      else {
-	printf ("\n+ AS=%gP PS=%gU", tsrc->n_area*1e12, tsrc->n_perim*1e6);
-	tsrc->n_perim = 0;
-	tsrc->n_area = 0;
-	printf (" AD=%gP PD=%gU", tdrain->n_area*1e12, tdrain->n_perim*1e6);
-	tdrain->n_perim = 0;
-	tdrain->n_area = 0;
-      }
+      printf ("\n+ AS=%gP PS=%gU", tsrc->area[fl->type]*1e12,
+	      tsrc->perim[fl->type]*1e6);
+      tsrc->area[fl->type] = 0;
+      tsrc->perim[fl->type] = 0;
+      printf (" AD=%gP PD=%gU", tdrain->area[fl->type]*1e12,
+	      tdrain->perim[fl->type]*1e6);
+      tdrain->area[fl->type] = 0;
+      tdrain->perim[fl->type] = 0;
       printf ("\n");
     }
   }
@@ -525,6 +509,25 @@ int main (int argc, char **argv)
     fprintf (stderr, "Missing extract file name\n");
     usage (argv[0]);
   }
+
+  if (config_exists ("net.ext_map")) {
+    char **rawdevs;
+    int j;
+    num_devices = config_get_table_size ("net.ext_map");
+    Assert (config_get_table_size ("net.ext_map") ==
+	    config_get_table_size ("net.ext_devs"), "Inconsistency in config");
+    rawdevs = config_get_table_string ("net.ext_map");
+    MALLOC (devnames, char *, num_devices);
+    for (j=0; j < num_devices; j++) {
+      MALLOC (devnames[j], char, strlen (rawdevs[j]) + 4 + 1);
+      sprintf (devnames[j], "net.%s", rawdevs[j]);
+    }
+  }
+  else {
+    num_devices = 2;
+    devnames = NULL;
+  }
+  
 
   seen = hash_new (4);
   ext_validate_timestamp (argv[optind]);

@@ -72,8 +72,7 @@ struct ext_cap {
 
 struct ext_ap {
   char *node;
-  double p_perim, p_area;
-  double n_perim, n_area;
+  double *perim, *area;
   struct ext_ap *next;
 };
   
