@@ -3,7 +3,7 @@
 * raw ports:  a b c g.vdd g.gnd
 *
 .subckt foo a b c g_4vdd g_4gnd
-*.PININFO a:I b:I c:O g_4vdd:O g_4gnd:O
+*.PININFO a:I b:I c:O g_4vdd:I g_4gnd:I
 *.POWER VDD g_4vdd
 *.POWER GND g_4gnd
 *.POWER NSUB g_4gnd

@@ -27,6 +27,8 @@
 #include "config.h"
 #include <act/iter.h>
 
+#define VINF(x) ((struct act_varinfo *)((x)->extra))
+
 static std::map<Process *, netlist_t *> *netmap = NULL;
 
 static double lambda;			/* scale factor from width expressions
@@ -88,369 +90,11 @@ static void special_emit_procname (Act *a, FILE *fp, Process *p)
   }
 }
 
-static var_t *raw_lookup (netlist_t *n, act_connection *c)
-{
-  ihash_bucket_t *b;
-
-  b = ihash_lookup (n->cH, (long)c);
-  if (b) {
-    return (var_t *)b->v;
-  }
-  else {
-    return NULL;
-  }
-}
-
-
-static void mark_c_used (netlist_t *n, netlist_t *subinst, act_connection *c,
-			 int *count)
-{
-  var_t *v = raw_lookup (n, c);
-
-  A_NEW (n->instports, act_connection *);
-  A_NEXT (n->instports) = c;
-  A_INC (n->instports);
-  
-  if (v) {
-    v->used = 1;
-    if (subinst->ports[*count].input) {
-      v->input = 1;
-    }
-    else {
-      v->output = 1;
-    }
-  }
-  else {
-    ihash_bucket_t *b;
-    b = ihash_lookup (n->uH, (long)c);
-    if (!b) {
-      b = ihash_add (n->uH, (long)c);
-      b->v = NULL;
-    }
-    if (!subinst->ports[*count].input) {
-      b->v = (void *)1;
-    }
-  }
-}
-
-static void append_bool_port (netlist_t *n, act_connection *c)
-{
-  int i;
-
-  A_NEWM (n->ports, struct netlist_bool_port);
-  A_NEXT (n->ports).c = c;
-  A_NEXT (n->ports).omit = 0;
-  A_NEXT (n->ports).input = 0;
-  A_INC (n->ports);
-
-  if (c->isglobal()) {
-    /* globals do not need to be in the port list */
-    A_LAST (n->ports).omit = 1;
-    return;
-  }
-
-  if (black_box_mode && n->isempty) {
-    /* assume this is needed! */
-    return;
-  }
-
-  ihash_bucket_t *b;
-  b = ihash_lookup (n->cH, (long)c);
-  if (b) {
-    var_t *v = (var_t *)b->v;
-    if (!v->used) {
-      b = ihash_lookup (n->uH, (long)c);
-      if (!b) {
-	A_LAST (n->ports).omit = 1;
-	return;
-      }
-      else {
-	if (b->v) {
-	  A_LAST (n->ports).input = 0;
-	}
-	else {
-	  A_LAST (n->ports).input = 1;
-	}
-      }
-    }
-    if (v->input && !v->output) {
-      A_LAST (n->ports).input = 1;
-    }
-  }
-  else {
-    /* connection pointers that were not found were also not used! */
-    b = ihash_lookup (n->uH, (long)c);
-    if (!b) {
-      A_LAST (n->ports).omit = 1;
-      return;
-    }
-    else {
-      if (b->v) {
-	A_LAST (n->ports).input = 0;
-      }
-      else {
-	A_LAST (n->ports).input = 1;
-      }
-    }
-  }
-  
-  for (i=0; i < A_LEN (n->ports)-1; i++) {
-    /* check to see if this is already in the port list;
-       make this faster with a map if necessary since it is O(n^2) */
-    if (c == n->ports[i].c) {
-      A_LAST (n->ports).omit = 1;
-      return;
-    }
-  }
-}
-
-
-static void flatten_ports_to_bools (netlist_t *n, ActId *prefix,
-				    Scope *s, UserDef *u)
-{
-  int i;
-
-  Assert (u, "Hmm...");
-  
-  for (i=0; i < u->getNumPorts(); i++) {
-    InstType *it;
-    const char *name;
-    ActId *sub, *tail;
-    act_connection *c;
-
-    name = u->getPortName (i);
-    it = u->getPortType (i);
-
-    if (prefix) {
-      sub = prefix->Clone ();
-
-      tail = sub;
-      while (tail->Rest()) {
-	tail = tail->Rest();
-      }
-      tail->Append (new ActId (name));
-      tail = tail->Rest();
-    }
-    else {
-      sub = new ActId (name);
-      tail = sub;
-    }
-      
-    /* if it is a complex type, we need to traverse it! */
-    if (TypeFactory::isUserType (it)) {
-      if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
-	  tail->setArray (t);
-	  flatten_ports_to_bools (n, sub, s,
-				  dynamic_cast<UserDef *>(it->BaseType ()));
-	  delete t;
-	  tail->setArray (NULL);
-	  step->step();
-	}
-      }
-      else {
-	flatten_ports_to_bools (n, sub, s,
-				dynamic_cast<UserDef *>(it->BaseType ()));
-      }
-    }
-    else if (TypeFactory::isBoolType (it)) {
-      /* now check! */
-      if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
-	  tail->setArray (t);
-	  c = sub->Canonical (s);
-	  Assert (c == c->primary (), "What?");
-	  append_bool_port (n, c);
-	  delete t;
-	  tail->setArray (NULL);
-	  step->step();
-	}
-	delete step;
-      }
-      else {
-	c = sub->Canonical (s);
-	Assert (c == c->primary(), "What?");
-	append_bool_port (n, c);
-      }
-    }
-    else {
-      fatal_error ("This cannot handle int/enumerated types; everything must be reducible to bool");
-    }
-    delete sub;
-  }
-}
-
-
-static void rec_update_used_flags (netlist_t *n,
-				   netlist_t *subinst,
-				   ActId *prefix,
-				   Scope *s, UserDef *u, int *count)
-{
-  int i;
-
-  Assert (u, "Hmm...");
-  Assert (prefix, "Hmm");
-  
-  for (i=0; i < u->getNumPorts(); i++) {
-    InstType *it;
-    const char *name;
-    ActId *sub, *tail;
-    act_connection *c;
-
-    name = u->getPortName (i);
-    it = u->getPortType (i);
-
-    sub = prefix->Clone ();
-
-    tail = sub;
-    while (tail->Rest()) {
-      tail = tail->Rest();
-    }
-    tail->Append (new ActId (name));
-    tail = tail->Rest();
-      
-    /* if it is a complex type, we need to traverse it! */
-    if (TypeFactory::isUserType (it)) {
-      if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
-	  tail->setArray (t);
-	  rec_update_used_flags (n, subinst, sub, s,
-				 dynamic_cast<UserDef *>(it->BaseType ()),
-				 count);
-	  delete t;
-	  tail->setArray (NULL);
-	  step->step();
-	}
-      }
-      else {
-	rec_update_used_flags (n, subinst, sub, s,
-			       dynamic_cast<UserDef *>(it->BaseType ()), count);
-
-      }
-    }
-    else if (TypeFactory::isBoolType (it)) {
-      
-      /* now check! */
-      if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Assert (*count < A_LEN (subinst->ports), "What?");
-	  if (!subinst->ports[*count].omit) {
-	    Array *t = step->toArray ();
-	    tail->setArray (t);
-	    c = sub->Canonical (s);
-	    Assert (c == c->primary (), "What?");
-
-	    /* mark c as used */
-	    mark_c_used (n, subinst, c, count);
-
-	    delete t;
-	    tail->setArray (NULL);
-	  }
-	  *count = *count + 1;
-	  step->step();
-	}
-	delete step;
-      }
-      else {
-	Assert (*count < A_LEN (subinst->ports), "Hmm");
-	if (!subinst->ports[*count].omit) {
-	  c = sub->Canonical (s);
-	  Assert (c == c->primary(), "What?");
-
-	  /* mark c as used */
-	  mark_c_used (n, subinst, c, count);
-
-	}
-	*count = *count + 1;
-      }
-    }
-    else {
-      fatal_error ("This cannot handle int/enumerated types; everything must be reducible to bool");
-    }
-    delete sub;
-  }
-}
-
-static void update_used_flags (netlist_t *n, ValueIdx *vx, Process *p)
-{
-  ActId *id;
-  int count;
-  netlist_t *subinst;
-  /* vx is a process instance in process p.
-     
-     Update used flags in the current netlist n, based on connections
-     to the ports of vx
-   */
-  id = new ActId (vx->getName());
-
-  subinst = netmap->find (dynamic_cast <Process *>(vx->t->BaseType()))->second;
-  
-  if (vx->t->arrayInfo()) {
-    /* ok, we need an outer loop now */
-    Arraystep *as = vx->t->arrayInfo()->stepper();
-
-    while (!as->isend()) {
-      Array *t = as->toArray();
-      id->setArray (t);
-      count = 0;
-      rec_update_used_flags (n, subinst,
-			     id, p->CurScope(),
-			     dynamic_cast<UserDef *>(vx->t->BaseType()), &count);
-      delete t;
-      id->setArray (NULL);
-      as->step();
-    }
-    delete as;
-  }
-  else {
-    count = 0;
-    rec_update_used_flags (n, subinst,
-			   id, p->CurScope (),
-			   dynamic_cast<UserDef *>(vx->t->BaseType()), &count);
-  }
-  delete id;
-}
-
-static void create_bool_ports (Act *a, Process *p)
-{
-  Assert (p->isExpanded(), "Process must be expanded!");
-  if (netmap->find(p) == netmap->end()) {
-    fprintf (stderr, "Could not find process `%s'", p->getName());
-    fprintf (stderr, " in created netlists; inconstency!\n");
-    fatal_error ("Internal inconsistency or error in pass ordering!");
-  }
-  netlist_t *n = netmap->find (p)->second;
-  if (n->visited) return;
-  n->visited = 1;
-    
-  /* emit sub-processes */
-  ActInstiter i(p->CurScope());
-
-  /* handle all processes instantiated by this one */
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      create_bool_ports (a, dynamic_cast<Process *>(vx->t->BaseType()));
-      update_used_flags (n, vx, p);
-    }
-  }
-  flatten_ports_to_bools (n, NULL, p->CurScope(), p);
-  return;
-}
-
-
 static void aemit_node (Act *a, netlist_t *N, FILE *fp, node_t *n)
 {
   if (n->v) {
     char buf[10240];
-    ActId *id = n->v->id->toid();
+    ActId *id = n->v->v->id->toid();
     id->sPrint (buf, 10240);
     a->mfprintf (fp, "%s", buf);
     delete id;
@@ -482,10 +126,10 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
     fatal_error ("Internal inconsistency or error in pass ordering!");
   }
   netlist_t *n = netmap->find (p)->second;
-  if (n->visited) return;
-  n->visited = 1;
+  if (n->bN->visited) return;
+  n->bN->visited = 1;
 
-  if (n->isempty && black_box_mode) return;
+  if (n->bN->isempty && black_box_mode) return;
 
   ActInstiter i(p->CurScope());
   
@@ -505,10 +149,10 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   fprintf (fp, "*---- act defproc: %s -----\n", p->getName());
   if (a->mangle_active()) {
     fprintf (fp, "* raw ports: ");
-    for (int k=0; k < A_LEN (n->ports); k++) {
-      if (n->ports[k].omit) continue;
+    for (int k=0; k < A_LEN (n->bN->ports); k++) {
+      if (n->bN->ports[k].omit) continue;
       fprintf (fp, " ");
-      ActId *id = n->ports[k].c->toid();
+      ActId *id = n->bN->ports[k].c->toid();
       id->Print (fp);
       delete id;
     }
@@ -518,9 +162,9 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   /* special mangling for processes that only end in <> */
   special_emit_procname (a, fp, p);
   int out = 0;
-  for (int k=0; k < A_LEN (n->ports); k++) {
-    if (n->ports[k].omit) continue;
-    ActId *id = n->ports[k].c->toid();
+  for (int k=0; k < A_LEN (n->bN->ports); k++) {
+    if (n->bN->ports[k].omit) continue;
+    ActId *id = n->bN->ports[k].c->toid();
     char buf[10240];
     id->sPrint (buf, 10240);
     a->mfprintf (fp, " %s", buf);
@@ -532,13 +176,13 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   /* print pininfo */
   if (out) {
     fprintf (fp, "*.PININFO");
-    for (int k=0; k < A_LEN (n->ports); k++) {
-      if (n->ports[k].omit) continue;
-      ActId *id = n->ports[k].c->toid();
+    for (int k=0; k < A_LEN (n->bN->ports); k++) {
+      if (n->bN->ports[k].omit) continue;
+      ActId *id = n->bN->ports[k].c->toid();
       char buf[10240];
       id->sPrint (buf, 10240);
       a->mfprintf (fp, " %s", buf);
-      fprintf (fp, ":%c", n->ports[k].input ? 'I' : 'O');
+      fprintf (fp, ":%c", n->bN->ports[k].input ? 'I' : 'O');
       delete id;
     }
     fprintf (fp, "\n");
@@ -593,8 +237,8 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   node_t *x;
   for (x = n->hd; x; x = x->next) {
     if (!x->v) continue;
-    if (!x->v->output) continue;
-    ActId *id = x->v->id->toid();
+    if (!x->v->v->output) continue;
+    ActId *id = x->v->v->id->toid();
     char buf[10240];
     id->sPrint (buf, 10240);
     delete id;
@@ -837,8 +481,8 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
       sub = netmap->find (instproc)->second;
       
       ports_exist = 0;
-      for (int i=0; i < A_LEN (sub->ports); i++) {
-	if (sub->ports[i].omit == 0) {
+      for (int i=0; i < A_LEN (sub->bN->ports); i++) {
+	if (sub->bN->ports[i].omit == 0) {
 	  ports_exist = 1;
 	  break;
 	}
@@ -851,13 +495,13 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	    char *str = as->string();
 	    a->mfprintf (fp, "x%s%s", vx->getName(), str);
 	    FREE (str);
-	    for (int i=0; i < A_LEN (sub->ports); i++) {
+	    for (int i=0; i < A_LEN (sub->bN->ports); i++) {
 	      ActId *id;
 	      char buf[10240];
-	      if (sub->ports[i].omit) continue;
+	      if (sub->bN->ports[i].omit) continue;
 
-	      Assert (iport < A_LEN (n->instports), "Hmm");
-	      id = n->instports[iport]->toid();
+	      Assert (iport < A_LEN (n->bN->instports), "Hmm");
+	      id = n->bN->instports[iport]->toid();
 	      fprintf (fp, " ");
 	      id->sPrint (buf, 10240);
 	      a->mfprintf (fp, "%s", buf);
@@ -873,13 +517,13 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	}
 	else {
 	  a->mfprintf (fp, "x%s", vx->getName ());
-	  for (int i =0; i < A_LEN (sub->ports); i++) {
+	  for (int i =0; i < A_LEN (sub->bN->ports); i++) {
 	    ActId *id;
 	    char buf[10240];
-	    if (sub->ports[i].omit) continue;
+	    if (sub->bN->ports[i].omit) continue;
 	  
-	    Assert (iport < A_LEN (n->instports), "Hmm");
-	    id = n->instports[iport]->toid();
+	    Assert (iport < A_LEN (n->bN->instports), "Hmm");
+	    id = n->bN->instports[iport]->toid();
 	    fprintf (fp, " ");
 	    id->sPrint (buf, 10240);
 	    a->mfprintf (fp, "%s", buf);
@@ -893,37 +537,12 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
       }
     }
   }
-  Assert (iport == A_LEN (n->instports), "Hmm...");
+  Assert (iport == A_LEN (n->bN->instports), "Hmm...");
   
   fprintf (fp, ".ends\n");
   fprintf (fp, "*---- end of process: %s -----\n", p->getName());
 
   return;
-}
-
-
-void act_create_bool_ports (Act *a, Process *p)
-{
-  Assert (p->isExpanded (), "Process must be expanded!");
-
-  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
-  if (!netmap) {
-    fatal_error ("emit_netlist pass called before prs2net pass!");
-  }
-
-  black_box_mode = config_get_int ("net.black_box_mode");
-  
-  /* clear visited flag */
-  std::map<Process *, netlist_t *>::iterator it;
-  for (it = netmap->begin(); it != netmap->end(); it++) {
-    netlist_t *n = it->second;
-    n->visited = 0;
-  }
-  create_bool_ports (a, p);
-  for (it = netmap->begin(); it != netmap->end(); it++) {
-    netlist_t *n = it->second;
-    n->visited = 0;
-  }
 }
 
 

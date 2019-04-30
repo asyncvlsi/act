@@ -42,6 +42,7 @@ static double weak_to_strong_ratio;
 static double default_load_cap;
 
 static std::map<Process *, netlist_t *> *netmap = NULL;
+static std::map<Process *, act_boolean_netlist_t *> *boolmap = NULL;
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
@@ -56,6 +57,9 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 			    act_size_spec_t *sz);
 static void create_expr_edges (netlist_t *N, int type, node_t *left,
 			       act_prs_expr_t *e, node_t *right, int sense = 0);
+
+
+#define VINF(x) ((struct act_varinfo *)((x)->extra))
 
 /*-- compute the maximum acyclic path from power supply to each node --*/
 /* (either p-type or n-type) */
@@ -173,17 +177,17 @@ static void compute_max_reff (netlist_t *N, int type)
 
   /* for each variable v, compute reff as the max of all paths */
   ihash_bucket_t *b;
-  for (int i=0; i < N->cH->size; i++)
-    for (b = N->cH->head[i]; b; b = b->next) {
-      var_t *v = (var_t *)b->v;
-      if (v->n->reff_set[type]) {
+  for (int i=0; i < N->bN->cH->size; i++)
+    for (b = N->bN->cH->head[i]; b; b = b->next) {
+      act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
+      if (VINF(v)->n->reff_set[type]) {
 	/* over-ridden by attributes */
 	continue;
       }
-      v->n->reff[type] = -1;
-      for (li = list_first (v->n->wl); li; li = list_next (li)) {
+      VINF(v)->n->reff[type] = -1;
+      for (li = list_first (VINF(v)->n->wl); li; li = list_next (li)) {
 	p = (path_t *) list_value (li);
-	v->n->reff[type] = MAX(v->n->reff[type], p->reff);
+	VINF(v)->n->reff[type] = MAX(VINF(v)->n->reff[type], p->reff);
       }
     }
 
@@ -217,14 +221,15 @@ static at_lookup *at_alloc (void)
 }
 
 /*-- variables --*/
+static void emit_node (netlist_t *N, FILE *fp, node_t *n);
 
-static node_t *node_alloc (netlist_t *n, var_t *v)
+static node_t *node_alloc (netlist_t *n, struct act_varinfo *vi)
 {
   node_t *x;
 
   NEW (x, node_t);
   x->i = n->idnum++;
-  x->v = v;
+  x->v = vi;
 
   x->e = list_new ();
   x->b = bool_false (n->B);
@@ -250,57 +255,55 @@ static node_t *node_alloc (netlist_t *n, var_t *v)
   return x;
 }
 
-static var_t *var_alloc (netlist_t *n, act_connection *c)
+static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
 {
-  var_t *v;
+  struct act_varinfo *vi;
   
-  Assert (c == c->primary(), "What?");
+  NEW (vi, struct act_varinfo);
+  vi->e_up = NULL;
+  vi->e_dn = NULL;
+  vi->b = bool_newvar (n->B);
+  vi->up = bool_false (n->B);
+  vi->dn = bool_false (n->B);
 
-  NEW (v, var_t);
-  v->id = c;
-  v->e_up = NULL;
-  v->e_dn = NULL;
-  v->b = bool_newvar (n->B);
-  v->up = bool_false (n->B);
-  v->dn = bool_false (n->B);
+  vi->n = node_alloc (n, vi);
 
-  v->n = node_alloc (n, v);
+  vi->vdd = NULL;
+  vi->gnd = NULL;
 
-  v->vdd = NULL;
-  v->gnd = NULL;
+  vi->unstaticized = 0;
+  vi->stateholding = 0;
+  vi->usecf = 0;
+  vi->inv = NULL;
 
-  v->unstaticized = 0;
-  v->stateholding = 0;
-  v->usecf = 0;
-  v->input = 0;
-  v->output = 0;
-  v->used = 0;
-  v->inv = NULL;
+  vi->v = v;
 
-  return v;
+  return vi;
 }
 
-static var_t *var_lookup (netlist_t *n, act_connection *c)
+static act_booleanized_var_t *var_lookup (netlist_t *n, act_connection *c)
 {
   ihash_bucket_t *b;
+  act_booleanized_var_t *v;
 
   if (!c) return NULL;
 
   c = c->primary();
 
-  b = ihash_lookup (n->cH, (long)c);
-  if (!b) {
-    b = ihash_add (n->cH, (long)c);
-    b->v = var_alloc (n, c);
+  b = ihash_lookup (n->bN->cH, (long)c);
+  Assert (b, "What?!");
+  v = (act_booleanized_var_t *) b->v;
+  if (!v->extra) {
+    v->extra = varinfo_alloc (n, v);
   }
-  return (var_t *)b->v;
+  return v;
 }
 
-static var_t *var_lookup (netlist_t *n, ActId *id)
+static act_booleanized_var_t *var_lookup (netlist_t *n, ActId *id)
 {
   act_connection *c;
 
-  c = id->Canonical (n->cur);
+  c = id->Canonical (n->bN->cur);
   return var_lookup (n, c);
 }
 
@@ -311,9 +314,9 @@ static node_t *node_lookup (netlist_t *n, act_connection *c)
   
   if (!c) return NULL;
   c = c->primary();
-  b = ihash_lookup (n->cH, (long)c);
+  b = ihash_lookup (n->bN->cH, (long)c);
   if (b) {
-    return ((var_t *)b->v)->n;
+    return VINF(((act_booleanized_var_t *)b->v))->n;
   }
   else {
     return NULL;
@@ -332,16 +335,16 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
   e->bulk = bulk;
 
   if (e->g->v) {
-    e->g->v->used = 1;
+    Assert (e->g->v->v->used == 1, "What?");
   }
   if (e->a->v) {
-    e->a->v->used = 1;
+    Assert (e->a->v->v->used == 1, "What?");
   }
   if (e->b->v) {
-    e->b->v->used = 1;
+    Assert (e->b->v->v->used == 1, "What?");
   }
   if (e->bulk->v) {
-    e->bulk->v->used = 1;
+    e->bulk->v->v->used = 1;
   }
 
   e->w = -1;
@@ -372,15 +375,15 @@ static edge_t *edge_alloc (netlist_t *n, ActId *id, node_t *a, node_t *b,
 {
   edge_t *e;
   act_connection *c;
-  var_t *v;
+  act_booleanized_var_t *v;
 
-  c = id->Canonical (n->cur);
+  c = id->Canonical (n->bN->cur);
   Assert (c, "This is weird");
   Assert (c == c->primary(), "This is weird");
 
   v = var_lookup (n, c);
 
-  return edge_alloc (n, v->n, a, b, bulk);
+  return edge_alloc (n, VINF(v)->n, a, b, bulk);
 }
   
   
@@ -482,7 +485,7 @@ static void generate_staticizers (netlist_t *N)
     if (n->supply) continue;
 
     if (n->v->up == bool_false (N->B) && n->v->dn == bool_false (N->B)) {
-      n->v->input = 1;
+      n->v->v->input = 1;
       continue;
     }
 
@@ -499,18 +502,18 @@ static void generate_staticizers (netlist_t *N)
 
 	Assert (n->v->e_up && n->v->e_dn, "What?");
 	if (n->v->e_up->type == ACT_PRS_EXPR_VAR) {
-	  var_t *inv = var_lookup (N, n->v->e_up->u.v.id);
-	  if (bool_var (N->B, bool_topvar (n->v->up)) == inv->b) {
-	    inv->inv = n;
+	  act_booleanized_var_t *inv = var_lookup (N, n->v->e_up->u.v.id);
+	  if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
+	    VINF(inv)->inv = n;
 	  }
 	  else {
 	    fatal_error ("Complex inverter?");
 	  }
 	}
 	else if (n->v->e_dn->type == ACT_PRS_EXPR_VAR) {
-	  var_t *inv = var_lookup (N, n->v->e_dn->u.v.id);
-	  if (bool_var (N->B, bool_topvar (n->v->up)) == inv->b) {
-	    inv->inv = n;
+	  act_booleanized_var_t *inv = var_lookup (N, n->v->e_dn->u.v.id);
+	  if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
+	    VINF(inv)->inv = n;
 	  }
 	  else {
 	    fatal_error ("Complex inverter?");
@@ -534,7 +537,7 @@ static void generate_staticizers (netlist_t *N)
 	node_t *iout; /* inverter output */
 	iout = node_alloc (N, NULL);
 	iout->inv = 1;
-	Assert (n->v->used == 1, "Hmm");
+	Assert (n->v->v->used == 1, "Hmm");
 
 	edge_t *e_inv;
 
@@ -683,20 +686,20 @@ static void generate_staticizers (netlist_t *N)
 
 static void check_supply (netlist_t *N,  ActId *id, int type, node_t *n)
 {
-  var_t *v = var_lookup (N, id);
+  act_booleanized_var_t *v = var_lookup (N, id);
   if (type == EDGE_PFET) {
-    if (!v->vdd) {
-      v->vdd = n;
+    if (!VINF(v)->vdd) {
+      VINF(v)->vdd = n;
       return;
     }
-    else if (v->vdd == n) return;
+    else if (VINF(v)->vdd == n) return;
   }
   else {
-    if (!v->gnd) {
-      v->gnd = n;
+    if (!VINF(v)->gnd) {
+      VINF(v)->gnd = n;
       return;
     }
-    else if (v->gnd == n) return;
+    else if (VINF(v)->gnd == n) return;
   }
   fprintf (stderr, "Inconsistent power supply for signal `");
   id->Print (stderr);
@@ -788,7 +791,7 @@ static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sense = 0)
 {
   bool_t *l, *r, *b;
-  var_t *v;
+  act_booleanized_var_t *v;
   hash_bucket_t *at;
   
   if (!e) return bool_false (N->B);
@@ -818,10 +821,10 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
     v = var_lookup (N, e->u.v.id);
     if ((sense == 0 && ((type & EDGE_CELEM) == 0)) ||
 	(sense == 1 && ((type & EDGE_CELEM) != 0))) {
-      b = bool_copy (N->B, v->b);
+      b = bool_copy (N->B, VINF(v)->b);
     }
     else {
-      b = bool_not (N->B, v->b);
+      b = bool_not (N->B, VINF(v)->b);
     }
     return b;
     break;
@@ -1019,7 +1022,7 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
 static void emit_node (netlist_t *N, FILE *fp, node_t *n)
 {
   if (n->v) {
-    ActId *id = n->v->id->toid();
+    ActId *id = n->v->v->id->toid();
     id->Print (fp);
     delete id;
   }
@@ -1206,7 +1209,8 @@ static void tree_compute_sharing (netlist_t *N, node_t *power,
   }
 }
 
-static void update_bdds_exprs (netlist_t *N, var_t *v, act_prs_expr_t *e,
+static void update_bdds_exprs (netlist_t *N,
+			       act_booleanized_var_t *v, act_prs_expr_t *e,
 			       int type)
 {
   bool_t *b1, *b2;
@@ -1235,39 +1239,39 @@ static void update_bdds_exprs (netlist_t *N, var_t *v, act_prs_expr_t *e,
       ||
       (EDGE_TYPE (type) == EDGE_PFET && ((type & (EDGE_INVERT|EDGE_CELEM)) != 0))) {
     /* pull-down, n-type */
-    if (!v->e_dn) {
-      v->e_dn = e;
+    if (!VINF(v)->e_dn) {
+      VINF(v)->e_dn = e;
     }
     else {
       NEW (tmp, act_prs_expr_t);
       tmp->type = ACT_PRS_EXPR_OR;
-      tmp->u.e.l = v->e_dn;
+      tmp->u.e.l = VINF(v)->e_dn;
       tmp->u.e.r = e;
       tmp->u.e.pchg = NULL;
       tmp->u.e.pchg_type = -1;
-      v->e_dn = tmp;
+      VINF(v)->e_dn = tmp;
     }
-    b2 = v->dn;
-    v->dn = bool_or (N->B, b2, b1);
+    b2 = VINF(v)->dn;
+    VINF(v)->dn = bool_or (N->B, b2, b1);
     bool_free (N->B, b1);
     bool_free (N->B, b2);
   }
   else {
     /* pull-up, p-type */
-    if (!v->e_up) {
-      v->e_up = e;
+    if (!VINF(v)->e_up) {
+      VINF(v)->e_up = e;
     }
     else {
       NEW (tmp, act_prs_expr_t);
       tmp->type = ACT_PRS_EXPR_OR;
-      tmp->u.e.l = v->e_up;
+      tmp->u.e.l = VINF(v)->e_up;
       tmp->u.e.r = e;
       tmp->u.e.pchg = NULL;
       tmp->u.e.pchg_type = -1;
-      v->e_up = tmp;
+      VINF(v)->e_up = tmp;
     }
-    b2 = v->up;
-    v->up = bool_or (N->B, b2, b1);
+    b2 = VINF(v)->up;
+    VINF(v)->up = bool_or (N->B, b2, b1);
     bool_free (N->B, b1);
     bool_free (N->B, b2);
   }
@@ -1310,12 +1314,12 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       b = hash_lookup (N->atH[d], (char *)p->u.one.id);
     }
     else {
-      var_t *v;
+      act_booleanized_var_t *v;
       double cap = default_load_cap;
       unsigned int attr_type = 0;
 
       v = var_lookup (N, p->u.one.id);
-      v->output = 1;
+      Assert (v->output == 1, "eh?");
 
       for (attr = p->u.one.attr; attr; attr = attr->next) {
 	/* look for keeper, iskeeper, isckeeper, loadcap, oresis,
@@ -1323,10 +1327,10 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	*/
 	if (strcmp (attr->attr, "keeper") == 0) {
 	  if (attr->e->u.v == 0) {
-	    v->unstaticized = 1;
+	    VINF(v)->unstaticized = 1;
 	  }
 	  else {
-	    v->unstaticized = 0;
+	    VINF(v)->unstaticized = 0;
 	  }
 	}
 	else if (strcmp (attr->attr, "iskeeper") == 0) {
@@ -1346,30 +1350,30 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	  /* do something here */
 	}
 	else if (strcmp (attr->attr, "N_reff") == 0) {
-	  v->n->reff[EDGE_NFET] = attr->e->u.f;
-	  v->n->reff_set[EDGE_NFET] = 1;
+	  VINF(v)->n->reff[EDGE_NFET] = attr->e->u.f;
+	  VINF(v)->n->reff_set[EDGE_NFET] = 1;
 	}
 	else if (strcmp (attr->attr, "P_reff") == 0) {
-	  v->n->reff[EDGE_PFET] = attr->e->u.f;
-	  v->n->reff_set[EDGE_PFET] = 1;
+	  VINF(v)->n->reff[EDGE_PFET] = attr->e->u.f;
+	  VINF(v)->n->reff_set[EDGE_PFET] = 1;
 	}
 	else if (strcmp (attr->attr, "comb") == 0) {
 	  if (attr->e->u.v) {
-	    v->usecf = 1;
+	    VINF(v)->usecf = 1;
 	  }
 	  else {
-	    v->usecf = 0;
+	    VINF(v)->usecf = 0;
 	  }
 	}
       }
-
-      v->n->cap = cap;
+      
+      VINF(v)->n->cap = cap;
 
       if (p->u.one.arrow_type == 0) {
 	/* -> */
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
-			   p->u.one.e, v->n, 0);
+			   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
 	check_supply (N, p->u.one.id, d, (d == EDGE_NFET ? N->GND : N->Vdd));
       }
@@ -1380,11 +1384,11 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	/* => */
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
-			   p->u.one.e, v->n, 0);
+			   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
 	create_expr_edges (N, (1-d) | attr_type | EDGE_INVERT | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
-			   p->u.one.e, v->n, 1);
+			   p->u.one.e, VINF(v)->n, 1);
 	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL|EDGE_INVERT);
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
@@ -1396,11 +1400,11 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	/* #> */
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
-			   p->u.one.e, v->n, 0);
+			   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_NORMAL);
 	create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
-			   p->u.one.e, v->n, 1);
+			   p->u.one.e, VINF(v)->n, 1);
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_CELEM | EDGE_NORMAL);
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
@@ -1418,12 +1422,12 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       if (strcmp (attr->attr, "output") == 0) {
 	unsigned int v = attr->e->u.v;
 	if (v & 0x1) {
-	  var_t *x = var_lookup (N, p->u.p.s);
-	  x->output = 1;
+	  act_booleanized_var_t *x = var_lookup (N, p->u.p.s);
+	  Assert (x->output == 1, "What?");
 	}
 	if (v & 0x2) {
-	  var_t *x = var_lookup (N, p->u.p.d);
-	  x->output = 1;
+	  act_booleanized_var_t *x = var_lookup (N, p->u.p.d);
+	  Assert (x->output == 1, "Hmm");
 	}
       }
     }
@@ -1431,8 +1435,8 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       edge_t *f;
       /* add nfet */
       f = edge_alloc (N, p->u.p.g,
-		      var_lookup (N, p->u.p.s)->n,
-		      var_lookup (N, p->u.p.d)->n,
+		      VINF(var_lookup (N, p->u.p.s))->n,
+		      VINF(var_lookup (N, p->u.p.d))->n,
 		      N->psc);
       f->type = EDGE_NFET;
       f->raw = 1;
@@ -1442,8 +1446,8 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
       edge_t *f;
       /* add pfet */
       f = edge_alloc (N, p->u.p._g,
-		      var_lookup (N, p->u.p.s)->n,
-		      var_lookup (N, p->u.p.d)->n,
+		      VINF(var_lookup (N, p->u.p.s))->n,
+		      VINF(var_lookup (N, p->u.p.d))->n,
 		      N->nsc);
       f->type = EDGE_PFET;
       f->raw = 1;
@@ -1508,21 +1512,19 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
   NEW (N, netlist_t);
 
-  A_INIT (N->ports);
-  A_INIT (N->instports);
-  
-  N->B = bool_init ();
-  N->p = proc;
-  N->cur = cur;
-  N->uH = ihash_new (2);
+  N->bN = boolmap->find(proc)->second;
 
-  N->visited = 0;
+  N->B = bool_init ();
+
+  Assert (proc == N->bN->p, "Hmm");
+  Assert (cur == N->bN->cur, "Hmm");
+
+  N->bN->visited = 0;
 
   N->hd = NULL;
   N->tl = NULL;
   N->idnum = 0;
   
-  N->cH = ihash_new (32);
   N->atH[EDGE_NFET] = hash_new (2);
   N->atH[EDGE_PFET] = hash_new (2);
 
@@ -1530,8 +1532,6 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
   N->gnd_list = list_new ();
   N->psc_list = list_new ();
   N->nsc_list = list_new ();
-
-  N->isempty = 1;
 
   if (!p) {
     return N;
@@ -1565,7 +1565,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
     /* set the current Vdd/GND/psc/nsc */
     if (cvdd) {
-      N->Vdd = var_lookup (N, cvdd)->n;
+      N->Vdd = VINF(var_lookup (N, cvdd))->n;
     }
     else {
       N->Vdd = search_supply_list_for_null (N->vdd_list);
@@ -1574,7 +1574,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
       }
     }
     if (cgnd) {
-      N->GND = var_lookup (N, cgnd)->n;
+      N->GND = VINF(var_lookup (N, cgnd))->n;
     }
     else {
       /* no GND declared; allocate a new one; this one will be called `GND' */
@@ -1584,13 +1584,13 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
       }
     }
     if (cpsc) {
-      N->psc = var_lookup (N, cpsc)->n;
+      N->psc = VINF(var_lookup (N, cpsc))->n;
     }
     else {
       N->psc = N->GND;
     }
     if (cnsc) {
-      N->nsc = var_lookup (N, cnsc)->n;
+      N->nsc = VINF(var_lookup (N, cnsc))->n;
     }
     else {
       N->nsc = N->Vdd;
@@ -1614,7 +1614,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
     for (prs = p->p; prs; prs = prs->next) {
       generate_prs_graph (N, prs);
-      N->isempty = 0;
+      Assert (N->bN->isempty == 0, "Hmm");
     }
     p = p->next;
   }
@@ -1643,7 +1643,6 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
 static void generate_netlist (Act *a, Process *p)
 {
-  int subinst = 0;
   Assert (p->isExpanded(), "Process must be expanded!");
 
   if (netmap->find(p) != netmap->end()) {
@@ -1659,18 +1658,10 @@ static void generate_netlist (Act *a, Process *p)
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
       generate_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()));
-      subinst = 1;
     }
   }
-
   netlist_t *n = generate_netgraph (a, p);
-
   (*netmap)[p] = n;
-
-  if (subinst) {
-    n->isempty = 0;
-  }
-
   return;
 }
 
@@ -1678,6 +1669,12 @@ static void generate_netlist (Act *a, Process *p)
 void act_prs_to_netlist (Act *a, Process *p)
 {
   std::map<Process *, netlist_t *> *tmp;
+
+  boolmap = (std::map<Process *, act_boolean_netlist_t *> *) a->aux_find ("booleanize");
+  
+  if (!boolmap) {
+    fatal_error ("act_prs_to_netlist called without booleanize pass");
+  }
 
   tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   if (tmp) {
@@ -1716,4 +1713,5 @@ void act_prs_to_netlist (Act *a, Process *p)
   a->aux_add ("prs2net", netmap);
 
   netmap = NULL;
+  boolmap = NULL;
 }

@@ -65,8 +65,8 @@ static std::map<Process *, netlist_t *> *netmap = NULL;
 static void _print_node (netlist_t *N, FILE *fp, ActId *prefix, node_t *n)
 {
   if (n->v) {
-    ActId *tmp = n->v->id->toid();
-    if (!n->v->id->isglobal()) {
+    ActId *tmp = n->v->v->id->toid();
+    if (!n->v->v->id->isglobal()) {
       idprint (fp, prefix);
       //prefix->Print (fp);
       //fprintf (fp, ".");
@@ -156,6 +156,7 @@ int main (int argc, char **argv)
 
   /* generate netlist */
   /*config_set_int ("net.disable_keepers", 1);*/
+  act_booleanize_netlist (a, NULL);
   act_prs_to_netlist (a, NULL);
   netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   Assert (netmap, "Hmm...");

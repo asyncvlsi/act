@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <act/act.h>
+#include <act/passes/booleanize.h>
 #include "bool.h"
 #include "list.h"
 #include "bitset.h"
@@ -49,8 +50,9 @@ typedef struct edge edge_t;
 #define EDGE_WIDTH(x,i,fold,minw)  \
   (((i) < (x)->nfolds-1) ? (fold) : ((((x)->w % (fold)) < (minw)) ? (fold) + ((x)->w % (fold)) : ((x)->w % (fold))))
 
-typedef struct var {
-  act_connection *id;		/* unique connection id */
+struct act_varinfo {
+  act_booleanized_var_t *v;	/* var pointer */
+  
   act_prs_expr_t *e_up, *e_dn;	/* parsed expression */
 
   bool_t *b;			/* the bdd for the variable */
@@ -65,20 +67,16 @@ typedef struct var {
   unsigned int unstaticized:1;	/* unstaticized! */
   unsigned int stateholding:1;	/* state-holding variable */
   unsigned int usecf:1;		/* combinational feedback */
-  unsigned int input:1;		/* is a primary input variable */
-  unsigned int output:1;	/* set to 1 to force it to be an output */
-  unsigned int used:1;		/* 1 if it is used */
 
   struct node *inv;		/* var is an input to an inverter
 				   whose output is inv */
 
-} var_t;
-
+};
 
 /* transistor-level netlist graph */
 typedef struct node {
   int i;			/* node id# */
-  var_t *v;			/* some have names (could be NULL) */
+  struct act_varinfo *v;	/* some have names (could be NULL) */
 
   list_t *e;			/* edges */
 
@@ -134,25 +132,12 @@ struct edge {
 				   edge is folded */
 };
 
-struct netlist_bool_port {
-  act_connection *c;		/* port bool */
-  unsigned int omit:1;		/* skipped due to aliasing */
-  unsigned int input:1;		/* 1 if input, otherwise output */
-};
-  
-
 typedef struct {
-  Process *p;
-  Scope *cur;
-  BOOL_T *B;
+  act_boolean_netlist_t *bN;
 
+  BOOL_T *B;
   node_t *hd, *tl;
   int idnum;			/* used to number the nodes */
-
-  unsigned int visited:1;	/* flags */
-  unsigned int isempty:1;	/* check if this is empty! */
-
-  struct iHashtable *cH;   /* connection hash table (map to var_t)  */
 
   struct Hashtable *atH[2];	/* hash table for @-labels to node mapping */
 
@@ -167,16 +152,9 @@ typedef struct {
     int sw, sl;			/* staticizer sizes */
   } sz[2];    			/* sizes */
 
-
-  A_DECL (struct netlist_bool_port, ports);
-  struct iHashtable *uH;      /* used act_connection *'s in subckts */
-
-  A_DECL (act_connection *, instports);
-
 } netlist_t;
 
 void act_prs_to_netlist (Act *, Process *);
-void act_create_bool_ports (Act *, Process *);
 void act_emit_netlist (Act *, Process *, FILE *);
 void emit_verilog_pins (Act *, FILE *, FILE *, Process *);
 
