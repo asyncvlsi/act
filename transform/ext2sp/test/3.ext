@@ -1,0 +1,15 @@
+timestamp 1536182944
+version 8.1
+tech scmos
+style HP0.5um(hpcmos14tb)from:T11E
+scale 1000 1 30
+resistclasses 2800 2400 725000 725000 1 2500 2500 70 70 50
+node "drain" 5 0 19 -3 pdif 0 0 18 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+node "drain" 6 0 -2 -3 ndif 18 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+node "a" 13 226.976 17 0 p 0 0 0 0 0 0 0 0 0 0 20 24 0 0 0 0 0 0 0 0
+node "a" 13 226.976 -4 0 p 0 0 0 0 0 0 0 0 0 0 20 24 0 0 0 0 0 0 0 0
+node "Vdd!" 5 0 19 2 pdif 0 0 18 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+node "GND!" 6 0 -2 2 ndif 18 18 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+fet pfet 19 0 20 1 12 16 "Vdd!" "a" 4 0 "drain" 6 0 "Vdd!" 6 0
+fet nfet -2 0 -1 1 12 16 "GND!" "a" 4 0 "drain" 6 0 "GND!" 6 0
+subcap "a" -113.488

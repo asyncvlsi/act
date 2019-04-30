@@ -1,0 +1,23 @@
+timestamp 1536765637
+version 8.1
+tech scmos
+style HP0.5um(hpcmos14tb)from:T24L
+scale 1000 1 30
+resistclasses 2600 2300 721000 721000 1 2300 2300 70 70 50
+node "GND!" 4 476.993 4 -10 ndc 20 18 0 0 0 0 0 0 0 0 0 0 0 0 41 32 76 56 0 0
+node "out" 9 498.114 11 -10 ndif 20 18 55 32 0 0 0 0 0 0 0 0 0 0 135 94 0 0 0 0
+node "Vdd!" 6 123.326 4 14 pdc 0 0 55 32 0 0 0 0 0 0 0 0 0 0 66 48 76 56 0 0
+equiv "Vdd!" "Vdd!"
+node "in" 45 1135.87 6 4 pc 0 0 0 0 0 0 0 0 0 0 90 88 0 0 40 32 0 0 0 0
+node "w_n2_8#" 752 5017.68 -2 8 nw 0 0 0 0 552 94 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cap "w_n2_8#" "in" 449.068
+cap "in" "Vdd!" 28.5839
+cap "out" "in" 61.5653
+cap "w_n2_8#" "Vdd!" 394.932
+cap "out" "w_n2_8#" 300.639
+cap "out" "Vdd!" 115.435
+cap "out" "GND!" 46.174
+fet nfet 9 -10 10 -9 8 12 "GND!" "in" 4 0 "GND!" 4 0 "out" 4 0
+fet pfet 9 14 10 15 22 26 "w_n2_8#" "in" 4 0 "Vdd!" 11 0 "out" 11 0
+subcap "GND!" -406.253
+subcap "in" -276.586

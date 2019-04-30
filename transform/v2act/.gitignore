@@ -1,7 +1,7 @@
 *~
 i386_*
 Makefile.deps
-vnet2act.i386*
+v2act.i386*
 v_parse*
 v_walk_X*
 v_parse_id.h

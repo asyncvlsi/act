@@ -1,0 +1,31 @@
+timestamp 1536774731
+version 8.1
+tech scmos
+style HP0.5um(hpcmos14tb)from:T24L
+scale 1000 1 30
+resistclasses 2600 2300 721000 721000 1 2300 2300 70 70 50
+node "GND!" 17 776.593 -6 -24 ndc 40 36 0 0 0 0 0 0 0 0 0 0 0 0 82 64 95 68 0 0
+node "out" 10 605.694 1 -24 ndif 24 20 55 32 0 0 0 0 0 0 0 0 0 0 162 112 0 0 0 0
+node "a_1_0#" 8 0 1 0 pdif 0 0 33 28 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+node "Vdd!" 6 134.306 -6 0 pdc 0 0 55 32 0 0 0 0 0 0 0 0 0 0 66 48 91 66 0 0
+equiv "Vdd!" "Vdd!"
+node "b" 48 1159.82 4 -5 p 0 0 0 0 0 0 0 0 0 0 100 96 0 0 28 24 0 0 0 0
+node "a" 45 1007.08 -5 -8 pc 0 0 0 0 0 0 0 0 0 0 94 90 0 0 37 30 0 0 0 0
+node "w_n12_n6#" 909 6063.03 -12 -6 nw 0 0 0 0 667 104 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+cap "w_n12_n6#" "out" 260.849
+cap "a" "Vdd!" 43.8653
+cap "a" "out" 46.174
+cap "a" "w_n12_n6#" 627.701
+cap "b" "out" 410.568
+cap "GND!" "b" 61.5653
+cap "b" "w_n12_n6#" 526.042
+cap "b" "a" 131.378
+cap "GND!" "out" 92.348
+cap "w_n12_n6#" "Vdd!" 427.167
+fet nfet 7 -24 8 -23 8 12 "GND!" "b" 4 0 "out" 4 0 "GND!" 4 0
+fet nfet -1 -24 0 -23 8 12 "GND!" "a" 4 0 "GND!" 4 0 "out" 4 0
+fet pfet 4 0 5 1 22 26 "w_n12_n6#" "b" 4 0 "a_1_0#" 11 0 "out" 11 0
+fet pfet -1 0 0 1 22 26 "w_n12_n6#" "a" 4 0 "Vdd!" 11 0 "a_1_0#" 11 0
+subcap "GND!" -705.853
+subcap "b" -126.268
+subcap "a" -214.69

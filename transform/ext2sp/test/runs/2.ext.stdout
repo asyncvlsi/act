@@ -1,0 +1,126 @@
+*---------------------------------------------------
+* Subcircuit from nor2.ext
+*---------------------------------------------------
+.subckt nor2 _
+* -- connections ---
+V1 GND! GND
+V2 Vdd! Vdd
+* -- fets ---
+M3 a_1_0# a Vdd w_n12_n6# p W=3.3U L=0.6U
++ AS=4.95P PS=9.6U AD=2.97P PD=8.4U
+M4 out b a_1_0# w_n12_n6# p W=3.3U L=0.6U
++ AS=0P PS=0U AD=4.95P PD=9.6U
+M5 out a GND GND n W=1.2U L=0.6U
++ AS=3.6P PS=10.8U AD=2.16P PD=6U
+M6 GND b out GND n W=1.2U L=0.6U
++ AS=0P PS=0U AD=0P PD=0U
+* -- caps ---
+C7 w_n12_n6# Vdd 0.427167F
+C8 b a 0.131378F
+C9 b w_n12_n6# 0.526042F
+C10 b out 0.410568F
+C11 a w_n12_n6# 0.627701F
+C12 w_n12_n6# out 0.260849F
+C13 a GND 1.00708F
+C14 Vdd GND 0.134306F
+C15 b GND 1.22139F
+C16 out GND 0.698042F
+C17 w_n12_n6# GND 6.06303F
+.ends
+*---------------------------------------------------
+* Subcircuit from inv.ext
+*---------------------------------------------------
+.subckt inv _
+* -- connections ---
+V1 GND! GND
+V2 Vdd! Vdd
+* -- fets ---
+M3 out in Vdd w_n2_8# p W=3.3U L=0.6U
++ AS=4.95P PS=9.6U AD=4.95P PD=9.6U
+M4 out in GND GND n W=1.2U L=0.6U
++ AS=1.8P PS=5.4U AD=1.8P PD=5.4U
+* -- caps ---
+C5 out Vdd 0.115435F
+C6 out w_n2_8# 0.300639F
+C7 w_n2_8# Vdd 0.394932F
+C8 w_n2_8# in 0.449068F
+C9 w_n2_8# GND 5.01768F
+C10 in GND 1.13587F
+C11 Vdd GND 0.123326F
+C12 out GND 0.544288F
+.ends
+*
+*---------------------------------------------------
+*  Main extract file 2.ext
+*---------------------------------------------------
+*
+* -- connections ---
+V1 xinv_0:GND! GND
+V2 m2_151_n6# m2_116_n6#
+V3 xinv_2:GND! GND
+V4 xinv_0:Vdd! Vdd
+V5 xinv_2:in xnor2_2:out
+V6 m1_85_14# xnor2_1:out
+V7 m2_25_n6# GND
+V8 m2_116_n6# m2_85_n6#
+V9 xnor2_0:Vdd! Vdd
+V10 m1_25_14# xnor2_0:out
+V11 xinv_2:w_n2_8# xnor2_2:w_n12_n6#
+V12 w_25_18# xnor2_0:w_n12_n6#
+V13 xinv_1:Vdd! Vdd
+V14 m1_151_14# xinv_2:in
+V15 xnor2_0:out xinv_0:in
+V16 xnor2_1:Vdd! Vdd
+V17 xinv_1:GND! GND
+V18 m2_85_n6# m2_25_n6#
+V19 xnor2_1:w_n12_n6# xinv_1:w_n2_8#
+V20 m2_151_38# m2_116_38#
+V21 m2_116_38# m2_85_38#
+V22 in1 xnor2_0:b
+V23 w_151_18# w_116_18#
+V24 xnor2_1:b xinv_2:out
+V25 m2_25_38# Vdd
+V26 xnor2_1:GND! GND
+V27 xinv_1:w_n2_8# xinv_2:w_n2_8#
+V28 m2_85_38# m2_25_38#
+V29 xinv_2:Vdd! Vdd
+V30 m1_85_7# xnor2_1:b
+V31 xnor2_1:out xinv_1:in
+V32 in2 xnor2_2:b
+V33 xnor2_2:Vdd! Vdd
+V34 xnor2_0:GND! GND
+V35 w_85_18# w_25_18#
+V36 out xinv_1:out
+V37 xinv_0:w_n2_8# xnor2_1:w_n12_n6#
+V38 in0 xnor2_0:a
+V39 in3.t xnor2_2:a
+V40 xnor2_2:GND! GND
+V41 xnor2_0:w_n12_n6# xinv_0:w_n2_8#
+V42 w_116_18# w_85_18#
+V43 xinv_0:out xnor2_1:a
+* -- caps ---
+C44 xnor2_2:w_n12_n6# xnor2_2:w_n12_n6# 1.88163F
+C45 xinv_1:out xnor2_2:w_n12_n6# 0.12969F
+C46 xnor2_2:w_n12_n6# xinv_1:out 0.440634F
+C47 Vdd xinv_1:out 0.152425F
+C48 xinv_1:out GND 0.472919F
+C49 xinv_2:out GND 2.70811F
+C50 Vdd GND 0.116388F
+C51 xnor2_2:out GND 0.210741F
+C52 xinv_0:in GND 0.210741F
+C53 xinv_1:in GND 0.210741F
+C54 xnor2_2:a GND 1.03499F
+C55 xnor2_2:b GND 1.01019F
+C56 xnor2_2:w_n12_n6# GND 6.69024F
+C57 xnor2_0:a GND 1.03499F
+C58 xnor2_0:b GND 1.01019F
+*--- subcircuits ---
+xnor2_2 GND nor2
+xinv_2 GND inv
+xinv_1 GND inv
+xnor2_1 GND nor2
+xinv_0 GND inv
+xnor2_0 GND nor2
+*--- inferred globals
+.global Vdd
+.global GND
