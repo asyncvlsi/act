@@ -45,7 +45,7 @@ struct ext_list {
   char *id;
   float mult;			/* subcircuit multiplier */
   int xlo, xhi, ylo, yhi;
-  struct ext_file *ext;
+  struct ext_file *ext;     	/* note: this is shared for common subcells */
   struct ext_list *next;
 };
 

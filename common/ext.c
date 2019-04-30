@@ -27,6 +27,7 @@
 #include <string.h>
 #include "ext.h"
 #include "lex.h"
+#include "hash.h"
 #include "misc.h"
 
 #define MAXLINE 1024
@@ -626,12 +627,22 @@ struct ext_file *ext_read (const char *name)
   double x;
   double n_a, n_p, p_a, p_p;
   static int depth = 0;
+  static struct Hashtable *ehash;
+  hash_bucket_t *eb;
 
   dump = NULL;
   fp = NULL;
   if (depth == 0) {
+    ehash = hash_new (2);
     fp = fopen (name, "r");
   }
+
+  eb = hash_lookup (ehash, name);
+  if (eb) {
+    return (struct ext_file *)eb->v;
+  }
+  eb = hash_add (ehash, name);
+  
   if (!fp) {
     fp = mag_path_open (name, &dump);
   }
@@ -639,6 +650,7 @@ struct ext_file *ext_read (const char *name)
     fatal_error ("Could not find extract file for `%s'", name);
   }
   depth++;
+
 
   l = lex_string ("boo");
   l_comma = lex_addtoken (l, ",");
@@ -652,6 +664,7 @@ struct ext_file *ext_read (const char *name)
   ext->cap = NULL;
   ext->attr = NULL;
   ext->ap = NULL;
+  eb->v = ext;
 
   buf[MAXLINE-1] = '\n';
 
@@ -667,6 +680,11 @@ struct ext_file *ext_read (const char *name)
     if (dump) fclose (dump);
     lex_free (l);
     depth--;
+
+    if (depth == 0) {
+      hash_free (ehash);
+      ehash = NULL;
+    }
     return ext;
   }
 
@@ -721,6 +739,10 @@ struct ext_file *ext_read (const char *name)
       }
       lex_free (l);
       depth--;
+      if (depth == 0) {
+	hash_free (ehash);
+	ehash = NULL;
+      }
       return ext;
     }
     else {
@@ -930,5 +952,9 @@ readext:
   fclose (fp);
   lex_free (l);
   depth--;
+  if (depth == 0) {
+    hash_free (ehash);
+    ehash = NULL;
+  }
   return ext;
 }
