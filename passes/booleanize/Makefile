@@ -18,9 +18,6 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-
-weird: install_inc all
-
 EXTRA=booleanize.o 
 TARGETINCS=booleanize.h
 TARGETINCSUBDIR=act/passes

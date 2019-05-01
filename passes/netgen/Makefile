@@ -18,9 +18,6 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-
-weird: install_inc all
-
 EXTRA=netgen.o 
 TARGETINCS=netlist.h
 TARGETINCSUBDIR=act/passes

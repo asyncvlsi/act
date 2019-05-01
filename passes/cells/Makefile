@@ -18,9 +18,6 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-
-weird: install_inc all
-
 EXTRA=cells.o 
 TARGETINCS=cells.h
 TARGETINCSUBDIR=act/passes
