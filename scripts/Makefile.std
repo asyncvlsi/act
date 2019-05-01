@@ -95,7 +95,7 @@ runtestsub: $(SUBDIRS_RUNTEST)
 installincsub: $(SUBDIRS_INSTALLINC)
 
 $(SUBDIRS_ALL):
-	@$(MAKE) -C $(patsubst %_all,%,$@) allsub all "CFLAGS=$(CFLAGS)"
+	@$(MAKE) -C $(patsubst %_all,%,$@) "CFLAGS=$(CFLAGS)"
 
 $(SUBDIRS_POST):
 	@$(MAKE) -C  $(patsubst %_post,%,$@) "CFLAGS=$(CFLAGS)"
