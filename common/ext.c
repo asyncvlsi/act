@@ -68,7 +68,7 @@ static char *expand (char *s)
     else {
       pwd  = getpwnam (s+1);
       if (!pwd) {
-	fprintf (stderr, "WARNING: could not find user `%s' for path name expansion\n", s+1);
+	/*fprintf (stderr, "WARNING: could not find user `%s' for path name expansion\n", s+1);*/
 	path = "";
       }
       else {
