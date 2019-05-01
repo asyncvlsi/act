@@ -33,7 +33,7 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 $(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
 
-install_conf: ext2sp.conf
-	@$(VLSI_TOOLS_SRC)/scripts/install ext2sp.conf $(INSTALLLIB)/act/ext2sp.conf
+install_conf: extract.conf
+	@$(VLSI_TOOLS_SRC)/scripts/install extract.conf $(INSTALLLIB)/act/extract.conf
 
 -include Makefile.deps

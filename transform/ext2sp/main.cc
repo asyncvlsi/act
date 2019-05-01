@@ -32,8 +32,7 @@
 
 double mincap = 0.1e-15;
 const char *gnd_node = "GND";
-
-#define SEP_CHAR ':'
+static char SEP_CHAR = ':';
 
 L_A_DECL (char *, globals);
 static char **devnames = NULL;
@@ -74,7 +73,7 @@ char *name_munge (const char *name)
       flag = 0;
     }
     if (name[i] == '/') {
-      ret[j] = SEP_CHAR;  /* xyce */
+      ret[j] = SEP_CHAR;
       count--;
       flag = (count > 0) ? 1 : 0;
     }
@@ -510,6 +509,10 @@ int main (int argc, char **argv)
     usage (argv[0]);
   }
 
+  seen = hash_new (4);
+  ext_validate_timestamp (argv[optind]);
+  E = ext_read (argv[optind]);
+
   if (config_exists ("net.ext_map")) {
     char **rawdevs;
     int j;
@@ -527,11 +530,14 @@ int main (int argc, char **argv)
     num_devices = 2;
     devnames = NULL;
   }
-  
+  if (config_exists ("net.spice_path_sep")) {
+    char *s = config_get_string ("net.spice_path_sep");
+    if (strlen (s) != 1) {
+      fatal_error ("net.spice_path_sep must have length 1");
+    }
+    SEP_CHAR = s[0];
+  }
 
-  seen = hash_new (4);
-  ext_validate_timestamp (argv[optind]);
-  E = ext_read (argv[optind]);
   ext2spice (argv[optind], E, 1);
 
   return 0;
