@@ -1,5 +1,58 @@
 #!/bin/sh
 
+#
+# initialize config params
+#
+. $VLSI_TOOLS_SRC/scripts/config
+
+cat > '__tst0.c' <<EOM
+#include <stdio.h>
+
+int main (void)
+{
+  printf ("Hello!\n");
+  return 0;
+}
+EOM
+
+echo "  ... looking for $C_COMPILER_NAME"
+if ! $C_COMPILER_NAME -c __tst0.c  >/dev/null 2>&1
+then
+	rm -f __tst0.c
+	echo "Did not find $C_COMPILER_NAME on the system"
+	exit 1
+fi
+rm -f __tst0.c
+
+cat > '__tst0.c' <<EOM
+#include <iostream>
+
+using namespace std;
+
+int main (void)
+{
+  cout << "Hello, world" << endl;
+  return 0;
+}
+EOM
+
+echo "  ... looking for $CXX_COMPILER_NAME"
+if ! $CXX_COMPILER_NAME -c __tst0.c  >/dev/null 2>&1
+then
+	rm -f __tst0.c
+	echo "Did not find $CXX_COMPILER_NAME on the system"
+	exit 1
+fi
+rm -f __tst0.c
+rm -f __tst0.o
+
+echo "  ... looking for make"
+if ! make -f $VLSI_TOOLS_SRC/scripts/makedummy > /dev/null 2>&1
+then
+	echo "Did not find make on the system"
+	exit 1
+fi
+
 cat > '__tst1.c' <<EOM
 
 #include <stdio.h>
@@ -13,7 +66,6 @@ int main (void)
 
 EOM
 
-. $VLSI_TOOLS_SRC/scripts/config
 
 echo "  ... looking for editline"
 if ! $C_COMPILER_NAME -c __tst1.c  >/dev/null 2>&1
