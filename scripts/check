@@ -24,7 +24,7 @@ then
 fi
 rm -f __tst0.c
 
-cat > '__tst0.c' <<EOM
+cat > '__tst0.cc' <<EOM
 #include <iostream>
 
 using namespace std;
@@ -37,13 +37,13 @@ int main (void)
 EOM
 
 echo "  ... looking for $CXX_COMPILER_NAME"
-if ! $CXX_COMPILER_NAME -c __tst0.c  >/dev/null 2>&1
+if ! $CXX_COMPILER_NAME -c __tst0.cc  >/dev/null 2>&1
 then
-	rm -f __tst0.c
+	rm -f __tst0.cc
 	echo "Did not find $CXX_COMPILER_NAME on the system"
 	exit 1
 fi
-rm -f __tst0.c
+rm -f __tst0.cc
 rm -f __tst0.o
 
 echo "  ... looking for make"
