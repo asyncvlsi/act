@@ -30,7 +30,8 @@
 #include "misc.h"
 #include <act/act.h>
 
-double mincap = 0.1e-15;
+static double mincap = 0.1e-15;
+static int use_subckt_models = 0;
 const char *gnd_node = "GND";
 static char SEP_CHAR = ':';
 
@@ -353,6 +354,9 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     printf ("* -- fets ---\n");
     for (struct ext_fets *fl = E->fet; fl; fl = fl->next) {
       struct alias_tree *tsrc, *tdrain, *t;
+      if (use_subckt_models) {
+	printf ("x");
+      }
       printf ("M%d ", devcount++);
       tdrain = getname (N, fl->t2); /* drain */
       printf ("%s ", tdrain->name); /* gate */
@@ -536,6 +540,10 @@ int main (int argc, char **argv)
       fatal_error ("net.spice_path_sep must have length 1");
     }
     SEP_CHAR = s[0];
+  }
+
+  if (config_exists ("net.use_subckt_models")) {
+    use_subckt_models = config_get_int ("net.use_subckt_models");
   }
 
   ext2spice (argv[optind], E, 1);
