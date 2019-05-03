@@ -22,10 +22,10 @@ BIN=tlint.$(EXT)
 BIN2=tr2alint.$(EXT)
 TARGETS=$(BIN) $(BIN2)
 
+TARGETCONF=lint.conf
+
 OBJS2=hs.o
 OBJS1=tlint.o
-
-weird: all install_conf
 
 OBJS=$(OBJS1) $(OBJS2)
 
@@ -42,9 +42,6 @@ $(BIN): $(LIB) $(OBJS1) $(ACTDEPEND)
 
 $(BIN2): $(LIB) $(OBJS2) $(ACTDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBACT) $(ZLIBS)
-
-install_conf: lint.conf
-	@$(VLSI_TOOLS_SRC)/scripts/install lint.conf $(INSTALLLIB)/act/lint.conf
 
 
 -include Makefile.deps

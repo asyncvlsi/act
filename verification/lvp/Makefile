@@ -9,7 +9,7 @@ BIN2=extfix.$(EXT)
 
 TARGETS=$(BINARY) $(BIN2)
 
-weird: all install_conf
+TARGETCONF=lvp.conf
 
 OBJS1=main.o lvs.o dots.o excl.o flatten.o \
 	hier.o parse.o \

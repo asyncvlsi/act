@@ -27,6 +27,8 @@ TARGETINCS=lang.h expr.h act_parse_id.h path.h namespaces.h act.h \
 
 TARGETINCSUBDIR=act
 
+TARGETCONF=global.conf
+
 OBJS1=expr.o path.o
 OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 	body.o check.o error.o array.o expr2.o id.o lang.o iter.o \
@@ -45,10 +47,6 @@ CLEAN=act_parse.cc act_walk_X.cc expr.c expr.h act_parse.h \
 SUBDIRSPOST=test
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
-
-install_conf:
-	@[ -d $(INSTALLLIB)/act ] || mkdir $(INSTALLLIB)/act
-	@$(VLSI_TOOLS_SRC)/scripts/install global.conf $(INSTALLLIB)/act/global.conf
 
 $(LIB): $(OBJS)
 	ar ruv $(LIB) $(OBJS)

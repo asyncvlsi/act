@@ -20,9 +20,9 @@
 #-------------------------------------------------------------------------
 BINARY=ext2sp.$(EXT)
 
-weird: all install_conf
-
 TARGETS=$(BINARY)
+
+TARGETCONF=extract.conf
 
 OBJS=main.o 
 
@@ -32,8 +32,5 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
-
-install_conf: extract.conf
-	@$(VLSI_TOOLS_SRC)/scripts/install extract.conf $(INSTALLLIB)/act/extract.conf
 
 -include Makefile.deps

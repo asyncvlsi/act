@@ -149,6 +149,20 @@ install_bin: $(TARGETS)
                 fi; \
                 done
 
+install_conf: $(TARGETCONF)
+	@[ -d $(INSTALLLIB)/act ] || mkdir $(INSTALLLIB)/act
+	@for i in dummy_bad_name $(TARGETCONF); \
+                do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+                        if [ -d $(INSTALLLIB) ]; \
+                        then \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLLIB)/act/$$i; \
+                        fi; \
+                fi; \
+                done
+
+
 install_lib: $(TARGETLIBS)
 	@for i in dummy_bad_name $(TARGETLIBS); \
 	do \
