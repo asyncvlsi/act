@@ -24,6 +24,8 @@ TARGETINCSUBDIR=act/passes
 
 SRCS=netlist.cc emit.cc
 
+OBJS=$(SRCS:.cc=.o) $(EXTRA)
+
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 netgen.o: netlist.o emit.o

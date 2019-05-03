@@ -22,6 +22,8 @@ BINARY=v2act.$(EXT)
 
 TARGETS=$(BINARY)
 
+TARGETINCS=v_parse_id.h
+
 OBJS1=main.o emit.o sync.o wrap.o v_parse.o v_walk_X.o
 OBJS=$(OBJS1) $(OBJS2)
 
@@ -30,16 +32,15 @@ CLEAN=v_walk_X.h v_walk_X.cc v_parse.cc v_parse.h \
 
 SRCS=$(OBJS:.o=.cc)
 
-tgt: v_parse_int.h all
-
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(BINARY): $(LIB) $(OBJS1) $(ACTPASSDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS1) -o $(BINARY) $(LIBACTPASS)
 
-v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
+v_parse_id.h v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
 	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -p -n v
 	-mv v_parse.c v_parse.cc
 	-mv v_walk_X.c v_walk_X.cc
+	-touch v_parse_id.h
 
 -include Makefile.deps

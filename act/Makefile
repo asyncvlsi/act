@@ -18,9 +18,6 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-
-weird: install_inc all install_conf install allsub
-
 LIB=libact_$(EXT).a
 
 TARGETLIBS=$(LIB)

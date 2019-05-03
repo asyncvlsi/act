@@ -334,7 +334,7 @@ void compute_fanout (VWalk *v, module_t *m)
       /* instance: look at the type */
       Assert (info->isinst, "What?");
       Assert (info->nm, "No module name?");
-      if (p = v2act_find_lib (v->a, info->nm)) {
+      if ((p = v2act_find_lib (v->a, info->nm))) {
 	/* port direction */
 	j = p->FindPort (m->conn[i]->id.id->b->key);
 	if (j == 0) {

@@ -18,7 +18,7 @@ OBJS1=main.o lvs.o dots.o excl.o flatten.o \
 
 OBJS2=extfix.o
 
-OBJS=$(OBJS1) $(OBJS2)
+OBJS=$(OBJS1) $(OBJS2) init.o
 
 # cap.o bump.o bump2.o
 

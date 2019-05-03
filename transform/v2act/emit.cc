@@ -400,11 +400,14 @@ void emit_types (VWalk *v)
     /* print out the connections */
     fprintf (v->out, "   /*--- connections ---*/\n");
 
+
+    char *pending = NULL;
+    
     for (i=0; i < A_LEN (m->conn); i++) {
       /* skip clock connections */
       if ((mode == V_ASYNC) && m->conn[i]->isclk) continue;
 
-      fprintf (v->out, "   ");
+      if (!pending) fprintf (v->out, "   ");
 
       if (mode == V_ASYNC) {
 	if (m->conn[i]->dir == 1) {
@@ -665,15 +668,47 @@ void emit_types (VWalk *v)
 	}
       }
       else {
+	int f = 0;
 	if (m->conn[i]->prefix) {
-	  fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	  if (!pending) {
+	    fprintf (v->out, "%s(", m->conn[i]->prefix->b->key);
+	    f = 1;
+	  }
+	  else if (m->conn[i]->prefix->b->key != pending) {
+	    fprintf (v->out, ");\n   ");
+	    fprintf (v->out, "%s(", m->conn[i]->prefix->b->key);
+	    f = 1;
+	  }
+	  pending = m->conn[i]->prefix->b->key;
 	}
-	emit_id_deref (v->out, &m->conn[i]->id);
-	fprintf (v->out, "=");
-	emit_conn_rhs (v->out, m->conn[i]->r, m->conn[i]->l);
-	fprintf (v->out, ";");
+	else {
+	  if (pending) {
+	    fprintf (v->out, ");\n");
+	  }
+	  pending = NULL;
+	}
+	if (pending) {
+	  if (!f) {
+	    fprintf (v->out, ", ");
+	  }
+	  fprintf (v->out, ".");
+	  emit_id_deref (v->out, &m->conn[i]->id);
+	  fprintf (v->out, "=");
+	  emit_conn_rhs (v->out, m->conn[i]->r, m->conn[i]->l);
+	}
+	else {
+	  emit_id_deref (v->out, &m->conn[i]->id);
+	  fprintf (v->out, "=");
+	  emit_conn_rhs (v->out, m->conn[i]->r, m->conn[i]->l);
+	  fprintf (v->out, ";");
+	}
       }
-      fprintf (v->out, "\n");
+      if (!pending) {
+	fprintf (v->out, "\n");
+      }
+    }
+    if (pending) {
+      fprintf (v->out, ");\n");
     }
     fprintf (v->out, "}\n\n");
   }
