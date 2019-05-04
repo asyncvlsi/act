@@ -23,6 +23,7 @@
  */
 #include <act/act.h>
 #include <act/iter.h>
+#include <string.h>
 
 
 Scope::Scope (Scope *parent, int is_expanded)
