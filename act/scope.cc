@@ -1222,7 +1222,7 @@ void Scope::Print (FILE *fp)
      * connections should be reported only once
      * subconnections should be reported 
      */
-    if (vx->hasConnection()) {
+    if (!TypeFactory::isParamType (vx->t) && vx->hasConnection()) {
       _print_connections (fp, vx->connection());
 #if 0      
       ActConniter ci(vx->connection());
