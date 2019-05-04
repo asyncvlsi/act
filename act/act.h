@@ -118,6 +118,9 @@ private:
   char mangle_characters[256];
   int inv_map[256];
   int any_mangling;
+  int mangle_langle_idx;  /* index of '<' */
+  int mangle_min_idx;     /* index of the min of , . { } */
+  int mangle_mode;
 
   struct Hashtable *aux;	// any aux storage you want
   

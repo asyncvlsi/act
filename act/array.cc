@@ -590,6 +590,75 @@ void Array::Print (FILE *fp, int style)
   fprintf (fp, "%s", buf);
 }
 
+void Array::PrintOne (FILE *fp, int style)
+{
+  char buf[10240];
+  sPrintOne (buf, 10240, style);
+  fprintf (fp, "%s", buf);
+}
+
+int Array::sPrintOne (char *buf, int sz, int style)
+{
+  int k = 0;
+  int l;
+
+#define PRINT_STEP				\
+  do {						\
+    l = strlen (buf+k);				\
+    k += l;					\
+    sz -= l;					\
+    if (sz <= 1) return k;			\
+  } while (0)
+
+  snprintf (buf+k, sz, "[");
+  PRINT_STEP;
+  for (int i=0; i < dims; i++) {
+    if (!expanded) {
+      if (r[i].u.ue.lo == NULL) {
+	sprint_expr (buf+k, sz, r[i].u.ue.hi);
+	PRINT_STEP;
+      }
+      else {
+	sprint_expr (buf+k, sz, r[i].u.ue.lo);
+	PRINT_STEP;
+	snprintf (buf+k, sz, "..");
+	PRINT_STEP;
+	sprint_expr (buf+k, sz, r[i].u.ue.hi);
+	PRINT_STEP;
+      }
+    }
+    else {
+      if (r[i].u.ex.isrange) {
+	if (r[i].u.ex.lo == 0) {
+	  snprintf (buf+k, sz, "%d", r[i].u.ex.hi+1);
+	  PRINT_STEP;
+	}
+	else {
+	  snprintf (buf+k, sz, "%d..%d", r[i].u.ex.lo, r[i].u.ex.hi);
+	  PRINT_STEP;
+	}
+      }
+      else {
+	snprintf (buf+k, sz, "%d", r[i].u.ex.lo);
+	PRINT_STEP;
+      }
+    }
+    if (i < dims-1) {
+      if (style) {
+	snprintf (buf+k, sz, ",");
+      }
+      else {
+	snprintf (buf+k, sz, "][");
+      }
+      PRINT_STEP;
+    }
+  }
+  snprintf (buf+k, sz, "]");
+  PRINT_STEP;
+  return k;
+#undef PRINT_STEP
+}
+
 void Array::sPrint (char *buf, int sz, int style)
 {
   Array *pr;
@@ -610,58 +679,15 @@ void Array::sPrint (char *buf, int sz, int style)
   }
   pr = this;
   while (pr) {
-    snprintf (buf+k, sz, "[");
+    pr->sPrintOne (buf+k, sz, style);
     PRINT_STEP;
-    for (int i=0; i < pr->dims; i++) {
-      if (!expanded) {
-	if (pr->r[i].u.ue.lo == NULL) {
-	  sprint_expr (buf+k, sz, pr->r[i].u.ue.hi);
-	  PRINT_STEP;
-	}
-	else {
-	  sprint_expr (buf+k, sz, pr->r[i].u.ue.lo);
-	  PRINT_STEP;
-	  snprintf (buf+k, sz, "..");
-	  PRINT_STEP;
-	  sprint_expr (buf+k, sz, pr->r[i].u.ue.hi);
-	  PRINT_STEP;
-	}
-      }
-      else {
-	if (pr->r[i].u.ex.isrange) {
-	  if (pr->r[i].u.ex.lo == 0) {
-	    snprintf (buf+k, sz, "%d", pr->r[i].u.ex.hi+1);
-	    PRINT_STEP;
-	  }
-	  else {
-	    snprintf (buf+k, sz, "%d..%d", pr->r[i].u.ex.lo, pr->r[i].u.ex.hi);
-	    PRINT_STEP;
-	  }
-	}
-	else {
-	  snprintf (buf+k, sz, "%d", pr->r[i].u.ex.lo);
-	  PRINT_STEP;
-	}
-      }
-      if (i < pr->dims-1) {
-	if (style) {
-	  snprintf (buf+k, sz, ",");
-	}
-	else {
-	  snprintf (buf+k, sz, "][");
-	}
-	PRINT_STEP;
-      }
-    }
-    snprintf (buf+k, sz, "]");
-    PRINT_STEP;
-    pr = pr->next;
-    if (pr) {
+    if (pr->next) {
       snprintf (buf+k, sz, "+");
       PRINT_STEP;
     }
+    pr = pr->next;
   }
-  if (this->next) {
+  if (next) {
     snprintf (buf+k, sz, " ]");
     PRINT_STEP;
   }

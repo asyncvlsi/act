@@ -128,6 +128,10 @@ class Array {
 					 // otherwise [num,num]
   void sPrint (char *buf, int sz, int style = 0);
 
+  int sPrintOne (char *buf, int sz, int style = 0);
+  void PrintOne (FILE *fp, int style = 0);
+  Array *Next() { return next; }
+
   Array *Clone ();		/* returns a deep copy */
   Array *CloneOne ();		/* only copy current range */
   Array *Reduce();		// return a deep copy, but elide
@@ -169,6 +173,7 @@ class Array {
 				// array. why not call it an iterator?
 				// because it isn't...
 				// sub = subrange within this array
+
 
 private:
   Array ();			/* for deep copy only */

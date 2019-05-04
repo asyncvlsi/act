@@ -1197,59 +1197,63 @@ void Scope::Print (FILE *fp)
     if (!TypeFactory::isParamType (vx->t)) {
       if (strcmp (vx->getName(), "self") == 0) continue;
       if (!u || (u->FindPort (vx->getName()) == 0)) {
+	Array *ta;
 	a = vx->t->arrayInfo();
 	if (a) {
 	  vx->t->clrArray();
 	}
-	if (vx->t->isExpanded()) {
-	  vx->t->sPrint (buf, 10240);
-	  ActNamespace::Act()->mfprintf (fp, "%s", buf);
-	}
-	else {
-	  vx->t->Print (fp);
-	}
-	fprintf (fp, " %s", vx->getName());
-	if (a) {
-	  a->Print (fp);
-	}
+	ta = a;
+	do {
+	  if (vx->t->isExpanded()) {
+	    vx->t->sPrint (buf, 10240);
+	    if (!TypeFactory::isUserType (vx->t)) {
+	      fprintf (fp, "%s", buf);
+	    }
+	    else {
+	      ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	    }
+	    fprintf (fp, " %s", vx->getName());
+	  }
+	  else {
+	    vx->t->Print (fp);
+	    fprintf (fp, " %s", vx->getName());
+	  }
+	  if (ta) {
+	    ta->PrintOne (fp);
+	  }
+	  ta = ta->Next();
+	  if (ta) {
+	    fprintf (fp, ";\n");
+	  }
+	} while (ta);
 	fprintf (fp, ";\n");
 	if (a) {
 	  vx->t->MkArray (a);
 	}
       }
     }
+  }
+
+  
+  fprintf (fp, "\n/* connections */\n");
+  
+  for (inst = inst.begin(); inst != inst.end(); inst++) {
+    ValueIdx *vx = *inst;
+    Array *a;
+
+    if (TypeFactory::isParamType (vx->t))
+      continue;
+    
     /* fix this.
      * connections should be reported only once
      * subconnections should be reported 
      */
     if (!TypeFactory::isParamType (vx->t) && vx->hasConnection()) {
       _print_connections (fp, vx->connection());
-#if 0      
-      ActConniter ci(vx->connection());
-      ActId *id;
-
-      if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
-	fprintf (fp, "%s", vx->getName());
-	for (ci = ci.begin(); ci != ci.end(); ci++) {
-	  act_connection *c = *ci;
-	  if (c == vx->connection()) continue;
-	  id = c->toid();
-	  fprintf (fp, "=");
-	  id->Print (fp);
-	  delete id;
-	}
-	fprintf (fp, ";\n");
-      }
-      if (vx->hasSubconnections()) {
-	act_connection *cx = vx->connection();
-	for (int i=0; i < cx->numSubconnections(); i++) {
-	  
-	  /* do something! */
-	}
-      }
-#endif      
     }
   }
+
+  
 }
 
 void Scope::playBody (ActBody *b)

@@ -37,6 +37,8 @@ static char mangle_result[] =
     'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
     'w', 'x', 'y', 'z' };
 
+static int mangle_invidx[256];
+
 /*------------------------------------------------------------------------
  *
  *  Act::mangle --
@@ -54,6 +56,7 @@ void Act::mangle (char *str)
   for (i=0; i < 256; i++) {
     mangle_characters[i] = -1;
     inv_map[i] = -1;
+    mangle_invidx[i] = -1;
   }
 
   if (str == NULL || *str == '\0') {
@@ -62,21 +65,35 @@ void Act::mangle (char *str)
     return;
   }
   any_mangling = 1;
+  mangle_langle_idx = -1;
+  mangle_min_idx = -1;
+  mangle_mode = 0;
 
   mangle_characters['_'] = mangle_result[0];
   inv_map[mangle_result[0]] = '_';
+  mangle_invidx['_'] = 0;
 
   for (i=0; (i+1) < max_len && str[i]; i++) {
     if (mangle_characters[str[i]] >= 0) {
       fatal_error ("Cannot install mangle string `%s': dup char `%c'",
 		   str, str[i]);
     }
+    mangle_invidx[mangle_result[i+1]] = i+1;
     mangle_characters[str[i]] = mangle_result[i+1];
     inv_map[mangle_result[i+1]] = str[i];
+    if (str[i] == '<') {
+      mangle_langle_idx = i;
+    }
+    if (mangle_min_idx == -1 && (str[i] == '.' || str[i] == ',' || str[i] == '{' || str[i] == '}')) {
+      mangle_min_idx = i;
+    }
   }
   if (str[i]) {
     fatal_error ("Cannot install mangle string `%s'---too many characters",
 		 str);
+  }
+  if (mangle_min_idx == -1) {
+    mangle_min_idx = strlen (str);
   }
 }
 
@@ -97,7 +114,15 @@ int Act::mangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (mangle_characters[*src] >= 0) {
+    if (mangle_characters[*src] >= 0 &&
+	((*src != '_') || inv_map[*(src+1)] == -1)) {
+      /* modify _ mangling; special case.
+	 so mangle if
+	 
+	 *src != '_' || *src == '_' AND
+	    next character cannot be the result of mangling!
+	    (inv_map[next char] == -1)
+      */
       *dst++ = '_';
       sz--;
       if (sz == 0) return -1;
@@ -109,6 +134,12 @@ int Act::mangle_string (const char *src, char *dst, int sz)
       sz--;
     }
     if (sz == 0) return -1;
+    if (*src == '<') {
+      mangle_mode++;
+    }
+    else if (*src == '>') {
+      mangle_mode--;
+    }
     src++;
   }
   *dst = '\0';
@@ -133,9 +164,16 @@ int Act::unmangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (*src == mangle_result[0]) {
+    if ((*src == mangle_result[0]) &&
+	(mangle_invidx[*(src+1)] != -1)) {
       src++;
       *dst++ = inv_map[*src];
+      if (inv_map[*src] == '<') {
+	mangle_mode++;
+      }
+      else if (inv_map[*src] == '>') {
+	mangle_mode--;
+      }
       sz--;
       if (sz == 0) return -1;
     }
@@ -173,6 +211,7 @@ void Act::mfprintf (FILE *fp, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+    fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
   }
   
@@ -202,6 +241,7 @@ int Act::msnprintf (char *fp, int len, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+    fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
   }
   
@@ -233,6 +273,7 @@ void Act::ufprintf (FILE *fp, const char *s, ...)
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
   Assert (mangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+    fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
   }
   
@@ -262,6 +303,7 @@ int Act::usnprintf (char *fp, int len, const char *s, ...)
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
   Assert (mangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+    fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
   }
   

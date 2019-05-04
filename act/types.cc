@@ -1772,8 +1772,14 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
     fprintf (fp, "template <");
     for (int i=0; i < n; i++) {
       InstType *it = getPortType (-(i+1));
+      Array *a = it->arrayInfo();
+      it->clrArray();
       it->Print (fp);
       fprintf (fp, " %s", getPortName (-(i+1)));
+      if (a) {
+	a->Print (fp);
+      }
+      it->MkArray (a);
       if (i != n-1) {
 	fprintf (fp, "; ");
       }
@@ -1800,6 +1806,8 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   fprintf (fp, "(");
   for (int i=0; i < n; i++) {
     InstType *it = getPortType (i);
+    Array *a = it->arrayInfo();
+    it->clrArray ();
     if (it->isExpanded()) {
       it->sPrint (buf, 10240);
       ActNamespace::Act()->mfprintf (fp, "%s", buf);
@@ -1808,6 +1816,10 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       it->Print (fp);
     }
     fprintf (fp, " %s", getPortName (i));
+    if (a) {
+      a->Print (fp);
+    }
+    it->MkArray (a);
     if (i != n-1) {
       fprintf (fp, "; ");
     }
