@@ -16,14 +16,24 @@ do
 	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	echo "    Directory $i"
 	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	if (cd $i; ../run_subdir.sh)
-	then
+	if [ -f $i/run.sh ]; then
+	    if (cd $i; ./run.sh)
+	    then
 		:
-	else
+	    else
 		fail=`expr $fail + 1`
 		faildirs="$i $faildirs"
-	fi
-	fi
+	    fi
+	else
+	    if (cd $i; ../run_subdir.sh)
+	    then
+		:
+	    else
+		fail=`expr $fail + 1`
+		faildirs="$i $faildirs"
+	    fi
+        fi
+       fi
 done
 
 if [ $fail -ne 0 ]
