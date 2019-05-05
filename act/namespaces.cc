@@ -472,7 +472,9 @@ void ActNamespace::Print (FILE *fp)
     UserDef *u = dynamic_cast<UserDef *>(t);
     Assert (u, "Hmm...");
     /* print type! */
-    u->Print (fp);
+    if (CurScope()->isExpanded() == u->isExpanded()) {
+      u->Print (fp);
+    }
   }
 
   /* print instances */

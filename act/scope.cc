@@ -1220,8 +1220,8 @@ void Scope::Print (FILE *fp)
 	  }
 	  if (ta) {
 	    ta->PrintOne (fp);
+	    ta = ta->Next();
 	  }
-	  ta = ta->Next();
 	  if (ta) {
 	    fprintf (fp, ";\n");
 	  }
