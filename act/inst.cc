@@ -474,17 +474,17 @@ Type *InstType::isConnectable (InstType *it, int weak)
 
 
 
-void InstType::Print (FILE *fp)
+void InstType::Print (FILE *fp, int nl_mode)
 {
   char buf[10240];
 
-  sPrint (buf, 10240);
+  sPrint (buf, 10240, nl_mode);
   fprintf (fp, "%s", buf);
   return;
 }
 
 
-void InstType::sPrint (char *buf, int sz)
+void InstType::sPrint (char *buf, int sz, int nl_mode)
 {
   UserDef *ud;
   InstType *x;
@@ -505,7 +505,23 @@ void InstType::sPrint (char *buf, int sz)
     fprintf (fp, "c:");
   }
 #endif
-  snprintf (buf+k, sz, "%s", t->getName());
+  if (!nl_mode) {
+    snprintf (buf+k, sz, "%s", t->getName());
+  }
+  else {
+    const char *tmp = t->getName();
+    int x = strlen (tmp);
+    if (x > 2 && tmp[x-1] == '>' && tmp[x-2] == '<') {
+      x--;
+      if (sz < x) {
+	x = sz;
+      }
+    }
+    else {
+      x = sz;
+    }
+    snprintf (buf+k, x, "%s", tmp);
+  }
   PRINT_STEP;
   
   if (nt > 0) {

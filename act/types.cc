@@ -1606,9 +1606,9 @@ const char *PType::getName ()
   }
   else if (!name) {
     char buf[10240];
-    sprintf (buf, "ptype<");
+    sprintf (buf, "ptype(");
     i->sPrint (buf+strlen (buf), 10240-strlen (buf));
-    sprintf (buf+strlen(buf), ">");
+    sprintf (buf+strlen(buf), ")");
     name = Strdup (buf);
   }
   return name;
@@ -1689,9 +1689,9 @@ const char *Chan::getName ()
     sprintf (buf, "chan");
   }
   else {
-    sprintf (buf, "chan<");
+    sprintf (buf, "chan(");
     p->sPrint (buf+strlen (buf), 10239-strlen(buf));
-    strcat (buf, ">");
+    strcat (buf, ")");
   }
   name = Strdup (buf);
   return name;
@@ -1788,7 +1788,13 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   }
   fprintf (fp, "%s ", type);
   if (expanded) {
-    ActNamespace::Act()->mfprintf (fp, "%s ", getName());
+    char *tmp = Strdup (getName());
+    int x = strlen (tmp);
+    if (x > 2 && tmp[x-1] == '>' && tmp[x-2] == '<') {
+      tmp[x-2] = '\0';
+    }
+    ActNamespace::Act()->mfprintf (fp, "%s ", tmp);
+    FREE (tmp);
   }
   else {
     /* ok there is a possibility of a name conflict here but lets not
@@ -1809,7 +1815,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
     Array *a = it->arrayInfo();
     it->clrArray ();
     if (it->isExpanded()) {
-      it->sPrint (buf, 10240);
+      it->sPrint (buf, 10240, 1);
       ActNamespace::Act()->mfprintf (fp, "%s", buf);
     }
     else {

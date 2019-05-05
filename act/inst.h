@@ -93,9 +93,9 @@ class InstType {
      NULL if error, otherwise returns the most specific type.
   */
 
-  void Print (FILE *fp);	/**< print inst type string */
+  void Print (FILE *fp, int nl_mode = 0); /**< print inst type string */
 
-  void sPrint (char *buf, int sz); /**< snprintf */
+  void sPrint (char *buf, int sz, int nl_mode = 0); /**< snprintf */
 
   Type *BaseType ()  { return t; } /**< Return root type */
 

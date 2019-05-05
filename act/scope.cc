@@ -1205,7 +1205,7 @@ void Scope::Print (FILE *fp)
 	ta = a;
 	do {
 	  if (vx->t->isExpanded()) {
-	    vx->t->sPrint (buf, 10240);
+	    vx->t->sPrint (buf, 10240, 1);
 	    if (!TypeFactory::isUserType (vx->t)) {
 	      fprintf (fp, "%s", buf);
 	    }
@@ -1215,7 +1215,7 @@ void Scope::Print (FILE *fp)
 	    fprintf (fp, " %s", vx->getName());
 	  }
 	  else {
-	    vx->t->Print (fp);
+	    vx->t->Print (fp, 1);
 	    fprintf (fp, " %s", vx->getName());
 	  }
 	  if (ta) {
