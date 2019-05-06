@@ -10,7 +10,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../netgen.$EXT
+ACTTOOL=../netgen.$EXT 
 
 check_echo=0
 myecho()
@@ -51,7 +51,7 @@ do
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
 	myecho ".[$bname]"
-	$ACTTOOL -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	$ACTTOOL -l -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then

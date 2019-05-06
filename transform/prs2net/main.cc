@@ -91,6 +91,11 @@ static char *initialize_parameters (int *argc, char ***argv)
   conf_file = NULL;
   proc_name = NULL;
 
+  config_set_default_string ("net.global_vdd", "Vdd");
+  config_set_default_string ("net.global_gnd", "GND");
+  config_set_default_string ("net.local_vdd", "VddN");
+  config_set_default_string ("net.local_gnd", "GNDN");
+
   Act::Init (argc, argv);
 
   while ((ch = getopt (*argc, *argv, "BdC:tp:o:lV:")) != -1) {
@@ -184,10 +189,10 @@ static char *initialize_parameters (int *argc, char ***argv)
     }
   }
 
-  config_set_default_int ("ignore_loadcap", ignore_loadcap);
-  config_set_default_int ("emit_parasitics", emit_parasitics);
-  config_set_default_int ("black_box_mode", black_box_mode);
-  config_set_default_int ("top_level_only", top_level_only);
+  config_set_default_int ("net.ignore_loadcap", ignore_loadcap);
+  config_set_default_int ("net.emit_parasitics", emit_parasitics);
+  config_set_default_int ("net.black_box_mode", black_box_mode);
+  config_set_default_int ("net.top_level_only", top_level_only);
   
   if (!proc_name) {
     fprintf (stderr, "Missing process name.\n");

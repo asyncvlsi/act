@@ -41,6 +41,9 @@ static double weak_to_strong_ratio;
 /* load cap */
 static double default_load_cap;
 
+/* local and global Vdd/GND */
+const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
+
 static std::map<Process *, netlist_t *> *netmap = NULL;
 static std::map<Process *, act_boolean_netlist_t *> *boolmap = NULL;
 
@@ -1028,10 +1031,48 @@ static void emit_node (netlist_t *N, FILE *fp, node_t *n)
   }
   else {
     if (n == N->Vdd) {
-      fprintf (fp, "Vdd");
+      if (N->bN->cur) {
+	ValueIdx *vx;
+	act_connection *c;
+	vx = N->bN->cur->FullLookupVal (local_vdd);
+	if (!vx) {
+	  vx = N->bN->cur->FullLookupVal (global_vdd);
+	}
+	if (vx) {
+	  c = vx->connection()->primary();
+	  ActId *id  = c->toid();
+	  id->Print (fp);
+	  delete id;
+	}
+	else {
+	  fprintf (fp, "%s", global_vdd);
+	}
+      }
+      else {
+	fprintf (fp, "%s", global_vdd);
+      }	
     }
     else if (n == N->GND) {
-      fprintf (fp, "GND");
+      if (N->bN->cur) {
+	ValueIdx *vx;
+	act_connection *c;
+	vx = N->bN->cur->FullLookupVal (local_gnd);
+	if (!vx) {
+	  vx = N->bN->cur->FullLookupVal (global_gnd);
+	}
+	if (vx) {
+	  c = vx->connection()->primary();
+	  ActId *id  = c->toid();
+	  id->Print (fp);
+	  delete id;
+	}
+	else {
+	  fprintf (fp, "%s", global_gnd);
+	}
+      }
+      else {
+	fprintf (fp, "%s", global_gnd);
+      }
     }
     else {
       if (n->inv) {
@@ -1687,6 +1728,12 @@ void act_prs_to_netlist (Act *a, Process *p)
   weak_to_strong_ratio = config_get_real ("net.weak_to_strong_ratio");
   min_w_in_lambda = config_get_int ("net.min_width");
   min_l_in_lambda = config_get_int ("net.min_length");
+
+  local_vdd = config_get_string ("net.local_vdd");
+  local_gnd = config_get_string ("net.local_gnd");
+
+  global_vdd = config_get_string ("net.global_vdd");
+  global_gnd = config_get_string ("net.global_gnd");
 
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
