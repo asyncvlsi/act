@@ -97,6 +97,11 @@ static void emit_verilog_id (act_connection *c)
 
   id = c->toid();
 
+  if (c->isglobal()) {
+    /* XXX: this only works in simulation land */
+    printf ("top.");
+  }
+
   if (id->arrayInfo() || id->Rest()) {
     printf ("\\");
   }
@@ -180,6 +185,7 @@ void emit_verilog (Act *a, Process *p)
     for (b = n->cH->head[i]; b; b = b->next) {
       act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
       if (!v->used) continue;
+      if (v->id->isglobal()) continue;
 
       if (v->input && !v->output) {
 	printf ("   wire ");
