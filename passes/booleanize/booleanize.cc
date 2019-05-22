@@ -651,7 +651,7 @@ static void create_bool_ports (Act *a, Process *p)
   act_boolean_netlist_t *n = netmap->find (p)->second;
   if (n->visited) return;
   n->visited = 1;
-    
+
   /* emit sub-processes */
   ActInstiter i(p->CurScope());
 
@@ -717,7 +717,23 @@ void act_booleanize_netlist (Act *a, Process *p)
     act_boolean_netlist_t *n = it->second;
     n->visited = 0;
   }
-  create_bool_ports (a, p);
+  if (!p) {
+    ActNamespace *g = ActNamespace::Global();
+    ActInstiter i(g->CurScope());
+
+    for (i = i.begin(); i != i.end(); i++) {
+      ValueIdx *vx = *i;
+      if (TypeFactory::isProcessType (vx->t)) {
+	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+	if (x->isExpanded()) {
+	  create_bool_ports (a, x);
+	}
+      }
+    }
+  }
+  else {
+    create_bool_ports (a, p);
+  }
   for (it = netmap->begin(); it != netmap->end(); it++) {
     act_boolean_netlist_t *n = it->second;
     n->visited = 0;
