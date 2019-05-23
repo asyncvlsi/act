@@ -1145,7 +1145,7 @@ ID
     $0->u_f = f;
     $0->scope = $0->u_f->CurScope ();
 }}
-"(" port_formal_list ")" [ ":" param_type ] 
+"(" port_formal_list ")" [ ":" inst_type ] 
 {{X:
     UserDef *u;
     /* let's check to see if this matches any previous definition */
@@ -1231,12 +1231,24 @@ func_body_items[ActBody *]: { alias_or_inst ";" }* lang_chp
     tl = b;
     for (li = list_next (list_first ($1)); li; li = list_next (li)) {
       tmp = (ActBody *)list_value (li);
-      tl->Append (tmp);
-      tl = tmp;
+      if (tl) {
+	if (tmp) {
+	  tl->Append (tmp);
+	  tl = tmp;
+	}
+      }
+      else {
+	tl = tmp;
+      }
     }
     list_free ($1);
-    tl->Append ($2);
-    return b;
+    if (tl) {
+      tl->Append ($2);
+      return b;
+    }
+    else {
+      return $2;
+    }
 }}
 ;
 
@@ -1248,6 +1260,7 @@ alias_or_inst[ActBody *]: alias
 {{X:
     return $1;
 }}
+| /* nothing */
 ;
 
 /*------------------------------------------------------------------------
