@@ -161,9 +161,16 @@ int act_connection::numSubconnections()
 
   Assert (type == 0 || type == 1, "Hmm");
 
-  if (type == 0 && _vx->t->arrayInfo()) {
-    /* it is an array! */
-    return _vx->t->arrayInfo()->size();
+  if (type == 0) {
+    if (_vx->t->arrayInfo()) {
+      /* it is an array! */
+      return _vx->t->arrayInfo()->size();
+    }
+    else {
+      UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
+      Assert (ux, "hmm...");
+      return ux->getNumPorts ();
+    }
   }
   else {
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
@@ -177,9 +184,26 @@ int act_connection::numSubconnections()
       printf ("\n");
       return 0;
     }
-#endif      
+#endif
     Assert (ux, "hmm...");
-    return ux->getNumPorts ();
+
+    if (_vx->t->arrayInfo()) {
+      return ux->getNumPorts ();
+    }
+    else {
+      int off = myoffset();
+      InstType *itmp;
+      Assert (off >= 0 && off < ux->getNumPorts(), "Hmm");
+      itmp = ux->getPortType (off);
+      if (itmp->arrayInfo()) {
+	return itmp->arrayInfo()->size();
+      }
+      else {
+	ux = dynamic_cast<UserDef *>(itmp->BaseType());
+	Assert (ux, "Hmm");
+	return ux->getNumPorts();
+      }
+    }
   }
 }
 

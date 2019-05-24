@@ -1,0 +1,60 @@
+deftype kpg <: bool (bool k,p,g; bool d[3]) 
+{
+
+	spec{
+	exclhi(k,p,g) 
+	}
+
+	d[0] = k;
+	d[1] = p;
+	d[2] = g;
+}
+
+deftype _kpg <: bool (bool k,p,g; bool d[3]) 
+{
+
+	spec{
+	excllo(k,p,g) 
+	}
+
+	d[0] = k;
+	d[1] = p;
+	d[2] = g;
+}
+
+defchan akpg <: chan(enum<3>) (bool k,p,g,a; bool d[3]) 
+{
+
+	spec{
+		exclhi(k,p,g) 
+	}
+
+	d[0] = k;
+	d[1] = p;
+	d[2] = g;
+}
+
+defproc Invert_kpg (_kpg a; kpg b) {
+	prs {
+		~a.k -> b.k+
+		 a.k -> b.k-
+		~a.p -> b.p+
+		 a.p -> b.p-
+		~a.g -> b.g+
+		 a.g -> b.g-
+	}
+}
+
+defproc foo (kpg in; akpg out) {
+
+	kpg tmp;
+	_kpg _tmp;
+	
+	tmp.d = out.d;
+
+	Invert_kpg ik(_tmp, tmp);
+
+}
+
+foo test;
+
