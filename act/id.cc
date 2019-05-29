@@ -604,11 +604,8 @@ static void _import_conn_rec (act_connection *cxroot,
 	if (px->a[i]->isPrimary() && !px->a[i]->hasSubconnections())
 	  continue;
 	tmp2 = cx->getsubconn (i, px->numSubconnections());
-	if (ct == 1) {
-	  if (!tmp2->vx) {
-	    tmp2->vx = px->a[i]->vx;
-	  }
-	  Assert (tmp2->vx && tmp2->vx == px->a[i]->vx, "Hmm");
+	if (!tmp2->vx) {
+	  tmp2->vx = px->a[i]->vx;
 	}
 	_import_conn_rec (cxroot, tmp2, px->a[i], ux);
       }

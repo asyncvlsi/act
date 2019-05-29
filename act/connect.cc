@@ -36,7 +36,10 @@ int act_connection::suboffset (act_connection *c)
   while (1) {
     if (a[i] == c) return i;
     i++;
-    if (i > 10000) return -1;
+    if (i > 10000) {
+      warning ("Exceeded internal limit on subconnection computation.");
+      return -1;
+    }
   }
   return -1;
 }
