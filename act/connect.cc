@@ -378,6 +378,8 @@ static void _merge_subtrees (UserDef *ux,
 			     act_connection *c1, act_connection *c2);
 static int _should_swap (UserDef *ux, act_connection *c1,
 			 act_connection *c2);
+static int _raw_should_swap (UserDef *ux, act_connection *c1,
+			 act_connection *c2);
 
 /*
   merge c2 into c1 (primary)
@@ -479,6 +481,25 @@ static void mk_raw_skip_connection (UserDef *ux,
   return;
 }
 
+static void _verify_subconn_canonical (UserDef *ux, act_connection *c)
+{
+  act_connection *d;
+  d = c->primary();
+  if (c == d) return;
+
+  if (_raw_should_swap (ux, d, c)) {
+    c->up = NULL;
+    d->up = c;
+  }
+  if (c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      if (c->a[i]) {
+	_verify_subconn_canonical (ux, c->a[i]);
+      }
+    }
+  }
+}
+
 static void _merge_subtrees (UserDef *ux,
 			     act_connection *c1, act_connection *c2)
 {
@@ -513,8 +534,11 @@ static void _merge_subtrees (UserDef *ux,
       for (int i=0; i < sz; i++) {
 	if (c1->a[i]) {
 	  c1->a[i]->parent = c1;
+	  _verify_subconn_canonical (ux,c1->a[i]);
 	}
       }
+      /* now go through each subconnection and make sure it has the
+	 right canonical pointer */
     }
   }
   else if (c2->a) {
@@ -544,9 +568,8 @@ static void _merge_subtrees (UserDef *ux,
       else if (c2->a[i]) {
 	c1->a[i] = c2->a[i];
 	c2->a[i] = NULL;
-      }
-      if (c1->a[i]) {
 	c1->a[i]->parent = c1;
+	_verify_subconn_canonical (ux, c1->a[i]);
       }
     }
     FREE (c2->a);
@@ -560,10 +583,190 @@ static void _merge_subtrees (UserDef *ux,
 
 static void _merge_attributes (act_attr_t **x, act_attr *a);
 
+static int _raw_should_swap (UserDef *ux, act_connection *d1,
+			     act_connection *d2)
+{
+  act_connection *tmp, *tmp2;
+  ValueIdx *vx1, *vx2;
 
+  int p1, p2;
+  
+  /* for global flag, find the root value */
+  tmp = d1;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?");
+  vx1 = tmp->vx;
+
+  tmp = d2;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?!");
+  vx2 = tmp->vx;
+
+  if (vx1->global || vx2->global) {
+    /* set p1, p2 to -1, -1 if a priority has been set;
+       0, 0 otherwise
+    */
+    if (vx2->global && !vx1->global) {
+      /* c2 is primary, so swap(c1,c2) */
+      return 1;
+    }
+    else if (vx1->global && !vx2->global) {
+      /* nothing has to be done; c1 is primary */
+      return 0;
+    }
+    else {
+      /* this test is insufficient */
+      p1 = 0;
+      p2 = 0;
+    }
+  }
+  else {
+    /* not global */
+    if (ux) {
+      /* user defined type */
+      p1 = ux->FindPort (vx1->getName());
+      p2 = ux->FindPort (vx2->getName());
+
+      if (p1 > 0 || p2 > 0) {
+	/* this should be enough to determine which one is primary */
+	if (p2 == 0) return 0;
+	/* p2 > 0 */
+	if (p1 == 0 || (p2 < p1)) {
+	  return 1;
+	}
+	/* p1 > 0 */
+	if (p1 < p2) {
+	  return 0;
+	}
+	/* p1 = p2: find "earlier" connections */
+	list_t *l1 = _act_create_connection_stackidx (d1, NULL);
+	list_t *l2 = _act_create_connection_stackidx (d2, NULL);
+	listitem_t *li1, *li2;
+	li1 = list_first (l1);
+	li2 = list_first (l2);
+	while (li1 && li2) {
+	  int x1, x2;
+	  x1 = (int)(long)list_value (li1);
+	  x2 = (int)(long)list_value (li2);
+	  if (x1 < x2) {
+	    list_free (l1);
+	    list_free (l2);
+	    return 0;
+	  }
+	  else if (x1 > x2) {
+	    list_free (l1);
+	    list_free (l2);
+	    return 1;
+	  }
+	  li1 = list_next (li1);
+	  li2 = list_next (li2);
+	}
+	if (li1) {
+	  list_free (l1);
+	  list_free (l2);
+	  return 1;
+	}
+	else if (li2) {
+	  list_free (l1);
+	  list_free (l2);
+	  return 0;
+	}
+	Assert (0, "Should not be here");
+      }
+    }
+  }
+  if (!ux || (p1 == 0 && p2 == 0)) {
+    /* without refinement, this would be resolved by string
+       comparisons. we need to check subtyping relationship at this
+       point */
+    InstType *it1, *it2;
+    int ct;
+    ct = d1->getctype();
+    it1 = d1->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it1->BaseType());
+      Assert (ux, "Hmm");
+      it1 = ux->getPortType (d1->myoffset());
+      Assert (it1, "Hmm");
+    }
+    ct = d2->getctype();
+    it2 = d2->getvx()->t;
+    if (ct == 2 || ct == 3) {
+      UserDef *ux;
+      ux = dynamic_cast<UserDef *>(it2->BaseType());
+      Assert (ux, "Hmm");
+      it2 = ux->getPortType (d2->myoffset());
+      Assert (it2, "Hmm");
+    }
+    if (it1->BaseType() == it2->BaseType()) {
+      Type::direction dir1, dir2;
+      dir1 = d1->getDir();
+      dir2 = d2->getDir();
+      if (dir2 != Type::NONE && dir1 != Type::NONE && dir1 != dir2) {
+	/* error */
+      }
+      if (dir1 != Type::NONE && dir2 == Type::NONE) {
+	return 1;
+      }
+      else {
+	/* find depth: use lower depth name */
+	int l1, l2;
+	l1 = 0; tmp = d1;
+	while (tmp) { l1++; tmp = tmp->parent; }
+	l2 = 0; tmp = d2;
+	while (tmp) { l2++; tmp = tmp->parent; }
+	if (l2 < l1) {
+	  return 1;
+	}
+	else if (l1 < l2) {
+	    return 0;
+	}
+	else {
+	  const char *s1, *s2;
+
+	  s1 = vx1->getName();
+	  s2 = vx2->getName();
+	  
+	  /* ok, use string names! */
+	  p1 = strlen (s1);
+	  p2 = strlen (s2);
+	  if (p2 < p1) {
+	    return 1;
+	  }
+	  else if (p1 == p2) {
+	    p1 = strcmp (s1, s2);
+	    if (p1 > 0) {
+	      return 1;
+	    }
+	  }
+	}
+      }
+    }
+    else {
+      /* more specific type wins */
+      Type *t = it1->isRelated (it2);
+      if (it2->BaseType() == t) {
+	return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
+/*
+  should we make c2 canonical, rather than c1? 
+*/
 static int _should_swap (UserDef *ux, act_connection *c1,
 			 act_connection *c2)
 {
+  return _raw_should_swap (ux, c1->primary(), c2->primary());
+#if 0
   act_connection *d1 = c1->primary();
   act_connection *d2 = c2->primary();
   act_connection *tmp, *tmp2;
@@ -736,6 +939,7 @@ static int _should_swap (UserDef *ux, act_connection *c1,
     }
   }
   return 0;
+#endif  
 }
 
 
