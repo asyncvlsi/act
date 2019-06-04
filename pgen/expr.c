@@ -1075,6 +1075,10 @@ Expr *expr_parse_any (LFILE *l)
   Tl = l;
   e = I();
 
+  if (!e) {
+    e = BE ();
+  }
+
   if (count) {
     file_deltoken (l, ">>");
   }

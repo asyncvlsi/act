@@ -238,6 +238,8 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 
   case E_QUERY:
     ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->type = e->u.e.r->type;
     ret->u.e.r->u.e.l = act_walk_X_expr (cookie, e->u.e.r->u.e.l);
     ret->u.e.r->u.e.r = act_walk_X_expr (cookie, e->u.e.r->u.e.r);
     break;

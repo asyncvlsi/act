@@ -1,0 +1,4 @@
+pint reset = 0;
+pbool reset0 = (reset = 0) ? true : false;
+
+{reset0 : "what?"};

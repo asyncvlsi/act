@@ -1,0 +1,2 @@
+pint reset = 0;
+pbool reset0 = (reset = 0);
