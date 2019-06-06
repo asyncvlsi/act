@@ -839,6 +839,14 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
     }
     return compute_bool (N, ((at_lookup *)at->v)->e, type, sense);
     break;
+
+  case ACT_PRS_EXPR_TRUE:
+    return bool_true (N->B);
+    break;
+    
+  case ACT_PRS_EXPR_FALSE:
+    return bool_false (N->B);
+    break;
     
   default:
     fatal_error ("Unknown type");
@@ -966,7 +974,47 @@ static void create_expr_edges (netlist_t *N, int type, node_t *left,
     break;
     
   case ACT_PRS_EXPR_TRUE:
+    if (sense == 1) {
+      /* done, disconnected */
+    }
+    else {
+      edge_t *f;
+      node_t *supply, *sub;
+      /* depending on n-type or p-type, use Vdd or GND */
+      if (EDGE_TYPE (type) == EDGE_NFET) {
+	supply = N->Vdd;
+	sub = N->psc;
+      }
+      else {
+	supply = N->GND;
+	sub = N->nsc;
+      }
+      f = edge_alloc (N, supply, left, right, sub);
+      f->type = EDGE_TYPE (type);
+      set_fet_params (N, f, type, NULL);
+    }
+    break;
   case ACT_PRS_EXPR_FALSE:
+    if (sense == 0) {
+      /* left and right are disconnected; done */
+    }
+    else {
+      edge_t *f;
+      node_t *supply, *sub;
+      /* depending on n-type or p-type, use Vdd or GND */
+      if (EDGE_TYPE (type) == EDGE_NFET) {
+	supply = N->Vdd;
+	sub = N->psc;
+      }
+      else {
+	supply = N->GND;
+	sub = N->nsc;
+      }
+      f = edge_alloc (N, supply, left, right, sub);
+      f->type = EDGE_TYPE (type);
+      set_fet_params (N, f, type, NULL);
+    }
+    break;
   default:
     fatal_error ("Unknown type");
     break;
