@@ -461,6 +461,12 @@ static ActId *_process_id (ActTree *a, ActId *id)
   Assert (id, "Hmm");
 
   id = act_walk_X_expr_id (a, (pId *)id);
+
+  if (id->Rest() == NULL && id->arrayInfo() == NULL &
+      ((strcmp (id->getName(), "true") == 0) ||
+       (strcmp (id->getName(), "false") == 0))) {
+    return id;
+  }
   
   t = act_type_var (a->scope, id);
   if (t != T_BOOL) {
@@ -563,8 +569,20 @@ static act_prs_expr_t *_act_walk_expr (ActTree *a, act_prs_expr_t *e)
     break;
 
   case ACT_PRS_EXPR_VAR:
-    ret->u.v.sz = _process_sz (a, e->u.v.sz);
     ret->u.v.id = _process_id (a, e->u.v.id);
+    if (ret->u.v.id->Rest() == NULL && ret->u.v.id->arrayInfo() == NULL) {
+      if (strcmp (ret->u.v.id->getName(), "true") == 0) {
+	delete ret->u.v.id;
+	ret->type = ACT_PRS_EXPR_TRUE;
+      }
+      else if (strcmp (ret->u.v.id->getName(), "false") == 0) {
+	delete ret->u.v.id;
+	ret->type = ACT_PRS_EXPR_FALSE;
+      }
+    }
+    if (ret->type == ACT_PRS_EXPR_VAR) {
+      ret->u.v.sz = _process_sz (a, e->u.v.sz);
+    }
     break;
 
   case ACT_PRS_EXPR_LABEL:
