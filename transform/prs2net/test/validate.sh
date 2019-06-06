@@ -19,5 +19,5 @@ fi
 
 for i in $list
 do
-	$ACTTOOL -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	$ACTTOOL -l -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
 done

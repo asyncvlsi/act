@@ -19,8 +19,5 @@
 *
 M0_ b a GND GND nch W=0.15U L=0.06U
 M1_ a Vdd GND GND nch W=0.15U L=0.06U
-C_per_node_0 b GND 4e-15
-C_per_node_1 a GND 4e-15
-C_per_node_2 w GND 4e-15
 .ends
 *---- end of process: foo<> -----
