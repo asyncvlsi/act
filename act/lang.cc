@@ -229,7 +229,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	    "Huh?");
     {
       ValueIdx *vx;
-      unsigned int ilo, ihi, i;
+      int ilo, ihi, i;
       Expr *etmp;
 
       if (p->u.loop.lo) {
@@ -581,7 +581,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	      "Should have been caught earlier");
       {
 	ValueIdx *vx;
-	unsigned int ilo, ihi, i;
+	int ilo, ihi, i;
 	act_prs_lang_t *px, *pxrethd, *pxrettl;
 	Expr *etmp;
 	

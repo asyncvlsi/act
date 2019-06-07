@@ -41,10 +41,6 @@ param_type[InstType *]: "pint"
 {{X:
     return $0->tf->NewPInt();
 }}
-| "pints"
-{{X:
-    return $0->tf->NewPInts();
-}}
 | "pbool"
 {{X:
     return $0->tf->NewPBool();
