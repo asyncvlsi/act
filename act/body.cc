@@ -1079,8 +1079,10 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
     }
   }
   /* all guards false, skip it */
-  act_error_ctxt (stderr);
-  warning ("All guards in selection are false.");
+  if (Act::warn_emptyselect) {
+    act_error_ctxt (stderr);
+    warning ("All guards in selection are false.");
+  }
 }
 
 void ActBody_Genloop::Expand (ActNamespace *ns, Scope *s)

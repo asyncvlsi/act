@@ -60,9 +60,15 @@ class Act {
   static int max_loop_iterations;
 
   /**
+   * Warn on empty selection in main ACT language
+   */
+  static int warn_emptyselect;
+
+  /**
    * Parser flags 
    */
   static int emit_depend;
+
 
   /**
    * Create an act data structure for the specified input file

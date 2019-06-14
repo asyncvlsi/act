@@ -1,0 +1,15 @@
+template <pint x[2]>
+defproc foo(bool w)
+{
+  prs {
+    w -> w-
+  }
+  { x[0] = 11 };
+}
+
+
+pint a[2][2];
+
+(i:2: (j:2: a[i][j] = 1 + 10*i + j;))
+
+foo<a[1][0..1]> x;

@@ -598,7 +598,8 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
     else if (e->type == E_SUBRANGE) {
       ValueIdx *vx = (ValueIdx *)e->u.e.l;
       InstType *it = new InstType (vx->t, 1);
-      it->MkArray (((Array *)e->u.e.r->u.e.r)->Clone());
+      //it->MkArray (((Array *)e->u.e.r->u.e.r)->Clone());
+      it->MkArray (((Array *)e->u.e.r->u.e.r)->Reduce());
       return it;
     }
     else {
