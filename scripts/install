@@ -39,7 +39,7 @@ if [ -r $src ]
 then
    if cmp -s $src $dest
    then
-        echo "[Unchanged $src]"
+        : # echo "[Unchanged $src]"
    else
         if [ -f $dest ]
         then

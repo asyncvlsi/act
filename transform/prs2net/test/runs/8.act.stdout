@@ -11,19 +11,19 @@
 *
 * --- node flags ---
 *
-* c (state-holding): pup_reff=0.2; pdn_reff=0.8
+* c (state-holding): pup_reff=0.4; pdn_reff=0.8
 *
 * --- end node flags ---
 *
-M0_ c a g_4vdd g_4vdd pch W=0.3U L=0.06U
-M1_ c b g_4vdd g_4vdd pch W=0.3U L=0.06U
-M2_ #fb6# c g_4vdd g_4vdd pch W=0.15U L=0.06U
-M3_keeper #7 g_4gnd g_4vdd g_4vdd pch W=0.12U L=0.33U
-M4_ #3 a g_4gnd g_4gnd nch W=0.15U L=0.06U
-M5_ #fb6# c g_4gnd g_4gnd nch W=0.15U L=0.06U
-M6_keeper #8 g_4vdd g_4gnd g_4gnd nch W=0.12U L=0.54U
-M7_ c b #3 g_4gnd nch W=0.15U L=0.06U
-M8_keeper c #fb6# #7 g_4vdd pch W=0.12U L=0.06U
-M9_keeper c #fb6# #8 g_4gnd nch W=0.12U L=0.06U
+M0_ #6 a g_4vdd g_4vdd pch W=0.3U L=0.06U
+M1_ #fb7# c g_4vdd g_4vdd pch W=0.15U L=0.06U
+M2_keeper #8 g_4gnd g_4vdd g_4vdd pch W=0.12U L=0.33U
+M3_ #3 a g_4gnd g_4gnd nch W=0.15U L=0.06U
+M4_ #fb7# c g_4gnd g_4gnd nch W=0.15U L=0.06U
+M5_keeper #9 g_4vdd g_4gnd g_4gnd nch W=0.12U L=1.14U
+M6_ c b #3 g_4gnd nch W=0.15U L=0.06U
+M7_ c b #6 g_4vdd pch W=0.3U L=0.06U
+M8_keeper c #fb7# #8 g_4vdd pch W=0.12U L=0.06U
+M9_keeper c #fb7# #9 g_4gnd nch W=0.12U L=0.06U
 .ends
 *---- end of process: foo<> -----

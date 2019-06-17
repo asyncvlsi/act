@@ -42,9 +42,12 @@ struct _listDATA_ {
 
 list_t *list_new (void);
 void list_append (list_t *, const void *);
+#define list_append_head(l,x) stack_push ((l), (x))
 int list_length (list_t *);
 const void *list_delete_tail (list_t *);
 void list_concat (list_t *main, list_t *x);
+list_t *list_dup (list_t *);
+
 
 /* in-place reversal */
 void list_reverse (list_t *);

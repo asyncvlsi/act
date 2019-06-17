@@ -1483,6 +1483,7 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
       }
       else {
+	Assert (p->u.one.arrow_type == 2, "???");
 	if (istree) {
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
@@ -1493,7 +1494,7 @@ static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_NORMAL);
 	create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
-			   p->u.one.e, VINF(v)->n, 1);
+			   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_CELEM | EDGE_NORMAL);
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);

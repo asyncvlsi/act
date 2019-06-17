@@ -51,6 +51,8 @@ heap_key_t heap_peek_minkey (Heap *H);
 void heap_save (Heap *H, FILE *fp, void (*save_element)(FILE *, void *value));
 Heap *heap_restore (FILE *fp, void *(*restore_element) (FILE *));
 
+#define heap_size(h) ((h)->sz)
+
 #ifdef __cplusplus
 }
 #endif

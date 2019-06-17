@@ -319,3 +319,16 @@ void list_concat (list_t *l, list_t *x)
   x->tl = NULL;
 }
   
+
+list_t *list_dup (list_t *l)
+{
+  list_t *tmp;
+  listitem_t *li;
+  if (!l) return NULL;
+  tmp = list_new ();
+  for (li = list_first (l); li; li = list_next (li)) {
+    list_append (tmp, list_value (li));
+  }
+  return tmp;
+}
+  
