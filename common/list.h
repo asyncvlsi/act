@@ -45,6 +45,7 @@ void list_append (list_t *, const void *);
 #define list_append_head(l,x) stack_push ((l), (x))
 int list_length (list_t *);
 const void *list_delete_tail (list_t *);
+void list_delete_next (list_t *l, listitem_t *li);
 void list_concat (list_t *main, list_t *x);
 list_t *list_dup (list_t *);
 

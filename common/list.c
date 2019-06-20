@@ -332,3 +332,26 @@ list_t *list_dup (list_t *l)
   return tmp;
 }
   
+void list_delete_next (list_t *l, listitem_t *li)
+{
+  if (!li) {
+    if (l->hd == l->tl) {
+      freeitem (l->hd);
+      l->hd = l->tl = NULL;
+    }
+    else {
+      li = l->hd->next;
+      freeitem (l->hd);
+      l->hd = li;
+    }
+  }
+  else {
+    listitem_t *tmp = li->next;
+    Assert (tmp, "What?");
+    li->next = tmp->next;
+    if (li->next == l->tl) {
+      l->tl = li;
+    }
+    freeitem (tmp);
+  }
+}
