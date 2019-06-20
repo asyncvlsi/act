@@ -2098,6 +2098,8 @@ void emit_parser (void)
     pp_printf_text (pp, "  file_setflags (l, FILE_FLAGS_ESCAPEID);");
     pp_nl;
   }
+  pp_printf_text (pp, "   file_setflags (l, FILE_FLAGS_PARSELINE|file_flags(l));");
+  pp_nl;
   if (found_expr) {
     pp_printf_text (pp, "  expr_init (l);");
     pp_nl;
