@@ -897,6 +897,7 @@ Arraystep::Arraystep (Array *a, Array *sub)
   base = a;
   if (sub) {
     subrange = sub->Clone ();
+    insubrange = subrange;
   }
   else {
     subrange = NULL;
@@ -946,18 +947,28 @@ void Arraystep::step()
   if (subrange) {
     /* ok, we need to do a step */
     for (int i = base->dims - 1; i >= 0; i--) {
-      if (subrange->r[i].u.ex.lo == subrange->r[i].u.ex.hi)
+      if (insubrange->r[i].u.ex.lo == insubrange->r[i].u.ex.hi)
 	continue;
       deref[i]++;
-      if (deref[i] <= subrange->r[i].u.ex.hi) {
+      if (deref[i] <= insubrange->r[i].u.ex.hi) {
 	/* we're done */
 	idx = base->Offset (deref);
 	return;
       }
-      deref[i] = subrange->r[i].u.ex.lo;
+      deref[i] = insubrange->r[i].u.ex.lo;
     }
-    idx = -1;
-    return;
+    if (!insubrange->next) {
+      idx = -1;
+      return;
+    }
+    else {
+      insubrange = insubrange->next;
+      for (int i=0; i < base->dims; i++) {
+	deref[i] = insubrange->r[i].u.ex.lo;
+      }
+      idx = base->Offset (deref);
+      return;
+    }
   }
 
   /*-- not a subrange --*/

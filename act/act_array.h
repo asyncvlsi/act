@@ -245,6 +245,7 @@ private:
   int *deref;
   Array *base;
   Array *subrange;		// subrange, if any
+  Array *insubrange;		// part of subrange walker
 };
 
 
