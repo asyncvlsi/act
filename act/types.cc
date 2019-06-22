@@ -1484,6 +1484,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   /*-- create ports --*/
   for (int i=0; i < nports; i++) {
     Assert (ux->AddPort (getPortType(i)->Expand (ns, ux->I), getPortName (i)), "What?");
+    ActId *tmp = new ActId (getPortName (i));
+    tmp->Canonical (ux->CurScope());
+    delete tmp;
   }
 
   /*-- XXX: create this, if necessary --*/
