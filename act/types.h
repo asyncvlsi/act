@@ -672,6 +672,14 @@ class TypeFactory {
    */
   static int isParamType (Type *t);
   static int isParamType (InstType *it);
+
+  /**
+   * Determines the bit-width of the type
+   * The type must be either a channel or a data type. If it isn't,
+   * the function returns -1
+   */
+  static int bitWidth (Type *t);
+  static int bitWidth (InstType *t);
 };
 
 

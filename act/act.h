@@ -105,6 +105,8 @@ class Act {
   */
   Process *findProcess (const char *s);
   Process *findProcess (ActNamespace *, const char *);
+  UserDef *findUserdef (const char *s);
+
   ActNamespace *findNamespace (const char *s);
   ActNamespace *findNamespace (ActNamespace *, const char *);
   ActNamespace *Global() { return gns; }

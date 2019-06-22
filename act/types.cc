@@ -263,6 +263,14 @@ int TypeFactory::isfunc (InstType *it)		\
   return TypeFactory::isfunc (it->BaseType());	\
 }
 
+#define XINSTMACRO(isfunc)			\
+int TypeFactory::isfunc (InstType *it)		\
+{						\
+ if (!it->isExpanded()) return -1;		\
+ return TypeFactory::isfunc (it->BaseType());	\
+}
+
+
 int TypeFactory::isUserType (Type *t)
 {
   UserDef *tmp_u = dynamic_cast<UserDef *>(t);
@@ -1943,3 +1951,45 @@ void Channel::copyMethods (Channel *c)
     emethods[i] = c->geteMethod ((datatype_methods)i);
   }
 }
+
+
+int TypeFactory::bitWidth (Type *t)
+{
+  {
+    Chan *tmp = dynamic_cast <Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->datatype();
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::bitWidth (x);
+    }
+  }
+  {
+    Channel *tmp = dynamic_cast <Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::bitWidth (tmp->getParent());
+    }
+  }
+  { 
+    Data *tmp = dynamic_cast<Data *>(t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::bitWidth (tmp->getParent());
+    }
+  }
+  {
+    Int *tmp = dynamic_cast<Int *>(t);
+    if (tmp) {
+      return tmp->w;
+    }
+  }
+  {
+    Bool *tmp = dynamic_cast<Bool *>(t);
+    if (tmp) {
+      return 1;
+    }
+  }
+  return -1;
+}
+XINSTMACRO(bitWidth)

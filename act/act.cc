@@ -358,6 +358,47 @@ void Act::Expand ()
 }
 
 
+UserDef *Act::findUserdef (const char *s)
+{
+  if (!s) return NULL;
+  
+  int i;
+  char *tmp = Strdup (s);
+  char *f = tmp;
+  ActNamespace *ns = gns;
+
+  i = 0;
+  while (tmp[i]) {
+    if (tmp[i] == ':') {
+      if (tmp[i+1] != ':') {
+	return NULL;
+      }
+      else {
+	tmp[i] = '\0';
+	if (i == 0) {
+	  ns = gns;
+	}
+	else {
+	  ns = ns->findNS (tmp);
+	}
+	if (!ns) {
+	  return NULL;
+	}
+	tmp = tmp + i + 2;
+	i = 0;
+      }
+    }
+    else {
+      i++;
+    }
+  }
+
+  UserDef *u = ns->findType (tmp);
+  FREE (f);
+  return u;
+}
+
+
 
 Process *Act::findProcess (const char *s)
 {
