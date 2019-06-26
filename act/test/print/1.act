@@ -1,0 +1,16 @@
+defproc foo (bool x, y)
+{
+  bool a[2], b[2];
+  
+  prs {
+    (i:2: a[i] => b[i]-)
+  }
+  x = a[0];
+  y = b[1];
+}
+
+foo f;
+
+bool w;
+
+w = f.x;

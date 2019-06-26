@@ -1,0 +1,23 @@
+defproc foo (bool x; bool y)
+{
+
+/* instances */
+bool b[2];
+bool a[2];
+
+/* connections */
+y=b[1];
+x=a[0];
+prs {
+a[0] => b[0]-
+a[1] => b[1]-
+}
+}
+
+
+/* instances */
+bool w;
+foo f;
+
+/* connections */
+w=f.x;
