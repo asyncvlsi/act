@@ -901,10 +901,7 @@ UserDef::UserDef (ActNamespace *ns)
 
   b = NULL;
 
-  lang.prs = NULL;
-  lang.chp = NULL;
-  lang.hse = NULL;
-  lang.spec = NULL;
+  lang = new act_languages ();
 
   I = new Scope(ns->CurScope());
   I->setUserDef (this);
@@ -970,10 +967,8 @@ void UserDef::MkCopy (UserDef *u)
   _ns = u->_ns; u->_ns = NULL;
 
   lang = u->lang;
-  u->lang.prs = NULL;
-  u->lang.chp = NULL;
-  u->lang.hse = NULL;
-  u->lang.spec = NULL;
+
+  u->lang = new act_languages ();
 }
 
 
@@ -1076,8 +1071,10 @@ Channel::Channel (UserDef *u) : UserDef (*u)
   /* copy over userdef */
   b = NULL;
 
-  for (i=0; i < 6; i++) {
+  for (i=0; i < 4; i++) {
     methods[i] = NULL;
+  }
+  for (i=0; i < 2; i++) {
     emethods[i] = NULL;
   }
   MkCopy (u);
@@ -1593,8 +1590,10 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (ns->EditType (xc->name, xc) == 1, "What?");
 
-  for (i=0; i < 6; i++) {
+  for (i=0; i < 4; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
+  }
+  for (i=0; i < 2; i++) {
     xc->emethods[i] = expr_expand (emethods[i], ns, xc->CurScope(), 0);
   }
 
@@ -1813,32 +1812,49 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
     fprintf (fp, "%s ", getName());
   }
 
+  int skip_ports = 0;
+
   if (parent) {
     fprintf (fp, "<: ");
-    parent->Print (fp);
+    if (!expanded) {
+      parent->Print (fp);
+    }
+    else {
+      parent->sPrint (buf, 10240, 1);
+      if (!TypeFactory::isUserType (parent)) {
+	fprintf (fp, "%s", buf);
+      }
+      else {
+	ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	
+	skip_ports = dynamic_cast<UserDef *>(parent->BaseType())->getNumPorts();
+      }
+    }
     fprintf (fp, " ");
   }
 
   n = getNumPorts ();
   fprintf (fp, "(");
-  for (int i=0; i < n; i++) {
-    InstType *it = getPortType (i);
-    Array *a = it->arrayInfo();
-    it->clrArray ();
-    if (it->isExpanded()) {
-      it->sPrint (buf, 10240, 1);
-      ActNamespace::Act()->mfprintf (fp, "%s", buf);
-    }
-    else {
-      it->Print (fp);
-    }
-    fprintf (fp, " %s", getPortName (i));
-    if (a) {
-      a->Print (fp);
-    }
-    it->MkArray (a);
-    if (i != n-1) {
-      fprintf (fp, "; ");
+  if (skip_ports < n) {
+    for (int i=skip_ports; i < n; i++) {
+      InstType *it = getPortType (i);
+      Array *a = it->arrayInfo();
+      it->clrArray ();
+      if (it->isExpanded()) {
+	it->sPrint (buf, 10240, 1);
+	ActNamespace::Act()->mfprintf (fp, "%s", buf);
+      }
+      else {
+	it->Print (fp);
+      }
+      fprintf (fp, " %s", getPortName (i));
+      if (a) {
+	a->Print (fp);
+      }
+      it->MkArray (a);
+      if (i != n-1) {
+	fprintf (fp, "; ");
+      }
     }
   }
   fprintf (fp, ")\n");
@@ -1886,6 +1902,11 @@ void Process::Print (FILE *fp)
   else {
     CurScope()->Print (fp);
   }
+
+  /* print language bodies */
+  lang->Print (fp);
+
+  
   fprintf (fp, "}\n\n");
 }
 
@@ -1904,6 +1925,60 @@ void Channel::Print (FILE *fp)
   else {
     CurScope()->Print (fp);
   }
+
+  lang->Print (fp);
+
+  int firstmeth = 1;
+
+#define EMIT_METHOD_HEADER(id)			\
+  do {						\
+    if (methods[id]) {				\
+      if (firstmeth) {				\
+	fprintf (fp, "  methods {\n");		\
+      }						\
+      firstmeth = 0;				\
+    }						\
+  } while (0)
+
+#define EMIT_METHOD_EXPRHEADER(id)		\
+  do {						\
+    if (emethods[id]) {				\
+      if (firstmeth) {				\
+	fprintf (fp, "  methods {\n");		\
+      }						\
+      firstmeth = 0;				\
+    }						\
+  } while (0)
+
+#define EMIT_METHOD(id,name)			\
+  do {						\
+    EMIT_METHOD_HEADER(id);			\
+    if (methods[id]) {				\
+      fprintf (fp, "  %s {\n", name);		\
+      chp_print (fp, methods[id]);		\
+      fprintf (fp, "}\n");			\
+    }						\
+  } while (0)
+
+#define EMIT_METHODEXPR(id,name)		\
+  do {						\
+    EMIT_METHOD_EXPRHEADER(id);			\
+    if (emethods[id]) {				\
+      fprintf (fp, "  %s =", name);		\
+      print_expr (fp, emethods[id]);		\
+      fprintf (fp, ";\n");			\
+    }						\
+  } while (0)
+
+  EMIT_METHOD(ACT_METHOD_SET, "set");
+  EMIT_METHOD(ACT_METHOD_GET, "get");
+  EMIT_METHOD(ACT_METHOD_SEND_REST, "send_rest");
+  EMIT_METHOD(ACT_METHOD_RECV_REST, "recv_rest");
+  EMIT_METHODEXPR (ACT_METHOD_SEND_PROBE, "send_probe");
+  EMIT_METHODEXPR (ACT_METHOD_RECV_PROBE, "recv_probe");
+  if (!firstmeth) {
+    fprintf (fp, "}\n");
+  }
   fprintf (fp, "}\n\n");
 }
 
@@ -1921,6 +1996,17 @@ void Data::Print (FILE *fp)
   }
   else {
     CurScope()->Print (fp);
+  }
+  
+  lang->Print (fp);
+
+  int firstmeth = 1;
+
+  EMIT_METHOD(ACT_METHOD_SET, "set");
+  EMIT_METHOD(ACT_METHOD_GET, "get");
+
+  if (!firstmeth) {
+    fprintf (fp, " }\n");
   }
   fprintf (fp, "}\n\n");
 }
@@ -1946,8 +2032,10 @@ void Data::copyMethods (Data *d)
 
 void Channel::copyMethods (Channel *c)
 {
-  for (int i=0; i < 6; i++) {
+  for (int i=0; i < 4; i++) {
     methods[i] = c->getMethod ((datatype_methods)i);
+  }
+  for (int i=0; i < 2; i++) {
     emethods[i] = c->geteMethod ((datatype_methods)i);
   }
 }
@@ -1993,3 +2081,15 @@ int TypeFactory::bitWidth (Type *t)
   return -1;
 }
 XINSTMACRO(bitWidth)
+
+
+act_prs *UserDef::getprs ()
+{
+  return lang->getprs();
+}
+
+act_spec *UserDef::getspec ()
+{
+  return lang->getspec();
+}
+

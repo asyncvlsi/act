@@ -462,7 +462,7 @@ static ActId *_process_id (ActTree *a, ActId *id)
 
   id = act_walk_X_expr_id (a, (pId *)id);
 
-  if (id->Rest() == NULL && id->arrayInfo() == NULL &
+  if ((id->Rest() == NULL) && (id->arrayInfo() == NULL) &&
       ((strcmp (id->getName(), "true") == 0) ||
        (strcmp (id->getName(), "false") == 0))) {
     return id;

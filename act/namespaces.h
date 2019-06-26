@@ -42,7 +42,10 @@ class ActNamespaceiter;
 class ActTypeiter;
 struct ValueIdx;
 class act_connection;
-
+class act_languages;
+struct act_chp;
+struct act_prs;
+struct act_spec;
 
 class Scope {
  public:
@@ -341,20 +344,10 @@ class ActNamespace {
   void setBody (ActBody *b) { B = b; }
   void AppendBody (ActBody *b);
 
-  void setprs (struct act_prs *p) { lang.prs = p; }
-  struct act_prs *getprs() { return lang.prs; }
-  
-  void sethse (struct act_chp *c) { lang.hse = c; }
-  struct act_chp *gethse() { return lang.hse; }
-  
-  void setchp (struct act_chp *c) { lang.chp = c; }
-  struct act_chp *getchp() { return lang.chp; }
+  act_languages *lang;
 
-  void setspec (struct act_spec *s) { lang.spec = s; }
-  struct act_spec *getspec() { return lang.spec; }
-
-  void setrefine (struct act_refine *r) { lang.refine = r; }
-  struct act_refine *getrefine() { return lang.refine; }
+  act_prs *getprs ();
+  act_spec *getspec ();
 
  private:
   /**
@@ -385,13 +378,6 @@ class ActNamespace {
    */
   ActBody *B;
 
-  struct {
-    struct act_prs *prs;
-    struct act_chp *chp, *hse;
-    struct act_spec *spec;
-    struct act_refine *refine;
-  } lang;
-  
   /**
    * if the namespace is nested, this is a pointer to the parent.
    */

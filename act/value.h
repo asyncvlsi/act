@@ -25,9 +25,7 @@
 #define __ACT_VALUE_H__
 
 
-class ActNamespace;
 class InstType;
-class ActId;
 struct ValueIdx;
 struct act_attr;
 

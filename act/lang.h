@@ -218,17 +218,56 @@ struct act_refine {
   ActBody *b;
 };
 
+void prs_print (FILE *, act_prs *);
+void chp_print (FILE *, act_chp *);
+void chp_print (FILE *fp, act_chp_lang_t *c);
+void hse_print (FILE *, act_chp *);
+void spec_print (FILE *, act_spec *);
+
+
+class act_languages {
+public:
+  act_languages () {
+    prs = NULL;
+    chp = NULL;
+    hse = NULL;
+    spec = NULL;
+    refine = NULL;
+  }
+  void Print (FILE *fp) {
+    if (chp) { chp_print (fp, chp); }
+    if (hse) { hse_print (fp, hse); }
+    if (prs) { prs_print (fp, prs); }
+    if (spec) { spec_print (fp, spec); }
+    if (refine) { }
+  }
+
+  act_chp *getchp () { return chp; }
+  void setchp (act_chp *x) { chp = x; }
+
+  act_chp *gethse () { return hse; }
+  void sethse (act_chp *x) { hse = x; }
+
+  act_prs *getprs () { return prs; }
+  void setprs (act_prs *x) { prs = x; }
+
+  act_spec *getspec () { return spec; }
+  void setspec (act_spec *x) { spec = x; }
+
+ private:
+  act_chp *chp, *hse;
+  act_prs *prs;
+  act_spec *spec;
+  act_refine *refine;
+};
+
+
 class ActNamespace;
 class Scope;
 
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
-
-void prs_print (FILE *, act_prs *);
-void chp_print (FILE *, act_chp *);
-void hse_print (FILE *, act_chp *);
-void spec_print (FILE *, act_spec *);
 
 const char *act_spec_string (int type);
 const char *act_dev_value_to_string (int);

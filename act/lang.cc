@@ -1182,8 +1182,10 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 	else {
 	  print_expr (fp, gc->g);
 	}
-	fprintf (fp, " -> ");
-	chp_print (fp, gc->s);
+	if (gc->s) {
+	  fprintf (fp, " -> ");
+	  chp_print (fp, gc->s);
+	}
 	if (gc->next) {
 	  fprintf (fp, " [] ");
 	}

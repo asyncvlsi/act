@@ -289,21 +289,13 @@ class UserDef : public Type {
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit);
 
   /* append in the case of multiple bodies! */
-  void setprs (act_prs *p) { lang.prs = p; }
-  act_prs *getprs () { return lang.prs; }
-  
-  void sethse (act_chp *c) { lang.hse = c; }
-  act_chp *gethse() { return lang.hse; }
-  
-  void setchp (act_chp *c) { lang.chp = c; }
-  act_chp *getchp() { return lang.chp; }
-
-  void setspec (act_spec *s) { lang.spec = s; }
-  act_spec *getspec() { return lang.spec; }
 
   ActNamespace *getns() { return _ns; }
-
   InstType *root();
+
+  act_languages *lang;
+  act_prs *getprs ();
+  act_spec *getspec ();
 
  protected:
   InstType *parent;		/**< implementation relationship, if any */
@@ -332,12 +324,6 @@ class UserDef : public Type {
   ActBody *b;			/**< body of user-defined type */
   ActNamespace *_ns;		/**< namespace within which this type is defined */
 
-  /* languages */
-  struct {
-    act_prs *prs;
-    act_chp *hse, *chp;
-    act_spec *spec;
-  } lang;
 };
 
 /**
@@ -386,8 +372,8 @@ enum datatype_methods {
     ACT_METHOD_GET = 1,
     ACT_METHOD_SEND_REST = 2,
     ACT_METHOD_RECV_REST = 3,
-    ACT_METHOD_SEND_PROBE = 4,
-    ACT_METHOD_RECV_PROBE = 5
+    ACT_METHOD_SEND_PROBE = 0,
+    ACT_METHOD_RECV_PROBE = 1
 };
 
 /**
@@ -435,7 +421,7 @@ class Channel : public UserDef {
   
  private:
   struct act_chp_lang *methods[6];
-  Expr *emethods[6];
+  Expr *emethods[2];
 };
 
 class TypeFactory {

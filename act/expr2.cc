@@ -115,7 +115,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PREC_END (10);
     break;
     
-  case E_NOT: EMIT_UNOP(10, "!"); break;
+  case E_NOT: EMIT_UNOP(10, "~"); break;
   case E_COMPLEMENT: EMIT_UNOP(10, "~"); break;
   case E_UMINUS: EMIT_UNOP(10, "-"); break;
 
@@ -251,6 +251,11 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
       delete as;
     }
     break;
+
+  case E_SELF:
+    snprintf (buf+k, sz, "self");
+    PRINT_STEP;
+    return;
 
   case E_FUNCTION:
   case E_BITFIELD:

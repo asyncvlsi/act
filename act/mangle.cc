@@ -211,8 +211,16 @@ void Act::mfprintf (FILE *fp, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+#if 0
+    /* XXX: This is a problem.
+       In particular, foo<8>
+       Will get mangled to foo_38_7
+       Mangling foo_38_7 will result in foo_38_7
+       So this is not a unique invertible mapping!
+    */
     fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
+#endif    
   }
   
   fprintf (fp, "%s", buf2);
@@ -273,8 +281,16 @@ void Act::ufprintf (FILE *fp, const char *s, ...)
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
   Assert (mangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+#if 0
+    /* XXX: This is a problem.
+       In particular, foo<8>
+       Will get mangled to foo_38_7
+       Mangling foo_38_7 will result in foo_38_7
+       So this is not a unique invertible mapping!
+    */
     fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
+#endif    
   }
   
   fprintf (fp, "%s", buf2);
@@ -303,8 +319,10 @@ int Act::usnprintf (char *fp, int len, const char *s, ...)
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
   Assert (mangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+#if 0    
     fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
+#endif    
   }
   
   return snprintf (fp, len, "%s", buf2);

@@ -87,11 +87,7 @@ void ActNamespace::_init (ActNamespace *ns, const char *s)
   }
   B = NULL;
   exported = 0;
-  lang.chp = NULL;
-  lang.hse = NULL;
-  lang.prs = NULL;
-  lang.spec = NULL;
-  lang.refine = NULL;
+  lang = new act_languages ();
 }
 
 void ActNamespace::AppendBody (ActBody *b)
@@ -486,20 +482,17 @@ void ActNamespace::Print (FILE *fp)
   }
   else {
     /* languages */
-    if (lang.prs) {
-      prs_print (fp, lang.prs);
-    }
-    if (lang.chp) {
-      chp_print (fp, lang.chp);
-    }
-    if (lang.hse) {
-      hse_print (fp, lang.hse);
-    }
-    if (lang.spec) {
-      spec_print (fp, lang.spec);
-    }
+    lang->Print (fp);
   }
 }
 
 
+act_prs *ActNamespace::getprs ()
+{
+  return lang->getprs();
+}
 
+act_spec *ActNamespace::getspec()
+{
+  return lang->getspec();
+}

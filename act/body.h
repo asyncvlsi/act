@@ -355,6 +355,8 @@ private:
 
 struct act_prs;
 struct act_chp;
+struct act_refine;
+struct act_spec;
 
 /*
  * Language body

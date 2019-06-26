@@ -1158,25 +1158,25 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     ux = s->getUserDef();
     if (!ux) {
       /* better be the global namespace */
-      if ((old = ActNamespace::Global()->getprs())) {
+      if ((old = ActNamespace::Global()->lang->getprs())) {
 	while (old->next) {
 	  old = old->next;
 	}
 	old->next = p;
       }
       else {
-	ActNamespace::Global()->setprs (p);
+	ActNamespace::Global()->lang->setprs (p);
       }
     }
     else {
-      if ((old = ux->getprs())) {
+      if ((old = ux->lang->getprs())) {
 	while (old->next) {
 	  old = old->next;
 	}
 	old->next = p;
       }
       else {
-	ux->setprs (p);
+	ux->lang->setprs (p);
       }
     }
     break;
@@ -1185,10 +1185,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
-      ActNamespace::Global()->setchp (c);
+      ActNamespace::Global()->lang->setchp (c);
     }
     else {
-      ux->setchp (c);
+      ux->lang->setchp (c);
     }
     break;
     
@@ -1196,10 +1196,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
-      ActNamespace::Global()->sethse (c);
+      ActNamespace::Global()->lang->sethse (c);
     }
     else {
-      ux->sethse (c);
+      ux->lang->sethse (c);
     }
     break;
 
@@ -1207,10 +1207,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     spec = spec_expand ((act_spec *)lang, ns, s);
     ux = s->getUserDef ();
     if (!ux) {
-      ActNamespace::Global()->setspec (spec);
+      ActNamespace::Global()->lang->setspec (spec);
     }
     else {
-      ux->setspec (spec);
+      ux->lang->setspec (spec);
     }
     break;
 
