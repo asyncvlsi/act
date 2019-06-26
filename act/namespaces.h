@@ -353,6 +353,9 @@ class ActNamespace {
   void setspec (struct act_spec *s) { lang.spec = s; }
   struct act_spec *getspec() { return lang.spec; }
 
+  void setrefine (struct act_refine *r) { lang.refine = r; }
+  struct act_refine *getrefine() { return lang.refine; }
+
  private:
   /**
    * hash table entry for this namespace
@@ -386,6 +389,7 @@ class ActNamespace {
     struct act_prs *prs;
     struct act_chp *chp, *hse;
     struct act_spec *spec;
+    struct act_refine *refine;
   } lang;
   
   /**

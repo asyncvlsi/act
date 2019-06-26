@@ -42,6 +42,10 @@ language_body[ActBody *]: lang_chp
 {{X:
     return $1;
 }}
+| lang_refine
+{{X:
+    return $1;
+}}
 | lang_size 
 ;
 
@@ -1153,4 +1157,48 @@ strength_directive: bool_expr_id dir "->" wint_expr
 ;
 
 size_body: { strength_directive ";" }*
+;
+
+lang_refine[ActBody *]: "refine" "{"
+refine_body "}"
+{{X:
+    act_refine *r;
+    ActBody *b;
+    NEW (r, act_refine);
+    r->b = $3;
+
+    b = new ActBody_Lang (r);
+    return b;
+}}
+;
+
+refine_body[ActBody *]: refine_item refine_body
+{{X:
+    if ($1 == NULL) {
+      return $2;
+    }
+    if ($2 == NULL) {
+      return $1;
+    }
+    $1->Append ($2);
+    return $1;
+}}
+| refine_item
+{{X:
+    return $1;
+}}
+;
+
+refine_item[ActBody *]: instance
+{{X:
+    return $1;
+}}
+| connection
+{{X:
+    return $1;
+}}
+| alias
+{{X:
+    return $1;
+}}
 ;

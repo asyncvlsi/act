@@ -1213,6 +1213,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
       ux->setspec (spec);
     }
     break;
+
+  case ActBody_Lang::LANG_REFINE:
+    /* don't do anything right now! */
+    break;
     
   default:
     fatal_error ("Unknown language");

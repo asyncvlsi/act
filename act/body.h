@@ -367,9 +367,11 @@ class ActBody_Lang : public ActBody {
     LANG_CHP,
     LANG_HSE,
     LANG_SPEC,
+    LANG_REFINE,
 
     LANG_SIZE,
-    LANG_SPICE
+    LANG_SPICE,
+    LANG_VERILOG
   };
 
   ActBody_Lang (act_prs *p) {
@@ -394,6 +396,11 @@ class ActBody_Lang : public ActBody {
   ActBody_Lang (enum langtype _t, void *l) {
     t = _t;
     lang = l;
+  }
+
+  ActBody_Lang (act_refine *r) {
+    t = LANG_REFINE;
+    lang = r;
   }
 
   void Expand (ActNamespace *, Scope *);

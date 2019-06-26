@@ -193,7 +193,6 @@ typedef struct act_func_arguments {
     Expr *e;
   } u;
 } act_func_arguments_t;
-  
 
 struct act_chp {
   ActId *vdd, *gnd, *psc, *nsc;
@@ -211,6 +210,12 @@ struct act_spec {
 		   0x04 : 1 = ?, 0 = nothing
 	       */
   struct act_spec *next;
+};
+
+class ActBody;
+
+struct act_refine {
+  ActBody *b;
 };
 
 class ActNamespace;
