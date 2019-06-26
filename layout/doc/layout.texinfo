@@ -318,7 +318,7 @@ ntype). The order of entries in this table corresponds to the order in
 the @code{ntype}/@code{ptype} table.
 @item @code{polyspacing}: spacing to polysilicon
 @item @code{notchspacing}: if the diffusion has a notch, the spacing
-between the two sides of the (U-shaped) notch
+between the vertical edge of the notch and the edge of the polysilicon
 @item @code{overhang}: a range table that specifies the diffusion overhang
 depending on the width of the transistor (i.e. polysilicon) it
 overhangs. This is used for drawing the end of a transistor stack
