@@ -1012,7 +1012,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
       Assert (it2, "Hmm");
     }
     Type *t = it1->isRelated (it2);
-    if (t != it1->BaseType()) {
+    if ((t != it1->BaseType()) && (!t || !t->isEqual (it1->BaseType()))) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);
       fprintf (stderr, "\tType 1: ");

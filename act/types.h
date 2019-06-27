@@ -47,6 +47,7 @@ class PInt : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
 };
 
 class PInts : public Type {
@@ -54,6 +55,7 @@ class PInts : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
 };
 
 class PBool : public Type { 
@@ -61,6 +63,7 @@ class PBool : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
 };
 
 class PReal : public Type {
@@ -68,6 +71,7 @@ class PReal : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
 };
 
 class PType : public Type {
@@ -76,7 +80,10 @@ public:
   PType *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   PType() { i = NULL; name = NULL; };
-  
+
+  /* wrong */
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
+
 private:
   InstType *i;			// when it is expanded
   const char *name;
@@ -89,11 +96,14 @@ class Bool : public Type {
   Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
     return this;
   }
+  int isEqual (Type *t) { return t == this ? 1 : 0; }
 };
 
 class Int : public Type {
   const char *getName();
   Int *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  
+  int isEqual (Type *t);
   
   unsigned int kind:2;		// 0 = unsigned, 1 = signed, 2 = enum
   int w;
@@ -109,6 +119,8 @@ class Chan : public Type {
   const char *getName ();
   Chan *Expand (ActNamespace *ns, Scope *s, int, inst_param *);
 
+  int isEqual (Type *t);
+  
   /* type info here */
   const char *name;
   InstType *p;			// data type for expanded channel
@@ -203,6 +215,8 @@ class UserDef : public Type {
   InstType *getPortType (int pos);
 
   const char *getName (); /**< the name of the user-defined type */
+
+  int isEqual (Type *t);
 
   /**
    * Set the name of the type

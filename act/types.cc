@@ -2093,3 +2093,32 @@ act_spec *UserDef::getspec ()
   return lang->getspec();
 }
 
+int UserDef::isEqual (Type *t)
+{
+  UserDef *u;
+  u = dynamic_cast<UserDef *>(t);
+  if (!u) return 0;
+  if (u == this) return 1;
+  return 0;
+}
+
+int Int::isEqual (Type *t)
+{
+  Int *x = dynamic_cast<Int *>(t);
+  if (!x) return 0;
+  if (x->kind == kind && x->w == w) return 1;
+  return 0;
+}
+  
+int Chan::isEqual (Type *t)
+{
+  Chan *x = dynamic_cast<Chan *>(t);
+  if (!x) return 0;
+  if (x == this) return 1;
+  if (!p && !x->p) return 1;
+  if (!p || !x->p) return 0;
+  if (p->isEqual (x->p)) return 1;
+  return 0;
+}
+
+

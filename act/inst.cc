@@ -277,6 +277,7 @@ Type *InstType::isRelated (InstType *it)
   Type *retval;
   
   if (t == it->t) return t;
+  if (t->isEqual (it->t)) return t;
 
 #if 0
     printf (" -- In the subtype check.\n");
@@ -306,7 +307,7 @@ Type *InstType::isRelated (InstType *it)
       pit->Print (stdout);
       printf ("\n");
 #endif
-      if (pit->t == t2)
+      if (pit->t == t2 || pit->t->isEqual (t2))
 	break;
       if (TypeFactory::isUserType (pit)) {
 	u = dynamic_cast<UserDef *>(pit->t);
@@ -335,7 +336,7 @@ Type *InstType::isRelated (InstType *it)
 	  pit->Print (stdout);
 	  printf ("\n");
 #endif
-	  if (pit->t == t1)
+	  if (pit->t == t1 || pit->t->isEqual (t1))
 	    break;
 	  if (TypeFactory::isUserType (pit)) {
 	    u = dynamic_cast<UserDef *>(pit->t);
@@ -379,7 +380,10 @@ Type *InstType::isConnectable (InstType *it, int weak)
 
   /* Even if the base types are not the same,
      they might be connectable because they have a common root */
-  if (t != it->t) {
+
+  /* EVENTUALLY insttype pointers will be unique, and so this
+     will work! */
+  if (t != it->t && !t->isEqual (it->t)) {
     subtype = 1;
     retval = isRelated (it);
     if (!retval) return NULL;

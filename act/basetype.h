@@ -48,6 +48,11 @@ class Type {
   virtual Type *Expand (ActNamespace *, Scope *, int, inst_param *) = 0;
 
   /**
+   * @return the result of comparing two types
+   */
+  virtual int isEqual (Type *t) = 0;
+
+  /**
    * Initialize static members. This also calls the static functions
    * for the TypeFactory
    */
