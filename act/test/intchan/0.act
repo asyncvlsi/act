@@ -1,0 +1,12 @@
+defproc test (chan(bool) x, y)
+{
+   bool p, q;
+   chan(bool) ww;
+
+   prs { 
+     p => q-
+   }
+   x = y;
+}   
+
+test t;
