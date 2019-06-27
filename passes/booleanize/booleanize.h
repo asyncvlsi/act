@@ -36,6 +36,11 @@ typedef struct act_booleanized_var {
   unsigned int output:1;	/* set to 1 to force it to be an
 				   output */
   unsigned int used:1;		/* used flags */
+  unsigned int ischan:1;	/* for built-in channel variables that
+				   have not been turned into bools! */
+  unsigned int isint:1;		/* for built-in int variables that
+				   have not been turned into bools! */
+  unsigned int width;		/* bit-width for chan/int */
   void *extra;			/* space for rent */
 } act_booleanized_var_t;
 

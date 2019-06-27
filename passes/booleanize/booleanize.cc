@@ -44,6 +44,8 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   NEW (v, act_booleanized_var_t);
   v->id = c;
   v->used = 1;
+  v->ischan = 0;
+  v->isint = 0;
   v->input = 0;
   v->output = 0;
   v->extra = NULL;
@@ -210,6 +212,10 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
   act_prs *p; 
   act_boolean_netlist_t *N;
   Scope *cur;
+
+  /* 
+     XXX: Need to add: chp, hse
+  */
 
   if (proc) {
     p = proc->getprs();
@@ -421,7 +427,6 @@ static void append_bool_port (act_boolean_netlist_t *n, act_connection *c)
 }
 
 
-
 static void flatten_ports_to_bools (act_boolean_netlist_t *n, ActId *prefix,
 				    Scope *s, UserDef *u)
 {
@@ -472,7 +477,8 @@ static void flatten_ports_to_bools (act_boolean_netlist_t *n, ActId *prefix,
 				dynamic_cast<UserDef *>(it->BaseType ()));
       }
     }
-    else if (TypeFactory::isBoolType (it)) {
+    else if (TypeFactory::isBoolType (it) || TypeFactory::isChanType (it) ||
+	     TypeFactory::isIntType (it)) {
       /* now check! */
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
@@ -552,8 +558,8 @@ static void rec_update_used_flags (act_boolean_netlist_t *n,
 
       }
     }
-    else if (TypeFactory::isBoolType (it)) {
-      
+    else if (TypeFactory::isBoolType (it) || TypeFactory::isChanType (it) ||
+	     TypeFactory::isIntType (it)) {
       /* now check! */
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
