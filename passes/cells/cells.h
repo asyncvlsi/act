@@ -35,7 +35,7 @@
 
 struct act_varinfo {
   int nup, ndn;			// # of times in up and down guards
-  int *depths;			// depth of each instance (nup + ndn
+  int *depths;			// depth of each instance (nup + ndn)
   int cup, cdn;
 				// size), 0..nup-1 followed by ndn
   unsigned char tree;		// 0 = not in tree, 1 in tree
@@ -55,6 +55,7 @@ struct act_prsinfo {
   int nat;                     /* # of labels */
 
   /* variable attributes */
+  int *attr_map;
   A_DECL (struct act_varinfo, attrib);
 
   int tval;			 /* for tree<>; -1 = none, 0 = mgn,
