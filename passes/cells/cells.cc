@@ -396,6 +396,7 @@ static act_prs_expr_t *_copy_rule (act_prs_expr_t *e)
 
   case ACT_PRS_EXPR_VAR:
     ret->u.v = e->u.v;
+    ret->u.v.sz = NULL;
     break;
 
   case ACT_PRS_EXPR_LABEL:
