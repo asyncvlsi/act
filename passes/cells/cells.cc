@@ -1304,7 +1304,7 @@ static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
       /* found match! */
     }
     else {
-#if 1      
+#if 0
       _dump_prsinfo (pi);
 #endif      
       b = chash_add (cell_table, pi);
@@ -1812,6 +1812,9 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
     cell_table->print = NULL;
 
     a->aux_add ("prs2cells", cell_table);
+  }
+  else {
+    return;
   }
     
   visited_procs = new std::set<Process *> ();

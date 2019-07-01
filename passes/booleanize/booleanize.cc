@@ -681,6 +681,7 @@ void act_booleanize_netlist (Act *a, Process *p)
 
   tmp = (std::map<Process *, act_boolean_netlist_t *> *) a->aux_find ("booleanize");
   if (tmp) {
+    return;
     delete tmp;
   }
   netmap = new std::map<Process *, act_boolean_netlist_t *>();
