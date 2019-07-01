@@ -134,4 +134,6 @@ private:
   
 };
 
+Expr *const_expr (int);
+
 #endif /* __ACT_H__ */

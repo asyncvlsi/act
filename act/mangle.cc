@@ -249,8 +249,10 @@ int Act::msnprintf (char *fp, int len, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
+#if 0
     fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
+#endif
   }
   
   return snprintf (fp, len, "%s", buf2);

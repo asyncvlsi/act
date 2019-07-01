@@ -49,13 +49,17 @@ static char *initialize_parameters (int *argc, char ***argv)
 {
   char *proc_name;
   int ch;
+  int black_box = 0;
   
   proc_name = NULL;
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "p:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "Bp:")) != -1) {
     switch (ch) {
+    case 'B':
+      black_box = 1;
+      break;
     case 'p':
       if (proc_name) {
 	FREE (proc_name);
@@ -87,6 +91,10 @@ static char *initialize_parameters (int *argc, char ***argv)
   *argc = 2;
   (*argv)[1] = (*argv)[optind];
   (*argv)[2] = NULL;
+
+  if (black_box) {
+    config_set_int ("net.black_box_mode", 1);
+  }
 
   return proc_name;
 }
