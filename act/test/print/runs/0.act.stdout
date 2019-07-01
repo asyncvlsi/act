@@ -1,4 +1,5 @@
 
+
 /* instances */
 bool x[5];
 bool x[7..8];

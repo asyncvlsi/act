@@ -1,3 +1,5 @@
+defproc foo (bool x; bool y);
+
 defproc foo (bool x; bool y)
 {
 
