@@ -171,7 +171,7 @@ static int  _mysort (const void **a, const void **b,
   while (i < sz/2 || j < (sz-sz/2)) {
     if (i < sz/2) {
       if (j < (sz-sz/2)) {
-	if ((*cmpfn) (x[i], y[j]) < 0) {
+	if ((*cmpfn) (x[i], y[j]) <= 0) {
 	  z[i+j] = x[i];
 	  i++;
 	}

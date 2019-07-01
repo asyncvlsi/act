@@ -1857,7 +1857,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       }
     }
   }
-  fprintf (fp, ")\n");
+  fprintf (fp, ")");
 }
 
 
@@ -1889,8 +1889,13 @@ InstType *UserDef::root ()
  */
 void Process::Print (FILE *fp)
 {
-  PrintHeader (fp, "defproc");
-  fprintf (fp, "{\n");
+  if (isCell()) {
+    PrintHeader (fp, "defcell");
+  }
+  else {
+    PrintHeader (fp, "defproc");
+  }
+  fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */
     ActBody *bi;
@@ -1913,7 +1918,7 @@ void Process::Print (FILE *fp)
 void Channel::Print (FILE *fp)
 {
   PrintHeader (fp, "defchan");
-  fprintf (fp, "{\n");
+  fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */
     ActBody *bi;
@@ -1985,7 +1990,7 @@ void Channel::Print (FILE *fp)
 void Data::Print (FILE *fp)
 {
   PrintHeader (fp, "defdata");
-  fprintf (fp, "{\n");
+  fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */
     ActBody *bi;

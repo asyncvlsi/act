@@ -462,8 +462,34 @@ void ActNamespace::Print (FILE *fp)
     n->Print (fp);
   }
 
-  /* print types */
+  /* print type declarations  */
   ActTypeiter it(this);
+  for (it = it.begin(); it != it.end(); it++) {
+    Type *t = *it;
+    UserDef *u = dynamic_cast<UserDef *>(t);
+    Assert (u, "Hmm...");
+    /* print type! */
+    if (CurScope()->isExpanded() == u->isExpanded()) {
+      if (TypeFactory::isProcessType (t)) {
+	Process *p = dynamic_cast<Process *>(t);
+	if (p->isCell()) {
+	  u->PrintHeader (fp, "defcell");
+	}
+	else {
+	  u->PrintHeader (fp, "defproc");
+	}
+      }
+      else if (TypeFactory::isDataType (t)) {
+	u->PrintHeader (fp, "deftype");
+      }
+      else if (TypeFactory::isChanType (t)) {
+	u->PrintHeader (fp, "defchan");
+      }
+      fprintf (fp, ";\n");
+    }
+  }
+  fprintf (fp, "\n");
+  /* print types */
   for (it = it.begin(); it != it.end(); it++) {
     Type *t = *it;
     UserDef *u = dynamic_cast<UserDef *>(t);
@@ -473,6 +499,7 @@ void ActNamespace::Print (FILE *fp)
       u->Print (fp);
     }
   }
+  
 
   /* print instances */
   CurScope()->Print (fp);
