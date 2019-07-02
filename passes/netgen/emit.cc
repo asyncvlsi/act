@@ -78,7 +78,16 @@ static void special_emit_procname (Act *a, FILE *fp, Process *p)
 {
   const char *x = p->getName ();
   int len;
+  char buf[10240];
+  ActNamespace *ns;
 
+  ns = p->getns();
+
+  if (ns && ns != ActNamespace::Global()) {
+    char *s = ns->Name();
+    a->mfprintf (fp, "%s", s);
+    FREE (s);
+  }
   len = strlen (x);
   if (len > 2 && x[len-1] == '>' && x[len-2] == '<') {
     for (int i=0; i < len-2; i++) {
@@ -146,7 +155,14 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   }
 
   fprintf (fp, "*\n");
-  fprintf (fp, "*---- act defproc: %s -----\n", p->getName());
+  if (p->getns() && p->getns() != ActNamespace::Global()) {
+    char *tmp = p->getns()->Name();
+    fprintf (fp, "*---- act defproc: %s::%s -----\n", tmp, p->getName());
+    FREE (tmp);
+  }
+  else {
+    fprintf (fp, "*---- act defproc: %s -----\n", p->getName());
+  }
   if (a->mangle_active()) {
     fprintf (fp, "* raw ports: ");
     for (int k=0; k < A_LEN (n->bN->ports); k++) {
@@ -548,6 +564,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 
 void act_emit_netlist (Act *a, Process *p, FILE *fp)
 {
+  Assert (p, "act_emit_netlist() requires a non-NULL process!");
   Assert (p->isExpanded (), "Process must be expanded!");
 
   netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");

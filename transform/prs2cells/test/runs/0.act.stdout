@@ -11,7 +11,7 @@ export defcell g0x0 (bool? in[2]; bool! out)
 export defcell g0x1 (bool? in[2]; bool! out)
 {
    prs {
-   ~(in[0]<10> & in[1]) -> out+
+   ~(in[0] & in[1]) -> out+
    in[0]<10> & in[1] -> out-
    }
 }
@@ -52,7 +52,7 @@ export defcell g5x0 (bool? in[1]; bool! out)
 {
    prs {
    ~in[0] -> out+
-   in[0]<5> -> out-
+   in[0] -> out-
    }
 }
 
@@ -60,7 +60,7 @@ export defcell g6x0 (bool? in[1]; bool! out)
 {
    prs {
    ~in[0] -> out+
-   in[0] -> out-
+   in[0]<5> -> out-
    }
 }
 
