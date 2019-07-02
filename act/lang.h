@@ -223,7 +223,10 @@ void chp_print (FILE *, act_chp *);
 void chp_print (FILE *fp, act_chp_lang_t *c);
 void hse_print (FILE *, act_chp *);
 void spec_print (FILE *, act_spec *);
+void refine_print (FILE *, act_refine *);
 
+class ActNamespace;
+class Scope;
 
 class act_languages {
 public:
@@ -254,6 +257,11 @@ public:
   act_spec *getspec () { return spec; }
   void setspec (act_spec *x) { spec = x; }
 
+  act_refine *getrefine() { return refine; }
+  void setrefine (act_refine *x) { refine = x; }
+
+  act_languages *Expand (ActNamespace *ns, Scope *s);
+
  private:
   act_chp *chp, *hse;
   act_prs *prs;
@@ -262,12 +270,10 @@ public:
 };
 
 
-class ActNamespace;
-class Scope;
-
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
+void refine_expand (act_refine *, ActNamespace *, Scope *);
 
 const char *act_spec_string (int type);
 const char *act_dev_value_to_string (int);

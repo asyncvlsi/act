@@ -1291,3 +1291,36 @@ void spec_print (FILE *fp, act_spec *spec)
   }
   fprintf (fp, "}\n");
 }
+
+void refine_expand (act_refine *r, ActNamespace *ns, Scope *s)
+{
+  if (!r) return;
+  if (r->b) {
+    r->b->Expandlist (ns, s);
+  }
+}
+
+act_languages *act_languages::Expand (ActNamespace *ns, Scope *s)
+{
+  act_languages *ret = new act_languages ();
+  if (chp) {
+    ret->chp = chp_expand (chp, ns, s);
+  }
+  if (hse) {
+    ret->hse = chp_expand (hse, ns, s);
+  }
+  if (prs) {
+    ret->prs = prs_expand (prs, ns, s);
+  }
+  if (refine) {
+    refine_expand (refine, ns, s);
+  }
+  return ret;
+}
+
+
+void refine_print (FILE *fp, act_refine *r)
+{
+  if (!r || !r->b) return;
+  r->b->Print (fp);
+}

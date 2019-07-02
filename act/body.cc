@@ -1140,6 +1140,9 @@ void ActBody_Lang::Print (FILE *fp)
   case ActBody_Lang::LANG_SPEC:
     spec_print (fp, (act_spec *)lang);
     break;
+  case ActBody_Lang::LANG_REFINE:
+    refine_print (fp, (act_refine *)lang);
+    break;
   }
 }
 
@@ -1215,7 +1218,9 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     break;
 
   case ActBody_Lang::LANG_REFINE:
-    /* don't do anything right now! */
+    if (((act_refine *)lang)->b) {
+      ((act_refine *)lang)->b->Expandlist (ns, s);
+    }
     break;
     
   default:

@@ -452,7 +452,7 @@ void ActNamespace::Expand ()
 void ActNamespace::Print (FILE *fp)
 {
   if (this != ActNamespace::Global()) {
-    fprintf (fp, "%s {\n", getName());
+    fprintf (fp, "namespace %s {\n", getName());
   }
 
   /* print subnamespaces */
