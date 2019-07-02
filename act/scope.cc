@@ -1197,13 +1197,37 @@ void Scope::Print (FILE *fp)
     if (!TypeFactory::isParamType (vx->t)) {
       if (strcmp (vx->getName(), "self") == 0) continue;
       if (!u || (u->FindPort (vx->getName()) == 0)) {
+	list_t *nsl = NULL;
+	listitem_t *li;
 	Array *ta;
 	a = vx->t->arrayInfo();
 	if (a) {
 	  vx->t->clrArray();
 	}
 	ta = a;
+
+	if (TypeFactory::isUserType (vx->t)) {
+	  UserDef *u = dynamic_cast<UserDef *> (vx->t->BaseType());
+	  ActNamespace *ns;
+	  Assert(u, "What?");
+	  ns = u->getns();
+	  if (ns && ns != ActNamespace::Global() && ns != getNamespace()) {
+	    nsl = list_new ();
+	    while (ns && ns != ActNamespace::Global()) {
+	      list_append_head (nsl, ns->getName());
+	      ns = ns->Parent();
+	    }
+	  }
+	}
+	
 	do {
+
+	  if (nsl) {
+	    for (li = list_first (nsl); li; li = list_next (li)) {
+	      fprintf (fp, "%s::", (char *) list_value (li));
+	    }
+	  }
+	  
 	  if (vx->t->isExpanded()) {
 	    vx->t->sPrint (buf, 10240, 1);
 	    if (!TypeFactory::isUserType (vx->t)) {
@@ -1229,6 +1253,9 @@ void Scope::Print (FILE *fp)
 	fprintf (fp, ";\n");
 	if (a) {
 	  vx->t->MkArray (a);
+	}
+	if (nsl) {
+	  list_free (nsl);
 	}
       }
     }

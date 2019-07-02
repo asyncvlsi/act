@@ -509,6 +509,8 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
     fprintf (fp, "c:");
   }
 #endif
+  /* if this is a user-defined type, print its namespace if it is not
+     global! */
   if (!nl_mode) {
     snprintf (buf+k, sz, "%s", t->getName());
   }

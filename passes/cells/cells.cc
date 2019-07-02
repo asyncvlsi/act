@@ -33,6 +33,11 @@ static std::set<Process *> *visited_procs = NULL;
 static ActNamespace *cell_ns = NULL;
 
 static void _dump_prsinfo (struct act_prsinfo *p);
+static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
+						struct act_prsinfo *pi);
+
+
+static int proc_inst_count = 0;
 
 static int cell_hashfn (int sz, void *key)
 {
@@ -275,12 +280,11 @@ static int match_prsinfo (struct act_prsinfo *k1,
       return 0;
     }
   }
-  FREE (perm);
 
 #if 0
   printf ("match!\n");
 #endif  
-  
+  k1->match_perm = perm;
   return 1;
 }
 
@@ -353,6 +357,8 @@ struct idmap {
   int nout;
   int nat;
 };
+
+struct idmap current_idmap;
 
 static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
 {
@@ -601,6 +607,148 @@ static int _collect_depths (struct act_prsinfo *info,
   }
   return v;
 }
+
+
+static int cell_max = 0;
+
+static void add_new_cell (struct act_prsinfo *pi)
+{
+  int i;
+  
+  if (cell_max == 0) {
+    int id, version;
+    chash_bucket_t *b;
+    struct act_prsinfo *mi;
+
+    if (!cell_table) return;
+
+    for (i=0; i < cell_table->size; i++) {
+      for (b = cell_table->head[i]; b; b = b->next) {
+	mi = (struct act_prsinfo *)b->v;
+	if (mi->cell) {
+	  sscanf (mi->cell->getName()+1, "%dx%d", &id, &version);
+	  cell_max = (cell_max > id) ? cell_max : id;
+	}
+      }
+    }
+  }
+
+  char buf[100];
+  snprintf (buf, 100, "g%dx0", ++cell_max);
+  Assert (!pi->cell, "Hmm...");
+
+  /* add the unexpanded process to the cell namespace, and then
+     expand it! */
+  Process *proc;
+
+  /*-- create a new process in the namespace --*/
+  Assert (cell_ns, "What?");
+  UserDef *u = new UserDef (cell_ns);
+  proc = new Process (u);
+  delete u;
+  proc->MkCell ();
+  proc->MkExported ();
+
+  Assert (cell_ns->findName (buf) == 0, "Name conflict?");
+  cell_ns->CreateType (buf, proc);
+
+  /*-- add ports --*/
+  InstType *it = TypeFactory::Factory()->NewBool (Type::IN);
+  Expr *arr = const_expr (pi->nvars - pi->nout - pi->nat);
+  Array *ta;
+  it = new InstType (it);
+  ta = new Array (arr);
+  ta->mkArray ();
+  it->MkArray (ta);
+
+  Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
+
+  it = TypeFactory::Factory()->NewBool (Type::OUT);
+  if (pi->nout > 1) {
+    arr = const_expr (pi->nout);
+    it = new InstType (it);
+    ta = new Array (arr);
+    ta->mkArray ();
+    it->MkArray (ta);
+  }
+  Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
+
+  /*-- prs body --*/
+  act_prs *prs_body;
+  NEW (prs_body, act_prs);
+  prs_body->vdd = NULL;
+  prs_body->gnd = NULL;
+  prs_body->psc = NULL;
+  prs_body->nsc = NULL;
+  prs_body->next = NULL;
+
+  act_prs_lang_t *rules = NULL;
+
+  /*-- now do the rules: @-labels go first --*/
+  for (int j = 0; j < A_LEN (pi->up); j++) {
+    if (pi->up[j]) {
+      act_prs_lang_t *tmp;
+      NEW (tmp, act_prs_lang_t);
+      tmp->next = rules;
+      rules = tmp;
+
+      rules->type = ACT_PRS_RULE;
+      rules->u.one.attr = NULL;
+      rules->u.one.arrow_type = 0;
+      rules->u.one.label = (j < pi->nout ? 0 : 1);
+      rules->u.one.eopp = NULL;
+      rules->u.one.e = _convert_prsexpr_to_act (pi->up[j], pi);
+      if (rules->u.one.label) {
+	char buf[10];
+	snprintf (buf, 10, "x%d", j-pi->nout);
+	rules->u.one.id = (ActId *) Strdup (buf);
+      }
+      else {
+	if (pi->nout == 1) {
+	  rules->u.one.id = new ActId ("out");
+	}
+	else {
+	  rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
+	}
+      }
+      rules->u.one.dir = 1; /* up */
+    }
+    if (pi->dn[j]) {
+      act_prs_lang_t *tmp;
+      NEW (tmp, act_prs_lang_t);
+      tmp->next = rules;
+      rules = tmp;
+
+      rules->type = ACT_PRS_RULE;
+      rules->u.one.attr = NULL;
+      rules->u.one.arrow_type = 0;
+      rules->u.one.label = (j < pi->nout ? 0 : 1);
+      rules->u.one.eopp = NULL;
+      rules->u.one.e = _convert_prsexpr_to_act (pi->dn[j], pi);
+      if (rules->u.one.label) {
+	char buf[10];
+	snprintf (buf, 10, "x%d", j-pi->nout);
+	rules->u.one.id = (ActId *) Strdup (buf);
+      }
+      else {
+	if (pi->nout == 1) {
+	  rules->u.one.id = new ActId ("out");
+	}
+	else {
+	  rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
+	}
+      }
+      rules->u.one.dir = 0; /* dn */
+    }
+  }
+  prs_body->p = rules;
+  proc->AppendBody (new ActBody_Lang  (prs_body));
+  proc->MkDefined ();
+  pi->cell = proc;
+  //proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
+}
+
+
 
 
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
@@ -852,11 +1000,15 @@ static struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs)
   int i;
   int in_tree;
 
+  A_FREE (current_idmap.ids);
+  A_INIT (current_idmap.ids);
+
   ret->cell = NULL;
   ret->nvars = 0;
   ret->nout = 0;
   ret->nat = 0;
   ret->tval = -1;
+  ret->match_perm = NULL;
 
   A_INIT (ret->attrib);
   A_INIT (ret->up);
@@ -1075,6 +1227,8 @@ static struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs)
     ret->attrib[i] = tmp[ret->attr_map[i]];
   }
   FREE (tmp);
+
+  current_idmap = imap;
   
   return ret;
 }
@@ -1258,7 +1412,72 @@ static void dump_celldb (FILE *fp)
   A_FREE (cells);
   fprintf (fp, "\n\n}\n");
 }
+
+static Expr *_idexpr (int idx, struct act_prsinfo *pi)
+{
+  Expr *ret;
+
+  NEW (ret, Expr);
+  ret->type = E_VAR;
+  if (pi->match_perm) {
+    ret->u.e.l = (Expr *)current_idmap.ids[pi->match_perm[idx]];
+  }
+  else {
+    ret->u.e.l = (Expr *)current_idmap.ids[idx];
+  }
+  return ret;
+}
+
+ActBody_Conn *_build_connections (char *name, struct act_prsinfo *pi)
+{
+  int i;
+  ActId *instname;
   
+  /*--- variable order:  outputs at-vars inputs ---*/
+
+  /*-- inputs --*/
+  AExpr *a, *ret;
+  Expr *idexpr;
+
+  i = pi->nout + pi->nat;
+  Assert (i < pi->nvars, "No inputs?");
+
+  idexpr = _idexpr (i, pi);
+  
+  ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
+  a = ret;
+  i++;
+  for (; i < pi->nvars; i++) {
+    idexpr = _idexpr (i, pi);
+    a->SetRight (new AExpr (AExpr::COMMA,
+			    new AExpr (idexpr), NULL));
+    a = a->GetRight ();
+  }
+  instname = new ActId (name);
+  instname->Append (new ActId ("in"));
+  
+  ActBody_Conn *ac = new ActBody_Conn (instname, ret);
+  
+  instname = new ActId (name);
+  instname->Append (new ActId ("out"));
+
+  idexpr = _idexpr (0, pi);
+  if (pi->nout == 1) {
+    ac->Append (new ActBody_Conn (instname, new AExpr (idexpr)));
+  }
+  else {
+    ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
+    i = 1;
+    for (; i < pi->nout; i++) {
+      idexpr = _idexpr (i, pi);
+      a->SetRight (new AExpr (AExpr::COMMA,
+			      new AExpr (idexpr), NULL));
+      a = a->GetRight ();
+    }
+    ac->Append (new ActBody_Conn (instname, ret));
+  }
+  return ac;
+}
 
 static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
 {
@@ -1302,15 +1521,41 @@ static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
   if (cell_table) {
     b = chash_lookup (cell_table, pi);
     if (b) {
+      pi = (struct act_prsinfo *)b->v;
       /* found match! */
     }
     else {
 #if 0
       _dump_prsinfo (pi);
-#endif      
+#endif
+      add_new_cell (pi);
       b = chash_add (cell_table, pi);
       b->v = pi;
     }
+    char buf[100];
+    do {
+      snprintf (buf, 100, "cx%d", proc_inst_count++);
+    } while (p->CurScope()->Lookup (buf));
+
+    Assert (p->CurScope()->isExpanded(), "Hmm");
+
+    InstType *it = new InstType (p->CurScope(), pi->cell, 0);
+    it = it->Expand (NULL, p->CurScope());
+
+    Assert (it->isExpanded(), "Hmm");
+    
+    Assert (p->CurScope()->Add (buf, it), "What?");
+    /*--- now make connections --*/
+    
+    ActBody_Conn *ac;
+
+    //printf (" --- [%s] \n", p->getName());
+    ac = _build_connections (buf, pi);
+    //ac->Print (stdout);
+    //ac->Next()->Print (stdout);
+    //printf (" --- \n");
+    
+    ac->Expandlist (NULL, p->CurScope ());
   }
 }
 
@@ -1333,7 +1578,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
   while (prs) {
     switch (prs->type) {
     case ACT_PRS_RULE:
-#if 0      
+#if 1
       /* snip rule */
       if (prev) {
 	prev->next = prs->next;
@@ -1343,7 +1588,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
       break;
     case ACT_PRS_GATE:
       /* preserve pass transistors */
-#if 0      
+#if 1      
       if (!prev) {
 	*pprs = prs;
       }
@@ -1351,7 +1596,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
 #endif      
       break;
     case ACT_PRS_TREE:
-#if 0      
+#if 1
       if (prev) {
 	prev->next = prs->next;
       }
@@ -1368,7 +1613,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
       break;
     case ACT_PRS_SUBCKT:
       collect_gates (p, &prs->u.l.p);
-#if 0      
+#if 1
       if (prs->u.l.p) {
 	/* there's something left */
 	if (!prev) {
@@ -1384,7 +1629,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
     }
     prs = prs->next;
   }
-#if 0  
+#if 1
   if (!prev) {
     *pprs = NULL;
   }
@@ -1423,6 +1668,7 @@ static void prs_to_cells (Act *a, Process *p, int add_cells)
     }
   }
 
+  proc_inst_count = 0;
   A_INIT (pending);
   act_prs *prs = p->getprs();
   
@@ -1455,6 +1701,25 @@ static void prs_to_cells (Act *a, Process *p, int add_cells)
     prs = prs->next;
   }
   flush_pending ();
+
+  prs = p->getprs();
+  act_prs *prevprs = NULL;
+
+  /* remove empty prs blocks */
+  while (prs) {
+    if (prs->p) {
+      prevprs = prs;
+    }
+    else {
+      if (!prevprs) {
+	p->lang->setprs (prs->next);
+      }
+      else {
+	prevprs->next = prs->next;
+      }
+    }
+    prs = prs->next;
+  }
 }
 
 
@@ -1593,7 +1858,18 @@ static int _collect_cells (ActNamespace *cells)
       /* fine. now dump into celldb */
       pi = _gen_prs_attributes (l);
 
-      pi->cell = p;
+      {
+	char buf[100];
+	int cut;
+	snprintf (buf, 100, "%s", p->getName());
+	cut = strlen (buf) - 2;
+	buf[cut] = '\0';
+	UserDef *u = cells->findType (buf);
+	Assert (u, "Hmm");
+	pi->cell = dynamic_cast<Process *>(u);
+	Assert (pi->cell, "Hmm...");
+      }
+      
       if (out_t->arrayInfo()) {
          if (out_t->arrayInfo()->size() != pi->nout) {
             fatal_error ("Cell `cell::%s': inconsistent outputs",
@@ -1645,161 +1921,6 @@ static int _collect_cells (ActNamespace *cells)
   return cellmax;
 }
 
-static void populate_cellns (void)
-{
-  int i;
-  chash_bucket_t *b;
-  struct act_prsinfo *pi;
-  int cellmax = 0;
-
-  int id, version;
-  A_DECL (struct cell_name *, cells);
-  A_INIT (cells);
-
-  if (!cell_table) return;
-
-  for (i=0; i < cell_table->size; i++) {
-    for (b = cell_table->head[i]; b; b = b->next) {
-      pi = (struct act_prsinfo *)b->v;
-      if (pi->cell) {
-	sscanf (pi->cell->getName()+1, "%dx%d", &id, &version);
-	cellmax = (cellmax > id) ? cellmax : id;
-      }
-    }
-  }
-  cellmax++;
-
-  for (i=0; i < cell_table->size; i++) {
-    for (b = cell_table->head[i]; b; b = b->next) {
-      pi = (struct act_prsinfo *)b->v;
-      A_NEW (cells, struct cell_name *);
-      NEW (A_NEXT (cells), struct cell_name);
-      A_NEXT (cells)->p = pi;
-      if (pi->cell) {
-	A_NEXT (cells)->name = pi->cell->getName();
-      }
-      else {
-	char buf[100];
-	snprintf (buf, 100, "g%dx0", cellmax++);
-	A_NEXT (cells)->name = Strdup (buf);
-      }
-      A_INC (cells);
-    }
-  }
-
-  for (i=0; i < A_LEN (cells); i++) {
-    pi = cells[i]->p;
-    if (!pi->cell) {
-      /* add the unexpanded process to the cell namespace, and then
-	 expand it! */
-      Process *proc;
-
-      /*-- create a new process in the namespace --*/
-      Assert (cell_ns, "What?");
-      UserDef *u = new UserDef (cell_ns);
-      proc = new Process (u);
-      delete u;
-      proc->MkCell ();
-      proc->MkExported ();
-
-      Assert (cell_ns->findName (cells[i]->name) == 0, "Name conflict?");
-      cell_ns->CreateType (cells[i]->name, proc);
-
-      /*-- add ports --*/
-      InstType *it = TypeFactory::Factory()->NewBool (Type::IN);
-      Expr *arr = const_expr (pi->nvars - pi->nout - pi->nat);
-      it = new InstType (it);
-      it->MkArray (new Array (arr));
-
-      Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
-
-      it = TypeFactory::Factory()->NewBool (Type::OUT);
-      if (pi->nout > 1) {
-	arr = const_expr (pi->nout);
-	it = new InstType (it);
-	it->MkArray (new Array (arr));
-      }
-      Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
-
-      /*-- prs body --*/
-      act_prs *prs_body;
-      NEW (prs_body, act_prs);
-      prs_body->vdd = NULL;
-      prs_body->gnd = NULL;
-      prs_body->psc = NULL;
-      prs_body->nsc = NULL;
-      prs_body->next = NULL;
-
-      act_prs_lang_t *rules = NULL;
-
-      /*-- now do the rules: @-labels go first --*/
-      for (int j = 0; j < A_LEN (pi->up); j++) {
-	if (pi->up[j]) {
-	  act_prs_lang_t *tmp;
-	  NEW (tmp, act_prs_lang_t);
-	  tmp->next = rules;
-	  rules = tmp;
-
-	  rules->type = ACT_PRS_RULE;
-	  rules->u.one.attr = NULL;
-	  rules->u.one.arrow_type = 0;
-	  rules->u.one.label = (j < pi->nout ? 0 : 1);
-	  rules->u.one.eopp = NULL;
-	  rules->u.one.e = _convert_prsexpr_to_act (pi->up[j], pi);
-	  if (rules->u.one.label) {
-	    char buf[10];
-	    snprintf (buf, 10, "x%d", j-pi->nout);
-	    rules->u.one.id = (ActId *) Strdup (buf);
-	  }
-	  else {
-	    if (pi->nout == 1) {
-	      rules->u.one.id = new ActId ("out");
-	    }
-	    else {
-	      rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
-	    }
-	  }
-	  rules->u.one.dir = 1; /* up */
-	}
-	if (pi->dn[j]) {
-	  act_prs_lang_t *tmp;
-	  NEW (tmp, act_prs_lang_t);
-	  tmp->next = rules;
-	  rules = tmp;
-
-	  rules->type = ACT_PRS_RULE;
-	  rules->u.one.attr = NULL;
-	  rules->u.one.arrow_type = 0;
-	  rules->u.one.label = (j < pi->nout ? 0 : 1);
-	  rules->u.one.eopp = NULL;
-	  rules->u.one.e = _convert_prsexpr_to_act (pi->dn[j], pi);
-	  if (rules->u.one.label) {
-	    char buf[10];
-	    snprintf (buf, 10, "x%d", j-pi->nout);
-	    rules->u.one.id = (ActId *) Strdup (buf);
-	  }
-	  else {
-	    if (pi->nout == 1) {
-	      rules->u.one.id = new ActId ("out");
-	    }
-	    else {
-	      rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
-	    }
-	  }
-	  rules->u.one.dir = 0; /* dn */
-	}
-      }
-      prs_body->p = rules;
-      proc->AppendBody (new ActBody_Lang  (prs_body));
-      proc->MkDefined ();
-      FREE ((void*)cells[i]->name);
-      proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
-    }
-    FREE (cells[i]);
-  }
-  A_FREE (cells);
-}
-
 void act_prs_to_cells (Act *a, Process *p, int add_cells)
 {
   cell_table = (struct cHashtable *) a->aux_find ("prs2cells");
@@ -1817,6 +1938,10 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
   else {
     return;
   }
+
+  A_INIT (current_idmap.ids);
+  current_idmap.nout = 0;
+  current_idmap.nat = 0;
     
   visited_procs = new std::set<Process *> ();
   
@@ -1825,6 +1950,7 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
 
   if (!cell_ns) {
     cell_ns = new ActNamespace (ActNamespace::Global(), "cell");
+    cell_ns->Expand ();
   }
   else {
     int res =  _collect_cells (cell_ns) + 1;
@@ -1852,9 +1978,6 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
   }
 
   delete visited_procs;
-
-  /* update the cell namespace! */
-  populate_cellns ();
   
   cell_table = NULL;
   cell_ns = NULL;

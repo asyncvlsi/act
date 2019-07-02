@@ -67,6 +67,9 @@ struct act_prsinfo {
   A_DECL (act_prs_expr_t *, dn); /* pull-down */
       /* NOTE: all actid pointers are actually just simple integers */
       /* The # of these will be nout + any internal labels */
+
+  int *match_perm;		// used to report match!
+  
 };
 
 
