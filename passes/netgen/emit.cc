@@ -85,7 +85,7 @@ static void special_emit_procname (Act *a, FILE *fp, Process *p)
 
   if (ns && ns != ActNamespace::Global()) {
     char *s = ns->Name();
-    a->mfprintf (fp, "%s", s);
+    a->mfprintf (fp, "%s::", s);
     FREE (s);
   }
   len = strlen (x);

@@ -1197,9 +1197,11 @@ void Scope::Print (FILE *fp)
     if (!TypeFactory::isParamType (vx->t)) {
       if (strcmp (vx->getName(), "self") == 0) continue;
       if (!u || (u->FindPort (vx->getName()) == 0)) {
-	list_t *nsl = NULL;
-	listitem_t *li;
 	Array *ta;
+	char *ns_name;
+
+	ns_name = NULL;
+
 	a = vx->t->arrayInfo();
 	if (a) {
 	  vx->t->clrArray();
@@ -1211,21 +1213,16 @@ void Scope::Print (FILE *fp)
 	  ActNamespace *ns;
 	  Assert(u, "What?");
 	  ns = u->getns();
+	  Assert (ns, "Hmm");
 	  if (ns && ns != ActNamespace::Global() && ns != getNamespace()) {
-	    nsl = list_new ();
-	    while (ns && ns != ActNamespace::Global()) {
-	      list_append_head (nsl, ns->getName());
-	      ns = ns->Parent();
-	    }
+	    ns_name = ns->Name();
 	  }
 	}
 	
 	do {
 
-	  if (nsl) {
-	    for (li = list_first (nsl); li; li = list_next (li)) {
-	      fprintf (fp, "%s::", (char *) list_value (li));
-	    }
+	  if (ns_name) {
+	    fprintf (fp, "%s::", ns_name);
 	  }
 	  
 	  if (vx->t->isExpanded()) {
@@ -1254,8 +1251,9 @@ void Scope::Print (FILE *fp)
 	if (a) {
 	  vx->t->MkArray (a);
 	}
-	if (nsl) {
-	  list_free (nsl);
+
+	if (ns_name) {
+	  FREE (ns_name);
 	}
       }
     }
