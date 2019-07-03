@@ -1153,20 +1153,37 @@ static void _print_connections (FILE *fp, act_connection *cx)
   ActConniter ci(cx);
   ActId *id;
   int first = 1;
+  int global;
 
+  global = cx->isglobal();
   if (cx->isPrimary()) {
     if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
       for (ci = ci.begin(); ci != ci.end(); ci++) {
 	act_connection *c = *ci;
-	if (!first) {
-	  fprintf (fp, "=");
+
+	if (!global || c->isglobal()) {
+	  if (!first) {
+	    fprintf (fp, "=");
+	  }
+	  id = c->toid();
+	  first = 0;
+	  id->Print (fp);
+	  delete id;
 	}
-	id = c->toid();
-	first = 0;
-	id->Print (fp);
-	delete id;
       }
       fprintf (fp, ";\n");
+    }
+  }
+  else {
+    if (!global && cx->primary()->isglobal()) {
+	id = cx->toid();
+	id->Print (fp);
+        delete id;
+        id = cx->primary()->toid();
+        fprintf (fp, "=");
+	id->Print (fp);
+        delete id;
+        fprintf (fp, ";\n");
     }
   }
   if (cx->hasSubconnections()) {
