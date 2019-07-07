@@ -25,7 +25,8 @@ SUBDIRS=flatten netgen cells booleanize
 
 USEOBJS=flatten/$(EXT)/aflat.o \
 	booleanize/$(EXT)/booleanize.o \
-	netgen/$(EXT)/netgen.o \
+	netgen/$(EXT)/netlist.o \
+	netgen/$(EXT)/emit.o \
  	flatten/$(EXT)/flatten.o \
 	cells/$(EXT)/cells.o
 

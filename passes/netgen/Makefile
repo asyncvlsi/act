@@ -18,7 +18,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=netgen.o 
+EXTRA=netlist.o emit.o
 TARGETINCS=netlist.h
 TARGETINCSUBDIR=act/passes
 
@@ -27,8 +27,5 @@ SRCS=netlist.cc emit.cc
 OBJS=$(SRCS:.cc=.o) $(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
-
-netgen.o: netlist.o emit.o
-	ld -r -o netgen.o netlist.o emit.o
 
 -include Makefile.deps
