@@ -32,7 +32,11 @@ extern "C" {
 
 typedef struct hash_bucket {
   char *key;
-  void *v;
+  union {
+    void *v;
+    int i;
+    long l;
+  };
   struct hash_bucket *next;
 } hash_bucket_t;
 
@@ -44,7 +48,11 @@ struct Hashtable {
 
 typedef struct ihash_bucket {
   unsigned long key;
-  void *v;
+  union {
+    void *v;
+    int i;
+    long l;
+  };
   struct ihash_bucket *next;
 } ihash_bucket_t;
 
@@ -56,7 +64,11 @@ struct iHashtable {
 
 typedef struct chash_bucket {
   void *key;			/* key */
-  void *v;
+  union {
+    void *v;
+    int i;
+    long l;
+  };
   struct chash_bucket *next;
 } chash_bucket_t;
 
