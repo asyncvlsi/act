@@ -1768,7 +1768,6 @@ void act_prs_to_netlist (Act *a, Process *p)
 
   tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
   if (tmp) {
-    return;
     delete tmp;
   }
   netmap = new std::map<Process *, netlist_t *>();
