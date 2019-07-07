@@ -35,9 +35,14 @@ void act_prsflat_lvs (Act *a);
 /* flat connection pair pass */
 void act_flat_apply_conn_pairs (Act *a, void *cookie,
 				void (*f)(void *c, ActId *one, ActId *two));
+void act_flat_apply_conn_pairs (Act *a, void *cookie, Process *top,
+				void (*f)(void *c, ActId *one, ActId *two));
+
 
 /* flat process pass */
 void act_flat_apply_processes (Act *a, void *cookie,
+			       void (*f)(void *c, ActId *name, Process *p));
+void act_flat_apply_processes (Act *a, void *cookie, Process *top,
 			       void (*f)(void *c, ActId *name, Process *p));
 
 /* create netlist */  

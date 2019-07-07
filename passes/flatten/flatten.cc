@@ -897,6 +897,23 @@ void act_flat_apply_conn_pairs (Act *a, void *cookie,
   g_apply_fn = NULL;
 }
 
+void act_flat_apply_conn_pairs (Act *a, void *cookie, Process *proc,
+				void (*f)(void *, ActId *, ActId *))
+{
+  g_cookie = cookie;
+  g_apply_fn = f;
+  if (!f) return;
+  prefixes = list_new ();
+  prefix_array = list_new ();
+  _flat_scope (proc->CurScope());
+  list_free (prefixes);
+  list_free (prefix_array);
+  g_cookie = NULL;
+  g_apply_fn = NULL;
+}
+
+
+
 void act_flat_apply_processes (Act *a, void *cookie,
 			       void (*f)(void *, ActId *, Process *p))
 {
@@ -906,6 +923,21 @@ void act_flat_apply_processes (Act *a, void *cookie,
   prefixes = list_new ();
   prefix_array = list_new ();
   _flat_ns (a->Global());
+  list_free (prefixes);
+  list_free (prefix_array);
+  g_cookie = NULL;
+  g_apply_procfn = NULL;
+}
+
+void act_flat_apply_processes (Act *a, void *cookie, Process *proc,
+			       void (*f)(void *, ActId *, Process *p))
+{
+  g_cookie = cookie;
+  g_apply_procfn = f;
+  if (!f) return;
+  prefixes = list_new ();
+  prefix_array = list_new ();
+  _flat_scope (proc->CurScope());
   list_free (prefixes);
   list_free (prefix_array);
   g_cookie = NULL;
