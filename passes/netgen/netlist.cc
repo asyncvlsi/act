@@ -1755,6 +1755,66 @@ static void generate_netlist (Act *a, Process *p)
   return;
 }
 
+static void free_nl (netlist_t *n)
+{
+  if (!n) return;
+  
+  //bool_free (n->B); XXX write bdd clear routine
+  
+  list_free (n->vdd_list);
+  list_free (n->gnd_list);
+  list_free (n->psc_list);
+  list_free (n->nsc_list);
+
+  for (int k=0; k < 2; k++) {
+    for (int i=0; i < n->atH[k]->size; i++) {
+      for (hash_bucket_t *b = n->atH[k]->head[i]; b; b = b->next) {
+	at_lookup *al = (at_lookup *)b->v;
+	FREE (al);
+      }
+    }
+    hash_free (n->atH[k]);
+  }
+
+  node_t *tmp, *prev;
+
+  for (tmp = n->hd; tmp; tmp = tmp->next) {
+    for (listitem_t *li = list_first (tmp->e); li; li = list_next (li)) {
+      edge_t *e = (edge_t *) list_value (li);
+      e->visited = 0;
+    }
+    if (tmp->v) {
+      Assert (tmp->v->v, "Hmm");
+      tmp->v->v->extra = NULL;
+    }
+  }
+  
+
+  tmp = n->hd;
+  while (tmp) {
+    prev = tmp;
+    tmp = tmp->next;
+    
+    list_free (prev->wl);
+    if (prev->v) {
+      FREE (prev->v);
+    }
+    /* free edge the second time you see it */
+    for (listitem_t *li = list_first (prev->e); li; li = list_next (li)) {
+      edge_t *e = (edge_t *) list_value (li);
+      if (e->visited) {
+	FREE (e);
+      }
+      else {
+	e->visited = 1;
+      }
+    }
+    list_free (prev->e);
+    FREE (prev);
+  }
+  FREE (n);
+}
+
 
 void act_prs_to_netlist (Act *a, Process *p)
 {
@@ -1767,9 +1827,15 @@ void act_prs_to_netlist (Act *a, Process *p)
   }
 
   tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
+  
   if (tmp) {
+    std::map<Process *, netlist_t *>::iterator it;
+    for (it = (*tmp).begin(); it != (*tmp).end(); it++) {
+      free_nl (it->second);
+    }
     delete tmp;
   }
+  
   netmap = new std::map<Process *, netlist_t *>();
 
   default_load_cap = config_get_real ("net.default_load_cap");

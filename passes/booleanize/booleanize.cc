@@ -674,6 +674,28 @@ static void create_bool_ports (Act *a, Process *p)
 }
 
 
+static void free_bN (act_boolean_netlist_t *n)
+{
+  int i;
+  ihash_bucket_t *b;
+  
+  if (!n) return;
+
+  Assert (n->cH, "Hmm");
+
+  for (int i=0; i < n->cH->size; i++) {
+    for (b = n->cH->head[i]; b; b = b->next) {
+      act_booleanized_var_t *v = (act_booleanized_var_t *) b->v;
+      FREE (v);
+    }
+  }
+  ihash_free (n->cH);
+  ihash_free (n->uH);
+  A_FREE (n->ports);
+  A_FREE (n->instports);
+  FREE (n);
+}
+
 
 void act_booleanize_netlist (Act *a, Process *p)
 {
@@ -681,7 +703,10 @@ void act_booleanize_netlist (Act *a, Process *p)
 
   tmp = (std::map<Process *, act_boolean_netlist_t *> *) a->aux_find ("booleanize");
   if (tmp) {
-    /* XXX: need to free the netlist */
+    std::map<Process *, act_boolean_netlist_t *>::iterator it;
+    for (it = (*tmp).begin(); it != (*tmp).end(); it++) {
+      free_bN (it->second);
+    }
     delete tmp;
   }
   netmap = new std::map<Process *, act_boolean_netlist_t *>();

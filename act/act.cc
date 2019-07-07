@@ -84,7 +84,8 @@ void Act::Init (int *iargc, char ***iargv)
   config_std_path ("act");
   config_set_default_int ("act.max_recurse_depth", 1000);
   config_set_default_int ("act.max_loop_iterations", 1000);
-  config_set_default_int ("act.warn_emptyselect", 0);
+  config_set_default_int ("act.warn.emptyselect", 0);
+  config_set_default_int ("act.warn.no_aux", 1);
   config_read ("global.conf");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
@@ -137,10 +138,14 @@ void Act::Init (int *iargc, char ***iargv)
       tmp = strtok (s, ",");
       while (tmp) {
 	if (strcmp (tmp, "empty-select") == 0) {
-	  config_set_int ("act.warn_emptyselect", 1);
+	  config_set_int ("act.warn.emptyselect", 1);
+	}
+	else if (strcmp (tmp, "no-aux") == 0) {
+	  config_set_int ("act.warn.no_aux", 0);
 	}
 	else if (strcmp (tmp, "all") == 0) {
-	  config_set_int ("act.warn_emptyselect", 1);
+	  config_set_int ("act.warn.emptyselect", 1);
+	  config_set_int ("act.warn.no_aux", 0);
 	}
 	else {
 	  fatal_error ("-W option `%s' is unknown", tmp);
@@ -160,7 +165,7 @@ void Act::Init (int *iargc, char ***iargv)
   }
   argv[j] = NULL;
 
-  Act::warn_emptyselect = config_get_int ("act.warn_emptyselect");
+  Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
   
   return;
 }
@@ -510,7 +515,9 @@ void Act::aux_add (const char *phase, void *data)
   b = hash_lookup (aux, phase);
   if (b) {
     if (b->v) {
-      warning ("Act::aux_append is replacing old data for `%s'", phase);
+      if (config_get_int ("act.warn.no_aux")) {
+	warning ("Act::aux_append is replacing old data for `%s'", phase);
+      }
     }
     b->v = data;
   }
