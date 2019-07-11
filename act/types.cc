@@ -1798,13 +1798,8 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   }
   fprintf (fp, "%s ", type);
   if (expanded) {
-    char *tmp = Strdup (getName());
-    int x = strlen (tmp);
-    if (x > 2 && tmp[x-1] == '>' && tmp[x-2] == '<') {
-      tmp[x-2] = '\0';
-    }
-    ActNamespace::Act()->mfprintf (fp, "%s ", tmp);
-    FREE (tmp);
+    ActNamespace::Act()->mfprintfproc (fp, this, 0);
+    fprintf (fp, " ");
   }
   else {
     /* ok there is a possibility of a name conflict here but lets not

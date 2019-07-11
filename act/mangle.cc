@@ -329,3 +329,85 @@ int Act::usnprintf (char *fp, int len, const char *s, ...)
   
   return snprintf (fp, len, "%s", buf2);
 }
+
+/*------------------------------------------------------------------------
+ *
+ *  Act::msnprintfproc --
+ *
+ *   Special mangling for process name
+ *
+ *  WARNING: keep consistent with InstType::sPrint 
+ *
+ *------------------------------------------------------------------------
+ */
+void Act::msnprintfproc (char *fp, int len, UserDef *p, int omit_ns)
+{
+  int pos = 0;
+
+  fp[0] = '\0';
+  if (!omit_ns) {
+    if (p->getns() && p->getns() != ActNamespace::Global()) {
+      char *s = p->getns()->Name();
+      msnprintf (fp, len, "%s::", s);
+      pos = strlen (fp);
+      len -= pos;
+      fp += pos;
+      FREE (s);
+    }
+  }
+
+  const char *proc_name = p->getName ();
+  pos = strlen (proc_name);
+  if (pos > 2 && proc_name[pos-2] == '<' &&  proc_name[pos-1] == '>') {
+    pos = 0;
+    while (proc_name[pos] != '<') {
+      if (len == 1) {
+	fp[pos] = '\0';
+	return;
+      }
+      fp[pos] = proc_name[pos];
+      pos++;
+      len--;
+    }
+    fp[pos] = '\0';
+  }
+  else {
+    msnprintf (fp, len, "%s", proc_name);
+  }
+}
+
+
+/*------------------------------------------------------------------------
+ *
+ *  Act::mfprintfproc --
+ *
+ *   Special mangling for process name
+ *
+ *------------------------------------------------------------------------
+ */
+void Act::mfprintfproc (FILE *fp, UserDef *p, int omit_ns)
+{
+  int pos = 0;
+
+  /*--- process gp ---*/
+  if (!omit_ns) {
+    if (p->getns() && p->getns() != ActNamespace::Global()) {
+      char *s = p->getns()->Name();
+      mfprintf (fp, "%s::", s);
+      FREE (s);
+    }
+  }
+
+  const char *proc_name = p->getName ();
+  pos = strlen (proc_name);
+  if (pos > 2 && proc_name[pos-2] == '<' &&  proc_name[pos-1] == '>') {
+    pos = 0;
+    while (proc_name[pos] != '<') {
+      fputc (proc_name[pos], fp);
+      pos++;
+    }
+  }
+  else {
+    mfprintf (fp, "%s", proc_name);
+  }
+}

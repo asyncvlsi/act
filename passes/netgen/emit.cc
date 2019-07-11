@@ -74,31 +74,6 @@ static int black_box_mode;
 /* top level only */
 static int top_level_only;
 
-static void special_emit_procname (Act *a, FILE *fp, Process *p)
-{
-  const char *x = p->getName ();
-  int len;
-  char buf[10240];
-  ActNamespace *ns;
-
-  ns = p->getns();
-
-  if (ns && ns != ActNamespace::Global()) {
-    char *s = ns->Name();
-    a->mfprintf (fp, "%s::", s);
-    FREE (s);
-  }
-  len = strlen (x);
-  if (len > 2 && x[len-1] == '>' && x[len-2] == '<') {
-    for (int i=0; i < len-2; i++) {
-      fputc (x[i], fp);
-    }		   
-  }
-  else {
-    a->mfprintf (fp, "%s", x);
-  }
-}
-
 static void aemit_node (Act *a, netlist_t *N, FILE *fp, node_t *n)
 {
   if (n->v) {
@@ -176,7 +151,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
   }
   fprintf (fp, ".subckt ");
   /* special mangling for processes that only end in <> */
-  special_emit_procname (a, fp, p);
+  a->mfprintfproc (fp, p);
   int out = 0;
   for (int k=0; k < A_LEN (n->bN->ports); k++) {
     if (n->bN->ports[k].omit) continue;
@@ -525,7 +500,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	      iport++;
 	    }
 	    a->mfprintf (fp, " ");
-	    special_emit_procname (a, fp, instproc);
+	    a->mfprintfproc (fp, instproc);
 	    a->mfprintf (fp, "\n");
 	    as->step();
 	  }
@@ -547,7 +522,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 	    iport++;
 	  }
 	  a->mfprintf (fp, " ");
-	  special_emit_procname (a, fp, instproc);
+	  a->mfprintfproc (fp, instproc);
 	  a->mfprintf (fp, "\n");
 	}
       }

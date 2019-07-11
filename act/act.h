@@ -35,6 +35,8 @@
  *       the ACT library
  */
 
+class ActPass;
+
 class Act {
  public:
   /**
@@ -98,6 +100,8 @@ class Act {
   void ufprintf (FILE *fp, const char *s, ...);
   int msnprintf (char *fp, int sz, const char *s, ...);
   int usnprintf (char *fp, int sz, const char *s, ...);
+  void msnprintfproc (char *fp, int sz, UserDef *, int omit_ns = 0);
+  void mfprintfproc (FILE *fp, UserDef *, int omit_ns = 0);
 
 
   /* 
@@ -119,6 +123,9 @@ class Act {
   void *aux_find (const char *phase);
   void aux_add (const char *phase, void *data);
 
+  int pass_register (const char *name, ActPass *p);
+  ActPass *pass_find (const char *name);
+
 private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
@@ -132,6 +139,35 @@ private:
 
   struct Hashtable *aux;	// any aux storage you want
   
+};
+
+class ActPass {
+  int _finished;		// has the pass finished execution?
+  Act *a;			// main act data structure
+  list_t *deps;			// ActPass dependencies
+  const char *name;
+  
+public:
+  ActPass (Act *_a, const char *name); // create, initialize, and
+				       // register pass
+  
+  ~ActPass ();			       // release storage
+
+
+  int AddDependency (const char *pass); // insert dependency on an
+					// actpass
+
+  int rundeps (Process *p = NULL);
+
+  const char *getName();
+  
+  virtual int run(Process *p = NULL); // run pass on a process; NULL =
+				      // top level
+  
+  virtual int init (); // initialize or re-initialize
+  
+  int completed()  { return (_finished == 2) ? 1 : 0; }
+  int pending()  { return (_finished == 1) ? 1 : 0; }
 };
 
 Expr *const_expr (int);

@@ -23,6 +23,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <act/act.h>
 #include <act/types.h>
 #include <act/inst.h>
 
@@ -515,18 +516,14 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
     snprintf (buf+k, sz, "%s", t->getName());
   }
   else {
-    const char *tmp = t->getName();
-    int x = strlen (tmp);
-    if (x > 2 && tmp[x-1] == '>' && tmp[x-2] == '<') {
-      x--;
-      if (sz < x) {
-	x = sz;
-      }
+    /* WARNING: this has to be kept consistent with mangle.cc */
+    UserDef *u = dynamic_cast<UserDef *> (t);
+    if (u) {
+      ActNamespace::Act()->msnprintfproc (buf+k, sz, u, 1);
     }
     else {
-      x = sz;
+      snprintf (buf+k, sz, "%s", t->getName());
     }
-    snprintf (buf+k, x, "%s", tmp);
   }
   PRINT_STEP;
   

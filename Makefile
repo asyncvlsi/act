@@ -21,6 +21,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=common pgen act passes transform simulation layout
+SUBDIRS=common pgen act passes transform simulation tech
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
