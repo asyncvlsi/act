@@ -70,5 +70,3 @@ int ActPass::rundeps (Process *p)
   }
   return 1;
 }
-  
-  

@@ -123,7 +123,7 @@ class Act {
   void *aux_find (const char *phase);
   void aux_add (const char *phase, void *data);
 
-  int pass_register (const char *name, ActPass *p);
+  void pass_register (const char *name, ActPass *p);
   ActPass *pass_find (const char *name);
 
 private:
@@ -138,7 +138,7 @@ private:
   int mangle_mode;
 
   struct Hashtable *aux;	// any aux storage you want
-  
+  struct Hashtable *passes;	// any ActPass-es
 };
 
 class ActPass {

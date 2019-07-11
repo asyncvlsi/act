@@ -85,6 +85,7 @@ void Act::Init (int *iargc, char ***iargv)
   config_set_default_int ("act.max_recurse_depth", 1000);
   config_set_default_int ("act.max_loop_iterations", 1000);
   config_set_default_int ("act.warn.emptyselect", 0);
+  config_set_default_int ("act.warn.dup_pass", 1);
   config_set_default_int ("act.warn.no_aux", 1);
   config_read ("global.conf");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
@@ -143,9 +144,13 @@ void Act::Init (int *iargc, char ***iargv)
 	else if (strcmp (tmp, "no-aux") == 0) {
 	  config_set_int ("act.warn.no_aux", 0);
 	}
+	else if (strcmp (tmp, "no-dup-pass") == 0) {
+	  config_set_int ("act.warn.dup_pass", 0);
+	}
 	else if (strcmp (tmp, "all") == 0) {
 	  config_set_int ("act.warn.emptyselect", 1);
-	  config_set_int ("act.warn.no_aux", 0);
+	  config_set_int ("act.warn.dup_pass", 1);
+	  config_set_int ("act.warn.no_aux", 1);
 	}
 	else {
 	  fatal_error ("-W option `%s' is unknown", tmp);
@@ -515,7 +520,7 @@ void Act::aux_add (const char *phase, void *data)
   b = hash_lookup (aux, phase);
   if (b) {
     if (b->v) {
-      if (config_get_int ("act.warn.no_aux")) {
+      if (config_get_int ("act.warn.aux")) {
 	warning ("Act::aux_append is replacing old data for `%s'", phase);
       }
     }
@@ -545,3 +550,36 @@ void Act::Print (FILE *fp)
 {
   gns->Print (fp);
 }
+
+
+void Act::pass_register (const char *name, ActPass *p)
+{
+  hash_bucket_t *b;
+
+  b = hash_lookup (passes, name);
+  if (b) {
+    if (b->v) {
+      if (config_get_int ("act.warn.dup_pass")) {
+	warning ("Act::pass_register is replacing an existing pass `%s'", name);
+      }
+    }
+  }
+  else {
+    b = hash_add (passes, name);
+  }
+  b->v = p;
+}
+
+ActPass *Act::pass_find (const char *name)
+{
+  hash_bucket_t *b;
+
+  b = hash_lookup (passes, name);
+  if (b) {
+    return (ActPass *)b->v;
+  }
+  else {
+    return NULL;
+  }
+}
+
