@@ -1,0 +1,5 @@
+| units: 3 tech: dummytech format: MIT
+n f/a GND f/b 2 10
+n f/c GND f/d 2 10
+= Vdd Vdd!
+= GND GND!

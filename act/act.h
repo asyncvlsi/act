@@ -125,6 +125,8 @@ class Act {
 
   void pass_register (const char *name, ActPass *p);
   ActPass *pass_find (const char *name);
+  void pass_unregister (const char *name);
+  const char *pass_name (const char *name);
 
 private:
   TypeFactory *tf;		/* type factory for the file */
@@ -142,10 +144,12 @@ private:
 };
 
 class ActPass {
+protected:
   int _finished;		// has the pass finished execution?
   Act *a;			// main act data structure
   list_t *deps;			// ActPass dependencies
   const char *name;
+
   
 public:
   ActPass (Act *_a, const char *name); // create, initialize, and
@@ -164,12 +168,15 @@ public:
   virtual int run(Process *p = NULL); // run pass on a process; NULL =
 				      // top level
   
-  virtual int init (); // initialize or re-initialize
-  
   int completed()  { return (_finished == 2) ? 1 : 0; }
   int pending()  { return (_finished == 1) ? 1 : 0; }
+
+private:
+  virtual int init (); // initialize or re-initialize
 };
 
+
+/* this should be elsewhere */
 Expr *const_expr (int);
 
 #endif /* __ACT_H__ */

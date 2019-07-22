@@ -30,21 +30,20 @@
 /*-- a pass to walk through all connection pairs --*/
 
 
-/* hash table for labels */
-static struct Hashtable *labels;
+void ActApplyPass::printns (FILE *fp)
+{
+  for (listitem_t *li = list_first (prefixes); li; li = list_next (li)) {
+    char *x = (char *) list_value (li);
+    if (x[strlen(x)-1] == ':') {
+      fprintf (fp, "%s", x);
+    }
+    else {
+      return;
+    }
+  }
+}  
 
-/* prefix tracking */
-static list_t *prefixes = NULL;
-static list_t *prefix_array = NULL;
-
-static list_t *suffixes = NULL;
-static list_t *suffix_array = NULL;
-
-static void (*g_apply_fn) (void *, ActId *, ActId *) = NULL;
-static void (*g_apply_procfn) (void *, ActId *, Process *) = NULL;
-static void *g_cookie = NULL;
-
-static void push_namespace_name (const char *s)
+void ActApplyPass::push_namespace_name (const char *s)
 {
   char *n;
   MALLOC (n, char, strlen (s)+3);
@@ -53,25 +52,19 @@ static void push_namespace_name (const char *s)
   list_append (prefix_array, NULL);
 }
 
-static void push_name (const char *s)
+void ActApplyPass::push_name (const char *s, Array *t)
 {
   list_append (prefixes, s);
-  list_append (prefix_array, NULL);
+  list_append (prefix_array, t);
 }
 
-static void push_name_suffix (const char *s)
-{
-  list_append (suffixes, s);
-  list_append (suffix_array, NULL);
-}
-
-static void push_name_array_suffix (const char *s, Array *t)
+void ActApplyPass::push_name_suffix (const char *s, Array *t)
 {
   list_append (suffixes, s);
   list_append (suffix_array, t);
 }
 
-static void pop_name_suffix ()
+void ActApplyPass::pop_name_suffix ()
 {
   list_delete_tail (suffixes);
   Array *a = (Array *) list_delete_tail (suffix_array);
@@ -80,7 +73,7 @@ static void pop_name_suffix ()
   }
 }
 
-static ActId *suffix_to_id ()
+static ActId *suffix_to_id (list_t *suffixes, list_t *suffix_array)
 {
   listitem_t *li, *mi;
   Array *a;
@@ -112,13 +105,7 @@ static ActId *suffix_to_id ()
   return id;
 }  
 
-static void push_name_array (const char *s, Array *t)
-{
-  list_append (prefixes, s);
-  list_append (prefix_array, t);
-}
-
-static void pop_name ()
+void ActApplyPass::pop_name ()
 {
   char *s = (char *) list_delete_tail (prefixes);
   if (s[strlen(s)-1] == ':') {
@@ -141,7 +128,8 @@ static ActId *tailid (ActId *id)
 
 static void prefix_print ();
 
-static ActId *prefix_to_id (ActId **tailp)
+static ActId *prefix_to_id (list_t *prefixes, list_t *prefix_array,
+			    ActId **tailp)
 {
   listitem_t *li, *mi;
   Array *a;
@@ -184,7 +172,7 @@ static void nullify_arrays (ActId *id)
   }
 }
 
-static void suffix_print ()
+static void suffix_print (list_t *suffixes, list_t *suffix_array)
 {
   listitem_t *li, *mi;
   Array *a;
@@ -204,7 +192,7 @@ static void suffix_print ()
   }
 }
 
-static void _flat_connections_bool (ValueIdx *vx)
+void ActApplyPass::_flat_connections_bool (ValueIdx *vx)
 {
   act_connection *c = vx->connection();
   ActConniter iter(c);
@@ -249,8 +237,8 @@ static void _flat_connections_bool (ValueIdx *vx)
       ActId *hd1, *hd2, *tl1, *tl2;
 
       if (!is_global) {
-	hd1 = prefix_to_id (&tl1);
-	hd2 = prefix_to_id (&tl2);
+	hd1 = prefix_to_id (prefixes, prefix_array, &tl1);
+	hd2 = prefix_to_id (prefixes, prefix_array, &tl2);
       }
       else {
 	hd1 = NULL;
@@ -279,10 +267,10 @@ static void _flat_connections_bool (ValueIdx *vx)
 	tail2->setArray (a2);
 
 	if (hd1 && hd2) {
-	  (*g_apply_fn) (g_cookie, hd1, hd2);
+	  (*apply_conn_fn) (cookie, hd1, hd2);
 	}
 	else {
-	  (*g_apply_fn) (g_cookie, id1, id2);
+	  (*apply_conn_fn) (cookie, id1, id2);
 	}
 
 	delete a1;
@@ -319,8 +307,8 @@ static void _flat_connections_bool (ValueIdx *vx)
 	head2 = NULL;
       }
       else {
-	head1 = prefix_to_id (&tail1);
-	head2 = prefix_to_id (&tail2);
+	head1 = prefix_to_id (prefixes, prefix_array, &tail1);
+	head2 = prefix_to_id (prefixes, prefix_array, &tail2);
       }
       
       id1 = c->toid();
@@ -335,10 +323,10 @@ static void _flat_connections_bool (ValueIdx *vx)
       }
 
       if (head1) {
-	(*g_apply_fn) (g_cookie, head1, head2);
+	(*apply_conn_fn) (cookie, head1, head2);
       }
       else {
-	(*g_apply_fn) (g_cookie, id1, id2);
+	(*apply_conn_fn) (cookie, id1, id2);
       }
 
       if (head1) {
@@ -370,8 +358,8 @@ static void _flat_connections_bool (ValueIdx *vx)
 	hd2 = NULL;
       }
       else {
-	hd1 = prefix_to_id (&tl1);
-	hd2 = prefix_to_id (&tl2);
+	hd1 = prefix_to_id (prefixes, prefix_array, &tl1);
+	hd2 = prefix_to_id (prefixes, prefix_array, &tl2);
       }
 
       id1 = d->toid();
@@ -393,11 +381,11 @@ static void _flat_connections_bool (ValueIdx *vx)
 	id2 = tmp->toid();
 	if (hd2) {
 	  tl2->Append (id2);
-	  (*g_apply_fn) (g_cookie, hd1, hd2);
+	  (*apply_conn_fn) (cookie, hd1, hd2);
 	  tl2->prune();
 	}
 	else {
-	  (*g_apply_fn) (g_cookie, id1, id2);
+	  (*apply_conn_fn) (cookie, id1, id2);
 	}
 	delete id2;
       }
@@ -407,10 +395,10 @@ static void _flat_connections_bool (ValueIdx *vx)
 }
 
 /* if nm == NULL, there are no suffixes! */
-static void _flat_single_connection (ActId *one, Array *oa,
-				      ActId *two, Array *ta,
-				      const char *nm, Arraystep *na,
-				      ActNamespace *isoneglobal)
+void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
+					    ActId *two, Array *ta,
+					    const char *nm, Arraystep *na,
+					    ActNamespace *isoneglobal)
 {
   ActId *id1, *id2;
   ActId *tail1, *tail2;
@@ -426,20 +414,30 @@ static void _flat_single_connection (ActId *one, Array *oa,
   }
 
   /*-- ok, construct two ids here and call the apply function! --*/
-  if (isoneglobal && isoneglobal != ActNamespace::Global()) {
-    char buf[10240];
-    sprintf (buf, "%s::", isoneglobal->Name());
-    id1 = new ActId (buf);
-    tail1 = id1;
+  if (isoneglobal) {
+    if (isoneglobal != ActNamespace::Global()) {
+      char buf[10240];
+      sprintf (buf, "%s::", isoneglobal->Name());
+      id1 = new ActId (buf);
+      tail1 = id1;
+    }
+    else {
+      tail1 = NULL;
+    }
   }
   else {
-    id1 = prefix_to_id (&tail1);
+    id1 = prefix_to_id (prefixes, prefix_array, &tail1);
   }
-  tail1->Append (one);
+  if (tail1) {
+    tail1->Append (one);
+  }
+  else {
+    id1 = one;
+  }
   tmp1 = tailid (one);
 
   if (nm) {
-    suf1 = suffix_to_id ();
+    suf1 = suffix_to_id (suffixes, suffix_array);
     tmp1->Append (suf1);
     if (suf1) {
       suf1 = tailid (suf1);
@@ -453,11 +451,16 @@ static void _flat_single_connection (ActId *one, Array *oa,
     suf1 = tmp1;
   }
 
-  id2 = prefix_to_id (&tail2);
-  tail2->Append (two);
+  id2 = prefix_to_id (prefixes, prefix_array, &tail2);
+  if (tail2) {
+    tail2->Append (two);
+  }
+  else {
+    id2 = two;
+  }
   tmp2 = tailid (two);
   if (nm) {
-    suf2 = suffix_to_id ();
+    suf2 = suffix_to_id (suffixes, suffix_array);
     tmp2->Append (suf2);
     if (suf2) {
       suf2 = tailid (suf2);
@@ -485,7 +488,7 @@ static void _flat_single_connection (ActId *one, Array *oa,
       tmp1->setArray (a1);
       tmp2->setArray (a2);
 
-      (*g_apply_fn) (g_cookie, id1, id2);
+      (*apply_conn_fn) (cookie, id1, id2);
 
       delete a1;
       delete a2;
@@ -499,22 +502,25 @@ static void _flat_single_connection (ActId *one, Array *oa,
     delete s2;
   }
   else {
-    (*g_apply_fn) (g_cookie, id1, id2);
+    (*apply_conn_fn) (cookie, id1, id2);
   }
     
   /* dealloc prefix and suffix */
-  tail1->prune();
-  nullify_arrays (id1);
-  delete id1;
+  if (tail1) {
+    tail1->prune();
+    nullify_arrays (id1);
+    delete id1;
+  }
   if (tmp1->Rest()) {
     nullify_arrays (tmp1->Rest());
     delete tmp1->Rest();
     tmp1->prune();
   }
-
-  tail2->prune();
-  nullify_arrays (id2);
-  delete id2;
+  if (tail2) {
+    tail2->prune();
+    nullify_arrays (id2);
+    delete id2;
+  }
   if (tmp2->Rest()) {
     nullify_arrays (tmp2->Rest());
     delete tmp2->Rest();
@@ -526,9 +532,9 @@ static void _flat_single_connection (ActId *one, Array *oa,
 }
 
 
-static void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
-				   Array *oa, Array *ta,
-				   ActNamespace *isoneglobal)
+void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
+					 Array *oa, Array *ta,
+					 ActNamespace *isoneglobal)
 {
   Assert (ux, "What");
   Assert (one, "What");
@@ -550,7 +556,7 @@ static void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
       if (vx->t->arrayInfo()) {
 	Arraystep *p = vx->t->arrayInfo()->stepper ();
 	while (!p->isend()) {
-	  push_name_array_suffix (vx->getName (), p->toArray());
+	  push_name_suffix (vx->getName (), p->toArray());
 	  _flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
 	  pop_name_suffix ();
 	  p->step();
@@ -580,7 +586,7 @@ static void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   }
 }
 
-static void _any_global_conns (act_connection *c)
+void ActApplyPass::_any_global_conns (act_connection *c)
 {
   act_connection *root;
   list_t *stack;
@@ -640,7 +646,7 @@ static void _any_global_conns (act_connection *c)
 }
 
 
-static void _flat_scope (Scope *s)
+void ActApplyPass::_flat_scope (Scope *s)
 {
   ActInstiter inst(s);
 
@@ -661,7 +667,7 @@ static void _flat_scope (Scope *s)
 	 global signal. If so, just emit that connection and nothing
 	 else. 
       */
-      if (g_apply_fn) {
+      if (apply_conn_fn) {
 	_any_global_conns (vx->connection());
       }
       continue;
@@ -679,12 +685,12 @@ static void _flat_scope (Scope *s)
 
 	while (!step->isend()) {
 	  if (vx->isPrimary(idx)) {
-	    push_name_array (vx->getName(), step->toArray());
+	    push_name (vx->getName(), step->toArray());
 
 	    /*-- process me --*/
-	    if (px && g_apply_procfn) {
-	      ActId *proc_inst = prefix_to_id (NULL);
-	      (*g_apply_procfn) (g_cookie, proc_inst, px);
+	    if (px && apply_proc_fn) {
+	      ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
+	      (*apply_proc_fn) (cookie, proc_inst, px);
 	      nullify_arrays (proc_inst);
 	      delete proc_inst;
 	    }
@@ -701,9 +707,9 @@ static void _flat_scope (Scope *s)
 	push_name (vx->getName());
 
 	/*-- process me --*/
-	if (px && g_apply_procfn) {
-	  ActId *proc_inst = prefix_to_id (NULL);
-	  (*g_apply_procfn) (g_cookie, proc_inst, px);
+	if (px && apply_proc_fn) {
+	  ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
+	  (*apply_proc_fn) (cookie, proc_inst, px);
 	  nullify_arrays (proc_inst);
 	  delete proc_inst;
 	}
@@ -713,7 +719,7 @@ static void _flat_scope (Scope *s)
       }
     }
 
-    if (!g_apply_fn) continue;
+    if (!apply_conn_fn) continue;
 
     /* not the special case of global to non-global connection; vx
        is the primary ValueIdx */
@@ -842,7 +848,7 @@ static void _flat_scope (Scope *s)
 		  delete one;
 		}
 		else {
-		  if (g_apply_fn && !c->a[i]->isglobal()) {
+		  if (apply_conn_fn && !c->a[i]->isglobal()) {
 		    _any_global_conns (c->a[i]);
 		  }
 		}
@@ -864,7 +870,7 @@ static void _flat_scope (Scope *s)
 }
 
 
-static void _flat_ns (ActNamespace *ns)
+void ActApplyPass::_flat_ns (ActNamespace *ns)
 {
   /* sub-namespaces */
   ActNamespaceiter iter(ns);
@@ -882,64 +888,78 @@ static void _flat_ns (ActNamespace *ns)
 }
 
 
-void act_flat_apply_conn_pairs (Act *a, void *cookie,
-				void (*f)(void *, ActId *, ActId *))
-{
-  g_cookie = cookie;
-  g_apply_fn = f;
-  if (!f) return;
-  prefixes = list_new ();
-  prefix_array = list_new ();
-  _flat_ns (a->Global());
-  list_free (prefixes);
-  list_free (prefix_array);
-  g_cookie = NULL;
-  g_apply_fn = NULL;
-}
 
-void act_flat_apply_conn_pairs (Act *a, void *cookie, Process *proc,
-				void (*f)(void *, ActId *, ActId *))
+ActApplyPass::ActApplyPass (Act *a) : ActPass (a, "apply")
 {
-  g_cookie = cookie;
-  g_apply_fn = f;
-  if (!f) return;
-  prefixes = list_new ();
-  prefix_array = list_new ();
-  _flat_scope (proc->CurScope());
-  list_free (prefixes);
-  list_free (prefix_array);
-  g_cookie = NULL;
-  g_apply_fn = NULL;
+  apply_proc_fn = NULL;
+  apply_conn_fn = NULL;
+  cookie = NULL;
+
+  prefixes = NULL;
+  prefix_array = NULL;
+  suffixes = NULL;
+  suffix_array = NULL;
 }
 
 
-
-void act_flat_apply_processes (Act *a, void *cookie,
-			       void (*f)(void *, ActId *, Process *p))
+ActApplyPass::~ActApplyPass()
 {
-  g_cookie = cookie;
-  g_apply_procfn = f;
-  if (!f) return;
-  prefixes = list_new ();
-  prefix_array = list_new ();
-  _flat_ns (a->Global());
-  list_free (prefixes);
-  list_free (prefix_array);
-  g_cookie = NULL;
-  g_apply_procfn = NULL;
+
 }
 
-void act_flat_apply_processes (Act *a, void *cookie, Process *proc,
-			       void (*f)(void *, ActId *, Process *p))
+
+int ActApplyPass::init ()
 {
-  g_cookie = cookie;
-  g_apply_procfn = f;
-  if (!f) return;
+  if (prefixes) {
+    list_free (prefixes);
+  }
   prefixes = list_new ();
+
+  if (prefix_array) {
+    list_free (prefix_array);
+  }
   prefix_array = list_new ();
-  _flat_scope (proc->CurScope());
-  list_free (prefixes);
-  list_free (prefix_array);
-  g_cookie = NULL;
-  g_apply_procfn = NULL;
+
+  _finished = 1;
+  return 1;
+}
+
+
+void ActApplyPass::setCookie (void *x)
+{
+  cookie = x;
+}
+
+void ActApplyPass::setInstFn (void (*f) (void *, ActId *, Process *))
+{
+  apply_proc_fn = f;
+}
+
+void ActApplyPass::setConnPairFn (void (*f) (void *, ActId *, ActId *))
+{
+  apply_conn_fn = f;
+}
+
+int ActApplyPass::run (Process *p)
+{
+  init ();
+
+  if (!a->Global()->CurScope()->isExpanded()) {
+    fatal_error ("ActApplyPass: must be called after expansion!");
+  }
+
+  if (!apply_conn_fn && !apply_proc_fn) {
+    warning ("ActApplyPass::run() without any functions to call. Doing nothing.");
+  }
+  else {
+    if (!p) {
+      _flat_ns (a->Global ());
+    }
+    else {
+      _flat_scope (p->CurScope ());
+    }
+  }
+  
+  _finished = 2;
+  return 1;
 }

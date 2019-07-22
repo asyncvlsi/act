@@ -50,7 +50,7 @@ typedef struct edge edge_t;
 #define EDGE_WIDTH(x,i,fold,minw)  \
   (((i) < (x)->nfolds-1) ? (fold) : ((((x)->w % (fold)) < (minw)) ? (fold) + ((x)->w % (fold)) : ((x)->w % (fold))))
 
-struct act_varinfo {
+struct act_nl_varinfo {
   act_booleanized_var_t *v;	/* var pointer */
   
   act_prs_expr_t *e_up, *e_dn;	/* parsed expression */
@@ -76,7 +76,7 @@ struct act_varinfo {
 /* transistor-level netlist graph */
 typedef struct node {
   int i;			/* node id# */
-  struct act_varinfo *v;	/* some have names (could be NULL) */
+  struct act_nl_varinfo *v;	/* some have names (could be NULL) */
 
   list_t *e;			/* edges */
 
@@ -154,8 +154,82 @@ typedef struct {
 
 } netlist_t;
 
-void act_prs_to_netlist (Act *, Process *);
-void act_emit_netlist (Act *, Process *, FILE *);
-void emit_verilog_pins (Act *, FILE *, FILE *, Process *);
+
+/* -- netlist pass -- */
+
+class ActNetlistPass : public ActPass {
+ public:
+  ActNetlistPass (Act *a);
+  ~ActNetlistPass ();
+
+  int run (Process *p = NULL);
+
+  netlist_t *getNL (Process *p);
+
+  void Print (FILE *fp, Process *p);
+
+ private:
+  int init ();
+  
+  std::map<Process *, netlist_t *> *netmap;
+  ActBooleanizePass *bools;
+
+  /* lambda value */
+  double lambda;
+  
+  /* minimum transistor size */
+  int min_w_in_lambda;
+  int min_l_in_lambda;
+
+  /* maximum transistor size */
+  int max_n_w_in_lambda;
+  int max_p_w_in_lambda;
+
+  /* strength ratios */
+  double p_n_ratio;
+  double weak_to_strong_ratio;
+
+  /* load cap */
+  double default_load_cap;
+
+  /* netlist generation mode */
+  int black_box_mode;
+  
+  /* folding parameters */
+  int n_fold;
+  int p_fold;
+  int discrete_len;
+  
+  /* local and global Vdd/GND */
+  const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
+
+  /* printing flags */
+  int ignore_loadcap;
+  int emit_parasitics;
+  
+  int fet_spacing_diffonly;
+  int fet_spacing_diffcontact;
+  int fet_diff_overhang;
+  
+  int use_subckt_models;
+  int swap_source_drain;
+  const char *extra_fet_string;
+  
+  int top_level_only;
+
+  void generate_netlist (Process *p);
+  netlist_t *generate_netgraph (Process *proc);
+  void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0);
+  void generate_staticizers (netlist_t *N);
+  void fold_transistors (netlist_t *N);
+  void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
+		       act_size_spec_t *sz);
+  void emit_node (netlist_t *N, FILE *fp, node_t *n);
+  void create_expr_edges (netlist_t *N, int type, node_t *left,
+			  act_prs_expr_t *e, node_t *right, int sense);
+  
+  void emit_netlist (Process *p, FILE *fp);
+};
+
 
 #endif /* __NETLIST_H__ */

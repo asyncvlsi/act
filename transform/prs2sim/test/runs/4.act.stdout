@@ -1,0 +1,23 @@
+| units: 3 tech: dummytech format: MIT
+p x/a1/c Vdd x/a1/n#6 2 5
+p GND Vdd x/a1/n#7 11 4
+n x/a1/a GND x/a1/n#3 2 5
+n x/a1/c GND x/a1/n#6 2 5
+n x/a1/n#6 GND x/a1/c 2 4
+n x/a1/b x/a1/n#3 x/a1/c 2 5
+p x/a1/n#6 x/a1/n#7 x/a1/c 2 4
+p x/a/c Vdd x/a/n#6 2 5
+p GND Vdd x/a/n#7 11 4
+n x/a/a GND x/a/n#3 2 5
+n x/a/c GND x/a/n#6 2 5
+n x/a/n#6 GND x/a/c 2 4
+n x/a/b x/a/n#3 x/a/c 2 5
+p x/a/n#6 x/a/n#7 x/a/c 2 4
+= x/C x/a1/b
+= x/C x/a/c
+= x/Z x/a1/c
+= x/B x/a/b
+= x/A x/a1/a
+= x/A x/a/a
+= Vdd Vdd!
+= GND GND!

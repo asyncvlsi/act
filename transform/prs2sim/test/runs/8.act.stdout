@@ -1,0 +1,15 @@
+| units: 3 tech: dummytech format: MIT
+p t/a t/g/vdd t/n#6 2 10
+p t/c t/g/vdd t/n#7 2 5
+p t/g/gnd t/g/vdd t/n#8 11 4
+n t/a t/g/gnd t/n#3 2 5
+n t/c t/g/gnd t/n#7 2 5
+n t/g/vdd t/g/gnd t/n#9 38 4
+n t/b t/n#3 t/c 2 5
+p t/b t/n#6 t/c 2 10
+p t/n#7 t/n#8 t/c 2 4
+n t/n#7 t/n#9 t/c 2 4
+= t/g/vdd t/s
+= t/g/gnd t/p
+= Vdd Vdd!
+= GND GND!

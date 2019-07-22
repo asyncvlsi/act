@@ -1,0 +1,19 @@
+bool Vdd2, GND;
+
+defchan e1of2 <: chan(int<1>) (bool d0, d1, e; bool d[2]) { d0 = d[0]; d1 = d[1]; }
+
+defproc foo(e1of2 A, B)
+{
+  bool a, b;
+  bool w, aa, bb;
+  bool q = Vdd2;
+
+  A.e = aa = a;
+
+  prs<q> { 
+    a<20,2> & w <10> -> b-
+    aa  => bb-
+  }
+}
+
+foo x;

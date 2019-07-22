@@ -28,10 +28,6 @@
 #include "config.h"
 #include <act/iter.h>
 
-static std::map<Process *, act_boolean_netlist_t *> *netmap = NULL;
-
-static int black_box_mode;
-
 /*-- variables --*/
 
 static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
@@ -285,7 +281,7 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
   return N;
 }
 
-static void generate_netbools (Act *a, Process *p)
+void ActBooleanizePass::generate_netbools (Act *a, Process *p)
 {
   int subinst = 0;
   Assert (p->isExpanded(), "Process must be expanded!");
@@ -317,6 +313,40 @@ static void generate_netbools (Act *a, Process *p)
 
   return;
 }
+
+void ActBooleanizePass::generate_netbools (Process *p)
+{
+  int subinst = 0;
+
+  Assert (p->isExpanded(), "Process must be expanded!");
+
+  if (netmap->find(p) != netmap->end()) {
+    /* handled this already */
+    return;
+  }
+
+  /* Create netlist for all sub-processes */
+  ActInstiter i(p->CurScope());
+
+  /* handle all processes instantiated by this one */
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = *i;
+    if (TypeFactory::isProcessType (vx->t)) {
+      generate_netbools (dynamic_cast<Process *>(vx->t->BaseType()));
+      subinst = 1;
+    }
+  }
+
+  act_boolean_netlist_t *n = walk_netgraph (a, p);
+
+  (*netmap)[p] = n;
+
+  if (subinst) {
+    n->isempty = 0;
+  }
+  return;
+}
+
 
 
 
@@ -355,7 +385,8 @@ static void mark_c_used (act_boolean_netlist_t *n,
 }
 
 
-static void append_bool_port (act_boolean_netlist_t *n, act_connection *c)
+void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
+					  act_connection *c)
 {
   int i;
 
@@ -427,8 +458,9 @@ static void append_bool_port (act_boolean_netlist_t *n, act_connection *c)
 }
 
 
-static void flatten_ports_to_bools (act_boolean_netlist_t *n, ActId *prefix,
-				    Scope *s, UserDef *u)
+void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
+						ActId *prefix,
+						Scope *s, UserDef *u)
 {
   int i;
 
@@ -509,10 +541,10 @@ static void flatten_ports_to_bools (act_boolean_netlist_t *n, ActId *prefix,
 
 
 
-static void rec_update_used_flags (act_boolean_netlist_t *n,
-				   act_boolean_netlist_t *subinst,
-				   ActId *prefix,
-				   Scope *s, UserDef *u, int *count)
+void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
+					       act_boolean_netlist_t *subinst,
+					       ActId *prefix,
+					       Scope *s, UserDef *u, int *count)
 {
   int i;
 
@@ -604,8 +636,8 @@ static void rec_update_used_flags (act_boolean_netlist_t *n,
 
 
 
-static void update_used_flags (act_boolean_netlist_t *n,
-			       ValueIdx *vx, Process *p)
+void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
+					   ValueIdx *vx, Process *p)
 {
   ActId *id;
   int count;
@@ -646,7 +678,7 @@ static void update_used_flags (act_boolean_netlist_t *n,
 }
 
 
-static void create_bool_ports (Act *a, Process *p)
+void ActBooleanizePass::create_bool_ports (Act *a, Process *p)
 {
   Assert (p->isExpanded(), "Process must be expanded!");
   if (netmap->find(p) == netmap->end()) {
@@ -666,6 +698,33 @@ static void create_bool_ports (Act *a, Process *p)
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
       create_bool_ports (a, dynamic_cast<Process *>(vx->t->BaseType()));
+      update_used_flags (n, vx, p);
+    }
+  }
+  flatten_ports_to_bools (n, NULL, p->CurScope(), p);
+  return;
+}
+
+void ActBooleanizePass::create_bool_ports (Process *p)
+{
+  Assert (p->isExpanded(), "Process must be expanded!");
+  if (netmap->find(p) == netmap->end()) {
+    fprintf (stderr, "Could not find process `%s'", p->getName());
+    fprintf (stderr, " in created netlists; inconstency!\n");
+    fatal_error ("Internal inconsistency or error in pass ordering!");
+  }
+  act_boolean_netlist_t *n = netmap->find (p)->second;
+  if (n->visited) return;
+  n->visited = 1;
+
+  /* emit sub-processes */
+  ActInstiter i(p->CurScope());
+
+  /* handle all processes instantiated by this one */
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = *i;
+    if (TypeFactory::isProcessType (vx->t)) {
+      create_bool_ports (dynamic_cast<Process *>(vx->t->BaseType()));
       update_used_flags (n, vx, p);
     }
   }
@@ -696,21 +755,57 @@ static void free_bN (act_boolean_netlist_t *n)
   FREE (n);
 }
 
-
-void act_booleanize_netlist (Act *a, Process *p)
+ActBooleanizePass::ActBooleanizePass(Act *a) : ActPass(a, "booleanize")
 {
-  std::map<Process *, act_boolean_netlist_t *> *tmp;
+  netmap = NULL;
 
-  tmp = (std::map<Process *, act_boolean_netlist_t *> *) a->aux_find ("booleanize");
-  if (tmp) {
+  /* setup config option */
+  if (config_exists ("net.black_box_mode")) {
+    black_box_mode = config_get_int ("net.black_box_mode");
+  }
+  else {
+    black_box_mode = 0;
+  }
+}
+
+ActBooleanizePass::~ActBooleanizePass()
+{
+  if (netmap) {
     std::map<Process *, act_boolean_netlist_t *>::iterator it;
-    for (it = (*tmp).begin(); it != (*tmp).end(); it++) {
+    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
       free_bN (it->second);
     }
-    delete tmp;
+    delete netmap;
+  }
+  netmap = NULL;
+}
+
+int ActBooleanizePass::init ()
+{
+  if (netmap) {
+    std::map<Process *, act_boolean_netlist_t *>::iterator it;
+    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
+      free_bN (it->second);
+    }
+    delete netmap;
   }
   netmap = new std::map<Process *, act_boolean_netlist_t *>();
 
+  _finished = 1;
+  return 1;
+}
+
+int ActBooleanizePass::run (Process *p)
+{
+  /*-- start the pass --*/
+  init ();
+  
+  /*-- run any dependencies registered --*/
+  if (!rundeps (p)) {
+    return 0;
+  }
+
+  /*-- do the work --*/
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
     ActInstiter i(g->CurScope());
@@ -720,7 +815,7 @@ void act_booleanize_netlist (Act *a, Process *p)
       if (TypeFactory::isProcessType (vx->t)) {
 	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
 	if (x->isExpanded()) {
-	  generate_netbools (a, x);
+	  generate_netbools (x);
 	}
       }
     }
@@ -730,25 +825,17 @@ void act_booleanize_netlist (Act *a, Process *p)
     (*netmap)[NULL] = N;
   }
   else {
-    generate_netbools (a, p);
+    generate_netbools (p);
   }
 
-  a->aux_add ("booleanize", netmap);
-
-  /*-- Now create Boolean ports --*/
-  if (config_exists ("net.black_box_mode")) {
-    black_box_mode = config_get_int ("net.black_box_mode");
-  }
-  else {
-    black_box_mode = 0;
-  }
-  
-  /* clear visited flag */
+  /*--- clear visited flag ---*/
   std::map<Process *, act_boolean_netlist_t *>::iterator it;
   for (it = netmap->begin(); it != netmap->end(); it++) {
     act_boolean_netlist_t *n = it->second;
     n->visited = 0;
   }
+
+  /*-- create boolean ports --*/
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
     ActInstiter i(g->CurScope());
@@ -758,18 +845,43 @@ void act_booleanize_netlist (Act *a, Process *p)
       if (TypeFactory::isProcessType (vx->t)) {
 	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
 	if (x->isExpanded()) {
-	  create_bool_ports (a, x);
+	  create_bool_ports (x);
 	}
       }
     }
   }
   else {
-    create_bool_ports (a, p);
+    create_bool_ports (p);
   }
+
+  /*-- clear visited flag again --*/
   for (it = netmap->begin(); it != netmap->end(); it++) {
     act_boolean_netlist_t *n = it->second;
     n->visited = 0;
   }
-  
-  netmap = NULL;
+
+  /*-- mark pass as done --*/
+  _finished = 2;
+
+  return 1;
 }
+
+
+act_boolean_netlist_t *ActBooleanizePass::getBNL (Process *p)
+{
+  if (!completed()) {
+    warning ("ActBooleanizePass::getBNL() called before pass was complete");
+    return NULL;
+  }
+
+  Assert (netmap, "What?");
+
+  std::map<Process *, act_boolean_netlist_t *>::iterator it = netmap->find (p);
+
+  if (it == netmap->end()) {
+    return NULL;
+  }
+
+  return it->second;
+}
+  

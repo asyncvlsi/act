@@ -22,6 +22,7 @@
 #ifndef __ACT_BOOLEANIZE_H__
 #define __ACT_BOOLEANIZE_H__
 
+#include <map>
 #include <act/act.h>
 
 struct netlist_bool_port {
@@ -62,5 +63,47 @@ typedef struct {
 
 
 void act_booleanize_netlist (Act *, Process *);
+
+class ActBooleanizePass : public ActPass {
+ public:
+  ActBooleanizePass(Act *a);
+  ~ActBooleanizePass();
+
+  int run (Process *p = NULL);
+
+  act_boolean_netlist_t *getBNL (Process *p);
+
+
+
+  
+  /*-- internal data structures and functions --*/
+ private:
+  int init ();
+  
+  std::map<Process *, act_boolean_netlist_t *> *netmap;
+  int black_box_mode;
+
+  /*-- internal functions: generate booleans for a process --*/
+  void generate_netbools (Process *p);
+  void generate_netbools (Act *a, Process *p);
+
+  void create_bool_ports (Process *p);
+  void create_bool_ports (Act *a, Process *p);
+  void flatten_ports_to_bools (act_boolean_netlist_t *,
+			       ActId *prefix,
+			       Scope *s,
+			       UserDef *u);
+
+  void update_used_flags (act_boolean_netlist_t *n,
+			  ValueIdx *vx, Process *p);
+  void rec_update_used_flags (act_boolean_netlist_t *n,
+			      act_boolean_netlist_t *subinst,
+			      ActId *prefix,
+			      Scope *s, UserDef *u, int *count);
+  void append_bool_port (act_boolean_netlist_t *n,
+			 act_connection *c);
+};
+
+
 
 #endif /* __ACT_BOOLEANIZE_H__ */

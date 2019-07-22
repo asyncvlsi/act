@@ -28,16 +28,49 @@
 #include <utility>
 #include <act/passes/cells.h>
 
-static struct cHashtable *cell_table = NULL;
-static std::set<Process *> *visited_procs = NULL;
-static ActNamespace *cell_ns = NULL;
+struct act_varinfo {
+  int nup, ndn;			// # of times in up and down guards
+  int *depths;			// depth of each instance (nup + ndn)
+  int cup, cdn;
+				// size), 0..nup-1 followed by ndn
+  unsigned char tree;		// 0 = not in tree, 1 in tree
+};
+
+struct act_prsinfo {
+  Process *cell;		/* the cell; NULL until it is
+				   created. */
+
+  int nvars;			/* # of variables. includes @-labels */
+
+  int nout;			/* # of outputs 
+				   Variable convention:
+				   0, 1, ..., nout-1 are outputs.
+				   nout, ... nvars-1 are inputs
+				*/
+  int nat;                     /* # of labels */
+
+  /* variable attributes */
+  int *attr_map;
+  A_DECL (struct act_varinfo, attrib);
+
+  int tval;			 /* for tree<>; -1 = none, 0 = mgn,
+				    otherwise tree  */
+
+  /* XXX: need attributes from the production rules */
+  
+  A_DECL (act_prs_expr_t *, up); /* pull-up */
+  A_DECL (act_prs_expr_t *, dn); /* pull-down */
+      /* NOTE: all actid pointers are actually just simple integers */
+      /* The # of these will be nout + any internal labels */
+
+  int *match_perm;		// used to report match!
+  
+};
 
 static void _dump_prsinfo (struct act_prsinfo *p);
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
 						struct act_prsinfo *pi);
 
-
-static int proc_inst_count = 0;
 
 static int cell_hashfn (int sz, void *key)
 {
@@ -341,24 +374,15 @@ static void cell_freefn (void *key)
 }
 
 
-L_A_DECL (act_prs_lang_t *, pending);
-
+L_A_DECL (act_prs_lang_t *, pendingprs);
 
 static void flush_pending (void)
 {
   /* convert pending gates into cells too */
-  A_FREE (pending);
-  A_INIT (pending);
+  A_FREE (pendingprs);
+  A_INIT (pendingprs);
 }
 
-
-struct idmap {
-  A_DECL (ActId *, ids);
-  int nout;
-  int nat;
-};
-
-struct idmap current_idmap;
 
 static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
 {
@@ -609,32 +633,12 @@ static int _collect_depths (struct act_prsinfo *info,
 }
 
 
-static int cell_max = 0;
-
-static void add_new_cell (struct act_prsinfo *pi)
+void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 {
   int i;
   
-  if (cell_max == 0) {
-    int id, version;
-    chash_bucket_t *b;
-    struct act_prsinfo *mi;
-
-    if (!cell_table) return;
-
-    for (i=0; i < cell_table->size; i++) {
-      for (b = cell_table->head[i]; b; b = b->next) {
-	mi = (struct act_prsinfo *)b->v;
-	if (mi->cell) {
-	  sscanf (mi->cell->getName()+1, "%dx%d", &id, &version);
-	  cell_max = (cell_max > id) ? cell_max : id;
-	}
-      }
-    }
-  }
-
   char buf[100];
-  snprintf (buf, 100, "g%dx0", ++cell_max);
+  snprintf (buf, 100, "g%dx0", cell_count++);
   Assert (!pi->cell, "Hmm...");
 
   /* add the unexpanded process to the cell namespace, and then
@@ -991,7 +995,7 @@ static int intcmpfn (const void *a, const void *b)
 }
 
 /*-- convert prs block into attriburtes used for isomorphism checking --*/
-static struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs)
+struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
 {
   struct act_prsinfo *ret;
   act_prs_lang_t *l, *lpush;
@@ -1354,7 +1358,7 @@ static int _cmp_cells (const void *a, const void *b)
 }
 
 
-static void dump_celldb (FILE *fp)
+void ActCellPass::dump_celldb (FILE *fp)
 {
   int i;
   chash_bucket_t *b;
@@ -1413,7 +1417,7 @@ static void dump_celldb (FILE *fp)
   fprintf (fp, "\n\n}\n");
 }
 
-static Expr *_idexpr (int idx, struct act_prsinfo *pi)
+Expr *ActCellPass::_idexpr (int idx, struct act_prsinfo *pi)
 {
   Expr *ret;
 
@@ -1428,7 +1432,8 @@ static Expr *_idexpr (int idx, struct act_prsinfo *pi)
   return ret;
 }
 
-ActBody_Conn *_build_connections (char *name, struct act_prsinfo *pi)
+ActBody_Conn *ActCellPass::_build_connections (const char *name,
+					       struct act_prsinfo *pi)
 {
   int i;
   ActId *instname;
@@ -1479,7 +1484,7 @@ ActBody_Conn *_build_connections (char *name, struct act_prsinfo *pi)
   return ac;
 }
 
-static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
+void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
 {
   int i;
   struct act_prsinfo *pi;
@@ -1495,27 +1500,27 @@ static void _collect_one_prs (Process *p, act_prs_lang_t *prs)
     newprs.next = NULL;
   }
   else {
-    for (i=0; i < A_LEN (pending); i++) {
-      if (prs->u.one.id == pending[i]->u.one.id ||
-	  prs->u.one.id->isEqual (pending[i]->u.one.id)) {
+    for (i=0; i < A_LEN (pendingprs); i++) {
+      if (prs->u.one.id == pendingprs[i]->u.one.id ||
+	  prs->u.one.id->isEqual (pendingprs[i]->u.one.id)) {
 	break;
       }
     }
-    if (i == A_LEN (pending)) {
-      A_NEW (pending, act_prs_lang_t *);
-      A_NEXT (pending) = prs;
-      A_INC (pending);
+    if (i == A_LEN (pendingprs)) {
+      A_NEW (pendingprs, act_prs_lang_t *);
+      A_NEXT (pendingprs) = prs;
+      A_INC (pendingprs);
       return;
     }
-    newprs = *(pending[i]);
+    newprs = *(pendingprs[i]);
     newprs.next = &newprs2;
     newprs2 = *prs;
     newprs2.next = NULL;
     i++;
-    for (; i < A_LEN (pending); i++) {
-      pending[i-1] = pending[i];
+    for (; i < A_LEN (pendingprs); i++) {
+      pendingprs[i-1] = pendingprs[i];
     }
-    A_LEN(pending)--;
+    A_LEN(pendingprs)--;
   }
   pi = _gen_prs_attributes (&newprs);
   if (cell_table) {
@@ -1571,7 +1576,7 @@ static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
 /*
   Helper function for walking through the production rule block
 */
-static void collect_gates (Process *p, act_prs_lang_t **pprs)
+void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
 {
   act_prs_lang_t *prs = *pprs;
   act_prs_lang_t *prev = NULL;
@@ -1641,7 +1646,7 @@ static void collect_gates (Process *p, act_prs_lang_t **pprs)
 /*
   add_cells: -1 if not to be added, otherwise starting id of newcells 
 */
-static void prs_to_cells (Act *a, Process *p, int add_cells)
+void ActCellPass::prs_to_cells (Process *p)
 {
   Assert (p->isExpanded(), "Only works for expanded processes!");
 
@@ -1663,13 +1668,13 @@ static void prs_to_cells (Act *a, Process *p, int add_cells)
     if (TypeFactory::isProcessType (vx->t)) {
       Process *x = dynamic_cast<Process *>(vx->t->BaseType());
       if (x->isExpanded()) {
-	prs_to_cells (a, x, add_cells);
+	prs_to_cells (x);
       }
     }
   }
 
   proc_inst_count = 0;
-  A_INIT (pending);
+  A_INIT (pendingprs);
   act_prs *prs = p->getprs();
   
   while (prs) {
@@ -1724,9 +1729,9 @@ static void prs_to_cells (Act *a, Process *p, int add_cells)
 
 
 /*
- * collect all cells into the cell table
+ * collect all cells into the cell table, and return the max cell number
  */
-static int _collect_cells (ActNamespace *cells)
+int ActCellPass::_collect_cells (ActNamespace *cells)
 {
   ActTypeiter it(cell_ns);
   chash_bucket_t *b;
@@ -1921,23 +1926,86 @@ static int _collect_cells (ActNamespace *cells)
   return cellmax;
 }
 
-void act_prs_to_cells (Act *a, Process *p, int add_cells)
-{
-  cell_table = (struct cHashtable *) a->aux_find ("prs2cells");
-  if (!cell_table) {
-    /* initialize all the fields of cell_table */
-    cell_table = chash_new (32);
-    cell_table->hash = cell_hashfn;
-    cell_table->match = cell_matchfn;
-    cell_table->dup = cell_dupfn;
-    cell_table->free = cell_freefn;
-    cell_table->print = NULL;
 
-    a->aux_add ("prs2cells", cell_table);
+int ActCellPass::run (Process *p)
+{
+  /*-- start the pass --*/
+  init ();
+
+  /*-- run dependencies --*/
+  if (!rundeps (p)) {
+    return 0;
+  }
+
+  if (!p) {
+    ActNamespace *g = ActNamespace::Global();
+    ActInstiter i(g->CurScope());
+    
+    for (i = i.begin(); i != i.end(); i++) {
+      ValueIdx *vx = *i;
+      if (TypeFactory::isProcessType (vx->t)) {
+	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+	if (x->isExpanded()) {
+	  prs_to_cells (x);
+	}
+      }
+    }
   }
   else {
+    prs_to_cells (p);
+  }
+
+  delete visited_procs;
+  visited_procs = NULL;
+
+  /*-- finished --*/
+  _finished = 2;
+  return 1;
+}
+
+
+void ActCellPass::Print (FILE *fp)
+{
+  if (!completed()) {
+    warning ("ActCellPass::Print() called without pass being run");
     return;
   }
+  if (!cell_table) {
+    return;
+  }
+  dump_celldb (fp);
+}
+
+
+ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
+{
+  cell_table = NULL;
+  visited_procs = NULL;
+  cell_ns = NULL;
+  proc_inst_count = 0;
+  cell_count = 0;
+}
+
+ActCellPass::~ActCellPass ()
+{
+  if (cell_table) {
+    chash_free (cell_table);
+  }
+}
+  
+int ActCellPass::init ()
+{
+  if (cell_table) {
+    warning ("ActCellPass::init(): cannot be run more than once!");
+    return 0;
+  }
+  
+  cell_table = chash_new (32);
+  cell_table->hash = cell_hashfn;
+  cell_table->match = cell_matchfn;
+  cell_table->dup = cell_dupfn;
+  cell_table->free = cell_freefn;
+  cell_table->print = NULL;
 
   A_INIT (current_idmap.ids);
   current_idmap.nout = 0;
@@ -1946,51 +2014,16 @@ void act_prs_to_cells (Act *a, Process *p, int add_cells)
   visited_procs = new std::set<Process *> ();
   
   cell_ns = a->findNamespace ("cell");
-
-
+  
   if (!cell_ns) {
     cell_ns = new ActNamespace (ActNamespace::Global(), "cell");
     cell_ns->Expand ();
+    cell_count = 0;
   }
   else {
-    int res =  _collect_cells (cell_ns) + 1;
-    if (add_cells != -1) {
-      add_cells = add_cells > res ? add_cells : res;
-    }
-  }
-
-  if (!p) {
-    ActNamespace *g = ActNamespace::Global();
-    ActInstiter i(g->CurScope());
-
-    for (i = i.begin(); i != i.end(); i++) {
-      ValueIdx *vx = *i;
-      if (TypeFactory::isProcessType (vx->t)) {
-	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-	if (x->isExpanded()) {
-	  prs_to_cells (a, x, add_cells);
-	}
-      }
-    }
-  }
-  else {
-    prs_to_cells (a, p, add_cells);
-  }
-
-  delete visited_procs;
+    cell_count =  _collect_cells (cell_ns) + 1;
+  }    
   
-  cell_table = NULL;
-  cell_ns = NULL;
-}
-
-
-void act_emit_celltable (FILE *fp, Act *a)
-{
-  cell_table = (struct cHashtable *) a->aux_find ("prs2cells");
-  if (!cell_table) {
-    return;
-  }
-  dump_celldb (fp);
-  
-  cell_table = NULL;
+  _finished = 1;
+  return 1;
 }

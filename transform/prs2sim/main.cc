@@ -25,6 +25,7 @@
 #include <string.h>
 #include <act/passes.h>
 #include <act/passes/netlist.h>
+#include <act/passes/aflat.h>
 #include <map>
 #include "config.h"
 
@@ -60,7 +61,7 @@ void f (void *x, ActId *one, ActId *two)
   fprintf (fp, "\n");
 }
 
-static std::map<Process *, netlist_t *> *netmap = NULL;
+static ActNetlistPass *netinfo = NULL;
 
 static void _print_node (netlist_t *N, FILE *fp, ActId *prefix, node_t *n)
 {
@@ -99,7 +100,9 @@ void g (void *x, ActId *prefix, Process *p)
 {
   FILE *fp;
   netlist_t *N;
-  N = netmap->find (p)->second;
+
+  N = netinfo->getNL (p);
+  
   Assert (N, "Hmm");
 
   fp = (FILE *)x;
@@ -151,15 +154,12 @@ int main (int argc, char **argv)
   }
   
   a = new Act (argv[1]);
-  act_expand (a);
+  a->Expand ();
   config_read ("prs2net.conf");
 
   /* generate netlist */
-  /*config_set_int ("net.disable_keepers", 1);*/
-  act_booleanize_netlist (a, NULL);
-  act_prs_to_netlist (a, NULL);
-  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
-  Assert (netmap, "Hmm...");
+  netinfo = new ActNetlistPass (a);
+  netinfo->run ();
 
   FILE *fps, *fpal;
   char buf[10240];
@@ -175,7 +175,6 @@ int main (int argc, char **argv)
     fatal_error ("Could not open file `%s' for writing", buf);
   }
 
-
   /* print as sim file 
      units: lambda in centimicrons
    */
@@ -187,11 +186,17 @@ int main (int argc, char **argv)
 
   fprintf (fps, "| units: %d tech: %s format: MIT\n", units, config_get_string ("net.name"));
 
-  act_flat_apply_processes (a, fps, g);
-  g(fps, NULL, NULL);
+  ActApplyPass *app = new ActApplyPass (a);
+
+  app->setCookie (fps);
+  app->setInstFn (g);
+  app->run ();
   fclose (fps);
-  
-  act_flat_apply_conn_pairs (a, fpal, f);
+
+  app->setCookie (fpal);
+  app->setInstFn (NULL);
+  app->setConnPairFn (f);
+  app->run ();
   fprintf (fpal, "= Vdd Vdd!\n");
   fprintf (fpal, "= GND GND!\n");
   fclose (fpal);

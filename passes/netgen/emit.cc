@@ -29,51 +29,6 @@
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
-static std::map<Process *, netlist_t *> *netmap = NULL;
-
-static double lambda;			/* scale factor from width expressions
-					to absolute units */
-
-/* min transistor size */
-static int min_w_in_lambda;
-static int min_l_in_lambda;
-
-/* max fet widths */
-static int max_n_w_in_lambda;
-static int max_p_w_in_lambda;
-
-static int ignore_loadcap;  /* ignore loadcap directives (lvs only) */
-
-/* discrete lengths */
-static int discrete_length;
-
-/* fet extra string */
-static char *extra_fet_string;
-
-/* fold transistors */
-static int fold_nfet_width;
-static int fold_pfet_width;
-
-/* swap source and drain */
-static int swap_source_drain;
-
-/* use subckt models */
-static int use_subckt_models;
-
-/* emit area of source/drain along with fet */
-static int emit_parasitics;
-
-/* internal diffusion */
-static int fet_spacing_diffonly;
-static int fet_spacing_diffcontact;
-static int fet_diff_overhang;
-
-/* black box mode */
-static int black_box_mode;
-
-/* top level only */
-static int top_level_only;
-
 static void aemit_node (Act *a, netlist_t *N, FILE *fp, node_t *n)
 {
   if (n->v) {
@@ -101,15 +56,17 @@ static void aemit_node (Act *a, netlist_t *N, FILE *fp, node_t *n)
   }
 }
 
-static void emit_netlist (Act *a, Process *p, FILE *fp)
+void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 {
   Assert (p->isExpanded(), "Process must be expanded!");
-  if (netmap->find(p) == netmap->end()) {
+
+  netlist_t *n = getNL (p);
+  if (!n) {
     fprintf (stderr, "Could not find process `%s'", p->getName());
     fprintf (stderr, " in created netlists; inconstency!\n");
     fatal_error ("Internal inconsistency or error in pass ordering!");
   }
-  netlist_t *n = netmap->find (p)->second;
+
   if (n->bN->visited) return;
   n->bN->visited = 1;
 
@@ -124,7 +81,7 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
     for (i = i.begin(); i != i.end(); i++) {
       ValueIdx *vx = *i;
       if (TypeFactory::isProcessType (vx->t)) {
-	emit_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()), fp);
+	emit_netlist (dynamic_cast<Process *>(vx->t->BaseType()), fp);
       }
     }
   }
@@ -287,16 +244,16 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 
       /* discretize lengths */
       len_repeat = e->nlen;
-      if (discrete_length > 0) {
-	l = discrete_length;
+      if (discrete_len > 0) {
+	l = discrete_len;
       }
 
       if (e->type == EDGE_NFET) {
-	fold = fold_nfet_width;
+	fold = n_fold;
       }
       else {
 	Assert (e->type == EDGE_PFET, "Hmm");
-	fold = fold_pfet_width;
+	fold = p_fold;
       }
 
       width_repeat = e->nfolds;
@@ -537,48 +494,14 @@ static void emit_netlist (Act *a, Process *p, FILE *fp)
 }
 
 
-void act_emit_netlist (Act *a, Process *p, FILE *fp)
+void ActNetlistPass::Print (FILE *fp, Process *p)
 {
   Assert (p, "act_emit_netlist() requires a non-NULL process!");
   Assert (p->isExpanded (), "Process must be expanded!");
 
-  netmap = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
-  if (!netmap) {
-    fatal_error ("emit_netlist pass called before prs2net pass!");
+  if (!completed()) {
+    fatal_error ("ActNetlistPass::Print() called before pass is run!");
   }
-
-  lambda = config_get_real ("net.lambda");
   
-  min_w_in_lambda = config_get_int ("net.min_width");
-  min_l_in_lambda = config_get_int ("net.min_length");
-  
-  max_n_w_in_lambda = config_get_int ("net.max_n_width");
-  max_p_w_in_lambda = config_get_int ("net.max_p_width");
-  
-  discrete_length = config_get_int ("net.discrete_length");
-  fold_pfet_width = config_get_int ("net.fold_pfet_width");
-  fold_nfet_width = config_get_int ("net.fold_nfet_width");
-
-  ignore_loadcap = config_get_int ("net.ignore_loadcap");
-
-  emit_parasitics = config_get_int ("net.emit_parasitics");
-  fet_spacing_diffonly = config_get_int ("net.fet_spacing_diffonly");
-  fet_spacing_diffcontact = config_get_int ("net.fet_spacing_diffcontact");
-  fet_diff_overhang = config_get_int ("net.fet_diff_overhang");
-  
-  use_subckt_models = config_get_int ("net.use_subckt_models");
-  swap_source_drain = config_get_int ("net.swap_source_drain");
-  extra_fet_string = config_get_string ("net.extra_fet_string");
-
-  black_box_mode = config_get_int ("net.black_box_mode");
-
-  top_level_only = config_get_int ("net.top_level_only");
-  
-  emit_netlist (a, p, fp);
-}
-
-
-void emit_verilog_pins (Act *a, FILE *fpv, FILE *fpp, Process *p)
-{
-  
+  emit_netlist (p, fp);
 }

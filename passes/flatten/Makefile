@@ -21,7 +21,7 @@
 
 weird: install_inc all
 
-EXTRA=aflat.o flatten.o
+EXTRA=flatten.o
 TARGETINCS=aflat.h
 TARGETINCSUBDIR=act/passes
 

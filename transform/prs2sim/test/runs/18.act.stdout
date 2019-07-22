@@ -1,0 +1,23 @@
+| units: 3 tech: dummytech format: MIT
+p f/b Vdd f/n#4 2 5
+p GND Vdd f/n#5 4 4
+n f/a GND f/b 2 5
+n f/b GND f/n#4 2 5
+n f/n#4 GND f/b 2 4
+p f/n#4 f/n#5 f/b 2 4
+p f/zz/s Vdd f/zz/n#6 2 5
+p GND Vdd f/zz/n#7 11 4
+n f/zz/q GND f/zz/n#3 2 5
+n f/zz/s GND f/zz/n#6 2 5
+n f/zz/n#6 GND f/zz/s 2 4
+n f/zz/r f/zz/n#3 f/zz/s 2 5
+p f/zz/n#6 f/zz/n#7 f/zz/s 2 4
+p f/z/s Vdd f/z/n#6 2 5
+p GND Vdd f/z/n#7 11 4
+n f/z/q GND f/z/n#3 2 5
+n f/z/s GND f/z/n#6 2 5
+n f/z/n#6 GND f/z/s 2 4
+n f/z/r f/z/n#3 f/z/s 2 5
+p f/z/n#6 f/z/n#7 f/z/s 2 4
+= Vdd Vdd!
+= GND GND!

@@ -23,16 +23,19 @@
 #include <string.h>
 
 
-ActPass::ActPass (Act *_a, const char *name)
+ActPass::ActPass (Act *_a, const char *s)
 {
+  Assert (_a, "ActPass: requires non-NULL Act pointer!");
   _finished = 0;
   a = _a;
   deps = list_new ();
-  _a->pass_register (name, this);
+  _a->pass_register (s, this);
+  name = _a->pass_name (s);
 }
 
 ActPass::~ActPass ()
 {
+  a->pass_unregister (getName());
   list_free (deps);
 }
 
@@ -70,3 +73,15 @@ int ActPass::rundeps (Process *p)
   }
   return 1;
 }
+
+
+const char *ActPass::getName ()
+{
+  return name;
+}
+
+/* dummies */
+int ActPass::run (Process *p) { return 0; }
+
+int ActPass::init () { return 0; }
+ 

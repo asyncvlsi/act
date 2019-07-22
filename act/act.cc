@@ -191,6 +191,7 @@ Act::Act (const char *s)
   FREE (argv);
 
   aux = hash_new (2);
+  passes = hash_new (2);
 
   gns = ActNamespace::global;
   tf = new TypeFactory();
@@ -583,3 +584,26 @@ ActPass *Act::pass_find (const char *name)
   }
 }
 
+void Act::pass_unregister (const char *name)
+{
+  hash_bucket_t *b;
+
+  b = hash_lookup (passes, name);
+  if (!b) {
+    if (config_get_int ("act.warn.dup_pass")) {
+      warning ("Act::pass_unregister, pass `%s' doesn't exist", name);
+    }
+  }
+  else {
+    hash_delete (passes, name);
+  }
+}
+
+const char *Act::pass_name (const char *name)
+{
+  hash_bucket_t *b;
+  b = hash_lookup (passes, name);
+  if (!b) return NULL;
+  return b->key;
+}
+			   

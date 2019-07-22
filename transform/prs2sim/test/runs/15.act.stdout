@@ -1,0 +1,7 @@
+| units: 3 tech: dummytech format: MIT
+= f/r f/n2/b
+= f/q f/n2/a
+= f/q f/n/b
+= f/p f/n/a
+= Vdd Vdd!
+= GND GND!

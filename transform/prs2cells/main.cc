@@ -26,6 +26,7 @@
 #include <string.h>
 #include <act/act.h>
 #include <act/passes.h>
+#include <act/passes/cells.h>
 #include "config.h"
 
 
@@ -56,14 +57,15 @@ int main (int argc, char **argv)
   /* for each ACT process, find production rules and try and match
      to cells */
 
-  act_prs_to_cells (a, NULL, 0);
+  ActCellPass *cp = new ActCellPass (a);
+  cp->run();
 
   /* now emit new cells file */
   fp = fopen (argv[3], "w");
   if (!fp) {
     fatal_error ("Could not open file `%s' for writing", argv[3]);
   }
-  act_emit_celltable (fp, a);
+  cp->Print (fp);
   fclose (fp);
 
   return 0;

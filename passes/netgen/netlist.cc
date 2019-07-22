@@ -30,23 +30,6 @@
 #include "config.h"
 #include <act/iter.h>
 
-/* minimum transistor size */
-static int min_w_in_lambda;
-static int min_l_in_lambda;
-
-/* strength ratios */
-static double p_n_ratio;
-static double weak_to_strong_ratio;
-
-/* load cap */
-static double default_load_cap;
-
-/* local and global Vdd/GND */
-const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
-
-static std::map<Process *, netlist_t *> *netmap = NULL;
-static std::map<Process *, act_boolean_netlist_t *> *boolmap = NULL;
-
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 /* for maximum acyclic path algorithm */
@@ -56,13 +39,8 @@ typedef struct {
   double reff;			/* reff through this path */
 } path_t;
 
-static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
-			    act_size_spec_t *sz);
-static void create_expr_edges (netlist_t *N, int type, node_t *left,
-			       act_prs_expr_t *e, node_t *right, int sense = 0);
 
-
-#define VINF(x) ((struct act_varinfo *)((x)->extra))
+#define VINF(x) ((struct act_nl_varinfo *)((x)->extra))
 
 /*-- compute the maximum acyclic path from power supply to each node --*/
 /* (either p-type or n-type) */
@@ -223,10 +201,7 @@ static at_lookup *at_alloc (void)
   return a;
 }
 
-/*-- variables --*/
-static void emit_node (netlist_t *N, FILE *fp, node_t *n);
-
-static node_t *node_alloc (netlist_t *n, struct act_varinfo *vi)
+static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
 {
   node_t *x;
 
@@ -260,9 +235,9 @@ static node_t *node_alloc (netlist_t *n, struct act_varinfo *vi)
 
 static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
 {
-  struct act_varinfo *vi;
+  struct act_nl_varinfo *vi;
   
-  NEW (vi, struct act_varinfo);
+  NEW (vi, struct act_nl_varinfo);
   vi->e_up = NULL;
   vi->e_dn = NULL;
   vi->b = bool_newvar (n->B);
@@ -434,14 +409,11 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
 
 
-static void fold_transistors (netlist_t *N)
+void ActNetlistPass::fold_transistors (netlist_t *N)
 {
   node_t *n;
   listitem_t *li;
   edge_t *e;
-  int n_fold = config_get_int ("net.fold_nfet_width");
-  int p_fold = config_get_int ("net.fold_pfet_width");
-  int discrete_len = config_get_int ("net.discrete_length");
   int fold;
 
   if (n_fold == 0 && p_fold == 0 && discrete_len == 0) return;
@@ -479,7 +451,7 @@ static void fold_transistors (netlist_t *N)
 }
 
 
-static void generate_staticizers (netlist_t *N)
+void ActNetlistPass::generate_staticizers (netlist_t *N)
 {
   node_t *n;
 
@@ -711,8 +683,8 @@ static void check_supply (netlist_t *N,  ActId *id, int type, node_t *n)
   return;
 }
 
-static void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
-			    act_size_spec_t *sz)
+void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
+				     act_size_spec_t *sz)
 {
   /* set edge flags */
   if (type & EDGE_PCHG) {
@@ -864,7 +836,7 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
  *  type has two parts: the EDGE_TYPE has EDGE_PFET or EDGE_NFET
  *                      the EDGE_SIZE piece (normal, feedback, small inv)
  */
-static void create_expr_edges (netlist_t *N, int type, node_t *left,
+void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 			       act_prs_expr_t *e, node_t *right, int sense)
 {
   node_t *mid;
@@ -1070,7 +1042,7 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
   return ret;
 }
 
-static void emit_node (netlist_t *N, FILE *fp, node_t *n)
+void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n)
 {
   if (n->v) {
     ActId *id = n->v->v->id->toid();
@@ -1366,7 +1338,8 @@ static void update_bdds_exprs (netlist_t *N,
   }
 }
 
-static void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0)
+void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
+					 int istree)
 {
   int d;
   if (!p) return;
@@ -1584,7 +1557,7 @@ static void release_atalloc (struct Hashtable *H)
   }
 }
 
-static netlist_t *generate_netgraph (Act *a, Process *proc)
+netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
 {
   act_prs *p; 
   netlist_t *N;
@@ -1602,7 +1575,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
 
   NEW (N, netlist_t);
 
-  N->bN = boolmap->find(proc)->second;
+  N->bN = bools->getBNL (proc);
 
   N->B = bool_init ();
 
@@ -1731,7 +1704,7 @@ static netlist_t *generate_netgraph (Act *a, Process *proc)
   return N;
 }
 
-static void generate_netlist (Act *a, Process *p)
+void ActNetlistPass::generate_netlist (Process *p)
 {
   Assert (p->isExpanded(), "Process must be expanded!");
 
@@ -1747,10 +1720,10 @@ static void generate_netlist (Act *a, Process *p)
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
-      generate_netlist (a, dynamic_cast<Process *>(vx->t->BaseType()));
+      generate_netlist (dynamic_cast<Process *>(vx->t->BaseType()));
     }
   }
-  netlist_t *n = generate_netgraph (a, p);
+  netlist_t *n = generate_netgraph (p);
   (*netmap)[p] = n;
   return;
 }
@@ -1816,27 +1789,11 @@ static void free_nl (netlist_t *n)
 }
 
 
-void act_prs_to_netlist (Act *a, Process *p)
+/*-- create a pass --*/
+ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 {
-  std::map<Process *, netlist_t *> *tmp;
-
-  boolmap = (std::map<Process *, act_boolean_netlist_t *> *) a->aux_find ("booleanize");
-  
-  if (!boolmap) {
-    fatal_error ("act_prs_to_netlist called without booleanize pass");
-  }
-
-  tmp = (std::map<Process *, netlist_t *> *) a->aux_find ("prs2net");
-  
-  if (tmp) {
-    std::map<Process *, netlist_t *>::iterator it;
-    for (it = (*tmp).begin(); it != (*tmp).end(); it++) {
-      free_nl (it->second);
-    }
-    delete tmp;
-  }
-  
-  netmap = new std::map<Process *, netlist_t *>();
+  netmap = NULL;
+  bools = NULL;
 
   default_load_cap = config_get_real ("net.default_load_cap");
   p_n_ratio = config_get_real ("net.p_n_ratio");
@@ -1850,30 +1807,121 @@ void act_prs_to_netlist (Act *a, Process *p)
   global_vdd = config_get_string ("net.global_vdd");
   global_gnd = config_get_string ("net.global_gnd");
 
+  n_fold = config_get_int ("net.fold_nfet_width");
+  p_fold = config_get_int ("net.fold_pfet_width");
+  discrete_len = config_get_int ("net.discrete_length");
+
+  lambda = config_get_real ("net.lambda");
+  ignore_loadcap = config_get_int ("net.ignore_loadcap");
+  emit_parasitics = config_get_int ("net.emit_parasitics");
+  
+  fet_spacing_diffonly = config_get_int ("net.fet_spacing_diffonly");
+  fet_spacing_diffcontact = config_get_int ("net.fet_spacing_diffcontact");
+  fet_diff_overhang = config_get_int ("net.fet_diff_overhang");
+  
+  use_subckt_models = config_get_int ("net.use_subckt_models");
+  swap_source_drain = config_get_int ("net.swap_source_drain");
+  extra_fet_string = config_get_string ("net.extra_fet_string");
+
+  black_box_mode = config_get_int ("net.black_box_mode");
+  top_level_only = config_get_int ("net.top_level_only");
+
+  max_n_w_in_lambda = config_get_int ("net.max_n_width");
+  max_p_w_in_lambda = config_get_int ("net.max_p_width");
+
+  /*-- automatically add this pass if it doesn't exist --*/
+  if (!a->pass_find ("booleanize")) {
+    ActBooleanizePass *bp = new ActBooleanizePass (a);
+  }
+  AddDependency ("booleanize");
+
+  ActPass *pass = a->pass_find ("booleanize");
+  Assert (pass, "What?");
+
+  bools = dynamic_cast <ActBooleanizePass *>(pass);
+  Assert (bools, "Huh?");
+}
+
+ActNetlistPass::~ActNetlistPass()
+{
+  if (netmap) {
+    std::map<Process *, netlist_t *>::iterator it;
+    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
+      free_nl (it->second);
+    }
+    delete netmap;
+  }
+  netmap = NULL;
+  bools = NULL;
+}
+
+int ActNetlistPass::init ()
+{
+  if (netmap) {
+    std::map<Process *, netlist_t *>::iterator it;
+    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
+      free_nl (it->second);
+    }
+    delete netmap;
+  }
+
+  netmap = new std::map<Process *, netlist_t *>();
+
+  _finished = 1;
+
+  return 1;
+}
+
+  
+int ActNetlistPass::run(Process *p)
+{
+  init ();
+
+  /*-- run dependencies --*/
+  if (!rundeps (p)) {
+    return 0;
+  }
+  
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
     ActInstiter i(g->CurScope());
-
+    
     for (i = i.begin(); i != i.end(); i++) {
       ValueIdx *vx = *i;
       if (TypeFactory::isProcessType (vx->t)) {
 	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
 	if (x->isExpanded()) {
-	  generate_netlist (a, x);
+	  generate_netlist (x);
 	}
       }
     }
     
     /*-- generate netlist for any prs in the global scope --*/
-    netlist_t *N = generate_netgraph (a, NULL);
+    netlist_t *N = generate_netgraph (NULL);
     (*netmap)[NULL] = N;
   }
   else {
-    generate_netlist (a, p);
+    generate_netlist (p);
   }
 
-  a->aux_add ("prs2net", netmap);
+  /*-- done --*/
+  _finished = 2;
+  
+  return 1;
+}
 
-  netmap = NULL;
-  boolmap = NULL;
+
+netlist_t *ActNetlistPass::getNL (Process *p)
+{
+  if (!completed ()) {
+    fatal_error ("ActNetlistPass::getNL() called without pass being run!");
+  }
+  Assert (netmap, "huh");
+
+  std::map<Process *, netlist_t *>::iterator it = netmap->find (p);
+  if (it == netmap->end()) {
+    return NULL;
+  }
+  
+  return it->second;
 }

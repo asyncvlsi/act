@@ -1,0 +1,23 @@
+| units: 3 tech: dummytech format: MIT
+p x/A/e Vdd2 x/bb 2 10
+p x/b Vdd2 x/n#7 2 5
+p GND Vdd2 x/n#8 3 4
+n x/A/e GND x/n#3 2 20
+n x/A/e GND x/bb 2 5
+n x/b GND x/n#7 2 5
+n x/n#7 GND x/b 2 4
+n x/w x/n#3 x/b 2 10
+p x/n#7 x/n#8 x/b 2 4
+= Vdd2 x/q
+= x/B/d0 x/B/d[0]
+= x/B/d1 x/B/d[1]
+= x/B/d0 x/B/d[0]
+= x/B/d1 x/B/d[1]
+= x/A/d0 x/A/d[0]
+= x/A/d1 x/A/d[1]
+= x/A/d0 x/A/d[0]
+= x/A/d1 x/A/d[1]
+= x/A/e x/a
+= x/A/e x/aa
+= Vdd Vdd!
+= GND GND!

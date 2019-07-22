@@ -1,0 +1,14 @@
+
+export defchan globals <: chan(bool) (bool vdd, gnd, testme)  {
+}
+
+
+defproc foo (bool a, b, c; globals g) {
+	bool p = g.gnd;
+	bool s = g.vdd;
+	prs<g.vdd, g.gnd> {
+		a & b #> c-
+	}
+}
+
+foo t;

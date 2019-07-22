@@ -1,0 +1,7 @@
+| units: 3 tech: dummytech format: MIT
+n c/u GND c/n#3 2 5
+n c/u GND c/n#3 2 5
+n c/p c/n#3 c/r 2 5
+n c/q c/n#3 c/v 2 5
+= Vdd Vdd!
+= GND GND!

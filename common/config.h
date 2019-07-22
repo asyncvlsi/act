@@ -70,7 +70,8 @@ void config_set_default_int (const char *s, int v);
 void config_set_default_real (const char *s, double v);
 void config_set_default_string (const char *s, const char *t);
 
-/* set value */
+/* set value: if this API is used, any file read in will not 
+   override the value */
 void config_set_int (const char *s, int v);
 void config_set_real (const char *s, double v);
 void config_set_string (const char *s, const char *t);

@@ -25,39 +25,10 @@
 #define __ACT_PASSES_H__
 
 #include <act/act.h>
-
-void act_expand (Act *a);
-
-/* emit flattened production rule set */
-void act_prsflat_prsim (Act *a);
-void act_prsflat_lvs (Act *a);
-
-/* flat connection pair pass */
-void act_flat_apply_conn_pairs (Act *a, void *cookie,
-				void (*f)(void *c, ActId *one, ActId *two));
-void act_flat_apply_conn_pairs (Act *a, void *cookie, Process *top,
-				void (*f)(void *c, ActId *one, ActId *two));
-
-
-/* flat process pass */
-void act_flat_apply_processes (Act *a, void *cookie,
-			       void (*f)(void *c, ActId *name, Process *p));
-void act_flat_apply_processes (Act *a, void *cookie, Process *top,
-			       void (*f)(void *c, ActId *name, Process *p));
-
-/* create netlist */  
-void act_prs_to_netlist (Act *, Process *);
-
-/* booleanize */
-void act_booleanize_netlist (Act *, Process *);
-
-/* create unique boolean port list */
-void act_create_bool_ports (Act *, Process *);
-
-/* create cells from processes */
-void act_prs_to_cells (Act *a, Process *p, int add_cells = -1);
-void act_emit_celltable (FILE *fp, Act *a);
-
+#include <act/passes/aflat.h>
+#include <act/passes/booleanize.h>
+#include <act/passes/netlist.h>
+#include <act/passes/cells.h>
 
 
 #endif /* __ACT_PASSES_H__ */

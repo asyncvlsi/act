@@ -24,6 +24,7 @@
 #ifndef __ACT_PASS_CELL_H__
 #define __ACT_PASS_CELL_H__
 
+#include <set>
 #include <map>
 #include <act/act.h>
 #include <act/iter.h>
@@ -32,44 +33,47 @@
 #include "bitset.h"
 #include "array.h"
 
+struct act_prsinfo;
 
-struct act_varinfo {
-  int nup, ndn;			// # of times in up and down guards
-  int *depths;			// depth of each instance (nup + ndn)
-  int cup, cdn;
-				// size), 0..nup-1 followed by ndn
-  unsigned char tree;		// 0 = not in tree, 1 in tree
+struct idmap {
+  A_DECL (ActId *, ids);
+  int nout;
+  int nat;
 };
 
-struct act_prsinfo {
-  Process *cell;		/* the cell; NULL until it is
-				   created. */
 
-  int nvars;			/* # of variables. includes @-labels */
+class ActCellPass : public ActPass {
+public:
+  ActCellPass (Act *a);
+  ~ActCellPass ();
 
-  int nout;			/* # of outputs 
-				   Variable convention:
-				   0, 1, ..., nout-1 are outputs.
-				   nout, ... nvars-1 are inputs
-				*/
-  int nat;                     /* # of labels */
+  int run (Process *p = NULL);
 
-  /* variable attributes */
-  int *attr_map;
-  A_DECL (struct act_varinfo, attrib);
+  void Print (FILE *fp);
 
-  int tval;			 /* for tree<>; -1 = none, 0 = mgn,
-				    otherwise tree  */
+private:
+  int init ();
 
-  /* XXX: need attributes from the production rules */
-  
-  A_DECL (act_prs_expr_t *, up); /* pull-up */
-  A_DECL (act_prs_expr_t *, dn); /* pull-down */
-      /* NOTE: all actid pointers are actually just simple integers */
-      /* The # of these will be nout + any internal labels */
 
-  int *match_perm;		// used to report match!
-  
+  /*-- private data structures --*/
+  struct cHashtable *cell_table;
+  std::set<Process *> *visited_procs;
+  ActNamespace *cell_ns;
+  int proc_inst_count;
+  int cell_count;
+  struct idmap current_idmap;
+
+  /*-- private functions --*/
+  void add_new_cell (struct act_prsinfo *pi);
+  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs);
+  void dump_celldb (FILE *);
+  Expr *_idexpr (int idx, struct act_prsinfo *pi);
+  ActBody_Conn *_build_connections (const char *name,
+				    struct act_prsinfo *pi);
+  void _collect_one_prs (Process *p, act_prs_lang_t *prs);
+  void collect_gates (Process *p, act_prs_lang_t **pprs);
+  void prs_to_cells (Process *p);
+  int _collect_cells (ActNamespace *cells);
 };
 
 

@@ -28,13 +28,6 @@
 #include <act/passes/netlist.h>
 #include <config.h>
 
-FILE *fpout;			/* output file */
-int emit_verilog;
-FILE *fvout;			/* output verilog module file */
-int emit_pinfo;
-FILE *fpinfo;			/* output pinfo file */
-
-
 /*
   Check for trailing .extension
 */
@@ -56,14 +49,13 @@ static int has_trailing_extension (const char *s, const char *ext)
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [-dltBR] [-C <conf>] [-p <proc>] [-o <file>] [-V <file>] <act>\n", name);
+  fprintf (stderr, "Usage: %s [-dltBR] [-C <conf>] [-p <proc>] [-o <file>] <act>\n", name);
   fprintf (stderr, " -C <conf> Configuration file name\n");
   fprintf (stderr, " -t        Only emit top-level cell (no sub-cells)\n");
   fprintf (stderr, " -p <proc> Emit process <proc>\n");
   fprintf (stderr, " -o <file> Save result to <file> rather than stdout\n");
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
   fprintf (stderr, " -B	       Black-box mode. Assume empty act process is an external .sp file\n");
-  fprintf (stderr, " -V <file> Print Verilog module for the top level in <file> and port information on <file>.port_info \n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
   exit (1);
 }
@@ -73,7 +65,7 @@ static void usage (char *name)
   Initialize globals from the configuration file.
   Returns process name
 */
-static char *initialize_parameters (int *argc, char ***argv)
+static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 {
   char *conf_file;
   char *proc_name;
@@ -84,9 +76,8 @@ static char *initialize_parameters (int *argc, char ***argv)
   int black_box_mode = 0;
   int top_level_only = 0;
 
-  emit_verilog = 0;
-  emit_pinfo = 0;
-  fpout = stdout;
+
+  *fpout = stdout;
   top_level_only = 0;
   conf_file = NULL;
   proc_name = NULL;
@@ -98,7 +89,7 @@ static char *initialize_parameters (int *argc, char ***argv)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "BdC:tp:o:lV:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "BdC:tp:o:l")) != -1) {
     switch (ch) {
     case 'l':
       ignore_loadcap = 1;
@@ -131,32 +122,13 @@ static char *initialize_parameters (int *argc, char ***argv)
       break;
       
     case 'o':
-      if (fpout != stdout) {
-	fclose (fpout);
+      if (*fpout != stdout) {
+	fclose (*fpout);
       }
-      fpout = fopen (optarg, "w");
-      if (!fpout) {
+      *fpout = fopen (optarg, "w");
+      if (!*fpout) {
 	fatal_error ("Could not open file `%s' for writing.", optarg);
       }
-      break;
-
-    case 'V':
-      if (optarg == 0) {
-	usage ((*argv)[0]);
-      }
-      char port_info_f[1024];
-      strncpy (port_info_f, optarg, 1000);
-      strcat (port_info_f, ".port_info");
-      fvout = fopen (optarg, "w");
-      if (!fvout) {
-	fatal_error ("Could not open file `%s' for writing.", optarg);
-      }
-      fpinfo = fopen (port_info_f, "w");
-      if (!fpinfo) {
-	fatal_error ("Could not open file '%s' for writing", port_info_f);
-      }
-      emit_verilog = 1;
-      emit_pinfo = 1;
       break;
 
     case '?':
@@ -212,8 +184,9 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *proc;
+  FILE *fpout;
 
-  proc = initialize_parameters (&argc, &argv);
+  proc = initialize_parameters (&argc, &argv, &fpout);
 
   if (argc != 2) {
     fatal_error ("Something strange happened!");
@@ -239,12 +212,11 @@ int main (int argc, char **argv)
     fatal_error ("Process `%s' is not expanded.", proc);
   }
 
-  act_booleanize_netlist (a, p);
-  act_prs_to_netlist (a, p);
-  act_emit_netlist (a, p, fpout);
-
-  if (emit_verilog || emit_pinfo) {
-    emit_verilog_pins (a, fvout, fpinfo, p);
+  ActNetlistPass *np = new ActNetlistPass (a);
+  np->run (p);
+  np->Print (fpout, p);
+  if (fpout != stdin) {
+    fclose (fpout);
   }
 
   return 0;

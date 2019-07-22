@@ -26,27 +26,55 @@
 
 #include <act/act.h>
 
-enum output_formats {
-  PRSIM_FMT,
-  LVS_FMT
+class ActApplyPass : public ActPass {
+ public:
+  ActApplyPass (Act *a);
+  ~ActApplyPass ();
+
+  int run (Process *p = NULL);
+
+  void setCookie (void *);
+  void setInstFn (void (*f) (void *, ActId *, Process *));
+  void setConnPairFn (void (*f) (void *, ActId *, ActId *));
+
+  void printns (FILE *fp);
+
+ private:
+  int init ();
+
+  
+  void (*apply_proc_fn) (void *, ActId *, Process *);
+  void (*apply_conn_fn) (void *, ActId *, ActId *);
+  void *cookie;
+  
+  list_t *prefixes;
+  list_t *prefix_array;
+  list_t *suffixes;
+  list_t *suffix_array;
+
+  /*-- private functions --*/
+  void push_namespace_name (const char *);
+  
+  void push_name (const char *, Array *arr = NULL);
+  void pop_name ();
+    
+  void push_name_suffix (const char *, Array *arr = NULL);
+  void pop_name_suffix ();
+
+  void _flat_connections_bool (ValueIdx *vx);
+  
+  void _flat_single_connection (ActId *one, Array *oa,
+				ActId *two, Array *ta,
+				const char *nm, Arraystep *na,
+				ActNamespace *isoneglobal);
+
+  void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
+			     Array *oa, Array *ta,
+			     ActNamespace *isoneglobal);
+  void _any_global_conns (act_connection *c);
+  void _flat_scope (Scope *);
+  void _flat_ns (ActNamespace *);
+
 };
-
-
-void act_expand (Act *a);
-void aflat_prs (Act *a, output_formats fmt);
-
-
-void act_flat_apply_conn_pairs (Act *a, void *cookie,
-				void (*f)(void *c, ActId *one, ActId *two));
-
-void act_flat_apply_conn_pairs (Act *a, void *cookie, Process *top,
-				void (*f)(void *c, ActId *one, ActId *two));
-
-void act_flat_apply_processes (Act *a, void *cookie,
-			       void (*f)(void *c, ActId *name, Process *p));
-
-void act_flat_apply_processes (Act *a, void *cookie, Process *top,
-			       void (*f)(void *c, ActId *name, Process *p));
-
 
 #endif /* __AFLAT_H__ */
