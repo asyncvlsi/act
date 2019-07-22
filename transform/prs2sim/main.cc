@@ -39,7 +39,12 @@ void idprint (FILE *fp, ActId *id)
 {
   char buf[10240];
   int i;
-  id->sPrint (buf, 10240);
+  if (id) {
+    id->sPrint (buf, 10240);
+  }
+  else {
+    buf[0] = '\0';
+  }
   for (i=0; buf[i]; i++) {
     if (buf[i] == '.') {
       buf[i] = '/';
@@ -191,6 +196,7 @@ int main (int argc, char **argv)
   app->setCookie (fps);
   app->setInstFn (g);
   app->run ();
+  g(fps, NULL, NULL);
   fclose (fps);
 
   app->setCookie (fpal);
