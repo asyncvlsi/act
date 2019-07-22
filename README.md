@@ -5,3 +5,6 @@ This is the implementation of the ACT hardware description language.
 
 More detailed documentation is available here:
     http://avlsi.csl.yale.edu/act/
+
+Installation instructions are available here:
+    http://avlsi.csl.yale.edu/act/doku.php?id=install
