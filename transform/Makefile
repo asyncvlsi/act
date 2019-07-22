@@ -21,6 +21,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=aflat prs2net prs2sim prs2cells v2act ext2sp
+SUBDIRS=aflat prs2net prs2sim prs2cells v2act ext2sp adepend
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
