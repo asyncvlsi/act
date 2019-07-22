@@ -50,7 +50,12 @@ do
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
-	myecho ".[$bname]"
+        if [ $bname -lt 10 ]
+        then
+	   myecho ".[0$bname]"
+        else
+	   myecho ".[$bname]"
+        fi
 	$ACTTOOL $i foo  2>runs/$i.t.stderr
         cat foo.sim foo.al > runs/$i.t.stdout
         rm foo.sim foo.al

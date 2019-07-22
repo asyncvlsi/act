@@ -50,7 +50,12 @@ do
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).ext'`
 	num=`expr $num + 1`
-	myecho ".[$bname]"
+        if [ $bname -lt 10 ]
+        then
+	   myecho ".[0$bname]"
+        else
+	   myecho ".[$bname]"
+        fi
 	$ACTTOOL $i  > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null

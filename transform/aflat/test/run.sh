@@ -49,7 +49,12 @@ do
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
-	myecho ".[$bname]"
+        if [ $bname -lt 10 ]
+        then
+	   myecho ".[0$bname]"
+        else
+	   myecho ".[$bname]"
+        fi
 	$ACTTOOL $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	sort < runs/$i.t.stdout > runs/$i.x.t.stdout
  	sort < runs/$i.stdout > runs/$i.y.t.stdout
