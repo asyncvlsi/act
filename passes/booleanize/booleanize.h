@@ -29,6 +29,7 @@ struct netlist_bool_port {
   act_connection *c;		/* port bool */
   unsigned int omit:1;		/* skipped due to aliasing */
   unsigned int input:1;		/* 1 if input, otherwise output */
+  unsigned int netid;		/* if set, points to net; -1 if not set */
 };
 
 typedef struct act_booleanized_var {
@@ -45,6 +46,19 @@ typedef struct act_booleanized_var {
   void *extra;			/* space for rent */
 } act_booleanized_var_t;
 
+typedef struct {
+  ActId *inst;
+  act_connection *pin;
+} act_local_pin_t;
+  
+
+typedef struct {
+  act_connection *net; // this could be a global
+  unsigned int skip:1; // skip this net
+  unsigned int port:1; // is a port
+  A_DECL (act_local_pin_t, pins);
+} act_local_net_t;
+
 
 typedef struct {
   Process *p;
@@ -59,6 +73,8 @@ typedef struct {
   A_DECL (struct netlist_bool_port, ports);
   A_DECL (act_connection *, instports);
 
+  A_DECL (act_local_net_t, nets); // nets
+
 } act_boolean_netlist_t;
 
 
@@ -69,11 +85,32 @@ class ActBooleanizePass : public ActPass {
   ActBooleanizePass(Act *a);
   ~ActBooleanizePass();
 
+  /**
+   * Run the pass
+   *  @param p is the top-level process. Must be an expanded process.
+   *         (NULL means the global namespace scope)
+   *  @return 1 on success, 0 on failure
+   */
   int run (Process *p = NULL);
 
+  /**
+   *  @param p is a pointer to a process; NULL means the top-level
+   *  global namespace (the global scope, external to any process)
+   *
+   *  @return the booleanized netlist pointer for the spceified
+   * process 
+   **/
   act_boolean_netlist_t *getBNL (Process *p);
 
 
+  /**
+   * Create net data structure that contains a netname and instance
+   *  names + pins
+   *
+   * @param p is the top level process
+   * @return 1 on success, 0 on failure
+   */
+  int createNets (Process *p = NULL);
 
   
   /*-- internal data structures and functions --*/
@@ -102,6 +139,13 @@ class ActBooleanizePass : public ActPass {
 			      Scope *s, UserDef *u, int *count);
   void append_bool_port (act_boolean_netlist_t *n,
 			 act_connection *c);
+
+  void _createNets (Process *p);
+  int addNet (act_boolean_netlist_t *n, act_connection *c);
+  void addPin (act_boolean_netlist_t *n, int netid, const char *name, act_connection *pin);
+  void addPin (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_connection *pin);
+  void importPins (act_boolean_netlist_t *n, int netid, const char *name, act_local_net_t *net);
+  void importPins (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_local_net_t *net);
 };
 
 

@@ -37,6 +37,10 @@
 
 class ActPass;
 
+/**
+ *   The main Act class used to read in an ACT file and create basic
+ *   data structures
+ */
 class Act {
  public:
   /**
@@ -75,40 +79,115 @@ class Act {
   /**
    * Create an act data structure for the specified input file
    *
-   * @param s is the name of the file containing the top-level ACT
+   * @param s is the name of the file containing the top-level ACT. If
+   * NULL, then the library is initialized without any ACT file being
+   * read.
    */
   Act (const char *s = NULL);
   ~Act ();
 
   /** 
    * Merge in ACT file "s" into current ACT database
+   *
+   * @param s is the name of an ACT file
    */
   void Merge (const char *s);
 
 
   /**
-   * Expand types!
+   * Expand types
    */
   void Expand ();
 
-  
-  void mangle (char *s);	// install string mangling functions
-  int mangle_active() { return any_mangling; }
-  int mangle_string (const char *src, char *dst, int sz);
-  int unmangle_string (const char *src, char *dst, int sz);
-  void mfprintf (FILE *fp, const char *s, ...);
-  void ufprintf (FILE *fp, const char *s, ...);
-  int msnprintf (char *fp, int sz, const char *s, ...);
-  int usnprintf (char *fp, int sz, const char *s, ...);
-  void msnprintfproc (char *fp, int sz, UserDef *, int omit_ns = 0);
-  void mfprintfproc (FILE *fp, UserDef *, int omit_ns = 0);
 
+  /**
+   * Install string mangling functionality
+   *
+   * @param s is a string corresponding to the list of characters to
+   * be mangled.
+   */
+  void mangle (char *s);
+
+  int mangle_active() { return any_mangling; } /**< @return 1 if
+						  mangling is active, 
+						  0 otherwise */
+
+  /** 
+   * mangle string from src to dst.
+   * @param src is the source string
+   * @param dst is the destination string
+   * @param sz is the space available in the destination string
+   * @return 0 on success, -1 on error
+   */  
+  int mangle_string (const char *src, char *dst, int sz);
+  
+  /** 
+   * unmangle string from src to dst.
+   * @param src is the source string
+   * @param dst is the destination string
+   * @param sz is the space available in the destination string
+   * @return 0 on success, -1 on error
+   */  
+  int unmangle_string (const char *src, char *dst, int sz);
+
+  /**
+   * Mangle fprintf functionality
+   */
+  void mfprintf (FILE *fp, const char *s, ...);
+
+  /**
+   * Unmangle fprintf functionality
+   */
+  void ufprintf (FILE *fp, const char *s, ...);
+
+  /**
+   * Mangle snprintf functionality
+   */
+  int msnprintf (char *fp, int sz, const char *s, ...);
+
+  /**
+   * Unmangle snprintf functionality
+   */
+  int usnprintf (char *fp, int sz, const char *s, ...);
+
+  /**
+   * Non-standard mangling for user-defined types.
+   * @param omit_ns is 1 if you don't want to include the namespace in
+   * the string
+   */
+  void msnprintfproc (char *fp, int sz, UserDef *, int omit_ns = 0);
+
+  /**
+   * Non-standard mangling for user-defined types
+   * @param omit_ns is 1 if you don't want to include the namespace in
+   * the string
+   */
+  void mfprintfproc (FILE *fp, UserDef *, int omit_ns = 0);
 
   /* 
      API functions
   */
+
+  /**
+   * Find a process given a name
+   * @param s is the name of the process
+   * @return process pointer, or NULL if not found
+   */
   Process *findProcess (const char *s);
-  Process *findProcess (ActNamespace *, const char *);
+
+  /**
+   * Find a process within a namespace
+   * @param s is the name of the process
+   * @param ns is the ACT namespace
+   * @return the process pointer if found, NULL otherwise
+   */
+  Process *findProcess (ActNamespace *ns, const char *s);
+
+  /**
+   * Find a user-defined type
+   * @param s is the name of the type
+   * @return the UserDef pointer if found, NULL otherwise
+   */
   UserDef *findUserdef (const char *s);
 
   ActNamespace *findNamespace (const char *s);
@@ -119,9 +198,6 @@ class Act {
     Dump to a file 
   */
   void Print (FILE *fp);
-
-  void *aux_find (const char *phase);
-  void aux_add (const char *phase, void *data);
 
   void pass_register (const char *name, ActPass *p);
   ActPass *pass_find (const char *name);
@@ -139,7 +215,6 @@ private:
   int mangle_min_idx;     /* index of the min of , . { } */
   int mangle_mode;
 
-  struct Hashtable *aux;	// any aux storage you want
   struct Hashtable *passes;	// any ActPass-es
 };
 

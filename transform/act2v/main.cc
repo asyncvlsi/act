@@ -31,7 +31,7 @@
 #include <map>
 
 
-static std::map<Process *, act_boolean_netlist_t *> *BOOL = NULL;
+static ActBooleanizePass *BOOL = NULL;
 
 static void usage (char *name)
 {
@@ -137,12 +137,12 @@ static void emit_verilog_moduletype (Act *a, Process *p)
 
 void emit_verilog (Act *a, Process *p)
 {
-  if (BOOL->find (p) == BOOL->end()) {
+  Assert (p->isExpanded(), "What?");
+
+  act_boolean_netlist_t *n = BOOL->getBNL (p);
+  if (!n) {
     Assert (0, "emit_verilog internal inconsistency");
   }
-  act_boolean_netlist_t *n = BOOL->find (p)->second;
-  Assert (n, "Hmm");
-  Assert (p->isExpanded(), "What?");
 
   if (n->visited) return;
   n->visited = 1;
@@ -217,7 +217,7 @@ void emit_verilog (Act *a, Process *p)
       Process *instproc = dynamic_cast<Process *>(vx->t->BaseType());
       int ports_exist = 0;
 
-      sub = BOOL->find (instproc)->second;
+      sub = BOOL->getBNL (instproc);
       for (i=0; i < A_LEN (sub->ports); i++) {
 	if (!sub->ports[i].omit) {
 	  ports_exist = 1;
@@ -324,14 +324,8 @@ int main (int argc, char **argv)
     fatal_error ("Process `%s' is not expanded.", proc);
   }
 
-  act_booleanize_netlist (a, p);
-
-  BOOL = (std::map<Process *, act_boolean_netlist_t *> *)
-    a->aux_find ("booleanize");
-
-  Assert (BOOL, "Booleanize pass failed?");
-  
+  BOOL = new ActBooleanizePass (a);
+  Assert (BOOL->run (p), "booleanize pass failed?");
   emit_verilog (a, p);
-
   return 0;
 }

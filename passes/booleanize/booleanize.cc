@@ -227,6 +227,7 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
 
   A_INIT (N->ports);
   A_INIT (N->instports);
+  A_INIT (N->nets);
   
   N->p = proc;
   N->cur = cur;
@@ -394,6 +395,7 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
   A_NEXT (n->ports).c = c;
   A_NEXT (n->ports).omit = 0;
   A_NEXT (n->ports).input = 0;
+  A_NEXT (n->ports).netid = -1;
   A_INC (n->ports);
 
   if (c->isglobal()) {
@@ -752,6 +754,7 @@ static void free_bN (act_boolean_netlist_t *n)
   ihash_free (n->uH);
   A_FREE (n->ports);
   A_FREE (n->instports);
+  A_FREE (n->nets);
   FREE (n);
 }
 
@@ -884,4 +887,217 @@ act_boolean_netlist_t *ActBooleanizePass::getBNL (Process *p)
 
   return it->second;
 }
+
+void ActBooleanizePass::_createNets (Process *p)
+{
+  act_boolean_netlist_t *n = getBNL (p);
+  Assert (n, "What?");
+  if (n->visited) return;
+  n->visited = 1;
+
+  ActInstiter i(p ? p->CurScope() : a->Global()->CurScope());
+
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = (*i);
+    if (!TypeFactory::isProcessType (vx->t)) continue;
+    _createNets (dynamic_cast<Process *>(vx->t->BaseType()));
+  }
+
+  int iport = 0;
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = (*i);
+    act_boolean_netlist_t *sub;
+    Process *instproc;
+    int ports_exist;
+    
+    if (!TypeFactory::isProcessType (vx->t)) continue;
+
+    instproc = dynamic_cast<Process *>(vx->t->BaseType());
+    sub = getBNL (instproc);
+    Assert (sub, "What?");
+
+    ports_exist = 0;
+    for (int j=0; j < A_LEN (sub->ports); j++) {
+      if (sub->ports[j].omit == 0) {
+	ports_exist = 1;
+	break;
+      }
+    }
+    if (!ports_exist) continue;
+
+    if (vx->t->arrayInfo()) {
+      Arraystep *as = vx->t->arrayInfo()->stepper();
+
+      while (!as->isend()) {
+	for (int j=0; j < A_LEN (sub->ports); j++) {
+	  if (sub->ports[j].omit) continue;
+
+	  int netid = addNet (n, n->instports[iport]);
+
+	  if (sub->ports[j].netid == -1) {
+	    /* there is nothing to be done here */
+	    addPin (n, netid, vx->getName(), as->toArray(), sub->ports[j].c);
+	  }
+	  else {
+	    importPins (n, netid, vx->getName(), as->toArray(), &sub->nets[sub->ports[j].netid]);
+	  }
+	  for (int k=0; k < A_LEN (n->ports); k++) {
+	    if (n->ports[k].c == n->instports[iport]) {
+	      n->ports[k].netid = netid;
+	      break;
+	    }
+	  }
+	  iport++;
+	}
+
+	for (int j=0; j < A_LEN (sub->nets); j++) {
+	  if (!sub->nets[j].net->isglobal()) continue;
+	  int k;
+	  for (k=0; k < A_LEN (sub->ports); k++) {
+	    if (sub->ports[k].c == sub->nets[j].net) break;
+	  }
+	  if (k == A_LEN (sub->ports)) {
+	    /* global net, not in port list */
+	    int netid = addNet (n, sub->nets[j].net);
+	    importPins (n, netid, vx->getName(), as->toArray(), &sub->nets[j]);
+	    sub->nets[j].skip = 1;
+	  }
+	}
+
+	as->step();
+      }
+    }
+    else {
+      for (int j=0; j < A_LEN (sub->ports); j++) {
+	if (sub->ports[j].omit) continue;
+
+	int netid = addNet (n, n->instports[iport]);
+
+	if (sub->ports[j].netid == -1) {
+	  /* there is nothing to be done here */
+	  addPin (n, netid, vx->getName(), sub->ports[j].c);
+	}
+	else {
+	  importPins (n, netid, vx->getName(), &sub->nets[sub->ports[j].netid]);
+	}
+	for (int k=0; k < A_LEN (n->ports); k++) {
+	  if (n->ports[k].c == n->instports[iport]) {
+	    n->ports[k].netid = netid;
+	    break;
+	  }
+	}
+	iport++;
+      }
+
+      /*-- global nets --*/
+      for (int j=0; j < A_LEN (sub->nets); j++) {
+	if (!sub->nets[j].net->isglobal()) continue;
+	int k;
+	for (k=0; k < A_LEN (sub->ports); k++) {
+	  if (sub->ports[k].c == sub->nets[j].net) break;
+	}
+	if (k == A_LEN (sub->ports)) {
+	  /* global net, not in port list */
+	  int netid = addNet (n, sub->nets[j].net);
+	  importPins (n, netid, vx->getName(), &sub->nets[j]);
+	  sub->nets[j].skip = 1;
+	}
+      }
+    }
+  }
+  Assert (iport == A_LEN (n->instports), "What?");
+
+  for (int i=0; i < A_LEN (n->ports); i++) {
+    if (n->ports[i].netid != -1) {
+      n->nets[n->ports[i].netid].port = 1;
+    }
+  }
+}
+
+int ActBooleanizePass::createNets (Process *p)
+{
+  if (!completed()) {
+    warning ("ActBooleanizePass::createNets() called before pass was complete; ignoring.");
+    return 0;
+  }
+
+  _createNets (p);
+
+  std::map<Process *, act_boolean_netlist_t *>::iterator it;
+  for (it = netmap->begin(); it != netmap->end(); it++) {
+    act_boolean_netlist_t *n = it->second;
+    n->visited = 0;
+  }
   
+  return 1;
+}
+
+
+int ActBooleanizePass::addNet (act_boolean_netlist_t *n, act_connection *c)
+{
+  int i;
+  for (i=0; i < A_LEN (n->nets); i++) {
+    if (n->nets[i].net == c) return i;
+  }
+  A_NEW (n->nets, act_local_net_t);
+  A_NEXT (n->nets).net = c;
+  A_NEXT (n->nets).skip = 0;
+  A_NEXT (n->nets).port = 0;
+  A_INIT (A_NEXT (n->nets).pins);
+  A_INC (n->nets);
+  return A_LEN (n->nets)-1;
+}
+
+void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
+				int netid,
+				const char *name, Array *a,
+				act_connection *pin)
+{
+  Assert (0 <= netid && netid < A_LEN (n->nets), "What?");
+
+  A_NEWM (n->nets[netid].pins, act_local_pin_t);
+
+  ActId *inst = new ActId (name);
+  inst->setArray (a);
+  A_NEXT (n->nets[netid].pins).inst = inst;
+  A_NEXT (n->nets[netid].pins).pin = pin;
+  A_INC (n->nets[netid].pins);
+}
+
+void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
+				int netid,
+				const char *name,
+				act_connection *pin)
+{
+  addPin (n, netid, name, NULL, pin);
+}
+
+
+void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
+				    int netid,
+				    const char *name, Array *a,
+				    act_local_net_t *net)
+{
+  Assert (0 <= netid && netid < A_LEN (n->nets), "What?");
+
+  for (int i=0; i < A_LEN (net->pins); i++) {
+    ActId *inst;
+    /* orig name becomes <name>.<orig> */
+    A_NEW (n->nets[netid].pins, act_local_pin_t);
+
+    inst = new ActId (name);
+    inst->setArray (a);
+    inst->Append (net->pins[i].inst);
+    A_NEXT (n->nets[netid].pins).inst = inst;
+    A_NEXT (n->nets[netid].pins).pin = net->pins[i].pin;
+    A_INC (n->nets[netid].pins);
+  }
+}
+
+void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
+				    int netid,
+				    const char *name,
+				    act_local_net_t *net)
+{
+  importPins (n, netid, name, NULL, net);
+}
