@@ -4,3 +4,6 @@ defproc foo (bool b)
   [ x > 0 -> bool w; ]
   [ x > 0 -> bool w; ]
 }
+
+
+foo<4> x;

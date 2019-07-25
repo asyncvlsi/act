@@ -1493,16 +1493,18 @@ instance_id[ActBody *]: ID [ sparse_range ]
       if (OPT_EMPTY ($2)) {
 	/* not an array instance */
 
-	/* XXX: what happens if I say 
+	/* What happens if I say 
 	   [ .. -> bool a; [] ... -> bool a; ]
-	   Right now  the program will complain. Is that okay, or
-	   should we punt? We could put in a check to see if the two
-	   might be exclusive, and then check again at instantiation
-	   time. 
-
 	   Check if conditional, and ignore it.
 	*/
-	$E("Duplicate instance for name ``%s''", $1);
+	if (!prev_it->isEqual (it, 1)) {
+	  $E("Duplicate instance for name ``%s'' with incompatible types", $1);
+	}
+	else {
+	  if ($0->in_cond == 0) {
+	    $E("Duplicate instance for name ``%s''", $1);
+	  }
+	}
       }
       else {
 	/* check weak compatibility of instance types, since this
@@ -1887,6 +1889,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
       $E("Identifier `%s' already defined in current scope", $3);
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
+    $0->in_cond++;
 }}
    base_item_list ")"
 {{X:
@@ -1902,8 +1905,13 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
       FREE (r);
     }
     OPT_FREE ($6);
+    $0->in_cond--;
 }}
-| "*[" { gc_1 "[]" }* "]"
+| "*["
+{{X: $0->in_cond++; }}
+
+    { gc_1 "[]" }* "]"
+    
 {{X:
     listitem_t *li;
     ActBody_Select_gc *ret, *prev, *stmp;
@@ -1923,12 +1931,19 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
 	prev = stmp;
       }
     }
+    $0->in_cond--;
     return new ActBody_Genloop (ret);
 }}
 ;
 
-conditional[ActBody *]: "[" guarded_cmds "]"
+conditional[ActBody *]: "["
+
+{{X: $0->in_cond++; }}
+
+                    guarded_cmds "]"
+
 {{X:
+    $0->in_cond--;
     return $2; 
 }}
 ;

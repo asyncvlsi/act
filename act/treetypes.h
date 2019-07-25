@@ -149,6 +149,9 @@ typedef struct {
   /* depend flags */
   int emit_depend;
 
+  /* in a conditional/loop */
+  int in_cond;
+
 } ActTree;
 
 

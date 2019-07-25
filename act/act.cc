@@ -228,6 +228,7 @@ Act::Act (const char *s)
   tr.attr_table = config_get_table_string ("act.instance_attr");
 
   tr.emit_depend = Act::emit_depend;
+  tr.in_cond = 0;
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
