@@ -308,6 +308,7 @@ void list_cleanup (void)
 
 void list_concat (list_t *l, list_t *x)
 {
+  if (!x->hd) return;
   if (!l->hd) {
     l->hd = x->hd;
   }
