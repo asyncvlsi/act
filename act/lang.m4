@@ -1077,7 +1077,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     s->next = NULL;
     return s;
 }}
-| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ dir ] "<" bool_expr_id_or_array [ dir ]
+| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ dir ] "<" [ "[" wint_expr "]" ] bool_expr_id_or_array [ dir ]
 {{X:
     /* a timing fork */
     act_spec *s;
@@ -1085,7 +1085,8 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     
     NEW (s, act_spec);
     s->type = -1;
-    s->count = 3;
+    s->count = 4; 		/* the last value is the delay
+				   margin, if any */
     MALLOC (s->ids, ActId *, s->count);
     MALLOC (s->extra, int, s->count);
     i = 0;
@@ -1130,9 +1131,9 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     }
     OPT_FREE ($3);
     s->ids[i++] = $4;
-    if (!OPT_EMPTY ($8)) {
+    if (!OPT_EMPTY ($9)) {
       ActRet *r;
-      r = OPT_VALUE ($8);
+      r = OPT_VALUE ($9);
       $A(r->type == R_INT);
       s->extra[i] = r->u.ival ? 1 : 2;
       FREE (r);
@@ -1140,9 +1141,21 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     else {
       s->extra[i] = 0;
     }
-    OPT_FREE ($8);
-    s->ids[i++] = $7;
+    OPT_FREE ($9);
+    s->ids[i++] = $8;
     s->next = NULL;
+
+    if (OPT_EMPTY ($7)) {
+      s->ids[i] = NULL;
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($7);
+      $A(r->type == R_EXPR);
+      s->ids[i] = (ActId *) r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($7);
     return s;
 }}
 ;
