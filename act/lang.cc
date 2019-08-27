@@ -862,6 +862,7 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
 				expr_expand ((Expr *)s->ids[tmp->count-1],
 					     ns, sc) : NULL);
     }
+    tmp->extra = s->extra;
     tmp->next = NULL;
     if (prev) {
       prev->next = tmp;

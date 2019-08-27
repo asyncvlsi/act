@@ -1088,7 +1088,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     s->count = 4; 		/* the last value is the delay
 				   margin, if any */
     MALLOC (s->ids, ActId *, s->count);
-    MALLOC (s->extra, int, s->count);
+    MALLOC (s->extra, int, s->count-1);
     i = 0;
     if (!OPT_EMPTY ($2)) {
       ActRet *r;

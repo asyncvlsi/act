@@ -225,6 +225,167 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
   const char *tmp;
   ActId *id;
   while (spec) {
+    if (spec->type == -1) {
+      /* timing constraint: special representation */
+      if (export_format == PRSIM_FMT) {
+	Expr *e = (Expr *)spec->ids[3];
+	int delay;
+	if (e) {
+	  Assert (e->type == E_INT, "What?");
+	  delay = e->u.v;
+	}
+	Array *aref[3];
+	InstType *it[3];
+
+	Assert (spec->count == 4, "Hmm...");
+
+	for (int i=0; i < 3; i++) {
+	  it[i] = s->FullLookup (spec->ids[i], &aref[i]);
+	  Assert (it[i], "Hmm...");
+	}
+
+	if (it[0]->arrayInfo () && (!aref[0] || !aref[0]->isDeref())) {
+	  spec->ids[0]->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Timing directive: LHS cannot be an array!");
+	}
+	ActId *tl[2];
+	Arraystep *as[2];
+
+	for (int i=1; i < 3; i++) {
+	  if (it[i]->arrayInfo() && (!aref[i] || !aref[i]->isDeref ())) {
+	    if (aref[i]) {
+	      as[i-1] = it[i]->arrayInfo()->stepper (aref[i]);
+	    }
+	    else {
+	      as[i-1] = it[i]->arrayInfo()->stepper();
+	    }
+	    tl[i-1] = spec->ids[i]->Tail();
+	  }
+	  else {
+	    tl[i-1] = NULL;
+	    as[i-1] = NULL;
+	  }
+	}
+
+	if (!as[0] && !as[1]) {
+	  printf ("timing(");
+	  prefix_id_print (s, spec->ids[0]);
+
+#define PRINT_EXTRA(x)					\
+	  do {						\
+	    if (spec->extra[x] & 0x03) {		\
+	      if ((spec->extra[x] & 0x03) == 1) {	\
+		printf ("+");				\
+	      }						\
+	      else {					\
+		printf ("-");				\
+	      }						\
+	    }						\
+	  } while (0)
+
+	  PRINT_EXTRA (0);
+	  printf (",");
+	  prefix_id_print (s, spec->ids[1]);
+	  PRINT_EXTRA (1);
+	  printf (",");
+	  prefix_id_print (s, spec->ids[2]);
+	  PRINT_EXTRA (2);
+	  if (e) {
+	    printf (",%d", delay);
+	  }
+	  printf (")\n");
+	}
+	else {
+	  if (aref[1]) {
+	    tl[0]->setArray (NULL);
+	  }
+	  if (aref[2]) {
+	    tl[1]->setArray (NULL);
+	  }
+	  
+	  while ((as[0] && !as[0]->isend()) ||
+		 (as[1] && !as[1]->isend())) {
+	    char *tmp[2];
+	    for (int i=0; i < 2; i++) {
+	      if (as[i]) {
+		tmp[i] = as[i]->string();
+	      }
+	      else {
+		tmp[i] = NULL;
+	      }
+	    }
+	    
+	    printf ("timing(");
+	    prefix_id_print (s, spec->ids[0]);
+	    PRINT_EXTRA (0);
+	    printf (",");
+	    if (tmp[0]) {
+	      prefix_id_print (s, spec->ids[1], tmp[0]);
+	      FREE (tmp[0]);
+	    }
+	    else {
+	      prefix_id_print (s, spec->ids[1]);
+	    }
+	    PRINT_EXTRA (1);
+	    printf (",");
+	    if (tmp[1]) {
+	      prefix_id_print (s, spec->ids[2], tmp[1]);
+	      FREE (tmp[1]);
+	    }
+	    else {
+	      prefix_id_print (s, spec->ids[2]);
+	    }
+	    PRINT_EXTRA (2);
+	    if (e) {
+	      printf (",%d", delay);
+	    }
+	    printf (")\n");
+
+	    if (as[1]) {
+	      as[1]->step();
+	      if (as[1]->isend()) {
+		if (as[0]) {
+		  as[0]->step();
+		  if (as[0]->isend()) {
+		    /* we're done! */
+		  }
+		  else {
+		    /* refresh as[1] */
+		    delete as[1];
+		    if (aref[2]) {
+		      as[1] = it[2]->arrayInfo()->stepper (aref[2]);
+		    }
+		    else {
+		      as[1] = it[2]->arrayInfo()->stepper();
+		    }
+		  }
+		}
+		else {
+		  /* we're done */
+		}
+	      }
+	      else {
+		/* keep going! */
+	      }
+	    }
+	    else if (as[0]) {
+	      as[0]->step();
+	    }
+	  }
+	  delete as[0];
+	  delete as[1];
+	  if (aref[1]) {
+	    tl[0]->setArray (aref[1]);
+	  }
+	  if (aref[2]) {
+	    tl[1]->setArray (aref[2]);
+	  }
+	}
+      }
+      spec = spec->next;
+      continue;
+    }
     tmp = act_spec_string (spec->type);
     Assert (tmp, "Hmm");
     if ((export_format == PRSIM_FMT &&
@@ -235,26 +396,20 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
 	int comma = 0;
 	printf ("%s(", tmp);
 	for (int i=0; i < spec->count; i++) {
+	  Array *aref;
 	  id = spec->ids[i];
-	  ValueIdx *vx = s->FullLookupVal (id->getName());
-	  InstType *it = vx->t;
-	  Assert (vx, "What");
-	  while (id->Rest()) {
-	    UserDef *u = dynamic_cast<UserDef *> (it->BaseType ());
-	    Assert (u, "Hm");
-	    id = id->Rest();
-	    it = u->Lookup (id);
-	    Assert (it, "Hmm");
-	  }
+	  InstType *it = s->FullLookup (id, &aref);
 	  /* spec->ids[i] might be a bool, or a bool array! fix bool
 	     array case */
-	  if (it->arrayInfo() &&
-	      (!id->arrayInfo() || !id->arrayInfo()->isDeref())) {
+	  if (it->arrayInfo() && (!aref || !aref->isDeref())) {
 	    Arraystep *astep;
 	    Array *a = it->arrayInfo();
-	    if (id->arrayInfo()) {
-	      astep = a->stepper (id->arrayInfo());
-	      a = id->arrayInfo();
+
+	    id = id->Tail();
+	    
+	    if (aref) {
+	      astep = a->stepper (aref);
+	      a = aref;
 	    }
 	    else {
 	      astep = a->stepper();

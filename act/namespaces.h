@@ -46,6 +46,7 @@ class act_languages;
 struct act_chp;
 struct act_prs;
 struct act_spec;
+class Array;
 
 class Scope {
  public:
@@ -63,6 +64,10 @@ class Scope {
   InstType *FullLookup (const char *s); /**< return full lookup,
 					   including in parent scopes */
 
+  InstType *FullLookup (ActId *id, Array **aref);
+  /**< return actual type of ID,  after full lookup including
+     parent scopes. aref is used to store final array reference in
+     id, if any */
 
   /* 
      only for expanded scopes

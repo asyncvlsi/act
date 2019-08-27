@@ -1204,4 +1204,11 @@ int ActId::isEqual (ActId *id)
 }
   
 
-  
+ActId *ActId::Tail ()
+{
+  ActId *ret = this;
+  while (ret->Rest()) {
+    ret = ret->Rest();
+  }
+  return ret;
+}

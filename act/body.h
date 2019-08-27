@@ -82,6 +82,8 @@ class ActId {
 
   int isEqual (ActId *other);
 
+  ActId *Tail();
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

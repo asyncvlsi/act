@@ -201,7 +201,12 @@ struct act_chp {
 
 
 struct act_spec {
-  int type;    /* -1 = timing */
+  int type;    /* -1 = timing. in this case, 
+		  directive: timing lhs : first < [expr] second
+		  (a) count = 4
+		  (b) ids[0] = lhs, ids[1] = first, ids[2] = second
+		  (c) ids[3] = NULL or an Expr * for the timing margin
+		*/
   int count;
   ActId **ids;
   int *extra;  /*  Flags
