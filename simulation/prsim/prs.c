@@ -46,6 +46,7 @@ static void mk_out_link (PrsExpr *e, PrsNode *n);
 static PrsNode *raw_lookup (char *s, struct Hashtable *H);
 static void canonicalize_hashtable (Prs *p);
 static void canonicalize_excllist (Prs *p);
+static void canonicalize_timing (Prs *p);
 static unsigned long random_number (Prs *p, PrsNode *n, int dir);
 
 static int lex_is_idx (Prs *p, LEX_T *L);
@@ -108,6 +109,20 @@ static int lex_have_excllo (Prs *p, LEX_T *l)
   }
   else {
     if (lex_sym (l) == l_err && l->token[0] == 0x4) {
+      lex_getsym (l);
+      return 1;
+    }
+    return 0;
+  }
+}
+
+static int lex_have_timing (Prs *p, LEX_T *l)
+{
+  if (!p->N) {
+    return lex_have_keyw (l, "timing");
+  }
+  else {
+    if (lex_sym (l) == l_err && l->token[0] == 0x6) {
       lex_getsym (l);
       return 1;
     }
@@ -321,6 +336,7 @@ static Prs *prs_lex_internal (LEX_T *L, char *names)
   p->energy = 0;
   A_INIT (p->exhi);
   A_INIT (p->exlo);
+  p->timing = ihash_new (4);
 
   lex_getsym (L);
 
@@ -333,6 +349,9 @@ static Prs *prs_lex_internal (LEX_T *L, char *names)
   /* exclhi/lo lists point to buckets during parsing, at this point
      they are converted to nodes */
   canonicalize_excllist (p);
+
+  /* timing */
+  canonicalize_timing (p);
 
   return p;
 }
@@ -537,6 +556,7 @@ static PrsNode *newnode (void)
   n->tc = 0;
   n->seu = 0;
   n->after_range = 0;
+  n->intiming = 0;
   n->delay_up[0] = -1;
   n->delay_dn[0] = -1;
   n->delay_up[1] = -1;
@@ -1413,6 +1433,20 @@ static void print_node (Prs *P, PrsNode *n)
   }
 }
 
+static void printtiming (Prs *p, PrsTiming *pt)
+{
+  printf ("%s", prs_nodename (p, pt->n[0]));
+  if (!pt->f[0].up) { printf ("-"); }
+  if (!pt->f[0].dn) { printf ("+"); }
+  printf (" : ");
+  printf ("%s", prs_nodename (p, pt->n[1]));
+  if (!pt->f[1].up) { printf ("-"); }
+  if (!pt->f[1].dn) { printf ("+"); }
+  printf (" < ");
+  printf ("%s", prs_nodename (p, pt->n[2]));
+  if (!pt->f[2].up) { printf ("-"); }
+  if (!pt->f[2].dn) { printf ("+"); }
+}
 
 PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 {
@@ -1791,6 +1825,65 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
   }
   A_LEN(prsexcllo) = 0;
 
+  /* n is the node that changed */
+  if (n->intiming) {
+    ihash_bucket_t *b;
+    PrsTiming *pt;
+
+    b = ihash_lookup (p->timing, (long)n);
+    Assert (b, "Hmm");
+    pt = (PrsTiming *) b->v;
+
+#define TIMING_TRIGGER(x)  ((n->val == PRS_VAL_T) && pt->f[x].up || (n->val == PRS_VAL_F) && pt->f[x].dn)
+     
+    while (pt) {
+      int k;
+      if (pt->n[0] == n) {
+	k = 0;
+	if (TIMING_TRIGGER (k)) {
+	  pt->state = PRS_TIMING_START;
+	}
+	else {
+	  pt->state = PRS_TIMING_INACTIVE;
+	}
+      }
+      else if (pt->n[1] == n) {
+	k = 1;
+	if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
+	  if (pt->state == PRS_TIMING_PENDING) {
+	    printf ("WARNING: timing constraint ");
+	    printtiming (p, pt);
+	    printf (" violated!\n");
+	    printf (">> time: %10llu\n", p->time);
+	    /* stable 1:
+	       START: we're done
+               PENDING: error
+	       
+	       unstable 1:
+	       START: stay in START
+               PENDING: error
+	    */
+	    pt->state = PRS_TIMING_INACTIVE;
+	  }
+	  else if (pt->state == PRS_TIMING_START) {
+	    if (!UNSTAB_NODE (p, pt->n[1])) {
+	      pt->state = PRS_TIMING_INACTIVE;
+	    }
+	  }
+	}
+      }
+      else if (pt->n[2] == n) {
+	k = 2;
+	if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
+	  pt->state = PRS_TIMING_PENDING;
+	}
+      }
+      else {
+	Assert (0, "What?");
+      }
+      pt = pt->next[k];
+    }
+  }
   return n;
 }
 
@@ -2083,7 +2176,6 @@ static void propagate_up (Prs *p, PrsNode *root, PrsExpr *e, int prev, int val,
 			eu->weak ? "weak-" : "", prs_nodename (p,n));
 		printf (">> cause: %s (val: %c)\n", 
 			prs_nodename (p,root), prs_nodechar (root->val));
-		printf (">> time: %10llu\n", p->time);
 		if (p->flags & PRS_STOP_ON_WARNING) {
 		  p->flags |= PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING;
 		}
@@ -2274,6 +2366,7 @@ static void propagate_up (Prs *p, PrsNode *root, PrsExpr *e, int prev, int val,
 static void parse_prs (Prs *p, LEX_T *l);
 static void parse_connection (Prs *p, LEX_T *l);
 static void parse_excl (LEX_T *l, int ishi, Prs *p);
+static void parse_timing (Prs *p, LEX_T *l);
 
 
 static void _check_delays (PrsNode *n, void *v)
@@ -2321,6 +2414,9 @@ static void parse_file (LEX_T *l, Prs *p)
     }
     else if (lex_have_excllo (p,l)) {
       parse_excl (l, 0, p);
+    }
+    else if (lex_have_timing (p,l)) {
+      parse_timing (p, l);
     }
     else {
       parse_prs (p,l);
@@ -2377,6 +2473,36 @@ static void canonicalize_hashtable (Prs *p)
   for (i=0; i < p->H->size; i++)
     for (b = p->H->head[i]; b; b = b->next) {
       b->v = (void*) canonical_name ((PrsNode *)b->v);
+    }
+}
+
+static void canonicalize_timing (Prs *p)
+{
+  int i;
+  ihash_bucket_t *b;
+
+  for (i=0; i < p->timing->size; i++)
+    for (b = p->timing->head[i]; b; b = b->next) {
+      PrsTiming *pt = (PrsTiming *) b->v;
+      int k;
+
+      for (k=0; k < 3; k++) {
+	Assert (pt->n[k] == canonical_name (pt->n[k]), "What?");
+	if (UNSTAB_NODE (p, pt->n[0])) {
+	  fatal_error ("Node `%s' on LHS of timing constraint can be unstable",
+		       prs_nodename (p, pt->n[0]));
+	}
+      }
+      for (k=0; k < 3; k++) {
+	int l;
+	for (l=k+1; l < 3; l++) {
+	  if (pt->n[k] == pt->n[l]) {
+	    fprintf (stderr, "Duplicate node `%s'\n", prs_nodename(p,pt->n[k]));
+		     
+	    fatal_error ("timing directive has duplicate nodes!");
+	  }
+	}
+      }
     }
 }
 
@@ -2451,8 +2577,9 @@ static PrsNode *lookup (char *s, struct Hashtable *H)
  *  n1 gets stuff that used to be in n2.
  *
  *  [ n1 := n1 UNION n2 ]
+ *
 */
-static void merge_nodes (PrsNode *n1, PrsNode *n2)
+static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
 {
   PrsExpr *e;
   int i;
@@ -2502,6 +2629,74 @@ static void merge_nodes (PrsNode *n1, PrsNode *n2)
   if (n2->excllo) {
     n1->excllo = 1;
   }
+  if (n2->intiming) {
+    ihash_bucket_t *b;
+    if (!n1->intiming) {
+      PrsTiming *pt;
+      n1->intiming = 1;
+      /* delete n2 from the timing hash table */
+      b = ihash_lookup (p->timing, (long)n2);
+      Assert (b, "Hmm...");
+      pt = (PrsTiming *) b->v;
+      if (pt->n[0] == n2) {
+	pt->n[0] = n1;
+      }
+      else if (pt->n[1] == n2) {
+	pt->n[1] = n2;
+      }
+      else if (pt->n[2] == n2) {
+	pt->n[2] = n1;
+      }
+      else {
+	fatal_error ("Timing data structure error");
+      }
+      b = ihash_add (p->timing, (long)n1);
+      b->v = pt;
+    }
+    else {
+      /* merge timing chains */
+      PrsTiming *n1c, *n2c, *prev;
+      int prevk;
+      b = ihash_lookup (p->timing, (long)n1);
+      Assert (b, "Hmm");
+      n1c = (PrsTiming *)b->v;
+      b = ihash_lookup (p->timing, (long)n2);
+
+      Assert (b, "HMM");
+      n2c = (PrsTiming *)b->v;
+      prev = NULL;
+      prevk = -1;
+      while (n1c) {
+	int k;
+	prev = n1c;
+	for (k=0; k < 3; k++) {
+	  if (n1c->n[k] == n1) {
+	    prevk = k;
+	    n1c = n1c->next[prevk];
+	    break;
+	  }
+	}
+	Assert (k != 3, "What?");
+      }
+      Assert (prev, "What?");
+      prev->next[prevk] = n2c;
+      ihash_delete (p->timing, (long)n2);
+      n2->intiming = 0;
+
+      while (n2c) {
+	int k;
+	for (k=0; k < 3; k++) {
+	  if (n2c->n[k] == n2) {
+	    n2c->n[k] = n1;
+	    n2c = n2c->next[k];
+	    break;
+	  }
+	}
+	Assert (k != 3, "What?");
+      }
+    }
+  }
+  
   for (i=0; i < 2; i++) {
     if (n2->delay_up[i] >= 0) {
       n1->delay_up[i] = n2->delay_up[i];
@@ -2567,7 +2762,7 @@ static void do_connection (Prs *p, PrsNode *n1, PrsNode *n2)
        make the alias traversal *through* the buckets, so changing
        a PrsNode -> RawPrsNode is a constant time operation
   */
-  merge_nodes (n1, n2);  	/* n1 := n1 UNION n2 */
+  merge_nodes (p, n1, n2);  	/* n1 := n1 UNION n2 */
 
   Assert ((PrsNode *)n2->b->v == n2, "Oh my god. You're dead.");
 
@@ -2712,6 +2907,73 @@ static void parse_excl (LEX_T *l, int ishi, Prs *p)
   }
   lex_mustbe (l, TOK_RPAR);
 }
+
+/*
+ * Parse timing directives
+ */
+static void parse_timing (Prs *p, LEX_T *l)
+{
+  PrsNode *n;
+  PrsTiming *constraint;
+
+  lex_mustbe (l, TOK_LPAR);
+
+  NEW (constraint, PrsTiming);
+  for (int i=0; i < 3; i++) {
+    constraint->n[i] = NULL;
+    constraint->next[i] = NULL;
+    constraint->margin = 0;
+    constraint->state = PRS_TIMING_INACTIVE;
+  }
+
+  for (int i=0; i < 3; i++) {
+    ihash_bucket_t *b;
+    n = lookup (lex_mustbe_id (p,l), p->H);
+    constraint->n[i] = n;
+    if (!n->intiming) {
+      n->intiming = 1;
+      b = ihash_lookup (p->timing, (long)n);
+      Assert (!b, "intiming flag error");
+      b = ihash_add (p->timing, (long)n);
+    }
+    else {
+      b = ihash_lookup (p->timing, (long)n);
+      Assert (b, "intiming flag error");
+      constraint->next[i] = (PrsTiming *)b->v;
+    }
+    b->v = constraint;
+    if (lex_have (l, TOK_UP)) {
+      constraint->f[i].up = 1;
+      constraint->f[i].dn = 0;
+    }
+    else if (lex_have (l, TOK_DN)) {
+      constraint->f[i].up = 0;
+      constraint->f[i].dn = 1;
+    }
+    else {
+      constraint->f[i].up = 1;
+      constraint->f[i].dn = 1;
+    }
+    if (i != 2) {
+      lex_mustbe (l, TOK_COMMA);
+    }
+  }
+  if (lex_have (l, TOK_COMMA)) {
+    lex_mustbe (l, l_integer);
+    constraint->margin = lex_integer (l);
+  }
+  lex_mustbe (l, TOK_RPAR);
+
+  for (int i=0; i < 3; i++) {
+    for (int j=i+1; j < 3; j++) {
+      if (constraint->n[i] == constraint->n[j]) {
+	fatal_error ("Timing constraint cannot repeat the signal name!\n%s", lex_errstring (l));
+      }
+    }
+  }
+}
+
+
 
 /*
  *

@@ -80,6 +80,8 @@ typedef struct prs_node {
 
   unsigned int after_range:1;	/* 1 if we are using after range */
 
+  unsigned int intiming:1;	/* part of a timing constraint */
+
   int delay_up[2];		/* after delay on the node (up) */
   int delay_dn[2];		/* after delay on node (down) */
   long sz, max;
@@ -100,6 +102,25 @@ typedef struct excl_ring {
   PrsNode *n;
   struct excl_ring *next;
 } PrsExclRing;
+
+enum prs_timing_state {
+    PRS_TIMING_INACTIVE = 0,
+    PRS_TIMING_START = 1,
+    PRS_TIMING_PENDING = 2
+};
+
+typedef struct timing_constraint {
+  PrsNode *n[3];
+  int margin;
+  struct {
+    unsigned int up:1;
+    unsigned int dn:1;
+  } f[3];
+  unsigned int state:2;
+  struct timing_constraint *next[3];
+} PrsTiming;
+  
+  
 
 typedef struct raw_prs_node {
   struct prs_node *alias;
@@ -193,6 +214,10 @@ typedef struct {
 
   A_DECL(PrsExclRing *, exhi);	/* exclusive high ring */
   A_DECL(PrsExclRing *, exlo);	/* exclusive low ring */
+
+  struct iHashtable *timing;	/* timing constraints: map from
+				   PrsNode * to head of timing list
+				*/
 
   Time_t time;			/* current time */
   unsigned long energy;		/* energy estimate */
