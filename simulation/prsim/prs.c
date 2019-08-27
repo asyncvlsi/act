@@ -1442,8 +1442,11 @@ static void printtiming (Prs *p, PrsTiming *pt)
   printf ("%s", prs_nodename (p, pt->n[1]));
   if (!pt->f[1].up) { printf ("-"); }
   if (!pt->f[1].dn) { printf ("+"); }
-  printf (" < ");
-  printf ("%s", prs_nodename (p, pt->n[2]));
+  printf (" <");
+  if (pt->margin > 0) {
+    printf (" [%d]", pt->margin);
+  }
+  printf (" %s", prs_nodename (p, pt->n[2]));
   if (!pt->f[2].up) { printf ("-"); }
   if (!pt->f[2].dn) { printf ("+"); }
 }
@@ -1866,16 +1869,36 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	    pt->state = PRS_TIMING_INACTIVE;
 	  }
 	  else if (pt->state == PRS_TIMING_START) {
-	    if (!UNSTAB_NODE (p, pt->n[1])) {
-	      pt->state = PRS_TIMING_INACTIVE;
+	    if (pt->margin != 0) {
+	      pt->ts = p->time;
+	      pt->state = PRS_TIMING_PENDINGDELAY;
 	    }
+	    else {
+	      if (!UNSTAB_NODE (p, pt->n[1])) {
+		pt->state = PRS_TIMING_INACTIVE;
+	      }
+	    }
+	  }
+	  else if (pt->state == PRS_TIMING_PENDINGDELAY) {
+	    pt->ts = p->time;
 	  }
 	}
       }
       else if (pt->n[2] == n) {
 	k = 2;
 	if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
-	  pt->state = PRS_TIMING_PENDING;
+	  if (pt->state == PRS_TIMING_PENDINGDELAY) {
+	    if (pt->ts + pt->margin > p->time) {
+	      printf ("WARNING: timing constraint ");
+	      printtiming (p, pt);
+	      printf (" violated!\n");
+	      printf (">> time: %10llu\n", p->time);
+	      pt->state = PRS_TIMING_INACTIVE;
+	    }
+	  }
+	  else {
+	    pt->state = PRS_TIMING_PENDING;
+	  }
 	}
       }
       else {
@@ -2961,6 +2984,9 @@ static void parse_timing (Prs *p, LEX_T *l)
   if (lex_have (l, TOK_COMMA)) {
     lex_mustbe (l, l_integer);
     constraint->margin = lex_integer (l);
+    if (constraint->margin < 0) {
+      fatal_error ("Timing margin must be positive (not %d)\n", constraint->margin);
+    }
   }
   lex_mustbe (l, TOK_RPAR);
 

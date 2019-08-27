@@ -106,7 +106,8 @@ typedef struct excl_ring {
 enum prs_timing_state {
     PRS_TIMING_INACTIVE = 0,
     PRS_TIMING_START = 1,
-    PRS_TIMING_PENDING = 2
+    PRS_TIMING_PENDING = 2,
+    PRS_TIMING_PENDINGDELAY = 3
 };
 
 typedef struct timing_constraint {
@@ -117,6 +118,7 @@ typedef struct timing_constraint {
     unsigned int dn:1;
   } f[3];
   unsigned int state:2;
+  Time_t ts;
   struct timing_constraint *next[3];
 } PrsTiming;
   
