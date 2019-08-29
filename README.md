@@ -1,4 +1,5 @@
 # act
+[![CircleCI](https://circleci.com/gh/asyncvlsi/act.svg?style=svg)](https://circleci.com/gh/asyncvlsi/act)
 
 This is the implementation of the ACT hardware description language.
 (ACT = asynchronous circuit/compiler tools)
