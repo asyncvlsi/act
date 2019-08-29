@@ -15,7 +15,8 @@ jobs:
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./configure $ACT_HOME
           ./build 
-          make install || :
+          make install
+          make runtest || :
 
 workflows:
    version: 2
