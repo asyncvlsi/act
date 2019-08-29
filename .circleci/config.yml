@@ -10,7 +10,7 @@ jobs:
        - run: |
           apt-get -q update -y
           apt-get -q install -y libedit-dev zlib-dev m4
-	  mkdir install
+          mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./configure $ACT_HOME || :
