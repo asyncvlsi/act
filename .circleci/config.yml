@@ -9,7 +9,7 @@ jobs:
        - checkout
        - run: |
           apt-get -q update -y
-          apt-get -q install -y libedit-dev zlib1g-dev m4
+          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
