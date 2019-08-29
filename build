@@ -13,7 +13,7 @@ else
 fi
 
 echo "Building common library/generators..." && \
-   make install_inc && \
+   make -C common install_inc && \
    make -C common install && \
    make -C pgen install
 

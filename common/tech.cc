@@ -26,8 +26,6 @@
 #include <config.h>
 #include <misc.h>
 #include <array.h>
-#include <act/lang.h>
-#include <act/passes/netlist.h>
 #include "tech.h"
 
 #define BUF_SZ 10240
@@ -67,8 +65,11 @@ static void verify_range_table (const char *nm)
   }
 }
 
-#define PTYPE EDGE_PFET
-#define NTYPE EDGE_NFET
+//#define PTYPE EDGE_PFET
+//#define NTYPE EDGE_NFET
+#define PTYPE 1
+#define NTYPE 0
+extern const char *act_dev_value_to_string (int);
 
 /*------------------------------------------------------------------------
  *
