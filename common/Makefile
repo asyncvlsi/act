@@ -30,7 +30,7 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	names.h mstring.h mytime.h \
 	channel.h hconfig.h contexts.h count.h \
 	machine.h mem.h mutex.h  thread.h sim.h \
-	log.h ext.h simthread.h simdes.h tech.h
+	log.h ext.h simthread.h simdes.h
 
 # general library support
 OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
@@ -49,7 +49,7 @@ OBJS3=$(OBJS3C) $(OBJS3C2) $(OBJS3CPP) $(OBJS3CPP2)
 
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 
-SRCS=$(OBJS1:.o=.c) tech.cc $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
+SRCS=$(OBJS1:.o=.c) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
 	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc) # ns.c
 
 OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
@@ -116,8 +116,8 @@ alog.o: log.cc
 #queue.o: queue.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
 
-$(LIB1): $(OBJS1) tech.o
-	ar ruv $(LIB1) $(OBJS1) tech.o
+$(LIB1): $(OBJS1) 
+	ar ruv $(LIB1) $(OBJS1)
 	$(RANLIB) $(LIB1)
 
 $(LIB3): $(OBJS3)
