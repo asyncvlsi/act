@@ -16,7 +16,7 @@ jobs:
           ./configure $ACT_HOME
           ./build 
           make install
-          make runtest || :
+          make runtest
 
 workflows:
    version: 2
