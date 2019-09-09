@@ -1,7 +1,9 @@
 defchan e1of2 <: chan(bool) (bool d0, d1, e)
 {
   spec {
+   requires {
    exclhi (d0,d1)
+   }
   }
   methods {
     set {

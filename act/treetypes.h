@@ -152,6 +152,9 @@ typedef struct {
   /* in a conditional/loop */
   int in_cond;
 
+  /* requires vs ensures */
+  int req_ensures;
+
 } ActTree;
 
 

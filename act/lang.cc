@@ -850,6 +850,7 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
     NEW (tmp, act_spec);
     tmp->type = s->type;
     tmp->count = s->count;
+    tmp->isrequires = s->isrequires;
     MALLOC (tmp->ids, ActId *, tmp->count);
     for (int i=0; i < tmp->count-1; i++) {
       tmp->ids[i] = s->ids[i]->Expand (ns, sc);
@@ -884,6 +885,10 @@ const char *act_spec_string (int type)
   if (num == -1) {
     num = config_get_table_size ("act.spec_types");
     opts = config_get_table_string ("act.spec_types");
+  }
+
+  if (type == -1) {
+    return "timing";
   }
 
   if (type < 0 || type >= num) {

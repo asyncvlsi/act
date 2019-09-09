@@ -201,6 +201,8 @@ struct act_chp {
 
 
 struct act_spec {
+  int isrequires;		/* 1 if this is a requires clause */
+  
   int type;    /* -1 = timing. in this case, 
 		  directive: timing lhs : first < [expr] second
 		  (a) count = 4

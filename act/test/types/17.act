@@ -1,7 +1,9 @@
 deftype d1of2 <: int<1> (bool d0, d1)
 {
   spec {
+   requires {
    exclhi (d0,d1)
+   }
   }
   methods {
     set { 

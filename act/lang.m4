@@ -198,21 +198,16 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
 }}
 ;
 
-lang_spec[ActBody *]: "spec" "{" [ spec_body ] "}"
+lang_spec[ActBody *]: "spec" "{" spec_body "}"
 {{X:
     ActBody *b;
 
-    if (!OPT_EMPTY ($3)) {
-      ActRet *r;
-      r = OPT_VALUE ($3);
-      $A(r->type == R_SPEC_LANG);
-      b = new ActBody_Lang (r->u.spec);
-      FREE (r);
-    }
-    else {
+    if (!$3) {
       b = NULL;
     }
-    OPT_FREE ($3);
+    else {
+      b = new ActBody_Lang ($3);
+    }
     return b;
 }}    
 ;
@@ -1027,18 +1022,100 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] "
 ;
 
 /*
-  Specification body
+  Specification body: need to add assume-guarntee clause once we have
+  converged on a syntax for it.
 */
-spec_body[act_spec *]: spec_body_item spec_body
+spec_body[act_spec *]: [ requires_clause ] [ ensures_clause ] [ generic_clause ]
+{{X:
+    act_spec *t = NULL;
+    if (!OPT_EMPTY ($1)) {
+      ActRet *r;
+      r = OPT_VALUE ($1);
+      $A(r->type == R_SPEC_LANG);
+      t = r->u.spec;
+      FREE (r);
+    }
+    OPT_FREE ($1);
+    if (!OPT_EMPTY ($2)) {
+      act_spec *tmp, *tmp2;
+      ActRet *r;
+      r = OPT_VALUE ($2);
+      $A(r->type == R_SPEC_LANG);
+      if (!t) {
+	t = r->u.spec;
+      }
+      else {
+	tmp = t;
+	while (tmp->next) {
+	  tmp = tmp->next;
+	}
+	tmp->next = r->u.spec;
+      }
+      FREE (r);
+    }
+    OPT_FREE ($2);
+    if (!OPT_EMPTY ($3)) {
+      act_spec *tmp, *tmp2;
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_SPEC_LANG);
+      if (!t) {
+	t = r->u.spec;
+      }
+      else {
+	tmp = t;
+	while (tmp->next) {
+	  tmp = tmp->next;
+	}
+	tmp->next = r->u.spec;
+      }
+      FREE (r);
+    }
+    OPT_FREE ($3);
+    return t;
+}}
+;
+
+requires_clause[act_spec *]: "requires"
+{{X: $0->req_ensures = 1; }}
+"{" base_spec_body "}"
+{{X:
+    $0->req_ensures = -1;
+    return $3;
+}}
+;
+
+ensures_clause[act_spec *]: "ensures" 
+{{X: $0->req_ensures = 0; }}
+"{" base_spec_body "}"
+{{X:
+    $0->req_ensures = -1;
+    return $3;
+}}
+;
+
+generic_clause[act_spec *]: base_spec_body
+{{X:
+    act_spec *tmp;
+    for (tmp = $1; tmp; tmp = tmp->next) {
+      tmp->isrequires = -1;
+    }
+    return $1;
+}}
+;
+
+base_spec_body[act_spec *]: spec_body_item base_spec_body
 {{X:
     $1->next = $2;
     return $1;
 }}
 | spec_body_item
 {{X:
+    $1->isrequires = $0->req_ensures;
     return $1;
 }}
 ;
+
 
 spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 {{X:
