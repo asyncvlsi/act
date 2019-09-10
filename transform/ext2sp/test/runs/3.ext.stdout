@@ -4,15 +4,13 @@
 *---------------------------------------------------
 *
 * -- connections ---
-V1 GND! GND
-V2 Vdd! Vdd
 * -- fets ---
-M3 GND a drain GND n W=1.8U L=0.6U
+M1 GND a drain GND n W=1.8U L=0.6U
 + AS=1.62P PS=5.4U AD=1.62P PD=5.4U
-M4 Vdd a drain Vdd p W=1.8U L=0.6U
+M2 Vdd a drain Vdd p W=1.8U L=0.6U
 + AS=1.62P PS=5.4U AD=1.62P PD=5.4U
 * -- caps ---
-C5 a GND 0.453952F
+C3 a GND 0.453952F
 *--- inferred globals
 .global GND
 .global Vdd

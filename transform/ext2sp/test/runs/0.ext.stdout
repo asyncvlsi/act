@@ -4,22 +4,20 @@
 *---------------------------------------------------
 *
 * -- connections ---
-V1 GND! GND
-V2 Vdd! Vdd
 * -- fets ---
-M3 out in Vdd w_n2_8# p W=3.3U L=0.6U
+M1 out in Vdd w_n2_8# p W=3.3U L=0.6U
 + AS=4.95P PS=9.6U AD=4.95P PD=9.6U
-M4 out in GND GND n W=1.2U L=0.6U
+M2 out in GND GND n W=1.2U L=0.6U
 + AS=1.8P PS=5.4U AD=1.8P PD=5.4U
 * -- caps ---
-C5 out Vdd 0.115435F
-C6 out w_n2_8# 0.300639F
-C7 w_n2_8# Vdd 0.394932F
-C8 w_n2_8# in 0.449068F
-C9 w_n2_8# GND 5.01768F
-C10 in GND 1.13587F
-C11 Vdd GND 0.123326F
-C12 out GND 0.544288F
+C3 out Vdd 0.115435F
+C4 out w_n2_8# 0.300639F
+C5 w_n2_8# Vdd 0.394932F
+C6 w_n2_8# in 0.449068F
+C7 w_n2_8# GND 5.01768F
+C8 in GND 1.13587F
+C9 Vdd GND 0.123326F
+C10 out GND 0.544288F
 *--- inferred globals
 .global Vdd
 .global GND

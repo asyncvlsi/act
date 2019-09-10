@@ -4,29 +4,27 @@
 *---------------------------------------------------
 *
 * -- connections ---
-V1 GND! GND
-V2 Vdd! Vdd
 * -- fets ---
-M3 a_1_0# a Vdd w_n12_n6# p W=3.3U L=0.6U
+M1 a_1_0# a Vdd w_n12_n6# p W=3.3U L=0.6U
 + AS=4.95P PS=9.6U AD=2.97P PD=8.4U
-M4 out b a_1_0# w_n12_n6# p W=3.3U L=0.6U
+M2 out b a_1_0# w_n12_n6# p W=3.3U L=0.6U
 + AS=0P PS=0U AD=4.95P PD=9.6U
-M5 out a GND GND n W=1.2U L=0.6U
+M3 out a GND GND n W=1.2U L=0.6U
 + AS=3.6P PS=10.8U AD=2.16P PD=6U
-M6 GND b out GND n W=1.2U L=0.6U
+M4 GND b out GND n W=1.2U L=0.6U
 + AS=0P PS=0U AD=0P PD=0U
 * -- caps ---
-C7 w_n12_n6# Vdd 0.427167F
-C8 b a 0.131378F
-C9 b w_n12_n6# 0.526042F
-C10 b out 0.410568F
-C11 a w_n12_n6# 0.627701F
-C12 w_n12_n6# out 0.260849F
-C13 a GND 1.00708F
-C14 Vdd GND 0.134306F
-C15 b GND 1.22139F
-C16 out GND 0.698042F
-C17 w_n12_n6# GND 6.06303F
+C5 w_n12_n6# Vdd 0.427167F
+C6 b a 0.131378F
+C7 b w_n12_n6# 0.526042F
+C8 b out 0.410568F
+C9 a w_n12_n6# 0.627701F
+C10 w_n12_n6# out 0.260849F
+C11 a GND 1.00708F
+C12 Vdd GND 0.134306F
+C13 b GND 1.22139F
+C14 out GND 0.698042F
+C15 w_n12_n6# GND 6.06303F
 *--- inferred globals
 .global Vdd
 .global GND

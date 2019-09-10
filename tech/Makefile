@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2018 Rajit Manohar
+#  Copyright (c) 2018-2019 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -19,16 +19,16 @@
 #
 #-------------------------------------------------------------------------
 
-EXE=tfile.$(EXT)
+EXE=techgen.$(EXT)
 
 TARGETS=$(EXE)
 
-SRCS=tech.c test.c
-OBJS=$(SRCS:.c=.o)
+SRCS=techgen.cc
+OBJS=$(SRCS:.cc=.o)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(EXE): $(OBJS) $(LIBDEPEND)
-	$(CC) $(OBJS) -o $(EXE) $(LIBCOMMON)
+$(EXE): $(OBJS) $(LIBACTDEPEND)
+	$(CXX) $(OBJS) -o $(EXE) $(LIBACT)
 
 -include Makefile.deps
