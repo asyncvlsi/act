@@ -155,17 +155,121 @@ static void emit_contacts (pp_t *pp)
   pp_printf (pp, "end"); pp_SPACE;
 }
 
+#define PTYPE 1
+#define NTYPE 0
 
 static void emit_styles (pp_t *pp)
 {
   pp_printf (pp, "styles"); pp_TAB;
   pp_printf (pp, "styletype mos"); pp_TAB;
 
-  
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      char c = (j == PTYPE) ? 'p' : 'n';
+      if (Technology::T->well[j][i]) {
+	pp_printf (pp, "%s %cwell", Technology::T->well[j][i]->getName(), c);
+	pp_nl;
+	pp_printf (pp, "%sc %cdiff_in_%cwell metal1 contact_X'es",
+		   Technology::T->well[j][i]->getName(), c, c);
+	pp_nl;
+      }
+      if (Technology::T->diff[j][i]) {
+	pp_printf (pp, "%s %cdiffusion",
+		   Technology::T->diff[j][i]->getName(), c); pp_nl;
+	pp_printf (pp, "%sc %cdiffusion metal1 contact_X'es",
+		   Technology::T->diff[j][i]->getName(), c); pp_nl;
+      }
+      if (Technology::T->fet[j][i]) {
+	pp_printf (pp, "%s %ctransistor %ctransistor_stripes",
+		   Technology::T->fet[j][i]->getName(), c, c); pp_nl;
+      }
+    }
+  }
+  pp_printf (pp, "%s polysilicon", Technology::T->poly->getName()); pp_nl;
+  pp_printf (pp, "%sc poly_contact contact_X'es",
+	     Technology::T->poly->getName()); pp_nl;
+
+
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    pp_printf (pp, "m%d metal%d", i+1, i+1); pp_nl;
+    if (i > 0) {
+      pp_printf (pp, "m%dc metal%d metal%d via%darrow", i+1, i, i+1, i);
+      pp_nl;
+    }
+  }
+
+  pp_printf (pp, "boundary subcircuit"); pp_nl;
+  pp_printf (pp, "error_p error_waffle"); pp_nl;
+  pp_printf (pp, "error_s error_waffle"); pp_nl;
+  pp_printf (pp, "error_ps error_waffle"); pp_nl;
+  pp_printf (pp, "pad overglass metal%d", Technology::T->nmetals+1); pp_nl;
 
   pp_endb (pp); pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 }
+
+
+static void emit_compose (pp_t *pp)
+{
+  pp_printf (pp, "compose"); pp_TAB;
+
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      pp_printf (pp, "compose %s %s %s",
+		 Technology::T->fet[j][i]->getName(),
+		 Technology::T->poly->getName(),
+		 Technology::T->diff[j][i]->getName());
+      pp_nl;
+
+      if (Technology::T->well[j][i]) {
+	pp_printf (pp, "paint %s %s %s",
+		   Technology::T->diff[1-j][i]->getName(),
+		   Technology::T->well[j][i]->getName(),
+		   Technology::T->diff[j][i]->getName()); pp_nl;
+	pp_printf (pp, "paint %sc %s %sc",
+		   Technology::T->diff[1-j][i]->getName(),
+		   Technology::T->well[j][i]->getName(),
+		   Technology::T->diff[j][i]->getName()); pp_nl;
+	pp_printf (pp, "paint %s %s %s",
+		   Technology::T->fet[1-j][i]->getName(),
+		   Technology::T->well[j][i]->getName(),
+		   Technology::T->fet[j][i]->getName()); pp_nl;
+	if (Technology::T->well[1-j][i]) {
+	  pp_printf (pp, "paint %sc %s %sc",
+		     Technology::T->well[1-j][i]->getName(),
+		     Technology::T->well[j][i]->getName(),
+		     Technology::T->well[j][i]->getName()); pp_nl;
+	}
+      }
+    }
+  }
+  
+  pp_UNTAB;
+  pp_printf (pp, "end"); pp_SPACE;
+}
+
+
+static void emit_connect (pp_t *pp)
+{
+  pp_printf (pp, "connect"); pp_TAB;
+  pp_printf (pp, "%s", Technology::T->poly->getName());
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      pp_printf (pp, ",%s", Technology::T->fet[j][i]->getName());
+    }
+  }
+  pp_printf (pp, " ");
+  pp_printf (pp, "%s", Technology::T->poly->getName());
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      pp_printf (pp, ",%s", Technology::T->fet[j][i]->getName());
+    }
+  }
+  pp_UNTAB;
+  pp_printf (pp, "end"); pp_SPACE;
+}
+
+
 
 int main (int argc, char **argv)
 {
@@ -178,13 +282,15 @@ int main (int argc, char **argv)
     fatal_error ("Can't handle a process with fewer than two metal layers!");
   }
 
-  pp = pp_init (stdout, 72);
+  pp = pp_init (stdout, 1000);
 
   emit_header (pp);
   emit_planes (pp);
   emit_tiletypes (pp);
   emit_contacts (pp);
   emit_styles (pp);
+  emit_compose (pp);
+  emit_connect (pp);
 
   pp_close (pp);
   
