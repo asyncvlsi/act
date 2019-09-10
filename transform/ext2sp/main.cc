@@ -333,16 +333,18 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
       for (hash_bucket_t *b = N->head[i]; b; b = b->next) {
 	struct alias_tree *t = (struct alias_tree *)b->v;
 	if (t->up) {
-	  printf ("V%d %s ", devcount++, t->name);
-	  if (0 && (t->up->global == 1)) {
-	    int s, e;
-	    global_name (t->up->name, &s, &e);
-	    print_substr (t->up->name, s, e);
+	  if (strncmp (t->name, t->up->name, strlen (t->up->name)) != 0) {
+	    printf ("V%d %s ", devcount++, t->name);
+	    if (0 && (t->up->global == 1)) {
+	      int s, e;
+	      global_name (t->up->name, &s, &e);
+	      print_substr (t->up->name, s, e);
+	    }
+	    else {
+	      printf ("%s", t->up->name);
+	    }
+	    printf ("\n");
 	  }
-	  else {
-	    printf ("%s", t->up->name);
-	  }
-	  printf ("\n");
 	}
       }
     }
