@@ -1841,6 +1841,8 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
      
     while (pt) {
       int k;
+
+      k = -1;
       if (pt->n[0] == n) {
 	k = 0;
 	if (TIMING_TRIGGER (k)) {
@@ -1849,42 +1851,11 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	else {
 	  pt->state = PRS_TIMING_INACTIVE;
 	}
-	if (pt->n[1] == n) {
-	  if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
-	    if (pt->state == PRS_TIMING_PENDING) {
-	      printf ("WARNING: timing constraint ");
-	      printtiming (p, pt);
-	      printf (" violated!\n");
-	      printf (">> time: %10llu\n", p->time);
-	      /* stable 1:
-		 START: we're done
-		 PENDING: error
-	       
-		 unstable 1:
-		 START: stay in START
-		 PENDING: error
-	      */
-	      pt->state = PRS_TIMING_INACTIVE;
-	    }
-	    else if (pt->state == PRS_TIMING_START) {
-	      if (pt->margin != 0) {
-		pt->ts = p->time;
-		pt->state = PRS_TIMING_PENDINGDELAY;
-	      }
-	      else {
-		if (!UNSTAB_NODE (p, pt->n[1])) {
-		  pt->state = PRS_TIMING_INACTIVE;
-		}
-	      }
-	    }
-	    else if (pt->state == PRS_TIMING_PENDINGDELAY) {
-	      pt->ts = p->time;
-	    }
-	  }
-	}
       }
-      else if (pt->n[1] == n) {
-	k = 1;
+      if (pt->n[1] == n) {
+	if (k == -1) {
+	  k = 1;
+	}
 	if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
 	  if (pt->state == PRS_TIMING_PENDING) {
 	    printf ("WARNING: timing constraint ");
@@ -1893,11 +1864,11 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	    printf (">> time: %10llu\n", p->time);
 	    /* stable 1:
 	       START: we're done
-               PENDING: error
+	       PENDING: error
 	       
 	       unstable 1:
 	       START: stay in START
-               PENDING: error
+	       PENDING: error
 	    */
 	    pt->state = PRS_TIMING_INACTIVE;
 	  }
@@ -1917,8 +1888,10 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	  }
 	}
       }
-      else if (pt->n[2] == n) {
-	k = 2;
+      if (pt->n[2] == n) {
+	if (k == -1) {
+	  k = 2;
+	}
 	if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
 	  if (pt->state == PRS_TIMING_PENDINGDELAY) {
 	    if (pt->ts + pt->margin > p->time) {
@@ -1934,9 +1907,7 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	  }
 	}
       }
-      else {
-	Assert (0, "What?");
-      }
+      Assert (k != -1, "What?");
       pt = pt->next[k];
     }
   }
@@ -2549,15 +2520,9 @@ static void canonicalize_timing (Prs *p)
 		       prs_nodename (p, pt->n[0]));
 	}
       }
-      for (k=0; k < 3; k++) {
-	int l;
-	for (l=k+1; l < 3; l++) {
-	  if (pt->n[k] == pt->n[l] && !(k == 0 && l == 1)) {
-	    fprintf (stderr, "Duplicate node `%s'\n", prs_nodename(p,pt->n[k]));
-		     
-	    fatal_error ("timing directive has duplicate nodes!");
-	  }
-	}
+      if (pt->n[1] == pt->n[2]) {
+	fprintf (stderr, "Duplicate node `%s'\n", prs_nodename(p,pt->n[1]));
+	fatal_error ("timing directive has duplicate nodes!");
       }
     }
 }
@@ -2986,18 +2951,21 @@ static void parse_timing (Prs *p, LEX_T *l)
     ihash_bucket_t *b;
     n = lookup (lex_mustbe_id (p,l), p->H);
     constraint->n[i] = n;
-    if (!n->intiming) {
-      n->intiming = 1;
-      b = ihash_lookup (p->timing, (long)n);
-      Assert (!b, "intiming flag error");
-      b = ihash_add (p->timing, (long)n);
+    if ((i < 1 || n != constraint->n[i-1]) &&
+	(i < 2 || n != constraint->n[i-2])) {
+      if (!n->intiming) {
+	n->intiming = 1;
+	b = ihash_lookup (p->timing, (long)n);
+	Assert (!b, "intiming flag error");
+	b = ihash_add (p->timing, (long)n);
+      }
+      else {
+	b = ihash_lookup (p->timing, (long)n);
+	Assert (b, "intiming flag error");
+	constraint->next[i] = (PrsTiming *)b->v;
+      } 
+      b->v = constraint;
     }
-    else {
-      b = ihash_lookup (p->timing, (long)n);
-      Assert (b, "intiming flag error");
-      constraint->next[i] = (PrsTiming *)b->v;
-    }
-    b->v = constraint;
     if (lex_have (l, TOK_UP)) {
       constraint->f[i].up = 1;
       constraint->f[i].dn = 0;
@@ -3023,12 +2991,8 @@ static void parse_timing (Prs *p, LEX_T *l)
   }
   lex_mustbe (l, TOK_RPAR);
 
-  for (int i=0; i < 3; i++) {
-    for (int j=i+1; j < 3; j++) {
-      if ((constraint->n[i] == constraint->n[j]) && !(i == 0 && j == 1)) {
-	fatal_error ("Timing constraint cannot repeat the signal name!\n%s", lex_errstring (l));
-      }
-    }
+  if (constraint->n[1] == constraint->n[2]) {
+    fatal_error ("Timing constraint cannot repeat the signal name on the RHS!\n%s", lex_errstring (l));
   }
 }
 
