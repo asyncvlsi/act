@@ -1311,10 +1311,21 @@ Type::direction act_connection::getDir ()
   act_connection *tmp;
   int polarity;
   int isfirst;
+  int isrootproc;
   Type::direction ret;
 
   ret = Type::NONE;
   isfirst = 1;
+
+  // check if the root is a process; if so return none
+  tmp = this;
+  while (tmp->parent) {
+    tmp = tmp->parent;
+  }
+  Assert (tmp->vx, "What?");
+  if (TypeFactory::isProcessType (tmp->vx->t)) {
+    return Type::NONE;
+  }
 
   // to identify my direction flag:
   //   go to the root of the connection. that type has a direction
