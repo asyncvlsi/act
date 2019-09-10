@@ -1849,6 +1849,39 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 	else {
 	  pt->state = PRS_TIMING_INACTIVE;
 	}
+	if (pt->n[1] == n) {
+	  if (pt->state != PRS_TIMING_INACTIVE && TIMING_TRIGGER (k)) {
+	    if (pt->state == PRS_TIMING_PENDING) {
+	      printf ("WARNING: timing constraint ");
+	      printtiming (p, pt);
+	      printf (" violated!\n");
+	      printf (">> time: %10llu\n", p->time);
+	      /* stable 1:
+		 START: we're done
+		 PENDING: error
+	       
+		 unstable 1:
+		 START: stay in START
+		 PENDING: error
+	      */
+	      pt->state = PRS_TIMING_INACTIVE;
+	    }
+	    else if (pt->state == PRS_TIMING_START) {
+	      if (pt->margin != 0) {
+		pt->ts = p->time;
+		pt->state = PRS_TIMING_PENDINGDELAY;
+	      }
+	      else {
+		if (!UNSTAB_NODE (p, pt->n[1])) {
+		  pt->state = PRS_TIMING_INACTIVE;
+		}
+	      }
+	    }
+	    else if (pt->state == PRS_TIMING_PENDINGDELAY) {
+	      pt->ts = p->time;
+	    }
+	  }
+	}
       }
       else if (pt->n[1] == n) {
 	k = 1;
@@ -2519,7 +2552,7 @@ static void canonicalize_timing (Prs *p)
       for (k=0; k < 3; k++) {
 	int l;
 	for (l=k+1; l < 3; l++) {
-	  if (pt->n[k] == pt->n[l]) {
+	  if (pt->n[k] == pt->n[l] && !(k == 0 && l == 1)) {
 	    fprintf (stderr, "Duplicate node `%s'\n", prs_nodename(p,pt->n[k]));
 		     
 	    fatal_error ("timing directive has duplicate nodes!");
@@ -2992,7 +3025,7 @@ static void parse_timing (Prs *p, LEX_T *l)
 
   for (int i=0; i < 3; i++) {
     for (int j=i+1; j < 3; j++) {
-      if (constraint->n[i] == constraint->n[j]) {
+      if ((constraint->n[i] == constraint->n[j]) && !(i == 0 && j == 1)) {
 	fatal_error ("Timing constraint cannot repeat the signal name!\n%s", lex_errstring (l));
       }
     }
