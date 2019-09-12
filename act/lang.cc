@@ -1191,7 +1191,12 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
       act_chp_gc_t *gc = c->u.gc;
       while (gc) {
 	if (!gc->g) {
-	  fprintf (fp, "else");
+	  if (c->type == ACT_CHP_LOOP) {
+	    fprintf (fp, "true");
+	  }
+	  else {
+	    fprintf (fp, "else");
+	  }
 	}
 	else {
 	  print_expr (fp, gc->g);

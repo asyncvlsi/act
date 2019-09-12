@@ -1,0 +1,19 @@
+defproc testme (chan_1int_332_4_2 l; chan_1int_332_4_2 r);
+
+defproc testme (chan_1int_332_4_2 l; chan_1int_332_4_2 r)
+{
+
+/* instances */
+int<32> x;
+
+/* connections */
+chp {
+x:=5;*[true -> l?x;r!x]
+}
+}
+
+
+/* instances */
+testme t;
+
+/* connections */
