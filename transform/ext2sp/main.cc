@@ -49,6 +49,11 @@ void addglobal (char *name)
   A_INC (globals);
 }
 
+/*
+  Name munge: converts name to add in "xfoo<sep>", as needed by SPICE.
+  Key is the name from the .ext file, name is the name translated to
+  the appropriate SPICE version.
+*/
 char *name_munge (const char *name)
 {
   int count = 0;
@@ -98,22 +103,48 @@ static void usage (char *name)
 static struct Hashtable *seen = NULL;
 
 struct alias_tree {
-  int global;
   struct alias_tree *up;
+  struct alias_tree *noglob;
+  hash_bucket_t *b;
   char *name;
+  int global;
   double cap_gnd;
   double *perim, *area;
 };
 
 
-struct alias_tree *getalias (struct alias_tree *a)
+struct alias_tree *getroot (struct alias_tree *a)
 {
-  struct alias_tree *root, *tmp;
-  
   while (a->up) {
     a = a->up;
   }
-  root = a;
+  return a;
+}
+
+struct alias_tree *getroot_noglob (struct alias_tree *a)
+{
+  struct alias_tree *tmp;
+
+  tmp = a;
+  while (a->up) {
+    a = a->up;
+  }
+
+  while (tmp->up) {
+    struct alias_tree *x;
+    x = tmp->up;
+    tmp->up = a;
+    tmp = x;
+  }
+  
+  return a;
+}
+
+struct alias_tree *getalias (struct alias_tree *a)
+{
+  struct alias_tree *root, *tmp;
+
+  root = getroot (a);
   while (a->up) {
     tmp = a->up;
     a->up = root;
@@ -133,7 +164,7 @@ void global_name (const char *name, int *start, int *end)
   Assert (e > 0, "What?");
   e--;
   s = e;
-  while (s > 0 && name[s] != SEP_CHAR) {
+  while (s > 0 && name[s] != '/') {
     s--;
   }
   if (s != 0) { s++; }
@@ -153,8 +184,10 @@ static struct alias_tree *newnode ()
   struct alias_tree *a;
   
   NEW (a, struct alias_tree);
+  a->b = NULL;
   a->global = 0;
   a->up = NULL;
+  a->noglob = NULL;
   a->name = NULL;
   a->cap_gnd = 0;
   MALLOC (a->area, double, num_devices);
@@ -165,7 +198,17 @@ static struct alias_tree *newnode ()
   }
   return a;
 }
-  
+
+
+static int islocal (char *s)
+{
+  int i = 0;
+  while (s[i]) {
+    if (s[i] == '/') return 0;
+    i++;
+  }
+  return 1;
+}
 
 /*
   name is in the EXT file namespace 
@@ -182,7 +225,10 @@ struct alias_tree *getname (struct Hashtable *N, const char *name)
     a = newnode ();
     a->name = name_munge (b->key);
     b->v = a;
+    a->b = b;
     l = strlen (b->key);
+
+    /* if the name has a "!" in it, it is a global signal */
     while (l > 0) {
       if (b->key[l] == '!') {
 	a->global = 1;
@@ -194,37 +240,38 @@ struct alias_tree *getname (struct Hashtable *N, const char *name)
       l--;
     }
     if (a->global) {
+      /* a->global = 1 => the signal has a ! */
       int s, e;
       char *tmp;
       hash_bucket_t *g;
       struct alias_tree *x;
-      
-      global_name (a->name, &s, &e);
 
-      if (s == 0 && a->name[e+1] == '\0') {
-	a->global = 2;
-	addglobal (a->name);
+      global_name (b->key, &s, &e);
+      /* s, e correspond to start and end indices in b->key that
+	 delimits the global signal name. 
+	 e+1 should be '!'
+      */
+      Assert (b->key[e+1] == '!', "What?");
+      MALLOC (tmp, char, e-s+2);
+      tmp[e-s+1] = '\0';
+      while (s <= e) {
+	tmp[e-s] = b->key[e];
+	e--;
       }
-      else {
-	MALLOC (tmp, char, e-s+2);
-	tmp[e-s+1] = '\0';
-	while (s <= e) {
-	  tmp[e-s] = a->name[e];
-	  e--;
-	}
-	g = hash_lookup (N, tmp);
-	if (!g) {
-	  g = hash_add (N, tmp);
-	  x = newnode ();
-	  x->global = 2;
-	  x->name = g->key;
-	  addglobal (x->name);
-	  g->v = x;
-	}
-	x = (struct alias_tree *)g->v;
-	a->up = x;
-	FREE (tmp);
+      /* tmp is the name of the global, without the ! */
+      g = hash_lookup (N, tmp);
+      if (!g) {
+	g = hash_add (N, tmp);
+	x = newnode ();
+	x->global = 2;
+	x->name = g->key;
+	addglobal (x->name);
+	g->v = x;
+	x->b = g;
       }
+      x = (struct alias_tree *)g->v;
+      a->up = x;
+      FREE (tmp);
     }
   }
   return getalias ((struct alias_tree *)b->v);
@@ -232,6 +279,15 @@ struct alias_tree *getname (struct Hashtable *N, const char *name)
 
 void mergealias (struct alias_tree *a1, struct alias_tree *a2)
 {
+  struct alias_tree *t1, *t2;
+
+  /* noglob merge trees */
+  t1 = getroot_noglob (a1);
+  t2 = getroot_noglob (a2);
+  if (t1 != t2) {
+    t1->noglob = t2;
+  }
+  
   a1 = getalias (a1);
   a2 = getalias (a2);
   if (a1 != a2) {
@@ -264,6 +320,178 @@ void mergealias (struct alias_tree *a1, struct alias_tree *a2)
   }
 }
 
+static struct alias_tree *get_cur_node (hash_bucket_t *b, struct Hashtable *cur,
+					char *buf, int l)
+{
+  struct alias_tree *x = (struct alias_tree *)b->v;
+  hash_bucket_t *newb;
+  struct alias_tree *newx;
+  
+  if (x->global == 2) {
+    newb = hash_lookup (cur, b->key);
+    if (!newb) {
+      return NULL;
+    }
+    else {
+      return (struct alias_tree *)newb->v;
+    }
+  }
+  else {
+    sprintf (buf+l+1, "%s", b->key);
+    newb = hash_lookup (cur, buf);
+    if (!newb) {
+      return NULL;
+    }
+    else {
+      return (struct alias_tree *)newb->v;
+    }
+  }
+}
+
+static void import_base_node (hash_bucket_t *b, struct Hashtable *cur,
+			      char *buf, int l)
+{
+  struct alias_tree *x = (struct alias_tree *)b->v;
+  int new_node;
+  hash_bucket_t *newb;
+  struct alias_tree *newx;
+
+  sprintf (buf+l+1, "%s", b->key);
+
+  new_node = 1;
+
+  if (x->global == 2) {
+    newb = hash_lookup (cur, b->key);
+    if (!newb) {
+      newb = hash_add (cur, b->key);
+    }
+    else {
+      new_node = 0;
+    }
+  }
+  else {
+    newb = hash_lookup (cur, buf);
+    if (newb) {
+      new_node = 0;
+    }
+    else {
+      newb = hash_add (cur, buf);
+    }
+  }
+  if (new_node) {
+    newx = newnode();
+    newx->name = name_munge (newb->key);
+    newx->global = x->global;
+    newb->v = newx;
+    newx->b = newb;
+  }
+}
+
+static void import_subcell_conns (struct Hashtable *N,
+				  const char *instname, const char *tname,
+				  int xl, int xh, int yl, int yh)
+{
+  struct Hashtable *sub;
+  hash_bucket_t *b, *tb;
+  char *strbuf;
+  int l, t;
+
+  l = strlen (instname);
+
+  b = hash_lookup (seen, tname);
+  Assert (b, "What?");
+  sub = (struct Hashtable *) b->v;
+
+  t = 0;
+  for (int i=0; i < sub->size; i++) {
+    for (b = sub->head[i]; b; b = b->next) {
+      int x = strlen (b->key);
+      if (x > t) {
+	t = x;
+      }
+    }
+  }
+
+  int dims = 0;
+
+  if (xl != xh) { t += 10; dims++; }
+  if (yl != yh) { t += 10; dims++; }
+  
+  MALLOC (strbuf, char, l + t + 2);
+
+  if (xl == xh && yl != yh) {
+    xl = yl;
+    xh = yh;
+    yl = 0;
+    yh = 0;
+  }
+
+  int xval, yval;
+  xval = xl;
+  yval = yl;
+
+  do {
+    if (dims == 0) {
+      sprintf (strbuf, "%s/", instname);
+    }
+    else if (dims == 1) {
+      sprintf (strbuf, "%s[%d]/", instname, xval);
+    }
+    else if (dims == 2) {
+      sprintf (strbuf, "%s[%d,%d]/", instname, xval, yval);
+    }
+
+    for (int i=0; i < sub->size; i++) {
+      for (b = sub->head[i]; b; b = b->next) {
+	struct alias_tree *base;
+	struct alias_tree *x, *x1;
+
+	base = (struct alias_tree *)b->v;
+	import_base_node (b, N, strbuf, l);
+
+	/* x is the current node */
+	x = get_cur_node (b, N, strbuf, l);
+
+	/* now import connections */
+	if (base->up) {
+	  import_base_node (base->up->b, N, strbuf, l);
+	  x1 = get_cur_node (base->up->b, N, strbuf, l);
+	  Assert (x1, "What?");
+	  x->up = x1;
+	}
+	if (base->noglob) {
+	  import_base_node (base->noglob->b, N, strbuf, l);
+	  x1 = get_cur_node (base->noglob->b, N, strbuf, l);
+	  Assert (x1, "What?");
+	  x->noglob = x1;
+	}
+      }
+    }
+    
+    if (dims == 0) {
+      break;
+    }
+    else if (dims == 1) {
+      xval++;
+      if (xval > xh) {
+	break;
+      }
+    }
+    else if (dims == 2) {
+      xval++;
+      if (xval > xh) {
+	xval = xl;
+	yval++;
+	if (yval > yh) {
+	  break;
+	}
+      }
+    }
+  } while (1);
+
+  FREE (strbuf);
+}
+
 void ext2spice (const char *name, struct ext_file *E, int toplevel)
 {
   hash_bucket_t *b;
@@ -277,9 +505,31 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   }
   b = hash_add (seen, name);
 
+  /*-- create names table --*/
+  N = hash_new (32);
+  b->v = N;
 
   for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
+    int xl, xh, yl, yh;
     ext2spice (lst->file, lst->ext, 0);
+    /* import connections */
+    if (lst->xhi < lst->xlo) {
+      xl = lst->xhi;
+      xh = lst->xlo;
+    }
+    else {
+      xl = lst->xlo;
+      xh = lst->xhi;
+    }
+    if (lst->yhi < lst->ylo) {
+      yl = lst->yhi;
+      yh = lst->ylo;
+    }
+    else {
+      yl = lst->ylo;
+      yh = lst->yhi;
+    }
+    import_subcell_conns (N, lst->id, lst->file, xl, xh, yl, yh);
   }
 
   if (!toplevel) {
@@ -306,15 +556,43 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     printf ("*\n");
   }
 
-  /*-- create names table --*/
-  N = hash_new (32);
-
+  if (E->subcells) {
+    printf ("*--- subcircuits ---\n");
+    for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
+      int p = 0;
+      printf ("x%s %s ", lst->id, gnd_node);
+      l = strlen (lst->file);
+      if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
+	l -= 4;
+      }
+      while (l) {
+	putchar (lst->file[p++]);
+	l--;
+      }
+      putchar ('\n');
+    }
+  }
+  
   /*-- process aliases --*/
+  printf ("* -- connections ---\n");
   for (struct ext_alias *a = E->aliases; a; a = a->next) {
     struct alias_tree *t1, *t2;
     t1 = getname (N, a->n1);
     t2 = getname (N, a->n2);
-    mergealias (t1, t2);
+    if (t1 != t2) {
+      char *s1, *s2;
+      s1 = name_munge (a->n1);
+      s2 = name_munge (a->n2);
+      printf ("V%d %s %s\n", devcount++, s2, s1);
+      FREE (s1);
+      FREE (s2);
+    }
+    if (islocal (a->n1)) {
+      mergealias (t1, t2);
+    }
+    else {
+      mergealias (t2, t1);
+    }      
   }
 
   /*-- process area/perim --*/
@@ -325,33 +603,8 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
       t->perim[i] += a->perim[i];
     }
   }
-  
-  /*--- now print out aliases ---*/
-  if (N->n > 0) {
-    printf ("* -- connections ---\n");
-    for (int i=0; i < N->size; i++) {
-      for (hash_bucket_t *b = N->head[i]; b; b = b->next) {
-	struct alias_tree *t = (struct alias_tree *)b->v;
-	if (t->up) {
-	  if (strncmp (t->name, t->up->name, strlen (t->up->name)) != 0) {
-	    printf ("V%d %s ", devcount++, t->name);
-	    if (0 && (t->up->global == 1)) {
-	      int s, e;
-	      global_name (t->up->name, &s, &e);
-	      print_substr (t->up->name, s, e);
-	    }
-	    else {
-	      printf ("%s", t->up->name);
-	    }
-	    printf ("\n");
-	  }
-	}
-      }
-    }
-  }
 
   /*--- now print out fets ---*/
-
   if (E->fet) {
     printf ("* -- fets ---\n");
     for (struct ext_fets *fl = E->fet; fl; fl = fl->next) {
@@ -449,22 +702,6 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     }
   }
 
-  if (E->subcells) {
-    printf ("*--- subcircuits ---\n");
-    for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
-      int p = 0;
-      printf ("x%s %s ", lst->id, gnd_node);
-      l = strlen (lst->file);
-      if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
-	l -= 4;
-      }
-      while (l) {
-	putchar (lst->file[p++]);
-	l--;
-      }
-      putchar ('\n');
-    }
-  }
 
   if (!toplevel) {
     printf (".ends\n");
@@ -477,6 +714,7 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     }
   }
 
+#if 0  
   /*--- delete hashtable ---*/
   for (int i=0; i < N->size; i++) {
     for (hash_bucket_t *b = N->head[i]; b; b = b->next) {
@@ -484,6 +722,7 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     }
   }
   hash_free (N);
+#endif  
   N = NULL;
 }
 
