@@ -1,0 +1,17 @@
+import "syn.act";
+import "channel.act";
+import "globals.act";
+
+a1of2 in[1];
+dualrail v[1];
+a1of1 go[1];
+a1of2 X[1];a1of2 Y[1];a1of2 Z[1];
+
+defproc top (a1of2 in[1];dualrail v[1];a1of1 go[1]){
+
+syn_recv x[1];
+x[0] (go[0],v[0],X[0]); 
+
+}
+
+top t;

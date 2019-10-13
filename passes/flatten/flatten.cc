@@ -473,8 +473,8 @@ void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
   else {
     suf2 = tmp2;
   }
-    
-  if (oa) {
+
+  if (oa && ta) {
     Array *a1, *a2;
     Arraystep *s1, *s2;
 
@@ -539,7 +539,6 @@ void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
   Assert (ux, "What");
   Assert (one, "What");
   Assert (two, "What");
-  Assert ((oa && ta) || (!oa && !ta), "What?");
 
   /* walk through all instances */
   ActInstiter inst(ux->CurScope());
@@ -616,6 +615,7 @@ void ActApplyPass::_any_global_conns (act_connection *c)
 	if (TypeFactory::isUserType (xit)) {
 	  suffixes = list_new ();
 	  suffix_array = list_new ();
+
 	  _flat_rec_bool_conns (one, two, rux,
 				 it->arrayInfo(), xit->arrayInfo(),
 				 root->getvx()->global);
