@@ -228,6 +228,7 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
   A_INIT (N->ports);
   A_INIT (N->instports);
   A_INIT (N->nets);
+  A_INIT (N->used_globals);
   
   N->p = proc;
   N->cur = cur;
@@ -275,6 +276,11 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
       act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
       if (!v->output) {
 	v->input = 1;
+      }
+      if (v->id->isglobal()) {
+	A_NEWM (N->used_globals, act_connection *);
+	A_NEXT (N->used_globals) = v->id;
+	A_INC (N->used_globals);
       }
     }
   }  

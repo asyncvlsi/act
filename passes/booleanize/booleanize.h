@@ -72,6 +72,7 @@ typedef struct {
 
   A_DECL (struct netlist_bool_port, ports);
   A_DECL (act_connection *, instports);
+  A_DECL (act_connection *, used_globals);
 
   A_DECL (act_local_net_t, nets); // nets
 
