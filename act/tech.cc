@@ -82,6 +82,8 @@ void Technology::Init (const char *s)
   int i, j, k, sz;
   const char *tables[] = { "diff.ntype", "diff.ptype", "diff.nfet", "diff.pfet",
 			   "diff.nfet_well", "diff.pfet_well" };
+  const int well_start = 4;
+  
   char **diff;
   const char *prefix = "layout";
 
@@ -149,6 +151,7 @@ void Technology::Init (const char *s)
     MALLOC (T->diff[i], DiffMat *, sz);
     MALLOC (T->well[i], WellMat *, sz);
     MALLOC (T->fet[i], FetMat *, sz);
+    MALLOC (T->welldiff[i], DiffMat *, sz);
   }
   
   for (i=0; i < sizeof(tables)/sizeof (tables[0]); i++) {
@@ -208,6 +211,14 @@ void Technology::Init (const char *s)
 	snprintf (buf+k, BUF_SZ-k-1, "%s.via.fet", diff[j]);
 	mat->via_fet = config_get_int (buf);
 
+	snprintf (buf+k, BUF_SZ-k-1, "%s.minarea", diff[j]);
+	if (config_exists (buf)) {
+	  if (config_get_int (buf) < 0) {
+	    fatal_error ("%s: has to be non-negative", buf);
+	  }
+	  mat->minarea = config_get_int (buf);
+	}
+
 	/* contacts */
 	A_NEW (contacts, char *);
 	A_NEXT (contacts) = diff[j];
@@ -242,42 +253,109 @@ void Technology::Init (const char *s)
       }
       else if (i < 6) {
 	/* wells */
-	if (strcmp (diff[j], "") != 0) {
-	  /* there is a well */
-	  
-	  WellMat *mat;
-	  mat = T->well[i-4][j] = new WellMat (diff[j]);
-	  
-	  snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
-	  if (config_get_int (buf) < 1) {
-	    fatal_error ("`%s': minimum width has to be at least 1", buf);
-	  }
-	  mat->width = config_get_int (buf);
-	  
-	  snprintf (buf+k, BUF_SZ-k-1, "%s.overhang", diff[j]);
-	  if (config_get_int (buf) < 1) {
-	    fatal_error ("`%s': minimum overhang has to be at least 1", buf);
-	  }
-	  mat->overhang = config_get_int (buf);
-	  
-	  snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", diff[j]);
-	  if (config_get_table_size (buf) != sz) {
-	    fatal_error ("Table `%s' has to be the same size as the # of types", buf);
-	  }
-	  mat->spacing = config_get_table_int (buf);
-	  
-	  snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", diff[j]);
-	  if (config_get_table_size (buf) != sz) {
-	    fatal_error ("Table `%s' has to be the same size as the # of types", buf);
-	  }
-	  mat->oppspacing = config_get_table_int (buf);
 
-	  A_NEW (contacts, char *);
-	  A_NEXT (contacts) = diff[j];
-	  A_INC (contacts);
+	if (strcmp (diff[j], "") != 0) {
+	  /* there is a well/welldiff */
+	  char ldiff[1024];
+	  int ik;
+
+	  ldiff[0] = '\0';
+	  for (ik=0; diff[j][ik]; ik++) {
+	    ldiff[ik] = diff[j][ik];
+	    ldiff[ik+1] = '\0';
+	    if (diff[j][ik] == ':') {
+	      ldiff[ik] = '\0';
+	      break;
+	    }
+	  }
+
+	  if (diff[j][ik] == ':') {
+	    if (diff[j][ik+1] == '\0') {
+	      T->welldiff[i-4][j] = NULL;
+	    }
+	    else {
+	      DiffMat *mat;
+	      mat = T->welldiff[i-4][j] = new DiffMat (diff[j]+ik+1);
+	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
+	      mat->width = config_get_int (buf);
+	      
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", diff[j]+ik+1);
+	      if (config_get_table_size (buf) != sz) {
+		fatal_error ("Table `%s' has to be the same size as the # of types", buf);
+	      }
+	      mat->spacing = config_get_table_int (buf);
+
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", diff[j]+ik+1);
+	      if (config_get_table_size (buf) != sz) {
+		fatal_error ("Table `%s' has to be the same size as the # of types", buf);
+	      }
+	      mat->oppspacing = config_get_table_int (buf);
+	
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.polyspacing", diff[j]+ik+1);
+	      mat->polyspacing = config_get_int (buf);
+
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.minarea", diff[j]+ik+1);
+	      if (config_exists (buf)) {
+		if (config_get_int (buf) < 0) {
+		  fatal_error ("%s: has to be non-negative", buf);
+		}
+		mat->minarea = config_get_int (buf);
+	      }
+	      
+	      A_NEW (contacts, char *);
+	      A_NEXT (contacts) = Strdup (diff[j]+ik+1);
+	      A_INC (contacts);
+	    }
+	  }
+
+	  if (ldiff[0] != '\0') {
+
+	    WellMat *mat;
+	    mat = T->well[i-4][j] = new WellMat (Strdup (ldiff));
+
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.width", ldiff);
+	    if (config_get_int (buf) < 1) {
+	      fatal_error ("`%s': minimum width has to be at least 1", buf);
+	    }
+	    mat->width = config_get_int (buf);
+	  
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.overhang", ldiff);
+	    if (config_get_int (buf) < 1) {
+	      fatal_error ("`%s': minimum overhang has to be at least 1", buf);
+	    }
+	    mat->overhang = config_get_int (buf);
+	  
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", ldiff);
+	    if (config_get_table_size (buf) != sz) {
+	      fatal_error ("Table `%s' has to be the same size as the # of types", buf);
+	    }
+	    mat->spacing = config_get_table_int (buf);
+	  
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", ldiff);
+	    if (config_get_table_size (buf) != sz) {
+	      fatal_error ("Table `%s' has to be the same size as the # of types", buf);
+	    }
+	    mat->oppspacing = config_get_table_int (buf);
+
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.minarea", ldiff);
+	    if (config_exists (buf)) {
+	      if (config_get_int (buf) < 0) {
+		fatal_error ("%s: has to be non-negative", buf);
+	      }
+	      mat->minarea = config_get_int (buf);
+	    }
+
+	    A_NEW (contacts, char *);
+	    A_NEXT (contacts) = Strdup (ldiff);
+	    A_INC (contacts);
+	  }
+	  else {
+	    T->well[i-4][j] = NULL;
+	  }
 	}
 	else {
 	  T->well[i-4][j] = NULL; /* no well */
+	  T->welldiff[i-4][j] = NULL; /* no welldiff */
 	}
       }
     }
@@ -342,15 +420,15 @@ void Technology::Init (const char *s)
     pmat->minarea = config_get_int (buf);
   }
 
-  snprintf (buf+k, BUF_SZ-k-1, "minturn");
+  snprintf (buf+k, BUF_SZ-k-1, "minjog");
   if (config_exists (buf)) {
     if (config_get_int (buf) < 0) {
       fatal_error ("%s: has to be non-negative", buf);
     }
-    pmat->r.minturn = config_get_int (buf);
+    pmat->r.minjog = config_get_int (buf);
   }
   else {
-    pmat->r.minturn = 0;
+    pmat->r.minjog = 0;
   }
   
   snprintf (buf+k, BUF_SZ-k-1, "endofline");
@@ -480,15 +558,15 @@ void Technology::Init (const char *s)
       mat->minarea = config_get_int (buf);
     }
 
-    snprintf (buf+j, BUF_SZ-j-1, "minturn");
+    snprintf (buf+j, BUF_SZ-j-1, "minjog");
     if (config_exists (buf)) {
       if (config_get_int (buf) < 0) {
 	fatal_error ("%s: has to be non-negative", buf);
       }
-      mat->r.minturn = config_get_int (buf);
+      mat->r.minjog = config_get_int (buf);
     }
     else {
-      mat->r.minturn = 0;
+      mat->r.minjog = 0;
     }
     
     snprintf (buf+j, BUF_SZ-j-1, "endofline");
@@ -511,28 +589,41 @@ void Technology::Init (const char *s)
   k = strlen (buf);
   buf[BUF_SZ-1] = '\0';
   for (i=0; i < A_LEN (contacts); i++) {
-    int found_contact;
+    char *t;
 
-    snprintf (buf+k, BUF_SZ-k-1, "%s.name", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s", contacts[i]);
+    t = config_get_string (buf);
+
+    snprintf (buf+k, BUF_SZ-k-1, "%s.name", t);
     if (!config_get_string (buf)) {
       fatal_error ("%s: needs a name field", buf);
     }
-    Contact *cmat = new Contact (config_get_string (buf));
-    
+
+    char vname[1024];
+    sprintf (vname, "%s_%s", config_get_string (buf), contacts[i]);
+    Contact *cmat = new Contact (vname);
+
     cmat->lower = NULL;
     cmat->upper = NULL;
+
     for (int j=0; j < T->num_devs; j++) {
       for (int k=0; k < 2; k++) {
 	if (strcmp (T->diff[k][j]->getName(), contacts[i]) == 0) {
 	  cmat->lower = T->diff[k][j];
 	  break;
 	}
-	if (T->well[k][j] && (strcmp (T->well[k][j]->getName(), contacts[i]) == 0)) {
+	if (T->well[k][j] &&
+	    (strcmp (T->well[k][j]->getName(), contacts[i]) == 0)) {
 	  cmat->lower = T->well[k][j];
 	  break;
 	}
 	if (strcmp (T->fet[k][j]->getName(), contacts[i]) == 0) {
 	  cmat->lower = T->fet[k][j];
+	  break;
+	}
+	if (T->welldiff[k][j] &&
+	    (strcmp (T->welldiff[k][j]->getName(), contacts[i]) == 0)) {
+	  cmat->lower = T->welldiff[k][j];
 	  break;
 	}
       }
@@ -572,58 +663,43 @@ void Technology::Init (const char *s)
       cmat->upper->viadn = cmat;
     }
 
-    snprintf (buf+k, BUF_SZ-k-1, "%s.width", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s.width", t);
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: has to be at least 1", buf);
     }
     cmat->width_int = config_get_int (buf);
     
-    snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", t);
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: has to be at least 1", buf);
     }
     cmat->spacing = config_get_int (buf);
     
-    found_contact = 0;
-    snprintf (buf+k, BUF_SZ-k-1, "%s.sym.surround", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s.surround.up", t);
+    if (config_get_int (buf) < 0) {
+      fatal_error ("%s: has to be non-negative", buf);
+    }
+    cmat->sym_surround_up = config_get_int (buf);
+    snprintf (buf+k, BUF_SZ-k-1, "%s.surround.dn", t);
+    if (config_get_int (buf) < 0) {
+      fatal_error ("%s: has to be non-negative", buf);
+    }
+    cmat->sym_surround_dn = config_get_int (buf);
+    
+    snprintf (buf+k, BUF_SZ-k-1, "%s.surround.asym_up", t);
     if (config_exists (buf)) {
       if (config_get_int (buf) < 0) {
 	fatal_error ("%s: has to be non-negative", buf);
       }
-      found_contact++;
-      cmat->sym_surround = config_get_int (buf);
-      snprintf (buf+k, BUF_SZ-k-1, "%s.sym.surround_up", contacts[i]);
-      cmat->sym_surround_up = config_get_int (buf);
-    }
-    else {
-      cmat->sym_surround = -1;
+      cmat->asym_surround_up = config_get_int (buf);
     }
     
-    snprintf (buf+k, BUF_SZ-k-1, "%s.asym.surround", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s.surround.asym_dn", t);
     if (config_exists (buf)) {
       if (config_get_int (buf) < 0) {
 	fatal_error ("%s: has to be non-negative", buf);
       }
-      cmat->asym_surround = config_get_int (buf);
-
-      snprintf (buf+k, BUF_SZ-k-1, "%s.asym.surround_up", contacts[i]);
-      cmat->asym_surround_up = config_get_int (buf);
-      
-      snprintf (buf+k, BUF_SZ-k-1, "%s.asym.opp", contacts[i]);
-      if (config_get_int (buf) < 0) {
-	fatal_error ("%s: has to be non-negative", buf);
-      }
-      cmat->asym_opp = config_get_int (buf);
-      found_contact++;
-
-      snprintf (buf+k, BUF_SZ-k-1, "%s.asym.opp_up", contacts[i]);
-      cmat->asym_opp_up = config_get_int (buf);
-    }
-    else {
-      cmat->asym_surround = -1;
-    }
-    if (!found_contact) {
-      fatal_error ("Missing contact for material `%s'", contacts[i]);
+      cmat->asym_surround_dn = config_get_int (buf);
     }
   }
   A_FREE (contacts);

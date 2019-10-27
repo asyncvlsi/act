@@ -97,7 +97,7 @@ protected:
 struct RoutingRules {
   int endofline;		/* end of line extension */
   int endofline_width;		/* width for extension */
-  int minturn;
+  int minjog;
 
   unsigned int routex:1;	/* can be used for x routing */
   unsigned int routey:1;	/* can be used for y routing */
@@ -192,32 +192,29 @@ protected:
 class Contact : public Material {
  public:
   Contact (char *s) {
+    asym_surround_up = 0;
+    asym_surround_dn = 0;
     name = s;
   }
   int getWidth() { return width_int; }
   int getSpacing() { return spacing; } 
-  int isSym() { return sym_surround >= 0 ? 1 : 0; }
-  int isAsym() { return asym_surround >= 0 ? 1 : 0; }
-  int getSym() { return sym_surround; }
+  int isSym() { return (asym_surround_up == 0) && (asym_surround_dn == 0); }
+  int isAsym() { return !isSym(); }
+  int getSym() { return sym_surround_dn; }
   int getSymUp() { return sym_surround_up; }
-  int getAsym() { return asym_surround; }
-  int getAsymOpp() { return asym_opp; }
+  int getAsym() { return asym_surround_dn; }
   int getAsymUp() { return asym_surround_up; }
-  int getAsymOppUp() { return asym_opp_up; }
   
 protected:
   int width_int, spacing;
   Material *lower, *upper;
 
-  int sym_surround;
+  int sym_surround_dn;
   int sym_surround_up;
   
-  int asym_surround;
-  int asym_opp;
-  
+  int asym_surround_dn;
   int asym_surround_up;
-  int asym_opp_up;
-
+  
   friend class Technology;
 };
 
@@ -241,6 +238,7 @@ class Technology {
   int num_devs;			/* # of device types */
   DiffMat **diff[2];		/* diffusion for p/n devices */
   WellMat **well[2];		/* device wells */
+  DiffMat **welldiff[2];	/* substrate diffusion */
   FetMat **fet[2];		/* transistors for each type */
 
   PolyMat *poly;
