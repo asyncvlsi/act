@@ -601,7 +601,7 @@ void Technology::Init (const char *s)
 
     char vname[1024];
     sprintf (vname, "%s_%s", config_get_string (buf), contacts[i]);
-    Contact *cmat = new Contact (vname);
+    Contact *cmat = new Contact (Strdup (vname));
 
     cmat->lower = NULL;
     cmat->upper = NULL;
