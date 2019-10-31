@@ -755,3 +755,18 @@ int DiffMat::effOverhang (int w, int hasvia)
     return t;
   }
 }
+
+int Technology::getMaxDiffSpacing ()
+{
+  int i;
+  int spc = -1;
+  for (i=0; i < num_devs; i++) {
+    if (spc < diff[0][0]->getOppDiffSpacing (i)) {
+      spc = diff[0][0]->getOppDiffSpacing (i);
+    }
+    if (spc < diff[1][0]->getOppDiffSpacing (i)) {
+      spc = diff[1][0]->getOppDiffSpacing (i);
+    }
+  }
+  return spc;
+}

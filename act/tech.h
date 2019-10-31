@@ -244,6 +244,9 @@ class Technology {
   PolyMat *poly;
 
   RoutingMat **metal;
+
+  int getMaxDiffSpacing ();
+
 };
   
   

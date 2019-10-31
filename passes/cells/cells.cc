@@ -47,6 +47,9 @@ struct act_prsinfo {
 				   0, 1, ..., nout-1 are outputs.
 				   nout, ... nvars-1 are inputs
 				*/
+
+  act_attr_t **nattr;		/* 2 per output: pull-up and pull-down */
+  
   int nat;                     /* # of labels */
 
   /* variable attributes */
@@ -246,6 +249,30 @@ static int basic_match (struct act_prsinfo *k1, struct act_prsinfo *k2)
   if (A_LEN (k1->up) != A_LEN (k2->up)) return 0;
   if (A_LEN (k1->dn) != A_LEN (k2->dn)) return 0;
   if (A_LEN (k1->attrib) != A_LEN (k2->attrib)) return 0;
+
+  for (int i=0; i < k1->nout*2; i++) {
+    act_attr_t *a1, *a2;
+    a1 = k1->nattr[i];
+    a2 = k2->nattr[i];
+    
+    if (a1) {
+      if (a2) {
+	while (a1 && a2) {
+	  if (strcmp (a1->attr, a2->attr) != 0) return 0;
+	  if (!expr_equal (a1->e, a2->e)) return 0;
+	  a1 = a1->next;
+	  a2 = a2->next;
+	}
+	if (a1 || a2) return 0;
+      }
+      else {
+	return 0;
+      }
+    }
+    else if (a2) {
+      return 0;
+    }
+  }
   return 1;
 }
 
@@ -697,7 +724,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules = tmp;
 
       rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = NULL;
+      rules->u.one.attr = pi->nattr[2*j+1];
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
       rules->u.one.eopp = NULL;
@@ -724,7 +751,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules = tmp;
 
       rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = NULL;
+      rules->u.one.attr = pi->nattr[2*j];
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
       rules->u.one.eopp = NULL;
@@ -999,11 +1026,12 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
 {
   struct act_prsinfo *ret;
   act_prs_lang_t *l, *lpush;
-  NEW (ret, struct act_prsinfo);
   struct idmap imap;
   int i;
   int in_tree;
 
+  NEW (ret, struct act_prsinfo);
+  
   A_FREE (current_idmap.ids);
   A_INIT (current_idmap.ids);
 
@@ -1013,6 +1041,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   ret->nat = 0;
   ret->tval = -1;
   ret->match_perm = NULL;
+  ret->nattr = NULL;
 
   A_INIT (ret->attrib);
   A_INIT (ret->up);
@@ -1078,6 +1107,10 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   ret->nout = A_LEN (imap.ids);
   ret->nvars = ret->nout;
   imap.nout = ret->nout;
+  MALLOC (ret->nattr, act_attr_t *, ret->nout*2);
+  for (i=0; i < ret->nout*2; i++) {
+    ret->nattr[i] = NULL;
+  }
 
   /* collect all labels */
   l = prs;
@@ -1119,7 +1152,13 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
     act_prs_expr_t *x = _scrub_rule (&imap, l->u.one.e);
     act_prs_expr_t *xx = NULL;
 
-    /* XXX: what about l->u.one.attr?! */
+    if (l->u.one.attr) {
+      if (i >= ret->nout) {
+	fatal_error ("Attributes on labels? This is not supported");
+      }
+      ret->nattr[2*i+(l->u.one.dir ? 1 : 0)] = l->u.one.attr;
+    }
+    
     if (l->u.one.arrow_type == 1) {
       xx = _complement_rule (x);
     }
@@ -1294,6 +1333,20 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
   for (int i=0; i < A_LEN (p->up); i++) {
     if (p->up[i]) {
       fprintf (fp, "   ");
+
+      if (p->nattr[2*i+1]) {
+	act_attr_t *a;
+	fprintf (fp, "[");
+	for (a = p->nattr[2*i+1]; a; a = a->next) {
+	  fprintf (fp, "%s=", a->attr);
+	  print_expr (fp, a->e);
+	  if (a->next) {
+	    fprintf (fp, "; ");
+	  }
+	}
+	fprintf (fp, "] ");
+      }
+      
       _dump_expr (fp, p->up[i], p);
       fprintf (fp, " -> ");
       if (i < p->nout) {
@@ -1312,6 +1365,21 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
     
     if (p->dn[i]) {
       fprintf (fp, "   ");
+
+      if (p->nattr[2*i]) {
+	act_attr_t *a;
+	fprintf (fp, "[");
+	for (a = p->nattr[2*i]; a; a = a->next) {
+	  fprintf (fp, "%s=", a->attr);
+	  print_expr (fp, a->e);
+	  if (a->next) {
+	    fprintf (fp, "; ");
+	  }
+	}
+	fprintf (fp, "] ");
+      }
+
+      
       _dump_expr (fp, p->dn[i], p);
       fprintf (fp, " -> ");
       if (i < p->nout) {
