@@ -74,6 +74,7 @@ private:
   void collect_gates (Process *p, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);
+  void flush_pending (Process *p);
 };
 
 

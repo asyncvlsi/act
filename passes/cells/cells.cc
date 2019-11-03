@@ -403,9 +403,65 @@ static void cell_freefn (void *key)
 
 L_A_DECL (act_prs_lang_t *, pendingprs);
 
-static void flush_pending (void)
+void ActCellPass::flush_pending (Process *p)
 {
-  /* convert pending gates into cells too */
+  int pending_count = 0;
+  act_prs_lang_t newprs;
+  
+  /* XXX: convert pending gates into cells too */
+  for (int i=0; i < A_LEN (pendingprs); i++) {
+    struct act_prsinfo *pi;
+    chash_bucket_t *b;
+
+    newprs = *(pendingprs[i]);
+    newprs.next = NULL;
+
+    pi = _gen_prs_attributes (&newprs);
+
+    if (cell_table) {
+      b = chash_lookup (cell_table, pi);
+      if (b) {
+	pi = (struct act_prsinfo *)b->v;
+      }
+      else {
+#if 0
+	_dump_prsinfo (pi);
+#endif
+	add_new_cell (pi);
+	b = chash_add (cell_table, pi);
+	b->v = pi;
+      }
+
+      char buf[100];
+      do {
+	snprintf (buf, 100, "cpx%d", pending_count++);
+      } while (p->CurScope()->Lookup (buf));
+
+      Assert (p->CurScope()->isExpanded(), "Hmm");
+
+      InstType *it = new InstType (p->CurScope(), pi->cell, 0);
+      it = it->Expand (NULL, p->CurScope());
+
+      Assert (it->isExpanded(), "Hmm");
+    
+      Assert (p->CurScope()->Add (buf, it), "What?");
+      /*--- now make connections --*/
+    
+      ActBody_Conn *ac;
+
+      //printf (" --- [%s] \n", p->getName());
+      ac = _build_connections (buf, pi);
+      //ac->Print (stdout);
+      //ac->Next()->Print (stdout);
+      //printf (" --- \n");
+
+      int oval = Act::warn_double_expand;
+      Act::warn_double_expand = 0;
+      ac->Expandlist (NULL, p->CurScope ());
+      Act::warn_double_expand = oval;
+      //printf ("---\n");
+    }
+  }
   A_FREE (pendingprs);
   A_INIT (pendingprs);
 }
@@ -1581,6 +1637,24 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
       return;
     }
     newprs = *(pendingprs[i]);
+    if (prs->u.one.dir == newprs.u.one.dir) {
+      /* do something */
+      act_prs_expr_t *eor;  /* XXX: NEED TO FREE THESE ALLOCATIONS */
+      act_prs_lang_t *tmp;
+      NEW (eor, act_prs_expr_t);
+      eor->type = ACT_PRS_EXPR_OR;
+      eor->u.e.l = prs->u.one.e;
+      eor->u.e.r = newprs.u.one.e;
+      eor->u.e.pchg = NULL;
+      newprs.u.one.e = eor;
+      if (prs->u.one.attr && !newprs.u.one.attr) {
+	newprs.u.one.attr = prs->u.one.attr;
+      }
+      NEW (tmp, act_prs_lang_t);
+      *tmp = newprs;
+      pendingprs[i] = tmp;
+      return;
+    }
     newprs.next = &newprs2;
     newprs2 = *prs;
     newprs2.next = NULL;
@@ -1624,11 +1698,14 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
 
     //printf (" --- [%s] \n", p->getName());
     ac = _build_connections (buf, pi);
-    //ac->Print (stdout);
     //ac->Next()->Print (stdout);
     //printf (" --- \n");
-    
+
+
+    int oval = Act::warn_double_expand;
+    Act::warn_double_expand = 0;
     ac->Expandlist (NULL, p->CurScope ());
+    Act::warn_double_expand = oval;
   }
 }
 
@@ -1773,7 +1850,7 @@ void ActCellPass::prs_to_cells (Process *p)
     collect_gates (p, &prs->p);
     prs = prs->next;
   }
-  flush_pending ();
+  flush_pending (p);
 
   prs = p->getprs();
   act_prs *prevprs = NULL;
