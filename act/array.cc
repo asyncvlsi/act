@@ -21,6 +21,7 @@
  *
  **************************************************************************
  */
+#include <act/act.h>
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/body.h>
@@ -796,8 +797,10 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
   
   if (expanded) {
     /* eh, why am I here anyway */
-    act_error_ctxt (stderr);
-    warning ("Not sure why Array::Expand() was called");
+    if (Act::warn_double_expand) {
+      act_error_ctxt (stderr);
+      warning ("Not sure why Array::Expand() was called");
+    }
     return this;
   }
 

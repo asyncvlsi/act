@@ -71,6 +71,11 @@ class Act {
   static int warn_emptyselect;
 
   /**
+   * Warn if Expand is called on something that is already expanded
+   */
+  static int warn_double_expand;
+
+  /**
    * Parser flags 
    */
   static int emit_depend;

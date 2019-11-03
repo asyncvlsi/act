@@ -42,6 +42,7 @@ int Act::max_recurse_depth;
 int Act::max_loop_iterations;
 int Act::warn_emptyselect;
 int Act::emit_depend;
+int Act::warn_double_expand;
 
 L_A_DECL (struct command_line_defs, vars);
 
@@ -90,6 +91,7 @@ void Act::Init (int *iargc, char ***iargv)
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
   Act::emit_depend = 0;
+  Act::warn_double_expand = 1;
 
   A_INIT (vars);
 
