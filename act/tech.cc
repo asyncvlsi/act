@@ -591,20 +591,14 @@ void Technology::Init (const char *s)
   for (i=0; i < A_LEN (contacts); i++) {
     char *t;
 
-    snprintf (buf+k, BUF_SZ-k-1, "%s", contacts[i]);
+    snprintf (buf+k, BUF_SZ-k-1, "%s_name", contacts[i]);
     t = config_get_string (buf);
-
-    snprintf (buf+k, BUF_SZ-k-1, "%s.name", t);
-    if (!config_get_string (buf)) {
-      fatal_error ("%s: needs a name field", buf);
-    }
-
-    char vname[1024];
-    sprintf (vname, "%s_%s", config_get_string (buf), contacts[i]);
-    Contact *cmat = new Contact (Strdup (vname));
-
+    Contact *cmat = new Contact (t);
     cmat->lower = NULL;
     cmat->upper = NULL;
+
+    snprintf (buf+k, BUF_SZ-k-1, "%s", contacts[i]);
+    t = config_get_string (buf);
 
     for (int j=0; j < T->num_devs; j++) {
       for (int k=0; k < 2; k++) {
