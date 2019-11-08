@@ -1,0 +1,21 @@
+bool? a[10];
+bool? y[10];
+
+a = y;
+
+defproc bar (bool? in[1]; bool! out)
+{
+   prs {
+    in[0] => out-
+   }
+}
+
+defproc foo (bool? in; bool! out)
+{
+   bar b;
+   bool? x[1];
+   x[0] = in;
+   b.in = x;
+}
+
+foo f;

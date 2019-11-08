@@ -1035,7 +1035,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     dump_conn (c2);
 #endif
     
-    if (d1 != d2 && d1 != Type::NONE) {
+    if (d1 != d2 && (d1 != Type::NONE && d2 != Type::NONE)) {
       /* error */
       act_error_ctxt (stderr);
       fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);

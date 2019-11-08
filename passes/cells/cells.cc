@@ -1699,6 +1699,7 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
 
     //printf (" --- [%s] \n", p->getName());
     ac = _build_connections (buf, pi);
+    //ac->Print (stdout);
     //ac->Next()->Print (stdout);
     //printf (" --- \n");
 
