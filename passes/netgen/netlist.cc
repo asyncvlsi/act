@@ -429,7 +429,7 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
       else {
 	fold = p_fold;
       }
-      if (fold > 0 && e->w > fold) {
+      if (fold > 0 && (e->w/e->nfolds) > fold) {
 	e->nfolds = e->w/fold;
 	if ((e->w % fold) >= min_w_in_lambda) {
 	  e->nfolds++;
@@ -720,13 +720,25 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       else {
 	f->l = n->sz[f->type].l;
       }
+      if (sz->folds) {
+	Assert (sz->folds->type == E_INT, "What?");
+	f->nfolds = sz->folds->u.v;
+	if (f->nfolds < 1) {
+	  f->nfolds = 1;
+	}
+      }
     }
     else {
       f->w = n->sz[f->type].w;
       f->l = n->sz[f->type].l;
+      f->nfolds = n->sz[f->type].nf;
     }
     f->w = MAX(f->w, min_w_in_lambda);
     f->l = MAX(f->l, min_l_in_lambda);
+
+    if (f->w/f->nfolds < min_w_in_lambda) {
+      f->nfolds = f->w/min_w_in_lambda;
+    }
   }
   else if (EDGE_SIZE (type) == EDGE_STATINV
 	   || EDGE_SIZE(type) == EDGE_FEEDBACK) {
@@ -752,10 +764,20 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       else {
 	f->l = min_l_in_lambda;
       }
+      if (sz->folds) {
+	Assert (sz->folds->type == E_INT, "What?");
+	f->nfolds = sz->folds->u.v;
+	if (f->nfolds < 1) {
+	  f->nfolds = 1;
+	}
+      }
     }
     else {
       f->w = min_w_in_lambda;
       f->l = min_l_in_lambda;
+    }
+    if (f->w/f->nfolds < min_w_in_lambda) {
+      f->nfolds = f->w/min_w_in_lambda;
     }
   }
 }
@@ -1354,6 +1376,8 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
     N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
     N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+    N->sz[EDGE_NFET].nf = 1;
+    N->sz[EDGE_PFET].nf = 1;
 
     if (p->u.one.label) {
       if (istree) {
@@ -1481,6 +1505,8 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
     N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
     N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+    N->sz[EDGE_NFET].nf = 1;
+    N->sz[EDGE_PFET].nf = 1;
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
 	unsigned int v = attr->e->u.v;
@@ -1620,11 +1646,15 @@ netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
     N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
     N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
     N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
+    N->sz[EDGE_NFET].nf = 1;
+    N->sz[EDGE_PFET].nf = 1;
 
     N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
     N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
     N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
     N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
+    N->sz[EDGE_NFET].nf = 1;
+    N->sz[EDGE_PFET].nf = 1;
 
     /* set the current Vdd/GND/psc/nsc */
     if (cvdd) {

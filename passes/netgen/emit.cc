@@ -271,7 +271,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	for (iw = 0; iw < width_repeat; iw++) {
 
 	  if (width_repeat > 1) {
-	    w = EDGE_WIDTH (e, iw, fold, min_w_in_lambda);
+	    w = EDGE_WIDTH (e, iw);
 	  }
 	  else {
 	    w = e->w;

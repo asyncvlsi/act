@@ -66,7 +66,8 @@ enum act_prs_expr_type {
 
 typedef struct {
   Expr *w, *l;		/* size, if any */
-  int flavor;
+  int flavor;		/* type of transistor */
+  Expr *folds;		/* folding, if any */
 } act_size_spec_t;
 
 

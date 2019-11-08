@@ -76,7 +76,7 @@
   Token list 
 */
 static int LANGLE, RANGLE, TWIDDLE, LBRACE, RBRACE, AND, OR, COLON, COMMA,
-  AT, DDOT, LPAR, RPAR, PLUS, MINUS;
+  AT, DDOT, LPAR, RPAR, PLUS, MINUS, SEMI;
 
 static act_prs_expr_t *_act_parse_prs_expr (LFILE *l);
 
@@ -103,6 +103,7 @@ void act_init_prs_expr (LFILE *l)
   COMMA = file_addtoken (l, ",");
   AT = file_addtoken (l, "@");
   DDOT = file_addtoken (l, "..");
+  SEMI = file_addtoken (l, ";");
 }
 
 int act_is_a_prs_expr (LFILE *l)
@@ -136,6 +137,9 @@ static void _freeexpr (act_prs_expr_t *e)
       }
       if (e->u.v.sz->w) {
 	expr_free (e->u.v.sz->w);
+      }
+      if (e->u.v.sz->folds) {
+	expr_free (e->u.v.sz->folds);
       }
       FREE (e->u.v.sz);
     }
@@ -287,6 +291,8 @@ static act_prs_expr_t *atom (LFILE *l)
       sz->w = expr_parse_real (l);
       sz->l = NULL;
       sz->flavor = 0;
+      sz->folds = NULL;
+      
       if (!sz->w) {
 	FREE (sz);
 	_freeexpr (e);
@@ -314,6 +320,13 @@ static act_prs_expr_t *atom (LFILE *l)
 	    }
 	    sz->flavor = act_dev_string_to_value (file_prev (l));
 	  }
+	}
+      }
+      if (file_have (l, SEMI)) {
+	sz->folds = expr_parse_int (l);
+	if (!sz->folds) {
+	  _freeexpr (e);
+	  return NULL;
 	}
       }
       if (!file_have (l, RANGLE)) {
@@ -545,6 +558,7 @@ static act_size_spec_t *_process_sz (ActTree *a, act_size_spec_t *sz)
   NEW (ret, act_size_spec_t);
   ret->w = _wnumber_expr (a, sz->w);
   ret->l = _wnumber_expr (a, sz->l);
+  ret->folds = _wnumber_expr (a, sz->folds);
   ret->flavor = sz->flavor;
   return ret;
 }

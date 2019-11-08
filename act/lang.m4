@@ -984,7 +984,7 @@ bool_expr_id_or_array[ActId *]: expr_id
       < width , length, flavor : somethingelse >
 
 */
-size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] ">"
+size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] [ ";" wint_expr ] ">"
 {{X:
     act_size_spec_t *s;
     
@@ -992,6 +992,7 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] "
     s->w = $2;
     s->l = NULL;
     s->flavor = 0;
+    s->folds = NULL;
     
     if (!OPT_EMPTY ($3)) {
       ActRet *r;
@@ -1016,6 +1017,16 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] "
       FREE (r);
     }
     OPT_FREE ($4);
+
+    if (!OPT_EMPTY ($5)) {
+      ActRet *r;
+      
+      r = OPT_VALUE ($5);
+      $A(r->type == R_EXPR);
+      s->folds = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($5);
     return s;
 }}
 |  /* empty */

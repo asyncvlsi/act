@@ -477,6 +477,19 @@ act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *
   else {
     ret->l = NULL;
   }
+  if (sz->folds) {
+    ret->folds = expr_expand (sz->folds, ns, s);
+    if (ret->l->type != E_INT) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Size folding amount is not a pint\n");
+      fprintf (stderr, " expr: ");
+      print_expr (stderr, sz->folds);
+      exit (1);
+    }
+  }
+  else {
+    ret->folds = NULL;
+  }
   ret->flavor = sz->flavor;
   
   return ret;
@@ -924,6 +937,10 @@ static void _print_size (FILE *fp, act_size_spec_t *sz)
       if (sz->flavor != 0) {
 	fprintf (fp, ",%s", act_dev_value_to_string (sz->flavor));
       }
+    }
+    if (sz->folds) {
+      fprintf (fp, ";");
+      print_expr (fp, sz->folds);
     }
     fprintf (fp, ">");
   }

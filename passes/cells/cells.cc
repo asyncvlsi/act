@@ -216,6 +216,7 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
 	if (a->u.v.sz->flavor != b->u.v.sz->flavor) return 0;
 	if (!expr_equal (a->u.v.sz->w, b->u.v.sz->w)) return 0;
 	if (!expr_equal (a->u.v.sz->l, b->u.v.sz->l)) return 0;
+	if (!expr_equal (a->u.v.sz->folds, b->u.v.sz->folds)) return 0;
       }
     }
     break;

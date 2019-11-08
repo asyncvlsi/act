@@ -47,8 +47,9 @@ typedef struct edge edge_t;
      fold = folding threshold for this type of edge
      minw = min width of a transistor
 */
-#define EDGE_WIDTH(x,i,fold,minw)  \
-  (((i) < (x)->nfolds-1) ? (fold) : ((((x)->w % (fold)) < (minw)) ? (fold) + ((x)->w % (fold)) : ((x)->w % (fold))))
+#define _STD_WIDTH_PER_FOLD(x)  ((x)->w/(x)->nfolds)
+#define _RESIDUAL_WIDTH(x)   ((x)->w - ((x)->nfolds*_STD_WIDTH_PER_FOLD(x)))
+#define EDGE_WIDTH(x,i)  (_STD_WIDTH_PER_FOLD(x) + (((i) == (x)->nfolds-1) ? _RESIDUAL_WIDTH(x) : 0))
 
 struct act_nl_varinfo {
   act_booleanized_var_t *v;	/* var pointer */
@@ -149,6 +150,7 @@ typedef struct {
 
   struct {
     int w, l;			/* current size */
+    int nf;			/* current fold */
     int sw, sl;			/* staticizer sizes */
   } sz[2];    			/* sizes */
 
