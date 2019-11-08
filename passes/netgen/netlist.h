@@ -48,7 +48,7 @@ typedef struct edge edge_t;
      minw = min width of a transistor
 */
 #define _STD_WIDTH_PER_FOLD(x)  ((x)->w/(x)->nfolds)
-#define _RESIDUAL_WIDTH(x)   ((x)->w - ((x)->nfolds*_STD_WIDTH_PER_FOLD(x)))
+#define _RESIDUAL_WIDTH(x)   ((x)->w % (x)->nfolds)
 #define EDGE_WIDTH(x,i)  (_STD_WIDTH_PER_FOLD(x) + (((i) == (x)->nfolds-1) ? _RESIDUAL_WIDTH(x) : 0))
 
 struct act_nl_varinfo {
