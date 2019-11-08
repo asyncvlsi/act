@@ -68,5 +68,7 @@ int main (int argc, char **argv)
   cp->Print (fp);
   fclose (fp);
 
+  a->Print (stdout);
+
   return 0;
 }

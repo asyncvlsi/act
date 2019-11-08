@@ -56,7 +56,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL $i cells.act runs/$i.t.stdout >/dev/null 2> runs/$i.t.stderr
+	$ACTTOOL $i cells.act runs/$i.t.cellout >runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
@@ -70,7 +70,18 @@ do
 		if [ $ok -eq 1 ]
 		then
 			echo
-			myecho "** FAILED TEST $i:"
+			myecho "** FAILED TEST $i: stderr"
+		fi
+		myecho " stderr"
+		fail=`expr $fail + 1`
+		ok=0
+	fi
+	if ! cmp runs/$i.t.cellout runs/$i.cellout >/dev/null 2>/dev/null
+	then
+		if [ $ok -eq 1 ]
+		then
+			echo
+			myecho "** FAILED TEST $i: cellout"
 		fi
 		myecho " stderr"
 		fail=`expr $fail + 1`

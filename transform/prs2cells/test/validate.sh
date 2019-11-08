@@ -19,5 +19,5 @@ fi
 
 for i in $list
 do
-	$ACTTOOL $i cells.act runs/$i.stdout >/dev/null 2> runs/$i.stderr
+	$ACTTOOL $i cells.act runs/$i.cellout > runs/$i.stdout 2> runs/$i.stderr
 done
