@@ -1158,20 +1158,36 @@ static void _print_connections (FILE *fp, act_connection *cx)
   global = cx->isglobal();
   if (cx->isPrimary()) {
     if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
+      ActId *idfirst = NULL;
       for (ci = ci.begin(); ci != ci.end(); ci++) {
 	act_connection *c = *ci;
 
 	if (!global || c->isglobal()) {
 	  if (!first) {
+	    if (idfirst) {
+	      idfirst->Print (fp);
+	      delete idfirst;
+	      idfirst = NULL;
+	    }
 	    fprintf (fp, "=");
 	  }
 	  id = c->toid();
-	  first = 0;
-	  id->Print (fp);
-	  delete id;
+	  if (first) {
+	    idfirst = id;
+	    first = 0;
+	  }
+	  else {
+	    id->Print (fp);
+	    delete id;
+	  }
 	}
       }
-      fprintf (fp, ";\n");
+      if (idfirst) {
+	delete idfirst;
+      }
+      else {
+	fprintf (fp, ";\n");
+      }
     }
   }
   else {
