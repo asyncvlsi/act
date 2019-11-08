@@ -479,7 +479,7 @@ act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *
   }
   if (sz->folds) {
     ret->folds = expr_expand (sz->folds, ns, s);
-    if (ret->l->type != E_INT) {
+    if (ret->folds->type != E_INT) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Size folding amount is not a pint\n");
       fprintf (stderr, " expr: ");
