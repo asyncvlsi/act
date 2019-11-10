@@ -298,8 +298,6 @@ char *lex_shouldbe_string_id (LEX_T *L)
 static
 void lex_mustbe_string_contiguous_id (LEX_T *L)
 {
-  char *s;
-
   if (lex_have (L, l_string)) {
     ;
   }
@@ -623,11 +621,9 @@ struct ext_file *ext_read (const char *name)
   char *s, *t;
   int line = 0;
   unsigned long timestamp;
-  unsigned long fpos;
   double cscale, rscale;
   double lscale;
   double x;
-  double n_a, n_p, p_a, p_p;
   static int depth = 0;
   static struct Hashtable *ehash;
   hash_bucket_t *eb;

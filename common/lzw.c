@@ -395,7 +395,7 @@ int c_fread (char *buf, int sz, int n, FILE *fp)
   Table *t;
   int f;
 
-  f = ((int)fp)-1;
+  f = ((long)fp)-1;
 
   Assert ((f >= 0) && (f < MAX_OPEN_FILES), 
 	  "c_read: Invalid file handle.");
