@@ -304,7 +304,7 @@ void c_fclose (FILE *fp)
 {
   int i, f;
   
-  f = ((int) fp) - 1;
+  f = ((unsigned long) fp) - 1;
 
   Assert ((f >= 0) && (f < MAX_OPEN_FILES), "c_fclose: Invalid file handle.");
   Assert (used[f], "c_close: Invalid file handle.");
@@ -332,7 +332,7 @@ int c_fwrite (char *buf, int sz, int n, FILE *fp)
   int f;
   Table *t;
 
-  f = ((int)fp) - 1;
+  f = ((unsigned long)fp) - 1;
 
   Assert ((f >= 0) && (f < MAX_OPEN_FILES), 
 	  "c_fwrite: Invalid file handle.");
@@ -350,7 +350,7 @@ int c_fwrite (char *buf, int sz, int n, FILE *fp)
   /* hmm... */
   /* do compression stuff */
   for (i=st; i < sz*n; i++) {
-    if ((pos = (int)avl_search (t->u.c.forw[t->u.c.location],(int)buf[i]))) 
+    if ((pos = (long)avl_search (t->u.c.forw[t->u.c.location],(int)buf[i]))) 
       t->u.c.location = pos-1;
     else {
       if (t->size < (MAX_TABLE_SIZE-1)) {
