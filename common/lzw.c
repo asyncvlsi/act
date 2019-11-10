@@ -182,7 +182,7 @@ FILE *c_fopen_r (const char *s)
   else
     cbuf[i]->empty = False;
 
-  return (FILE *) (i+1);
+  return (FILE *) (unsigned long) (i+1);
 }
 
 
@@ -221,7 +221,7 @@ FILE *c_fopen_w (const char *s)
   cbuf[i]->eof = False;
   cbuf[i]->u.c.location = -1;
 
-  return (FILE*) (i+1);
+  return (FILE*) (unsigned long) (i+1);
 }
 
 
@@ -357,10 +357,10 @@ int c_fwrite (char *buf, int sz, int n, FILE *fp)
 	t->tab[t->size] = buf[i];
 	if (!t->u.c.forw[t->u.c.location])
 	  t->u.c.forw[t->u.c.location] = 
-	    avl_new ((int)buf[i],(void*)(t->size+1));
+	    avl_new ((int)buf[i],(void*)(unsigned long)(t->size+1));
 	else
 	  avl_insert (t->u.c.forw[t->u.c.location], (int)buf[i],
-		       (void*)(t->size+1));
+		      (void*)(unsigned long)(t->size+1));
 	t->u.c.forw[t->size] = NULL;
 	t->size++;
 	
