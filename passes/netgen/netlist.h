@@ -151,6 +151,7 @@ typedef struct {
   struct {
     int w, l;			/* current size */
     int nf;			/* current fold */
+    int flavor;			/* current flavor */
     int sw, sl;			/* staticizer sizes */
   } sz[2];    			/* sizes */
 

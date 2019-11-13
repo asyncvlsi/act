@@ -705,6 +705,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
     */
     if (sz) {
       f->flavor = sz->flavor;
+      n->sz[f->type].flavor = f->flavor;
 
       if (sz->w) {
 	f->w = (sz->w->type == E_INT ? sz->w->u.v : sz->w->u.f);
@@ -726,19 +727,17 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 	if (f->nfolds < 1) {
 	  f->nfolds = 1;
 	}
+	n->sz[f->type].nf = f->nfolds;
       }
     }
     else {
       f->w = n->sz[f->type].w;
       f->l = n->sz[f->type].l;
       f->nfolds = n->sz[f->type].nf;
+      f->flavor = n->sz[f->type].flavor;
     }
     f->w = MAX(f->w, min_w_in_lambda);
     f->l = MAX(f->l, min_l_in_lambda);
-
-    if (f->w/f->nfolds < min_w_in_lambda) {
-      f->nfolds = f->w/min_w_in_lambda;
-    }
   }
   else if (EDGE_SIZE (type) == EDGE_STATINV
 	   || EDGE_SIZE(type) == EDGE_FEEDBACK) {
@@ -776,9 +775,9 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->w = min_w_in_lambda;
       f->l = min_l_in_lambda;
     }
-    if (f->w/f->nfolds < min_w_in_lambda) {
-      f->nfolds = f->w/min_w_in_lambda;
-    }
+  }
+  if (f->w/f->nfolds < min_w_in_lambda) {
+    f->nfolds = f->w/min_w_in_lambda;
   }
 }
 
@@ -1378,6 +1377,8 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
     N->sz[EDGE_NFET].nf = 1;
     N->sz[EDGE_PFET].nf = 1;
+    N->sz[EDGE_NFET].flavor = 0;
+    N->sz[EDGE_PFET].flavor = 0;
 
     if (p->u.one.label) {
       if (istree) {
