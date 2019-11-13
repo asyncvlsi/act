@@ -1232,6 +1232,31 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	      fatal_error ("Attribute `%s': merge rule MIN only for reals and ints", t->attr);
 	    }
 	  }
+	  else if (z[i][2] == '|') {
+	    /* OR */
+	    if (t->e->type == E_INT) {
+	      t->e->u.v |= a->e->u.v;
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': merge rule OR only for ints", t->attr);
+	    }
+	  }
+	  else if (z[i][2] == '&') {
+	    /* AND */
+	    if (t->e->type == E_INT) {
+	      t->e->u.v &= a->e->u.v;
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Attribute `%s': merge rule AND only for ints", t->attr);
+	    }
+	  }
+	  else if (z[i][2] == 'h') {
+	    /* hierarchy */
+	    act_error_ctxt (stderr);
+	    fatal_error ("Attribute `%s': merge rule hierarchy to be done", t->attr);
+	  }
 	  else {
 	    fatal_error ("Unrecognized attribute format `%s'", z[i]);
 	  }
