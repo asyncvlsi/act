@@ -577,12 +577,6 @@ static void _merge_subtrees (UserDef *ux,
   }
 }
 
-
-
-
-
-static void _merge_attributes (act_attr_t **x, act_attr *a);
-
 static int _raw_should_swap (UserDef *ux, act_connection *d1,
 			     act_connection *d2)
 {
@@ -1253,9 +1247,11 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	  }
 	  else if (z[i][2] == 'h') {
-	    /* hierarchy */
-	    act_error_ctxt (stderr);
-	    fatal_error ("Attribute `%s': merge rule hierarchy to be done", t->attr);
+	    /* hierarchy: override! */
+	    t->e->u = a->e->u;
+	  }
+	  else if (z[i][2] == 'H') {
+	    /* inv hierarchy: skip */
 	  }
 	  else {
 	    fatal_error ("Unrecognized attribute format `%s'", z[i]);

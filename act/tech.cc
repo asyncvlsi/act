@@ -254,6 +254,8 @@ void Technology::Init (const char *s)
       else if (i < 6) {
 	/* wells */
 
+	T->welldiff[i-4][j] = NULL;
+	
 	if (strcmp (diff[j], "") != 0) {
 	  /* there is a well/welldiff */
 	  char ldiff[1024];
