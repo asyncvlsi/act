@@ -153,6 +153,11 @@ class WellMat : public Material {
  public:
   WellMat (char *s) { name = s; }
   int getOverhang () { return overhang; }
+
+  int minSpacing(int dev) { return spacing[dev]; }
+  int oppSpacing(int dev) { return oppspacing[dev]; }
+  int minWidth() { return width; }
+  
 protected:
   int width;
   int *spacing;	      /* to other wells of the same type */
