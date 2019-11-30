@@ -347,6 +347,17 @@ void Technology::Init (const char *s)
 	      mat->minarea = config_get_int (buf);
 	    }
 
+	    snprintf (buf+k, BUF_SZ-k-1, "%s.plug_dist", ldiff);
+	    if (config_exists (buf)) {
+	      if (config_get_int (buf) <= 0) {
+		fatal_error ("%s: has to be positive", buf);
+	      }
+	      mat->plug_dist = config_get_int (buf);
+	    }
+	    else {
+	      mat->plug_dist = -1;
+	    }
+
 	    A_NEW (contacts, char *);
 	    A_NEXT (contacts) = Strdup (ldiff);
 	    A_INC (contacts);

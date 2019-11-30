@@ -157,12 +157,14 @@ class WellMat : public Material {
   int minSpacing(int dev) { return spacing[dev]; }
   int oppSpacing(int dev) { return oppspacing[dev]; }
   int minWidth() { return width; }
+  int maxPlugDist() { return plug_dist; }
   
 protected:
   int width;
   int *spacing;	      /* to other wells of the same type */
   int *oppspacing;    /* to other wells of a different type */
   int overhang;	      /* overhang from diffusion */
+  int plug_dist;      /* max distance to plug */
 
   friend class Technology;
 };
