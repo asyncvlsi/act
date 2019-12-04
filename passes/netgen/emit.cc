@@ -119,6 +119,15 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     delete id;
     out = 1;
   }
+
+  if (n->weak_supply_vdd > 0) {
+    fprintf (fp, " #%d", n->nid_wvdd);
+  }
+
+  if (n->weak_supply_gnd > 0) {
+    fprintf (fp, " #%d", n->nid_wgnd);
+  }
+  
   fprintf (fp, "\n");
 
   /* print pininfo */
@@ -420,6 +429,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
   
   /*-- emit instances --*/
   int iport = 0;
+  int iweak = 0;
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
@@ -456,6 +466,16 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	      delete id;
 	      iport++;
 	    }
+
+	    if (sub->weak_supply_vdd > 0) {
+	      Assert (iweak < A_LEN (n->instport_weak), "What?");
+	      fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	    }
+	    if (sub->weak_supply_gnd > 0) {
+	      Assert (iweak < A_LEN (n->instport_weak), "What?");
+	      fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	    }
+	    
 	    a->mfprintf (fp, " ");
 	    a->mfprintfproc (fp, instproc);
 	    a->mfprintf (fp, "\n");
@@ -478,6 +498,16 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	    delete id;
 	    iport++;
 	  }
+
+	  if (sub->weak_supply_vdd > 0) {
+	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	  }
+	  if (sub->weak_supply_gnd > 0) {
+	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	  }
+
 	  a->mfprintf (fp, " ");
 	  a->mfprintfproc (fp, instproc);
 	  a->mfprintf (fp, "\n");
@@ -486,6 +516,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     }
   }
   Assert (iport == A_LEN (n->bN->instports), "Hmm...");
+  Assert (iweak == A_LEN (n->instport_weak), "Hmm...");
   
   fprintf (fp, ".ends\n");
   fprintf (fp, "*---- end of process: %s -----\n", p->getName());

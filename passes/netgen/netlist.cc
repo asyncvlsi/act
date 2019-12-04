@@ -1704,10 +1704,10 @@ static void _set_current_supplies (netlist_t *N, act_prs *p)
   cpsc = NULL;
   cnsc = NULL;
 
-  if (p->vdd) cvdd = p->vdd->Canonical(N->bN->cur);
-  if (p->gnd) cgnd = p->gnd->Canonical(N->bN->cur);
-  if (p->psc) cpsc = p->psc->Canonical(N->bN->cur);
-  if (p->nsc) cnsc = p->nsc->Canonical(N->bN->cur);
+  if (p && p->vdd) cvdd = p->vdd->Canonical(N->bN->cur);
+  if (p && p->gnd) cgnd = p->gnd->Canonical(N->bN->cur);
+  if (p && p->psc) cpsc = p->psc->Canonical(N->bN->cur);
+  if (p && p->nsc) cnsc = p->nsc->Canonical(N->bN->cur);
 
   N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
   N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
@@ -1812,9 +1812,8 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
   N->nsc_list = list_new ();
 
   /* set Vdd/GND to be the first Vdd/GND there is */
-  if (p) {
-    _set_current_supplies (N, p);
-  }
+  _set_current_supplies (N, p);
+
   return N;
 }
 
@@ -1888,6 +1887,18 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   hash_clear (N->atH[EDGE_PFET]);
   hash_clear (N->atH[EDGE_NFET]);
 #endif
+
+  int ports_exist = 0;
+  for (int i=0; i < A_LEN (N->bN->ports); i++) {
+    if (N->bN->ports[i].omit == 0) {
+      ports_exist = 1;
+      break;
+    }
+  }
+  if (!ports_exist) {
+    N->weak_supply_gnd = 0;
+    N->weak_supply_vdd = 0;
+  }
 
   return;
 }

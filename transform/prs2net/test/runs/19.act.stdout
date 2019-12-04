@@ -43,6 +43,10 @@ M0_ a_4x a_4x GND GND nch W=0.15U L=0.06U
 * raw ports: 
 *
 .subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
 xu l_4x sub2
 xt l_4x sub2
 xs l_4x sub

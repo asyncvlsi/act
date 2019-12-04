@@ -56,6 +56,10 @@ M6_keeper c #fb6# #7 Vdd pch W=0.12U L=0.06U
 *
 .subckt foo A B Z
 *.PININFO A:I B:I Z:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
 xa1 A C Z XOR
 xa A B C AND
 .ends

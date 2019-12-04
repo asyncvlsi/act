@@ -3,6 +3,10 @@
 * raw ports: 
 *
 .subckt nand2
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
 .ends
 *---- end of process: nand2<> -----
 *
@@ -10,5 +14,9 @@
 * raw ports: 
 *
 .subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
 .ends
 *---- end of process: foo<> -----

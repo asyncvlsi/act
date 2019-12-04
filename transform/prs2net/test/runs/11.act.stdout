@@ -42,6 +42,10 @@ M17_keeper b #fb10# #11 Vdd pch W=0.12U L=0.06U
 *
 .subckt foo p q r
 *.PININFO p:I q:O r:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
 xx p q r bar
 .ends
 *---- end of process: foo<> -----
