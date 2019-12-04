@@ -2,7 +2,7 @@
 
 echo
 echo "************************************************************************"
-echo "*               Testing tool: netgen                                   *"
+echo "*               Testing tool: prs2net                                  *"
 echo "************************************************************************"
 echo
 
@@ -10,7 +10,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../netgen.$EXT 
+ACTTOOL=../prs2net.$EXT 
 
 check_echo=0
 myecho()

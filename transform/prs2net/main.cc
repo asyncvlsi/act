@@ -57,9 +57,12 @@ static void usage (char *name)
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
   fprintf (stderr, " -B	       Black-box mode. Assume empty act process is an external .sp file\n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
+  fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   exit (1);
 }
 
+
+static int enable_shared_stat = 0;
 
 /*
   Initialize globals from the configuration file.
@@ -89,8 +92,12 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "BdC:tp:o:l")) != -1) {
+  while ((ch = getopt (*argc, *argv, "SBdC:tp:o:l")) != -1) {
     switch (ch) {
+    case 'S':
+      enable_shared_stat = 1;
+      break;
+      
     case 'l':
       ignore_loadcap = 1;
       break;
@@ -213,6 +220,9 @@ int main (int argc, char **argv)
   }
 
   ActNetlistPass *np = new ActNetlistPass (a);
+  if (enable_shared_stat) {
+    np->enableSharedStat();
+  }
   np->run (p);
   np->Print (fpout, p);
   if (fpout != stdin) {

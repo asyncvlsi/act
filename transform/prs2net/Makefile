@@ -18,7 +18,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-BINARY=netgen.$(EXT)
+BINARY=prs2net.$(EXT)
 
 TARGETS=$(BINARY)
 

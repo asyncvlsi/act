@@ -451,7 +451,11 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
 }
 
 
-void ActNetlistPass::generate_staticizers (netlist_t *N)
+void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
+					   int num_vdd_share,
+					   int num_gnd_share,
+					   int vdd_len,
+					   int gnd_len)
 {
   node_t *n;
 
@@ -503,6 +507,14 @@ void ActNetlistPass::generate_staticizers (netlist_t *N)
   }
 
   if (config_get_int ("net.disable_keepers") == 1) return;
+
+
+  /*--- 
+    At this point we might have enough shared nodes to emit a number
+    of weak Vdd/GND circuits; if so, we emit those edges and number
+    them #weakVdd0, ...
+    --*/
+  
 
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
@@ -575,11 +587,11 @@ void ActNetlistPass::generate_staticizers (netlist_t *N)
 	}
 
 	/* two options:
-	      - minimum size is weak enough, or 
-	           series resistance is less than min length in which
-	      case use slightly longer inverter
+	   - minimum size is weak enough, or 
+	   series resistance is less than min length in which
+	   case use slightly longer inverter
 	      
-	      - min size + series resistance
+	   - min size + series resistance
 	*/
 	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
 	    (len < min_l_in_lambda)) {
@@ -858,7 +870,7 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
  *                      the EDGE_SIZE piece (normal, feedback, small inv)
  */
 void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
-			       act_prs_expr_t *e, node_t *right, int sense)
+					act_prs_expr_t *e, node_t *right, int sense)
 {
   node_t *mid;
   node_t *at_node;
@@ -1584,32 +1596,110 @@ static void release_atalloc (struct Hashtable *H)
   }
 }
 
-netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
+static void _set_current_supplies (netlist_t *N, act_prs *p)
 {
-  act_prs *p; 
-  netlist_t *N;
-  Scope *cur;
+  /* add vdd and gnd */
+  act_connection *cvdd, *cgnd, *cpsc, *cnsc;
 
-  if (proc) {
-    p = proc->getprs();
-    cur = proc->CurScope();
+  cvdd = NULL;
+  cgnd = NULL;
+  cpsc = NULL;
+  cnsc = NULL;
+
+  if (p->vdd) cvdd = p->vdd->Canonical(N->bN->cur);
+  if (p->gnd) cgnd = p->gnd->Canonical(N->bN->cur);
+  if (p->psc) cpsc = p->psc->Canonical(N->bN->cur);
+  if (p->nsc) cnsc = p->nsc->Canonical(N->bN->cur);
+
+  N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
+  N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
+  N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
+  N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
+  N->sz[EDGE_NFET].nf = 1;
+  N->sz[EDGE_PFET].nf = 1;
+
+  N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
+  N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+  N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
+  N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
+  N->sz[EDGE_NFET].nf = 1;
+  N->sz[EDGE_PFET].nf = 1;
+
+  /* set the current Vdd/GND/psc/nsc */
+  if (cvdd) {
+    N->Vdd = VINF(var_lookup (N, cvdd))->n;
   }
   else {
-    /* global namespace */
+    N->Vdd = search_supply_list_for_null (N->vdd_list);
+    if (!N->Vdd) {
+      N->Vdd = node_alloc (N, NULL);
+    }
+  }
+  if (cgnd) {
+    N->GND = VINF(var_lookup (N, cgnd))->n;
+  }
+  else {
+    /* no GND declared; allocate a new one; this one will be called `GND' */
+    N->GND = search_supply_list_for_null (N->gnd_list);
+    if (!N->GND) {
+      N->GND = node_alloc (N, NULL);
+    }
+  }
+  if (cpsc) {
+    N->psc = VINF(var_lookup (N, cpsc))->n;
+  }
+  else {
+    N->psc = N->GND;
+  }
+  if (cnsc) {
+    N->nsc = VINF(var_lookup (N, cnsc))->n;
+  }
+  else {
+    N->nsc = N->Vdd;
+  }
+
+  N->Vdd->supply = 1;
+  N->GND->supply = 1;
+  N->psc->supply = 1;
+  N->nsc->supply = 1;
+
+  append_node_to_list (N->vdd_list, N->Vdd);
+  append_node_to_list (N->gnd_list, N->GND);
+  append_node_to_list (N->psc_list, N->psc);
+  append_node_to_list (N->nsc_list, N->nsc);
+    
+  N->Vdd->reff[EDGE_PFET] = 0;
+  N->Vdd->reff_set[EDGE_PFET] = 1;
+
+  N->GND->reff[EDGE_NFET] = 0;
+  N->GND->reff_set[EDGE_NFET] = 1;
+}
+
+static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
+{
+  netlist_t *N;
+  act_prs *p;
+  Scope *cur;
+  
+  NEW (N, netlist_t);
+
+  if (bN->p) {
+    p = bN->p->getprs();
+    cur = bN->p->CurScope();
+  }
+  else {
     p = ActNamespace::Global()->getprs();
     cur = ActNamespace::Global()->CurScope();
   }
 
-  NEW (N, netlist_t);
-
-  N->bN = bools->getBNL (proc);
-
+  N->bN = bN;
   N->B = bool_init ();
-
-  Assert (proc == N->bN->p, "Hmm");
-  Assert (cur == N->bN->cur, "Hmm");
-
   N->bN->visited = 0;
+  N->weak_supply_vdd = 0;
+  N->weak_supply_gnd = 0;
+  N->vdd_len = 0;
+  N->gnd_len = 0;
+  A_INIT (N->instport_weak);
 
   N->hd = NULL;
   N->tl = NULL;
@@ -1623,90 +1713,49 @@ netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
   N->psc_list = list_new ();
   N->nsc_list = list_new ();
 
+  /* set Vdd/GND to be the first Vdd/GND there is */
+  if (p) {
+    _set_current_supplies (N, p);
+  }
+  return N;
+}
+
+
+void ActNetlistPass::generate_netgraph (netlist_t *N,
+					int is_toplevel,
+					int num_vdd_sharing,
+					int num_gnd_sharing,
+					int vdd_len,
+					int gnd_len)
+{
+  act_prs *p; 
+  Scope *cur;
+  Process *proc;
+
+  proc = N->bN->p;
+  
+  if (proc) {
+    p = proc->getprs();
+    cur = proc->CurScope();
+  }
+  else {
+    /* global namespace */
+    p = ActNamespace::Global()->getprs();
+    cur = ActNamespace::Global()->CurScope();
+  }
+
+  Assert (cur == N->bN->cur, "Hmm");
+
   if (!p) {
-    return N;
+    return;
   }
 
   /* walk through each PRS block */
   while (p) {
     /* add vdd and gnd */
-    act_connection *cvdd, *cgnd, *cpsc, *cnsc;
-    act_prs_lang_t *prs;
+    _set_current_supplies (N, p);
 
-    cvdd = NULL;
-    cgnd = NULL;
-    cpsc = NULL;
-    cnsc = NULL;
-
-    if (p->vdd) cvdd = p->vdd->Canonical(cur);
-    if (p->gnd) cgnd = p->gnd->Canonical(cur);
-    if (p->psc) cpsc = p->psc->Canonical(cur);
-    if (p->nsc) cnsc = p->nsc->Canonical(cur);
-
-    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
-    N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
-    N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
-    N->sz[EDGE_NFET].nf = 1;
-    N->sz[EDGE_PFET].nf = 1;
-
-    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
-    N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
-    N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
-    N->sz[EDGE_NFET].nf = 1;
-    N->sz[EDGE_PFET].nf = 1;
-
-    /* set the current Vdd/GND/psc/nsc */
-    if (cvdd) {
-      N->Vdd = VINF(var_lookup (N, cvdd))->n;
-    }
-    else {
-      N->Vdd = search_supply_list_for_null (N->vdd_list);
-      if (!N->Vdd) {
-	N->Vdd = node_alloc (N, NULL);
-      }
-    }
-    if (cgnd) {
-      N->GND = VINF(var_lookup (N, cgnd))->n;
-    }
-    else {
-      /* no GND declared; allocate a new one; this one will be called `GND' */
-      N->GND = search_supply_list_for_null (N->gnd_list);
-      if (!N->GND) {
-	N->GND = node_alloc (N, NULL);
-      }
-    }
-    if (cpsc) {
-      N->psc = VINF(var_lookup (N, cpsc))->n;
-    }
-    else {
-      N->psc = N->GND;
-    }
-    if (cnsc) {
-      N->nsc = VINF(var_lookup (N, cnsc))->n;
-    }
-    else {
-      N->nsc = N->Vdd;
-    }
-
-    N->Vdd->supply = 1;
-    N->GND->supply = 1;
-    N->psc->supply = 1;
-    N->nsc->supply = 1;
-
-    append_node_to_list (N->vdd_list, N->Vdd);
-    append_node_to_list (N->gnd_list, N->GND);
-    append_node_to_list (N->psc_list, N->psc);
-    append_node_to_list (N->nsc_list, N->nsc);
-    
-    N->Vdd->reff[EDGE_PFET] = 0;
-    N->Vdd->reff_set[EDGE_PFET] = 1;
-
-    N->GND->reff[EDGE_NFET] = 0;
-    N->GND->reff_set[EDGE_NFET] = 1;
-
-    for (prs = p->p; prs; prs = prs->next) {
+    for (act_prs_lang_t *prs = p->p; prs; prs = prs->next) {
       generate_prs_graph (N, prs);
       Assert (N->bN->isempty == 0, "Hmm");
     }
@@ -1720,7 +1769,8 @@ netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
   compute_max_reff (N, EDGE_PFET);
 
   /*-- generate staticizers --*/
-  generate_staticizers (N);
+  generate_staticizers (N, is_toplevel, num_vdd_sharing, num_gnd_sharing,
+			vdd_len, gnd_len);
 
   /*-- fold transistors --*/
   fold_transistors (N);
@@ -1732,31 +1782,55 @@ netlist_t *ActNetlistPass::generate_netgraph (Process *proc)
   hash_clear (N->atH[EDGE_NFET]);
 #endif
   
-  return N;
+  return;
 }
 
-void ActNetlistPass::generate_netlist (Process *p)
+netlist_t *ActNetlistPass::generate_netlist (Process *p, int is_toplevel)
 {
+  int sub_proc_vdd = 0, sub_proc_gnd = 0;
+  int vdd_len = 0, gnd_len = 0;
   Assert (p->isExpanded(), "Process must be expanded!");
 
   if (netmap->find(p) != netmap->end()) {
     /* handled this already */
-    return;
+    return (*netmap)[p];
   }
 
   /* Create netlist for all sub-processes */
   ActInstiter i(p->CurScope());
 
+  netlist_t *n = _initialize_empty_netlist (bools->getBNL (p));
+
   /* handle all processes instantiated by this one */
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
-      generate_netlist (dynamic_cast<Process *>(vx->t->BaseType()));
+      int cnt = 1;
+      netlist_t *tn =
+	generate_netlist (dynamic_cast<Process *>(vx->t->BaseType()), 0);
+
+      /* count the # of shared weak drivers so far, and track the
+	 weakness of the weak supply */
+
+      if (vx->t->arrayInfo()) {
+	cnt = vx->t->arrayInfo()->size();
+      }
+      
+      sub_proc_vdd += tn->weak_supply_vdd*cnt;
+      if (tn->weak_supply_vdd > 0) {
+	vdd_len = MAX (vdd_len, tn->vdd_len);
+      }
+      sub_proc_gnd += tn->weak_supply_gnd*cnt;
+      if (tn->weak_supply_gnd > 0) {
+	gnd_len = MAX (gnd_len, tn->gnd_len);
+      }
     }
   }
-  netlist_t *n = generate_netgraph (p);
+
+  generate_netgraph (n, is_toplevel, sub_proc_vdd, sub_proc_gnd,
+		     vdd_len, gnd_len);
   (*netmap)[p] = n;
-  return;
+  return n;
 }
 
 static void free_nl (netlist_t *n)
@@ -1819,12 +1893,29 @@ static void free_nl (netlist_t *n)
   FREE (n);
 }
 
+void ActNetlistPass::enableSharedStat ()
+{
+  if (config_exists ("net.weak_sharing")) {
+    Assert (config_get_table_size ("net.weak_sharing") == 2, "weak sharing table incorrect");
+    int *t = config_get_table_int ("net.weak_sharing");
+    weak_share_min = t[0];
+    weak_share_max = t[1];
+
+    if (weak_share_max < weak_share_min) {
+      fatal_error ("weak sharing table: range is empty!");
+    }
+  }
+}
 
 /*-- create a pass --*/
 ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 {
   netmap = NULL;
   bools = NULL;
+
+  weak_share_min = 1;
+  weak_share_max = 1;
+
 
   default_load_cap = config_get_real ("net.default_load_cap");
   p_n_ratio = config_get_real ("net.p_n_ratio");
@@ -1916,7 +2007,11 @@ int ActNetlistPass::run(Process *p)
   if (!p) {
     ActNamespace *g = ActNamespace::Global();
     ActInstiter i(g->CurScope());
+    netlist_t *N;
     
+    N = _initialize_empty_netlist (bools->getBNL (p));
+    Assert (N->bN->p == p, "What?");
+
     for (i = i.begin(); i != i.end(); i++) {
       ValueIdx *vx = *i;
       if (TypeFactory::isProcessType (vx->t)) {
@@ -1928,11 +2023,11 @@ int ActNetlistPass::run(Process *p)
     }
     
     /*-- generate netlist for any prs in the global scope --*/
-    netlist_t *N = generate_netgraph (NULL);
+    generate_netgraph (N, 1, 0, 0, 0, 0);
     (*netmap)[NULL] = N;
   }
   else {
-    generate_netlist (p);
+    generate_netlist (p, 1);
   }
 
   /*-- done --*/

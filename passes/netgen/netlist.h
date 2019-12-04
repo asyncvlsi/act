@@ -148,6 +148,15 @@ typedef struct {
   node_t *Vdd, *GND;
   node_t *psc, *nsc;		/* substrate contacts */
 
+  int weak_supply_vdd, weak_supply_gnd;
+  /* if > 0, this block has weak supply ports. It includes the count of the
+     # of gates that share the weak inv within the block */
+  int vdd_len, gnd_len;		/* sizing info for the weak supply
+				   exported */
+
+  A_DECL (int, instport_weak);	/* node # for instance ports for weak
+				   supplies */
+
   struct {
     int w, l;			/* current size */
     int nf;			/* current fold */
@@ -168,6 +177,8 @@ class ActNetlistPass : public ActPass {
   int run (Process *p = NULL);
 
   netlist_t *getNL (Process *p);
+
+  void enableSharedStat();
 
   void Print (FILE *fp, Process *p);
 
@@ -220,10 +231,21 @@ class ActNetlistPass : public ActPass {
   
   int top_level_only;
 
-  void generate_netlist (Process *p);
-  netlist_t *generate_netgraph (Process *proc);
+  int weak_share_min, weak_share_max;
+
+  netlist_t *generate_netlist (Process *p, int is_toplevel = 0);
+  void generate_netgraph (netlist_t *N, int is_toplevel,
+			  int num_vdd_share,
+			  int num_gnd_share,
+			  int vdd_len,
+			  int gnd_len);
+
   void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0);
-  void generate_staticizers (netlist_t *N);
+  void generate_staticizers (netlist_t *N, int is_toplevel,
+			     int num_vdd_share,
+			     int num_gnd_share,
+			     int vdd_len, int gnd_len);
+
   void fold_transistors (netlist_t *N);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 		       act_size_spec_t *sz);
