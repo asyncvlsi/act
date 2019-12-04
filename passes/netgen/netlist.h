@@ -153,6 +153,7 @@ typedef struct {
      # of gates that share the weak inv within the block */
   int vdd_len, gnd_len;		/* sizing info for the weak supply
 				   exported */
+  int nid_wvdd, nid_wgnd;	/* node ids! */
 
   A_DECL (int, instport_weak);	/* node # for instance ports for weak
 				   supplies */
@@ -238,13 +239,15 @@ class ActNetlistPass : public ActPass {
 			  int num_vdd_share,
 			  int num_gnd_share,
 			  int vdd_len,
-			  int gnd_len);
+			  int gnd_len,
+			  node_t *weak_vdd, node_t *weak_gnd);
 
   void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0);
   void generate_staticizers (netlist_t *N, int is_toplevel,
 			     int num_vdd_share,
 			     int num_gnd_share,
-			     int vdd_len, int gnd_len);
+			     int vdd_len, int gnd_len,
+			     node_t *weak_vdd, node_t *weak_gnd);
 
   void fold_transistors (netlist_t *N);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
