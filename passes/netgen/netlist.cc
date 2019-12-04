@@ -631,7 +631,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	  /* residual length conforming to rules */
 
 	  if (num_vdd_share == weak_share_max) {
-	    _alloc_weak_vdd (N, weak_vdd, min_l_in_lambda, vdd_len);
+	    _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
 	    weak_vdd = NULL;
 	    num_vdd_share = 0;
 	  }
@@ -690,7 +690,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	  /* residual length conforming to rules */
 
 	  if (num_gnd_share == weak_share_max) {
-	    _alloc_weak_gnd (N, weak_gnd, min_l_in_lambda, gnd_len);
+	    _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
 	    weak_gnd = NULL;
 	    num_gnd_share = 0;
 	  }
