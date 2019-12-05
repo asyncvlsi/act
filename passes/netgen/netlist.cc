@@ -727,11 +727,13 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
     if (is_toplevel) {
       /* flush it! */
       _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
+      N->weak_supply_vdd = 0;
     }
     else {
       if (num_vdd_share >= weak_share_min) {
 	/* flush it! */
 	_alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
+	N->weak_supply_vdd = 0;
       }
       else {
 	N->weak_supply_vdd = num_vdd_share;
@@ -746,11 +748,13 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
     if (is_toplevel) {
       /* flush it! */
       _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
+      N->weak_supply_gnd = 0;
     }
     else {
       if (num_gnd_share >= weak_share_min) {
 	/* flush it! */
 	_alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
+	N->weak_supply_gnd = 0;
       }
       else {
 	N->weak_supply_gnd = num_gnd_share;
@@ -1842,12 +1846,30 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   Assert (cur == N->bN->cur, "Hmm");
 
   if (!p) {
-    /* flush any shared vdd/gnd nodes for subcircuits */
-    if (weak_vdd) {
-      _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
+    if (is_toplevel) {
+      /* flush any shared vdd/gnd nodes for subcircuits */
+      if (weak_vdd) {
+	_alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
+      }
+      if (weak_gnd) {
+	_alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
+      }
     }
-    if (weak_gnd) {
-      _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
+    else {
+      if (weak_vdd) {
+	N->weak_supply_vdd = num_vdd_sharing;
+	if (num_vdd_sharing > 0) {
+	  N->vdd_len = vdd_len;
+	  N->nid_wvdd = weak_vdd->i;
+	}
+      }
+      if (weak_gnd) {
+	N->weak_supply_gnd = num_gnd_sharing;
+	if (num_gnd_sharing > 0) {
+	  N->gnd_len = gnd_len;
+	  N->nid_wgnd = weak_gnd->i;
+	}
+      } 
     }
     return;
   }
