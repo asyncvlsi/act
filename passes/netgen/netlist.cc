@@ -487,11 +487,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 					   node_t *weak_gnd)
 {
   node_t *n;
-  node_t *orig_wv, *orig_wg;
-  orig_wv = weak_vdd;
-  orig_wg = weak_gnd;
   
-
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
     if (n->supply) continue;
@@ -728,7 +724,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
   }
 
   if (weak_vdd) {
-    if (weak_vdd == orig_wv || is_toplevel) {
+    if (is_toplevel) {
       /* flush it! */
       _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
     }
@@ -747,7 +743,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
     }
   }
   if (weak_gnd) {
-    if (weak_gnd == orig_wg || is_toplevel) {
+    if (is_toplevel) {
       /* flush it! */
       _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
     }
