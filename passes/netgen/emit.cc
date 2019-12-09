@@ -535,4 +535,12 @@ void ActNetlistPass::Print (FILE *fp, Process *p)
   }
   
   emit_netlist (p, fp);
+
+  /*--- clear visited flag ---*/
+  std::map<Process *, netlist_t *>::iterator it;
+  for (it = netmap->begin(); it != netmap->end(); it++) {
+    netlist_t *n = it->second;
+    Assert (n->bN, "Hmm...");
+    n->bN->visited = 0;
+  }
 }
