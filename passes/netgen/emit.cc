@@ -142,6 +142,12 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
       fprintf (fp, ":%c", n->bN->ports[k].input ? 'I' : 'O');
       delete id;
     }
+    if (n->weak_supply_vdd > 0) {
+      fprintf (fp, " #%d:I", n->nid_wvdd);
+    }
+    if (n->weak_supply_gnd > 0) {
+      fprintf (fp, " #%d:I", n->nid_wgnd);
+    }
     fprintf (fp, "\n");
   }
 
