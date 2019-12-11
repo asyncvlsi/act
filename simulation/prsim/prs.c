@@ -2936,18 +2936,19 @@ static void parse_timing (Prs *p, LEX_T *l)
 {
   PrsNode *n;
   PrsTiming *constraint;
+  int i;
 
   lex_mustbe (l, TOK_LPAR);
 
   NEW (constraint, PrsTiming);
-  for (int i=0; i < 3; i++) {
+  for (i=0; i < 3; i++) {
     constraint->n[i] = NULL;
     constraint->next[i] = NULL;
     constraint->margin = 0;
     constraint->state = PRS_TIMING_INACTIVE;
   }
 
-  for (int i=0; i < 3; i++) {
+  for (i=0; i < 3; i++) {
     ihash_bucket_t *b;
     n = lookup (lex_mustbe_id (p,l), p->H);
     constraint->n[i] = n;
