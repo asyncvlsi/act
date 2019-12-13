@@ -30,56 +30,72 @@
 = "A[1].d[1]" "part.A[1].d[1]"
 = "A[2].d[1]" "part.A[2].d[1]"
 = "A[3].d[1]" "part.A[3].d[1]"
-unstab after 0 ("tree.add2_pn[0].A"|"tree.add2_pn[0].B")&"tree.add2_pn[0]._Co"->"tree.add2_pn[0]._S"-
-unstab after 0 ~"tree.add2_pn[0].A"&~"tree.add2_pn[0].B"|~"tree.add2_pn[0]._Co"->"tree.add2_pn[0]._S"+
-unstab after 0 ~"tree.add2_pn[0].A"|~"tree.add2_pn[0].B"->"tree.add2_pn[0]._Co"+
-unstab after 0 "tree.add2_pn[0].A"&"tree.add2_pn[0].B"->"tree.add2_pn[0]._Co"-
-= "tree.add2_pn[0].g._Reset" "tree.add2_pn[0].g._sReset"
-= "tree.add2_pn[0].g.Reset" "tree.add2_pn[0].g.sReset"
-= "tree.add2_pn[0].g.Reset" "tree.add2_pn[0].g.sReset"
-= "tree.add2_pn[0].g._Reset" "tree.add2_pn[0].g._sReset"
-unstab after 0 ("tree.add2_pn[1].A"|"tree.add2_pn[1].B")&"tree.add2_pn[1]._Co"->"tree.add2_pn[1]._S"-
-unstab after 0 ~"tree.add2_pn[1].A"&~"tree.add2_pn[1].B"|~"tree.add2_pn[1]._Co"->"tree.add2_pn[1]._S"+
-unstab after 0 ~"tree.add2_pn[1].A"|~"tree.add2_pn[1].B"->"tree.add2_pn[1]._Co"+
-unstab after 0 "tree.add2_pn[1].A"&"tree.add2_pn[1].B"->"tree.add2_pn[1]._Co"-
-= "tree.add2_pn[1].g._Reset" "tree.add2_pn[1].g._sReset"
-= "tree.add2_pn[1].g.Reset" "tree.add2_pn[1].g.sReset"
-= "tree.add2_pn[1].g.Reset" "tree.add2_pn[1].g.sReset"
-= "tree.add2_pn[1].g._Reset" "tree.add2_pn[1].g._sReset"
-unstab after 0 ("tree.add2_pn[2].A"|"tree.add2_pn[2].B")&"tree.add2_pn[2]._Co"->"tree.add2_pn[2]._S"-
-unstab after 0 ~"tree.add2_pn[2].A"&~"tree.add2_pn[2].B"|~"tree.add2_pn[2]._Co"->"tree.add2_pn[2]._S"+
-unstab after 0 ~"tree.add2_pn[2].A"|~"tree.add2_pn[2].B"->"tree.add2_pn[2]._Co"+
-unstab after 0 "tree.add2_pn[2].A"&"tree.add2_pn[2].B"->"tree.add2_pn[2]._Co"-
-= "tree.add2_pn[2].g._Reset" "tree.add2_pn[2].g._sReset"
-= "tree.add2_pn[2].g.Reset" "tree.add2_pn[2].g.sReset"
-= "tree.add2_pn[2].g.Reset" "tree.add2_pn[2].g.sReset"
-= "tree.add2_pn[2].g._Reset" "tree.add2_pn[2].g._sReset"
-= "tree.add2_pn[1]._S" "tree.P[27].d[0]"
-= "tree.add2_pn[1]._Co" "tree.P[30].d[0]"
-= "tree.add2_pn[0]._S" "tree.P[24].d[0]"
-= "tree.add2_pn[0]._Co" "tree.P[26].d[0]"
+unstab after 0 "tree.P[24].d[1]"->"tree.P[24].d[0]"-
+unstab after 0 ~"tree.P[24].d[1]"->"tree.P[24].d[0]"+
+unstab after 0 "tree.P[25].d[0]"->"tree.P[25].d[1]"-
+unstab after 0 ~"tree.P[25].d[0]"->"tree.P[25].d[1]"+
+unstab after 0 "tree.P[30].d[1]"->"tree.P[30].d[0]"-
+unstab after 0 ~"tree.P[30].d[1]"->"tree.P[30].d[0]"+
+unstab after 0 (~"tree.add2_np[0]._A"|~"tree.add2_np[0]._B")&~"tree.add2_np[0].Co"->"tree.add2_np[0].S"+
+unstab after 0 "tree.add2_np[0]._A"&"tree.add2_np[0]._B"|"tree.add2_np[0].Co"->"tree.add2_np[0].S"-
+unstab after 0 "tree.add2_np[0]._A"|"tree.add2_np[0]._B"->"tree.add2_np[0].Co"-
+unstab after 0 ~"tree.add2_np[0]._A"&~"tree.add2_np[0]._B"->"tree.add2_np[0].Co"+
+= "tree.add2_np[0].g._Reset" "tree.add2_np[0].g._sReset"
+= "tree.add2_np[0].g.Reset" "tree.add2_np[0].g.sReset"
+= "tree.add2_np[0].g.Reset" "tree.add2_np[0].g.sReset"
+= "tree.add2_np[0].g._Reset" "tree.add2_np[0].g._sReset"
+unstab after 0 (~"tree.add2_np[1]._A"|~"tree.add2_np[1]._B")&~"tree.add2_np[1].Co"->"tree.add2_np[1].S"+
+unstab after 0 "tree.add2_np[1]._A"&"tree.add2_np[1]._B"|"tree.add2_np[1].Co"->"tree.add2_np[1].S"-
+unstab after 0 "tree.add2_np[1]._A"|"tree.add2_np[1]._B"->"tree.add2_np[1].Co"-
+unstab after 0 ~"tree.add2_np[1]._A"&~"tree.add2_np[1]._B"->"tree.add2_np[1].Co"+
+= "tree.add2_np[1].g._Reset" "tree.add2_np[1].g._sReset"
+= "tree.add2_np[1].g.Reset" "tree.add2_np[1].g.sReset"
+= "tree.add2_np[1].g.Reset" "tree.add2_np[1].g.sReset"
+= "tree.add2_np[1].g._Reset" "tree.add2_np[1].g._sReset"
+unstab after 0 (~"tree.add2_np[2]._A"|~"tree.add2_np[2]._B")&~"tree.add2_np[2].Co"->"tree.add2_np[2].S"+
+unstab after 0 "tree.add2_np[2]._A"&"tree.add2_np[2]._B"|"tree.add2_np[2].Co"->"tree.add2_np[2].S"-
+unstab after 0 "tree.add2_np[2]._A"|"tree.add2_np[2]._B"->"tree.add2_np[2].Co"-
+unstab after 0 ~"tree.add2_np[2]._A"&~"tree.add2_np[2]._B"->"tree.add2_np[2].Co"+
+= "tree.add2_np[2].g._Reset" "tree.add2_np[2].g._sReset"
+= "tree.add2_np[2].g.Reset" "tree.add2_np[2].g.sReset"
+= "tree.add2_np[2].g.Reset" "tree.add2_np[2].g.sReset"
+= "tree.add2_np[2].g._Reset" "tree.add2_np[2].g._sReset"
+= "tree.add2_np[1].S" "tree.add3_pn[0].Ci"
+= "tree.add2_np[1].S" "tree.P[27].d[1]"
+= "tree.add2_np[1].Co" "tree.P[30].d[1]"
+= "tree.add2_np[0].S" "tree.P[24].d[1]"
+= "tree.add2_np[0].Co" "tree.add3_pn[0].B"
+= "tree.add2_np[0].Co" "tree.P[26].d[1]"
+unstab after 0 "tree.add3_np[0].A"&"tree.add3_np[0].B"|("tree.add3_np[0].B"|"tree.add3_np[0].A")&"tree.add3_np[0].Ci"->"tree.add3_np[0]._Co"-
+unstab after 0 ~"tree.add3_np[0].A"&~"tree.add3_np[0].B"|(~"tree.add3_np[0].B"|~"tree.add3_np[0].A")&~"tree.add3_np[0].Ci"->"tree.add3_np[0]._Co"+
+unstab after 0 "tree.add3_np[0].A"&"tree.add3_np[0].B"&"tree.add3_np[0].Ci"|("tree.add3_np[0].A"|"tree.add3_np[0].B"|"tree.add3_np[0].Ci")&"tree.add3_np[0]._Co"->"tree.add3_np[0]._S"-
+unstab after 0 ~"tree.add3_np[0].A"&~"tree.add3_np[0].B"&~"tree.add3_np[0].Ci"|(~"tree.add3_np[0].A"|~"tree.add3_np[0].B"|~"tree.add3_np[0].Ci")&~"tree.add3_np[0]._Co"->"tree.add3_np[0]._S"+
+= "tree.add3_np[0].g._Reset" "tree.add3_np[0].g._sReset"
+= "tree.add3_np[0].g.Reset" "tree.add3_np[0].g.sReset"
+= "tree.add3_np[0].g.Reset" "tree.add3_np[0].g.sReset"
+= "tree.add3_np[0].g._Reset" "tree.add3_np[0].g._sReset"
+unstab after 0 "tree.add3_np[1].A"&"tree.add3_np[1].B"|("tree.add3_np[1].B"|"tree.add3_np[1].A")&"tree.add3_np[1].Ci"->"tree.add3_np[1]._Co"-
+unstab after 0 ~"tree.add3_np[1].A"&~"tree.add3_np[1].B"|(~"tree.add3_np[1].B"|~"tree.add3_np[1].A")&~"tree.add3_np[1].Ci"->"tree.add3_np[1]._Co"+
+unstab after 0 "tree.add3_np[1].A"&"tree.add3_np[1].B"&"tree.add3_np[1].Ci"|("tree.add3_np[1].A"|"tree.add3_np[1].B"|"tree.add3_np[1].Ci")&"tree.add3_np[1]._Co"->"tree.add3_np[1]._S"-
+unstab after 0 ~"tree.add3_np[1].A"&~"tree.add3_np[1].B"&~"tree.add3_np[1].Ci"|(~"tree.add3_np[1].A"|~"tree.add3_np[1].B"|~"tree.add3_np[1].Ci")&~"tree.add3_np[1]._Co"->"tree.add3_np[1]._S"+
+= "tree.add3_np[1].g._Reset" "tree.add3_np[1].g._sReset"
+= "tree.add3_np[1].g.Reset" "tree.add3_np[1].g.sReset"
+= "tree.add3_np[1].g.Reset" "tree.add3_np[1].g.sReset"
+= "tree.add3_np[1].g._Reset" "tree.add3_np[1].g._sReset"
+= "tree.add3_np[1].Ci" "tree.P[30].d[0]"
+= "tree.add3_np[0].Ci" "tree.P[24].d[0]"
 = "tree.g._Reset" "tree.g._sReset"
 = "tree.g.Reset" "tree.g.sReset"
-= "tree.g._sReset" "tree.add3_pn[2].g._sReset"
-= "tree.g.Vdd" "tree.add3_pn[2].g.Vdd"
-= "tree.g._Reset" "tree.add3_pn[2].g._Reset"
-= "tree.g._pReset" "tree.add3_pn[2].g._pReset"
-= "tree.g.GND" "tree.add3_pn[2].g.GND"
-= "tree.g.vpsub" "tree.add3_pn[2].g.vpsub"
-= "tree.g.vnsub" "tree.add3_pn[2].g.vnsub"
-= "tree.g.Reset" "tree.add3_pn[2].g.Reset"
-= "tree.g.pReset" "tree.add3_pn[2].g.pReset"
-= "tree.g.sReset" "tree.add3_pn[2].g.sReset"
-= "tree.g._sReset" "tree.add3_pn[1].g._sReset"
-= "tree.g.Vdd" "tree.add3_pn[1].g.Vdd"
-= "tree.g._Reset" "tree.add3_pn[1].g._Reset"
-= "tree.g._pReset" "tree.add3_pn[1].g._pReset"
-= "tree.g.GND" "tree.add3_pn[1].g.GND"
-= "tree.g.vpsub" "tree.add3_pn[1].g.vpsub"
-= "tree.g.vnsub" "tree.add3_pn[1].g.vnsub"
-= "tree.g.Reset" "tree.add3_pn[1].g.Reset"
-= "tree.g.pReset" "tree.add3_pn[1].g.pReset"
-= "tree.g.sReset" "tree.add3_pn[1].g.sReset"
+= "tree.g._sReset" "tree.add3_np[1].g._sReset"
+= "tree.g.Vdd" "tree.add3_np[1].g.Vdd"
+= "tree.g._Reset" "tree.add3_np[1].g._Reset"
+= "tree.g._pReset" "tree.add3_np[1].g._pReset"
+= "tree.g.GND" "tree.add3_np[1].g.GND"
+= "tree.g.vpsub" "tree.add3_np[1].g.vpsub"
+= "tree.g.vnsub" "tree.add3_np[1].g.vnsub"
+= "tree.g.Reset" "tree.add3_np[1].g.Reset"
+= "tree.g.pReset" "tree.add3_np[1].g.pReset"
+= "tree.g.sReset" "tree.add3_np[1].g.sReset"
 = "tree.g._sReset" "tree.add3_pn[0].g._sReset"
 = "tree.g.Vdd" "tree.add3_pn[0].g.Vdd"
 = "tree.g._Reset" "tree.add3_pn[0].g._Reset"
@@ -90,36 +106,46 @@ unstab after 0 "tree.add2_pn[2].A"&"tree.add2_pn[2].B"->"tree.add2_pn[2]._Co"-
 = "tree.g.Reset" "tree.add3_pn[0].g.Reset"
 = "tree.g.pReset" "tree.add3_pn[0].g.pReset"
 = "tree.g.sReset" "tree.add3_pn[0].g.sReset"
-= "tree.g._sReset" "tree.add2_pn[2].g._sReset"
-= "tree.g.Vdd" "tree.add2_pn[2].g.Vdd"
-= "tree.g._Reset" "tree.add2_pn[2].g._Reset"
-= "tree.g._pReset" "tree.add2_pn[2].g._pReset"
-= "tree.g.GND" "tree.add2_pn[2].g.GND"
-= "tree.g.vpsub" "tree.add2_pn[2].g.vpsub"
-= "tree.g.vnsub" "tree.add2_pn[2].g.vnsub"
-= "tree.g.Reset" "tree.add2_pn[2].g.Reset"
-= "tree.g.pReset" "tree.add2_pn[2].g.pReset"
-= "tree.g.sReset" "tree.add2_pn[2].g.sReset"
-= "tree.g._sReset" "tree.add2_pn[1].g._sReset"
-= "tree.g.Vdd" "tree.add2_pn[1].g.Vdd"
-= "tree.g._Reset" "tree.add2_pn[1].g._Reset"
-= "tree.g._pReset" "tree.add2_pn[1].g._pReset"
-= "tree.g.GND" "tree.add2_pn[1].g.GND"
-= "tree.g.vpsub" "tree.add2_pn[1].g.vpsub"
-= "tree.g.vnsub" "tree.add2_pn[1].g.vnsub"
-= "tree.g.Reset" "tree.add2_pn[1].g.Reset"
-= "tree.g.pReset" "tree.add2_pn[1].g.pReset"
-= "tree.g.sReset" "tree.add2_pn[1].g.sReset"
-= "tree.g._sReset" "tree.add2_pn[0].g._sReset"
-= "tree.g.Vdd" "tree.add2_pn[0].g.Vdd"
-= "tree.g._Reset" "tree.add2_pn[0].g._Reset"
-= "tree.g._pReset" "tree.add2_pn[0].g._pReset"
-= "tree.g.GND" "tree.add2_pn[0].g.GND"
-= "tree.g.vpsub" "tree.add2_pn[0].g.vpsub"
-= "tree.g.vnsub" "tree.add2_pn[0].g.vnsub"
-= "tree.g.Reset" "tree.add2_pn[0].g.Reset"
-= "tree.g.pReset" "tree.add2_pn[0].g.pReset"
-= "tree.g.sReset" "tree.add2_pn[0].g.sReset"
+= "tree.g._sReset" "tree.add3_np[0].g._sReset"
+= "tree.g.Vdd" "tree.add3_np[0].g.Vdd"
+= "tree.g._Reset" "tree.add3_np[0].g._Reset"
+= "tree.g._pReset" "tree.add3_np[0].g._pReset"
+= "tree.g.GND" "tree.add3_np[0].g.GND"
+= "tree.g.vpsub" "tree.add3_np[0].g.vpsub"
+= "tree.g.vnsub" "tree.add3_np[0].g.vnsub"
+= "tree.g.Reset" "tree.add3_np[0].g.Reset"
+= "tree.g.pReset" "tree.add3_np[0].g.pReset"
+= "tree.g.sReset" "tree.add3_np[0].g.sReset"
+= "tree.g._sReset" "tree.add2_np[2].g._sReset"
+= "tree.g.Vdd" "tree.add2_np[2].g.Vdd"
+= "tree.g._Reset" "tree.add2_np[2].g._Reset"
+= "tree.g._pReset" "tree.add2_np[2].g._pReset"
+= "tree.g.GND" "tree.add2_np[2].g.GND"
+= "tree.g.vpsub" "tree.add2_np[2].g.vpsub"
+= "tree.g.vnsub" "tree.add2_np[2].g.vnsub"
+= "tree.g.Reset" "tree.add2_np[2].g.Reset"
+= "tree.g.pReset" "tree.add2_np[2].g.pReset"
+= "tree.g.sReset" "tree.add2_np[2].g.sReset"
+= "tree.g._sReset" "tree.add2_np[1].g._sReset"
+= "tree.g.Vdd" "tree.add2_np[1].g.Vdd"
+= "tree.g._Reset" "tree.add2_np[1].g._Reset"
+= "tree.g._pReset" "tree.add2_np[1].g._pReset"
+= "tree.g.GND" "tree.add2_np[1].g.GND"
+= "tree.g.vpsub" "tree.add2_np[1].g.vpsub"
+= "tree.g.vnsub" "tree.add2_np[1].g.vnsub"
+= "tree.g.Reset" "tree.add2_np[1].g.Reset"
+= "tree.g.pReset" "tree.add2_np[1].g.pReset"
+= "tree.g.sReset" "tree.add2_np[1].g.sReset"
+= "tree.g._sReset" "tree.add2_np[0].g._sReset"
+= "tree.g.Vdd" "tree.add2_np[0].g.Vdd"
+= "tree.g._Reset" "tree.add2_np[0].g._Reset"
+= "tree.g._pReset" "tree.add2_np[0].g._pReset"
+= "tree.g.GND" "tree.add2_np[0].g.GND"
+= "tree.g.vpsub" "tree.add2_np[0].g.vpsub"
+= "tree.g.vnsub" "tree.add2_np[0].g.vnsub"
+= "tree.g.Reset" "tree.add2_np[0].g.Reset"
+= "tree.g.pReset" "tree.add2_np[0].g.pReset"
+= "tree.g.sReset" "tree.add2_np[0].g.sReset"
 = "tree.g.Reset" "tree.g.sReset"
 = "tree.g._Reset" "tree.g._sReset"
 unstab after 0 "tree.add3_pn[0].A"&"tree.add3_pn[0].B"|("tree.add3_pn[0].B"|"tree.add3_pn[0].A")&"tree.add3_pn[0].Ci"->"tree.add3_pn[0]._Co"-
@@ -130,26 +156,6 @@ unstab after 0 ~"tree.add3_pn[0].A"&~"tree.add3_pn[0].B"&~"tree.add3_pn[0].Ci"|(
 = "tree.add3_pn[0].g.Reset" "tree.add3_pn[0].g.sReset"
 = "tree.add3_pn[0].g.Reset" "tree.add3_pn[0].g.sReset"
 = "tree.add3_pn[0].g._Reset" "tree.add3_pn[0].g._sReset"
-unstab after 0 "tree.add3_pn[1].A"&"tree.add3_pn[1].B"|("tree.add3_pn[1].B"|"tree.add3_pn[1].A")&"tree.add3_pn[1].Ci"->"tree.add3_pn[1]._Co"-
-unstab after 0 ~"tree.add3_pn[1].A"&~"tree.add3_pn[1].B"|(~"tree.add3_pn[1].B"|~"tree.add3_pn[1].A")&~"tree.add3_pn[1].Ci"->"tree.add3_pn[1]._Co"+
-unstab after 0 "tree.add3_pn[1].A"&"tree.add3_pn[1].B"&"tree.add3_pn[1].Ci"|("tree.add3_pn[1].A"|"tree.add3_pn[1].B"|"tree.add3_pn[1].Ci")&"tree.add3_pn[1]._Co"->"tree.add3_pn[1]._S"-
-unstab after 0 ~"tree.add3_pn[1].A"&~"tree.add3_pn[1].B"&~"tree.add3_pn[1].Ci"|(~"tree.add3_pn[1].A"|~"tree.add3_pn[1].B"|~"tree.add3_pn[1].Ci")&~"tree.add3_pn[1]._Co"->"tree.add3_pn[1]._S"+
-= "tree.add3_pn[1].g._Reset" "tree.add3_pn[1].g._sReset"
-= "tree.add3_pn[1].g.Reset" "tree.add3_pn[1].g.sReset"
-= "tree.add3_pn[1].g.Reset" "tree.add3_pn[1].g.sReset"
-= "tree.add3_pn[1].g._Reset" "tree.add3_pn[1].g._sReset"
-unstab after 0 "tree.add3_pn[2].A"&"tree.add3_pn[2].B"|("tree.add3_pn[2].B"|"tree.add3_pn[2].A")&"tree.add3_pn[2].Ci"->"tree.add3_pn[2]._Co"-
-unstab after 0 ~"tree.add3_pn[2].A"&~"tree.add3_pn[2].B"|(~"tree.add3_pn[2].B"|~"tree.add3_pn[2].A")&~"tree.add3_pn[2].Ci"->"tree.add3_pn[2]._Co"+
-unstab after 0 "tree.add3_pn[2].A"&"tree.add3_pn[2].B"&"tree.add3_pn[2].Ci"|("tree.add3_pn[2].A"|"tree.add3_pn[2].B"|"tree.add3_pn[2].Ci")&"tree.add3_pn[2]._Co"->"tree.add3_pn[2]._S"-
-unstab after 0 ~"tree.add3_pn[2].A"&~"tree.add3_pn[2].B"&~"tree.add3_pn[2].Ci"|(~"tree.add3_pn[2].A"|~"tree.add3_pn[2].B"|~"tree.add3_pn[2].Ci")&~"tree.add3_pn[2]._Co"->"tree.add3_pn[2]._S"+
-= "tree.add3_pn[2].g._Reset" "tree.add3_pn[2].g._sReset"
-= "tree.add3_pn[2].g.Reset" "tree.add3_pn[2].g.sReset"
-= "tree.add3_pn[2].g.Reset" "tree.add3_pn[2].g.sReset"
-= "tree.add3_pn[2].g._Reset" "tree.add3_pn[2].g._sReset"
-= "tree.add3_pn[2].Ci" "tree.P[30].d[1]"
-= "tree.add3_pn[1].B" "tree.P[26].d[1]"
-= "tree.add3_pn[1].Ci" "tree.P[27].d[1]"
-= "tree.add3_pn[0].Ci" "tree.P[24].d[1]"
 = "tree.Pi[0].d[0]" "tree.P[32].d[0]"
 = "tree.Pi[0].d[1]" "tree.P[32].d[1]"
 = "tree.Pi[0].d[0]" "tree.S[0].d[0]"
@@ -226,17 +232,17 @@ unstab after 0 ~"tree.add3_pn[2].A"&~"tree.add3_pn[2].B"&~"tree.add3_pn[2].Ci"|(
 = "tree.Pi[15].d[1]" "tree.P[31].d[1]"
 = "tree.Pi[15].d[0]" "tree.P[15].d[0]"
 = "tree.Pi[15].d[1]" "tree.P[15].d[1]"
-= "tree.Pi[14].d[1]" "tree.add3_pn[2].B"
-= "tree.Pi[13].d[1]" "tree.add3_pn[2].A"
-= "tree.Pi[12].d[1]" "tree.add3_pn[1].A"
-= "tree.Pi[11].d[1]" "tree.add2_pn[1].B"
-= "tree.Pi[10].d[1]" "tree.add2_pn[1].A"
-= "tree.Pi[9].d[1]" "tree.add3_pn[0].B"
-= "tree.Pi[8].d[1]" "tree.add3_pn[0].A"
-= "tree.Pi[7].d[1]" "tree.add2_pn[0].B"
-= "tree.Pi[6].d[1]" "tree.add2_pn[0].A"
-= "tree.Pi[4].d[1]" "tree.add2_pn[2].B"
-= "tree.Pi[3].d[1]" "tree.add2_pn[2].A"
+= "tree.Pi[14].d[0]" "tree.add3_np[1].B"
+= "tree.Pi[13].d[0]" "tree.add3_np[1].A"
+= "tree.Pi[12].d[1]" "tree.add3_pn[0].A"
+= "tree.Pi[11].d[0]" "tree.add2_np[1]._B"
+= "tree.Pi[10].d[0]" "tree.add2_np[1]._A"
+= "tree.Pi[9].d[0]" "tree.add3_np[0].B"
+= "tree.Pi[8].d[0]" "tree.add3_np[0].A"
+= "tree.Pi[7].d[0]" "tree.add2_np[0]._B"
+= "tree.Pi[6].d[0]" "tree.add2_np[0]._A"
+= "tree.Pi[4].d[0]" "tree.add2_np[2]._B"
+= "tree.Pi[3].d[0]" "tree.add2_np[2]._A"
 = "tree.S[4].d[0]" "tree.P[36].d[0]"
 = "tree.S[4].d[1]" "tree.P[36].d[1]"
 = "tree.S[5].d[0]" "tree.P[37].d[0]"
@@ -253,14 +259,14 @@ unstab after 0 ~"tree.add3_pn[2].A"&~"tree.add3_pn[2].B"&~"tree.add3_pn[2].Ci"|(
 = "tree.S[10].d[1]" "tree.P[42].d[1]"
 = "tree.S[12].d[0]" "tree.P[44].d[0]"
 = "tree.S[12].d[1]" "tree.P[44].d[1]"
-= "tree.S[12].d[0]" "tree.add3_pn[2]._Co"
-= "tree.S[10].d[0]" "tree.add3_pn[2]._S"
-= "tree.S[9].d[0]" "tree.add3_pn[1]._Co"
-= "tree.S[8].d[0]" "tree.add3_pn[1]._S"
-= "tree.S[7].d[0]" "tree.add3_pn[0]._Co"
-= "tree.S[6].d[0]" "tree.add3_pn[0]._S"
-= "tree.S[5].d[0]" "tree.add2_pn[2]._Co"
-= "tree.S[4].d[0]" "tree.add2_pn[2]._S"
+= "tree.S[12].d[1]" "tree.add3_np[1]._Co"
+= "tree.S[10].d[1]" "tree.add3_np[1]._S"
+= "tree.S[9].d[0]" "tree.add3_pn[0]._Co"
+= "tree.S[8].d[0]" "tree.add3_pn[0]._S"
+= "tree.S[7].d[1]" "tree.add3_np[0]._Co"
+= "tree.S[6].d[1]" "tree.add3_np[0]._S"
+= "tree.S[5].d[1]" "tree.add2_np[2].Co"
+= "tree.S[4].d[1]" "tree.add2_np[2].S"
 unstab after 0 "part.A[0].d[1]"&"part.B[0].d[1]"->"part.P[0].d[0]"-
 unstab after 0 ~"part.A[0].d[1]"|~"part.B[0].d[1]"->"part.P[0].d[0]"+
 unstab after 0 "part.A[0].d[1]"&"part.B[1].d[1]"->"part.P[1].d[0]"-

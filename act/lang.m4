@@ -734,6 +734,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->type = ACT_PRS_RULE;
     p->u.one.attr = NULL;
     p->u.one.e = (act_prs_expr_t *) $1;
+    p->u.one.eopp = NULL;
     p->u.one.arrow_type = $2;
     p->u.one.id = $3;
     p->u.one.dir = $4;
@@ -749,6 +750,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->type = ACT_PRS_RULE;
     p->u.one.attr = NULL;
     p->u.one.e = (act_prs_expr_t *) $1;
+    p->u.one.eopp = NULL;
     p->u.one.arrow_type = $2;
     p->u.one.id = (ActId *)$4;
     p->u.one.dir = $5;

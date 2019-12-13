@@ -661,29 +661,29 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	unsigned int v;
+	signed int v;
 
 	v = ret->u.e.l->u.v;
 	if (e->type == E_PLUS) {
-	  v = v + ((unsigned int)ret->u.e.r->u.v);
+	  v = v + ((signed int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MINUS) {
-	  v = v - ((unsigned int)ret->u.e.r->u.v);
+	  v = v - ((signed int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MULT) {
-	  v = v * ((unsigned int)ret->u.e.r->u.v);
+	  v = v * ((signed int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_DIV) {
-	  v = v / ((unsigned int)ret->u.e.r->u.v);
+	  v = v / ((signed int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MOD) {
-	  v = v % ((unsigned int)ret->u.e.r->u.v);
+	  v = v % ((signed int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_LSL) {
 	  v = v << ((unsigned int)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_LSR) {
-	  v = v << ((unsigned int)ret->u.e.r->u.v);
+	  v = ((unsigned int)v) >> ((unsigned int)ret->u.e.r->u.v);
 	}
 	else { /* ASR */
 	  v = (signed)v >> ((unsigned int)ret->u.e.r->u.v);
@@ -746,26 +746,26 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	unsigned int v;
+	signed int v;
 
 	v = ret->u.e.l->u.v;
 	if (e->type == E_LT) {
-	  v = (v < ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v < ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_GT) {
-	  v = (v > ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v > ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_LE) {
-	  v = (v <= ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v <= ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_GE) {
-	  v = (v >= ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v >= ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_EQ) {
-	  v = (v == ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v == ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else { /* NE */
-	  v = (v != ((unsigned int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v != ((signed int)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	//FREE (ret->u.e.l);
 	//FREE (ret->u.e.r);
@@ -896,7 +896,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = expr_expand (e->u.e.l, ns, s);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
-	unsigned int v = ret->u.e.l->u.v;
+	signed int v = ret->u.e.l->u.v;
 	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = -v;

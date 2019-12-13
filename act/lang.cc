@@ -518,6 +518,8 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
     case ACT_PRS_RULE:
       tmp->u.one.attr = prs_attr_expand (p->u.one.attr, ns, s);
       tmp->u.one.e = prs_expr_expand (p->u.one.e, ns, s);
+      tmp->u.one.eopp = p->u.one.eopp ?
+	prs_expr_expand (p->u.one.eopp, ns, s) : NULL;
 
       if (p->u.one.label == 0) {
 	act_connection *ac;
