@@ -484,10 +484,16 @@ static void mk_raw_skip_connection (UserDef *ux,
 static void _verify_subconn_canonical (UserDef *ux, act_connection *c)
 {
   act_connection *d;
-  d = c->primary();
-  if (c == d) return;
 
-  if (_raw_should_swap (ux, d, c)) {
+#if 0
+  printf ("  > subconn_canon:\n");
+  printf ("  > ");
+  dump_conn_rec (c);
+  printf ("  >\n");
+#endif
+
+  d = c->primary();
+  if ((c != d) && _raw_should_swap (ux, d, c)) {
     c->up = NULL;
     d->up = c;
   }
@@ -564,6 +570,7 @@ static void _merge_subtrees (UserDef *ux,
       if (c1->a[i] && c2->a[i]) {
 	/* you might have the same thing repeated... */
 	mk_raw_skip_connection (ux, c1->a[i], c2->a[i]);
+	_verify_subconn_canonical (ux, c1->a[i]);
       }
       else if (c2->a[i]) {
 	c1->a[i] = c2->a[i];
@@ -973,6 +980,9 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   vx2 = tmp->vx;
   
   do_swap = _should_swap (ux, c1, c2);
+#if 0
+  printf ("[do_swap=%d]\n", do_swap);
+#endif  
 
   if (do_swap) {
     tmp = c1;

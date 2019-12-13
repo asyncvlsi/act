@@ -140,5 +140,5 @@
 = "snk.l.t" "src.r.t"
 = "snk.l.d[0]" "src.r.d[0]"
 = "snk.l.d[1]" "src.r.d[1]"
-= "snk.l.d[0]" "snk.l.f"
-= "snk.l.d[1]" "snk.l.t"
+= "snk.l.t" "snk.l.d[1]"
+= "snk.l.f" "snk.l.d[0]"
