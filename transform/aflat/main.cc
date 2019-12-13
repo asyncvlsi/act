@@ -460,6 +460,9 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
       /* attributes */
       if (p->u.one.label) {
 	hash_bucket_t *b;
+	if (!labels) {
+	  labels = hash_new (4);
+	}
 	if (hash_lookup (labels, (char *)p->u.one.id)) {
 	  fatal_error ("Duplicate label `%s'", (char *)p->u.one.id);
 	}
@@ -545,6 +548,9 @@ void aflat_body (void *cookie, ActId *prefix, Process *p)
 {
   Assert (p->isExpanded(), "What?");
   current_prefix = prefix;
+  if (labels) {
+    hash_clear (labels);
+  }
   aflat_dump (p->CurScope(), p->getprs(), p->getspec());
   current_prefix = NULL;
 }
