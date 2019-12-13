@@ -514,22 +514,31 @@ void ActCellPass::flush_pending (Process *p)
   }
 
   bitset_t **at_use = NULL;
-  bitset_t *all_at = NULL;
   int *grouped = NULL;
 
   if (at_len > 0) {
     /* there are some labels */
 
     /* figure out which pending rules use them */
-    all_at = bitset_new (at_len);
     MALLOC (at_use, bitset_t *, A_LEN (pendingprs));
     MALLOC (grouped, int, A_LEN (pendingprs));
+
+#if 0
+    printf ("--\n");
+#endif    
     for (int i=0; i < A_LEN (pendingprs); i++) {
       grouped[i] = 0;
-      bitset_set (all_at, i);
       at_use[i] = bitset_new (at_len);
       _mark_at_used (pendingprs[i]->u.one.e, at_use[i], at_idx, at_len);
+#if 0
+      printf ("%d : ", i);
+      bitset_print (at_use[i]);
+      printf ("\n");
+#endif
     }
+#if 0
+    printf ("--\n");
+#endif    
   }
   else {
     FREE (at_idx);
@@ -539,7 +548,6 @@ void ActCellPass::flush_pending (Process *p)
 
   A_DECL (act_prs_lang_t, groupprs);
   A_INIT (groupprs);
-
 
   bitset_t *at_group = NULL;
   bitset_t *at_tmp = NULL;
@@ -605,7 +613,17 @@ void ActCellPass::flush_pending (Process *p)
 
       // now we have all the @s we need, and they are flagged with the
       // grouped bit
+
+#if 0
+      printf ("Grouped: ");
+#endif
+      
       for (int j=i; j < A_LEN (pendingprs); j++) {
+#if 0
+	if (grouped[j] == 1) {
+	  printf (" %d", j);
+	}
+#endif	
 	if (grouped[j] == 1 && !pendingprs[j]->u.one.label) {
 	  for (int k=j+1; k < A_LEN (pendingprs); k++) {
 	    if ((pendingprs[j]->u.one.id == pendingprs[k]->u.one.id) ||
@@ -616,21 +634,30 @@ void ActCellPass::flush_pending (Process *p)
 	  }
 	}
       }
+#if 0
+      printf ("\n");
+#endif      
 
       for (int j=i+1; j < A_LEN (pendingprs); j++) {
 	if (grouped[j] == 1) {
 	  A_NEWM (groupprs, act_prs_lang_t);
 	  A_NEXT (groupprs) = *(pendingprs[j]);
-	  groupprs[A_LEN(groupprs)-1].next = &A_NEXT (groupprs);
 	  A_NEXT (groupprs).next = NULL;
 	  A_INC (groupprs);
 	  grouped[j] = 2;
 	}
       }
+      for (int j=0; j < A_LEN (groupprs)-1; j++) {
+	groupprs[j].next = &groupprs[j+1];
+      }
       bitset_clear (at_group);
     }
 
     pi = _gen_prs_attributes (&groupprs[0]);
+
+#if 0
+    _dump_prsinfo (pi);
+#endif    
 
     if (cell_table) {
       b = chash_lookup (cell_table, pi);
@@ -684,7 +711,6 @@ void ActCellPass::flush_pending (Process *p)
     at_idx = NULL;
     bitset_free (at_group);
     bitset_free (at_tmp);
-    bitset_free (all_at);
     for (int i=0; i < A_LEN (pendingprs); i++) {
       bitset_free (at_use[i]);
     }
@@ -1571,8 +1597,8 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   else {
     printf (" cell: -no-name-\n");
   }
-  printf ("  nvars=%d, nout=%d, tval=%d\n",
-	  p->nvars, p->nout, p->tval);
+  printf ("  nvars=%d, nout=%d, nat=%d, tval=%d\n",
+	  p->nvars, p->nout, p->nat, p->tval);
 
   for (int i=0; i < A_LEN (p->up); i++) {
     printf (" %d: up = ", i);
@@ -1810,11 +1836,12 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 			    new AExpr (idexpr), NULL));
     a = a->GetRight ();
   }
+
   instname = new ActId (name);
   instname->Append (new ActId ("in"));
   
   ActBody_Conn *ac = new ActBody_Conn (instname, ret);
-  
+
   instname = new ActId (name);
   instname->Append (new ActId ("out"));
 
@@ -1824,6 +1851,7 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   }
   else {
     ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
+    a = ret;
     i = 1;
     for (; i < pi->nout; i++) {
       idexpr = _idexpr (i, pi);
