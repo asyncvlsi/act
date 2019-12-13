@@ -135,6 +135,21 @@ void bitset_and (bitset_t *l, bitset_t *r)
     l->x[i] &= r->x[i];
 }
 
+int bitset_andclear (bitset_t *b, bitset_t *c)
+{
+  int i;
+
+  if (b->sz != c->sz) {
+    fatal_error ("Sizes must match!");
+  }
+
+  for (i=0; i < b->sz; i++) {
+    if (b->x[i] & c->x[i]) return 0;
+  }
+  return 1;
+}
+
+
 int bitset_equal (bitset_t *l, bitset_t *r)
 {
   int i;

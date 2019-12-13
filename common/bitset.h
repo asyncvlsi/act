@@ -48,6 +48,8 @@ void bitset_or (bitset_t *l, bitset_t *r);
 void bitset_and (bitset_t *l, bitset_t *r);
 void bitset_xor (bitset_t *l, bitset_t *r);
 int bitset_isclear (bitset_t *b);
+  int bitset_andclear (bitset_t *b, bitset_t *c); /* 1 if the AND of
+						     the two is empty */
 bitset_t *bitset_copy (bitset_t *b);
 int bitset_equal (bitset_t *a, bitset_t *b);
 

@@ -1167,7 +1167,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     s->next = NULL;
     return s;
 }}
-| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ dir ] "<" [ "[" wint_expr "]" ] bool_expr_id_or_array [ dir ]
+| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] "<" [ "[" wint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
 {{X:
     /* a timing fork */
     act_spec *s;
@@ -1205,9 +1205,10 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       s->ids[i++] = NULL;
     }
     OPT_FREE ($2);
-    if (!OPT_EMPTY ($5)) {
+
+    if (!OPT_EMPTY ($6)) {
       ActRet *r;
-      r = OPT_VALUE ($5);
+      r = OPT_VALUE ($6);
       $A(r->type == R_INT);
       s->extra[i] = r->u.ival ? 1 : 2;
       FREE (r);
@@ -1215,15 +1216,22 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     else {
       s->extra[i] = 0;
     }
-    OPT_FREE ($5);
+    OPT_FREE ($6);
     if (!OPT_EMPTY ($3)) {
       s->extra[i] |= 0x4;
     }
     OPT_FREE ($3);
+
+    // $5
+    if (!OPT_EMPTY ($5)) {
+      s->extra[i] |= 0x8;
+    }
+    OPT_FREE ($5);
+    
     s->ids[i++] = $4;
-    if (!OPT_EMPTY ($9)) {
+    if (!OPT_EMPTY ($11)) {
       ActRet *r;
-      r = OPT_VALUE ($9);
+      r = OPT_VALUE ($11);
       $A(r->type == R_INT);
       s->extra[i] = r->u.ival ? 1 : 2;
       FREE (r);
@@ -1231,21 +1239,29 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     else {
       s->extra[i] = 0;
     }
-    OPT_FREE ($9);
-    s->ids[i++] = $8;
+    OPT_FREE ($11);
+
+    // $10
+
+    if (!OPT_EMPTY ($10)) {
+      s->extra[i] |= 0x8;
+    }
+    OPT_FREE ($10);
+    
+    s->ids[i++] = $9;
     s->next = NULL;
 
-    if (OPT_EMPTY ($7)) {
+    if (OPT_EMPTY ($8)) {
       s->ids[i] = NULL;
     }
     else {
       ActRet *r;
-      r = OPT_VALUE ($7);
+      r = OPT_VALUE ($8);
       $A(r->type == R_EXPR);
       s->ids[i] = (ActId *) r->u.exp;
       FREE (r);
     }
-    OPT_FREE ($7);
+    OPT_FREE ($8);
     return s;
 }}
 ;

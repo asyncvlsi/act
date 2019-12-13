@@ -404,20 +404,233 @@ static void cell_freefn (void *key)
 
 L_A_DECL (act_prs_lang_t *, pendingprs);
 
+
+static int _uses_a_label (act_prs_expr_t *e)
+{
+  if (!e) return 0;
+
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    return _uses_a_label (e->u.e.l) || _uses_a_label (e->u.e.r);
+   break;
+
+  case ACT_PRS_EXPR_NOT:
+    return _uses_a_label (e->u.e.l);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    return 0;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    return 1;
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    return 0;
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    return 0;
+    break;
+
+  default:
+    fatal_error ("What?");
+    return 0;
+    break;
+  }
+}
+
+static void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
+			   int *idx_array, int idx_len)
+{
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    _mark_at_used (e->u.e.l, b, idx_array, idx_len);
+    _mark_at_used (e->u.e.r, b, idx_array, idx_len);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    _mark_at_used (e->u.e.l, b, idx_array, idx_len);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    return;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    for (int i=0; i < idx_len; i++) {
+      if (strcmp (e->u.l.label,
+		  (char *)pendingprs[idx_array[i]]->u.one.id) == 0) {
+	bitset_set (b, i);
+	return;
+      }
+    }
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    return;
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  return;
+}
+
 void ActCellPass::flush_pending (Process *p)
 {
   int pending_count = 0;
-  act_prs_lang_t newprs;
+
+  if (A_LEN (pendingprs) == 0) {
+    A_FREE (pendingprs);
+    A_INIT (pendingprs);
+    return;
+  }
+
+  /* -- handle shared gates -- */
+  int *at_idx;
+  MALLOC (at_idx, int, A_LEN (pendingprs));
+  int at_len = 0;
+
+  for (int i=0; i < A_LEN (pendingprs); i++) {
+    if (pendingprs[i]->u.one.label) {
+      at_idx[at_len] = i;
+      at_len++;
+    }
+  }
+
+  bitset_t **at_use = NULL;
+  bitset_t *all_at = NULL;
+  int *grouped = NULL;
+
+  if (at_len > 0) {
+    /* there are some labels */
+
+    /* figure out which pending rules use them */
+    all_at = bitset_new (at_len);
+    MALLOC (at_use, bitset_t *, A_LEN (pendingprs));
+    MALLOC (grouped, int, A_LEN (pendingprs));
+    for (int i=0; i < A_LEN (pendingprs); i++) {
+      grouped[i] = 0;
+      bitset_set (all_at, i);
+      at_use[i] = bitset_new (at_len);
+      _mark_at_used (pendingprs[i]->u.one.e, at_use[i], at_idx, at_len);
+    }
+  }
+  else {
+    FREE (at_idx);
+    at_len = 0;
+    at_idx = NULL;
+  }
+
+  A_DECL (act_prs_lang_t, groupprs);
+  A_INIT (groupprs);
+
+
+  bitset_t *at_group = NULL;
+  bitset_t *at_tmp = NULL;
+  if (at_len > 0) {
+    at_group = bitset_new (at_len);
+    at_tmp = bitset_new (at_len);
+  }
   
-  /* XXX: convert pending gates into cells too */
   for (int i=0; i < A_LEN (pendingprs); i++) {
     struct act_prsinfo *pi;
     chash_bucket_t *b;
 
-    newprs = *(pendingprs[i]);
-    newprs.next = NULL;
+    if (at_len > 0 && (grouped[i] == 2)) {
+      /* skip, since it has been grouped already */
+      continue;
+    }
 
-    pi = _gen_prs_attributes (&newprs);
+    A_NEWM (groupprs, act_prs_lang_t);
+    A_NEXT (groupprs) = *(pendingprs[i]);
+    A_NEXT (groupprs).next = NULL;
+    A_INC (groupprs);
+
+    if (at_len == 0 ||
+	(bitset_isclear (at_use[i]) && !pendingprs[i]->u.one.label)) {
+      /* nothing to do! */
+    }
+    else {
+      /* Some @ rule is used, or we are at an @ rule */
+      grouped[i] = 1;
+      bitset_or (at_group, at_use[i]);
+      if (pendingprs[i]->u.one.label) {
+	int k;
+	for (k=0; k < at_len; k++) {
+	  if (at_idx[k] == i) {
+	    bitset_set (at_group, i);
+	    break;
+	  }
+	}
+	Assert (k != at_len, "What?");
+      }
+
+      do {
+	bitset_clear (at_tmp);
+	bitset_or (at_tmp, at_group);
+	for (int j=i+1; j < A_LEN (pendingprs); j++) {
+	  if (!bitset_andclear (at_group, at_use[j])) {
+	    /* there is an AT in common! */
+	    bitset_or (at_group, at_use[j]);
+	    grouped[j] = 1;
+	  }
+	  if (pendingprs[j]->u.one.label) {
+	    for (int k=0; k < at_len; k++) {
+	      if (at_idx[k] == j) {
+		grouped[j] = 1;
+		bitset_set (at_group, j);
+		bitset_or (at_group, at_use[j]);
+		break;
+	      }
+	    }
+	  }
+	}
+      } while (!bitset_equal (at_tmp, at_group));
+
+      // now we have all the @s we need, and they are flagged with the
+      // grouped bit
+      for (int j=i; j < A_LEN (pendingprs); j++) {
+	if (grouped[j] == 1 && !pendingprs[j]->u.one.label) {
+	  for (int k=j+1; k < A_LEN (pendingprs); k++) {
+	    if ((pendingprs[j]->u.one.id == pendingprs[k]->u.one.id) ||
+		pendingprs[j]->u.one.id->isEqual (pendingprs[k]->u.one.id)) {
+	      grouped[k] = 1;
+	      break;
+	    }
+	  }
+	}
+      }
+
+      for (int j=i+1; j < A_LEN (pendingprs); j++) {
+	if (grouped[j] == 1) {
+	  A_NEWM (groupprs, act_prs_lang_t);
+	  A_NEXT (groupprs) = *(pendingprs[j]);
+	  groupprs[A_LEN(groupprs)-1].next = &A_NEXT (groupprs);
+	  A_NEXT (groupprs).next = NULL;
+	  A_INC (groupprs);
+	  grouped[j] = 2;
+	}
+      }
+      bitset_clear (at_group);
+    }
+
+    pi = _gen_prs_attributes (&groupprs[0]);
 
     if (cell_table) {
       b = chash_lookup (cell_table, pi);
@@ -462,6 +675,21 @@ void ActCellPass::flush_pending (Process *p)
       Act::warn_double_expand = oval;
       //printf ("---\n");
     }
+    A_FREE (groupprs);
+    A_INIT (groupprs);
+  }
+  if (at_len > 0) {
+    FREE (at_idx);
+    at_len = 0;
+    at_idx = NULL;
+    bitset_free (at_group);
+    bitset_free (at_tmp);
+    bitset_free (all_at);
+    for (int i=0; i < A_LEN (pendingprs); i++) {
+      bitset_free (at_use[i]);
+    }
+    FREE (at_use);
+    FREE (grouped);
   }
   A_FREE (pendingprs);
   A_INIT (pendingprs);
@@ -781,7 +1009,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules = tmp;
 
       rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = pi->nattr[2*j+1];
+      rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j+1] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
       rules->u.one.eopp = NULL;
@@ -808,7 +1036,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules = tmp;
 
       rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = pi->nattr[2*j];
+      rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
       rules->u.one.eopp = NULL;
@@ -1329,7 +1557,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   FREE (tmp);
 
   current_idmap = imap;
-  
+
   return ret;
 }
 
@@ -1391,7 +1619,7 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
     if (p->up[i]) {
       fprintf (fp, "   ");
 
-      if (p->nattr[2*i+1]) {
+      if ((i < p->nout) && p->nattr[2*i+1]) {
 	act_attr_t *a;
 	fprintf (fp, "[");
 	for (a = p->nattr[2*i+1]; a; a = a->next) {
@@ -1423,7 +1651,7 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
     if (p->dn[i]) {
       fprintf (fp, "   ");
 
-      if (p->nattr[2*i]) {
+      if ((i < p->nout) && p->nattr[2*i]) {
 	act_attr_t *a;
 	fprintf (fp, "[");
 	for (a = p->nattr[2*i]; a; a = a->next) {
@@ -1436,7 +1664,6 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
 	fprintf (fp, "] ");
       }
 
-      
       _dump_expr (fp, p->dn[i], p);
       fprintf (fp, " -> ");
       if (i < p->nout) {
@@ -1623,8 +1850,18 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
     /* we're good, let's do this! */
     newprs = *prs;
     newprs.next = NULL;
+
+    if (_uses_a_label (prs->u.one.e)) {
+      fatal_error ("@-expressions can only be used with -> production rules");
+    }
   }
   else {
+    if (prs->u.one.label) {
+      A_NEW (pendingprs, act_prs_lang_t *);
+      A_NEXT (pendingprs) = prs;
+      A_INC (pendingprs);
+      return;
+    }
     for (i=0; i < A_LEN (pendingprs); i++) {
       if (prs->u.one.id == pendingprs[i]->u.one.id ||
 	  prs->u.one.id->isEqual (pendingprs[i]->u.one.id)) {
@@ -1656,14 +1893,29 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
       pendingprs[i] = tmp;
       return;
     }
+
+    if (_uses_a_label (prs->u.one.e) || _uses_a_label (newprs.u.one.e)) {
+      A_NEW (pendingprs, act_prs_lang_t *);
+      A_NEXT (pendingprs) = prs;
+      A_INC (pendingprs);
+      return;
+    }
+    
     newprs.next = &newprs2;
     newprs2 = *prs;
     newprs2.next = NULL;
     i++;
+
+    /* 
+       We now have a pull-up and pull-down; check if it needs labels!
+    */
+    
     for (; i < A_LEN (pendingprs); i++) {
       pendingprs[i-1] = pendingprs[i];
     }
     A_LEN(pendingprs)--;
+
+    
   }
   pi = _gen_prs_attributes (&newprs);
   if (cell_table) {

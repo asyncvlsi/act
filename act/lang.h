@@ -216,6 +216,8 @@ struct act_spec {
 
 		   0x03 : 0 = no dir, 1 = +, 2 = -
 		   0x04 : 1 = ?, 0 = nothing
+		   0x08 : 1 = +1, 0 = current iteration. Can only be
+ 		          set for ids[1] and ids[2].
 	       */
   struct act_spec *next;
 };
