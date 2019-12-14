@@ -52,6 +52,7 @@ int bitset_isclear (bitset_t *b);
 						     the two is empty */
 bitset_t *bitset_copy (bitset_t *b);
 int bitset_equal (bitset_t *a, bitset_t *b);
+int bitset_subset (bitset_t *a, bitset_t *b); /* is "a" a subset of "b" */
 
 void bitset_expand (bitset_t *b, unsigned int w2);
 unsigned int bitset_size (bitset_t *b);

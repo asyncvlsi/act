@@ -164,6 +164,19 @@ int bitset_equal (bitset_t *l, bitset_t *r)
   return 1;
 }
 
+int bitset_subset (bitset_t *a, bitset_t *b)
+{
+  int i;
+  
+  if (a->sz != b->sz) return 0;
+
+  for (i=0; i < a->sz; i++) {
+    if ((a->x[i] & b->x[i]) != a->x[i])
+      return 0;
+  }
+  return 1;
+}
+
 void bitset_xor (bitset_t *l, bitset_t *r)
 {
   int i;

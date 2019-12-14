@@ -52,6 +52,8 @@ struct act_prsinfo {
   
   int nat;                     /* # of labels */
 
+  int *at_perm; 		/* permutation of ATs */
+
   /* variable attributes */
   int *attr_map;
   A_DECL (struct act_varinfo, attrib);
@@ -468,6 +470,51 @@ static void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
     for (int i=0; i < idx_len; i++) {
       if (strcmp (e->u.l.label,
 		  (char *)pendingprs[idx_array[i]]->u.one.id) == 0) {
+	bitset_set (b, i);
+	return;
+      }
+    }
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    return;
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  return;
+}
+
+static void _mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
+			    act_prs_lang_t **rules, int len)
+{
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    _mark_at_used2 (e->u.e.l, b, rules, len);
+    _mark_at_used2 (e->u.e.r, b, rules, len);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    _mark_at_used2 (e->u.e.l, b, rules, len);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    return;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    for (int i=0; i < len; i++) {
+      if (strcmp (e->u.l.label,(char *)rules[i]->u.one.id) == 0) {
 	bitset_set (b, i);
 	return;
       }
@@ -1083,6 +1130,66 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.dir = 0; /* dn */
     }
   }
+
+  /*--- now reorder rules if necessary ---*/
+  if (pi->nat > 1) {
+    act_prs_lang_t *t;
+    act_prs_lang_t **atrules;
+    bitset_t **atused;
+    int *finished;
+
+    MALLOC (pi->at_perm, int, pi->nat);
+
+    MALLOC (atrules, act_prs_lang_t *, pi->nat);
+    MALLOC (atused, bitset_t *, pi->nat);
+    MALLOC (finished, int, pi->nat);
+    t = rules;
+    for (int i=0; i < pi->nat; i++) {
+      finished[i] = 0;
+      atused[i] = bitset_new (pi->nat);
+      atrules[i] = t;
+      t = t->next;
+    }
+    for (int i=0; i < pi->nat; i++) {
+      _mark_at_used2 (atrules[i]->u.one.e, atused[i], atrules, pi->nat);
+    }
+
+    bitset_t *done = bitset_new (pi->nat);
+    int count = 0;
+    act_prs_lang_t *prev;
+
+    prev = NULL;
+    while (count != pi->nat) {
+      for (int i=0; i < pi->nat; i++) {
+	if (finished[i]) continue;
+	if (bitset_subset (atused[i], done)) {
+	  pi->at_perm[count] = (pi->nat-1-i);
+	  bitset_set (done, i);
+	  finished[i] = 1;
+	  if (count == 0) {
+	    rules = atrules[i];
+	    atrules[i]->next = NULL;
+	    prev = atrules[i];
+	  }
+	  else {
+	    prev->next = atrules[i];
+	    prev = atrules[i];
+	  }
+	  count++;
+	}
+      }
+    }
+    prev->next = t;
+
+    for (int i=0; i < pi->nat; i++) {
+      bitset_free (atused[i]);
+    }
+    FREE (atused);
+    FREE (atrules);
+    FREE (finished);
+  }
+
+  
   prs_body->p = rules;
   proc->AppendBody (new ActBody_Lang  (prs_body));
   proc->MkDefined ();
@@ -1353,6 +1460,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   ret->tval = -1;
   ret->match_perm = NULL;
   ret->nattr = NULL;
+  ret->at_perm = NULL;
 
   A_INIT (ret->attrib);
   A_INIT (ret->up);
@@ -1641,7 +1749,16 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
   }
   fprintf (fp, ")\n{\n   prs {\n");
 
-  for (int i=0; i < A_LEN (p->up); i++) {
+  int idx = p->nout-1;
+  for (int ii=0; ii < A_LEN (p->up); ii++) {
+    int i;
+    idx = (idx + 1) % A_LEN (p->up);
+    if ((idx >= p->nout) && (p->at_perm)) {
+      i = p->nout + p->at_perm[idx-p->nout];
+    }
+    else {
+      i = idx;
+    }
     if (p->up[i]) {
       fprintf (fp, "   ");
 
