@@ -71,8 +71,9 @@ do
 		then
 			echo
 			myecho "** FAILED TEST $i: stderr"
+		else
+			myecho " stderr"
 		fi
-		myecho " stderr"
 		fail=`expr $fail + 1`
 		ok=0
 	fi
@@ -82,8 +83,9 @@ do
 		then
 			echo
 			myecho "** FAILED TEST $i: cellout"
+		else
+			myecho " cellout"
 		fi
-		myecho " stderr"
 		fail=`expr $fail + 1`
 		ok=0
 	fi

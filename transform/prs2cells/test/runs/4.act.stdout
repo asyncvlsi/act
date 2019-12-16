@@ -6,6 +6,7 @@ export defcell _0_0cell_0_0g6x0 (bool? in[1]; bool! out);
 export defcell _0_0cell_0_0g2x0 (bool in[2]; bool out);
 export defcell _0_0cell_0_0g4x0 (bool in[2]; bool out);
 export defcell _0_0cell_0_0g3x0 (bool in[3]; bool out);
+export defcell _0_0cell_0_0t0_34_78_4 (bool? in[3]; bool! out);
 export defcell _0_0cell_0_0g1x0 (bool in[2]; bool out);
 
 export defcell _0_0cell_0_0g0x1 (bool in[2]; bool out)
@@ -88,6 +89,17 @@ in[0]&in[1]&in[2] #> out-
 }
 }
 
+export defcell _0_0cell_0_0t0_34_78_4 (bool? in[3]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+transgate<4,8>(in[0],in[1],in[2],out)
+}
+}
+
 export defcell _0_0cell_0_0g1x0 (bool in[2]; bool out)
 {
 
@@ -112,10 +124,15 @@ defproc foo (bool a; bool b)
 
 /* instances */
 ::cell::g5x0 cx0;
+bool y;
+bool x;
+::cell::t0_34_78_4 cx1;
 
 /* connections */
-b=cx0.out;
-a=cx0.in[0];
+y=cx1.in[2];
+x=cx1.in[1];
+b=cx1.out=cx0.out;
+a=cx1.in[0]=cx0.in[0];
 }
 
 defproc bar (bool p)

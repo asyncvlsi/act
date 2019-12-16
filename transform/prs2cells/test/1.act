@@ -1,0 +1,23 @@
+defproc foo (bool a, b)
+{
+  prs {
+    a => b-
+    passp (a,b,b)
+  }
+}
+
+defproc bar (bool p)
+{
+  bool q;
+  bool w, x, y;
+  prs {
+    x & y & w -> q-
+    ~x & ~y & ~w -> q+
+
+    x <5> -> w-
+   ~x -> w+
+  }
+}
+
+bar b;
+foo f;

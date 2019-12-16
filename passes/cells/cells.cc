@@ -27,6 +27,7 @@
 #include <map>
 #include <utility>
 #include <act/passes/cells.h>
+#include <config.h>
 
 struct act_varinfo {
   int nup, ndn;			// # of times in up and down guards
@@ -102,6 +103,16 @@ static int cell_hashfn (int sz, void *key)
   }
   
   return h;
+}
+
+static Expr *_id_to_expr (ActId *id)
+{
+  Expr *ret;
+  
+  NEW (ret, Expr);
+  ret->type = E_VAR;
+  ret->u.e.l = (Expr *)id;
+  return ret;
 }
 
 static void _propagate_sz (act_prs_expr_t *e, act_size_spec_t **sz)
@@ -1017,6 +1028,119 @@ static int _collect_depths (struct act_prsinfo *info,
   return v;
 }
 
+void ActCellPass::add_passgates ()
+{
+  int i;
+  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1" };
+
+  Assert (cell_ns, "What?");
+
+  if (cell_ns->findType (g[0])) {
+    return;
+  }
+
+  for (i=0; i < 6; i++) {
+    /* add the unexpanded process to the cell namespace, and then
+       expand it! */
+    Process *proc;
+
+    /*-- create a new process in the namespace --*/
+    UserDef *u = new UserDef (cell_ns);
+
+    if (g[i][1] == '0') {
+      InstType *xit;
+      xit = TypeFactory::Factory()->NewPInt();
+      u->AddMetaParam (xit, "w");
+      u->AddMetaParam (xit, "l");
+    }
+    
+    proc = new Process (u);
+    delete u;
+    proc->MkCell ();
+    proc->MkExported ();
+
+    Assert (cell_ns->findName (g[i]) == 0, "Name conflict?");
+    cell_ns->CreateType (g[i], proc);
+
+    /*-- add ports --*/
+    InstType *it = TypeFactory::Factory()->NewBool (Type::IN);
+
+    Expr *arr;
+    if (g[i][0] == 't') {
+      arr = const_expr (3);
+    }
+    else {
+      arr = const_expr (2);
+    }
+    Array *ta;
+    it = new InstType (it);
+    ta = new Array (arr);
+    ta->mkArray ();
+    it->MkArray (ta);
+
+    Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
+
+    it = TypeFactory::Factory()->NewBool (Type::OUT);
+    Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
+
+    /*-- prs body --*/
+    act_prs *prs_body;
+    NEW (prs_body, act_prs);
+    prs_body->vdd = NULL;
+    prs_body->gnd = NULL;
+    prs_body->psc = NULL;
+    prs_body->nsc = NULL;
+    prs_body->next = NULL;
+
+    act_prs_lang_t *rules = NULL;
+
+    NEW (rules, act_prs_lang_t);
+    rules->next = NULL;
+    rules->type = ACT_PRS_GATE;
+
+    rules->u.p.sz = NULL;
+    rules->u.p.g = NULL;
+    rules->u.p._g = NULL;
+    rules->u.p.s = NULL;
+    rules->u.p.d = NULL;
+    rules->u.p.attr = NULL;
+
+    int j = 0;
+
+    if (g[i][0] != 'p') {
+      rules->u.p.g = new ActId ("in", new Array (const_expr (j)));
+      j++;
+    }
+    else {
+      rules->u.p.g = NULL;
+    }
+    if (g[i][0] != 'n') {
+      rules->u.p._g = new ActId ("in", new Array (const_expr (j)));
+      j++;
+    }
+    else {
+      rules->u.p._g = NULL;
+    }
+    rules->u.p.s = new ActId ("in", new Array (const_expr (j)));
+    j++;
+    rules->u.p.d = new ActId ("out");
+
+    if (g[i][1] == '0') {
+      act_size_spec_t *sz;
+      NEW (sz, act_size_spec_t);
+      sz->flavor = 0;
+      sz->folds = NULL;
+      sz->w = _id_to_expr (new ActId ("w"));
+      sz->l = _id_to_expr (new ActId ("l"));
+      rules->u.p.sz = sz;
+    }
+    prs_body->p = rules;
+    proc->AppendBody (new ActBody_Lang  (prs_body));
+    proc->MkDefined ();
+  }
+}
+
+
 
 void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 {
@@ -1909,22 +2033,37 @@ void ActCellPass::dump_celldb (FILE *fp)
     FREE (cells[i]);
   }
   A_FREE (cells);
+
+  fprintf (fp, "export template<pint w,l> defcell p0(bool? in[2]; bool! out) {\n");
+  fprintf (fp, "  prs { passp<w,l> (in[0],in[1],out) }\n}\n\n");
+
+  fprintf (fp, "export template<pint w,l> defcell n0(bool? in[2]; bool! out) {\n");
+  fprintf (fp, "  prs { passn<w,l> (in[0],in[1],out) }\n}\n\n");
+
+  fprintf (fp, "export template<pint w,l> defcell t0(bool? in[3]; bool! out) {\n");
+  fprintf (fp, "  prs { transgate<w,l> (in[0],in[1],in[2],out) }\n}\n\n");
+
+  fprintf (fp, "export defcell p1(bool? in[2]; bool! out) {\n");
+  fprintf (fp, "  prs { passp (in[0],in[1],out) }\n}\n\n");
+
+  fprintf (fp, "export defcell n1(bool? in[2]; bool! out) {\n");
+  fprintf (fp, "  prs { passn (in[0],in[1],out) }\n}\n\n");
+
+  fprintf (fp, "export defcell t1(bool? in[3]; bool! out) {\n");
+  fprintf (fp, "  prs { transgate (in[0],in[1],in[2],out) }\n}\n\n");
+
   fprintf (fp, "\n\n}\n");
 }
 
+
 Expr *ActCellPass::_idexpr (int idx, struct act_prsinfo *pi)
 {
-  Expr *ret;
-
-  NEW (ret, Expr);
-  ret->type = E_VAR;
   if (pi->match_perm) {
-    ret->u.e.l = (Expr *)current_idmap.ids[pi->match_perm[idx]];
+    return _id_to_expr (current_idmap.ids[pi->match_perm[idx]]);
   }
   else {
-    ret->u.e.l = (Expr *)current_idmap.ids[idx];
+    return _id_to_expr (current_idmap.ids[idx]);
   }
-  return ret;
 }
 
 ActBody_Conn *ActCellPass::_build_connections (const char *name,
@@ -1980,6 +2119,53 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   }
   return ac;
 }
+
+ActBody_Conn *ActCellPass::_build_connections (const char *name,
+					       act_prs_lang_t *gate)
+{
+  ActId *instname;
+  
+  /*--- variable order:  outputs at-vars inputs ---*/
+
+  /*-- inputs --*/
+  AExpr *a, *ret;
+  Expr *idexpr;
+
+  if (gate->u.p.g && gate->u.p._g) {
+    ret = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr(gate->u.p.g)), NULL);
+    a = ret;
+    a->SetRight (new AExpr (AExpr::COMMA,
+			    new AExpr (_id_to_expr (gate->u.p._g)), NULL));
+    a = a->GetRight ();
+    a->SetRight (new AExpr (AExpr::COMMA,
+			    new AExpr (_id_to_expr (gate->u.p.s)), NULL));
+  }
+  else if (gate->u.p.g) {
+    ret = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr (gate->u.p.g)), NULL);
+    a = ret;
+    a->SetRight (new AExpr (AExpr::COMMA,
+			    new AExpr (_id_to_expr (gate->u.p.s)), NULL));
+  }
+  else {
+    ret = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr (gate->u.p._g)), NULL);
+    a = ret;
+    a->SetRight (new AExpr (AExpr::COMMA,
+			    new AExpr (_id_to_expr (gate->u.p.s)), NULL));
+  }
+
+  instname = new ActId (name);
+  instname->Append (new ActId ("in"));
+  
+  ActBody_Conn *ac = new ActBody_Conn (instname, ret);
+
+  instname = new ActId (name);
+  instname->Append (new ActId ("out"));
+
+  ac->Append (new ActBody_Conn (instname, new AExpr (_id_to_expr (gate->u.p.d))));
+
+  return ac;
+}
+
 
 void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
 {
@@ -2108,6 +2294,101 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
   }
 }
 
+void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
+{
+  int i;
+  
+  // add this prs to the list, if it is paired then we can find a gate
+  Assert (prs->type == ACT_PRS_GATE, "Hmm.");
+
+  /* XXX: ignoring attributes! */
+
+  char buf[100];
+  do {
+    snprintf (buf, 100, "cx%d", proc_inst_count++);
+  } while (p->CurScope()->Lookup (buf));
+
+  Assert (p->CurScope()->isExpanded(), "Hmm");
+
+  Process *cell;
+  ActNamespace *cellns = ActNamespace::Global()->findNS ("cell");
+  Assert (cellns, "No cell namespace!");
+
+  if (prs->u.p.g && prs->u.p._g) {
+    if (prs->u.p.sz) {
+      cell = dynamic_cast<Process *>(cellns->findType ("t0"));
+    }
+    else {
+      cell = dynamic_cast<Process *>(cellns->findType ("t1"));
+    }
+  }
+  else if (prs->u.p.g) {
+    if (prs->u.p.sz) {
+      cell = dynamic_cast<Process *>(cellns->findType ("n0"));
+    }
+    else {
+      cell = dynamic_cast<Process *>(cellns->findType ("n1"));
+    }
+  }
+  else {
+    if (prs->u.p.sz) {
+      cell = dynamic_cast<Process *>(cellns->findType ("p0"));
+    }
+    else {
+      cell = dynamic_cast<Process *>(cellns->findType ("p1"));
+    }
+  }
+
+  Assert (cell, "No transmission gates?");
+    
+  InstType *it = new InstType (p->CurScope(), cell, 0);
+  int w, l;
+  if (prs->u.p.sz) {
+    if (prs->u.p.sz->w) {
+      w = prs->u.p.sz->w->u.v;
+    }
+    else {
+      w = config_get_int ("net.std_p_width");
+    }
+    if (prs->u.p.sz->l) {
+      l = prs->u.p.sz->l->u.v;
+    }
+    else {
+      l = config_get_int ("net.std_p_length");
+    }
+    it->setNumParams (2);
+    it->setParam (0, new AExpr (const_expr (w)));
+    it->setParam (1, new AExpr (const_expr (l)));
+  }
+  else {
+    /* nothing to do */
+  }
+  it = it->Expand (NULL, p->CurScope());
+
+  Assert (it->isExpanded(), "Hmm");
+  
+  Assert (p->CurScope()->Add (buf, it), "What?");
+    /*--- now make connections --*/
+    
+  ActBody_Conn *ac;
+
+    //printf (" --- [%s] \n", p->getName());
+  ac = _build_connections (buf, prs);
+    //ac->Print (stdout);
+    //ac->Next()->Print (stdout);
+    //printf (" --- \n");
+
+
+  int oval = Act::warn_double_expand;
+  Act::warn_double_expand = 0;
+  ac->Expandlist (NULL, p->CurScope ());
+  Act::warn_double_expand = oval;
+}
+
+
+
+
+
 
 static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
 {
@@ -2136,8 +2417,13 @@ void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
       _collect_one_prs (p, prs);
       break;
     case ACT_PRS_GATE:
-      /* preserve pass transistors */
-#if 1      
+#if 1
+      if (prev) {
+	prev->next = prs->next;
+      }
+      _collect_one_passgate (p, prs);
+#else
+      /* preserve pass gates */
       if (!prev) {
 	*pprs = prs;
       }
@@ -2567,6 +2853,7 @@ int ActCellPass::init ()
   else {
     cell_count =  _collect_cells (cell_ns) + 1;
   }    
+  add_passgates ();
   
   _finished = 1;
   return 1;

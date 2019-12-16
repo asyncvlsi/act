@@ -65,12 +65,17 @@ private:
 
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
+  void add_passgates ();
   struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs);
   void dump_celldb (FILE *);
   Expr *_idexpr (int idx, struct act_prsinfo *pi);
   ActBody_Conn *_build_connections (const char *name,
 				    struct act_prsinfo *pi);
+  ActBody_Conn *_build_connections (const char *name,
+				    act_prs_lang_t *gate);
+  
   void _collect_one_prs (Process *p, act_prs_lang_t *prs);
+  void _collect_one_passgate (Process *p, act_prs_lang_t *prs);
   void collect_gates (Process *p, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);

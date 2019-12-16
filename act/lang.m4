@@ -883,6 +883,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->u.p.s = $6;
     p->u.p.d = $8;
     p->u.p._g = NULL;
+    p->u.p.attr = NULL;
 
     return p;
 }}
@@ -898,6 +899,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->u.p.s = $6;
     p->u.p.d = $8;
     p->u.p.g = NULL;
+    p->u.p.attr = NULL;
 
     return p;
 }}
@@ -914,6 +916,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->u.p._g = $6;
     p->u.p.s = $8;
     p->u.p.d = $10;
+    p->u.p.attr = NULL;
 
     return p;
 }}

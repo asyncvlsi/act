@@ -1,0 +1,24 @@
+defproc foo (bool a, b)
+{
+  bool x, y;
+  prs {
+    a => b-
+    transgate<4,8> (a,x,y,b)
+  }
+}
+
+defproc bar (bool p)
+{
+  bool q;
+  bool w, x, y;
+  prs {
+    x & y & w -> q-
+    ~x & ~y & ~w -> q+
+
+    x <5> -> w-
+   ~x -> w+
+  }
+}
+
+bar b;
+foo f;
