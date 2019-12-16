@@ -239,6 +239,8 @@ class Technology {
 
   int nmetals;			/* # of metal layers */
 
+  int dummy_poly;		/* # of dummy poly */
+
   unsigned int stk_contacts:1;	/* stacked contacts? */
 
   /* indexed by EDGE_PFET, EDGE_NFET */

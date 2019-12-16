@@ -126,6 +126,17 @@ void Technology::Init (const char *s)
     fatal_error ("Need at least one metal layer!");
   }
 
+  tech_strname (prefix, "general.dummy_poly");
+  if (config_exists (buf)) {
+    T->dummy_poly = config_get_int (buf);
+    if (T->dummy_poly < 0) {
+      fatal_error ("Can't have negative dummy poly");
+    }
+  }
+  else {
+    T->dummy_poly = 0;
+  }
+
   tech_strname (prefix, "diff.types");
   sz = config_get_table_size (buf);
   if (sz < 1) {
