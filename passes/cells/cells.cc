@@ -2611,10 +2611,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
        3. only prs for out[m]'s are present
 
        4. cell names are g<#> (for "gate")
-       5. pass gate cells are
-             p0_<flavor> <w,l> pass gate n
-	     p1_<flavor> <w,l> pass gate p
-	     p2_<flavor> <w,l> transgate
+       5. pass gate cells are t0,t1,n0,n1,p0,p1
     */
     if (p->getName()[0] == 'g') {
       /* ok, gate! */

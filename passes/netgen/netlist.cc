@@ -1714,14 +1714,14 @@ static void _set_current_supplies (netlist_t *N, act_prs *p)
   N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
   N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
   N->sz[EDGE_NFET].nf = 1;
-  N->sz[EDGE_PFET].nf = 1;
+  N->sz[EDGE_NFET].flavor = 0;
 
   N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
   N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
   N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
   N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
-  N->sz[EDGE_NFET].nf = 1;
   N->sz[EDGE_PFET].nf = 1;
+  N->sz[EDGE_PFET].flavor = 0;
 
   /* set the current Vdd/GND/psc/nsc */
   if (cvdd) {
