@@ -1,0 +1,409 @@
+export deftype globals <: int<6> (bool Vdd, GND, vpsub, vnsub, Reset, _Reset, pReset, sReset, _pReset, _sReset)
+{
+	sReset = Reset;
+	_sReset = _Reset;
+
+	//set { }
+	//get { }
+}
+
+preal PN = 2.0;
+
+// Transistor minimal sizing
+pint NM = 6;
+pint PM = 6;
+
+pbool PRSIM=true;
+
+export deftype pair <: int (bool d[2])
+{
+	//set { }
+	//get { }
+}
+
+
+export template <pint sz>
+defproc add_full_ripple_inv(globals g; bool A, B, Ci, _S, _Co)
+{
+	preal n1 = 1.0*sz;
+	preal n2 = 2.0*sz;
+	preal n3 = 3.0*sz;
+	preal p1 = 1.0*PN*sz;
+	preal p2 = 2.0*PN*sz;
+	preal p3 = 3.0*PN*sz;
+
+	prs <g.Vdd, g.GND>
+	{
+		[after=0; unstab=1] A<n2> & B | (B<n2> | A<n2>) & Ci<n2> -> _Co-
+		[after=0; unstab=1] ~A<p2> & ~B | (~B<p2> | ~A<p2>) & ~Ci<p2> -> _Co+
+		[after=0; unstab=1] A<n3> & B & Ci | (A<n2> | B<n2> | Ci<n2>) & _Co<n2> -> _S-
+		[after=0; unstab=1] ~A<p3> & ~B & ~Ci | (~A<p2> | ~B<p2> | ~Ci<p2>) & ~_Co<p2> -> _S+
+	}
+}
+
+export template <pint sz>
+defproc add_half_ripple_pn(globals g; bool A, B, _S, _Co)
+{
+	preal n1 = 1.0*sz;
+	preal n2 = 2.0*sz;
+	preal p1 = 1.0*PN*sz;
+	preal p2 = 2.0*PN*sz;
+
+	prs <g.Vdd, g.GND>
+	{
+		[after=0; unstab=1] (A<n2> | B<n2>) & _Co<n2> -> _S-
+		[after=0; unstab=1] ~A<p2> & ~B | ~_Co<p1> -> _S+
+		[after=0; unstab=1] ~A<p1> | ~B<p1> -> _Co+
+		[after=0; unstab=1]  A<n2> &  B -> _Co-
+	}
+}
+
+export template <pint sz>
+defproc add_half_ripple_np(globals g; bool _A, _B, S, Co)
+{
+	preal n1 = 1.0*sz;
+	preal n2 = 2.0*sz;
+	preal p1 = 1.0*PN*sz;
+	preal p2 = 2.0*PN*sz;
+
+	prs <g.Vdd, g.GND>
+	{
+		[after=0; unstab=1] (~_A<p2> | ~_B<p2>) & ~Co<p2> -> S+
+		[after=0; unstab=1] _A<n2> & _B | Co<n1> -> S-
+		[after=0; unstab=1] _A<n1> | _B<n1> -> Co-
+		[after=0; unstab=1]  ~_A<p2> &  ~_B -> Co+
+	}
+}
+
+
+export template <pint Np, W; pint Dp[W], Pis[Np]; pint sz; pint Ns, Ds[W], Ss[W*2+1]>
+defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
+{
+	//[ Np = 0 -> 0 = 1; ]
+	//[ W = 0 -> 0 = 1; ]
+
+	// Determine the maximum depth of the partials. The first column with more
+	// than one partial product doesn't need to be compressed below 3 because
+	// there is no carry in and a full adder has 3 inputs. Dstart identifies this
+	// case.
+	pint Dmax_[W+1], Dmax, Dstart;
+	Dmax_[0] = 0;
+	(;i:W:
+		[  Dp[i] >  Dmax_[i] -> Dmax_[i+1] = Dp[i];
+		[] Dp[i] <= Dmax_[i] -> Dmax_[i+1] = Dmax_[i];
+		]
+
+		[ Dmax_[i] <= 1 -> [ Dmax_[i+1] > 1 -> Dstart = i; ]]
+	)
+	[ Dmax_[0] > 1 -> Dstart = 0; ]
+
+	Dmax = Dmax_[W];
+
+	// Supports Dmax < 316. This just an optimization. Really what we'd like is
+	// Jcnt = log1.5(Dmax)
+	pint Jlim = 13;
+	pint Jcnt;
+	[  Dmax <= Jlim -> Jcnt = Dmax;
+	[] Dmax > Jlim -> Jcnt = Jlim;
+	]
+
+	// Calculate J for all iterations. J represents the maximum number of partial
+	// products that should be in a column after each iteration and follows the
+	// pattern 2 3 4 6 9 13 19 ...
+	// Supposing we start with 9 < Dmax <= 13, then each iteration we'll place
+	// just enough adders to cut the partial products down by one step. So the
+	// first iteration will cut it down to 9, the second to 6, and so on.
+	pint J[Jcnt];
+	pint Jsz, Jidx;
+	J[0] = 2;
+	(;i:(Jcnt-1):
+		J[i+1] = (3*J[i])/2;
+		[ J[i+1] >= Dmax -> [ J[i] < Dmax -> Jsz = i+1; Jidx = i; ] ]
+	)
+	[ Dmax <= 2 -> Jsz = 0; Jidx = -1; ]
+
+	// Calculate the resulting depths (Dx) in all iterations and adders (A1, A2, A3)
+	// required to implement dadda algorithm. The carries (A2, A3) from the previous
+	// column are carried to the next.
+	pint Dx[Jsz+1][W];
+	pint Col_Dx[Jsz+1][W+1], Total_Dx;
+	[ Jsz > 0 ->
+		pint Diff[Jsz][W+1];
+		pint A1[Jsz][W+1]; // number of wire connections in each (iteration, column)
+		pint A2[Jsz][W+1]; // number of half adders in each (iteration, column)
+		pint A3[Jsz][W+1]; // number of full adders in each (iteration, column)
+		pint Col_A2[Jsz][W+1];
+		pint Col_A3[Jsz][W+1];
+	]
+	pint Total_A2, Total_A3;
+
+	//Dx[0] = D;
+	Col_Dx[0][0] = 0;
+	(;j:W:
+		Dx[0][j] = Dp[j];
+		Col_Dx[0][j+1] = Col_Dx[0][j] + Dx[0][j];
+	)
+
+	[ Jsz > 0 ->
+		(;i:Jsz:
+			Col_Dx[i+1][0] = Col_Dx[i][W];
+			[ i = 0 ->
+				Col_A2[i][0] = 0;
+				Col_A3[i][0] = 0;
+			[] i > 0 ->
+				Col_A2[i][0] = Col_A2[i-1][W];
+				Col_A3[i][0] = Col_A3[i-1][W];
+			]
+
+			Diff[i][0] = 0;
+			A1[i][0] = 0;
+			A2[i][0] = 0;
+			A3[i][0] = 0;
+
+			(;j:W:
+				// We're already less than the next step, just pass these partial
+				// sums onto the next.
+				[ (Dx[i][j] + A2[i][j] + A3[i][j]) <= J[Jidx-i] ->
+					Diff[i][j+1] = 0;
+				// This column has more partial sums than the next step allows, cut
+				// it down by the difference. Full adders reduce this difference by 2
+				// each and half adders by 1 each. Both full adders and half adders add
+				// one partial sum to the next more significant column.
+				[] (Dx[i][j] + A2[i][j] + A3[i][j]) > J[Jidx-i] ->
+					// Make sure we don't compress the Dstart case past 3.
+					[ j = Dstart ->
+						[  (Dx[i][j] + A2[i][j] + A3[i][j]) <= 3 -> 
+							Diff[i][j+1] = 0;
+						[] (Dx[i][j] + A2[i][j] + A3[i][j]) >  3 ->
+							Diff[i][j+1] = Dx[i][j] + A2[i][j] + A3[i][j] - J[Jidx-i];
+						]
+					[] j != Dstart ->
+						Diff[i][j+1] = Dx[i][j] + A2[i][j] + A3[i][j] - J[Jidx-i];
+					]
+				]
+			
+				[  Dx[i][j] >= (((Diff[i][j+1] + 1)/2)*3) ->
+					/*********************************************************
+					 * This is the only difference from the dadda multiplier *
+					 *********************************************************/
+					
+					// This multiplier seeks to reduce the total number of partial products
+					// by only using half adders when absolutely necessary. Any time the
+					// Dadda algorithm would use a half adder, we just go ahead and use a
+					// full adder as long as there are enough available partial products to
+					// add. When adding two bits in a half adder, we need two bits to
+					// represent the output (00, 01, 10). However, the half adder doesn't
+					// fully utilize that second bit. The full adder does by adding a forth
+					// possible output value (11). This reduces the total number of partial
+					// products overall.
+					A3[i][j+1] = (Diff[i][j+1] + 1)/2;
+					A2[i][j+1] = 0;
+				[] Dx[i][j] <  (((Diff[i][j+1] + 1)/2)*3) ->
+					// Revert back to the normal Dadda algorithm if we don't have enough
+					// partial products to add.
+					A3[i][j+1] = Diff[i][j+1]/2;
+					A2[i][j+1] = Diff[i][j+1]%2;
+				]
+
+				Dx[i+1][j] = Dx[i][j] + A2[i][j] + A3[i][j] - A3[i][j+1]*2 - A2[i][j+1];
+				A1[i][j+1] = Dx[i][j] - A3[i][j+1]*3 - A2[i][j+1]*2;
+				
+				// Count up the total number of partial products and each type of adder
+				// so we can instantiate them later.
+				Col_Dx[i+1][j+1] = Col_Dx[i+1][j] + Dx[i+1][j];
+				Col_A2[i][j+1] = Col_A2[i][j] + A2[i][j+1];
+				Col_A3[i][j+1] = Col_A3[i][j] + A3[i][j+1];
+			)
+		)
+
+		Total_A2 = Col_A2[Jsz-1][W];
+		Total_A3 = Col_A3[Jsz-1][W];
+	[] Jsz = 0 ->
+		Total_A2 = 0;
+		Total_A3 = 0;
+	]
+
+	Total_Dx = Col_Dx[Jsz][W];
+	Ns = Col_Dx[Jsz][W] - Col_Dx[Jsz][0];
+	Ds = Dx[Jsz][0..W-1];
+	// Now we have to calculate the sense of each partial product and figure out
+	// where to place inverters	
+	[ Total_Dx > 0 ->
+		pint Ps[Total_Dx]; // the sense for each partial product
+		Ps[0..Np-1] = Pis;
+	]
+	[ Total_A2 > 0 ->	pint A2_pn[Total_A2];]
+	[ Total_A3 > 0 -> pint A3_pn[Total_A3];]
+	pint Sum_A2_pn[Total_A2+1], Sum_A2_np[Total_A2+1];
+	pint Sum_A3_pn[Total_A3+1], Sum_A3_np[Total_A3+1];
+	pint Total_A2_pn, Total_A2_np;
+	pint Total_A3_pn, Total_A3_np;
+
+	Sum_A2_pn[0] = 0;
+	Sum_A3_pn[0] = 0;
+	Sum_A2_np[0] = 0;
+	Sum_A3_np[0] = 0;
+
+	[ Jsz > 0 ->
+		(;i:Jsz:
+			(;j:W:
+				// Determine full adders if any
+				[ A3[i][j+1] > 0 ->
+					(;k:A3[i][j+1]:
+						[ (Ps[Col_Dx[i  ][j] + k*3 + 0] + Ps[Col_Dx[i  ][j] + k*3 + 1] + Ps[Col_Dx[i  ][j] + k*3 + 2]) >= 0 ->
+							A3_pn[Col_A3[i][j] + k] = 1; // pn
+							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k] = -1; // S
+							Ps[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k] = -1; // Co
+						[] (Ps[Col_Dx[i  ][j] + k*3 + 0] + Ps[Col_Dx[i  ][j] + k*3 + 1] + Ps[Col_Dx[i  ][j] + k*3 + 2]) < 0 ->
+							A3_pn[Col_A3[i][j] + k] = 0; // np
+							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k] = 1; // S
+              Ps[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k] = 1; // Co
+						]
+						Sum_A3_pn[Col_A3[i][j] + k + 1] = Sum_A3_pn[Col_A3[i][j] + k] + A3_pn[Col_A3[i][j] + k];
+						Sum_A3_np[Col_A3[i][j] + k + 1] = Sum_A3_np[Col_A3[i][j] + k] + 1 - A3_pn[Col_A3[i][j] + k];
+					)
+				]
+
+				// Determine half adders if any
+				[ A2[i][j+1] > 0 ->
+					(;k:A2[i][j+1]:
+						// We prefer add_half_ripple_pn over add_half_ripple_np. Its
+						// smaller and more efficient.
+						[ (Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0] + Ps[Col_Dx[i][j] + A3[i][j+1]*3 + k*2 + 1]) >= 0 ->
+							A2_pn[Col_A2[i][j] + k] = 1; // pn
+							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k] = -1; // S
+							Ps[Col_Dx[i+1][j+1] + A1[i][j+2] + k] = -1; // Co
+						[] (Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0] + Ps[Col_Dx[i][j] + A3[i][j+1]*3 + k*2 + 1]) < 0 ->
+							A2_pn[Col_A2[i][j] + k] = 0; // np
+							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k] = 1; // S
+							Ps[Col_Dx[i+1][j+1] + A1[i][j+2] + k] = 1; // Co
+						]
+						Sum_A2_pn[Col_A2[i][j] + k + 1] = Sum_A2_pn[Col_A2[i][j] + k] + A2_pn[Col_A2[i][j] + k];
+						Sum_A2_np[Col_A2[i][j] + k + 1] = Sum_A2_np[Col_A2[i][j] + k] + 1 - A2_pn[Col_A2[i][j] + k];
+					)
+				]
+
+				// Hook up wire connections if any
+				[ A1[i][j+1] > 0 ->
+					(;k:A1[i][j+1]:
+						Ps[Col_Dx[i+1][j] + k] = Ps[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
+					)
+				]
+			)
+		)
+	]
+	Total_A2_pn = Sum_A2_pn[Total_A2];
+	Total_A3_pn = Sum_A3_pn[Total_A3];
+	Total_A2_np = Sum_A2_np[Total_A2];
+	Total_A3_np = Sum_A3_np[Total_A3];
+
+	Ss[0..(Ns-1)] = Ps[Col_Dx[Jsz][0]..Col_Dx[Jsz][W]-1];
+
+	// Now that we've done all of the necessary calculations, we need to place
+	// down the actual circuitry.
+	[ Total_Dx > 0 -> 
+		pair P[Total_Dx]; // the connections for each partial product
+		P[0..Np-1] = Pi;
+	]
+	[ Total_A2_pn > 0 -> add_half_ripple_pn<sz> add2_pn[Total_A2_pn]; ]
+	[ Total_A2_np > 0 -> add_half_ripple_np<sz> add2_np[Total_A2_np]; ]
+	[ Total_A3_pn > 0 -> add_full_ripple_inv<sz> add3_pn[Total_A3_pn]; ]
+	[ Total_A3_np > 0 -> add_full_ripple_inv<sz> add3_np[Total_A3_np]; ]
+
+	[ Jsz > 0 ->
+		(;i:Jsz:
+			(;j:W:
+				// For the inputs of a column, order should be add3, add2, add1. For
+				// the outputs, order should be add1, add2, add3. This will minimize
+				// the total gate depth of the dadda multiplier by spreading the gates
+				// as evenly as possible across the partial sums.
+
+				// Place down full adders if any
+				[ A3[i][j+1] > 0 ->
+					(;k:A3[i][j+1]:
+						[ A3_pn[Col_A3[i][j] + k] = 1 ->
+							add3_pn[Sum_A3_pn[Col_A3[i][j] + k]](g,
+								P[Col_Dx[i  ][j] + k*3 + 0].d[1],
+								P[Col_Dx[i  ][j] + k*3 + 1].d[1],
+								P[Col_Dx[i  ][j] + k*3 + 2].d[1], 
+								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[0] /* S */,
+								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[0] /* Co */);
+							// Check the sense of each input signal, inverting if necessary
+							(;l:3:
+								[ Ps[Col_Dx[i  ][j] + k*3 + l] < 0 -> 
+									prs <g.Vdd, g.GND> {
+										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[1]-
+										[after=0; unstab=1] ~P[Col_Dx[i  ][j] + k*3 + l].d[0]<PN*sz> -> P[Col_Dx[i  ][j] + k*3 + l].d[1]+
+									}
+								]
+							)
+						[] A3_pn[Col_A3[i][j] + k] = 0 ->
+							add3_np[Sum_A3_np[Col_A3[i][j] + k]](g,
+ 								P[Col_Dx[i  ][j] + k*3 + 0].d[0],
+								P[Col_Dx[i  ][j] + k*3 + 1].d[0],
+								P[Col_Dx[i  ][j] + k*3 + 2].d[0], 
+								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[1] /* S */,
+								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[1] /* Co */);
+							// Check the sense of each input signal, inverting if necessary
+							(;l:3:
+								[ Ps[Col_Dx[i  ][j] + k*3 + l] > 0 -> 
+									prs <g.Vdd, g.GND> {
+										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[0]-
+										[after=0; unstab=1] ~P[Col_Dx[i  ][j] + k*3 + l].d[1]<PN*sz> -> P[Col_Dx[i  ][j] + k*3 + l].d[0]+
+									}
+								]
+							)
+						]
+					)
+				]
+
+				// Place down half adders if any
+				[ A2[i][j+1] > 0 ->
+					(;k:A2[i][j+1]:
+						[ A2_pn[Col_A2[i][j] + k] = 1 ->
+							add2_pn[Sum_A2_pn[Col_A2[i][j] + k]](g,
+								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0].d[1],
+								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 1].d[1],
+								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[0] /* S */,
+								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[0] /* Co */);
+							// Check the sense of each input signal, inverting if necessary
+							(;l:2:
+								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] < 0 ->
+									prs <g.Vdd, g.GND> {
+										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]-
+										[after=0; unstab=1] ~P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]<PN*sz> -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]+
+									}
+								]
+							)
+						[] A2_pn[Col_A2[i][j] + k] = 0 ->
+							add2_np[Sum_A2_np[Col_A2[i][j] + k]](g,
+								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0].d[0],
+								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 1].d[0],
+								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[1] /* S */,
+								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[1] /* Co */);
+							// Check the sense of each input signal, inverting if necessary
+							(;l:2:
+								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] > 0 ->
+									prs <g.Vdd, g.GND> {
+										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]-
+										[after=0; unstab=1] ~P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]<PN*sz> -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]+
+									}
+								]
+							)
+						]
+					)
+				]
+
+				// Hook up wire connections if any
+				[ A1[i][j+1] > 0 ->
+					(;k:A1[i][j+1]:
+						P[Col_Dx[i+1][j] + k] = P[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
+					)
+				]
+			)
+		)
+	]
+	S[0..(Ns-1)] = P[Col_Dx[Jsz][0]..Col_Dx[Jsz][W]-1];
+}
+
+add_bingham_fwd_raw<64,16,{1,2,3,4,5,6,7,8,7,6,5,4,3,2,1,0},{-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1},6> tmp;
