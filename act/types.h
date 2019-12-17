@@ -311,6 +311,8 @@ class UserDef : public Type {
   act_prs *getprs ();
   act_spec *getspec ();
 
+  int isLeaf(); /**< if there are no sub-circuits, return 1 */
+
  protected:
   InstType *parent;		/**< implementation relationship, if any */
   
@@ -350,7 +352,7 @@ class Process : public UserDef {
   Process (UserDef *u);		/**< Construct a process from a userdef */
   ~Process ();
   void MkCell () { is_cell = 1; } /**< Mark this as a cell */
-  int isCell() { return is_cell; } 
+  int isCell() { return is_cell; }
 
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 

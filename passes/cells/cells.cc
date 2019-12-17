@@ -2485,7 +2485,7 @@ void ActCellPass::prs_to_cells (Process *p)
   }
   visited_procs->insert (p);
 
-  if (p->isCell()) {
+  if (p->isCell() && p->isLeaf()) {
     /* nothing to do here */
     return;
   }

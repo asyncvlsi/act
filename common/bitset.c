@@ -61,6 +61,11 @@ bitset_t *bitset_new (unsigned int w)
 void bitset_expand (bitset_t *b, unsigned int w)
 {
   int o;
+
+  if ((w+31)/32 < b->sz) {
+    /* nothing to do */
+    return;
+  }
   Assert ((w+31)/32 >= b->sz, "Shrinking instead of expanding?");
   if ((w+31)/32 == b->sz) return;
   o = b->sz;

@@ -28,6 +28,7 @@
 #include <act/lang.h>
 #include <act/body.h>
 #include <act/value.h>
+#include <act/iter.h>
 #include <string.h>
 #include "misc.h"
 #include "hash.h"
@@ -2122,3 +2123,16 @@ int Chan::isEqual (Type *t)
 }
 
 
+
+int UserDef::isLeaf ()
+{
+  ActInstiter i(I);
+
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = (*i);
+    if (TypeFactory::isProcessType (vx->t)) {
+      return 0;
+    }
+  }
+  return 1;
+}
