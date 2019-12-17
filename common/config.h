@@ -39,6 +39,9 @@ void config_append_path (const char *s);
 */
 void config_std_path (const char *tool);
 
+/* What file name is actually being read? */
+char *config_file_name (const char *name);
+
 /*
   Add standard tech-specific config path
     . <- highest

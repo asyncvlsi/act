@@ -942,3 +942,30 @@ void config_dump (FILE *fp)
     }
   }
 }
+
+
+char *config_file_name (const char *name)
+{
+  FILE *fp;
+  struct search_path *p;
+  char buf[10240];
+  
+  fp = NULL;
+  if (*name == '/') {
+    /* absolute path name */
+    return Strdup (name);
+  }
+  else {
+    p = Path;
+    while ((fp == NULL) && (p != NULL)) {
+      sprintf (buf, "%s/%s", p->path, name);
+      fp = fopen (buf, "r");
+      if (fp) {
+	fclose (fp);
+	return Strdup (buf);
+      }
+      p = p->next;
+    }
+  }
+  return NULL;
+}

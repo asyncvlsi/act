@@ -80,6 +80,13 @@ class Act {
    */
   static int emit_depend;
 
+  /**
+   * Config debugging
+   */
+  static int config_verbose;
+
+  static void config_info (const char *s);
+
 
   /**
    * Create an act data structure for the specified input file

@@ -160,6 +160,7 @@ int main (int argc, char **argv)
   
   a = new Act (argv[1]);
   a->Expand ();
+  Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
 
   /* generate netlist */

@@ -99,6 +99,7 @@ void Technology::Init (const char *s)
     config_push_prefix (prefix);
   }
 
+  Act::config_info (s);
   config_read (s);
   if (prefix) {
     config_pop_prefix ();

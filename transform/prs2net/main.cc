@@ -159,11 +159,14 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   if (conf_file) {
     /* read config file */
     if (has_trailing_extension (conf_file, "conf")) {
+
+      Act::config_info (conf_file);
       config_read (conf_file);
     }
     else {
       char buf[10240];
       sprintf (buf, "%s.conf", conf_file);
+      Act::config_info (buf);
       config_read (buf);
     }
   }
@@ -204,6 +207,7 @@ int main (int argc, char **argv)
   
   a = new Act (argv[1]);
   a->Expand ();
+  Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
   if (config_exists ("net.mangle_chars")) {
     a->mangle (config_get_string ("net.mangle_chars"));
