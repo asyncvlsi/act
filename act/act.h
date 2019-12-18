@@ -36,6 +36,7 @@
  */
 
 class ActPass;
+class Log;
 
 /**
  *   The main Act class used to read in an ACT file and create basic
@@ -83,8 +84,6 @@ class Act {
   /**
    * Config debugging
    */
-  static int config_verbose;
-
   static void config_info (const char *s);
 
 
@@ -226,6 +225,8 @@ private:
   int mangle_langle_idx;  /* index of '<' */
   int mangle_min_idx;     /* index of the min of , . { } */
   int mangle_mode;
+
+  static Log *L;
 
   struct Hashtable *passes;	// any ActPass-es
 };

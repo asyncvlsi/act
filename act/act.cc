@@ -26,12 +26,14 @@
 #include <act/act.h>
 #include "act_parse.h"
 #include "act_walk_X.h"
-#include "config.h"
+#include <config.h>
 #include "array.h"
 
 #ifdef DEBUG_PERFORMANCE
 #include "mytime.h"
 #endif
+
+#include <log.h>
 
 struct command_line_defs {
   char *varname;
@@ -43,7 +45,7 @@ int Act::max_loop_iterations;
 int Act::warn_emptyselect;
 int Act::emit_depend;
 int Act::warn_double_expand;
-int Act::config_verbose;
+Log *Act::L;
 
 L_A_DECL (struct command_line_defs, vars);
 
@@ -80,6 +82,8 @@ void Act::Init (int *iargc, char ***iargv)
 
   if (initialize) return;
   initialize = 1;
+
+  Act::L = new Log("actcore", 'A');
   ActNamespace::Init();
   Type::Init();
 
@@ -93,7 +97,9 @@ void Act::Init (int *iargc, char ***iargv)
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
   Act::emit_depend = 0;
   Act::warn_double_expand = 1;
-  Act::config_verbose = 0;
+
+  Log::OpenStderr ();
+  Log::Initialize_LogLevel ("");
 
   A_INIT (vars);
 
@@ -158,8 +164,26 @@ void Act::Init (int *iargc, char ***iargv)
       }
       FREE (s);
     }
-    else if (strcmp (argv[i], "-Vconfig") == 0) {
-      Act::config_verbose = 1;
+    else if (strncmp (argv[i], "-V", 2) == 0) {
+      char *s, *tmp;
+      s = Strdup (argv[i]+2);
+      tmp = strtok (s, ",");
+      while (tmp) {
+	if (strcmp (tmp, "config") == 0) {
+	  Log::UpdateLogLevel("A");
+	}
+	else {
+	  fatal_error ("-V option `%s' is unknown", tmp);
+	}
+	tmp = strtok (NULL, ",");
+      }
+      FREE (s);
+    }
+    else if (strncmp (argv[i], "-L", 2) == 0) {
+      char *s;
+      s = Strdup (argv[i]+2);
+      Log::OpenLog (s);
+      FREE (s);
     }
     else {
       break;
@@ -190,6 +214,7 @@ Act::Act (const char *s)
   MALLOC (argv, char *, 2);
   argv[0] = Strdup ("-internal-");
   argv[1] = NULL;
+
   Act::Init (&argc, &argv);
   FREE (argv[0]);
   FREE (argv);
@@ -580,11 +605,9 @@ const char *Act::pass_name (const char *name)
 
 void Act::config_info (const char *name)
 {
-  if (Act::config_verbose) {
-    char *s = config_file_name (name);
-    if (s) {
-      printf (" >> config read: %s\n", s);
-      FREE (s);
-    }
+  char *s = config_file_name (name);
+  if (s) {
+    (*L) << "Read configuration file: " << s << "\n";
+    FREE (s);
   }
 }

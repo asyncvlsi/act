@@ -48,13 +48,15 @@ extern LogDecInt LogDEC;
 
 class Log {
  public:
+  Log(const char *s, char level = '*', int num = 1);
   Log(Sim *s, char level = '*', int num = 1); 
   // Use "level" to filter log messages by type. The level is
   // checked against variable LogLevel in the configuration file.
 				
   static void OpenLog (const char *name); // Call once in main() to open "name"
 				    // as the log file name.
-
+  static void OpenStderr ();		// make stderr the log output
+    
   static void CloseLog (void);	// Call once in the cleanup() routine
 				// to close the file
 
@@ -83,7 +85,10 @@ class Log {
 				// Sets the log_level vector to the right
 				// thing to handle appropriate filtering of 
 				// log messages. Should be called by the
-				// routine reading the configuration file.
+				// routine reading the configuration
+				// file.
+  static void UpdateLogLevel (const char *s);
+      // additional logging; only call after Initialize
 
   static FILE *fp;
 
@@ -107,7 +112,12 @@ class Log {
 
   int hex_int;
 
-  Sim *proc;
+  int ltype;			// 1 for sim, 0 for string
+
+  union {
+    Sim *proc;
+    const char *name;
+  } u;
   
   void Prefix (void);
 

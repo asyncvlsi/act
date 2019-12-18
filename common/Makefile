@@ -21,6 +21,7 @@
 
 LIB1=libvlsilib_$(EXT).a
 #LIB2=libALINT_$(EXT).so
+#LIB3=libsim_$(EXT).a -- removed
 LIB4=libasim_$(EXT).a
 
 TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
@@ -33,23 +34,25 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	log.h ext.h simthread.h simdes.h
 
 # general library support
-OBJS1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
+OBJSC1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
 	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o \
+
+OBJSCC1=log.o sim.o
+
+OBJS1=$(OBJSC1) $(OBJSCC1)
 
 # shared libs hsim integration
 #OBJS2=hash2.os atrace2.os ns.os misc.os
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
-OBJS4CPP2=alog.o amem.o asim.o simthread.o simdes.o
+OBJS4CPP2=amem.o simthread.o simdes.o
 OBJS4C=thread.o mutex.o count.o channel.o
 OBJS4C2=contexts_f.o 
 
-OBJS3=$(OBJS3C) $(OBJS3C2) $(OBJS3CPP) $(OBJS3CPP2)
-
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
 
-SRCS=$(OBJS1:.o=.c) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
+SRCS=$(OBJSC1:.o=.c) $(OBJSCC1:.o=.cc) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
 	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc) # ns.c
 
 OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
@@ -101,14 +104,8 @@ channel.o: channel.c
 #scheckpoint.o: checkpoint.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<  -o scheckpoint.o
 
-asim.o: sim.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o asim.o
-
 amem.o: mem.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o amem.o
-
-alog.o: log.cc
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $< -o alog.o
 
 #acheckpoint.o: checkpoint.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
@@ -116,13 +113,9 @@ alog.o: log.cc
 #queue.o: queue.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DSYNCHRONOUS $<
 
-$(LIB1): $(OBJS1) 
+$(LIB1): $(OBJS1)
 	ar ruv $(LIB1) $(OBJS1)
 	$(RANLIB) $(LIB1)
-
-$(LIB3): $(OBJS3)
-	ar ruv $(LIB3) $(OBJS3)
-	$(RANLIB) $(LIB3)
 
 $(LIB4): $(OBJS4)
 	ar ruv $(LIB4) $(OBJS4)

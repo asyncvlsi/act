@@ -25,14 +25,14 @@
 #include "sim.h"
 #include "thread.h"
 
-FILE *Log::fp;
+FILE *Log::fp = NULL;
 int Log::newline = 1;
 Log *Log::last_log = NULL;	// last log entry written out
 Time_t Log::last_log_time = 0; // time of last log message
 
 int Log::log_level[256];	// initialized by config file
 
-#define log_prefix_changed   ((last_log != this || last_log_time != Sim::Now()))
+#define log_prefix_changed   ((last_log != this || (ltype == 1 && last_log_time != Sim::Now())))
 
 /*------------------------------------------------------------------------
  *
@@ -47,8 +47,20 @@ Log::Log(Sim *s, char level, int num)
   levtype = level;
   lev = num;
   hex_int = 0;
-  proc = s;
+  ltype = 1;
+  u.proc = s;
 }
+
+
+Log::Log(const char *s, char level, int num)
+{
+  levtype = level;
+  lev = num;
+  hex_int = 0;
+  ltype = 0;
+  u.name = Strdup (s);
+}
+
 
 
 /*------------------------------------------------------------------------
@@ -66,6 +78,11 @@ void Log::OpenLog (const char *name)
   if (!Log::fp) {
     fprintf (stderr, "WARNING: log file `%s'can't be opened\n", name);
   }
+}
+
+void Log::OpenStderr ()
+{
+  Log::fp = stderr;
 }
 
 /*------------------------------------------------------------------------
@@ -99,6 +116,14 @@ void Log::Initialize_LogLevel (const char *s)
   if (!s) {
     return;
   }
+  UpdateLogLevel (s);
+}
+
+void Log::UpdateLogLevel (const char *s)
+{
+  int i;
+  
+  if (!s) return;
   while (*s) {
     log_level[(int)*s]++;
     s++;
@@ -126,7 +151,12 @@ void Log::Prefix (void)
     else
       return;
   }
-  fprintf (Log::fp, "%llu <%s> ", Sim::Now(), proc->Name());
+  if (ltype == 1) {
+    fprintf (Log::fp, "%llu <%s> ", Sim::Now(), u.proc->Name());
+  }
+  else {
+    fprintf (Log::fp, "<%s> ", u.name);
+  }    
 }
 
 #define no_logging(tipe,num) \
@@ -135,7 +165,9 @@ void Log::Prefix (void)
 void Log::NormalUpdate (void)
 {
   last_log = this;
-  last_log_time = Sim::Now();
+  if (ltype == 1) {
+    last_log_time = Sim::Now();
+  }
   newline = 0;
 }
 
@@ -168,7 +200,7 @@ Log &Log::operator <<(const char *s)
   Log::Prefix ();
   NormalUpdate ();
   while (*s) {
-    fputc (*s++, Log::fp);
+    fputc (*s, Log::fp);
     if (*s == '\n') {
       if (*(s+1))
 	Prefix();
@@ -177,6 +209,7 @@ Log &Log::operator <<(const char *s)
 	newline = 1;
       }
     }
+    s++;
   }
   fflush (Log::fp);
   context_enable ();
