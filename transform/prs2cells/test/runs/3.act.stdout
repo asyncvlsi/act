@@ -1,15 +1,15 @@
 namespace cell {
-export defcell _0_0cell_0_0g0x1 (bool in[2]; bool out);
-export defcell _0_0cell_0_0g5x0 (bool? in[1]; bool! out);
-export defcell _0_0cell_0_0g0x0 (bool in[2]; bool out);
-export defcell _0_0cell_0_0g6x0 (bool? in[1]; bool! out);
-export defcell _0_0cell_0_0g2x0 (bool in[2]; bool out);
-export defcell _0_0cell_0_0g4x0 (bool in[2]; bool out);
-export defcell _0_0cell_0_0g3x0 (bool in[3]; bool out);
-export defcell _0_0cell_0_0t1 (bool? in[3]; bool! out);
-export defcell _0_0cell_0_0g1x0 (bool in[2]; bool out);
+export defcell g0x1 (bool in[2]; bool out);
+export defcell g5x0 (bool? in[1]; bool! out);
+export defcell g0x0 (bool in[2]; bool out);
+export defcell g6x0 (bool? in[1]; bool! out);
+export defcell g2x0 (bool in[2]; bool out);
+export defcell g4x0 (bool in[2]; bool out);
+export defcell g3x0 (bool in[3]; bool out);
+export defcell t1 (bool? in[3]; bool! out);
+export defcell g1x0 (bool in[2]; bool out);
 
-export defcell _0_0cell_0_0g0x1 (bool in[2]; bool out)
+export defcell g0x1 (bool in[2]; bool out)
 {
 
 /* instances */
@@ -20,7 +20,7 @@ in[0]<10>&in[1] => out-
 }
 }
 
-export defcell _0_0cell_0_0g5x0 (bool? in[1]; bool! out)
+export defcell g5x0 (bool? in[1]; bool! out)
 {
 
 /* instances */
@@ -32,7 +32,7 @@ in[0] -> out-
 }
 }
 
-export defcell _0_0cell_0_0g0x0 (bool in[2]; bool out)
+export defcell g0x0 (bool in[2]; bool out)
 {
 
 /* instances */
@@ -43,7 +43,7 @@ in[0]&in[1] => out-
 }
 }
 
-export defcell _0_0cell_0_0g6x0 (bool? in[1]; bool! out)
+export defcell g6x0 (bool? in[1]; bool! out)
 {
 
 /* instances */
@@ -55,7 +55,7 @@ in[0]<5> -> out-
 }
 }
 
-export defcell _0_0cell_0_0g2x0 (bool in[2]; bool out)
+export defcell g2x0 (bool in[2]; bool out)
 {
 
 /* instances */
@@ -66,7 +66,7 @@ in[0]&in[1] #> out-
 }
 }
 
-export defcell _0_0cell_0_0g4x0 (bool in[2]; bool out)
+export defcell g4x0 (bool in[2]; bool out)
 {
 
 /* instances */
@@ -78,7 +78,7 @@ in[0] -> out-
 }
 }
 
-export defcell _0_0cell_0_0g3x0 (bool in[3]; bool out)
+export defcell g3x0 (bool in[3]; bool out)
 {
 
 /* instances */
@@ -89,7 +89,7 @@ in[0]&in[1]&in[2] #> out-
 }
 }
 
-export defcell _0_0cell_0_0t1 (bool? in[3]; bool! out)
+export defcell t1 (bool? in[3]; bool! out)
 {
 
 /* instances */
@@ -100,7 +100,7 @@ transgate(in[0],in[1],in[2],out)
 }
 }
 
-export defcell _0_0cell_0_0g1x0 (bool in[2]; bool out)
+export defcell g1x0 (bool in[2]; bool out)
 {
 
 /* instances */
@@ -123,10 +123,10 @@ defproc foo (bool a; bool b)
 {
 
 /* instances */
-::cell::_0_0cell_0_0g5x0 cx0;
+::cell::g5x0 cx0;
 bool y;
 bool x;
-::cell::_0_0cell_0_0t1 cx1;
+::cell::t1 cx1;
 
 /* connections */
 y=cx1.in[2];
@@ -139,12 +139,12 @@ defproc bar (bool p)
 {
 
 /* instances */
-::cell::_0_0cell_0_0g3x0 cx0;
+::cell::g3x0 cx0;
 bool y;
 bool x;
 bool w;
 bool q;
-::cell::_0_0cell_0_0g6x0 cx1;
+::cell::g6x0 cx1;
 
 /* connections */
 y=cx0.in[1];

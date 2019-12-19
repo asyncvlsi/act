@@ -1253,18 +1253,19 @@ void Scope::Print (FILE *fp)
 	}
 	
 	do {
-
 	  if (ns_name) {
 	    fprintf (fp, "%s::", ns_name);
 	  }
 	  
 	  if (vx->t->isExpanded()) {
-	    vx->t->sPrint (buf, 10240, 1);
 	    if (!TypeFactory::isUserType (vx->t)) {
+	      vx->t->sPrint (buf, 10240, 0);
 	      fprintf (fp, "%s", buf);
 	    }
 	    else {
-	      ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	      UserDef *tmpu = dynamic_cast<UserDef *>(vx->t->BaseType());
+	      Assert (tmpu, "Hmm");
+	      ActNamespace::Act()->mfprintfproc (fp, tmpu, 1);
 	    }
 	    fprintf (fp, " %s", vx->getName());
 	  }

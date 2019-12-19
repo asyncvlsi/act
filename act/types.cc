@@ -1799,7 +1799,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
   }
   fprintf (fp, "%s ", type);
   if (expanded) {
-    ActNamespace::Act()->mfprintfproc (fp, this, 0);
+    ActNamespace::Act()->mfprintfproc (fp, this, 1);
     fprintf (fp, " ");
   }
   else {
