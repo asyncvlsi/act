@@ -52,16 +52,13 @@ static void emit_planes (pp_t *pp)
   pp_printf (pp, "#--- Planes ---"); pp_nl;
   pp_printf (pp, "planes"); pp_TAB;
   pp_printf (pp, "well,w"); pp_nl;
+  pp_printf (pp, "select,s"); pp_nl;
   pp_printf (pp, "active,a"); pp_nl;
   for (int i=0; i < Technology::T->nmetals; i++) {
-    pp_printf (pp, "metal%d,m%d", i+1, i+1);
-    if (i != Technology::T->nmetals-1) {
-      pp_nl;
-    }
-    else {
-      pp_UNTAB;
-    }
+    pp_printf (pp, "metal%d,m%d", i+1, i+1); pp_nl;
   }
+  pp_printf (pp, "comment");
+  pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 }
 
@@ -75,6 +72,13 @@ static void emit_tiletypes (pp_t *pp)
     for (int j=0; j < 2; j++) {
       if (Technology::T->well[j][i]) {
 	pp_printf (pp, "well   %s", Technology::T->well[j][i]->getName());
+	pp_nl;
+	empty = 0;
+      }
+    }
+    for (int j=0; j < 2; j++) {
+      if (Technology::T->welldiff[j][i]) {
+	pp_printf (pp, "select   %s", Technology::T->welldiff[j][i]->getName());
 	pp_nl;
 	empty = 0;
       }
@@ -93,8 +97,8 @@ static void emit_tiletypes (pp_t *pp)
 	pp_nl;
 	empty = 0;
       }
-      if (Technology::T->well[j][i]) {
-	pp_printf (pp, "active   %sc", Technology::T->well[j][i]->getName());
+      if (Technology::T->welldiff[j][i]) {
+	pp_printf (pp, "active   %sc", Technology::T->welldiff[j][i]->getName());
 	pp_nl;
 	empty = 0;
       }
@@ -113,12 +117,13 @@ static void emit_tiletypes (pp_t *pp)
     pp_printf (pp, "metal%d m%d", i+1, i+1); pp_nl;
     pp_printf (pp, "metal%d m%dpin", i+1, i+1); pp_nl;
     if (i != Technology::T->nmetals-1) {
-      pp_printf (pp, "metal%d m%dc", i+1, i+2); pp_nl;
+      pp_printf (pp, "metal%d m%dc,via%d", i+1, i+2, i+1); pp_nl;
     }
     else {
-      pp_printf (pp, "metal%d pad", i+1);
+      pp_printf (pp, "metal%d pad", i+1); pp_nl;
     }
   }
+  pp_printf (pp, "comment comment"); 
   pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 }
@@ -144,6 +149,11 @@ static void emit_contacts (pp_t *pp)
 		   Technology::T->well[j][i]->getName());
 	pp_nl;
       }
+      if (Technology::T->welldiff[j][i]) {
+	pp_printf (pp, "%sc %s metal1", Technology::T->welldiff[j][i]->getName(),
+		   Technology::T->welldiff[j][i]->getName());
+	pp_nl;
+      }
     }
   }
 
@@ -166,11 +176,12 @@ static void emit_styles (pp_t *pp)
   for (int i=0; i < Technology::T->num_devs; i++) {
     for (int j=0; j < 2; j++) {
       char c = (j == PTYPE) ? 'p' : 'n';
+      char d = (j == PTYPE) ? 'n' : 'p';
       if (Technology::T->well[j][i]) {
-	pp_printf (pp, "%s %cwell", Technology::T->well[j][i]->getName(), c);
+	pp_printf (pp, "%s %cwell", Technology::T->well[j][i]->getName(), d);
 	pp_nl;
 	pp_printf (pp, "%sc %cdiff_in_%cwell metal1 contact_X'es",
-		   Technology::T->well[j][i]->getName(), c, c);
+		   Technology::T->well[j][i]->getName(), d, d);
 	pp_nl;
       }
       if (Technology::T->diff[j][i]) {
