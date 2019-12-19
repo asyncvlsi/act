@@ -65,9 +65,9 @@ void Act::mangle (char *str)
     return;
   }
   any_mangling = 1;
-  mangle_langle_idx = -1;
-  mangle_min_idx = -1;
-  mangle_mode = 0;
+  //mangle_langle_idx = -1;
+  //mangle_min_idx = -1;
+  //mangle_mode = 0;
 
   mangle_characters['_'] = mangle_result[0];
   inv_map[mangle_result[0]] = '_';
@@ -81,20 +81,25 @@ void Act::mangle (char *str)
     mangle_invidx[mangle_result[i+1]] = i+1;
     mangle_characters[str[i]] = mangle_result[i+1];
     inv_map[mangle_result[i+1]] = str[i];
+
+#if 0
     if (str[i] == '<') {
       mangle_langle_idx = i;
     }
     if (mangle_min_idx == -1 && (str[i] == '.' || str[i] == ',' || str[i] == '{' || str[i] == '}')) {
       mangle_min_idx = i;
     }
+#endif    
   }
   if (str[i]) {
     fatal_error ("Cannot install mangle string `%s'---too many characters",
 		 str);
   }
+#if 0  
   if (mangle_min_idx == -1) {
     mangle_min_idx = strlen (str);
   }
+#endif  
 }
 
 /*------------------------------------------------------------------------
@@ -114,8 +119,9 @@ int Act::mangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (mangle_characters[*src] >= 0 &&
-	((*src != '_') || inv_map[*(src+1)] == -1)) {
+    if (mangle_characters[*src] >= 0) {
+      //&&
+      //((*src != '_') || inv_map[*(src+1)] == -1)) {
       /* modify _ mangling; special case.
 	 so mangle if
 	 
@@ -134,12 +140,14 @@ int Act::mangle_string (const char *src, char *dst, int sz)
       sz--;
     }
     if (sz == 0) return -1;
+#if 0    
     if (*src == '<') {
       mangle_mode++;
     }
     else if (*src == '>') {
       mangle_mode--;
     }
+#endif
     src++;
   }
   *dst = '\0';
@@ -164,16 +172,19 @@ int Act::unmangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if ((*src == mangle_result[0]) &&
-	(mangle_invidx[*(src+1)] != -1)) {
+    if (*src == mangle_result[0]) {
+    //    if ((*src == mangle_result[0]) &&
+    //	(mangle_invidx[*(src+1)] != -1)) {
       src++;
       *dst++ = inv_map[*src];
+#if 0      
       if (inv_map[*src] == '<') {
 	mangle_mode++;
       }
       else if (inv_map[*src] == '>') {
 	mangle_mode--;
       }
+#endif      
       sz--;
       if (sz == 0) return -1;
     }
@@ -211,7 +222,7 @@ void Act::mfprintf (FILE *fp, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
-#if 0
+#if 1
     /* XXX: This is a problem.
        In particular, foo<8>
        Will get mangled to foo_38_7
@@ -249,7 +260,7 @@ int Act::msnprintf (char *fp, int len, const char *s, ...)
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
   Assert (unmangle_string (buf2, chk, 10240) == 0, "Ick");
   if (strcmp (chk, buf) != 0) {
-#if 0
+#if 1
     fprintf (stderr, "Mangled: %s; unmangled: %s\n", buf2, chk);
     fatal_error ("Mangle/unmangle pair failure: [[ %s ]]\n", buf);
 #endif

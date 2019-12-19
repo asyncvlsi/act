@@ -537,6 +537,11 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 
   if (config_get_int ("net.disable_keepers") == 1) return;
 
+  int cf_keepers = 0;
+  if (config_exists ("net.comb_feedback")) {
+    cf_keepers = config_get_int ("net.comb_feedback");
+  }
+
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
     if (n->v->stateholding) {
@@ -560,7 +565,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
       }
 
       /*-- node has forward inverter --*/
-      if (n->v->usecf) {
+      if (n->v->usecf || cf_keepers) {
 	/* combinational feedback */
 	node_t *tmp;
 	edge_t *e;
