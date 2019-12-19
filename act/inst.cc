@@ -512,19 +512,32 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 #endif
   /* if this is a user-defined type, print its namespace if it is not
      global! */
-  if (!nl_mode) {
-    snprintf (buf+k, sz, "%s", t->getName());
-  }
-  else {
-    /* WARNING: this has to be kept consistent with mangle.cc */
+  if (nl_mode) {
     UserDef *u = dynamic_cast<UserDef *> (t);
     if (u) {
-      ActNamespace::Act()->msnprintfproc (buf+k, sz, u, 1);
+      if (u->getns() && u->getns() != ActNamespace::Global()) {
+	char *s = u->getns()->Name();
+	snprintf (buf+k, sz, "%s::", s);
+	PRINT_STEP;
+	FREE (s);
+      }
+      int l;
+      char *s = Strdup (t->getName());
+      l = strlen (s);
+      if (l > 2 && s[l-1] == '>' && s[l-2] == '<') {
+	s[l-2] = '\0';
+      }
+      snprintf (buf+k, sz, "%s", s);
+      FREE (s);
     }
     else {
       snprintf (buf+k, sz, "%s", t->getName());
     }
   }
+  else {
+    snprintf (buf+k, sz, "%s", t->getName());
+  }
+
   PRINT_STEP;
   
   if (nt > 0) {

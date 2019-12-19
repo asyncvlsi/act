@@ -1816,14 +1816,15 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       parent->Print (fp);
     }
     else {
-      parent->sPrint (buf, 10240, 1);
       if (!TypeFactory::isUserType (parent)) {
+	parent->sPrint (buf, 10240, 1);
 	fprintf (fp, "%s", buf);
       }
       else {
-	ActNamespace::Act()->mfprintf (fp, "%s", buf);
-	
-	skip_ports = dynamic_cast<UserDef *>(parent->BaseType())->getNumPorts();
+	UserDef *u = dynamic_cast<UserDef *>(parent->BaseType());
+	Assert (u, "what?");
+	ActNamespace::Act()->mfprintfproc (fp, u);
+	skip_ports = u->getNumPorts();
       }
     }
     fprintf (fp, " ");

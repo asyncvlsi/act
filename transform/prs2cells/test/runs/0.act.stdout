@@ -111,7 +111,7 @@ defproc foo (bool a; bool b)
 {
 
 /* instances */
-::cell::g5x0 cx0;
+::cell::_0_0cell_0_0g5x0 cx0;
 
 /* connections */
 b=cx0.out;
@@ -122,12 +122,12 @@ defproc bar (bool p)
 {
 
 /* instances */
-::cell::g3x0 cx0;
+::cell::_0_0cell_0_0g3x0 cx0;
 bool y;
 bool x;
 bool w;
 bool q;
-::cell::g6x0 cx1;
+::cell::_0_0cell_0_0g6x0 cx1;
 
 /* connections */
 y=cx0.in[1];
