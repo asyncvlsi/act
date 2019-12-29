@@ -1555,13 +1555,6 @@ static void _add_rule (act_prs_expr_t **x, act_prs_expr_t *e)
   }
 }
 
-static int intcmpfn (const void *a, const void *b)
-{
-  int x1, x2;
-  x1 = (long)a;
-  x2 = (long)b;
-  return (x1 > x2) ? 1 : 0;
-}
 
 /*-- convert prs block into attriburtes used for isomorphism checking --*/
 struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
@@ -1771,9 +1764,9 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   /* Sort depths to canonicalize */
   for (i=0; i < A_LEN (ret->attrib); i++) {
     if (ret->attrib[i].depths) {
-      mymergesort ((const void**) ret->attrib[i].depths, ret->attrib[i].nup, intcmpfn);
-      mymergesort ((const void **) (ret->attrib[i].depths + ret->attrib[i].nup),
-		   ret->attrib[i].ndn, intcmpfn);
+      myintmergesort (ret->attrib[i].depths, ret->attrib[i].nup);
+      myintmergesort (ret->attrib[i].depths + ret->attrib[i].nup,
+		      ret->attrib[i].ndn);
     }
   }
 

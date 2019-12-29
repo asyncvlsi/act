@@ -211,6 +211,93 @@ void mymergesort (const void **a, int sz,
   FREE (b);
 }
 
+static int  _myintsort (int *a, int *b, int sz)
+{
+  int *x, *y, *z;
+  int i, j;
+  int p;
+  
+  if (sz == 1) {
+    return 0;
+  }
+  if ((p = _myintsort (a, b, sz/2))) {
+    x = b;
+    z = a;
+  }
+  else {
+    x = a;
+    z = b;
+  }
+  if (_myintsort (a+sz/2, b+sz/2, sz-sz/2)) {
+    if (p == 0) {
+      /* copy */
+      y = a+sz/2;
+      for (i=0; i < sz-sz/2; i++) {
+	y[i] = (b+sz/2)[i];
+      }
+    }
+    else {
+      y = b+sz/2;
+    }
+  }
+  else {
+    if (p == 1) {
+      /* copy */
+      y = b+sz/2;
+      for (i=0; i < sz-sz/2; i++) {
+	y[i] = (a+sz/2)[i];
+      }
+    }
+    else {
+      y = a+sz/2;
+    }
+  }
+
+  /* -- merge -- */
+  i = 0;
+  j = 0;
+  while (i < sz/2 || j < (sz-sz/2)) {
+    if (i < sz/2) {
+      if (j < (sz-sz/2)) {
+	if (x[i] <= y[i]) {
+	  z[i+j] = x[i];
+	  i++;
+	}
+	else {
+	  z[i+j] = y[j];
+	  j++;
+	}
+      }
+      else {
+	z[i+j] = x[i];
+	i++;
+      }
+    }
+    else {
+      z[i+j] = y[j];
+      j++;
+    }
+  }
+  return (1-p);
+}
+
+void myintmergesort (int *a, int sz)
+{
+  int *b;
+  int i;
+
+  if (sz <= 1) return;
+
+  MALLOC (b, int, sz);
+
+  if (_myintsort (a, b, sz)) {
+    for (i=0; i < sz; i++) {
+      a[i] = b[i];
+    }
+  }
+  FREE (b);
+}
+
 
 /*
   p has size sz

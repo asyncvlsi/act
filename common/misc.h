@@ -109,6 +109,7 @@ char *Strdup (const char *);
 
 void mymergesort (const void **a, int sz,
 		  int (*cmpfn)(const void *, const void *));
+void myintmergesort (int *a, int sz);
 
 /* p is an array of size sz. 
    aux = allocated array of size sz+1, with aux[0] = -1
