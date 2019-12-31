@@ -1,10 +1,10 @@
-# act
+# The ACT language and core tools
 [![CircleCI](https://circleci.com/gh/asyncvlsi/act.svg?style=svg)](https://circleci.com/gh/asyncvlsi/act)
 
-This is the implementation of the ACT hardware description language.
+This is the implementation of the ACT hardware description language, and some of the core tools.
 (ACT = asynchronous circuit/compiler tools)
 
-System requirements:
+## System requirements:
 
    * The system must have libedit installed. For the yum package manager, the
      package is called libedit-devel; for apt-get, it is libeditline-dev. Some
@@ -12,7 +12,7 @@ System requirements:
    * The system should have zlib installed      
    * The system should have the macro pre-processing package m4 installed
 
-Build instructions:
+## Build instructions:
 
    * Create a directory where you'd like the tools to be installed. Example
      common locations include /usr/local/cad, /opt/cad, /opt/async
@@ -28,12 +28,13 @@ If there is an issue building the software and you want to do a clean build, use
 
 Once you've built the tools, run "make install" to install the files, and  "make runtest" to run through a set of test cases.
 
+## More information:
+
 More detailed documentation is available here:
     http://avlsi.csl.yale.edu/act/
     
 A first ACT tutorial:
     http://avlsi.csl.yale.edu/act/doku.php?id=tutorial:basicprs
 
-
-Installation instructions are available here:
+Some more installation instructions are available here:
     http://avlsi.csl.yale.edu/act/doku.php?id=install
