@@ -1312,7 +1312,40 @@ void spec_print (FILE *fp, act_spec *spec)
   fprintf (fp, "spec {\n");
   while (spec) {
     if (spec->type == -1) {
-      fprintf (fp, "   timing");
+      fprintf (fp, "   timing ");
+
+#define SPEC_PRINT_ID(x)			\
+      do {					\
+	if (spec->extra[x] & 0x04) {		\
+	  fprintf (fp, "?");			\
+	}					\
+	spec->ids[x]->Print (fp);		\
+	if (spec->extra[x] & 0x8) {		\
+	  fprintf (fp, "*");			\
+	}					\
+	if (spec->extra[x] & 0x3) {		\
+	  if ((spec->extra[x] & 0x03) == 1) {	\
+	    fprintf (fp, "+");			\
+	  }					\
+	  else {				\
+	    fprintf (fp, "-");			\
+	  }					\
+	}					\
+      } while (0)
+
+      if (spec->ids[0]) {
+	SPEC_PRINT_ID(0);
+	fprintf (fp, " : ");
+      }
+      SPEC_PRINT_ID (1);
+      fprintf (fp, " < ");
+      if (spec->ids[3]) {
+	fprintf (fp, "[");
+	print_expr (fp, (Expr *)spec->ids[3]);
+	fprintf (fp, "] ");
+      }
+      SPEC_PRINT_ID(2);
+      fprintf (fp, "\n");
     }
     else {
       Assert (spec->type >= 0 && spec->type < count, "What?");
