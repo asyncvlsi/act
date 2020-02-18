@@ -773,7 +773,8 @@ ActBooleanizePass::ActBooleanizePass(Act *a) : ActPass(a, "booleanize")
     black_box_mode = config_get_int ("net.black_box_mode");
   }
   else {
-    black_box_mode = 0;
+    black_box_mode = 1;
+    config_set_default_int ("net.black_box_mode", 1);
   }
 }
 

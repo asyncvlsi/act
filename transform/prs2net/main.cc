@@ -55,7 +55,7 @@ static void usage (char *name)
   fprintf (stderr, " -p <proc> Emit process <proc>\n");
   fprintf (stderr, " -o <file> Save result to <file> rather than stdout\n");
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
-  fprintf (stderr, " -B	       Black-box mode. Assume empty act process is an external .sp file\n");
+  fprintf (stderr, " -B	       Turn of black-box mode. Assume empty act process is an externally specified file\n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
   fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   exit (1);
@@ -76,7 +76,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   int ch;
   int ignore_loadcap = 0;
   int emit_parasitics = 0;
-  int black_box_mode = 0;
+  int black_box_mode = 1;
   int top_level_only = 0;
 
 
@@ -103,7 +103,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
       break;
 
     case 'B':
-      black_box_mode = 1;
+      black_box_mode = 0;
       break;
 
     case 'd':
