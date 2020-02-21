@@ -15,7 +15,7 @@ This is the implementation of the ACT hardware description language, and some of
 ## Build instructions:
 
    * Create a directory where you'd like the tools to be installed. Example
-     common locations include /usr/local/cad, /opt/cad, /opt/async
+     common locations on Unix-like machines include /usr/local/cad, /opt/cad, /opt/async. You can also install them in any other directory (e.g. $HOME/async)
    * Set the environment variable ACT_HOME to point to the install directory.
    * Set the environment variable VLSI_TOOLS_SRC to the root of the source tree
      (i.e. the /path/to/act).
