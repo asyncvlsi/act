@@ -286,11 +286,27 @@ void config_read (const char *name)
   buf[0] = '\0';
   buf[10239] = '\0';
   while (fgets (buf, 10240, fp)) {
+    int sbuf;
+    int buf_start;
+
+    buf_start = 0;
+  extend_buf:
     line++;
     if (buf[10239] != '\0') {
       fatal_error ("Line too long [%s:%d]!", name, line);
     }
-    buf[strlen(buf)-1] = '\0';
+    sbuf = strlen (buf);
+    buf[sbuf-1] = '\0';
+    if (sbuf > 1 && buf[sbuf-2] == '\\') {
+      /* continuation character */
+      buf_start = sbuf-2;
+      if (!fgets (buf + buf_start, 10240 - buf_start, fp)) {
+	fatal_error ("Continuation character one the last line of file `%s'",
+		     name);
+      }
+      goto extend_buf;
+    }
+    
     if (buf[0] == '#' || buf[0] == '\0') continue;
     s = strtok (buf, " \t");
     if (!s || !*s || s[0] == '#') continue;
