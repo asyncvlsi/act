@@ -150,8 +150,8 @@ struct act_prs {
  * CHP
  */
 enum act_chp_lang_type {
-  ACT_CHP_COMMA, ACT_CHP_SEMI, ACT_CHP_SELECT, ACT_CHP_LOOP, ACT_CHP_SKIP,
-  ACT_CHP_ASSIGN, ACT_CHP_SEND, ACT_CHP_RECV, ACT_CHP_FUNC
+  ACT_CHP_COMMA, ACT_CHP_SEMI, ACT_CHP_SELECT, ACT_CHP_LOOP, ACT_CHP_DOLOOP,
+  ACT_CHP_SKIP, ACT_CHP_ASSIGN, ACT_CHP_SEND, ACT_CHP_RECV, ACT_CHP_FUNC
 };
 
 struct act_chp_lang;
@@ -183,7 +183,10 @@ typedef struct act_chp_lang {
     struct {
       list_t *cmd;
     } semi_comma;
-    act_chp_gc_t *gc;			/* loop or select */
+    act_chp_gc_t *gc;			/* loop or select;
+					   also used for a do-loop,
+					   where there is exactly one gc
+					 */
   } u;
 } act_chp_lang_t;
 

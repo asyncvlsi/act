@@ -507,7 +507,7 @@ guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
 }}
 ;
 
-loop_stmt[act_chp_lang_t *]: "*[" chp_body "]"
+loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]" 
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -517,6 +517,15 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body "]"
     c->u.gc->id = NULL;
     c->u.gc->g = NULL;
     c->u.gc->s = $2;
+    if (!OPT_EMPTY ($3)) {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_EXPR);
+      c->u.gc->g = r->u.exp;
+      c->type = ACT_CHP_DOLOOP;
+      FREE (r);
+    }
+    OPT_FREE ($3);
     return c;
 }}
 | "*[" { guarded_cmd "[]" }* "]"
@@ -597,7 +606,7 @@ hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
 
 hse_loop_stmt[act_chp_lang_t *]: "*[" hse_body "]"
 {{X:
-    return apply_X_loop_stmt_opt0 ($0, $2);
+    return apply_X_loop_stmt_opt0 ($0, $2, NULL);
 }}
 | "*[" { hse_guarded_cmd "[]" }* "]"
 {{X:

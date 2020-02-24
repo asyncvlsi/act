@@ -747,6 +747,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 
   case ACT_CHP_SELECT:
   case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
     gchd = NULL;
     gctl = NULL;
     for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
@@ -1203,31 +1204,46 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
     break;
 
   case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
     fprintf (fp, "*");
   case ACT_CHP_SELECT:
     fprintf (fp, "[");
     {
       act_chp_gc_t *gc = c->u.gc;
-      while (gc) {
-	if (!gc->g) {
-	  if (c->type == ACT_CHP_LOOP) {
-	    fprintf (fp, "true");
-	  }
-	  else {
-	    fprintf (fp, "else");
-	  }
-	}
-	else {
+
+      if (c->type == ACT_CHP_DOLOOP) {
+	fprintf (fp, " ");
+	chp_print (fp, gc->s);
+	fprintf (fp, " <- ");
+	if (gc->g) {
 	  print_expr (fp, gc->g);
 	}
-	if (gc->s) {
-	  fprintf (fp, " -> ");
-	  chp_print (fp, gc->s);
+	else {
+	  fprintf (fp, "true");
 	}
-	if (gc->next) {
-	  fprintf (fp, " [] ");
+      }
+      else {
+	while (gc) {
+	  if (!gc->g) {
+	    if (c->type == ACT_CHP_LOOP) {
+	      fprintf (fp, "true");
+	    }
+	    else {
+	      fprintf (fp, "else");
+	    }
+	  }
+	  else {
+	    print_expr (fp, gc->g);
+	  }
+	  if (gc->s) {
+	    fprintf (fp, " -> ");
+	    chp_print (fp, gc->s);
+	  }
+	  if (gc->next) {
+	    fprintf (fp, " [] ");
+	  }
+	  gc = gc->next;
 	}
-	gc = gc->next;
       }
     }
     fprintf (fp, "]");
