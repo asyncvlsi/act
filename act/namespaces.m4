@@ -142,9 +142,10 @@ import_item: "import" STRING ";"
 
     MALLOC (tmp, char, strlen(s)+14);
     sprintf (tmp, "%s/_all_.act", s);
-    ftmp = fopen (tmp, "r");
-    if (ftmp) {					\
-      fclose (ftmp);
+
+    char *t = path_open (tmp);
+    if (t) {
+      FREE (t);
       sprintf (tmp, "%s/_all_.act", s-1);
     }
     else {
@@ -153,6 +154,7 @@ import_item: "import" STRING ";"
     strcat (tmp, "\"");
     s--;
     FREE (s);
+
     apply_X_import_item_opt0 ($0, tmp);
     FREE (tmp);
 
