@@ -185,6 +185,7 @@ class DiffMat : public Material {
   int getSpacing (int flavor) { return spacing[flavor]; }
 protected:
   int width;
+  int diffspacing;
   int *spacing;
   int *oppspacing;
   int polyspacing;

@@ -29,6 +29,7 @@
 #include <act/passes/booleanize.h>
 #include <act/passes/netlist.h>
 #include <act/passes/cells.h>
+#include <act/passes/statepass.h>
 
 
 #endif /* __ACT_PASSES_H__ */

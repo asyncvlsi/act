@@ -308,6 +308,9 @@ void Technology::Init (const char *s)
 	      snprintf (buf+k, BUF_SZ-k-1, "%s.polyspacing", diff[j]+ik+1);
 	      mat->polyspacing = config_get_int (buf);
 
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.diffspacing", diff[j]+ik+1);
+	      mat->diffspacing = config_get_int (buf);
+
 	      snprintf (buf+k, BUF_SZ-k-1, "%s.minarea", diff[j]+ik+1);
 	      if (config_exists (buf)) {
 		if (config_get_int (buf) < 0) {
