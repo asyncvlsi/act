@@ -60,14 +60,10 @@ public:
   void Print (FILE *fp);
 
 private:
-  int init ();
-
-  /* -- info map -- */
-  std::map<Process *, stateinfo_t *> *umap;
+  void *local_op (Process *p);
+  void free_local (void *);
+  
   ActBooleanizePass *bp;
-
-  void count_sub (Process *p);
-  void count_local (Process *p, Scope *s);
 };
 
 

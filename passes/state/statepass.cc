@@ -34,15 +34,10 @@
  * pointers corresponding to them to integers.
  *
  */
-void ActStatePass::count_local (Process *p, Scope *s)
+void *ActStatePass::local_op (Process *p)
 {
   act_boolean_netlist_t *b;
 
-  std::map<Process *, stateinfo_t *>::iterator it = umap->find (p);
-  if (it != umap->end()) {
-    return;
-  }
-  
   b = bp->getBNL (p);
   if (!b) {
     fatal_error ("Process `%s' does not have a booleanized view?",
@@ -117,14 +112,12 @@ void ActStatePass::count_local (Process *p, Scope *s)
       }
     }
   }
-  
-  (*umap)[p] = si;
-}
 
 
+  /* sum up instance state, and compute offsets for each instance */
+  si->allbools = si->localbools;
+  si->imap = ihash_new (8);
 
-void ActStatePass::count_sub (Process *p)
-{
   ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
   for (i = i.begin(); i != i.end(); i++) {
@@ -132,26 +125,7 @@ void ActStatePass::count_sub (Process *p)
     if (TypeFactory::isProcessType (vx->t)) {
       Process *x = dynamic_cast<Process *>(vx->t->BaseType());
       if (x->isExpanded()) {
-	count_sub (x);
-      }
-    }
-  }
-  
-  /* count local state */
-  count_local (p, p->CurScope());
-
-  /* sum up instance state, and compute offsets for each instance */
-  stateinfo_t *si = (*umap)[p];
-
-  si->allbools = si->localbools;
-  si->imap = ihash_new (8);
-
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-      if (x->isExpanded()) {
-	stateinfo_t *ti = (*umap)[x];
+	stateinfo_t *ti = (stateinfo_t *) getMap (x);
 	Assert (ti, "Hmm");
 
 	/* map valueidx pointer to the current bool offset */
@@ -162,26 +136,9 @@ void ActStatePass::count_sub (Process *p)
       }
     }
   }
+  
+  return si;
 }
-
-int ActStatePass::run (Process *p)
-{
-  /*-- start the pass --*/
-  init ();
-
-  /*-- run dependencies --*/
-  if (!rundeps (p)) {
-    return 0;
-  }
-
-  /*-- do the work --*/
-  count_sub (p);
-
-  /*-- finished --*/
-  _finished = 2;
-  return 1;
-}
-
 
 void ActStatePass::Print (FILE *fp)
 {
@@ -204,11 +161,12 @@ ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
     Assert (bp, "What?");
   }
   AddDependency ("booleanize");
-  umap = NULL;
 }
 
-static void free_stateinfo (stateinfo_t *s)
+void ActStatePass::free_local (void *v)
 {
+  stateinfo_t *s = (stateinfo_t *)v;
+
   if (s->map) {
     ihash_free (s->map);
     s->map = NULL;
@@ -220,30 +178,7 @@ static void free_stateinfo (stateinfo_t *s)
   FREE (s);
 }
 
-ActStatePass::~ActStatePass ()
+int ActStatePass::run (Process *p)
 {
-  if (umap) {
-    std::map<Process *, stateinfo_t *>::iterator it;
-    for (it = umap->begin(); it != umap->end(); it++) {
-      free_stateinfo (it->second);
-    }
-    delete umap;
-  }
-  umap = NULL;
-}
-  
-int ActStatePass::init ()
-{
-  if (umap) {
-    std::map<Process *, stateinfo_t *>::iterator it;
-    for (it = umap->begin(); it != umap->end(); it++) {
-      free_stateinfo (it->second);
-    }
-    delete umap;
-  }
-  umap = new std::map<Process *, stateinfo_t *>();
-  
-  _finished = 1;
-  
-  return 1;
+  return ActPass::run (p);
 }

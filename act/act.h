@@ -28,6 +28,7 @@
 #include <act/lang.h>
 #include <act/body.h>
 #include <act/value.h>
+#include <map>
 
 /**
  * @file act.h
@@ -258,9 +259,20 @@ public:
   
   int completed()  { return (_finished == 2) ? 1 : 0; }
   int pending()  { return (_finished == 1) ? 1 : 0; }
-
+  void *getMap (Process *p);
+  
 private:
-  virtual int init (); // initialize or re-initialize
+  virtual void *local_op (Process *p);
+  virtual void free_local (void *);
+
+  int init (); // initialize or re-initialize
+  void recursive_op (Process *p);
+  void init_map ();
+  void free_map ();
+  std::map<Process *, void *> *pmap;
+
+public:
+  
 };
 
 
