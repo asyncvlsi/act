@@ -72,6 +72,22 @@ void *ActStatePass::local_op (Process *p)
   si->allbools = 0;
   si->map = NULL;
   si->imap = NULL;
+  si->nportbools = (b->cH->n + b->uH->n) - nvars;
+
+#if 0
+  printf ("%s: start \n", p->getName());
+#endif  
+
+  bitset_t *tmpbits;
+  
+  if (si->localbools + si->nportbools > 0) {
+    si->multi = bitset_new (si->localbools + si->nportbools);
+    tmpbits = bitset_new (si->localbools + si->nportbools);
+  }
+  else {
+    si->multi = NULL;
+    tmpbits = NULL;
+  }
 
   int idx = 0;
 
@@ -84,15 +100,36 @@ void *ActStatePass::local_op (Process *p)
   for (int i=0; i < b->cH->size; i++) {
     for (ihash_bucket_t *ib = b->cH->head[i]; ib; ib = ib->next) {
       int found = 0;
+      act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+      int ocount = 0;
       for (int k=0; k < A_LEN (b->ports); k++) {
+	if (b->ports[k].omit) continue;
 	if (ib->key == (long)b->ports[k].c) {
 	  found = 1;
 	  break;
 	}
+	ocount++;
       }
       if (!found) {
 	ihash_bucket_t *x = ihash_add (si->map, ib->key);
 	x->i = idx++;
+	ocount = x->i + si->nportbools;
+      }
+      if (v->output) {
+	if (bitset_tst (tmpbits, ocount)) {
+	  /* found multi driver! */
+	  bitset_set (si->multi, ocount);
+#if 0	  
+	  printf ("  multi-driver: ");
+	  ActId *id = ((act_connection *)ib->key)->toid();
+	  id->Print (stdout);
+	  delete id;
+	  printf ("\n");
+#endif
+	}
+	else {
+	  bitset_set (tmpbits, ocount);
+	}
       }
     }
   }
@@ -113,6 +150,8 @@ void *ActStatePass::local_op (Process *p)
     }
   }
 
+  Assert (idx == si->localbools, "What?");
+
 
   /* sum up instance state, and compute offsets for each instance */
   si->allbools = si->localbools;
@@ -131,11 +170,98 @@ void *ActStatePass::local_op (Process *p)
 	/* map valueidx pointer to the current bool offset */
 	ihash_bucket_t *ib = ihash_add (si->imap, (long)vx);
 	ib->i = si->allbools;
-	
-	si->allbools += ti->allbools;
+
+	if (vx->t->arrayInfo()) {
+	  si->allbools += vx->t->arrayInfo()->size()*ti->allbools;
+	}
+	else {
+	  si->allbools += ti->allbools;
+	}
       }
     }
   }
+
+  /* now check for multi-drivers due to instances */
+  int instcnt = 0;
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = *i;
+    if (TypeFactory::isProcessType (vx->t)) {
+      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+      if (x->isExpanded()) {
+	int ports_exist;
+	act_boolean_netlist_t *sub;
+
+	sub = bp->getBNL (x);
+	ports_exist = 0;
+	for (int j=0; j < A_LEN (sub->ports); j++) {
+	  if (sub->ports[j].omit == 0) {
+	    ports_exist = 1;
+	    break;
+	  }
+	}
+
+	if (ports_exist) {
+	  int sz;
+	  if (vx->t->arrayInfo()) {
+	    sz = vx->t->arrayInfo()->size();
+	  }
+	  else {
+	    sz = 1;
+	  }
+	  
+	  while (sz > 0) {
+	    sz--;
+	    for (int j=0; j < A_LEN (sub->ports); j++) {
+	      if (sub->ports[j].omit) continue;
+	      if (!sub->ports[j].input) {
+		act_connection *c = b->instports[instcnt];
+		ihash_bucket_t *bi;
+		int ocount;
+
+		bi = ihash_lookup (si->map, (long)c);
+		if (bi) {
+		  ocount = bi->i + si->nportbools;
+		}
+		else {
+		  ocount = 0;
+		  for (int k=0; k < A_LEN (b->ports); k++) {
+		    if (b->ports[k].omit) continue;
+		    if (c == b->ports[k].c) {
+		      break;
+		    }
+		    ocount++;
+		  }
+		  Assert (ocount < si->nportbools, "What?");
+		}
+		if (bitset_tst (tmpbits, ocount)) {
+		  /* found multi driver! */
+		  bitset_set (si->multi, ocount);
+#if 0
+		  printf ("  multi-driver: ");
+		  ActId *id = c->toid();
+		  id->Print (stdout);
+		  delete id;
+		  printf ("\n");
+#endif		  
+		}
+		else {
+		  bitset_set (tmpbits, ocount);
+		}
+	      }
+	      instcnt++;
+	    }
+	  }
+	}
+      }
+    }
+  }
+  if (tmpbits) {
+    bitset_free (tmpbits);
+  }
+
+#if 0  
+  printf ("%s: done\n\n", p->getName());
+#endif  
   
   return si;
 }

@@ -32,6 +32,11 @@
 #include "array.h"
 
 
+/*
+ * State information: assumed that ports are allocated in the parent
+ * process, so no booleans associated with ports are included in the
+ * local/all bools count.
+ */
 typedef struct {
   int nbools;			// # of Boolean bits
   int ibitwidth;		// cumulative integer bitwidth
@@ -40,6 +45,16 @@ typedef struct {
   int localbools;		// total number of Booleans needed for
 				// local state: bits + elaborated int
 				// + elaborated channel state
+
+  int nportbools;		// # of port bools [not omitted]
+  bitset_t *multi;		// bitset of local bools that are
+				// locally multi-driver. The size of
+				// this bitset is # of localbools + #
+				// of output bools. 0..nportbools-1 are
+				// the output ports, and the rest are
+				// numbered as per localbool numbering
+				// with nportbools as the offset.
+  
 
   int allbools;			// localbools + bools needed for instances
 

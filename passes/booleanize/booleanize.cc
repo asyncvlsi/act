@@ -383,10 +383,10 @@ static void mark_c_used (act_boolean_netlist_t *n,
     b = ihash_lookup (n->uH, (long)c);
     if (!b) {
       b = ihash_add (n->uH, (long)c);
-      b->v = NULL;
+      b->i = 0;
     }
     if (!subinst->ports[*count].input) {
-      b->v = (void *)1;
+      b->i = 1;
     }
   }
 }
@@ -426,7 +426,7 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
 	return;
       }
       else {
-	if (b->v) {
+	if (b->i) {
 	  A_LAST (n->ports).input = 0;
 	}
 	else {
@@ -446,7 +446,7 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
       return;
     }
     else {
-      if (b->v) {
+      if (b->i) {
 	A_LAST (n->ports).input = 0;
       }
       else {

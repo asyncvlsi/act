@@ -449,6 +449,13 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     c->u.gc->id = NULL;
     return c;
 }}
+| "|[" { guarded_cmd "[]" }* "]|"
+{{X:
+    act_chp_lang_t *c;
+    c = apply_X_select_stmt_opt0 ($0, $2);
+    c->type = ACT_CHP_SELECT_NONDET;
+    return c;
+}}
 ;
 
 guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
@@ -580,6 +587,10 @@ hse_select_stmt[act_chp_lang_t *]: "[" { hse_guarded_cmd "[]" }* "]"
 | "[" wbool_expr "]" 
 {{X:
     return apply_X_select_stmt_opt1 ($0, $2);
+}}
+| "|[" { hse_guarded_cmd "[]" }* "]|"
+{{X:
+    return apply_X_select_stmt_opt2 ($0, $2);
 }}
 ;
 

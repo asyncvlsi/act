@@ -746,6 +746,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     break;
 
   case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_LOOP:
   case ACT_CHP_DOLOOP:
     gchd = NULL;
@@ -1207,6 +1208,10 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
   case ACT_CHP_DOLOOP:
     fprintf (fp, "*");
   case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+    if (c->type == ACT_CHP_SELECT_NONDET) {
+      fprintf (fp, "|");
+    }
     fprintf (fp, "[");
     {
       act_chp_gc_t *gc = c->u.gc;
@@ -1247,6 +1252,9 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
       }
     }
     fprintf (fp, "]");
+    if (c->type == ACT_CHP_SELECT_NONDET) {
+      fprintf (fp, "|");
+    }
     break;
     
   case ACT_CHP_SKIP:
