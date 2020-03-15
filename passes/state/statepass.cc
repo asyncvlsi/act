@@ -73,6 +73,7 @@ void *ActStatePass::local_op (Process *p)
   si->map = NULL;
   si->imap = NULL;
   si->nportbools = (b->cH->n + b->uH->n) - nvars;
+  si->ismulti = 0;
 
 #if 0
   printf ("%s: start \n", p->getName());
@@ -190,8 +191,10 @@ void *ActStatePass::local_op (Process *p)
       if (x->isExpanded()) {
 	int ports_exist;
 	act_boolean_netlist_t *sub;
+	stateinfo_t *subsi;
 
 	sub = bp->getBNL (x);
+	subsi = getStateInfo (x);
 	ports_exist = 0;
 	for (int j=0; j < A_LEN (sub->ports); j++) {
 	  if (sub->ports[j].omit == 0) {
@@ -236,6 +239,7 @@ void *ActStatePass::local_op (Process *p)
 		if (bitset_tst (tmpbits, ocount)) {
 		  /* found multi driver! */
 		  bitset_set (si->multi, ocount);
+		  subsi->ismulti = 1;
 #if 0
 		  printf ("  multi-driver: ");
 		  ActId *id = c->toid();
@@ -307,4 +311,14 @@ void ActStatePass::free_local (void *v)
 int ActStatePass::run (Process *p)
 {
   return ActPass::run (p);
+}
+
+
+stateinfo_t *ActStatePass::getStateInfo (Process *p)
+{
+  if (!completed()) {
+    return NULL;
+  }
+  void *v = getMap (p);
+  return (stateinfo_t *) v;
 }

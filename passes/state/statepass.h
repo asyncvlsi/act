@@ -54,7 +54,9 @@ typedef struct {
 				// the output ports, and the rest are
 				// numbered as per localbool numbering
 				// with nportbools as the offset.
-  
+
+  int ismulti;			// 1 if this process contributes to a
+				// multi-driver scenario
 
   int allbools;			// localbools + bools needed for instances
 
@@ -73,6 +75,8 @@ public:
   int run (Process *p = NULL);
 
   void Print (FILE *fp);
+
+  stateinfo_t *getStateInfo (Process *p);
 
 private:
   void *local_op (Process *p);
