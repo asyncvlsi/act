@@ -34,7 +34,7 @@
  * pointers corresponding to them to integers.
  *
  */
-void *ActStatePass::local_op (Process *p)
+void *ActStatePass::local_op (Process *p, int mode)
 {
   act_boolean_netlist_t *b;
 

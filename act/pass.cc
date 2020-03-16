@@ -33,6 +33,7 @@ ActPass::ActPass (Act *_a, const char *s)
   _a->pass_register (s, this);
   name = _a->pass_name (s);
   pmap = NULL;
+  visited_flag = NULL;
 }
 
 ActPass::~ActPass ()
@@ -92,14 +93,30 @@ int ActPass::run (Process *p)
     return 0;
   }
 
+  visited_flag = new std::unordered_set<Process *> ();
+  
   /* do the work */
   recursive_op (p);
+  
+  delete visited_flag;
+  visited_flag = NULL;
 
   _finished = 2;
 
   return 1;
 }
 
+void ActPass::run_recursive (Process *p, int mode)
+{
+  if (!completed()) {
+    return;
+  }
+
+  visited_flag = new std::unordered_set<Process *> ();
+  recursive_op (p, mode);
+  delete visited_flag;
+  visited_flag = NULL;
+}
 
 int ActPass::init ()
 {
@@ -110,7 +127,7 @@ int ActPass::init ()
   return 0;
 }
 
-void *ActPass::local_op (Process *p) { return NULL; }
+void *ActPass::local_op (Process *p, int mode) { return NULL; }
 void ActPass::free_local (void *v) { if (v) { FREE (v); } }
 
 
@@ -132,26 +149,26 @@ void ActPass::free_map ()
   pmap = NULL;
 }
 
-void ActPass::recursive_op (Process *p)
+void ActPass::recursive_op (Process *p, int mode)
 {
   ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
-  std::map<Process *, void *>::iterator it = pmap->find (p);
-  if (it != pmap->end()) {
+  if (visited_flag->find (p) != visited_flag->end()) {
     return;
   }
+  visited_flag->insert (p);
 
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
       Process *x = dynamic_cast<Process *> (vx->t->BaseType());
       if (x->isExpanded()) {
-	recursive_op (x);
+	recursive_op (x, mode);
       }
     }
   }
 
-  (*pmap)[p] = local_op (p);
+  (*pmap)[p] = local_op (p, mode);
 }
 
  

@@ -29,6 +29,7 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <map>
+#include <unordered_set>
 
 /**
  * @file act.h
@@ -260,16 +261,18 @@ public:
   int completed()  { return (_finished == 2) ? 1 : 0; }
   int pending()  { return (_finished == 1) ? 1 : 0; }
   void *getMap (Process *p);
+  virtual void run_recursive (Process *p = NULL, int mode = 0);
   
 private:
-  virtual void *local_op (Process *p);
+  virtual void *local_op (Process *p, int mode = 0);
   virtual void free_local (void *);
 
   int init (); // initialize or re-initialize
-  void recursive_op (Process *p);
+  void recursive_op (Process *p, int mode = 0);
   void init_map ();
   void free_map ();
   std::map<Process *, void *> *pmap;
+  std::unordered_set<Process *> *visited_flag;
 
 public:
   

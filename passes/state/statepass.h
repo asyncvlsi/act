@@ -79,7 +79,7 @@ public:
   stateinfo_t *getStateInfo (Process *p);
 
 private:
-  void *local_op (Process *p);
+  void *local_op (Process *p, int mode = 0);
   void free_local (void *);
   
   ActBooleanizePass *bp;
