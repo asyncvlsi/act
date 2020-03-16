@@ -410,7 +410,7 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
     return;
   }
 
-  if (black_box_mode && n->isempty) {
+  if (black_box_mode && n->p->isBlackBox()) {
     /* assume this is needed! */
     return;
   }

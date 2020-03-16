@@ -70,7 +70,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
   if (n->bN->visited) return;
   n->bN->visited = 1;
 
-  if (n->bN->isempty && black_box_mode) return;
+  if (n->bN->p->isBlackBox() && black_box_mode) return;
 
   ActInstiter i(p->CurScope());
   
