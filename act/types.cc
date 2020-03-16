@@ -899,6 +899,7 @@ UserDef::UserDef (ActNamespace *ns)
   nports = 0;
   port_t = NULL;
   port_n = NULL;
+  unexpanded = NULL;
 
   b = NULL;
 
@@ -1160,6 +1161,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
   /* create a new userdef type */
   ux = new UserDef (ns);
+  ux->unexpanded = this;
 
   if (defined) {
     ux->MkDefined();
@@ -1545,6 +1547,17 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (ns->EditType (xp->name, xp) == 1, "What?");
   xp->is_cell = is_cell;
   return xp;
+}
+
+int Process::isBlackBox ()
+{
+  if (isExpanded()) {
+    Assert (unexpanded, "What?");
+    return unexpanded->isDefined() && (unexpanded->getBody() == NULL);
+  }
+  else {
+    return isDefined () && (getBody() == NULL);
+  }
 }
 
 Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)

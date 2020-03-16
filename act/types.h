@@ -340,6 +340,7 @@ class UserDef : public Type {
   ActBody *b;			/**< body of user-defined type */
   ActNamespace *_ns;		/**< namespace within which this type is defined */
 
+  UserDef *unexpanded;		/**< unexpanded type, if any **/
 };
 
 /**
@@ -357,6 +358,8 @@ class Process : public UserDef {
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   void Print (FILE *fp);
+
+  int isBlackBox();
 
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
