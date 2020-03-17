@@ -214,6 +214,8 @@ class DiffMat : public Material {
   int getNotchSpacing () { return notchspacing; }
   int getOppDiffSpacing (int flavor) { return oppspacing[flavor]; }
   int getSpacing (int flavor) { return spacing[flavor]; }
+  int getWidth () { return width; }
+  
 protected:
   int width;
   int diffspacing;
