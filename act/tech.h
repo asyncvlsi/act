@@ -34,6 +34,7 @@ class RangeTable {
     minval = -1;
   }
   int min() {
+
     if (minval >= 0) return minval;
     if (sz == 1) {
       minval = table[0];
@@ -48,7 +49,10 @@ class RangeTable {
     }
     return minval;
   }
+  
   int operator[](int idx);
+  int size();
+  int range_threshold (int idx);
  protected:
   int sz;
   int *table;
@@ -72,6 +76,10 @@ class Material {
     viaup = NULL;
     viadn = NULL;
     pitch = 0;
+    runlength = -1;
+    runlength_mode = -1;
+    parallelrunlength = NULL;
+    spacing_aux = NULL;
   }
 
   const char *getName() { return name; }
@@ -82,6 +90,13 @@ protected:
 
   RangeTable *width;		/* min width (indexed by length) */
   RangeTable *spacing;		/* min spacing (indexed by width) */
+
+  int runlength_mode;		// 0 = parallelrunlength, 1 = twowidths
+  int runlength;		// negative if it doesn't exist;
+				// otherwise # of parallel run lengths
+  int *parallelrunlength;	// parallel run length options
+  RangeTable **spacing_aux;	// extra range tables for parallel run
+				// lengths
 
   int minarea;			/* 0 means no constraint */
   int maxarea;			/* 0 means no constraint */
@@ -111,6 +126,20 @@ public:
   int minSpacing() { return spacing->min(); }
   int getPitch() { return pitch; }
   Contact *getUpC() { return viaup; }
+  int getSpacing(int w) { return (*spacing)[w]; }
+  int isComplexSpacing() {
+    if (runlength != -1) return 1;
+    if (spacing->size() > 1) return 1;
+    return 0;
+  }
+  int complexSpacingMode() { return runlength_mode; }
+  int numRunLength()  { return runlength; }
+  int getRunLength(int w) { return parallelrunlength[w]; }
+  RangeTable *getRunTable (int w) {
+    if (w == 0) { return spacing; }
+    else { return spacing_aux[w-1]; }
+  }
+  
   
  protected:
   RoutingRules r;
@@ -153,6 +182,7 @@ class WellMat : public Material {
  public:
   WellMat (char *s) { name = s; }
   int getOverhang () { return overhang; }
+  int getOverhangWelldiff () { return overhang_welldiff; }
 
   int minSpacing(int dev) { return spacing[dev]; }
   int oppSpacing(int dev) { return oppspacing[dev]; }
@@ -164,6 +194,7 @@ protected:
   int *spacing;	      /* to other wells of the same type */
   int *oppspacing;    /* to other wells of a different type */
   int overhang;	      /* overhang from diffusion */
+  int overhang_welldiff; /* overhang from well diffusion */
   int plug_dist;      /* max distance to plug */
 
   friend class Technology;

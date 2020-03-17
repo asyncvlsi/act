@@ -60,7 +60,7 @@ static void verify_range_table (const char *nm)
     fatal_error ("Table `%s' is not a range table (even # of entries).", nm);
   }
   tab = config_get_table_int (nm);
-  for (i=2; i < sz; i += 2) {
+  for (i=2; i < sz-1; i += 2) {
     if (tab[i] <= tab[i-2]) {
       fatal_error ("Table `%s': ranges must be in increasing order!", nm);
     }
@@ -272,7 +272,10 @@ void Technology::Init (const char *s)
 	  /* there is a well/welldiff */
 	  char ldiff[1024];
 	  int ik;
+	  int has_welldiff;
 
+	  has_welldiff = 0;
+	  
 	  ldiff[0] = '\0';
 	  for (ik=0; diff[j][ik]; ik++) {
 	    ldiff[ik] = diff[j][ik];
@@ -289,6 +292,9 @@ void Technology::Init (const char *s)
 	    }
 	    else {
 	      DiffMat *mat;
+
+	      has_welldiff = 1;
+	      
 	      mat = T->welldiff[i-4][j] = new DiffMat (diff[j]+ik+1);
 	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
 	      mat->width = config_get_int (buf);
@@ -341,6 +347,15 @@ void Technology::Init (const char *s)
 	      fatal_error ("`%s': minimum overhang has to be at least 1", buf);
 	    }
 	    mat->overhang = config_get_int (buf);
+
+	    if (has_welldiff) {
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.overhang_welldiff", ldiff);
+	      if (config_get_int (buf) < 1) {
+		fatal_error ("`%s': minimum overhang has to be at least 1", buf);
+	      }
+	      mat->overhang_welldiff = config_get_int (buf);
+	    }
+
 	  
 	    snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", ldiff);
 	    if (config_get_table_size (buf) != sz) {
@@ -538,11 +553,40 @@ void Technology::Init (const char *s)
     verify_range_table (buf);
     mat->width = new RangeTable (config_get_table_size (buf),
 				 config_get_table_int (buf));
-    
+
+    /* spacing */
     snprintf (buf+j, BUF_SZ-j-1, "spacing");
     verify_range_table (buf);
     mat->spacing = new RangeTable (config_get_table_size (buf),
 				   config_get_table_int (buf));
+
+    /* extra spacing rules */
+    snprintf (buf+j, BUF_SZ-j-1, "runlength");
+    if (config_exists (buf)) {
+      mat->runlength_mode = 0;
+      mat->runlength = config_get_table_size (buf);
+      mat->parallelrunlength = config_get_table_int (buf);
+
+      snprintf (buf+j, BUF_SZ-j-1, "runlength_mode");
+      if (config_exists (buf)) {
+	mat->runlength_mode = config_get_int (buf);
+      }
+      int num_extra = mat->runlength;
+      if (mat->runlength_mode == 1) {
+	num_extra--;
+      }
+      MALLOC (mat->spacing_aux, RangeTable *, num_extra);
+      for (int k=0; k < num_extra; k++) {
+	snprintf (buf+j, BUF_SZ-j-1, "spacing%d", k+1);
+	verify_range_table (buf);
+	mat->spacing_aux[k] = new RangeTable (config_get_table_size (buf),
+					      config_get_table_int (buf));
+      }
+      if (mat->runlength_mode == 1) {
+	/* XXX: check that all spacing tables are the same! */
+	
+      }
+    }
 
     snprintf (buf+j, BUF_SZ-j-1, "pitch");
     if (config_exists (buf) && config_get_int (buf) < 1) {
@@ -736,7 +780,7 @@ int RangeTable::operator[](int idx)
     return table[0];
   }
   
-  for (i=0; i < sz; i += 2) {
+  for (i=0; i < sz-1; i += 2) {
     Assert (i+1 < sz, "Hmm");
     if (idx <= table[i]) {
       return table[i+1];
@@ -745,6 +789,16 @@ int RangeTable::operator[](int idx)
   return table[sz-1];
 }
 
+int RangeTable::size()
+{
+  return (sz + 1)/2;
+}
+
+int RangeTable::range_threshold (int x)
+{
+  Assert (0 <= x && x < (sz+1)/2, "What?");
+  return table[x*2];
+}
 
 /*--- derived rules ---*/
 int DiffMat::viaSpaceEdge ()
