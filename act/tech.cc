@@ -834,14 +834,16 @@ int DiffMat::effOverhang (int w, int hasvia)
 
 int Technology::getMaxDiffSpacing ()
 {
-  int i;
+  int i, j;
   int spc = -1;
   for (i=0; i < num_devs; i++) {
-    if (spc < diff[0][0]->getOppDiffSpacing (i)) {
-      spc = diff[0][0]->getOppDiffSpacing (i);
-    }
-    if (spc < diff[1][0]->getOppDiffSpacing (i)) {
-      spc = diff[1][0]->getOppDiffSpacing (i);
+    for (j=0; j < 2; j++) {
+      if (spc < diff[j][0]->getOppDiffSpacing (i)) {
+	spc = diff[j][0]->getOppDiffSpacing (i);
+      }
+      if (welldiff[j][i] && spc < welldiff[j][i]->getWdiffToDiffSpacing()) {
+	spc = welldiff[j][i]->getWdiffToDiffSpacing();
+      }
     }
   }
   return spc;
