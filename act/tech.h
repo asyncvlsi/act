@@ -289,7 +289,14 @@ class Technology {
 
   RoutingMat **metal;
 
-  int getMaxDiffSpacing ();
+  int getMaxDiffSpacing ();	/* this space  guarantees correct
+				   spacing between any two types of
+				   diffusion (not including welldiff) */
+  
+  int getMaxSameDiffSpacing (); /* this space guarantees correct
+				   spacing between two diffusions of
+				   the same type, across all diffusion
+				   types */
 
 };
   

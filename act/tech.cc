@@ -848,3 +848,17 @@ int Technology::getMaxDiffSpacing ()
   }
   return spc;
 }
+
+int Technology::getMaxSameDiffSpacing ()
+{
+  int i, j;
+  int spc = -1;
+  for (i=0; i < num_devs; i++) {
+    for (j=0; j < 2; j++) {
+      if (spc < diff[j][i]->getSpacing (i)) {
+	spc = diff[j][i]->getSpacing (i);
+      }
+    }
+  }
+  return spc;
+}
