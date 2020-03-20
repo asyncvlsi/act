@@ -72,6 +72,8 @@
 
 */
 
+#define STD_ERRMSG "Error parsing production rule"
+
 /*
   Token list 
 */
@@ -198,6 +200,7 @@ static act_prs_expr_t *atom (LFILE *l)
     else {
       e = _act_parse_prs_expr (l);
       if (!file_have (l, RPAR)) {
+	act_parse_seterr (l, STD_ERRMSG ": missing right parentheses");
 	_freeexpr (e);
 	return NULL;
       }
@@ -215,6 +218,7 @@ static act_prs_expr_t *atom (LFILE *l)
     if (!file_have (l, f_id)) {
       FREE (e);
       file_setflags (l, flags);
+      act_parse_seterr (l, STD_ERRMSG ": missing identifier for and/or loop");
       return NULL;
     }
     e->u.loop.id = Strdup (file_prev (l));
@@ -222,6 +226,7 @@ static act_prs_expr_t *atom (LFILE *l)
       FREE (e->u.loop.id);
       FREE (e);
       file_setflags (l, flags);
+      act_parse_seterr (l, STD_ERRMSG ": missing colon in and/or loop");
       return NULL;
     }
     e->u.loop.lo = expr_parse_int (l);
@@ -229,6 +234,7 @@ static act_prs_expr_t *atom (LFILE *l)
       FREE (e->u.loop.id);
       FREE (e);
       file_setflags (l, flags);
+      act_parse_seterr (l, STD_ERRMSG ": error parsing range in and/or loop");
       return NULL;
     }
     if (file_have (l, DDOT)) {
@@ -238,6 +244,7 @@ static act_prs_expr_t *atom (LFILE *l)
 	FREE (e->u.loop.id);
 	FREE (e);
 	file_setflags (l, flags);
+	act_parse_seterr (l, STD_ERRMSG ": error parsing range in and/or loop");
 	return NULL;
       }
     }
@@ -251,6 +258,7 @@ static act_prs_expr_t *atom (LFILE *l)
       if (e->u.loop.lo) expr_free (e->u.loop.lo);
       FREE (e->u.loop.id);
       FREE (e);
+      act_parse_seterr (l, STD_ERRMSG ": error parsing range in and/or loop");
       return NULL;
     }
     e->u.loop.e = _act_parse_prs_expr (l);
@@ -259,10 +267,12 @@ static act_prs_expr_t *atom (LFILE *l)
       if (e->u.loop.lo) expr_free (e->u.loop.lo);
       FREE (e->u.loop.id);
       FREE (e);
+      act_parse_seterr (l, STD_ERRMSG ": error parsing body of and/or loop");
       return NULL;
     }
     if (!file_have (l, RPAR)) {
       _freeexpr (e);
+      act_parse_seterr (l, STD_ERRMSG ": missing right parentheses");
       return NULL;
     }
     goto done;
@@ -275,6 +285,7 @@ static act_prs_expr_t *atom (LFILE *l)
       e->u.l.label = Strdup (file_prev (l));
     }
     else {
+      act_parse_seterr (l, STD_ERRMSG ": error in @-label");
       return NULL;
     }
   }
@@ -296,6 +307,7 @@ static act_prs_expr_t *atom (LFILE *l)
       if (!sz->w) {
 	FREE (sz);
 	_freeexpr (e);
+	act_parse_seterr (l, STD_ERRMSG ": error in width syntax");
 	return NULL;
       }
       e->u.v.sz = sz;
@@ -303,6 +315,7 @@ static act_prs_expr_t *atom (LFILE *l)
 	if (file_have (l, f_id)) {
 	  sz->flavor = act_dev_string_to_value (file_prev (l));
 	  if (sz->flavor == -1) {
+	    act_parse_seterr (l, STD_ERRMSG ": unknown transistor flavor");
 	    _freeexpr (e);
 	    return NULL;
 	  }
@@ -311,14 +324,21 @@ static act_prs_expr_t *atom (LFILE *l)
 	  sz->l = expr_parse_real (l);
 	  if (!sz->l) {
 	    _freeexpr (e);
+	    act_parse_seterr (l, STD_ERRMSG ": error in length syntax");
 	    return NULL;
 	  }
 	  if (file_have (l, COMMA)) {
 	    if (!file_have (l, f_id)) {
 	      _freeexpr (e);
+	      act_parse_seterr (l, STD_ERRMSG ": missing transistor flavor");
 	      return NULL;
 	    }
 	    sz->flavor = act_dev_string_to_value (file_prev (l));
+	    if (sz->flavor == -1) {
+	      act_parse_seterr (l, STD_ERRMSG ": unknown transistor flavor");
+	      _freeexpr (e);
+	      return NULL;
+	    }
 	  }
 	}
       }
@@ -326,16 +346,19 @@ static act_prs_expr_t *atom (LFILE *l)
 	sz->folds = expr_parse_int (l);
 	if (!sz->folds) {
 	  _freeexpr (e);
+	  act_parse_seterr (l, STD_ERRMSG ": unknown transistor flavor");
 	  return NULL;
 	}
       }
       if (!file_have (l, RANGLE)) {
 	_freeexpr (e);
+	act_parse_seterr (l, STD_ERRMSG ": missing `>'");
 	return NULL;
       }
     }
   }
   else {
+    act_parse_seterr (l, STD_ERRMSG ": missing id");
     return NULL;
   }
  done:
@@ -442,7 +465,7 @@ void *act_parse_a_prs_expr (LFILE *l)
 
   e = _act_parse_prs_expr (l);
   if (!e) {
-    act_parse_seterr (l, "Error parsing production rule");
+    act_parse_seterr (l, STD_ERRMSG);
     file_set_position (l);
   }
   file_pop_position (l);
