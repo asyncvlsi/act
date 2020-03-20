@@ -1,0 +1,4 @@
+WARNING: Process `foo<>': local variable `z.q': no driver
+WARNING: Process `foo<>': local variable `z.r': no driver
+WARNING: Process `foo<>': local variable `zz.q': no driver
+WARNING: Process `foo<>': local variable `zz.r': no driver

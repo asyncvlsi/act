@@ -1,0 +1,16 @@
+bool Vdd2, GND;
+
+defproc foo(bool a, b)
+{
+  bool w, aa, bb;
+  bool q = Vdd2;
+
+  aa = a;
+
+  prs<q> { 
+    a<20,2> & w <10> -> b-
+    aa  => bb-
+  }
+}
+
+foo x;

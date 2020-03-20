@@ -1,0 +1,3 @@
+WARNING: Process `foo<>': local variable `a1': no driver
+WARNING: Process `foo<>': local variable `de': no driver
+WARNING: Process `foo<>': local variable `en': no driver

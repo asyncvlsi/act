@@ -1,0 +1,6 @@
+bool a, b, c;
+
+spec {
+  timing a+ : b- <[10] c+
+}
+
