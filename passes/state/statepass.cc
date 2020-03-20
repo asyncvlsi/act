@@ -28,6 +28,17 @@
 #include <config.h>
 #include <act/passes/statepass.h>
 
+static act_connection *_inv_hash (struct iHashtable *H, int idx)
+{
+  for (int i=0; i < H->size; i++) {
+    for (ihash_bucket_t *ib = H->head[i]; ib; ib = ib->next) {
+      if (ib->i == idx) {
+	return (act_connection *)ib->key;
+      }
+    }
+  }
+  return NULL;
+}
 
 /*
  * Count all the local booleans, and create a map from connection
@@ -37,11 +48,17 @@
 void *ActStatePass::local_op (Process *p, int mode)
 {
   act_boolean_netlist_t *b;
+  int black_box_mode = config_get_int ("net.black_box_mode");
 
   b = bp->getBNL (p);
   if (!b) {
     fatal_error ("Process `%s' does not have a booleanized view?",
 		 p->getName());
+  }
+
+  if (black_box_mode && p && p->isBlackBox()) {
+    /* Black box module */
+    return NULL;
   }
 
   Assert (b->cH, "Hmm");
@@ -62,6 +79,8 @@ void *ActStatePass::local_op (Process *p, int mode)
     if (b->ports[i].omit) continue;
     nvars--;
   }
+  /* globals are not handled by this mechanism */
+  nvars -= A_LEN (b->used_globals);
 
   stateinfo_t *si;
   NEW (si, stateinfo_t);
@@ -80,14 +99,17 @@ void *ActStatePass::local_op (Process *p, int mode)
 #endif  
 
   bitset_t *tmpbits;
+  bitset_t *inpbits;
   
   if (si->localbools + si->nportbools > 0) {
     si->multi = bitset_new (si->localbools + si->nportbools);
     tmpbits = bitset_new (si->localbools + si->nportbools);
+    inpbits = bitset_new (si->localbools + si->nportbools);
   }
   else {
     si->multi = NULL;
     tmpbits = NULL;
+    inpbits = NULL;
   }
 
   int idx = 0;
@@ -111,27 +133,40 @@ void *ActStatePass::local_op (Process *p, int mode)
 	}
 	ocount++;
       }
-      if (!found) {
+      if (!found && !v->id->isglobal()) {
 	ihash_bucket_t *x = ihash_add (si->map, ib->key);
 	x->i = idx++;
 	ocount = x->i + si->nportbools;
       }
-      if (v->output) {
-	if (bitset_tst (tmpbits, ocount)) {
-	  /* found multi driver! */
-	  bitset_set (si->multi, ocount);
-#if 0	  
-	  printf ("  multi-driver: ");
-	  ActId *id = ((act_connection *)ib->key)->toid();
-	  id->Print (stdout);
-	  delete id;
-	  printf ("\n");
+
+#if 0
+      ActId *id = ((act_connection *)ib->key)->toid();
+      printf ("   var: ");
+      id->Print (stdout);
+      printf (" [out=%d]", v->output ? 1 : 0);
+      printf ("\n");
+#endif      
+      if (!v->id->isglobal()) {
+	if (v->output) {
+	  if (bitset_tst (tmpbits, ocount)) {
+	    /* found multi driver! */
+	    bitset_set (si->multi, ocount);
+#if 0
+	    printf ("     -> multi-driver!\n");
 #endif
+	  }
+	  else {
+	    bitset_set (tmpbits, ocount);
+	  }
 	}
 	else {
-	  bitset_set (tmpbits, ocount);
+	  /* an input; mark it */
+	  bitset_set (inpbits, ocount);
 	}
       }
+#if 0
+      delete id;
+#endif      
     }
   }
 
@@ -144,14 +179,27 @@ void *ActStatePass::local_op (Process *p, int mode)
 	  break;
 	}
       }
-      if (!found) {
+      if (!found && !((act_connection*)ib->key)->isglobal()) {
 	ihash_bucket_t *x = ihash_add (si->map, ib->key);
 	x->i = idx++;
+#if 0
+	act_connection *c = (act_connection *)ib->key;
+	ActId *id = c->toid();
+	printf ("   non-var: ");
+	id->Print (stdout);
+	printf ("\n");
+	delete id;
+#endif	
       }
     }
   }
 
   Assert (idx == si->localbools, "What?");
+
+#if 0
+  printf (" stats: %d local; %d port\n", si->localbools,
+	  si->nportbools);
+#endif
 
 
   /* sum up instance state, and compute offsets for each instance */
@@ -215,33 +263,38 @@ void *ActStatePass::local_op (Process *p, int mode)
 	  while (sz > 0) {
 	    sz--;
 	    for (int j=0; j < A_LEN (sub->ports); j++) {
+	      act_connection *c;
+	      ihash_bucket_t *bi;
+	      int ocount;
 	      if (sub->ports[j].omit) continue;
-	      if (!sub->ports[j].input) {
-		act_connection *c = b->instports[instcnt];
-		ihash_bucket_t *bi;
-		int ocount;
 
-		bi = ihash_lookup (si->map, (long)c);
-		if (bi) {
-		  ocount = bi->i + si->nportbools;
-		}
-		else {
-		  ocount = 0;
-		  for (int k=0; k < A_LEN (b->ports); k++) {
-		    if (b->ports[k].omit) continue;
-		    if (c == b->ports[k].c) {
-		      break;
-		    }
-		    ocount++;
+	      c = b->instports[instcnt];
+	      bi = ihash_lookup (si->map, (long)c);
+	      if (bi) {
+		ocount = bi->i + si->nportbools;
+	      }
+	      else {
+		ocount = 0;
+		for (int k=0; k < A_LEN (b->ports); k++) {
+		  if (b->ports[k].omit) continue;
+		  if (c == b->ports[k].c) {
+		    break;
 		  }
-		  Assert (ocount < si->nportbools, "What?");
+		  ocount++;
 		}
+		Assert (ocount < si->nportbools, "What?");
+	      }
+	      
+	      if (!sub->ports[j].input) {
 		if (bitset_tst (tmpbits, ocount)) {
 		  /* found multi driver! */
 		  bitset_set (si->multi, ocount);
-		  subsi->ismulti = 1;
+		  if (subsi) {
+		    /* could be NULL, if it is a black box */
+		    subsi->ismulti = 1;
+		  }
 #if 0
-		  printf ("  multi-driver: ");
+		  printf (" *multi-driver: ");
 		  ActId *id = c->toid();
 		  id->Print (stdout);
 		  delete id;
@@ -252,6 +305,9 @@ void *ActStatePass::local_op (Process *p, int mode)
 		  bitset_set (tmpbits, ocount);
 		}
 	      }
+	      else {
+		bitset_set (inpbits, ocount);
+	      }
 	      instcnt++;
 	    }
 	  }
@@ -259,11 +315,29 @@ void *ActStatePass::local_op (Process *p, int mode)
       }
     }
   }
+
+  /* now check if there is some local state that is actually never
+     driven! */
+  for (int i=0; i < si->localbools; i++) {
+    if (bitset_tst (inpbits, i + si->nportbools) &&
+	!bitset_tst (tmpbits, i + si->nportbools)) {
+      act_connection *tmpc = _inv_hash (si->map, i);
+      Assert (tmpc, "How did we get here?");
+      ActId *tmpid = tmpc->toid();
+      fprintf (stderr, "WARNING: Process `%s': local variable `",
+	       p ? p->getName() : "-toplevel-");
+      tmpid->Print (stderr);
+      fprintf (stderr, "': no driver\n");
+      delete tmpid;
+    }
+  }
+  
   if (tmpbits) {
     bitset_free (tmpbits);
+    bitset_free (inpbits);
   }
 
-#if 0  
+#if 0
   printf ("%s: done\n\n", p->getName());
 #endif  
   

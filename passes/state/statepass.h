@@ -50,8 +50,8 @@ typedef struct {
   bitset_t *multi;		// bitset of local bools that are
 				// locally multi-driver. The size of
 				// this bitset is # of localbools + #
-				// of output bools. 0..nportbools-1 are
-				// the output ports, and the rest are
+				// of port bools. 0..nportbools-1 are
+				// the ports, and the rest are
 				// numbered as per localbool numbering
 				// with nportbools as the offset.
 
