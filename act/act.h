@@ -79,6 +79,11 @@ class Act {
   static int warn_double_expand;
 
   /**
+   * Warn if a local signal has no driver
+   */
+  static int warn_no_local_driver;
+
+  /**
    * Parser flags 
    */
   static int emit_depend;

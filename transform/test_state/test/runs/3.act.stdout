@@ -1,0 +1,7 @@
+--- Process: foo<> ---
+   nbools = 3, ibits = 0, ichans = 0
+  localbools: 3
+  portbools: 1
+  ismulti: 0
+  all booleans (incl. inst): 3
+--- End Process: foo<> ---

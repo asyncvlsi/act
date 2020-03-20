@@ -74,15 +74,21 @@ public:
 
   int run (Process *p = NULL);
 
-  void Print (FILE *fp);
+  void Print (FILE *fp, Process *p = NULL);
 
   stateinfo_t *getStateInfo (Process *p);
 
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
+
+  stateinfo_t *countBools (Process *p);
+  void printLocal (FILE *fp, Process *p);
+  int _black_box_mode;
+  int _warn_local_driver;
   
   ActBooleanizePass *bp;
+  FILE *_fp;
 };
 
 

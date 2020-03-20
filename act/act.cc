@@ -45,6 +45,7 @@ int Act::max_loop_iterations;
 int Act::warn_emptyselect;
 int Act::emit_depend;
 int Act::warn_double_expand;
+int Act::warn_no_local_driver;
 Log *Act::L;
 
 L_A_DECL (struct command_line_defs, vars);
@@ -92,6 +93,7 @@ void Act::Init (int *iargc, char ***iargv)
   config_set_default_int ("act.max_loop_iterations", 1000);
   config_set_default_int ("act.warn.emptyselect", 0);
   config_set_default_int ("act.warn.dup_pass", 1);
+  config_set_default_int ("act.warn_no_local_driver", 1);
   config_read ("global.conf");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
@@ -150,8 +152,11 @@ void Act::Init (int *iargc, char ***iargv)
 	if (strcmp (tmp, "empty-select") == 0) {
 	  config_set_int ("act.warn.emptyselect", 1);
 	}
-	else if (strcmp (tmp, "no-dup-pass") == 0) {
+	else if (strcmp (tmp, "dup-pass:off") == 0) {
 	  config_set_int ("act.warn.dup_pass", 0);
+	}
+	else if (strcmp (tmp, "local-driver:off") == 0) {
+	  config_set_int ("act.warn_no_local_driver", 0);
 	}
 	else if (strcmp (tmp, "all") == 0) {
 	  config_set_int ("act.warn.emptyselect", 1);

@@ -73,5 +73,7 @@ int main (int argc, char **argv)
   ActStatePass *sp = new ActStatePass (a);
   sp->run (p);
 
+  sp->Print (stdout, p);
+
   return 0;
 }

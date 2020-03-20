@@ -40,15 +40,25 @@ static act_connection *_inv_hash (struct iHashtable *H, int idx)
   return NULL;
 }
 
+void *ActStatePass::local_op (Process *p, int mode)
+{
+  if (mode == 0) {
+    return countBools (p);
+  }
+  else if (mode == 1) {
+    printLocal (_fp, p);
+  }
+  return getMap (p);
+}
+
 /*
  * Count all the local booleans, and create a map from connection
  * pointers corresponding to them to integers.
  *
  */
-void *ActStatePass::local_op (Process *p, int mode)
+stateinfo_t *ActStatePass::countBools (Process *p)
 {
   act_boolean_netlist_t *b;
-  int black_box_mode = config_get_int ("net.black_box_mode");
 
   b = bp->getBNL (p);
   if (!b) {
@@ -56,7 +66,7 @@ void *ActStatePass::local_op (Process *p, int mode)
 		 p->getName());
   }
 
-  if (black_box_mode && p && p->isBlackBox()) {
+  if (_black_box_mode && p && p->isBlackBox()) {
     /* Black box module */
     return NULL;
   }
@@ -91,7 +101,7 @@ void *ActStatePass::local_op (Process *p, int mode)
   si->allbools = 0;
   si->map = NULL;
   si->imap = NULL;
-  si->nportbools = (b->cH->n + b->uH->n) - nvars;
+  si->nportbools = (b->cH->n + b->uH->n) - nvars - A_LEN (b->used_globals);
   si->ismulti = 0;
 
 #if 0
@@ -214,17 +224,25 @@ void *ActStatePass::local_op (Process *p, int mode)
       Process *x = dynamic_cast<Process *>(vx->t->BaseType());
       if (x->isExpanded()) {
 	stateinfo_t *ti = (stateinfo_t *) getMap (x);
-	Assert (ti, "Hmm");
+	int n_sub_bools;
 
+	if (ti) {
+	  n_sub_bools = ti->allbools;
+	}
+	else {
+	  /* black box */
+	  act_boolean_netlist_t *bn = bp->getBNL (x);
+	  Assert (bn, "What?");
+	  n_sub_bools = 0;
+	}
 	/* map valueidx pointer to the current bool offset */
 	ihash_bucket_t *ib = ihash_add (si->imap, (long)vx);
 	ib->i = si->allbools;
-
 	if (vx->t->arrayInfo()) {
-	  si->allbools += vx->t->arrayInfo()->size()*ti->allbools;
+	  si->allbools += vx->t->arrayInfo()->size()*n_sub_bools;
 	}
 	else {
-	  si->allbools += ti->allbools;
+	  si->allbools += n_sub_bools;
 	}
       }
     }
@@ -316,19 +334,21 @@ void *ActStatePass::local_op (Process *p, int mode)
     }
   }
 
-  /* now check if there is some local state that is actually never
-     driven! */
-  for (int i=0; i < si->localbools; i++) {
-    if (bitset_tst (inpbits, i + si->nportbools) &&
-	!bitset_tst (tmpbits, i + si->nportbools)) {
-      act_connection *tmpc = _inv_hash (si->map, i);
-      Assert (tmpc, "How did we get here?");
-      ActId *tmpid = tmpc->toid();
-      fprintf (stderr, "WARNING: Process `%s': local variable `",
-	       p ? p->getName() : "-toplevel-");
-      tmpid->Print (stderr);
-      fprintf (stderr, "': no driver\n");
-      delete tmpid;
+  if (_warn_local_driver) {
+    /* now check if there is some local state that is actually never
+       driven! */
+    for (int i=0; i < si->localbools; i++) {
+      if (bitset_tst (inpbits, i + si->nportbools) &&
+	  !bitset_tst (tmpbits, i + si->nportbools)) {
+	act_connection *tmpc = _inv_hash (si->map, i);
+	Assert (tmpc, "How did we get here?");
+	ActId *tmpid = tmpc->toid();
+	fprintf (stderr, "WARNING: Process `%s': local variable `",
+		 p ? p->getName() : "-toplevel-");
+	tmpid->Print (stderr);
+	fprintf (stderr, "': no driver\n");
+	delete tmpid;
+      }
     }
   }
   
@@ -344,15 +364,6 @@ void *ActStatePass::local_op (Process *p, int mode)
   return si;
 }
 
-void ActStatePass::Print (FILE *fp)
-{
-  if (!completed()) {
-    warning ("ActStatePass::Print() called without pass being run");
-    return;
-  }
-}
-
-
 ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
 {
   /*-- need the booleanize pass --*/
@@ -365,6 +376,8 @@ ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
     Assert (bp, "What?");
   }
   AddDependency ("booleanize");
+  _black_box_mode = config_get_int ("net.black_box_mode");
+  _warn_local_driver = config_get_int ("act.warn_no_local_driver");
 }
 
 void ActStatePass::free_local (void *v)
@@ -387,6 +400,15 @@ int ActStatePass::run (Process *p)
   return ActPass::run (p);
 }
 
+void ActStatePass::Print (FILE *fp, Process *p)
+{
+  if (!completed()) {
+    warning ("ActStatePass::Print() called without pass being run");
+    return;
+  }
+  _fp = fp;
+  run_recursive (p, 1);
+}
 
 stateinfo_t *ActStatePass::getStateInfo (Process *p)
 {
@@ -395,4 +417,29 @@ stateinfo_t *ActStatePass::getStateInfo (Process *p)
   }
   void *v = getMap (p);
   return (stateinfo_t *) v;
+}
+
+void ActStatePass::printLocal (FILE *fp, Process *p)
+{
+  stateinfo_t *si;
+
+  si = getStateInfo (p);
+
+  fprintf (fp, "--- Process: %s ---\n", p ? p->getName() : "-toplevel-");
+
+  if (!si) {
+    act_boolean_netlist_t *bn = bp->getBNL (p);
+    Assert (bn, "Hmm");
+    fprintf (fp, "  ** black box **\n");
+    fprintf (fp, "  portbools: %d\n", A_LEN (bn->ports));
+  }
+  else {
+    fprintf (fp, "   nbools = %d, ibits = %d, ichans = %d\n",
+	     si->nbools, si->ibitwidth, si->ichanwidth);
+    fprintf (fp, "  localbools: %d\n", si->localbools);
+    fprintf (fp, "  portbools: %d\n", si->nportbools);
+    fprintf (fp, "  ismulti: %d\n", si->ismulti);
+    fprintf (fp, "  all booleans (incl. inst): %d\n", si->allbools);
+  }
+  fprintf (fp, "--- End Process: %s ---\n", p->getName());
 }
