@@ -41,7 +41,7 @@ else
       s=`expr $i : '.*\(.cc\)'`
       if [ "x$s" = "x.cc" ]
       then
-          g++ -MM $@ $i >> Makefile.deps
+          g++ -MM -std=c++11 $@ $i >> Makefile.deps
       else
 	  gcc -MM $@ $i >> Makefile.deps
       fi

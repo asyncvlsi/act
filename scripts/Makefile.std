@@ -227,10 +227,10 @@ move-out:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $<
 
 .C.o:
-	$(CXX) -c $(CFLAGS) $(DFLAGS) $<
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=c++11 $<
 
 .cc.o:
-	$(CXX) -c $(CFLAGS) $(DFLAGS) $<
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=c++11 $<
 
 .c.os:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
