@@ -231,7 +231,6 @@ expr_id[ActId *]: { base_id "." }*
       */
       ud = dynamic_cast<UserDef *>(it->BaseType());
       if (!ud) {
-	listitem_t *mi;
 	$e("Invalid use of ``.'' for an identifer that is not a user-defined type: ");
 	ret->Print ($f);
 	fprintf ($f, "\n");
@@ -240,7 +239,6 @@ expr_id[ActId *]: { base_id "." }*
       if (list_next (li) && cur->isRange ()) {
 	/* a subrange specifier can occur, but it must be the *last*
 	   part of the identifier (!) */
-	listitem_t *mi;
 	$e("Invalid use of array sub-range specifier: ");
 	ret->Print ($f);
 	fprintf ($f, "\n");
@@ -250,7 +248,6 @@ expr_id[ActId *]: { base_id "." }*
 	/* if there is an array specifier, check that the dimensions
 	   match */
 	if (!it->arrayInfo() || (cur->arrayInfo()->nDims () != it->arrayInfo()->nDims ())) {
-	  listitem_t *mi;
 	  if (it->arrayInfo ()) {
 	    $e("Mismatch in array dimensions (%d v/s %d): ",
 	       cur->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
@@ -268,7 +265,6 @@ expr_id[ActId *]: { base_id "." }*
 	 type */
       it = ud->Lookup ((ActId *)list_value (li));
       if (!it) {
-	listitem_t *mi;
 	$e("Port name ``%s'' does not exist for the identifier: ", 
 	   ((ActId *)list_value (li))->getName());
 	ret->Print ($f);
@@ -290,7 +286,6 @@ expr_id[ActId *]: { base_id "." }*
       /* if there is an array specifier, check that the dimensions
 	 match */
       if (!it->arrayInfo() || (cur->arrayInfo()->nDims () != it->arrayInfo()->nDims ())) {
-	listitem_t *mi;
 	if (it->arrayInfo ()) {
 	  $e("Mismatch in array dimensions (%d v/s %d): ",
 	     cur->arrayInfo()->nDims(), it->arrayInfo()->nDims ());

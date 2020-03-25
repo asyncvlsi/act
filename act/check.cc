@@ -96,7 +96,6 @@ int act_type_var (Scope *s, ActId *id)
   InstType *it;
   UserDef *u;
   Data *d;
-  ActId *orig = id;
   int is_strict;
 
   /*printf ("[scope=%x] check: var ", s); id->Print (stdout); printf ("\n");*/
@@ -442,7 +441,6 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
 	  return NULL;
 	}
 	if (s->isExpanded()) {
-	  int i;
 	  Assert (it->isExpanded(), "What on earth?");
 	  Assert (id->arrayInfo()->isExpanded(), "What on earth2?");
 
@@ -903,7 +901,6 @@ InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
 
 int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 {
-  InstType *it;
   int ret;
 
   Assert (s, "NULL scope");
@@ -967,7 +964,6 @@ int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 
 int act_type_conn (Scope *s, ActId *id, AExpr *rae)
 {
-  InstType *it;
   int ret;
 
   Assert (s, "NULL scope");

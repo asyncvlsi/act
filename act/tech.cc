@@ -82,7 +82,6 @@ void Technology::Init (const char *s)
   int i, j, k, sz;
   const char *tables[] = { "diff.ntype", "diff.ptype", "diff.nfet", "diff.pfet",
 			   "diff.nfet_well", "diff.pfet_well" };
-  const int well_start = 4;
   
   char **diff;
   const char *prefix = "layout";

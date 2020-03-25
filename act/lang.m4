@@ -780,7 +780,6 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
 | ID [ tree_subckt_spec ]
 {{X:
     ActRet *r;
-    act_prs_lang_t *p;
 
     if (!OPT_EMPTY ($2)) {
       r = OPT_VALUE ($2);
@@ -1073,7 +1072,7 @@ spec_body[act_spec *]: [ requires_clause ] [ ensures_clause ] [ generic_clause ]
     }
     OPT_FREE ($1);
     if (!OPT_EMPTY ($2)) {
-      act_spec *tmp, *tmp2;
+      act_spec *tmp;
       ActRet *r;
       r = OPT_VALUE ($2);
       $A(r->type == R_SPEC_LANG);
@@ -1091,7 +1090,7 @@ spec_body[act_spec *]: [ requires_clause ] [ ensures_clause ] [ generic_clause ]
     }
     OPT_FREE ($2);
     if (!OPT_EMPTY ($3)) {
-      act_spec *tmp, *tmp2;
+      act_spec *tmp;
       ActRet *r;
       r = OPT_VALUE ($3);
       $A(r->type == R_SPEC_LANG);

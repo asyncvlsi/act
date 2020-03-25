@@ -333,7 +333,6 @@ static void dump_conn (act_connection *c)
 
 static void dump_conn_rec (act_connection *c)
 {
-  act_connection *tmp, *root;
   static int level = 0;
 
   level++;
@@ -587,7 +586,7 @@ static void _merge_subtrees (UserDef *ux,
 static int _raw_should_swap (UserDef *ux, act_connection *d1,
 			     act_connection *d2)
 {
-  act_connection *tmp, *tmp2;
+  act_connection *tmp;
   ValueIdx *vx1, *vx2;
 
   int p1, p2;
@@ -1342,7 +1341,6 @@ Type::direction act_connection::getDir ()
   act_connection *tmp;
   int polarity;
   int isfirst;
-  int isrootproc;
   Type::direction ret;
 
   ret = Type::NONE;

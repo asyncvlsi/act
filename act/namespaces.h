@@ -40,7 +40,7 @@ class AExprstep;
 class ActNamespace;
 class ActNamespaceiter;
 class ActTypeiter;
-struct ValueIdx;
+class ValueIdx;
 class act_connection;
 class act_languages;
 struct act_chp;
@@ -100,7 +100,7 @@ class Scope {
    * Delete current scope, returning parent [does this work?]
    */
   Scope *Pop () {
-    Scope *x, *ret = this;
+    Scope *x = this, *ret = this;
     ret = this->up;
     delete x;
     return ret;

@@ -32,7 +32,18 @@
 #include "misc.h"
 #include "config.h"
 
+ActBody::ActBody()
+{
+  next = NULL;
+}
+
 /* XXX: free actbody */
+ActBody::~ActBody()
+{
+  if (next) {
+    delete next;
+  }
+}
 
 void ActBody::Append (ActBody *b)
 {
@@ -795,7 +806,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	AExprstep *aes = alhs->stepper();
 	AExprstep *bes = arhs->stepper();
 	/* any other parameter assignment */
-	int ii = 0;
 	while (!aes->isend()) {
 
 	  aes->getID (&lhsid, &lhsidx, NULL);
@@ -953,7 +963,6 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
   int ilo, ihi;
   ValueIdx *vx;
   Expr *e;
-  ActBody *bi;
   
   Assert (t == ActBody_Loop::SEMI, "What loop is this?");
 
@@ -1004,7 +1013,6 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
 void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 {
   ActBody_Select_gc *igc;
-  ActBody *bi;
   Expr *guard;
   int ilo, ihi;
   ValueIdx *vx;
@@ -1088,7 +1096,6 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 void ActBody_Genloop::Expand (ActNamespace *ns, Scope *s)
 {
   ActBody_Select_gc *igc;
-  ActBody *bi;
   Expr *guard;
   int flag;
   int loopcount = 0;

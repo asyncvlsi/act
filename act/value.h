@@ -26,7 +26,7 @@
 
 
 class InstType;
-struct ValueIdx;
+class ValueIdx;
 struct act_attr;
 
 #include <act/basetype.h>
@@ -38,7 +38,8 @@ struct act_attr;
    - ring of connections
    - union-find tree
 */
-struct act_connection {
+class act_connection {
+public:
   ValueIdx *vx;			// identifier that has been allocated
 
   act_connection *parent;	// parent for id.id or id[val]
@@ -104,7 +105,8 @@ struct act_connection {
 /*
   Values: this is the core expanded data structure
 */
-struct ValueIdx {
+class ValueIdx {
+public:
   InstType *t;
   struct act_attr *a;			// attributes for the value
   struct act_attr **array_spec;	// array deref-specific value

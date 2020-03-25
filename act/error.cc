@@ -71,7 +71,9 @@ void act_error_pop ()
 void act_error_ctxt (FILE *fp)
 {
   struct err_ctxt *ec;
+#if 0  
   int x = 0;
+#endif  
 
   for (ec = hd; ec; ec = ec->next) {
 #if 0

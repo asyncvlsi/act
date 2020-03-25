@@ -69,18 +69,18 @@ void Act::mangle (char *str)
   //mangle_min_idx = -1;
   //mangle_mode = 0;
 
-  mangle_characters['_'] = mangle_result[0];
-  inv_map[mangle_result[0]] = '_';
-  mangle_invidx['_'] = 0;
+  mangle_characters[(int)'_'] = mangle_result[0];
+  inv_map[(int)mangle_result[0]] = '_';
+  mangle_invidx[(int)'_'] = 0;
 
   for (i=0; (i+1) < max_len && str[i]; i++) {
-    if (mangle_characters[str[i]] >= 0) {
+    if (mangle_characters[(int)str[i]] >= 0) {
       fatal_error ("Cannot install mangle string `%s': dup char `%c'",
 		   str, str[i]);
     }
-    mangle_invidx[mangle_result[i+1]] = i+1;
-    mangle_characters[str[i]] = mangle_result[i+1];
-    inv_map[mangle_result[i+1]] = str[i];
+    mangle_invidx[(int)mangle_result[i+1]] = i+1;
+    mangle_characters[(int)str[i]] = mangle_result[i+1];
+    inv_map[(int)mangle_result[i+1]] = str[i];
 
 #if 0
     if (str[i] == '<') {
@@ -119,7 +119,7 @@ int Act::mangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (mangle_characters[*src] >= 0) {
+    if (mangle_characters[(int)*src] >= 0) {
       //&&
       //((*src != '_') || inv_map[*(src+1)] == -1)) {
       /* modify _ mangling; special case.
@@ -132,7 +132,7 @@ int Act::mangle_string (const char *src, char *dst, int sz)
       *dst++ = '_';
       sz--;
       if (sz == 0) return -1;
-      *dst++ = mangle_characters[*src];
+      *dst++ = mangle_characters[(int)*src];
       sz--;
     }
     else {
@@ -176,7 +176,7 @@ int Act::unmangle_string (const char *src, char *dst, int sz)
     //    if ((*src == mangle_result[0]) &&
     //	(mangle_invidx[*(src+1)] != -1)) {
       src++;
-      *dst++ = inv_map[*src];
+      *dst++ = inv_map[(int)*src];
 #if 0      
       if (inv_map[*src] == '<') {
 	mangle_mode++;

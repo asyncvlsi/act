@@ -950,7 +950,6 @@ const char *expr_operator_name (int t)
 
 void expr_print (pp_t *pp, Expr *e)
 {
-  char *s;
   if (!e) return;
   switch (e->type) {
   case E_AND: case E_OR: case E_PLUS: case E_MINUS:

@@ -147,7 +147,7 @@ class InstType;
 class UserDef : public Type {
  public:
   UserDef (ActNamespace *ns); /**< constructor, initialize everything correctly */
-  ~UserDef (); /**< destructor, releases storage */
+  virtual ~UserDef (); /**< destructor, releases storage */
 
   /**
    * Specifies if this is an exported user-defined type or not
@@ -351,7 +351,7 @@ class UserDef : public Type {
 class Process : public UserDef {
  public:
   Process (UserDef *u);		/**< Construct a process from a userdef */
-  ~Process ();
+  virtual ~Process ();
   void MkCell () { is_cell = 1; } /**< Mark this as a cell */
   int isCell() { return is_cell; }
 
@@ -403,7 +403,7 @@ enum datatype_methods {
 class Data : public UserDef {
  public:
   Data (UserDef *u);
-  ~Data();
+  virtual ~Data();
 
   void MkEnum () { is_enum = 1; }
   int isEnum () { return is_enum; }
@@ -426,7 +426,7 @@ private:
 class Channel : public UserDef {
  public:
   Channel (UserDef *u);
-  ~Channel();
+  virtual ~Channel();
   
   void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
   void setMethod (datatype_methods t, Expr *e) { emethods[t] = e; }

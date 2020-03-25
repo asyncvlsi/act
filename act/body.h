@@ -104,7 +104,9 @@ class ActId {
 
 class ActBody {
  public:
-  ActBody () { next = NULL; }
+  ActBody ();
+  virtual ~ActBody();
+  
   void Append (ActBody *b);
   ActBody *Tail ();
   ActBody *Next () { return next; }
@@ -128,6 +130,7 @@ class ActBody {
 class ActBody_Inst : public ActBody {
  public:
   ActBody_Inst(InstType *, const char *);
+  
   void Expand (ActNamespace *, Scope *);
   Type *BaseType ();
   void Print (FILE *fp);

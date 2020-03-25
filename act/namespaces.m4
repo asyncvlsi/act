@@ -93,7 +93,6 @@ import_item: "import" STRING ";"
     int len, len2;
     listitem_t *li;
     ActNamespace *ns, *tmpns;
-    FILE *ftmp;
 
     if (OPT_EMPTY ($2)) {
       ns = $0->curns;

@@ -860,7 +860,6 @@ void Scope::BindParam (ActId *id, AExpr *ae)
   if (!ae) return;
   
   int need_alloc = 0;
-  int subrange_offset = 0;
   Array *subrange_info = id->arrayInfo();
   ValueIdx *vx = LookupVal (id->getName());
 
@@ -1298,7 +1297,6 @@ void Scope::Print (FILE *fp)
   
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = *inst;
-    Array *a;
 
     if (TypeFactory::isParamType (vx->t))
       continue;

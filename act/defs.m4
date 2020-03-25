@@ -194,7 +194,6 @@ def_or_proc ID
 {{X:
     if (!OPT_EMPTY ($4)) {
       ActRet *r;
-      void *v;
       InstType *it;
 
       r = OPT_VALUE ($4);

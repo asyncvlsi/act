@@ -128,8 +128,6 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")"
 {{X:
     ActRet *r;
     Type::direction d;
-    listitem_t *li;
-    int c = 0;
     InstType *ret;
     
     if (OPT_EXISTS ($2)) {

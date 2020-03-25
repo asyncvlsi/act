@@ -310,9 +310,6 @@ int Array::isEqual (Array *a, int strict)
  */
 int Array::isDimCompatible (Array *a)
 {
-  struct range *r1, *r2;
-  int i;
-
   if (dims != a->dims) return 0;
   if (deref != a->deref) return 0;
   if (isSparse() != a->isSparse()) return 0;
@@ -726,10 +723,6 @@ int Array::effDims()
  */
 int Array::range_size(int d)
 {
-  int i;
-  int count = 1;
-  struct Array *a;
-
   Assert (expanded, "Only applicable to expanded arrays");
   Assert (0 <= d && d < dims, "Invalid dimension");
   Assert (!isSparse(), "Only applicable to dense arrays");
@@ -755,9 +748,7 @@ void Array::update_range (int d, int lo, int hi)
  */
 int Array::size()
 {
-  int i;
   int count = 1;
-  struct Array *a;
 
   Assert (expanded, "Only applicable to expanded arrays");
 
@@ -765,7 +756,7 @@ int Array::size()
     count = range_sz;
   }
   else {
-    for (i=0; i < dims; i++) {
+    for (int i=0; i < dims; i++) {
       if (r[i].u.ex.hi < r[i].u.ex.lo) {
 	count = 0;
 	break;
@@ -895,8 +886,6 @@ Arraystep *Array::stepper (Array *sub)
  */
 Arraystep::Arraystep (Array *a, Array *sub)
 {
-  int offset;
-  
   base = a;
   if (sub) {
     subrange = sub->Clone ();

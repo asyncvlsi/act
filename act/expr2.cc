@@ -62,7 +62,6 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 {
   int k = 0;
   int len;
-  char *s;
   if (!e) return;
 
   if (sz <= 1) return;

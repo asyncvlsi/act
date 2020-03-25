@@ -501,7 +501,6 @@ ActNamespace *Act::findNamespace (const char *s)
 {
   if (!s) return NULL;
   
-  UserDef *u;
   int i;
   char *tmp = Strdup (s);
   char *f = tmp;

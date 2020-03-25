@@ -591,8 +591,7 @@ static void _import_conn_rec (act_connection *cxroot,
   }
   else if (px->hasSubconnections()) {
     /* have to do something else */
-    act_connection *tmp, *tmp2;
-    ValueIdx *vx = px->getvx();
+    act_connection *tmp2;
     int ct = px->getctype ();
     Assert (ct == 0 || ct == 1, "Hmm");
     /* 0 = array; 1 = userdef */
@@ -850,8 +849,7 @@ static void print_id (act_connection *c)
 act_connection *ActId::Canonical (Scope *s)
 {
   ValueIdx *vx;
-  act_connection *cx, *tmpx;
-  act_connection *parent_cx;
+  act_connection *cx;
   ActId *id;
   ActId *idrest;
   

@@ -589,7 +589,6 @@ int TypeFactory::chanhashfn (int sz, void *key)
 {
   int v;
   struct chanhashkey *ch = (struct chanhashkey *)key;
-  int i;
 
   v = hash_function_continue
     (sz, (const unsigned char *) &ch->s, sizeof (Scope *), 0, 0);
@@ -724,8 +723,7 @@ PType *TypeFactory::NewPType (InstType *t)
 {
   chash_bucket_t *b;
   struct chanhashkey c;
-  InstType *it[1];
-
+  
   c.s = NULL;
   c.d = Type::NONE;
   c.t = t;
@@ -1347,7 +1345,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
 
   char *buf;
-  int orig_sz = sz;
   MALLOC (buf, char, sz);
   k = 0;
   buf[k] = '\0';
@@ -1644,7 +1641,6 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Int *ix;
   AExpr *ae;
-  Expr *e;
   InstType *it;
   
   Assert (nt == 1, "What?");
@@ -1725,9 +1721,6 @@ const char *Chan::getName ()
 Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Chan *cx;
-  InstType *xp;
-  struct chanhashkey c;
-  chash_bucket_t *b;
   InstType *cp;
 
   Assert (nt == 1, "Hmm");
