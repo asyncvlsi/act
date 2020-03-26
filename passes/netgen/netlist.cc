@@ -2112,7 +2112,6 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   Assert (bools, "Huh?");
 
   netmap = NULL;
-  bools = NULL;
 
   weak_share_min = 1;
   weak_share_max = 1;
