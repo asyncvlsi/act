@@ -2099,12 +2099,23 @@ void ActNetlistPass::enableSharedStat ()
 /*-- create a pass --*/
 ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 {
+  /*-- automatically add this pass if it doesn't exist --*/
+  if (!a->pass_find ("booleanize")) {
+    ActBooleanizePass *bp = new ActBooleanizePass (a);
+  }
+  AddDependency ("booleanize");
+
+  ActPass *pass = a->pass_find ("booleanize");
+  Assert (pass, "What?");
+
+  bools = dynamic_cast <ActBooleanizePass *>(pass);
+  Assert (bools, "Huh?");
+
   netmap = NULL;
   bools = NULL;
 
   weak_share_min = 1;
   weak_share_max = 1;
-
 
   default_load_cap = config_get_real ("net.default_load_cap");
   p_n_ratio = config_get_real ("net.p_n_ratio");
@@ -2140,17 +2151,6 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   max_n_w_in_lambda = config_get_int ("net.max_n_width");
   max_p_w_in_lambda = config_get_int ("net.max_p_width");
 
-  /*-- automatically add this pass if it doesn't exist --*/
-  if (!a->pass_find ("booleanize")) {
-    ActBooleanizePass *bp = new ActBooleanizePass (a);
-  }
-  AddDependency ("booleanize");
-
-  ActPass *pass = a->pass_find ("booleanize");
-  Assert (pass, "What?");
-
-  bools = dynamic_cast <ActBooleanizePass *>(pass);
-  Assert (bools, "Huh?");
 }
 
 ActNetlistPass::~ActNetlistPass()
