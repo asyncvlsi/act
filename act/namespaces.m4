@@ -143,8 +143,10 @@ import_item: "import" STRING ";"
     sprintf (tmp, "%s/_all_.act", s);
 
     char *t = path_open (tmp);
-    if (t) {
-      FREE (t);
+    FILE *tfp = fopen (t, "r");
+    FREE (t);
+    if (tfp) {
+      fclose (tfp);
       sprintf (tmp, "%s/_all_.act", s-1);
     }
     else {
