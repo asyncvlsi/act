@@ -1702,6 +1702,20 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
       xx = _celement_rule (x);
     }
 
+    /* dn first, then up */
+    if (!l->u.one.dir) {
+      _add_rule (&ret->dn[i], x);
+      if (l->u.one.arrow_type != 0) {
+	_add_rule (&ret->up[i], xx);
+      }
+    }
+    else {
+      if (l->u.one.arrow_type != 0) {
+	_add_rule (&ret->dn[i], xx);
+      }
+      _add_rule (&ret->up[i], x);
+    }
+#if 0
     if (l->u.one.dir) {
       /* up */
       _add_rule (&ret->up[i], x);
@@ -1717,6 +1731,8 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
 	_add_rule (&ret->dn[i], xx);
       }	
     }
+#endif
+    
     l = l->next;
   }
   /* scrubbed rules are now ready: now we can create the varinfo space */
@@ -1876,38 +1892,6 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
     else {
       i = idx;
     }
-    if (p->up[i]) {
-      fprintf (fp, "   ");
-
-      if ((i < p->nout) && p->nattr[2*i+1]) {
-	act_attr_t *a;
-	fprintf (fp, "[");
-	for (a = p->nattr[2*i+1]; a; a = a->next) {
-	  fprintf (fp, "%s=", a->attr);
-	  print_expr (fp, a->e);
-	  if (a->next) {
-	    fprintf (fp, "; ");
-	  }
-	}
-	fprintf (fp, "] ");
-      }
-      
-      _dump_expr (fp, p->up[i], p);
-      fprintf (fp, " -> ");
-      if (i < p->nout) {
-	if (p->nout == 1) {
-	  fprintf (fp, "out+");
-	}
-	else {
-	  fprintf (fp, "out[%d]+", i);
-	}
-      }
-      else {
-	fprintf (fp, "@x%d+", i-p->nout);
-      }
-      fprintf (fp, "\n");
-    }
-    
     if (p->dn[i]) {
       fprintf (fp, "   ");
 
@@ -1936,6 +1920,38 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
       }
       else {
 	fprintf (fp, "@x%d-", i-p->nout);
+      }
+      fprintf (fp, "\n");
+    }
+
+    if (p->up[i]) {
+      fprintf (fp, "   ");
+
+      if ((i < p->nout) && p->nattr[2*i+1]) {
+	act_attr_t *a;
+	fprintf (fp, "[");
+	for (a = p->nattr[2*i+1]; a; a = a->next) {
+	  fprintf (fp, "%s=", a->attr);
+	  print_expr (fp, a->e);
+	  if (a->next) {
+	    fprintf (fp, "; ");
+	  }
+	}
+	fprintf (fp, "] ");
+      }
+      
+      _dump_expr (fp, p->up[i], p);
+      fprintf (fp, " -> ");
+      if (i < p->nout) {
+	if (p->nout == 1) {
+	  fprintf (fp, "out+");
+	}
+	else {
+	  fprintf (fp, "out[%d]+", i);
+	}
+      }
+      else {
+	fprintf (fp, "@x%d+", i-p->nout);
       }
       fprintf (fp, "\n");
     }
