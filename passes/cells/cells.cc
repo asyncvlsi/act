@@ -62,8 +62,6 @@ struct act_prsinfo {
   int tval;			 /* for tree<>; -1 = none, 0 = mgn,
 				    otherwise tree  */
 
-  /* XXX: need attributes from the production rules */
-  
   A_DECL (act_prs_expr_t *, up); /* pull-up */
   A_DECL (act_prs_expr_t *, dn); /* pull-down */
       /* NOTE: all actid pointers are actually just simple integers */
@@ -72,6 +70,27 @@ struct act_prsinfo {
   int *match_perm;		// used to report match!
   
 };
+
+
+static void _add_new_outslot (struct act_prsinfo *pi)
+{
+  A_NEW (pi->up, act_prs_expr_t *);
+  A_NEW (pi->dn, act_prs_expr_t *);
+  A_NEXT (pi->up) = NULL;
+  A_NEXT (pi->dn) = NULL;
+  A_INC (pi->up);
+  A_INC (pi->dn);
+
+  A_NEW (pi->attrib, struct act_varinfo);
+  A_NEXT (pi->attrib).nup = 0;
+  A_NEXT (pi->attrib).ndn = 0;
+  A_NEXT (pi->attrib).depths = NULL;
+  A_NEXT (pi->attrib).cup = 0;
+  A_NEXT (pi->attrib).cdn = 0;
+  A_NEXT (pi->attrib).tree = 0;
+  A_INC (pi->attrib);
+}
+
 
 static void _dump_prsinfo (struct act_prsinfo *p);
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
@@ -166,6 +185,7 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
 {
   int bid;
   int btype;
+
   if (!a && !b) return 1;
   if (!a || !b) return 0;
   btype = b->type;
@@ -326,7 +346,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
   for (i=0; i < k1->nvars; i++) {
     printf (" %d", perm[i]);
   }
-  printf ("===\n");
+  printf ("  ===\n");
 #endif  
   
   /* 
@@ -338,7 +358,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
   */
   for (i=0; i < A_LEN (k1->up); i++) {
     if (!_equal_expr (k1->up[i], k2->up[perm[i]], perm, 0, chk_width)) {
-#if 0      
+#if 0
       printf ("up[%d] doesn't match\n", i);
 #endif      
       FREE (perm);
@@ -347,7 +367,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
   }
   for (i=0; i < A_LEN (k1->dn); i++) {
     if (!_equal_expr (k1->dn[i], k2->dn[perm[i]], perm, 0, chk_width)) {
-#if 0      
+#if 0
       printf ("dn[%d] doesn't match\n", i);
 #endif      
       FREE (perm);
@@ -779,6 +799,12 @@ void ActCellPass::flush_pending (Process *p)
   A_INIT (pendingprs);
 }
 
+static void _alloc_new_id (struct idmap *i, ActId *id)
+{
+  A_NEW (i->ids, ActId *);
+  A_NEXT (i->ids) = id;
+  A_INC (i->ids);
+}
 
 static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
 {
@@ -790,9 +816,7 @@ static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
       if (id->isEqual (i->ids[k])) return k;
     }
   }
-  A_NEW (i->ids, ActId *);
-  A_NEXT (i->ids) = id;
-  A_INC (i->ids);
+  _alloc_new_id (i, id);
   return k;
 }
 
@@ -1555,9 +1579,8 @@ static void _add_rule (act_prs_expr_t **x, act_prs_expr_t *e)
   }
 }
 
-
 /*-- convert prs block into attriburtes used for isomorphism checking --*/
-struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
+struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int ninp, int noutp)
 {
   struct act_prsinfo *ret;
   act_prs_lang_t *l, *lpush;
@@ -1587,6 +1610,23 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
   imap.nout = 0;
   imap.nat = 0;
 
+  if (noutp > 0) {
+    if (noutp == 1) {
+      ActId *tmp = new ActId ("out");
+      tmp = tmp->Expand (NULL, NULL);
+      _alloc_new_id (&imap, tmp);
+      _add_new_outslot (ret);
+    }
+    else {
+      for (int i=0; i < noutp; i++) {
+	ActId *tmp = new ActId ("out", new Array (const_expr (i)));
+	tmp = tmp->Expand (NULL, NULL);
+	_alloc_new_id (&imap, tmp);
+	_add_new_outslot (ret);
+      }
+    }
+  }
+
   l = prs;
   lpush = NULL;
   in_tree = 0;
@@ -1614,21 +1654,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
 	A_NEXT (imap.ids) = l->u.one.id;
 	A_INC (imap.ids);
 
-	A_NEW (ret->up, act_prs_expr_t *);
-	A_NEW (ret->dn, act_prs_expr_t *);
-	A_NEXT (ret->up) = NULL;
-	A_NEXT (ret->dn) = NULL;
-	A_INC (ret->up);
-	A_INC (ret->dn);
-
-	A_NEW (ret->attrib, struct act_varinfo);
-	A_NEXT (ret->attrib).nup = 0;
-	A_NEXT (ret->attrib).ndn = 0;
-	A_NEXT (ret->attrib).depths = NULL;
-	A_NEXT (ret->attrib).cup = 0;
-	A_NEXT (ret->attrib).cdn = 0;
-	A_NEXT (ret->attrib).tree = 0;
-	A_INC (ret->attrib);
+	_add_new_outslot (ret);
       }
     }
     if (in_tree) {
@@ -1658,26 +1684,20 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs)
       A_NEW (imap.ids, ActId *);
       A_NEXT (imap.ids) = l->u.one.id;
       A_INC (imap.ids);
-      A_NEW (ret->up, act_prs_expr_t *);
-      A_NEW (ret->dn, act_prs_expr_t *);
-      A_NEXT (ret->up) = NULL;
-      A_NEXT (ret->dn) = NULL;
-      A_INC (ret->up);
-      A_INC (ret->dn);
 
-      A_NEW (ret->attrib, struct act_varinfo);
-      A_NEXT (ret->attrib).nup = 0;
-      A_NEXT (ret->attrib).ndn = 0;
-      A_NEXT (ret->attrib).depths = NULL;
-      A_NEXT (ret->attrib).cup = 0;
-      A_NEXT (ret->attrib).cdn = 0;
-      A_NEXT (ret->attrib).tree = 0;
-      A_INC (ret->attrib);
-      
+      _add_new_outslot (ret);
     }
     l = l->next;
   }
 
+  if (ninp > 0) {
+    for (int i=0; i < ninp; i++) {
+      ActId *tmp = new ActId ("in", new Array (const_expr (i)));
+      tmp = tmp->Expand (NULL, NULL);
+      _find_alloc_id (&imap, tmp, 0);
+    }
+  }
+  
   l = prs;
   while (l) {
     /* collect all the inputs, scrub rules */
@@ -2261,17 +2281,19 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
   if (cell_table) {
     b = chash_lookup (cell_table, pi);
     if (b) {
-      pi = (struct act_prsinfo *)b->v;
       /* found match! */
     }
     else {
 #if 0
+      printf ("NEW CELL NEEDED!\n");
       _dump_prsinfo (pi);
 #endif
       add_new_cell (pi);
       b = chash_add (cell_table, pi);
       b->v = pi;
     }
+    pi = (struct act_prsinfo *)b->key;
+    
     char buf[100];
     do {
       snprintf (buf, 100, "cx%d", proc_inst_count++);
@@ -2300,6 +2322,11 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
     Act::warn_double_expand = 0;
     ac->Expandlist (NULL, p->CurScope ());
     Act::warn_double_expand = oval;
+
+    if (pi->match_perm) {
+      FREE (pi->match_perm);
+      pi->match_perm = NULL;
+    }
   }
 }
 
@@ -2697,7 +2724,15 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
       
       /* fine. now dump into celldb */
-      pi = _gen_prs_attributes (l);
+      pi = _gen_prs_attributes (l, in_t->arrayInfo() ?
+				in_t->arrayInfo()->size() : 1,
+				out_t->arrayInfo() ?
+				out_t->arrayInfo()->size() : 1);
+
+#if 0
+      printf ("CELL: %s\n", p->getName());
+      _dump_prsinfo (pi);
+#endif      
 
       {
 	char buf[100];
@@ -2756,6 +2791,10 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	_dump_prsinfo (pi);
 #endif	
 	b->v = pi;
+      }
+      if (pi->match_perm) {
+	FREE (pi->match_perm);
+	pi->match_perm = NULL;
       }
     }
   }

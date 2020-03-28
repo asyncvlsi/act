@@ -66,7 +66,8 @@ private:
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
   void add_passgates ();
-  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs);
+  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs, int ninp = -1,
+					   int noutp = -1);
   void dump_celldb (FILE *);
   Expr *_idexpr (int idx, struct act_prsinfo *pi);
   ActBody_Conn *_build_connections (const char *name,
