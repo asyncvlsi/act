@@ -210,6 +210,7 @@ class DiffMat : public Material {
   int effOverhang(int w, int hasvia = 0);
   int viaSpaceEdge ();
   int viaSpaceMid ();
+  int minArea () { return minarea; }
   int getPolySpacing () { return polyspacing; }
   int getNotchSpacing () { return notchspacing; }
   int getOppDiffSpacing (int flavor) { return oppspacing[flavor]; }
