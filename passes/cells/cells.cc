@@ -171,77 +171,82 @@ static void _propagate_sz (act_prs_expr_t *e, act_size_spec_t **sz)
   }
 }
 
-
-/*
-  non-zero if equal, 0 otherwise
-
-  flip = 0, compare a to b
-  flip = 1, compare a to NOT b
-
-  chk_width = 1 : check widths of gates
-*/
-static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
-			int *perm, int flip, int chk_width)
+static int _equal_expr_helper (act_prs_expr_t *a, act_prs_expr_t *b,
+			       int *perm, int paritya, int parityb,
+			       int chk_width)
 {
   int bid;
-  int btype;
-
-  if (!a && !b) return 1;
-  if (!a || !b) return 0;
-  btype = b->type;
-  if (flip) {
-    if (b->type == ACT_PRS_EXPR_NOT) {
-      flip = 0;
-      b = b->u.e.l;
-    }
-    else if (a->type == ACT_PRS_EXPR_NOT) {
-      flip = 0;
-      a = a->u.e.l;
-    }
-    else if (b->type == ACT_PRS_EXPR_AND) {
-      btype = ACT_PRS_EXPR_OR;
-    }
-    else if (b->type == ACT_PRS_EXPR_OR) {
-      btype = ACT_PRS_EXPR_AND;
-    }
+  
+  if (!a && !b) {
+    return 1;
   }
-  if ((a->type != b->type) && (flip == 0)) {
-    if (a->type == ACT_PRS_EXPR_NOT) {
-      return _equal_expr (a->u.e.l, b, perm, 1, chk_width);
-    }
-    else if (b->type == ACT_PRS_EXPR_NOT) {
-      return _equal_expr (a, b->u.e.l, perm, 1, chk_width);
-    }
+  if (!a || !b) {
     return 0;
   }
-  if (flip && (a->type != btype)) return 0;
-  
+
+  if (a->type == ACT_PRS_EXPR_NOT && b->type == ACT_PRS_EXPR_NOT) {
+    return _equal_expr_helper (a->u.e.l, b->u.e.l, perm, 1-paritya, 1-parityb,
+			       chk_width);
+  }
+  while (a && a->type == ACT_PRS_EXPR_NOT) {
+    paritya = 1 - paritya;
+    a = a->u.e.l;
+  }
+  while (b && b->type == ACT_PRS_EXPR_NOT) {
+    parityb = 1 - parityb;
+    b = b->u.e.l;
+  }
+  Assert (a && b, "Hmm");
+
   switch (a->type) {
-  case ACT_PRS_EXPR_AND:
-    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width) &&
-      _equal_expr (a->u.e.r, b->u.e.r, perm, flip, chk_width) &&
-      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0, chk_width) &&
-      (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    if (b->type == ACT_PRS_EXPR_TRUE || b->type == ACT_PRS_EXPR_FALSE) {
+      int bval, aval;
+      bval = (b->type == ACT_PRS_EXPR_TRUE ? 1 : 0);
+      aval = (a->type == ACT_PRS_EXPR_TRUE ? 1 : 0);
+      bval = bval^parityb;
+      aval = aval^paritya;
+      return (aval == bval);
+    }
+    else {
+      return 0;
+    }
     break;
 
-  case ACT_PRS_EXPR_OR:
-    return ((_equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width) &&
-	     _equal_expr (a->u.e.r, b->u.e.r, perm, flip, chk_width)) ||
-	    (_equal_expr (a->u.e.l, b->u.e.r, perm, flip, chk_width) &&
-	     _equal_expr (a->u.e.r, b->u.e.l, perm, flip, chk_width))) &&
-      _equal_expr (a->u.e.pchg, b->u.e.pchg, perm, 0, chk_width) &&
-      (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
-    break;
-    
-  case ACT_PRS_EXPR_NOT:
-    return _equal_expr (a->u.e.l, b->u.e.l, perm, flip, chk_width);
+  case ACT_PRS_EXPR_LABEL:
+    if (b->type != ACT_PRS_EXPR_LABEL) {
+      return 0;
+    }
+    if (paritya != parityb) {
+      return 0;
+    }
+    bid = (unsigned long)b->u.l.label;
+    if (perm) {
+      bid = perm[bid];
+    }
+    if ((unsigned long)a->u.l.label != bid) {
+      return 0;
+    }
+    else {
+      return 1;
+    }
     break;
 
   case ACT_PRS_EXPR_VAR:
+    if (b->type != ACT_PRS_EXPR_VAR) {
+      return 0;
+    }
+    if (paritya != parityb) {
+      return 0;
+    }
     bid = (unsigned long long)b->u.v.id;
-    if (perm) bid = perm[bid];
-    //if (!a->u.v.id->isEqual (b->u.v.id)) return 0;
-    if ((unsigned long long)a->u.v.id != bid) return 0;
+    if (perm) {
+      bid = perm[bid];
+    }
+    if ((unsigned long long)a->u.v.id != bid) {
+      return 0;
+    }
     if (chk_width) {
       if (a->u.v.sz && !b->u.v.sz) return 0;
       if (!a->u.v.sz && b->u.v.sz) return 0;
@@ -252,25 +257,74 @@ static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
 	if (!expr_equal (a->u.v.sz->folds, b->u.v.sz->folds)) return 0;
       }
     }
+    return 1;
     break;
 
   case ACT_PRS_EXPR_ANDLOOP:
   case ACT_PRS_EXPR_ORLOOP:
-    fatal_error ("loops in prs?");
+    fatal_error ("loops in expanded prs?");
+    return 0;
     break;
 
-  case ACT_PRS_EXPR_LABEL:
-    bid = (unsigned long)b->u.l.label;
-    if (perm) bid = perm[bid];
-    if ((unsigned long)a->u.l.label != bid) return 0;
+  case ACT_PRS_EXPR_NOT:
+    fatal_error ("What happened to the while loop earlier?!");
+    return 0;
     break;
 
-  case ACT_PRS_EXPR_TRUE:
-  case ACT_PRS_EXPR_FALSE:
-    return 1;
+#define IS_AND(x,y) (((x)->type == ACT_PRS_EXPR_AND && ((y) == 0)) || \
+		     ((x)->type == ACT_PRS_EXPR_OR && ((y) == 1)))
+
+#define IS_OR(x,y) (((x)->type == ACT_PRS_EXPR_OR && ((y) == 0)) || \
+		     ((x)->type == ACT_PRS_EXPR_AND && ((y) == 1)))
+
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    if (IS_AND (a, paritya)) {
+      if (IS_AND (b, parityb)) {
+	return _equal_expr_helper (a->u.e.l, b->u.e.l, perm, paritya, parityb, chk_width) &&
+	  _equal_expr_helper (a->u.e.r, b->u.e.r, perm, paritya, parityb, chk_width) &&
+	  _equal_expr_helper (a->u.e.pchg, b->u.e.pchg, perm, 0, 0, chk_width) &&
+	  (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+      }
+      else {
+	return 0;
+      }
+    }
+    else {
+      if (IS_AND (b, parityb)) {
+	return 0;
+      }
+      else {
+	return ((_equal_expr_helper (a->u.e.l, b->u.e.l, perm, paritya, parityb, chk_width) &&
+		_equal_expr_helper (a->u.e.r, b->u.e.r, perm, paritya, parityb, chk_width)) ||
+	  (_equal_expr_helper (a->u.e.l, b->u.e.r, perm, paritya, parityb, chk_width) &&
+	   _equal_expr_helper (a->u.e.r, b->u.e.l, perm, paritya, parityb, chk_width))) &&
+	  _equal_expr_helper (a->u.e.pchg, b->u.e.pchg, perm, 0, 0, chk_width) &&
+	  (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+      }
+    }    
     break;
+#undef IS_AND
+#undef IS_OR
+
+  default:
+    fatal_error ("What?");
+    return 0;
   }
-  return 1;
+}
+
+/*
+  non-zero if equal, 0 otherwise
+
+  flip = 0, compare a to b
+  flip = 1, compare a to NOT b
+
+  chk_width = 1 : check widths of gates
+*/
+static int _equal_expr (act_prs_expr_t *a, act_prs_expr_t *b,
+			int *perm, int chk_width)
+{
+  return _equal_expr_helper (a, b, perm, 0, 0, chk_width);
 }
 
 static int basic_match (struct act_prsinfo *k1, struct act_prsinfo *k2)
@@ -357,7 +411,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
      let's say i.
   */
   for (i=0; i < A_LEN (k1->up); i++) {
-    if (!_equal_expr (k1->up[i], k2->up[perm[i]], perm, 0, chk_width)) {
+    if (!_equal_expr (k1->up[i], k2->up[perm[i]], perm, chk_width)) {
 #if 0
       printf ("up[%d] doesn't match\n", i);
 #endif      
@@ -366,7 +420,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
     }
   }
   for (i=0; i < A_LEN (k1->dn); i++) {
-    if (!_equal_expr (k1->dn[i], k2->dn[perm[i]], perm, 0, chk_width)) {
+    if (!_equal_expr (k1->dn[i], k2->dn[perm[i]], perm, chk_width)) {
 #if 0
       printf ("dn[%d] doesn't match\n", i);
 #endif      
@@ -2432,7 +2486,32 @@ static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
   // mark these rules as part of a tree: needs to be fixed
 }
   
-
+static  act_prs_expr_t *_left_canonicalize (act_prs_expr_t *p)
+{
+  if (!p) {
+    return p;
+  }
+  if (p->type == ACT_PRS_EXPR_NOT) {
+    p->u.e.l = _left_canonicalize (p->u.e.l);
+    return p;
+  }
+  if (p->type == ACT_PRS_EXPR_AND || p->type == ACT_PRS_EXPR_OR) {
+    p->u.e.l = _left_canonicalize (p->u.e.l);
+    if (p->type == p->u.e.r->type) {
+      act_prs_expr_t *x, *y;
+      x = p->u.e.r;
+      p->u.e.r = x->u.e.l;
+      x->u.e.l = p;
+      p = x;
+      return _left_canonicalize (p);
+    }
+    else {
+      p->u.e.r = _left_canonicalize (p->u.e.r);
+      return p;
+    }
+  }
+  return p;
+}
 
 /*
   Helper function for walking through the production rule block
@@ -2444,6 +2523,7 @@ void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
   while (prs) {
     switch (prs->type) {
     case ACT_PRS_RULE:
+      prs->u.one.e = _left_canonicalize (prs->u.one.e);
 #if 1
       /* snip rule */
       if (prev) {
