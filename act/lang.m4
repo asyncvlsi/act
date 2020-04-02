@@ -219,6 +219,7 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
     if (list_length ($1) > 1) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_SEMI;
+      c->space = NULL;
       c->u.semi_comma.cmd = $1;
     }
     else {
@@ -236,6 +237,7 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 
     if (list_length ($1) > 1) {
       NEW (c, act_chp_lang_t);
+      c->space = NULL;
       c->type = ACT_CHP_COMMA;
       c->u.semi_comma.cmd = $1;
     }
@@ -279,6 +281,7 @@ base_stmt[act_chp_lang_t *]: send_stmt
 	act_chp_lang_t *c;
 	NEW (c, act_chp_lang_t);
 	c->type = ACT_CHP_SKIP;
+	c->space = NULL;
 	return c;
 }}
 | "(" chp_body ")"
@@ -290,6 +293,7 @@ base_stmt[act_chp_lang_t *]: send_stmt
 	act_chp_lang_t *c;
 	NEW (c, act_chp_lang_t);
 	c->type = ACT_CHP_FUNC;
+	c->space = NULL;
 	c->u.func.name = string_create ($1);
 	c->u.func.rhs = $3;
 	return c;
@@ -335,6 +339,7 @@ send_data[act_chp_lang_t *]: w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
+    c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = list_new ();
     list_append (c->u.comm.rhs, $1);
@@ -345,6 +350,7 @@ send_data[act_chp_lang_t *]: w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
+    c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = $2;
     return c;
@@ -371,6 +377,7 @@ recv_id[act_chp_lang_t *]: expr_id
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
+    c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = list_new ();
     list_append (c->u.comm.rhs, $1);
@@ -381,6 +388,7 @@ recv_id[act_chp_lang_t *]: expr_id
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
+    c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = $2;
     return c;
@@ -392,6 +400,7 @@ assign_stmt[act_chp_lang_t *]: expr_id ":=" w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
+    c->space = NULL;
     c->u.assign.id = $1;
     c->u.assign.e = $3;
     return c;
@@ -401,6 +410,7 @@ assign_stmt[act_chp_lang_t *]: expr_id ":=" w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
+    c->space = NULL;
     c->u.assign.id = $1;
     NEW (c->u.assign.e, Expr);
     if ($2) {
@@ -421,6 +431,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
 
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SELECT;
+    c->space = NULL;
     c->u.gc = NULL;
     for (li = list_first ($2); li; li = list_next (li)) {
       gc = (act_chp_gc_t *) list_value (li);
@@ -442,6 +453,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SELECT;
+    c->space = NULL;
     NEW (c->u.gc, struct act_chp_gc);
     c->u.gc->g = $2;
     c->u.gc->s = NULL;
@@ -519,6 +531,7 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_LOOP;
+    c->space = NULL;
     NEW (c->u.gc, act_chp_gc_t);
     c->u.gc->next = NULL;
     c->u.gc->id = NULL;

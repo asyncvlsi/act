@@ -735,6 +735,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   
   if (!c) return NULL;
   NEW (ret, act_chp_lang_t);
+  ret->space = NULL;
   ret->type = c->type;
   switch (c->type) {
   case ACT_CHP_COMMA:

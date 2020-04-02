@@ -169,6 +169,7 @@ typedef struct act_chp_gc {
 
 typedef struct act_chp_lang {
   int type;
+  void *space;			// this space for rent!
   union {
     struct {
       ActId *id;
