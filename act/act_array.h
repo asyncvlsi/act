@@ -121,6 +121,7 @@ class Array {
    */
   Array (Expr *e, Expr *f = NULL);
   Array (int lo, int hi);
+  Array (int idx);
 
   ~Array ();
 

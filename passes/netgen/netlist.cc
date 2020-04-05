@@ -39,6 +39,12 @@ typedef struct {
   double reff;			/* reff through this path */
 } path_t;
 
+const char *ActNetlistPass::global_vdd = NULL;
+const char *ActNetlistPass::global_gnd = NULL;
+const char *ActNetlistPass::local_vdd = NULL;
+const char *ActNetlistPass::local_gnd = NULL;
+Act *ActNetlistPass::current_act = NULL;
+
 
 #define VINF(x) ((struct act_nl_varinfo *)((x)->extra))
 
@@ -1178,11 +1184,87 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
   return ret;
 }
 
-void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n)
+node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
+{
+  int k;
+  node_t *n = NULL;
+  if (!s) return NULL;
+  if (!*s) return NULL;
+
+  Process *p = N->bN->p;
+  
+  if (*s == '#') {
+    if (*(s+1) == 'f') {
+      k = atoi (s+3);
+    }
+    else {
+      k = atoi (s+1);
+    }
+    /* k = node# */
+    n = N->hd;
+    while (n) {
+      if (n->i == k) {
+	break;
+      }
+      n = n->next;
+    }
+  }
+  else {
+    /* not an internal node */
+    char *t = s;
+    char dot;
+    while (*t && *t != '.' && *t != '[') {
+      t++;
+    }
+    Assert (N->bN->cur, "What?");
+    dot = *t;
+    *t = '\0';
+    if (!N->bN->cur->FullLookup (s)) {
+      *t = dot;
+      /* has to be localvdd, localgnd, globalvdd, globalgnd */
+    }
+    else {
+      *t = dot;
+      ActId *id = act_string_to_bool_id (s);
+      if (!id) {
+	fatal_error ("Could not convert string `%s' to an ActId", s);
+      }
+      act_connection *c = id->Canonical (N->bN->cur);
+      n = N->hd;
+      while (n) {
+	if (n->v) {
+	  Assert (n->v->v, "What?");
+	  if (n->v->v->id == c) {
+	    break;
+	  }
+	}
+	n = n->next;
+      }
+    }
+    if (!n) {
+      if ((strcmp (s, local_vdd) == 0) ||
+	  (strcmp (s, global_vdd) == 0)) {
+	n = N->Vdd;
+      }
+      else if ((strcmp (s, local_gnd) == 0) ||
+	       (strcmp (s, global_gnd) == 0)) {
+	n = N->GND;
+      }
+    }
+  }
+  if (!n) {
+    Assert (p, "What?");
+    fatal_error ("Looking for signal `%s', not found in `%s'", s,
+		 p->getName());
+  }
+  return n;
+}
+
+void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 {
   if (n->v) {
     ActId *id = n->v->v->id->toid();
-    id->Print (fp);
+    id->sPrint (buf, sz);
     delete id;
   }
   else {
@@ -1195,17 +1277,22 @@ void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n)
 	  vx = N->bN->cur->FullLookupVal (global_vdd);
 	}
 	if (vx) {
-	  c = vx->connection()->primary();
-	  ActId *id  = c->toid();
-	  id->Print (fp);
-	  delete id;
+	  if (vx->hasConnection()) {
+	    c = vx->connection()->primary();
+	    ActId *id  = c->toid();
+	    id->sPrint (buf, sz);
+	    delete id;
+	  }
+	  else {
+	    snprintf (buf, sz, "%s", vx->getName());
+	  }
 	}
 	else {
-	  fprintf (fp, "%s", global_vdd);
+	  snprintf (buf, sz, "%s", global_vdd);
 	}
       }
       else {
-	fprintf (fp, "%s", global_vdd);
+	snprintf (buf, sz, "%s", global_vdd);
       }	
     }
     else if (n == N->GND) {
@@ -1217,27 +1304,44 @@ void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n)
 	  vx = N->bN->cur->FullLookupVal (global_gnd);
 	}
 	if (vx) {
-	  c = vx->connection()->primary();
-	  ActId *id  = c->toid();
-	  id->Print (fp);
-	  delete id;
+	  if (vx->hasConnection()) {
+	    c = vx->connection()->primary();
+	    ActId *id  = c->toid();
+	    id->sPrint (buf, sz);
+	    delete id;
+	  }
+	  else {
+	    snprintf (buf, sz, "%s", vx->getName());
+	  }
 	}
 	else {
-	  fprintf (fp, "%s", global_gnd);
+	  snprintf (buf, sz, "%s", global_gnd);
 	}
       }
       else {
-	fprintf (fp, "%s", global_gnd);
+	snprintf (buf, sz, "%s", global_gnd);
       }
     }
     else {
       if (n->inv) {
-	fprintf (fp, "#fb%d#", n->i);
+	snprintf (buf, sz, "#fb%d#", n->i);
       }
       else {
-	fprintf (fp, "#%d", n->i);
+	snprintf (buf, sz, "#%d", n->i);
       }
     }
+  }
+}
+
+void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle)
+{
+  char buf[10240];
+  sprint_node (buf, 10240, N, n);
+  if (mangle) {
+    ActNetlistPass::current_act->mfprintf (fp, "%s", buf);
+  }
+  else {
+    fprintf (fp, "%s", buf);
   }
 }
 
@@ -2099,6 +2203,7 @@ void ActNetlistPass::enableSharedStat ()
 /*-- create a pass --*/
 ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 {
+  current_act = a;
   /*-- automatically add this pass if it doesn't exist --*/
   if (!a->pass_find ("booleanize")) {
     ActBooleanizePass *bp = new ActBooleanizePass (a);

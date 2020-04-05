@@ -153,6 +153,8 @@ class PolyMat : public RoutingMat {
   PolyMat (char *s) : RoutingMat(s) { }
   int getOverhang (int w) { return (*overhang)[w]; }
   int getNotchOverhang (int w) { return (*notch_overhang)[w]; }
+  Contact *getUpC() { return viaup; }
+  
  protected:
   int width;
 
@@ -217,6 +219,7 @@ class DiffMat : public Material {
   int getSpacing (int flavor) { return spacing[flavor]; }
   int getWidth () { return width; }
   int getWdiffToDiffSpacing() { return diffspacing; }
+  Contact *getUpC() { return viaup; }
   
 protected:
   int width;

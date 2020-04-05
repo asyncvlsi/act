@@ -141,6 +141,23 @@ Array::Array (int lo, int hi)
 }
 
 /*------------------------------------------------------------------------
+ * Constructor: [e] single dimensional array dereference
+ *------------------------------------------------------------------------
+ */
+Array::Array (int idx)
+{
+  dims = 1;
+  NEW (r, struct range);
+  r->u.ex.lo = idx;
+  r->u.ex.hi = idx;
+  r->u.ex.isrange = 0;
+  deref = 1;
+  expanded = 1;
+  range_sz = -1;
+  next = NULL;
+}
+
+/*------------------------------------------------------------------------
  *  Destructor
  *------------------------------------------------------------------------
  */

@@ -286,5 +286,6 @@ public:
 
 /* this should be elsewhere */
 Expr *const_expr (int);
+ActId *act_string_to_bool_id (const char *s);
 
 #endif /* __ACT_H__ */

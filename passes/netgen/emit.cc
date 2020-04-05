@@ -29,33 +29,6 @@
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
-static void aemit_node (Act *a, netlist_t *N, FILE *fp, node_t *n)
-{
-  if (n->v) {
-    char buf[10240];
-    ActId *id = n->v->v->id->toid();
-    id->sPrint (buf, 10240);
-    a->mfprintf (fp, "%s", buf);
-    delete id;
-  }
-  else {
-    if (n == N->Vdd) {
-      fprintf (fp, "Vdd");
-    }
-    else if (n == N->GND) {
-      fprintf (fp, "GND");
-    }
-    else {
-      if (n->inv) {
-	fprintf (fp, "#fb%d#", n->i);
-      }
-      else {
-	fprintf (fp, "#%d", n->i);
-      }
-    }
-  }
-}
-
 void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 {
   Assert (p->isExpanded(), "Process must be expanded!");
@@ -158,7 +131,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     for (vi = list_first (n->vdd_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      aemit_node (a, n, fp, x);
+      emit_node (n, fp, x, 1);
     }
     fprintf (fp, "\n");
   }
@@ -168,7 +141,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     for (vi = list_first (n->gnd_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      aemit_node (a, n, fp, x);
+      emit_node (n, fp, x, 1);
     }
     fprintf (fp, "\n");
   }
@@ -181,7 +154,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     for (vi = list_first (n->psc_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      aemit_node (a, n, fp, x);
+      emit_node (n, fp, x, 1);
     }
     fprintf (fp, "\n");
   }
@@ -191,7 +164,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     for (vi = list_first (n->nsc_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      aemit_node (a, n, fp, x);
+      emit_node (n, fp, x, 1);
     }
     fprintf (fp, "\n");
   }
@@ -235,9 +208,9 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     /* emit node cap, if any */
     if ((x->cap > 0) && !ignore_loadcap) {
       fprintf (fp, "C_per_node_%d ", ncaps++);
-      aemit_node (a, n, fp, x);
+      emit_node (n, fp, x, 1);
       fprintf (fp, " ");
-      aemit_node (a, n, fp, n->GND);
+      emit_node (n, fp, n->GND, 1);
       fprintf (fp, " %g\n", x->cap*1e-15);
     }
     
@@ -323,17 +296,17 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 
 	  /* if length repeat, source/drain changes */
 	  if (il == 0) {
-	    aemit_node (a, n, fp, src);
+	    emit_node (n, fp, src, 1);
 	  }
 	  else {
 	    fprintf (fp, "#l%d", repnodes);
 	  }
 	  fprintf (fp, " ");
-	  aemit_node (a, n, fp, e->g);
+	  emit_node (n, fp, e->g, 1);
 	  fprintf (fp, " ");
 
 	  if (il == len_repeat-1) {
-	    aemit_node (a, n, fp, drain);
+	    emit_node (n, fp, drain, 1);
 	  }
 	  else {
 	    fprintf (fp, "#l%d", repnodes+1);
@@ -343,7 +316,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	  }
 
 	  fprintf (fp, " ");
-	  aemit_node (a, n, fp, e->bulk);
+	  emit_node (n, fp, e->bulk, 1);
 
 	  sprintf (devname, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   act_dev_value_to_string (e->flavor));

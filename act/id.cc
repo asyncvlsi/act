@@ -26,6 +26,7 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <string.h>
+#include <ctype.h>
 
 static void print_id (act_connection *c);
 
@@ -1210,3 +1211,103 @@ ActId *ActId::Tail ()
   }
   return ret;
 }
+
+static ActId *singleton_id (char *s)
+{
+  char *tmp;
+  if (!s) return NULL;
+  if (!*s) return NULL;
+  tmp = s;
+  while (*tmp && *tmp != '[') {
+    tmp++;
+  }
+  if (!*tmp) {
+    return new ActId (s);
+  }
+  else {
+    Array *a, *aret;
+    char *foo = tmp;
+    int idx;
+    aret = NULL;
+    *tmp = '\0';
+    do {
+      sscanf (tmp+1, "%d", &idx);
+      a = new Array (idx);
+      if (!aret) {
+	aret = a;
+      }
+      else {
+	aret->Concat (a);
+	delete a;
+      }
+      tmp++;
+      while (*tmp && isdigit (*tmp)) {
+	tmp++;
+      }
+      if (*tmp != ']') {
+	fatal_error ("singleton_id: bad string `%s'", s);
+      }
+      tmp++;
+    } while (*tmp == '[');
+    if (*tmp) {
+      fatal_error ("singleton_id: bad string `%s'", s);
+    }
+    ActId *ret = new ActId (s, aret);
+    *foo = '[';
+    return ret;
+  }
+}
+
+/*
+ * Convert a constant string into an ActId
+ */
+ActId *act_string_to_bool_id (const char *s)
+{
+  char *t, *tmp, *pos;
+  ActId *ret, *cur;
+
+  if (!s) {
+    return NULL;
+  }
+  if (!*s) {
+    return NULL;
+  }
+  t = Strdup (s);
+  tmp = t;
+
+  ret = NULL;
+  cur = NULL;
+
+  while (*tmp) {
+    pos = tmp;
+    while (*tmp && *tmp != '.') {
+      tmp++;
+    }
+    if (*tmp) {
+      *tmp = '\0';
+      if (!cur) {
+	cur = singleton_id (pos);
+	ret = cur;
+      }
+      else {
+	cur->Append (singleton_id (pos));
+	cur = cur->Rest ();
+      }
+      *tmp = '.';
+      tmp++;
+    }
+    else {
+      if (!cur) {
+	cur = singleton_id (pos);
+	ret = cur;
+      }
+      else {
+	cur->Append (singleton_id (pos));
+	cur = cur->Rest ();
+      }
+    }
+  }
+  FREE (t);
+  return ret;
+}
+

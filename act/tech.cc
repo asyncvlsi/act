@@ -387,9 +387,11 @@ void Technology::Init (const char *s)
 	      mat->plug_dist = -1;
 	    }
 
-	    A_NEW (contacts, char *);
-	    A_NEXT (contacts) = Strdup (ldiff);
-	    A_INC (contacts);
+	    //XXX: no well contact; contact is through welldiff
+	    //
+	    //A_NEW (contacts, char *);
+	    //A_NEXT (contacts) = Strdup (ldiff);
+	    //A_INC (contacts);
 	  }
 	  else {
 	    T->well[i-4][j] = NULL;
