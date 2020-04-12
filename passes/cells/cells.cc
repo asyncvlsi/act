@@ -2687,6 +2687,10 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
   /*
     If cells are not expanded, then expand them!
   */
+  A_DECL (const char *, xcell);
+  A_INIT (xcell);
+
+  /* -- collect potential cells -- */
   for (it = it.begin(); it != it.end(); it++) {
     Type *u = (*it);
     Process *p = dynamic_cast<Process *>(u);
@@ -2696,14 +2700,27 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       continue;
     }
     if ((!p->isExpanded()) && (p->getNumParams() == 0)) {
-      char buf[10240];
-      sprintf (buf, "%s<>", p->getName());
-      if (!cells->findType (buf)) {
-	/* create expanded version */
-	p->Expand (cells, cells->CurScope(), 0, NULL);
-      }
+      A_NEW (xcell, const char *);
+      A_NEXT (xcell) = p->getName();
+      A_INC (xcell);
     }
   }
+
+  /* -- expand potential cells if they don't exist -- */
+  for (int i=0; i < A_LEN (xcell); i++) {
+    char buf[10240];
+    sprintf (buf, "%s<>", xcell[i]);
+    Type *u = cell_ns->findType (xcell[i]);
+    Assert (u, "What?");
+    Process *p = dynamic_cast<Process *>(u);
+    Assert (p, "What?");
+    if (!cells->findType (buf)) {
+      /* create expanded version */
+      p->Expand (cells, cells->CurScope(), 0, NULL);
+    }
+  }
+  A_FREE (xcell);
+
 
   /* 
      Collect production rules from expanded cells 

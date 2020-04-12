@@ -2250,7 +2250,12 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   extra_fet_string = config_get_string ("net.extra_fet_string");
 
   black_box_mode = config_get_int ("net.black_box_mode");
-  top_level_only = config_get_int ("net.top_level_only");
+  if (config_exists ("net.top_level_only")) {
+    top_level_only = config_get_int ("net.top_level_only");
+  }
+  else {
+    top_level_only = 0;
+  }
 
   max_n_w_in_lambda = config_get_int ("net.max_n_width");
   max_p_w_in_lambda = config_get_int ("net.max_p_width");
