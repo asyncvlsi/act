@@ -423,3 +423,29 @@ wbool_expr[Expr *]: bool_expr
     return e;
 }}
 ;
+
+
+wreal_expr[Expr *]: expr
+{{X:
+    Expr *e;
+    int tc;
+
+    e = act_walk_X_expr ($0, $1);
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t");
+      print_expr ($f, e);
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    if ((tc & T_BOOL)) {
+      $E("Expression must be of type int or real");
+    }
+    return e;
+}}
+;

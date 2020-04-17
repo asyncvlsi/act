@@ -1200,6 +1200,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     }
     s->extra = NULL;
     s->next = NULL;
+    list_free ($3);
     return s;
 }}
 | "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] "<" [ "[" wint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
@@ -1304,13 +1305,71 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 /*
   Sizing body: specify drive strength for rules
 */
-lang_size: "sizing" "{" [ size_body ] "}"
+lang_size[ActBody *]: "sizing" "{"
+{{X:
+    NEW ($0->sizing_info, act_sizing);
+    $0->sizing_info->p_specified = 0;
+    $0->sizing_info->unit_n_specified = 0;
+    A_INIT ($0->sizing_info->d);
+}}
+[ size_body ]
+"}"
+{{X:
+    act_sizing *sz;
+    if (OPT_EMPTY ($3)) {
+      FREE ($0->sizing_info);
+      sz = NULL;
+    }
+    else {
+      sz = $0->sizing_info;
+    }
+    $0->sizing_info = NULL;
+    OPT_FREE ($3);
+    if (sz) {
+      return new ActBody_Lang (sz);
+    }
+    else {
+      return NULL;
+    }
+}}
 ;
 
-strength_directive: bool_expr_id dir "->" wint_expr
+size_directive:
+  ID wreal_expr
+{{X:
+    /* ID can be:
+           p_n_mode  0/1  0 = default, 1 = sqrt sizing
+	   unit_n 10
+    */
+    if (strcmp ($1, "p_n_mode") == 0) {
+      $0->sizing_info->p_specified = 1;
+      $0->sizing_info->p_n_mode_e = $2;
+    }
+    else if (strcmp ($1, "unit_n") == 0) {
+      $0->sizing_info->unit_n_specified = 1;
+      $0->sizing_info->unit_n_e = $2;
+    }
+    else {
+      $E("Unknown sizing directive ``%s''", $1);
+    }
+    return NULL;
+}}
+|  bool_expr_id dir "->" wreal_expr
+{{X:
+    A_NEW ($0->sizing_info->d, act_sizing_directive);
+    A_NEXT ($0->sizing_info->d).id = $1;
+    A_NEXT ($0->sizing_info->d).dir = $2;
+    A_NEXT ($0->sizing_info->d).e = $4;
+    A_INC ($0->sizing_info->d);
+    return NULL;
+}}
 ;
 
-size_body: { strength_directive ";" }*
+size_body: { size_directive ";" }*
+{{X:
+    list_free ($1);
+    return NULL;
+}}  
 ;
 
 lang_refine[ActBody *]: "refine" "{"

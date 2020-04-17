@@ -261,6 +261,3 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
   }
   return ret;
 }
-
-
-

@@ -375,6 +375,8 @@ void Act::Merge (const char *s)
   tr.attr_num = config_get_table_size ("act.instance_attr");
   tr.attr_table = config_get_table_string ("act.instance_attr");
 
+  tr.sizing_info = NULL;
+
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
 #endif

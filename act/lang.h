@@ -27,6 +27,7 @@
 #include "expr.h"
 #include <mstring.h>
 #include <list.h>
+#include <array.h>
 
 /*------------------------------------------------------------------------
  *
@@ -235,12 +236,27 @@ struct act_refine {
   ActBody *b;
 };
 
+struct act_sizing_directive {
+  ActId *id;
+  Expr *e;
+  int dir; // 1 = +, 0 = -
+};
+  
+struct act_sizing {
+  int p_specified, unit_n_specified;
+  Expr *p_n_mode_e, *unit_n_e;
+  int p_n_mode;
+  int unit_n;
+  A_DECL (act_sizing_directive, d);
+};
+
 void prs_print (FILE *, act_prs *);
 void chp_print (FILE *, act_chp *);
 void chp_print (FILE *fp, act_chp_lang_t *c);
 void hse_print (FILE *, act_chp *);
 void spec_print (FILE *, act_spec *);
 void refine_print (FILE *, act_refine *);
+void sizing_print (FILE *, act_sizing *);
 
 class ActNamespace;
 class Scope;
@@ -253,12 +269,14 @@ public:
     hse = NULL;
     spec = NULL;
     refine = NULL;
+    sizing = NULL;
   }
   void Print (FILE *fp) {
     if (chp) { chp_print (fp, chp); }
     if (hse) { hse_print (fp, hse); }
     if (prs) { prs_print (fp, prs); }
     if (spec) { spec_print (fp, spec); }
+    if (sizing) { sizing_print (fp, sizing); }
     if (refine) { }
   }
 
@@ -277,6 +295,9 @@ public:
   act_refine *getrefine() { return refine; }
   void setrefine (act_refine *x) { refine = x; }
 
+  act_sizing *getsizing() { return sizing; }
+  void setsizing(act_sizing *s) { sizing = s; }
+
   act_languages *Expand (ActNamespace *ns, Scope *s);
 
  private:
@@ -284,6 +305,7 @@ public:
   act_prs *prs;
   act_spec *spec;
   act_refine *refine;
+  act_sizing *sizing;
 };
 
 
@@ -291,6 +313,7 @@ act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 void refine_expand (act_refine *, ActNamespace *, Scope *);
+act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
 
 const char *act_spec_string (int type);
 const char *act_dev_value_to_string (int);

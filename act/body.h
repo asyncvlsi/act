@@ -362,6 +362,7 @@ struct act_prs;
 struct act_chp;
 struct act_refine;
 struct act_spec;
+struct act_sizing;
 
 /*
  * Language body
@@ -375,8 +376,8 @@ class ActBody_Lang : public ActBody {
     LANG_HSE,
     LANG_SPEC,
     LANG_REFINE,
-
     LANG_SIZE,
+    
     LANG_SPICE,
     LANG_VERILOG
   };
@@ -410,6 +411,11 @@ class ActBody_Lang : public ActBody {
     lang = r;
   }
 
+  ActBody_Lang (act_sizing *s) {
+    t = LANG_SIZE;
+    lang = s;
+  }
+  
   void Expand (ActNamespace *, Scope *);
   void Print (FILE *fp);
   ActBody *Clone();

@@ -1411,6 +1411,9 @@ act_languages *act_languages::Expand (ActNamespace *ns, Scope *s)
   if (refine) {
     refine_expand (refine, ns, s);
   }
+  if (sizing) {
+    ret->sizing = sizing_expand (sizing, ns, s);
+  }
   return ret;
 }
 
@@ -1419,4 +1422,82 @@ void refine_print (FILE *fp, act_refine *r)
 {
   if (!r || !r->b) return;
   r->b->Print (fp);
+}
+
+void sizing_print (FILE *fp, act_sizing *s)
+{
+  if (!s) return;
+  fprintf (fp, "sizing {");
+  if (s->p_specified) {
+    fprintf (fp, "   p_n_mode ");
+    print_expr (fp, s->p_n_mode_e);
+    fprintf (fp, ";\n");
+  }
+  if (s->unit_n_specified) {
+    fprintf (fp, "   unit_n ");
+    print_expr (fp, s->unit_n_e);
+    fprintf (fp, ";\n");
+  }
+  for (int i=0; i < A_LEN (s->d); i++) {
+    fprintf (fp, "   ");
+    s->d[i].id->Print (fp);
+    if (s->d[i].dir) {
+      fprintf (fp, "+ -> ");
+    }
+    else {
+      fprintf (fp, "- -> ");
+    }
+    print_expr (fp, s->d[i].e);
+    fprintf (fp, "\n");
+  }
+  fprintf (fp, "}\n");
+}
+
+act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
+{
+  if (!sz) return NULL;
+  act_sizing *ret;
+  Expr *te;
+  NEW (ret, act_sizing);
+  ret->p_specified = sz->p_specified;
+  ret->unit_n_specified = sz->unit_n_specified;
+  if (ret->p_specified) {
+    te = expr_expand (sz->p_n_mode_e, ns, s);
+    ret->p_n_mode_e = te;
+    if (te && te->type == E_INT) {
+      ret->p_n_mode = te->u.v;
+    }
+    else if (te && te->type == E_REAL) {
+      ret->p_n_mode = te->u.f;
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("Expression for p_n_mode is not a const?");
+    }
+  }
+  if (ret->unit_n_specified) {
+    te = expr_expand (sz->unit_n_e, ns, s);
+    ret->unit_n_e = te;
+    if (te && te->type == E_INT) {
+      ret->unit_n = te->u.v;
+    }
+    else if (te && te->type == E_REAL) {
+      ret->unit_n = te->u.f;
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("Expression for unit_n is not a const?");
+    }
+  }
+  A_INIT (ret->d);
+  if (A_LEN (sz->d) > 0) {
+    for (int i=0; i < A_LEN (sz->d); i++) {
+      A_NEW (ret->d, act_sizing_directive);
+      A_NEXT (ret->d).id = sz->d[i].id->Expand (ns, s);
+      A_NEXT (ret->d).e = expr_expand (sz->d[i].e, ns, s);
+      A_NEXT (ret->d).dir = sz->d[i].dir;
+      A_INC (ret->d);
+    }
+  }
+  return ret;
 }

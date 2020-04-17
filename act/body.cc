@@ -1149,6 +1149,8 @@ void ActBody_Lang::Print (FILE *fp)
     break;
   case ActBody_Lang::LANG_REFINE:
     refine_print (fp, (act_refine *)lang);
+  case ActBody_Lang::LANG_SIZE:
+    sizing_print (fp, (act_sizing *)lang);
     break;
   }
 }
@@ -1160,6 +1162,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   act_chp *c;
   act_prs *old;
   act_spec *spec;
+  act_sizing *sz;
 
   switch (t) {
   case ActBody_Lang::LANG_PRS:
@@ -1228,6 +1231,18 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     if (((act_refine *)lang)->b) {
       ((act_refine *)lang)->b->Expandlist (ns, s);
     }
+    break;
+
+  case ActBody_Lang::LANG_SIZE:
+    sz = sizing_expand ((act_sizing *)lang, ns, s);
+    ux = s->getUserDef();
+    if (!ux) {
+      ActNamespace::Global()->lang->setsizing (sz);
+    }
+    else {
+      ux->lang->setsizing (sz);
+    }
+    break;
     break;
     
   default:

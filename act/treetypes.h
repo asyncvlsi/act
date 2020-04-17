@@ -155,6 +155,9 @@ typedef struct {
   /* requires vs ensures */
   int req_ensures;
 
+  /* sizing */
+  act_sizing *sizing_info;
+
 } ActTree;
 
 
