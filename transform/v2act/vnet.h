@@ -46,7 +46,8 @@ struct driver_info {
 };
 
 struct idinfo {
-  hash_bucket_t *b;		/* name */
+  char *myname;
+  //  hash_bucket_t *b;		/* name */
 
   unsigned int isinput:1;	/* input? */
   unsigned int isoutput:1;	/* output? */
@@ -158,6 +159,7 @@ typedef struct moduletype {
 
 typedef struct {
   FILE *out;			/* output file */
+  Act *a;			/* library */
 
   struct Hashtable *M;		/* module hash table */
 
@@ -167,9 +169,11 @@ typedef struct {
   /* missing module list: temporary */
   struct Hashtable *missing;
 
-  Act *a;			/* library */
 
+  /* temporary used during reading the netlist */
   id_info_t *prefix;
+  int flag;			/* temp flag */
+  id_info_t *tmpid;		/* temp */
   
 } VNet;
 
@@ -188,9 +192,9 @@ typedef struct {
     id_info_t *id;
   } u;
 } VRet;
-    
 
 VNet *verilog_read (const char *file, const char *lib);
+void verilog_graph (VNet *n);
 
 
 #endif /* __ACT_VNET_H__ */

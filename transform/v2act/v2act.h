@@ -41,7 +41,6 @@ void label_clocks (VNet *w, const char *clk);
 
 void emit_types (VNet *);
 void free_typetable (struct Hashtable *);
-id_info_t *gen_id (VNet *, const char *);
 void update_id_info (id_info_t *);
 void update_conn_info (id_info_t *);
 

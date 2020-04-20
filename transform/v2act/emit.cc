@@ -29,7 +29,7 @@ void emit_id_deref_fo (FILE *fp, id_deref_t *id);
 
 static void _emit_adjusted_full_deref (FILE *fp, id_info_t *id, int k)
 {
-  fprintf (fp, "%s", id->b->key);
+  fprintf (fp, "%s", id->myname);
   if (id->isport && id->a[0].lo > 0) {
     fprintf (fp, "[%d] /* port */", k - id->a[0].lo);
   }
@@ -66,7 +66,7 @@ static void _emit_rhs_element (FILE *fp, struct connectinfo *rhs, int k)
   }
   Assert (r, "What?");
   
-  fprintf (fp, "%s", r->id.id->b->key);
+  fprintf (fp, "%s", r->id.id->myname);
   if (r->id.isderef) {
     _emit_adjusted_deref (fp, r->id.id, r->id.deref);
   }
@@ -76,7 +76,7 @@ static void _emit_one_type_rhs (FILE *fp, struct idinfo *id)
 {
   int i;
 
-  fprintf (fp, "%s", id->b->key);
+  fprintf (fp, "%s", id->myname);
   if (A_LEN (id->a) > 0) {
     for (i=0; i < A_LEN (id->a); i++) {
       if (id->a[i].lo == 0) {
@@ -170,7 +170,7 @@ void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l)
   
   if (r) {
     /* simple */
-    fprintf (fp, "%s", r->id.id->b->key);
+    fprintf (fp, "%s", r->id.id->myname);
     if (r->id.isderef) {
       _emit_adjusted_deref (fp, r->id.id, r->id.deref);
     }
@@ -211,7 +211,7 @@ void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l)
 	  else {
 	    if (!first) { fprintf (fp, ","); }
 	    first = 0;
-	    fprintf (fp, "%s", r->id.id->b->key);
+	    fprintf (fp, "%s", r->id.id->myname);
 	  }
 	}
       }
@@ -221,6 +221,34 @@ void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l)
   }
 }
 
+static
+void emit_module_header (FILE *fp, module_t *m)
+{
+  int  first;
+  struct idinfo *id;
+  
+  fprintf (fp, "defproc %s (", m->b->key);
+  first = 1;
+
+  for (int i=0; i < A_LEN (m->port_list); i++) {
+    id = m->port_list[i];
+    Assert (id->isport, "What?");
+
+    if (id->isclk && mode == V_ASYNC) {
+      /* ignore clock nets in async mode */
+      continue;
+    }
+
+    if (first) {
+      first = 0;
+    }
+    else {
+      fprintf (fp, "; ");
+    }
+    _emit_one_type (fp, id);
+  }
+  fprintf (fp, ")");
+}
 
 /*------------------------------------------------------------------------
  *
@@ -246,66 +274,33 @@ void emit_types (VNet *v)
   fprintf (v->out, "/* globals */\n");
   fprintf (v->out, "bool Vdd, GND;\n\n");
 
+  fprintf (v->out, "/* -- declarations -- */\n");
+  for (m = v->hd; m; m = m->next) {
+    emit_module_header (v->out, m);
+    fprintf (v->out, ";\n");
+  }
+  fprintf (v->out, "\n");
+  
   for (m = v->hd; m; m = m->next) {
 
     if (m->next == NULL) {
 	top_level_module = 1;
     }
 
-    fprintf (v->out, "defproc %s (", m->b->key);
-    first = 1;
-
-#if 0
-    if (mode == V_ASYNC) {
-      fprintf (v->out, "globals g");
-      first = 0;
-    }
-#endif
-
-    for (i=0; i < A_LEN (m->port_list); i++) {
-      id = m->port_list[i];
-      Assert (id->isport, "What?");
-
-      if (id->isclk && mode == V_ASYNC) {
-	/* ignore clock nets */
-	continue;
-      }
-
-      if (first) {
-	first = 0;
-      }
-      else {
-	fprintf (v->out, "; ");
-      }
-      _emit_one_type (v->out, id);
-    }
-    if (mode != V_ASYNC && top_level_module == 0) {
-      //if (first) {
-      //first = 0;
-      //}
-      //else {
-      //fprintf (v->out, "; ");
-      //}
-      //fprintf (v->out, "bool? VDD, VSS");
-    }
-    fprintf (v->out, ")\n");
-    fprintf (v->out, "{\n");
-
-    if (mode != V_ASYNC && top_level_module == 1) {
-      //fprintf (v->out, "   bool VDD, VSS;\n");
-    }
+    emit_module_header (v->out, m);
+    fprintf (v->out, "\n{\n");
 
     fprintf (v->out, "   /*--- types ---*/\n");
     /* now print all the other types out */
     for (i=0; i < m->H->size; i++) 
       for (b = m->H->head[i]; b; b = b->next) {
 	id = (struct idinfo *)b->v;
-	if (strcmp (id->b->key, "Vdd") == 0 ||
-	    strcmp (id->b->key, "GND") == 0) {
+	if (strcmp (id->myname, "Vdd") == 0 ||
+	    strcmp (id->myname, "GND") == 0) {
 	  int j;
 	  for (j=0; j < id->fanout; j++) {
-	    fprintf (v->out, "   source_%s src_%s_%d;\n", id->b->key,
-		     id->b->key, j);
+	    fprintf (v->out, "   source_%s src_%s_%d;\n", id->myname,
+		     id->myname, j);
 	  }
 	  continue;
 	}
@@ -340,7 +335,7 @@ void emit_types (VNet *v)
 		  Assert (it, "Hmm");
 		  if (it->getDir() == Type::OUT) {
 		    fprintf (v->out, "   sink __sink__%d(%s.%s);\n",
-			     sink_count++, id->b->key, id->p->getPortName(k));
+			     sink_count++, id->myname, id->p->getPortName(k));
 		  }
 		}
 		else {
@@ -348,14 +343,14 @@ void emit_types (VNet *v)
 		  if (id->m->port_list[k]->isoutput) {
 		    if (A_LEN (id->m->port_list[k]->a) == 0) {
 		      fprintf (v->out, "   sink __sink_%d(%s.%s);\n",
-			       sink_count++, id->b->key, id->m->port_list[k]->b->key);
+			       sink_count++, id->myname, id->m->port_list[k]->myname);
 		    }
 		    else {
 		      int ii;
 		      Assert (A_LEN (id->m->port_list[k]->a) == 1, "Not a 1D dangling array!");
 		      for (ii=0; ii <= id->m->port_list[k]->a[0].hi - id->m->port_list[k]->a[0].lo; ii++) {
 			fprintf (v->out, "   sink __sink_%d(%s.%s[%d]);\n",
-				 sink_count++, id->b->key, id->m->port_list[k]->b->key,
+				 sink_count++, id->myname, id->m->port_list[k]->myname,
 				 ii);
 		      }
 		    }
@@ -381,8 +376,8 @@ void emit_types (VNet *v)
 	      for (j=0; j < id->a[0].hi - id->a[0].lo + 1; j++) {
 		if (id->fa[j] > 1) {
 		  fprintf (v->out, "   copy<%d> __cpy_%s_%d (%s[%d],);\n",
-			   id->fa[j], id->b->key, j + id->a[0].lo, 
-			   id->b->key, j + id->a[0].lo);
+			   id->fa[j], id->myname, j + id->a[0].lo, 
+			   id->myname, j + id->a[0].lo);
 		}
 	      }
 	    }
@@ -391,7 +386,7 @@ void emit_types (VNet *v)
 	    if (id->fanout > 1) {
 	      /* we need to do something! */
 	      fprintf (v->out, "   copy<%d> __cpy_%s_ (%s,);\n",
-		       id->fanout, id->b->key, id->b->key);
+		       id->fanout, id->myname, id->myname);
 	    }
 	  }
 	}
@@ -414,7 +409,7 @@ void emit_types (VNet *v)
 	  /* RHS := LHS */
 	  if (m->conn[i]->prefix) {
 	    /* we know that LHS fanout := 1 */
-	    fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	    fprintf (v->out, "%s.", m->conn[i]->prefix->myname);
 	    emit_id_deref (v->out, &m->conn[i]->id);
 	    fprintf (v->out, "=");
 	    emit_conn_rhs (v->out, m->conn[i]->r, m->conn[i]->l);
@@ -445,7 +440,7 @@ void emit_types (VNet *v)
 		      m->conn[i]->id.id->fa[j-m->conn[i]->id.id->a[0].lo] > 1) {
 		    /* fanout! */
 		    fprintf (v->out, "__cpy_%s_%d.out[%d]", 
-			     m->conn[i]->id.id->b->key, j,
+			     m->conn[i]->id.id->myname, j,
 			     m->conn[i]->id.id->fcur[j-m->conn[i]->id.id->a[0].lo]++);
 		  }
 		  else {
@@ -483,7 +478,7 @@ void emit_types (VNet *v)
 	    int first;
 
 	    if (m->conn[i]->prefix) {
-	      fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	      fprintf (v->out, "%s.", m->conn[i]->prefix->myname);
 	    }
 	    emit_id_deref (v->out, &m->conn[i]->id);
 	    if (!m->conn[i]->prefix) {
@@ -506,7 +501,7 @@ void emit_types (VNet *v)
 		if (r->id.id->fa && r->id.id->fa[r->id.deref - 
 						 r->id.id->a[0].lo] > 1) {
 		  fprintf (v->out, "__cpy_%s_%d.out[%d]",
-			   r->id.id->b->key, 
+			   r->id.id->myname, 
 			   r->id.deref, 
 			   r->id.id->fcur[r->id.deref - r->id.id->a[0].lo]++);
 		}
@@ -524,7 +519,7 @@ void emit_types (VNet *v)
 		    first = 0;
 		    if (r->id.id->fa && r->id.id->fa[j - r->id.id->a[0].lo] > 1) {
 		      fprintf (v->out, "__cpy_%s_%d.out[%d]",
-			       r->id.id->b->key, j,
+			       r->id.id->myname, j,
 			       r->id.id->fcur[j - r->id.id->a[0].lo]++);
 		    }
 		    else {
@@ -541,7 +536,7 @@ void emit_types (VNet *v)
 		      first = 0;
 		      if (r->id.id->fa && r->id.id->fa[j - r->id.id->a[0].lo] > 1) {
 			fprintf (v->out, "__cpy_%s_%d.out[%d]",
-				 r->id.id->b->key, j, 
+				 r->id.id->myname, j, 
 				 r->id.id->fcur[j - r->id.id->a[0].lo]++);
 		      }
 		      else {
@@ -572,7 +567,7 @@ void emit_types (VNet *v)
 	    int first;
 
 	    if (m->conn[i]->prefix) {
-	      fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	      fprintf (v->out, "%s.", m->conn[i]->prefix->myname);
 	    }
 	    emit_id_deref (v->out, &m->conn[i]->id);
 	    if (!m->conn[i]->prefix) {
@@ -591,7 +586,7 @@ void emit_types (VNet *v)
 	      first = 0;
 	      if (r->id.id->fa && r->id.id->fa[j - r->id.id->a[0].lo] > 1) {
 		fprintf (v->out, "__cpy_%s_%d.out[%d]",
-			 r->id.id->b->key, j, 
+			 r->id.id->myname, j, 
 			 r->id.id->fcur[j - r->id.id->a[0].lo]++);
 	      }
 	      else {
@@ -606,7 +601,7 @@ void emit_types (VNet *v)
 	    int first;
 
 	    if (m->conn[i]->prefix) {
-	      fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	      fprintf (v->out, "%s.", m->conn[i]->prefix->myname);
 	    }
 	    emit_id_deref (v->out, &m->conn[i]->id);
 	    if (!m->conn[i]->prefix) {
@@ -626,7 +621,7 @@ void emit_types (VNet *v)
 	      first = 0;
 	      if (r->id.id->fa && r->id.id->fa[j - r->id.id->a[0].lo] > 1) {
 		fprintf (v->out, "__cpy_%s_%d.out[%d]",
-			 r->id.id->b->key, j, 
+			 r->id.id->myname, j, 
 			 r->id.id->fcur[j - r->id.id->a[0].lo]++);
 	      }
 	      else {
@@ -637,7 +632,7 @@ void emit_types (VNet *v)
 	  }
 	  else {
 	    if (m->conn[i]->prefix) {
-	      fprintf (v->out, "%s.", m->conn[i]->prefix->b->key);
+	      fprintf (v->out, "%s.", m->conn[i]->prefix->myname);
 	    }
 	    emit_id_deref (v->out, &m->conn[i]->id);
 	    fprintf (v->out, "=");
@@ -656,7 +651,7 @@ void emit_types (VNet *v)
 
 	      if (m->conn[i]->r->id.id->fa && m->conn[i]->r->id.id->fa[idx - base] > 1) {
 		fprintf (v->out, "__cpy_%s_%d.out[%d]",
-			 m->conn[i]->r->id.id->b->key, idx, 
+			 m->conn[i]->r->id.id->myname, idx, 
 			 m->conn[i]->r->id.id->fcur[idx-base]++);
 	      }
 	      else {
@@ -671,15 +666,15 @@ void emit_types (VNet *v)
 	int f = 0;
 	if (m->conn[i]->prefix) {
 	  if (!pending) {
-	    fprintf (v->out, "%s(", m->conn[i]->prefix->b->key);
+	    fprintf (v->out, "%s(", m->conn[i]->prefix->myname);
 	    f = 1;
 	  }
-	  else if (m->conn[i]->prefix->b->key != pending) {
+	  else if (m->conn[i]->prefix->myname != pending) {
 	    fprintf (v->out, ");\n   ");
-	    fprintf (v->out, "%s(", m->conn[i]->prefix->b->key);
+	    fprintf (v->out, "%s(", m->conn[i]->prefix->myname);
 	    f = 1;
 	  }
-	  pending = m->conn[i]->prefix->b->key;
+	  pending = m->conn[i]->prefix->myname;
 	}
 	else {
 	  if (pending) {
@@ -766,63 +761,19 @@ void update_conn_info (id_info_t *id)
       int k;
       printf ("mod len = %d\n", A_LEN (id->m->port_list));
       for (k=0; k < A_LEN (id->m->port_list); k++) {
-	if (strcmp (id->mod->conn[i]->id.id->b->key,
-		    id->m->port_list[k]->b->key) == 0) {
+	if (strcmp (id->mod->conn[i]->id.id->myname,
+		    id->m->port_list[k]->myname) == 0) {
 	  id->used[k] = 1;
 	  break;
 	}
       }
       if (k == A_LEN (id->m->port_list)) {
-	fatal_error ("Connection to unknown port `%s' for %s?", id->mod->conn[i]->id.id->b->key, id->m->b->key);
+	fatal_error ("Connection to unknown port `%s' for %s?", id->mod->conn[i]->id.id->myname, id->m->b->key);
       }
     }
   }
 }
 
-
-/*------------------------------------------------------------------------
- *
- *  gen_id --
- *
- *   Generate new id
- *
- *------------------------------------------------------------------------
- */
-id_info_t *gen_id (VNet *v, const char *s)
-{
-  hash_bucket_t *b;
-  id_info_t *id;
-
-  b = hash_lookup (CURMOD(v)->H, s);
-  if (!b) {
-    b = hash_add (CURMOD(v)->H, s);
-    NEW (id, id_info_t);
-    b->v = id;
-
-    id->b = b;
-    id->isinput = 0;
-    id->isoutput = 0;
-    id->isport = 0;
-    id->isinst = 0;
-    id->ismodname = 0;
-    id->isclk = 0;
-    id->fanout = 0;
-    id->curnum = 0;
-    id->nm = NULL;
-    id->d = NULL;
-    id->next = NULL;
-    id->nxt = NULL;
-    id->nused = 0;
-    id->conn_start = -1;
-    id->conn_end = -1;
-    id->mod = NULL;
-
-    A_INIT (id->a);
-    id->fa = NULL;
-    id->fcur = NULL;
-  }
-  return (id_info_t *)b->v;
-}
 
 /*------------------------------------------------------------------------
  *
@@ -835,17 +786,17 @@ id_info_t *gen_id (VNet *v, const char *s)
 void emit_id_deref (FILE *fp, id_deref_t *id)
 {
   if (mode == V_ASYNC) {
-    if (strcmp (id->id->b->key, "Vdd") == 0 ||
-	strcmp (id->id->b->key, "GND") == 0) {
-      fprintf (fp, "src_%s_%d.out", id->id->b->key,
+    if (strcmp (id->id->myname, "Vdd") == 0 ||
+	strcmp (id->id->myname, "GND") == 0) {
+      fprintf (fp, "src_%s_%d.out", id->id->myname,
 	       id->id->curnum++);
     }
     else {
-      fprintf (fp, "%s", id->id->b->key);
+      fprintf (fp, "%s", id->id->myname);
     }
   }
   else {
-    fprintf (fp, "%s", id->id->b->key);
+    fprintf (fp, "%s", id->id->myname);
   }
   if (id->isderef) {
     if (id->id->isport && id->id->a[0].lo > 0) {
@@ -867,23 +818,23 @@ void emit_id_deref (FILE *fp, id_deref_t *id)
  */
 void emit_id_deref_fo (FILE *fp, id_deref_t *id)
 {
-  if (strcmp (id->id->b->key, "Vdd") == 0) {
-    fprintf (fp, "src_%s_%d.out", id->id->b->key, id->id->curnum++);
+  if (strcmp (id->id->myname, "Vdd") == 0) {
+    fprintf (fp, "src_%s_%d.out", id->id->myname, id->id->curnum++);
     return;
   }
-  else if (strcmp (id->id->b->key, "GND") == 0) {
-    fprintf (fp, "src_%s_%d.out", id->id->b->key, id->id->curnum++);
+  else if (strcmp (id->id->myname, "GND") == 0) {
+    fprintf (fp, "src_%s_%d.out", id->id->myname, id->id->curnum++);
     return;
   }
   if (id->isderef) {
     fprintf (fp, "__cpy_%s_%d.out[%d]", 
-	     id->id->b->key, 
+	     id->id->myname, 
 	     id->deref,
 	     id->id->fcur[id->deref - id->id->a[0].lo]++);
   }
   else {
     fprintf (fp, "__cpy_%s_.out[%d]",
-	     id->id->b->key,
+	     id->id->myname,
 	     id->id->curnum++);
   }
 }

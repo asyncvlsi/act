@@ -49,9 +49,9 @@ static void _label_clock_helper (VNet *v, module_t *m, const char *clk)
   /* Label all clock ports */
   for (i=0; i < A_LEN (m->port_list); i++) {
     id = m->port_list[i];
-    if (id->isinput && strcmp (clk, id->b->key) == 0) {
+    if (id->isinput && strcmp (clk, id->myname) == 0) {
 #if 0
-      printf ("MODULE %s, clock port %s\n", m->b->key, clk);
+      printf ("MODULE %s, clock port %s\n", m->myname, clk);
 #endif
       id->isclk = 1;
     }
@@ -76,13 +76,13 @@ static void _label_clock_helper (VNet *v, module_t *m, const char *clk)
 	    }
 #if 0 
 	    printf ("LIBMODULE %s, clock port %s\n", c->prefix->nm,
-		    c->id.id->b->key);
+		    c->id.id->myname);
 #endif
 	  }
 	  else {
 	    n = (module_t *)b->v;
 	    if ((n->flags & M_FLAG_CLKDONE) == 0) {
-	      _label_clock_helper (v, n, c->id.id->b->key);
+	      _label_clock_helper (v, n, c->id.id->myname);
 	    }
 	  }
 	}
@@ -152,7 +152,7 @@ _increment_fanout (conn_rhs_t *r, id_deref_t *lhs)
 
       if (lhs) {
 	NEW (d, struct driver_info);
-	d->id = info->b->key;
+	d->id = info->myname;
 	d->port = NULL;
 	d->isderef = 1;
 	d->deref = r->id.deref;
@@ -193,7 +193,7 @@ _increment_fanout (conn_rhs_t *r, id_deref_t *lhs)
   else {
     if (lhs) {
       NEW (d, struct driver_info);
-      d->id = info->b->key;
+      d->id = info->myname;
       d->port = NULL;
       d->isderef = 0;
       d->deref = 0;
@@ -336,10 +336,10 @@ void compute_fanout (VNet *v, module_t *m)
       Assert (info->nm, "No module name?");
       if ((p = v2act_find_lib (v->a, info->nm))) {
 	/* port direction */
-	j = p->FindPort (m->conn[i]->id.id->b->key);
+	j = p->FindPort (m->conn[i]->id.id->myname);
 	if (j == 0) {
 	  fatal_error ("Port name `%s' not found in library process `%s'",
-		       m->conn[i]->id.id->b->key, p->getName());
+		       m->conn[i]->id.id->myname, p->getName());
 	}
 	InstType *it;
 	j--;
@@ -353,8 +353,8 @@ void compute_fanout (VNet *v, module_t *m)
 	  dir = 1;
 	  /* create driver */
 	  NEW (d, struct driver_info);
-	  d->id = info->b->key;
-	  d->port = m->conn[i]->id.id->b->key;
+	  d->id = info->myname;
+	  d->port = m->conn[i]->id.id->myname;
 	  d->isderef = m->conn[i]->id.isderef;
 	  d->deref = m->conn[i]->id.deref;
 	  if (it->arrayInfo()) {
@@ -364,7 +364,7 @@ void compute_fanout (VNet *v, module_t *m)
 	}
 	else {
 	  fatal_error ("Port `%s' for library process `%s' has no direction [%d]",
-		       m->conn[i]->id.id->b->key, p->getName(),
+		       m->conn[i]->id.id->myname, p->getName(),
 		       it->getDir());
 	}
       }
@@ -377,7 +377,7 @@ void compute_fanout (VNet *v, module_t *m)
 	}
 	n = (module_t *)b->v;
 	for (j=0; j < A_LEN (n->port_list); j++) {
-	  if (strcmp (n->port_list[j]->b->key, m->conn[i]->id.id->b->key) == 0) {
+	  if (strcmp (n->port_list[j]->myname, m->conn[i]->id.id->myname) == 0) {
 	    Assert (n->port_list[j]->isport, "??");
 	    if (n->port_list[j]->isinput) {
 	      dir = 0;
@@ -387,8 +387,8 @@ void compute_fanout (VNet *v, module_t *m)
 	      dir = 1;
 
 	      NEW (d, struct driver_info);
-	      d->id = info->b->key;
-	      d->port = m->conn[i]->id.id->b->key;
+	      d->id = info->myname;
+	      d->port = m->conn[i]->id.id->myname;
 	      d->isderef = m->conn[i]->id.isderef;
 	      d->deref = m->conn[i]->id.deref;
 
@@ -403,14 +403,14 @@ void compute_fanout (VNet *v, module_t *m)
 	    }
 	    else {
 	      fatal_error ("Undirected port `%s' in module `%s'", 
-			   n->port_list[j]->b->key,
+			   n->port_list[j]->myname,
 			   b->key);
 	    }
 	  }
 	}
 	if (j == A_LEN (n->port_list)) {
 	  fatal_error ("Unknown port name `%s' for module `%s'", 
-		       m->conn[i]->id.id->b->key, b->key);
+		       m->conn[i]->id.id->myname, b->key);
 	}
       }
     }
@@ -423,9 +423,9 @@ void compute_fanout (VNet *v, module_t *m)
 #if 0
     printf (" LHS: ");
     if (m->conn[i]->prefix) {
-      printf ("%s.", m->conn[i]->prefix->b->key);
+      printf ("%s.", m->conn[i]->prefix->myname);
     }
-    printf ("%s", m->conn[i]->id.id->b->key);
+    printf ("%s", m->conn[i]->id.id->myname);
     if (m->conn[i]->id.isderef) {
       printf ("[%d]", m->conn[i]->id.deref);
     }
@@ -493,14 +493,14 @@ void compute_fanout (VNet *v, module_t *m)
 
 #if 0
   printf ("\n====\n");
-  printf ("Module %s:\n", m->b->key);
+  printf ("Module %s:\n", m->myname);
   for (i=0; i < m->H->size; i++) {
     for (b = m->H->head[i]; b; b = b->next) {
       id_info_t *id = (id_info_t *)b->v;
 
       if (id->isinst || id->ismodname || id->nm) continue;
 
-      printf ("%s : flags ", id->b->key);
+      printf ("%s : flags ", id->myname);
       if (id->isinput) {
 	printf (" ?");
       }
@@ -539,10 +539,10 @@ void compute_fanout (VNet *v, module_t *m)
 	else if (id->fanout == 0) {
 	  printf (" no-drive");
 	}
-	else if (strcmp (id->b->key, "Vdd") == 0) {
+	else if (strcmp (id->myname, "Vdd") == 0) {
 	  printf (" no-drive");
 	}
-	else if (strcmp (id->b->key, "GND") == 0) {
+	else if (strcmp (id->myname, "GND") == 0) {
 	  printf (" no-drive");
 	}
 	else {

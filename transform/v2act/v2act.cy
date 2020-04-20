@@ -42,6 +42,8 @@ module: "module" ID
 	update_id_info (nm);
 	nm = tmp;
       }
+      /* now that we've found it, it should no longer be missing! */
+      hash_delete ($0->missing, $2);
     }
 }}
 "(" port_list ")" ";" module_body
@@ -81,23 +83,26 @@ id[id_info_t *]: ID
 	$E("Act::mangle_string failed on string `%s'", $1);
       }
       FREE (tmp);
-      id = gen_id ($0, buf);
+
+      id = verilog_find_id ($0, buf);
+      if (id) {
+	$0->flag = 0;
+      }
+      else {
+	$0->flag = 1;
+	id = verilog_gen_id ($0, buf);
+      }
     }
     else {
-      id = gen_id ($0, $1);
+      id = verilog_find_id ($0, $1);
+      if (id) {
+	$0->flag = 0;
+      }
+      else {
+	$0->flag = 1;
+	id = verilog_gen_id ($0, $1);
+      }
     }
-    return id;
-}}
-| STRING 
-{{X:
-    char buf[10240];
-    id_info_t *id;
-
-    if ($0->a->mangle_string ($1, buf, 10240) != 0) {
-      $E("Act::mangle_string failed on string `%s'", $1);
-    }
-    id = gen_id ($0, buf);
-
     return id;
 }}
 ;
@@ -127,7 +132,7 @@ module_body: decls
 	c[i]->id.id->isoutput = 1;
       }
       else {
-	$W("Port name `%s' in module `%s': input/output direction unknown\n", c[i]->id.id->b->key, CURMOD($0)->b->key);
+	$W("Port name `%s' in module `%s': input/output direction unknown\n", c[i]->id.id->myname, CURMOD($0)->b->key);
       }
     }
 }}
@@ -171,10 +176,10 @@ one_decl: decl_type [ "[" INT ":" INT "]" ] { id "," }**  ";"
 
       if (A_LEN (id->a) > 0) {
 	if (!((A_LEN (id->a) == 1 && isarray == 1))) {
-	  $E("Identifier `%s' error in repeated array definition", id->b->key);
+	  $E("Identifier `%s' error in repeated array definition", id->myname);
 	}
 	if (id->a[0].lo != lo || id->a[0].hi != hi) {
-	  $E("Identifier `%s' dims don't match", id->b->key);
+	  $E("Identifier `%s' dims don't match", id->myname);
 	}
 	/* good, move on */
       }
@@ -263,11 +268,11 @@ one_instance: id id
 
     $1->ismodname = 1;
     /* lookup id in the module table */
-    b = hash_lookup ($0->M, $1->b->key);
+    b = hash_lookup ($0->M, $1->myname);
     if (!b) {
       $2->m = NULL;
       /* external module */
-      if (($2->p = v2act_find_lib ($0->a, $1->b->key))) {
+      if (($2->p = v2act_find_lib ($0->a, $1->myname))) {
 	/* okay */
       }
       else {
@@ -276,9 +281,9 @@ one_instance: id id
 	//$E("Reference to missing library module `%s'", $1->b->key);
 
 	/* maybe this is later? */
-	b = hash_lookup ($0->missing, $1->b->key);
+	b = hash_lookup ($0->missing, $1->myname);
 	if (!b) {
-	  b = hash_add ($0->missing, $1->b->key);
+	  b = hash_add ($0->missing, $1->myname);
 	  b->v = NULL;
 	}
 	$2->nxt = (id_info_t *)b->v;
@@ -305,7 +310,7 @@ one_instance: id id
     */
     update_id_info ($2);
     $2->isinst = 1;
-    $2->nm = $1->b->key;
+    $2->nm = $1->myname;
     $0->prefix = $2;
 }}
 "(" port_conns ")" ";"
@@ -344,13 +349,23 @@ one_port[id_info_t *]: "." id "(" id_or_const_or_array ")"
     return $2;
 }};
 
-one_port2: "." id "(" id_or_const_or_array ")" 
+one_port2: "." id
 {{X:
     /* THIS .id should not be part of the type table */
+    $0->tmpid = $2;
+    if ($0->flag) {
+      $0->tmpid = verilog_alloc_id (Strdup ($2->myname));
+      /* delete from table! */
+      verilog_delete_id ($0, $2->myname);
+    }
+}}
+"(" id_or_const_or_array ")" 
+{{X:
+    
 
     /* emit connection! */
     $4->prefix = $0->prefix;
-    $4->id.id = $2;
+    $4->id.id = $0->tmpid;
     $4->id.isderef = 0;
     A_NEW (CURMOD($0)->conn, conn_info_t *);
     A_NEXT (CURMOD($0)->conn) = $4;
@@ -360,14 +375,14 @@ one_port2: "." id "(" id_or_const_or_array ")"
       int k;
       /* check act process ports */
 
-      k = $0->prefix->p->FindPort ($2->b->key);
+      k = $0->prefix->p->FindPort ($0->tmpid->myname);
       if (k != 0) {
 	Assert (k > 0, "Hmm...");
 	k--;
         $0->prefix->used[k] = 1;
       }
       else {
-	$E("Connection to unknown port `%s'?", $2->b->key);
+	$E("Connection to unknown port `%s'?", $0->tmpid->myname);
       }
     }
     else {
@@ -375,13 +390,14 @@ one_port2: "." id "(" id_or_const_or_array ")"
 
       if ($0->prefix->m) {
 	for (k=0; k < A_LEN ($0->prefix->m->port_list); k++) {
-	  if (strcmp ($2->b->key, $0->prefix->m->port_list[k]->b->key) == 0) {
+	  if (strcmp ($0->tmpid->myname,
+		      $0->prefix->m->port_list[k]->myname) == 0) {
 	    $0->prefix->used[k] = 1;
 	    break;
 	  }
 	}
 	if (k == A_LEN ($0->prefix->m->port_list)) {
-	  $E("Connection to unknown port `%s'?", $2->b->key);
+	  $E("Connection to unknown port `%s'?", $0->tmpid->myname);
 	}
       }
       else {
@@ -421,24 +437,24 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
     }
     return d;
 }}
-| /*INT*/ "1'b0"
+| "1'b0"
 {{X:
   id_deref_t *d;
   VRet *r;
 
   NEW (d, id_deref_t);
-  d->id = gen_id ($0, "GND");
+  d->id = verilog_gen_id ($0, "GND");
   d->isderef = 0;
   d->deref = 0;
   return d;
 }}
-| /*INT*/ "1'b1"
+| "1'b1"
 {{X:
   id_deref_t *d;
   VRet *r;
 
   NEW (d, id_deref_t);
-  d->id = gen_id ($0, "Vdd");
+  d->id = verilog_gen_id ($0, "Vdd");
   d->isderef = 0;
   d->deref = 0;
   return d;
@@ -482,11 +498,11 @@ id_or_const[conn_rhs_t *]: id_deref [ "[" INT ":" INT "]" ]
     conn_rhs_t *r;
 
     if ($1) {
-      id = gen_id ($0, "Vdd");
+      id = verilog_gen_id ($0, "Vdd");
       id->isport = 1;
     }
     else {
-      id = gen_id ($0, "GND");
+      id = verilog_gen_id ($0, "GND");
       id->isport = 1;
     }
     NEW (r, conn_rhs_t);
@@ -525,4 +541,3 @@ id_or_const_or_array[conn_info_t *]: id_or_const
     return c;
 }}
 ;
-

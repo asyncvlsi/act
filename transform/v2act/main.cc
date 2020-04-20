@@ -32,12 +32,12 @@ char *channame;
 
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [-a] [-c clkname] [-o outfile] -L <lib> <file.v>\n", s);
+  fprintf (stderr, "Usage: %s [-a] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
   fprintf (stderr, "  -a : async output\n");
   fprintf (stderr, "  -C <chan>: change default channel name to <chan>\n");
   fprintf (stderr, "  -c <clkname>: specifies the clock port name [default: clock]\n");
   fprintf (stderr, "  -o <file> : specify output file name [default: stdout]\n");
-  fprintf (stderr, "  -L <lib>  : synchronous library (act file) [default: sync.act]\n");
+  fprintf (stderr, "  -l <lib>  : synchronous library (act file) [default: sync.act]\n");
   exit (1);
 }
 
@@ -69,7 +69,7 @@ int main (int argc, char **argv)
   fname = NULL;
   libname = NULL;
 
-  while ((ch = getopt (argc, argv, "C:c:ao:L:")) != -1) {
+  while ((ch = getopt (argc, argv, "C:c:ao:l:")) != -1) {
     switch (ch) {
     case 'C':
       if (channame) {
@@ -96,7 +96,7 @@ int main (int argc, char **argv)
       mode = V_ASYNC;
       break;
 
-    case 'L':
+    case 'l':
       if (libname) {
 	FREE (libname);
       }

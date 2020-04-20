@@ -33,4 +33,10 @@
 #define OPT_VALUE(x)     LIST_VALUE (list_first (x))
 
 
+/* parser */
+id_info_t *verilog_gen_id (VNet *, const char *);
+id_info_t *verilog_find_id (VNet *v, const char *s);
+id_info_t *verilog_alloc_id (char *name);
+void verilog_delete_id (VNet *v, const char *s);
+
 #endif /* __V2ACT_EXTRA_H__ */
