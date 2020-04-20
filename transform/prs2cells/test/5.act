@@ -1,0 +1,21 @@
+defproc and2 (bool a[6]; bool c){
+  prs{
+    ( a[5] & a[4] & a[3])| ( a[2] & a[1] & a[0]) -> c-
+    (~a[5] |~a[4] |~a[3])& (~a[2] |~a[1] |~a[0]) -> c+
+  }
+}
+
+defproc and1 (bool a[6]; bool c){
+  prs{
+    ( a[0] & a[1] & a[2])| ( a[3] & a[4] & a[5]) -> c-
+    (~a[5] |~a[4] |~a[3])& (~a[2] |~a[1] |~a[0]) -> c+
+  }
+}
+
+defproc foo (bool a[6]; bool b; bool c[6]; bool d){
+
+  and1 a1(a,b);
+  and2 a2(c,d);
+}
+
+foo f;

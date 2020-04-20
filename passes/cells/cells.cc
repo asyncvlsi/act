@@ -296,9 +296,7 @@ static int _equal_expr_helper (act_prs_expr_t *a, act_prs_expr_t *b,
 	  return ((_equal_expr_helper (a->u.e.l, b->u.e.l, perm, paritya, parityb, chk_width) &&
 		   _equal_expr_helper (a->u.e.r, b->u.e.r, perm, paritya, parityb, chk_width)) ||
 		  (_equal_expr_helper (a->u.e.l, b->u.e.r, perm, paritya, parityb, chk_width) &&
-		   _equal_expr_helper (a->u.e.r, b->u.e.l, perm, paritya, parityb, chk_width))) &&
-	    _equal_expr_helper (a->u.e.pchg, b->u.e.pchg, perm, 0, 0, chk_width) &&
-	    (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+		   _equal_expr_helper (a->u.e.r, b->u.e.l, perm, paritya, parityb, chk_width)));
 	}
 	else {
 	  return 0;

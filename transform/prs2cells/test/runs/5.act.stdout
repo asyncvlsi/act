@@ -1,0 +1,161 @@
+namespace cell {
+export defcell g0x1 (bool in[2]; bool out);
+export defcell g5x0 (bool? in[6]; bool! out);
+export defcell g0x0 (bool in[2]; bool out);
+export defcell g6x0 (bool? in[6]; bool! out);
+export defcell g2x0 (bool in[2]; bool out);
+export defcell g4x0 (bool in[2]; bool out);
+export defcell g3x0 (bool in[3]; bool out);
+export defcell g1x0 (bool in[2]; bool out);
+
+export defcell g0x1 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]<10>&in[1] => out-
+}
+}
+
+export defcell g5x0 (bool? in[6]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2]|in[3]&in[4]&in[5] -> out-
+(~in[5]|~in[4]|~in[3])&(~in[2]|~in[1]|~in[0]) -> out+
+}
+}
+
+export defcell g0x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] => out-
+}
+}
+
+export defcell g6x0 (bool? in[6]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2]|in[3]&in[4]&in[5] -> out-
+(~in[0]|~in[1]|~in[2])&(~in[3]|~in[4]|~in[5]) -> out+
+}
+}
+
+export defcell g2x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] #> out-
+}
+}
+
+export defcell g4x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0]&~in[1] -> out+
+}
+}
+
+export defcell g3x0 (bool in[3]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2] #> out-
+}
+}
+
+export defcell g1x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]|in[1] => out-
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc foo (bool a[6]; bool b; bool c[6]; bool d);
+defproc and2 (bool a[6]; bool c);
+defproc and1 (bool a[6]; bool c);
+
+defproc foo (bool a[6]; bool b; bool c[6]; bool d)
+{
+
+/* instances */
+and1 a1;
+and2 a2;
+
+/* connections */
+b=a1.c;
+a=a1.a;
+d=a2.c;
+c=a2.a;
+}
+
+defproc and2 (bool a[6]; bool c)
+{
+
+/* instances */
+::cell::g6x0 cx0;
+
+/* connections */
+a[0]=cx0.in[5];
+a[1]=cx0.in[4];
+a[2]=cx0.in[3];
+a[3]=cx0.in[2];
+a[4]=cx0.in[1];
+a[5]=cx0.in[0];
+c=cx0.out;
+}
+
+defproc and1 (bool a[6]; bool c)
+{
+
+/* instances */
+::cell::g5x0 cx0;
+
+/* connections */
+a[0]=cx0.in[0];
+a[1]=cx0.in[1];
+a[2]=cx0.in[2];
+a[3]=cx0.in[3];
+a[4]=cx0.in[4];
+a[5]=cx0.in[5];
+c=cx0.out;
+}
+
+
+/* instances */
+foo f;
+
+/* connections */
