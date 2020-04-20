@@ -271,8 +271,8 @@ void emit_types (VNet *v)
   int sink_count = 0;
 
   //fprintf (v->out, "import \"globals.act\";\n");
-  fprintf (v->out, "/* globals */\n");
-  fprintf (v->out, "bool Vdd, GND;\n\n");
+  //fprintf (v->out, "/* globals */\n");
+  //fprintf (v->out, "bool Vdd, GND;\n\n");
 
   fprintf (v->out, "/* -- declarations -- */\n");
   for (m = v->hd; m; m = m->next) {
