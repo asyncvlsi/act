@@ -230,7 +230,7 @@ void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l)
  *
  *------------------------------------------------------------------------
  */
-void emit_types (VWalk *v)
+void emit_types (VNet *v)
 {
   int i, j;
   hash_bucket_t *b;
@@ -788,7 +788,7 @@ void update_conn_info (id_info_t *id)
  *
  *------------------------------------------------------------------------
  */
-id_info_t *gen_id (VWalk *v, const char *s)
+id_info_t *gen_id (VNet *v, const char *s)
 {
   hash_bucket_t *b;
   id_info_t *id;

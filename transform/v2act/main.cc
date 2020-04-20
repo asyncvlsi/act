@@ -24,44 +24,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "v_parse.h"
-#include "v_walk_X.h"
+#include "v2act.h"
 #include "misc.h"
-#include <string.h>
 
 char *channame;
 
-static
-char *find_library (char *s)
-{
-  char buf[10240];
-  char *ret;
-  FILE *tmp;
-
-  ret = NULL;
-  if (getenv ("CAD_HOME")) {
-    sprintf (buf, "%s/lib/v2act/%s", getenv ("CAD_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (!ret && getenv ("ACT_HOME")) {
-    sprintf (buf, "%s/lib/v2act/%s", getenv ("ACT_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (ret) {
-    return Strdup (ret);
-  }
-  else {
-    return NULL;
-  }
-}
 
 static void usage (char *s)
 {
@@ -78,9 +45,7 @@ int mode;			/* sync or async mode */
 
 int main (int argc, char **argv)
 {
-  Act *a;
-  v_Token *t;
-  VWalk *w;
+  VNet *w;
   extern int optind, opterr;
   extern char *optarg;
   int ch;
@@ -160,31 +125,7 @@ int main (int argc, char **argv)
     channame = Strdup ("e1of2");
   }
 
-  {
-    char *s;
-    
-    s = find_library (libname);
-    if (!s) {
-      a = new Act (libname);
-    }
-    else {
-      a = new Act (s);
-      FREE (s);
-    }
-  }
-
-  t = v_parse (argv[optind]);
-
-  NEW (w, VWalk);
-  w->a = a;
-  w->out = stdout;
-  w->prefix = NULL;
-  w->M = hash_new (32);
-  w->hd = NULL;
-  w->tl = NULL;
-  w->missing = hash_new (8);
-
-  v_walk_X (w, t);
+  w = verilog_read (argv[optind], libname);
 
   label_clocks (w, clkname ? clkname : "clock");
 
@@ -201,7 +142,6 @@ int main (int argc, char **argv)
       compute_fanout (w, m);
     }
   }
-
 
   emit_types (w);
 

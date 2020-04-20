@@ -36,7 +36,7 @@ Process *v2act_find_lib (Act *a, const char *nm)
 }
 
 
-static void _label_clock_helper (VWalk *v, module_t *m, const char *clk)
+static void _label_clock_helper (VNet *v, module_t *m, const char *clk)
 {
   module_t *n;
   int i;
@@ -103,7 +103,7 @@ static void _label_clock_helper (VWalk *v, module_t *m, const char *clk)
  *------------------------------------------------------------------------
  */
 void
-label_clocks (VWalk *v, const char *clk)
+label_clocks (VNet *v, const char *clk)
 {
   module_t *m;
 
@@ -316,7 +316,7 @@ _set_driver_array (conn_rhs_t *r, struct driver_info *d, int offset)
  *
  *------------------------------------------------------------------------
  */
-void compute_fanout (VWalk *v, module_t *m)
+void compute_fanout (VNet *v, module_t *m)
 {
   int i, j;
   hash_bucket_t *b;

@@ -1,7 +1,7 @@
 /*
   Structural Verilog to ACT file
 */
-%type[X] {{ VWalk VRet }};
+%type[X] {{ VNet VRet }};
 
 ver_file: module ver_file | module ;
 

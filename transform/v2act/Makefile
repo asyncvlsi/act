@@ -19,13 +19,16 @@
 #
 #-------------------------------------------------------------------------
 BINARY=v2act.$(EXT)
+LOCAL_LIB=libverilog_$(EXT).a
 
 TARGETS=$(BINARY)
 
 TARGETINCS=v_parse_id.h
 
-OBJS1=main.o emit.o sync.o wrap.o v_parse.o v_walk_X.o
-OBJS=$(OBJS1) $(OBJS2)
+LOCAL_LIBOBJS=wrap.o v_parse.o v_walk_X.o vnet.o
+
+OBJS1=main.o emit.o sync.o 
+OBJS=$(OBJS1) $(OBJS2) $(LOCAL_LIBOBJS)
 
 CLEAN=v_walk_X.h v_walk_X.cc v_parse.cc v_parse.h \
 	v_parse_int.h v_parse.def v_parse.gram v_parse_id.h
@@ -34,8 +37,12 @@ SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(BINARY): $(LIB) $(OBJS1) $(ACTPASSDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS1) -o $(BINARY) $(LIBACTPASS)
+$(BINARY): $(LOCAL_LIB) $(OBJS1) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS1) -o $(BINARY) $(LOCAL_LIB) $(LIBACTPASS)
+
+$(LOCAL_LIB): $(LOCAL_LIBOBJS)
+	ar ruv $(LOCAL_LIB) $(LOCAL_LIBOBJS)
+	$(RANLIB) $(LOCAL_LIB)
 
 v_parse_id.h v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
 	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -p -n v
