@@ -1210,10 +1210,10 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
     fprintf (fp, "*");
   case ACT_CHP_SELECT:
   case ACT_CHP_SELECT_NONDET:
+    fprintf (fp, "[");
     if (c->type == ACT_CHP_SELECT_NONDET) {
       fprintf (fp, "|");
     }
-    fprintf (fp, "[");
     {
       act_chp_gc_t *gc = c->u.gc;
 
@@ -1252,10 +1252,10 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 	}
       }
     }
-    fprintf (fp, "]");
     if (c->type == ACT_CHP_SELECT_NONDET) {
       fprintf (fp, "|");
     }
+    fprintf (fp, "]");
     break;
     
   case ACT_CHP_SKIP:
