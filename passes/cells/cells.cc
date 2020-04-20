@@ -188,11 +188,11 @@ static int _equal_expr_helper (act_prs_expr_t *a, act_prs_expr_t *b,
     return _equal_expr_helper (a->u.e.l, b->u.e.l, perm, 1-paritya, 1-parityb,
 			       chk_width);
   }
-  while (a && a->type == ACT_PRS_EXPR_NOT) {
+  while (a && (a->type == ACT_PRS_EXPR_NOT)) {
     paritya = 1 - paritya;
     a = a->u.e.l;
   }
-  while (b && b->type == ACT_PRS_EXPR_NOT) {
+  while (b && (b->type == ACT_PRS_EXPR_NOT)) {
     parityb = 1 - parityb;
     b = b->u.e.l;
   }
@@ -291,16 +291,21 @@ static int _equal_expr_helper (act_prs_expr_t *a, act_prs_expr_t *b,
       }
     }
     else {
-      if (IS_AND (b, parityb)) {
-	return 0;
+      if (IS_OR (a, paritya)) {
+	if (IS_OR (b, parityb)) {
+	  return ((_equal_expr_helper (a->u.e.l, b->u.e.l, perm, paritya, parityb, chk_width) &&
+		   _equal_expr_helper (a->u.e.r, b->u.e.r, perm, paritya, parityb, chk_width)) ||
+		  (_equal_expr_helper (a->u.e.l, b->u.e.r, perm, paritya, parityb, chk_width) &&
+		   _equal_expr_helper (a->u.e.r, b->u.e.l, perm, paritya, parityb, chk_width))) &&
+	    _equal_expr_helper (a->u.e.pchg, b->u.e.pchg, perm, 0, 0, chk_width) &&
+	    (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+	}
+	else {
+	  return 0;
+	}
       }
       else {
-	return ((_equal_expr_helper (a->u.e.l, b->u.e.l, perm, paritya, parityb, chk_width) &&
-		_equal_expr_helper (a->u.e.r, b->u.e.r, perm, paritya, parityb, chk_width)) ||
-	  (_equal_expr_helper (a->u.e.l, b->u.e.r, perm, paritya, parityb, chk_width) &&
-	   _equal_expr_helper (a->u.e.r, b->u.e.l, perm, paritya, parityb, chk_width))) &&
-	  _equal_expr_helper (a->u.e.pchg, b->u.e.pchg, perm, 0, 0, chk_width) &&
-	  (a->u.e.pchg ? (a->u.e.pchg_type == b->u.e.pchg_type) : 1);
+	return 0;
       }
     }    
     break;
