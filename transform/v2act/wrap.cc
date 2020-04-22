@@ -124,3 +124,95 @@ void verilog_delete_id (VNet *v, const  char *s)
   hash_delete (CURMOD(v)->H, s);
 }
 
+
+int array_length (conn_info_t *c)
+{
+  conn_rhs_t *r;
+  int x;
+  listitem_t *li;
+
+  if (c->r) {
+    /* simple */
+    r = c->r;
+    if (r->id.isderef) {
+      /* not an array */
+      return -1;
+    }
+    else {
+      if (r->issubrange) {
+	return (r->hi - r->lo + 1);
+      }
+      else {
+	return -1;
+      }
+    }
+  }
+  else {
+    x = 0;
+    for (li = list_first (c->l); li; li = list_next (li)) {
+      r = (conn_rhs_t *)list_value (li);
+      if (r->id.isderef) {
+	x += 1;
+      }
+      else {
+	if (r->issubrange) {
+	  x += (r->hi - r->lo + 1);
+	}
+	else {
+	  x += 1;
+	}
+      }
+    }
+  }
+  return x;
+}
+
+
+/*
+ * update ID info
+ *
+ */
+void update_id_info (id_info_t *id)
+{
+  if (id->m) {
+    id->m->inst_exists = 1;
+    id->nused = A_LEN (id->m->port_list);
+    id->p = NULL;
+  }
+  if (id->nused > 0) {
+    MALLOC (id->used, int, id->nused);
+    for (int i=0; i < id->nused; i++) {
+      id->used[i] = 0;
+    }
+  }
+}
+
+void update_conn_info (id_info_t *id)
+{
+  if (!id->m) return;
+  if (id->mod && id->conn_start != -1) {
+    for (int i=id->conn_start; i <= id->conn_end; i++) {
+      int k;
+      printf ("mod len = %d\n", A_LEN (id->m->port_list));
+      for (k=0; k < A_LEN (id->m->port_list); k++) {
+	if (strcmp (id->mod->conn[i]->id.id->myname,
+		    id->m->port_list[k]->myname) == 0) {
+	  id->used[k] = 1;
+	  break;
+	}
+      }
+      if (k == A_LEN (id->m->port_list)) {
+	fatal_error ("Connection to unknown port `%s' for %s?", id->mod->conn[i]->id.id->myname, id->m->b->key);
+      }
+    }
+  }
+}
+
+
+Process *verilog_find_lib (Act *a, const char *nm)
+{
+  char buf[10240];
+
+  sprintf (buf, "sync::%s", nm);
+  return a->findProcess (buf);
+}

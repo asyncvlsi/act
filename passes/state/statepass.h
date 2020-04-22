@@ -27,7 +27,7 @@
 #include <map>
 #include <act/act.h>
 #include <act/iter.h>
-#include <act/passes.h>
+#include <act/passes/booleanize.h>
 #include "hash.h"
 #include "array.h"
 

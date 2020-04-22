@@ -27,13 +27,6 @@
 #include "misc.h"
 
 
-Process *v2act_find_lib (Act *a, const char *nm)
-{
-  char buf[10240];
-
-  sprintf (buf, "sync::%s", nm);
-  return a->findProcess (buf);
-}
 
 
 static void _label_clock_helper (VNet *v, module_t *m, const char *clk)
@@ -71,7 +64,7 @@ static void _label_clock_helper (VNet *v, module_t *m, const char *clk)
 	  b = hash_lookup (v->M, c->prefix->nm);
 	  if (!b) {
 	    /* library, ignore */
-	    if (v2act_find_lib (v->a, c->prefix->nm) == NULL) {
+	    if (verilog_find_lib (v->a, c->prefix->nm) == NULL) {
 	      fatal_error ("Module `%s' not found in library!", c->prefix->nm);
 	    }
 #if 0 
@@ -334,7 +327,7 @@ void compute_fanout (VNet *v, module_t *m)
       /* instance: look at the type */
       Assert (info->isinst, "What?");
       Assert (info->nm, "No module name?");
-      if ((p = v2act_find_lib (v->a, info->nm))) {
+      if ((p = verilog_find_lib (v->a, info->nm))) {
 	/* port direction */
 	j = p->FindPort (m->conn[i]->id.id->myname);
 	if (j == 0) {

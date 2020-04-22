@@ -23,6 +23,7 @@
 #define __ACT_VNET_H__
 
 #include <act/act.h>
+#include <agraph.h>
 #include "misc.h"
 #include "array.h"
 #include "hash.h"
@@ -80,7 +81,11 @@ struct idinfo {
   int *fcur;
 
   /** this is used for missing modules to be filled in later **/
-  struct idinfo *nxt;
+  union {
+    struct idinfo *nxt;
+    void *space;
+    int ispace;
+  };
   int conn_start, conn_end;
   struct moduletype  *mod;
 
@@ -146,6 +151,9 @@ typedef struct moduletype {
   /* flags */
   unsigned int flags;
 
+  /* space */
+  void *space;
+
   /* dangling ports (have to be bucketed for async) */
   A_DECL (struct connect_lhs, dangling_list);
   
@@ -193,8 +201,9 @@ typedef struct {
   } u;
 } VRet;
 
+Process *verilog_find_lib (Act *a, const char *nm);
 VNet *verilog_read (const char *file, const char *lib);
-void verilog_graph (VNet *n);
+AGraph *verilog_create_netgraph (VNet *n);
 
 
 #endif /* __ACT_VNET_H__ */

@@ -1149,6 +1149,7 @@ void ActBody_Lang::Print (FILE *fp)
     break;
   case ActBody_Lang::LANG_REFINE:
     refine_print (fp, (act_refine *)lang);
+    break;
   case ActBody_Lang::LANG_SIZE:
     sizing_print (fp, (act_sizing *)lang);
     break;
@@ -1242,7 +1243,6 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     else {
       ux->lang->setsizing (sz);
     }
-    break;
     break;
     
   default:

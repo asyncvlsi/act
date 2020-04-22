@@ -29,6 +29,7 @@
 #include "bitset.h"
 #include "config.h"
 #include <act/iter.h>
+#include <act/passes/sizing.h>
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 
@@ -2208,7 +2209,11 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   if (!a->pass_find ("booleanize")) {
     ActBooleanizePass *bp = new ActBooleanizePass (a);
   }
+  if (!a->pass_find ("sizing")) {
+    ActSizingPass *sp = new ActSizingPass (a);
+  }
   AddDependency ("booleanize");
+  AddDependency ("sizing");
 
   ActPass *pass = a->pass_find ("booleanize");
   Assert (pass, "What?");

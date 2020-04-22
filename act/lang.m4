@@ -46,7 +46,10 @@ language_body[ActBody *]: lang_chp
 {{X:
     return $1;
 }}
-| lang_size 
+| lang_size
+{{X:
+    return $1;
+}}
 ;
 
 supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
@@ -767,7 +770,6 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->type = ACT_PRS_RULE;
     p->u.one.attr = NULL;
     p->u.one.e = (act_prs_expr_t *) $1;
-    p->u.one.eopp = NULL;
     p->u.one.arrow_type = $2;
     p->u.one.id = $3;
     p->u.one.dir = $4;
@@ -783,7 +785,6 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     p->type = ACT_PRS_RULE;
     p->u.one.attr = NULL;
     p->u.one.e = (act_prs_expr_t *) $1;
-    p->u.one.eopp = NULL;
     p->u.one.arrow_type = $2;
     p->u.one.id = (ActId *)$4;
     p->u.one.dir = $5;
@@ -1316,26 +1317,48 @@ lang_size[ActBody *]: "sizing" "{"
 "}"
 {{X:
     act_sizing *sz;
-    if (OPT_EMPTY ($3)) {
-      FREE ($0->sizing_info);
-      sz = NULL;
-    }
-    else {
-      sz = $0->sizing_info;
-    }
-    $0->sizing_info = NULL;
     OPT_FREE ($3);
-    if (sz) {
-      return new ActBody_Lang (sz);
-    }
-    else {
-      return NULL;
-    }
+    sz = $0->sizing_info;
+    $0->sizing_info = NULL;
+    return new ActBody_Lang (sz);
 }}
 ;
 
-size_directive:
-  ID wreal_expr
+size_directive: bool_expr_id "{" dir wreal_expr ["," dir wreal_expr ] "}"
+{{X:
+    A_NEW ($0->sizing_info->d, act_sizing_directive);
+    A_NEXT ($0->sizing_info->d).id = $1;
+    if ($3) {
+      A_NEXT ($0->sizing_info->d).eup = $4;
+      A_NEXT ($0->sizing_info->d).edn = NULL;
+    }
+    else {
+      A_NEXT ($0->sizing_info->d).edn = $4;
+      A_NEXT ($0->sizing_info->d).eup = NULL;
+    }
+    if (!OPT_EMPTY ($5)) {
+      ActRet *r1, *r2;
+      r1 = OPT_VALUE ($5);
+      r2 = OPT_VALUE2 ($5);
+      $A(r1->type == R_INT);
+      $A(r2->type == R_EXPR);
+      if (r1->u.ival == $3) {
+	$E("Sizing directive with duplicate drive strength directions?");
+      }
+      if (r1->u.ival) {
+	A_NEXT ($0->sizing_info->d).eup = r2->u.exp;
+      }
+      else {
+	A_NEXT ($0->sizing_info->d).edn = r2->u.exp;
+      }
+      FREE (r1);
+      FREE (r2);
+    }
+    list_free ($5);
+    A_INC ($0->sizing_info->d);
+    return NULL;
+}}
+| ID wreal_expr
 {{X:
     /* ID can be:
            p_n_mode  0/1  0 = default, 1 = sqrt sizing
@@ -1352,15 +1375,6 @@ size_directive:
     else {
       $E("Unknown sizing directive ``%s''", $1);
     }
-    return NULL;
-}}
-|  bool_expr_id dir "->" wreal_expr
-{{X:
-    A_NEW ($0->sizing_info->d, act_sizing_directive);
-    A_NEXT ($0->sizing_info->d).id = $1;
-    A_NEXT ($0->sizing_info->d).dir = $2;
-    A_NEXT ($0->sizing_info->d).e = $4;
-    A_INC ($0->sizing_info->d);
     return NULL;
 }}
 ;

@@ -110,7 +110,7 @@ typedef struct act_prs_lang {
   union {
     struct {
       act_attr_t *attr;  /* after, weak, and unstab need u/d versions */
-      act_prs_expr_t *e, *eopp;
+      act_prs_expr_t *e;
       ActId *id; /* is a char * if it is a label */
       unsigned int arrow_type:2; /* -> = 0, => = 1, #> = 2 */
       unsigned int dir:1;	/* 0 = -, 1 = + */
@@ -238,11 +238,12 @@ struct act_refine {
 
 struct act_sizing_directive {
   ActId *id;
-  Expr *e;
-  int dir; // 1 = +, 0 = -
+  Expr *eup, *edn;
 };
   
 struct act_sizing {
+  // p_n_mode  0/1  0 = default, 1 = sqrt sizing
+  // unit_n 5
   int p_specified, unit_n_specified;
   Expr *p_n_mode_e, *unit_n_e;
   int p_n_mode;
@@ -323,5 +324,8 @@ act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 void act_print_size (FILE *fp, act_size_spec_t *sz);
+
+act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e);
+act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
 
 #endif /* __LANG_H__ */

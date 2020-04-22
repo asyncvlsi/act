@@ -31,13 +31,13 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	names.h mstring.h mytime.h \
 	channel.h hconfig.h contexts.h count.h \
 	machine.h mem.h mutex.h  thread.h sim.h \
-	log.h ext.h simthread.h simdes.h
+	log.h ext.h simthread.h simdes.h agraph.h
 
 # general library support
 OBJSC1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
 	heap.o except.o pp.o list.o bool.o names.o mstring.o time.o ext.o \
 
-OBJSCC1=log.o sim.o
+OBJSCC1=log.o sim.o agraph.o
 
 OBJS1=$(OBJSC1) $(OBJSCC1)
 

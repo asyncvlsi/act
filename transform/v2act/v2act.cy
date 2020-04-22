@@ -10,6 +10,7 @@ module: "module" ID
     module_t *m;
 
     NEW (m, module_t);
+    m->space = NULL;
     m->next = NULL;
     A_INIT (m->conn);
     A_INIT (m->port_list);
@@ -272,7 +273,7 @@ one_instance: id id
     if (!b) {
       $2->m = NULL;
       /* external module */
-      if (($2->p = v2act_find_lib ($0->a, $1->myname))) {
+      if (($2->p = verilog_find_lib ($0->a, $1->myname))) {
 	/* okay */
       }
       else {
@@ -444,6 +445,7 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
 
   NEW (d, id_deref_t);
   d->id = verilog_gen_id ($0, "GND");
+  d->id->isport = 1;
   d->isderef = 0;
   d->deref = 0;
   return d;
@@ -455,6 +457,7 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
 
   NEW (d, id_deref_t);
   d->id = verilog_gen_id ($0, "Vdd");
+  d->id->isport = 1;
   d->isderef = 0;
   d->deref = 0;
   return d;

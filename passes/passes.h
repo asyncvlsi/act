@@ -30,6 +30,7 @@
 #include <act/passes/netlist.h>
 #include <act/passes/cells.h>
 #include <act/passes/statepass.h>
+#include <act/passes/sizing.h>
 
 
 #endif /* __ACT_PASSES_H__ */

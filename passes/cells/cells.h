@@ -28,7 +28,6 @@
 #include <map>
 #include <act/act.h>
 #include <act/iter.h>
-#include <act/passes.h>
 #include "hash.h"
 #include "bitset.h"
 #include "array.h"

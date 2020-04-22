@@ -21,14 +21,15 @@
 TARGETLIBS=libactpass_$(EXT).a
 TARGETINCS=passes.h
 TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen cells booleanize state
+SUBDIRS=flatten netgen cells booleanize state sizing
 
 USEOBJS=booleanize/$(EXT)/booleanize.o \
 	netgen/$(EXT)/netlist.o \
 	netgen/$(EXT)/emit.o \
 	flatten/$(EXT)/flatten.o \
 	cells/$(EXT)/cells.o \
-	state/$(EXT)/statepass.o
+	state/$(EXT)/statepass.o \
+	sizing/$(EXT)/sizing.o
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 

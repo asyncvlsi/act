@@ -877,121 +877,6 @@ static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
   return k;
 }
 
-static act_prs_expr_t *_copy_rule (act_prs_expr_t *e)
-{
-  act_prs_expr_t *ret;
-  
-  if (!e) return NULL;
-
-  NEW (ret, act_prs_expr_t);
-  ret->type = e->type;
-  switch (e->type) {
-  case ACT_PRS_EXPR_AND:
-  case ACT_PRS_EXPR_OR:
-    ret->u.e.l = _copy_rule (e->u.e.l);
-    ret->u.e.r = _copy_rule (e->u.e.r);
-    ret->u.e.pchg = NULL;
-    ret->u.e.pchg_type = -1;
-    break;
-
-  case ACT_PRS_EXPR_NOT:
-    ret->u.e.l = _copy_rule (e->u.e.l);
-    ret->u.e.r = NULL;
-    ret->u.e.pchg = NULL;
-    ret->u.e.pchg_type = -1;
-    break;
-
-  case ACT_PRS_EXPR_VAR:
-    ret->u.v = e->u.v;
-    ret->u.v.sz = NULL;
-    break;
-
-  case ACT_PRS_EXPR_LABEL:
-    ret->u.l = e->u.l;
-    break;
-
-  case ACT_PRS_EXPR_TRUE:
-  case ACT_PRS_EXPR_FALSE:
-    break;
-
-  case ACT_PRS_EXPR_ANDLOOP:
-  case ACT_PRS_EXPR_ORLOOP:
-    fatal_error ("and/or loop?!");
-    break;
-
-  default:
-    fatal_error ("What?");
-    break;
-  }
-  return ret;
-}
-
-static act_prs_expr_t *_complement_rule (act_prs_expr_t *e)
-{
-  act_prs_expr_t *r;
-  NEW (r, act_prs_expr_t);
-  r->type = ACT_PRS_EXPR_NOT;
-  r->u.e.r = NULL;
-  r->u.e.pchg = NULL;
-  r->u.e.pchg_type = -1;
-  r->u.e.l = _copy_rule (e);
-  return r;
-}
-
-static void _twiddle_leaves (act_prs_expr_t *e)
-{
-  act_prs_expr_t *tmp;
-  
-  if (!e) return;
-  switch (e->type) {
-  case ACT_PRS_EXPR_AND:
-  case ACT_PRS_EXPR_OR:
-    _twiddle_leaves (e->u.e.l);
-    _twiddle_leaves (e->u.e.r);
-    break;
-
-  case ACT_PRS_EXPR_NOT:
-    _twiddle_leaves (e->u.e.l);
-    break;
-
-  case ACT_PRS_EXPR_VAR:
-    tmp = _copy_rule (e);
-    e->type =ACT_PRS_EXPR_NOT;
-    e->u.e.l = tmp;
-    e->u.e.r = NULL;
-    e->u.e.pchg = NULL;
-    e->u.e.pchg_type = -1;
-    break;
-
-  case ACT_PRS_EXPR_LABEL:
-    tmp = _copy_rule (e);
-    e->type =ACT_PRS_EXPR_NOT;
-    e->u.e.l = tmp;
-    e->u.e.r = NULL;
-    e->u.e.pchg = NULL;
-    e->u.e.pchg_type = -1;
-    break;
-
-  case ACT_PRS_EXPR_TRUE:
-    e->type = ACT_PRS_EXPR_FALSE;
-    break;
-    
-  case ACT_PRS_EXPR_FALSE:
-    e->type = ACT_PRS_EXPR_TRUE;
-    break;
-
-  case ACT_PRS_EXPR_ANDLOOP:
-  case ACT_PRS_EXPR_ORLOOP:
-    fatal_error ("and/or loop?!");
-    break;
-
-  default:
-    fatal_error ("What?");
-    break;
-  }
-}
-
-
 static void _count_occurrences (struct act_prsinfo *info,
 				act_prs_expr_t *e, int isup)
 {
@@ -1290,7 +1175,6 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j+1] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.eopp = NULL;
       rules->u.one.e = _convert_prsexpr_to_act (pi->up[j], pi);
       if (rules->u.one.label) {
 	char buf[10];
@@ -1317,7 +1201,6 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.eopp = NULL;
       rules->u.one.e = _convert_prsexpr_to_act (pi->dn[j], pi);
       if (rules->u.one.label) {
 	char buf[10];
@@ -1562,14 +1445,6 @@ static void _dump_expr (FILE *fp,
 }
 
 
-static act_prs_expr_t *_celement_rule (act_prs_expr_t *e)
-{
-  act_prs_expr_t *r = _copy_rule (e);
-  _twiddle_leaves (r);
-  return r;
-}
-
-
 static act_prs_expr_t *_scrub_rule (struct idmap *i, act_prs_expr_t *e)
 {
   act_prs_expr_t *ret;
@@ -1773,10 +1648,10 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
     }
     
     if (l->u.one.arrow_type == 1) {
-      xx = _complement_rule (x);
+      xx = act_prs_complement_rule (x);
     }
     else if (l->u.one.arrow_type == 2) {
-      xx = _celement_rule (x);
+      xx = act_prs_celement_rule (x);
     }
 
     /* dn first, then up */

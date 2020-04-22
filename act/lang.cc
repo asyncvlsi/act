@@ -518,9 +518,6 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
     case ACT_PRS_RULE:
       tmp->u.one.attr = prs_attr_expand (p->u.one.attr, ns, s);
       tmp->u.one.e = prs_expr_expand (p->u.one.e, ns, s);
-      tmp->u.one.eopp = p->u.one.eopp ?
-	prs_expr_expand (p->u.one.eopp, ns, s) : NULL;
-
       if (p->u.one.label == 0) {
 	act_connection *ac;
 	
@@ -1441,14 +1438,19 @@ void sizing_print (FILE *fp, act_sizing *s)
   for (int i=0; i < A_LEN (s->d); i++) {
     fprintf (fp, "   ");
     s->d[i].id->Print (fp);
-    if (s->d[i].dir) {
-      fprintf (fp, "+ -> ");
+    fprintf (fp, " { ");
+    if (s->d[i].eup) {
+      fprintf (fp, "+ ");
+      print_expr (fp, s->d[i].eup);
     }
-    else {
-      fprintf (fp, "- -> ");
+    if (s->d[i].edn) {
+      if (s->d[i].eup) {
+	fprintf (fp, ", ");
+      }
+      fprintf (fp, "- ");
+      print_expr (fp, s->d[i].edn);
     }
-    print_expr (fp, s->d[i].e);
-    fprintf (fp, "\n");
+    fprintf (fp, " };\n");
   }
   fprintf (fp, "}\n");
 }
@@ -1494,10 +1496,135 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     for (int i=0; i < A_LEN (sz->d); i++) {
       A_NEW (ret->d, act_sizing_directive);
       A_NEXT (ret->d).id = sz->d[i].id->Expand (ns, s);
-      A_NEXT (ret->d).e = expr_expand (sz->d[i].e, ns, s);
-      A_NEXT (ret->d).dir = sz->d[i].dir;
+      A_NEXT (ret->d).eup = expr_expand (sz->d[i].eup, ns, s);
+      A_NEXT (ret->d).edn = expr_expand (sz->d[i].edn, ns, s);
       A_INC (ret->d);
     }
   }
   return ret;
 }
+
+
+/* utility functions for expanded rules */
+
+static act_prs_expr_t *_copy_rule (act_prs_expr_t *e)
+{
+  act_prs_expr_t *ret;
+  
+  if (!e) return NULL;
+
+  NEW (ret, act_prs_expr_t);
+  ret->type = e->type;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    ret->u.e.l = _copy_rule (e->u.e.l);
+    ret->u.e.r = _copy_rule (e->u.e.r);
+    ret->u.e.pchg = NULL;
+    ret->u.e.pchg_type = -1;
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    ret->u.e.l = _copy_rule (e->u.e.l);
+    ret->u.e.r = NULL;
+    ret->u.e.pchg = NULL;
+    ret->u.e.pchg_type = -1;
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    ret->u.v = e->u.v;
+    ret->u.v.sz = NULL;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    ret->u.l = e->u.l;
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  return ret;
+}
+
+act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e)
+{
+  act_prs_expr_t *r;
+  NEW (r, act_prs_expr_t);
+  r->type = ACT_PRS_EXPR_NOT;
+  r->u.e.r = NULL;
+  r->u.e.pchg = NULL;
+  r->u.e.pchg_type = -1;
+  r->u.e.l = _copy_rule (e);
+  return r;
+}
+
+static void _twiddle_leaves (act_prs_expr_t *e)
+{
+  act_prs_expr_t *tmp;
+  
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    _twiddle_leaves (e->u.e.l);
+    _twiddle_leaves (e->u.e.r);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    _twiddle_leaves (e->u.e.l);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    tmp = _copy_rule (e);
+    e->type =ACT_PRS_EXPR_NOT;
+    e->u.e.l = tmp;
+    e->u.e.r = NULL;
+    e->u.e.pchg = NULL;
+    e->u.e.pchg_type = -1;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    tmp = _copy_rule (e);
+    e->type =ACT_PRS_EXPR_NOT;
+    e->u.e.l = tmp;
+    e->u.e.r = NULL;
+    e->u.e.pchg = NULL;
+    e->u.e.pchg_type = -1;
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+    e->type = ACT_PRS_EXPR_FALSE;
+    break;
+    
+  case ACT_PRS_EXPR_FALSE:
+    e->type = ACT_PRS_EXPR_TRUE;
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+}
+
+act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e)
+{
+  act_prs_expr_t *r = _copy_rule (e);
+  _twiddle_leaves (r);
+  return r;
+}
+

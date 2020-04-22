@@ -2,7 +2,7 @@
  *
  *  This file is part of the ACT library
  *
- *  Copyright (c) 2007, 2018-2019 Rajit Manohar
+ *  Copyright (c) 2020 Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,36 +21,29 @@
  *
  **************************************************************************
  */
-#ifndef __V2ACT_H__
-#define __V2ACT_H__
+#ifndef __ACT_PASS_SIZING_H__
+#define __ACT_PASS_SIZING_H__
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <map>
 #include <act/act.h>
-#include "vnet.h"
+#include <act/iter.h>
+#include <act/passes/booleanize.h>
+#include "hash.h"
+#include "array.h"
 
+class ActSizingPass : public ActPass {
+public:
+  ActSizingPass (Act *a);
+  ~ActSizingPass ();
 
-enum V2ACT_mode {
-  V_ASYNC,
-  V_SYNC
+  int run (Process *p = NULL);
+
+private:
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *);
+
+  ActBooleanizePass *bp;
 };
 
-extern int mode;		/* mode */
 
-void label_clocks (VNet *w, const char *clk);
-
-void emit_types (VNet *);
-void free_typetable (struct Hashtable *);
-void update_id_info (id_info_t *);
-void update_conn_info (id_info_t *);
-
-void emit_id_deref (FILE *fp, id_deref_t *id);
-int array_length (conn_info_t *c); /* crazy */
-void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l);
-
-void compute_fanout (VNet *v, module_t *m);
-void emit_verilog (VNet *);
-
-extern char *channame;
-
-#endif /* __V2ACT_H__ */
+#endif /* __ACT_PASS_STATE_H__ */
