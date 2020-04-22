@@ -212,6 +212,16 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
   return;
 }
 
+static  void _do_sizing (act_prs_expr_t *e, double sz)
+{
+  _depthmap = new std::map<act_prs_expr_t *, int> ();
+  _depth_map (e, 0);
+  _in_place_sizing (e, sz);
+  delete _depthmap;
+  _depthmap = NULL;
+}
+
+
 static void _apply_sizing (act_connection *c, double up, double dn,
 		    act_prs_lang_t *prs, Scope *sc)
 {
@@ -225,10 +235,7 @@ static void _apply_sizing (act_connection *c, double up, double dn,
 	if (cid == c) {
 	  if (_no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
-	      _depthmap = new std::map<act_prs_expr_t *, int> ();
-	      _depth_map (tmp->u.one.e, 0);
-	      _in_place_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
-	      delete _depthmap;
+	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
 	    }
 	    else {
 	      /* create a new production rule and size both */
@@ -248,17 +255,11 @@ static void _apply_sizing (act_connection *c, double up, double dn,
 	      }
 	      newrule->next = tmp->next;
 	      tmp->next = newrule;
-
 	      tmp->u.one.arrow_type = 0;
-	      _depthmap = new std::map<act_prs_expr_t *, int> ();
-	      _depth_map (tmp->u.one.e, 0);
-	      _in_place_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
-	      delete _depthmap;
 	      
-	      _depthmap = new std::map<act_prs_expr_t *, int> ();
-	      _depth_map (newrule->u.one.e, 0);
-	      _in_place_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn);
-	      delete _depthmap;
+	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
+	      _do_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn);
+
 	      tmp = newrule;
 	    }
 	  }
