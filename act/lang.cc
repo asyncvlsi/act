@@ -1442,6 +1442,10 @@ void sizing_print (FILE *fp, act_sizing *s)
     if (s->d[i].eup) {
       fprintf (fp, "+ ");
       print_expr (fp, s->d[i].eup);
+      if (s->d[i].upfolds) {
+	fprintf (fp, ";");
+	print_expr (fp, s->d[i].upfolds);
+      }
     }
     if (s->d[i].edn) {
       if (s->d[i].eup) {
@@ -1449,6 +1453,10 @@ void sizing_print (FILE *fp, act_sizing *s)
       }
       fprintf (fp, "- ");
       print_expr (fp, s->d[i].edn);
+      if (s->d[i].dnfolds) {
+	fprintf (fp, ";");
+	print_expr (fp, s->d[i].dnfolds);
+      }
     }
     fprintf (fp, " };\n");
   }
@@ -1498,6 +1506,8 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
       A_NEXT (ret->d).id = sz->d[i].id->Expand (ns, s);
       A_NEXT (ret->d).eup = expr_expand (sz->d[i].eup, ns, s);
       A_NEXT (ret->d).edn = expr_expand (sz->d[i].edn, ns, s);
+      A_NEXT (ret->d).upfolds = expr_expand (sz->d[i].upfolds, ns, s);
+      A_NEXT (ret->d).dnfolds = expr_expand (sz->d[i].dnfolds, ns, s);
       A_INC (ret->d);
     }
   }

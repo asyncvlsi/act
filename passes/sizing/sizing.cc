@@ -152,7 +152,8 @@ static void _depth_map (act_prs_expr_t *e, int pad, int flip = 0)
 }
 
 
-static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
+static void _in_place_sizing (act_prs_expr_t *e, double sz, int nf,
+			      int flip = 0)
 {
   if (!e) return;
 
@@ -175,18 +176,18 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
       }
 #endif      
       Assert (d2 > d1, "What?");
-      _in_place_sizing (e->u.e.l, sz*d2/d1, flip);
-      _in_place_sizing (e->u.e.r, sz*d2/(d2-d1), flip);
+      _in_place_sizing (e->u.e.l, sz*d2/d1, nf, flip);
+      _in_place_sizing (e->u.e.r, sz*d2/(d2-d1), nf, flip);
     }
     else {
       /* or */
-      _in_place_sizing (e->u.e.l, sz, flip);
-      _in_place_sizing (e->u.e.r, sz, flip);
+      _in_place_sizing (e->u.e.l, sz, nf, flip);
+      _in_place_sizing (e->u.e.r, sz, nf, flip);
     }
     break;
     
   case ACT_PRS_EXPR_NOT:
-    _in_place_sizing (e->u.e.l, sz, 1 - flip);
+    _in_place_sizing (e->u.e.l, sz, nf, 1 - flip);
     break;
 
   case ACT_PRS_EXPR_VAR:
@@ -195,7 +196,12 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
     e->u.v.sz->l = NULL;
     e->u.v.sz->flavor = 0; // what to do?
     e->u.v.sz->w = const_expr ((int)(sz + 0.5));
-    e->u.v.sz->folds = NULL;
+    if (nf != 1) {
+      e->u.v.sz->folds = const_expr (nf);
+    }
+    else {
+      e->u.v.sz->folds = NULL;
+    }
     break;
 
   case ACT_PRS_EXPR_LABEL:
@@ -212,18 +218,19 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
   return;
 }
 
-static  void _do_sizing (act_prs_expr_t *e, double sz)
+static  void _do_sizing (act_prs_expr_t *e, double sz, int nf)
 {
   _depthmap = new std::map<act_prs_expr_t *, int> ();
   _depth_map (e, 0);
-  _in_place_sizing (e, sz);
+  _in_place_sizing (e, sz, nf);
   delete _depthmap;
   _depthmap = NULL;
 }
 
 
-static void _apply_sizing (act_connection *c, double up, double dn,
-		    act_prs_lang_t *prs, Scope *sc)
+static void _apply_sizing (act_connection *c, double up, int upf,
+			   double dn, int dnf,
+			   act_prs_lang_t *prs, Scope *sc)
 {
   act_prs_lang_t *tmp;
   act_connection *cid;
@@ -235,7 +242,8 @@ static void _apply_sizing (act_connection *c, double up, double dn,
 	if (cid == c) {
 	  if (_no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
-	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
+	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn,
+			  tmp->u.one.dir ? upf : dnf);
 	    }
 	    else {
 	      /* create a new production rule and size both */
@@ -257,8 +265,10 @@ static void _apply_sizing (act_connection *c, double up, double dn,
 	      tmp->next = newrule;
 	      tmp->u.one.arrow_type = 0;
 	      
-	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
-	      _do_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn);
+	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn,
+			  tmp->u.one.dir ? upf : dnf);
+	      _do_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn,
+			  newrule->u.one.dir ? upf : dnf);
 
 	      tmp = newrule;
 	    }
@@ -277,7 +287,7 @@ static void _apply_sizing (act_connection *c, double up, double dn,
       break;
     case ACT_PRS_SUBCKT:
     case ACT_PRS_TREE:
-      _apply_sizing (c, up, dn, tmp->u.l.p, sc);
+      _apply_sizing (c, up, upf, dn, dnf, tmp->u.l.p, sc);
       break;
     case ACT_PRS_LOOP:
       fatal_error ("Why are there loops?");
@@ -378,6 +388,10 @@ void *ActSizingPass::local_op (Process *p, int mode)
     /* apply directive! */
     act_connection *c;
     double dup, ddn;
+    int upf, dnf;
+
+    upf = 1;
+    dnf = 1;
     
     c = sz->d[i].id->Canonical (sc);
 
@@ -392,6 +406,14 @@ void *ActSizingPass::local_op (Process *p, int mode)
     else {
       dup = -1;
     }
+    if (sz->d[i].upfolds) {
+      if (!getconst_int (sz->d[i].upfolds, &upf)) {
+	fatal_error ("Sizing folding value is not a const");
+      }
+      if (upf < 0) {
+	fatal_error ("Sizing folding is negative");
+      }
+    }
     if (sz->d[i].edn) {
       if (!getconst_real (sz->d[i].edn, &ddn)) {
 	fatal_error ("Sizing expression is not a const");
@@ -403,18 +425,28 @@ void *ActSizingPass::local_op (Process *p, int mode)
     else {
       ddn = -1;
     }
+    if (sz->d[i].dnfolds) {
+      if (!getconst_int (sz->d[i].dnfolds, &dnf)) {
+	fatal_error ("Sizing folding value is not a const");
+      }
+      if (dnf < 0) {
+	fatal_error ("Sizing folding is negative");
+      }
+    }
     if (dup == -1) {
       dup = ddn*ratio;
+      upf = dnf;
     }
     if (ddn == -1) {
       ddn = dup/ratio;
+      dnf = upf;
     }
     dup *= unit_n;
     ddn *= unit_n;
 
     /* find all rules with this and apply sizing */
     for (act_prs *tprs = prs; tprs; tprs = tprs->next) {
-      _apply_sizing (c, dup, ddn, tprs->p, sc);
+      _apply_sizing (c, dup, upf, ddn, dnf, tprs->p, sc);
     }
   }
   return NULL;

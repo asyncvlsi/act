@@ -239,6 +239,7 @@ struct act_refine {
 struct act_sizing_directive {
   ActId *id;
   Expr *eup, *edn;
+  Expr *upfolds, *dnfolds;
 };
   
 struct act_sizing {

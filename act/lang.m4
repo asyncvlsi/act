@@ -1324,37 +1324,72 @@ lang_size[ActBody *]: "sizing" "{"
 }}
 ;
 
-size_directive: bool_expr_id "{" dir wreal_expr ["," dir wreal_expr ] "}"
+size_directive: bool_expr_id "{" dir wreal_expr [ ";" wint_expr]  ["," dir wreal_expr [ ";" wint_expr ] ] "}"
 {{X:
     A_NEW ($0->sizing_info->d, act_sizing_directive);
     A_NEXT ($0->sizing_info->d).id = $1;
+    A_NEXT ($0->sizing_info->d).upfolds = NULL;
+    A_NEXT ($0->sizing_info->d).dnfolds = NULL;
+    
+    
     if ($3) {
       A_NEXT ($0->sizing_info->d).eup = $4;
       A_NEXT ($0->sizing_info->d).edn = NULL;
+      if (!OPT_EMPTY ($5)) {
+	ActRet *r = OPT_VALUE ($5);
+	$A(r->type == R_EXPR);
+	A_NEXT ($0->sizing_info->d).upfolds = r->u.exp;
+	FREE (r);
+      }
+      OPT_FREE ($5);
     }
     else {
       A_NEXT ($0->sizing_info->d).edn = $4;
       A_NEXT ($0->sizing_info->d).eup = NULL;
+      if (!OPT_EMPTY ($5)) {
+	ActRet *r = OPT_VALUE ($5);
+	$A(r->type == R_EXPR);
+	A_NEXT ($0->sizing_info->d).dnfolds = r->u.exp;
+	FREE (r);
+      }
+      OPT_FREE ($5);
     }
-    if (!OPT_EMPTY ($5)) {
-      ActRet *r1, *r2;
-      r1 = OPT_VALUE ($5);
-      r2 = OPT_VALUE2 ($5);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r1, *r2, *r3;
+      Expr *fold;
+      r1 = OPT_VALUE ($6);
+      r2 = OPT_VALUE2 ($6);
+      r3 = OPT_VALUE3 ($6);
       $A(r1->type == R_INT);
       $A(r2->type == R_EXPR);
+      $A(r3->type == R_LIST);
       if (r1->u.ival == $3) {
 	$E("Sizing directive with duplicate drive strength directions?");
       }
+      if (!OPT_EMPTY (r3->u.l)) {
+	ActRet *r4;
+	r4 = OPT_VALUE (r3->u.l);
+	$A(r4->type == R_EXPR);
+	fold = r4->u.exp;
+	FREE (r4);
+      }
+      else {
+	fold = NULL;
+      }
+      OPT_FREE (r3->u.l);
       if (r1->u.ival) {
 	A_NEXT ($0->sizing_info->d).eup = r2->u.exp;
+	A_NEXT ($0->sizing_info->d).upfolds = fold;
       }
       else {
 	A_NEXT ($0->sizing_info->d).edn = r2->u.exp;
+	A_NEXT ($0->sizing_info->d).dnfolds = fold;
       }
       FREE (r1);
       FREE (r2);
+      FREE (r3);
     }
-    list_free ($5);
+    list_free ($6);
     A_INC ($0->sizing_info->d);
     return NULL;
 }}
