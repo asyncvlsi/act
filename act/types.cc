@@ -1202,7 +1202,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       /* add parameter to the scope */
       ux->AddMetaParam (x, pn[i]);
 
-      while (uparent && uparent->isPort (getPortName (-(i+1)))) {
+      while (i < nt && uparent && uparent->isPort (getPortName (-(i+1)))) {
 #if 0
 	printf ("uparent: i=%d, ii=%d\n", i, ii);
 #endif
