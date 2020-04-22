@@ -84,6 +84,9 @@ int _no_sizing (act_prs_expr_t *e)
     break;
 
   case ACT_PRS_EXPR_LABEL:
+    return 0;
+    break;
+    
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
     return 1;
@@ -97,12 +100,119 @@ int _no_sizing (act_prs_expr_t *e)
   return 0;
 }
 
-void _in_place_sizing (act_prs_expr *e, double sz)
+static std::map<act_prs_expr_t *, int> *_depthmap = NULL;
+
+#ifndef MAX
+#define MAX(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
+static void _depth_map (act_prs_expr_t *e, int pad, int flip = 0)
 {
+  if (!e) return;
+
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    if ((e->type == ACT_PRS_EXPR_AND && flip == 0) ||
+	(e->type == ACT_PRS_EXPR_OR && flip == 1)) {
+      /* and */
+      _depth_map (e->u.e.l, pad, flip);
+      _depth_map (e->u.e.r, (*_depthmap)[e->u.e.l], flip);
+      (*_depthmap)[e] = (*_depthmap)[e->u.e.r];
+    }
+    else {
+      /* or */
+      _depth_map (e->u.e.l, pad, flip);
+      _depth_map (e->u.e.r, pad, flip);
+      (*_depthmap)[e] = MAX((*_depthmap)[e->u.e.l], (*_depthmap)[e->u.e.r]);
+    }
+    break;
+    
+  case ACT_PRS_EXPR_NOT:
+    _depth_map (e->u.e.l, pad, 1 - flip);
+    (*_depthmap)[e] = (*_depthmap)[e->u.e.l];
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    (*_depthmap)[e] = 1 + pad;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+  default:
+    fatal_error ("What?");
+    break;
+  }
   return;
 }
 
-void _apply_sizing (act_connection *c, double up, double dn,
+
+static void _in_place_sizing (act_prs_expr_t *e, double sz, int flip = 0)
+{
+  if (!e) return;
+
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    if ((e->type == ACT_PRS_EXPR_AND && flip == 0) ||
+	(e->type == ACT_PRS_EXPR_OR && flip == 1)) {
+      /* and */
+      int d1, d2;
+      d1 = (*_depthmap)[e->u.e.l];
+      d2 = (*_depthmap)[e->u.e.r];
+#if 0
+      if (d2 <= d1) {
+	printf ("depth d1=%d, d2=%d; flip=%d\n", d1, d2, flip);
+	act_print_prs_expr (stdout, e->u.e.l);
+	printf ("\n");
+	act_print_prs_expr (stdout, e->u.e.r);
+	printf ("\n");
+      }
+#endif      
+      Assert (d2 > d1, "What?");
+      _in_place_sizing (e->u.e.l, sz*d2/d1, flip);
+      _in_place_sizing (e->u.e.r, sz*d2/(d2-d1), flip);
+    }
+    else {
+      /* or */
+      _in_place_sizing (e->u.e.l, sz, flip);
+      _in_place_sizing (e->u.e.r, sz, flip);
+    }
+    break;
+    
+  case ACT_PRS_EXPR_NOT:
+    _in_place_sizing (e->u.e.l, sz, 1 - flip);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    /* add sizing */
+    NEW (e->u.v.sz, act_size_spec_t);
+    e->u.v.sz->l = NULL;
+    e->u.v.sz->flavor = 0; // what to do?
+    e->u.v.sz->w = const_expr ((int)(sz + 0.5));
+    e->u.v.sz->folds = NULL;
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  return;
+}
+
+static void _apply_sizing (act_connection *c, double up, double dn,
 		    act_prs_lang_t *prs, Scope *sc)
 {
   act_prs_lang_t *tmp;
@@ -115,10 +225,41 @@ void _apply_sizing (act_connection *c, double up, double dn,
 	if (cid == c) {
 	  if (_no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
+	      _depthmap = new std::map<act_prs_expr_t *, int> ();
+	      _depth_map (tmp->u.one.e, 0);
 	      _in_place_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
+	      delete _depthmap;
 	    }
 	    else {
-	      /* create a new production rule */
+	      /* create a new production rule and size both */
+	      act_prs_lang_t *newrule;
+	      NEW (newrule, act_prs_lang_t);
+	      newrule->type = ACT_PRS_RULE;
+	      newrule->u.one.id = tmp->u.one.id;
+	      newrule->u.one.attr = NULL;
+	      newrule->u.one.arrow_type = 0;
+	      newrule->u.one.dir = 1 - tmp->u.one.dir;
+	      newrule->u.one.label = 0;
+	      if (tmp->u.one.arrow_type == 1) {
+		newrule->u.one.e = act_prs_complement_rule (tmp->u.one.e);
+	      }
+	      else {
+		newrule->u.one.e = act_prs_celement_rule (tmp->u.one.e);
+	      }
+	      newrule->next = tmp->next;
+	      tmp->next = newrule;
+
+	      tmp->u.one.arrow_type = 0;
+	      _depthmap = new std::map<act_prs_expr_t *, int> ();
+	      _depth_map (tmp->u.one.e, 0);
+	      _in_place_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn);
+	      delete _depthmap;
+	      
+	      _depthmap = new std::map<act_prs_expr_t *, int> ();
+	      _depth_map (newrule->u.one.e, 0);
+	      _in_place_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn);
+	      delete _depthmap;
+	      tmp = newrule;
 	    }
 	  }
 	  else {
@@ -267,6 +408,8 @@ void *ActSizingPass::local_op (Process *p, int mode)
     if (ddn == -1) {
       ddn = dup/ratio;
     }
+    dup *= unit_n;
+    ddn *= unit_n;
 
     /* find all rules with this and apply sizing */
     for (act_prs *tprs = prs; tprs; tprs = tprs->next) {
