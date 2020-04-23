@@ -95,6 +95,18 @@ void list_append (list_t *l, const void *item)
   q_ins (l->hd, l->tl, li);
 }
 
+void list_iappend (list_t *l, int item)
+{
+  listitem_t *li;
+
+  Assert (l, "void pointer as list argument");
+
+  li = allocitem ();
+  li->idata = item;
+
+  q_ins (l->hd, l->tl, li);
+}
+
 
 /*------------------------------------------------------------------------
  *
@@ -206,9 +218,37 @@ void stack_push (list_t *l, const void *item)
   }
 }
 
+void stack_ipush (list_t *l, int item)
+{
+  listitem_t *li;
+
+  li = allocitem ();
+  li->idata = item;
+
+  if (l->hd) {
+    li->next = l->hd;
+    l->hd = li;
+  }
+  else {
+    l->hd = li;
+    l->tl = li;
+  }
+}
+
 const void *stack_pop (list_t *l)
 {
   const void *item = l->hd->data;
+  listitem_t *li = l->hd;
+
+  l->hd = l->hd->next;
+  freeitem (li);
+  
+  return item;
+}
+
+int stack_ipop (list_t *l)
+{
+  int item = l->hd->idata;
   listitem_t *li = l->hd;
 
   l->hd = l->hd->next;
@@ -253,6 +293,37 @@ const void *list_delete_tail (list_t *l)
     l->tl = NULL;
   }
   data = li->data;
+  freeitem (li);
+  return data;
+}
+
+int list_idelete_tail (list_t *l)
+{
+  listitem_t *li;
+  listitem_t *prev;
+  int data;
+
+  if (list_isempty (l)) return 0;
+  prev = NULL;
+  li = list_first (l);
+  while (list_next (li)) {
+    prev = li;
+    li = list_next (li);
+  }
+  /* li is the last element */
+  Assert (li, "list_delete_tail: list appears to be empty!");
+
+  if (prev) {
+    /* non-empty list remains */
+    prev->next = NULL;
+    l->tl = prev;
+  }
+  else {
+    /* the list is now empty */
+    l->hd = NULL;
+    l->tl = NULL;
+  }
+  data = li->idata;
   freeitem (li);
   return data;
 }

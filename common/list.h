@@ -32,7 +32,10 @@ typedef struct _listDATA_ list_t;
 typedef struct _list_ listitem_t;
 
 struct _list_ {
-  const void *data;
+  union {
+    const void *data;
+    int idata;
+  };
   struct _list_ *next;
 };
 
@@ -42,7 +45,9 @@ struct _listDATA_ {
 
 list_t *list_new (void);
 void list_append (list_t *, const void *);
+void list_iappend (list_t *,  int);
 #define list_append_head(l,x) stack_push ((l), (x))
+#define list_iappend_head(l,x) stack_ipush ((l), (x))
 int list_length (list_t *);
 const void *list_delete_tail (list_t *);
 void list_delete_next (list_t *l, listitem_t *li);
@@ -68,12 +73,15 @@ void list_apply (list_t *l, void *cookie, void (*f)(void *, const void *));
 #define list_tail(l)  ((l)->tl)
 #define list_next(l)     ((l)->next)
 #define list_value(l)    ((l)->data)
+#define list_ivalue(l)  ((l)->idata)  
 
 typedef void *(*LISTMAPFN)(const void *);
 typedef void *(*LISTMAPFNCOOKIE)(void *, const void *);
 
 void stack_push (list_t *l, const void *item);
+void stack_ipush (list_t *l, int item);
 const void *stack_pop (list_t *l);
+int stack_ipop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
 
 #ifdef __cplusplus

@@ -53,8 +53,12 @@ class AGraph {
 
   int numEdges ();
   int numVertices ();
+  int numOutputs ();
+  int numInputs ();
   AGedge *getEdge (int i);
   AGvertex *getVertex (int i);
+  AGvertex *getInput (int i);
+  AGvertex *getOutput (int i);
   void *getInfo();
 
  private:
@@ -146,6 +150,46 @@ class AGvertexBwdIter : public
   AGvertexBwdIter end();
   int pos() { return i; }
 };
+
+
+class AGraphInpVertexIter : public
+      std::iterator<std::input_iterator_tag, AGvertex *> {
+
+  AGraph *g;
+  int i;
+
+ public:
+  AGraphInpVertexIter (AGraph *);
+  AGraphInpVertexIter (const AGraphInpVertexIter & c);
+  AGraphInpVertexIter& operator++();
+  AGraphInpVertexIter operator++(int);
+  bool operator==(const AGraphInpVertexIter& rhs) const;
+  bool operator!=(const AGraphInpVertexIter& rhs) const;
+  AGvertex *operator*();
+  AGraphInpVertexIter begin();
+  AGraphInpVertexIter end();
+  int pos() { return i; }
+};
+
+class AGraphOutVertexIter : public
+      std::iterator<std::input_iterator_tag, AGvertex *> {
+
+  AGraph *g;
+  int i;
+
+ public:
+  AGraphOutVertexIter (AGraph *);
+  AGraphOutVertexIter (const AGraphOutVertexIter & c);
+  AGraphOutVertexIter& operator++();
+  AGraphOutVertexIter operator++(int);
+  bool operator==(const AGraphOutVertexIter& rhs) const;
+  bool operator!=(const AGraphOutVertexIter& rhs) const;
+  AGvertex *operator*();
+  AGraphOutVertexIter begin();
+  AGraphOutVertexIter end();
+  int pos() { return i; }
+};
+
 
 
 #endif /* __ACT_GRAPH_H__ */

@@ -124,12 +124,43 @@ struct library_vertex_info {
   int clk_port;			/* vertex number port for clock, if any */
 };
 
+/* XXX: assumption: an array port has all its elements in the same
+   clock domain */
+struct library_edge_info {
+  const char *dstpin;		/* dst pin info */
+  //int portid;			/* port info */
+  //int port_offset;		/* array idx if needed */
+};
 
 static void dump_li_info (library_vertex_info *li)
 {
   printf ("  pin: %s; clk: %d; inp: %d; clk_port: %d\n", li->pin,
 	  li->isclk, li->isinp, li->clk_port);
 }
+
+AGvertex *find_pin (AGraph *g, const char *nm)
+{
+  AGraphInpVertexIter it(g);
+
+  for (it = it.begin(); it != it.end(); it++) {
+    AGvertex *v = (*it);
+    library_vertex_info *li = (library_vertex_info *) v->info;
+    if (strcmp (li->pin, nm) == 0) {
+      return v;
+    }
+  }
+
+  AGraphOutVertexIter jt(g);
+  for (jt = jt.begin(); jt != jt.end(); jt++) {
+    AGvertex *v = (*jt);
+    library_vertex_info *li = (library_vertex_info *) v->info;
+    if (strcmp (li->pin, nm) == 0) {
+      return v;
+    }
+  }
+  return NULL;
+}
+
 
 static AGraph *_act_create_graph (VNet *v, Process *p)
 {
@@ -256,10 +287,42 @@ static AGraph *_act_create_graph (VNet *v, Process *p)
   return g;
 }
 
+struct netinfo {
+  int idriver;			/* instance vertex for driver, -1 if none */
+  AGvertex *drive_pin;		/* pin for driver */
+
+  list_t *targets;		/* list of (instv,pin) pairs */
+};
+
+#define UPDATE_LEN_SZ				\
+  do {						\
+    int tmp = strlen (buf+len);			\
+    len += tmp;					\
+    sz -= tmp;					\
+  } while (0)
+
+static void sprint_individual_id (char *buf, int sz, id_deref_t *id)
+{
+  int len = 0;
+  buf[0] = '\0';
+  snprintf (buf+len, sz, "%s", id->id->myname);
+  UPDATE_LEN_SZ;
+  if (id->isderef) {
+    if (id->isport && id->a[0].lo > 0) {
+      snprintf (buf+len, sz, "[%d]", id->deref - id->a[0].lo);
+    }
+    else {
+      snprintf (buf+len, sz, "[%d]", id->deref);
+    }
+    UPDATE_LEN_SZ;
+  }
+}
+
 static
 AGraph *_module_create_graph (VNet *v, module_t *m)
 {
   hash_bucket_t *b;
+  struct Hashtable *H;
   
   AGraph *g = new AGraph (m);
 
@@ -364,34 +427,81 @@ AGraph *_module_create_graph (VNet *v, module_t *m)
     }
   }
 
-  /* now create the edges */
+  /* now create the edges
+     Step 1: find all drivers and associate them with the id for the net.
+   */
+
+  /* A net is a collection of input pins + a driver. 
+     We need to elaborate arrays.
+   */
+  H = hash_new (16);
+  
   for (int i=0; i < A_LEN (m->conn); i++) {
-    if (!m->conn[i]->prefix) {
+    conn_info_t *c = m->conn[i];
+    
+    if (!c->prefix) {
       /* lhs <- rhs : what do we do about this?! */
-      if (m->conn[i]->r) {
-	if (!m->conn[i]->r->issubrange &&
-	    (m->conn[i]->r->id.isderef == 0) &&
-	    (strcmp (m->conn[i]->r->id.id->myname, "Vdd") == 0 ||
-	     strcmp (m->conn[i]->r->id.id->myname, "GND") == 0)) {
+      if (c->r) {
+	if (!c->r->issubrange && (c->r->id.isderef == 0) &&
+	    (strcmp (c->r->id.id->myname, "Vdd") == 0 ||
+	     strcmp (c->r->id.id->myname, "GND") == 0)) {
 	  /* nothing to see here! */
-	  printf ("skip %s <- supply\n", m->conn[i]->id.id->myname);
+	  //printf ("skip %s <- supply\n", c->id.id->myname);
 	}
 	else {
 	  warning ("Local net connection; not handled at present");
 	  fprintf (stderr, "\tpartial info %s <- %s\n",
-		   m->conn[i]->id.id->myname,
-		   m->conn[i]->r->id.id->myname);
+		   c->id.id->myname, c->r->id.id->myname);
 	}
       }
       else {
 	  warning ("Local net connection; not handled at present");
-	  fprintf (stderr, "\tpartial info %s <- { ... }\n",
-		   m->conn[i]->id.id->myname);
+	  fprintf (stderr, "\tpartial info %s <- { ... }\n", c->id.id->myname);
       }
     }
     else {
       /* instance and port */
-      
+      AGraph *ig;
+      int inst_v;
+
+      /* instance is from the prefix */
+      /* port name is from id, and if there is a deref */
+      if (c->prefix->isinst) {
+	inst_v = c->prefix->ispace;
+	ig = (AGraph *) (g->getVertex (inst_v))->info;
+	Assert (ig, "What?");
+      }
+      else {
+	fatal_error ("Prefix in connection `%s' is not an instance!",
+		     c->prefix->myname);
+	ig = NULL;
+      }
+      if (c->r) {
+	/* simple connection */
+	/* look in ig to see if this pin is an input or output */
+	AGvertex *pin = find_pin (ig, c->id.id->myname);
+	if (!pin) {
+	  warning ("Pin `%s' not found in inst `%s'",
+		   c->id.id->myname, c->prefix->myname);
+	}
+	else {
+	  library_vertex_info *li = (library_vertex_info *)pin->info;
+	  if (!li->isinp) {
+	    /* output pin: the driver! */
+
+	  }
+	  else {
+	    /* input pin */
+
+	  }
+	}
+
+      }
+      else {
+	/* list connection */
+
+
+      }
     }
 
 

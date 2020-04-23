@@ -376,10 +376,7 @@ class ActBody_Lang : public ActBody {
     LANG_HSE,
     LANG_SPEC,
     LANG_REFINE,
-    LANG_SIZE,
-    
-    LANG_SPICE,
-    LANG_VERILOG
+    LANG_SIZE
   };
 
   ActBody_Lang (act_prs *p) {

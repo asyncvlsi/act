@@ -129,7 +129,28 @@ AGvertex *AGraph::getVertex (int i)
  return &vertices[i];
 }
 
+int AGraph::numInputs ()
+{
+  return A_LEN (inp);
+}
 
+int AGraph::numOutputs ()
+{
+  return A_LEN (outp);
+}
+
+AGvertex *AGraph::getInput (int i)
+{
+  Assert (i >= 0 && i < A_LEN (inp), "AGraph::getInput() range error");
+  return &vertices[inp[i]];
+}
+
+AGvertex *AGraph::getOutput (int i)
+{
+  Assert (i >= 0 && i < A_LEN (outp), "AGraph::getInput() range error");
+  return &vertices[outp[i]];
+}
+  
 
 
 
@@ -361,5 +382,116 @@ AGvertexBwdIter AGvertexBwdIter::end()
 AGvertexBwdIter& AGvertexBwdIter::operator++()
 {
  i = g->getEdge (i)->eback;
+ return *this;
+}
+
+
+AGraphOutVertexIter::AGraphOutVertexIter (AGraph *_g)
+{
+  g = _g;
+  i = 0;
+}
+
+AGraphOutVertexIter::AGraphOutVertexIter (const AGraphOutVertexIter& gi)
+{
+  g = gi.g;
+  i = gi.i;
+}
+
+AGraphOutVertexIter AGraphOutVertexIter::operator ++(int)
+{
+  AGraphOutVertexIter tmp(*this);
+  operator++();
+  return tmp;
+}
+
+bool AGraphOutVertexIter::operator==(const AGraphOutVertexIter &rhs) const
+{
+   return (rhs.g == g && rhs.i == i);
+}
+
+bool AGraphOutVertexIter::operator!=(const AGraphOutVertexIter &rhs) const
+{
+ return !operator==(rhs);
+}
+
+AGvertex *AGraphOutVertexIter::operator*()
+{
+ if (i < 0 || i >= g->numOutputs()) return NULL;
+ return g->getOutput(i);
+}
+
+AGraphOutVertexIter AGraphOutVertexIter::begin()
+{
+ AGraphOutVertexIter tmp(*this);
+ tmp.i = 0;
+ return tmp;
+}
+
+AGraphOutVertexIter AGraphOutVertexIter::end()
+{
+ AGraphOutVertexIter tmp(*this);
+ tmp.i = g->numOutputs();
+ return tmp;
+}
+
+AGraphOutVertexIter& AGraphOutVertexIter::operator++()
+{
+ i++;
+ return *this;
+}
+
+AGraphInpVertexIter::AGraphInpVertexIter (AGraph *_g)
+{
+  g = _g;
+  i = 0;
+}
+
+AGraphInpVertexIter::AGraphInpVertexIter (const AGraphInpVertexIter& gi)
+{
+  g = gi.g;
+  i = gi.i;
+}
+
+AGraphInpVertexIter AGraphInpVertexIter::operator ++(int)
+{
+  AGraphInpVertexIter tmp(*this);
+  operator++();
+  return tmp;
+}
+
+bool AGraphInpVertexIter::operator==(const AGraphInpVertexIter &rhs) const
+{
+   return (rhs.g == g && rhs.i == i);
+}
+
+bool AGraphInpVertexIter::operator!=(const AGraphInpVertexIter &rhs) const
+{
+ return !operator==(rhs);
+}
+
+AGvertex *AGraphInpVertexIter::operator*()
+{
+ if (i < 0 || i >= g->numInputs ()) return NULL;
+ return g->getInput (i);
+}
+
+AGraphInpVertexIter AGraphInpVertexIter::begin()
+{
+ AGraphInpVertexIter tmp(*this);
+ tmp.i = 0;
+ return tmp;
+}
+
+AGraphInpVertexIter AGraphInpVertexIter::end()
+{
+ AGraphInpVertexIter tmp(*this);
+ tmp.i = g->numInputs(); 
+ return tmp;
+}
+
+AGraphInpVertexIter& AGraphInpVertexIter::operator++()
+{
+ i++;
  return *this;
 }
