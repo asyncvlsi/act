@@ -307,6 +307,7 @@ static void sprint_individual_id (char *buf, int sz, id_deref_t *id)
   buf[0] = '\0';
   snprintf (buf+len, sz, "%s", id->id->myname);
   UPDATE_LEN_SZ;
+#if 0  
   if (id->isderef) {
     if (id->isport && id->a[0].lo > 0) {
       snprintf (buf+len, sz, "[%d]", id->deref - id->a[0].lo);
@@ -316,6 +317,7 @@ static void sprint_individual_id (char *buf, int sz, id_deref_t *id)
     }
     UPDATE_LEN_SZ;
   }
+#endif  
 }
 
 static
