@@ -414,11 +414,13 @@ static void mk_raw_skip_connection (UserDef *ux,
     if (!in_ring) {
       /* not already connected: merge union/find trees */
       int do_swap = _should_swap (ux, c1, c2);
-      if (do_swap) {
-	Assert (t2 != c2, "Hmm...");
+      if (do_swap && t2 != c2) {
+	//Assert (t2 != c2, "Hmm..."); why?
 	t1->up = t2;
       }
       else {
+	// if c2 was the canonical one, it now means that c1 will
+	// become canonical as c1's parent is more important than c2's parent
 	t2->up = t1;
       }
     }
@@ -583,6 +585,10 @@ static void _merge_subtrees (UserDef *ux,
   }
 }
 
+/*
+  d1 original canonical, d2 other connection
+  should d2 become the new canonical one?
+*/
 static int _raw_should_swap (UserDef *ux, act_connection *d1,
 			     act_connection *d2)
 {
