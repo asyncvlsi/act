@@ -1,0 +1,773 @@
+/*************************************************************************
+ *
+ *  This file is part of chp2prs
+ *
+ *  Copyright (c) 2018 Rajit Manohar
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA  02110-1301, USA.
+ *
+ **************************************************************************
+ */
+/*
+ * Blocks for syntax directed translation.
+ *
+ * INTERFACES:
+ *    a1of2: dual-rail data channel
+ *    a1of1: single-rail control channel
+ *    dualrail: one-bit of data
+ */
+
+import "globals.act";
+import "channel.act";
+
+namespace syn {
+  /* ======================== VARIABLE INITIALIZATION ======================== */
+  /* TRUE */
+  export defproc var_init_true (dualrail v)
+  {
+    prs
+    {
+      Reset -> v.f-
+      v.f<8> -> v.t-
+      v.t<8> -> v.f-
+      [weak=1] ~v.t<4,4> -> v.f+
+      [weak=1] ~v.f<4,4> -> v.t+
+    }
+  }
+
+  /* FALSE */
+  export defproc var_init_false (dualrail v)
+  {
+    prs
+    {
+      Reset -> v.t-
+      v.f<8> -> v.t-
+      v.t<8> -> v.f-
+      [weak=1] ~v.t<4,4> -> v.f+
+      [weak=1] ~v.f<4,4> -> v.t+
+    }
+  }
+
+  /* ============================ CIRCUIT ELEMENTS ============================ */
+
+  /* DUALRAIL AND GATE */
+  export defproc expr_and (dualrail in1, in2; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      in1.t & in2.t -> _out.t-
+      ~in1.t & ~in2.t -> _out.t+
+      (in1.f & (in2.t | in2.f)) | (in1.t & in2.f) -> _out.f-
+      ~in1.t & ~in1.f & ~in2.t & ~in2.f -> _out.f+
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* DUALRAIL OR GATE */
+  export defproc expr_or (dualrail in1, in2; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      (in1.t & (in2.t | in2.f)) | (in1.f & in2.t) -> _out.t-
+      ~in1.t & ~in1.f & ~in2.t & ~in2.f -> _out.t+
+      in1.f & in2.f -> _out.f-
+      ~in1.f & ~in2.f -> _out.f+
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* DUALRAIL NAND GATE */
+  export defproc expr_nand (dualrail in1, in2; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      in1.t & in2.t -> _out.f-
+      ~in1.t & ~in2.t -> _out.f+
+      (in1.f & (in2.t | in2.f)) | (in1.t & in2.f) -> _out.t-
+      ~in1.t & ~in1.f & ~in2.t & ~in2.f -> _out.t+
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* DUALRAIL XOR GATE */
+  export defproc expr_xor (dualrail in1, in2; dualrail out)
+  {
+    expr_nand nand (in1, in2);
+    expr_or or (in1, in2);
+    expr_and and (nand.out, or.out, out);
+  }
+
+  /* DUALRAIL NOT GATE */
+  export defproc expr_not (dualrail in; dualrail out)
+  {
+    out.t = in.f;
+    out.f = in.t;
+  }
+
+  /* C-ELEMENT */
+  export defproc expr_c_elem (bool in1, in2; bool out)
+  {
+    bool _out;
+    prs
+    {
+      in1 & in2 -> _out-
+      ~in1 & ~in2 -> _out+
+      _out => out-
+    }
+  }
+
+  /* BOOLEAN OR GATE */
+  export defproc bool_or (bool in1, in2, out)
+  {
+    bool _out;
+    prs
+    {
+      in1 | in2 => _out-
+      _out => out-
+    }
+  }
+
+  /* BOOLEAN NOTAND GATE */
+  export defproc bool_notand (bool in1, in2, out)
+  {
+    bool _in1;
+    prs
+    {
+      _in1 | in2 => out-
+      in1 => _in1-
+    }
+  }
+
+  /* BOOLEAN NOT GATE */
+  export defproc bool_not (bool in, out)
+  {
+    prs
+    {
+      in => out-
+    }
+  }
+
+  /* FULL ADDER */
+  export defproc full_adder (dualrail a, b, c_in; dualrail s, c_out)
+  {
+    _dualrail _s, _c_out;
+    prs
+    {
+      (a.t & b.t & c_in.t) | (a.t & b.f & c_in.f) | (a.f & b.t & c_in.f) | (a.f & b.f & c_in.t) => _s.t-
+      (a.f & b.f & c_in.f) | (a.t & b.t & c_in.f) | (a.f & b.t & c_in.t) | (a.t & b.f & c_in.t) => _s.f-
+
+    	(a.t & b.t & (c_in.t | c_in.f)) | (a.t & c_in.t & (b.t | b.f)) | (b.t & c_in.t & (a.t | a.f)) => _c_out.t-
+    	(a.f & b.f & (c_in.t | c_in.f)) | (a.f & c_in.f & (b.t | b.f)) | (b.f & c_in.f & (a.t | a.f)) => _c_out.f-
+
+    	_s.t => s.t-
+    	_s.f => s.f-
+    	_c_out.t => c_out.t-
+    	_c_out.f => c_out.f-
+    }
+  }
+
+  /* MULTIPLICATION CELL */
+  export template<pint N>
+  defproc mul_cell (dualrail in1[N], in2; dualrail out[N])
+  {
+    expr_and and[N];
+    (i:N: and[i].in1 = in1[i];
+          and[i].in2 = in2;
+          and[i].out = out[i];)
+  }
+
+  /* MUX CELL */
+  export defproc mux (dualrail a, b, s; dualrail o)
+  {
+    _dualrail _o;
+    prs
+    {
+      (a.t & (b.t | b.f) & s.f) | ((a.t | a.f) & b.t & s.t) | (a.t & b.t & (s.t | s.f)) => _o.t-
+      (a.f & (b.t | b.f) & s.f) | ((a.t | a.f) & b.f & s.t) | (a.f & b.f & (s.t | s.f)) => _o.f-
+
+      _o.t => o.t-
+      _o.f => o.f-
+    }
+  }
+
+  /* 2:1 MUX !had to change name from: 2_to_1_mux to mux_2_to_1 since var name cannot start with a #! */
+  export template<pint N>
+  defproc mux_2_to_1 (dualrail a[N], b[N], s; dualrail o[N])
+  {
+    mux mux[N];
+    (i:N: mux[i].a = a[i];
+          mux[i].b = b[i];
+          mux[i].s = s;
+          mux[i].o = o[i];)
+  }
+
+  /* ========================== MISCELLANEOUS BLOCKS ========================== */
+
+  /* CARRY-SAVE ADDER */
+  export template<pint N>
+  defproc carry_save_adder (dualrail in1[N], in2[N], in3[N]; dualrail out1[N], out2[N])
+  {
+    var_init_false const_0;
+    full_adder add[N];
+    (i:N: add[i].a = in1[i];
+          add[i].b = in2[i];
+          add[i].c_in = in3[i];
+          add[i].s = out1[i];)
+    out2[0] = const_0.v;
+    (i:N-1: add[i].c_out = out2[i+1];)
+  }
+
+  /* 4:2 COMPRESSOR !had to change name from: 4_to_2_compress to compressor_4_to_2 since var name cannot start with a #! */
+  export template<pint N>
+  defproc compressor_4_to_2 (dualrail in1[N], in2[N], in3[N], in4[N]; dualrail out1[N], out2[N])
+  {
+    dualrail csa_out1[N], csa_out2[N];
+    carry_save_adder<N> csa1 (in1, in2, in3, csa_out1, csa_out2);
+    carry_save_adder<N> csa2 (in4, csa_out1, csa_out2, out1, out2);
+  }
+
+  /* ================================= TREES ================================= */
+
+  export template<pint N> defproc invctree (bool in[N]; bool _out);
+  export template<pint N> defproc ctree (bool in[N]; bool out);
+
+  /* INVERTING COMPLETION TREE */
+  export template<pint N>
+  defproc invctree (bool in[N]; bool _out)
+  {
+    [  N > 3 ->
+         ctree<N/2> l (in[0..N/2-1]);
+         ctree<N-N/2> r (in[N/2..N-1]);
+         prs
+         {
+           l.out & r.out -> _out-
+           ~l.out & ~r.out -> _out+
+         }
+    [] else ->
+         prs
+         {
+          (&i:N:in[i]) -> _out-
+          (&i:N:~in[i]) -> _out+
+         }
+    ]
+  }
+
+  /* COMPLETION TREE */
+  export template<pint N>
+  defproc ctree (bool in[N]; bool out)
+  {
+    [  N > 3 ->
+         invctree<N/2> l(in[0..N/2-1]);
+         invctree<N-N/2> r(in[N/2..N-1]);
+         prs
+         {
+           l._out & r._out -> out-
+           ~l._out & ~r._out -> out+
+         }
+    [] N = 1 ->
+         out = in[0];
+    [] else ->
+         bool _out;
+         prs
+         {
+           (&i:N:in[i]) -> _out-
+           (&i:N:~in[i]) -> _out+
+           _out => out-
+         }
+    ]
+  }
+
+  /* LINEAR CSA CASCADE */
+  export template<pint M, N>
+  defproc linear_csa_cascade (dualrail in[M][N]; dualrail out1[N], out2[N])
+  {
+    [  M > 3 ->
+         dualrail next[M-1][N];
+         carry_save_adder<N> cs (in[0][0..N-1], in[1][0..N-1], in[2][0..N-1], next[0][0..N-1], next[1][0..N-1]);
+         (i:M-3: next[i+2][0..N-1] = in[i+3][0..N-1];)
+         linear_csa_cascade<M-1, N> csac (next, out1, out2);
+    [] M = 1 ->
+         var_init_false const_0;
+         out1 = in[0][0..N-1];
+         (i:N: out2[i] = const_0.v;)
+    [] M = 2 ->
+         out1 = in[0][0..N-1];
+         out2 = in[1][0..N-1];
+    [] else ->
+         carry_save_adder<N> cs_3 (in[0][0..N-1], in[1][0..N-1], in[2][0..N-1], out1, out2);
+    ]
+  }
+
+  /* WALLACE TREE */
+  export template<pint M, N>
+  defproc wallace_tree (dualrail in[M][N]; dualrail out1[N], out2[N])
+  {
+    [  M > 4 ->
+         wallace_tree<M/2, N> l(in[0..M/2-1][0..N-1]);
+         wallace_tree<M-M/2, N> r(in[M/2..M-1][0..N-1]);
+         compressor_4_to_2<N> comp (l.out1, l.out2, r.out1, r.out2, out1, out2);
+    [] M = 0 ->
+         var_init_false const_0;
+         (i:N: out1[i] = const_0.v;
+               out2[i] = const_0.v;)
+    [] M = 1 ->
+         out1 = in[0][0..N-1];
+         (i:N: out2[i] = const_0.v;)
+    [] M = 2 ->
+         out1 = in[0][0..N-1];
+         out2 = in[1][0..N-1];
+    [] M = 3 ->
+         carry_save_adder<N> cs_3 (in[0][0..N-1], in[1][0..N-1], in[2][0..N-1], out1, out2);
+    [] else ->
+         compressor_4_to_2<N> comp_4 (in[0][0..N-1], in[1][0..N-1], in[2][0..N-1], in[3][0..N-1], out1, out2);
+    ]
+  }
+
+  /* ============================= COMMUNICATION ============================= */
+
+  /* RECV */
+  export defproc recv (a1of1 go; dualrail v; a1of2 in)
+  {
+    bool _goa;
+    go.a = in.a;
+    prs
+    {
+      [keeper=0] go.r & _goa & in.t -> v.f-
+      [keeper=0] go.r & _goa & in.f -> v.t-
+      go.r & (v.t & in.t | v.f & in.f) -> _goa-
+      ~in.t & ~in.f & ~go.r -> _goa+
+      Reset|_goa => go.a-
+    }
+  }
+
+  /* A1OF2 PROBE */
+  export defproc a1of2_probe (bool go_r; bool t, f, a; dualrail out)
+  {
+    bool _t, _f, _a;
+    _dualrail _out;
+    prs
+    {
+      go_r & ((t | f) & _a) => _out.t-
+      go_r & ((_t & _f) | a) => _out.f-
+      t => _t-
+      f => _f-
+      a => _a-
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* AN1OF2 PROBE */
+  export template<pint N>
+  defproc aN1of2_probe (bool go_r; aN1of2<N> c; dualrail out)
+  {
+    a1of2_probe probe[N];
+    (i:N: probe[i].go_r = go_r;
+          probe[i].t = c.d[i].t;
+          probe[i].f = c.d[i].f;
+          probe[i].a = c.a;)
+
+    _dualrail _out;
+    prs
+    {
+      (&i:N: probe[i].out.t) => _out.t-
+      (|i:N: probe[i].out.f) => _out.f-
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* ========================= EXPRESSION EVALUATION ========================= */
+
+  /* SINGLE-BIT VARIABLE */
+  export defproc expr_var (bool go_r; dualrail v; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      go_r & v.t -> _out.t-
+      go_r & v.f -> _out.f-
+      ~_Reset | ~go_r -> _out.t+
+      ~_Reset | ~go_r -> _out.f+
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* MULTI-BIT VARIABLE */
+  export template<pint N>
+  defproc expr_vararray (bool go_r; dualrail v[N]; dualrail out[N])
+  {
+    expr_var ev[N];
+    (i:N: ev[i].go_r = go_r;
+          ev[i].v = v[i];
+          ev[i].out = out[i];)
+  }
+
+  /* =========================== BOOLEAN OPERATIONS =========================== */
+
+  /* BITWISE AND */
+  export template<pint N>
+  defproc and (dualrail in1[N], in2[N]; dualrail out[N])
+  {
+    expr_and and[N];
+    (i:N: and[i].in1 = in1[i];
+          and[i].in2 = in2[i];
+          and[i].out = out[i];)
+  }
+
+  /* BITWISE OR */
+  export template<pint N>
+  defproc or (dualrail in1[N], in2[N]; dualrail out[N])
+  {
+    expr_or or[N];
+    (i:N: or[i].in1 = in1[i];
+          or[i].in2 = in2[i];
+          or[i].out = out[i];)
+  }
+
+  /* BITWISE COMPLEMENT */
+  export template<pint N>
+  defproc not (dualrail in[N]; dualrail out[N])
+  {
+    expr_not not[N];
+    (i:N: not[i].in = in[i];
+          not[i].out = out[i];)
+  }
+
+  /* BITWISE XOR */
+  export template<pint N>
+  defproc xor (dualrail in1[N], in2[N]; dualrail out[N])
+  {
+    expr_xor xor[N];
+    (i:N: xor[i].in1 = in1[i];
+          xor[i].in2 = in2[i];
+          xor[i].out = out[i];)
+  }
+
+  /* ========================= ARITHMETIC OPERATIONS ========================= */
+
+  /* RIPPLE-CARRY ADDITION */
+  export template<pint N>
+  defproc ripple_carry_add (dualrail in1[N], in2[N], c_in; dualrail out[N], overflow)
+  {
+    full_adder add[N];
+    (i:N: add[i].a = in1[i];
+          add[i].b = in2[i];
+          add[i].s = out[i];)
+    add[0].c_in = c_in;
+    overflow = add[N-1].c_out;
+    (i:N-1: add[i+1].c_in = add[i].c_out;)
+  }
+
+  /* CARRY-LOOKAHEAD ADDITION */
+  export template<pint N>
+  defproc cla_add (dualrail in1[N], in2[N], c_in; dualrail out[N], overflow)
+  {
+    full_adder add[N];
+    overflow = add[N-1].c_out;
+
+    or<N> p (in1, in2);
+    and<N> g (in1, in2);
+
+    _dualrail _c_in[N];
+
+    (i:N: add[i].a = in1[i];
+          add[i].b = in2[i];
+          add[i].s = out[i];)
+
+    prs
+    {
+      c_in.t => _c_in[0].t-
+      c_in.f => _c_in[0].f-
+      ((c_in.t & p.out[0].t) | g.out[0].t) => _c_in[1].t-
+      ((c_in.f | p.out[0].f) & g.out[0].f) => _c_in[1].f-
+      (i:N-2: ((c_in.t & (&j:i+2: p.out[j].t)) | (|j:i+1: (g.out[j].t & (&k:i-j+1: p.out[k+j+1].t))) | g.out[i+1].t) => _c_in[i+2].t-
+        			((c_in.f | (|j:i+2: p.out[j].f)) & (&j:i+1: (g.out[j].f | (|k:i-j+1: p.out[k+j+1].f))) & g.out[i+1].f) => _c_in[i+2].f-)
+
+      (i:N: _c_in[i].t => add[i].c_in.t-
+            _c_in[i].f => add[i].c_in.f-)
+    }
+  }
+
+  /* ADDITION */
+  export template<pint N>
+  defproc add (dualrail in1[N], in2[N]; dualrail out[N], overflow)
+  {
+    var_init_false const_0;
+    ripple_carry_add<N> s (in1, in2, const_0.v, out, overflow);
+  }
+
+  /* UNARY MINUS */
+  export template<pint N>
+  defproc uminus (dualrail in[N]; dualrail out[N])
+  {
+    dualrail _in[N];
+    not<N> n (in, _in);
+
+    var_init_false const_0;
+    dualrail zero[N];
+    (i:N: zero[i] = const_0.v;)
+
+    var_init_true const_1;
+    ripple_carry_add<N> r (_in, zero, const_1.v, out);
+  }
+
+  /* SUBTRACTION */
+  export template<pint N>
+  defproc sub (dualrail in1[N], in2[N]; dualrail out[N], overflow)
+  {
+    dualrail _in2[N];
+    uminus<N> u (in2, _in2);
+    add<N> s (in1, _in2, out, overflow);
+  }
+
+  /* UNSIGNED MULTIPLICATION */
+  export template<pint N>
+  defproc unsigned_mul (dualrail in1[N], in2[N]; dualrail out[N], overflow)
+  {
+    var_init_false const_0;
+    dualrail partial_products[N][N];
+
+    mul_cell<N> mul[N];
+    (i:N: mul[i].in1 = in1;
+          mul[i].in2 = in2[i];
+          (j:i: partial_products[i][j] = const_0.v;)
+          (j:N-i: partial_products[i][j+i] = mul[i].out[j];))
+
+    wallace_tree<N, N> wal (partial_products);
+
+    add<N> add (wal.out1, wal.out2, out, overflow);
+  }
+
+  /* SIGNED MULTIPLICATION*/
+  export template<pint N>
+  defproc mul (dualrail in1[N], in2[N]; dualrail out[N], overflow)
+  {
+    dualrail _in1[N], _in2[N], _out[N];
+    dualrail s1, s2, so;
+    _dualrail _s1, _s2;
+
+    uminus<N> u1 (in1, _in1);
+    uminus<N> u2 (in2, _in2);
+
+    unsigned_mul<N> mul;
+    mul.overflow = overflow;
+
+    mux_2_to_1<N> mux1 (in1, _in1, s1, mul.in1);
+    mux_2_to_1<N> mux2 (in2, _in2, s2, mul.in2);
+
+    uminus<N> uo (mul.out, _out);
+
+    mux_2_to_1<N> muxo (mul.out, _out, so, out);
+
+    prs
+    {
+      in1[N-1].t => _s1.t-
+      in1[N-1].f => _s1.f-
+      in2[N-1].t => _s2.t-
+      in2[N-1].f => _s2.f-
+      (in1[N-1].t & in2[N-1].t) | (in1[N-1].f & in2[N-1].f) => so.t-
+      (in1[N-1].t & in2[N-1].f) | (in1[N-1].f & in2[N-1].t) => so.f-
+
+      _s1.t => s1.t-
+      _s1.f => s1.f-
+      _s2.t => s2.t-
+      _s2.f => s2.f-
+    }
+  }
+
+  /* LEFT-SHIFT */
+  export template<pint M, N>
+  defproc shift_left (dualrail in[N], sa[M]; dualrail out[N])
+  {
+    var_init_false const_0;
+    mux muxes[M][N];
+    (i:M: (j:N: muxes[i][j].s = sa[i];))
+    (j:N: muxes[0][j].a = in[j];)
+    (i:M-1: (j:N: muxes[i+1][j].a = muxes[i][j].o;))
+    (j:N: muxes[M-1][j].o = out[j];)
+
+    (j:N-1: muxes[0][j+1].b = in[j];)
+    (i:M: (j:(1<<i): muxes[i][j].b = const_0.v;))
+    (i:M-1: (j:(N-(1<<i)): muxes[i+1][j+(1<<i)].b = muxes[i][j].o;))
+  }
+
+  /* ========================== COMPARISON OPERATORS ========================== */
+
+  /* EQUALITY */
+  export template<pint N>
+  defproc expr_eq (dualrail in1[N], in2[N]; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      (&i:N: ((in1[i].t & in2[i].t) | (in1[i].f & in2[i].f))) => _out.t-
+      (|i:N: ((in1[i].t & in2[i].f) | (in1[i].f & in2[i].t))) => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* INEQUALITY */
+  export template<pint N>
+  defproc expr_ne (dualrail in1[N], in2[N]; dualrail out)
+  {
+    _dualrail _out;
+    prs
+    {
+      (|i:N: ((in1[i].t & in2[i].f) | (in1[i].f & in2[i].t))) => _out.t-
+      (&i:N: ((in1[i].t & in2[i].t) | (in1[i].f & in2[i].f))) => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* LESS THAN OR EQUALS */
+  export template<pint N>
+  defproc expr_le (dualrail in1[N], in2[N]; dualrail out)
+  {
+    sub<N> sub (in1, in2);
+    expr_eq<N> eq (in1, in2);
+
+    _dualrail _out;
+    prs
+    {
+      (sub.out[N-1].t & (&i:N-1: (sub.out[i].t | sub.out[i].f)) & (eq.out.t | eq.out.f)) | ((&i:N: (sub.out[i].t | sub.out[i].f)) & eq.out.t) => _out.t-
+      (sub.out[N-1].f & (&i:N-1: (sub.out[i].t | sub.out[i].f))) & eq.out.f => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* GREATER THAN OR EQUALS */
+  export template<pint N>
+  defproc expr_ge (dualrail in1[N], in2[N]; dualrail out)
+  {
+    sub<N> sub (in1, in2);
+
+    _dualrail _out;
+    prs
+    {
+      (sub.out[N-1].f & (&i:N-1: (sub.out[i].t | sub.out[i].f))) => _out.t-
+      (sub.out[N-1].t & (&i:N-1: (sub.out[i].t | sub.out[i].f))) => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* LESS THAN */
+  export template<pint N>
+  defproc expr_lt (dualrail in1[N], in2[N]; dualrail out)
+  {
+    sub<N> sub (in1, in2);
+
+    _dualrail _out;
+    prs
+    {
+      (sub.out[N-1].t & (&i:N-1: (sub.out[i].t | sub.out[i].f))) => _out.t-
+      (sub.out[N-1].f & (&i:N-1: (sub.out[i].t | sub.out[i].f))) => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* GREATER THAN */
+  export template<pint N>
+  defproc expr_gt (dualrail in1[N], in2[N]; dualrail out)
+  {
+    sub<N> sub (in1, in2);
+    expr_eq<N> eq (in1, in2);
+
+    _dualrail _out;
+    prs
+    {
+      (sub.out[N-1].f & (&i:N-1: (sub.out[i].t | sub.out[i].f))) & eq.out.f => _out.t-
+      (sub.out[N-1].t & (&i:N-1: (sub.out[i].t | sub.out[i].f)) & (eq.out.t | eq.out.f)) | ((&i:N: (sub.out[i].t | sub.out[i].f)) & eq.out.t) => _out.f-
+
+      _out.t => out.t-
+      _out.f => out.f-
+    }
+  }
+
+  /* ============================ CHP CONSTRUCTS ============================ */
+
+  /* SKIP !had to keep syn_skip name since "skip" isn't allowed as an identifier! */
+  export defproc syn_skip (a1of1 go)
+  {
+    go.r = go.a;
+  }
+
+  /* SIMPLE FULL SEQUENCER */
+  export defproc fullseq (a1of1 go; a1of1 r)
+  {
+    bool x;
+    bool _gor;
+    bool _goa;
+    bool _ra;
+    prs
+    {
+      ~x & ~_gor -> r.r+
+      ~_ra -> x+
+      Reset | x -> r.r-
+      x & _ra -> _goa-
+      _gor -> x-
+      ~x -> _goa+
+      go.r => _gor-
+      _goa => go.a-
+      r.a => _ra-
+    }
+  }
+
+  /* SEQUENTIAL COMPOSITION */
+  export defproc seq (a1of1 go; a1of1 s1, s2)
+  {
+    go.r = s1.r;
+    s1.a = s2.r;
+    go.a = s2.a;
+  }
+
+  /* PARALLEL COMPOSITION */
+  export defproc par (a1of1 go; a1of1 s1, s2)
+  {
+    go.r = s1.r;
+    go.r = s2.r;
+
+    bool _c;
+    prs
+    {
+      s1.a & s2.a -> _c-
+      ~s1.a & ~s2.a -> _c+
+
+      _c => go.a-
+    }
+  }
+}

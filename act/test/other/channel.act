@@ -1,0 +1,102 @@
+/*************************************************************************
+ *
+ *  This file is part of chp2prs
+ *
+ *  Copyright (c) 2018 Rajit Manohar
+ *
+ *  This library is free software; you can redistribute it and/or
+ *  modify it under the terms of the GNU Lesser General Public
+ *  License as published by the Free Software Foundation; either
+ *  version 2.1 of the License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public
+ *  License along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ *  Boston, MA  02110-1301, USA.
+ *
+ **************************************************************************
+ */
+
+export defchan e1of1 <: chan(bool) (bool d, e) 
+{
+}
+
+export defchan a1of1 <: chan(bool) (bool r, a)
+{
+}
+
+export defchan r1of2 <: chan(bool) (bool r; bool t, f)
+{
+}
+
+export template<pint N>
+deftype d1of <: int<N> (bool d[N])
+{ 
+}
+
+export defchan e1of2 <: chan(bool) (bool d[2]; bool t, f, e)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t, f)
+  }
+}
+
+
+export template<pint N>
+defchan e1of <: chan(int<N>) (bool d[N]; bool e)
+{
+}
+
+
+export defchan a1of2 <: chan(bool) (bool d[2]; bool t, f, a)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t, f)
+  }
+}
+
+export deftype dualrail <: int<1> (bool d[2]; bool t, f)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    exclhi (t,f)
+  }
+}
+
+export template<pint N>
+defchan aN1of2 <: chan(int<N>) (dualrail d[N]; bool a)
+{
+}
+
+
+export deftype _dualrail <: int<1> (bool d[2]; bool t, f)
+{
+  d[0] = f;
+  d[1] = t;
+  spec {
+    excllo (t,f)
+  }
+}
+
+export defchan a4x1of2 <: chan(int<4>) (dualrail b[4]; bool a)
+{
+}
+ 
+export template<pint N>
+defchan eNx1of2 <: chan(int<N>) (dualrail b[N]; bool e)
+{
+}
+
+export defchan e32x1of2 <: chan(int<32>) (dualrail b[32]; bool e)
+{
+}
