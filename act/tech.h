@@ -139,7 +139,8 @@ public:
     if (w == 0) { return spacing; }
     else { return spacing_aux[w-1]; }
   }
-  
+  int getEol() { return r.endofline; }
+  int getEolWithin() { return r.endofline_width; }
   
  protected:
   RoutingRules r;
