@@ -38,7 +38,10 @@ struct AGvertex {
   int vid;
   int ehd;
   int bhd;			// backward edges
+  unsigned int isio:2;		// 0 = not I/O, 1 = inp, 2 = outp
   void *info;
+  int hasFanout () { return ehd != -1; }
+  int hasFanin () { return bhd != -1; }
 };
 
 class AGraph {
@@ -59,6 +62,7 @@ class AGraph {
   AGvertex *getVertex (int i);
   AGvertex *getInput (int i);
   AGvertex *getOutput (int i);
+  int V2idx (AGvertex *v);
   void *getInfo();
 
  private:
@@ -120,6 +124,7 @@ class AGvertexFwdIter : public
 
  public:
   AGvertexFwdIter (AGraph *, int);
+  AGvertexFwdIter (AGraph *, AGvertex *);
   AGvertexFwdIter (const AGvertexFwdIter & c);
   AGvertexFwdIter& operator++();
   AGvertexFwdIter operator++(int);

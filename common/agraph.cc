@@ -45,6 +45,12 @@ void *AGraph::getInfo ()
   return info;
 }
 
+int AGraph::V2idx (AGvertex *v)
+{
+  if (v == NULL) return -1;
+  return (v - &vertices[0]);
+}
+
 int AGraph::addVertex (void *info)
 {
   AGvertex *v;
@@ -54,8 +60,10 @@ int AGraph::addVertex (void *info)
   A_INC (vertices);
 
   v->ehd = -1;
+  v->bhd = -1;
   v->info = info;
   v->vid = A_LEN (vertices)-1;
+  v->isio = 0;
 
   return v->vid;
 }
@@ -63,6 +71,7 @@ int AGraph::addVertex (void *info)
 int AGraph::addInput (void *info)
 {
   int v = addVertex (info);
+  vertices[v].isio = 1;
   A_NEW (inp, int);
   A_NEXT (inp) = v;
   A_INC (inp);
@@ -72,6 +81,7 @@ int AGraph::addInput (void *info)
 int AGraph::addOutput (void *info)
 {
   int v = addVertex (info);
+  vertices[v].isio = 2;
   A_NEW (outp, int);
   A_NEXT (outp) = v;
   A_INC (outp);
@@ -111,22 +121,23 @@ int AGraph::addEdge (int src, int dst, void *info)
 
 int AGraph::numEdges ()
 {
- return A_LEN (edges);
+  return A_LEN (edges);
 }
 
 int AGraph::numVertices ()
 {
- return A_LEN (vertices);
+  return A_LEN (vertices);
 }
 
 AGedge *AGraph::getEdge (int i)
 {
- return &edges[i];
+  return &edges[i];
 }
 
 AGvertex *AGraph::getVertex (int i)
 {
- return &vertices[i];
+  Assert (i >= 0 && i < A_LEN (vertices), "What?");
+  return &vertices[i];
 }
 
 int AGraph::numInputs ()
@@ -276,6 +287,13 @@ AGvertexFwdIter::AGvertexFwdIter (AGraph *_g, int v)
   g = _g;
   vid = v;
   i = _g->getVertex (v)->ehd;
+}
+
+AGvertexFwdIter::AGvertexFwdIter (AGraph *_g, AGvertex *v)
+{
+  g = _g;
+  vid = _g->V2idx (v);
+  i = _g->getVertex (vid)->ehd;
 }
 
 AGvertexFwdIter::AGvertexFwdIter (const AGvertexFwdIter& gi)
