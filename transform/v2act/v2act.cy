@@ -324,11 +324,22 @@ one_instance: id id
 
 port_conns: { one_port2 "," }* ;
 
-one_port[id_info_t *]: "." id "(" id_or_const_or_array ")" 
+one_port[id_info_t *]: "." id
+{{X:
+    /* THIS .id should not be part of the type table */
+    $0->tmpid = $2;
+    if ($0->flag) {
+      $0->tmpid = verilog_alloc_id (Strdup ($2->myname));
+      /* delete from table! */
+      verilog_delete_id ($0, $2->myname);
+      FREE ($2);
+    }
+}}
+"(" id_or_const_or_array ")" 
 {{X:
     int len;
     /* now add pending connections! id = blah */
-    $4->id.id = $2;
+    $4->id.id = $0->tmpid;
     $4->id.isderef = 0;
 
     /* this is retarded */
@@ -340,14 +351,14 @@ one_port[id_info_t *]: "." id "(" id_or_const_or_array ")"
     if (len > 0) {
       /* excitement, this is an array, make sure the id is in fact an
 	 array */
-      if (A_LEN ($2->a) == 0) {
-	A_NEW ($2->a, struct array_idx);
-	A_NEXT ($2->a).lo = 0;
-	A_NEXT ($2->a).hi = len-1;
-	A_INC ($2->a);
+      if (A_LEN ($0->tmpid->a) == 0) {
+	A_NEW ($0->tmpid->a, struct array_idx);
+	A_NEXT ($0->tmpid->a).lo = 0;
+	A_NEXT ($0->tmpid->a).hi = len-1;
+	A_INC ($0->tmpid->a);
       }
     }
-    return $2;
+    return $0->tmpid;
 }};
 
 one_port2: "." id
@@ -358,6 +369,7 @@ one_port2: "." id
       $0->tmpid = verilog_alloc_id (Strdup ($2->myname));
       /* delete from table! */
       verilog_delete_id ($0, $2->myname);
+      FREE ($2);
     }
 }}
 "(" id_or_const_or_array ")" 

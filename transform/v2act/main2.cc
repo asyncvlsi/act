@@ -89,6 +89,10 @@ int main (int argc, char **argv)
   
   w = verilog_read (argv[optind], config_get_string ("s2a.library"));
   AGraph *ag = verilog_create_netgraph (w);
+
+  verilog_mark_clock_nets (w);
+
+  
   
   if (fname) {
     w->out = fopen (fname, "w");

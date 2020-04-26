@@ -48,7 +48,6 @@ struct driver_info {
 
 struct idinfo {
   char *myname;
-  //  hash_bucket_t *b;		/* name */
 
   unsigned int isinput:1;	/* input? */
   unsigned int isoutput:1;	/* output? */
@@ -204,6 +203,6 @@ typedef struct {
 Process *verilog_find_lib (Act *a, const char *nm);
 VNet *verilog_read (const char *file, const char *lib);
 AGraph *verilog_create_netgraph (VNet *n);
-
+void verilog_mark_clock_nets (VNet *n);
 
 #endif /* __ACT_VNET_H__ */
