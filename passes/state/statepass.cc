@@ -334,7 +334,7 @@ stateinfo_t *ActStatePass::countBools (Process *p)
     }
   }
 
-  if (_warn_local_driver) {
+  if (Act::warn_no_local_driver) {
     /* now check if there is some local state that is actually never
        driven! */
     for (int i=0; i < si->localbools; i++) {
@@ -377,7 +377,6 @@ ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
   }
   AddDependency ("booleanize");
   _black_box_mode = config_get_int ("net.black_box_mode");
-  _warn_local_driver = config_get_int ("act.warn_no_local_driver");
 }
 
 void ActStatePass::free_local (void *v)

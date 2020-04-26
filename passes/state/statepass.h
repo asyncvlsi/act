@@ -85,7 +85,6 @@ private:
   stateinfo_t *countBools (Process *p);
   void printLocal (FILE *fp, Process *p);
   int _black_box_mode;
-  int _warn_local_driver;
   
   ActBooleanizePass *bp;
   FILE *_fp;

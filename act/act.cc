@@ -163,7 +163,10 @@ void Act::Init (int *iargc, char ***iargv)
 	  config_set_int ("act.warn.dup_pass", 1);
 	}
 	else {
-	  fatal_error ("-W option `%s' is unknown", tmp);
+	  fprintf (stderr, "FATAL: -W option `%s' is unknown", tmp);
+	  fprintf (stderr, "  legal values:\n");
+	  fprintf (stderr, "     empty-select, dup-pass:off, local-driver:off, all\n");
+	  exit (1);
 	}
 	tmp = strtok (NULL, ",");
       }
@@ -202,6 +205,7 @@ void Act::Init (int *iargc, char ***iargv)
   argv[j] = NULL;
 
   Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
+  Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
 
   Act::config_info ("global.conf");
   
