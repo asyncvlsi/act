@@ -185,6 +185,7 @@ class ActNetlistPass : public ActPass {
 
   static node_t *string_to_node (netlist_t *, char *s);
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
+  static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);
 
  private:
   int init ();
@@ -256,7 +257,6 @@ class ActNetlistPass : public ActPass {
   void fold_transistors (netlist_t *N);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 		       act_size_spec_t *sz);
-  static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);
   void create_expr_edges (netlist_t *N, int type, node_t *left,
 			  act_prs_expr_t *e, node_t *right, int sense);
   
