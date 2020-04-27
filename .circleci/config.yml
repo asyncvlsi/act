@@ -1,26 +1,106 @@
 version: 2
 
 jobs:
-   "Ubuntu": 
+   ubuntu18-build: 
      # Ubuntu 18
+     working_directory: ~/project
      docker:
        - image: ubuntu:18.04
      steps:
        - checkout
+       # install dependencies
        - run: |
           apt-get -q update -y
-          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential
+          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential ca-certificates
+       # build
+       - run: | 
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./configure $ACT_HOME
           ./build 
           make install
+       # save build for testing
+       - persist_to_workspace:
+          root: ~/
+          paths: 
+          - project
+
+   ubuntu18-test: 
+     # Ubuntu 18
+     docker:
+       - image: ubuntu:18.04
+     steps:
+       # install dependencies
+       - run: |
+          apt-get -q update -y
+          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential ca-certificates
+       # restore workspace
+       - attach_workspace:
+          at: ~/
+       # run the tests
+       - run: |
+          export VLSI_TOOLS_SRC=`pwd`
+          export ACT_HOME=$VLSI_TOOLS_SRC/install
           make runtest
+
+   centos8-build: 
+     # build on plain centos 8
+     working_directory: ~/project
+     docker:
+       - image: centos:8
+     steps:
+       # install dependencies
+       - run: |
+          yum install -y 'dnf-command(config-manager)'
+          yum config-manager --set-enabled PowerTools -y
+          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
+       # get the code
+       - checkout
+       # build and install
+       - run: |
+          mkdir install
+          export VLSI_TOOLS_SRC=`pwd`
+          export ACT_HOME=$VLSI_TOOLS_SRC/install
+          ./configure $ACT_HOME
+          ./build
+          make install
+       # save install directroy for testing
+       - persist_to_workspace:
+          root: ~/
+          paths: 
+          - project
+
+   centos8-test: 
+     working_directory: ~/project
+     docker:
+       - image: centos:8
+     steps:
+       # install dependencies
+       - run: |
+          yum install -y 'dnf-command(config-manager)'
+          yum config-manager --set-enabled PowerTools -y
+          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
+       # restore workspace
+       - attach_workspace:
+          at: ~/
+       # run the tests
+       - run: |
+          export VLSI_TOOLS_SRC=`pwd`
+          export ACT_HOME=$VLSI_TOOLS_SRC/install
+          make runtest
+          
 
 workflows:
    version: 2
-   build:
+   build_and_test:
      jobs: 
-        - "Ubuntu"
+      - ubuntu18-build
+      - ubuntu18-test:
+         requires:
+          - ubuntu18-build
+      - centos8-build
+      - centos8-test:
+         requires:
+          - centos8-build
           
