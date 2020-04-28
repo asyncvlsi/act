@@ -26,6 +26,7 @@
 #include <string.h>
 #include <act/act.h>
 #include <act/passes/netlist.h>
+#include <act/passes/cells.h>
 #include <config.h>
 
 /*
@@ -51,6 +52,7 @@ static void usage (char *name)
 {
   fprintf (stderr, "Usage: %s [-dltBR] [-C <conf>] [-p <proc>] [-o <file>] <act>\n", name);
   fprintf (stderr, " -C <conf> Configuration file name\n");
+  fprintf (stderr, " -c <cells> Cell file name\n");
   fprintf (stderr, " -t        Only emit top-level cell (no sub-cells)\n");
   fprintf (stderr, " -p <proc> Emit process <proc>\n");
   fprintf (stderr, " -o <file> Save result to <file> rather than stdout\n");
@@ -63,6 +65,7 @@ static void usage (char *name)
 
 
 static int enable_shared_stat = 0;
+static char *cell_file;
 
 /*
   Initialize globals from the configuration file.
@@ -84,6 +87,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   top_level_only = 0;
   conf_file = NULL;
   proc_name = NULL;
+  cell_file = NULL;
 
   config_set_default_string ("net.global_vdd", "Vdd");
   config_set_default_string ("net.global_gnd", "GND");
@@ -92,7 +96,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "SBdC:tp:o:l")) != -1) {
+  while ((ch = getopt (*argc, *argv, "SBdC:tp:o:lc:")) != -1) {
     switch (ch) {
     case 'S':
       enable_shared_stat = 1;
@@ -138,6 +142,12 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
       }
       break;
 
+    case 'c':
+      if (cell_file) {
+	FREE (cell_file);
+      }
+      cell_file = Strdup (optarg);
+      break;
     case '?':
       fprintf (stderr, "Unknown option.\n");
       usage ((*argv)[0]);
@@ -206,7 +216,25 @@ int main (int argc, char **argv)
   }
   
   a = new Act (argv[1]);
+  
+  if (cell_file) {
+    a->Merge (cell_file);
+  }
+  
   a->Expand ();
+
+  if (cell_file) {
+    ActCellPass *cp = new ActCellPass (a);
+    cp->run();
+
+    FILE *oc = fopen (cell_file, "w");
+    if (!oc) {
+      fatal_error ("Could not write cell file");
+    }
+    cp->Print (oc);
+    fclose (oc);
+  }
+  
   Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
   if (config_exists ("net.mangle_chars")) {
