@@ -132,9 +132,8 @@ struct library_edge_info {
                                     vertex id in the instance */
   int dstpin;			/* -1 if an I/O pin; otherwise the
                                     vertex id in the instance */
-  int isclk:1;
-  //int portid;			/* port info */
-  //int port_offset;		/* array idx if needed */
+  int genclk:1;		 	/* set to 1 if this edge corresponds
+				   to a generated clock */
 };
 
 static library_edge_info *newedge ()
@@ -143,7 +142,7 @@ static library_edge_info *newedge ()
   NEW (ei, library_edge_info);
   ei->srcpin = -1;
   ei->dstpin = -1;
-  ei->isclk = 0;
+  ei->genclk = 0;
   return ei;
 }
    
@@ -711,7 +710,10 @@ AGraph *_module_create_graph (VNet *v, module_t *m)
 #endif      
       if (ni->idriver == -2) {
 	if (Act::warn_no_local_driver) {
-	  warning ("Missing driver, net `%s'", b->key);
+	  if (!config_exists ("s2a.warnings.no_driver") ||
+	      (config_get_int ("s2a.warnings.no_driver") == 1)) {
+	    warning ("Missing driver, net `%s'", b->key);
+	  }
 	}
       }
       else {
@@ -909,73 +911,105 @@ static void _mark_clock_nets (VNet *v, module_t *m)
 
   /* now walk the graph */
   AGraph *ag = (AGraph *)m->space;
-  AGraphVertexIter it(ag);
-  for (it = it.begin(); it != it.end(); it++) {
-    AGvertex *v = (*it);
-    inst_vertex_info *inst = (inst_vertex_info *)v->info;
-    if (v->isio != 0) continue;
+  int repeat_prop;
+  do {
+    repeat_prop = 0;
+    AGraphVertexIter it(ag);
+    for (it = it.begin(); it != it.end(); it++) {
+      AGvertex *v = (*it);
+      inst_vertex_info *inst = (inst_vertex_info *)v->info;
+      if (v->isio != 0) continue;
 
 #if 0
-    printf ("inst: %s [%s]\n", inst->id->myname, inst->id->nm);
+      printf ("inst: %s [%s]\n", inst->id->myname, inst->id->nm);
 #endif    
 
-    AGvertexBwdIter ei(ag,v->vid);
+      AGvertexBwdIter ei(ag,v->vid);
 
-    for (ei = ei.begin(); ei != ei.end(); ei++) {
-      AGedge *e = (*ei);
-      library_edge_info *lei;
-      lei = (library_edge_info *) e->info;
+      for (ei = ei.begin(); ei != ei.end(); ei++) {
+	AGedge *e = (*ei);
+	library_edge_info *lei;
+	lei = (library_edge_info *) e->info;
 
-      Assert (lei->dstpin != -1, "What?");
-      AGvertex *dstpin = inst->g->getVertex (lei->dstpin);
-      Assert (dstpin->isio != 0, "Huh?");
-      library_vertex_info *dstpin_inf = (library_vertex_info *) dstpin->info;
+	Assert (lei->dstpin != -1, "What?");
+	AGvertex *dstpin = inst->g->getVertex (lei->dstpin);
+	Assert (dstpin->isio != 0, "Huh?");
+	library_vertex_info *dstpin_inf = (library_vertex_info *) dstpin->info;
 
-      if (dstpin_inf->isclk != 0) {
+	if (dstpin_inf->isclk != 0 || lei->genclk) {
 #if 0
-	printf ("  clk pin [%s] at dst\n", dstpin_inf->pin);
+	  printf ("  clk pin [%s] at dst\n", dstpin_inf->pin);
 #endif	
-	/* propagate clock */
+	  /* propagate clock */
 	
-	AGvertex *srcpin = ag->getVertex (e->src);
-	library_vertex_info *tmp;
+	  AGvertex *srcpin = ag->getVertex (e->src);
+	  library_vertex_info *tmp;
 	
-	if (lei->srcpin == -1) {
-	  Assert (srcpin->isio != 0, "What?");
-	  tmp = (library_vertex_info *)srcpin->info;
-	  tmp->isclk = 5;
-	}
-	else {
-	  inst_vertex_info *itmp;
-	  Assert (srcpin->isio == 0, "What?");
-	  itmp = (inst_vertex_info *)srcpin->info;
-	  AGvertex *pin = itmp->g->getVertex (lei->srcpin);
-	  Assert (pin->isio != 0, "What?");
-	  tmp = (library_vertex_info *)pin->info;
-	  if (!tmp->isset) {
+	  if (lei->srcpin == -1) {
+	    Assert (srcpin->isio != 0, "What?");
+	    tmp = (library_vertex_info *)srcpin->info;
 	    if (tmp->isclk == 0) {
 	      tmp->isclk = 5;
-	      /* check if there is fanin */
-	      if (pin->hasFanin()) {
-		warning ("Fanin?");
-	      }
+	      repeat_prop = 1;
 	    }
 	  }
 	  else {
-	    if (tmp->isclk == 0) {
-	      warning ("Pin %s.%s is a generated clock",
-		       inst->id->myname, dstpin_inf->pin);
+	    inst_vertex_info *itmp;
+	    Assert (srcpin->isio == 0, "What?");
+	    itmp = (inst_vertex_info *)srcpin->info;
+	    AGvertex *pin = itmp->g->getVertex (lei->srcpin);
+	    Assert (pin->isio != 0, "What?");
+	    tmp = (library_vertex_info *)pin->info;
+	    if (!tmp->isset) {
+	      /*-- module, pins can become clocks as needed --*/
+	      if (tmp->isclk == 0) {
+		tmp->isclk = 5;
+		repeat_prop = 1;
+		/* check if there is fanin */
+		if (pin->hasFanin()) {
+		  warning ("Module pin has fan-in?");
+		}
+	      }
+	    }
+	    else {
+	      /*-- basic library cell: we're supposed to know what the
+		clock nets here are apriori --*/
+	      if (tmp->isclk == 0) {
+		if (!config_exists ("s2a.warnings.gen_clk") ||
+		    (config_get_int ("s2a.warnings.gen_clk") == 1)) {
+		  warning ("Pin %s.%s is a generated clock",
+			   inst->id->myname, dstpin_inf->pin);
+		}
+		/* -- generated clock: mark the *edge* -- */
+		if (!lei->genclk) {
+		  lei->genclk = 1;
+		  repeat_prop = 1;
+		  /* -- now mark all edges *backward* through this as a
+		     generated clock pin -- */
+	      
+		  AGvertexBwdIter fi(ag, lei->srcpin);
+		  for (fi = fi.begin(); fi != fi.end(); fi++) {
+		    AGedge *f = (*fi);
+		    library_edge_info *fei;
+		    fei = (library_edge_info *) f->info;
+		    if (!fei->genclk) {
+		      fei->genclk = 1;
+		    }
+		  }
+		}
+	      }
 	    }
 	  }
 	}
-      }
 #if 0      
-      else {
-	printf (" not clock pin [%s]\n", dstpin_inf->pin);
-      }
+	else {
+	  printf (" not clock pin [%s]\n", dstpin_inf->pin);
+	}
 #endif      
+      }
     }
-  }
+  } while (repeat_prop);
+  
   m->flags = 1;
 
   printf ("Pin info for `%s'\n", m->b->key);
