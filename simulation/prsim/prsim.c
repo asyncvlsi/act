@@ -2096,6 +2096,7 @@ struct Command {
   { "unwatch", "unwatch <n> - delete watchpoint for <n>", process_unwatch },
   { "watchall", "watchall - watch all nodes", process_watchall },
   { "breakpt", "breakpt <n> - set a breakpoint on <n>", process_break },
+  { "break", "breakpt <n> - set a breakpoint on <n>", process_break },
   { "trace", "trace <file> <time> - Create atrace file for <time> duration", process_trace },
   { "timescale", "timescale <t> - set time scale to <t> picoseconds for tracing", process_timescale },
   { "break-on-warn", "break-on-warn - stops/doesn't stop simulation on instability/inteference", process_break_on_warn },
