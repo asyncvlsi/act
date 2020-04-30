@@ -1169,17 +1169,25 @@ void process_cycle (void)
   PrsNode *n;
   PrsNode *m;
   char *s;
-  char *usage = "Usage: cycle\n";
+  char *usage = "Usage: cycle [signal]\n";
   int flag;
   int seu;
+  PrsNode *stop;
 
+  GET_OPTARG;
+  if (s == NULL) {
+    stop = NULL;
+  }
+  else {
+    stop = prs_node (P, s);
+  }
   CHECK_TRAILING(usage);
 
 #if 0
   interrupted = 0;
 #endif
   while (!interrupted) {
-    n = prs_cycle_cause (P, &m, &seu);
+    n = prs_cycle_cause_stop (P, &m, &seu, stop);
 
     if (!n) return;
 
@@ -1229,6 +1237,7 @@ void process_cycle (void)
 	break;
       }
     }
+    if (n == stop) return;
   }
 }
 
@@ -2082,7 +2091,7 @@ struct Command {
 
   { "step", "step <n> - run for <n> simulation steps", process_step },
   { "advance", "advance <n> - run for <n> units of simulation time", process_advance },
-  { "cycle", "cycle - run simulation", process_cycle },
+  { "cycle", "cycle [<n>] - run simulation, and stop if <n> changes", process_cycle },
   { "watch", "watch <n> - add watchpoint for <n>", process_watch },
   { "unwatch", "unwatch <n> - delete watchpoint for <n>", process_unwatch },
   { "watchall", "watchall - watch all nodes", process_watchall },

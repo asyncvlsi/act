@@ -778,13 +778,14 @@ PrsNode *prs_cycle (Prs *p)
   return n;
 }
 
-PrsNode *prs_cycle_cause (Prs *p, PrsNode **m, int *seu)
+PrsNode *prs_cycle_cause_stop (Prs *p, PrsNode **m, int *seu, PrsNode *stop)
 {
   PrsNode *n;
 
   while ((n = prs_step_cause (p, m, seu))) {
     if (n->bp || (p->flags & PRS_STOP_SIMULATION))
       break;
+    if (n == stop) break;
   }
   return n;
 }

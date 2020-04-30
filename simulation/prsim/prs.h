@@ -289,7 +289,7 @@ void prs_set_seu (Prs *p, PrsNode *n, int value, Time_t time, int dur);
    is the last node flipped
 */
 PrsNode *prs_cycle (Prs *);
-PrsNode *prs_cycle_cause (Prs *, PrsNode **, int *seu);
+PrsNode *prs_cycle_cause_stop (Prs *, PrsNode **, int *seu, PrsNode *stop);
 
 /* fire next event */
 PrsNode *prs_step  (Prs *);
