@@ -1,3 +1,5 @@
-ERROR: File `6.act', line 13, col 10
-	Override specification must not have direction flags
-	Override: e1of2?
+Parse error: Could not parse entire file.
+Expecting token `::', got `?'
+	File `6.act', line: 13, col: 11.
+Exception: number=1, message -none-
+FATAL: Uncaught exception

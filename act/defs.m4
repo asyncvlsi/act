@@ -312,15 +312,8 @@ override_spec: override_one_spec override_spec
 {{X: return NULL; }}
 ;
 
-override_one_spec: physical_inst_type bare_id_list ";"
+override_one_spec: qualified_type bare_id_list ";"
 {{X:
-    if ($1->getDir() != Type::NONE) {
-      $e("Override specification must not have direction flags\n");
-      fprintf ($f, "\tOverride: ");
-      $1->Print ($f);
-      fprintf ($f, "\n");
-      exit (1);
-    }
     listitem_t *li;
     for (li = list_first ($2); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
@@ -329,7 +322,7 @@ override_one_spec: physical_inst_type bare_id_list ";"
 	$E("Override specified for ``%s'': not found in type", s);
       }
       /* XXX: now check if $1 can be a valid override for it */
-      InstType *chk = $1;
+      InstType *chk = new InstType ($0->scope, $1, 1);
       $A(chk->arrayInfo() == NULL);
       if (chk->isEqual (it)) {
 	$e("Override is not necessary if type is not being refined!\n");

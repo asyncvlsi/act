@@ -210,6 +210,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
       Assert (it->isExpanded(), "This should be expanded");
       
       u = dynamic_cast<UserDef *>(it->BaseType ());
+      Assert (u, "This should have been caught earlier!");
     
       /* WWW: here we would have to check the array index for relaxed
 	 parameters */

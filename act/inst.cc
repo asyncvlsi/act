@@ -893,11 +893,8 @@ void InstType::appendParams (int na, inst_param *a)
 }
 
 
-void InstType::refineBaseType (InstType *ut)
+void InstType::refineBaseType (UserDef *u)
 {
-  /* XXX: do something fun! */
-  nt = ut->nt;
-  u = ut->u;
-  t = ut->t;
+  t = u;			/* just replace the base type */
 }
 

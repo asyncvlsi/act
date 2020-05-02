@@ -1,0 +1,16 @@
+defchan foo <: chan(bool) (bool! z; bool?! y) { }
+
+defproc test (chan!(bool) c)
+{
+
+}
+
+defproc testimpl <: test()
++{ foo c; }
+{
+  prs {
+   c.z -> c.y-
+  }
+}
+
+testimpl x;
