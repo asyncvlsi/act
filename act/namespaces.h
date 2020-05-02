@@ -59,7 +59,9 @@ class Scope {
   InstType *Lookup (const char *s);
   InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
 						id; default report an error */
-  void refineBaseType (const char *s, UserDef *u);
+
+  /* u = plain vanilla user-def type with potential template parameters */
+  void refineBaseType (const char *s, InstType *u);
   
   InstType *FullLookup (const char *s); /**< return full lookup,
 					   including in parent scopes */

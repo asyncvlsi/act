@@ -1453,16 +1453,7 @@ ActBody *ActBody_Assertion::Clone()
 }
 
 
-void ActBody_Inst::updateInstType (UserDef *u)
+void ActBody_Inst::updateInstType (InstType *u)
 {
-  InstType *n = new InstType (t,1);
-
-  /* copy array over too! */
-  if (t->arrayInfo()) {
-    n->MkArray (t->arrayInfo()->Clone());
-  }
-
-  n->refineBaseType (u);
-
-  t = n;
+  t->refineBaseType (u);
 }

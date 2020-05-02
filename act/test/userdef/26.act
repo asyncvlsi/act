@@ -1,0 +1,10 @@
+deftype d1of2 <: int<1> (bool d0, d1)
+{
+}
+
+int<1> x;
+d1of2 y;
+bool w;
+
+x = y;
+y.d0 = w;

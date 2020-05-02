@@ -1326,7 +1326,7 @@ void Scope::playBody (ActBody *b)
 }
 
 
-void Scope::refineBaseType (const char *s, UserDef *u)
+void Scope::refineBaseType (const char *s, InstType *u)
 {
   hash_bucket_t *b;
 
@@ -1337,6 +1337,7 @@ void Scope::refineBaseType (const char *s, UserDef *u)
     x->refineBaseType (u);
   }
   else {
+    Assert (0, "Should not be here!");
     ValueIdx *vx = (ValueIdx *)b->v;
     vx->t->refineBaseType (u);
   }

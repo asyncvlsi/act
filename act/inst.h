@@ -156,7 +156,7 @@ class InstType {
      symbols */
   int hasinstGlobal() { return 0; }
 
-  void refineBaseType (UserDef *update);
+  void refineBaseType (InstType *update);
   
  private:
 

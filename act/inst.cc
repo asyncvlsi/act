@@ -397,7 +397,7 @@ Type *InstType::isConnectable (InstType *it, int weak)
   Assert (retval, "HMM!");
 
 #if 0
-  printf ("Made it through the check!\n");
+  printf ("Made it through the check [subtype=%d]!\n", subtype);
   printf ("nt=%d, it->nt=%d\n", nt, it->nt);
 #endif
 
@@ -412,10 +412,20 @@ Type *InstType::isConnectable (InstType *it, int weak)
   }
 
   int ntchk = (nt < it->nt) ? nt : it->nt;
-  
+
+  /* XXX: CHECK THIS.
+     
+     If it is right, it's only right for processes...
+
+  */
 
   /* check that the template parameters of the type are the same */
   for (int i=0; i < ntchk; i++) {
+    /* XXX: need a special case here for chan(int<x>) */
+#if 0
+    printf ("isatype: %d, %d\n", u[i].isatype, it->u[i].isatype);
+#endif    
+    
     if (u[i].isatype != it->u[i].isatype) return NULL;
     if (u[i].isatype) {
       if ((u[i].u.tt && !it->u[i].u.tt) ||
@@ -450,6 +460,9 @@ Type *InstType::isConnectable (InstType *it, int weak)
     }
   }
 
+#if 0
+  printf ("made it here!\n");
+#endif  
 
   if ((a && !it->a) || (!a && it->a)) return NULL; /* both are either
 						   arrays or not
@@ -893,8 +906,10 @@ void InstType::appendParams (int na, inst_param *a)
 }
 
 
-void InstType::refineBaseType (UserDef *u)
+void InstType::refineBaseType (InstType *update)
 {
-  t = u;			/* just replace the base type */
+  t = update->t;		/* just replace the base type */
+  nt = update->nt;
+  u = update->u;
 }
 

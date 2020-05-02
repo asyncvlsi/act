@@ -137,7 +137,7 @@ class ActBody_Inst : public ActBody {
 
   InstType *getType () { return t; }
   const char *getName() { return id; }
-  void updateInstType (UserDef *u);
+  void updateInstType (InstType *u);
 
   ActBody *Clone ();
 
