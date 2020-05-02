@@ -453,53 +453,61 @@ Type *InstType::isConnectable (InstType *it, int weak)
     if (retval == t) {
       // THIS SHOULD BE AN EQUALITY TEST!
       if (related->isEqual (it, weak)) {
-	return retval;
+	/* good! */
+      }
+      else {
+	return NULL;
       }
     }
     else {
       // THIS SHOULD BE AN EQUALITY TEST!
       if (related->isEqual (this, weak)) {
-	return retval;
-      }	
+	/* good! */
+      }
+      else {
+	return NULL;
+      }
     }
   }
+  else {
     /* check that the template parameters of the type are the same */
-  for (int i=0; i < ntchk; i++) {
-    /* XXX: need a special case here for chan(int<x>) */
+    for (int i=0; i < ntchk; i++) {
+      /* XXX: need a special case here for chan(int<x>) */
 #if 0
-    printf ("isatype: %d, %d\n", u[i].isatype, it->u[i].isatype);
+      printf ("isatype: %d, %d\n", u[i].isatype, it->u[i].isatype);
 #endif    
     
-    if (u[i].isatype != it->u[i].isatype) return NULL;
-    if (u[i].isatype) {
-      if ((u[i].u.tt && !it->u[i].u.tt) ||
-	  (!u[i].u.tt && it->u[i].u.tt)) return NULL;
-      if (u[i].u.tt && it->u[i].u.tt) {
-	if (!u[i].u.tt->isEqual (it->u[i].u.tt, weak)) return NULL;
-      }
-    }
-    else {
-      AExpr *xconstexpr;
-      if (!u[i].u.tp || !it->u[i].u.tp) {
-	xconstexpr = new AExpr (const_expr (32));
+      if (u[i].isatype != it->u[i].isatype) return NULL;
+      if (u[i].isatype) {
+	if ((u[i].u.tt && !it->u[i].u.tt) ||
+	    (!u[i].u.tt && it->u[i].u.tt)) return NULL;
+	if (u[i].u.tt && it->u[i].u.tt) {
+	  if (!u[i].u.tt->isEqual (it->u[i].u.tt, weak)) return NULL;
+	}
       }
       else {
-	xconstexpr = NULL;
-      }
-      /* being NULL is the same as const 32 */
-      if (u[i].u.tp && !it->u[i].u.tp) {
-	if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return NULL;
-	delete xconstexpr;
-      }
-      else if (it->u[i].u.tp && !u[i].u.tp) {
-	if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return NULL;
-	delete xconstexpr;
-      }
-      else if (u[i].u.tp && it->u[i].u.tp) {
-	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return NULL;
-      }
-      else {
-	delete xconstexpr;
+	AExpr *xconstexpr;
+	if (!u[i].u.tp || !it->u[i].u.tp) {
+	  xconstexpr = new AExpr (const_expr (32));
+	}
+	else {
+	  xconstexpr = NULL;
+	}
+	/* being NULL is the same as const 32 */
+	if (u[i].u.tp && !it->u[i].u.tp) {
+	  if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return NULL;
+	  delete xconstexpr;
+	}
+	else if (it->u[i].u.tp && !u[i].u.tp) {
+	  if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return NULL;
+	  delete xconstexpr;
+	}
+	else if (u[i].u.tp && it->u[i].u.tp) {
+	  if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return NULL;
+	}
+	else {
+	  delete xconstexpr;
+	}
       }
     }
   }
