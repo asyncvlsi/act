@@ -1361,7 +1361,7 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ ";" wint_expr]  ["
       A_NEXT ($0->sizing_info->d).eup = NULL;
       
       if (!OPT_EMPTY ($5)) {
-	ActRet *r = OPT_VALUE ($6);
+	ActRet *r = OPT_VALUE ($5);
 	$A(r->type == R_STRING);
 	A_NEXT ($0->sizing_info->d).flav_dn = act_dev_string_to_value (r->u.str);
 	if (A_NEXT ($0->sizing_info->d).flav_dn == -1) {
