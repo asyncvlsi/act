@@ -152,7 +152,7 @@ static void _depth_map (act_prs_expr_t *e, int pad, int flip = 0)
 }
 
 
-static void _in_place_sizing (act_prs_expr_t *e, double sz, int nf,
+static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
 			      int flip = 0)
 {
   if (!e) return;
@@ -176,25 +176,25 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int nf,
       }
 #endif      
       Assert (d2 > d1, "What?");
-      _in_place_sizing (e->u.e.l, sz*d2/d1, nf, flip);
-      _in_place_sizing (e->u.e.r, sz*d2/(d2-d1), nf, flip);
+      _in_place_sizing (e->u.e.l, flav, sz*d2/d1, nf, flip);
+      _in_place_sizing (e->u.e.r, flav, sz*d2/(d2-d1), nf, flip);
     }
     else {
       /* or */
-      _in_place_sizing (e->u.e.l, sz, nf, flip);
-      _in_place_sizing (e->u.e.r, sz, nf, flip);
+      _in_place_sizing (e->u.e.l, flav, sz, nf, flip);
+      _in_place_sizing (e->u.e.r, flav, sz, nf, flip);
     }
     break;
     
   case ACT_PRS_EXPR_NOT:
-    _in_place_sizing (e->u.e.l, sz, nf, 1 - flip);
+    _in_place_sizing (e->u.e.l, flav, sz, nf, 1 - flip);
     break;
 
   case ACT_PRS_EXPR_VAR:
     /* add sizing */
     NEW (e->u.v.sz, act_size_spec_t);
     e->u.v.sz->l = NULL;
-    e->u.v.sz->flavor = 0; // what to do?
+    e->u.v.sz->flavor = flav;
     e->u.v.sz->w = const_expr ((int)(sz + 0.5));
     if (nf != 1) {
       e->u.v.sz->folds = const_expr (nf);
@@ -218,18 +218,19 @@ static void _in_place_sizing (act_prs_expr_t *e, double sz, int nf,
   return;
 }
 
-static  void _do_sizing (act_prs_expr_t *e, double sz, int nf)
+static  void _do_sizing (act_prs_expr_t *e, int flav, double sz, int nf)
 {
   _depthmap = new std::map<act_prs_expr_t *, int> ();
   _depth_map (e, 0);
-  _in_place_sizing (e, sz, nf);
+  _in_place_sizing (e, flav, sz, nf);
   delete _depthmap;
   _depthmap = NULL;
 }
 
 
-static void _apply_sizing (act_connection *c, double up, int upf,
-			   double dn, int dnf,
+static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
+			   double up, int upf,
+			   double dn, int dnf, double ratio,
 			   act_prs_lang_t *prs, Scope *sc)
 {
   act_prs_lang_t *tmp;
@@ -242,7 +243,9 @@ static void _apply_sizing (act_connection *c, double up, int upf,
 	if (cid == c) {
 	  if (_no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
-	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn,
+	      _do_sizing (tmp->u.one.e,
+			  tmp->u.one.dir ? flav_up : flav_dn,
+			  tmp->u.one.dir ? up : dn,
 			  tmp->u.one.dir ? upf : dnf);
 	    }
 	    else {
@@ -265,16 +268,20 @@ static void _apply_sizing (act_connection *c, double up, int upf,
 	      tmp->next = newrule;
 	      tmp->u.one.arrow_type = 0;
 	      
-	      _do_sizing (tmp->u.one.e, tmp->u.one.dir ? up : dn,
+	      _do_sizing (tmp->u.one.e,
+			  tmp->u.one.dir ? flav_up : flav_dn,
+			  tmp->u.one.dir ? up : dn,
 			  tmp->u.one.dir ? upf : dnf);
-	      _do_sizing (newrule->u.one.e, newrule->u.one.dir ? up : dn,
+	      _do_sizing (newrule->u.one.e,
+			  newrule->u.one.dir ? flav_up : flav_dn,
+			  newrule->u.one.dir ? up : dn,
 			  newrule->u.one.dir ? upf : dnf);
 
 	      tmp = newrule;
 	    }
 	  }
 	  else {
-	    warning ("Sizing directive {+%g,-%g} specified for already sized rule", up, dn);
+	    warning ("Sizing directive {+%g,-%g} specified for already sized rule", up/ratio, dn);
 	    fprintf (stderr, "\tskipped signal: `");
 	    tmp->u.one.id->Print (stderr);
 	    fprintf (stderr, "'\n");
@@ -287,7 +294,8 @@ static void _apply_sizing (act_connection *c, double up, int upf,
       break;
     case ACT_PRS_SUBCKT:
     case ACT_PRS_TREE:
-      _apply_sizing (c, up, upf, dn, dnf, tmp->u.l.p, sc);
+      _apply_sizing (c, flav_up, flav_dn,
+		     up, upf, dn, dnf, ratio, tmp->u.l.p, sc);
       break;
     case ACT_PRS_LOOP:
       fatal_error ("Why are there loops?");
@@ -389,11 +397,16 @@ void *ActSizingPass::local_op (Process *p, int mode)
     act_connection *c;
     double dup, ddn;
     int upf, dnf;
+    int fup, fdn;
 
     upf = 1;
     dnf = 1;
+    fup = 0;
+    fdn = 0;
     
     c = sz->d[i].id->Canonical (sc);
+    fup = sz->d[i].flav_up;
+    fdn = sz->d[i].flav_dn;
 
     if (sz->d[i].eup) {
       if (!getconst_real (sz->d[i].eup, &dup)) {
@@ -402,6 +415,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
       if (dup < 0) {
 	fatal_error ("Sizing expression is negative");
       }
+      dup *= ratio;		/* keep the units fixed */
     }
     else {
       dup = -1;
@@ -436,17 +450,19 @@ void *ActSizingPass::local_op (Process *p, int mode)
     if (dup == -1) {
       dup = ddn*ratio;
       upf = dnf;
+      fup = fdn;
     }
     if (ddn == -1) {
       ddn = dup/ratio;
       dnf = upf;
+      fdn = fup;
     }
     dup *= unit_n;
     ddn *= unit_n;
 
     /* find all rules with this and apply sizing */
     for (act_prs *tprs = prs; tprs; tprs = tprs->next) {
-      _apply_sizing (c, dup, upf, ddn, dnf, tprs->p, sc);
+      _apply_sizing (c, fup, fdn, dup, upf, ddn, dnf, ratio, tprs->p, sc);
     }
   }
   return NULL;

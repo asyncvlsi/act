@@ -46,6 +46,7 @@
 #define OPT_FREE(x)      list_free(x)
 #define OPT_VALUE2(x)    LIST_VALUE (list_next (list_first (x)))
 #define OPT_VALUE3(x)    LIST_VALUE (list_next (list_next (list_first (x))))
+#define OPT_VALUE4(x)    LIST_VALUE (list_next (list_next (list_next (list_first (x)))))
 
 Expr *const_expr (int val);
 Expr *act_walk_X_expr (ActTree *cookie, Expr *e);

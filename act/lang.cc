@@ -1442,6 +1442,9 @@ void sizing_print (FILE *fp, act_sizing *s)
     if (s->d[i].eup) {
       fprintf (fp, "+ ");
       print_expr (fp, s->d[i].eup);
+      if (s->d[i].flav_up != 0) {
+	fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_up));
+      }
       if (s->d[i].upfolds) {
 	fprintf (fp, ";");
 	print_expr (fp, s->d[i].upfolds);
@@ -1453,6 +1456,9 @@ void sizing_print (FILE *fp, act_sizing *s)
       }
       fprintf (fp, "- ");
       print_expr (fp, s->d[i].edn);
+      if (s->d[i].flav_dn != 0) {
+	fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_dn));
+      }
       if (s->d[i].dnfolds) {
 	fprintf (fp, ";");
 	print_expr (fp, s->d[i].dnfolds);
@@ -1508,6 +1514,8 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
       A_NEXT (ret->d).edn = expr_expand (sz->d[i].edn, ns, s);
       A_NEXT (ret->d).upfolds = expr_expand (sz->d[i].upfolds, ns, s);
       A_NEXT (ret->d).dnfolds = expr_expand (sz->d[i].dnfolds, ns, s);
+      A_NEXT (ret->d).flav_up = sz->d[i].flav_up;
+      A_NEXT (ret->d).flav_dn = sz->d[i].flav_dn;
       A_INC (ret->d);
     }
   }

@@ -1012,6 +1012,7 @@ static void _mark_clock_nets (VNet *v, module_t *m)
   
   m->flags = 1;
 
+#if 0  
   printf ("Pin info for `%s'\n", m->b->key);
   for (int i=0; i < ag->numInputs(); i++) {
     AGvertex *iv = ag->getVertex (i);
@@ -1020,7 +1021,7 @@ static void _mark_clock_nets (VNet *v, module_t *m)
       printf ("Clock pin: %s\n", vi->pin);
     }
   }
-  
+#endif
 }
 			   
 

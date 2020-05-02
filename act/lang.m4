@@ -1324,76 +1324,121 @@ lang_size[ActBody *]: "sizing" "{"
 }}
 ;
 
-size_directive: bool_expr_id "{" dir wreal_expr [ ";" wint_expr]  ["," dir wreal_expr [ ";" wint_expr ] ] "}"
+size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ ";" wint_expr]  ["," dir wnumber_expr [ "," ID ] [ ";" wint_expr ] ] "}"
 {{X:
     A_NEW ($0->sizing_info->d, act_sizing_directive);
     A_NEXT ($0->sizing_info->d).id = $1;
     A_NEXT ($0->sizing_info->d).upfolds = NULL;
     A_NEXT ($0->sizing_info->d).dnfolds = NULL;
-    
+    A_NEXT ($0->sizing_info->d).flav_up = 0;
+    A_NEXT ($0->sizing_info->d).flav_dn = 0;
     
     if ($3) {
       A_NEXT ($0->sizing_info->d).eup = $4;
       A_NEXT ($0->sizing_info->d).edn = NULL;
+      
       if (!OPT_EMPTY ($5)) {
-	ActRet *r = OPT_VALUE ($5);
+	ActRet *r = OPT_VALUE ($6);
+	$A(r->type == R_STRING);
+	A_NEXT ($0->sizing_info->d).flav_up = act_dev_string_to_value (r->u.str);
+	if (A_NEXT ($0->sizing_info->d).flav_up == -1) {
+	  $E("Unknown device flavor ``%s''", r->u.str);
+	}
+	FREE (r);
+      }
+      OPT_FREE ($5);
+      
+      if (!OPT_EMPTY ($6)) {
+	ActRet *r = OPT_VALUE ($6);
 	$A(r->type == R_EXPR);
 	A_NEXT ($0->sizing_info->d).upfolds = r->u.exp;
 	FREE (r);
       }
-      OPT_FREE ($5);
+      OPT_FREE ($6);
     }
     else {
       A_NEXT ($0->sizing_info->d).edn = $4;
       A_NEXT ($0->sizing_info->d).eup = NULL;
+      
       if (!OPT_EMPTY ($5)) {
-	ActRet *r = OPT_VALUE ($5);
+	ActRet *r = OPT_VALUE ($6);
+	$A(r->type == R_STRING);
+	A_NEXT ($0->sizing_info->d).flav_dn = act_dev_string_to_value (r->u.str);
+	if (A_NEXT ($0->sizing_info->d).flav_dn == -1) {
+	  $E("Unknown device flavor ``%s''", r->u.str);
+	}
+	FREE (r);
+      }
+      OPT_FREE ($5);
+      
+      if (!OPT_EMPTY ($6)) {
+	ActRet *r = OPT_VALUE ($6);
 	$A(r->type == R_EXPR);
 	A_NEXT ($0->sizing_info->d).dnfolds = r->u.exp;
 	FREE (r);
       }
-      OPT_FREE ($5);
+      OPT_FREE ($6);
     }
-    if (!OPT_EMPTY ($6)) {
-      ActRet *r1, *r2, *r3;
+    if (!OPT_EMPTY ($7)) {
+      ActRet *r1, *r2, *r3, *r4;
       Expr *fold;
-      r1 = OPT_VALUE ($6);
-      r2 = OPT_VALUE2 ($6);
-      r3 = OPT_VALUE3 ($6);
+      int flav;
+      r1 = OPT_VALUE ($7);
+      r2 = OPT_VALUE2 ($7);
+      r3 = OPT_VALUE3 ($7);
+      r4 = OPT_VALUE4 ($7);
       $A(r1->type == R_INT);
       $A(r2->type == R_EXPR);
       $A(r3->type == R_LIST);
+      $A(r4->type == R_LIST);
       if (r1->u.ival == $3) {
 	$E("Sizing directive with duplicate drive strength directions?");
       }
+
+      flav = 0;
       if (!OPT_EMPTY (r3->u.l)) {
-	ActRet *r4;
-	r4 = OPT_VALUE (r3->u.l);
-	$A(r4->type == R_EXPR);
-	fold = r4->u.exp;
-	FREE (r4);
+	ActRet *r;
+	r = OPT_VALUE (r3->u.l);
+	$A(r->type == R_STRING);
+	flav = act_dev_string_to_value (r->u.str);
+	if (flav == -1) {
+	  $E("Unknown device flavor ``%s''", r->u.str);
+	}
+	FREE (r);
+      }
+      OPT_FREE (r3->u.l);
+      
+      if (!OPT_EMPTY (r4->u.l)) {
+	ActRet *r5;
+	r5 = OPT_VALUE (r4->u.l);
+	$A(r5->type == R_EXPR);
+	fold = r5->u.exp;
+	FREE (r5);
       }
       else {
 	fold = NULL;
       }
-      OPT_FREE (r3->u.l);
+      OPT_FREE (r4->u.l);
       if (r1->u.ival) {
 	A_NEXT ($0->sizing_info->d).eup = r2->u.exp;
 	A_NEXT ($0->sizing_info->d).upfolds = fold;
+	A_NEXT ($0->sizing_info->d).flav_up = flav;
       }
       else {
 	A_NEXT ($0->sizing_info->d).edn = r2->u.exp;
 	A_NEXT ($0->sizing_info->d).dnfolds = fold;
+	A_NEXT ($0->sizing_info->d).flav_dn = flav;
       }
       FREE (r1);
       FREE (r2);
       FREE (r3);
+      FREE (r4);
     }
-    list_free ($6);
+    OPT_FREE ($7);
     A_INC ($0->sizing_info->d);
     return NULL;
 }}
-| ID wreal_expr
+| ID wnumber_expr
 {{X:
     /* ID can be:
            p_n_mode  0/1  0 = default, 1 = sqrt sizing
