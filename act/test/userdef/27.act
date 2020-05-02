@@ -1,0 +1,11 @@
+template<pint n>
+deftype d1of <: enum<n> (bool d0, d1)
+{
+}
+
+enum<1> x;
+d1of<1> y;
+bool w;
+
+x = y;
+y.d0 = w;
