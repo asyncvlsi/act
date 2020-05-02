@@ -1,0 +1,17 @@
+template<pint n>
+defchan foo <: chan(int<n>) (bool! z; bool?! y) { }
+
+defproc test (chan(int<1>) c)
+{
+
+}
+
+defproc testimpl <: test()
++{ foo<1> c; }
+{
+  prs {
+   c.z -> c.y-
+  }
+}
+
+testimpl x;

@@ -333,7 +333,7 @@ override_one_spec: user_type bare_id_list ";"
       /* XXX: now check if $1 can be a valid override for it */
       InstType *chk = $1;
       $A(chk->arrayInfo() == NULL);
-      if (chk->isEqual (it)) {
+      if (chk->isEqual (it, 1)) {
 	$e("Override is not necessary if type is not being refined!\n");
 	fprintf ($f, "\tOverride: ");
 	$1->Print ($f);
@@ -343,7 +343,7 @@ override_one_spec: user_type bare_id_list ";"
 	exit (1);
       }
       while (chk) {
-	if (chk->isEqual (it)) {
+	if (chk->isEqual (it, 1)) {
 	  break;
 	}
 	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());

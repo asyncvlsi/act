@@ -2125,7 +2125,13 @@ int Chan::isEqual (Type *t)
   if (x == this) return 1;
   if (!p && !x->p) return 1;
   if (!p || !x->p) return 0;
-  if (p->isEqual (x->p)) return 1;
+
+  if (p->isExpanded()) {
+    if (p->isEqual (x->p)) return 1;
+  }
+  else {
+    if (p->isEqual (x->p, 1)) return 1;
+  }
   return 0;
 }
 

@@ -1,0 +1,9 @@
+template<pint n>
+defchan foo <: chan(int<n>) (bool! z; bool?! y) { }
+
+foo<1> a;
+
+chan(int<1>) b;
+
+a = b;
+

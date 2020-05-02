@@ -205,8 +205,8 @@ int InstType::isEqual (InstType *it, int weak)
 #if 0
   printf ("valcheck = %d\n", valcheck);
 #endif
-
-  if (t != it->t) return 0;   /* same base type */
+  
+  if (t != it->t && !t->isEqual (it->t)) return 0;   /* same base type */
 
   if (nt != it->nt) return 0; /* same number of template params, if
 				 any */
@@ -218,7 +218,7 @@ int InstType::isEqual (InstType *it, int weak)
       if ((u[i].u.tt && !it->u[i].u.tt) ||
 	  (!u[i].u.tt && it->u[i].u.tt)) return 0;
       if (u[i].u.tt && it->u[i].u.tt) {
-	if (!u[i].u.tt->isEqual (it->u[i].u.tt)) return 0;
+	if (!u[i].u.tt->isEqual (it->u[i].u.tt, weak)) return 0;
       }
     }
     else {
@@ -273,12 +273,26 @@ int InstType::isEqual (InstType *it, int weak)
   return 1;
 }
 
-Type *InstType::isRelated (InstType *it)
+/*
+ *  Returns NULL if the specified type is not related; otherwise
+ *  returns the related type
+ */
+Type *InstType::isRelated (InstType *it, InstType **common)
 {
   Type *retval;
   
-  if (t == it->t) return t;
-  if (t->isEqual (it->t)) return t;
+  if (t == it->t) {
+    if (common) {
+      *common = it;
+    }
+    return t;
+  }
+  if (t->isEqual (it->t)) {
+    if (common) {
+      *common = it;
+    }
+    return t;
+  }
 
 #if 0
     printf (" -- In the subtype check.\n");
@@ -322,6 +336,9 @@ Type *InstType::isRelated (InstType *it)
     printf ("Here, %s\n", pit ? "ok!" : "NULL");
 #endif
     if (pit) {
+      if (common) {
+	*common = pit;
+      }
       retval = t1;
     }
     else {
@@ -350,6 +367,11 @@ Type *InstType::isRelated (InstType *it)
 	if (!pit) {
 	  return NULL;
 	}
+	else {
+	  if (common) {
+	    *common = pit;
+	  }
+	}
       }
       else {
 	return NULL;
@@ -365,12 +387,16 @@ Type *InstType::isRelated (InstType *it)
 
 
 
+
+
+
 /* XXX: FIXME */
 Type *InstType::isConnectable (InstType *it, int weak)
 {
   int valcheck;
   Type *retval;
   int subtype;
+  InstType *related;
 
   valcheck = isExpanded();
   if (weak == 0) valcheck = 1;
@@ -386,7 +412,7 @@ Type *InstType::isConnectable (InstType *it, int weak)
      will work! */
   if (t != it->t && !t->isEqual (it->t)) {
     subtype = 1;
-    retval = isRelated (it);
+    retval = isRelated (it, &related);
     if (!retval) return NULL;
   }
   else {
@@ -415,51 +441,74 @@ Type *InstType::isConnectable (InstType *it, int weak)
 
   /* XXX: CHECK THIS.
      
-     If it is right, it's only right for processes...
+     A problem will arise if the types are only compatible at the base
+     type for chan(type)
 
+     it's a special case...
+        if the type at which they match is of "chan" type, then we
+        have to make sure things match
   */
-
-  /* check that the template parameters of the type are the same */
-  for (int i=0; i < ntchk; i++) {
-    /* XXX: need a special case here for chan(int<x>) */
-#if 0
-    printf ("isatype: %d, %d\n", u[i].isatype, it->u[i].isatype);
-#endif    
-    
-    if (u[i].isatype != it->u[i].isatype) return NULL;
-    if (u[i].isatype) {
-      if ((u[i].u.tt && !it->u[i].u.tt) ||
-	  (!u[i].u.tt && it->u[i].u.tt)) return NULL;
-      if (u[i].u.tt && it->u[i].u.tt) {
-	if (!u[i].u.tt->isEqual (it->u[i].u.tt)) return NULL;
+  if (subtype && (retval == t ? TypeFactory::isExactChanType (it) :
+		  TypeFactory::isExactChanType (retval))) {
+    if (retval == t) {
+      // THIS SHOULD BE AN EQUALITY TEST!
+      if (related->isEqual (it, weak)) {
+	return retval;
       }
     }
     else {
-      AExpr *xconstexpr;
-      if (!u[i].u.tp || !it->u[i].u.tp) {
-	xconstexpr = new AExpr (const_expr (32));
+      // THIS SHOULD BE AN EQUALITY TEST!
+      if (related->isEqual (this, weak)) {
+	return retval;
+      }	
+    }
+  }
+  if (0) {
+
+  }
+  else {
+    /* check that the template parameters of the type are the same */
+    for (int i=0; i < ntchk; i++) {
+      /* XXX: need a special case here for chan(int<x>) */
+#if 0
+      printf ("isatype: %d, %d\n", u[i].isatype, it->u[i].isatype);
+#endif    
+    
+      if (u[i].isatype != it->u[i].isatype) return NULL;
+      if (u[i].isatype) {
+	if ((u[i].u.tt && !it->u[i].u.tt) ||
+	    (!u[i].u.tt && it->u[i].u.tt)) return NULL;
+	if (u[i].u.tt && it->u[i].u.tt) {
+	  if (!u[i].u.tt->isEqual (it->u[i].u.tt, weak)) return NULL;
+	}
       }
       else {
-	xconstexpr = NULL;
-      }
-      /* being NULL is the same as const 32 */
-      if (u[i].u.tp && !it->u[i].u.tp) {
-	if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return NULL;
-	delete xconstexpr;
-      }
-      else if (it->u[i].u.tp && !u[i].u.tp) {
-	if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return NULL;
-	delete xconstexpr;
-      }
-      else if (u[i].u.tp && it->u[i].u.tp) {
-	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return NULL;
-      }
-      else {
-	delete xconstexpr;
+	AExpr *xconstexpr;
+	if (!u[i].u.tp || !it->u[i].u.tp) {
+	  xconstexpr = new AExpr (const_expr (32));
+	}
+	else {
+	  xconstexpr = NULL;
+	}
+	/* being NULL is the same as const 32 */
+	if (u[i].u.tp && !it->u[i].u.tp) {
+	  if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return NULL;
+	  delete xconstexpr;
+	}
+	else if (it->u[i].u.tp && !u[i].u.tp) {
+	  if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return NULL;
+	  delete xconstexpr;
+	}
+	else if (u[i].u.tp && it->u[i].u.tp) {
+	  if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return NULL;
+	}
+	else {
+	  delete xconstexpr;
+	}
       }
     }
   }
-
+  
 #if 0
   printf ("made it here!\n");
 #endif  
