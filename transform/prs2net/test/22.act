@@ -6,7 +6,7 @@ defproc foo(bool a, b)
    [keeper=0] c <10,hvt> -> d-
   }
   sizing {
-     b {+4,-3}
+     b {+4;-3}
   }
 }
 

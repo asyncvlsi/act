@@ -1324,7 +1324,7 @@ lang_size[ActBody *]: "sizing" "{"
 }}
 ;
 
-size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ ";" wint_expr]  ["," dir wnumber_expr [ "," ID ] [ ";" wint_expr ] ] "}"
+size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  [";" dir wnumber_expr [ "," ID ] [ "," wint_expr ] ] "}"
 {{X:
     A_NEW ($0->sizing_info->d, act_sizing_directive);
     A_NEXT ($0->sizing_info->d).id = $1;

@@ -4,7 +4,7 @@ defproc testme (bool? a; bool! b)
     a => b-
   }
   sizing {
-    b {-1,lvt;2, +4,hvt;3 }
+    b {-1,lvt,2; +4,hvt,3 }
   }
 }
 
