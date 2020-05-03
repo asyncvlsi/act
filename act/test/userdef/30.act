@@ -1,0 +1,20 @@
+defproc inv (bool? i; bool! o)
+{
+  prs {
+    i => o-
+  }
+}
+
+template<pint drive>
+defproc szinv <: inv()
+{
+  sizing {
+     o {-drive}
+  }
+}
+
+defproc INV1 <: szinv<1> () { }
+defproc INV2 <: szinv<2> () { }
+
+INV1 x1;
+INV2 x2;
