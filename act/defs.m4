@@ -113,8 +113,18 @@ param_inst: param_type id_list
       }
       list_free (m);
 
-      if ($0->u->AddMetaParam (it, id_name) != 1) {
-	$E("Duplicate meta-parameter name in port list: ``%s''", id_name);
+      if ($0->u) {
+	if ($0->u->AddMetaParam (it, id_name) != 1) {
+	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
+	}
+      }
+      else if ($0->u_f) {
+	if ($0->u_f->AddMetaParam (it, id_name) != 1) {
+	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
+	}
+      }
+      else {
+	$A(0);
       }
     }
     list_free ($2);
@@ -416,6 +426,16 @@ port_formal_list: { single_port_item ";" }*
     return NULL;
 }}
 ;
+
+function_formal_list: port_formal_list | param_formal_list ;
+
+param_formal_list: { param_inst ";" }*
+{{X:
+    list_free ($1);
+    return NULL;
+}}
+;
+
 
 single_port_item: physical_inst_type id_list
 {{X:
@@ -1099,7 +1119,7 @@ bare_id_list[list_t *]: { ID "," }*
 
 /*------------------------------------------------------------------------
  *
- * Functions: XXX fixme
+ * Functions
  *
  *------------------------------------------------------------------------
  */
@@ -1146,7 +1166,7 @@ ID
     $0->u_f = f;
     $0->scope = $0->u_f->CurScope ();
 }}
-"(" port_formal_list ")" [ ":" inst_type ] 
+"(" function_formal_list  ")" [ ":" inst_type ] 
 {{X:
     UserDef *u;
     /* let's check to see if this matches any previous definition */

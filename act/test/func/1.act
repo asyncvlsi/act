@@ -1,0 +1,6 @@
+function f (int x) : pint
+{
+  chp {
+     self := x*x
+  }
+}
