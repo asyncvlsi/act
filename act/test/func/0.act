@@ -1,0 +1,8 @@
+function f (int<4> x) : int<5>
+{
+  int<3> w;
+  chp {
+     w := x + x;
+     self := w
+  }
+}
