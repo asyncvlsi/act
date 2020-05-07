@@ -281,7 +281,7 @@ class Technology {
 
   int dummy_poly;		/* # of dummy poly */
 
-  unsigned int stk_contacts:1;	/* stacked contacts? */
+  int welltap_adjust;		/* adjustment for welltap y-center */
 
   /* indexed by EDGE_PFET, EDGE_NFET */
   int num_devs;			/* # of device types */

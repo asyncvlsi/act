@@ -137,6 +137,14 @@ void Technology::Init (const char *s)
     T->dummy_poly = 0;
   }
 
+  tech_strname (prefix, "general.welltap_adjust");
+  if (config_exists (buf)) {
+    T->welltap_adjust = config_get_int (buf);
+  }
+  else {
+    T->welltap_adjust = 0;
+  }
+
   tech_strname (prefix, "diff.types");
   sz = config_get_table_size (buf);
   if (sz < 1) {
