@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <act/passes/aflat.h>
+#include <act/passes/cells.h>
 
 static enum output_formats {
   PRSIM_FMT,
@@ -38,7 +39,7 @@ static struct Hashtable *labels;
 
 void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [-prsim|-lvs] <file.act>\n", s);
+  fprintf (stderr, "Usage: %s [-c] [-prsim|-lvs] <file.act>\n", s);
   exit (1);
 }
 
@@ -575,33 +576,41 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *file;
+  int do_cells = 0;
 
   Act::Init (&argc, &argv);
   
   export_format = PRSIM_FMT;
 
-  if (argc > 3) usage(argv[0]);
-  if (argc == 3) {
-    if (strcmp (argv[1], "-prsim") == 0) {
-      export_format = PRSIM_FMT;
-    }
-    else if (strcmp (argv[1], "-lvs") == 0) {
-      export_format = LVS_FMT;
-    }
-    else {
-      usage (argv[0]);
-    }
-    file = argv[2];
+  if (argc < 2 || argc > 4) usage (argv[0]);
+
+  int idx = 1;
+
+  if (strcmp (argv[idx], "-c") == 0) {
+     do_cells = 1;
+     idx++;
   }
-  else if (argc == 2) {
-    file = argv[1];
+  if (strcmp (argv[idx], "-prsim") == 0) {
+     export_format = PRSIM_FMT;
+     idx++;
+  }
+  else if (strcmp (argv[idx], "-lvs") == 0) {
+    export_format = LVS_FMT;
+     idx++;
   }
   else {
-    usage (argv[0]);
+    if (idx != argc-1) {
+      usage (argv[0]);
+    }
   }
+  file = argv[idx];
 
   a = new Act (file);
   a->Expand ();
+  if (do_cells) {
+     ActCellPass *cp = new ActCellPass (a);
+     cp->run ();
+  }
 
   ActApplyPass *ap = new ActApplyPass (a);
 
