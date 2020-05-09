@@ -577,6 +577,7 @@ int main (int argc, char **argv)
   Act *a;
   char *file;
   int do_cells = 0;
+  char *cells = NULL;
 
   Act::Init (&argc, &argv);
   
@@ -586,8 +587,14 @@ int main (int argc, char **argv)
 
   int idx = 1;
 
-  if (strcmp (argv[idx], "-c") == 0) {
+  if (strncmp (argv[idx], "-c", 2) == 0) {
      do_cells = 1;
+     if (argv[idx][2] == '\0') {
+	cells = NULL;
+     }
+     else {
+        cells = argv[idx]+2;
+     }
      idx++;
   }
   if (idx >= argc) usage (argv[0]);
@@ -608,6 +615,9 @@ int main (int argc, char **argv)
   file = argv[idx];
 
   a = new Act (file);
+  if (cells) {
+    a->Merge (cells);
+  }
   a->Expand ();
   if (do_cells) {
      ActCellPass *cp = new ActCellPass (a);
