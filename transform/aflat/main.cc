@@ -590,6 +590,7 @@ int main (int argc, char **argv)
      do_cells = 1;
      idx++;
   }
+  if (idx >= argc) usage (argv[0]);
   if (strcmp (argv[idx], "-prsim") == 0) {
      export_format = PRSIM_FMT;
      idx++;
@@ -603,6 +604,7 @@ int main (int argc, char **argv)
       usage (argv[0]);
     }
   }
+  if (idx != argc-1) usage (argv[0]);
   file = argv[idx];
 
   a = new Act (file);
