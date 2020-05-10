@@ -114,6 +114,9 @@ struct RoutingRules {
   int endofline_width;		/* width for extension */
   int minjog;
 
+  double antenna_ratio;		// antenna ratios for this layer
+  double antenna_diff_ratio;
+  
   unsigned int routex:1;	/* can be used for x routing */
   unsigned int routey:1;	/* can be used for y routing */
 };
@@ -142,6 +145,9 @@ public:
   int getEol() { return r.endofline; }
   int getEolWithin() { return r.endofline_width; }
   
+  double getAntenna() { return r.antenna_ratio; }
+  double getAntennaDiff() { return r.antenna_diff_ratio; }
+  
  protected:
   RoutingRules r;
 
@@ -155,6 +161,7 @@ class PolyMat : public RoutingMat {
   int getOverhang (int w) { return (*overhang)[w]; }
   int getNotchOverhang (int w) { return (*notch_overhang)[w]; }
   Contact *getUpC() { return viaup; }
+
   
  protected:
   int width;
@@ -251,6 +258,8 @@ class Contact : public Material {
   int getSymUp() { return sym_surround_up; }
   int getAsym() { return asym_surround_dn; }
   int getAsymUp() { return asym_surround_up; }
+  double getAntenna() { return antenna_ratio; }
+  double getAntennaDiff() { return antenna_diff_ratio; }
   
 protected:
   int width_int, spacing;
@@ -261,6 +270,9 @@ protected:
   
   int asym_surround_dn;
   int asym_surround_up;
+
+  double antenna_ratio;
+  double antenna_diff_ratio;
   
   friend class Technology;
 };

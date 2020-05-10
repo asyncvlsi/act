@@ -482,7 +482,9 @@ void Technology::Init (const char *s)
   else {
     pmat->r.minjog = 0;
   }
+
   
+
   snprintf (buf+k, BUF_SZ-k-1, "endofline");
   if (config_exists (buf) && config_get_int (buf) != 0) {
     if (config_get_int (buf) < 0) {
@@ -502,6 +504,22 @@ void Technology::Init (const char *s)
   else {
     pmat->r.endofline = 0;
   }
+
+  snprintf (buf+k, BUF_SZ-k-1, "antenna.ratio");
+  if (config_exists (buf)) {
+    pmat->r.antenna_ratio = config_get_real (buf);
+  }
+  else {
+    pmat->r.antenna_ratio = 0;
+  }
+  snprintf (buf+k, BUF_SZ-k-1, "antenna.diffratio");
+  if (config_exists (buf)) {
+    pmat->r.antenna_diff_ratio = config_get_real (buf);
+  }
+  else {
+    pmat->r.antenna_diff_ratio = 0;
+  }
+  
   
   snprintf (buf+k, BUF_SZ-k-1, "overhang");
   verify_range_table (buf);
@@ -512,7 +530,8 @@ void Technology::Init (const char *s)
   verify_range_table (buf);
   pmat->notch_overhang = new RangeTable (config_get_table_size (buf),
 					 config_get_table_int (buf));
-    
+
+  
   
   snprintf (buf+k, BUF_SZ-k-1, "via.nspacing");
   if (config_get_table_size (buf) != sz) {
@@ -663,7 +682,24 @@ void Technology::Init (const char *s)
     else {
       mat->r.endofline = 0;
     }
+
+    snprintf (buf+k, BUF_SZ-k-1, "antenna.ratio");
+    if (config_exists (buf)) {
+      mat->r.antenna_ratio = config_get_real (buf);
+    }
+    else {
+      mat->r.antenna_ratio = 0;
+    }
+    snprintf (buf+k, BUF_SZ-k-1, "antenna.diffratio");
+    if (config_exists (buf)) {
+      mat->r.antenna_diff_ratio = config_get_real (buf);
+    }
+    else {
+      mat->r.antenna_diff_ratio = 0;
+    }
+    
   }
+
 
   /* contacts */
   tech_strname (prefix, "vias.");
@@ -776,7 +812,23 @@ void Technology::Init (const char *s)
       }
       cmat->asym_surround_dn = config_get_int (buf);
     }
+
+    snprintf (buf+k, BUF_SZ-k-1, "%s.antenna.ratio", t);
+    if (config_exists (buf)) {
+      cmat->antenna_ratio = config_get_real (buf);
+    }
+    else {
+      cmat->antenna_ratio = 0;
+    }
+    snprintf (buf+k, BUF_SZ-k-1, "%s.antenna.diffratio", t);
+    if (config_exists (buf)) {
+      cmat->antenna_diff_ratio = config_get_real (buf);
+    }
+    else {
+      cmat->antenna_diff_ratio = 0;
+    }
   }
+  
   A_FREE (contacts);
 }
 
