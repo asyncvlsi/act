@@ -1,8 +1,9 @@
 version: 2
 
 jobs:
-   "Ubuntu": 
+   ubuntu18:
      # Ubuntu 18
+     working_directory: ~/project
      docker:
        - image: ubuntu:18.04
      steps:
@@ -18,9 +19,30 @@ jobs:
           make install
           make runtest
 
+   centos8:
+     working_directory: ~/project
+     docker:
+       - image: centos:8
+     steps:
+       - checkout
+       - run: |
+          yum install -y 'dnf-command(config-manager)'
+          yum config-manager --set-enabled PowerTools -y
+          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
+          mkdir install
+          export VLSI_TOOLS_SRC=`pwd`
+          export ACT_HOME=$VLSI_TOOLS_SRC/install
+          ./configure $ACT_HOME
+          ./build
+          make install
+          make runtest
+          
+
+
 workflows:
    version: 2
    build:
      jobs: 
-        - "Ubuntu"
-          
+        - ubuntu18
+	- centos8
+
