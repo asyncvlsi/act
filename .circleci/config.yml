@@ -3,7 +3,6 @@ version: 2
 jobs:
    ubuntu18:
      # Ubuntu 18
-     working_directory: ~/project
      docker:
        - image: ubuntu:18.04
      steps:
@@ -20,7 +19,6 @@ jobs:
           make runtest
 
    centos8:
-     working_directory: ~/project
      docker:
        - image: centos:8
      steps:
