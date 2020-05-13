@@ -337,7 +337,7 @@ Act::Act (const char *s)
     }
   }
   else {
-    mangle_set_char ();
+    mangle_set_char ('_');
   }
   if (config_exists ("act.mangle_chars")) {
     mangle (config_get_string ("act.mangle_chars"));

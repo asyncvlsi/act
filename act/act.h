@@ -124,7 +124,7 @@ class Act {
    * @param s is a string corresponding to the list of characters to
    * be mangled.
    */
-  int mangle_set_char (char c = '_');
+  int mangle_set_char (char c);
   
   void mangle (char *s);
 
