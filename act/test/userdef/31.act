@@ -1,0 +1,16 @@
+defchan e1of2 <: chan(bool) (bool t, f, e) { }
+
+defproc buffer (chan(bool) l, r)
+{
+  e1of2 y;
+  int x;
+
+  l = y;
+  
+  chp {
+    *[ l?x; r!x ]
+  }
+}
+
+
+buffer x;
