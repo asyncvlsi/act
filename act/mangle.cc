@@ -39,6 +39,24 @@ static char mangle_result[] =
 
 static int mangle_invidx[256];
 
+
+int Act::mangle_set_char (char c)
+{
+  int i;
+  for (i=0; i < sizeof (mangle_result)/sizeof (mangle_result[0]); i++) {
+    if (mangle_result[i] == c) {
+      break;
+    }
+  }
+  if (i == sizeof (mangle_result)/sizeof (mangle_result[0])) {
+    return 0;
+  }
+  char t = mangle_result[i];
+  mangle_result[i] = mangle_result[0];
+  mangle_result[0] = t;
+  return 1;
+}
+
 /*------------------------------------------------------------------------
  *
  *  Act::mangle --
@@ -69,9 +87,9 @@ void Act::mangle (char *str)
   //mangle_min_idx = -1;
   //mangle_mode = 0;
 
-  mangle_characters[(int)'_'] = mangle_result[0];
-  inv_map[(int)mangle_result[0]] = '_';
-  mangle_invidx[(int)'_'] = 0;
+  mangle_characters[(int)mangle_result[0]] = mangle_result[0];
+  inv_map[(int)mangle_result[0]] = mangle_result[0];
+  mangle_invidx[(int)mangle_result[0]] = 0;
 
   for (i=0; (i+1) < max_len && str[i]; i++) {
     if (mangle_characters[(int)str[i]] >= 0) {
@@ -129,7 +147,7 @@ int Act::mangle_string (const char *src, char *dst, int sz)
 	    next character cannot be the result of mangling!
 	    (inv_map[next char] == -1)
       */
-      *dst++ = '_';
+      *dst++ = mangle_result[0];
       sz--;
       if (sz == 0) return -1;
       *dst++ = mangle_characters[(int)*src];

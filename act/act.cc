@@ -330,7 +330,18 @@ Act::Act (const char *s)
 #ifdef DEBUG_PERFORMANCE
   printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
 #endif
-
+  if (config_exists ("act.mangle_letter")) {
+    const char *tmp = config_get_string ("act.mangle_letter");
+    if (tmp[1] != '\0') {
+      fatal_error ("act.mangle_letter has to be a string containing a single character");
+    }
+    if (!mangle_set_char (*tmp)) {
+      fatal_error ("act.mangle_letter: could not be used as a character!");
+    }
+  }
+  else {
+    mangle_set_char ();
+  }
   if (config_exists ("act.mangle_chars")) {
     mangle (config_get_string ("act.mangle_chars"));
   }
