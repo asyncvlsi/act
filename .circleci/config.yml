@@ -100,7 +100,4 @@ workflows:
          requires:
           - ubuntu18-build
       - centos8-build
-      - centos8-test:
-         requires:
-          - centos8-build
           
