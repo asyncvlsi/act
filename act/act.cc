@@ -332,9 +332,6 @@ Act::Act (const char *s)
 #endif
   if (config_exists ("act.mangle_letter")) {
     const char *tmp = config_get_string ("act.mangle_letter");
-    if (tmp[1] != '\0') {
-      fatal_error ("act.mangle_letter has to be a string containing a single character");
-    }
     if (!mangle_set_char (*tmp)) {
       fatal_error ("act.mangle_letter: could not be used as a character!");
     }
