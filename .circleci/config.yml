@@ -42,5 +42,5 @@ workflows:
    build:
      jobs: 
         - ubuntu18
-	- centos8
+        - centos8
 
