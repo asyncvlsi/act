@@ -31,7 +31,9 @@
   Code for mangling/unmangling special characters to sanitize output
 */
 
-static char mangle_result[] = 
+static char mangle_result[37];
+
+static char mangle_result_init[] = 
   { '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     'a', 'b', 'c', 'd', 'e', 'f', 'z', 'h', 'i', 'j', 'k',
     'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
@@ -43,6 +45,9 @@ static int mangle_invidx[256];
 int Act::mangle_set_char (char c)
 {
   int i;
+  for (i=0; i < sizeof (mangle_result)/sizeof (mangle_result[0]); i++) {
+	mangle_result[i] = mangle_result_init[i];
+  }
   for (i=0; i < sizeof (mangle_result)/sizeof (mangle_result[0]); i++) {
     if (mangle_result[i] == c) {
       break;
