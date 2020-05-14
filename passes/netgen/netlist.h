@@ -183,6 +183,7 @@ class ActNetlistPass : public ActPass {
 
   void Print (FILE *fp, Process *p);
 
+  static node_t *connection_to_node (netlist_t *n, act_connection *c);
   static node_t *string_to_node (netlist_t *, char *s);
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
   static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);

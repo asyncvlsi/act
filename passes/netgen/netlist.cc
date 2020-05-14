@@ -1185,6 +1185,23 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
   return ret;
 }
 
+node_t *ActNetlistPass::connection_to_node (netlist_t *N, act_connection *c)
+{
+  node_t *n;
+  
+  n = N->hd;
+  while (n) {
+    if (n->v) {
+      Assert (n->v->v, "What?");
+      if (n->v->v->id == c) {
+	return n;
+      }
+    }
+    n = n->next;
+  }
+  return NULL;
+}
+
 node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
 {
   int k;
@@ -1231,16 +1248,7 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
 	fatal_error ("Could not convert string `%s' to an ActId", s);
       }
       act_connection *c = id->Canonical (N->bN->cur);
-      n = N->hd;
-      while (n) {
-	if (n->v) {
-	  Assert (n->v->v, "What?");
-	  if (n->v->v->id == c) {
-	    break;
-	  }
-	}
-	n = n->next;
-      }
+      n = ActNetlistPass::connection_to_node (N, c);
     }
     if (!n) {
       if ((strcmp (s, local_vdd) == 0) ||
