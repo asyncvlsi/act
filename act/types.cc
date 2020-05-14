@@ -817,8 +817,13 @@ InstType *UserDef::getPortType (int pos)
     return port_t[pos];
   }
 }
-  
-  
+
+void UserDef::refinePortType (int pos, InstType *u)
+{
+  Assert (pos >= 0, "Can't refine parameter types");
+  Assert (pos < getNumPorts(), "Invalid pos!");
+  port_t[pos] = port_t[pos]->refineBaseType (u);
+}
 
 int UserDef::AddPort (InstType *t, const char *id)
 {

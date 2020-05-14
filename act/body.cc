@@ -1455,5 +1455,5 @@ ActBody *ActBody_Assertion::Clone()
 
 void ActBody_Inst::updateInstType (InstType *u)
 {
-  t->refineBaseType (u);
+  t = t->refineBaseType (u);
 }

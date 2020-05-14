@@ -969,11 +969,11 @@ InstType *InstType::refineBaseType (InstType *update)
   }
   else {
     InstType *x = new InstType (this);
-    x->MkCached ();
     x->t = update->t;
     x->nt = update->nt;
     x->u = update->u;
+    x->a = this->a;
+    x->MkCached ();
     return x;
   }
 }
-

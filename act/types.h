@@ -213,6 +213,7 @@ class UserDef : public Type {
    */
   const char *getPortName (int pos);
   InstType *getPortType (int pos);
+  void refinePortType (int pos, InstType *u);
 
   const char *getName (); /**< the name of the user-defined type */
 

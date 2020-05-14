@@ -396,6 +396,7 @@ override_one_spec: user_type bare_id_list ";"
     else {
       $A(0);
     }
+    /* walk through the body, editing instances */
     while (b) {
       ActBody_Inst *bi;
       bi = dynamic_cast <ActBody_Inst *> (b);
@@ -410,6 +411,30 @@ override_one_spec: user_type bare_id_list ";"
 	}
       }
       b = b->Next();
+    }
+    /* walk through the ports, editing instances */
+    UserDef *px;
+    if ($0->u_p) {
+      px = $0->u_p;
+    }
+    else if ($0->u_d) {
+      px = $0->u_d;
+    }
+    else if ($0->u_c) {
+      px = $0->u_c;
+    }
+    else {
+      $A(0);
+    }
+    for (int i=0; i < px->getNumPorts(); i++) {
+      for (li = list_first ($2); li; li = list_next (li)) {
+	if (strcmp (px->getPortName (i), (char *) list_value (li)) == 0) {
+	  break;
+	}
+      }
+      if (li) {
+	px->refinePortType (i, $1);
+      }
     }
     for (li = list_first ($2); li; li = list_next (li)) {
       $0->scope->refineBaseType ((char *)list_value (li), $1);

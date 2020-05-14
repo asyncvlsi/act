@@ -1,0 +1,22 @@
+defchan a1of2 <: chan(bool) (bool t, f, a) {  }
+
+deftype dualrail <: bool (bool t, f) { }
+
+
+defproc myproc (chan(bool) l, r)
+{
+   bool x;
+}
+
+defproc sdt_myproc <: myproc (bool go)
++{ 
+    a1of2 l, r;
+    dualrail x;
+ }
+{
+   /* stuff  goes here */
+   
+   r = l;
+}
+
+sdt_myproc x;
