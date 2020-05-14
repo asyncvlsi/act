@@ -224,6 +224,11 @@ class Act {
   void pass_unregister (const char *name);
   const char *pass_name (const char *name);
 
+  /* 
+    To mess with types after parsing
+  */
+  TypeFactory *getTypeFactory () { return tf; }
+
 private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
