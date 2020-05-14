@@ -1,0 +1,5 @@
+i386_*
+x86_64*
+test_statepass.i386_*
+test_statepass.x86_64*
+*~
