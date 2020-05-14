@@ -1334,12 +1334,12 @@ void Scope::refineBaseType (const char *s, InstType *u)
   if (!b) return;
   if (!expanded) {
     InstType *x = (InstType *)b->v;
-    x->refineBaseType (u);
+    b->v = x->refineBaseType (u);
   }
   else {
     Assert (0, "Should not be here!");
     ValueIdx *vx = (ValueIdx *)b->v;
-    vx->t->refineBaseType (u);
+    vx->t = vx->t->refineBaseType (u);
   }
 }
 

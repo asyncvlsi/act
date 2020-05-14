@@ -324,6 +324,7 @@ Type *InstType::isRelated (InstType *it, InstType **common)
 #endif
       if (pit->t == t2 || pit->t->isEqual (t2))
 	break;
+
       if (TypeFactory::isUserType (pit)) {
 	u = dynamic_cast<UserDef *>(pit->t);
 	pit = u->getParent();
@@ -958,10 +959,21 @@ void InstType::appendParams (int na, inst_param *a)
 }
 
 
-void InstType::refineBaseType (InstType *update)
+InstType *InstType::refineBaseType (InstType *update)
 {
-  t = update->t;		/* just replace the base type */
-  nt = update->nt;
-  u = update->u;
+  if (temp_type) {
+    t = update->t;		/* just replace the base type */
+    nt = update->nt;
+    u = update->u;
+    return this;
+  }
+  else {
+    InstType *x = new InstType (this);
+    x->MkCached ();
+    x->t = update->t;
+    x->nt = update->nt;
+    x->u = update->u;
+    return x;
+  }
 }
 
