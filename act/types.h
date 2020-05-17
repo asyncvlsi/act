@@ -710,6 +710,9 @@ class TypeFactory {
 #define T_SELF       0x8   /* special type, "self" */
 #define T_ARRAYOF    0x10
 
+#define T_BASETYPE(x) ((x) & 0xf)
+#define T_BASETYPE_ISNUM(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
+
 int act_type_expr (Scope *, Expr *);
 int act_type_var (Scope *, ActId *);
 int act_type_conn (Scope *, ActId *, AExpr *);

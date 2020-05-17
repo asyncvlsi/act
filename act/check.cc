@@ -70,13 +70,13 @@ static void dumpflags(int f)
 {
   if (f == T_ERR) { printf ("[t-ERR]"); return; }
   printf ("[v=%x]", f);
-  if (f & T_INT) {
+  if (T_BASETYPE (f) == T_INT) {
     printf ("[t-int]");
   }
-  if (f & T_REAL) { 
+  else if (T_BASETYPE (f) == T_REAL) { 
     printf ("[t-real]");
   }
-  if (f & T_BOOL) {
+  else if (T_BASETYPE (f) == T_BOOL) {
     printf ("[t-bool]");
   }
   if (f & T_STRICT) {
@@ -198,37 +198,50 @@ int act_type_expr (Scope *s, Expr *e)
   printf (" lt: %x  rt: %x\n", lt, rt);      
   */
 
-#define EQUAL_LT_RT2(f,g)			\
-  do {						\
-    lt = act_type_expr (s, e->u.e.l);		\
-    rt = act_type_expr (s, e->u.e.r);		\
-    if (lt == T_ERR || rt == T_ERR || (lt & T_ARRAYOF) || (rt & T_ARRAYOF)) { \
-      return T_ERR;				\
-    }						\
-    flgs = lt & rt & (T_PARAM|T_STRICT);        \
-    if ((lt & (f)) == (rt & (f))) {		\
-      return ((g) & ~(T_PARAM|T_STRICT))|flgs;	\
-    }						\
+#define EQUAL_LT_RT2(f,g)						\
+  do {									\
+    lt = act_type_expr (s, e->u.e.l);					\
+    rt = act_type_expr (s, e->u.e.r);					\
+    if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
+    if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
+      typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
+      return T_ERR;							\
+    }									\
+    flgs = lt & rt & (T_PARAM|T_STRICT);				\
+    if ((f & T_BOOL) && T_BASETYPE (lt) == T_BOOL && T_BASETYPE (rt) == T_BOOL) { \
+      return (((f) != (g) ? (g) : T_BOOL) & ~(T_PARAM|T_STRICT))|flgs;  \
+    }                                                                   \
+    if ((f & T_REAL) && T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) { \
+      if (T_BASETYPE(lt) == T_REAL || T_BASETYPE(rt) == T_REAL) {       \
+        return (((f) != (g) ? (g) : T_REAL) & ~(T_PARAM|T_STRICT))|flgs; \
+      }                                                                 \
+      return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
+    }                                                                   \
+    if ((f & T_INT) && T_BASETYPE(lt) == T_INT && T_BASETYPE(rt) == T_INT) { \
+      return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
+    }                                                                   \
   } while (0)
 
 #define EQUAL_LT_RT(f)	 EQUAL_LT_RT2((f),lt)
 
-#define INT_OR_REAL						\
-  do {								\
-    lt = act_type_expr (s, e->u.e.l);				\
-    rt = act_type_expr (s, e->u.e.r);				\
-    if (lt == T_ERR || rt == T_ERR || (lt & T_ARRAYOF) || (rt & T_ARRAYOF)) { \
-      return T_ERR;						\
-    }								\
-    flgs = lt & rt & (T_PARAM|T_STRICT);			\
-    if ((lt & (T_INT|T_REAL)) && (rt & (T_INT|T_REAL))) {	\
-      if ((lt & T_REAL) || (rt & T_REAL)) {			\
-	return T_REAL|flgs;					\
-      }								\
-      else {							\
-	return T_INT|flgs;					\
-      }								\
-    }								\
+#define INT_OR_REAL							\
+  do {									\
+    lt = act_type_expr (s, e->u.e.l);					\
+    rt = act_type_expr (s, e->u.e.r);					\
+    if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
+    if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
+      typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
+      return T_ERR;							\
+    }									\
+    flgs = lt & rt & (T_PARAM|T_STRICT);				\
+    if (T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) {			\
+      if (T_BASETYPE (lt) == T_REAL || T_BASETYPE (rt) == T_REAL) {	\
+	return T_REAL|flgs;						\
+      }									\
+      else {								\
+	return T_INT|flgs;						\
+      }									\
+    }									\
   } while (0)
   
   
@@ -269,7 +282,7 @@ int act_type_expr (Scope *s, Expr *e)
   case E_GT:
   case E_LE:
   case E_GE:
-    EQUAL_LT_RT2(T_INT|T_REAL,T_BOOL);
+    EQUAL_LT_RT2(T_REAL,T_BOOL);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int or real/real", expr_operator_name (e->type));
     return T_ERR;
 
@@ -301,7 +314,7 @@ int act_type_expr (Scope *s, Expr *e)
     /* binary, Integer or Bool or real */
   case E_EQ:
   case E_NE:
-    EQUAL_LT_RT2(T_INT|T_BOOL|T_REAL,T_BOOL);
+    EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_operator_name (e->type));
     return T_ERR;
 

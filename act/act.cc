@@ -150,7 +150,7 @@ void Act::Init (int *iargc, char ***iargv)
 	}
 	else {
 	  if (*s == '-') {
-	    isint = 2; /* pints */
+	    isint = 2;
 	    t = s + 1;
 	  }
 	  else {
@@ -170,7 +170,7 @@ void Act::Init (int *iargc, char ***iargv)
 	    sscanf (s, "%u", &u_value);
 	  }
 	  else if (isint == 2) {
-	    sscanf (s+1, "%d", &s_value);
+	    sscanf (s, "%d", &s_value);
 	  }
 	}
       }
@@ -367,7 +367,8 @@ Act::Act (const char *s)
       it = tr.tf->NewPInt();
     }
     else if (vars[i].isint == 2) {
-      it = tr.tf->NewPInts();
+      /* pint is signed */
+      it = tr.tf->NewPInt();
     }
     else {
       Assert (0 <= vars[i].isint && vars[i].isint <= 2, "What?");
