@@ -37,7 +37,11 @@
 
 struct command_line_defs {
   char *varname;
-  int value;
+  union {
+    int s_value;
+    unsigned int u_value;
+  };
+  int isint;
 };
 
 int Act::max_recurse_depth;
@@ -107,7 +111,10 @@ void Act::Init (int *iargc, char ***iargv)
 
   for (i=1; i < argc; i++) {
     if (strncmp (argv[i], "-D", 2) == 0) {
-      char *tmp, *s;
+      char *tmp, *s, *t;
+      int isint;
+      int s_value;
+      unsigned int u_value;
 
       tmp = Strdup (argv[i]+2);
       /* tmp should look like var=true or var=false */
@@ -117,13 +124,68 @@ void Act::Init (int *iargc, char ***iargv)
       }
 
       if (*s != '=') {
-	fatal_error ("-D option must be of the form -Dvar=true or -Dvar=false");
+	fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
       }
       *s = '\0';
       s++;
       if (strcmp (s, "true") != 0 &&
 	  strcmp (s, "false") != 0) {
-	fatal_error ("-D option must be of the form -Dvar=true or -Dvar=false");
+	if (strncmp (s, "0x", 2) == 0) {
+	  isint = 1; /* pint */
+	  t = s+2;
+	  while (*t) {
+	    if (('0' <= *t  && *t <= '9')
+		|| ('a' <= *t && *t <= 'f')
+		|| ('A' <= *t && *t <= 'F')) {
+	      t++;
+	    }
+	    else {
+	      isint = -1;
+	      break;
+	    }
+	  }
+	  if (isint != -1) {
+	    sscanf (s+2, "%x", &u_value);
+	  }
+	}
+	else {
+	  if (*s == '-') {
+	    isint = 2; /* pints */
+	    t = s + 1;
+	  }
+	  else {
+	    isint = 1;
+	    t = s;
+	  }
+	  while (*t) {
+	    if ('0' <= *t  && *t <= '9') {
+	      t++;
+	    }
+	    else {
+	      isint = -1;
+	      break;
+	    }
+	  }
+	  if (isint == 1) {
+	    sscanf (s, "%u", &u_value);
+	  }
+	  else if (isint == 2) {
+	    sscanf (s+1, "%d", &s_value);
+	  }
+	}
+      }
+      else {
+	isint = 0;
+	if (strcmp (s, "true") == 0) {
+	  u_value = 1;
+	}
+	else {
+	  u_value = 0;
+	}
+      }
+
+      if (isint == -1) {
+	fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
       }
 
       if (!_valid_id_string (tmp)) {
@@ -133,12 +195,16 @@ void Act::Init (int *iargc, char ***iargv)
 
       A_NEW (vars, struct command_line_defs);
       A_NEXT (vars).varname = tmp;
-      if (strcmp (s, "true") == 0) {
-	A_NEXT (vars).value = 1;
+      if (isint == 0) {
+	A_NEXT (vars).u_value = u_value;
       }
-      else {
-	A_NEXT (vars).value = 0;
+      else if (isint == 1) {
+	A_NEXT (vars).u_value = u_value;
       }
+      else if (isint == 2) {
+	A_NEXT (vars).s_value = s_value;
+      }
+      A_NEXT (vars).isint = isint;
       A_INC (vars);
     }
     else if (strncmp (argv[i], "-T", 2) == 0) {
@@ -294,14 +360,36 @@ Act::Act (const char *s)
     /* add variables to the global namespace
        Note: copied from instance[] rule in defs.m4
      */
-    it = tr.tf->NewPBool();
+    if (vars[i].isint == 0) {
+      it = tr.tf->NewPBool();
+    }
+    else if (vars[i].isint == 1) {
+      it = tr.tf->NewPInt();
+    }
+    else if (vars[i].isint == 2) {
+      it = tr.tf->NewPInts();
+    }
+    else {
+      Assert (0 <= vars[i].isint && vars[i].isint <= 2, "What?");
+    }
     if (tr.global->CurScope()->Lookup (vars[i].varname)) {
       fatal_error ("Name `%s' defined through -D is a duplicate!", vars[i].varname);
     }
     tr.global->CurScope()->Add (vars[i].varname, it);
     b = new ActBody_Inst (it, vars[i].varname);
     NEW (e, Expr);
-    e->type = (vars[i].value ? E_TRUE : E_FALSE);
+
+    if (vars[i].isint == 0) {
+      e->type = (vars[i].u_value ? E_TRUE : E_FALSE);
+    }
+    else if (vars[i].isint == 1) {
+      e->type = E_INT;
+      e->u.v = vars[i].u_value;
+    }
+    else {
+      e->type = E_INT;
+      e->u.v = vars[i].s_value;
+    }
 
     Expr *tmp = TypeFactory::NewExpr (e);
     FREE (e);

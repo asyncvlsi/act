@@ -142,6 +142,9 @@ int act_type_var (Scope *s, ActId *id)
   if (TypeFactory::isPIntType (t)) {
     return T_INT|T_PARAM|is_strict|arr;
   }
+  if (TypeFactory::isPIntsType (t)) {
+    return T_INT|T_PARAM|is_strict|arr;
+  }
   if (TypeFactory::isPBoolType (t)) {
     return T_BOOL|T_PARAM|is_strict|arr;
   }
