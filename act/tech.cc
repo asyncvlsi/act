@@ -432,15 +432,17 @@ void Technology::Init (const char *s)
   pmat->spacing = new RangeTable (config_get_table_size (buf),
 				  config_get_table_int (buf));
 
-#if 0
-  /* not sure this makes sense */
+  /* might need this for gridded technologies */
   snprintf (buf+k, BUF_SZ-k-1, "pitch");
   if (config_exists (buf)) {
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: minimum pitch has to be at least 1", buf);
     }
+    pmat->pitch = config_get_int (buf);
   }
-#endif
+  else {
+    pmat->pitch = pmat->spacing->min() + pmat->width;
+  }
   
   snprintf (buf+k, BUF_SZ-k-1, "direction");
   pmat->r.routex = 1;
@@ -613,6 +615,16 @@ void Technology::Init (const char *s)
       if (mat->runlength_mode == 1) {
 	/* XXX: check that all spacing tables are the same! */
 	
+      }
+
+      snprintf (buf+j, BUF_SZ-j-1, "influence");
+      if (config_exists (buf)) {
+	mat->r.influence = config_get_table_int (buf);
+	mat->r.inf_sz = config_get_table_size (buf);
+	if ((mat->r.inf_sz % 3) != 0) {
+	  fatal_error ("Influence table `%s' has to have 3n entries", buf);
+	}
+	mat->r.inf_sz /= 3;
       }
     }
 

@@ -119,11 +119,14 @@ struct RoutingRules {
   
   unsigned int routex:1;	/* can be used for x routing */
   unsigned int routey:1;	/* can be used for y routing */
+
+  int *influence;		// spacing influence table
+  int inf_sz;			// # of lines in the table
 };
 
 class RoutingMat : public Material {
 public:
-  RoutingMat (char *s) { name = s; }
+  RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; }
   int minWidth () { return width->min(); }
   int minArea() { return minarea; }
   int minSpacing() { return spacing->min(); }
@@ -147,6 +150,9 @@ public:
   
   double getAntenna() { return r.antenna_ratio; }
   double getAntennaDiff() { return r.antenna_diff_ratio; }
+
+  int numInfluence() { return r.inf_sz; }
+  int *getInfluence() { return r.influence; }
   
  protected:
   RoutingRules r;
