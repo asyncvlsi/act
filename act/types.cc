@@ -1117,7 +1117,7 @@ int UserDef::isEqual (UserDef *u)
 
   for (i=0; i < nports; i++) {
     if (port_n[i] != u->port_n[i]) return 0;
-    if (!port_t[i]->isEqual (u->port_t[i])) return 0;
+    if (!port_t[i]->isEqualDir (u->port_t[i])) return 0;
   }
   
   return 1;

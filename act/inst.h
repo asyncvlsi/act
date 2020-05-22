@@ -87,7 +87,11 @@ class InstType {
   void clrArray () { a = NULL; }
 
   int isEqual (InstType *t, int weak = 0); /**< check if two instance types are
-					      identical */
+					      identical: DOES NOT
+					      CHECK DIRECTION FLAGS! 
+					   */
+  int isEqualDir (InstType *t, int weak = 0); // also checks direction flags
+  
   Type *isConnectable (InstType *t, int weak = 0);
   /**< check if two types are compatible for connections.  Returns
      NULL if error, otherwise returns the most specific type.

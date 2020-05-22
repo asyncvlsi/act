@@ -1,0 +1,10 @@
+defproc testme (bool x);
+
+
+defproc testme (bool x) {
+  prs { 
+    true -> x-
+  }
+}
+
+testme t;

@@ -273,6 +273,12 @@ int InstType::isEqual (InstType *it, int weak)
   return 1;
 }
 
+int InstType::isEqualDir (InstType *t, int weak)
+{
+  if (dir != t->getDir()) return 0;
+  return isEqual (t, weak);
+}
+
 /*
  *  Returns NULL if the specified type is not related; otherwise
  *  returns the related type
