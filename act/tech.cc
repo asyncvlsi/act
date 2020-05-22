@@ -839,6 +839,25 @@ void Technology::Init (const char *s)
     else {
       cmat->antenna_diff_ratio = 0;
     }
+
+    snprintf (buf+k, BUF_SZ-k-1, "%s.generate.dx", t);
+    if (config_exists (buf)) {
+      cmat->spc_x = config_get_int (buf);
+    }
+    else {
+      cmat->spc_x = -1;
+    }
+    snprintf (buf+k, BUF_SZ-k-1, "%s.generate.dy", t);
+    if (config_exists (buf)) {
+      cmat->spc_y = config_get_int (buf);
+    }
+    else {
+      cmat->spc_y = -1;
+    }
+    if ((cmat->spc_x < 0 || cmat->spc_y < 0) &&
+	(cmat->spc_x >= 0 || cmat->spc_y >= 0)) {
+      fatal_error ("via.generate: must specify both dx and dy or neither");
+    }
   }
   
   A_FREE (contacts);

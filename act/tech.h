@@ -266,6 +266,10 @@ class Contact : public Material {
   int getAsymUp() { return asym_surround_up; }
   double getAntenna() { return antenna_ratio; }
   double getAntennaDiff() { return antenna_diff_ratio; }
+
+  int viaGenerate() { return spc_x > 0; }
+  int viaGenX() { return spc_x; }
+  int viaGenY() { return spc_y; }
   
 protected:
   int width_int, spacing;
@@ -279,6 +283,9 @@ protected:
 
   double antenna_ratio;
   double antenna_diff_ratio;
+
+  // generate
+  int spc_x, spc_y;
   
   friend class Technology;
 };
