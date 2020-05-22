@@ -396,11 +396,15 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
 					  act_connection *c)
 {
   int i;
+  int dir = c->getDir();
 
   A_NEWM (n->ports, struct netlist_bool_port);
   A_NEXT (n->ports).c = c;
   A_NEXT (n->ports).omit = 0;
   A_NEXT (n->ports).input = 0;
+  if (dir == Type::IN) {
+    A_NEXT (n->ports).input = 1;
+  }
   A_NEXT (n->ports).netid = -1;
   A_INC (n->ports);
 
