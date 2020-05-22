@@ -225,7 +225,7 @@ void emit_verilog (Act *a, Process *p)
 	}
       }
       /* if there are no ports, we can skip the instance */
-      if (ports_exist) {
+      if (ports_exist || instproc->isBlackBox()) {
 	if (vx->t->arrayInfo()) {
 	  Arraystep *as = vx->t->arrayInfo()->stepper();
 	  while (!as->isend()) {
