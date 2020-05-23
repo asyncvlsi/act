@@ -81,7 +81,8 @@ void Technology::Init (const char *s)
 {
   int i, j, k, sz;
   const char *tables[] = { "diff.ntype", "diff.ptype", "diff.nfet", "diff.pfet",
-			   "diff.nfet_well", "diff.pfet_well" };
+			   "diff.nfet_well", "diff.pfet_well",
+			   "diff.nselect", "diff.pselect" };
   
   char **diff;
   const char *prefix = "layout";
@@ -145,6 +146,41 @@ void Technology::Init (const char *s)
     T->welltap_adjust = 0;
   }
 
+  T->gdsH = NULL;
+  /* -- read GDS layers -- */
+  tech_strname (prefix, "gds.layers");
+  if (config_exists (buf)) {
+    T->gdsH = hash_new (16);
+    char **layers = config_get_table_string (buf);
+    int sz = config_get_table_size (buf);
+    
+    tech_strname (prefix, "gds.major");
+    int *maj = config_get_table_int (buf);
+
+    if (config_get_table_size (buf) != sz) {
+      fatal_error ("gds.major table size should match gds.layers");
+    }
+    
+    tech_strname (prefix, "gds.minor");
+    int *min = config_get_table_int (buf);
+
+    if (config_get_table_size (buf) != sz) {
+      fatal_error ("gds.minor table size should match gds.layers");
+    }
+
+    
+    for (int i=0; i < sz; i++) {
+      hash_bucket_t *b;
+      b = hash_lookup (T->gdsH, layers[i]);
+      if (b) {
+	fatal_error ("Duplicate GDS layer name `%s'", layers[i]);
+      }
+      b = hash_add (T->gdsH, layers[i]);
+      b->v = new GDSLayer (layers[i], maj[i], min[i]);
+    }
+  }
+  
+
   tech_strname (prefix, "diff.types");
   sz = config_get_table_size (buf);
   if (sz < 1) {
@@ -171,20 +207,50 @@ void Technology::Init (const char *s)
     MALLOC (T->well[i], WellMat *, sz);
     MALLOC (T->fet[i], FetMat *, sz);
     MALLOC (T->welldiff[i], DiffMat *, sz);
+    MALLOC (T->sel[i], Material *, sz);
   }
   
   for (i=0; i < sizeof(tables)/sizeof (tables[0]); i++) {
     tech_strname (prefix, tables[i]);
+    if (i == 6 || i == 7)  { /* selects are optional */
+      if (!config_exists (buf)) {
+	continue;
+      }
+    }
     if (sz != config_get_table_size (buf)) {
       fatal_error ("Table `%s' is not the same size is the type table", buf);
     }
     config_get_table_string (buf);
   }
 
+#define ADDGDS_TEMPL(mat)					\
+  do {								\
+      if (config_exists (buf)) {				\
+	mat->addGDS (config_get_table_string (buf),		\
+		     config_get_table_size (buf));		\
+      }								\
+      else {							\
+	warning ("No GDS information: `%s'", buf);	        \
+      }								\
+  } while (0)
+
+#define ADDGDS(mat,name)				\
+  do {							\
+    if (T->gdsH) {					\
+      snprintf (buf+k, BUF_SZ-k-1, "%s.gds", name);	\
+      ADDGDS_TEMPL(mat);				\
+    }							\
+  } while (0)
 
   /* now: check materials! */
-  for (i=0; i < 6; i++) {
+  for (i=0; i < 8; i++) {
     tech_strname (prefix, tables[i]);
+    if (i == 6 || i == 7) {
+      if (!config_exists (buf)) {
+	continue;
+      }
+    }
+
     diff = config_get_table_string (buf);
     tech_strname (prefix, "materials.");
     k = strlen (buf);
@@ -197,6 +263,7 @@ void Technology::Init (const char *s)
 	
 	DiffMat *mat;
 	mat = T->diff[i][j] = new DiffMat (diff[j]);
+	ADDGDS(mat, diff[j]);
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
 	mat->width = config_get_int (buf);
@@ -246,6 +313,7 @@ void Technology::Init (const char *s)
       else if (i < 4) {
 	FetMat *mat;
 	mat = T->fet[i-2][j] = new FetMat (diff[j]);
+	ADDGDS(mat, diff[j]);
 	
 	/* pfet/nfet: transistors */
 	snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
@@ -303,6 +371,8 @@ void Technology::Init (const char *s)
 	      has_welldiff = 1;
 	      
 	      mat = T->welldiff[i-4][j] = new DiffMat (diff[j]+ik+1);
+	      ADDGDS(mat, diff[j]+ik+1);
+	      
 	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
 	      mat->width = config_get_int (buf);
 	      
@@ -342,6 +412,7 @@ void Technology::Init (const char *s)
 
 	    WellMat *mat;
 	    mat = T->well[i-4][j] = new WellMat (Strdup (ldiff));
+	    ADDGDS (mat, ldiff);
 
 	    snprintf (buf+k, BUF_SZ-k-1, "%s.width", ldiff);
 	    if (config_get_int (buf) < 1) {
@@ -410,6 +481,16 @@ void Technology::Init (const char *s)
 	  T->welldiff[i-4][j] = NULL; /* no welldiff */
 	}
       }
+      else {
+	if (diff) {
+	  /* selects */
+	  T->sel[i-6][j] = new Material (diff[j]);
+	  ADDGDS (T->sel[i-6][j], diff[j]);
+	}
+	else {
+	  T->sel[i-6][j] = NULL;
+	}
+      }
     }
   }
 
@@ -420,7 +501,8 @@ void Technology::Init (const char *s)
 
   PolyMat *pmat = new PolyMat (Strdup ("polysilicon"));
   T->poly = pmat;
-
+  ADDGDS (T->poly, "polysilicon");
+  
   snprintf (buf+k, BUF_SZ-k-1, "width");
   if (config_get_int (buf) < 1) {
     fatal_error ("%s: minimum width has to be at least 1", buf);
@@ -568,6 +650,11 @@ void Technology::Init (const char *s)
 
     mat = new RoutingMat (Strdup (buf+k));
     T->metal[i-1] = mat;
+
+    if (T->gdsH) {
+      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds", i);
+      ADDGDS_TEMPL(mat);
+    }
 
     if (i != T->nmetals) {
       A_NEW (contacts, char *);
@@ -725,6 +812,11 @@ void Technology::Init (const char *s)
     Contact *cmat = new Contact (t);
     cmat->lower = NULL;
     cmat->upper = NULL;
+
+    if (T->gdsH) {
+      snprintf (buf+k, BUF_SZ-k-1, "%s_gds", contacts[i]);
+      ADDGDS_TEMPL(cmat);
+    }
 
     snprintf (buf+k, BUF_SZ-k-1, "%s", contacts[i]);
     t = config_get_string (buf);
@@ -953,4 +1045,20 @@ int Technology::getMaxSameDiffSpacing ()
     }
   }
   return spc;
+}
+
+void Material::addGDS (char **layers, int sz)
+{
+  hash_bucket_t *b;
+  Assert (Technology::T->gdsH, "What?");
+  Assert (!gds, "What?");
+  
+  gds = list_new ();
+  for (int i=0; i < sz; i++) {
+    b = hash_lookup (Technology::T->gdsH, layers[i]);
+    if (!b) {
+      fatal_error ("Could not find GDS layer `%s'", layers[i]);
+    }
+    list_append (gds, b->v);
+  }
 }

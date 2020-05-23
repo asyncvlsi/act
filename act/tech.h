@@ -61,12 +61,29 @@ class RangeTable {
 
 class Contact;
 
+
+class GDSLayer {
+private:
+  const char *name;
+  int major, minor;
+public:
+  GDSLayer (char *nm, int maj, int min) {
+    name = string_cache (nm);
+    major = maj;
+    minor = min;
+  }
+};
+
+
 class Material {
  public:
-  Material() {
-    name = NULL;
-    gds[0] = -1;
-    gds[1] = -1;
+  Material(const char *nm = NULL) {
+    if (nm) {
+      name = string_cache (nm);
+    }
+    else {
+      name = NULL;
+    }
     width = NULL;
     spacing = NULL;
     minarea = 0;
@@ -80,13 +97,15 @@ class Material {
     runlength_mode = -1;
     parallelrunlength = NULL;
     spacing_aux = NULL;
+    gds = NULL;
   }
 
   const char *getName() { return name; }
-  
+
+  void addGDS (char **table, int sz);
+
 protected:
   const char *name;		/* drawing name in magic */
-  int gds[2];			/* gds ids */
 
   RangeTable *width;		/* min width (indexed by length) */
   RangeTable *spacing;		/* min spacing (indexed by width) */
@@ -105,6 +124,8 @@ protected:
   int pitch;
 
   Contact *viaup, *viadn;
+
+  list_t *gds;			// GDS layer list
 
   friend class Technology;
 };
@@ -314,10 +335,13 @@ class Technology {
   WellMat **well[2];		/* device wells */
   DiffMat **welldiff[2];	/* substrate diffusion */
   FetMat **fet[2];		/* transistors for each type */
+  Material **sel[2];		/* selects for each diffusion */
 
   PolyMat *poly;
 
   RoutingMat **metal;
+
+  struct Hashtable *gdsH;	/* gds layers */
 
   int getMaxDiffSpacing ();	/* this space  guarantees correct
 				   spacing between any two types of

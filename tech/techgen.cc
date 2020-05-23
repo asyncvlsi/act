@@ -38,11 +38,15 @@ static void emit_header (pp_t *pp)
 {
   pp_printf (pp, "tech"); pp_TAB;
   pp_printf (pp, "format 33"); pp_nl;
-  pp_printf (pp, "%s", Technology::T->name); pp_UNTAB;
+  for (int i=0; Technology::T->name[i]; i++) {
+    if (Technology::T->name[i] == ' ' || Technology::T->name[i] == '\t') break;
+    pp_printf (pp, "%c", Technology::T->name[i]);
+  }
+  pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 
   pp_printf (pp, "version"); pp_TAB;
-  pp_printf (pp, "version 0"); pp_nl;
+  pp_printf (pp, "version 1"); pp_nl;
   pp_printf (pp, "description \"%s\"", Technology::T->date); pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 }
@@ -56,6 +60,9 @@ static void emit_planes (pp_t *pp)
   pp_printf (pp, "active,a"); pp_nl;
   for (int i=0; i < Technology::T->nmetals; i++) {
     pp_printf (pp, "metal%d,m%d", i+1, i+1); pp_nl;
+    if (i != Technology::T->nmetals-1) {
+      pp_printf (pp, "via%d,v%d", i+1, i+1); pp_nl;
+    }
   }
   pp_printf (pp, "comment");
   pp_UNTAB;
@@ -78,7 +85,14 @@ static void emit_tiletypes (pp_t *pp)
     }
     for (int j=0; j < 2; j++) {
       if (Technology::T->welldiff[j][i]) {
-	pp_printf (pp, "select   %s", Technology::T->welldiff[j][i]->getName());
+	pp_printf (pp, "active   %s", Technology::T->welldiff[j][i]->getName());
+	pp_nl;
+	empty = 0;
+      }
+    }
+    for (int j=0; j < 2; j++) {
+      if (Technology::T->sel[j][i]) {
+	pp_printf (pp, "select   %s", Technology::T->sel[j][i]->getName());
 	pp_nl;
 	empty = 0;
       }
@@ -117,10 +131,10 @@ static void emit_tiletypes (pp_t *pp)
     pp_printf (pp, "metal%d m%d", i+1, i+1); pp_nl;
     pp_printf (pp, "metal%d m%dpin", i+1, i+1); pp_nl;
     if (i != Technology::T->nmetals-1) {
-      pp_printf (pp, "metal%d m%dc,via%d", i+1, i+2, i+1); pp_nl;
+      pp_printf (pp, "metal%d m%dc,v%d", i+1, i+2, i+1); pp_nl;
     }
     else {
-      pp_printf (pp, "metal%d pad", i+1); pp_nl;
+      pp_printf (pp, "metal%d", i+1); pp_nl;
     }
   }
   pp_printf (pp, "comment comment"); 
@@ -144,11 +158,13 @@ static void emit_contacts (pp_t *pp)
 		   Technology::T->diff[j][i]->getName());
 	pp_nl;
       }
+#if 0      
       if (Technology::T->well[j][i]) {
 	pp_printf (pp, "%sc %s metal1", Technology::T->well[j][i]->getName(),
 		   Technology::T->well[j][i]->getName());
 	pp_nl;
       }
+#endif      
       if (Technology::T->welldiff[j][i]) {
 	pp_printf (pp, "%sc %s metal1", Technology::T->welldiff[j][i]->getName(),
 		   Technology::T->welldiff[j][i]->getName());
@@ -180,9 +196,6 @@ static void emit_styles (pp_t *pp)
       if (Technology::T->well[j][i]) {
 	pp_printf (pp, "%s %cwell", Technology::T->well[j][i]->getName(), d);
 	pp_nl;
-	pp_printf (pp, "%sc %cdiff_in_%cwell metal1 contact_X'es",
-		   Technology::T->well[j][i]->getName(), d, d);
-	pp_nl;
       }
       if (Technology::T->diff[j][i]) {
 	pp_printf (pp, "%s %cdiffusion",
@@ -193,6 +206,16 @@ static void emit_styles (pp_t *pp)
       if (Technology::T->fet[j][i]) {
 	pp_printf (pp, "%s %ctransistor %ctransistor_stripes",
 		   Technology::T->fet[j][i]->getName(), c, c); pp_nl;
+      }
+      if (Technology::T->welldiff[j][i]) {
+	pp_printf (pp, "%s %cdiff_in_%cwell", Technology::T->welldiff[j][i]->getName(), d, d);
+	pp_nl;
+	pp_printf (pp, "%sc %cdiff_in_%cwell metal1_alt contact_X'es",
+		   Technology::T->welldiff[j][i]->getName(), d, d);
+	pp_nl;
+      }
+      if (Technology::T->sel[j][i]) {
+	/* something here */
       }
     }
   }
@@ -213,7 +236,7 @@ static void emit_styles (pp_t *pp)
   pp_printf (pp, "error_p error_waffle"); pp_nl;
   pp_printf (pp, "error_s error_waffle"); pp_nl;
   pp_printf (pp, "error_ps error_waffle"); pp_nl;
-  pp_printf (pp, "pad overglass metal%d", Technology::T->nmetals+1); pp_nl;
+  //pp_printf (pp, "pad overglass metal%d", Technology::T->nmetals+1); pp_nl;
 
   pp_endb (pp); pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
@@ -262,8 +285,10 @@ static void emit_compose (pp_t *pp)
 
 static void emit_connect (pp_t *pp)
 {
+  Material *m1, *m2;
   pp_printf (pp, "connect"); pp_TAB;
   pp_printf (pp, "%s", Technology::T->poly->getName());
+  pp_printf (pp, ",%sc/a", Technology::T->poly->getName());
   for (int i=0; i < Technology::T->num_devs; i++) {
     for (int j=0; j < 2; j++) {
       pp_printf (pp, ",%s", Technology::T->fet[j][i]->getName());
@@ -271,15 +296,219 @@ static void emit_connect (pp_t *pp)
   }
   pp_printf (pp, " ");
   pp_printf (pp, "%s", Technology::T->poly->getName());
+  pp_printf (pp, ",%sc/a", Technology::T->poly->getName());
   for (int i=0; i < Technology::T->num_devs; i++) {
     for (int j=0; j < 2; j++) {
       pp_printf (pp, ",%s", Technology::T->fet[j][i]->getName());
     }
   }
+  pp_nl;
+  
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      m1 = Technology::T->welldiff[j][i];
+      m2 = Technology::T->well[j][i];
+      if (m1 && m2) {
+	pp_printf (pp, "%s,%s,%sc/a ", m1->getName(), m2->getName(),
+		   m1->getName());
+	pp_printf (pp, "%s,%s,%sc/a", m1->getName(), m2->getName(),
+		   m1->getName());
+	pp_nl;
+      }
+
+      m1 = Technology::T->diff[j][i];
+      if (m1) {
+	pp_printf (pp, "%s,%sc/a %s,%sc/a", m1->getName(),
+		   m1->getName(), m1->getName(), m1->getName());
+	pp_nl;
+      }
+    }
+  }
+
+  pp_printf (pp, "m1,m2c/m1,%sc/m1", Technology::T->poly->getName());
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      m1 = Technology::T->welldiff[j][i];
+      if (m1) {
+	pp_printf (pp, ",%sc/a", m1->getName());
+      }
+      m1 = Technology::T->diff[j][i];
+      if (m1) {
+	pp_printf (pp, ",%sc/a", m1->getName());
+      }
+    }
+  }
+  pp_printf (pp, " ");
+  pp_printf (pp, "m1,m2c/m1,%sc/m1", Technology::T->poly->getName());
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      m1 = Technology::T->welldiff[j][i];
+      if (m1) {
+	pp_printf (pp, ",%sc/a", m1->getName());
+      }
+      m1 = Technology::T->diff[j][i];
+      if (m1) {
+	pp_printf (pp, ",%sc/a", m1->getName());
+      }
+    }
+  }
+  pp_nl;
+  
+  for (int i=2; i < Technology::T->nmetals+1; i++) {
+    if (i != Technology::T->nmetals) {
+      pp_printf (pp, "m%d,m%dc/m%d,m%dc/m%d m%d,m%dc/m%d,m%dc/m%d",
+		 i, i, i, (i+1), i, 
+		 i, i, i, (i+1), i);
+      pp_nl;
+    }
+    else {
+      pp_printf (pp, "m%d,m%dc/m%d m%d,m%dc/m%d",
+		 i, i, i, i, i, i);
+    }
+  }
+  
+
   pp_UNTAB;
   pp_printf (pp, "end"); pp_SPACE;
 }
 
+
+void emit_mzrouter (pp_t *pp)
+{
+  pp_printf (pp, "mzrouter"); pp_TAB;
+  pp_printf (pp, "# this is a dummy section"); pp_nl;
+  pp_printf (pp, "style irouter"); pp_nl;
+  pp_printf (pp, "layer m1  2 1 1 1"); pp_nl;
+  pp_printf (pp, "layer %s 2 2 1 1", Technology::T->poly->getName()); pp_nl;
+  pp_printf (pp, "contact %sc m1 %s 10", Technology::T->poly->getName(),
+	     Technology::T->poly->getName());
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+void emit_cif (pp_t *pp)
+{
+  
+}
+
+void emit_drc (pp_t *pp)
+{
+}
+
+void emit_extract (pp_t *pp)
+{
+  pp_printf (pp, "extract"); pp_TAB;
+
+  pp_printf (pp, "style generic"); pp_nl;
+  pp_printf (pp, "scale 1"); pp_nl;
+  pp_printf (pp, "lambda 5"); pp_nl;
+  pp_printf (pp, "step 100"); pp_nl;
+  pp_printf (pp, "sidehalo 8"); pp_nl;
+  pp_printf (pp, "rscale 1"); pp_nl;
+  int order = 0;
+  pp_printf (pp, "planeorder well %d", order++); pp_nl;
+  pp_printf (pp, "planeorder select %d", order++); pp_nl;
+  pp_printf (pp, "planeorder active %d", order++); pp_nl;
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    pp_printf (pp, "planeorder metal%d %d", i+1, order++); pp_nl;
+  }
+
+  for (int i=0; i < Technology::T->nmetals-1; i++) {
+    pp_printf (pp, "planeorder via%d %d", i+1, order++); pp_nl;
+  }
+  /*
+   fet pfet pdiff,pdc 2 pfet Vdd! nwell 50 46
+   fet pfet pdiff,pdc 1 pfet Vdd! nwell 50 46
+   fet nfet ndiff,ndc 2 nfet GND! pwell 56 48
+   fet nfet ndiff,ndc 1 nfet GND! pwell 56 48
+  */
+  
+
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+void emit_wiring (pp_t *pp)
+{
+  pp_printf (pp, "wiring"); pp_TAB;
+
+  pp_printf (pp, "# dummy"); pp_nl;
+  for (int i=0; i < Technology::T->nmetals-1; i++) {
+    pp_printf (pp, "contact m%dc 28 metal%d 0 metal%d 0", i+2,
+	       i+1, i+2); pp_nl;
+  }
+  pp_printf (pp, "contact %sc 28 metal1 0 %s 0",
+	     Technology::T->poly->getName(),
+	     Technology::T->poly->getName());
+  
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+void emit_router (pp_t *pp)
+{
+  pp_printf (pp, "router"); pp_TAB;
+
+  pp_printf (pp, "# dummy"); pp_nl;
+  pp_printf (pp, "layer1  metal1 18 m1,m2c/m1 18"); pp_nl;
+  pp_printf (pp, "layer2  metal2 20 m2c/m2,m3c,m2 20"); pp_nl;
+  pp_printf (pp, "contacts m2c 28"); pp_nl;
+  pp_printf (pp, "gridspacing 8");
+
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+void emit_plowing (pp_t *pp)
+{
+  pp_printf (pp, "plowing"); pp_TAB;
+
+  pp_printf (pp, "# dummy"); pp_nl;
+  pp_printf (pp, "fixed %s,%s",
+	     Technology::T->fet[0][0]->getName(),
+	     Technology::T->fet[1][0]->getName());
+  pp_nl;
+  pp_printf (pp, "covered %s,%s",
+	     Technology::T->fet[0][0]->getName(),
+	     Technology::T->fet[1][0]->getName());
+  pp_nl;
+  pp_printf (pp, "drag %s,%s",
+	     Technology::T->fet[0][0]->getName(),
+	     Technology::T->fet[1][0]->getName());
+
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+void emit_plot (pp_t *pp)
+{
+  pp_printf (pp, "plot"); pp_TAB;
+
+  pp_printf (pp, "style pnm"); pp_TAB;
+
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    pp_printf (pp, "draw metal%d", i+1); pp_nl;
+  }
+  pp_printf (pp, "draw polysilicon"); pp_nl;
+
+  for (int i=0; i < Technology::T->num_devs; i++)
+    for (int j=0; j < 2; j++) {
+      pp_printf (pp, "draw %s", Technology::T->fet[j][i]->getName());
+      pp_nl;
+
+      pp_printf (pp, "draw %s", Technology::T->diff[j][i]->getName());
+      pp_nl;
+    }
+  pp_UNTAB;
+  pp_UNTAB;
+  pp_printf (pp, "end:");
+  pp_SPACE;
+}
 
 
 int main (int argc, char **argv)
@@ -302,7 +531,16 @@ int main (int argc, char **argv)
   emit_styles (pp);
   emit_compose (pp);
   emit_connect (pp);
-
+  emit_cif (pp);
+  emit_mzrouter (pp);
+  emit_drc (pp);
+  emit_extract (pp);
+  emit_wiring (pp);
+  emit_router (pp);
+  emit_plowing (pp);
+  emit_plot (pp);
+  
+  
   pp_close (pp);
   
   return 0;

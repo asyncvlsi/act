@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2018-2019 Rajit Manohar
+#  Copyright (c) 2018-2020 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@ OBJS=$(SRCS:.cc=.o)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(EXE): $(OBJS) $(LIBACTDEPEND)
+$(EXE): $(OBJS) $(ACTDEPEND)
 	$(CXX) $(OBJS) -o $(EXE) $(LIBACT)
 
 -include Makefile.deps
