@@ -94,7 +94,6 @@ void Technology::Init (const char *s)
   A_DECL (char *, contacts);
   A_INIT (contacts);
 
-  config_std_path ("layout");
   if (prefix) {
     config_push_prefix (prefix);
   }
