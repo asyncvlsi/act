@@ -85,6 +85,7 @@ void Act::Init (int *iargc, char ***iargv)
   char **argv = *iargv;
   int i, j;
   int tech_specified = 0;
+  char *conf_file = NULL;
 
   if (initialize) return;
   initialize = 1;
@@ -258,6 +259,12 @@ void Act::Init (int *iargc, char ***iargv)
       Log::OpenLog (s);
       FREE (s);
     }
+    else if (strncmp (argv[i], "-C", 2) == 0) {
+      if (conf_file) {
+	FREE (conf_file);
+      }
+      conf_file = Strdup (argv[i]+2);
+    }
     else {
       break;
     }
@@ -269,17 +276,21 @@ void Act::Init (int *iargc, char ***iargv)
   }
   argv[j] = NULL;
 
-  Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
-  Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
-
   if (!tech_specified) {
     config_stdtech_path ("generic");
   }
 
+  Act::config_info ("global.conf");
   config_read ("global.conf");
+  if (conf_file) {
+    config_read (conf_file);
+    Act::config_info (conf_file);
+  }
+
+  Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
+  Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
-  Act::config_info ("global.conf");
   
   return;
 }
