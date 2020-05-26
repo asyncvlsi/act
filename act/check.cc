@@ -501,7 +501,7 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
   }
   
   if (it->arrayInfo ()->nDims () != id->arrayInfo()->nDims ()) {
-    typecheck_err ("Port `.%s': number of dimensions don't match type (%s v/s %s)", id->getName(), id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
+    typecheck_err ("Port `.%s': number of dimensions don't match type (%d v/s %d)", id->getName(), id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
     return NULL;
   }
 
