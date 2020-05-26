@@ -84,6 +84,7 @@ void Act::Init (int *iargc, char ***iargv)
   int argc = *iargc;
   char **argv = *iargv;
   int i, j;
+  int tech_specified = 0;
 
   if (initialize) return;
   initialize = 1;
@@ -92,15 +93,12 @@ void Act::Init (int *iargc, char ***iargv)
   ActNamespace::Init();
   Type::Init();
 
-  config_std_path ("act");
   config_set_default_int ("act.max_recurse_depth", 1000);
   config_set_default_int ("act.max_loop_iterations", 1000);
   config_set_default_int ("act.warn.emptyselect", 0);
   config_set_default_int ("act.warn.dup_pass", 1);
   config_set_default_int ("act.warn_no_local_driver", 1);
-  config_read ("global.conf");
-  Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
-  Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
+  
   Act::emit_depend = 0;
   Act::warn_double_expand = 1;
 
@@ -209,6 +207,7 @@ void Act::Init (int *iargc, char ***iargv)
     }
     else if (strncmp (argv[i], "-T", 2) == 0) {
       config_stdtech_path (argv[i]+2);
+      tech_specified = 1;
     }
     else if (strncmp (argv[i], "-W", 2) == 0) {
       char *s, *tmp;
@@ -273,6 +272,13 @@ void Act::Init (int *iargc, char ***iargv)
   Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
   Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
 
+  if (!tech_specified) {
+    config_stdtech_path ("generic");
+  }
+
+  config_read ("global.conf");
+  Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
+  Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
   Act::config_info ("global.conf");
   
   return;

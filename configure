@@ -46,16 +46,25 @@ fi
 echo "Configuring for [$arch] architecture, os [${os}]"
 echo "Install directory: [$installdir]"
 
+#
+# Binaries
+#
 if [ ! -d $installdir/bin ]
 then
     mkdir $installdir/bin
 fi
 
+#
+# C/C++ Libraries
+#
 if [ ! -d $installdir/lib ]
 then
     mkdir $installdir/lib
 fi
 
+#
+# Header files for libraries
+#
 if [ ! -d $installdir/include ]
 then
     mkdir $installdir/include
@@ -65,6 +74,24 @@ if [ ! -d $installdir/include/act ]
 then
     mkdir $installdir/include/act
 fi
+
+
+#
+# Technology configuration
+#
+if [ ! -d $installdir/conf ]
+then
+    mkdir $installdir/conf
+fi
+
+#
+# ACT standard includes
+#
+if [ ! -d $installdir/act ]
+then
+    mkdir $installdir/act
+fi
+
 
 c_compiler_name=gcc
 cxx_compiler_name=g++

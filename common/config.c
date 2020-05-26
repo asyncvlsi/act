@@ -102,6 +102,27 @@ void config_append_path (const char *s)
 
 /*------------------------------------------------------------------------
  *
+ *  config_flush_path --
+ *
+ *   Make the search path empty
+ *
+ *------------------------------------------------------------------------
+ */
+void config_flush_path (void)
+{
+  struct search_path *p, *pnext;
+  p = Path;
+  while (p) {
+    pnext = p->next;
+    FREE (p->path);
+    FREE (p);
+    p = pnext;
+  }
+  Path = NULL;
+}
+
+/*------------------------------------------------------------------------
+ *
  *  config_std_path --
  *
  *   Add standard config path
@@ -113,11 +134,11 @@ void config_std_path (const char *tool)
   char buf[10240];
 
   if (getenv ("CAD_HOME")) {
-    sprintf (buf, "%s/lib/%s/", getenv ("CAD_HOME"), tool);
+    sprintf (buf, "%s/conf/%s/", getenv ("CAD_HOME"), tool);
     config_append_path (buf);
   }
   if (getenv ("ACT_HOME")) {
-    sprintf (buf, "%s/lib/%s/", getenv ("ACT_HOME"), tool);
+    sprintf (buf, "%s/conf/%s/", getenv ("ACT_HOME"), tool);
     config_append_path (buf);
   }
   config_append_path (".");

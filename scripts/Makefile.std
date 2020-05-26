@@ -36,6 +36,7 @@ include $(VLSI_TOOLS_SRC)/scripts/config
 
 INSTALLBIN=$(INSTALLDIR)/bin
 INSTALLLIB=$(INSTALLDIR)/lib
+INSTALLCONF=$(INSTALLDIR)/conf
 INSTALLINC=$(INSTALLDIR)/include
 INSTALLMAN=$(INSTALLDIR)/man
 INSTALLINFO=$(INSTALLDIR)/info
@@ -150,14 +151,14 @@ install_bin: $(TARGETS)
                 done
 
 install_conf: $(TARGETCONF)
-	@[ -d $(INSTALLLIB)/act ] || mkdir $(INSTALLLIB)/act
+	@[ -d $(INSTALLCONF)/generic ] || mkdir $(INSTALLCONF)/generic
 	@for i in dummy_bad_name $(TARGETCONF); \
                 do \
                 if [ $$i != "dummy_bad_name" ]; \
                 then \
-                        if [ -d $(INSTALLLIB) ]; \
+                        if [ -d $(INSTALLCONF) ]; \
                         then \
-                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLLIB)/act/$$i; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLCONF)/generic/$$i; \
                         fi; \
                 fi; \
                 done
