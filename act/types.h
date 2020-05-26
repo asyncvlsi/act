@@ -712,6 +712,7 @@ class TypeFactory {
 
 #define T_BASETYPE(x) ((x) & 0xf)
 #define T_BASETYPE_ISNUM(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
+#define T_BASETYPE_ISINTBOOL(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_BOOL)
 
 int act_type_expr (Scope *, Expr *);
 int act_type_var (Scope *, ActId *);

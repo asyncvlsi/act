@@ -290,18 +290,27 @@ int act_type_expr (Scope *s, Expr *e)
   case E_UMINUS:
     lt = act_type_expr (s, e->u.e.l);
     if (lt == T_ERR) return T_ERR;
-    if (lt & (T_REAL|T_INT)) {
+    if (T_BASETYPE_ISNUM (lt)) {
       return lt;
     }
     typecheck_err ("`!' operator applied to a Boolean");
     return T_ERR;
     break;
 
+    /* Unary, integer or bool */
+  case E_COMPLEMENT:
+    lt = act_type_expr (s, e->u.e.l);
+    if (lt == T_ERR) return lt;
+    if (T_BASETYPE_ISINTBOOL (lt)) {
+      return lt;
+    }
+    typecheck_err ("`~' operator needs an int or bool");
+    return T_ERR;
+
     /* Binary, integer only */
   case E_LSL:
   case E_LSR:
   case E_ASR:
-  case E_COMPLEMENT:
   case E_XOR:
     EQUAL_LT_RT(T_INT);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
@@ -317,13 +326,13 @@ int act_type_expr (Scope *s, Expr *e)
     EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_operator_name (e->type));
     return T_ERR;
+    break;
 
   case E_CONCAT:
-    fatal_error ("Should not be here");
     do {
       lt = act_type_expr (s, e->u.e.l);
       if (lt == T_ERR) return T_ERR;
-      if (!(lt & (T_INT|T_BOOL))) {
+      if (!T_BASETYPE_ISINTBOOL (lt)) {
 	typecheck_err ("{ } concat: all items must be int or bool");
       }
       if (e->u.e.r) {
@@ -334,9 +343,12 @@ int act_type_expr (Scope *s, Expr *e)
     break;
 
   case E_BITFIELD:
-    /* XXX: HERE */
+    if (T_BASETYPE (lt) == T_INT) {
+      return lt;
+    }
     typecheck_err ("Bitfield! Implement me please");
     return T_ERR;
+    break;
 
     /* UMMMM */
   case E_FUNCTION:
