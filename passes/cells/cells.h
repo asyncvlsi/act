@@ -51,12 +51,12 @@ public:
   void Print (FILE *fp);
 
 private:
-  int init ();
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *);
 
 
   /*-- private data structures --*/
   struct cHashtable *cell_table;
-  std::set<Process *> *visited_procs;
   ActNamespace *cell_ns;
   int proc_inst_count;
   int cell_count;
@@ -74,12 +74,12 @@ private:
   ActBody_Conn *_build_connections (const char *name,
 				    act_prs_lang_t *gate);
   
-  void _collect_one_prs (Process *p, act_prs_lang_t *prs);
-  void _collect_one_passgate (Process *p, act_prs_lang_t *prs);
-  void collect_gates (Process *p, act_prs_lang_t **pprs);
+  void _collect_one_prs (Scope *sc, act_prs_lang_t *prs);
+  void _collect_one_passgate (Scope *sc, act_prs_lang_t *prs);
+  void collect_gates (Scope *sc, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);
-  void flush_pending (Process *p);
+  void flush_pending (Scope *sc);
 };
 
 

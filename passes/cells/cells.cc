@@ -27,6 +27,9 @@
 #include <map>
 #include <utility>
 #include <act/passes/cells.h>
+#include <act/passes/sizing.h>
+#include <act/passes/booleanize.h>
+#include <act/passes/netlist.h>
 #include <config.h>
 
 struct act_varinfo {
@@ -626,7 +629,7 @@ static void _mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
   return;
 }
 
-void ActCellPass::flush_pending (Process *p)
+void ActCellPass::flush_pending (Scope *sc)
 {
   int pending_count = 0;
 
@@ -811,16 +814,16 @@ void ActCellPass::flush_pending (Process *p)
       char buf[100];
       do {
 	snprintf (buf, 100, "cpx%d", pending_count++);
-      } while (p->CurScope()->Lookup (buf));
+      } while (sc->Lookup (buf));
 
-      Assert (p->CurScope()->isExpanded(), "Hmm");
+      Assert (sc->isExpanded(), "Hmm");
 
-      InstType *it = new InstType (p->CurScope(), pi->cell, 0);
-      it = it->Expand (NULL, p->CurScope());
+      InstType *it = new InstType (sc, pi->cell, 0);
+      it = it->Expand (NULL, sc);
 
       Assert (it->isExpanded(), "Hmm");
     
-      Assert (p->CurScope()->Add (buf, it), "What?");
+      Assert (sc->Add (buf, it), "What?");
       /*--- now make connections --*/
     
       ActBody_Conn *ac;
@@ -833,7 +836,7 @@ void ActCellPass::flush_pending (Process *p)
 
       int oval = Act::warn_double_expand;
       Act::warn_double_expand = 0;
-      ac->Expandlist (NULL, p->CurScope ());
+      ac->Expandlist (NULL, sc);
       Act::warn_double_expand = oval;
       //printf ("---\n");
     }
@@ -2128,7 +2131,7 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 }
 
 
-void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
+void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
 {
   int i;
   struct act_prsinfo *pi;
@@ -2229,16 +2232,16 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
     char buf[100];
     do {
       snprintf (buf, 100, "cx%d", proc_inst_count++);
-    } while (p->CurScope()->Lookup (buf));
+    } while (sc->Lookup (buf));
 
-    Assert (p->CurScope()->isExpanded(), "Hmm");
+    Assert (sc->isExpanded(), "Hmm");
 
-    InstType *it = new InstType (p->CurScope(), pi->cell, 0);
-    it = it->Expand (NULL, p->CurScope());
+    InstType *it = new InstType (sc, pi->cell, 0);
+    it = it->Expand (NULL, sc);
 
     Assert (it->isExpanded(), "Hmm");
     
-    Assert (p->CurScope()->Add (buf, it), "What?");
+    Assert (sc->Add (buf, it), "What?");
     /*--- now make connections --*/
     
     ActBody_Conn *ac;
@@ -2252,7 +2255,7 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
 
     int oval = Act::warn_double_expand;
     Act::warn_double_expand = 0;
-    ac->Expandlist (NULL, p->CurScope ());
+    ac->Expandlist (NULL, sc);
     Act::warn_double_expand = oval;
 
     if (pi->match_perm) {
@@ -2262,7 +2265,7 @@ void ActCellPass::_collect_one_prs (Process *p, act_prs_lang_t *prs)
   }
 }
 
-void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
+void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
 {
   int i;
   
@@ -2274,9 +2277,9 @@ void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
   char buf[100];
   do {
     snprintf (buf, 100, "cx%d", proc_inst_count++);
-  } while (p->CurScope()->Lookup (buf));
+  } while (sc->Lookup (buf));
 
-  Assert (p->CurScope()->isExpanded(), "Hmm");
+  Assert (sc->isExpanded(), "Hmm");
 
   Process *cell;
   ActNamespace *cellns = ActNamespace::Global()->findNS ("cell");
@@ -2309,7 +2312,7 @@ void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
 
   Assert (cell, "No transmission gates?");
     
-  InstType *it = new InstType (p->CurScope(), cell, 0);
+  InstType *it = new InstType (sc, cell, 0);
   int w, l;
   if (prs->u.p.sz) {
     if (prs->u.p.sz->w) {
@@ -2331,11 +2334,11 @@ void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
   else {
     /* nothing to do */
   }
-  it = it->Expand (NULL, p->CurScope());
+  it = it->Expand (NULL, sc);
 
   Assert (it->isExpanded(), "Hmm");
   
-  Assert (p->CurScope()->Add (buf, it), "What?");
+  Assert (sc->Add (buf, it), "What?");
     /*--- now make connections --*/
     
   ActBody_Conn *ac;
@@ -2349,7 +2352,7 @@ void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
 
   int oval = Act::warn_double_expand;
   Act::warn_double_expand = 0;
-  ac->Expandlist (NULL, p->CurScope ());
+  ac->Expandlist (NULL, sc);
   Act::warn_double_expand = oval;
 }
 
@@ -2358,7 +2361,7 @@ void ActCellPass::_collect_one_passgate (Process *p, act_prs_lang_t *prs)
 
 
 
-static void _collect_group_prs (Process *p, int tval, act_prs_lang_t *prs)
+static void _collect_group_prs (Scope *sc, int tval, act_prs_lang_t *prs)
 {
   Assert (tval > 0, "tree<> directive with <= 0 value?");
   // mark these rules as part of a tree: needs to be fixed
@@ -2394,7 +2397,7 @@ static  act_prs_expr_t *_left_canonicalize (act_prs_expr_t *p)
 /*
   Helper function for walking through the production rule block
 */
-void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
+void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
 {
   act_prs_lang_t *prs = *pprs;
   act_prs_lang_t *prev = NULL;
@@ -2408,14 +2411,14 @@ void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
 	prev->next = prs->next;
       }
 #endif      
-      _collect_one_prs (p, prs);
+      _collect_one_prs (sc, prs);
       break;
     case ACT_PRS_GATE:
 #if 1
       if (prev) {
 	prev->next = prs->next;
       }
-      _collect_one_passgate (p, prs);
+      _collect_one_passgate (sc, prs);
 #else
       /* preserve pass gates */
       if (!prev) {
@@ -2434,14 +2437,14 @@ void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
       if (prs->u.l.lo) {
 	Assert (expr_is_a_const (prs->u.l.lo), "Hmm...");
 	Assert (prs->u.l.lo->type == E_INT, "Hmmmm");
-	_collect_group_prs (p, prs->u.l.lo->u.v, prs->u.l.p);
+	_collect_group_prs (sc, prs->u.l.lo->u.v, prs->u.l.p);
       }
       else {
-	_collect_group_prs (p, 1, prs->u.l.p);
+	_collect_group_prs (sc, 1, prs->u.l.p);
       }
       break;
     case ACT_PRS_SUBCKT:
-      collect_gates (p, &prs->u.l.p);
+      collect_gates (sc, &prs->u.l.p);
 #if 1
       if (prs->u.l.p) {
 	/* there's something left */
@@ -2472,20 +2475,18 @@ void ActCellPass::collect_gates (Process *p, act_prs_lang_t **pprs)
 */
 void ActCellPass::prs_to_cells (Process *p)
 {
-  Assert (p->isExpanded(), "Only works for expanded processes!");
+  Scope *sc;
 
-  if (visited_procs->find(p) != visited_procs->end()) {
-    return;
-  }
-  visited_procs->insert (p);
-
-  if (p->isCell() && p->isLeaf()) {
-    /* nothing to do here */
-    return;
+  sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
+  if (p) {
+    if (p->isCell() && p->isLeaf()) {
+      /* nothing to do here */
+      return;
+    }
   }
 
   /* walk instances */
-  ActInstiter i(p->CurScope());
+  ActInstiter i(sc);
   
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
@@ -2499,8 +2500,8 @@ void ActCellPass::prs_to_cells (Process *p)
 
   proc_inst_count = 0;
   A_INIT (pendingprs);
-  act_prs *prs = p->getprs();
-  
+
+  act_prs *prs = (p ? p->getprs() : ActNamespace::Global()->getprs());
   while (prs) {
     /*
       1. group all gates.
@@ -2526,12 +2527,12 @@ void ActCellPass::prs_to_cells (Process *p)
          with cell instances that use the permutation map to pass in
          act identifers.
     */
-    collect_gates (p, &prs->p);
+    collect_gates (sc, &prs->p);
     prs = prs->next;
   }
-  flush_pending (p);
+  flush_pending (sc);
 
-  prs = p->getprs();
+  prs = (p ? p->getprs() : ActNamespace::Global()->getprs());
   act_prs *prevprs = NULL;
 
   /* remove empty prs blocks */
@@ -2777,40 +2778,52 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 }
 
 
+void *ActCellPass::local_op (Process *p, int mode)
+{
+  prs_to_cells (p);
+  return NULL;
+}
+
+void ActCellPass::free_local (void *v)
+{
+  return;
+}
+
 int ActCellPass::run (Process *p)
 {
-  /*-- start the pass --*/
-  init ();
+  int ret = ActPass::run (p);
 
-  /*-- run dependencies --*/
-  if (!rundeps (p)) {
-    return 0;
-  }
+  /* 
+     We've changedw the netlist: recompute the booleanize pass and
+     netlist pass if they exist
+  */
+  if (a->pass_find ("booleanize")) {
+    ActBooleanizePass *bp = dynamic_cast<ActBooleanizePass *> (a->pass_find ("booleanize"));
+    int done = 0;
 
-  if (!p) {
-    ActNamespace *g = ActNamespace::Global();
-    ActInstiter i(g->CurScope());
-    
-    for (i = i.begin(); i != i.end(); i++) {
-      ValueIdx *vx = *i;
-      if (TypeFactory::isProcessType (vx->t)) {
-	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-	if (x->isExpanded()) {
-	  prs_to_cells (x);
-	}
-      }
+    if (bp->completed()) {
+      done = 1;
+    }
+    delete bp;
+    bp = new ActBooleanizePass (a);
+    if (done) {
+      bp->run (p);
     }
   }
-  else {
-    prs_to_cells (p);
+  if (a->pass_find ("prs2net")) {
+    ActNetlistPass *np = dynamic_cast<ActNetlistPass *> (a->pass_find ("prs2net"));
+    int done = 0;
+
+    if (np->completed()) {
+      done = 1;
+    }
+    delete np;
+    np = new ActNetlistPass (a);
+    if (done) {
+      np->run (p);
+    }
   }
-
-  delete visited_procs;
-  visited_procs = NULL;
-
-  /*-- finished --*/
-  _finished = 2;
-  return 1;
+  return ret;
 }
 
 
@@ -2830,26 +2843,15 @@ void ActCellPass::Print (FILE *fp)
 ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
 {
   cell_table = NULL;
-  visited_procs = NULL;
   cell_ns = NULL;
   proc_inst_count = 0;
   cell_count = 0;
-}
 
-ActCellPass::~ActCellPass ()
-{
-  if (cell_table) {
-    chash_free (cell_table);
+  if (!a->pass_find ("sizing")) {
+    ActSizingPass *sp = new ActSizingPass (a);
   }
-}
-  
-int ActCellPass::init ()
-{
-  if (cell_table) {
-    warning ("ActCellPass::init(): cannot be run more than once!");
-    return 0;
-  }
-  
+  AddDependency ("sizing");
+
   cell_table = chash_new (32);
   cell_table->hash = cell_hashfn;
   cell_table->match = cell_matchfn;
@@ -2861,8 +2863,6 @@ int ActCellPass::init ()
   current_idmap.nout = 0;
   current_idmap.nat = 0;
     
-  visited_procs = new std::set<Process *> ();
-  
   cell_ns = a->findNamespace ("cell");
   
   if (!cell_ns) {
@@ -2874,7 +2874,11 @@ int ActCellPass::init ()
     cell_count =  _collect_cells (cell_ns) + 1;
   }    
   add_passgates ();
-  
-  _finished = 1;
-  return 1;
+}
+
+ActCellPass::~ActCellPass ()
+{
+  if (cell_table) {
+    chash_free (cell_table);
+  }
 }
