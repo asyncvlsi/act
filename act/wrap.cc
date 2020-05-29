@@ -133,6 +133,19 @@ Expr *const_expr (int val)
   return f;
 }
 
+Expr *const_expr_bool (int val)
+{
+  Expr *e, *f;
+
+  NEW (e, Expr);
+  e->type = (val ? E_TRUE : E_FALSE);
+
+  f = TypeFactory::NewExpr (e);
+  FREE (e);
+  
+  return f;
+}  
+
 /**
  * Print out a list of strings to the specified file, separated by
  * "::". Used to display a namespace name.

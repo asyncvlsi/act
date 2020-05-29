@@ -21,6 +21,7 @@
  *
  **************************************************************************
  */
+#include <act/act.h>
 #include <act/types.h>
 #include <act/lang.h>
 #include <act/inst.h>
@@ -749,19 +750,40 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  tmp->next = NULL;
 	  tmp->id = NULL;
 	  tmp->g = expr_expand (gctmp->g, ns, s);
-	  tmp->s = chp_expand (gctmp->s, ns, s);
-	  q_ins (gchd, gctl, tmp);
+	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
+	    FREE (tmp);
+	  }
+	  else {
+	    tmp->s = chp_expand (gctmp->s, ns, s);
+	    q_ins (gchd, gctl, tmp);
+	  }
 	}
 	act_syn_loop_teardown (ns, s, gctmp->id, vx);
       }
-      else {	
+      else {
 	NEW (tmp, act_chp_gc_t);
 	tmp->id = NULL;
 	tmp->next = NULL;
 	tmp->g = expr_expand (gctmp->g, ns, s);
-	tmp->s = chp_expand (gctmp->s, ns, s);
-	q_ins (gchd, gctl, tmp);
+	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
+	  FREE (tmp);
+	}
+	else {
+	  tmp->s = chp_expand (gctmp->s, ns, s);
+	  q_ins (gchd, gctl, tmp);
+	}
       }
+    }
+    if (!gchd) {
+      /* ok this is false -> skip */
+      NEW (tmp, act_chp_gc_t);
+      tmp->id = NULL;
+      tmp->next = NULL;
+      
+      tmp->g = const_expr_bool (0);
+      NEW (tmp->s, act_chp_lang);
+      tmp->s->type = ACT_CHP_SKIP;
+      q_ins (gchd, gctl, tmp);
     }
     ret->u.gc = gchd;
     break;
