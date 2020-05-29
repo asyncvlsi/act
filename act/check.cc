@@ -381,6 +381,30 @@ int act_type_expr (Scope *s, Expr *e)
       Assert (TypeFactory::isFuncType (u), "Hmm.");
       Function *fn = dynamic_cast<Function *>(u);
       InstType *rtype = fn->getRetType();
+      int kind = 0;
+      Expr *tmp = e->u.fn.r;
+
+      if (TypeFactory::isParamType (rtype)) {
+	kind = 0;
+      }
+      else {
+	kind = 1;
+      }
+
+      for (int i=0;
+	   i < (kind == 0 ? fn->getNumParams() : fn->getNumPorts()); i++) {
+	InstType *x = fn->getPortType (kind == 0 ? -(i+1) : i);
+	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
+
+	if (!x->isConnectable (y, 1)) {
+	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
+			 fn->getName(), i);
+	  return T_ERR;
+	}
+      }
+
+      /*-- provide return type --*/
+      
       if (TypeFactory::isParamType(rtype)) {
 	ret |= T_PARAM;
       }
