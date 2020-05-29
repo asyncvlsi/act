@@ -32,6 +32,12 @@
 #include "config.h"
 #include <string.h>
 
+
+static void chp_free (act_chp_lang_t *c)
+{
+  /* XXX FIXME */
+}
+
 act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
@@ -765,7 +771,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	tmp->id = NULL;
 	tmp->next = NULL;
 	tmp->g = expr_expand (gctmp->g, ns, s);
-	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
+	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
+	    c->type != ACT_CHP_DOLOOP) {
 	  FREE (tmp);
 	}
 	else {
@@ -784,6 +791,37 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       NEW (tmp->s, act_chp_lang);
       tmp->s->type = ACT_CHP_SKIP;
       q_ins (gchd, gctl, tmp);
+    }
+    if (c->type != ACT_CHP_DOLOOP) {
+      if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {
+	/* loops and selections that simplify to a single guard that
+	   is constant */
+	if (c->type == ACT_CHP_LOOP) {
+	  if (gchd->g && gchd->g->type == E_FALSE) {
+	    /* whole thing is a skip */
+	    /* XXX: need chp_free */
+	    ret->u.gc = gchd;
+	    chp_free (ret);
+	    NEW (ret, act_chp_lang);
+	    ret->type = ACT_CHP_SKIP;
+	    return ret;
+	  }
+	}
+	else {
+	  if (!gchd->g || gchd->g->type == E_TRUE) {
+	    /* whole thing is the body */
+	    
+	    FREE (ret);
+	    ret = gchd->s;
+	    FREE (gchd);
+	    if (!ret) {
+	      NEW (ret, act_chp_lang);
+	      ret->type = ACT_CHP_SKIP;
+	    }
+	    return ret;
+	  }
+	}
+      }
     }
     ret->u.gc = gchd;
     break;
