@@ -762,7 +762,10 @@ void act_error_ctxt (FILE *);
 extern "C" {
 
 Expr *act_parse_expr_syn_loop_bool (LFILE *l);
-
+Expr *act_parse_expr_intexpr_base (LFILE *l);
+int act_expr_parse_newtokens (LFILE *l);
+  
+  
 }
 
 #endif /* __ACT_TYPES_H__ */

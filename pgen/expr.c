@@ -38,6 +38,7 @@ void (*expr_print_id)(pp_t *, void *) = NULL;
 void (*expr_print_probe)(pp_t *, void *) = NULL;
 Expr *(*expr_parse_basecase_num)(LFILE *l) = NULL;
 Expr *(*expr_parse_basecase_bool)(LFILE *l) = NULL;
+int (*expr_parse_newtokens)(LFILE *l) = NULL;
 
 #define PUSH(x) file_push_position(x)
 #define POP(x)  file_pop_position(x)
@@ -183,7 +184,8 @@ int expr_parse_isany (LFILE *l)
       file_sym (l) == T[E_LPAR] ||
       file_sym (l) == T[E_UMINUS] ||
       file_sym (l) == T[E_NOT] ||
-      file_sym (l) == T[E_PROBE]) {
+      file_sym (l) == T[E_PROBE] ||
+      (expr_parse_newtokens && (*expr_parse_newtokens)(l))) {
     return 1;
   }
   return 0;
