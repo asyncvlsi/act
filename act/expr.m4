@@ -335,6 +335,9 @@ w_expr[Expr *]: expr
     Expr *e;
     int tc;
 
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
     tc = act_type_expr ($0->scope, e);
@@ -355,6 +358,9 @@ wnumber_expr[Expr *]: expr
     Expr *e;
     int tc;
 
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
     tc = act_type_expr ($0->scope, e);
@@ -381,6 +387,9 @@ wint_expr[Expr *]: int_expr
     Expr *e;
     int tc;
 
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
     tc = act_type_expr ($0->scope, e);
@@ -406,6 +415,9 @@ wbool_expr[Expr *]: bool_expr
     Expr *e;
     int tc;
 
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
     tc = act_type_expr ($0->scope, e);

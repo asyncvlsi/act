@@ -1,0 +1,15 @@
+function g (pint x) : pint
+{
+  chp {
+     self := x*x
+  }
+}
+
+
+defproc blah ()
+{
+  int x;
+  chp {
+    x := ::f(1)
+  }
+}

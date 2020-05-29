@@ -171,6 +171,17 @@ void print_ns_string (FILE *fp, list_t *l)
 /* external */
 ActId *act_walk_X_expr_id (ActTree *cookie, pId *n);
 
+static int find_colon (char *s)
+{
+  int i = 0;
+  while (s[i]) {
+    if (s[i] == ':')
+      return i;
+    i++;
+  }
+  return -1;
+}
+
 /*------------------------------------------------------------------------
  *
  * Expression walk
@@ -288,8 +299,98 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     break;
 
   case E_FUNCTION:
-    ret->u.fn.s = Strdup (e->u.fn.s);
-    ret->u.fn.r = (Expr *) act_walk_X_expr (cookie, e->u.fn.r);
+    /* we lookup the function in scope! */
+    {
+      ActNamespace *ns;
+      char *prev;
+      int i;
+      int args = 0;
+
+      i = find_colon (e->u.fn.s);
+      if (i == -1) {
+	ns = cookie->curns;
+	i = 0;
+      }
+      else if (i == 0) {
+	ns = ActNamespace::Global();
+	i += 2;
+      }
+      else {
+	e->u.fn.s[i] = '\0';
+	ns = cookie->os->find (cookie->curns, e->u.fn.s);
+	if (!ns) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "Could not find namespace `%s'", e->u.fn.s);
+	}
+	e->u.fn.s[i] = ':';
+	i += 2;
+      }
+      prev = e->u.fn.s + i;
+      while ((i = find_colon (prev)) != -1) {
+	ActNamespace *tmp;
+	prev[i] = '\0';
+	tmp = ns->findNS (prev);
+	prev[i] = ':';
+	if (!tmp) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "Could not find `%s' in namespace `%s'", prev,
+			 ns->Name());
+	}
+	ns = tmp;
+	prev = prev + i + 2;
+      }
+      UserDef *u = ns->findType (prev);
+      if (!u) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "Could not find `%s' in namespace `%s'", prev,
+			 ns->Name());
+      }
+      if (!TypeFactory::isFuncType (u)) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
+      }
+      ret->u.fn.s = (char *) u;
+      Expr *etmp = e->u.fn.r;
+      Expr *rtmp;
+
+      rtmp = ret;
+      ret->u.fn.r = NULL;
+
+      while (etmp) {
+	args++;
+	if (ret == rtmp) {
+	  NEW (ret->u.fn.r, Expr);
+	  rtmp = ret->u.fn.r;
+	}
+	else {
+	  NEW (rtmp->u.e.r, Expr);
+	  rtmp = rtmp->u.e.r;
+	}
+	rtmp->u.e.r = NULL;
+	rtmp->type = etmp->type;
+	rtmp->u.e.l = act_walk_X_expr (cookie, etmp->u.e.l);
+	etmp = etmp->u.e.r;
+      }
+      if (args != (u->getNumParams() + u->getNumPorts())) {
+	struct act_position p;
+	p.l = cookie->line;
+	p.c = cookie->column;
+	p.f = cookie->file;
+	act_parse_err (&p, "`%s': incorrect number of arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts() + u->getNumParams(), args);
+      }
+    }
     break;
     
   default:

@@ -1,0 +1,2 @@
+ERROR: File `4.act', line 13, col 11
+	`g': incorrect number of arguments (expected 1, got 2)

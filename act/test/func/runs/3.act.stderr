@@ -1,0 +1,2 @@
+ERROR: File `3.act', line 13, col 12
+	Could not find `f' in namespace `::'

@@ -374,6 +374,7 @@ int act_type_expr (Scope *s, Expr *e)
 
     /* UMMMM */
   case E_FUNCTION:
+    /* typecheck all arguments; then return result type */
     typecheck_err ("Function! Implement me please");
     return T_ERR;
     break;
