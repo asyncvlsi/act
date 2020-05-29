@@ -232,6 +232,36 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
     }
     return c;
 }}
+| "(" ";" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" chp_body ")"
+{{X:
+    act_chp_lang_t *c;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+
+    NEW (c, act_chp_lang_t);
+    c->space = NULL;
+    c->type = ACT_CHP_SEMILOOP;
+    c->u.loop.id = $3;
+    c->u.loop.lo = $5;
+    c->u.loop.hi = hi;
+    c->u.loop.body = $8;
+    return c;
+}}
 ;
 
 chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
@@ -249,6 +279,36 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
       c = (act_chp_lang_t *) list_value (list_first ($1));
       list_free ($1);
     }
+    return c;
+}}
+| "(" "," ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" chp_body ")"
+{{X:
+    act_chp_lang_t *c;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_COMMALOOP;
+    c->space = NULL;
+    c->u.loop.id = $3;
+    c->u.loop.lo = $5;
+    c->u.loop.hi = hi;
+    c->u.loop.body = $8;
     return c;
 }}
 ;
@@ -564,11 +624,27 @@ hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
 {{X:
     return apply_X_chp_body_opt0 ($0, $1);
 }}
+| "(" ";" ID
+{{X:
+    lapply_X_chp_body_1_2 ($0, $3);
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
+{{X:
+    return apply_X_chp_body_opt1 ($0, $3, $5, $6, $8);
+}}
 ;
 
 hse_body_item[act_chp_lang_t *]: { assign_stmt "," }* 
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
+}}
+| "(" "," ID
+{{X:
+    lapply_X_chp_comma_list_1_2 ($0, $3);
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
+{{X:
+    return apply_X_chp_comma_list_opt1 ($0, $3, $5, $6, $8);
 }}
 | hse_loop_stmt
 {{X:

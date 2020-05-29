@@ -31,10 +31,6 @@
 #include <mstring.h>
 #include <act/inst.h>
 
-#ifndef E_SELF
-#define E_SELF 50
-#endif
-
 class ActBody;
 struct act_chp_lang;
 struct act_chp;
@@ -744,6 +740,15 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 					 r points to the array range
 				*/
 
+#define E_SELF (E_END + 20)
+
+/* 
+   For loops:
+      e->l->l = id, e->r->l = lo, e->r->r->l = hi, e->r->r->r = expr
+*/
+#define E_ANDLOOP (E_END + 21) 
+#define E_ORLOOP (E_END + 22)
+
 /*
   Push expansion context 
 */
@@ -753,5 +758,11 @@ void act_error_update (const char *file, int line); // set file to
 						    // the file name
 void act_error_pop ();
 void act_error_ctxt (FILE *);
+
+extern "C" {
+
+Expr *act_parse_expr_syn_loop_bool (LFILE *l);
+
+}
 
 #endif /* __ACT_TYPES_H__ */

@@ -36,6 +36,8 @@ pId *(*expr_parse_id)(LFILE *l) = NULL;
 void (*expr_free_id) (void *) = NULL;
 void (*expr_print_id)(pp_t *, void *) = NULL;
 void (*expr_print_probe)(pp_t *, void *) = NULL;
+Expr *(*expr_parse_basecase_num)(LFILE *l) = NULL;
+Expr *(*expr_parse_basecase_bool)(LFILE *l) = NULL;
 
 #define PUSH(x) file_push_position(x)
 #define POP(x)  file_pop_position(x)
@@ -48,6 +50,10 @@ static LFILE *Tl;
 
 static int end_gt_mode = 0;
 
+int expr_gettoken (int type)
+{
+  return T[type];
+}
 
 void expr_endgtmode (int v)
 {
@@ -228,6 +234,11 @@ static void efree (Expr *e)
     FREE (e->u.e.r);
     break;
 
+  case E_RAWFREE:
+    if (e->u.e.l)  FREE (e->u.e.l);
+    if (e->u.e.r) efree (e->u.e.r);
+    break;
+
   default:
     if (e->u.e.l) efree (e->u.e.l);
     if (e->u.e.r) efree (e->u.e.r);
@@ -284,64 +295,70 @@ Expr *B (void)
   PUSH (Tl);
   while (file_have (Tl, T[E_NOT]))
     not = 1 - not;
-  if (file_have (Tl, T[E_LPAR])) {
-    paren_count++;
-    e = BE ();
-    paren_count--;
-    if (file_have (Tl, T[E_RPAR])) {
-      POP (Tl);
-    }
-    else {
-      SET (Tl);
-      POP (Tl);
-      efree (e);
-      return NULL;
-    }
-  }
-  else if (strcmp (file_tokenstring (Tl), "true") == 0) {
+  if (expr_parse_basecase_bool && ((e = (*expr_parse_basecase_bool)(Tl)))) {
+    /* ok! */
     POP (Tl);
-    file_getsym (Tl);
-    e = newexpr ();
-    e->type = E_TRUE;
-    e->u.v = 1;
-  }
-  else if (strcmp (file_tokenstring (Tl), "false") == 0) {
-    POP (Tl);
-    file_getsym (Tl);
-    e = newexpr ();
-    e->type = E_FALSE;
-    e->u.v = 0;
   }
   else {
-    if (expr_parse_id) {
-      v = (*expr_parse_id) (Tl);
+    if (file_have (Tl, T[E_LPAR])) {
+      paren_count++;
+      e = BE ();
+      paren_count--;
+      if (file_have (Tl, T[E_RPAR])) {
+	POP (Tl);
+      }
+      else {
+	SET (Tl);
+	POP (Tl);
+	efree (e);
+	return NULL;
+      }
+    }
+    else if (strcmp (file_tokenstring (Tl), "true") == 0) {
+      POP (Tl);
+      file_getsym (Tl);
+      e = newexpr ();
+      e->type = E_TRUE;
+      e->u.v = 1;
+    }
+    else if (strcmp (file_tokenstring (Tl), "false") == 0) {
+      POP (Tl);
+      file_getsym (Tl);
+      e = newexpr ();
+      e->type = E_FALSE;
+      e->u.v = 0;
     }
     else {
-      v = NULL;
-    }
-    if (expr_parse_id && v) {
-      POP (Tl);
-      e = newexpr ();
-      e->type = E_VAR;
-      e->u.e.l = (Expr *) v;
-    } 
-    else if (file_have (Tl, T[E_PROBE])) {
-      if (expr_parse_id && (v = (*expr_parse_id)(Tl))) {
+      if (expr_parse_id) {
+	v = (*expr_parse_id) (Tl);
+      }
+      else {
+	v = NULL;
+      }
+      if (expr_parse_id && v) {
 	POP (Tl);
 	e = newexpr ();
-	e->type = E_PROBE;
-	e->u.e.l = (Expr *)v;
+	e->type = E_VAR;
+	e->u.e.l = (Expr *) v;
+      } 
+      else if (file_have (Tl, T[E_PROBE])) {
+	if (expr_parse_id && (v = (*expr_parse_id)(Tl))) {
+	  POP (Tl);
+	  e = newexpr ();
+	  e->type = E_PROBE;
+	  e->u.e.l = (Expr *)v;
+	}
+	else {
+	  SET (Tl);
+	  POP (Tl);
+	  return NULL;
+	}
       }
       else {
 	SET (Tl);
 	POP (Tl);
 	return NULL;
       }
-    }
-    else {
-      SET (Tl);
-      POP (Tl);
-      return NULL;
     }
   }
   if (not) {
@@ -576,143 +593,138 @@ static Expr *W (void)
     while (file_have (Tl, T[E_COMPLEMENT]))
       tilde = 1 - tilde;
   }
-  if (file_have (Tl, T[E_LPAR])) {
-    paren_count++;
-    e = I();
-    paren_count--;
-    if (file_have (Tl, T[E_RPAR])) {
-      POP (Tl);
-    }
-    else {
-      SET (Tl);
-      POP (Tl);
-      efree (e);
-      return NULL;
-    }
-  }
-  else if (file_have (Tl, f_integer)) {
+
+  if (expr_parse_basecase_num && ((e = (*expr_parse_basecase_num)(Tl)))) {
+    /* ok! */
     POP (Tl);
-    e = newexpr ();
-    e->type = E_INT;
-    if (uminus) {
-      e->u.v = -file_integer (Tl);
-    }
-    else if (tilde) {
-      e->u.v = ~file_integer (Tl);
-    }
-    else {
-      e->u.v = file_integer (Tl);
-    }
-    uminus = 0;
-    tilde = 0;
   }
-  else if (file_have (Tl, f_real)) {
-    POP (Tl);
-    e = newexpr ();
-    e->type = E_REAL;
-    if (uminus) {
-      e->u.f = -file_real (Tl);
-    }
-    else {
-      e->u.f = file_real (Tl);
-    }
-    uminus = 0;
-  }
-  else if (strcmp (file_tokenstring (Tl), "true") == 0) {
-    POP (Tl);
-    file_getsym (Tl);
-    e = newexpr ();
-    e->type = E_TRUE;
-    e->u.v = 1;
-  }
-  else if (strcmp (file_tokenstring (Tl), "false") == 0) {
-    POP (Tl);
-    file_getsym (Tl);
-    e = newexpr ();
-    e->type = E_FALSE;
-    e->u.v = 0;
-  }
-  else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
-	   /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {
-    e = newexpr ();
-    e->type = E_VAR;
-    e->u.e.l = (Expr *) v;
-    /* optional bitfield extraction */
-    if (file_have (Tl, T[E_CONCAT])) {
-      /* { constexpr .. constexpr } | { constexpr } */
-      f = I();
-      if (!const_intexpr (f, &x)) {
-	SET (Tl); 
+  else {
+    if (file_have (Tl, T[E_LPAR])) {
+      paren_count++;
+      e = I();
+      paren_count--;
+      if (file_have (Tl, T[E_RPAR])) {
+	POP (Tl);
+      }
+      else {
+	SET (Tl);
 	POP (Tl);
 	efree (e);
 	return NULL;
       }
-      efree (f);
-      y = x;
-      if (file_have (Tl, T[E_BITFIELD])) {
+    }
+    else if (file_have (Tl, f_integer)) {
+      POP (Tl);
+      e = newexpr ();
+      e->type = E_INT;
+      if (uminus) {
+	e->u.v = -file_integer (Tl);
+      }
+      else if (tilde) {
+	e->u.v = ~file_integer (Tl);
+      }
+      else {
+	e->u.v = file_integer (Tl);
+      }
+      uminus = 0;
+      tilde = 0;
+    }
+    else if (file_have (Tl, f_real)) {
+      POP (Tl);
+      e = newexpr ();
+      e->type = E_REAL;
+      if (uminus) {
+	e->u.f = -file_real (Tl);
+      }
+      else {
+	e->u.f = file_real (Tl);
+      }
+      uminus = 0;
+    }
+    else if (strcmp (file_tokenstring (Tl), "true") == 0) {
+      POP (Tl);
+      file_getsym (Tl);
+      e = newexpr ();
+      e->type = E_TRUE;
+      e->u.v = 1;
+    }
+    else if (strcmp (file_tokenstring (Tl), "false") == 0) {
+      POP (Tl);
+      file_getsym (Tl);
+      e = newexpr ();
+      e->type = E_FALSE;
+      e->u.v = 0;
+    }
+    else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
+	     /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {
+      e = newexpr ();
+      e->type = E_VAR;
+      e->u.e.l = (Expr *) v;
+      /* optional bitfield extraction */
+      if (file_have (Tl, T[E_CONCAT])) {
+	/* { constexpr .. constexpr } | { constexpr } */
 	f = I();
-	if (!const_intexpr (f, &y)) {
+	if (!const_intexpr (f, &x)) {
+	  SET (Tl); 
+	  POP (Tl);
+	  efree (e);
+	  return NULL;
+	}
+	efree (f);
+	y = x;
+	if (file_have (Tl, T[E_BITFIELD])) {
+	  f = I();
+	  if (!const_intexpr (f, &y)) {
+	    SET (Tl);
+	    POP (Tl);
+	    efree (e);
+	  }
+	  efree (f);
+	}
+	if (!file_have (Tl, T[E_END])) {
 	  SET (Tl);
 	  POP (Tl);
 	  efree (e);
+	  return NULL;
 	}
-	efree (f);
+	f = newexpr ();
+	f->u.e.l = (void *)x;
+	f->u.e.r = (void *)y;
+	f->type = E_BITFIELD;
+	e->type = E_BITFIELD;
+	e->u.e.r = f;
+	if (x > y) {
+	  efree (e);
+	  SET (Tl);
+	  POP (Tl);
+	  return NULL;
+	}
+	POP (Tl);
       }
-      if (!file_have (Tl, T[E_END])) {
+      else {
+	POP (Tl);
+      }
+    }
+    else if (file_have (Tl, T[E_PROBE])) {
+      if (expr_parse_id && (v = (*expr_parse_id)(Tl))) {
+	POP (Tl);
+	e = newexpr ();
+	e->type = E_PROBE;
+	e->u.e.l = (Expr *)v;
+      }
+      else {
 	SET (Tl);
 	POP (Tl);
-	efree (e);
 	return NULL;
       }
-      f = newexpr ();
-      f->u.e.l = (void *)x;
-      f->u.e.r = (void *)y;
-      f->type = E_BITFIELD;
-      e->type = E_BITFIELD;
-      e->u.e.r = f;
-      if (x > y) {
-	efree (e);
-	SET (Tl);
-	POP (Tl);
-	return NULL;
-      }
-      POP (Tl);
     }
-    else {
-      POP (Tl);
-    }
-  }
-  else if (file_have (Tl, T[E_PROBE])) {
-    if (expr_parse_id && (v = (*expr_parse_id)(Tl))) {
-      POP (Tl);
-      e = newexpr ();
-      e->type = E_PROBE;
-      e->u.e.l = (Expr *)v;
-    }
-    else {
-      SET (Tl);
-      POP (Tl);
-      return NULL;
-    }
-  }
 #if 0
-  else if (file_have (Tl, T[E_CONCAT])) {
-    /* concatenation:
-        { expr, expr, expr, expr, expr, ... }
-    */
-    Expr *ret;
-    ret = e = newexpr ();
-    e->type = E_CONCAT;
-    e->u.e.l = I();
-    if (!e->u.e.l) {
-      efree (ret);
-      SET (Tl);
-      POP (Tl);
-      return NULL;
-    }
-    while (file_have (Tl, T[E_COMMA])) {
-      e->u.e.r = newexpr ();
-      e = e->u.e.r;
+    else if (file_have (Tl, T[E_CONCAT])) {
+      /* concatenation:
+	 { expr, expr, expr, expr, expr, ... }
+      */
+      Expr *ret;
+      ret = e = newexpr ();
       e->type = E_CONCAT;
       e->u.e.l = I();
       if (!e->u.e.l) {
@@ -721,62 +733,74 @@ static Expr *W (void)
 	POP (Tl);
 	return NULL;
       }
-    }
-    if (file_have (Tl, T[E_END])) {
-      e = ret;
-    }
-    else {
-      efree (ret);
-      SET (Tl);
-      POP (Tl);
-      return NULL;
-    }
-  }
-#endif
-  else {
-    if (v && expr_free_id) {
-      (*expr_free_id) (v);
-    }
-    SET (Tl);
-    if (file_have (Tl, f_id) && file_sym (Tl) == T[E_LPAR]) {
-      e = newexpr ();
-      e->type = E_FUNCTION;
-      e->u.fn.s = Strdup (file_prev (Tl));
-      e->u.fn.r = NULL;
-      f = e;
-      file_mustbe (Tl, T[E_LPAR]);
-      paren_count++;
-      if (file_sym (Tl) != T[E_RPAR]) {
-	do {
-	  f->u.e.r = newexpr (); /* wow! rely that this is the same
-				    space as u.fn.r */
-	  f = f->u.e.r;
-	  f->type = E_LT;
-	  f->u.e.r = NULL;
-	  f->u.e.l = I (); /* int expr, argument */
-	  if (!f->u.e.l) {
-	    efree (e);
-	    SET (Tl);
-	    POP (Tl);
-	    return NULL;
-	  }
-	} while (file_have (Tl, T[E_COMMA]));
-	paren_count--;
-	if (file_sym (Tl) != T[E_RPAR]) {
-	  efree (e);
+      while (file_have (Tl, T[E_COMMA])) {
+	e->u.e.r = newexpr ();
+	e = e->u.e.r;
+	e->type = E_CONCAT;
+	e->u.e.l = I();
+	if (!e->u.e.l) {
+	  efree (ret);
 	  SET (Tl);
 	  POP (Tl);
 	  return NULL;
 	}
       }
-      /* success! */
-      POP (Tl);
-      file_getsym (Tl);
+      if (file_have (Tl, T[E_END])) {
+	e = ret;
+      }
+      else {
+	efree (ret);
+	SET (Tl);
+	POP (Tl);
+	return NULL;
+      }
     }
+#endif
     else {
+      if (v && expr_free_id) {
+	(*expr_free_id) (v);
+      }
       SET (Tl);
-      POP (Tl);
-      return NULL;
+      if (file_have (Tl, f_id) && file_sym (Tl) == T[E_LPAR]) {
+	e = newexpr ();
+	e->type = E_FUNCTION;
+	e->u.fn.s = Strdup (file_prev (Tl));
+	e->u.fn.r = NULL;
+	f = e;
+	file_mustbe (Tl, T[E_LPAR]);
+	paren_count++;
+	if (file_sym (Tl) != T[E_RPAR]) {
+	  do {
+	    f->u.e.r = newexpr (); /* wow! rely that this is the same
+				      space as u.fn.r */
+	    f = f->u.e.r;
+	    f->type = E_LT;
+	    f->u.e.r = NULL;
+	    f->u.e.l = I (); /* int expr, argument */
+	    if (!f->u.e.l) {
+	      efree (e);
+	      SET (Tl);
+	      POP (Tl);
+	      return NULL;
+	    }
+	  } while (file_have (Tl, T[E_COMMA]));
+	  paren_count--;
+	  if (file_sym (Tl) != T[E_RPAR]) {
+	    efree (e);
+	    SET (Tl);
+	    POP (Tl);
+	    return NULL;
+	  }
+	}
+	/* success! */
+	POP (Tl);
+	file_getsym (Tl);
+      }
+      else {
+	SET (Tl);
+	POP (Tl);
+	return NULL;
+      }
     }
   }
   if (uminus || tilde) {

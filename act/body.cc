@@ -958,56 +958,68 @@ void ActBody_Loop::Print (FILE *fp)
   fprintf (fp, ")\n");
 }
 
+void act_syn_loop_setup (ActNamespace *ns, Scope *s,
+			    const char *id, Expr *lo, Expr *hi,
+			    
+			    /* outputs */
+			    ValueIdx **vx, int *ilo, int *ihi)
+{
+  Expr *ix;
+  
+  Assert (s->Add (id, TypeFactory::Factory()->NewPInt()),"What?");
+  
+  *vx = s->LookupVal (id);
+  (*vx)->init = 1;
+  (*vx)->u.idx = s->AllocPInt();
+  ix = expr_expand (lo, ns, s);
+  if (!expr_is_a_const (ix)) {
+    act_error_ctxt (stderr);
+    print_expr (stderr, lo);
+    fprintf (stderr, "\n");
+    fatal_error ("Isn't a constant expression");
+    Assert (ix->type == E_INT, "Should have been caught earlier");
+  }
+  *ilo = ix->u.v;
+  if (hi) {
+    ix = expr_expand (hi, ns, s);
+    if (!expr_is_a_const (ix)) {
+      act_error_ctxt (stderr);
+      print_expr (stderr, hi);
+      fprintf (stderr, "\n");
+      fatal_error ("Isn't a constant expression");
+    }
+    Assert (ix->type == E_INT, "Should have been caught earlier");
+    *ihi = ix->u.v;
+  }
+  else {
+    *ihi = *ilo-1;
+    *ilo = 0;
+  }
+}
+
+void act_syn_loop_teardown (ActNamespace *ns, Scope *s,
+			    const char *id, ValueIdx *vx)
+{
+  s->DeallocPInt (vx->u.idx, 1);
+  s->Del (id);
+}
+
+
 void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
 {
   int ilo, ihi;
   ValueIdx *vx;
-  Expr *e;
   
   Assert (t == ActBody_Loop::SEMI, "What loop is this?");
 
-  Assert (s->Add (id, TypeFactory::Factory()->NewPInt()), "Should have been caught earlier");
-
-  if (lo) {
-    e = expr_expand (lo, ns, s);
-    if (!expr_is_a_const (e)) {
-      act_error_ctxt (stderr);
-      print_expr (stderr, lo);
-      fprintf (stderr, "\n");
-      fatal_error ("Isn't a constant expression");
-    }
-    Assert (e->type == E_INT, "Should have been caught earlier");
-    ilo = e->u.v;
-    //FREE (e);
-  }
-
-  e = expr_expand (hi, ns, s);
-  if (!expr_is_a_const (e)) {
-    act_error_ctxt (stderr);
-    print_expr (stderr, hi);
-    fprintf (stderr, "\n");
-    fatal_error ("Isn't a constant expression");
-  }
-  Assert (e->type == E_INT, "Should have been caught earlier");
-  ihi = e->u.v;
-  //FREE (e);
-
-  if (!lo) {
-    ilo = 0;
-    ihi--;
-  }
-
-  vx = s->LookupVal (id);
-  vx->init = 1;
-  vx->u.idx = s->AllocPInt();
+  act_syn_loop_setup (ns, s, id, lo, hi, &vx, &ilo, &ihi);
 
   for (; ilo <= ihi; ilo++) {
     s->setPInt (vx->u.idx, ilo);
     b->Expandlist (ns, s);
   }
 
-  s->DeallocPInt (vx->u.idx, 1);
-  s->Del (id);
+  act_syn_loop_teardown (ns, s, id, vx);
 }
 
 void ActBody_Select::Expand (ActNamespace *ns, Scope *s)

@@ -23,6 +23,7 @@
  */
 #include <stdio.h>
 #include "act_walk_X.h"
+#include "act_parse_int.h"
 #include <act/lang.h>
 #include "config.h"
 
@@ -202,6 +203,29 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
   case E_NOT:  UOP; break;
   case E_COMPLEMENT: UOP; break;
   case E_UMINUS:     UOP; break;
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    if (cookie->scope->Lookup ((char *)e->u.e.l->u.e.l)) {
+      struct act_position p;
+      p.l = cookie->line;
+      p.c = cookie->column;
+      p.f = cookie->file;
+      act_parse_err (&p, "Identifier `%s' already exists in current scope",
+		     (char *)e->u.e.l->u.e.l);
+    }
+    cookie->scope->Add ((char *)e->u.e.l->u.e.l, cookie->tf->NewPInt());
+    NEW (ret->u.e.l, Expr);
+    ret->u.e.l->type = e->u.e.l->type;
+    ret->u.e.l->u.e.l = (Expr *)Strdup ((char *)e->u.e.l->u.e.l);
+    ret->u.e.l->u.e.r = NULL;
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->u.e.l = act_walk_X_expr (cookie, e->u.e.r->u.e.l);
+    NEW (ret->u.e.r->u.e.r, Expr);
+    ret->u.e.r->u.e.r->u.e.l = act_walk_X_expr (cookie, e->u.e.r->u.e.r->u.e.l);
+    ret->u.e.r->u.e.r->u.e.r = act_walk_X_expr (cookie, e->u.e.r->u.e.r->u.e.r);
+    cookie->scope->Del ((char *)e->u.e.l->u.e.l);
+    break;
 
   case E_INT:
     ret->u.v = e->u.v;

@@ -65,9 +65,12 @@ extern "C" {
 #define  E_BITFIELD 30
 #define  E_COMPLEMENT 31 /* bitwise complement */
 #define  E_REAL 32  /* not a real token */
-#define  E_END   33
 
-#define E_NUMBER 34 /* # of E_xxx things */
+#define  E_RAWFREE 33  
+  
+#define  E_END   34
+
+#define E_NUMBER 35 /* # of E_xxx things */
 
 #define E_FUNCTION 100
 
@@ -197,6 +200,16 @@ extern void (*expr_print_id) (pp_t *, void *);
 extern void (*expr_print_probe) (pp_t *, void *);
   /* Print #chan */
 
+  
+extern Expr *(*expr_parse_basecase_num)(LFILE *l);
+  /* if you want to support your own basecase for numerical expr */
+
+extern Expr *(*expr_parse_basecase_bool)(LFILE *l);
+  /* if you want to support your own basecase for bool expr */
+
+
+extern int expr_gettoken (int t);
+  /* needed for external parsing support */
 
 extern void expr_print (pp_t *, Expr *);
 /*  Print expression */

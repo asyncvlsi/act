@@ -871,17 +871,7 @@ one_method: ID "{" hse_body "}"
 /*
   For both channel and data types you can have spec bodies and aliases
 */
-base_body[ActBody *]: lang_spec base_body
-{{X:
-    if ($1) {
-      $1->Append ($2);
-      return $1;
-    }
-    else {
-      return $2;
-    }
-}}
-| alias base_body
+base_body[ActBody *]: base_body_item  base_body
 {{X:
     if ($1) {
       $1->Append ($2);
@@ -892,6 +882,24 @@ base_body[ActBody *]: lang_spec base_body
     }
 }}
 | /* empty */
+;
+
+base_body_item[ActBody *]: lang_spec
+{{X:
+    return $1;
+}}
+| alias
+{{X:
+    return $1;
+}}
+| loop_base
+{{X:
+    return $1;
+}}
+| conditional_base
+{{X:
+    return $1;
+}}
 ;
 
 /*------------------------------------------------------------------------
@@ -1941,7 +1949,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
 {{X:
     $0->scope->Del ($3);
     if (OPT_EMPTY ($6)) {
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, NULL, $5, $8);
+      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, NULL, $8);
     }
     else {
       ActRet *r;
@@ -2046,5 +2054,58 @@ gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
 | "else" "->" base_item_list
 {{X:
     return new ActBody_Select_gc (NULL, $3);
+}}
+;
+
+
+loop_base[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
+{{X:
+    lapply_X_loop_0_6 ($0, $2, $3, $5, $6);
+}}
+   base_body ")"
+{{X:
+    return apply_X_loop_opt0 ($0, $2, $3, $5, $6, $8);
+}}
+| "*["
+{{X:
+    lapply_X_loop_1_0 ($0);
+}}
+  { gc_1_base "[]" }* "]"
+{{X:
+    return apply_X_loop_opt1 ($0, $2);
+}}
+;
+
+conditional_base[ActBody *]: "["
+{{X:
+    lapply_X_conditional_0_0 ($0);
+}}
+guarded_cmds_base "]"
+{{X:
+    return apply_X_conditional_opt0 ($0, $2);
+}}
+;
+
+guarded_cmds_base[ActBody *]: { gc_1_base "[]" }*
+{{X:
+    return apply_X_guarded_cmds_opt0 ($0, $1);
+}}
+;
+
+gc_1_base[ActBody_Select_gc *]: wbool_expr "->" base_body
+{{X:
+    return apply_X_gc_1_opt0 ($0, $1, $3);
+}}
+| "(" "[]" ID
+{{X:
+    lapply_X_gc_1_1_2 ($0, $3);
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" base_body ")"
+{{X:
+    return apply_X_gc_1_opt1 ($0, $3, $5, $6, $8, $10);
+}}
+| "else" "->" base_body
+{{X:
+    return apply_X_gc_1_opt2 ($0, $3);
 }}
 ;

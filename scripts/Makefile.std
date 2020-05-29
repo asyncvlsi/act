@@ -40,6 +40,7 @@ INSTALLCONF=$(INSTALLDIR)/conf
 INSTALLINC=$(INSTALLDIR)/include
 INSTALLMAN=$(INSTALLDIR)/man
 INSTALLINFO=$(INSTALLDIR)/info
+INSTALLACT=$(INSTALLDIR)/act
 
 EXT=$(ARCH)_$(OS)
 
@@ -131,7 +132,7 @@ realclean: clean realcleansub
 depend: $(GENERATED) dependsub
 	-$(VLSI_TOOLS_SRC)/scripts/mymakedepend "$(SRCS)" $(DFLAGS) $(DEPEND_FLAGS)
 
-install: move-in install_bin install_lib install_inc install_conf move-out installsub
+install: move-in install_bin install_lib install_inc install_conf install_act move-out installsub
 
 install_bin: $(TARGETS)
 	@for i in dummy_bad_name $(TARGETS); \
@@ -163,6 +164,18 @@ install_conf: $(TARGETCONF)
                 fi; \
                 done
 
+install_act: $(TARGETACT)
+	@[ -d $(INSTALLACT) ] || mkdir $(INSTALLACT)
+	@for i in dummy_bad_name $(TARGETACT); \
+                do \
+                if [ $$i != "dummy_bad_name" ]; \
+                then \
+                        if [ -d $(INSTALLACT) ]; \
+                        then \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLACT)/$$i; \
+                        fi; \
+                fi; \
+		done
 
 install_lib: $(TARGETLIBS)
 	@for i in dummy_bad_name $(TARGETLIBS); \

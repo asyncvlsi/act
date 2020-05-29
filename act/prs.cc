@@ -249,8 +249,7 @@ static act_prs_expr_t *atom (LFILE *l)
       }
     }
     else {
-      e->u.loop.hi = e->u.loop.lo;
-      e->u.loop.lo = NULL;
+      e->u.loop.hi = NULL;
     }
     file_setflags (l, flags);
     if (!file_have (l, COLON)) {

@@ -254,6 +254,28 @@ int act_type_expr (Scope *s, Expr *e)
     return T_ERR;
     break;
 
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    lt = act_type_expr (s, e->u.e.r->u.e.l);
+    if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
+      typecheck_err ("Loop range is not of integer type");
+      return T_ERR;
+    }
+    if (e->u.e.r->u.e.r->u.e.l) {
+      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l);
+      if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
+	typecheck_err ("Loop range is not of integer type");
+	return T_ERR;
+      }
+    }
+    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r);
+    if (T_BASETYPE (lt) != T_BOOL || (lt & T_ARRAYOF)) {
+      typecheck_err ("Loop body is not of bool type");
+      return T_ERR;
+    }
+    return T_BOOL;
+    break;
+
     /* Boolean, unary */
   case E_NOT:
     lt = act_type_expr (s, e->u.e.l);

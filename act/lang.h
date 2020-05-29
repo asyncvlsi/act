@@ -155,7 +155,8 @@ enum act_chp_lang_type {
   ACT_CHP_SELECT, ACT_CHP_SELECT_NONDET,
   ACT_CHP_LOOP, ACT_CHP_DOLOOP,
   ACT_CHP_SKIP, ACT_CHP_ASSIGN,
-  ACT_CHP_SEND, ACT_CHP_RECV, ACT_CHP_FUNC
+  ACT_CHP_SEND, ACT_CHP_RECV, ACT_CHP_FUNC,
+  ACT_CHP_SEMILOOP, ACT_CHP_COMMALOOP
 };
 
 struct act_chp_lang;
@@ -188,10 +189,17 @@ typedef struct act_chp_lang {
     struct {
       list_t *cmd;
     } semi_comma;
+
     act_chp_gc_t *gc;			/* loop or select;
 					   also used for a do-loop,
 					   where there is exactly one gc
 					 */
+    struct {
+      const char *id;
+      Expr *lo, *hi;
+      struct act_chp_lang *body;
+    } loop;			/* syntactic replication */
+    
   } u;
 } act_chp_lang_t;
 

@@ -423,7 +423,15 @@ class ActBody_Lang : public ActBody {
 };
 
 
+/* standard setup/teardown functions for syntactic replication */
+void act_syn_loop_setup (ActNamespace *ns, Scope *s,
+			    const char *id, Expr *lo, Expr *hi,
+			    
+			    /* outputs */
+			 ValueIdx **vx, int *ilo, int *ihi);
 
+void act_syn_loop_teardown (ActNamespace *ns, Scope *s,
+			    const char *id, ValueIdx *vx);
 
 
 #endif /* __ACT_BODY_H__ */

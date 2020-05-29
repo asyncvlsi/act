@@ -225,49 +225,13 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 
   case ACT_PRS_EXPR_ANDLOOP:
   case ACT_PRS_EXPR_ORLOOP:
-    Assert (s->Add (p->u.loop.id, TypeFactory::Factory()->NewPInt()),
-	    "Huh?");
     {
       ValueIdx *vx;
       int ilo, ihi, i;
-      Expr *etmp;
 
-      if (p->u.loop.lo) {
-	etmp = expr_expand (p->u.loop.lo, ns, s);
-	if (etmp->type != E_INT) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "Expanding loop range in prs body\n  expr: ");
-	  print_expr (stderr, p->u.loop.lo);
-	  fprintf (stderr, "\nNot a constant int\n");
-	  exit (1);
-	}
-	ilo = etmp->u.v;
-	//FREE (etmp);
-      }
-      else {
-	ilo = 0;
-      }
-
-      etmp = expr_expand (p->u.loop.hi, ns, s);
-      if (etmp->type != E_INT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Expanding loop range in prs body\n  expr: ");
-	print_expr (stderr, p->u.loop.hi);
-	fprintf (stderr, "\nNot a constant int\n");
-	exit (1);
-      }
-      if (p->u.loop.lo) {
-	ihi = etmp->u.v;
-      }
-      else {
-	ihi = etmp->u.v-1;
-      }
-      //FREE (etmp);
-
-      vx = s->LookupVal (p->u.loop.id);
-      vx->init = 1;
-      vx->u.idx = s->AllocPInt();
-
+      act_syn_loop_setup (ns, s, p->u.loop.id, p->u.loop.lo, p->u.loop.hi,
+			  &vx, &ilo, &ihi);
+      
       if (ihi < ilo) {
 	/* empty */
 	if (p->type == ACT_PRS_EXPR_ANDLOOP) {
@@ -358,9 +322,8 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	  }
 	}
       }
-      s->DeallocPInt (vx->u.idx, 1);
+      act_syn_loop_teardown (ns, s, p->u.loop.id, vx);
     }
-    s->Del (p->u.loop.id);
     break;
 
   case ACT_PRS_EXPR_TRUE:
@@ -743,6 +706,30 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     }
     break;
 
+  case ACT_CHP_COMMALOOP:
+  case ACT_CHP_SEMILOOP:
+    {
+      int ilo, ihi;
+      act_syn_loop_setup (ns, s, c->u.loop.id, c->u.loop.lo, c->u.loop.hi,
+		      &vx, &ilo, &ihi);
+
+      if (c->type == ACT_CHP_COMMALOOP) {
+	ret->type = ACT_CHP_COMMA;
+      }
+      else {
+	ret->type = ACT_CHP_SEMI;
+      }
+      ret->u.semi_comma.cmd = list_new ();
+      for (int iter=ilo; iter <= ihi; iter++) {
+	s->setPInt (vx->u.idx, iter);
+	list_append (ret->u.semi_comma.cmd,
+		     chp_expand (c->u.loop.body, ns, s));
+	
+      }
+      act_syn_loop_teardown (ns, s, c->u.loop.id, vx);
+    }
+    break;
+
   case ACT_CHP_SELECT:
   case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_LOOP:
@@ -752,34 +739,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
       if (gctmp->id) {
 	int ilo, ihi;
-	Expr *ix;
-	Assert (s->Add (gctmp->id, TypeFactory::Factory()->NewPInt()),
-		"What?");
-	vx = s->LookupVal (gctmp->id);
-	vx->init = 1;
-	vx->u.idx = s->AllocPInt();
-	ix = expr_expand (gctmp->lo, ns, s);
-	if (!expr_is_a_const (ix)) {
-	  act_error_ctxt (stderr);
-	  print_expr (stderr, gctmp->lo);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Isn't a constant expression");
-	}
-	ilo = ix->u.v;
-	if (gctmp->hi) {
-	  ix = expr_expand (gctmp->lo, ns, s);
-	  if (!expr_is_a_const (ix)) {
-	    act_error_ctxt (stderr);
-	    print_expr (stderr, gctmp->lo);
-	    fprintf (stderr, "\n");
-	    fatal_error ("Isn't a constant expression");
-	  }
-	  ihi = ix->u.v;
-	}
-	else {
-	  ihi = ilo-1;
-	  ilo = 0;
-	}
+
+	act_syn_loop_setup (ns, s, gctmp->id, gctmp->lo, gctmp->hi,
+			&vx, &ilo, &ihi);
+	
 	for (int iter=ilo; iter <= ihi; iter++) {
 	  s->setPInt (vx->u.idx, iter);
 	  NEW (tmp, act_chp_gc_t);
@@ -789,8 +752,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  tmp->s = chp_expand (gctmp->s, ns, s);
 	  q_ins (gchd, gctl, tmp);
 	}
-	s->DeallocPInt (vx->u.idx, 1);
-	s->Del (gctmp->id);
+	act_syn_loop_teardown (ns, s, gctmp->id, vx);
       }
       else {	
 	NEW (tmp, act_chp_gc_t);

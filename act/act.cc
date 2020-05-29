@@ -359,7 +359,7 @@ Act::Act (const char *s)
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
 #endif
-
+  expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
   a = act_parse (s);
 
 #ifdef DEBUG_PERFORMANCE

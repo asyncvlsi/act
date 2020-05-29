@@ -141,6 +141,29 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 
   case E_OR: EMIT_BIN (4, "|"); break;
 
+  case E_ANDLOOP:
+    snprintf (buf+k, sz, "(&");
+  case E_ORLOOP:
+    snprintf (buf+k, sz, "(|");
+    PRINT_STEP;
+    snprintf (buf+k, sz, "%s:", (char *)e->u.e.l->u.e.l);
+    PRINT_STEP;
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 0);
+    PRINT_STEP;
+    if (e->u.e.r->u.e.r->u.e.l) {
+      snprintf (buf+k, sz, "..");
+      PRINT_STEP;
+      _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 0);
+      PRINT_STEP;
+    }
+    snprintf (buf+k, sz, ":");
+    PRINT_STEP;
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, 0);
+    PRINT_STEP;
+    snprintf (buf+k, sz, ")");
+    PRINT_STEP;
+    break;
+
   case E_QUERY: /* prec = 3 */
     PREC_BEGIN(3);
     _print_expr (buf+k, sz, e->u.e.l, 3);
@@ -344,7 +367,7 @@ int expr_equal (Expr *a, Expr *b)
       return 0;
     }
     break;
-    
+
     /* unary */
   case E_UMINUS:
   case E_NOT:
@@ -386,6 +409,25 @@ int expr_equal (Expr *a, Expr *b)
     else {
       return 0;
     }
+    break;
+
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    if (strcmp ((char *)a->u.e.l->u.e.l,
+		(char *)b->u.e.l->u.e.l) != 0) {
+      return 0;
+    }
+    if (!expr_equal (a->u.e.r->u.e.l, b->u.e.r->u.e.l)) {
+      return 0;
+    }
+    if (!expr_equal (a->u.e.r->u.e.r->u.e.l, b->u.e.r->u.e.r->u.e.l)) {
+      return 0;
+    }
+    if (!expr_equal (a->u.e.r->u.e.r->u.e.r, b->u.e.r->u.e.r->u.e.r)) {
+      return 0;
+    }
+    return 1;
     break;
 
   case E_FUNCTION:
@@ -582,6 +624,107 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     } while (0)
 
   switch (e->type) {
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    LVAL_ERROR;
+    {
+      int ilo, ihi;
+      ValueIdx *vx;
+      Expr *cur = NULL;
+
+      act_syn_loop_setup (ns, s, (char *)e->u.e.l->u.e.l,
+			  e->u.e.r->u.e.l, e->u.e.r->u.e.r->u.e.l,
+			  &vx, &ilo, &ihi);
+
+      int is_const = 1;
+      int eval;
+      int count = 0;
+      int i;
+
+      if (e->type == E_ANDLOOP) {
+	ret->type = E_AND;
+      }
+      else {
+	ret->type = E_OR;
+      }
+      
+      for (i=ilo; i <= ihi; i++) {
+	s->setPInt (vx->u.idx, i);
+	Expr *tmp = expr_expand (e->u.e.r->u.e.r->u.e.r, ns, s);
+	if (is_const && expr_is_a_const (tmp)) {
+	  if (tmp->type == E_TRUE || tmp->type == E_FALSE) {
+	    if (e->type == E_ANDLOOP) {
+	      if (tmp->type == E_FALSE) {
+		/* we're done, the whole thing is false */
+		break;
+	      }
+	    }
+	    else {
+	      if (tmp->type == E_TRUE) {
+		break;
+	      }
+	    }
+	  }
+	  else {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "\texpanding expr: ");
+	    print_expr (stderr, e);
+	    fprintf (stderr,"\n");
+	    fatal_error ("Incompatible types for &/| operator");
+	  }
+	}
+	else {
+	  is_const = 0;
+	  if (count == 0) {
+	    ret->u.e.l = tmp;
+	  }
+	  else if (count == 1) {
+	    ret->u.e.r = tmp;
+	    cur = ret;
+	  }
+	  else {
+	    Expr *tmp2;
+	    NEW (tmp2, Expr);
+	    tmp2->u.e.l = cur->u.e.r;
+	    tmp2->type = cur->type;
+	    cur->u.e.r = tmp2;
+	    tmp2->u.e.r = tmp;
+	    cur = tmp2;
+	  }
+	  count++;
+	}
+      }
+      if (is_const) {
+	if (i <= ihi) {
+	  /* short circuit */
+	  if (e->type == E_ANDLOOP) {
+	    ret->type = E_FALSE;
+	  }
+	  else {
+	    ret->type = E_TRUE;
+	  }
+	}
+	else {
+	  if (e->type == E_ANDLOOP) {
+	    ret->type = E_TRUE;
+	  }
+	  else {
+	    ret->type = E_FALSE;
+	  }
+	}
+      }
+      else {
+	if (count == 1) {
+	  Expr *tmp = ret->u.e.l;
+	  FREE (ret);
+	  ret = tmp;
+	}
+      }
+      act_syn_loop_teardown (ns, s, (char *)e->u.e.l->u.e.l, vx);
+    }
+    break;
+    
   case E_AND:
   case E_OR:
   case E_XOR:
