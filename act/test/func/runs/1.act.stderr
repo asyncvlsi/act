@@ -1,0 +1,2 @@
+ERROR: File `1.act', line 1, col 9
+	Function `f': return type incompatible with arguments
