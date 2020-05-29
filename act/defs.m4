@@ -461,6 +461,15 @@ param_formal_list: { param_inst ";" }*
 }}
 ;
 
+func_ret_type[InstType *]: physical_inst_type
+{{X:
+    return $1;
+}}
+| param_type
+{{X:
+    return $1;
+}}
+;
 
 single_port_item: physical_inst_type id_list
 {{X:
@@ -1199,7 +1208,7 @@ ID
     $0->u_f = f;
     $0->scope = $0->u_f->CurScope ();
 }}
-"(" function_formal_list  ")" [ ":" inst_type ] 
+"(" function_formal_list  ")"  ":" func_ret_type
 {{X:
     UserDef *u;
     /* let's check to see if this matches any previous definition */
@@ -1217,24 +1226,19 @@ ID
     else {
       $A($0->curns->CreateType($3, $0->u_f));
     }
-
-    if (!OPT_EMPTY ($7)) {
-      ActRet *r;
-      r = OPT_VALUE ($7);
-      $A(r->type == R_INST_TYPE);
-      $0->u_f->setRetType (r->u.inst);
-      FREE (r);
+    if ($0->u_f->getNumPorts() > 0 && TypeFactory::isParamType ($8)) {
+      $E("Function ``%s'': return type incompatible with arguments", $3);
     }
-    else {
-      $0->u_f->setRetType (NULL);
+    if ($0->u_f->getNumParams() > 0 && !TypeFactory::isParamType ($8)) {
+      $E("Function ``%s'': return type incompatible with arguments", $3);
     }
-    OPT_FREE ($7);
- 
+    
+    $0->u_f->setRetType ($8);
     $0->strict_checking = 0;
 }}
 func_body
 {{X:
-    $0->u_f->setBody ($8);
+    $0->u_f->setBody ($9);
     $0->u_f = NULL;
     $0->scope = $0->curns->CurScope();
     return NULL;

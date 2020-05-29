@@ -375,8 +375,45 @@ int act_type_expr (Scope *s, Expr *e)
     /* UMMMM */
   case E_FUNCTION:
     /* typecheck all arguments; then return result type */
-    typecheck_err ("Function! Implement me please");
-    return T_ERR;
+    {
+      unsigned int ret = 0;
+      UserDef *u = (UserDef *) e->u.fn.s;
+      Assert (TypeFactory::isFuncType (u), "Hmm.");
+      Function *fn = dynamic_cast<Function *>(u);
+      InstType *rtype = fn->getRetType();
+      if (TypeFactory::isParamType(rtype)) {
+	ret |= T_PARAM;
+      }
+      if (fn->getRetType()->arrayInfo()) {
+	ret |= T_ARRAYOF;
+      }
+      if (ret & T_PARAM) {
+	if (TypeFactory::isPIntType (rtype)) {
+	  ret |= T_INT;
+	}
+	else if (TypeFactory::isPBoolType (rtype)) {
+	  ret |= T_BOOL;
+	}
+	else if (TypeFactory::isPRealType (rtype)) {
+	  ret |= T_REAL;
+	}
+	else {
+	  Assert (0, "Unknown return type");
+	}
+      }
+      else {
+	if (TypeFactory::isIntType (rtype)) {
+	  ret |= T_INT;
+	}
+	else if (TypeFactory::isBoolType (rtype)) {
+	  ret |= T_BOOL;
+	}
+	else {
+	  Assert (0, "Unknown return type");
+	}
+      }
+      return ret;
+    }
     break;
 
     /* leaves */
