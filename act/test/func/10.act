@@ -1,0 +1,18 @@
+function g (pint x) : pint
+{
+  pint w[10];
+  chp {
+     w[5] := x*x;
+     self := w[5]
+  }
+}
+
+bool x[1+g(0)];
+
+bool y[1];
+
+x = y;
+
+bool z[1+g(2)];
+
+y = z;

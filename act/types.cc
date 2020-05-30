@@ -2333,7 +2333,7 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
 	fatal_error ("Assignment: expression is not a constant?");
       }
       AExpr *ae = new AExpr (e);
-      s->BindParam (id->getName(), ae);
+      s->BindParam (id, ae);
       delete ae;
     }      
     break;
