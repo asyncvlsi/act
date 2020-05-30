@@ -891,6 +891,7 @@ UserDef::UserDef (ActNamespace *ns)
 
   defined = 0;
   expanded = 0;
+  pending = 0;
 
   nt = 0;
   pt = NULL;
