@@ -1592,6 +1592,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   return xd;
 }
 
+
 Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Channel *xc;
@@ -1619,6 +1620,31 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   return xc;
 }
+
+
+Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Function *xd;
+  UserDef *ux;
+  int cache_hit;
+  int i;
+
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+
+  if (cache_hit) {
+    return dynamic_cast<Function *>(ux);
+  }
+
+  xd = new Function (ux);
+  delete ux;
+
+  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+
+  xd->setRetType (ret_type->Expand (ns, s));
+  
+  return xd;
+}
+
 
 
 
@@ -2157,4 +2183,309 @@ int UserDef::isLeaf ()
     }
   }
   return 1;
+}
+
+static void _run_chp (Scope *s, act_chp_lang_t *c)
+{
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    for (listitem_t *li = list_first (c->u.semi_comma.cmd);
+	 li; li = list_next (li)) {
+      _run_chp (s, (act_chp_lang_t *) list_value (li));
+    }
+    break;
+
+  case ACT_CHP_COMMALOOP:
+  case ACT_CHP_SEMILOOP:
+    {
+      int ilo, ihi;
+      ValueIdx *vx;
+      act_syn_loop_setup (NULL, s, c->u.loop.id, c->u.loop.lo, c->u.loop.hi,
+			  &vx, &ilo, &ihi);
+
+      for (int iter=ilo; iter <= ihi; iter++) {
+	s->setPInt (vx->u.idx, iter);
+	_run_chp (s, c->u.loop.body);
+      }
+      act_syn_loop_teardown (NULL, s, c->u.loop.id, vx);
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+    {
+      act_chp_gc_t *gc;
+      for (gc = c->u.gc; gc; gc = gc->next) {
+	Expr *guard;
+	if (gc->id) {
+	  ValueIdx *vx;
+	  int ilo, ihi;
+
+	  act_syn_loop_setup (NULL, s, gc->id, gc->lo, gc->hi,
+			      &vx, &ilo, &ihi);
+	
+	  for (int iter=ilo; iter <= ihi; iter++) {
+	    s->setPInt (vx->u.idx, iter);
+	    guard = expr_expand (gc->g, NULL, s);
+	    if (!guard || guard->type == E_TRUE) {
+	      /* guard is true */
+	      _run_chp (s, gc->s);
+	      act_syn_loop_teardown (NULL, s, gc->id, vx);
+	      return;
+	    }
+	    if (!expr_is_a_const (guard)) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Guard is not a constant expression?");
+	    }
+	  }
+	  act_syn_loop_teardown (NULL, s, gc->id, vx);
+	}
+	else {
+	  guard = expr_expand (gc->g, NULL, s);
+	  if (!guard || guard->type == E_TRUE) {
+	    _run_chp (s, gc->s);
+	    return;
+	  }
+	  if (!expr_is_a_const (guard)) {
+	    act_error_ctxt (stderr);
+	    fatal_error ("Guard is not a constant expression?");
+	  }
+	}
+      }
+      act_error_ctxt (stderr);
+      fatal_error ("In a function call: all guards are false!");
+    }
+    break;
+
+  case ACT_CHP_LOOP:
+    while (1) {
+      for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
+	Expr *guard;
+	if (gc->id) {
+	  ValueIdx *vx;
+	  int ilo, ihi;
+	  
+	  act_syn_loop_setup (NULL, s, gc->id, gc->lo, gc->hi,
+			      &vx, &ilo, &ihi);
+	
+	  for (int iter=ilo; iter <= ihi; iter++) {
+	    s->setPInt (vx->u.idx, iter);
+	    guard = expr_expand (gc->g, NULL, s);
+	    if (!guard || guard->type == E_TRUE) {
+	      /* guard is true */
+	      _run_chp (s, gc->s);
+	      act_syn_loop_teardown (NULL, s, gc->id, vx);
+	      goto resume;
+	    }
+	    if (!expr_is_a_const (guard)) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Guard is not a constant expression?");
+	    }
+	  }
+	  act_syn_loop_teardown (NULL, s, gc->id, vx);
+	}
+	else {
+	  guard = expr_expand (gc->g, NULL, s);
+	  if (!guard || guard->type == E_TRUE) {
+	    _run_chp (s, gc->s);
+	    goto resume;
+	  }
+	  if (!expr_is_a_const (guard)) {
+	    act_error_ctxt (stderr);
+	    fatal_error ("Guard is not a constant expression?");
+	  }
+	}
+      }
+      /* all guards false */
+      return;
+    resume:
+      ;
+    }
+    break;
+
+  case ACT_CHP_DOLOOP:
+    {
+      Expr *guard;
+      Assert (c->u.gc->next == NULL, "What?");
+      do {
+	_run_chp (s, c->u.gc->s);
+	guard = expr_expand (c->u.gc->g, NULL, s);
+      } while (!guard || guard->type == E_TRUE);
+      if (!expr_is_a_const (guard)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Guard is not a constant expression?");
+      }
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      ActId *id = expand_var_write (c->u.assign.id, NULL, s);
+      Expr *e;
+      e = expr_expand (c->u.assign.e, NULL, s);
+      if (!expr_is_a_const (e)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Assignment: expression is not a constant?");
+      }
+      AExpr *ae = new AExpr (e);
+      s->BindParam (id->getName(), ae);
+      delete ae;
+    }      
+    break;
+    
+  case ACT_CHP_SEND:
+    act_error_ctxt (stderr);
+    fatal_error ("Channels in a function?");
+    break;
+    
+  case ACT_CHP_RECV:
+    act_error_ctxt (stderr);
+    fatal_error ("Channels in a function?");
+    break;
+
+  case ACT_CHP_FUNC:
+    /* built-in functions; skip */
+    break;
+    
+  default:
+    break;
+  }
+}
+
+Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
+{
+  Assert (nargs == getNumParams(), "What?");
+  
+  for (int i=0; i < nargs; i++) {
+      Assert (expr_is_a_const (args[i]), "Argument is not a constant?");
+  }
+
+  /* 
+     now we allocate all the parameters within the function scope
+     and bind them to the specified values.
+  */
+    
+  /* evaluate function!
+     1. Bind parameters 
+  */
+
+  if (pending) {
+    fatal_error ("Sorry, recursive functions (`%s') not supported.",
+		 getName());
+  }
+
+  /* XXX we could cache the allocated state, maybe later...*/
+  
+  I->FlushExpand ();
+  pending = 1;
+  expanded = 1;
+
+  ValueIdx *vx;
+      
+  for (int i=0; i < getNumParams(); i++) {
+    InstType *it;
+    const char *name;
+    it = getPortType (-(i+1));
+    name = getPortName (-(i+1));
+    
+    I->Add (name, it);
+    vx = I->LookupVal (name);
+    Assert (vx, "Hmm");
+    vx->init = 1;
+    if (TypeFactory::isPIntType (it)) {
+      vx->u.idx = I->AllocPInt();
+    }
+    else if (TypeFactory::isPBoolType (it)) {
+      vx->u.idx = I->AllocPBool();
+    }
+    else if (TypeFactory::isPRealType (it)) {
+      vx->u.idx = I->AllocPReal();
+    }
+    else {
+      fatal_error ("Invalid type in function signature");
+    }
+    AExpr *ae = new AExpr (args[i]);
+    I->BindParam (name, ae);
+    delete ae;
+  }
+
+  I->Add ("self", getRetType ()->Expand (ns, I));
+  vx = I->LookupVal ("self");
+  Assert (vx, "Hmm");
+  vx->init = 1;
+  if (TypeFactory::isPIntType (getRetType())) {
+    vx->u.idx = I->AllocPInt();
+  }
+  else if (TypeFactory::isPBoolType (getRetType())) {
+    vx->u.idx = I->AllocPBool();
+  }
+  else if (TypeFactory::isPRealType (getRetType())) {
+    vx->u.idx = I->AllocPReal();
+  }
+  else {
+    fatal_error ("Invalid return type in function signature");
+  }
+  
+
+  /* now run the chp body */
+  act_chp *c = NULL;
+  
+  if (b) {
+    ActBody *btmp;
+
+    for (btmp = b; btmp; btmp = btmp->Next()) {
+      ActBody_Lang *l;
+      if (!(l = dynamic_cast<ActBody_Lang *>(btmp))) {
+	btmp->Expand (ns, I);
+      }
+      else {
+	Assert (l->gettype() == ActBody_Lang::LANG_CHP, "What?");
+	c = (act_chp *)l->getlang();
+      }
+    }
+  }
+  pending = 0;
+  Assert (c, "Isn't this required?!");
+
+  /* run the chp */
+  _run_chp (I, c->c);
+
+  Expr *ret;
+
+  if (TypeFactory::isPIntType (getRetType())) {
+    if (I->issetPInt (vx->u.idx)) {
+      ret = const_expr (I->getPInt (vx->u.idx));
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("self is not assigned!");
+    }
+  }
+  else if (TypeFactory::isPBoolType (getRetType())) {
+    if (I->issetPBool (vx->u.idx)) {
+      ret = const_expr_bool (I->getPBool (vx->u.idx));
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("self is not assigned!");
+    }
+  }
+  else if (TypeFactory::isPRealType (getRetType())) {
+    if (I->issetPReal (vx->u.idx)) {
+      ret = const_expr_real (I->getPReal (vx->u.idx));
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("self is not assigned!");
+    }
+  }
+  else {
+    fatal_error ("Invalid return type in function signature");
+  }
+  return ret;
 }

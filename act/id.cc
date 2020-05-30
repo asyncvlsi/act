@@ -317,6 +317,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 	(TypeFactory::isPBoolType(base) && !s->issetPBool (vx->u.idx + offset)) ||
 	(TypeFactory::isPRealType(base) && !s->issetPReal (vx->u.idx + offset)) ||
 	(TypeFactory::isPTypeType(base) && !s->issetPType (vx->u.idx + offset))) {
+
       act_error_ctxt (stderr);
       fprintf (stderr, " id: ");
       this->Print (stderr);

@@ -280,6 +280,30 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     return;
 
   case E_FUNCTION:
+    {
+      UserDef *u = (UserDef *)e->u.fn.s;
+      Function *f = dynamic_cast<Function *>(u);
+      Expr *tmp;
+      Assert (f, "Hmm.");
+      snprintf (buf+k, sz, "%s", f->getName());
+      PRINT_STEP;
+      snprintf (buf+k, sz, "(");
+      PRINT_STEP;
+      tmp = e->u.fn.r;
+      while (tmp) {
+	sprint_expr (buf+k, sz, tmp->u.e.l);
+	PRINT_STEP;
+	tmp = tmp->u.e.r;
+	if (tmp) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+      }
+      snprintf (buf+k, sz, ")");
+      PRINT_STEP;
+    }
+    break;
+    
   case E_BITFIELD:
   default:
     fatal_error ("Unhandled case!\n");
@@ -431,7 +455,23 @@ int expr_equal (Expr *a, Expr *b)
     break;
 
   case E_FUNCTION:
-    fatal_error ("Fix this please");
+    if (a->u.fn.s != b->u.fn.s) return 0;
+    {
+      Expr *at, *bt;
+      at = a->u.fn.r;
+      bt = b->u.fn.r;
+      while (at && bt) {
+	if (!expr_equal (at->u.e.l, bt->u.e.l)) {
+	  return 0;
+	}
+	at = at->u.e.r;
+	bt = bt->u.e.r;
+      }
+      if (at || bt) {
+	return 0;
+      }
+      return 1;
+    }
     break;
 
     /* leaf */
@@ -594,6 +634,67 @@ int expr_equal (Expr *a, Expr *b)
   return 0;
 }
 
+
+static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
+{
+  Function *x = dynamic_cast<Function *>((UserDef *)fn->u.fn.s);
+  Expr *e, *f;
+  Assert (x, "What?");
+
+  if (!TypeFactory::isParamType (x->getRetType())) {
+    /* ok just expand the arguments */
+    Function *xf;
+    xf = x->Expand (ns, s, 0, NULL);
+    (*ret)->u.fn.s = (char *) ((UserDef *)xf);
+    (*ret)->u.fn.r = NULL;
+    e = fn->u.fn.r;
+    f = NULL;
+    while (e) {
+      Expr *x = expr_expand (e, ns, s, 0);
+      if (f == NULL) {
+	NEW (f, Expr);
+	(*ret)->u.fn.r = f;
+	f->u.e.r = NULL;
+      }
+      else {
+	NEW (f->u.e.r, Expr);
+	f = f->u.e.r;
+	f->u.e.r = NULL;
+      }
+      f->u.e.l = x;
+      f->type = e->type;
+      e = e->u.e.r;
+    }
+  }
+  else {
+    Expr **args;
+    int nargs;
+    Expr *e;
+
+    nargs = 0;
+    e = fn->u.e.r;
+    while (e) {
+      nargs++;
+      e = e->u.e.r;
+    }
+    if (nargs > 0) {
+      MALLOC (args, Expr *, nargs);
+      e = fn->u.e.r;
+      for (int i=0; i < nargs; i++) {
+	args[i] = expr_expand (e->u.e.l, ns, s, 0);
+	e = e->u.e.r;
+      }
+    }
+    for (int i=0; i < nargs; i++) {
+      Assert (expr_is_a_const (args[i]), "Argument is not a constant?");
+    }
+    e = x->eval (ns, nargs, args);
+    FREE (*ret);
+    *ret = e;
+  }
+  return;
+}
+    
 
 /*------------------------------------------------------------------------
  * Expand expression, replacing all paramters. If it is an lval, then
@@ -1152,6 +1253,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
     break;
 
+  case E_FUNCTION:
+    LVAL_ERROR;
+    _eval_function (ns, s, e, &ret);
+    break;
+
   case E_VAR:
     /* expand an ID:
        this either returns an expanded ID, or 
@@ -1172,7 +1278,6 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     tmp = TypeFactory::NewExpr (ret);
     FREE (ret);
     ret = tmp;
-    
     break;
 
   case E_REAL:
@@ -1199,6 +1304,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 
   case E_SELF:
     break;
+
+    
 
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);

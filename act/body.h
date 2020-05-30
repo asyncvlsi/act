@@ -417,6 +417,9 @@ class ActBody_Lang : public ActBody {
   void Print (FILE *fp);
   ActBody *Clone();
 
+  void *getlang() { return lang; }
+  enum langtype gettype() { return t; }
+
  private:
   enum langtype t;
   void *lang;

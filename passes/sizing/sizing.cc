@@ -316,12 +316,12 @@ void *ActSizingPass::local_op (Process *p, int mode)
   Assert (mode == 0, "What?");
   
   if (p) {
-    prs = p->lang->getprs();
-    sz = p->lang->getsizing();
+    prs = p->getlang()->getprs();
+    sz = p->getlang()->getsizing();
   }
   else {
     prs = ActNamespace::Global()->getprs();
-    sz = ActNamespace::Global()->lang->getsizing();
+    sz = ActNamespace::Global()->getlang()->getsizing();
   }
 
   if (!prs || !sz) return NULL;

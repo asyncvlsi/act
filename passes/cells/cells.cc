@@ -2542,7 +2542,7 @@ void ActCellPass::prs_to_cells (Process *p)
     }
     else {
       if (!prevprs) {
-	p->lang->setprs (prs->next);
+	p->getlang()->setprs (prs->next);
       }
       else {
 	prevprs->next = prs->next;

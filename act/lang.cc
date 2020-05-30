@@ -89,10 +89,33 @@ static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
   return idtmp;
 }
 
-static ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
+/*
+ * This is a chp variable to be written. So it can have array
+ * dereferences
+ */
+ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
 {
-  return expand_var_read (id, ns, s);
+  ActId *idtmp;
+  Expr *etmp;
+  
+  if (!id) return NULL;
+
+  /* this needs to be changed  to: expand as much as possible, not
+     full expand. It needs to be a non-array variable type.
+  */
+  idtmp = id->Expand (ns, s);
+  
+  etmp = idtmp->Eval (ns, s, 1);
+  Assert (etmp->type == E_VAR, "Hmm");
+  if ((ActId *)etmp->u.e.l != idtmp) {
+    delete idtmp;
+  }
+  idtmp = (ActId *)etmp->u.e.l;
+  /* check that type is a bool */
+  FREE (etmp);
+  return idtmp;
 }
+
 
 static ActId *expand_var_chan (ActId *id, ActNamespace *ns, Scope *s)
 {

@@ -351,12 +351,13 @@ class ActNamespace {
   void setBody (ActBody *b) { B = b; }
   void AppendBody (ActBody *b);
 
-  act_languages *lang;
-
   act_prs *getprs ();
   act_spec *getspec ();
+  act_languages *getlang() { return lang; }
 
  private:
+  act_languages *lang;
+
   /**
    * hash table entry for this namespace
    */

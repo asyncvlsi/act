@@ -1184,25 +1184,25 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     ux = s->getUserDef();
     if (!ux) {
       /* better be the global namespace */
-      if ((old = ActNamespace::Global()->lang->getprs())) {
+      if ((old = ActNamespace::Global()->getlang()->getprs())) {
 	while (old->next) {
 	  old = old->next;
 	}
 	old->next = p;
       }
       else {
-	ActNamespace::Global()->lang->setprs (p);
+	ActNamespace::Global()->getlang()->setprs (p);
       }
     }
     else {
-      if ((old = ux->lang->getprs())) {
+      if ((old = ux->getlang()->getprs())) {
 	while (old->next) {
 	  old = old->next;
 	}
 	old->next = p;
       }
       else {
-	ux->lang->setprs (p);
+	ux->getlang()->setprs (p);
       }
     }
     break;
@@ -1211,10 +1211,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
-      ActNamespace::Global()->lang->setchp (c);
+      ActNamespace::Global()->getlang()->setchp (c);
     }
     else {
-      ux->lang->setchp (c);
+      ux->getlang()->setchp (c);
     }
     break;
     
@@ -1222,10 +1222,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
-      ActNamespace::Global()->lang->sethse (c);
+      ActNamespace::Global()->getlang()->sethse (c);
     }
     else {
-      ux->lang->sethse (c);
+      ux->getlang()->sethse (c);
     }
     break;
 
@@ -1233,10 +1233,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     spec = spec_expand ((act_spec *)lang, ns, s);
     ux = s->getUserDef ();
     if (!ux) {
-      ActNamespace::Global()->lang->setspec (spec);
+      ActNamespace::Global()->getlang()->setspec (spec);
     }
     else {
-      ux->lang->setspec (spec);
+      ux->getlang()->setspec (spec);
     }
     break;
 
@@ -1250,10 +1250,10 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     sz = sizing_expand ((act_sizing *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
-      ActNamespace::Global()->lang->setsizing (sz);
+      ActNamespace::Global()->getlang()->setsizing (sz);
     }
     else {
-      ux->lang->setsizing (sz);
+      ux->getlang()->setsizing (sz);
     }
     break;
     

@@ -144,7 +144,16 @@ Expr *const_expr_bool (int val)
   FREE (e);
   
   return f;
-}  
+}
+
+Expr *const_expr_real (double d)
+{
+  Expr *e;
+  NEW (e, Expr);
+  e->type = E_REAL;
+  e->u.f = d;
+  return e;
+}
 
 /**
  * Print out a list of strings to the specified file, separated by

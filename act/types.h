@@ -304,9 +304,9 @@ class UserDef : public Type {
   ActNamespace *getns() { return _ns; }
   InstType *root();
 
-  act_languages *lang;
   act_prs *getprs ();
   act_spec *getspec ();
+  act_languages *getlang () { return lang; }
 
   int isLeaf(); /**< if there are no sub-circuits, return 1 */
 
@@ -321,6 +321,8 @@ class UserDef : public Type {
   unsigned int pending:1;	/**< 1 if this is currently being
 				   expanded, 0 otherwise. */
 
+  act_languages *lang;
+  
   int nt;			/**< number of template parameters */
   InstType **pt;		/**< parameter types */
   const char **pn;		/**< parameter names */
@@ -377,6 +379,10 @@ class Function : public UserDef {
 
   void setRetType (InstType *i) { ret_type = i; }
   InstType *getRetType () { return ret_type; }
+
+  Function *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  Expr *eval (ActNamespace *ns, int nargs, Expr **args);
   
  private:
   InstType *ret_type;
@@ -764,7 +770,6 @@ extern "C" {
 Expr *act_parse_expr_syn_loop_bool (LFILE *l);
 Expr *act_parse_expr_intexpr_base (LFILE *l);
 int act_expr_parse_newtokens (LFILE *l);
-  
   
 }
 
