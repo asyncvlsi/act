@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Connection: x = y
+  LHS: bool[2]
+  RHS: bool[16]
+FATAL: Type-checking failed on connection
+	Types `bool[2]' and `bool[16]' are not compatible
