@@ -1206,6 +1206,7 @@ ID
       break;
     }
     $0->u_f = f;
+    $0->strict_checking = 1;
     $0->scope = $0->u_f->CurScope ();
 }}
 "(" function_formal_list  ")"  ":" func_ret_type
@@ -1232,7 +1233,8 @@ ID
     if ($0->u_f->getNumParams() > 0 && !TypeFactory::isParamType ($8)) {
       $E("Function ``%s'': return type incompatible with arguments", $3);
     }
-    
+
+    $0->scope->Add ("self", $8);
     $0->u_f->setRetType ($8);
     $0->strict_checking = 0;
 }}

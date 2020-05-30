@@ -1516,6 +1516,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     x = ux->root();
     ux->CurScope()->Add ("self", x);
   }
+  else if (dynamic_cast<Function *>(this)) {
+    InstType *x = dynamic_cast<Function *>(this)->getRetType();
+    ux->CurScope()->Add ("self", x);
+  }
   else {
     /* process, no this pointer */
   }

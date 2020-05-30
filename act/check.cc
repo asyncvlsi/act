@@ -383,6 +383,7 @@ int act_type_expr (Scope *s, Expr *e)
       InstType *rtype = fn->getRetType();
       int kind = 0;
       Expr *tmp = e->u.fn.r;
+      int strict_flag = T_STRICT;
 
       if (TypeFactory::isParamType (rtype)) {
 	kind = 0;
@@ -396,6 +397,8 @@ int act_type_expr (Scope *s, Expr *e)
 	InstType *x = fn->getPortType (kind == 0 ? -(i+1) : i);
 	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
 
+	strict_flag &= act_type_expr (s, tmp->u.e.l);
+
 	if (!x->isConnectable (y, 1)) {
 	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
 			 fn->getName(), i);
@@ -406,7 +409,7 @@ int act_type_expr (Scope *s, Expr *e)
       /*-- provide return type --*/
       
       if (TypeFactory::isParamType(rtype)) {
-	ret |= T_PARAM;
+	ret |= T_PARAM|strict_flag;
       }
       if (fn->getRetType()->arrayInfo()) {
 	ret |= T_ARRAYOF;
