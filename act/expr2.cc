@@ -1303,9 +1303,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 #endif
 
   case E_SELF:
+    xid = new ActId ("self");
+    te = xid->Eval (ns, s, is_lval);
+    if (te->type != E_VAR) {
+      delete xid;
+    }
+    FREE (ret);
+    ret = te;
     break;
-
-    
 
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);

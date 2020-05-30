@@ -2325,9 +2325,8 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
 
   case ACT_CHP_ASSIGN:
     {
+      Expr *e = expr_expand (c->u.assign.e, NULL, s);
       ActId *id = expand_var_write (c->u.assign.id, NULL, s);
-      Expr *e;
-      e = expr_expand (c->u.assign.e, NULL, s);
       if (!expr_is_a_const (e)) {
 	act_error_ctxt (stderr);
 	fatal_error ("Assignment: expression is not a constant?");
@@ -2449,11 +2448,12 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
       }
     }
   }
-  pending = 0;
-  Assert (c, "Isn't this required?!");
-
+  
   /* run the chp */
+  Assert (c, "Isn't this required?!");
   _run_chp (I, c->c);
+
+  pending = 0;
 
   Expr *ret;
 
