@@ -650,7 +650,7 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
     e = fn->u.fn.r;
     f = NULL;
     while (e) {
-      Expr *x = expr_expand (e, ns, s, 0);
+      Expr *x = expr_expand (e->u.e.l, ns, s, 0);
       if (f == NULL) {
 	NEW (f, Expr);
 	(*ret)->u.fn.r = f;
@@ -752,7 +752,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       
       for (i=ilo; i <= ihi; i++) {
 	s->setPInt (vx->u.idx, i);
-	Expr *tmp = expr_expand (e->u.e.r->u.e.r->u.e.r, ns, s);
+	Expr *tmp = expr_expand (e->u.e.r->u.e.r->u.e.r, ns, s, is_lval);
 	if (is_const && expr_is_a_const (tmp)) {
 	  if (tmp->type == E_TRUE || tmp->type == E_FALSE) {
 	    if (e->type == E_ANDLOOP) {
@@ -830,8 +830,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
   case E_OR:
   case E_XOR:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	unsigned int v;
@@ -1070,7 +1070,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     
   case E_NOT:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1099,7 +1099,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     
   case E_COMPLEMENT:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1136,7 +1136,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     
   case E_UMINUS:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
 	signed int v = ret->u.e.l->u.v;
@@ -1164,19 +1164,20 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     break;
 
   case E_QUERY:
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
+    LVAL_ERROR;
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (!expr_is_a_const (ret->u.e.l)) {
-      ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+      ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     }
     else {
       //FREE (ret->u.e.l);
       if (ret->u.e.l->type == E_TRUE) {
 	FREE (ret);
-	ret = expr_expand (e->u.e.r->u.e.l, ns, s);
+	ret = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
       }
       else if (ret->u.e.l->type == E_FALSE) {
 	FREE (ret);
-	ret = expr_expand (e->u.e.r->u.e.r, ns, s);
+	ret = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
       }
       else {
 	act_error_ctxt (stderr);
@@ -1189,9 +1190,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     break;
 
   case E_COLON:
+    LVAL_ERROR;
     /* you only get here for non-const things */
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
+    ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     break;
 
   case E_BITFIELD:
@@ -1200,13 +1202,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     if (!expr_is_a_const (ret->u.e.l)) {
       NEW (ret->u.e.r, Expr);
       ret->u.e.r->type = E_BITFIELD;
-      ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s);
-      ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s);
+      ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
+      ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
     }
     else {
       Expr *lo, *hi;
-      lo = expr_expand (e->u.e.r->u.e.l, ns, s);
-      hi = expr_expand (e->u.e.r->u.e.r, ns, s);
+      lo = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
+      hi = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
       if (!expr_is_a_const (lo) || !expr_is_a_const (hi)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");

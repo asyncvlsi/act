@@ -1,0 +1,4 @@
+ERROR: File `14.act', line 12, col 12
+	Typechecking failed on expression!
+	pow(2,4)
+	Function `pow': arg #0 has an incompatible type

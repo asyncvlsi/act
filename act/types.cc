@@ -1519,6 +1519,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
   else if (dynamic_cast<Function *>(this)) {
     InstType *x = dynamic_cast<Function *>(this)->getRetType();
+    x = x->Expand (ns, ux->I);
     ux->CurScope()->Add ("self", x);
   }
   else {
