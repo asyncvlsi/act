@@ -98,11 +98,13 @@ class Material {
     parallelrunlength = NULL;
     spacing_aux = NULL;
     gds = NULL;
+    gds_bloat = NULL;
   }
 
   const char *getName() { return name; }
 
   void addGDS (char **table, int sz);
+  void addGDSBloat (int *table, int sz);
 
 protected:
   const char *name;		/* drawing name in magic */
@@ -126,6 +128,7 @@ protected:
   Contact *viaup, *viadn;
 
   list_t *gds;			// GDS layer list
+  int *gds_bloat;
 
   friend class Technology;
 };

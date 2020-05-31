@@ -233,6 +233,14 @@ void Technology::Init (const char *s)
       }								\
   } while (0)
 
+#define ADDGDSBL_TEMPL(mat)				\
+  do {							\
+      if (config_exists (buf)) {			\
+	mat->addGDSBloat (config_get_table_int (buf),	\
+			  config_get_table_size (buf));	\
+      }							\
+  } while (0)
+  
 #define ADDGDS(mat,name)				\
   do {							\
     if (T->gdsH) {					\
@@ -241,6 +249,14 @@ void Technology::Init (const char *s)
     }							\
   } while (0)
 
+#define ADDGDSBL(mat,name)				\
+  do {							\
+    if (T->gdsH) {					\
+      snprintf (buf+k, BUF_SZ-k-1, "%s.gds_bloat", name);\
+      ADDGDSBL_TEMPL(mat);				\
+    }							\
+  } while (0)
+  
   /* now: check materials! */
   for (i=0; i < 8; i++) {
     tech_strname (prefix, tables[i]);
@@ -263,6 +279,7 @@ void Technology::Init (const char *s)
 	DiffMat *mat;
 	mat = T->diff[i][j] = new DiffMat (diff[j]);
 	ADDGDS(mat, diff[j]);
+	ADDGDSBL(mat, diff[j]);
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
 	mat->width = config_get_int (buf);
@@ -313,6 +330,7 @@ void Technology::Init (const char *s)
 	FetMat *mat;
 	mat = T->fet[i-2][j] = new FetMat (diff[j]);
 	ADDGDS(mat, diff[j]);
+	ADDGDSBL(mat, diff[j]);
 	
 	/* pfet/nfet: transistors */
 	snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
@@ -371,6 +389,7 @@ void Technology::Init (const char *s)
 	      
 	      mat = T->welldiff[i-4][j] = new DiffMat (diff[j]+ik+1);
 	      ADDGDS(mat, diff[j]+ik+1);
+	      ADDGDSBL(mat, diff[j]+ik+1);
 	      
 	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
 	      mat->width = config_get_int (buf);
@@ -412,6 +431,7 @@ void Technology::Init (const char *s)
 	    WellMat *mat;
 	    mat = T->well[i-4][j] = new WellMat (Strdup (ldiff));
 	    ADDGDS (mat, ldiff);
+	    ADDGDSBL (mat, ldiff);
 
 	    snprintf (buf+k, BUF_SZ-k-1, "%s.width", ldiff);
 	    if (config_get_int (buf) < 1) {
@@ -485,6 +505,7 @@ void Technology::Init (const char *s)
 	  /* selects */
 	  T->sel[i-6][j] = new Material (diff[j]);
 	  ADDGDS (T->sel[i-6][j], diff[j]);
+	  ADDGDSBL (T->sel[i-6][j], diff[j]);
 	}
 	else {
 	  T->sel[i-6][j] = NULL;
@@ -501,6 +522,7 @@ void Technology::Init (const char *s)
   PolyMat *pmat = new PolyMat (Strdup ("polysilicon"));
   T->poly = pmat;
   ADDGDS (T->poly, "polysilicon");
+  ADDGDSBL (T->poly, "polysilicon");
   
   snprintf (buf+k, BUF_SZ-k-1, "width");
   if (config_get_int (buf) < 1) {
@@ -653,6 +675,8 @@ void Technology::Init (const char *s)
     if (T->gdsH) {
       snprintf (buf+k, BUF_SZ-k-1, "m%d_gds", i);
       ADDGDS_TEMPL(mat);
+      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds_bloat", i);
+      ADDGDSBL_TEMPL(mat);
     }
 
     if (i != T->nmetals) {
@@ -815,6 +839,8 @@ void Technology::Init (const char *s)
     if (T->gdsH) {
       snprintf (buf+k, BUF_SZ-k-1, "%s_gds", contacts[i]);
       ADDGDS_TEMPL(cmat);
+      snprintf (buf+k, BUF_SZ-k-1, "%s_gds_bloat", contacts[i]);
+      ADDGDSBL_TEMPL(cmat);
     }
 
     snprintf (buf+k, BUF_SZ-k-1, "%s", contacts[i]);
@@ -1061,3 +1087,15 @@ void Material::addGDS (char **layers, int sz)
     list_append (gds, b->v);
   }
 }
+
+void Material::addGDSBloat (int *table, int sz)
+{
+  gds_bloat = table;
+  if (!gds) {
+    fatal_error ("Bloat should be added only after the layers are specified");
+  }
+  if (sz != list_length (gds)) {
+    fatal_error ("Bloat table doesn't match gds table");
+  }
+}
+
