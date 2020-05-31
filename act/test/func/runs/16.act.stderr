@@ -1,0 +1,4 @@
+In expanding bool
+In expanding ::<Global>
+Typechecking failed, int<32>  v/s pint
+	Types `int<32>' and `pint' are not compatible

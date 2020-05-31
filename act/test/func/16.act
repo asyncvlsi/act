@@ -1,0 +1,12 @@
+/* return n^m */
+export function pow(pint n, m) : pint
+{
+  int i;
+  chp {
+   i := 0;
+   self := 1;
+  *[ i < m -> self := self*n; i:=i+1 ]
+  }
+}
+
+bool x[pow(2,4)];
