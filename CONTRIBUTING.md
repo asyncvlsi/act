@@ -5,9 +5,12 @@
 ### **Is this a build issue?**
 
 * Please be sure to follow the exact build instructions in the [README](https://github.com/asyncvlsi/act).
-* Check the [.circleci](https://github.com/asyncvlsi/act/tree/master/.circleci) to see how to build ACT on a clean installation of a few OS variants. Any commits to the master branch are automatically built on those variants. If the current ACT build is not passing, then the developers are already working on the issue so please don't open one.
+
+* Check the [.circleci config](https://github.com/asyncvlsi/act/tree/master/.circleci) to see how to build ACT on a clean installation of a few OS variants. Any commits to the master branch are automatically built on those variants. If the current ACT build is not passing, then the developers are already working on the issue so please don't open a new one.
+
 * If you have an operating system that differs substantially from a standard Unix platform, please start a discussion on our [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the developer channel rather than opening an issue.
-* Please note that if the developers do not already have access to a machine with your specific configuratioln, it will be difficult for them to be able to replicate your problem.
+
+* Please note that if the developers do not already have access to a machine with your specific configuration, it will be difficult for them to be able to replicate your problem. A Mattermost discussion might be the best way to proceed in this case.
 
 ### **Did you find a bug?**
 
@@ -24,10 +27,15 @@
 * Please don't use Github issues as a way to request a feature.
 
 * We have a [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) where you can self signup, and that is the most appropriate venue for feature requests.
-
 * Note that the current feature set in the ACT core language has evolved through long experience, so be prepared for a robust discussion before any feature makes it to the TODO list for ACT.
 
 * Once your feature request goes through the discussion phase, please don't be discouraged if your feature isn't immediately prioritized for implementation.
+
+
+### **Are you requesting a new tool?**
+
+* There are many tools under development, and many more on the wishlist. Please open a discussion with the developers on the  [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the feature request channel. Also indicate if you
+are interested in developing the tool.
 
 
 ### **Did you write a patch that fixes a bug?**
@@ -44,7 +52,8 @@ Changes that are cosmetic in nature and do not add anything substantial to the s
 
 ### **Do you intend to add a new feature or change an existing one?**
 
-* Suggest your change on our [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the feature request channel and start writing code. Indicate that you plan to develop the feature.
+* Suggest your change on our [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the feature request channel. Indicate that you plan to develop the feature.
+* Please do not start writing code without a robust discussion on the channel. Note that feature additions/changes that are likely to break older ACT designs are unlikely to be accepted.
 * Do not open an issue on GitHub until you have collected positive feedback about the change. GitHub issues are primarily intended for bug reports and fixes.
 
 ### **Do you have questions about the source code?**
