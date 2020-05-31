@@ -2,6 +2,13 @@
 
 (with thanks to the [Ruby on Rails](https://github.com/rails/rails) guide from which this borrows heavily)
 
+### **Is this a build issue?***
+
+* Please be sure to follow the exact build instructions in the [README](https://github.com/asyncvlsi/act).
+* Check the [.circleci](https://github.com/asyncvlsi/act/tree/master/.circleci) to see how to build ACT on a clean installation of a few OS variants. Any commits to the master branch are automatically built on those variants. If the current ACT build is not passing, then the developers are already working on the issue so please don't open one.
+* If you have an operating system that differs substantially from a standard Unix platform, please start a discussion on our [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the developer channel rather than opening an issue.
+* Please note that if the developers do not already have access to a machine with your specific configuratioln, it will be difficult for them to be able to replicate your problem.
+
 ### **Did you find a bug?**
 
 * **Ensure the bug was not already reported** by searching on GitHub under [Issues](https://github.com/asyncvlsi/act/issues).
