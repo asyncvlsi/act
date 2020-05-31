@@ -2,7 +2,7 @@
 
 (with thanks to the [Ruby on Rails](https://github.com/rails/rails) guide from which this borrows heavily)
 
-### **Is this a build issue?***
+### **Is this a build issue?**
 
 * Please be sure to follow the exact build instructions in the [README](https://github.com/asyncvlsi/act).
 * Check the [.circleci](https://github.com/asyncvlsi/act/tree/master/.circleci) to see how to build ACT on a clean installation of a few OS variants. Any commits to the master branch are automatically built on those variants. If the current ACT build is not passing, then the developers are already working on the issue so please don't open one.
