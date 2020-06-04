@@ -53,7 +53,7 @@ Changes that are cosmetic in nature and do not add anything substantial to the s
 ### **Do you intend to add a new feature or change an existing one?**
 
 * Suggest your change on our [Mattermost site](http://avlsi.csl.yale.edu/act/doku.php) on the feature request channel. Indicate that you plan to develop the feature.
-* Please do not start writing code without a robust discussion on the channel. Note that feature additions/changes that are likely to break older ACT designs are unlikely to be accepted.
+* Please do not start writing code without a robust discussion on the channel to ensure that your effort is not wasted. Note that feature additions/changes that are likely to break older ACT designs are unlikely to be accepted.
 * Do not open an issue on GitHub until you have collected positive feedback about the change. GitHub issues are primarily intended for bug reports and fixes.
 
 ### **Do you have questions about the source code?**
