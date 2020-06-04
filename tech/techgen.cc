@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <map>
+#include <config.h>
 
 #include <act/act.h>
 #include <act/tech.h>
@@ -387,13 +388,83 @@ void emit_mzrouter (pp_t *pp)
   pp_SPACE;
 }
 
+void emit_scalefactor (pp_t *pp)
+{
+  if (Technology::T->scale != (int)Technology::T->scale) {
+    double x = Technology::T->scale*10.0;
+    if (x != (int)x) {
+      warning ("Technology scale factor is not an integer number of angstroms");
+    }
+    pp_printf (pp, "scalefactor %d angstroms", (int)x);
+  }
+  else {
+    pp_printf (pp, "scalefactor %d nanometers", (int)Technology::T->scale);
+  }
+  pp_nl;
+}
+
 void emit_cif (pp_t *pp)
 {
-  
+  const char *gdsl = "layout.gds.layers";
+  pp_printf (pp, "cifoutput"); pp_TAB;
+  pp_printf (pp, "style generic"); pp_nl;
+  emit_scalefactor (pp);
+  pp_printf (pp, "options calma-permissive-labels"); pp_nl;
+  pp_nl;
+
+  if (!config_exists (gdsl)) {
+    warning ("Empty cifinput/cifoutput section; missing GDS layers");
+  }
+  else {
+    char **gds_all = config_get_table_string (gdsl);
+    for (int i=0; i < config_get_table_size (gdsl); i++) {
+      GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
+      int f = 1;
+      if (!g) {
+	warning ("GDS layer `%s' specified but unused?", gds_all[i]);
+	continue;
+      }
+      pp_printf (pp, "layer %s ", gds_all[i]);
+      listitem_t *li;
+      for (li = g->matList(); li; li = list_next (li)) {
+	Material *m = (Material *)list_value (li);
+	if (!f) {
+	  pp_printf (pp, ",%s", m->getName());
+	}
+	else {
+	  pp_printf (pp, "%s", m->getName());
+	}
+	f = 0;
+      }
+      pp_nl;
+      pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor()); pp_nl;
+
+      pp_nl;
+    }
+  }
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+
+  pp_printf (pp, "cifinput"); pp_TAB;
+  pp_printf (pp, "style generic"); pp_nl;
+  emit_scalefactor (pp);
+  pp_nl;
+
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
 }
 
 void emit_drc (pp_t *pp)
 {
+  pp_printf (pp, "drc"); pp_TAB;
+
+  // width, spacing, overhang, rect_only
+  
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
 }
 
 void emit_extract (pp_t *pp)
@@ -423,7 +494,6 @@ void emit_extract (pp_t *pp)
    fet nfet ndiff,ndc 2 nfet GND! pwell 56 48
    fet nfet ndiff,ndc 1 nfet GND! pwell 56 48
   */
-  
 
   pp_UNTAB;
   pp_printf (pp, "end");

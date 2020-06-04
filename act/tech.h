@@ -60,18 +60,25 @@ class RangeTable {
 };
 
 class Contact;
-
+class Material;
 
 class GDSLayer {
 private:
   const char *name;
   int major, minor;
+  list_t *mats;		// link back to materials
 public:
   GDSLayer (char *nm, int maj, int min) {
     name = string_cache (nm);
     major = maj;
     minor = min;
+    mats = NULL;
   }
+  void addMat (Material *m);
+  listitem_t *matList () { if (mats) { return list_first (mats); } else { return NULL; } }
+  int getMajor() { return major; }
+  int getMinor() { return minor; }
+  
 };
 
 
@@ -331,6 +338,8 @@ class Technology {
   int dummy_poly;		/* # of dummy poly */
 
   int welltap_adjust;		/* adjustment for welltap y-center */
+
+  GDSLayer *GDSlookup (const char *name); // return gds layer
 
   /* indexed by EDGE_PFET, EDGE_NFET */
   int num_devs;			/* # of device types */

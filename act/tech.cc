@@ -233,28 +233,41 @@ void Technology::Init (const char *s)
       }								\
   } while (0)
 
-#define ADDGDSBL_TEMPL(mat)				\
-  do {							\
-      if (config_exists (buf)) {			\
-	mat->addGDSBloat (config_get_table_int (buf),	\
-			  config_get_table_size (buf));	\
-      }							\
+#define ADDGDSBL_TEMPL(mat)					\
+  do {								\
+      if (config_exists (buf)) {				\
+	mat->addGDSBloat (config_get_table_int (buf),		\
+			  config_get_table_size (buf));		\
+      }								\
+      else {							\
+	warning ("No GDS bloat information: `%s'", buf);	\
+      }								\
   } while (0)
   
 #define ADDGDS(mat,name)				\
   do {							\
     if (T->gdsH) {					\
-      snprintf (buf+k, BUF_SZ-k-1, "%s.gds", name);	\
+      if (name) {					\
+	snprintf (buf+k, BUF_SZ-k-1, "%s.gds", name);	\
+      }							\
+      else {						\
+	snprintf (buf+k, BUF_SZ-k-1, "gds");		\
+      }							\
       ADDGDS_TEMPL(mat);				\
     }							\
   } while (0)
 
-#define ADDGDSBL(mat,name)				\
-  do {							\
-    if (T->gdsH) {					\
-      snprintf (buf+k, BUF_SZ-k-1, "%s.gds_bloat", name);\
-      ADDGDSBL_TEMPL(mat);				\
-    }							\
+#define ADDGDSBL(mat,name)					\
+  do {								\
+    if (T->gdsH) {						\
+      if (name) {						\
+	snprintf (buf+k, BUF_SZ-k-1, "%s.gds_bloat", name);	\
+      }								\
+      else {							\
+	snprintf (buf+k, BUF_SZ-k-1, "gds_bloat");		\
+      }								\
+      ADDGDSBL_TEMPL(mat);					\
+    }								\
   } while (0)
   
   /* now: check materials! */
@@ -521,8 +534,8 @@ void Technology::Init (const char *s)
 
   PolyMat *pmat = new PolyMat (Strdup ("polysilicon"));
   T->poly = pmat;
-  ADDGDS (T->poly, "polysilicon");
-  ADDGDSBL (T->poly, "polysilicon");
+  ADDGDS (T->poly, (char *)NULL);
+  ADDGDSBL (T->poly, (char *)NULL);
   
   snprintf (buf+k, BUF_SZ-k-1, "width");
   if (config_get_int (buf) < 1) {
@@ -672,19 +685,19 @@ void Technology::Init (const char *s)
     mat = new RoutingMat (Strdup (buf+k));
     T->metal[i-1] = mat;
 
-    if (T->gdsH) {
-      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds", i);
-      ADDGDS_TEMPL(mat);
-      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds_bloat", i);
-      ADDGDSBL_TEMPL(mat);
-    }
-
     if (i != T->nmetals) {
       A_NEW (contacts, char *);
       A_NEXT (contacts) = Strdup (buf+k);
       A_INC (contacts);
     }
 
+    if (T->gdsH) {
+      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds", i);
+      ADDGDS_TEMPL(mat);
+      snprintf (buf+k, BUF_SZ-k-1, "m%d_gds_bloat", i);
+      ADDGDSBL_TEMPL(mat);
+    }
+    
     /* now look for materials.metal.t */
     snprintf (buf+k, BUF_SZ-k-1, "%s.", t);
     j = strlen (buf);
@@ -1084,7 +1097,9 @@ void Material::addGDS (char **layers, int sz)
     if (!b) {
       fatal_error ("Could not find GDS layer `%s'", layers[i]);
     }
-    list_append (gds, b->v);
+    GDSLayer *gl = (GDSLayer *)b->v;
+    list_append (gds, gl);
+    gl->addMat (this);
   }
 }
 
@@ -1099,3 +1114,22 @@ void Material::addGDSBloat (int *table, int sz)
   }
 }
 
+
+void GDSLayer::addMat (Material *m)
+{
+  if (!mats) {
+    mats = list_new ();
+  }
+  list_append (mats, m);
+}
+
+GDSLayer *Technology::GDSlookup (const char *s)
+{
+  hash_bucket_t *b;
+  if (!gdsH) return NULL;
+  b = hash_lookup (gdsH, s);
+  if (!b) {
+    return NULL;
+  }
+  return (GDSLayer *) b->v;
+}
