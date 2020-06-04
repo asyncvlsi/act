@@ -1211,9 +1211,11 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
+      c->next = ActNamespace::Global()->getlang()->getchp();
       ActNamespace::Global()->getlang()->setchp (c);
     }
     else {
+      c->next = ux->getlang()->getchp();
       ux->getlang()->setchp (c);
     }
     break;
@@ -1222,9 +1224,11 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     c = chp_expand ((act_chp *)lang, ns, s);
     ux = s->getUserDef();
     if (!ux) {
+      c->next = ActNamespace::Global()->getlang()->gethse();
       ActNamespace::Global()->getlang()->sethse (c);
     }
     else {
+      c->next = ux->getlang()->gethse();
       ux->getlang()->sethse (c);
     }
     break;

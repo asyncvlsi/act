@@ -214,6 +214,7 @@ typedef struct act_func_arguments {
 struct act_chp {
   ActId *vdd, *gnd, *psc, *nsc;
   act_chp_lang_t *c;
+  struct act_chp *next;
 };
 
 
