@@ -2189,6 +2189,8 @@ int UserDef::isLeaf ()
 
 static void _run_chp (Scope *s, act_chp_lang_t *c)
 {
+  int loop_cnt = 0;
+  
   if (!c) return;
   switch (c->type) {
   case ACT_CHP_COMMA:
@@ -2263,6 +2265,7 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
 
   case ACT_CHP_LOOP:
     while (1) {
+      loop_cnt++;
       for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
 	Expr *guard;
 	if (gc->id) {
@@ -2303,6 +2306,9 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
       /* all guards false */
       return;
     resume:
+      if (loop_cnt > Act::max_loop_iterations) {
+	fatal_error ("# of loop iterations exceeded limit (%d)", Act::max_loop_iterations);
+      }
       ;
     }
     break;
