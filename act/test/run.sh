@@ -41,6 +41,7 @@ then
 	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
 	echo "** Number of directories that failed: $fail"
 	echo "** Directories: $faildirs"
+	exit 1
 else
 	echo
 	echo "SUCCESS! All tests passed."

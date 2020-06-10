@@ -332,6 +332,7 @@ Act::Act (const char *s)
   tr.u_d = NULL;
   tr.u_c = NULL;
   tr.u_f = NULL;
+  tr.u_i = NULL;
   tr.t = NULL;
 
   tr.t_inst = NULL;

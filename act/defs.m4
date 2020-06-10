@@ -34,6 +34,7 @@ definition: defproc_or_cell
 | defchan
 /*| defenum*/
 | deffunc
+| defiface
 ;
 
 /*-- distinguish between a process and a cell --*/
@@ -479,13 +480,21 @@ single_port_item: physical_inst_type id_list
     UserDef *u;
 
     /* Make sure that port types are acceptable */
-    if ($0->u_p) {
-      /* We are currently processing a defproc port list */
-      u = $0->u_p;
+    if ($0->u_p || $0->u_i) {
+      const char *msg = "process";
+      /* We are currently processing a defproc port list or an
+	 interface port list */
+      if ($0->u_p) {
+	u = $0->u_p;
+      }
+      else {
+	msg = "interface";
+	u = $0->u_i;
+      }
       if (TypeFactory::isProcessType ($1->BaseType())) {
 	r = (ActRet *) list_value (list_first ($2));
 	$A(r->type == R_STRING);
-	$E("Parameter ``%s'': port parameter for a process cannot be a process", r->u.str);
+	$E("Parameter ``%s'': port parameter for a %s cannot be a process", r->u.str, msg);
       }
       if ($1->getDir() == Type::INOUT ||
 	  $1->getDir() == Type::OUTIN) {
@@ -664,6 +673,10 @@ defdata: [ template_spec ]
     if (TypeFactory::isChanType ($5->BaseType())) {
       $E("A data type cannot be related to a channel");
     }
+    if (TypeFactory::isInterfaceType ($5->BaseType())) {
+      $E("A data type cannot be related to an interface");
+    }
+    
     ir = $5;
 
     if (ir->getDir() != Type::NONE) {
@@ -977,6 +990,10 @@ defchan: [ template_spec ]
     if (TypeFactory::isDataType ($5->BaseType())) {
       $E("A channel type cannot be related to a data type");
     }
+    if (TypeFactory::isInterfaceType ($5->BaseType())) {
+      $E("A channel type cannot be related to an interface");
+    }
+    
     ir = $5;
 
     if (ir->getDir() != Type::NONE) {
@@ -2115,3 +2132,84 @@ gc_1_base[ActBody_Select_gc *]: wbool_expr "->" base_body
     return apply_X_gc_1_opt2 ($0, $3);
 }}
 ;
+
+
+/*------------------------------------------------------------------------
+ *
+ * Interfaces
+ *
+ *------------------------------------------------------------------------
+ */
+defiface: [ template_spec ] 
+{{X:
+    if (OPT_EMPTY ($1)) {
+      $0->u = new UserDef($0->curns);
+    }
+    else {
+      $A($0->u);
+    }
+    OPT_FREE ($1);
+    $0->strict_checking = 1;
+}}
+"defiface" ID 
+{{X:
+    Interface *iface;
+    UserDef *u;
+
+    iface = new Interface ($0->u);
+    delete $0->u;
+    $0->u = NULL;
+    
+    switch ($0->curns->findName ($3)) {
+    case 0:
+      /* whew */
+      break;
+    case 1:
+      $A(u = $0->curns->findType ($3));
+      if (TypeFactory::isInterfaceType(u)) {
+	/* there is hope */
+      }
+      else {
+	$E("Name ``%s'' already used as a previous type definition", $3);
+      }
+      break;
+    case 2:
+      $E("Name ``%s'' already used as a namespace", $3);
+      break;
+    case 3:
+      $E("Name ``%s'' already used as an instance", $3);
+      break;
+    default:
+      $E("Should not be here ");
+      break;
+    }
+    $0->u_i = iface;
+    /*printf ("Orig scope: %x\n", $0->scope);*/
+    $0->scope = $0->u_i->CurScope ();
+}}
+ "(" [ port_formal_list ] ")" ";"
+{{X:
+    /* Create type here */
+    UserDef *u;
+
+    if ((u = $0->curns->findType ($3))) {
+      /* check if the type signature is identical */
+      if (u->isEqual ($0->u_i)) {
+	delete $0->u_i;
+	$0->u_i = dynamic_cast<Interface *>(u);
+	$A($0->u_i);
+      }
+      else {
+	$E("Name ``%s'' previously defined as a different interface", $3);
+      }
+    }
+    else {
+      $A($0->curns->CreateType ($3, $0->u_i));
+    }
+    OPT_FREE ($5);
+    $0->strict_checking = 0;
+    $0->scope =$0->curns->CurScope();
+    return NULL;
+}}
+;
+
