@@ -1,0 +1,12 @@
+defiface testme (bool x);
+
+
+defproc testme2 (bool x) {
+  prs { 
+    true -> x-
+  }
+}
+
+testme2 t;
+
+ptype (testme2) t1;

@@ -114,6 +114,7 @@ typedef struct {
   Data *u_d;			/* data */
   Channel *u_c;			/* user-defined channel */
   Function *u_f;		/* function */
+  Interface *u_i;		/* interface */
 
   InstType *t;			/* for instances */
 

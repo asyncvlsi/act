@@ -389,6 +389,23 @@ class Function : public UserDef {
 };
 
 
+/**
+ *
+ * Interfaces
+ *
+ *  Looks like a process. Body is empty.
+ *
+ */
+class Interface : public UserDef {
+ public:
+  Interface (UserDef *u);
+  ~Interface ();
+
+  Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+};
+
+
+
 enum datatype_methods {
     ACT_METHOD_SET = 0,
     ACT_METHOD_GET = 1,
@@ -662,6 +679,16 @@ class TypeFactory {
   static int isFuncType (Type *t);
   static int isFuncType (InstType *it);
 
+
+  /**
+   * Determines if the specified type is an interface type or not
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid process/cell, 0 otherwise
+   */
+  static int isInterfaceType (Type *t);
+  static int isInterfaceType (InstType *it);
+  
   /**
    * Determines if the specified type is a ptype or not
    *

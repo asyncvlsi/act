@@ -1,0 +1,2 @@
+ERROR: File `37.act', line 4, col 8
+	Name `testme' already used as a previous type definition

@@ -401,6 +401,17 @@ int TypeFactory::isFuncType (Type *t)
 }
 INSTMACRO(isFuncType)
 
+int TypeFactory::isInterfaceType (Type *t)
+{
+  Interface *tmp_i = dynamic_cast<Interface *>(t);
+  if (tmp_i) {
+    return 1;
+  }
+  return 0;
+}
+INSTMACRO(isInterfaceType)
+
+
 int TypeFactory::isPTypeType (Type *t)
 {
   PType *tmp_t = dynamic_cast<PType *>(t);
@@ -734,6 +745,7 @@ PType *TypeFactory::NewPType (InstType *t)
     PType *i = new PType();
     i->i = t;
 
+    b = chash_add (ptypehash, &c);
     b->v = i;
   }
   return (PType *)b->v;
@@ -1010,6 +1022,14 @@ Function::~Function ()
   }
 }
 
+
+Interface::Interface (UserDef *u) : UserDef (*u)
+{
+  /* copy over userdef */
+  MkCopy (u);
+}
+
+Interface::~Interface() { }
 
 
 void UserDef::SetParent (InstType *t)
@@ -1647,8 +1667,25 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   return xd;
 }
 
+Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Interface *xd;
+  UserDef *ux;
+  int cache_hit;
+  int i;
 
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
 
+  if (cache_hit) {
+    return dynamic_cast<Interface *>(ux);
+  }
+
+  xd = new Interface (ux);
+  delete ux;
+
+  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+  return xd;
+}
 
 PType *PType::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {

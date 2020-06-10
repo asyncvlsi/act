@@ -49,7 +49,7 @@ param_type[InstType *]: "pint"
 {{X:
     return $0->tf->NewPReal();
 }}
-| "ptype" "(" physical_inst_type ")"
+| "ptype" "(" iface_inst_type ")"
 {{X:
     return $0->tf->NewPType($0->scope, $3);
 }}
@@ -180,9 +180,28 @@ physical_inst_type[InstType *]: data_type
 | chan_type 
 {{X: return $1; }}
 | user_type
-{{X: return $1; }}
+{{X:
+    if (TypeFactory::isInterfaceType ($1)) {
+      $E("An interface type cannot be used in this context");
+    }
+    return $1;
+}}
 ;
 
+/*------------------------------------------------------------------------
+ *
+ *  Physical type: data or channel. Not a parameter.
+ *
+ *------------------------------------------------------------------------
+ */
+iface_inst_type[InstType *]: user_type
+{{X:
+    if (!TypeFactory::isInterfaceType ($1)) {
+      $E("An interface type is expected in this context");
+    }
+    return $1;
+}}
+;
 
 /*------------------------------------------------------------------------
  *
