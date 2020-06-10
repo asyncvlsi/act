@@ -1,0 +1,3 @@
+ERROR: File `28.act', line 23, col 8
+	Typechecking failed for template parameter #1
+	Types `ptype<linear>' and `bitinv' are not compatible

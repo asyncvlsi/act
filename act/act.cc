@@ -357,6 +357,8 @@ Act::Act (const char *s)
   tr.emit_depend = Act::emit_depend;
   tr.in_cond = 0;
 
+  tr.ptype_expand = 0;
+
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
 #endif

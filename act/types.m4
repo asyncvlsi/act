@@ -181,9 +181,10 @@ physical_inst_type[InstType *]: data_type
 {{X: return $1; }}
 | user_type
 {{X:
-    if (TypeFactory::isInterfaceType ($1)) {
+    if (TypeFactory::isInterfaceType ($1) && !$0->ptype_expand) {
       $E("An interface type cannot be used in this context");
     }
+    $0->ptype_expand = 0;
     return $1;
 }}
 ;
@@ -229,6 +230,12 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
     listitem_t *li;
     list_t *l;
     UserDef *ud;
+
+    if ($0->ptype_expand) {
+      if (!OPT_EMPTY ($2) || !OPT_EMPTY ($3)) {
+	$E("Parameter types are interfaces; no templates/direction flags allowed.");
+      }
+    }
 
     ud = $1;
     $A(ud);
@@ -316,7 +323,7 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 	param++;
       }
     }
-	
+
     if (list_length (l) > 0) {
       int i = 0;
       ui->setNumParams (list_length (l));
@@ -324,15 +331,30 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
       type_set_position ($l, $c, $n);
       for (li = list_first (l); li; li = list_next (li)) {
 	InstType *lhs, *rhs;
-	ui->setParam (i++, (AExpr *)list_value (li));
-	lhs = ud->getPortType (-(1+param_map[i-1]));
-	rhs = ((AExpr *)list_value (li))->getInstType ($0->scope, NULL);
-	if (type_connectivity_check (lhs, rhs) != 1) {
-	  $E("Typechecking failed for template parameter #%d\n\t%s", (i-1),
-	     act_type_errmsg());
+	inst_param *ip;
+
+	ip = (inst_param *)list_value (li);
+	if (ip->isatype) {
+	  ui->setParam (i++, ip->u.tt);
+	  lhs = ud->getPortType (-(1+param_map[i-1]));
+	  if (type_connectivity_check (lhs, ip->u.tt) != 1) {
+	    $E("Typechecking failed for template parameter #%d\n\t%s", (i-1),
+	       act_type_errmsg());
+	  }
+	  delete lhs;
 	}
-	delete lhs;
-	delete rhs;
+	else {
+	  ui->setParam (i++, ip->u.tp);
+	  lhs = ud->getPortType (-(1+param_map[i-1]));
+	  rhs = ip->u.tp->getInstType ($0->scope, NULL);
+	  if (type_connectivity_check (lhs, rhs) != 1) {
+	    $E("Typechecking failed for template parameter #%d\n\t%s", (i-1),
+	       act_type_errmsg());
+	  }
+	  delete lhs;
+	  delete rhs;
+	}
+	FREE (ip);
       }
     }
     list_free (l);
@@ -359,10 +381,27 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 }}
 ;
 
-template_args[list_t *]: "<" !endgt { array_expr "," }* ">" !noendgt
+template_args[list_t *]: "<" !endgt { array_expr_or_type "," }* ">" !noendgt
 {{X: return $2; }}
 ;
 
+array_expr_or_type[inst_param *]: "@" user_type
+{{X:
+    inst_param *ip;
+    NEW (ip, inst_param);
+    ip->isatype = 1;
+    ip->u.tt = $2;
+    return ip;
+}}  
+| array_expr
+{{X:
+    inst_param *ip;
+    NEW (ip, inst_param);
+    ip->isatype = 0;
+    ip->u.tp = $1;
+    return ip;
+}}
+;
 
 /* This is a qualified type name */
 qualified_type[UserDef *]: [ "::" ] { ID "::" }*
@@ -435,6 +474,23 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
 
       ns = $0->os->findType (g, (char *)list_value (li));
       if (!ns) {
+	if (OPT_EMPTY ($1)) {
+	  /* this might be a parameter */
+	  InstType *it = $0->scope->Lookup ((char *)list_value (li));
+	  if (it && TypeFactory::isPTypeType (it)) {
+	    PType *x = dynamic_cast<PType *> (it->BaseType());
+	    $A(x);
+	    /* unexpanded ptype: it's the instance */
+	    it = it->getTypeParam (0);
+	    $A(it);
+	    Interface *iface = dynamic_cast<Interface *>(it->BaseType ());
+	    $A(iface);
+	    OPT_FREE ($1);
+	    list_free ($2);
+	    $0->ptype_expand = 1;
+	    return iface;
+	  }
+	}
 	$E("Could not find specified type: %s", (char *)list_value (li));
       }
       export_perms = 1;

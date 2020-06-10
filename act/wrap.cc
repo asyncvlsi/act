@@ -67,6 +67,7 @@ NULL_WRAP(ActBody_Select_p, ActBody_Select *)
 NULL_WRAP(ActBody_Select_gc_p, ActBody_Select_gc *)
 NULL_WRAP(act_size_spec_t_p, act_size_spec_t *)
 NULL_WRAP(act_refine_p, act_refine *)
+NULL_WRAP(inst_param_p, inst_param *);
 
 /*
   nm = mangled type name used by pgen

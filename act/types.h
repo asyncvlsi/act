@@ -80,6 +80,8 @@ public:
   /* wrong */
   int isEqual (Type *t) { return t == this ? 1 : 0; }
 
+  InstType *getType () { return i; }
+
 private:
   InstType *i;			// when it is expanded
   const char *name;

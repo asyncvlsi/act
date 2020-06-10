@@ -159,6 +159,9 @@ typedef struct {
   /* sizing */
   act_sizing *sizing_info;
 
+  /* special return value */
+  int ptype_expand;
+
 } ActTree;
 
 

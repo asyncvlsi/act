@@ -1,0 +1,17 @@
+defiface linear (bool? in; bool! out) ;
+
+defproc bitinv (bool? a; bool! y) :> linear { in -> a, out -> y }
+{
+  prs {
+    a => y-
+  }
+}
+
+
+template<pint N; ptype(linear) p>
+defproc merge (bool? in; bool! out)
+{
+//  p x[N];
+}
+
+bitinv x;
