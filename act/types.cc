@@ -994,6 +994,7 @@ Process::Process (UserDef *u) : UserDef (*u)
 {
   is_cell = 0;
   b = NULL;
+  ifaces = NULL;
 
   /* copy over userdef */
   MkCopy (u);
@@ -1003,6 +1004,10 @@ Process::~Process ()
 {
   if (b) {
     delete b;
+  }
+  if (ifaces) {
+    list_free (ifaces);
+    ifaces = NULL;
   }
 }
 
@@ -1574,6 +1579,22 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (ns->EditType (xp->name, xp) == 1, "What?");
   xp->is_cell = is_cell;
+
+  if (ifaces) {
+    listitem_t *li;
+    xp->ifaces = list_new ();
+    for (li = list_first (ifaces); li; li = list_next (li)) {
+      InstType *iface = (InstType *)list_value (li);
+      Assert (list_next (li), "What?");
+      list_t *lmap = (list_t *)list_value (list_next (li));
+      li = list_next (li);
+      list_append (xp->ifaces, iface->Expand (ns, s));
+      list_append (xp->ifaces, lmap);
+    }
+  }
+  else {
+    xp->ifaces = NULL;
+  }  
   return xp;
 }
 
@@ -2533,4 +2554,15 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
     fatal_error ("Invalid return type in function signature");
   }
   return ret;
+}
+
+
+
+void Process::addIface (InstType *iface, list_t *lmap)
+{
+  if (!ifaces) {
+    ifaces = list_new ();
+  }
+  list_append (ifaces, iface);
+  list_append (ifaces, lmap);
 }

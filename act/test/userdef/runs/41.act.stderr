@@ -1,0 +1,2 @@
+ERROR: File `41.act', line 4, col 39
+	`y' is not a port in interface `testme'

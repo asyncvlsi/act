@@ -1,0 +1,13 @@
+defiface testme (bool x);
+
+
+defproc testme2 (bool x) :> testme { y -> x }
+{
+  prs { 
+    true -> x-
+  }
+}
+
+testme2 t;
+
+ptype (testme) t1;

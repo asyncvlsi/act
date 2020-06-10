@@ -301,14 +301,21 @@ proc_body
 }}
 ;
 
-proc_body: ";"
+proc_body:
+[ ":>" interface_spec ]
+[ "+{" override_spec "}" ]
+";"
 {{X:
+    OPT_FREE ($1);
+    OPT_FREE ($2);
     return NULL;
 }}
-| [ "+{" override_spec "}" ]
+|  [ ":>" interface_spec ]
+   [ "+{" override_spec "}" ]
   "{" def_body  "}"
 {{X:
     OPT_FREE ($1);
+    OPT_FREE ($2);
     if ($0->u_p->isDefined()) {
       $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
     }
@@ -316,6 +323,60 @@ proc_body: ";"
     return NULL;
 }}
 ;
+
+interface_spec: { interface_one_spec "," }*
+{{X:
+    OPT_FREE ($1);
+    return NULL;
+}}
+;
+
+interface_one_spec: iface_inst_type
+"{" { idmap "," }*  "}"
+{{X:
+    listitem_t *li;
+    list_t *ret;
+    Interface *iface = dynamic_cast <Interface *>($1->BaseType());
+
+    ret = NULL;
+    for (li = list_first ($3); li; li = list_next (li)) {
+      list_t *tlist = (list_t *) list_value (li);
+      if (!ret) {
+	ret = tlist;
+      }
+      else {
+	list_concat (ret, tlist);
+	list_free (tlist);
+      }
+    }
+
+    $A(iface);
+    $A($0->u_p);
+    for (li = list_first (ret); li; li = list_next (li)) {
+      if (!iface->isPort ((char *)list_value (li))) {
+	$E("``%s'' is not a port in interface ``%s''",
+	   (char *)list_value (li), iface->getName());
+      }
+      li = list_next (li);
+      $A(li);
+      if (!$0->u_p->isPort ((char *)list_value (li))) {
+	$E("``%s'' is not a port in process ``%s''",
+	   (char *)list_value (li), $0->u_p->getName());
+      }
+    }
+    $0->u_p->addIface ($1, ret);
+    return NULL;
+}}
+;
+
+idmap[list_t *]: ID "->" ID
+{{X:
+    list_t *ret = list_new ();
+    list_append (ret, $1);
+    list_append (ret, $3);
+    return ret;
+}}
+;    
 
 override_spec: override_one_spec override_spec
 {{X: return NULL; }}

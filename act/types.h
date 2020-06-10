@@ -360,9 +360,14 @@ class Process : public UserDef {
 
   int isBlackBox();
 
+  /* add an interface with an id mapping */
+  void addIface (InstType *iface, list_t *imap);
+
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
+  list_t *ifaces;		/**< list of interfaces, map pairs */
 };
+
 
 /**
  *
