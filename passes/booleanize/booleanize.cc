@@ -405,6 +405,9 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
   if (dir == Type::IN) {
     A_NEXT (n->ports).input = 1;
   }
+  else if (dir == Type::OUT) {
+    A_NEXT (n->ports).input = 0;
+  }
   A_NEXT (n->ports).netid = -1;
   A_INC (n->ports);
 
