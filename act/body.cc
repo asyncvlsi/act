@@ -357,7 +357,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
       Assert (pt, "PType ID missing!");
       ValueIdx *vx = s->LookupVal (pt);
       Assert (vx, "PType ID not found?");
-      if (!s->issetPType (vx->u.idx)) {
+      if (!vx->init || !s->issetPType (vx->u.idx)) {
 	act_error_ctxt (stderr);
 	fatal_error ("Ptype `%s' used to instantiate `%s' is not set", pt, id);
       }

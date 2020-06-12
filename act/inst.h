@@ -121,6 +121,7 @@ class InstType {
   InstType *getTypeParam (int pn);
   AExpr *getAExprParam (int pn);
   int getNumParams() { return nt; }
+  inst_param *allParams() { return u; }
 
   /**
    * Set direction flags
@@ -199,7 +200,6 @@ class InstType {
 
   friend class TypeFactory;
 };
-
 
 
 #endif /* __INST_H__ */

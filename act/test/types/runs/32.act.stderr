@@ -1,0 +1,3 @@
+In expanding foo<4>
+In expanding ::<Global>
+FATAL: Ptype `p' used to instantiate `y' is not set

@@ -244,9 +244,47 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 
     if ($0->ptype_expand) {
       ui->setPTypeID ($0->ptype_name);
+
+      /* set template parameters, if any */
+      if ($0->ptype_templ_nargs > 0) {
+	if ($0->ptype_templ_nargs > ud->getNumParams()) {
+	  $E("Number of template parameters specified (%d) > available parameters (%d) for `%s'", $0->ptype_templ_nargs, ud->getNumParams(), ud->getName());
+	}
+
+	ui->setNumParams ($0->ptype_templ_nargs);
+	type_set_position ($l, $c, $n);
+	for (int i=0; i < $0->ptype_templ_nargs; i++) {
+	  InstType *lhs, *rhs;
+	  inst_param *ip;
+
+	  ip = & $0->ptype_templ[i];
+	  
+	  if (ip->isatype) {
+	    ui->setParam (i, ip->u.tt);
+	    lhs = ud->getPortType (-(1+i));
+	    if (type_connectivity_check (lhs, ip->u.tt) != 1) {
+	      $E("Typechecking failed for template parameter #%d\n\t%s", i,
+		 act_type_errmsg());
+	    }
+	    delete lhs;
+	  }
+	  else {
+	    ui->setParam (i, ip->u.tp);
+	    lhs = ud->getPortType (-(1+i));
+	    rhs = ip->u.tp->getInstType ($0->scope, NULL);
+	    if (type_connectivity_check (lhs, rhs) != 1) {
+	      $E("Typechecking failed for template parameter #%d\n\t%s", i,
+		 act_type_errmsg());
+	    }
+	    delete lhs;
+	    delete rhs;
+	  }
+	}
+      }
     }
 
-    /* begin: set template parameters, if they exist */
+    /* begin: set normal template parameters, if they exist */
+    
     if (!OPT_EMPTY ($3)) {
       r = OPT_VALUE ($3);
       $A(r->type == R_LIST);
@@ -491,6 +529,9 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
 	    $A(iface);
 	    $0->ptype_name = (char *)list_value (li);
 	    $0->ptype_expand = 1;
+	    $0->ptype_templ_nargs = it->getNumParams();
+	    $0->ptype_templ = it->allParams();
+	      
 	    OPT_FREE ($1);
 	    list_free ($2);
 	    return iface;

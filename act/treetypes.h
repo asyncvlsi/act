@@ -162,6 +162,8 @@ typedef struct {
   /* special return value */
   int ptype_expand;
   char *ptype_name;
+  int ptype_templ_nargs;
+  inst_param *ptype_templ;
 
 } ActTree;
 
