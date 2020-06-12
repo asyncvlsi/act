@@ -11,7 +11,13 @@ defproc bitinv (bool? a; bool! y) :> linear { in -> a, out -> y }
 template<pint N; ptype(linear) p>
 defproc merge (bool? in; bool! out)
 {
-//  p x[N];
+  { N > 0 : "If N is zero, just skip this!" };
+  p x[N];
+//  (i:N-1: x[i].out = x[i+1].in;)
+//  x[0].in = in;
+//  x[N-1].out = out;
 }
 
 bitinv x;
+
+merge<4,@bitinv> y;

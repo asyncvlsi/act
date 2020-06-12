@@ -344,6 +344,23 @@ class UserDef : public Type {
   UserDef *unexpanded;		/**< unexpanded type, if any **/
 };
 
+
+/**
+ *
+ * Interfaces
+ *
+ *  Looks like a process. Body is empty.
+ *
+ */
+class Interface : public UserDef {
+ public:
+  Interface (UserDef *u);
+  ~Interface ();
+
+  Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+};
+
+
 /**
  *
  * User-defined processes
@@ -364,7 +381,9 @@ class Process : public UserDef {
 
   /* add an interface with an id mapping */
   void addIface (InstType *iface, list_t *imap);
-
+  int hasIface (InstType *x, int weak); // weak check for interface equality
+  list_t *findMap (InstType *iface);
+  
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */
@@ -395,21 +414,6 @@ class Function : public UserDef {
   InstType *ret_type;
 };
 
-
-/**
- *
- * Interfaces
- *
- *  Looks like a process. Body is empty.
- *
- */
-class Interface : public UserDef {
- public:
-  Interface (UserDef *u);
-  ~Interface ();
-
-  Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
-};
 
 
 
@@ -798,6 +802,8 @@ void act_error_update (const char *file, int line); // set file to
 						    // the file name
 void act_error_pop ();
 void act_error_ctxt (FILE *);
+
+void typecheck_err (const char *s, ...);
 
 extern "C" {
 

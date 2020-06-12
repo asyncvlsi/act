@@ -1,4 +1,4 @@
-defiface testme (bool x);
+interface testme (bool x);
 
 
 defproc testme (bool x) {

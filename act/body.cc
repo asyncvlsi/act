@@ -124,6 +124,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
   /* 
      expand instance type!
   */
+
   it = t->Expand (ns, s);
   x = s->Lookup (id);
 
@@ -350,7 +351,27 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 #endif    
   }
   else {
-    Assert (s->Add (id, it), "Should succeed; what happened?!");
+    if (TypeFactory::isInterfaceType (it)) {
+      /* this means that this was a ptype... we need to do more work */
+      const char *pt = it->getPTypeID();
+      Assert (pt, "PType ID missing!");
+      ValueIdx *vx = s->LookupVal (pt);
+      Assert (vx, "PType ID not found?");
+      if (!s->issetPType (vx->u.idx)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Ptype `%s' used to instantiate `%s' is not set", pt, id);
+      }
+
+      InstType *x = new InstType (s->getPType (vx->u.idx));
+      x->setIfaceType (it);
+      if (it->arrayInfo()) {
+	x->MkArray (it->arrayInfo());
+      }
+      Assert (s->Add (id, x), "Should succeed!");
+    }
+    else {
+      Assert (s->Add (id, it), "Should succeed; what happened?!");
+    }
   }
 }
 

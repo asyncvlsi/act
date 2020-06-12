@@ -38,7 +38,7 @@
 
 static char typecheck_errmsg[10240];
 
-static void typecheck_err (const char *s, ...)
+void typecheck_err (const char *s, ...)
 {
   va_list ap;
 
@@ -164,7 +164,12 @@ int act_type_var (Scope *s, ActId *id)
     if (TypeFactory::isProcessType (t)) {
       return T_PROC|arr;
     }
-    typecheck_err ("Identifier `%s' is not a data type", id->getName ());
+    if (TypeFactory::isInterfaceType (t)) {
+      typecheck_err ("Identifier `%s' is an interface type", id->getName());
+    }
+    else {
+      typecheck_err ("Identifier `%s' is not a data type", id->getName ());
+    }
     return T_ERR;
   }
   d = dynamic_cast<Data *>(t);
@@ -574,7 +579,53 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
       UserDef *u;
       u = dynamic_cast<UserDef *>(it->BaseType ());
       Assert (u, "This should have been caught during parsing!");
-      id = id->Rest ();
+
+      /* HERE: APPLY MAP! */
+      if (it->getIfaceType()) {
+	/* extract the real type */
+	InstType *itmp = it->getIfaceType();
+	Assert (itmp, "What?");
+	Process *proc = dynamic_cast<Process *> (it->BaseType());
+	Assert (proc, "What?");
+	list_t *map = proc->findMap (itmp);
+	if (!map) {
+	  fatal_error ("Missing interface `%s' from process `%s'?",
+		       itmp->BaseType()->getName(), proc->getName());
+	}
+	listitem_t *li;
+#if 0
+	printf ("ID rest: ");
+	id->Rest()->Print(stdout);
+	printf ("\n");
+#endif	
+	for (li = list_first (map); li; li = list_next (li)) {
+	  char *from = (char *)list_value (li);
+	  char *to = (char *)list_value (list_next(li));
+	  if (strcmp (id->Rest()->getName(), from) == 0) {
+	    ActId *nid = new ActId (to);
+	    if (id->Rest()->arrayInfo()) {
+	      nid->setArray (id->Rest()->arrayInfo());
+	    }
+	    /* XXX: ID CACHING */
+	    nid->Append (id->Rest()->Rest());
+	    id = nid;
+	    break;
+	  }
+	  li = list_next (li);
+	}
+	if (!li) {
+	  fatal_error ("Map for interface `%s' doesn't contain `%s'",
+		       itmp->BaseType()->getName(), id->Rest()->getName());
+	}
+#if 0	
+	printf ("NEW ID rest: ");
+	id->Print(stdout);
+	printf ("\n");
+#endif	
+      }
+      else {
+	id = id->Rest ();
+      }
       it = u->Lookup (id);
   }
   /* we have insttype, and id: now handle any derefs */
@@ -786,6 +837,10 @@ int type_connectivity_check (InstType *lhs,
   if (lhs->isExpanded ()) {
     /* the connectivity check is now strict */
     if ((tmp = lhs->isConnectable (rhs, (skip_last_array ? 3: 2)))) {
+      if (TypeFactory::isPTypeType(tmp)) {
+	/* special case */
+	return 1;
+      }
       if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
 	return 2;
       }
@@ -799,6 +854,10 @@ int type_connectivity_check (InstType *lhs,
   else {
     /* check dim compatibility */
     if ((tmp = lhs->isConnectable (rhs, 1))) {
+      if (TypeFactory::isPTypeType(tmp)) {
+	/* special case */
+	return 1;
+      }
       if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
 	return 2;
       }

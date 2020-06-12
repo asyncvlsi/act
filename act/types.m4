@@ -242,6 +242,10 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 
     ui = new InstType ($0->scope, ud);
 
+    if ($0->ptype_expand) {
+      ui->setPTypeID ($0->ptype_name);
+    }
+
     /* begin: set template parameters, if they exist */
     if (!OPT_EMPTY ($3)) {
       r = OPT_VALUE ($3);
@@ -485,9 +489,10 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
 	    $A(it);
 	    Interface *iface = dynamic_cast<Interface *>(it->BaseType ());
 	    $A(iface);
+	    $0->ptype_name = (char *)list_value (li);
+	    $0->ptype_expand = 1;
 	    OPT_FREE ($1);
 	    list_free ($2);
-	    $0->ptype_expand = 1;
 	    return iface;
 	  }
 	}

@@ -39,6 +39,8 @@ InstType::InstType (Scope *_s, Type *_t, int is_temp)
   u = NULL;
   s = _s;
   temp_type = (is_temp ? 1 : 0);
+  ptype_id = NULL;
+  iface_type = NULL;
 }
 
 /*
@@ -50,6 +52,8 @@ InstType::InstType (InstType *i, int skip_array)
   dir = i->dir;
   s = i->s;
   expanded = i->expanded;
+  ptype_id = i->ptype_id;
+  iface_type = i->iface_type;
   if (!skip_array) {
     Assert (i->a == NULL, "Replication in the presence of arrays?");
   }
@@ -286,6 +290,17 @@ int InstType::isEqualDir (InstType *t, int weak)
 Type *InstType::isRelated (InstType *it, InstType **common)
 {
   Type *retval;
+
+  /* XXX: other valid case:
+     chan(x) to connect to chan(y), where x and y are
+     connectable
+
+     In other words, there is an implicit implementation relationship:
+     if x <: y, then chan(x) <: chan(y)
+     
+     so if you hit the chan(x) as the root, you can keep going.
+  */
+
   
   if (t == it->t) {
     if (common) {
@@ -301,7 +316,7 @@ Type *InstType::isRelated (InstType *it, InstType **common)
   }
 
 #if 0
-    printf (" -- In the subtype check.\n");
+  printf (" -- In the subtype check.\n");
 #endif
     
   if (TypeFactory::isUserType (t) ||
@@ -417,10 +432,52 @@ Type *InstType::isConnectable (InstType *it, int weak)
 
   /* EVENTUALLY insttype pointers will be unique, and so this
      will work! */
+  if (TypeFactory::isInterfaceType (t)) {
+    typecheck_err ("Direct connections to interfaces not permitted (``%s'')",
+		   t->getName());
+    return NULL;
+  }
+  if (TypeFactory::isInterfaceType (it)) {
+    typecheck_err ("Direct connections to interfaces not permitted (``%s'')",
+		   it->BaseType()->getName());
+    return NULL;
+  }
+
   if (t != it->t && !t->isEqual (it->t)) {
     subtype = 1;
     retval = isRelated (it, &related);
-    if (!retval) return NULL;
+    if (!retval) {
+      /* other valid case:
+	 ptype(x) to connect to y, where y exports interface x
+      */
+      if (TypeFactory::isPTypeType (t) && TypeFactory::isProcessType (it)) {
+	/* ok there is hope 
+	   - extract interface from ptype
+	   - check that process exports this interface 
+	*/
+	if ((arrayInfo() && !arrayInfo()->isDeref())
+	    || (it->arrayInfo() && !it->arrayInfo()->isDeref())) {
+	  /*-- an array reference, this is not good --*/
+	  typecheck_err ("Parameter types do not support array connections");
+	  return NULL;
+	}
+	PType *pt = dynamic_cast <PType *>(t);
+	InstType *iface = pt->getType();
+	Process *rhs = dynamic_cast <Process *>(it->BaseType());
+	Assert (rhs, "What?");
+	if (!iface) {
+	  iface = this->getTypeParam (0);
+	}
+	Assert (iface, "What?");
+	if (!rhs->hasIface (iface, weak)) {
+	  typecheck_err ("Process `%s' does not export interface `%s'\n",
+			 rhs->getName(), iface->BaseType()->getName());
+	  return NULL;
+	}
+	return t;
+      }
+      return NULL;
+    }
   }
   else {
     subtype = 0;
@@ -851,7 +908,8 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   fprintf (stderr, "\n");
 #endif
   xit->dir = dir;
-  
+  xit->ptype_id = ptype_id;
+
   FREE (tmp);
   act_error_pop ();
 

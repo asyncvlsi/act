@@ -2212,7 +2212,7 @@ defiface: [ template_spec ]
     OPT_FREE ($1);
     $0->strict_checking = 1;
 }}
-"defiface" ID 
+"interface" ID 
 {{X:
     Interface *iface;
     UserDef *u;

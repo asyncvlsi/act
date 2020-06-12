@@ -161,6 +161,11 @@ class InstType {
   int hasinstGlobal() { return 0; }
 
   InstType *refineBaseType (InstType *update);
+
+  void setPTypeID (char *s) { ptype_id = string_cache (s); }
+  const  char *getPTypeID () { return ptype_id; }
+  void setIfaceType (InstType *x) { iface_type = x; }
+  InstType *getIfaceType() { return iface_type; }
   
  private:
 
@@ -186,6 +191,11 @@ class InstType {
   unsigned int temp_type:1;	/**< set if this is an uncached inst
 				   type */
   unsigned int expanded:1;	/**< set if this is expanded */
+
+  const char *ptype_id;		/**< for inst-types, this is the name
+				   of the ptype */
+  InstType *iface_type;		/**< if you're expanded, this is your
+				   interface */
 
   friend class TypeFactory;
 };

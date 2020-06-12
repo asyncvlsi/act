@@ -358,6 +358,7 @@ Act::Act (const char *s)
   tr.in_cond = 0;
 
   tr.ptype_expand = 0;
+  tr.ptype_name = NULL;
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();

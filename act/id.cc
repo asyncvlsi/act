@@ -153,7 +153,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 #if 0
     printf ("checking: ");
     id->Print (stdout);
-    printf (" in [%x] ", it->BaseType());
+    printf (" in [%lx] ", it->BaseType());
     fflush (stdout);
     it->Print (stdout);
     printf ("\n");
@@ -206,6 +206,15 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 
     if (id->Rest()) {
       UserDef *u;
+
+#if 0      
+      printf ("Type:  [it=");
+      it->Print (stdout);
+      printf ("]\n");
+      printf (" rest: ");
+      id->Rest()->Print (stdout);
+      printf ("\n");
+#endif      
     
       Assert (it->isExpanded(), "This should be expanded");
       
@@ -215,7 +224,55 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
       /* WWW: here we would have to check the array index for relaxed
 	 parameters */
 
-      id = id->Rest ();
+      /* NOW: if it is an interface type, then we have to find the map
+	 and change this part 
+      */
+      if (it->getIfaceType()) {
+	/* extract the real type */
+	InstType *itmp = it->getIfaceType();
+	Assert (itmp, "What?");
+	Process *proc = dynamic_cast<Process *> (it->BaseType());
+	Assert (proc, "What?");
+	list_t *map = proc->findMap (itmp);
+	if (!map) {
+	  fatal_error ("Missing interface `%s' from process `%s'?",
+		       itmp->BaseType()->getName(), proc->getName());
+	}
+	listitem_t *li;
+#if 0
+	printf ("ID rest: ");
+	id->Rest()->Print(stdout);
+	printf ("\n");
+#endif	
+	
+	for (li = list_first (map); li; li = list_next (li)) {
+	  char *from = (char *)list_value (li);
+	  char *to = (char *)list_value (list_next(li));
+	  if (strcmp (id->Rest()->getName(), from) == 0) {
+	    ActId *nid = new ActId (to);
+	    if (id->Rest()->arrayInfo()) {
+	      nid->setArray (id->Rest()->arrayInfo());
+	    }
+	    /* XXX: ID CACHING */
+	    nid->Append (id->Rest()->Rest());
+	    id = nid;
+	    break;
+	  }
+	  li = list_next (li);
+	}
+	if (!li) {
+	  fatal_error ("Map for interface `%s' doesn't contain `%s'",
+		       itmp->BaseType()->getName(), id->Rest()->getName());
+	}
+#if 0	
+	printf ("NEW ID rest: ");
+	id->Print(stdout);
+	printf ("\n");
+#endif	
+      }
+      else {
+	id = id->Rest ();
+      }
       s = u->CurScope ();
       it = s->Lookup (id->getName ());
     }
@@ -869,6 +926,12 @@ act_connection *ActId::Canonical (Scope *s)
   vx = rawValueIdx(s);
   cx = vx->u.obj.c;
 
+#if 0
+  printf ("Type-vx: ");
+  vx->t->Print (stdout);
+  printf ("\n");
+#endif  
+
   cx = cx->primary();
 
 #if 0
@@ -927,12 +990,59 @@ act_connection *ActId::Canonical (Scope *s)
 
     ux = dynamic_cast<UserDef *>(vx->t->BaseType());
     Assert (ux, "What?");
-    cxrest = id->Rest()->Canonical (ux->CurScope());
+
+    if (TypeFactory::isProcessType (vx->t) && vx->t->getIfaceType()) {
+	/* extract the real type */
+      InstType *itmp = vx->t->getIfaceType();
+      Assert (itmp, "What?");
+      Process *proc = dynamic_cast<Process *> (ux);
+      Assert (proc, "What?");
+      list_t *map = proc->findMap (itmp);
+      if (!map) {
+	fatal_error ("Missing interface `%s' from process `%s'?",
+		     itmp->BaseType()->getName(), proc->getName());
+      }
+      listitem_t *li;
+#if 0      
+      printf ("ID rest: ");
+      id->Rest()->Print(stdout);
+      printf ("\n");
+#endif      
+	
+      for (li = list_first (map); li; li = list_next (li)) {
+	char *from = (char *)list_value (li);
+	char *to = (char *)list_value (list_next(li));
+	if (strcmp (id->Rest()->getName(), from) == 0) {
+	  ActId *nid = new ActId (to);
+	  if (id->Rest()->arrayInfo()) {
+	    nid->setArray (id->Rest()->arrayInfo());
+	  }
+	  /* XXX: ID CACHING */
+	  nid->Append (id->Rest()->Rest());
+	  idrest = nid;
+	  break;
+	}
+	li = list_next (li);
+      }
+      if (!li) {
+	fatal_error ("Map for interface `%s' doesn't contain `%s'",
+		     itmp->BaseType()->getName(), id->Rest()->getName());
+      }
+#if 0      
+      printf ("NEW ID rest: ");
+      idrest->Print(stdout);
+      printf ("\n");
+#endif      
+    }
+
+
+    
+    cxrest = idrest->Canonical (ux->CurScope());
 
 #if 0
     printf ("------\n");
     printf ("Original name: ");
-    id->Rest()->Print (stdout);
+    idrest->Print (stdout);
     printf ("\nUnique name: ");
     print_id (cxrest);
     {
@@ -1066,7 +1176,7 @@ act_connection *ActId::Canonical (Scope *s)
   id->Print (stdout);
 #if 0
   printf (" [rest=");
-  id->Rest()->Print (stdout);
+  idrest->Print (stdout);
   printf ("]");
 #endif   
   printf (" [new=");

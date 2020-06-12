@@ -13,6 +13,8 @@ defproc merge (bool? in; bool! out)
 {
   { N > 0 : "If N is zero, just skip this!" };
   p x[N];
+  p y;
+  y = x[0];
   (i:N-1: x[i].out = x[i+1].in;)
   x[0].in = in;
   x[N-1].out = out;

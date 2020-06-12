@@ -1,0 +1,3 @@
+ERROR: File `29.act', line 17, col 4
+	Typechecking failed on expression!
+	Identifier `y' is an interface type

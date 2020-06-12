@@ -2566,3 +2566,45 @@ void Process::addIface (InstType *iface, list_t *lmap)
   list_append (ifaces, iface);
   list_append (ifaces, lmap);
 }
+
+int Process::hasIface (InstType *x, int weak)
+{
+  listitem_t *li;
+  if (!ifaces) return 0;
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *itmp = (InstType *)list_value (li);
+    Assert (itmp, "What?");
+    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
+    Assert (tmp, "What?");
+    if (itmp->isEqual (x, weak)) {
+      return 1;
+    }
+    li = list_next (li);
+  }
+  return 0;
+}
+
+list_t *Process::findMap (InstType *x)
+{
+  listitem_t *li;
+
+  if (!ifaces) return NULL;
+
+  Array *xtmp = x->arrayInfo();
+  x->clrArray();
+  
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *itmp = (InstType *)list_value (li);
+    Assert (itmp, "What?");
+    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
+    Assert (tmp, "What?");
+
+    if (itmp->isEqual (x)) {
+      x->MkArray (xtmp);
+      return (list_t *)list_value (list_next (li));
+    }
+    li = list_next (li);
+  }
+  x->MkArray (xtmp);
+  return NULL;
+}
