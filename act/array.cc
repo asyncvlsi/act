@@ -1143,8 +1143,9 @@ void AExprstep::step()
       {
 	Expr *xe = (Expr *) cur->l;
 	Assert (xe->type == E_VAR || expr_is_a_const (xe) ||
-		xe->type == E_ARRAY || xe->type == E_SUBRANGE, "What?");
-	if (expr_is_a_const (xe)) {
+		xe->type == E_ARRAY || xe->type == E_SUBRANGE ||
+		xe->type == E_TYPE, "What?");
+	if (expr_is_a_const (xe) || xe->type == E_TYPE) {
 	  /* return the constant! */
 	  type = 1;
 	  u.const_expr = xe;
@@ -1862,4 +1863,13 @@ Array *Arraystep::toArray ()
     a->r[i].u.ex.hi = deref[i];
   }
   return a;
+}
+
+InstType *AExpr::isType ()
+{
+  Expr *e;
+  if (t != AExpr::EXPR) return NULL;
+  e = (Expr *)l;
+  if (e->type != E_TYPE) return NULL;
+  return (InstType *) e->u.e.l;
 }

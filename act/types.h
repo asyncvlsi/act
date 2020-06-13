@@ -748,6 +748,7 @@ class TypeFactory {
 #define T_CHAN       0x6
 #define T_DATA       0x7
 #define T_SELF       0x8   /* special type, "self" */
+#define T_PTYPE      0x9
 #define T_ARRAYOF    0x10
 
 #define T_BASETYPE(x) ((x) & 0xf)

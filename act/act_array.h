@@ -294,6 +294,8 @@ class AExpr {
 
   AExprstep *stepper();  /* return stepper! */
 
+  InstType *isType ();
+
  private:
   enum type t;
   AExpr *l, *r;

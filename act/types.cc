@@ -1295,7 +1295,20 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       if (i < nt) {
 	if (TypeFactory::isPTypeType (p->BaseType())) {
 	  if (ii < spec_nt && u[ii].u.tt) {
-	    x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
+	    if (u[ii].isatype) {
+	      x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
+	    }
+	    else {
+	      x = u[ii].u.tp->isType();
+	      if (!x) {
+		act_error_ctxt (stderr);
+		fprintf (stderr, "Typechecking failed, ");
+		u[ii].u.tp->Print (stderr);
+		fprintf (stderr, "  v/s ");
+		p->Print (stderr);
+		exit (1);
+	      }
+	    }
 	    ux->I->BindParam (pn[i], x);
 	    ii++;
 	  }
@@ -1354,7 +1367,23 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	fatal_error ("ptype array parameters not supported");
       }
 
-      x = (i < spec_nt ? u[i].u.tt : NULL);
+      if (i < spec_nt) {
+	if (u[i].isatype) {
+	  x = u[i].u.tt;
+	}
+	else {
+	  x = u[i].u.tp->isType();
+	  if (!x) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed for param #%d ", i);
+	    u[i].u.tp->Print (stderr);
+	    exit (1);
+	  }
+	}
+      }
+      else {
+	x = NULL;
+      }
       /* x is now the value of the parameter */
       if (x) {
 	sz += strlen (x->BaseType()->getName()) + 2;
@@ -1395,7 +1424,17 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
-      x = (i < spec_nt ? u[i].u.tt : NULL);
+      if (i < spec_nt) {
+	if (u[i].isatype) {
+	  x = u[i].u.tt;
+	}
+	else {
+	  x = u[i].u.tp->isType();
+	}	  
+      }
+      else {
+	x = NULL;
+      }
       if (x) {
 	snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
 		  Type::dirstring (x->getDir()));

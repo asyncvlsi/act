@@ -1,0 +1,29 @@
+template<pint N>
+interface linear(bool in[N], out[N]);
+
+defproc bar (bool in[4], out[4]) :> linear<4> { in -> in, out -> out }
+{
+}
+
+template<ptype(linear<4>) p> 
+defproc foo2()
+{ 
+  p q;
+}
+
+template<pint N; ptype(linear<N>) p>
+defproc foo ()
+{
+  bool w[N];
+  p y;
+
+  ptype(linear<4>) q;
+
+  q = p;
+
+  foo2<p> f2;
+
+  y.in = w;
+}
+
+foo<4, @bar> x;

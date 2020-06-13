@@ -151,6 +151,9 @@ int act_type_var (Scope *s, ActId *id)
   if (TypeFactory::isPRealType (t)) {
     return T_REAL|T_PARAM|is_strict|arr;
   }
+  if (TypeFactory::isPTypeType (t)) {
+    return T_PTYPE|T_PARAM|arr;
+  }
   if (TypeFactory::isIntType (t)) {
     return T_INT|arr;
   }
@@ -486,6 +489,10 @@ int act_type_expr (Scope *s, Expr *e)
     }
     return lt;
     break;
+
+  case E_TYPE:
+    return T_PTYPE|T_PARAM|T_STRICT;
+    break;
     
   case E_ARRAY:
   case E_SUBRANGE:
@@ -754,6 +761,10 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
   }
   else if (ret == (T_REAL|T_PARAM)) {
     return TypeFactory::Factory()->NewPReal ();
+  }
+  else if (ret == (T_PTYPE|T_PARAM)) {
+    Assert (e->type == E_TYPE, "What?");
+    return (InstType *)e->u.e.l;
   }
   else if (ret & T_ARRAYOF) {
     if (e->type == E_ARRAY) {

@@ -279,6 +279,14 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
     return;
 
+  case E_TYPE:
+    {
+      InstType *it = (InstType *)e->u.e.l;
+      it->sPrint (buf+k, sz);
+      PRINT_STEP;
+    }
+    return;
+
   case E_FUNCTION:
     {
       UserDef *u = (UserDef *)e->u.fn.s;
@@ -1481,7 +1489,8 @@ AExpr *AExpr::Expand (ActNamespace *ns, Scope *s, int is_lval)
 	 expanded id or an expanded array */
       xe = expr_expand ((Expr *)l, ns, s, is_lval);
       if (!expr_is_a_const (xe) && xe->type != E_VAR
-	  && xe->type != E_ARRAY && xe->type != E_SUBRANGE) {
+	  && xe->type != E_ARRAY && xe->type != E_SUBRANGE &&
+	  xe->type != E_TYPE) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\t array expression: ");
 	this->Print (stderr);
