@@ -637,22 +637,22 @@ void emit_aliases (pp_t *pp)
   }
 
   /*
-  allnfets	   nfet
-  allpfets 	   pfet
-  allfets 	   allnfets,allpfets,varactor
+    allnfets	   nfet
+    allpfets 	   pfet
+    allfets 	   allnfets,allpfets,varactor
 
-  allnactivenonfet *ndiff,*nsd
-  allnactive	   allnactivenonfet,allnfets
+    allnactivenonfet *ndiff,*nsd
+    allnactive	   allnactivenonfet,allnfets
 
-  allpactivenonfet *pdiff,*psd
-  allpactive	   allpactivenonfet,allpfets
+    allpactivenonfet *pdiff,*psd
+    allpactive	   allpactivenonfet,allpfets
 
-  allactivenonfet  allnactivenonfet,allpactivenonfet
-  allactive	   allactivenonfet,allfets
+    allactivenonfet  allnactivenonfet,allpactivenonfet
+    allactive	   allactivenonfet,allfets
 
-  allpolynonfet    *poly
-  allpoly	   allpolynonfet,allfets
-*/
+    allpolynonfet    *poly
+    allpoly	   allpolynonfet,allfets
+  */
   
   pp_UNTAB;
   pp_printf (pp, "end");
