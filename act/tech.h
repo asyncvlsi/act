@@ -113,6 +113,8 @@ class Material {
   void addGDS (char **table, int sz);
   void addGDSBloat (int *table, int sz);
 
+  const char *viaUpName();
+
 protected:
   const char *name;		/* drawing name in magic */
 

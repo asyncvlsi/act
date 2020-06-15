@@ -1133,3 +1133,9 @@ GDSLayer *Technology::GDSlookup (const char *s)
   }
   return (GDSLayer *) b->v;
 }
+
+const  char *Material::viaUpName()
+{
+  Assert (viaup, "What?");
+  return viaup->getName();
+}
