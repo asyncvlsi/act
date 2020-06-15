@@ -461,13 +461,27 @@ void emit_cif (pp_t *pp)
   pp_SPACE;
 }
 
-void emit_width_spacing (pp_t *pp, Material *mat)
+void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
 {
+  const char *name;
   if (!mat) return;
+  if (!nm) {
+    name = mat->getName();
+  }
+  else {
+    name = nm;
+  }
   
-  pp_printf (pp, "width %s %d \\", mat->getName(), mat->minWidth());
+  pp_printf (pp, "width %s %d \\", name, mat->minWidth());
   pp_nl;
-  pp_printf (pp, " \"%s width < %d\"", mat->getName(), mat->minWidth());
+  pp_printf (pp, "   \"%s width < %d\"", mat->getName(), mat->minWidth());
+  pp_nl;
+
+  pp_printf (pp, "spacing %s %s %d touching_ok \\", name, name,
+	     mat->minSpacing());
+  pp_nl;
+  pp_printf (pp, "   \"%s spacing < %d \"", mat->getName(), mat->minSpacing());
+  pp_nl;
   pp_nl;
 }
 
@@ -487,7 +501,9 @@ void emit_drc (pp_t *pp)
 
   /* metal */
   for (int i=0; i < Technology::T->nmetals; i++) {
-    emit_width_spacing (pp, Technology::T->metal[i]);
+    char buf[1024];
+    sprintf (buf, "(allm%d)/m%d", i+1, i+1);
+    emit_width_spacing (pp, Technology::T->metal[i], buf);
   }
   
   
@@ -607,7 +623,39 @@ void emit_plot (pp_t *pp)
     }
   pp_UNTAB;
   pp_UNTAB;
-  pp_printf (pp, "end:");
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+
+void emit_aliases (pp_t *pp)
+{
+  pp_printf (pp, "aliases"); pp_TAB;
+
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    pp_printf (pp, "allm%d *m%d", i+1, i+1); pp_nl;
+  }
+
+  /*
+  allnfets	   nfet
+  allpfets 	   pfet
+  allfets 	   allnfets,allpfets,varactor
+
+  allnactivenonfet *ndiff,*nsd
+  allnactive	   allnactivenonfet,allnfets
+
+  allpactivenonfet *pdiff,*psd
+  allpactive	   allpactivenonfet,allpfets
+
+  allactivenonfet  allnactivenonfet,allpactivenonfet
+  allactive	   allactivenonfet,allfets
+
+  allpolynonfet    *poly
+  allpoly	   allpolynonfet,allfets
+*/
+  
+  pp_UNTAB;
+  pp_printf (pp, "end");
   pp_SPACE;
 }
 
@@ -629,6 +677,7 @@ int main (int argc, char **argv)
   emit_planes (pp);
   emit_tiletypes (pp);
   emit_contacts (pp);
+  emit_aliases (pp);
   emit_styles (pp);
   emit_compose (pp);
   emit_connect (pp);

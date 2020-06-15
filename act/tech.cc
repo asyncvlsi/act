@@ -305,6 +305,11 @@ void Technology::Init (const char *s)
 	  fatal_error ("Table `%s' has to be the same size as the # of types", buf);
 	}
 	mat->spacing = config_get_table_int (buf);
+
+	wt = new int[1];
+	wt[0] = mat->spacing[j];
+	mat->spacing_w = new RangeTable (1, wt);
+	
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", diff[j]);
 	if (config_get_table_size (buf) != sz) {
@@ -419,6 +424,9 @@ void Technology::Init (const char *s)
 		fatal_error ("Table `%s' has to be the same size as the # of types", buf);
 	      }
 	      mat->spacing = config_get_table_int (buf);
+	      wt = new int[1];
+	      wt[0] = mat->spacing[j];
+	      mat->spacing_w = new RangeTable (1, wt);
 
 	      snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", diff[j]+ik+1);
 	      if (config_get_table_size (buf) != sz) {
@@ -481,6 +489,9 @@ void Technology::Init (const char *s)
 	      fatal_error ("Table `%s' has to be the same size as the # of types", buf);
 	    }
 	    mat->spacing = config_get_table_int (buf);
+	    wt = new int[1];
+	    wt[0] = mat->spacing[j];
+	    mat->spacing_w = new RangeTable (1, wt);
 	  
 	    snprintf (buf+k, BUF_SZ-k-1, "%s.oppspacing", ldiff);
 	    if (config_get_table_size (buf) != sz) {
@@ -931,13 +942,17 @@ void Technology::Init (const char *s)
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: has to be at least 1", buf);
     }
-    cmat->width_int = config_get_int (buf);
+    int *wt = new int[1];
+    wt[0] = config_get_int (buf);
+    cmat->width = new RangeTable (1, wt);
     
     snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", t);
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: has to be at least 1", buf);
     }
-    cmat->spacing = config_get_int (buf);
+    wt = new int[1];
+    wt[0] = config_get_int (buf);
+    cmat->spacing_w = new RangeTable (1, wt);
     
     snprintf (buf+k, BUF_SZ-k-1, "%s.surround.up", t);
     if (config_get_int (buf) < 0) {
@@ -1037,13 +1052,13 @@ int RangeTable::range_threshold (int x)
 int DiffMat::viaSpaceEdge ()
 {
   Assert (viaup, "Hmm");
-  return via_edge + via_fet + viaup->getWidth();
+  return via_edge + via_fet + viaup->minWidth();
 }
 
 int DiffMat::viaSpaceMid ()
 {
   Assert (viaup, "Hmm");
-  return 2*via_fet + viaup->getWidth();
+  return 2*via_fet + viaup->minWidth();
 }
 
 int DiffMat::effOverhang (int w, int hasvia)

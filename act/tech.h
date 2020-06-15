@@ -280,8 +280,6 @@ class Contact : public Material {
     asym_surround_dn = 0;
     name = s;
   }
-  int getWidth() { return width_int; }
-  int getSpacing() { return spacing; } 
   int isSym() { return (asym_surround_up == 0) && (asym_surround_dn == 0); }
   int isAsym() { return !isSym(); }
   int getSym() { return sym_surround_dn; }
@@ -296,7 +294,6 @@ class Contact : public Material {
   int viaGenY() { return spc_y; }
   
 protected:
-  int width_int, spacing;
   Material *lower, *upper;
 
   int sym_surround_dn;
