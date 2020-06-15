@@ -312,13 +312,15 @@ proc_body:
 }}
 |  [ ":>" interface_spec ]
    [ "+{" override_spec "}" ]
+{{X:
+    if ($0->u_p->isDefined()) {
+      $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
+    }
+}}
   "{" def_body  "}"
 {{X:
     OPT_FREE ($1);
     OPT_FREE ($2);
-    if ($0->u_p->isDefined()) {
-      $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
-    }
     $0->u_p->MkDefined ();
     return NULL;
 }}
@@ -821,19 +823,28 @@ data_chan_body: ";"
     return NULL;
 }}
 | [ "+{" override_spec "}" ]
-"{" base_body [ methods_body ] "}"
 {{X:
     if ($0->u_c) {
       if ($0->u_c->isDefined ()) {
 	$E("Channel definition ``%s'': duplicate definition with the same type signature", $0->u_c->getName ());
       }
-      $0->u_c->MkDefined ();
-      $0->u_c->AppendBody ($3);
     }
     else if ($0->u_d) {
       if ($0->u_d->isDefined ()) {
 	$E("Data definition ``%s'': duplicate definition with the same type signature", $0->u_d->getName ());
       }
+    }
+    else {
+      $A(0);
+    }
+}}
+"{" base_body [ methods_body ] "}"
+{{X:
+    if ($0->u_c) {
+      $0->u_c->MkDefined ();
+      $0->u_c->AppendBody ($3);
+    }
+    else if ($0->u_d) {
       $0->u_d->MkDefined();
       $0->u_d->AppendBody ($3);
     }
