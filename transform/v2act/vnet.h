@@ -96,6 +96,7 @@ typedef struct idinfo id_info_t;
 
 typedef struct id_deref {
   id_info_t *id;
+  int cnt;
   unsigned int isderef:1;
   int deref;
 } id_deref_t;
@@ -181,6 +182,8 @@ typedef struct {
   id_info_t *prefix;
   int flag;			/* temp flag */
   id_info_t *tmpid;		/* temp */
+  int port_count;
+  
   
 } VNet;
 

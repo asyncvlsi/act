@@ -3,7 +3,11 @@
 */
 %type[X] {{ VNet VRet }};
 
-ver_file: module ver_file | module ;
+ver_file: one_file_item  ver_file | one_file_item ;
+
+one_file_item: module
+| "`timescale" INT ID "/" INT ID
+;
 
 module: "module" ID
 {{X:
@@ -137,7 +141,7 @@ module_body: decls
       }
     }
 }}
-assigns instances "endmodule" 
+assigns_or_instances "endmodule" 
 ;
 
 one_decl: decl_type [ "[" INT ":" INT "]" ] { id "," }**  ";"
@@ -228,6 +232,12 @@ decl_type[int]: "input"
 ;
 
 decls: one_decl decls | /* empty */ ;
+
+assigns_or_instances: assign_or_inst assigns_or_instances
+| /* empty */;
+
+
+assign_or_inst: one_assign |  one_instance ;
 
 assigns: one_assign assigns | /* empty */ ;
 
@@ -322,7 +332,13 @@ one_instance: id id
 }}
  ;
 
-port_conns: { one_port2 "," }* ;
+port_conns: { one_port2 "," }*
+| { bad_port_style "," }*
+{{X:
+    $0->port_count = 0;
+    return NULL;
+}}
+;
 
 one_port[id_info_t *]: "." id
 {{X:
@@ -374,8 +390,6 @@ one_port2: "." id
 }}
 "(" id_or_const_or_array ")" 
 {{X:
-    
-
     /* emit connection! */
     $4->prefix = $0->prefix;
     $4->id.id = $0->tmpid;
@@ -428,6 +442,66 @@ one_port2: "." id
 {{X:
     return NULL;
 }};
+
+
+bad_port_style: id_or_const_or_array
+{{X:
+    /* emit connection! */
+    $1->prefix = $0->prefix;
+    $1->id.id = NULL; /* to be filled later */
+    $1->id.isderef = 0;
+    A_NEW (CURMOD($0)->conn, conn_info_t *);
+    A_NEXT (CURMOD($0)->conn) = $1;
+    A_INC (CURMOD ($0)->conn);
+
+    if ($0->prefix->p) {
+      int k;
+      /* check act process ports */
+      k = $0->port_count++;
+      if (k >= $0->prefix->p->getNumPorts()) {
+	$E("Not enough ports in definition for `%s'?", $0->prefix->p->getName());
+      }
+      $1->id.id = verilog_find_id ($0, $0->prefix->p->getPortName (k));
+      if ($1->id.id) {
+	$0->flag = 0;
+      }
+      else {
+	$0->flag = 1;
+	$1->id.id = verilog_gen_id ($0, $0->prefix->p->getPortName (k));
+      }
+      $0->prefix->used[k] = 1;
+    }
+    else {
+      int k = $0->port_count++;
+      if ($0->prefix->m) {
+	if (k >= A_LEN ($0->prefix->m->port_list)) {
+	  $E("Not enough ports in definition for `%s'?",
+	     $0->prefix->m->b->key);
+	}
+	$1->id.id = verilog_find_id ($0, $0->prefix->m->port_list[k]->myname);
+	if ($1->id.id) {
+	  $0->flag = 0;
+	}
+	else {
+	  $0->flag = 1;
+	  $1->id.id = verilog_gen_id ($0, $0->prefix->m->port_list[k]->myname);
+	}
+	$0->prefix->used[k] = 1;
+      }
+      else {
+	/* punt */
+	$1->id.cnt = $0->port_count++;
+	$0->prefix->mod = CURMOD ($0);
+	if ($0->prefix->conn_start == -1) {
+	  $0->prefix->conn_start = A_LEN (CURMOD ($0)->conn)-1;
+	}
+	$0->prefix->conn_end = A_LEN (CURMOD ($0)->conn)-1;
+      }
+    }
+    return NULL;
+}}
+;
+
 
 
 id_deref[id_deref_t *]: id [ "[" INT "]" ]

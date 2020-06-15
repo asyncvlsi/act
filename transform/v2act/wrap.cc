@@ -193,16 +193,26 @@ void update_conn_info (id_info_t *id)
   if (id->mod && id->conn_start != -1) {
     for (int i=id->conn_start; i <= id->conn_end; i++) {
       int k;
-      printf ("mod len = %d\n", A_LEN (id->m->port_list));
-      for (k=0; k < A_LEN (id->m->port_list); k++) {
-	if (strcmp (id->mod->conn[i]->id.id->myname,
-		    id->m->port_list[k]->myname) == 0) {
-	  id->used[k] = 1;
-	  break;
+      //printf ("mod len = %d\n", A_LEN (id->m->port_list));
+      if (id->mod->conn[i]->id.id) {
+	for (k=0; k < A_LEN (id->m->port_list); k++) {
+	  if (strcmp (id->mod->conn[i]->id.id->myname,
+		      id->m->port_list[k]->myname) == 0) {
+	    id->used[k] = 1;
+	    break;
+	  }
+	}
+	if (k == A_LEN (id->m->port_list)) {
+	  fatal_error ("Connection to unknown port `%s' for %s?", id->mod->conn[i]->id.id->myname, id->m->b->key);
 	}
       }
-      if (k == A_LEN (id->m->port_list)) {
-	fatal_error ("Connection to unknown port `%s' for %s?", id->mod->conn[i]->id.id->myname, id->m->b->key);
+      else {
+	k = id->mod->conn[i]->id.cnt;
+	if (k >= A_LEN (id->m->port_list))
+	  fatal_error ("Not enough ports in definition for `%s'?",
+		       id->m->b->key);
+	id->used[k] = 1;
+	id->mod->conn[i]->id.id = verilog_alloc_id (id->m->port_list[k]->myname);
       }
     }
   }
