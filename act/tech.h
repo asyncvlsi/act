@@ -92,7 +92,7 @@ class Material {
       name = NULL;
     }
     width = NULL;
-    spacing = NULL;
+    spacing_w = NULL;
     minarea = 0;
     maxarea = 0;
     xgrid = 0;
@@ -114,12 +114,15 @@ class Material {
   void addGDSBloat (int *table, int sz);
 
   const char *viaUpName();
+  int minArea() { return minarea; }
+  int minWidth () { return width->min(); }
+  int minSpacing() { return spacing_w->min(); }
 
 protected:
   const char *name;		/* drawing name in magic */
 
   RangeTable *width;		/* min width (indexed by length) */
-  RangeTable *spacing;		/* min spacing (indexed by width) */
+  RangeTable *spacing_w;	/* min spacing (indexed by width) */
 
   int runlength_mode;		// 0 = parallelrunlength, 1 = twowidths
   int runlength;		// negative if it doesn't exist;
@@ -160,22 +163,19 @@ struct RoutingRules {
 class RoutingMat : public Material {
 public:
   RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; }
-  int minWidth () { return width->min(); }
-  int minArea() { return minarea; }
-  int minSpacing() { return spacing->min(); }
   int getPitch() { return pitch; }
   Contact *getUpC() { return viaup; }
-  int getSpacing(int w) { return (*spacing)[w]; }
+  int getSpacing(int w) { return (*spacing_w)[w]; }
   int isComplexSpacing() {
     if (runlength != -1) return 1;
-    if (spacing->size() > 1) return 1;
+    if (spacing_w->size() > 1) return 1;
     return 0;
   }
   int complexSpacingMode() { return runlength_mode; }
   int numRunLength()  { return runlength; }
   int getRunLength(int w) { return parallelrunlength[w]; }
   RangeTable *getRunTable (int w) {
-    if (w == 0) { return spacing; }
+    if (w == 0) { return spacing_w; }
     else { return spacing_aux[w-1]; }
   }
   int getEol() { return r.endofline; }
@@ -203,8 +203,6 @@ class PolyMat : public RoutingMat {
 
   
  protected:
-  int width;
-
   RangeTable *overhang;		/* poly overhang beyond diffusion */
   RangeTable *notch_overhang;	/* overhang for a notch */
   int *via_n;		      /* spacing of poly via to n-type diff */
@@ -217,10 +215,9 @@ class FetMat : public Material {
  public:
   FetMat (char *s) { name = s; }
   int getSpacing (int w) {
-    return (*spacing)[w];
+    return (*spacing_w)[w];
   }
 protected:
-  int width;
   int num_dummy;		/* # of dummy poly needed */
 
   friend class Technology;
@@ -232,14 +229,11 @@ class WellMat : public Material {
   WellMat (char *s) { name = s; }
   int getOverhang () { return overhang; }
   int getOverhangWelldiff () { return overhang_welldiff; }
-  int minArea () { return minarea; }
   int minSpacing(int dev) { return spacing[dev]; }
   int oppSpacing(int dev) { return oppspacing[dev]; }
-  int minWidth() { return width; }
   int maxPlugDist() { return plug_dist; }
   
 protected:
-  int width;
   int *spacing;	      /* to other wells of the same type */
   int *oppspacing;    /* to other wells of a different type */
   int overhang;	      /* overhang from diffusion */
@@ -259,17 +253,14 @@ class DiffMat : public Material {
   int effOverhang(int w, int hasvia = 0);
   int viaSpaceEdge ();
   int viaSpaceMid ();
-  int minArea () { return minarea; }
   int getPolySpacing () { return polyspacing; }
   int getNotchSpacing () { return notchspacing; }
   int getOppDiffSpacing (int flavor) { return oppspacing[flavor]; }
   int getSpacing (int flavor) { return spacing[flavor]; }
-  int getWidth () { return width; }
   int getWdiffToDiffSpacing() { return diffspacing; }
   Contact *getUpC() { return viaup; }
   
 protected:
-  int width;
   int diffspacing;
   int *spacing;
   int *oppspacing;

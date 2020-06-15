@@ -62,7 +62,8 @@ static void emit_planes (pp_t *pp)
   for (int i=0; i < Technology::T->nmetals; i++) {
     pp_printf (pp, "metal%d,m%d", i+1, i+1); pp_nl;
     if (i != Technology::T->nmetals-1) {
-      pp_printf (pp, "via%d,v%d", i+1, i+1); pp_nl;
+      pp_printf (pp, "via%d,%s", i+1,
+		 Technology::T->metal[i]->viaUpName()); pp_nl;
     }
   }
   pp_printf (pp, "comment");
@@ -132,7 +133,8 @@ static void emit_tiletypes (pp_t *pp)
     pp_printf (pp, "metal%d m%d", i+1, i+1); pp_nl;
     pp_printf (pp, "metal%d m%dpin", i+1, i+1); pp_nl;
     if (i != Technology::T->nmetals-1) {
-      pp_printf (pp, "metal%d m%dc,v%d", i+1, i+2, i+1); pp_nl;
+      pp_printf (pp, "metal%d m%dc,%s", i+1, i+2,
+		 Technology::T->metal[i]->viaUpName()); pp_nl;
     }
   }
   pp_printf (pp, "comment comment"); 
@@ -459,11 +461,35 @@ void emit_cif (pp_t *pp)
   pp_SPACE;
 }
 
+void emit_width_spacing (pp_t *pp, Material *mat)
+{
+  if (!mat) return;
+  
+  pp_printf (pp, "width %s %d \\", mat->getName(), mat->minWidth());
+  pp_nl;
+  pp_printf (pp, " \"%s width < %d\"", mat->getName(), mat->minWidth());
+  pp_nl;
+}
+
 void emit_drc (pp_t *pp)
 {
   pp_printf (pp, "drc"); pp_TAB;
 
-  // width, spacing, overhang, rect_only
+  /* base layers */
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      emit_width_spacing (pp, Technology::T->diff[j][i]);
+      emit_width_spacing (pp, Technology::T->well[j][i]);
+      emit_width_spacing (pp, Technology::T->fet[j][i]);
+      emit_width_spacing (pp, Technology::T->welldiff[j][i]);
+    }
+  }
+
+  /* metal */
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    emit_width_spacing (pp, Technology::T->metal[i]);
+  }
+  
   
   pp_UNTAB;
   pp_printf (pp, "end");

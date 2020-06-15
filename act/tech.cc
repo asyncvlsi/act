@@ -295,7 +295,10 @@ void Technology::Init (const char *s)
 	ADDGDSBL(mat, diff[j]);
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]);
-	mat->width = config_get_int (buf);
+	int *wt;
+	wt = new int[1];
+	wt[0] = config_get_int (buf);
+	mat->width = new RangeTable (1, wt);
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", diff[j]);
 	if (config_get_table_size (buf) != sz) {
@@ -350,7 +353,9 @@ void Technology::Init (const char *s)
 	if (config_get_int (buf) < 1) {
 	  fatal_error ("`%s': minimum width has to be at least 1", buf);
 	}
-	mat->width = config_get_int (buf);
+	int *wt = new int[1];
+	wt[0] = config_get_int (buf);
+	mat->width = new  RangeTable (1, wt);
 
 	snprintf (buf+k, BUF_SZ-k-1, "%s.dummy_poly", diff[j]);
 	if (config_exists (buf)) {
@@ -365,7 +370,7 @@ void Technology::Init (const char *s)
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", diff[j]);
 	verify_range_table (buf);
-	mat->spacing = new RangeTable (config_get_table_size (buf),
+	mat->spacing_w = new RangeTable (config_get_table_size (buf),
 				       config_get_table_int (buf));
       }
       else if (i < 6) {
@@ -405,7 +410,9 @@ void Technology::Init (const char *s)
 	      ADDGDSBL(mat, diff[j]+ik+1);
 	      
 	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
-	      mat->width = config_get_int (buf);
+	      int *wt = new int[1];
+	      wt[0] = config_get_int (buf);
+	      mat->width = new RangeTable (1, wt);
 	      
 	      snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", diff[j]+ik+1);
 	      if (config_get_table_size (buf) != sz) {
@@ -450,7 +457,9 @@ void Technology::Init (const char *s)
 	    if (config_get_int (buf) < 1) {
 	      fatal_error ("`%s': minimum width has to be at least 1", buf);
 	    }
-	    mat->width = config_get_int (buf);
+	    int *wt = new int[1];
+	    wt[0] = config_get_int (buf);
+	    mat->width = new RangeTable (1, wt);
 	  
 	    snprintf (buf+k, BUF_SZ-k-1, "%s.overhang", ldiff);
 	    if (config_get_int (buf) < 1) {
@@ -541,11 +550,13 @@ void Technology::Init (const char *s)
   if (config_get_int (buf) < 1) {
     fatal_error ("%s: minimum width has to be at least 1", buf);
   }
-  pmat->width = config_get_int (buf);
+  int *wt = new int[1];
+  wt[0] = config_get_int (buf);
+  pmat->width = new RangeTable (1, wt);
   
   snprintf (buf+k, BUF_SZ-k-1, "spacing");
   verify_range_table (buf);
-  pmat->spacing = new RangeTable (config_get_table_size (buf),
+  pmat->spacing_w = new RangeTable (config_get_table_size (buf),
 				  config_get_table_int (buf));
 
   /* might need this for gridded technologies */
@@ -557,7 +568,7 @@ void Technology::Init (const char *s)
     pmat->pitch = config_get_int (buf);
   }
   else {
-    pmat->pitch = pmat->spacing->min() + pmat->width;
+    pmat->pitch = pmat->minSpacing() + pmat->minWidth();
   }
   
   snprintf (buf+k, BUF_SZ-k-1, "direction");
@@ -613,10 +624,10 @@ void Technology::Init (const char *s)
     snprintf (buf+k, BUF_SZ-k-1, "endofline_width");
     if (config_exists (buf)) {
       pmat->r.endofline_width = config_get_int (buf);
-      Assert (pmat->r.endofline_width >= pmat->width, "What?");
+      Assert (pmat->r.endofline_width >= pmat->minWidth(), "What?");
     }
     else {
-      pmat->r.endofline_width = pmat->width;
+      pmat->r.endofline_width = pmat->minWidth();
     }
   }
   else {
@@ -710,7 +721,7 @@ void Technology::Init (const char *s)
     /* spacing */
     snprintf (buf+j, BUF_SZ-j-1, "spacing");
     verify_range_table (buf);
-    mat->spacing = new RangeTable (config_get_table_size (buf),
+    mat->spacing_w = new RangeTable (config_get_table_size (buf),
 				   config_get_table_int (buf));
 
     /* extra spacing rules */
@@ -759,7 +770,7 @@ void Technology::Init (const char *s)
       mat->pitch = config_get_int (buf);
     }
     else {
-      mat->pitch = mat->width->min() + mat->spacing->min();
+      mat->pitch = mat->width->min() + mat->minSpacing();
     }
     
     snprintf (buf+j, BUF_SZ-j-1, "direction");
