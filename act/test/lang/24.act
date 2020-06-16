@@ -1,0 +1,8 @@
+defproc testme (chan(bool) l, r)
+{
+  dataflow { 
+    l ->[4,4] r
+  }
+}
+
+testme t;

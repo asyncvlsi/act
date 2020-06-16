@@ -353,6 +353,30 @@ w_expr[Expr *]: expr
 }}
 ;
 
+w_chan_int_expr[Expr *]: expr
+{{X:
+    Expr *e;
+    int tc;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    e = act_walk_X_expr ($0, $1);
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e, 1);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    return e;
+}}
+;
+
+
 wnumber_expr[Expr *]: expr
 {{X:
     Expr *e;

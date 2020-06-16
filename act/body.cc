@@ -1186,6 +1186,12 @@ void ActBody_Lang::Print (FILE *fp)
   case ActBody_Lang::LANG_SIZE:
     sizing_print (fp, (act_sizing *)lang);
     break;
+  case ActBody_Lang::LANG_INIT:
+    initialize_print (fp, (act_initialize *)lang);
+    break;
+  case ActBody_Lang::LANG_DFLOW:
+    dflow_print (fp, (act_dataflow *)lang);
+    break;
   }
 }
 
@@ -1197,71 +1203,56 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   act_prs *old;
   act_spec *spec;
   act_sizing *sz;
+  act_initialize *init;
+  act_dataflow *dflow;
+  act_languages *all_lang;
+
+  ux = s->getUserDef();
+  if (!ux) {
+    /* better be the global namespace! */
+    all_lang = ActNamespace::Global()->getlang();
+  }
+  else {
+    all_lang = ux->getlang();
+  }
 
   switch (t) {
   case ActBody_Lang::LANG_PRS:
     p = prs_expand ((act_prs *)lang, ns, s);
-    /* this had better be in a userdef */
-    ux = s->getUserDef();
-    if (!ux) {
-      /* better be the global namespace */
-      if ((old = ActNamespace::Global()->getlang()->getprs())) {
-	while (old->next) {
-	  old = old->next;
-	}
-	old->next = p;
+    if ((old = all_lang->getprs())) {
+      while (old->next) {
+	old = old->next;
       }
-      else {
-	ActNamespace::Global()->getlang()->setprs (p);
-      }
+      old->next = p;
     }
     else {
-      if ((old = ux->getlang()->getprs())) {
-	while (old->next) {
-	  old = old->next;
-	}
-	old->next = p;
-      }
-      else {
-	ux->getlang()->setprs (p);
-      }
+      all_lang->setprs (p);
     }
     break;
 
   case ActBody_Lang::LANG_CHP:
     c = chp_expand ((act_chp *)lang, ns, s);
-    ux = s->getUserDef();
-    if (!ux) {
-      c->next = ActNamespace::Global()->getlang()->getchp();
-      ActNamespace::Global()->getlang()->setchp (c);
-    }
-    else {
-      c->next = ux->getlang()->getchp();
-      ux->getlang()->setchp (c);
-    }
+    c->next = all_lang->getchp();
+    all_lang->setchp (c);
     break;
     
   case ActBody_Lang::LANG_HSE:
     c = chp_expand ((act_chp *)lang, ns, s);
-    ux = s->getUserDef();
-    if (!ux) {
-      c->next = ActNamespace::Global()->getlang()->gethse();
-      ActNamespace::Global()->getlang()->sethse (c);
-    }
-    else {
-      c->next = ux->getlang()->gethse();
-      ux->getlang()->sethse (c);
-    }
+    c->next = all_lang->gethse();
+    all_lang->sethse (c);
     break;
 
   case ActBody_Lang::LANG_SPEC:
     spec = spec_expand ((act_spec *)lang, ns, s);
-    ux = s->getUserDef ();
-    if (!ux) {
-      ActNamespace::Global()->getlang()->setspec (spec);
+    if (all_lang->getspec()) {
+      act_spec *tmp  = all_lang->getspec();
+      while (tmp->next) {
+	tmp = tmp->next;
+      }
+      tmp->next = spec;
     }
     else {
-      ux->getlang()->setspec (spec);
+      all_lang->setspec (spec);
     }
     break;
 
@@ -1273,17 +1264,38 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 
   case ActBody_Lang::LANG_SIZE:
     sz = sizing_expand ((act_sizing *)lang, ns, s);
-    ux = s->getUserDef();
-    if (!ux) {
-      ActNamespace::Global()->getlang()->setsizing (sz);
+    if (all_lang->getsizing()) {
+      act_sizing *tmp = all_lang->getsizing();
+      while (tmp->next) {
+	tmp = tmp->next;
+      }
+      tmp->next = sz;
     }
     else {
-      ux->getlang()->setsizing (sz);
+      all_lang->setsizing (sz);
     }
     break;
-    
-  default:
-    fatal_error ("Unknown language");
+
+  case ActBody_Lang::LANG_INIT:
+    init = initialize_expand ((act_initialize *)lang, ns, s);
+    if (all_lang->getinit()) {
+      act_error_ctxt (stderr);
+      fatal_error ("Multiple Initialize { } blocks are not permitted.");
+    }
+    all_lang->setinit (init);
+    break;
+
+  case ActBody_Lang::LANG_DFLOW:
+    dflow = dflow_expand ((act_dataflow *)lang, ns, s);
+    if (all_lang->getdflow()) {
+      act_dataflow *tmp = all_lang->getdflow();
+      list_concat (tmp->dflow, dflow->dflow);
+      list_free (dflow->dflow);
+      FREE (dflow);
+    }
+    else {
+      all_lang->setdflow (dflow);
+    }
     break;
   }
 }

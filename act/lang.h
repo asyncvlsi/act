@@ -260,6 +260,39 @@ struct act_sizing {
   int p_n_mode;
   int unit_n;
   A_DECL (act_sizing_directive, d);
+  act_sizing *next;
+};
+
+struct act_initialize {
+  list_t *actions;
+};
+
+enum act_dataflow_element_types {
+ ACT_DFLOW_FUNC = 0,
+ ACT_DFLOW_SPLIT = 1,
+ ACT_DFLOW_MERGE = 2,
+};
+
+typedef struct  {
+  act_dataflow_element_types t;
+  union {
+    struct {
+      Expr *lhs;		// expression
+      ActId *rhs;		// channel output
+      Expr *nbufs;		// # of buffers
+      Expr *init;		// initial token, if any on the output
+    } func;
+    struct {
+      ActId *guard;		// condition
+      ActId **multi;		// set of channels
+      int nmulti;
+      ActId *single;		// single channel
+    } splitmerge;
+  } u;
+} act_dataflow_element;
+
+struct act_dataflow {
+  list_t *dflow;
 };
 
 void prs_print (FILE *, act_prs *);
@@ -269,6 +302,8 @@ void hse_print (FILE *, act_chp *);
 void spec_print (FILE *, act_spec *);
 void refine_print (FILE *, act_refine *);
 void sizing_print (FILE *, act_sizing *);
+void initialize_print (FILE *, act_initialize *);
+void dflow_print (FILE *, act_dataflow *);
 
 class ActNamespace;
 class Scope;
@@ -282,6 +317,8 @@ public:
     spec = NULL;
     refine = NULL;
     sizing = NULL;
+    init = NULL;
+    dflow = NULL;
   }
   void Print (FILE *fp) {
     if (chp) { chp_print (fp, chp); }
@@ -290,6 +327,8 @@ public:
     if (spec) { spec_print (fp, spec); }
     if (sizing) { sizing_print (fp, sizing); }
     if (refine) { }
+    if (init) { initialize_print (fp, init); }
+    if (dflow) { dflow_print (fp, dflow); }
   }
 
   act_chp *getchp () { return chp; }
@@ -310,6 +349,12 @@ public:
   act_sizing *getsizing() { return sizing; }
   void setsizing(act_sizing *s) { sizing = s; }
 
+  act_initialize *getinit() { return init; }
+  void setinit(act_initialize *s) { init = s; }
+
+  act_dataflow *getdflow() { return dflow; }
+  void setdflow (act_dataflow *s) { dflow = s; }
+
   act_languages *Expand (ActNamespace *ns, Scope *s);
 
  private:
@@ -318,14 +363,18 @@ public:
   act_spec *spec;
   act_refine *refine;
   act_sizing *sizing;
+  act_initialize *init;
+  act_dataflow *dflow;
 };
 
 
+act_initialize *initialize_expand (act_initialize *, ActNamespace *, Scope *);
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 void refine_expand (act_refine *, ActNamespace *, Scope *);
 act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
+act_dataflow *dflow_expand (act_dataflow *, ActNamespace *, Scope *);
 
 const char *act_spec_string (int type);
 const char *act_dev_value_to_string (int);

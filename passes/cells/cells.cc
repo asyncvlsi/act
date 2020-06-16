@@ -2476,6 +2476,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
 void ActCellPass::prs_to_cells (Process *p)
 {
   Scope *sc;
+  act_languages *lang;
 
   sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
   if (p) {
@@ -2501,7 +2502,9 @@ void ActCellPass::prs_to_cells (Process *p)
   proc_inst_count = 0;
   A_INIT (pendingprs);
 
-  act_prs *prs = (p ? p->getprs() : ActNamespace::Global()->getprs());
+  lang = (p ? p->getlang() : ActNamespace::Global()->getlang());
+  Assert (lang, "What?");
+  act_prs *prs = lang->getprs();
   while (prs) {
     /*
       1. group all gates.
@@ -2532,7 +2535,7 @@ void ActCellPass::prs_to_cells (Process *p)
   }
   flush_pending (sc);
 
-  prs = (p ? p->getprs() : ActNamespace::Global()->getprs());
+  prs = lang->getprs();
   act_prs *prevprs = NULL;
 
   /* remove empty prs blocks */
@@ -2542,7 +2545,7 @@ void ActCellPass::prs_to_cells (Process *p)
     }
     else {
       if (!prevprs) {
-	p->getlang()->setprs (prs->next);
+	lang->setprs (prs->next);
       }
       else {
 	prevprs->next = prs->next;

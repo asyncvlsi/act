@@ -726,6 +726,10 @@ class TypeFactory {
    */
   static int bitWidth (Type *t);
   static int bitWidth (InstType *t);
+  
+  static int boolType (Type *t); // 1 if a boolean within a channel or
+				 // a boolean type, -1 if NULL parent
+  static int boolType (InstType *t);
 };
 
 
@@ -755,7 +759,7 @@ class TypeFactory {
 #define T_BASETYPE_ISNUM(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
 #define T_BASETYPE_ISINTBOOL(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_BOOL)
 
-int act_type_expr (Scope *, Expr *);
+int act_type_expr (Scope *, Expr *, int only_chan = 0);
 int act_type_var (Scope *, ActId *);
 int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);

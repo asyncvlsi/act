@@ -50,6 +50,18 @@ language_body[ActBody *]: lang_chp
 {{X:
     return $1;
 }}
+| lang_initialize
+{{X:
+    /* only permitted in the top-level global namespace */
+    if ($0->u_p || $0->u_f || $0->u_i) {
+      $E("Initialize { } block is only permitted in the top-level namespace, or within channel/type definitions!");
+    }
+    return $1;
+}}
+| lang_dataflow
+{{X:
+    return $1;
+}}
 ;
 
 supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
@@ -1390,6 +1402,7 @@ lang_size[ActBody *]: "sizing" "{"
     $0->sizing_info->p_specified = 0;
     $0->sizing_info->unit_n_specified = 0;
     A_INIT ($0->sizing_info->d);
+    $0->sizing_info->next = NULL;
 }}
 [ size_body ]
 "}"
@@ -1585,5 +1598,146 @@ refine_item[ActBody *]: instance
 | alias
 {{X:
     return $1;
+}}
+;
+
+lang_initialize[ActBody *]: "Initialize" "{" { action_items ";" }* "}"
+{{X:
+    act_initialize *init;
+    NEW (init, act_initialize);
+    init->actions = $3;
+    return new ActBody_Lang (init);
+}}
+;
+
+action_items[act_chp_lang_t *]: ID "{" chp_body "}"
+{{X:
+    if (strcmp ($1, "actions") != 0) {
+      $E("Actions within an initialize block have to be called `actions'");
+    }
+    return $3;
+}}
+;
+
+lang_dataflow[ActBody *]: "dataflow" "{" { dataflow_items ";" }* "}"
+{{X:
+    act_dataflow *dflow;
+    NEW (dflow, act_dataflow);
+    dflow->dflow = $3;
+    return new ActBody_Lang (dflow);
+}}
+;
+
+dataflow_items[act_dataflow_element *]:
+w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
+{{X:
+    act_dataflow_element *e;
+    NEW (e, act_dataflow_element);
+    e->t = ACT_DFLOW_FUNC;
+    e->u.func.lhs = $1;
+    if (act_type_var ($0->scope, $4) != T_CHAN) {
+      $e("Identifier on the RHS of a dataflow expression must be of channel type");
+      fprintf ($f, "   ");
+      $4->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    e->u.func.rhs = $4;
+    e->u.func.nbufs = NULL;
+    e->u.func.init = NULL;
+    if (!OPT_EMPTY ($3)) {
+      ActRet *r1 = OPT_VALUE ($3);
+      ActRet *r2 = OPT_VALUE2 ($3);
+
+      $A(r1->type == R_EXPR);
+      e->u.func.nbufs = r1->u.exp;
+      FREE (r1);
+      
+      $A(r2->type == R_LIST);
+      if (!OPT_EMPTY (r2->u.l)) {
+	ActRet *r = OPT_VALUE (r2->u.l);
+	$A(r->type == R_EXPR);
+	e->u.func.init = r->u.exp;
+	FREE (r);
+      }
+      OPT_FREE (r2->u.l);
+      FREE (r2);
+    }
+    OPT_FREE ($3);
+    return e;
+}}
+| "{" expr_id "}" { expr_id_or_star "," }* "->" { expr_id_or_star "," }*
+{{X:
+    act_dataflow_element *e;
+    listitem_t *li;
+    list_t *l;
+    NEW (e, act_dataflow_element);
+    e->u.splitmerge.guard = $2;
+    if (act_type_var ($0->scope, $2) != T_CHAN) {
+      $e("Identifier in the condition of a dataflow expression must be of channel type");
+      fprintf ($f, "   ");
+      $2->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    if (list_length ($4) == 1) {
+      if (list_length ($6) < 2) {
+	$E("RHS needs more than one item for a split");
+      }
+      l = $6;
+      e->t = ACT_DFLOW_SPLIT;
+      e->u.splitmerge.single = (ActId *) list_value (list_first ($4));
+      if (!e->u.splitmerge.single) {
+	$E("Can't split from `*'");
+      }
+      list_free ($4);
+    }
+    else {
+      if (list_length ($6) != 1) {
+	$E("RHS has to be one item for a merge");
+      }
+      l = $4;
+      e->t = ACT_DFLOW_MERGE;
+      e->u.splitmerge.single = (ActId *) list_value (list_first ($6));
+      if (!e->u.splitmerge.single) {
+	$E("Can't merge from `*'");
+      }
+      list_free ($6);
+    }
+    if (act_type_var ($0->scope, e->u.splitmerge.single) != T_CHAN) {
+      $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
+      fprintf ($f, "   ");
+      e->u.splitmerge.single->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    e->u.splitmerge.nmulti = list_length (l);
+    MALLOC (e->u.splitmerge.multi, ActId *, e->u.splitmerge.nmulti);
+    li = list_first (l);
+    for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+      e->u.splitmerge.multi[i] = (ActId *) list_value (li);
+      if (e->u.splitmerge.multi[i]) {
+	if (act_type_var ($0->scope, e->u.splitmerge.multi[i]) != T_CHAN) {
+	  $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
+	  fprintf ($f, "   ");
+	  e->u.splitmerge.multi[i]->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
+      li = list_next (li);
+    }
+    list_free (l);
+    return e;
+}}  
+;
+
+expr_id_or_star[ActId *]: expr_id
+{{X:
+    return $1;
+}}
+| "*"
+{{X:
+    return NULL;
 }}
 ;

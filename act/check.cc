@@ -90,22 +90,19 @@ static void dumpflags(int f)
   }
 }
 
-
-int act_type_var (Scope *s, ActId *id)
+static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
+				    int *strict)
 {
   InstType *it;
   UserDef *u;
-  Data *d;
   int is_strict;
-
-  /*printf ("[scope=%x] check: var ", s); id->Print (stdout); printf ("\n");*/
 
   Assert (s, "Scope?");
   Assert (id, "Identifier?");
   it = s->Lookup (id->getName());
   if (!it) {
     it = s->FullLookup (id->getName());
-    is_strict = T_STRICT;
+    is_strict = 1;
   }
   else {
     is_strict = 0;
@@ -125,18 +122,30 @@ int act_type_var (Scope *s, ActId *id)
     /* this may be a strict port param */
     u = s->getUserDef();
     if (u && u->isStrictPort (id->getName ())) {
-      is_strict = T_STRICT;
+      is_strict = 1;
       /*printf ("this is strict [%s]!\n", id->getName ());*/
     }
   }
 
   Assert (!(id->isDeref () && !it->arrayInfo()), "Check during parsing!");
-  
+  if (strict) {
+    *strict = is_strict;
+  }
+  *retid = id;
+  return it;
+}  
+
+static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
+{
   Type *t = it->BaseType ();
   unsigned int arr = 0;
+  Data *d;
 
   if (it->arrayInfo() && !id->isDeref()) {
     arr = T_ARRAYOF;
+  }
+  if (is_strict) {
+    is_strict = T_STRICT;
   }
 
   if (TypeFactory::isPIntType (t)) {
@@ -179,12 +188,16 @@ int act_type_var (Scope *s, ActId *id)
   if (d->isEnum()) {
     return T_INT|arr;
   }
-#if 0
-  fatal_error ("FIX this. Check that the data type is an int or a bool");
-  /* XXX: FIX THIS PLEASE */
-  typecheck_err ("FIX this. Check data type.");
-#endif
   return T_DATA|arr;
+}
+
+int act_type_var (Scope *s, ActId *id)
+{
+  InstType *it;
+  int is_strict;
+
+  it = _act_get_var_type (s, id, &id, &is_strict);
+  return _act_type_id_to_flags (it, id, is_strict);
 }
 
 
@@ -195,7 +208,7 @@ int act_type_var (Scope *s, ActId *id)
  *  @param e is the expression to be typechecked
  *  @return -1 on an error
  */
-int act_type_expr (Scope *s, Expr *e)
+int act_type_expr (Scope *s, Expr *e, int only_chan)
 {
   int lt, rt;
   int flgs;
@@ -208,8 +221,8 @@ int act_type_expr (Scope *s, Expr *e)
 
 #define EQUAL_LT_RT2(f,g)						\
   do {									\
-    lt = act_type_expr (s, e->u.e.l);					\
-    rt = act_type_expr (s, e->u.e.r);					\
+    lt = act_type_expr (s, e->u.e.l, only_chan);			\
+    rt = act_type_expr (s, e->u.e.r, only_chan);			\
     if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
@@ -234,8 +247,8 @@ int act_type_expr (Scope *s, Expr *e)
 
 #define INT_OR_REAL							\
   do {									\
-    lt = act_type_expr (s, e->u.e.l);					\
-    rt = act_type_expr (s, e->u.e.r);					\
+    lt = act_type_expr (s, e->u.e.l, only_chan);			\
+    rt = act_type_expr (s, e->u.e.r, only_chan);			\
     if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
@@ -264,19 +277,19 @@ int act_type_expr (Scope *s, Expr *e)
 
   case E_ANDLOOP:
   case E_ORLOOP:
-    lt = act_type_expr (s, e->u.e.r->u.e.l);
+    lt = act_type_expr (s, e->u.e.r->u.e.l, 0);
     if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop range is not of integer type");
       return T_ERR;
     }
     if (e->u.e.r->u.e.r->u.e.l) {
-      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l);
+      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, 0);
       if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
 	typecheck_err ("Loop range is not of integer type");
 	return T_ERR;
       }
     }
-    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r);
+    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, only_chan);
     if (T_BASETYPE (lt) != T_BOOL || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of bool type");
       return T_ERR;
@@ -286,7 +299,7 @@ int act_type_expr (Scope *s, Expr *e)
 
     /* Boolean, unary */
   case E_NOT:
-    lt = act_type_expr (s, e->u.e.l);
+    lt = act_type_expr (s, e->u.e.l, only_chan);
     if (lt == T_ERR) return T_ERR;
     if (lt & T_BOOL) {
       return lt;
@@ -318,7 +331,7 @@ int act_type_expr (Scope *s, Expr *e)
 
     /* Unary, real or integer */
   case E_UMINUS:
-    lt = act_type_expr (s, e->u.e.l);
+    lt = act_type_expr (s, e->u.e.l, only_chan);
     if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE_ISNUM (lt)) {
       return lt;
@@ -329,7 +342,7 @@ int act_type_expr (Scope *s, Expr *e)
 
     /* Unary, integer or bool */
   case E_COMPLEMENT:
-    lt = act_type_expr (s, e->u.e.l);
+    lt = act_type_expr (s, e->u.e.l, only_chan);
     if (lt == T_ERR) return lt;
     if (T_BASETYPE_ISINTBOOL (lt)) {
       return lt;
@@ -360,7 +373,7 @@ int act_type_expr (Scope *s, Expr *e)
 
   case E_CONCAT:
     do {
-      lt = act_type_expr (s, e->u.e.l);
+      lt = act_type_expr (s, e->u.e.l, only_chan);
       if (lt == T_ERR) return T_ERR;
       if (!T_BASETYPE_ISINTBOOL (lt)) {
 	typecheck_err ("{ } concat: all items must be int or bool");
@@ -405,7 +418,7 @@ int act_type_expr (Scope *s, Expr *e)
 	InstType *x = fn->getPortType (kind == 0 ? -(i+1) : i);
 	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
 
-	strict_flag &= act_type_expr (s, tmp->u.e.l);
+	strict_flag &= act_type_expr (s, tmp->u.e.l, only_chan);
 
 	if (!x->isConnectable (y, 1)) {
 	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
@@ -454,10 +467,32 @@ int act_type_expr (Scope *s, Expr *e)
     /* leaves */
   case E_VAR:
     lt = act_type_var (s, (ActId *)e->u.e.l);
+    if (only_chan) {
+      if (lt == T_CHAN) {
+	ActId *tmp;
+	InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+	if (it->arrayInfo() && !tmp->isDeref()) {
+	  typecheck_err ("Array specifier not permitted in channel expression");
+	  return T_ERR;
+	}
+	if (TypeFactory::boolType (it)) {
+	  return T_BOOL;
+	}
+	else {
+	  return T_INT;
+	}
+      }
+      typecheck_err ("Channel expressions can't have non-channel variables");
+      return T_ERR;
+    }
     return lt;
     break;
 
   case E_PROBE:
+    if (only_chan) {
+      typecheck_err ("Probe not permitted in pure channel expression");
+      return T_ERR;
+    }
     lt = act_type_var (s, (ActId *)e->u.e.l);
     if (lt == T_CHAN) {
       return T_BOOL;

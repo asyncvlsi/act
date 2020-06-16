@@ -363,6 +363,8 @@ struct act_chp;
 struct act_refine;
 struct act_spec;
 struct act_sizing;
+struct act_initialize;
+struct act_dataflow;
 
 /*
  * Language body
@@ -376,7 +378,9 @@ class ActBody_Lang : public ActBody {
     LANG_HSE,
     LANG_SPEC,
     LANG_REFINE,
-    LANG_SIZE
+    LANG_SIZE,
+    LANG_INIT,
+    LANG_DFLOW
   };
 
   ActBody_Lang (act_prs *p) {
@@ -411,6 +415,16 @@ class ActBody_Lang : public ActBody {
   ActBody_Lang (act_sizing *s) {
     t = LANG_SIZE;
     lang = s;
+  }
+
+  ActBody_Lang (act_initialize *init) {
+    t = LANG_INIT;
+    lang = init;
+  }
+
+  ActBody_Lang (act_dataflow *dflow) {
+    t = LANG_DFLOW;
+    lang = dflow;
   }
   
   void Expand (ActNamespace *, Scope *);

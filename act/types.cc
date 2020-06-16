@@ -2185,6 +2185,7 @@ void Channel::copyMethods (Channel *c)
 
 int TypeFactory::bitWidth (Type *t)
 {
+  if (!t) return -1;
   {
     Chan *tmp = dynamic_cast <Chan *>(t);
     if (tmp) {
@@ -2223,6 +2224,49 @@ int TypeFactory::bitWidth (Type *t)
   return -1;
 }
 XINSTMACRO(bitWidth)
+
+int TypeFactory::boolType (Type *t)
+{
+  if (!t) return -1;
+  {
+    Chan *tmp = dynamic_cast <Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->datatype();
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::boolType (x);
+    }
+  }
+  {
+    Channel *tmp = dynamic_cast <Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::boolType (tmp->getParent());
+    }
+  }
+  { 
+    Data *tmp = dynamic_cast<Data *>(t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::boolType (tmp->getParent());
+    }
+  }
+  {
+    Int *tmp = dynamic_cast<Int *>(t);
+    if (tmp) {
+      return 0;
+    }
+  }
+  {
+    Bool *tmp = dynamic_cast<Bool *>(t);
+    if (tmp) {
+      return 1;
+    }
+  }
+  return -1;
+}
+XINSTMACRO(boolType)
+
 
 
 act_prs *UserDef::getprs ()

@@ -1474,50 +1474,52 @@ void refine_print (FILE *fp, act_refine *r)
 
 void sizing_print (FILE *fp, act_sizing *s)
 {
-  if (!s) return;
-  fprintf (fp, "sizing {");
-  if (s->p_specified) {
-    fprintf (fp, "   p_n_mode ");
-    print_expr (fp, s->p_n_mode_e);
-    fprintf (fp, ";\n");
-  }
-  if (s->unit_n_specified) {
-    fprintf (fp, "   unit_n ");
-    print_expr (fp, s->unit_n_e);
-    fprintf (fp, ";\n");
-  }
-  for (int i=0; i < A_LEN (s->d); i++) {
-    fprintf (fp, "   ");
-    s->d[i].id->Print (fp);
-    fprintf (fp, " { ");
-    if (s->d[i].eup) {
-      fprintf (fp, "+ ");
-      print_expr (fp, s->d[i].eup);
-      if (s->d[i].flav_up != 0) {
-	fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_up));
-      }
-      if (s->d[i].upfolds) {
-	fprintf (fp, ";");
-	print_expr (fp, s->d[i].upfolds);
-      }
+  while (s) {
+    fprintf (fp, "sizing {");
+    if (s->p_specified) {
+      fprintf (fp, "   p_n_mode ");
+      print_expr (fp, s->p_n_mode_e);
+      fprintf (fp, ";\n");
     }
-    if (s->d[i].edn) {
+    if (s->unit_n_specified) {
+      fprintf (fp, "   unit_n ");
+      print_expr (fp, s->unit_n_e);
+      fprintf (fp, ";\n");
+    }
+    for (int i=0; i < A_LEN (s->d); i++) {
+      fprintf (fp, "   ");
+      s->d[i].id->Print (fp);
+      fprintf (fp, " { ");
       if (s->d[i].eup) {
-	fprintf (fp, ", ");
+	fprintf (fp, "+ ");
+	print_expr (fp, s->d[i].eup);
+	if (s->d[i].flav_up != 0) {
+	  fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_up));
+	}
+	if (s->d[i].upfolds) {
+	  fprintf (fp, ";");
+	  print_expr (fp, s->d[i].upfolds);
+	}
       }
-      fprintf (fp, "- ");
-      print_expr (fp, s->d[i].edn);
-      if (s->d[i].flav_dn != 0) {
-	fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_dn));
+      if (s->d[i].edn) {
+	if (s->d[i].eup) {
+	  fprintf (fp, ", ");
+	}
+	fprintf (fp, "- ");
+	print_expr (fp, s->d[i].edn);
+	if (s->d[i].flav_dn != 0) {
+	  fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_dn));
+	}
+	if (s->d[i].dnfolds) {
+	  fprintf (fp, ";");
+	  print_expr (fp, s->d[i].dnfolds);
+	}
       }
-      if (s->d[i].dnfolds) {
-	fprintf (fp, ";");
-	print_expr (fp, s->d[i].dnfolds);
-      }
+      fprintf (fp, " };\n");
     }
-    fprintf (fp, " };\n");
+    fprintf (fp, "}\n");
+    s = s->next;
   }
-  fprintf (fp, "}\n");
 }
 
 act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
@@ -1526,6 +1528,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
   act_sizing *ret;
   Expr *te;
   NEW (ret, act_sizing);
+  ret->next = NULL;
   ret->p_specified = sz->p_specified;
   ret->unit_n_specified = sz->unit_n_specified;
   if (ret->p_specified) {
@@ -1697,3 +1700,163 @@ act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e)
   return r;
 }
 
+void initialize_print (FILE *fp, act_initialize *init)
+{
+  listitem_t *li;
+  if (!init) return;
+  if (!init->actions) return;
+
+  fprintf (fp, "Initialize {\n");
+  for (li = list_first (init->actions); li; li = list_next (li)) {
+    act_chp_lang_t *c = (act_chp_lang_t *)list_value (li);
+    fprintf (fp, " actions { ");
+    chp_print (fp, c);
+    fprintf (fp, " }");
+    if (list_next (li)) {
+      fprintf (fp, ";");
+    }
+    fprintf (fp, "\n");
+  }
+  fprintf (fp, "}\n");
+}
+  
+act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
+				   Scope *s)
+{
+  act_initialize *ret;
+  if (!init) return NULL;
+  NEW (ret, act_initialize);
+  if (!init->actions) {
+    ret->actions = NULL;
+  }
+  else {
+    listitem_t *li;
+    ret->actions = list_new ();
+    for (li = list_first (init->actions); li; li = list_next (li)) {
+      act_chp_lang_t *c = (act_chp_lang_t *) list_value (li);
+      list_append (ret->actions, chp_expand (c, ns, s));
+    }
+  }
+  return ret;
+}
+
+
+void dflow_print (FILE *fp, act_dataflow *d)
+{
+  listitem_t *li;
+  act_dataflow_element *e;
+  
+  if (!d) return;
+  fprintf (fp, "dataflow {\n");
+  for (li = list_first (d->dflow); li; li = list_next (li)) {
+    e = (act_dataflow_element *) list_value (li);
+    switch (e->t) {
+    case ACT_DFLOW_FUNC:
+      print_expr (fp, e->u.func.lhs);
+      fprintf (fp, " -> ");
+      if (e->u.func.nbufs) {			\
+	fprintf (fp, "[");			\
+	print_expr (fp, e->u.func.nbufs);	\
+	if (e->u.func.init) {			\
+	  fprintf (fp, ",");
+	  print_expr (fp, e->u.func.init);
+	}
+	fprintf (fp, "] ");
+      }
+      e->u.func.rhs->Print (fp);
+      break;
+
+    case ACT_DFLOW_SPLIT:
+      fprintf (fp, "{");
+      e->u.splitmerge.guard->Print (fp);
+      fprintf (fp, "} ");
+      e->u.splitmerge.single->Print (fp);
+      fprintf (fp, " -> ");
+      for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+	if (e->u.splitmerge.multi[i]) {
+	  e->u.splitmerge.multi[i]->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
+	if (i != e->u.splitmerge.nmulti-1) {
+	  fprintf (fp, ", ");
+	}
+      }
+      break;
+      
+    case ACT_DFLOW_MERGE:
+      fprintf (fp, "{");
+      e->u.splitmerge.guard->Print (fp);
+      fprintf (fp, "} ");
+      for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+	if (e->u.splitmerge.multi[i]) {
+	  e->u.splitmerge.multi[i]->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
+	if (i != e->u.splitmerge.nmulti-1) {
+	  fprintf (fp, ", ");
+	}
+      }
+      fprintf (fp, " -> ");
+      e->u.splitmerge.single->Print (fp);
+      break;
+    }
+    if (list_next (li)) {
+      fprintf (fp, ";");
+    }
+    fprintf (fp, "\n");
+  }
+  fprintf (fp, "}\n");
+}
+  
+act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
+{
+  listitem_t *li;
+  act_dataflow_element *e, *f;
+  act_dataflow *ret;
+  
+  if (!d) return NULL;
+  NEW (ret, act_dataflow);
+  ret->dflow = list_new ();
+  for (li = list_first (d->dflow); li; li = list_next (li)) {
+    e = (act_dataflow_element *) list_value (li);
+    NEW (f, act_dataflow_element);
+    f->t = e->t;
+    switch (e->t) {
+    case ACT_DFLOW_FUNC:
+      f->u.func.lhs = expr_expand (e->u.func.lhs, ns, s);
+      f->u.func.nbufs = NULL;
+      f->u.func.init  = NULL;
+      if (e->u.func.nbufs) {
+	f->u.func.nbufs = expr_expand (e->u.func.nbufs, ns, s);
+	if (e->u.func.init) {
+	  f->u.func.init = expr_expand (e->u.func.init, ns, s);
+	}
+      }
+      f->u.func.rhs = e->u.func.rhs->Expand (ns, s);
+      break;
+
+    case ACT_DFLOW_SPLIT:
+    case ACT_DFLOW_MERGE:
+      f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
+      f->u.splitmerge.nmulti = e->u.splitmerge.nmulti;
+      MALLOC (f->u.splitmerge.multi, ActId *, f->u.splitmerge.nmulti);
+      for (int i=0; i < f->u.splitmerge.nmulti; i++) {
+	if (e->u.splitmerge.multi[i]) {
+	  f->u.splitmerge.multi[i] = e->u.splitmerge.multi[i]->Expand (ns, s);
+	}
+	else {
+	  f->u.splitmerge.multi[i] = NULL;
+	}
+      }
+      f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
+      break;
+    }
+    list_append (ret->dflow, f);
+  }
+  return ret;
+}
+  

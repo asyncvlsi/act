@@ -1,0 +1,3 @@
+ERROR: File `21.act', line 4, col 6
+	Typechecking failed on expression!
+	Channel expressions can't have non-channel variables

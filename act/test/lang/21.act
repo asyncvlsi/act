@@ -1,0 +1,8 @@
+defproc testme (bool? a[10]; bool! b)
+{
+  dataflow { 
+    a -> b
+  }
+}
+
+testme t;
