@@ -237,10 +237,6 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
   N->uH = ihash_new (4);
   N->isempty = 1;
 
-  if (!p) {
-    return N;
-  }
-
   /* walk through each PRS block */
   while (p) {
     act_prs_lang_t *prs;
@@ -280,6 +276,16 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
       if (v->id->isglobal()) {
 	A_NEWM (N->used_globals, act_connection *);
 	A_NEXT (N->used_globals) = v->id;
+	A_INC (N->used_globals);
+      }
+    }
+  }
+  for (int i=0; i < N->uH->size; i++) {
+    for (ihash_bucket_t *b = N->uH->head[i]; b; b = b->next) {
+      act_connection *c = (act_connection *)b->key;
+      if (c->isglobal()) {
+	A_NEWM (N->used_globals, act_connection *);
+	A_NEXT (N->used_globals) = c;
 	A_INC (N->used_globals);
       }
     }
@@ -387,6 +393,18 @@ static void mark_c_used (act_boolean_netlist_t *n,
     }
     if (!subinst->ports[*count].input) {
       b->i = 1;
+    }
+    if (c->isglobal()) {
+      int i;
+      for (i=0; i < A_LEN (n->used_globals); i++) {
+	if (c == n->used_globals[i])
+	  break;
+      }
+      if (i == A_LEN (n->used_globals)) {
+	A_NEWM (n->used_globals, act_connection *);
+	A_NEXT (n->used_globals) = c;
+	A_INC (n->used_globals);
+      }
     }
   }
 }
@@ -646,6 +664,20 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
       fatal_error ("This cannot handle int/enumerated types; everything must be reducible to bool");
     }
     delete sub;
+  }
+
+  /* globals propagate up the hierarchy */
+  for (i=0; i < A_LEN (subinst->used_globals); i++) {
+    int j;
+    for (j=0; j < A_LEN (n->used_globals); j++) {
+      if (n->used_globals[j] == subinst->used_globals[i])
+	break;
+    }
+    if (j == A_LEN (n->used_globals)) {
+      A_NEWM (n->used_globals, act_connection *);
+      A_NEXT (n->used_globals) = subinst->used_globals[i];
+      A_INC (n->used_globals);
+    }
   }
 }
 

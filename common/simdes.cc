@@ -26,19 +26,26 @@ int SimDES::initialized_sim = 0;
 
 /* globals for events */
 Heap *SimDES::all = NULL;
-unsigned long SimDES::tm_offset[] = { 0UL, 0UL };
+unsigned long SimDES::tm_offset[SIM_TIME_SIZE];
 unsigned long SimDES::curtime = 0;
 Event *Event::ev_queue = NULL;
 SimDES *SimDES::curobj = NULL;
 
 /* create and destroy */
-SimDES::SimDES () : Sim()
+SimDES::SimDES ()
 {
   break_point = 0;
 
   if (!all) {
     /* first time I'm here */
     all = heap_new (32);
+  }
+
+  if (!initialized_sim) {
+    initialized_sim = 1;
+    for (int i=0; i < SIM_TIME_SIZE; i++) {
+      SimDES::tm_offset[i] = 0;
+    }
   }
 }
 
@@ -102,26 +109,6 @@ unsigned long long SimDES::CurTimeLo()
   return tm_offset[0] + curtime;
 }
 
-
-void SimDES::Initialize ()
-{
-  Event *ev;
-  Sim *s;
-  int delay;
-
-  if (initialized_sim) return;
-  initialized_sim = 1;
-
-  /* initialize all objects and create initial events */
-  for (s = obj_list; s; s = s->next) {
-    SimDES *sd = dynamic_cast<SimDES *>(s);
-    delay = sd->Init();
-    if (delay >= 0) {
-      ev = new Event (sd, 0, delay);
-    }
-  }
-}
-
 #define IS_A_BREAKPOINT(ev)						\
   ((ev)->obj->break_point && ((ev)->obj->break_point == 1 ||		\
 			      ((ev)->ev_type == (ev)->obj->bp_ev_type)))
@@ -137,8 +124,6 @@ Event *SimDES::Run ()
   unsigned long tm;
   unsigned long long tm2;
   
-  SimDES::Initialize ();
-
   /* process all events in global time order */
   while ((ev = (Event *)heap_remove_min_key (all, &tm2))) {
     tm = tm2;
@@ -242,7 +227,7 @@ Event *SimDES::AdvanceTime (int delay)
 void SimDES::Pause (int delay)
 {
   /* create an event */
-  new Event (this, -2, delay);
+  new Event (this, SIM_EV_DELAY, delay);
 }
 
 
@@ -263,7 +248,7 @@ Condition::~Condition ()
 /*
  * Add an object to the list of waiting objects for this condition
  */
-void Condition::AddObject (Sim *s)
+void Condition::AddObject (SimDES *s)
 {
   list_append (waiting_objects, s);
 }
@@ -275,7 +260,7 @@ void Condition::Wakeup (int delay)
 
   while (!list_isempty (waiting_objects)) {
     s = (SimDES *)list_delete_tail (waiting_objects);
-    new Event (s, -1, delay);
+    new Event (s, SIM_EV_WAKEUP, delay);
   }
 }
 

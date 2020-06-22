@@ -2631,10 +2631,12 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
     else {
       act_error_ctxt (stderr);
       fatal_error ("self is not assigned!");
+      ret = NULL;
     }
   }
   else {
     fatal_error ("Invalid return type in function signature");
+    ret = NULL;
   }
   return ret;
 }

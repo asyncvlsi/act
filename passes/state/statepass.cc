@@ -55,6 +55,9 @@ void *ActStatePass::local_op (Process *p, int mode)
  * Count all the local booleans, and create a map from connection
  * pointers corresponding to them to integers.
  *
+ * FIXME: deal with globals correctly.
+ *
+ *
  */
 stateinfo_t *ActStatePass::countBools (Process *p)
 {
@@ -207,8 +210,8 @@ stateinfo_t *ActStatePass::countBools (Process *p)
   Assert (idx == si->localbools, "What?");
 
 #if 0
-  printf (" stats: %d local; %d port\n", si->localbools,
-	  si->nportbools);
+  printf ("%s: stats: %d local; %d port\n", p->getName(),
+	  si->localbools, si->nportbools);
 #endif
 
 

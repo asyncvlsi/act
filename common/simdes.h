@@ -67,14 +67,20 @@ class SimDES;
  *                 be executed
  *
  *  There are three reserved event types:
- *       0 : the initial event, used if the object begins with an
+ *      EV_INIT : the initial event, used if the object begins with an
  *       action at the beginning of the simulation
- *      -1 : event that occurs when the object gets to wake up after a
+ *      EV_WAKEUP : event that occurs when the object gets to wake up after a
  *       wait condition
- *      -2 : event that occurs when the object wakes up after an
+ *      EV_DELAY : event that occurs when the object wakes up after an
  *       internal delay (Pause).
  * 
  */
+#define SIM_EV_INIT   0
+#define SIM_EV_WAKEUP 1
+#define SIM_EV_DELAY  2
+#define SIM_EV_REST   3
+#define SIM_EV_MAX    31
+
 class Event {
 public:
   Event (SimDES *s, int event_type, int delay);
@@ -90,15 +96,15 @@ public:
   void operator delete (void *v);
 
 private:
-  SimDES *obj;		// information about the event (see above)
-  int ev_type;		// ditto
-
   unsigned int kill:1;		// set to 1 to make this an event that
 				// is discarded
+  unsigned int ev_type:6;	// ditto
+
+  SimDES *obj;		// information about the event (see above)
 
   /* allocated event queue */
   static Event *ev_queue;
-  Event *next;
+  Event *next;               // queue of events
 
   friend class SimDES;
 };
@@ -109,9 +115,12 @@ private:
 
 #define SIM_TIME_SIZE 2
 
-class SimDES : public Sim {
+class SimDES {
  public:
-  SimDES ();
+  SimDES ();		    // Inherit from this class. The
+			    // constructor should create the initial
+			    // event with type SIM_EV_INIT, if any
+  
   virtual ~SimDES ();
 
   /*
@@ -119,7 +128,6 @@ class SimDES : public Sim {
    *  forward progress. See above. All state changes should happen in Step().
    */
   virtual void Step (int ev_type) = 0;
-  virtual int Init () = 0;	 /* returns initial event time, -1 if none. */
 
   void Pause (int delay); 	// pause yourself by the specified
 				// delay---after executing this
@@ -135,7 +143,6 @@ class SimDES : public Sim {
   /*-- simulation management --*/
 
   static Event *Run();		// run the simulation
-  static void Initialize();      // initialize the simulation
 
   static Event *Advance(int n = 1); // run n events
   static Event *AdvanceTime (int delay); // run all events upto
@@ -151,12 +158,11 @@ class SimDES : public Sim {
       (tm_offset[]) + curtime
   */
   static unsigned long long CurTimeLo (); // low order bits of the current time
-  static Sim *CurObj () { return curobj; }
+  static SimDES *CurObj () { return curobj; }
 
 protected:
-  int current_state;		// my current state
   unsigned int break_point:2;	// set a breakpoint on this object
-  int bp_ev_type;		// event type for breakpoint, if required
+  unsigned int bp_ev_type:6; // event type for breakpoint, if required
 
 private:
   static SimDES *curobj;	// current object being stepped
@@ -194,7 +200,7 @@ public:
    */
   virtual int Notify (int slot) = 0;	// generic notifier
 
-  void AddObject (Sim *s);	// add me to the list of things
+  void AddObject (SimDES *s);	// add me to the list of things
 				// that have to be invoked when
 				// the wait completes
 

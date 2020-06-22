@@ -6,7 +6,7 @@ Unless otherwise specified in the README, the way to build an ACT tool
 is:
 
    * Set the environment variables ACT_HOME and VLSI_TOOLS_SRC as per the
-     build instructions in the core ACT library.
+     [build instructions](https://github.com/asyncvlsi/act/blob/master/README.md) for the core ACT library.
  
    * Run make depend, followed by make to build the tools. make install
      will install the files in the ACT_HOME install directory.

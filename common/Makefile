@@ -46,14 +46,16 @@ OBJS1=$(OBJSC1) $(OBJSCC1)
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
-OBJS4CPP2=amem.o simthread.o simdes.o
+OBJS4CPP2=simthread.o simdes.o
 OBJS4C=thread.o mutex.o count.o channel.o
 OBJS4C2=contexts_f.o 
 
-OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2)
+OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2) amem.o
 
 SRCS=$(OBJSC1:.o=.c) $(OBJSCC1:.o=.cc) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
-	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc) # ns.c
+	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc)  $(OBJS4CPP2:.o=.cc)
+
+# ns.c
 
 OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 

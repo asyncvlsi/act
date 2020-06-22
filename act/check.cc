@@ -386,10 +386,11 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
     break;
 
   case E_BITFIELD:
+    lt = act_type_var (s, (ActId *)e->u.e.l);
     if (T_BASETYPE (lt) == T_INT) {
       return lt;
     }
-    typecheck_err ("Bitfield! Implement me please");
+    typecheck_err ("Bitfield used with non-integer variable.");
     return T_ERR;
     break;
 

@@ -987,10 +987,12 @@ static int _collect_depths (struct act_prsinfo *info,
 
   case ACT_PRS_EXPR_ANDLOOP:
   case ACT_PRS_EXPR_ORLOOP:
+    v = 0;
     fatal_error ("and/or loop?!");
     break;
 
   default:
+    v = 0;
     fatal_error ("What?");
     break;
   }
