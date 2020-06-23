@@ -411,8 +411,8 @@ void *ActBooleanizePass::local_op (Process *p, int mode)
   }
 }
 
-void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
-					  act_connection *c)
+void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
+					  act_connection *c, Type *t)
 {
   int i;
   int dir = c->getDir();
@@ -460,8 +460,17 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
 	}
       }
     }
+    v->used = 1;
     if (v->input && !v->output) {
       A_LAST (n->ports).input = 1;
+    }
+    if (TypeFactory::isIntType (t)) {
+      v->isint = 1;
+      v->width = TypeFactory::bitWidth (t);
+    }
+    else if (TypeFactory::isChanType (t)) {
+      v->ischan = 1;
+      v->width = TypeFactory::bitWidth (t);
     }
   }
   else {
@@ -491,6 +500,13 @@ void ActBooleanizePass::append_bool_port (act_boolean_netlist_t *n,
   }
 }
 
+
+/*
+       n : the current netlist where the ports have to be flattened
+  prefix : the prefix to the current instance
+       s : the parent scope of the current user defined object
+       u : the current user-defined object
+*/
 
 void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 						ActId *prefix,
@@ -545,6 +561,7 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
     }
     else if (TypeFactory::isBoolType (it) || TypeFactory::isChanType (it) ||
 	     TypeFactory::isIntType (it)) {
+      Type *itbase = it->BaseType();
       /* now check! */
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
@@ -553,7 +570,7 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 	  tail->setArray (t);
 	  c = sub->Canonical (s);
 	  Assert (c == c->primary (), "What?");
-	  append_bool_port (n, c);
+	  append_base_port (n, c, itbase);
 	  delete t;
 	  tail->setArray (NULL);
 	  step->step();
@@ -563,18 +580,31 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
       else {
 	c = sub->Canonical (s);
 	Assert (c == c->primary(), "What?");
-	append_bool_port (n, c);
+	append_base_port (n, c, itbase);
       }
     }
     else {
-      fatal_error ("This cannot handle int/enumerated types; everything must be reducible to bool");
+      fatal_error ("This cannot handle non-int/bool/chan types; everything must be reducible to a built-in type.");
     }
     delete sub;
   }
 }
 
 
-
+/*
+ *
+ *  Recursive update of port used flags
+ *
+ *        n : netlist where the update should be done
+ *  subinst : netlist of current instance
+ *   prefix : prefix to current instance
+ *        s : scope in which the instance exists
+ *        u : the user-defined type corresponding to the prefix
+ *    count : in/out used to track instports to make things simpler
+ *            for other tools
+ *
+ *
+ */
 void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 					       act_boolean_netlist_t *subinst,
 					       ActId *prefix,
@@ -605,60 +635,78 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
       
     /* if it is a complex type, we need to traverse it! */
     if (TypeFactory::isUserType (it)) {
+      Arraystep *step;
       if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
+	step = it->arrayInfo()->stepper();
+      }
+      else {
+	step = NULL;
+      }
+      if (!step || !step->isend()) {
+	do {
+	  Array *t;
+	  if (step) {
+	    t = step->toArray();
+	  }
+	  else {
+	    t = NULL;
+	  }
 	  tail->setArray (t);
 	  rec_update_used_flags (n, subinst, sub, s,
 				 dynamic_cast<UserDef *>(it->BaseType ()),
 				 count);
-	  delete t;
 	  tail->setArray (NULL);
-	  step->step();
-	}
+	  if (t) {
+	    delete t;
+	  }
+	  if (step) {
+	    step->step();
+	  }
+	} while (step && !step->isend());
       }
-      else {
-	rec_update_used_flags (n, subinst, sub, s,
-			       dynamic_cast<UserDef *>(it->BaseType ()), count);
-
+      if (step) {
+	delete step;
       }
     }
     else if (TypeFactory::isBoolType (it) || TypeFactory::isChanType (it) ||
 	     TypeFactory::isIntType (it)) {
       /* now check! */
+      Arraystep *step;
       if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
+	step = it->arrayInfo()->stepper();
+      }
+      else {
+	step = NULL;
+      }
+      if (!step || !step->isend()) {
+	do {
+	  Array *t;
+	  if (step) {
+	    t = step->toArray();
+	  }
+	  else {
+	    t = NULL;
+	  }
 	  Assert (*count < A_LEN (subinst->ports), "What?");
 	  if (!subinst->ports[*count].omit) {
-	    Array *t = step->toArray ();
 	    tail->setArray (t);
 	    c = sub->Canonical (s);
 	    Assert (c == c->primary (), "What?");
-
 	    /* mark c as used */
 	    mark_c_used (n, subinst, c, count);
-
-	    delete t;
 	    tail->setArray (NULL);
 	  }
 	  *count = *count + 1;
-	  step->step();
+	  if (t) {
+	    delete t;
+	  }
+	  if (step) {
+	    step->step();
+	  }
+	} while (step && !step->isend());
+	if (step) {
+	  delete step;
 	}
-	delete step;
-      }
-      else {
-	Assert (*count < A_LEN (subinst->ports), "Hmm");
-	if (!subinst->ports[*count].omit) {
-	  c = sub->Canonical (s);
-	  Assert (c == c->primary(), "What?");
-
-	  /* mark c as used */
-	  mark_c_used (n, subinst, c, count);
-
-	}
-	*count = *count + 1;
       }
     }
     else {
@@ -703,27 +751,42 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
   id = new ActId (vx->getName());
   subinst = getBNL (dynamic_cast<Process *>(vx->t->BaseType()));
   Assert (subinst, "What?");
-  
-  if (vx->t->arrayInfo()) {
-    /* ok, we need an outer loop now */
-    Arraystep *as = vx->t->arrayInfo()->stepper();
 
-    while (!as->isend()) {
-      Array *t = as->toArray();
+  Arraystep *as;
+
+  if (vx->t->arrayInfo()) {
+    as = vx->t->arrayInfo()->stepper();
+  }
+  else {
+    as = NULL;
+  }
+
+  if (!as || !as->isend()) {
+    do {
+      Array *t;
+      if (as) {
+	t = as->toArray();
+      }
+      else {
+	t = NULL;
+      }
+
       id->setArray (t);
       count = 0;
       rec_update_used_flags (n, subinst, id, sc,
 			     dynamic_cast<UserDef *>(vx->t->BaseType()), &count);
-      delete t;
       id->setArray (NULL);
-      as->step();
-    }
-    delete as;
+
+      if (t) {
+	delete t;
+      }
+      if (as) {
+	as->step();
+      }
+    } while (as && !as->isend());
   }
-  else {
-    count = 0;
-    rec_update_used_flags (n, subinst, id, sc,
-			   dynamic_cast<UserDef *>(vx->t->BaseType()), &count);
+  if (as) {
+    delete as;
   }
   delete id;
 }
@@ -781,6 +844,8 @@ act_boolean_netlist_t *ActBooleanizePass::getBNL (Process *p)
   return (act_boolean_netlist_t *)getMap (p);
 }
 
+
+/*-- local operator for creating all nets --*/
 void ActBooleanizePass::_createNets (Process *p)
 {
   act_boolean_netlist_t *n = getBNL (p);
@@ -793,7 +858,6 @@ void ActBooleanizePass::_createNets (Process *p)
     ValueIdx *vx = (*i);
     act_boolean_netlist_t *sub;
     Process *instproc;
-    int ports_exist;
     Arraystep *as;
     
     if (!TypeFactory::isProcessType (vx->t)) continue;
@@ -802,65 +866,63 @@ void ActBooleanizePass::_createNets (Process *p)
     sub = getBNL (instproc);
     Assert (sub, "What?");
 
-    ports_exist = 0;
-    for (int j=0; j < A_LEN (sub->ports); j++) {
-      if (sub->ports[j].omit == 0) {
-	ports_exist = 1;
-	break;
-      }
-    }
-    if (!ports_exist) continue;
-
     if (vx->t->arrayInfo()) {
       as = vx->t->arrayInfo()->stepper();
     }
     else {
       as = NULL;
     }
+    if (!as || !as->isend()) {
+      do {
+	Array *tmpa;
+	tmpa = as ? as->toArray() : NULL;
 
-    do {
-      Array *tmpa;
-      tmpa = as ? as->toArray() : NULL;
+	for (int j=0; j < A_LEN (sub->ports); j++) {
+	  if (sub->ports[j].omit) continue;
 
-      for (int j=0; j < A_LEN (sub->ports); j++) {
-	if (sub->ports[j].omit) continue;
+	  int netid = addNet (n, n->instports[iport]);
 
-	int netid = addNet (n, n->instports[iport]);
-
-	if (sub->ports[j].netid == -1) {
-	  /* there is nothing to be done here */
+	  if (sub->ports[j].netid == -1) {
+	    /* there is nothing to be done here */
 	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
+	  }
+	  else {
+	    importPins (n, netid, vx->getName(), tmpa, &sub->nets[sub->ports[j].netid]);
+	  }
+	  for (int k=0; k < A_LEN (n->ports); k++) {
+	    if (n->ports[k].c == n->instports[iport]) {
+	      n->ports[k].netid = netid;
+	      break;
+	    }
+	  }
+	  iport++;
 	}
-	else {
-	  importPins (n, netid, vx->getName(), tmpa, &sub->nets[sub->ports[j].netid]);
-	}
-	for (int k=0; k < A_LEN (n->ports); k++) {
-	  if (n->ports[k].c == n->instports[iport]) {
-	    n->ports[k].netid = netid;
-	    break;
+
+	/*-- global nets --*/
+	for (int j=0; j < A_LEN (sub->nets); j++) {
+	  if (!sub->nets[j].net->isglobal()) continue;
+	  int k;
+	  for (k=0; k < A_LEN (sub->ports); k++) {
+	    if (sub->ports[k].c == sub->nets[j].net) break;
+	  }
+	  if (k == A_LEN (sub->ports)) {
+	    /* global net, not in port list */
+	    int netid = addNet (n, sub->nets[j].net);
+	    importPins (n, netid, vx->getName(), tmpa, &sub->nets[j]);
+	    sub->nets[j].skip = 1;
 	  }
 	}
-	iport++;
-      }
-
-      /*-- global nets --*/
-      for (int j=0; j < A_LEN (sub->nets); j++) {
-	if (!sub->nets[j].net->isglobal()) continue;
-	int k;
-	for (k=0; k < A_LEN (sub->ports); k++) {
-	  if (sub->ports[k].c == sub->nets[j].net) break;
+	if (as) {
+	  as->step();
 	}
-	if (k == A_LEN (sub->ports)) {
-	  /* global net, not in port list */
-	  int netid = addNet (n, sub->nets[j].net);
-	  importPins (n, netid, vx->getName(), tmpa, &sub->nets[j]);
-	  sub->nets[j].skip = 1;
+	if (tmpa) {
+	  delete tmpa;
 	}
-      }
-      if (as) {
-	as->step();
-      }
-    } while (as && !as->isend());
+      } while (as && !as->isend());
+    }
+    if (as) {
+      delete as;
+    }
   }
   Assert (iport == A_LEN (n->instports), "What?");
 

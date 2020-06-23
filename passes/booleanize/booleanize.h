@@ -134,8 +134,7 @@ class ActBooleanizePass : public ActPass {
 			      act_boolean_netlist_t *subinst,
 			      ActId *prefix,
 			      Scope *s, UserDef *u, int *count);
-  void append_bool_port (act_boolean_netlist_t *n,
-			 act_connection *c);
+  void append_base_port (act_boolean_netlist_t *n, act_connection *c, Type *t);
 
   /*--- create netlist helper functions ---*/
   void _createNets (Process *p);
