@@ -109,20 +109,19 @@ class ActBooleanizePass : public ActPass {
    *  names + pins
    *
    * @param p is the top level process
-   * @return 1 on success, 0 on failure
    */
-  int createNets (Process *p = NULL);
+  void createNets (Process *p = NULL);
 
   
   /*-- internal data structures and functions --*/
  private:
-  int init ();
-  
-  std::map<Process *, act_boolean_netlist_t *> *netmap;
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *);
+
   int black_box_mode;
 
   /*-- internal functions: generate booleans for a process --*/
-  void generate_netbools (Process *p);
+  act_boolean_netlist_t *_create_local_bools (Process *p);
 
   void flatten_ports_to_bools (act_boolean_netlist_t *,
 			       ActId *prefix,
