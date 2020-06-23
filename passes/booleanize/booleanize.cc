@@ -542,45 +542,73 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
       
     /* if it is a complex type, we need to traverse it! */
     if (TypeFactory::isUserType (it)) {
+      Arraystep *step;
       if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
+	step = it->arrayInfo()->stepper();
+      }
+      else {
+	step = NULL;
+      }
+      if (!step || !step->isend()) {
+	do {
+	  Array *t;
+	  if (step) {
+	    t = step->toArray ();
+	  }
+	  else {
+	    t = NULL;
+	  }
 	  tail->setArray (t);
 	  flatten_ports_to_bools (n, sub, s,
 				  dynamic_cast<UserDef *>(it->BaseType ()));
-	  delete t;
 	  tail->setArray (NULL);
-	  step->step();
+	  if (t) {
+	    delete t;
+	  }
+	  if (step) {
+	    step->step();
+	  }
 	}
+	while (step && !step->isend());
       }
-      else {
-	flatten_ports_to_bools (n, sub, s,
-				dynamic_cast<UserDef *>(it->BaseType ()));
+      if (step) {
+	delete step;
       }
     }
     else if (TypeFactory::isBoolType (it) || TypeFactory::isChanType (it) ||
 	     TypeFactory::isIntType (it)) {
       Type *itbase = it->BaseType();
-      /* now check! */
+      Arraystep *step;
       if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	while (!step->isend()) {
-	  Array *t = step->toArray ();
+	step = it->arrayInfo()->stepper();
+      }
+      else {
+	step = NULL;
+      }
+      if (!step || !step->isend()) {
+	do {
+	  Array *t;
+	  if (step) {
+	    t = step->toArray ();
+	  }
+	  else {
+	    t = NULL;
+	  }
 	  tail->setArray (t);
 	  c = sub->Canonical (s);
 	  Assert (c == c->primary (), "What?");
 	  append_base_port (n, c, itbase);
-	  delete t;
 	  tail->setArray (NULL);
-	  step->step();
-	}
-	delete step;
+	  if (t) {
+	    delete t;
+	  }
+	  if (step) {
+	    step->step();
+	  }
+	} while (step && !step->isend());
       }
-      else {
-	c = sub->Canonical (s);
-	Assert (c == c->primary(), "What?");
-	append_base_port (n, c, itbase);
+      if (step) {
+	delete step;
       }
     }
     else {
@@ -704,9 +732,9 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	    step->step();
 	  }
 	} while (step && !step->isend());
-	if (step) {
-	  delete step;
-	}
+      }
+      if (step) {
+	delete step;
       }
     }
     else {
@@ -749,7 +777,8 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
   sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
   
   id = new ActId (vx->getName());
-  subinst = getBNL (dynamic_cast<Process *>(vx->t->BaseType()));
+  subinst = (act_boolean_netlist_t *)
+    getMap (dynamic_cast<Process *>(vx->t->BaseType()));
   Assert (subinst, "What?");
 
   Arraystep *as;
@@ -841,6 +870,9 @@ int ActBooleanizePass::run (Process *p)
 
 act_boolean_netlist_t *ActBooleanizePass::getBNL (Process *p)
 {
+  if (!completed()) {
+    fatal_error ("Called ActBooleanizePass::getBNL() while the pass was running!");
+  }
   return (act_boolean_netlist_t *)getMap (p);
 }
 
@@ -848,7 +880,7 @@ act_boolean_netlist_t *ActBooleanizePass::getBNL (Process *p)
 /*-- local operator for creating all nets --*/
 void ActBooleanizePass::_createNets (Process *p)
 {
-  act_boolean_netlist_t *n = getBNL (p);
+  act_boolean_netlist_t *n = (act_boolean_netlist_t *) getMap (p);
   Assert (n, "What?");
 
   ActInstiter i(p ? p->CurScope() : a->Global()->CurScope());
@@ -863,7 +895,7 @@ void ActBooleanizePass::_createNets (Process *p)
     if (!TypeFactory::isProcessType (vx->t)) continue;
 
     instproc = dynamic_cast<Process *>(vx->t->BaseType());
-    sub = getBNL (instproc);
+    sub = (act_boolean_netlist_t *) getMap (instproc);
     Assert (sub, "What?");
 
     if (vx->t->arrayInfo()) {
@@ -887,7 +919,8 @@ void ActBooleanizePass::_createNets (Process *p)
 	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
 	  }
 	  else {
-	    importPins (n, netid, vx->getName(), tmpa, &sub->nets[sub->ports[j].netid]);
+	    importPins (n, netid, vx->getName(), tmpa,
+			&sub->nets[sub->ports[j].netid]);
 	  }
 	  for (int k=0; k < A_LEN (n->ports); k++) {
 	    if (n->ports[k].c == n->instports[iport]) {

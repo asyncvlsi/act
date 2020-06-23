@@ -396,9 +396,11 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: expr_id snd_typ send_data
+send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ send_data
 {{X:
     $3->u.comm.chan = $1;
+    /* XXX: typecheck send data with channel */
+    
     return $3;
 }}
 ;
@@ -434,9 +436,11 @@ send_data[act_chp_lang_t *]: w_expr
 }}
 ;
 
-recv_stmt[act_chp_lang_t *]: expr_id rcv_type recv_id
+recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type recv_id
 {{X:
     $3->u.comm.chan = $1;
+    /* XXX: typecheck send data with channel */
+    
     return $3;
 }}
 ;
@@ -449,7 +453,7 @@ rcv_type[int]: "?"
 {{X: return 2; }}
 ;
 
-recv_id[act_chp_lang_t *]: expr_id
+recv_id[act_chp_lang_t *]: bool_or_int_expr_id
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -460,7 +464,7 @@ recv_id[act_chp_lang_t *]: expr_id
     list_append (c->u.comm.rhs, $1);
     return c;
 }}
-| "(" { expr_id "," }* ")" 
+| "(" { bool_or_int_expr_id "," }* ")" 
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -472,7 +476,7 @@ recv_id[act_chp_lang_t *]: expr_id
 }}
 ;
 
-assign_stmt[act_chp_lang_t *]: expr_id ":=" w_expr
+assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -480,9 +484,11 @@ assign_stmt[act_chp_lang_t *]: expr_id ":=" w_expr
     c->space = NULL;
     c->u.assign.id = $1;
     c->u.assign.e = $3;
+    /* XXX: typecheck w_expr here */
+    
     return c;
 }}
-| expr_id dir
+| bool_expr_id dir
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -525,7 +531,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     list_free ($2);
     return c;
 }}
-| "[" wbool_expr "]" 
+| "[" wbool_allow_chan_expr "]" 
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -547,7 +553,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
 }}
 ;
 
-guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
+guarded_cmd[act_chp_gc_t *]: wbool_allow_chan_expr "->" chp_body
 {{X:
     act_chp_gc_t *gc;
     NEW (gc, act_chp_gc_t);
@@ -566,7 +572,7 @@ guarded_cmd[act_chp_gc_t *]: wbool_expr "->" chp_body
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" chp_body ")"
+":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_allow_chan_expr "->" chp_body ")"
 {{X:
     ActRet *r;
     Expr *hi = NULL;
@@ -648,7 +654,7 @@ hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
 }}
 ;
 
-hse_body_item[act_chp_lang_t *]: { assign_stmt "," }* 
+hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }* 
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
@@ -678,13 +684,11 @@ hse_body_item[act_chp_lang_t *]: { assign_stmt "," }*
 }}
 ;
 
-/*
-hse_assign_stmt[act_chp_lang_t *]: expr_id dir 
+hse_assign_stmt[act_chp_lang_t *]: bool_expr_id dir 
 {{X:
     return apply_X_assign_stmt_opt1 ($0, $1, $2);
 }}
 ;
-*/
 
 hse_select_stmt[act_chp_lang_t *]: "[" { hse_guarded_cmd "[]" }* "]"
 {{X:
@@ -1079,7 +1083,13 @@ bool_expr_id[ActId *]: expr_id
 {{X:
     int t;
     t = act_type_var ($0->scope, $1);
-    if (t != T_BOOL) {
+    if (T_BASETYPE (t) != T_BOOL) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is not of type bool\n");
+      exit (1);
+    }
+    else if (t & T_ARRAYOF) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is not of type bool\n");
@@ -1093,7 +1103,7 @@ bool_expr_id_or_array[ActId *]: expr_id
 {{X:
     int t;
     t = act_type_var ($0->scope, $1);
-    if (t != T_BOOL && t != (T_BOOL|T_ARRAYOF)) {
+    if (T_BASETYPE (t) != T_BOOL) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is not of type bool or bool[]\n");
@@ -1103,6 +1113,45 @@ bool_expr_id_or_array[ActId *]: expr_id
 }}
 ;
 
+chan_expr_id[ActId *]: expr_id
+{{X:
+    int t;
+    t = act_type_var ($0->scope, $1);
+    if (T_BASETYPE(t) != T_CHAN) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is not of of a channel type\n");
+      exit (1);
+    }
+    else if (t & T_ARRAYOF) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is of array type\n");
+      exit (1);
+    }
+    return $1;
+}}
+;
+
+bool_or_int_expr_id[ActId *]: expr_id
+{{X:
+    int t;
+    t = act_type_var ($0->scope, $1);
+    if (!T_BASETYPE_ISINTBOOL (t)) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is not of type bool/int\n");
+      exit (1);
+    }
+    else if (t & T_ARRAYOF) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is of array type\n");
+      exit (1);
+    }
+    return $1;
+}}
+;
 
 /*
   CONSISTENCY: MAKE SURE THIS IS CONSISTENT WITH prs.c

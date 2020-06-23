@@ -459,3 +459,30 @@ wbool_expr[Expr *]: bool_expr
     return e;
 }}
 ;
+
+wbool_allow_chan_expr[Expr *]: bool_expr
+{{X:
+    Expr *e;
+    int tc;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    e = act_walk_X_expr ($0, $1);
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e, 2);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    if (!(tc & T_BOOL)) {
+      $E("Expression must be of type bool");
+    }
+    return e;
+}}
+;
+

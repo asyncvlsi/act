@@ -867,7 +867,7 @@ method_list: one_method method_list
 | one_method
 ;
 
-one_method: ID "{" hse_body "}"
+one_method: ID "{" chp_body "}"
 {{X:
     if ($0->u_d) {
       /* data methods */

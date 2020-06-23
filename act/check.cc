@@ -206,7 +206,13 @@ int act_type_var (Scope *s, ActId *id)
  *
  *  @param s is the scope in which all identifiers are evaluated
  *  @param e is the expression to be typechecked
+ *  @param only_chan 0 if this is a normal expression, 
+ *                   1 if this can only have channels,
+ *                   2 if this can mix channels and variables
+ *
  *  @return -1 on an error
+ *
+ *
  */
 int act_type_expr (Scope *s, Expr *e, int only_chan)
 {
@@ -483,8 +489,10 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 	  return T_INT;
 	}
       }
-      typecheck_err ("Channel expressions can't have non-channel variables");
-      return T_ERR;
+      if (only_chan == 1) {
+	typecheck_err ("Channel expressions can't have non-channel variables");
+	return T_ERR;
+      }
     }
     return lt;
     break;
