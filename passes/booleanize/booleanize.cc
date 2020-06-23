@@ -203,7 +203,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   }
 }
 
-static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
+static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
 {
   act_prs *p; 
   act_boolean_netlist_t *N;
@@ -237,7 +237,8 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
   N->uH = ihash_new (4);
   N->isempty = 1;
 
-  /* walk through each PRS block */
+  /* walk through each PRS block, and mark all variables that are
+     there as used, as well as set their input/output flag */
   while (p) {
     act_prs_lang_t *prs;
     
@@ -264,68 +265,19 @@ static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
     }
     p = p->next;
   }
+  return N;
+}
 
-  /* now walk through the variables. if it is not an output, it is an
-     input! */
-  for (int i=0; i < N->cH->size; i++) {
-    for (ihash_bucket_t *b = N->cH->head[i]; b; b = b->next) {
-      act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
-      if (!v->output) {
-	v->input = 1;
-      }
-      if (v->id->isglobal()) {
-	A_NEWM (N->used_globals, act_connection *);
-	A_NEXT (N->used_globals) = v->id;
-	A_INC (N->used_globals);
-      }
-    }
-  }
-  for (int i=0; i < N->uH->size; i++) {
-    for (ihash_bucket_t *b = N->uH->head[i]; b; b = b->next) {
-      act_connection *c = (act_connection *)b->key;
-      if (c->isglobal()) {
-	A_NEWM (N->used_globals, act_connection *);
-	A_NEXT (N->used_globals) = c;
-	A_INC (N->used_globals);
-      }
-    }
-  }  
+
+static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
+{
+  act_boolean_netlist_t *N;
+
+  N = process_local_lang (a, proc);
 
   return N;
 }
 
-void ActBooleanizePass::generate_netbools (Act *a, Process *p)
-{
-  int subinst = 0;
-  Assert (p->isExpanded(), "Process must be expanded!");
-
-  if (netmap->find(p) != netmap->end()) {
-    /* handled this already */
-    return;
-  }
-
-  /* Create netlist for all sub-processes */
-  ActInstiter i(p->CurScope());
-
-  /* handle all processes instantiated by this one */
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      generate_netbools (a, dynamic_cast<Process *>(vx->t->BaseType()));
-      subinst = 1;
-    }
-  }
-
-  act_boolean_netlist_t *n = walk_netgraph (a, p);
-
-  (*netmap)[p] = n;
-
-  if (subinst) {
-    n->isempty = 0;
-  }
-
-  return;
-}
 
 void ActBooleanizePass::generate_netbools (Process *p)
 {
@@ -338,6 +290,8 @@ void ActBooleanizePass::generate_netbools (Process *p)
     return;
   }
 
+  act_boolean_netlist_t *n = walk_netgraph (a, p);
+
   /* Create netlist for all sub-processes */
   ActInstiter i(p->CurScope());
 
@@ -347,16 +301,51 @@ void ActBooleanizePass::generate_netbools (Process *p)
     if (TypeFactory::isProcessType (vx->t)) {
       generate_netbools (dynamic_cast<Process *>(vx->t->BaseType()));
       subinst = 1;
+      update_used_flags (n, vx, p);
     }
   }
 
-  act_boolean_netlist_t *n = walk_netgraph (a, p);
-
+  flatten_ports_to_bools (n, NULL, p->CurScope(), p);
+  
   (*netmap)[p] = n;
+
+  /* now walk through the variables. if it is not an output, it is an
+     input! */
+  for (int i=0; i < n->cH->size; i++) {
+    for (ihash_bucket_t *b = n->cH->head[i]; b; b = b->next) {
+      act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
+      if (!v->output) {
+	Assert (v->input == 1, "What?");
+      }
+      if (v->id->isglobal()) {
+	A_NEWM (n->used_globals, act_connection *);
+	A_NEXT (n->used_globals) = v->id;
+	A_INC (n->used_globals);
+      }
+    }
+  }
+  for (int i=0; i < n->uH->size; i++) {
+    for (ihash_bucket_t *b = n->uH->head[i]; b; b = b->next) {
+      act_connection *c = (act_connection *)b->key;
+      if (c->isglobal()) {
+	int j;
+	for (j=0; j < A_LEN (n->used_globals); j++) {
+	  if (n->used_globals[j] == c)
+	    break;
+	}
+	if (j == A_LEN (n->used_globals)) {
+	  A_NEWM (n->used_globals, act_connection *);
+	  A_NEXT (n->used_globals) = c;
+	  A_INC (n->used_globals);
+	}
+      }
+    }
+  }
 
   if (subinst) {
     n->isempty = 0;
   }
+  
   return;
 }
 
@@ -725,61 +714,6 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
 }
 
 
-void ActBooleanizePass::create_bool_ports (Act *a, Process *p)
-{
-  Assert (p->isExpanded(), "Process must be expanded!");
-  if (netmap->find(p) == netmap->end()) {
-    fprintf (stderr, "Could not find process `%s'", p->getName());
-    fprintf (stderr, " in created netlists; inconstency!\n");
-    fatal_error ("Internal inconsistency or error in pass ordering!");
-  }
-  act_boolean_netlist_t *n = netmap->find (p)->second;
-  if (n->visited) return;
-  n->visited = 1;
-
-  /* emit sub-processes */
-  ActInstiter i(p->CurScope());
-
-  /* handle all processes instantiated by this one */
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      create_bool_ports (a, dynamic_cast<Process *>(vx->t->BaseType()));
-      update_used_flags (n, vx, p);
-    }
-  }
-  flatten_ports_to_bools (n, NULL, p->CurScope(), p);
-  return;
-}
-
-void ActBooleanizePass::create_bool_ports (Process *p)
-{
-  Assert (p->isExpanded(), "Process must be expanded!");
-  if (netmap->find(p) == netmap->end()) {
-    fprintf (stderr, "Could not find process `%s'", p->getName());
-    fprintf (stderr, " in created netlists; inconstency!\n");
-    fatal_error ("Internal inconsistency or error in pass ordering!");
-  }
-  act_boolean_netlist_t *n = netmap->find (p)->second;
-  if (n->visited) return;
-  n->visited = 1;
-
-  /* emit sub-processes */
-  ActInstiter i(p->CurScope());
-
-  /* handle all processes instantiated by this one */
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      create_bool_ports (dynamic_cast<Process *>(vx->t->BaseType()));
-      update_used_flags (n, vx, p);
-    }
-  }
-  flatten_ports_to_bools (n, NULL, p->CurScope(), p);
-  return;
-}
-
-
 static void free_bN (act_boolean_netlist_t *n)
 {
   int i;
@@ -884,31 +818,6 @@ int ActBooleanizePass::run (Process *p)
     n->visited = 0;
   }
 
-  /*-- create boolean ports --*/
-  if (!p) {
-    ActNamespace *g = ActNamespace::Global();
-    ActInstiter i(g->CurScope());
-
-    for (i = i.begin(); i != i.end(); i++) {
-      ValueIdx *vx = *i;
-      if (TypeFactory::isProcessType (vx->t)) {
-	Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-	if (x->isExpanded()) {
-	  create_bool_ports (x);
-	}
-      }
-    }
-  }
-  else {
-    create_bool_ports (p);
-  }
-
-  /*-- clear visited flag again --*/
-  for (it = netmap->begin(); it != netmap->end(); it++) {
-    act_boolean_netlist_t *n = it->second;
-    n->visited = 0;
-  }
-
   /*-- mark pass as done --*/
   _finished = 2;
 
@@ -955,6 +864,7 @@ void ActBooleanizePass::_createNets (Process *p)
     act_boolean_netlist_t *sub;
     Process *instproc;
     int ports_exist;
+    Arraystep *as;
     
     if (!TypeFactory::isProcessType (vx->t)) continue;
 
@@ -972,48 +882,16 @@ void ActBooleanizePass::_createNets (Process *p)
     if (!ports_exist) continue;
 
     if (vx->t->arrayInfo()) {
-      Arraystep *as = vx->t->arrayInfo()->stepper();
-
-      while (!as->isend()) {
-	for (int j=0; j < A_LEN (sub->ports); j++) {
-	  if (sub->ports[j].omit) continue;
-
-	  int netid = addNet (n, n->instports[iport]);
-
-	  if (sub->ports[j].netid == -1) {
-	    /* there is nothing to be done here */
-	    addPin (n, netid, vx->getName(), as->toArray(), sub->ports[j].c);
-	  }
-	  else {
-	    importPins (n, netid, vx->getName(), as->toArray(), &sub->nets[sub->ports[j].netid]);
-	  }
-	  for (int k=0; k < A_LEN (n->ports); k++) {
-	    if (n->ports[k].c == n->instports[iport]) {
-	      n->ports[k].netid = netid;
-	      break;
-	    }
-	  }
-	  iport++;
-	}
-
-	for (int j=0; j < A_LEN (sub->nets); j++) {
-	  if (!sub->nets[j].net->isglobal()) continue;
-	  int k;
-	  for (k=0; k < A_LEN (sub->ports); k++) {
-	    if (sub->ports[k].c == sub->nets[j].net) break;
-	  }
-	  if (k == A_LEN (sub->ports)) {
-	    /* global net, not in port list */
-	    int netid = addNet (n, sub->nets[j].net);
-	    importPins (n, netid, vx->getName(), as->toArray(), &sub->nets[j]);
-	    sub->nets[j].skip = 1;
-	  }
-	}
-
-	as->step();
-      }
+      as = vx->t->arrayInfo()->stepper();
     }
     else {
+      as = NULL;
+    }
+
+    do {
+      Array *tmpa;
+      tmpa = as ? as->toArray() : NULL;
+
       for (int j=0; j < A_LEN (sub->ports); j++) {
 	if (sub->ports[j].omit) continue;
 
@@ -1021,10 +899,10 @@ void ActBooleanizePass::_createNets (Process *p)
 
 	if (sub->ports[j].netid == -1) {
 	  /* there is nothing to be done here */
-	  addPin (n, netid, vx->getName(), sub->ports[j].c);
+	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
 	}
 	else {
-	  importPins (n, netid, vx->getName(), &sub->nets[sub->ports[j].netid]);
+	  importPins (n, netid, vx->getName(), tmpa, &sub->nets[sub->ports[j].netid]);
 	}
 	for (int k=0; k < A_LEN (n->ports); k++) {
 	  if (n->ports[k].c == n->instports[iport]) {
@@ -1045,11 +923,14 @@ void ActBooleanizePass::_createNets (Process *p)
 	if (k == A_LEN (sub->ports)) {
 	  /* global net, not in port list */
 	  int netid = addNet (n, sub->nets[j].net);
-	  importPins (n, netid, vx->getName(), &sub->nets[j]);
+	  importPins (n, netid, vx->getName(), tmpa, &sub->nets[j]);
 	  sub->nets[j].skip = 1;
 	}
       }
-    }
+      if (as) {
+	as->step();
+      }
+    } while (as && !as->isend());
   }
   Assert (iport == A_LEN (n->instports), "What?");
 
@@ -1110,15 +991,6 @@ void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
   A_INC (n->nets[netid].pins);
 }
 
-void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
-				int netid,
-				const char *name,
-				act_connection *pin)
-{
-  addPin (n, netid, name, NULL, pin);
-}
-
-
 void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
 				    int netid,
 				    const char *name, Array *a,
@@ -1138,12 +1010,4 @@ void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
     A_NEXT (n->nets[netid].pins).pin = net->pins[i].pin;
     A_INC (n->nets[netid].pins);
   }
-}
-
-void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
-				    int netid,
-				    const char *name,
-				    act_local_net_t *net)
-{
-  importPins (n, netid, name, NULL, net);
 }

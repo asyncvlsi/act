@@ -123,10 +123,7 @@ class ActBooleanizePass : public ActPass {
 
   /*-- internal functions: generate booleans for a process --*/
   void generate_netbools (Process *p);
-  void generate_netbools (Act *a, Process *p);
 
-  void create_bool_ports (Process *p);
-  void create_bool_ports (Act *a, Process *p);
   void flatten_ports_to_bools (act_boolean_netlist_t *,
 			       ActId *prefix,
 			       Scope *s,
@@ -141,12 +138,12 @@ class ActBooleanizePass : public ActPass {
   void append_bool_port (act_boolean_netlist_t *n,
 			 act_connection *c);
 
+  /*--- create netlist helper functions ---*/
   void _createNets (Process *p);
   int addNet (act_boolean_netlist_t *n, act_connection *c);
-  void addPin (act_boolean_netlist_t *n, int netid, const char *name, act_connection *pin);
   void addPin (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_connection *pin);
-  void importPins (act_boolean_netlist_t *n, int netid, const char *name, act_local_net_t *net);
   void importPins (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_local_net_t *net);
+
 };
 
 
