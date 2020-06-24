@@ -1206,6 +1206,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   act_initialize *init;
   act_dataflow *dflow;
   act_languages *all_lang;
+  int in_refinement = 0;
 
   ux = s->getUserDef();
   if (!ux) {
@@ -1216,30 +1217,50 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     all_lang = ux->getlang();
   }
 
+  Process *proc = dynamic_cast<Process *>(ux);
+  if (proc && proc->hasRefinment() && ActNamespace::Act()->getRefSteps() > 0) {
+    in_refinement = 1;
+  }
+
   switch (t) {
   case ActBody_Lang::LANG_PRS:
-    p = prs_expand ((act_prs *)lang, ns, s);
-    if ((old = all_lang->getprs())) {
-      while (old->next) {
-	old = old->next;
+    if (!in_refinement) {
+      p = prs_expand ((act_prs *)lang, ns, s);
+      if ((old = all_lang->getprs())) {
+	while (old->next) {
+	  old = old->next;
+	}
+	old->next = p;
       }
-      old->next = p;
+      else {
+	all_lang->setprs (p);
+      }
     }
     else {
-      all_lang->setprs (p);
+      all_lang->setprs (NULL);
     }
     break;
 
   case ActBody_Lang::LANG_CHP:
-    c = chp_expand ((act_chp *)lang, ns, s);
-    c->next = all_lang->getchp();
-    all_lang->setchp (c);
+    if (!in_refinement) {
+      c = chp_expand ((act_chp *)lang, ns, s);
+      c->next = all_lang->getchp();
+      all_lang->setchp (c);
+    }
+    else {
+      all_lang->setchp (NULL);
+    }
     break;
     
   case ActBody_Lang::LANG_HSE:
-    c = chp_expand ((act_chp *)lang, ns, s);
-    c->next = all_lang->gethse();
-    all_lang->sethse (c);
+    if (!in_refinement) {
+      c = chp_expand ((act_chp *)lang, ns, s);
+      c->next = all_lang->gethse();
+      all_lang->sethse (c);
+    }
+    else {
+      all_lang->sethse (NULL);
+    }
     break;
 
   case ActBody_Lang::LANG_SPEC:
@@ -1257,44 +1278,63 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     break;
 
   case ActBody_Lang::LANG_REFINE:
-    if (((act_refine *)lang)->b) {
-      ((act_refine *)lang)->b->Expandlist (ns, s);
+    if (in_refinement) {
+      ActNamespace::Act()->decRefSteps();
+      if (((act_refine *)lang)->b) {
+	((act_refine *)lang)->b->Expandlist (ns, s);
+      }
+      ActNamespace::Act()->incRefSteps();
     }
     break;
 
   case ActBody_Lang::LANG_SIZE:
-    sz = sizing_expand ((act_sizing *)lang, ns, s);
-    if (all_lang->getsizing()) {
-      act_sizing *tmp = all_lang->getsizing();
-      while (tmp->next) {
-	tmp = tmp->next;
+    if (!in_refinement) {
+      sz = sizing_expand ((act_sizing *)lang, ns, s);
+      if (all_lang->getsizing()) {
+	act_sizing *tmp = all_lang->getsizing();
+	while (tmp->next) {
+	  tmp = tmp->next;
+	}
+	tmp->next = sz;
       }
-      tmp->next = sz;
+      else {
+	all_lang->setsizing (sz);
+      }
     }
     else {
-      all_lang->setsizing (sz);
+      all_lang->setsizing (NULL);
     }
     break;
 
   case ActBody_Lang::LANG_INIT:
-    init = initialize_expand ((act_initialize *)lang, ns, s);
-    if (all_lang->getinit()) {
-      act_error_ctxt (stderr);
-      fatal_error ("Multiple Initialize { } blocks are not permitted.");
+    if (!in_refinement) {
+      init = initialize_expand ((act_initialize *)lang, ns, s);
+      if (all_lang->getinit()) {
+	act_error_ctxt (stderr);
+	fatal_error ("Multiple Initialize { } blocks are not permitted.");
+      }
+      all_lang->setinit (init);
     }
-    all_lang->setinit (init);
+    else {
+      all_lang->setinit (NULL);
+    }
     break;
 
   case ActBody_Lang::LANG_DFLOW:
-    dflow = dflow_expand ((act_dataflow *)lang, ns, s);
-    if (all_lang->getdflow()) {
-      act_dataflow *tmp = all_lang->getdflow();
-      list_concat (tmp->dflow, dflow->dflow);
-      list_free (dflow->dflow);
-      FREE (dflow);
+    if (!in_refinement) {
+      dflow = dflow_expand ((act_dataflow *)lang, ns, s);
+      if (all_lang->getdflow()) {
+	act_dataflow *tmp = all_lang->getdflow();
+	list_concat (tmp->dflow, dflow->dflow);
+	list_free (dflow->dflow);
+	FREE (dflow);
+      }
+      else {
+	all_lang->setdflow (dflow);
+      }
     }
     else {
-      all_lang->setdflow (dflow);
+      all_lang->setdflow (NULL);
     }
     break;
   }

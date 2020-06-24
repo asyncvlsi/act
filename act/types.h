@@ -132,6 +132,30 @@ public:
 
 class InstType;
 
+
+/*
+ *
+ *  ACT can model a circuit at different levels of detail. The four
+ *  levels are specified below.
+ *
+ *  The default level is the most detailed model available that can be
+ *  provided by the user (PRS)
+ *
+ */
+
+#define ACT_MODEL_CHP  0		// CHP language
+#define ACT_MODEL_HSE  1		// HSE language
+#define ACT_MODEL_PRS  2		// PRS language
+#define ACT_MODEL_DEVICE 3              // PRS + sizing translated into netlist
+#define ACT_MODEL_TOTAL 4
+
+extern const char *act_model_names[];
+
+
+
+
+
+
 /**
  *  UserDef stores information that is common to all user-defined
  *  types. User-defined types are more complex, because they can have
@@ -342,6 +366,8 @@ class UserDef : public Type {
   ActNamespace *_ns;		/**< namespace within which this type is defined */
 
   UserDef *unexpanded;		/**< unexpanded type, if any **/
+
+  int level;		  /**< default modeling level for the type **/
 };
 
 
@@ -383,10 +409,13 @@ class Process : public UserDef {
   void addIface (InstType *iface, list_t *imap);
   int hasIface (InstType *x, int weak); // weak check for interface equality
   list_t *findMap (InstType *iface);
+  void mkRefined() { has_refinement = 1; }
+  int hasRefinment() { return has_refinement; }
   
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */
+  int has_refinement;		/**< 1 if there is a refinement body */
 };
 
 

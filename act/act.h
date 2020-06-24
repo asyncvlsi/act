@@ -229,6 +229,21 @@ class Act {
   */
   TypeFactory *getTypeFactory () { return tf; }
 
+
+  /*
+    Set modeling level of detail and refinement steps.
+  */
+  void setLevel (int lev);
+  void setLevel (Process *p);
+  void setLevel (ActId *id);
+
+  /* this must be called prior to expansion */
+  void setRefineSteps (int nsteps);
+
+  int getRefSteps() { return refine_steps; }
+  void decRefSteps() { refine_steps--; }
+  void incRefSteps() { refine_steps++; }
+
 private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
@@ -243,6 +258,17 @@ private:
   static Log *L;
 
   struct Hashtable *passes;	// any ActPass-es
+
+  int refine_steps;		// number of refinement steps to
+				// process
+
+  int num_type_levels[ACT_MODEL_TOTAL];
+  char **type_levels[ACT_MODEL_TOTAL];
+  int num_inst_levels[ACT_MODEL_TOTAL];
+  char **inst_levels[ACT_MODEL_TOTAL];
+
+  int default_level;  // default level
+  
 };
 
 class ActPass {

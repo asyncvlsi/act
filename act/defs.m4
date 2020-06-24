@@ -1449,7 +1449,17 @@ base_item[ActBody *]: instance
 | alias 
 {{X: return $1; }}
 | language_body
-{{X: return $1; }}
+{{X:
+    if ($1) {
+      ActBody_Lang *l = dynamic_cast<ActBody_Lang *>($1);
+      $A(l);
+      if (l->gettype() == ActBody_Lang::LANG_REFINE) {
+	$A($0->u_p);
+	$0->u_p->mkRefined();
+      }
+    }
+    return $1;
+}}
 | loop 
 {{X: return $1; }}
 | conditional
@@ -2284,4 +2294,3 @@ defiface: [ template_spec ]
     return NULL;
 }}
 ;
-

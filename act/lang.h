@@ -29,13 +29,6 @@
 #include <list.h>
 #include <array.h>
 
-/*------------------------------------------------------------------------
- *
- *  PRS language
- *
- *------------------------------------------------------------------------
- */
-
 class ActId;
 
 /*
@@ -50,7 +43,12 @@ struct act_attr {
 typedef struct act_attr act_attr_t;
 
 
-
+/*------------------------------------------------------------------------
+ *
+ *  The PRS sublanguage: gate-level abstraction for the circuit
+ *
+ *------------------------------------------------------------------------
+ */
 enum act_prs_expr_type {
   ACT_PRS_EXPR_AND = 0,
   ACT_PRS_EXPR_OR  = 1,
@@ -94,7 +92,6 @@ typedef struct act_prs_expr {
     } loop;
   } u;
 } act_prs_expr_t;
-
 
 enum act_prs_lang_type {
   ACT_PRS_RULE = 0,
@@ -147,9 +144,15 @@ struct act_prs {
 };
 
 
-/**
- * CHP
+
+/*------------------------------------------------------------------------
+ *
+ *  The CHP sublanguage: behavioral description
+ *
+ *
+ *------------------------------------------------------------------------
  */
+
 enum act_chp_lang_type {
   ACT_CHP_COMMA, ACT_CHP_SEMI,
   ACT_CHP_SELECT, ACT_CHP_SELECT_NONDET,
@@ -218,6 +221,17 @@ struct act_chp {
 };
 
 
+
+
+/*------------------------------------------------------------------------
+ *
+ *  The specification sublanguage: used for verification and asserting
+ *  invariants; also used to specify arbiters
+ *
+ *
+ *------------------------------------------------------------------------
+ */
+
 struct act_spec {
   int isrequires;		/* 1 if this is a requires clause */
   
@@ -241,10 +255,25 @@ struct act_spec {
 
 class ActBody;
 
+
+/*------------------------------------------------------------------------
+ *
+ *  The refinement sublanguage
+ *
+ *------------------------------------------------------------------------
+ */
 struct act_refine {
   ActBody *b;
 };
 
+
+/*------------------------------------------------------------------------
+ *
+ *  The gate sizing sublanguage
+ *
+ *
+ *------------------------------------------------------------------------
+ */
 struct act_sizing_directive {
   ActId *id;
   int flav_up, flav_dn;
@@ -263,10 +292,27 @@ struct act_sizing {
   act_sizing *next;
 };
 
+
+/*------------------------------------------------------------------------
+ *
+ *  The initialization sublanguage, used to specify the initial state
+ *  and reset protocol.
+ *
+ *
+ *------------------------------------------------------------------------
+ */
 struct act_initialize {
   list_t *actions;
 };
 
+
+/*------------------------------------------------------------------------
+ *
+ * The dataflow sublanguage
+ *
+ *
+ *------------------------------------------------------------------------
+ */
 enum act_dataflow_element_types {
  ACT_DFLOW_FUNC = 0,
  ACT_DFLOW_SPLIT = 1,

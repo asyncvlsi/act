@@ -899,6 +899,7 @@ int UserDef::FindPort (const char *id)
 
 UserDef::UserDef (ActNamespace *ns)
 {
+  level = ACT_MODEL_PRS;	/* default */
   parent = NULL;
 
   defined = 0;
@@ -995,6 +996,7 @@ Process::Process (UserDef *u) : UserDef (*u)
   is_cell = 0;
   b = NULL;
   ifaces = NULL;
+  has_refinement = 0;
 
   /* copy over userdef */
   MkCopy (u);

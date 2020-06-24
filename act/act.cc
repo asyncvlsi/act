@@ -56,6 +56,9 @@ L_A_DECL (struct command_line_defs, vars);
 
 #define isid(x) (((x) == '_') || isalpha(x))
 
+const char *act_model_names[ACT_MODEL_TOTAL] = { "chp", "hse", "prs", "device" };
+
+
 /*------------------------------------------------------------------------
  *
  *  _valid_id_string --
@@ -253,17 +256,31 @@ void Act::Init (int *iargc, char ***iargv)
       }
       FREE (s);
     }
-    else if (strncmp (argv[i], "-L", 2) == 0) {
+    else if (strncmp (argv[i], "-log", 4) == 0) {
       char *s;
-      s = Strdup (argv[i]+2);
+      s = Strdup (argv[i]+5);
       Log::OpenLog (s);
       FREE (s);
     }
-    else if (strncmp (argv[i], "-C", 2) == 0) {
+    else if (strncmp (argv[i], "-cnf", 4) == 0) {
       if (conf_file) {
 	FREE (conf_file);
       }
-      conf_file = Strdup (argv[i]+2);
+      conf_file = Strdup (argv[i]+5);
+    }
+    else if (strncmp (argv[i], "-ref", 4) == 0) {
+      /* refinement steps */
+      int r = atoi(argv[i]+5);
+      if (r < 0) {
+	fatal_error ("-ref option needs a non-negative integer");
+      }
+      config_set_default_int ("act.refine_steps", r);
+    }
+    else if (strncmp (argv[i], "-lev", 4) == 0) {
+      char *s;
+      s = Strdup (argv[i]+5);
+      config_read (s);
+      FREE (s);
     }
     else {
       break;
@@ -307,10 +324,20 @@ Act::Act (const char *s)
   argv[0] = Strdup ("-internal-");
   argv[1] = NULL;
 
+  default_level = ACT_MODEL_PRS;
+  config_set_default_int ("act.refine_steps", 0);
+
+  for (int i=0; i < ACT_MODEL_TOTAL; i++) {
+    num_type_levels[i] = 0;
+    num_inst_levels[i] = 0;
+  }
+
   Act::Init (&argc, &argv);
   FREE (argv[0]);
   FREE (argv);
 
+  refine_steps = config_get_int ("act.refine_steps");
+  
   passes = hash_new (2);
 
   gns = ActNamespace::global;
@@ -456,6 +483,45 @@ Act::Act (const char *s)
     mangle (config_get_string ("act.mangle_chars"));
   }
   ActNamespace::act = this;
+
+  /*-- now update level flags --*/
+
+  if (config_exists ("level.default")) {
+    const char *s = config_get_string ("level.default");
+
+    default_level = -1;
+    for (int i=0; i < ACT_MODEL_TOTAL; i++) {
+      if (strcmp (s, act_model_names[i]) == 0) {
+	default_level = i;
+	break;
+      }
+    }
+    if (default_level == -1) {
+      fprintf (stderr, "level.default must be one of {");
+      for (int i=0; i < ACT_MODEL_TOTAL; i++) {
+	if (i != 0) {
+	  fprintf (stderr, ", ");
+	}
+	fprintf (stderr, "%s", act_model_names[i]);
+      }
+      fprintf (stderr, "}\n");
+      fatal_error ("Illegal level.default in configuration file.");
+    }
+  }
+
+  for (int i=0; i < ACT_MODEL_TOTAL; i++) {
+    char buf[1024];
+    snprintf (buf, 1024, "level.types.%s", act_model_names[i]);
+    if (config_exists (buf)) {
+      num_type_levels[i] = config_get_table_size (buf);
+      type_levels[i] = config_get_table_string (buf);
+    }
+    snprintf (buf, 1024, "level.inst.%s", act_model_names[i]);
+    if (config_exists (buf)) {
+      num_inst_levels[i] = config_get_table_size (buf);
+      inst_levels[i] = config_get_table_string (buf);
+    }
+  }
 }
 
 void Act::Merge (const char *s)
