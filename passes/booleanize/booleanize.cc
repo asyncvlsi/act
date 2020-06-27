@@ -203,6 +203,85 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   }
 }
 
+static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e)
+{
+  if (!e) return;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_NE:
+  case E_EQ:
+    generate_expr_vars (N, e->u.e.l);
+    generate_expr_vars (N, e->u.e.r);
+    break;
+
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    generate_expr_vars (N, e->u.e.l);
+    break;
+
+  case E_QUERY:
+  case E_BITFIELD:
+    generate_expr_vars (N, e->u.e.l);
+    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
+    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
+    generate_expr_vars (N, e->u.e.r->u.e.l);
+    generate_expr_vars (N, e->u.e.r->u.e.r);
+    break;
+
+  case E_CONCAT:
+    do {
+      generate_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    } while (e);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.e.r;
+    while (e) {
+      generate_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    }
+    break;
+    
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_SELF:
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, (ActId *)e->u.e.l);
+      v->input = 1;
+    }
+    break;
+
+  default:
+    fatal_error ("Unknown expression type (%d)\n", e->type);
+    break;
+  }
+  return;
+}
+
 static void generate_hse_vars (act_boolean_netlist_t *N,
 			       act_chp_lang_t *c)
 {
@@ -212,11 +291,41 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
   switch (c->type) {
   case ACT_CHP_COMMA:
   case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	generate_hse_vars (N, (act_chp_lang_t *) list_value (li));
+      }
+    }
+    break;
+    
   case ACT_CHP_SELECT:
   case ACT_CHP_DOLOOP:
   case ACT_CHP_LOOP:
+    {
+      act_chp_gc_t *gc;
+      for (gc = c->u.gc; gc; gc = gc->next) {
+	generate_expr_vars (N, gc->g);
+	generate_hse_vars (N, gc->s);
+      }
+    }
+    break;
+    
   case ACT_CHP_SKIP:
+    return;
+    
   case ACT_CHP_FUNC:
+    /* fix this later; these are built-in functions only */
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, c->u.assign.id);
+      Assert (v, "What?");
+      v->output = 1;
+      generate_expr_vars (N, c->u.assign.e);
+    }
     break;
     
   default:
@@ -231,7 +340,71 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
   if (!c) return;
   act_booleanized_var_t *v;
 
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	generate_hse_vars (N, (act_chp_lang_t *) list_value (li));
+      }
+    }
+    break;
+    
+  case ACT_CHP_SELECT:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_LOOP:
+    {
+      act_chp_gc_t *gc;
+      for (gc = c->u.gc; gc; gc = gc->next) {
+	generate_expr_vars (N, gc->g);
+	generate_hse_vars (N, gc->s);
+      }
+    }
+    break;
+    
+  case ACT_CHP_SKIP:
+    return;
+    
+  case ACT_CHP_FUNC:
+    /* fix this later; these are built-in functions only */
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, c->u.assign.id);
+      Assert (v, "What?");
+      v->output = 1;
+      generate_expr_vars (N, c->u.assign.e);
+    }
+    break;
+
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    {
+      act_booleanized_var_t *v;
+      listitem_t *li;
+      v = var_lookup (N, c->u.comm.chan);
+      Assert (v, "What?");
+      if (c->type == ACT_CHP_SEND) {
+	v->output = 1;
+      }
+      else {
+	v->input = 1;
+      }
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	generate_expr_vars (N, (Expr *) list_value (li));
+      }
+    }
+    break;
+    
+  default:
+    fatal_error ("Sholud be expanded already?");
+    break;
+  }
 }
+
 
 static void generate_dflow_vars (act_boolean_netlist_t *N,
 				 act_dataflow_element *e)
@@ -239,6 +412,42 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
   if (!e) return;
   act_booleanized_var_t *v;
 
+  switch (e->t) {
+  case ACT_DFLOW_FUNC:
+    generate_expr_vars (N, e->u.func.lhs);
+    v = var_lookup (N, e->u.func.rhs);
+    Assert (v, "Hmm");
+    v->output = 1;
+    break;
+
+  case ACT_DFLOW_SPLIT:
+  case ACT_DFLOW_MERGE:
+    v = var_lookup (N, e->u.splitmerge.guard);
+    if (v) {
+      v->input = 1;
+    }
+    v = var_lookup (N, e->u.splitmerge.single);
+    Assert (v, "WHat?");
+    if (e->t == ACT_DFLOW_SPLIT) {
+      v->input = 1;
+    }
+    else {
+      v->output = 1;
+    }
+    for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+      v = var_lookup (N, e->u.splitmerge.multi[i]);
+      if (v) {
+	if (e->t == ACT_DFLOW_SPLIT) {
+	  v->output = 1;
+	}
+	else {
+	  v->input = 1;
+	}
+      }
+    }
+    break;
+  }
+  return;
 }
 
 static void process_prs_lang (act_boolean_netlist_t *N, act_prs *p)
