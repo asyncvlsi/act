@@ -70,8 +70,10 @@ typedef struct {
   struct iHashtable *cH;   /* connection hash table (map to var)  */
   struct iHashtable *uH;   /* used act_connection *'s in subckts */
 
+  A_DECL (struct netlist_bool_port, chpports);
   A_DECL (struct netlist_bool_port, ports);
   A_DECL (act_connection *, instports);
+  A_DECL (act_connection *, instchpports);
   A_DECL (act_connection *, used_globals);
 
   A_DECL (act_local_net_t, nets); // nets
@@ -126,15 +128,16 @@ class ActBooleanizePass : public ActPass {
   void flatten_ports_to_bools (act_boolean_netlist_t *,
 			       ActId *prefix,
 			       Scope *s,
-			       UserDef *u);
+			       UserDef *u, int nochp);
 
   void update_used_flags (act_boolean_netlist_t *n,
 			  ValueIdx *vx, Process *p);
   void rec_update_used_flags (act_boolean_netlist_t *n,
 			      act_boolean_netlist_t *subinst,
 			      ActId *prefix,
-			      Scope *s, UserDef *u, int *count);
-  void append_base_port (act_boolean_netlist_t *n, act_connection *c, Type *t);
+			      Scope *s, UserDef *u, int *count, int *count2);
+  void append_base_port (act_boolean_netlist_t *n, act_connection *c, Type *t,
+			 int mode);
 
   /*--- create netlist helper functions ---*/
   void _createNets (Process *p);

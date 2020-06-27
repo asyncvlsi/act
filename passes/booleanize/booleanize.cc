@@ -203,40 +203,46 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   }
 }
 
-static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
+static void generate_hse_vars (act_boolean_netlist_t *N,
+			       act_chp_lang_t *c)
 {
-  act_prs *p; 
-  act_boolean_netlist_t *N;
-  Scope *cur;
+  if (!c) return;
+  act_booleanized_var_t *v;
 
-  /* 
-     XXX: Need to add: chp, hse
-  */
-
-  if (proc) {
-    p = proc->getprs();
-    cur = proc->CurScope();
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+  case ACT_CHP_SELECT:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_SKIP:
+  case ACT_CHP_FUNC:
+    break;
+    
+  default:
+    fatal_error ("Sholud be expanded already?");
+    break;
   }
-  else {
-    /* global namespace */
-    p = ActNamespace::Global()->getprs();
-    cur = ActNamespace::Global()->CurScope();
-  }
+}
 
-  NEW (N, act_boolean_netlist_t);
+static void generate_chp_vars (act_boolean_netlist_t *N,
+			       act_chp_lang_t *c)
+{
+  if (!c) return;
+  act_booleanized_var_t *v;
 
-  A_INIT (N->ports);
-  A_INIT (N->instports);
-  A_INIT (N->nets);
-  A_INIT (N->used_globals);
-  
-  N->p = proc;
-  N->cur = cur;
-  N->visited = 0;
-  N->cH = ihash_new (32);
-  N->uH = ihash_new (4);
-  N->isempty = 1;
+}
 
+static void generate_dflow_vars (act_boolean_netlist_t *N,
+				 act_dataflow_element *e)
+{
+  if (!e) return;
+  act_booleanized_var_t *v;
+
+}
+
+static void process_prs_lang (act_boolean_netlist_t *N, act_prs *p)
+{
   /* walk through each PRS block, and mark all variables that are
      there as used, as well as set their input/output flag */
   while (p) {
@@ -265,20 +271,114 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
     }
     p = p->next;
   }
-  return N;
 }
 
+static void process_hse_lang (act_boolean_netlist_t *N, act_chp *c)
+{
+  while (c) {
+    if (c->vdd) {
+      act_booleanized_var_t *v = var_lookup (N, c->vdd);
+      v->input = 1;
+    }
+    if (c->gnd) {
+      act_booleanized_var_t *v = var_lookup (N, c->gnd);
+      v->input = 1;
+    }
+    if (c->psc) {
+      act_booleanized_var_t *v = var_lookup (N, c->psc);
+      v->input = 1;
+    }
+    if (c->nsc) {
+      act_booleanized_var_t *v = var_lookup (N, c->nsc);
+      v->input = 1;
+    }
+    generate_hse_vars (N, c->c);
+    N->isempty = 0;
+    c = c->next;
+  }
+}
 
-static act_boolean_netlist_t *walk_netgraph (Act *a, Process *proc)
+static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
+{
+  while (c) {
+    if (c->vdd) {
+      act_booleanized_var_t *v = var_lookup (N, c->vdd);
+      v->input = 1;
+    }
+    if (c->gnd) {
+      act_booleanized_var_t *v = var_lookup (N, c->gnd);
+      v->input = 1;
+    }
+    if (c->psc) {
+      act_booleanized_var_t *v = var_lookup (N, c->psc);
+      v->input = 1;
+    }
+    if (c->nsc) {
+      act_booleanized_var_t *v = var_lookup (N, c->nsc);
+      v->input = 1;
+    }
+    generate_chp_vars (N, c->c);
+    N->isempty = 0;
+    c = c->next;
+  }
+}
+
+static void process_dflow_lang (act_boolean_netlist_t *N, act_dataflow *df)
+{
+  if (df) {
+    listitem_t *li;
+    for (li = list_first (df->dflow); li; li = list_next (li)) {
+      act_dataflow_element *e = (act_dataflow_element *)list_value (li);
+      generate_dflow_vars (N, e);
+      N->isempty = 0;
+    }
+  }
+}
+
+static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
 {
   act_boolean_netlist_t *N;
+  Scope *cur;
+  act_languages *lang;
 
-  N = process_local_lang (a, proc);
+  if (proc) {
+    lang = proc->getlang();
+    cur = proc->CurScope();
+  }
+  else {
+    /* global namespace */
+    lang = ActNamespace::Global()->getlang();
+    cur = ActNamespace::Global()->CurScope();
+  }
 
+  /*-- initialize netlist --*/
+
+  NEW (N, act_boolean_netlist_t);
+
+  A_INIT (N->ports);
+  A_INIT (N->chpports);
+  A_INIT (N->instports);
+  A_INIT (N->instchpports);
+  A_INIT (N->nets);
+  A_INIT (N->used_globals);
+  
+  N->p = proc;
+  N->cur = cur;
+  N->visited = 0;
+  N->cH = ihash_new (32);
+  N->uH = ihash_new (4);
+  N->isempty = 1;
+
+  
+  /*-- process all local variables that are used --*/
+  if (lang) {
+    process_prs_lang (N, lang->getprs());
+    process_hse_lang (N, lang->gethse());
+    process_chp_lang (N, lang->getchp());
+    process_dflow_lang (N, lang->getdflow());
+  }
   return N;
 }
-
-
 
 act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 {
@@ -288,10 +388,15 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 
   sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
 
-  n = walk_netgraph (a, p);
+  /*--- 
+    initialize netlist with used flags for all local languages that
+    specify circuits
+    ---*/
+  n = process_local_lang (a, p);
 
   ActInstiter i(sc);
 
+  /*-- mark ports to instances as used --*/
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
@@ -304,8 +409,9 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     }
   }
 
+  /*-- create elaborated port list --*/
   if (p) {
-    flatten_ports_to_bools (n, NULL, sc, p);
+    flatten_ports_to_bools (n, NULL, sc, p, 0);
   }
 
   /*-- collect globals --*/
@@ -353,21 +459,38 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 static void mark_c_used (act_boolean_netlist_t *n,
 			 act_boolean_netlist_t *subinst,
 			 act_connection *c,
-			 int *count)
+			 int *count, int type)
 {
   act_booleanized_var_t *v = raw_lookup (n, c);
 
-  A_NEW (n->instports, act_connection *);
-  A_NEXT (n->instports) = c;
-  A_INC (n->instports);
+  if (type == 0) {
+    A_NEW (n->instports, act_connection *);
+    A_NEXT (n->instports) = c;
+    A_INC (n->instports);
+  }
+  else {
+    A_NEW (n->instchpports, act_connection *);
+    A_NEXT (n->instchpports) = c;
+    A_INC (n->instchpports);
+  }
 
   if (v) {
     v->used = 1;
-    if (subinst->ports[*count].input) {
-      v->input = 1;
+    if (type == 0) {
+      if (subinst->ports[*count].input) {
+	v->input = 1;
+      }
+      else {
+	v->output = 1;
+      }
     }
     else {
-      v->output = 1;
+      if (subinst->chpports[*count].input) {
+	v->input = 1;
+      }
+      else {
+	v->output = 1;
+      }
     }
   }
   else {
@@ -377,8 +500,15 @@ static void mark_c_used (act_boolean_netlist_t *n,
       b = ihash_add (n->uH, (long)c);
       b->i = 0;
     }
-    if (!subinst->ports[*count].input) {
-      b->i = 1;
+    if (type == 0) {
+      if (!subinst->ports[*count].input) {
+	b->i = 1;
+      }
+    }
+    else if (type == 1) {
+      if (!subinst->chpports[*count].input) {
+	b->i = 1;
+      }
     }
     if (c->isglobal()) {
       int i;
@@ -411,28 +541,56 @@ void *ActBooleanizePass::local_op (Process *p, int mode)
   }
 }
 
+/*
+ *  mode = 0 : both chp and bool
+ *  mode = 1 : bool only
+ *  mode = 2 : chp only
+ */
 void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
-					  act_connection *c, Type *t)
+					  act_connection *c, Type *t,
+					  int mode)
 {
   int i;
   int dir = c->getDir();
 
-  A_NEWM (n->ports, struct netlist_bool_port);
-  A_NEXT (n->ports).c = c;
-  A_NEXT (n->ports).omit = 0;
-  A_NEXT (n->ports).input = 0;
-  if (dir == Type::IN) {
-    A_NEXT (n->ports).input = 1;
-  }
-  else if (dir == Type::OUT) {
+  if (mode != 2) {
+    A_NEWM (n->ports, struct netlist_bool_port);
+    A_NEXT (n->ports).c = c;
+    A_NEXT (n->ports).omit = 0;
     A_NEXT (n->ports).input = 0;
+    if (dir == Type::IN) {
+      A_NEXT (n->ports).input = 1;
+    }
+    else if (dir == Type::OUT) {
+      A_NEXT (n->ports).input = 0;
+    }
+    A_NEXT (n->ports).netid = -1;
+    A_INC (n->ports);
   }
-  A_NEXT (n->ports).netid = -1;
-  A_INC (n->ports);
+
+  if (mode != 1) {
+    A_NEWM (n->chpports, struct netlist_bool_port);
+    A_NEXT (n->chpports).c = c;
+    A_NEXT (n->chpports).omit = 0;
+    A_NEXT (n->chpports).input = 0;
+    if (dir == Type::IN) {
+      A_NEXT (n->chpports).input = 1;
+    }
+    else if (dir == Type::OUT) {
+      A_NEXT (n->chpports).input = 0;
+    }
+    A_NEXT (n->chpports).netid = -1;
+    A_INC (n->chpports);
+  }
 
   if (c->isglobal()) {
     /* globals do not need to be in the port list */
-    A_LAST (n->ports).omit = 1;
+    if (mode != 2) {
+      A_LAST (n->ports).omit = 1;
+    }
+    if (mode != 1) {
+      A_LAST (n->chpports).omit = 1;
+    }
     return;
   }
 
@@ -448,21 +606,41 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     if (!v->used) {
       b = ihash_lookup (n->uH, (long)c);
       if (!b) {
-	A_LAST (n->ports).omit = 1;
+	if (mode != 2) {
+	  A_LAST (n->ports).omit = 1;
+	}
+	if (mode != 1) {
+	  A_LAST (n->chpports).omit = 1;
+	}
 	return;
       }
       else {
 	if (b->i) {
-	  A_LAST (n->ports).input = 0;
+	  if (mode != 2) {
+	    A_LAST (n->ports).input = 0;
+	  }
+	  if (mode != 1) {
+	    A_LAST (n->chpports).input = 0;
+	  }
 	}
 	else {
-	  A_LAST (n->ports).input = 1;
+	  if (mode != 2) {
+	    A_LAST (n->ports).input = 1;
+	  }
+	  if (mode != 1) {
+	    A_LAST (n->chpports).input = 1;
+	  }
 	}
       }
     }
     v->used = 1;
     if (v->input && !v->output) {
-      A_LAST (n->ports).input = 1;
+      if (mode != 2) {
+	A_LAST (n->ports).input = 1;
+      }
+      if (mode != 1) {
+	A_LAST (n->chpports).input = 1;
+      }
     }
     if (TypeFactory::isIntType (t)) {
       v->isint = 1;
@@ -477,25 +655,53 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     /* connection pointers that were not found were also not used! */
     b = ihash_lookup (n->uH, (long)c);
     if (!b) {
-      A_LAST (n->ports).omit = 1;
+      if (mode != 2) {
+	A_LAST (n->ports).omit = 1;
+      }
+      if (mode != 1) {
+	A_LAST (n->chpports).omit = 1;
+      }
       return;
     }
     else {
       if (b->i) {
-	A_LAST (n->ports).input = 0;
+	if (mode != 2) {
+	  A_LAST (n->ports).input = 0;
+	}
+	if (mode != 1) {
+	  A_LAST (n->chpports).input = 0;
+	}
       }
       else {
-	A_LAST (n->ports).input = 1;
+	if (mode != 2) {
+	  A_LAST (n->ports).input = 1;
+	}
+	if (mode != 1) {
+	  A_LAST (n->chpports).input = 1;
+	}
       }
     }
   }
-  
-  for (i=0; i < A_LEN (n->ports)-1; i++) {
-    /* check to see if this is already in the port list;
-       make this faster with a map if necessary since it is O(n^2) */
-    if (c == n->ports[i].c) {
-      A_LAST (n->ports).omit = 1;
-      return;
+
+  if (mode != 2) {
+    for (i=0; i < A_LEN (n->ports)-1; i++) {
+      /* check to see if this is already in the port list;
+	 make this faster with a map if necessary since it is O(n^2) */
+      if (c == n->ports[i].c) {
+	A_LAST (n->ports).omit = 1;
+	return;
+      }
+    }
+  }
+
+  if (mode != 1) {
+    for (i=0; i < A_LEN (n->chpports)-1; i++) {
+      /* check to see if this is already in the port list;
+	 make this faster with a map if necessary since it is O(n^2) */
+      if (c == n->chpports[i].c) {
+	A_LAST (n->chpports).omit = 1;
+	return;
+      }
     }
   }
 }
@@ -506,11 +712,13 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   prefix : the prefix to the current instance
        s : the parent scope of the current user defined object
        u : the current user-defined object
+   nochp : flag saying we've broken down a channel so skip for chp
 */
 
 void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 						ActId *prefix,
-						Scope *s, UserDef *u)
+						Scope *s, UserDef *u,
+						int nochp)
 {
   int i;
 
@@ -559,8 +767,19 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 	    t = NULL;
 	  }
 	  tail->setArray (t);
-	  flatten_ports_to_bools (n, sub, s,
-				  dynamic_cast<UserDef *>(it->BaseType ()));
+	  if (TypeFactory::isChanType (it)) {
+	    flatten_ports_to_bools (n, sub, s,
+				    dynamic_cast<UserDef *>(it->BaseType ()),
+				    1);
+	    c = sub->Canonical (s);
+	    Assert (c == c->primary(), "What?");
+	    append_base_port (n, c, it->BaseType(), 2);
+	  }
+	  else {
+	    flatten_ports_to_bools (n, sub, s,
+				    dynamic_cast<UserDef *>(it->BaseType ()),
+				    nochp);
+	  }
 	  tail->setArray (NULL);
 	  if (t) {
 	    delete t;
@@ -597,7 +816,14 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 	  tail->setArray (t);
 	  c = sub->Canonical (s);
 	  Assert (c == c->primary (), "What?");
-	  append_base_port (n, c, itbase);
+	  if (nochp) {
+	    /* only bools */
+	    append_base_port (n, c, itbase, 1);
+	  }
+	  else {
+	    /* both bools and chp */
+	    append_base_port (n, c, itbase, 0);
+	  }
 	  tail->setArray (NULL);
 	  if (t) {
 	    delete t;
@@ -630,18 +856,27 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
  *        u : the user-defined type corresponding to the prefix
  *    count : in/out used to track instports to make things simpler
  *            for other tools
+ *   counr2 : same as count, for chp ports
  *
  *
  */
 void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 					       act_boolean_netlist_t *subinst,
 					       ActId *prefix,
-					       Scope *s, UserDef *u, int *count)
+					       Scope *s, UserDef *u,
+					       int *count, int *count2)
 {
   int i;
 
   Assert (u, "Hmm...");
   Assert (prefix, "Hmm");
+
+  /*
+   *
+   * If a type is a channel, we stop at the channel abstraction for
+   * CHP ports.
+   *
+   */
   
   for (i=0; i < u->getNumPorts(); i++) {
     InstType *it;
@@ -680,9 +915,28 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	    t = NULL;
 	  }
 	  tail->setArray (t);
+
+	  int *cnt = count2;
+	  if (TypeFactory::isChanType (it)) {
+	    /* at this point, we don't add to chp ports */
+	    cnt = NULL;
+	  }
 	  rec_update_used_flags (n, subinst, sub, s,
 				 dynamic_cast<UserDef *>(it->BaseType ()),
-				 count);
+				 count, cnt);
+
+	  if (!cnt && count2) {
+	    /* we set the chp port here, as we are in a base case */
+	    Assert (*count2 < A_LEN (subinst->chpports), "What?");
+	    if (!subinst->chpports[*count2].omit) {
+	      c = sub->Canonical (s);
+	      Assert (c == c->primary (), "What?");
+	      /* mark c as used */
+	      mark_c_used (n, subinst, c, count, 1);
+	    }
+	    *count2 = *count2 + 1;
+	  }
+
 	  tail->setArray (NULL);
 	  if (t) {
 	    delete t;
@@ -716,15 +970,23 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	    t = NULL;
 	  }
 	  Assert (*count < A_LEN (subinst->ports), "What?");
+	  tail->setArray (t);
 	  if (!subinst->ports[*count].omit) {
-	    tail->setArray (t);
 	    c = sub->Canonical (s);
 	    Assert (c == c->primary (), "What?");
 	    /* mark c as used */
-	    mark_c_used (n, subinst, c, count);
-	    tail->setArray (NULL);
+	    mark_c_used (n, subinst, c, count, 0);
 	  }
+	  if (count2 && !subinst->chpports[*count2].omit) {
+	    c = sub->Canonical (s);
+	    Assert (c == c->primary(), "What?");
+	    mark_c_used (n, subinst, c, count2, 1);
+	  }
+	  tail->setArray (NULL);
 	  *count = *count + 1;
+	  if (count2) {
+	    *count2 = *count2 + 1;
+	  }
 	  if (t) {
 	    delete t;
 	  }
@@ -764,7 +1026,7 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
 					   ValueIdx *vx, Process *p)
 {
   ActId *id;
-  int count;
+  int count, count2;
   act_boolean_netlist_t *subinst;
   Scope *sc;
 
@@ -802,8 +1064,10 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
 
       id->setArray (t);
       count = 0;
+      count2 = 0;
       rec_update_used_flags (n, subinst, id, sc,
-			     dynamic_cast<UserDef *>(vx->t->BaseType()), &count);
+			     dynamic_cast<UserDef *>(vx->t->BaseType()),
+			     &count, &count2);
       id->setArray (NULL);
 
       if (t) {
