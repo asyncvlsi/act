@@ -46,6 +46,7 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->output = 0;
   v->usedchp = 0;
   v->isglobal = 0;
+  v->isport = 0;
   v->extra = NULL;
   return v;
 }
@@ -856,10 +857,12 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     }
     if (mode != 2 && !bool_done) {
       v->used = 1;
+      v->isport = 1;
       A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
     }
     if (mode != 1 && !chp_done) {
       v->usedchp = 1;
+      v->ischpport = 1;
       A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
 
       if (TypeFactory::isIntType (t)) {

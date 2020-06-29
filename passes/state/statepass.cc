@@ -126,14 +126,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   /* init for chp mode: bools, ints, chans; note that fractured ints
      are tracked as fractured ints. */
 
-  si->chp_allbool = 0;
-  si->chp_allint = 0;
-  si->chp_allchan = 0;
   si->chp_ismulti = 0;
   si->nportchp = 0;
   si->chpmap = NULL;
-  si->chpimap = NULL;
-  si->chpmulti = NULL;
 
   nvars = chp_count;
   for (int i=0; i < A_LEN (b->chpports); i++) {
@@ -161,9 +156,30 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     inpbits = NULL;
   }
 
+  bitset_t *tmpchp;
+  bitset_t *inpchp;
+
+  if (si->localchp + si->nportchp > 0) {
+    si->chpmulti = bitset_new (si->localchp + si->nportchp);
+    tmpchp = bitset_new (si->localchp + si->nportchp);
+    inpchp = bitset_new (si->localchp + si->nportchp);
+    MALLOC (si->chpv, act_booleanized_var_t *, si->localchp +  si->nportchp);
+    for (int i=0; i < si->localchp + si->nportchp; i++) {
+      si->chpv[i] = NULL;
+    }
+  }
+  else {
+    si->chpmulti = NULL;
+    tmpchp = NULL;
+    inpchp = NULL;
+    si->chpv = NULL;
+  }
+
   int idx = 0;
+  int chpidx = 0;
 
   si->map = ihash_new (8);
+  si->chpmap = ihash_new (4);
 
   /* map each connection pointer that corresponds to local state to an
      integer starting at zero
@@ -174,58 +190,121 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       int found = 0;
       act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
       int ocount = 0;
-      for (int k=0; k < A_LEN (b->ports); k++) {
-	if (b->ports[k].omit) continue;
-	if (ib->key == (long)b->ports[k].c) {
-	  found = 1;
-	  break;
+
+      if (v->used) {
+	/* boolean state */
+	if (v->isport) {
+	  /*-- in the port list; so port state, not local state --*/
+	  for (int k=0; k < A_LEN (b->ports); k++) {
+	    if (b->ports[k].omit) continue;
+	    if (ib->key == (long)b->ports[k].c) {
+	      found = 1;
+	      break;
+	    }
+	    ocount++;
+	  }
+	  Assert (found, "What?");
 	}
-	ocount++;
-      }
-      if (!found && !v->isglobal) {
-	ihash_bucket_t *x = ihash_add (si->map, ib->key);
-	x->i = idx++;
-	ocount = x->i + si->nportbools;
-      }
+	else if (!v->isglobal) {
+	  /*-- globals not handled here --*/
+	  ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	  x->i = idx++;
+	  ocount = x->i + si->nportbools;
+	}
 
 #if 0
-      ActId *id = ((act_connection *)ib->key)->toid();
-      printf ("   var: ");
-      id->Print (stdout);
-      printf (" [out=%d]", v->output ? 1 : 0);
-      printf ("\n");
-#endif      
-      if (!v->isglobal) {
-	if (v->output) {
-	  if (bitset_tst (tmpbits, ocount)) {
-	    /* found multi driver! */
-	    bitset_set (si->multi, ocount);
-#if 0
-	    printf ("     -> multi-driver!\n");
+	ActId *id = ((act_connection *)ib->key)->toid();
+	printf ("   var: ");
+	id->Print (stdout);
+	printf (" [out=%d]", v->output ? 1 : 0);
+	printf ("\n");
 #endif
+
+	/*-- look for multi-drivers: globals are ignored --*/
+	if (!v->isglobal) {
+	  if (v->output) {
+	    if (bitset_tst (tmpbits, ocount)) {
+	      /* found multi driver! */
+	      bitset_set (si->multi, ocount);
+#if 0
+	      printf ("     -> multi-driver!\n");
+#endif
+	    }
+	    else {
+	      bitset_set (tmpbits, ocount);
+	    }
 	  }
 	  else {
-	    bitset_set (tmpbits, ocount);
+	    /* an input; mark it */
+	    bitset_set (inpbits, ocount);
 	  }
 	}
-	else {
-	  /* an input; mark it */
-	  bitset_set (inpbits, ocount);
-	}
-      }
 #if 0
-      delete id;
+	delete id;
 #endif      
+      }
+      
+      if (v->usedchp) {
+	/* chp state */
+	if (v->ischpport) {
+	  for (int k=0; k < A_LEN (b->chpports); k++) {
+	    if (b->ports[k].omit) continue;
+	    if (ib->key == (long)b->chpports[k].c) {
+	      found = 1;
+	      break;
+	    }
+	    ocount++;
+	  }
+	  si->chpv[ocount] = v;
+	  Assert (found, "What?");
+	}
+	else if (!v->isglobal) {
+	  ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	  x->i = chpidx++;
+	  ocount = x->i + si->nportchp;
+	  si->chpv[ocount] = v;
+	}
+
+#if 0
+	ActId *id = ((act_connection *)ib->key)->toid();
+	printf ("   var: ");
+	id->Print (stdout);
+	printf (" [out=%d]", v->output ? 1 : 0);
+	printf ("\n");
+#endif      
+	if (!v->isglobal) {
+	  if (v->output) {
+	    if (bitset_tst (tmpchp, ocount)) {
+	      /* found multi driver! */
+	      bitset_set (si->chpmulti, ocount);
+#if 0
+	      printf ("     -> multi-driver!\n");
+#endif
+	    }
+	    else {
+	      bitset_set (tmpchp, ocount);
+	    }
+	  }
+	  else {
+	    /* an input; mark it */
+	    bitset_set (inpchp, ocount);
+	  }
+	}
+#if 0
+	delete id;
+#endif      
+
+      }
     }
   }
 
   Assert (idx == si->localbools, "What?");
+  Assert (chpidx == si->localchp, "What?");
 
 #if 0
   printf ("%s: stats: %d local; %d port\n", p->getName(),
 	  si->localbools, si->nportbools);
 #endif
-
 
   /* sum up instance state, and compute offsets for each instance */
   si->allbools = si->localbools;
@@ -372,6 +451,11 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     bitset_free (inpbits);
   }
 
+  if (tmpchp) {
+    bitset_free (tmpchp);
+    bitset_free (inpchp);
+  }
+
 #if 0
   printf ("%s: done\n\n", p->getName());
 #endif  
@@ -405,6 +489,18 @@ void ActStatePass::free_local (void *v)
   if (s->imap) {
     ihash_free (s->imap);
     s->imap = NULL;
+  }
+  if (s->multi) {
+    bitset_free (s->multi);
+  }
+  if (s->chpmulti) {
+    bitset_free (s->chpmulti);
+  }
+  if (s->chpv) {
+    FREE (s->chpv);
+  }
+  if (s->chpmap) {
+    ihash_free (s->chpmap);
   }
   FREE (s);
 }

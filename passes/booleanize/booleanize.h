@@ -44,6 +44,12 @@ typedef struct act_booleanized_var {
 				   have not been turned into bools! */
   unsigned int usedchp:1;	/* also used in CHP mode */
   unsigned int isglobal:1;	/* global flag */
+  unsigned int isport:1;	/* 1 if this is in the port list, and
+				   isn't omitted; won't be set for
+				   black box processes */
+  unsigned int ischpport:1;	/* 1 if this is in the chp port list,
+				   and isn't omitted; won't be set
+				   for black box processes */
   
   unsigned int width;		/* bit-width for chan/int */
   void *extra;			/* space for rent */

@@ -66,6 +66,9 @@ typedef struct {
 
   struct iHashtable *map;	// map from connection pointer to
 				// unique integer from 0 .. totbools-1
+                                // chp connection pointers also map to
+				// unique id
+  
   
   struct iHashtable *imap;	// map from ValueIdx pointer to bool
 				// offset
@@ -86,14 +89,9 @@ typedef struct {
 
   int chp_ismulti;		// multidriver through CHP
 
-  struct iHashtable *chpmap;	// same maps except for chp level of
-				// abstraction
-  
-  struct iHashtable *chpimap;	// ValueIdx to offset to either
-				// bool/int/chan
+  struct iHashtable *chpmap;	// connection * to unique integer
+				// (bool/int/chan)
 
-  int chp_allbool, chp_allint, chp_allchan;
-  
 } stateinfo_t;
 
 class ActStatePass : public ActPass {
