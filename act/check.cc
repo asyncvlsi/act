@@ -611,11 +611,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	if (lt == T_CHAN) {
 	  ActId *tmp;
 	  InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+
 	  if (it->arrayInfo() && !tmp->isDeref()) {
 	    typecheck_err ("Array specifier not permitted in channel expression");
 	    return T_ERR;
 	  }
-	  if (TypeFactory::boolType (it)) {
+
+	  if (TypeFactory::boolType (it) == 1) {
 	    if (width) {
 	      *width = 1;
 	    }
