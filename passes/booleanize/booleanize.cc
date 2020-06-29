@@ -367,7 +367,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     return;
     
   case ACT_CHP_FUNC:
-    /* fix this later; these are built-in functions only */
+    /* XXX: fix this later; these are built-in functions only */
     break;
 
   case ACT_CHP_ASSIGN:
@@ -575,7 +575,6 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
   N->cur = cur;
   N->visited = 0;
   N->cH = ihash_new (32);
-  N->uH = ihash_new (4);
   N->isempty = 1;
 
   
@@ -638,24 +637,6 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     }
   }
   
-  for (int i=0; i < n->uH->size; i++) {
-    for (ihash_bucket_t *b = n->uH->head[i]; b; b = b->next) {
-      act_connection *c = (act_connection *)b->key;
-      if (c->isglobal()) {
-	int j;
-	for (j=0; j < A_LEN (n->used_globals); j++) {
-	  if (n->used_globals[j] == c)
-	    break;
-	}
-	if (j == A_LEN (n->used_globals)) {
-	  A_NEWM (n->used_globals, act_connection *);
-	  A_NEXT (n->used_globals) = c;
-	  A_INC (n->used_globals);
-	}
-      }
-    }
-  }
-
   if (subinst) {
     n->isempty = 0;
   }
@@ -703,20 +684,22 @@ static void mark_c_used (act_boolean_netlist_t *n,
     }
   }
   else {
-    ihash_bucket_t *b;
-    b = ihash_lookup (n->uH, (long)c);
-    if (!b) {
-      b = ihash_add (n->uH, (long)c);
-      b->i = 0;
-    }
+    v = var_lookup (n, c);
+    v->used = 1;
     if (type == 0) {
       if (!subinst->ports[*count].input) {
-	b->i = 1;
+	v->output = 1;
+      }
+      else {
+	v->input = 1;
       }
     }
     else if (type == 1) {
       if (!subinst->chpports[*count].input) {
-	b->i = 1;
+	v->output = 1;
+      }
+      else {
+	v->input = 1;
       }
     }
     if (c->isglobal()) {
@@ -813,42 +796,20 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   if (b) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
     if (!v->used) {
-      b = ihash_lookup (n->uH, (long)c);
-      if (!b) {
-	if (mode != 2) {
-	  A_LAST (n->ports).omit = 1;
-	}
-	if (mode != 1) {
-	  A_LAST (n->chpports).omit = 1;
-	}
-	return;
-      }
-      else {
-	if (b->i) {
-	  if (mode != 2) {
-	    A_LAST (n->ports).input = 0;
-	  }
-	  if (mode != 1) {
-	    A_LAST (n->chpports).input = 0;
-	  }
-	}
-	else {
-	  if (mode != 2) {
-	    A_LAST (n->ports).input = 1;
-	  }
-	  if (mode != 1) {
-	    A_LAST (n->chpports).input = 1;
-	  }
-	}
-      }
-    }
-    v->used = 1;
-    if (v->input && !v->output) {
       if (mode != 2) {
-	A_LAST (n->ports).input = 1;
+	A_LAST (n->ports).omit = 1;
       }
       if (mode != 1) {
-	A_LAST (n->chpports).input = 1;
+	A_LAST (n->chpports).omit = 1;
+      }
+      return;
+    }
+    else {
+      if (mode != 2) {
+	A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
+      }
+      if (mode != 1) {
+	A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
       }
     }
     if (TypeFactory::isIntType (t)) {
@@ -862,34 +823,13 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   }
   else {
     /* connection pointers that were not found were also not used! */
-    b = ihash_lookup (n->uH, (long)c);
-    if (!b) {
-      if (mode != 2) {
-	A_LAST (n->ports).omit = 1;
-      }
-      if (mode != 1) {
-	A_LAST (n->chpports).omit = 1;
-      }
-      return;
+    if (mode != 2) {
+      A_LAST (n->ports).omit = 1;
     }
-    else {
-      if (b->i) {
-	if (mode != 2) {
-	  A_LAST (n->ports).input = 0;
-	}
-	if (mode != 1) {
-	  A_LAST (n->chpports).input = 0;
-	}
-      }
-      else {
-	if (mode != 2) {
-	  A_LAST (n->ports).input = 1;
-	}
-	if (mode != 1) {
-	  A_LAST (n->chpports).input = 1;
-	}
-      }
+    if (mode != 1) {
+      A_LAST (n->chpports).omit = 1;
     }
+    return;
   }
 
   if (mode != 2) {
@@ -1311,7 +1251,6 @@ void ActBooleanizePass::free_local (void *v)
     }
   }
   ihash_free (n->cH);
-  ihash_free (n->uH);
   A_FREE (n->ports);
   A_FREE (n->instports);
   A_FREE (n->nets);

@@ -168,6 +168,10 @@ static void compute_max_reff (netlist_t *N, int type)
   for (int i=0; i < N->bN->cH->size; i++)
     for (b = N->bN->cH->head[i]; b; b = b->next) {
       act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
+
+      /* some variables are only there for connecting to sub-circuits */
+      if (!VINF(v)) continue;
+      
       if (VINF(v)->n->reff_set[type]) {
 	/* over-ridden by attributes */
 	continue;

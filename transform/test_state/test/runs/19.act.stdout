@@ -1,19 +1,19 @@
 --- Process: sub2<> ---
-   nbools = 1, ibits = 0, ichans = 0
+   nbools = 1, nvars = 0
   localbools: 1
   portbools: 1
   ismulti: 0
   all booleans (incl. inst): 1
 --- End Process: sub2<> ---
 --- Process: sub<> ---
-   nbools = 0, ibits = 0, ichans = 0
+   nbools = 0, nvars = 0
   localbools: 0
   portbools: 1
   ismulti: 0
   all booleans (incl. inst): 0
 --- End Process: sub<> ---
 --- Process: foo<> ---
-   nbools = 1, ibits = 0, ichans = 0
+   nbools = 1, nvars = 0
   localbools: 1
   portbools: 0
   ismulti: 0

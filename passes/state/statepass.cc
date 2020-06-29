@@ -75,18 +75,16 @@ stateinfo_t *ActStatePass::countBools (Process *p)
   }
 
   Assert (b->cH, "Hmm");
-  Assert (b->uH, "Hmm");
 
   /* 
      1. b->cH->n == local variables used
-     2. b->uH->n == boolean passed to subcircuits but not a local variable
-     3. port list: variables that are out of consideration
+     2. port list: variables that are out of consideration
 
      Once we have the set of variables, then we need state only for
      output variables.
   */
 
-  int nvars = b->cH->n + b->uH->n;
+  int nvars = b->cH->n;
 
   for (int i=0; i < A_LEN (b->ports); i++) {
     if (b->ports[i].omit) continue;
@@ -97,15 +95,23 @@ stateinfo_t *ActStatePass::countBools (Process *p)
 
   stateinfo_t *si;
   NEW (si, stateinfo_t);
+
+  /* init for hse/prs mode */
   si->nbools = nvars;
-  si->ibitwidth = 0;
-  si->ichanwidth = 0;
   si->localbools = nvars;
   si->allbools = 0;
   si->map = NULL;
   si->imap = NULL;
-  si->nportbools = (b->cH->n + b->uH->n) - nvars - A_LEN (b->used_globals);
+  si->nportbools = b->cH->n - nvars - A_LEN (b->used_globals);
   si->ismulti = 0;
+
+  /* init for chp mode */
+  A_INIT (si->vars);
+  A_INIT (si->lvars);
+  A_INIT (si->pvars);
+  A_INIT (si->allvars);
+  si->chpmap = NULL;
+  si->chpimap = NULL;
 
 #if 0
   printf ("%s: start \n", p->getName());
@@ -180,30 +186,6 @@ stateinfo_t *ActStatePass::countBools (Process *p)
 #if 0
       delete id;
 #endif      
-    }
-  }
-
-  for (int i=0; i < b->uH->size; i++) {
-    for (ihash_bucket_t *ib = b->uH->head[i]; ib; ib = ib->next) {
-      int found = 0;
-      for (int k=0; k < A_LEN (b->ports); k++) {
-	if (ib->key == (long)b->ports[k].c) {
-	  found = 1;
-	  break;
-	}
-      }
-      if (!found && !((act_connection*)ib->key)->isglobal()) {
-	ihash_bucket_t *x = ihash_add (si->map, ib->key);
-	x->i = idx++;
-#if 0
-	act_connection *c = (act_connection *)ib->key;
-	ActId *id = c->toid();
-	printf ("   non-var: ");
-	id->Print (stdout);
-	printf ("\n");
-	delete id;
-#endif	
-      }
     }
   }
 
@@ -436,8 +418,8 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
     fprintf (fp, "  portbools: %d\n", A_LEN (bn->ports));
   }
   else {
-    fprintf (fp, "   nbools = %d, ibits = %d, ichans = %d\n",
-	     si->nbools, si->ibitwidth, si->ichanwidth);
+    fprintf (fp, "   nbools = %d, nvars = %d\n",
+	     si->nbools, A_LEN (si->vars));
     fprintf (fp, "  localbools: %d\n", si->localbools);
     fprintf (fp, "  portbools: %d\n", si->nportbools);
     fprintf (fp, "  ismulti: %d\n", si->ismulti);

@@ -140,7 +140,7 @@ lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
     e->type = E_VAR;
     e->u.e.l = (Expr *)$1;
 
-    tc = act_type_expr ($0->scope, e);
+    tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
@@ -340,7 +340,7 @@ w_expr[Expr *]: expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e);
+    tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
@@ -363,7 +363,7 @@ w_chan_int_expr[Expr *]: expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e, 1);
+    tc = act_type_expr ($0->scope, e, NULL, 1);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
@@ -387,7 +387,7 @@ wnumber_expr[Expr *]: expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e);
+    tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
@@ -416,7 +416,7 @@ wint_expr[Expr *]: int_expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e);
+    tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t");
@@ -444,7 +444,7 @@ wbool_expr[Expr *]: bool_expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e);
+    tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
@@ -470,7 +470,7 @@ wbool_allow_chan_expr[Expr *]: bool_expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    tc = act_type_expr ($0->scope, e, 2);
+    tc = act_type_expr ($0->scope, e, NULL, 2);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());

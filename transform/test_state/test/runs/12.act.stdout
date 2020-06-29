@@ -1,5 +1,5 @@
 --- Process: foo<> ---
-   nbools = 2, ibits = 0, ichans = 0
+   nbools = 2, nvars = 0
   localbools: 2
   portbools: 3
   ismulti: 0

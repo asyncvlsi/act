@@ -503,7 +503,7 @@ static ActId *_process_id (ActTree *a, ActId *id)
     return id;
   }
   
-  t = act_type_var (a->scope, id);
+  t = act_type_var (a->scope, id, NULL);
   if (t != T_BOOL) {
     act_parse_msg (&p, "Identifier `");
     id->Print (stderr, NULL);
@@ -528,7 +528,7 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
   p.f = a->file;
 
   e = act_walk_X_expr (a, e);
-  tc = act_type_expr (a->scope, e);
+  tc = act_type_expr (a->scope, e, NULL);
   if (tc == T_ERR) {
     act_parse_msg (&p, "Typechecking failed on expression!");
     fprintf (stderr, "\n\t%s\n", act_type_errmsg ());
@@ -558,7 +558,7 @@ static Expr *_wnumber_expr (ActTree *a, Expr *e)
   p.f = a->file;
 
   e = act_walk_X_expr (a, e);
-  tc = act_type_expr (a->scope, e);
+  tc = act_type_expr (a->scope, e, NULL);
   if (tc == T_ERR) {
     act_parse_msg (&p, "Typechecking failed on expression!");
     fprintf (stderr, "\n\t%s\n", act_type_errmsg ());

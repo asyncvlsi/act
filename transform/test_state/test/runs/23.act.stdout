@@ -1,19 +1,19 @@
 --- Process: bar<> ---
-   nbools = 0, ibits = 0, ichans = 0
+   nbools = 0, nvars = 0
   localbools: 0
   portbools: 3
   ismulti: 0
   all booleans (incl. inst): 0
 --- End Process: bar<> ---
 --- Process: fuz<> ---
-   nbools = 6, ibits = 0, ichans = 0
+   nbools = 6, nvars = 0
   localbools: 6
   portbools: 2
   ismulti: 0
   all booleans (incl. inst): 6
 --- End Process: fuz<> ---
 --- Process: foo<> ---
-   nbools = 8, ibits = 0, ichans = 0
+   nbools = 8, nvars = 0
   localbools: 8
   portbools: 0
   ismulti: 0

@@ -68,7 +68,6 @@ typedef struct {
   unsigned int isempty:1;	/* check if this is empty! */
 
   struct iHashtable *cH;   /* connection hash table (map to var)  */
-  struct iHashtable *uH;   /* used act_connection *'s in subckts */
 
   A_DECL (struct netlist_bool_port, chpports);
   A_DECL (struct netlist_bool_port, ports);

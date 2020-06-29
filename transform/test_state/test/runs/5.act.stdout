@@ -1,19 +1,19 @@
 --- Process: XOR<> ---
-   nbools = 0, ibits = 0, ichans = 0
+   nbools = 0, nvars = 0
   localbools: 0
   portbools: 3
   ismulti: 0
   all booleans (incl. inst): 0
 --- End Process: XOR<> ---
 --- Process: AND<> ---
-   nbools = 0, ibits = 0, ichans = 0
+   nbools = 0, nvars = 0
   localbools: 0
   portbools: 3
   ismulti: 0
   all booleans (incl. inst): 0
 --- End Process: AND<> ---
 --- Process: foo<> ---
-   nbools = 1, ibits = 0, ichans = 0
+   nbools = 1, nvars = 0
   localbools: 1
   portbools: 3
   ismulti: 0

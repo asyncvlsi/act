@@ -191,12 +191,15 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   return T_DATA|arr;
 }
 
-int act_type_var (Scope *s, ActId *id)
+int act_type_var (Scope *s, ActId *id, InstType **xit)
 {
   InstType *it;
   int is_strict;
 
   it = _act_get_var_type (s, id, &id, &is_strict);
+  if (xit) {
+    *xit = it;
+  }
   return _act_type_id_to_flags (it, id, is_strict);
 }
 
@@ -206,6 +209,7 @@ int act_type_var (Scope *s, ActId *id)
  *
  *  @param s is the scope in which all identifiers are evaluated
  *  @param e is the expression to be typechecked
+ *  @param width is set to the bit-width of the expression
  *  @param only_chan 0 if this is a normal expression, 
  *                   1 if this can only have channels,
  *                   2 if this can mix channels and variables
@@ -214,9 +218,10 @@ int act_type_var (Scope *s, ActId *id)
  *
  *
  */
-int act_type_expr (Scope *s, Expr *e, int only_chan)
+int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 {
   int lt, rt;
+  int lw, rw;
   int flgs;
   if (!e) return T_ERR;
 
@@ -225,10 +230,54 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
   printf (" lt: %x  rt: %x\n", lt, rt);      
   */
 
-#define EQUAL_LT_RT2(f,g)						\
+  /*
+    Modes:
+       0 = max of lw. rw
+       1 = max of lw, rw + 1
+       2 = sum of lw, rw
+       3 = 1 (bool result)
+  */
+#define WIDTH_MAX   0
+#define WIDTH_MAX1  1
+#define WIDTH_SUM   2
+#define WIDTH_BOOL  3
+#define WIDTH_LEFT  4
+#define WIDTH_RIGHT 5
+#define WIDTH_LSHIFT 6
+
+#ifndef MAX
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#endif  
+
+#define WIDTH_UPDATE(mode)			\
+  if (width) {					\
+    if (mode == WIDTH_MAX) {			\
+      *width = MAX(lw,rw);			\
+    }						\
+    else if (mode == WIDTH_MAX1) {		\
+      *width = MAX(lw,rw)+1;			\
+    }						\
+    else if (mode == WIDTH_SUM) {		\
+      *width = lw+rw;				\
+    }						\
+    else if (mode == WIDTH_BOOL) {		\
+      *width = 1;				\
+    }						\
+    else if (mode == WIDTH_LEFT) {		\
+      *width = lw;				\
+    }						\
+    else if (mode == WIDTH_RIGHT) {		\
+      *width = rw;				\
+    }						\
+    else if (mode == WIDTH_LSHIFT) {		\
+      *width = lw + (1 << rw);			\
+    }						\
+  }
+  
+#define EQUAL_LT_RT2(f,g,mode)						\
   do {									\
-    lt = act_type_expr (s, e->u.e.l, only_chan);			\
-    rt = act_type_expr (s, e->u.e.r, only_chan);			\
+    lt = act_type_expr (s, e->u.e.l, &lw, only_chan);			\
+    rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
     if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
@@ -242,19 +291,21 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
       if (T_BASETYPE(lt) == T_REAL || T_BASETYPE(rt) == T_REAL) {       \
         return (((f) != (g) ? (g) : T_REAL) & ~(T_PARAM|T_STRICT))|flgs; \
       }                                                                 \
+      WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
     }                                                                   \
     if ((f & T_INT) && T_BASETYPE(lt) == T_INT && T_BASETYPE(rt) == T_INT) { \
+      WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
     }                                                                   \
   } while (0)
 
-#define EQUAL_LT_RT(f)	 EQUAL_LT_RT2((f),lt)
+#define EQUAL_LT_RT(f,mode)	 EQUAL_LT_RT2((f),lt,mode)
 
-#define INT_OR_REAL							\
+#define INT_OR_REAL(mode)						\
   do {									\
-    lt = act_type_expr (s, e->u.e.l, only_chan);			\
-    rt = act_type_expr (s, e->u.e.r, only_chan);			\
+    lt = act_type_expr (s, e->u.e.l, &lw, only_chan);			\
+    rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
     if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
@@ -266,46 +317,49 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 	return T_REAL|flgs;						\
       }									\
       else {								\
+	WIDTH_UPDATE(mode);						\
 	return T_INT|flgs;						\
       }									\
     }									\
   } while (0)
   
-  
   switch (e->type) {
     /* Boolean, binary or int */
   case E_AND:
   case E_OR:
-    EQUAL_LT_RT(T_BOOL|T_INT);
+    EQUAL_LT_RT(T_BOOL|T_INT, WIDTH_MAX);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs bool/bool or int/int", expr_operator_name (e->type));
     return T_ERR;
     break;
 
   case E_ANDLOOP:
   case E_ORLOOP:
-    lt = act_type_expr (s, e->u.e.r->u.e.l, 0);
+    lt = act_type_expr (s, e->u.e.r->u.e.l, &lw, 0);
     if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop range is not of integer type");
       return T_ERR;
     }
     if (e->u.e.r->u.e.r->u.e.l) {
-      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, 0);
+      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, &lw, 0);
       if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
 	typecheck_err ("Loop range is not of integer type");
 	return T_ERR;
       }
     }
-    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, only_chan);
+    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
     if (T_BASETYPE (lt) != T_BOOL || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of bool type");
       return T_ERR;
+    }
+    if (width) {
+      *width = 1;
     }
     return T_BOOL;
     break;
 
     /* Boolean, unary */
   case E_NOT:
-    lt = act_type_expr (s, e->u.e.l, only_chan);
+    lt = act_type_expr (s, e->u.e.l, width, only_chan);
     if (lt == T_ERR) return T_ERR;
     if (lt & T_BOOL) {
       return lt;
@@ -317,13 +371,27 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
     /* Binary, real or integer */
   case E_PLUS:
   case E_MINUS:
+    INT_OR_REAL(WIDTH_MAX1);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for add/sub; needs int/real for both", expr_operator_name (e->type));
+    return T_ERR;
+    break;
+
   case E_MULT:
+    INT_OR_REAL(WIDTH_SUM);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mult; needs int/real for both", expr_operator_name (e->type));
+    return T_ERR;
+    break;
+    
   case E_DIV:
+    INT_OR_REAL(WIDTH_LEFT);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for div; needs int/real for both", expr_operator_name (e->type));
+    return T_ERR;
+    break;
+
+    
   case E_MOD:
-    INT_OR_REAL;
-    /*EQUAL_LT_RT(T_INT|T_REAL);*/
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/real for both", expr_operator_name (e->type));
-    /*typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int or real/real", expr_operator_name (e->type));*/
+    INT_OR_REAL(WIDTH_RIGHT);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mod; needs int/real for both", expr_operator_name (e->type));
     return T_ERR;
     break;
 
@@ -331,13 +399,13 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
   case E_GT:
   case E_LE:
   case E_GE:
-    EQUAL_LT_RT2(T_REAL,T_BOOL);
+    EQUAL_LT_RT2(T_REAL,T_BOOL, WIDTH_BOOL);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int or real/real", expr_operator_name (e->type));
     return T_ERR;
 
     /* Unary, real or integer */
   case E_UMINUS:
-    lt = act_type_expr (s, e->u.e.l, only_chan);
+    lt = act_type_expr (s, e->u.e.l, width, only_chan);
     if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE_ISNUM (lt)) {
       return lt;
@@ -348,7 +416,7 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 
     /* Unary, integer or bool */
   case E_COMPLEMENT:
-    lt = act_type_expr (s, e->u.e.l, only_chan);
+    lt = act_type_expr (s, e->u.e.l, width, only_chan);
     if (lt == T_ERR) return lt;
     if (T_BASETYPE_ISINTBOOL (lt)) {
       return lt;
@@ -358,28 +426,48 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 
     /* Binary, integer only */
   case E_LSL:
+    EQUAL_LT_RT(T_INT, WIDTH_LSHIFT);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
+
   case E_LSR:
   case E_ASR:
+    EQUAL_LT_RT(T_INT, WIDTH_LEFT);
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
+
   case E_XOR:
-    EQUAL_LT_RT(T_INT);
+    EQUAL_LT_RT(T_INT, WIDTH_MAX);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
     return T_ERR;
 
-    /* weird */
   case E_QUERY:
+    lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
+    if (T_BASETYPE(lt) == T_BOOL && !( lt & T_ARRAYOF )) {
+      e = e->u.e.r;
+      EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
+      typecheck_err ("Query expression: two options must have compatible types");
+    }
+    else {
+      typecheck_err ("Query expr requires a boolean type");
+    }
+    return T_ERR;
+    break;
+    
   case E_COLON:
+    fatal_error ("FIXME");
+    break;
 
     /* binary, Integer or Bool or real */
   case E_EQ:
   case E_NE:
-    EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL);
+    EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL, WIDTH_BOOL);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_operator_name (e->type));
     return T_ERR;
     break;
 
   case E_CONCAT:
+    rw = 0;
     do {
-      lt = act_type_expr (s, e->u.e.l, only_chan);
+      lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
       if (lt == T_ERR) return T_ERR;
       if (!T_BASETYPE_ISINTBOOL (lt)) {
 	typecheck_err ("{ } concat: all items must be int or bool");
@@ -387,14 +475,51 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
       if (e->u.e.r) {
 	e = e->u.e.r;
       }
+      rw += lw;
     } while (e->type == E_CONCAT);
+    if (width) {
+      *width = rw;
+    }
     return T_INT;
     break;
 
   case E_BITFIELD:
-    lt = act_type_var (s, (ActId *)e->u.e.l);
-    if (T_BASETYPE (lt) == T_INT) {
-      return lt;
+    {
+      InstType *xit;
+      lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      if (T_BASETYPE (lt) == T_INT) {
+	if (xit->isExpanded()) {
+	  int hi, lo;
+	  Assert (e->u.e.r, "What?");
+	  if (!expr_is_a_const (e->u.e.r->u.e.l) ||
+	      e->u.e.r->u.e.l->type != E_INT) {
+	    typecheck_err ("Bitfield can only use const integer arguments");
+	    return T_ERR;
+	  }
+	  if (!expr_is_a_const (e->u.e.r->u.e.r) ||
+	      e->u.e.r->u.e.r->type != E_INT) {
+	    typecheck_err ("Bitfield can only use const integer arguments");
+	    return T_ERR;
+	  }
+	  hi = e->u.e.r->u.e.l->u.v;
+	  lo = e->u.e.r->u.e.r->u.v;
+	  if (hi < lo) {
+	    typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
+	    return T_ERR;
+	  }
+	  if (hi+1 > TypeFactory::bitWidth (xit) || lo < 0) {
+	    typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
+			   hi, lo, TypeFactory::bitWidth (xit));
+	  }
+	  if (width) {
+	    *width = hi - lo + 1;
+	  }
+	}
+	else {
+	  *width = 32;
+	}
+	return lt;
+      }
     }
     typecheck_err ("Bitfield used with non-integer variable.");
     return T_ERR;
@@ -425,7 +550,7 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 	InstType *x = fn->getPortType (kind == 0 ? -(i+1) : i);
 	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
 
-	strict_flag &= act_type_expr (s, tmp->u.e.l, only_chan);
+	strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
 
 	if (!x->isConnectable (y, 1)) {
 	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
@@ -459,9 +584,15 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
       else {
 	if (TypeFactory::isIntType (rtype)) {
 	  ret |= T_INT;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
 	}
 	else if (TypeFactory::isBoolType (rtype)) {
 	  ret |= T_BOOL;
+	  if (width) {
+	    *width = 1;
+	  }
 	}
 	else {
 	  Assert (0, "Unknown return type");
@@ -473,28 +604,50 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
 
     /* leaves */
   case E_VAR:
-    lt = act_type_var (s, (ActId *)e->u.e.l);
-    if (only_chan) {
-      if (lt == T_CHAN) {
-	ActId *tmp;
-	InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
-	if (it->arrayInfo() && !tmp->isDeref()) {
-	  typecheck_err ("Array specifier not permitted in channel expression");
+    {
+      InstType *xit;
+      lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      if (only_chan) {
+	if (lt == T_CHAN) {
+	  ActId *tmp;
+	  InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+	  if (it->arrayInfo() && !tmp->isDeref()) {
+	    typecheck_err ("Array specifier not permitted in channel expression");
+	    return T_ERR;
+	  }
+	  if (TypeFactory::boolType (it)) {
+	    if (width) {
+	      *width = 1;
+	    }
+	    return T_BOOL;
+	  }
+	  else {
+	    if (width) {
+	      if (xit->isExpanded()) {
+		*width = TypeFactory::bitWidth (xit);
+	      }
+	      else {
+		*width = 32;
+	      }
+	    }
+	    return T_INT;
+	  }
+	}
+	if (only_chan == 1) {
+	  typecheck_err ("Channel expressions can't have non-channel variables");
 	  return T_ERR;
 	}
-	if (TypeFactory::boolType (it)) {
-	  return T_BOOL;
+      }
+      if (width) {
+	if (xit->isExpanded()) {
+	  *width = TypeFactory::bitWidth (xit);
 	}
 	else {
-	  return T_INT;
+	  *width = 32;
 	}
       }
-      if (only_chan == 1) {
-	typecheck_err ("Channel expressions can't have non-channel variables");
-	return T_ERR;
-      }
+      return lt;
     }
-    return lt;
     break;
 
   case E_PROBE:
@@ -502,8 +655,11 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
       typecheck_err ("Probe not permitted in pure channel expression");
       return T_ERR;
     }
-    lt = act_type_var (s, (ActId *)e->u.e.l);
+    lt = act_type_var (s, (ActId *)e->u.e.l, NULL);
     if (lt == T_CHAN) {
+      if (width) {
+	*width = 1;
+      }
       return T_BOOL;
     }
     else {
@@ -517,19 +673,48 @@ int act_type_expr (Scope *s, Expr *e, int only_chan)
     break;
 
   case E_INT:
+    if (width) {
+      int w = 0;
+      int val = e->u.v;
+      if (val < 0) {
+	val = -val;
+      }
+      while (val) {
+	w++;
+	val = val >> 1;
+      }
+      *width = (w+1);
+    }
     return (T_INT|T_PARAM|T_STRICT);
     break;
 
   case E_TRUE:
   case E_FALSE:
+    if (width) {
+      *width = 1;
+    }
     return (T_BOOL|T_PARAM|T_STRICT);
     break;
 
   case E_SELF:
     {
       ActId *tmpid = new ActId ("self");
-      lt = act_type_var (s, tmpid);
+      InstType *xit;
+      lt = act_type_var (s, tmpid, &xit);
       delete tmpid;
+      if (width) {
+	if (xit->isExpanded()) {
+	  *width = TypeFactory::bitWidth (xit);
+	}
+	else {
+	  if (T_BASETYPE(lt) == T_BOOL) {
+	    *width = 1;
+	  }
+	  else {
+	    *width = 32;
+	  }
+	}
+      }
     }
     return lt;
     break;
@@ -785,7 +970,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
     it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
     return it;
   }
-  ret = act_type_expr (s, e);
+  ret = act_type_expr (s, e, NULL);
 
   if (ret == T_ERR) {
     return NULL;

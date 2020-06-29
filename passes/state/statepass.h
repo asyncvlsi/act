@@ -37,14 +37,22 @@
  * process, so no booleans associated with ports are included in the
  * local/all bools count.
  */
+
+struct chp_stateinfo {
+  int width;
+  int ischan:1;			// 1 if channel
+  int isbool:1;			// 1 if bool; otherwise int
+  int ismulti:1;		// mult-driver?
+};
+
 typedef struct {
   int nbools;			// # of Boolean bits
-  int ibitwidth;		// cumulative integer bitwidth
-  int ichanwidth;		// cumulative integer channel width
 
   int localbools;		// total number of Booleans needed for
 				// local state: bits + elaborated int
 				// + elaborated channel state
+
+
 
   int nportbools;		// # of port bools [not omitted]
   bitset_t *multi;		// bitset of local bools that are
@@ -58,12 +66,23 @@ typedef struct {
   int ismulti;			// 1 if this process contributes to a
 				// multi-driver scenario
 
-  int allbools;			// localbools + bools needed for instances
+  int allbools;			// localbools + bools needed for
+				// instances
+
+  A_DECL (chp_stateinfo, vars);	 // variables for chp version
+  A_DECL (chp_stateinfo, lvars); // local vars
+  A_DECL (chp_stateinfo, pvars); // port vars
+  A_DECL (chp_stateinfo, allvars); // all vars
 
   struct iHashtable *map;	// map from connection pointer to
 				// unique integer from 0 .. totbools-1
   
-  struct iHashtable *imap;	// map from ValueIdx pointer to bool offset
+  struct iHashtable *imap;	// map from ValueIdx pointer to bool
+				// offset
+
+  struct iHashtable *chpmap;	// same maps except for chp level of
+				// abstraction 
+  struct iHashtable *chpimap;
   
 } stateinfo_t;
 

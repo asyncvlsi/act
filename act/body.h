@@ -82,6 +82,8 @@ class ActId {
 
   int isEqual (ActId *other);
 
+  int isExpanded ();
+
   ActId *Tail();
 
  private:

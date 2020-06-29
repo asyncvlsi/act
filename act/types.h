@@ -788,8 +788,8 @@ class TypeFactory {
 #define T_BASETYPE_ISNUM(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
 #define T_BASETYPE_ISINTBOOL(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_BOOL)
 
-int act_type_expr (Scope *, Expr *, int only_chan = 0);
-int act_type_var (Scope *, ActId *);
+int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
+int act_type_var (Scope *, ActId *, InstType **xit);
 int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);
 const char *act_type_errmsg (void);

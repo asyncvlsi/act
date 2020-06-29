@@ -1082,7 +1082,7 @@ tree_subckt_spec: "<" wint_expr ">"
 bool_expr_id[ActId *]: expr_id
 {{X:
     int t;
-    t = act_type_var ($0->scope, $1);
+    t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE (t) != T_BOOL) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
@@ -1102,7 +1102,7 @@ bool_expr_id[ActId *]: expr_id
 bool_expr_id_or_array[ActId *]: expr_id
 {{X:
     int t;
-    t = act_type_var ($0->scope, $1);
+    t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE (t) != T_BOOL) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
@@ -1116,7 +1116,7 @@ bool_expr_id_or_array[ActId *]: expr_id
 chan_expr_id[ActId *]: expr_id
 {{X:
     int t;
-    t = act_type_var ($0->scope, $1);
+    t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE(t) != T_CHAN) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
@@ -1136,7 +1136,7 @@ chan_expr_id[ActId *]: expr_id
 bool_or_int_expr_id[ActId *]: expr_id
 {{X:
     int t;
-    t = act_type_var ($0->scope, $1);
+    t = act_type_var ($0->scope, $1, NULL);
     if (!T_BASETYPE_ISINTBOOL (t)) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
@@ -1684,7 +1684,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     NEW (e, act_dataflow_element);
     e->t = ACT_DFLOW_FUNC;
     e->u.func.lhs = $1;
-    if (act_type_var ($0->scope, $4) != T_CHAN) {
+    if (act_type_var ($0->scope, $4, NULL) != T_CHAN) {
       $e("Identifier on the RHS of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
       $4->Print ($f);
@@ -1722,7 +1722,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     list_t *l;
     NEW (e, act_dataflow_element);
     e->u.splitmerge.guard = $2;
-    if (act_type_var ($0->scope, $2) != T_CHAN) {
+    if (act_type_var ($0->scope, $2, NULL) != T_CHAN) {
       $e("Identifier in the condition of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
       $2->Print ($f);
@@ -1753,7 +1753,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
       }
       list_free ($6);
     }
-    if (act_type_var ($0->scope, e->u.splitmerge.single) != T_CHAN) {
+    if (act_type_var ($0->scope, e->u.splitmerge.single, NULL) != T_CHAN) {
       $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
       e->u.splitmerge.single->Print ($f);
@@ -1766,7 +1766,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
       e->u.splitmerge.multi[i] = (ActId *) list_value (li);
       if (e->u.splitmerge.multi[i]) {
-	if (act_type_var ($0->scope, e->u.splitmerge.multi[i]) != T_CHAN) {
+	if (act_type_var ($0->scope, e->u.splitmerge.multi[i], NULL) != T_CHAN) {
 	  $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
 	  fprintf ($f, "   ");
 	  e->u.splitmerge.multi[i]->Print ($f);
