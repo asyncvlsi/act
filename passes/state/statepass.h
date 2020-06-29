@@ -38,6 +38,12 @@
  * local/all bools count.
  */
 
+struct chp_offsets {
+  int bools;
+  int chans;
+  int ints;
+};
+
 typedef struct {
   int nportbools;		// # of port bools [not omitted]
 
@@ -72,6 +78,10 @@ typedef struct {
   
   struct iHashtable *imap;	// map from ValueIdx pointer to bool
 				// offset
+
+  struct iHashtable *cmap;	// map from ValueIdx pointer to chp
+				// offsets
+  
   /*--
     Analogous quantities for CHP level of abstraction
     --*/
@@ -91,6 +101,10 @@ typedef struct {
 
   struct iHashtable *chpmap;	// connection * to unique integer
 				// (bool/int/chan)
+
+  int chp_allbool;
+  int chp_allint;
+  int chp_allchan;
 
 } stateinfo_t;
 

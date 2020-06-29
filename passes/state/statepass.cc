@@ -185,6 +185,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
      integer starting at zero
   */
 
+  si->chp_allbool = 0;
+  si->chp_allint = 0;
+  si->chp_allchan = 0;
+
   for (int i=0; i < b->cH->size; i++) {
     for (ihash_bucket_t *ib = b->cH->head[i]; ib; ib = ib->next) {
       int found = 0;
@@ -255,14 +259,26 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    }
 	    ocount++;
 	  }
-	  si->chpv[ocount] = v;
 	  Assert (found, "What?");
+	  si->chpv[ocount] = v;
 	}
 	else if (!v->isglobal) {
 	  ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
 	  x->i = chpidx++;
 	  ocount = x->i + si->nportchp;
 	  si->chpv[ocount] = v;
+
+
+	  if (v->ischan) {
+	    si->chp_allchan++;
+	  }
+	  else if (v->isint) {
+	    si->chp_allint++;
+	  }
+	  else {
+	    si->chp_allbool++;
+	  }
+
 	}
 
 #if 0
@@ -300,6 +316,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   Assert (idx == si->localbools, "What?");
   Assert (chpidx == si->localchp, "What?");
+  Assert (si->localchp == si->chp_allbool + si->chp_allint + si->chp_allchan,
+	  "What?");
 
 #if 0
   printf ("%s: stats: %d local; %d port\n", p->getName(),
@@ -309,6 +327,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   /* sum up instance state, and compute offsets for each instance */
   si->allbools = si->localbools;
   si->imap = ihash_new (8);
+  si->cmap = ihash_new (8);
 
   ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
@@ -319,15 +338,24 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       if (x->isExpanded()) {
 	stateinfo_t *ti = (stateinfo_t *) getMap (x);
 	int n_sub_bools;
+	int n_sub_chp_bools;
+	int n_sub_chp_ints;
+	int n_sub_chp_chans;
 
 	if (ti) {
 	  n_sub_bools = ti->allbools;
+	  n_sub_chp_bools = ti->chp_allbool;
+	  n_sub_chp_ints = ti->chp_allint;
+	  n_sub_chp_chans = ti->chp_allchan;
 	}
 	else {
 	  /* black box */
 	  act_boolean_netlist_t *bn = bp->getBNL (x);
 	  Assert (bn, "What?");
 	  n_sub_bools = 0;
+	  n_sub_chp_chans = 0;
+	  n_sub_chp_ints = 0;
+	  n_sub_chp_bools = 0;
 	}
 	/* map valueidx pointer to the current bool offset */
 	ihash_bucket_t *ib = ihash_add (si->imap, (long)vx);
@@ -337,6 +365,25 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	}
 	else {
 	  si->allbools += n_sub_bools;
+	}
+
+	ihash_bucket_t *cb = ihash_add (si->cmap, (long)vx);
+	chp_offsets *co;
+	NEW (co, chp_offsets);
+	co->bools = si->chp_allbool;
+	co->chans = si->chp_allchan;
+	co->ints = si->chp_allint;
+	cb->v = co;
+
+	if (vx->t->arrayInfo()) {
+	  si->chp_allbool += vx->t->arrayInfo()->size()*n_sub_chp_bools;
+	  si->chp_allchan += vx->t->arrayInfo()->size()*n_sub_chp_chans;
+	  si->chp_allint += vx->t->arrayInfo()->size()*n_sub_chp_ints;
+	}
+	else {
+	  si->chp_allbool += n_sub_chp_bools;
+	  si->chp_allchan += n_sub_chp_chans;
+	  si->chp_allint += n_sub_chp_ints;
 	}
       }
     }
