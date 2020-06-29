@@ -1,0 +1,6 @@
+defproc testme (chan?(int<8>) A, B; chan!(int<8>) OUT)
+{                                                      
+  dataflow {                                          
+    A + B -> OUT                                      
+  }                                                    
+}                                                      
