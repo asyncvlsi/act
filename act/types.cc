@@ -2235,21 +2235,21 @@ int TypeFactory::boolType (Type *t)
     if (tmp) {
       /* ok */
       InstType *x = tmp->datatype();
-      if (!x->isExpanded()) return -1;
+      //if (!x->isExpanded()) return -1;
       return TypeFactory::boolType (x);
     }
   }
   {
     Channel *tmp = dynamic_cast <Channel *> (t);
     if (tmp) {
-      if (!tmp->isExpanded()) return -1;
+      //if (!tmp->isExpanded()) return -1;
       return TypeFactory::boolType (tmp->getParent());
     }
   }
   { 
     Data *tmp = dynamic_cast<Data *>(t);
     if (tmp) {
-      if (!tmp->isExpanded()) return -1;
+      //if (!tmp->isExpanded()) return -1;
       return TypeFactory::boolType (tmp->getParent());
     }
   }
