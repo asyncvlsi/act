@@ -38,23 +38,18 @@
  * local/all bools count.
  */
 
-struct chp_stateinfo {
-  int width;
-  int ischan:1;			// 1 if channel
-  int isbool:1;			// 1 if bool; otherwise int
-  int ismulti:1;		// mult-driver?
-};
-
 typedef struct {
-  int nbools;			// # of Boolean bits
+  int nportbools;		// # of port bools [not omitted]
 
   int localbools;		// total number of Booleans needed for
 				// local state: bits + elaborated int
 				// + elaborated channel state
 
-
-
-  int nportbools;		// # of port bools [not omitted]
+  /*-- 
+    Boolean variables are numbered
+      0 ... nportbools-1 ... (nportbools + localbools - 1)
+  --*/
+  
   bitset_t *multi;		// bitset of local bools that are
 				// locally multi-driver. The size of
 				// this bitset is # of localbools + #
@@ -66,23 +61,38 @@ typedef struct {
   int ismulti;			// 1 if this process contributes to a
 				// multi-driver scenario
 
-  int allbools;			// localbools + bools needed for
-				// instances
-
-  A_DECL (chp_stateinfo, vars);	 // variables for chp version
-  A_DECL (chp_stateinfo, lvars); // local vars
-  A_DECL (chp_stateinfo, pvars); // port vars
-  A_DECL (chp_stateinfo, allvars); // all vars
+  int allbools;			// total booleans needed for this
+				// process (minus its ports)
 
   struct iHashtable *map;	// map from connection pointer to
 				// unique integer from 0 .. totbools-1
   
   struct iHashtable *imap;	// map from ValueIdx pointer to bool
 				// offset
+  /*--
+    Analogous quantities for CHP level of abstraction
+    --*/
+  
+  int nportchp;			// # of chp variables in the port [not
+				// omitted]
+
+  int localchp;			// local chp variables
+
+  bitset_t *chpmulti;		// 1 if multi-driver at the CHP level
+
+  act_booleanized_var_t **chpv;	// map to var info from variable ID
+				// for chp: size if nportchp +
+				// localchp
+
+  int chp_ismulti;		// multidriver through CHP
 
   struct iHashtable *chpmap;	// same maps except for chp level of
-				// abstraction 
-  struct iHashtable *chpimap;
+				// abstraction
+  
+  struct iHashtable *chpimap;	// ValueIdx to offset to either
+				// bool/int/chan
+
+  int chp_allbool, chp_allint, chp_allchan;
   
 } stateinfo_t;
 
@@ -101,7 +111,7 @@ private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
 
-  stateinfo_t *countBools (Process *p);
+  stateinfo_t *countLocalState (Process *p);
   void printLocal (FILE *fp, Process *p);
   int _black_box_mode;
   

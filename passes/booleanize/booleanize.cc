@@ -39,11 +39,13 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
 
   NEW (v, act_booleanized_var_t);
   v->id = c;
-  v->used = 1;
+  v->used = 0;
   v->ischan = 0;
   v->isint = 0;
   v->input = 0;
   v->output = 0;
+  v->usedchp = 0;
+  v->isglobal = 0;
   v->extra = NULL;
   return v;
 }
@@ -61,6 +63,9 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   if (!b) {
     b = ihash_add (n->cH, (long)c);
     b->v = var_alloc (n, c);
+    if (c->isglobal()) {
+      ((act_booleanized_var_t *)b->v)->isglobal = 1;
+    }
   }
   return (act_booleanized_var_t *)b->v;
 }
@@ -116,6 +121,7 @@ static void walk_expr (act_boolean_netlist_t *N, act_prs_expr_t *e)
     
   case ACT_PRS_EXPR_VAR:
     v = var_lookup (N, e->u.v.id->Canonical (N->cur));
+    v->used = 1;
     v->input = 1;
     break;
       
@@ -145,6 +151,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
 
     if (!p->u.one.label) {
       v = var_lookup (N, p->u.one.id);
+      v->used = 1;
       v->output = 1;
     }
     break;
@@ -152,18 +159,24 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   case ACT_PRS_GATE:
     if (p->u.p.g) {
       v = var_lookup (N, p->u.p.s);
+      v->used = 1;
       v->input = 1;
       v = var_lookup (N, p->u.p.d);
+      v->used = 1;
       v->input = 1;
       v = var_lookup (N, p->u.p.g);
+      v->used = 1;
       v->input = 1;
     }
     if (p->u.p._g) {
       v = var_lookup (N, p->u.p.s);
+      v->used = 1;
       v->input = 1;
       v = var_lookup (N, p->u.p.d);
+      v->used = 1;
       v->input = 1;
       v = var_lookup (N, p->u.p._g);
+      v->used = 1;
       v->input = 1;
     }
 
@@ -172,10 +185,12 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
 	unsigned int v = attr->e->u.v;
 	if (v & 0x1) {
 	  act_booleanized_var_t *x = var_lookup (N, p->u.p.s);
+	  x->used = 1;
 	  x->output = 1;
 	}
 	if (v & 0x2) {
 	  act_booleanized_var_t *x = var_lookup (N, p->u.p.d);
+	  x->used = 1;
 	  x->output = 1;
 	}
       }
@@ -203,7 +218,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   }
 }
 
-static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e)
+static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 {
   if (!e) return;
   
@@ -225,28 +240,28 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_GE:
   case E_NE:
   case E_EQ:
-    generate_expr_vars (N, e->u.e.l);
-    generate_expr_vars (N, e->u.e.r);
+    generate_expr_vars (N, e->u.e.l, ischp);
+    generate_expr_vars (N, e->u.e.r, ischp);
     break;
 
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
-    generate_expr_vars (N, e->u.e.l);
+    generate_expr_vars (N, e->u.e.l, ischp);
     break;
 
   case E_QUERY:
   case E_BITFIELD:
-    generate_expr_vars (N, e->u.e.l);
+    generate_expr_vars (N, e->u.e.l, ischp);
     Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
     Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
-    generate_expr_vars (N, e->u.e.r->u.e.l);
-    generate_expr_vars (N, e->u.e.r->u.e.r);
+    generate_expr_vars (N, e->u.e.r->u.e.l, ischp);
+    generate_expr_vars (N, e->u.e.r->u.e.r, ischp);
     break;
 
   case E_CONCAT:
     do {
-      generate_expr_vars (N, e->u.e.l);
+      generate_expr_vars (N, e->u.e.l, ischp);
       e = e->u.e.r;
     } while (e);
     break;
@@ -254,7 +269,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_FUNCTION:
     e = e->u.e.r;
     while (e) {
-      generate_expr_vars (N, e->u.e.l);
+      generate_expr_vars (N, e->u.e.l, ischp);
       e = e->u.e.r;
     }
     break;
@@ -272,6 +287,12 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e)
       act_booleanized_var_t *v;
       v = var_lookup (N, (ActId *)e->u.e.l);
       v->input = 1;
+      if (ischp) {
+	v->usedchp = 1;
+      }
+      else {
+	v->used = 1;
+      }
     }
     break;
 
@@ -305,7 +326,7 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	generate_expr_vars (N, gc->g);
+	generate_expr_vars (N, gc->g, 0);
 	generate_hse_vars (N, gc->s);
       }
     }
@@ -323,8 +344,9 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
       act_booleanized_var_t *v;
       v = var_lookup (N, c->u.assign.id);
       Assert (v, "What?");
+      v->used = 1;
       v->output = 1;
-      generate_expr_vars (N, c->u.assign.e);
+      generate_expr_vars (N, c->u.assign.e, 0);
     }
     break;
     
@@ -346,7 +368,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       listitem_t *li;
       for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-	generate_hse_vars (N, (act_chp_lang_t *) list_value (li));
+	generate_chp_vars (N, (act_chp_lang_t *) list_value (li));
       }
     }
     break;
@@ -357,8 +379,8 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	generate_expr_vars (N, gc->g);
-	generate_hse_vars (N, gc->s);
+	generate_expr_vars (N, gc->g, 1);
+	generate_chp_vars (N, gc->s);
       }
     }
     break;
@@ -375,8 +397,9 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       act_booleanized_var_t *v;
       v = var_lookup (N, c->u.assign.id);
       Assert (v, "What?");
+      v->usedchp = 1;
       v->output = 1;
-      generate_expr_vars (N, c->u.assign.e);
+      generate_expr_vars (N, c->u.assign.e, 1);
     }
     break;
 
@@ -387,6 +410,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       listitem_t *li;
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
+      v->usedchp = 1;
       if (c->type == ACT_CHP_SEND) {
 	v->output = 1;
       }
@@ -394,7 +418,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	v->input = 1;
       }
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	generate_expr_vars (N, (Expr *) list_value (li));
+	generate_expr_vars (N, (Expr *) list_value (li), 1);
       }
     }
     break;
@@ -414,9 +438,10 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 
   switch (e->t) {
   case ACT_DFLOW_FUNC:
-    generate_expr_vars (N, e->u.func.lhs);
+    generate_expr_vars (N, e->u.func.lhs, 1);
     v = var_lookup (N, e->u.func.rhs);
     Assert (v, "Hmm");
+    v->usedchp = 1;
     v->output = 1;
     break;
 
@@ -424,10 +449,12 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
   case ACT_DFLOW_MERGE:
     v = var_lookup (N, e->u.splitmerge.guard);
     if (v) {
+      v->usedchp = 1;
       v->input = 1;
     }
     v = var_lookup (N, e->u.splitmerge.single);
     Assert (v, "WHat?");
+    v->usedchp = 1;
     if (e->t == ACT_DFLOW_SPLIT) {
       v->input = 1;
     }
@@ -437,6 +464,7 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
       v = var_lookup (N, e->u.splitmerge.multi[i]);
       if (v) {
+	v->usedchp = 1;
 	if (e->t == ACT_DFLOW_SPLIT) {
 	  v->output = 1;
 	}
@@ -459,18 +487,22 @@ static void process_prs_lang (act_boolean_netlist_t *N, act_prs *p)
     
     if (p->vdd) {
       act_booleanized_var_t *v = var_lookup (N, p->vdd);
+      v->used = 1;
       v->input = 1;
     }
     if (p->gnd) {
       act_booleanized_var_t *v = var_lookup (N, p->gnd);
+      v->used = 1;
       v->input = 1;
     }
     if (p->psc) {
       act_booleanized_var_t *v = var_lookup (N, p->psc);
+      v->used = 1;
       v->input = 1;
     }
     if (p->nsc) {
       act_booleanized_var_t *v = var_lookup (N, p->nsc);
+      v->used = 1;
       v->input = 1;
     }
     
@@ -487,18 +519,22 @@ static void process_hse_lang (act_boolean_netlist_t *N, act_chp *c)
   while (c) {
     if (c->vdd) {
       act_booleanized_var_t *v = var_lookup (N, c->vdd);
+      v->used = 1;
       v->input = 1;
     }
     if (c->gnd) {
       act_booleanized_var_t *v = var_lookup (N, c->gnd);
+      v->used = 1;
       v->input = 1;
     }
     if (c->psc) {
       act_booleanized_var_t *v = var_lookup (N, c->psc);
+      v->used = 1;
       v->input = 1;
     }
     if (c->nsc) {
       act_booleanized_var_t *v = var_lookup (N, c->nsc);
+      v->used = 1;
       v->input = 1;
     }
     generate_hse_vars (N, c->c);
@@ -512,18 +548,22 @@ static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
   while (c) {
     if (c->vdd) {
       act_booleanized_var_t *v = var_lookup (N, c->vdd);
+      v->usedchp = 1;
       v->input = 1;
     }
     if (c->gnd) {
       act_booleanized_var_t *v = var_lookup (N, c->gnd);
+      v->usedchp = 1;
       v->input = 1;
     }
     if (c->psc) {
       act_booleanized_var_t *v = var_lookup (N, c->psc);
+      v->usedchp = 1;
       v->input = 1;
     }
     if (c->nsc) {
       act_booleanized_var_t *v = var_lookup (N, c->nsc);
+      v->usedchp = 1;
       v->input = 1;
     }
     generate_chp_vars (N, c->c);
@@ -645,7 +685,10 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 }
 
 
-
+/*
+ * type = 0 : boolean flag
+ * type = 1 : chp flag
+ */
 static void mark_c_used (act_boolean_netlist_t *n,
 			 act_boolean_netlist_t *subinst,
 			 act_connection *c,
@@ -665,8 +708,8 @@ static void mark_c_used (act_boolean_netlist_t *n,
   }
 
   if (v) {
-    v->used = 1;
     if (type == 0) {
+      v->used = 1;
       if (subinst->ports[*count].input) {
 	v->input = 1;
       }
@@ -675,6 +718,7 @@ static void mark_c_used (act_boolean_netlist_t *n,
       }
     }
     else {
+      v->usedchp = 1;
       if (subinst->chpports[*count].input) {
 	v->input = 1;
       }
@@ -685,8 +729,8 @@ static void mark_c_used (act_boolean_netlist_t *n,
   }
   else {
     v = var_lookup (n, c);
-    v->used = 1;
     if (type == 0) {
+      v->used = 1;
       if (!subinst->ports[*count].input) {
 	v->output = 1;
       }
@@ -695,6 +739,7 @@ static void mark_c_used (act_boolean_netlist_t *n,
       }
     }
     else if (type == 1) {
+      v->usedchp = 1;
       if (!subinst->chpports[*count].input) {
 	v->output = 1;
       }
@@ -791,6 +836,8 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     return;
   }
 
+  int bool_done = 0;
+  int chp_done = 0;
   ihash_bucket_t *b;
   b = ihash_lookup (n->cH, (long)c);
   if (b) {
@@ -798,27 +845,31 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     if (!v->used) {
       if (mode != 2) {
 	A_LAST (n->ports).omit = 1;
+	bool_done = 1;
       }
+    }
+    if (!v->usedchp) {
       if (mode != 1) {
 	A_LAST (n->chpports).omit = 1;
-      }
-      return;
-    }
-    else {
-      if (mode != 2) {
-	A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
-      }
-      if (mode != 1) {
-	A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
+	chp_done = 1;
       }
     }
-    if (TypeFactory::isIntType (t)) {
-      v->isint = 1;
-      v->width = TypeFactory::bitWidth (t);
+    if (mode != 2 && !bool_done) {
+      v->used = 1;
+      A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
     }
-    else if (TypeFactory::isChanType (t)) {
-      v->ischan = 1;
-      v->width = TypeFactory::bitWidth (t);
+    if (mode != 1 && !chp_done) {
+      v->usedchp = 1;
+      A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
+
+      if (TypeFactory::isIntType (t)) {
+	v->isint = 1;
+	v->width = TypeFactory::bitWidth (t);
+      }
+      else if (TypeFactory::isChanType (t)) {
+	v->ischan = 1;
+	v->width = TypeFactory::bitWidth (t);
+      }
     }
   }
   else {
@@ -832,7 +883,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     return;
   }
 
-  if (mode != 2) {
+  if (!bool_done && mode != 2) {
     for (i=0; i < A_LEN (n->ports)-1; i++) {
       /* check to see if this is already in the port list;
 	 make this faster with a map if necessary since it is O(n^2) */
@@ -843,7 +894,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     }
   }
 
-  if (mode != 1) {
+  if (!chp_done && mode != 1) {
     for (i=0; i < A_LEN (n->chpports)-1; i++) {
       /* check to see if this is already in the port list;
 	 make this faster with a map if necessary since it is O(n^2) */

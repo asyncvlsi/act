@@ -42,6 +42,9 @@ typedef struct act_booleanized_var {
 				   have not been turned into bools! */
   unsigned int isint:1;		/* for built-in int variables that
 				   have not been turned into bools! */
+  unsigned int usedchp:1;	/* also used in CHP mode */
+  unsigned int isglobal:1;	/* global flag */
+  
   unsigned int width;		/* bit-width for chan/int */
   void *extra;			/* space for rent */
 } act_booleanized_var_t;

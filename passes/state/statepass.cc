@@ -43,7 +43,7 @@ static act_connection *_inv_hash (struct iHashtable *H, int idx)
 void *ActStatePass::local_op (Process *p, int mode)
 {
   if (mode == 0) {
-    return countBools (p);
+    return countLocalState (p);
   }
   else if (mode == 1) {
     printLocal (_fp, p);
@@ -59,7 +59,7 @@ void *ActStatePass::local_op (Process *p, int mode)
  *
  *
  */
-stateinfo_t *ActStatePass::countBools (Process *p)
+stateinfo_t *ActStatePass::countLocalState (Process *p)
 {
   act_boolean_netlist_t *b;
 
@@ -77,41 +77,71 @@ stateinfo_t *ActStatePass::countBools (Process *p)
   Assert (b->cH, "Hmm");
 
   /* 
+     The booleanized vars come in two flavors:
+      - the raw booleans
+      - the chp booleans
+
      1. b->cH->n == local variables used
      2. port list: variables that are out of consideration
 
      Once we have the set of variables, then we need state only for
      output variables.
   */
+  int nvars = 0;
+  int bool_count = 0;
+  int chp_count = 0;
 
-  int nvars = b->cH->n;
-
-  for (int i=0; i < A_LEN (b->ports); i++) {
-    if (b->ports[i].omit) continue;
-    nvars--;
+  /* count non-global variables that are used */
+  for (int i=0; i < b->cH->size; i++) {
+    for (ihash_bucket_t *hb = b->cH->head[i]; hb; hb = hb->next) {
+      act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
+      if (v->usedchp && !v->isglobal) {
+	chp_count++;
+      }
+      if (v->used && !v->isglobal) {
+	bool_count++;
+      }
+    }
   }
-  /* globals are not handled by this mechanism */
-  nvars -= A_LEN (b->used_globals);
 
   stateinfo_t *si;
   NEW (si, stateinfo_t);
 
-  /* init for hse/prs mode */
-  si->nbools = nvars;
-  si->localbools = nvars;
   si->allbools = 0;
   si->map = NULL;
   si->imap = NULL;
-  si->nportbools = b->cH->n - nvars - A_LEN (b->used_globals);
   si->ismulti = 0;
+  si->nportbools = 0;
 
-  /* init for chp mode */
-  A_INIT (si->vars);
-  A_INIT (si->lvars);
-  A_INIT (si->pvars);
-  A_INIT (si->allvars);
+  /* init for hse/prs mode: only track bools */
+  nvars = bool_count;
+  for (int i=0; i < A_LEN (b->ports); i++) {
+    if (b->ports[i].omit) continue;
+    nvars--;
+    si->nportbools++;
+  }
+  si->localbools = nvars;
+  
+
+  /* init for chp mode: bools, ints, chans; note that fractured ints
+     are tracked as fractured ints. */
+
+  si->chp_allbool = 0;
+  si->chp_allint = 0;
+  si->chp_allchan = 0;
+  si->chp_ismulti = 0;
+  si->nportchp = 0;
   si->chpmap = NULL;
   si->chpimap = NULL;
+  si->chpmulti = NULL;
+
+  nvars = chp_count;
+  for (int i=0; i < A_LEN (b->chpports); i++) {
+    if (b->chpports[i].omit) continue;
+    nvars--;
+    si->nportchp++;
+  }
+  si->localchp = nvars;
 
 #if 0
   printf ("%s: start \n", p->getName());
@@ -152,7 +182,7 @@ stateinfo_t *ActStatePass::countBools (Process *p)
 	}
 	ocount++;
       }
-      if (!found && !v->id->isglobal()) {
+      if (!found && !v->isglobal) {
 	ihash_bucket_t *x = ihash_add (si->map, ib->key);
 	x->i = idx++;
 	ocount = x->i + si->nportbools;
@@ -165,7 +195,7 @@ stateinfo_t *ActStatePass::countBools (Process *p)
       printf (" [out=%d]", v->output ? 1 : 0);
       printf ("\n");
 #endif      
-      if (!v->id->isglobal()) {
+      if (!v->isglobal) {
 	if (v->output) {
 	  if (bitset_tst (tmpbits, ocount)) {
 	    /* found multi driver! */
@@ -419,7 +449,7 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
   }
   else {
     fprintf (fp, "   nbools = %d, nvars = %d\n",
-	     si->nbools, A_LEN (si->vars));
+	     si->localbools, si->localchp);
     fprintf (fp, "  localbools: %d\n", si->localbools);
     fprintf (fp, "  portbools: %d\n", si->nportbools);
     fprintf (fp, "  ismulti: %d\n", si->ismulti);
