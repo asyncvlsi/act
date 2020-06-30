@@ -389,8 +389,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
+
   /* now check for multi-drivers due to instances */
   int instcnt = 0;
+  int chpinstcnt = 0;
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
@@ -471,6 +473,76 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    }
 	  }
 	}
+
+	ports_exist = 0;
+	for (int j=0; j < A_LEN (sub->chpports); j++) {
+	  if (sub->chpports[j].omit == 0) {
+	    ports_exist = 1;
+	    break;
+	  }
+	}
+
+	if (ports_exist) {
+	  int sz;
+	  if (vx->t->arrayInfo()) {
+	    sz = vx->t->arrayInfo()->size();
+	  }
+	  else {
+	    sz = 1;
+	  }
+	  
+	  while (sz > 0) {
+	    sz--;
+	    for (int j=0; j < A_LEN (sub->chpports); j++) {
+	      act_connection *c;
+	      ihash_bucket_t *bi;
+	      int ocount;
+	      if (sub->chpports[j].omit) continue;
+
+	      c = b->instchpports[chpinstcnt];
+	      bi = ihash_lookup (si->chpmap, (long)c);
+	      if (bi) {
+		ocount = bi->i + si->nportchp;
+	      }
+	      else {
+		ocount = 0;
+		for (int k=0; k < A_LEN (b->chpports); k++) {
+		  if (b->chpports[k].omit) continue;
+		  if (c == b->chpports[k].c) {
+		    break;
+		  }
+		  ocount++;
+		}
+		Assert (ocount < si->nportchp, "What?");
+	      }
+	      
+	      if (!sub->chpports[j].input) {
+		if (bitset_tst (tmpchp, ocount)) {
+		  /* found multi driver! */
+		  bitset_set (si->chpmulti, ocount);
+		  if (subsi) {
+		    /* could be NULL, if it is a black box */
+		    subsi->chp_ismulti = 1;
+		  }
+#if 0
+		  printf (" *multi-driver: ");
+		  ActId *id = c->toid();
+		  id->Print (stdout);
+		  delete id;
+		  printf ("\n");
+#endif		  
+		}
+		else {
+		  bitset_set (tmpchp, ocount);
+		}
+	      }
+	      else {
+		bitset_set (inpbits, ocount);
+	      }
+	      chpinstcnt++;
+	    }
+	  }
+	}
       }
     }
   }
@@ -482,6 +554,20 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       if (bitset_tst (inpbits, i + si->nportbools) &&
 	  !bitset_tst (tmpbits, i + si->nportbools)) {
 	act_connection *tmpc = _inv_hash (si->map, i);
+	Assert (tmpc, "How did we get here?");
+	ActId *tmpid = tmpc->toid();
+	fprintf (stderr, "WARNING: Process `%s': local variable `",
+		 p ? p->getName() : "-toplevel-");
+	tmpid->Print (stderr);
+	fprintf (stderr, "': no driver\n");
+	delete tmpid;
+      }
+    }
+
+    for (int i=0; i < si->localchp; i++) {
+      if (bitset_tst (inpchp, i + si->nportchp) &&
+	  !bitset_tst (tmpchp, i + si->nportchp)) {
+	act_connection *tmpc = _inv_hash (si->chpmap, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
 	fprintf (stderr, "WARNING: Process `%s': local variable `",

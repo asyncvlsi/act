@@ -79,9 +79,6 @@ typedef struct {
   struct iHashtable *imap;	// map from ValueIdx pointer to bool
 				// offset
 
-  struct iHashtable *cmap;	// map from ValueIdx pointer to chp
-				// offsets
-  
   /*--
     Analogous quantities for CHP level of abstraction
     --*/
@@ -102,6 +99,9 @@ typedef struct {
   struct iHashtable *chpmap;	// connection * to unique integer
 				// (bool/int/chan)
 
+  struct iHashtable *cmap;	// map from ValueIdx pointer to chp
+				// offsets
+  
   int chp_allbool;
   int chp_allint;
   int chp_allchan;
