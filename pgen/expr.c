@@ -501,8 +501,11 @@ static Expr *FF (void)
 {							
   Expr *e, *f;					
   int i;
+  int tmp = int_real_only;
 
-  return F ();
+  if (int_real_only) {
+    return F();
+  }
 							
   PUSH (Tl);						
   e = F ();					
@@ -529,7 +532,9 @@ static Expr *FF (void)
   f->type = _intcomp[i];				
   f->u.e.l = e;					
   file_getsym (Tl);
+  int_real_only = 1;
   f->u.e.r = F ();
+  int_real_only = tmp;
   if (!f->u.e.r) {
     FREE (f);
     efree (e);

@@ -2001,7 +2001,9 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 }}
 ;
 
-alias[ActBody *]: lhs_array_expr "=" { array_expr "=" }* ";"
+
+alias[ActBody *]: lhs_array_expr "=" array_expr ";"
+//{ array_expr "=" }* ";"
 {{X:
     ActBody *b, *tmp, *ret;
     listitem_t *li;
@@ -2010,20 +2012,21 @@ alias[ActBody *]: lhs_array_expr "=" { array_expr "=" }* ";"
     b = NULL;
     ret = NULL;
 
-    for (li = list_first ($3); li; li = list_next (li)) {
-      ae = (AExpr *) list_value (li);
+    //for (li = list_first ($3); li; li = list_next (li)) {
+    //ae = (AExpr *) list_value (li);
+    ae = $3;
       type_set_position ($l, $c, $n);
       if (!act_type_conn ($0->scope, $1, ae)) {
 	$e("Typechecking failed on connection!");
 	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
 	exit (1);
       }
-      if (li == list_first ($3)) {
+      //if (li == list_first ($3)) {
 	tmp = new ActBody_Conn ($1, ae);
-      }
-      else {
-	tmp = new ActBody_Conn ($1->Clone(), ae);
-      }
+	//}
+	//else {
+	//tmp = new ActBody_Conn ($1->Clone(), ae);
+	//}
       if (!b) {
 	b = tmp;
 	ret = b;
@@ -2032,8 +2035,8 @@ alias[ActBody *]: lhs_array_expr "=" { array_expr "=" }* ";"
 	b->Append (tmp);
 	b = b->Tail ();
       }
-    }
-    list_free ($3);
+  // }
+  //list_free ($3);
     return ret;
 }}
 ;

@@ -8,7 +8,7 @@ defproc foo(e1of2 A, B)
   bool w, aa, bb;
   bool q = Vdd2;
 
-  A.e = aa = a;
+  A.e = aa; aa = a;
 
   prs<q> { 
     a<20,2> & w <10> -> b-
