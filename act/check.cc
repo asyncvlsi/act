@@ -653,7 +653,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     break;
 
   case E_PROBE:
-    if (only_chan) {
+    if (only_chan == 1) {
       typecheck_err ("Probe not permitted in pure channel expression");
       return T_ERR;
     }
