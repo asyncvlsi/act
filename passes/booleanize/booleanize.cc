@@ -448,10 +448,14 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 
   case ACT_DFLOW_SPLIT:
   case ACT_DFLOW_MERGE:
-    v = var_lookup (N, e->u.splitmerge.guard);
-    if (v) {
-      v->usedchp = 1;
-      v->input = 1;
+  case ACT_DFLOW_MIXER:
+  case ACT_DFLOW_ARBITER:
+    if (e->u.splitmerge.guard) {
+      v = var_lookup (N, e->u.splitmerge.guard);
+      if (v) {
+	v->usedchp = 1;
+	v->input = 1;
+      }
     }
     v = var_lookup (N, e->u.splitmerge.single);
     Assert (v, "WHat?");
@@ -474,6 +478,10 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 	}
       }
     }
+    break;
+
+  default:
+    fatal_error ("Unknown type");
     break;
   }
   return;

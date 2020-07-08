@@ -40,6 +40,26 @@
 class ActPass;
 class Log;
 
+
+/*
+ *
+ *  ACT can model a circuit at different levels of detail. The four
+ *  levels are specified below.
+ *
+ *  The default level is the most detailed model available that can be
+ *  provided by the user (PRS)
+ *
+ */
+
+#define ACT_MODEL_CHP  0		// CHP language
+#define ACT_MODEL_HSE  1		// HSE language
+#define ACT_MODEL_PRS  2		// PRS language
+#define ACT_MODEL_DEVICE 3              // PRS + sizing translated into netlist
+#define ACT_MODEL_TOTAL 4
+
+extern const char *act_model_names[];
+
+
 /**
  *   The main Act class used to read in an ACT file and create basic
  *   data structures
