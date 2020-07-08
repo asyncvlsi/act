@@ -22,6 +22,7 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <act/act.h>
 #include "act_parse.h"
@@ -56,7 +57,12 @@ L_A_DECL (struct command_line_defs, vars);
 
 #define isid(x) (((x) == '_') || isalpha(x))
 
-const char *act_model_names[ACT_MODEL_TOTAL] = { "chp", "hse", "prs", "device" };
+const char *act_model_names[ACT_MODEL_TOTAL] =
+  { "chp",
+    "hse",
+    "prs",
+    "device"
+  };
 
 
 /*------------------------------------------------------------------------
@@ -807,4 +813,44 @@ void Act::config_info (const char *name)
     (*L) << "Read configuration file: " << s << "\n";
     FREE (s);
   }
+}
+
+
+int Act::getLevel ()
+{
+  return default_level;
+}
+
+int Act::getLevel (Process *p)
+{
+  int lev;
+  for (lev = 0; lev < ACT_MODEL_TOTAL; lev++) {
+    for (int i=0; i < num_type_levels[lev]; i++) {
+      if (strncmp (type_levels[lev][i],
+		   p->getName(), strlen (type_levels[lev][i])) == 0) {
+	return lev;
+      }
+    }
+  }
+  return default_level;
+}
+
+int Act::getLevel (ActId *id)
+{
+  char buf[10240];
+  int lev;
+  
+  if (!id) return default_level;
+  
+  id->sPrint (buf, 10240);
+  
+  for (lev = 0; lev < ACT_MODEL_TOTAL; lev++) {
+    for (int i=0; i < num_inst_levels[lev]; i++) {
+      if (strncmp (inst_levels[lev][i],
+		   buf, strlen (inst_levels[lev][i])) == 0) {
+	return lev;
+      }
+    }
+  }
+  return default_level;
 }

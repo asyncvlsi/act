@@ -231,14 +231,11 @@ class Act {
 
 
   /*
-    Set modeling level of detail and refinement steps.
+    Get modeling level of detail and refinement steps.
   */
-  void setLevel (int lev);
-  void setLevel (Process *p);
-  void setLevel (ActId *id);
-
-  /* this must be called prior to expansion */
-  void setRefineSteps (int nsteps);
+  int getLevel ();		// get default level
+  int getLevel (Process *p);	// get level for this type
+  int getLevel (ActId *id);	// get level for this instance
 
   int getRefSteps() { return refine_steps; }
   void decRefSteps() { refine_steps--; }

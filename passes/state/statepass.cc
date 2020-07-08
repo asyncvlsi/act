@@ -389,6 +389,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
+#if 0
+  printf ("%s: fullstats\n", p->getName());
+  printf ("  %d allbools\n", si->allbools);
+  printf ("  %d chp_allbool\n", si->chp_allbool);
+  printf ("  %d chp_allchan\n", si->chp_allchan);
+  printf ("  %d chp_allint\n", si->chp_allint);
+#endif
+  
 
   /* now check for multi-drivers due to instances */
   int instcnt = 0;
@@ -431,6 +439,12 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
 	      c = b->instports[instcnt];
 	      bi = ihash_lookup (si->map, (long)c);
+
+	      if (c->isglobal()) {
+		/* ignore globals here */
+		continue;
+	      }
+	      
 	      if (bi) {
 		ocount = bi->i + si->nportbools;
 	      }
@@ -500,6 +514,11 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      if (sub->chpports[j].omit) continue;
 
 	      c = b->instchpports[chpinstcnt];
+
+	      /* -- ignore globals -- */
+	      if (c->isglobal()) continue;
+		
+	      
 	      bi = ihash_lookup (si->chpmap, (long)c);
 	      if (bi) {
 		ocount = bi->i + si->nportchp;

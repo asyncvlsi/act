@@ -317,6 +317,8 @@ enum act_dataflow_element_types {
  ACT_DFLOW_FUNC = 0,
  ACT_DFLOW_SPLIT = 1,
  ACT_DFLOW_MERGE = 2,
+ ACT_DFLOW_MIXER = 3,
+ ACT_DFLOW_ARBITER = 4
 };
 
 typedef struct  {

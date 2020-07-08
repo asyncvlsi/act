@@ -1786,8 +1786,18 @@ void dflow_print (FILE *fp, act_dataflow *d)
       break;
       
     case ACT_DFLOW_MERGE:
+    case ACT_DFLOW_MIXER:
+    case ACT_DFLOW_ARBITER:
       fprintf (fp, "{");
-      e->u.splitmerge.guard->Print (fp);
+      if (e->t == ACT_DFLOW_MERGE) {
+	e->u.splitmerge.guard->Print (fp);
+      }
+      else if (e->t == ACT_DFLOW_MIXER) {
+	fprintf (fp, "*");
+      }
+      else {
+	fprintf (fp, "|");
+      }
       fprintf (fp, "} ");
       for (int i=0; i < e->u.splitmerge.nmulti; i++) {
 	if (e->u.splitmerge.multi[i]) {
@@ -1802,6 +1812,10 @@ void dflow_print (FILE *fp, act_dataflow *d)
       }
       fprintf (fp, " -> ");
       e->u.splitmerge.single->Print (fp);
+      break;
+      
+    default:
+      fatal_error ("What?");
       break;
     }
     if (list_next (li)) {
@@ -1841,7 +1855,14 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
 
     case ACT_DFLOW_SPLIT:
     case ACT_DFLOW_MERGE:
-      f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
+    case ACT_DFLOW_MIXER:
+    case ACT_DFLOW_ARBITER:
+      if (e->u.splitmerge.guard) {
+	f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
+      }
+      else {
+	f->u.splitmerge.guard = NULL;
+      }
       f->u.splitmerge.nmulti = e->u.splitmerge.nmulti;
       MALLOC (f->u.splitmerge.multi, ActId *, f->u.splitmerge.nmulti);
       for (int i=0; i < f->u.splitmerge.nmulti; i++) {
@@ -1853,6 +1874,10 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
 	}
       }
       f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
+      break;
+
+    default:
+      fatal_error ("What?");
       break;
     }
     list_append (ret->dflow, f);

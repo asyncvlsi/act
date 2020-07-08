@@ -1715,21 +1715,34 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     OPT_FREE ($3);
     return e;
 }}
-| "{" expr_id "}" { expr_id_or_star "," }* "->" { expr_id_or_star "," }*
+| "{" expr_id_or_star_or_bar "}" { expr_id_or_star "," }* "->" { expr_id_or_star "," }*
 {{X:
     act_dataflow_element *e;
     listitem_t *li;
     list_t *l;
     NEW (e, act_dataflow_element);
     e->u.splitmerge.guard = $2;
-    if (act_type_var ($0->scope, $2, NULL) != T_CHAN) {
-      $e("Identifier in the condition of a dataflow expression must be of channel type");
-      fprintf ($f, "   ");
-      $2->Print ($f);
-      fprintf ($f, "\n");
-      exit (1);
+    if ($2) {
+      if (act_type_var ($0->scope, $2, NULL) != T_CHAN) {
+	$e("Identifier in the condition of a dataflow expression must be of channel type");
+	fprintf ($f, "   ");
+	$2->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+    }
+    else {
+      if ($0->non_det) {
+	e->t = ACT_DFLOW_ARBITER;
+      }
+      else {
+	e->t = ACT_DFLOW_MIXER;
+      }
     }
     if (list_length ($4) == 1) {
+      if (!$2) {
+	$E("A split requires a control channel specifier");
+      }
       if (list_length ($6) < 2) {
 	$E("RHS needs more than one item for a split");
       }
@@ -1746,10 +1759,12 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
 	$E("RHS has to be one item for a merge");
       }
       l = $4;
-      e->t = ACT_DFLOW_MERGE;
+      if ($2) {
+	e->t = ACT_DFLOW_MERGE;
+      }
       e->u.splitmerge.single = (ActId *) list_value (list_first ($6));
       if (!e->u.splitmerge.single) {
-	$E("Can't merge from `*'");
+	$E("Can't merge to `*'");
       }
       list_free ($6);
     }
@@ -1774,6 +1789,11 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
 	  exit (1);
 	}
       }
+      else {
+	if (e->t != ACT_DFLOW_SPLIT) {
+	  $E("Can't use ``*'' specifier for any type of merge");
+	}
+      }
       li = list_next (li);
     }
     list_free (l);
@@ -1787,6 +1807,18 @@ expr_id_or_star[ActId *]: expr_id
 }}
 | "*"
 {{X:
+    return NULL;
+}}
+;
+
+expr_id_or_star_or_bar[ActId *]: expr_id_or_star
+{{X:
+    $0->non_det = 0;
+    return $1;
+}}
+| "|"
+{{X:
+    $0->non_det = 1;
     return NULL;
 }}
 ;

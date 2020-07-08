@@ -1,0 +1,10 @@
+defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
+{                                                      
+  chan(bool) OUT1;
+  chan(bool) tmp;
+  dataflow {                                          
+    A > B -> tmp;
+    A > B -> OUT1;
+   {tmp} OUT1 -> *, OUT
+  }                                                    
+}                                                      
