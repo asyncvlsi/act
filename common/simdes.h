@@ -61,7 +61,7 @@ class SimDES;
  * Events: used to make forward progress in the simulation
  *
  *  Events have
- *       - event_type: the type of the event
+ *       - event_type: the type of the event (also called ev_type below)
  *       - delay (relative to the current time)
  *       - object: the object whose event of type "event_type" has to
  *                 be executed
@@ -157,7 +157,7 @@ class SimDES {
 
       (tm_offset[]) + curtime
   */
-  static unsigned long long CurTimeLo (); // low order bits of the current time
+  static unsigned long CurTimeLo (); // low order bits of the current time
   static SimDES *CurObj () { return curobj; }
 
 protected:

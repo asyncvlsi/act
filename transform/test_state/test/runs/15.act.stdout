@@ -3,7 +3,7 @@
   portbools: 3
 --- End Process: nand2<> ---
 --- Process: foo<> ---
-   nbools = 2, nvars = 2
+   nbools = 2, nvars = 0
   localbools: 2
   portbools: 3
   ismulti: 0

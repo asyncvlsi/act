@@ -92,14 +92,24 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   int chp_count = 0;
 
   /* count non-global variables that are used */
+  int alt_portbools = 0;
+  int alt_portchp = 0;
   for (int i=0; i < b->cH->size; i++) {
     for (ihash_bucket_t *hb = b->cH->head[i]; hb; hb = hb->next) {
       act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
-      if (v->usedchp && !v->isglobal) {
-	chp_count++;
-      }
       if (v->used && !v->isglobal) {
 	bool_count++;
+	if (v->isport) {
+	  alt_portbools++;
+	}
+      }
+      if (!v->used && v->usedchp && !v->isglobal) {
+	/* variables that are used in chp that are not used in the
+	   booleanized version */
+	chp_count++;
+	if (v->ischpport) {
+	  alt_portchp++;
+	}
       }
     }
   }
@@ -111,17 +121,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   si->map = NULL;
   si->imap = NULL;
   si->ismulti = 0;
-  si->nportbools = 0;
+  si->nportbools = alt_portbools;
 
   /* init for hse/prs mode: only track bools */
-  nvars = bool_count;
-  for (int i=0; i < A_LEN (b->ports); i++) {
-    if (b->ports[i].omit) continue;
-    nvars--;
-    si->nportbools++;
-  }
-  si->localbools = nvars;
-  
+  si->localbools = bool_count - si->nportbools;
 
   /* init for chp mode: bools, ints, chans; note that fractured ints
      are tracked as fractured ints. */
@@ -129,14 +132,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   si->chp_ismulti = 0;
   si->nportchp = 0;
   si->chpmap = NULL;
-
-  nvars = chp_count;
-  for (int i=0; i < A_LEN (b->chpports); i++) {
-    if (b->chpports[i].omit) continue;
-    nvars--;
-    si->nportchp++;
-  }
-  si->localchp = nvars;
+  si->nportchp = alt_portchp;
+  si->localchp = chp_count - alt_portchp;
 
 #if 0
   printf ("%s: start \n", p->getName());
@@ -248,16 +245,24 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 #endif      
       }
       
-      if (v->usedchp) {
-	/* chp state */
+      if (!v->used && v->usedchp) {
+	/* extra chp state */
 	if (v->ischpport) {
 	  for (int k=0; k < A_LEN (b->chpports); k++) {
-	    if (b->ports[k].omit) continue;
+	    if (b->chpports[k].omit) continue;
 	    if (ib->key == (long)b->chpports[k].c) {
 	      found = 1;
 	      break;
 	    }
-	    ocount++;
+	    {
+	      ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
+	      act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
+	      if (!xv->used) {
+		/* if it is used in the boolean pass, it's already
+		   counted there */
+		ocount++;
+	      }
+	    }
 	  }
 	  Assert (found, "What?");
 	  si->chpv[ocount] = v;
@@ -517,8 +522,16 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
 	      /* -- ignore globals -- */
 	      if (c->isglobal()) continue;
+
+	      ihash_bucket_t *xb = ihash_lookup (b->cH, (long)c);
+	      if (xb) {
+		act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
+		if (xv->used) {
+		/* handled in earlier pass */
+		  continue;
+		}
+	      }
 		
-	      
 	      bi = ihash_lookup (si->chpmap, (long)c);
 	      if (bi) {
 		ocount = bi->i + si->nportchp;

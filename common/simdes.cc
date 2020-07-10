@@ -104,7 +104,7 @@ Event::~Event () { }
 /*
  * Return the low order bits of the current simulation time
  */
-unsigned long long SimDES::CurTimeLo() 
+unsigned long SimDES::CurTimeLo() 
 {
   return tm_offset[0] + curtime;
 }

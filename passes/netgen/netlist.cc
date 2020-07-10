@@ -264,6 +264,7 @@ static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
   vi->stateholding = 0;
   vi->usecf = 0;
   vi->inv = NULL;
+  vi->extra = NULL;
 
   vi->v = v;
 

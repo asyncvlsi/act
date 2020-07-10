@@ -72,6 +72,7 @@ struct act_nl_varinfo {
   struct node *inv;		/* var is an input to an inverter
 				   whose output is inv */
 
+  void *extra;			/* space for rent */
 };
 
 /* transistor-level netlist graph */

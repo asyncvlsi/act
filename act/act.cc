@@ -824,6 +824,11 @@ int Act::getLevel ()
 int Act::getLevel (Process *p)
 {
   int lev;
+
+  if (!p) {
+    return -1;
+  }
+  
   for (lev = 0; lev < ACT_MODEL_TOTAL; lev++) {
     for (int i=0; i < num_type_levels[lev]; i++) {
       if (strncmp (type_levels[lev][i],
@@ -832,7 +837,7 @@ int Act::getLevel (Process *p)
       }
     }
   }
-  return default_level;
+  return -1;
 }
 
 int Act::getLevel (ActId *id)
@@ -840,7 +845,9 @@ int Act::getLevel (ActId *id)
   char buf[10240];
   int lev;
   
-  if (!id) return default_level;
+  if (!id) {
+    return -1;
+  }
   
   id->sPrint (buf, 10240);
   
@@ -852,5 +859,5 @@ int Act::getLevel (ActId *id)
       }
     }
   }
-  return default_level;
+  return -1;
 }
