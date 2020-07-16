@@ -75,11 +75,13 @@ class SimDES;
  *       internal delay (Pause).
  * 
  */
-#define SIM_EV_INIT   0
-#define SIM_EV_WAKEUP 1
-#define SIM_EV_DELAY  2
-#define SIM_EV_REST   3
-#define SIM_EV_MAX    31
+#define SIM_EV_TYPE(x)   ((x) >> 1)
+#define SIM_EV_FLAGS(x)  ((x) & 0x1)
+#define SIM_EV_MKTYPE(x,flag)  (((x) << 1) | (flag))
+
+/* flags */
+#define SIM_EV_FLAG_WAKEUP 0x1
+#define SIM_EV_MAX    63
 
 class Event {
 public:
@@ -98,7 +100,8 @@ public:
 private:
   unsigned int kill:1;		// set to 1 to make this an event that
 				// is discarded
-  unsigned int ev_type:6;	// ditto
+  
+  unsigned int ev_type:6;	// event type
 
   SimDES *obj;		// information about the event (see above)
 
@@ -148,6 +151,8 @@ class SimDES {
   static Event *AdvanceTime (int delay); // run all events upto
 				       // specified delay in the future
 
+
+  static int isEmpty() { return initialized_sim ? 0 : 1; }
   /*
     The current time is represented in the simulation by an array of
     SIM_TIME_SIZE 64-bit values.
@@ -162,7 +167,7 @@ class SimDES {
 
 protected:
   unsigned int break_point:2;	// set a breakpoint on this object
-  unsigned int bp_ev_type:6; // event type for breakpoint, if required
+  unsigned int bp_ev_type:6;    // event type for breakpoint, if required
 
 private:
   static SimDES *curobj;	// current object being stepped
@@ -198,7 +203,7 @@ public:
       return 1 if the condition should be released
       return 0 otherwise
    */
-  virtual int Notify (int slot) = 0;	// generic notifier
+  virtual int Notify (int ev_type, int slot) = 0;	// generic notifier
 
   void AddObject (SimDES *s);	// add me to the list of things
 				// that have to be invoked when
@@ -212,7 +217,7 @@ public:
 				// objects, 0 otherwise
 
 protected:
-  void Wakeup (int delay = 0);
+  void Wakeup (int ev_type, int delay = 0);
 
 private:
   list_t *waiting_objects;
@@ -223,8 +228,11 @@ public:
   WaitForAll (int slots, int delay = 0);
   ~WaitForAll ();
 
-  int Notify  (int slot);	// slot is complete
-  void ReInit ();		// re-initialize
+  int Notify  (int ev_type, int slot); // slot is complete
+  int NotifyAny (int ev_type);	       // counting notification (not
+				       // slot based)
+  
+  void ReInit ();		       // re-initialize
 
 private:
   int delay;

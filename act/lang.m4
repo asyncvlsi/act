@@ -114,7 +114,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
       r = OPT_VALUE ($4);
       $A(r->type == R_CHP_LANG);
       NEW (chp, act_chp);
-      chp->next = NULL;
+      //chp->next = NULL;
       chp->c = r->u.chp;
       FREE (r);
       chp->vdd = $0->supply.vdd;
@@ -150,7 +150,7 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}"
       r = OPT_VALUE ($4);
       $A(r->type == R_CHP_LANG);
       NEW (chp, act_chp);
-      chp->next = NULL;
+      //chp->next = NULL;
       chp->c = r->u.chp;
       FREE (r);
       chp->vdd = $0->supply.vdd;

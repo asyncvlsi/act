@@ -62,11 +62,26 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
 
   b = ihash_lookup (n->cH, (long)c);
   if (!b) {
+    act_booleanized_var_t *v;
     b = ihash_add (n->cH, (long)c);
-    b->v = var_alloc (n, c);
+    v = var_alloc (n, c);
+    b->v = v;
     if (c->isglobal()) {
-      ((act_booleanized_var_t *)b->v)->isglobal = 1;
+      v->isglobal = 1;
     }
+    ActId *tmp = c->toid();
+    InstType *xit;
+    act_type_var (n->cur, tmp, &xit);
+    if (TypeFactory::isChanType (xit)) {
+      v->ischan = 1;
+      v->width = TypeFactory::bitWidth (xit);
+    }
+    else if (TypeFactory::isIntType (xit)) {
+      v->isint = 1;
+      v->width = TypeFactory::bitWidth (xit);
+    }
+    delete xit;
+    delete tmp;
   }
   return (act_booleanized_var_t *)b->v;
 }
@@ -251,8 +266,26 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
     generate_expr_vars (N, e->u.e.l, ischp);
     break;
 
-  case E_QUERY:
   case E_BITFIELD:
+    {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, (ActId *)e->u.e.l);
+      v->input = 1;
+      if (ischp) {
+	v->usedchp = 1;
+      }
+      else {
+	v->used = 1;
+      }
+      v->isint = 1;
+    }
+    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
+    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
+    generate_expr_vars (N, e->u.e.r->u.e.l, ischp);
+    generate_expr_vars (N, e->u.e.r->u.e.r, ischp);
+    break;
+
+  case E_QUERY:
     generate_expr_vars (N, e->u.e.l, ischp);
     Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
     Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
@@ -405,6 +438,19 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     break;
 
   case ACT_CHP_SEND:
+    {
+      act_booleanized_var_t *v;
+      listitem_t *li;
+      v = var_lookup (N, c->u.comm.chan);
+      Assert (v, "What?");
+      v->usedchp = 1;
+      v->output = 1;
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	generate_expr_vars (N, (Expr *) list_value (li), 1);
+      }
+    }
+    break;
+
   case ACT_CHP_RECV:
     {
       act_booleanized_var_t *v;
@@ -412,14 +458,12 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
       v->usedchp = 1;
-      if (c->type == ACT_CHP_SEND) {
-	v->output = 1;
-      }
-      else {
-	v->input = 1;
-      }
+      v->input = 1;
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	generate_expr_vars (N, (Expr *) list_value (li), 1);
+	v = var_lookup (N, (ActId *) list_value (li));
+	Assert (v, "what?");
+	v->usedchp = 1;
+	v->output = 1;
       }
     }
     break;
@@ -525,7 +569,7 @@ static void process_prs_lang (act_boolean_netlist_t *N, act_prs *p)
 
 static void process_hse_lang (act_boolean_netlist_t *N, act_chp *c)
 {
-  while (c) {
+  if (c) {
     if (c->vdd) {
       act_booleanized_var_t *v = var_lookup (N, c->vdd);
       v->used = 1;
@@ -548,13 +592,13 @@ static void process_hse_lang (act_boolean_netlist_t *N, act_chp *c)
     }
     generate_hse_vars (N, c->c);
     N->isempty = 0;
-    c = c->next;
+    //c = c->next;
   }
 }
 
 static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
 {
-  while (c) {
+  if (c) {
     if (c->vdd) {
       act_booleanized_var_t *v = var_lookup (N, c->vdd);
       v->usedchp = 1;
@@ -577,7 +621,7 @@ static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
     }
     generate_chp_vars (N, c->c);
     N->isempty = 0;
-    c = c->next;
+    //c = c->next;
   }
 }
 

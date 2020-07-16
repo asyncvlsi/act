@@ -1348,6 +1348,20 @@ int expr_is_a_const (Expr *e)
   return 0;
 }
 
+Expr *expr_dup_const (Expr *e)
+{
+  Assert (expr_is_a_const (e), "What?");
+  if (e->type != E_REAL) {
+    return e;
+  }
+  else {
+    Expr *ret;
+    NEW (ret, Expr);
+    *ret = *e;
+    return ret;
+  }
+}
+
 
 /*------------------------------------------------------------------------
  *

@@ -39,7 +39,7 @@
  */
 
 struct chp_offsets {
-  int bools;
+  int bools; // extra bools for chp, if any
   int chans;
   int ints;
 };
@@ -48,9 +48,8 @@ typedef struct {
   int nportbools;		// # of port bools [not omitted]
 
   int localbools;		// total number of Booleans needed for
-				// local state: bits + elaborated int
-				// + elaborated channel state
-
+				// local state:
+  
   /*-- 
     Boolean variables are numbered
       0 ... nportbools-1 ... (nportbools + localbools - 1)
@@ -83,28 +82,24 @@ typedef struct {
     Analogous quantities for CHP level of abstraction
     --*/
   
-  int nportchp;			// # of chp variables in the port [not
+  chp_offsets nportchp;		// # of chp variables in the port [not
 				// omitted]
+  int nportchptot;
 
+  chp_offsets chp_all;
   int localchp;			// local chp variables
+  
 
   bitset_t *chpmulti;		// 1 if multi-driver at the CHP level
-
-  act_booleanized_var_t **chpv;	// map to var info from variable ID
-				// for chp: size if nportchp +
-				// localchp
-
   int chp_ismulti;		// multidriver through CHP
 
-  struct iHashtable *chpmap;	// connection * to unique integer
-				// (bool/int/chan)
+  struct iHashtable *chpmap;	// connection * to index for
+				// bool/int/chan: note: idx is not unique!
+  
 
   struct iHashtable *cmap;	// map from ValueIdx pointer to chp
 				// offsets
   
-  int chp_allbool;
-  int chp_allint;
-  int chp_allchan;
 
 } stateinfo_t;
 
@@ -118,6 +113,7 @@ public:
   void Print (FILE *fp, Process *p = NULL);
 
   stateinfo_t *getStateInfo (Process *p);
+  ActBooleanizePass *getBooleanize () { return bp; }
 
 private:
   void *local_op (Process *p, int mode = 0);

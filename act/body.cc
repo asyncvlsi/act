@@ -1244,7 +1244,11 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   case ActBody_Lang::LANG_CHP:
     if (!in_refinement) {
       c = chp_expand ((act_chp *)lang, ns, s);
-      c->next = all_lang->getchp();
+      if (all_lang->getchp()) {
+	act_error_ctxt (stderr);
+	fatal_error ("Only one chp body permitted");
+      }
+      //c->next = all_lang->getchp();
       all_lang->setchp (c);
     }
     else {
@@ -1255,7 +1259,11 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   case ActBody_Lang::LANG_HSE:
     if (!in_refinement) {
       c = chp_expand ((act_chp *)lang, ns, s);
-      c->next = all_lang->gethse();
+      if (all_lang->gethse()) {
+	act_error_ctxt (stderr);
+	fatal_error ("Only one hse body permitted");
+      }
+      //c->next = all_lang->gethse();
       all_lang->sethse (c);
     }
     else {

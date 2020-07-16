@@ -1359,21 +1359,21 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 
 void chp_print (FILE *fp, act_chp *chp)
 {
-  while (chp) {
+  if (chp) {
     fprintf (fp, "chp {\n");
     chp_print (fp, chp->c);
     fprintf (fp, "\n}\n");
-    chp = chp->next;
+    //chp = chp->next;
   }
 }
 
 void hse_print (FILE *fp, act_chp *chp)
 {
-  while (chp) {
+  if (chp) {
     fprintf (fp, "hse {\n");
     chp_print (fp, chp->c);
     fprintf (fp, "\n}\n");
-    chp = chp->next;
+    //chp = chp->next;
   }
 }
 

@@ -133,8 +133,6 @@ Event *SimDES::Run ()
     /* execute event */
     if (!ev->kill) {
       if (IS_A_BREAKPOINT (ev)) {
-	/* put the event back */
-	heap_insert (all, tm, ev);
 	break;
       }
       curobj = ev->obj;
@@ -227,7 +225,7 @@ Event *SimDES::AdvanceTime (int delay)
 void SimDES::Pause (int delay)
 {
   /* create an event */
-  new Event (this, SIM_EV_DELAY, delay);
+  new Event (this, 0, delay);
 }
 
 
@@ -254,13 +252,13 @@ void Condition::AddObject (SimDES *s)
 }
 
 /* we're done, notify all objects */
-void Condition::Wakeup (int delay)
+void Condition::Wakeup (int ev_type, int delay)
 {
   SimDES *s;
 
   while (!list_isempty (waiting_objects)) {
     s = (SimDES *)list_delete_tail (waiting_objects);
-    new Event (s, SIM_EV_WAKEUP, delay);
+    new Event (s, SIM_EV_MKTYPE (ev_type,SIM_EV_FLAG_WAKEUP), delay);
   }
 }
 
@@ -304,16 +302,34 @@ WaitForAll::~WaitForAll ()
  * Returns 1 if the wait is satisfied, which says that the storage for
  * the wait can now be released.
  */
-int WaitForAll::Notify (int n)
+int WaitForAll::Notify (int ev_type, int n)
 {
   if (!bitset_tst (slot_state, n)) {
     bitset_set (slot_state, n);
     num--;
     if (num == 0) {
       /* let all the waiting objects know we're ready to go */
-      Wakeup (delay);
+      Wakeup (ev_type, delay);
       return 1;
     }
+  }
+  return 0;
+}
+
+
+/*
+ * Another slot is ready. Take the appropriate action.
+ *
+ * Returns 1 if the wait is satisfied, which says that the storage for
+ * the wait can now be released.
+ */
+int WaitForAll::NotifyAny (int ev_type)
+{
+  num--;
+  if (num == 0) {
+    /* let all the waiting objects know we're ready to go */
+    Wakeup (ev_type, delay);
+    return 1;
   }
   return 0;
 }
