@@ -525,6 +525,64 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     return T_ERR;
     break;
 
+  case E_BUILTIN_BOOL:
+    lt = act_type_expr (s, e->u.e.l, width, only_chan);
+    if (lt == T_ERR) return T_ERR;
+    if (lt & (T_BOOL|T_ARRAYOF|T_REAL)) {
+      typecheck_err ("bool(.) requires an integer argument");
+      return T_ERR;
+    }
+    if (lt & T_INT) {
+      return (lt & ~T_INT) | T_BOOL;
+    }
+    typecheck_err ("Invalid use of bool(.)");
+    return T_ERR;
+    break;
+    
+  case E_BUILTIN_INT:
+    lt = act_type_expr (s, e->u.e.l, width, only_chan);
+    if (lt & T_ARRAYOF) {
+      typecheck_err ("int(.) can't accept array arguments");
+      return T_ERR;
+    }
+    if (lt & T_REAL) {
+      typecheck_err ("int(.) can't accept real arguments");
+      return T_ERR;
+    }
+    if (lt & T_BOOL) {
+      if (e->u.e.r) {
+	typecheck_err ("int(.) with a Boolean argument doesn't accept second arg");
+	return T_ERR;
+      }
+      if (width) {
+	*width = 1;
+      }
+      return T_INT;
+    }
+    if (lt & T_INT) {
+      if (!e->u.e.r) {
+	typecheck_err ("int(.) with int argument requires width argument:");
+	return T_ERR;
+      }
+      rt = act_type_expr (s, e->u.e.l, NULL, only_chan);
+      if (!(rt & T_INT) || !(rt & T_PARAM) || !(rt & T_ARRAYOF)) {
+	typecheck_err ("int(.): second argument has to be an int parameter");
+	return T_ERR;
+      }
+      if (expr_is_a_const (e->u.e.r)) {
+	if (width) {
+	  *width = e->u.e.r->u.v;
+	}
+      }
+      else {
+	*width = 32;
+      }
+      return T_INT;
+    }
+    typecheck_err ("int(.) takes only an int or bool argument");
+    return T_ERR;
+    break;
+    
     /* UMMMM */
   case E_FUNCTION:
     /* typecheck all arguments; then return result type */

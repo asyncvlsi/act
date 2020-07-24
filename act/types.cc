@@ -513,7 +513,21 @@ static int expr_hash (int sz, Expr *w, int prev)
     break;
 
   case E_FUNCTION:
-    fatal_error ("Fix this please");
+    prev = hash_function_continue
+      (sz, (const unsigned char *)&w->u.fn.s, sizeof (UserDef *), prev, 1);
+    {
+      Expr *x = w->u.fn.r;
+      while (x) {
+	prev = expr_hash (sz, x->u.e.l, prev);
+	x = x->u.e.r;
+      }
+    }
+    break;
+
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    prev = expr_hash (sz, w->u.e.l, prev);
+    prev = expr_hash (sz, w->u.e.r, prev);
     break;
 
     /* leaf */

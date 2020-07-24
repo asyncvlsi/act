@@ -278,6 +278,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     snprintf (buf+k, sz, "self");
     PRINT_STEP;
     return;
+    break;
 
   case E_TYPE:
     {
@@ -286,7 +287,34 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
       PRINT_STEP;
     }
     return;
+    break;
 
+  case E_BUILTIN_BOOL:
+    snprintf (buf+k, sz, "bool(");
+    PRINT_STEP;
+    sprint_expr (buf+k, sz, e->u.e.l);
+    PRINT_STEP;
+    snprintf (buf+k, sz, ")");
+    PRINT_STEP;
+    return;
+    break;
+
+  case E_BUILTIN_INT:
+    snprintf (buf+k, sz, "int(");
+    PRINT_STEP;
+    sprint_expr (buf+k, sz, e->u.e.l);
+    PRINT_STEP;
+    if (e->u.e.r) {
+      snprintf (buf+k, sz, ",");
+      PRINT_STEP;
+      sprint_expr (buf+k, sz, e->u.e.r);
+      PRINT_STEP;
+    }
+    snprintf (buf+k, sz, ")");
+    PRINT_STEP;
+    return;
+    break;
+    
   case E_FUNCTION:
     {
       UserDef *u = (UserDef *)e->u.fn.s;
@@ -462,6 +490,17 @@ int expr_equal (Expr *a, Expr *b)
     return 1;
     break;
 
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    if (!expr_equal (a->u.e.l, b->u.e.l)) {
+      return 0;
+    }
+    if (!expr_equal (a->u.e.r, b->u.e.r)) {
+      return 0;
+    }
+    return 1;
+    break;
+    
   case E_FUNCTION:
     if (a->u.fn.s != b->u.fn.s) return 0;
     {
@@ -1253,7 +1292,6 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       //FREE (hi);
       ret->type = E_INT;
       ret->u.v = v;
-
       tmp = TypeFactory::NewExpr (ret);
       FREE (ret);
       ret = tmp;
@@ -1265,6 +1303,61 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
     break;
 
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    LVAL_ERROR;
+    ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
+    if (!e->u.e.r) {
+      ret->u.e.r = NULL;
+      if (expr_is_a_const (ret->u.e.l)) {
+	if (ret->type == E_BUILTIN_BOOL) {
+	  if (ret->u.e.l->u.v) {
+	    ret->type = E_TRUE;
+	    tmp = TypeFactory::NewExpr (ret);
+	    FREE (ret);
+	    ret = tmp;
+	  }
+	  else {
+	    ret->type = E_FALSE;
+	    tmp = TypeFactory::NewExpr (ret);
+	    FREE (ret);
+	    ret = tmp;
+	  }
+	}
+	else {
+	  if (ret->u.e.l->type == E_TRUE) {
+	    ret->type = E_INT;
+	    ret->u.v = 1;
+	    tmp = TypeFactory::NewExpr (ret);
+	    FREE (ret);
+	    ret = tmp;
+	  }
+	  else {
+	    ret->type = E_INT;
+	    ret->u.v = 0;
+	    tmp = TypeFactory::NewExpr (ret);
+	    FREE (ret);
+	    ret = tmp;
+	  }
+	}
+      }
+    }
+    else {
+      ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
+      if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+	unsigned long x = ret->u.e.l->u.v;
+	int width = ret->u.e.r->u.v;
+	x = x & (~(1 << width));
+
+	ret->type = E_INT;
+	ret->u.v = x;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
+      }
+    }
+    break;
+    
   case E_FUNCTION:
     LVAL_ERROR;
     _eval_function (ns, s, e, &ret);

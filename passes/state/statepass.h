@@ -45,6 +45,9 @@ struct chp_offsets {
 };
 
 typedef struct {
+  act_boolean_netlist_t *bnl;	// the basis for this calculation
+
+  
   int nportbools;		// # of port bools [not omitted]
 
   int localbools;		// total number of Booleans needed for
@@ -70,14 +73,12 @@ typedef struct {
 				// process (minus its ports)
 
   struct iHashtable *map;	// map from connection pointer to
-				// unique integer from 0 .. totbools-1
-                                // chp connection pointers also map to
-				// unique id
+				// unique integer from 0 .. localbools-1
+                                // for local booleans.
+                                // For port bools, negative numbers
+				// numbered from -nportbools to -1.
   
   
-  struct iHashtable *imap;	// map from ValueIdx pointer to bool
-				// offset
-
   /*--
     Analogous quantities for CHP level of abstraction
     --*/
@@ -96,11 +97,6 @@ typedef struct {
   struct iHashtable *chpmap;	// connection * to index for
 				// bool/int/chan: note: idx is not unique!
   
-
-  struct iHashtable *cmap;	// map from ValueIdx pointer to chp
-				// offsets
-  
-
 } stateinfo_t;
 
 class ActStatePass : public ActPass {
@@ -113,7 +109,13 @@ public:
   void Print (FILE *fp, Process *p = NULL);
 
   stateinfo_t *getStateInfo (Process *p);
-  ActBooleanizePass *getBooleanize () { return bp; }
+
+  /* type: 0 = bool, 1 = int, 2 = chan */
+  /* return 0 on error */
+  int getTypeOffset (stateinfo_t *si,
+		     act_connection *c,
+		     int *offset,
+		     int *type);
 
 private:
   void *local_op (Process *p, int mode = 0);

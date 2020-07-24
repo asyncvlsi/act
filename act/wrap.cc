@@ -309,6 +309,17 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     /* e->u.e.r is the bitfield... const expression */
     break;
 
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
+    if (e->u.e.r) {
+      ret->u.e.r = act_walk_X_expr (cookie, e->u.e.r);
+    }
+    else {
+      ret->u.e.r = NULL;
+    }
+    break;
+
   case E_FUNCTION:
     /* we lookup the function in scope! */
     {

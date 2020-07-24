@@ -24,14 +24,17 @@
 #include <misc.h>
 #include <string.h>
 
-/*--- replicated here ---*/
+/*--- WARNING: replicated here ---*/
 
 #define E_ANDLOOP (E_END + 21) 
 #define E_ORLOOP (E_END + 22)
+#define E_BUILTIN_BOOL (E_END + 23)
+#define E_BUILTIN_INT  (E_END + 24)
 
 
 static int tokand, tokor, lpar, rpar, ddot, colon;
 static int double_colon, comma;
+static int inttok, booltok;
 
 
 static void do_init (LFILE *l)
@@ -46,6 +49,8 @@ static void do_init (LFILE *l)
     colon = expr_gettoken (E_COLON);
     double_colon = file_addtoken (l, "::");
     comma = file_addtoken (l, ",");
+    inttok = file_addtoken (l, "int");
+    booltok = file_addtoken (l, "bool");
     init = 1;
   }
 }
@@ -75,6 +80,8 @@ static Expr *_parse_expr_func (LFILE *l)
     int sz, len, k;
     NEW (e, Expr);
     e->type = E_FUNCTION;
+    e->u.e.l = NULL;
+    e->u.e.r = NULL;
 
     k = 0;
     sz = 10239;
@@ -216,6 +223,63 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
       return NULL;
     }
   }
+  else if (file_have_keyw (l, "bool")) {
+    if (!file_have (l, lpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e, Expr);
+    e->type = E_BUILTIN_BOOL;
+    e->u.e.l = expr_parse_int (l);
+    e->u.e.r = NULL;
+    if (!e->u.e.l) {
+      FREE (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      expr_free (e);
+      return NULL;
+    }
+  }
+  else if (file_have_keyw (l, "int")) {
+    if (!file_have (l, lpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e, Expr);
+    e->type = E_BUILTIN_INT;
+    e->u.e.l = expr_parse_any (l);
+    e->u.e.r = NULL;
+    if (!e->u.e.l) {
+      FREE (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      if (file_have (l, comma)) {
+	e->u.e.r = expr_parse_int (l);
+      }
+      if (!e->u.e.r) {
+	file_set_position (l);
+	file_pop_position (l);
+	expr_free (e);
+	return NULL;
+      }
+      if (!file_have (l, rpar)) {
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+    }
+  }
   else if (!(e = _parse_expr_func (l))) {
     file_set_position (l);
     file_pop_position (l);
@@ -245,5 +309,6 @@ int act_expr_parse_newtokens (LFILE *l)
 {
   do_init(l);
 
-  return (file_sym (l) == double_colon);
+  return (file_sym (l) == double_colon || file_sym (l) == inttok ||
+	  file_sym (l) == booltok);
 }

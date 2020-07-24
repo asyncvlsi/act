@@ -39,14 +39,15 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
 
   NEW (v, act_booleanized_var_t);
   v->id = c;
+  v->input = 0;
+  v->output = 0;
   v->used = 0;
   v->ischan = 0;
   v->isint = 0;
-  v->input = 0;
-  v->output = 0;
   v->usedchp = 0;
   v->isglobal = 0;
   v->isport = 0;
+  v->ischpport = 0;
   v->extra = NULL;
   return v;
 }

@@ -1,0 +1,12 @@
+defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
+{                                                      
+  chan(bool) OUT1;
+  chan(bool) tmp;
+  int x;
+  bool y;
+  chp {                                          
+    *[ A?x; OUT!int(y) ]
+  }                                                    
+}                                                      
+
+testme t;

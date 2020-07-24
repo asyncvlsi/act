@@ -803,9 +803,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 /* 
    For loops:
       e->l->l = id, e->r->l = lo, e->r->r->l = hi, e->r->r->r = expr
+
+      WARNING: replicated in expr_extra.c
 */
 #define E_ANDLOOP (E_END + 21) 
 #define E_ORLOOP (E_END + 22)
+#define E_BUILTIN_BOOL (E_END + 23)
+#define E_BUILTIN_INT  (E_END + 24)
 
 /*
   Push expansion context 
