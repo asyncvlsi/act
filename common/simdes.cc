@@ -360,3 +360,38 @@ void Event::operator delete (void *v)
   e->next = Event::ev_queue;
   Event::ev_queue = e;
 }
+
+
+/*
+ * Condition corresponding to waiting for all of "slots"
+ * sub-conditions to be true.
+ */
+WaitForOne::WaitForOne (int _delay)
+{
+  delay = _delay;
+}
+
+void WaitForOne::ReInit ()
+{
+  Condition::ReInit ();
+}
+
+
+WaitForOne::~WaitForOne ()
+{
+}
+
+/*
+ * Slot "n" is now ready. Take the appropriate action.
+ *
+ * Returns 1 if the wait is satisfied, which says that the storage for
+ * the wait can now be released.
+ */
+int WaitForOne::Notify (int ev_type)
+{
+  /* let all the waiting objects know we're ready to go */
+  Wakeup (ev_type, delay);
+  return 1;
+}
+
+int WaitForOne::Notify (int ev_type, int slot) { Notify (ev_type); }

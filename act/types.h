@@ -810,6 +810,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 #define E_ORLOOP (E_END + 22)
 #define E_BUILTIN_BOOL (E_END + 23)
 #define E_BUILTIN_INT  (E_END + 24)
+#define E_NEWEND  E_END + 25
 
 /*
   Push expansion context 

@@ -241,6 +241,24 @@ private:
   bitset_t *slot_state;
 };
 
+class WaitForOne : public Condition {
+public:
+  WaitForOne (int delay = 0);
+  ~WaitForOne ();
+
+  int Notify  (int ev_type, int slot); // to make this not virtual
+  int Notify  (int ev_type);	// slot is complete
+  
+  void ReInit ();		       // re-initialize
+
+private:
+  int delay;
+};
+
+
+
+
+
 #define STANDARD_SIM_TEMPLATE			\
    void Print (FILE *fp) { }			\
    int Init ();					\

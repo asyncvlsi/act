@@ -84,6 +84,10 @@ typedef struct expr {
       char *s;
       struct expr *r;
     } fn;
+    struct {
+      unsigned int val;
+      unsigned int extra;
+    } x;
     double f;
     unsigned int v;
   } u;
