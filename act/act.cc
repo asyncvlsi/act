@@ -387,6 +387,8 @@ Act::Act (const char *s)
   tr.attr_num = config_get_table_size ("act.instance_attr");
   tr.attr_table = config_get_table_string ("act.instance_attr");
 
+  tr.sizing_info = NULL;
+
   tr.emit_depend = Act::emit_depend;
   tr.in_cond = 0;
 
@@ -551,6 +553,7 @@ void Act::Merge (const char *s)
   tr.u_d = NULL;
   tr.u_c = NULL;
   tr.u_f = NULL;
+  tr.u_i = NULL;
   tr.t = NULL;
 
   tr.t_inst = NULL;
@@ -574,9 +577,18 @@ void Act::Merge (const char *s)
 
   tr.sizing_info = NULL;
 
+  tr.in_cond = 0;
+  tr.ptype_expand = 0;
+  tr.ptype_name = NULL;
+  
+
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
 #endif
+
+  expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
+  expr_parse_basecase_num = act_parse_expr_intexpr_base;
+  expr_parse_newtokens = act_expr_parse_newtokens;
 
   a = act_parse (s);
 
