@@ -1401,11 +1401,7 @@ func_body_items[ActBody *]: { alias_or_inst ";" }* lang_chp
 }}
 ;
 
-alias_or_inst[ActBody *]: alias
-{{X:
-    return $1;
-}}
-| instance
+alias_or_inst[ActBody *]: instance
 {{X:
     return $1;
 }}

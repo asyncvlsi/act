@@ -329,6 +329,7 @@ int WaitForAll::NotifyAny (int ev_type)
   if (num == 0) {
     /* let all the waiting objects know we're ready to go */
     Wakeup (ev_type, delay);
+    ReInit ();
     return 1;
   }
   return 0;
@@ -391,7 +392,8 @@ int WaitForOne::Notify (int ev_type)
 {
   /* let all the waiting objects know we're ready to go */
   Wakeup (ev_type, delay);
+  ReInit ();
   return 1;
 }
 
-int WaitForOne::Notify (int ev_type, int slot) { Notify (ev_type); }
+int WaitForOne::Notify (int ev_type, int slot) { return Notify (ev_type); }
