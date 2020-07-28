@@ -389,9 +389,14 @@ chp_log_item[act_func_arguments_t *]: w_expr
 |  STRING
 {{X:
     act_func_arguments_t *arg;
+    char *tmp;
     NEW (arg, struct act_func_arguments);
     arg->isstring = 1;
-    arg->u.s = string_create ($1);
+    MALLOC (tmp, char, strlen ($1)-1);
+    strncpy (tmp, $1+1, strlen ($1)-2);
+    tmp[strlen($1)-1] = '\0';
+    arg->u.s = string_create (tmp);
+    FREE (tmp);
     return arg;
 }}
 ;
