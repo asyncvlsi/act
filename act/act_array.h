@@ -144,7 +144,7 @@ class Array {
   int size(); /**< returns total number of elements */
   int range_size(int d); /**< returns size of a particular dimension */
   void update_range (int d, int lo, int hi); /**< set range */
-  int isrange (int d) { return r[d].u.ex.isrange; }
+  int isrange (int d) { return (r[d].u.ex.isrange == 1); }
 
   /* only for unexpanded ranges */
   Expr *lo (int d) { return r[d].u.ue.lo; }
@@ -154,7 +154,7 @@ class Array {
         0 if it is for a type */
   Array *Expand (ActNamespace *ns, Scope *s, int is_ref = 0);
   Array *ExpandRef (ActNamespace *ns, Scope *s) { return Expand (ns, s, 1); }
-
+  Array *ExpandRefCHP (ActNamespace *ns, Scope *s);
 
   int Validate (Array *a);	// check that the array deref is a
 				// valid deref for the array!
@@ -192,8 +192,14 @@ private:
 	Expr *lo, *hi;
       } ue;			/* unexpanded */
       struct {
-	unsigned int isrange:1;	// it is a range... need this info, sadly.
-	int lo, hi;	       
+	unsigned int isrange:2;	// it is a range... need this info,
+				// sadly.  0 =  deref, 1 = range, 2 = dynamic
+	union {
+	  struct {
+	    int lo, hi;
+	  };
+	  Expr *deref;
+	};
       } ex;			/* expanded.
 				   when an array is attached to an
 				   ActId, this is the correct value;

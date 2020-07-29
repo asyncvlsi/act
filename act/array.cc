@@ -232,7 +232,7 @@ Array *Array::Reduce ()
 
   ret->dims = 0;
   for (int i=0; i < dims; i++) {
-    if (r[i].u.ex.isrange) {
+    if (r[i].u.ex.isrange == 1) {
       ret->dims++;
     }
   }
@@ -242,7 +242,7 @@ Array *Array::Reduce ()
     MALLOC (ret->r, struct range, ret->dims);
     j = 0;
     for (int i=0; i < dims; i++) {
-      if (r[i].u.ex.isrange) {
+      if (r[i].u.ex.isrange == 1) {
 	ret->r[j++] = r[i];
       }
     }
@@ -305,6 +305,7 @@ int Array::isEqual (Array *a, int strict)
   }
   else {
     for (i=(strict == -1 ? 1 : 0); i < dims; i++) {
+      if (r1[i].u.ex.isrange != r2[i].u.ex.isrange) return 0;
       if (strict == 1) {
 	if ((r1[i].u.ex.lo != r2[i].u.ex.lo) || (r1[i].u.ex.hi != r2[i].u.ex.hi))
 	  return 0;
@@ -436,6 +437,8 @@ int Array::in_range (Array *a)
   for (int i=0; i < dims; i++) {
     int d;
 
+    Assert (a->r[i].u.ex.isrange != 2, "Dynamic arrays not supported");
+
     /*Assert (a->r[i].u.ex.lo == a->r[i].u.ex.hi, "What?");*/
     d = a->r[i].u.ex.lo;
     if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
@@ -475,6 +478,8 @@ int Array::in_range (int *a)
   
   for (int i=0; i < dims; i++) {
     int d;
+
+    Assert (r[i].u.ex.isrange != 2, "Dynamic arrays not supported");
 
     d = a[i];
     if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
@@ -569,6 +574,7 @@ int Array::Validate (Array *a)
 
   for (i=0; i < dims; i++) {
     /* a is going to be from an ID */
+    Assert (a->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
     d = a->r[i].u.ex.hi;
     if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
       if (next) {
@@ -643,7 +649,7 @@ int Array::sPrintOne (char *buf, int sz, int style)
       }
     }
     else {
-      if (r[i].u.ex.isrange) {
+      if (r[i].u.ex.isrange == 1) {
 	if (r[i].u.ex.lo == 0) {
 	  snprintf (buf+k, sz, "%d", r[i].u.ex.hi+1);
 	  PRINT_STEP;
@@ -653,8 +659,12 @@ int Array::sPrintOne (char *buf, int sz, int style)
 	  PRINT_STEP;
 	}
       }
-      else {
+      else if (r[i].u.ex.isrange == 0) {
 	snprintf (buf+k, sz, "%d", r[i].u.ex.lo);
+	PRINT_STEP;
+      }
+      else if (r[i].u.ex.isrange == 2) {
+	sprint_expr (buf+k, sz, r[i].u.ex.deref);
 	PRINT_STEP;
       }
     }
@@ -743,6 +753,7 @@ int Array::range_size(int d)
   Assert (expanded, "Only applicable to expanded arrays");
   Assert (0 <= d && d < dims, "Invalid dimension");
   Assert (!isSparse(), "Only applicable to dense arrays");
+  Assert (r[d].u.ex.isrange != 2, "Dynamic arrays not supported");
 
   return r[d].u.ex.hi - r[d].u.ex.lo + 1;
 }
@@ -755,6 +766,7 @@ void Array::update_range (int d, int lo, int hi)
   Assert (expanded, "Huh?");
   Assert (0 <= d && d < dims, "Invalid dimension");
   Assert (!isSparse(), "Only applicable to dense arrays");
+  
   r[d].u.ex.lo = lo;
   r[d].u.ex.hi = hi;
   range_sz = -1;
@@ -774,6 +786,8 @@ int Array::size()
   }
   else {
     for (int i=0; i < dims; i++) {
+      Assert (r[i].u.ex.isrange != 2, "Dynamic reference not supported");
+
       if (r[i].u.ex.hi < r[i].u.ex.lo) {
 	count = 0;
 	break;
@@ -879,6 +893,73 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
 }
 
 
+/*------------------------------------------------------------------------
+ *
+ *  Array::ExpandCHP --
+ *
+ *   Return an expanded array for CHP purposes
+ *
+ *------------------------------------------------------------------------
+ */
+Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
+{
+  Array *ret;
+  
+  if (expanded) {
+    /* eh, why am I here anyway */
+    if (Act::warn_double_expand) {
+      act_error_ctxt (stderr);
+      warning ("Not sure why Array::ExpandCHP() was called");
+    }
+    return this;
+  }
+
+  if (!deref) {
+    act_error_ctxt (stderr);
+    fatal_error ("Array::ExpandCHP() called for a subrange?");
+  }
+
+  ret = new Array();
+  ret->expanded = 1;
+  ret->deref = 1;
+  ret->dims = dims;
+
+  Assert (dims > 0, "What on earth is going on...");
+  MALLOC (ret->r, struct range, dims);
+
+  int i;
+
+  for (i=0; i < dims; i++) {
+    Expr *hval;
+
+    Assert (r[i].u.ue.hi, "Invalid array range");
+    hval = expr_expand (r[i].u.ue.hi, ns, s);
+    if (r[i].u.ue.lo) {
+      act_error_ctxt (stderr);
+      fatal_error ("Range specifier for CHP array?");
+    }
+
+    if (hval->type == E_INT) {
+      ret->r[i].u.ex.isrange = 0;
+      ret->r[i].u.ex.lo = hval->u.v;
+      ret->r[i].u.ex.hi = hval->u.v;
+    }
+    else {
+      ret->r[i].u.ex.isrange = 2;
+      ret->r[i].u.ex.deref = hval;
+    }
+  }
+
+  if (next) {
+    ret->next = next->ExpandRefCHP (ns, s);
+  }
+
+  ret->range_sz = -1;
+
+  return ret;
+}
+
+
 
 /*------------------------------------------------------------------------
  *
@@ -915,9 +996,11 @@ Arraystep::Arraystep (Array *a, Array *sub)
   MALLOC (deref, int, base->dims);
   for (int i = 0; i < base->dims; i++) {
     if (subrange) {
+      Assert (subrange->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
       deref[i] = subrange->r[i].u.ex.lo;
     }
     else {
+      Assert (base->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
       if (base->r[i].u.ex.isrange) {
 	deref[i] = base->r[i].u.ex.lo;
       }

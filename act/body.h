@@ -65,6 +65,7 @@ class ActId {
   ActId *Clone ();
 
   ActId *Expand (ActNamespace *ns, Scope  *s); /**< expand ID */
+  ActId *ExpandCHP (ActNamespace *ns, Scope *s); /**< expand CHP ID */
 
   Expr *Eval (ActNamespace *ns, Scope *s, int is_lval = 0);
   /**< evaluating an ID returns either: just the ID itself, for

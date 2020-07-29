@@ -1253,6 +1253,27 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       ret->u.e.r->type = E_BITFIELD;
       ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
       ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
+      if (!expr_is_a_const (ret->u.e.r->u.e.l) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Bitfield operator has non-const components");
+      }
+      if (ret->u.e.r->u.e.l->type != E_INT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Variable in bitfield operator is a non-integer");
+      }
+      if (ret->u.e.r->u.e.r->type != E_INT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr,"\n");
+	fatal_error ("Variable in bitfield operator is a non-integer");
+      }
     }
     else {
       Expr *lo, *hi;
@@ -1354,6 +1375,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fatal_error ("int() operator requires a constant expression");
       }
     }
     break;

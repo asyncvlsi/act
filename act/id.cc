@@ -109,6 +109,36 @@ ActId *ActId::Expand (ActNamespace *ns, Scope *s)
   return ret;
 }
 
+ActId *ActId::ExpandCHP (ActNamespace *ns, Scope *s)
+{
+  ActId *ret;
+  Array *ax;
+
+  if (a) {
+    ax = a->ExpandRefCHP (ns, s);
+  }
+  else {
+    ax = NULL;
+  }
+
+  ret = new ActId (string_char (name), ax);
+
+  if (next) {
+    ret->next = next->ExpandCHP (ns, s);
+  }
+
+#if 0
+  fprintf (stderr, "expanding id: ");
+  this->Print (stderr, NULL);
+  fprintf (stderr, " -> ");
+  ret->Print (stderr, NULL);
+  fprintf (stderr, "\n");
+#endif
+
+  return ret;
+}
+
+
 /*------------------------------------------------------------------------
  *
  *  Evaluate identifier: It either returns an evaluated identifier
