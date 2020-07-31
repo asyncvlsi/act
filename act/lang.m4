@@ -534,6 +534,19 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
       }
     }
     list_free ($2);
+
+    /* check that only the last clause is else, if there is an else */
+    gc = c->u.gc;
+
+    if (gc && !gc->g) {
+      $E("`else' cannot be the first clause in a selection statement");
+    }
+    while (gc) {
+      if (!gc->g && gc->next) {
+	$E("`else' can only be the last clause in a selection statement");
+      }
+      gc = gc->next;
+    }
     return c;
 }}
 | "[" wbool_allow_chan_expr "]" 
@@ -639,8 +652,20 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
 | "*[" { guarded_cmd "[]" }* "]"
 {{X:
     act_chp_lang_t *c;
+    act_chp_gc_t *gc;
     c = apply_X_select_stmt_opt0 ($0, $2);
     c->type = ACT_CHP_LOOP;
+
+    gc = c->u.gc;
+    if (gc && !gc->g) {
+      $E("`else' cannot be the first clause in a loop statement");
+    }
+    while (gc) {
+      if (!gc->g && gc->next) {
+	$E("`else' can only be the last clause in a loop statement");
+      }
+      gc = gc->next;
+    }
     return c;
 }}
 ;

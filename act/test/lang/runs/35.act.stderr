@@ -1,0 +1,2 @@
+ERROR: File `35.act', line 8, col 7
+	else cannot be the first clause in a selection statement

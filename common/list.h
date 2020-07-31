@@ -84,6 +84,9 @@ const void *stack_pop (list_t *l);
 int stack_ipop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
 
+#define list_delete_head(l) stack_pop(l)
+#define list_delete_ihead(l) stack_ipop(l)
+
 #ifdef __cplusplus
 }
 #endif
