@@ -1584,7 +1584,7 @@ static Expr *_process_probes (Expr *e)
 }
 
 
-static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
+static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 {
   Expr *t;
   ihash_bucket_t *b;
@@ -1594,26 +1594,37 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
   
   switch (e->type) {
   case E_AND:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
-    e = _process_probes (e);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, isbool);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s, isbool);
+    if (isbool) {
+      e = _process_probes (e);
+    }
     break;
 
   case E_OR:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.l = _process_probes (e->u.e.l);
-    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
-    e->u.e.r = _process_probes (e->u.e.r);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, isbool);
+    if (isbool) {
+      e->u.e.l = _process_probes (e->u.e.l);
+    }
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s, isbool);
+    if (isbool) {
+      e->u.e.r = _process_probes (e->u.e.r);
+    }
     break;
 
   case E_NOT:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e = _process_probes (e);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, isbool);
+    if (isbool) {
+      e = _process_probes (e);
+    }
     break;
 
   case E_XOR:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, isbool);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s, isbool);
+    if (isbool) {
+      e = _process_probes (e);
+    }
     break;
     
   case E_LT:
@@ -1622,20 +1633,20 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
   case E_GE:
   case E_EQ:
   case E_NE:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s, 0);
     e = _process_probes (e);
     break;
 
   case E_COMPLEMENT:
   case E_UMINUS:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
     break;
 
   case E_QUERY:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.r->u.e.l = _chp_add_probes (e->u.e.r->u.e.l, ns, s);
-    e->u.e.r->u.e.r = _chp_add_probes (e->u.e.r->u.e.r, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 1);
+    e->u.e.r->u.e.l = _chp_add_probes (e->u.e.r->u.e.l, ns, s, isbool);
+    e->u.e.r->u.e.r = _chp_add_probes (e->u.e.r->u.e.r, ns, s, isbool);
     break;
 
   case E_PROBE:
@@ -1655,15 +1666,18 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
   case E_LSL:
   case E_LSR:
   case E_ASR:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
-    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s, 0);
     break;
     
   case E_FUNCTION:
     t = e;
     while (t->u.e.r) {
-      t->u.e.r->u.e.l = _chp_add_probes (t->u.e.r->u.e.l, ns, s);
+      t->u.e.r->u.e.l = _chp_add_probes (t->u.e.r->u.e.l, ns, s, 0);
       t = t->u.e.r;
+    }
+    if (isbool) {
+      e = _process_probes (e);
     }
     break;
 
@@ -1688,7 +1702,7 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
 
   case E_BUILTIN_BOOL:
   case E_BUILTIN_INT:
-    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
     break;
 
   case E_TRUE:
@@ -1709,7 +1723,7 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
   e = _chp_fix_nnf (e, 0);
 
   pmap = ihash_new (4);
-  e = _chp_add_probes (e, ns, s);
+  e = _chp_add_probes (e, ns, s, 1);
   ihash_free (pmap);
   return e;
 }
