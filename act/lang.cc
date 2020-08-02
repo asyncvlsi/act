@@ -1483,11 +1483,6 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
     break;
     
 
-  case E_PROBE:
-
-    
-    
-
   case E_PLUS:
   case E_MINUS:
   case E_MULT:
@@ -1513,6 +1508,16 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
       e = e->u.e.r;
     }
     e = t;
+    break;
+
+  case E_PROBE:
+    if (invert) {
+      NEW (t, Expr);
+      t->type = E_NOT;
+      t->u.e.l = e;
+      t->u.e.r = NULL;
+      e = t;
+    }
     break;
 
   case E_VAR:
@@ -2365,6 +2370,22 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
     break;
 
   case ACT_CHP_FUNC:
+    fprintf (fp, "%s(", string_char (c->u.func.name));
+    for (listitem_t *li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *a = (act_func_arguments_t *) list_value (li);
+      if (li != list_first (c->u.func.rhs)) {
+	fprintf (fp, ",");
+      }
+      if (a->isstring) {
+	fprintf (fp, "\"%s\"", string_char (a->u.s));
+      }
+      else {
+	print_expr (fp, a->u.e);
+      }
+    }
+    fprintf (fp, ")");
+    break;
+    
   default:
     fatal_error ("Unknown type");
     break;
