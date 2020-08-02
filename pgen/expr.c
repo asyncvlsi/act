@@ -507,13 +507,13 @@ static Expr *FF (void)
     return F();
   }
 							
-  PUSH (Tl);						
-  e = F ();					
-  if (!e) {						
+  PUSH (Tl);
+  e = F ();
+  if (!e) {
     SET (Tl);
     POP (Tl);
     return NULL;
-  }							
+  }
   for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)
     if (T[_intcomp[i]] != -1)				
       break;						
@@ -522,15 +522,15 @@ static Expr *FF (void)
     return e;
   }							
   for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)	
-    if (T[_intcomp[i]] == file_sym (Tl))
+    if (T[_intcomp[i]] != -1 && T[_intcomp[i]] == file_sym (Tl))
       break;
   if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
     POP (Tl);
     return e;
-  }							
-  f = newexpr ();					
-  f->type = _intcomp[i];				
-  f->u.e.l = e;					
+  }
+  f = newexpr ();
+  f->type = _intcomp[i];
+  f->u.e.l = e;
   file_getsym (Tl);
   int_real_only = 1;
   f->u.e.r = F ();
@@ -550,7 +550,7 @@ static Expr *FF (void)
     int have_semi = 0;
     int comma_token = -1;
     int semi_token = -1;
-    
+ 
     have_comma = file_istoken (Tl, ",");
     if (have_comma) {
       comma_token = file_addtoken (Tl, ",");
@@ -785,6 +785,7 @@ static Expr *W (void)
 	    f->u.e.r = NULL;
 	    f->u.e.l = I (); /* int expr, argument */
 	    if (!f->u.e.l) {
+              paren_count--;
 	      efree (e);
 	      SET (Tl);
 	      POP (Tl);
@@ -799,6 +800,9 @@ static Expr *W (void)
 	    return NULL;
 	  }
 	}
+        else {
+           paren_count--;
+        }
 	/* success! */
 	POP (Tl);
 	file_getsym (Tl);

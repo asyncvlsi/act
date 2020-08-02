@@ -1,0 +1,149 @@
+
+export deftype globals <: int<6> (bool Vdd, GND, vpsub, vnsub, Reset, _Reset, pReset, sReset, _pReset, _sReset)
+{
+	sReset = Reset;
+	_sReset = _Reset;
+
+	//set { }
+	//get { }
+}
+
+// PN ratio
+//preal PN = 1.4142;
+preal PN = 2.0;
+
+// Transistor minimal sizing
+pint NM = 6;
+pint PM = 6;
+
+// Gate reset output
+pint RESET_X = -2;
+pint RESET_N = -1;
+pint RESET_0 = 0;
+pint RESET_1 = 1;
+pint RESET_2 = 2;
+pint RESET_3 = 3;
+
+pint NO_INVERT = 0;
+pint INVERT = 1;
+
+
+namespace gate
+{
+
+/*
+This amplifier consists of an inverter chain with a fixed
+length of X = 2*L+invert where each inverter amplifies the 
+input signal by M/100.
+
+The first inverter in the chain is sized to match szi making
+szi the input load. The input driver size can be smaller than
+szi.
+
+This gives an output drive strength of szi*(M/100)^X.
+
+l is the input node
+r is the output node
+d is an array of all internal nodes including the input and
+output nodes.
+*/
+export template <pint L, M, invert, szi>
+defproc amplify_base(globals g; bool l, r, d[2*L+invert+1])
+{
+	preal C = (1.0*M)/(100.0);
+
+	// Set up the ports
+	pint X = 2*L+invert;
+	l = d[0];
+	r = d[X];
+
+	// Implement the amplifier
+	[ X <= 0 ->
+		prs {} // This is not a blackbox
+	]
+
+	preal d_sz[X+1];
+	d_sz[0] = 1.0*szi;		
+	(;i:X:
+		d_sz[i+1] = C*d_sz[i];
+
+		prs <g.Vdd, g.GND | g.vpsub, g.vnsub>
+		{
+			 d[i]<d_sz[i]>    -> d[i+1]-
+			~d[i]<d_sz[i]*PN> -> d[i+1]+
+		}
+	)
+}
+
+
+
+/*
+This amplifier consists of an inverter chain with the minimum
+length requird to drive szo, calculated as logM(szo/szi) where
+each inverter amplifies the input signal by M.
+
+The first inverter in the chain is sized to match szi making
+szi the input load. The input driver size can be smaller than
+szi.
+
+l is the input node
+r is the output node
+*/
+export template <pint M, invert, szi, szo>
+defproc amplify(globals g; bool l, r)
+{
+	preal C;
+	[ szi <= 0 ->
+		C = 1.0*szo;
+	[] szi > 0 ->
+		C = (1.0*szo)/(1.0*szi);
+	]
+
+	pint L;
+	preal Mr = (1.0*M)/100.0;
+	[ C > 1.0 ->	
+		// get log base M^2 of C
+		preal C_div_M[32];
+		C_div_M[0] = C;
+		(;i:32:
+			[ ((C_div_M[i] <= 1.0) & (C_div_M[i] > (1.0/Mr))) ->
+				L = i;
+			]
+
+			[ i < 31 ->
+				C_div_M[i+1] = C_div_M[i]/Mr;
+			]
+		)
+	[] C <= 1.0 ->
+		L = 0;
+	]
+
+	pint X;
+	[ (L%2) = invert ->
+		X = L/2;
+	[] (L%2) != invert ->
+		X = (L+1)/2;
+	]
+
+	//bool d[2*X+invert+1];
+	amplify_base<X, M, invert, szi> amp(g, l, r, ); // LOOK! connecting d here fixes it.
+}
+
+}
+
+export template <pint N>
+deftype c1of <: int (bool d[N])
+{
+	//set { }
+	//get { }
+}
+
+export template <pint N>
+defchan e1of <: chan(int) (c1of<N> b; bool d[N]; bool e)
+{
+	d = b.d;
+	// send { }
+	// recv { }
+}
+
+

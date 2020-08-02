@@ -1,0 +1,7 @@
+import "channel.act";
+
+export template <pint N, sz>
+defproc sink_e1of(globals g; e1of<N> C; bool w)
+{
+}
+
