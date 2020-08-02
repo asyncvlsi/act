@@ -2052,6 +2052,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
    base_item_list ")"
 {{X:
     $0->scope->Del ($3);
+    $0->in_cond--;
     if (OPT_EMPTY ($6)) {
       return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, NULL, $8);
     }
@@ -2063,7 +2064,6 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":"
       FREE (r);
     }
     OPT_FREE ($6);
-    $0->in_cond--;
 }}
 | "*["
 {{X: $0->in_cond++; }}
