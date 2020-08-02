@@ -1397,8 +1397,321 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   ret->psc = fullexpand_var (c->psc, ns, s);
   ret->nsc = fullexpand_var (c->nsc, ns, s);
   ret->c = chp_expand (c->c, ns, s);
-  
+
   return ret;
+}
+
+static Expr *_chp_fix_nnf (Expr *e, int invert)
+{
+  Expr *t;
+
+  if (!e) return e;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, invert);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, invert);
+    if (invert) {
+      if (e->type == E_AND) {
+	e->type = E_OR;
+      }
+      else {
+	e->type = E_AND;
+      }
+    }
+    break;
+
+  case E_NOT:
+    t = _chp_fix_nnf (e->u.e.l, 1-invert);
+    FREE (e);
+    e = t;
+    break;
+
+  case E_XOR:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, invert);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    break;
+
+  case E_LT:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_GE;
+    break;
+    
+  case E_GT:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_LE;
+    break;
+    
+  case E_LE:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_GT;
+    break;
+    
+  case E_GE:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_LT;
+    break;
+
+  case E_EQ:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_NE;
+    break;
+    
+  case E_NE:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    if (invert) e->type = E_EQ;
+    break;
+    
+    
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    Assert (invert == 0, "What?");
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, invert);
+    break;
+
+  case E_QUERY:
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r->u.e.l = _chp_fix_nnf (e->u.e.r->u.e.l, invert);
+    e->u.e.r->u.e.r = _chp_fix_nnf (e->u.e.r->u.e.r, invert);
+    break;
+    
+
+  case E_PROBE:
+
+    
+    
+
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    if (invert) {
+      fatal_error ("Unexpected type %d with inversion?", e->type);
+    }
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e->u.e.r = _chp_fix_nnf (e->u.e.r, 0);
+    break;
+    
+  case E_FUNCTION:
+    NEW (t, Expr);
+    t->type = E_NOT;
+    t->u.e.l = e;
+    t->u.e.r = NULL;
+    while (e->u.e.r) {
+      e->u.e.r->u.e.l = _chp_fix_nnf (e->u.e.r->u.e.l, 0);
+      e = e->u.e.r;
+    }
+    e = t;
+    break;
+
+  case E_VAR:
+    if (invert) {
+      NEW (t, Expr);
+      t->type = E_NOT;
+      t->u.e.l = e;
+      t->u.e.r = NULL;
+      e = t;
+    }
+    break;
+
+  case E_BUILTIN_BOOL:
+    NEW (t, Expr);
+    t->type = E_NOT;
+    t->u.e.l = e;
+    t->u.e.r = NULL;
+    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    e = t;
+    break;
+
+  case E_TRUE:
+    if (invert) e->type = E_FALSE;
+    break;
+    
+  case E_FALSE:
+    if (invert) e->type = E_TRUE;
+    break;
+    
+  case E_BUILTIN_INT:
+  case E_BITFIELD:
+  case E_INT:
+    if (invert) {
+      fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    }
+    break;
+  default:
+    fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    break;
+  }
+  return e;
+}
+
+static iHashtable *pmap = NULL;
+
+static Expr *_process_probes (Expr *e)
+{
+  if (pmap->n > 0) {
+    for (int i=0; i < pmap->size; i++) {
+      for (ihash_bucket_t *b = pmap->head[i]; b; b = b->next) {
+	if (b->i == 0) {
+	  Expr *t;
+	  act_connection *c = (act_connection *)b->key;
+	  NEW (t, Expr);
+	  t->type = E_AND;
+	  t->u.e.r = e;
+	  e = t;
+	  NEW (t->u.e.l, Expr);
+	  t = t->u.e.l;
+	  t->type = E_PROBE;
+	  t->u.e.l = (Expr *)c->toid();
+	  t->u.e.r = NULL;
+	}
+      }
+    }
+    ihash_clear (pmap);
+  }
+  return e;
+}
+
+
+static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s)
+{
+  Expr *t;
+  ihash_bucket_t *b;
+  act_connection *c;
+
+  if (!e) return e;
+  
+  switch (e->type) {
+  case E_AND:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e = _process_probes (e);
+    break;
+
+  case E_OR:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.l = _process_probes (e->u.e.l);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e->u.e.r = _process_probes (e->u.e.r);
+    break;
+
+  case E_NOT:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e = _process_probes (e);
+    break;
+
+  case E_XOR:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    break;
+    
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    e = _process_probes (e);
+    break;
+
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    break;
+
+  case E_QUERY:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.r->u.e.l = _chp_add_probes (e->u.e.r->u.e.l, ns, s);
+    e->u.e.r->u.e.r = _chp_add_probes (e->u.e.r->u.e.r, ns, s);
+    break;
+
+  case E_PROBE:
+    c = ((ActId *)e->u.e.l)->Canonical (s);
+    b = ihash_lookup (pmap, (long)c);
+    if (!b) {
+      b = ihash_add (pmap, (long)c);
+      b->i = 1;
+    }
+    break;
+    
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    e->u.e.r = _chp_add_probes (e->u.e.r, ns, s);
+    break;
+    
+  case E_FUNCTION:
+    t = e;
+    while (t->u.e.r) {
+      t->u.e.r->u.e.l = _chp_add_probes (t->u.e.r->u.e.l, ns, s);
+      t = t->u.e.r;
+    }
+    break;
+
+  case E_BITFIELD:
+  case E_VAR:
+    /*--  check if this is an channel! --*/
+    {
+      InstType *it = s->FullLookup ((ActId *)e->u.e.l, NULL);
+      if (TypeFactory::isChanType (it)) {
+	c = ((ActId *)e->u.e.l)->Canonical (s);
+	b = ihash_lookup (pmap, (long)c);
+	if (b) {
+	  /*-- ok has been recorded already --*/
+	}
+	else {
+	  b = ihash_add (pmap, (long)c);
+	  b->i = 0;		/* 0 = used as a variable */
+	}
+      }
+    }
+    break;
+
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    e->u.e.l = _chp_add_probes (e->u.e.l, ns, s);
+    break;
+
+  case E_TRUE:
+  case E_FALSE:
+  case E_INT:
+    break;
+    
+  default:
+    fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    break;
+  }
+  return e;
+}
+
+
+static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
+{
+  e = _chp_fix_nnf (e, 0);
+
+  pmap = ihash_new (4);
+  e = _chp_add_probes (e, ns, s);
+  ihash_free (pmap);
+  return e;
 }
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
@@ -1464,6 +1777,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  tmp->next = NULL;
 	  tmp->id = NULL;
 	  tmp->g = expr_expand (gctmp->g, ns, s);
+	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
 	    FREE (tmp);
 	  }
@@ -1479,6 +1793,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	tmp->id = NULL;
 	tmp->next = NULL;
 	tmp->g = expr_expand (gctmp->g, ns, s);
+	tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
 	    c->type != ACT_CHP_DOLOOP) {
 	  FREE (tmp);
@@ -2569,4 +2884,3 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
   }
   return ret;
 }
-  

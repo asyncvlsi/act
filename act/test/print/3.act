@@ -1,0 +1,12 @@
+defproc testme (chan(int) l, r)
+{
+  int x;
+  bool a;
+
+  chp {
+     x:=5;
+    *[ [ ~(a & l > 0) -> l?x; r!x ] ]
+  }
+}
+
+testme t;
