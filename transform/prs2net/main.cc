@@ -50,7 +50,7 @@ static int has_trailing_extension (const char *s, const char *ext)
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act options] [-dltBR] [-p <proc>] [-o <file>] <act>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-dltBR] [-p <proc>] [-o <file>] <act>\n", name);
   fprintf (stderr, " -c <cells> Cell file name\n");
   fprintf (stderr, " -t        Only emit top-level cell (no sub-cells)\n");
   fprintf (stderr, " -p <proc> Emit process <proc>\n");

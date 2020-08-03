@@ -39,7 +39,7 @@ static struct Hashtable *labels;
 
 void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [-c] [-prsim|-lvs] <file.act>\n", s);
+  fprintf (stderr, "Usage: %s [act-options] [-c] [-prsim|-lvs] <file.act>\n", s);
   exit (1);
 }
 

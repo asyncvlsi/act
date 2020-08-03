@@ -32,7 +32,7 @@ char *channame;
 
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [-a] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
+  fprintf (stderr, "Usage: %s [act-options] [-a] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
   fprintf (stderr, "  -a : async output\n");
   fprintf (stderr, "  -C <chan>: change default channel name to <chan>\n");
   fprintf (stderr, "  -c <clkname>: specifies the clock port name [default: clock]\n");

@@ -110,10 +110,9 @@ int is_init_prs_firing (PrsNode *n, int val);
 
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [-v] [-m maxprint] [-V Vdd] [-C configfile] [-f] [-F str] [-h val] [-t tm] tracefile\n", s);
+  fprintf (stderr, "Usage: %s [act-options] [-v] [-m maxprint] [-V Vdd] [-f] [-F str] [-h val] [-t tm] tracefile\n", s);
   fprintf (stderr, " -v     : verbosity; repeat for higher levels\n");
   fprintf (stderr, " -V val : specifies Vdd voltage; V_high is set to 0.1 less\n");
-  fprintf (stderr, " -C conf: specifies configuration file name\n");
   fprintf (stderr, " -m max : max # of messages per error type\n");
   fprintf (stderr, " -f     : do not display frequency\n");
   fprintf (stderr, " -F str : ignore names that match regular expression <str>\n");
@@ -265,16 +264,10 @@ int main (int argc, char **argv)
   /* two pass getopt... that way any config file specified will be
      overridden by command line arguments */
 
-#define GETOPT_STRING "fvm:C:V:F:h:t:p:o:r:"
+#define GETOPT_STRING "fvm:V:F:h:t:p:o:r:"
 
   while ((ch = getopt (argc, eargv, GETOPT_STRING)) != -1) {
     switch (ch) {
-    case 'C':
-      if (config_name) {
-	FREE (config_name);
-      }
-      config_name = Strdup (optarg);
-      break;
     default:
       break;
     }

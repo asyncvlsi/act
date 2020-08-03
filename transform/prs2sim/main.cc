@@ -31,7 +31,7 @@
 
 void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s <file.act> <simfile>\n", s);
+  fprintf (stderr, "Usage: %s [act-options] <file.act> <simfile>\n", s);
   exit (1);
 }
 

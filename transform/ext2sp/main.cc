@@ -95,7 +95,7 @@ char *name_munge (const char *name)
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [-c <mincap>] <file.ext>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-c <mincap>] <file.ext>\n", name);
   fprintf (stderr, " -c <mincap> : filter caps at or below this threshold\n");
   exit (1);
 }

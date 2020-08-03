@@ -35,7 +35,7 @@ static ActBooleanizePass *BOOL = NULL;
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [-p <proc>] <act>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-p <proc>] <act>\n", name);
   fprintf (stderr, " -p <proc> : Emit process <proc>\n");
   exit (1);
 }

@@ -31,7 +31,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s <actfile> <process> <outfile>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] <actfile> <process> <outfile>\n", name);
   exit (1);
 }
 

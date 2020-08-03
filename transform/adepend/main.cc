@@ -27,7 +27,7 @@
 
 void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s <file.act>\n", s);
+  fprintf (stderr, "Usage: %s [act-options]  <file.act>\n", s);
   exit (1);
 }
 
