@@ -234,7 +234,7 @@ void Act::mfprintf (FILE *fp, const char *s, ...)
   static char chk[10240];
 
   va_start (ap, s);
-  vsprintf (buf, s, ap);
+  vsnprintf (buf, 10240, s, ap);
   va_end (ap);
   
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
@@ -272,7 +272,7 @@ int Act::msnprintf (char *fp, int len, const char *s, ...)
   static char chk[10240];
 
   va_start (ap, s);
-  vsprintf (buf, s, ap);
+  vsnprintf (buf, 10240, s, ap);
   va_end (ap);
   
   Assert (mangle_string (buf, buf2, 20480) == 0, "Long name");
@@ -306,7 +306,7 @@ void Act::ufprintf (FILE *fp, const char *s, ...)
   static char chk[10240];
 
   va_start (ap, s);
-  vsprintf (buf, s, ap);
+  vsnprintf (buf, 10240, s, ap);
   va_end (ap);
   
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
@@ -344,7 +344,7 @@ int Act::usnprintf (char *fp, int len, const char *s, ...)
   static char chk[10240];
 
   va_start (ap, s);
-  vsprintf (buf, s, ap);
+  vsnprintf (buf, 10240, s, ap);
   va_end (ap);
   
   Assert (unmangle_string (buf, buf2, 10240) == 0, "Long name");
