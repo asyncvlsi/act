@@ -1,0 +1,9 @@
+defproc test(bool a, b, c, x, y)
+{
+  prs {
+    passn(a, b, c)
+    x -> y-
+  }
+}
+
+test t;

@@ -32,7 +32,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s <actfile> <cellin> <cellout>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] <actfile> <cellin> <cellout>\n", name);
   exit (1);
 }
 

@@ -513,7 +513,25 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
       }
       break;
     case ACT_PRS_GATE:
-      /* not printing pass fets */
+      if (p->u.p.g) {
+	/* passn */
+	printf ("after 0 ");
+	prefix_id_print (s, p->u.p.g);
+	printf (" & ~");
+	prefix_id_print (s, p->u.p.s);
+	printf (" -> ");
+	prefix_id_print (s, p->u.p.d);
+	printf ("-\n");
+      }
+      if (p->u.p._g) {
+	printf ("after 0 ~");
+	prefix_id_print (s, p->u.p._g);
+	printf (" & ");
+	prefix_id_print (s, p->u.p.s);
+	printf (" -> ");
+	prefix_id_print (s, p->u.p.d);
+	printf ("+\n");
+      }
       break;
     case ACT_PRS_TREE:
       /* this is fine */
