@@ -183,7 +183,7 @@ static void _print_prs_expr (Scope *s, act_prs_expr_t *e, int prec, int flip)
   }
 }
 
-static void print_attr_prefix (act_attr_t *attr)
+static void print_attr_prefix (act_attr_t *attr, int force_after)
 {
   /* examine attributes:
      after
@@ -209,6 +209,10 @@ static void print_attr_prefix (act_attr_t *attr)
       after = x->e->u.v;
       have_after = 1;
     }
+  }
+  if (!have_after && force_after) {
+    after = 0;
+    have_after = 1;
   }
   if (weak) {
     printf ("weak ");
@@ -471,7 +475,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	b->v = p;
       }
       else {
-	print_attr_prefix (p->u.one.attr);
+	print_attr_prefix (p->u.one.attr, 0);
 	_print_prs_expr (s, p->u.one.e, 0, 0);
 	printf ("->");
 	prefix_id_print (s, p->u.one.id);
@@ -482,7 +486,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	  printf ("-\n");
 	}
 	if (p->u.one.arrow_type == 1) {
-	  print_attr_prefix (p->u.one.attr);
+	  print_attr_prefix (p->u.one.attr, 0);
 	  printf ("~(");
 	  _print_prs_expr (s, p->u.one.e, 0, 0);
 	  printf (")");
@@ -496,7 +500,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	  }
 	}
 	else if (p->u.one.arrow_type == 2) {
-	  print_attr_prefix (p->u.one.attr);
+	  print_attr_prefix (p->u.one.attr, 0);
 	  _print_prs_expr (s, p->u.one.e, 0, 1);
 	  printf ("->");
 	  prefix_id_print (s, p->u.one.id);
@@ -513,9 +517,9 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
       }
       break;
     case ACT_PRS_GATE:
+      print_attr_prefix (p->u.p.attr, 1);
       if (p->u.p.g) {
 	/* passn */
-	printf ("after 0 ");
 	prefix_id_print (s, p->u.p.g);
 	printf (" & ~");
 	prefix_id_print (s, p->u.p.s);
@@ -524,7 +528,7 @@ static void aflat_print_prs (Scope *s, act_prs_lang_t *p)
 	printf ("-\n");
       }
       if (p->u.p._g) {
-	printf ("after 0 ~");
+	printf ("~");
 	prefix_id_print (s, p->u.p._g);
 	printf (" & ");
 	prefix_id_print (s, p->u.p.s);
