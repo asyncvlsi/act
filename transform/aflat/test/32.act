@@ -1,0 +1,11 @@
+defproc test(bool a, b, c, x, y)
+{
+	prs {
+		[after=0] passp(a, b, c)
+		[unstab=1] passn(a, b, c)
+		[after=0] x -> y-
+		[unstab=1] ~x -> y+
+	}
+}
+
+test t;

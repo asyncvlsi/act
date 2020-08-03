@@ -1,0 +1,4 @@
+after 0 ~"t.a" & "t.b" -> "t.c"+
+unstab after 0 "t.a" & ~"t.b" -> "t.c"-
+after 0 "t.x"->"t.y"-
+unstab ~"t.x"->"t.y"+
