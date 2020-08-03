@@ -11,8 +11,8 @@ defproc ld_logic(globals g; e1of1 l[N]; bool ld)
   bool _ld;
 
   prs{
-    [after=0]            (&:i:N:~l[i].d) | ~g._Reset -> _ld+
-    [after=0] g._Reset & (&:i:N: l[i].d)             -> _ld-
+    [after=0]            (&i:N:~l[i].d) | ~g._Reset -> _ld+
+    [after=0] g._Reset & (&i:N: l[i].d)             -> _ld-
   
     [after=0] _ld => ld-
   }
@@ -24,8 +24,8 @@ defproc re_logic(globals g; e1of1 r[N]; bool re)
   bool _re;
 
   prs{
-    [after=0] ~g.Reset & (&:i:N:~r[i].e)           -> _re+
-    [after=0]            (&:i:N: r[i].e) | g.Reset -> _re-
+    [after=0] ~g.Reset & (&i:N:~r[i].e)           -> _re+
+    [after=0]            (&i:N: r[i].e) | g.Reset -> _re-
 
     [after=0] _re => re-
   }

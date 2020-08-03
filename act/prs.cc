@@ -209,10 +209,7 @@ static act_prs_expr_t *atom (LFILE *l)
     flags = file_flags (l);
     file_setflags (l, flags | FILE_FLAGS_NOREAL);
 
-    /* optional colon */
-    if (file_have (l, COLON))
-      ;
-      /* okay */
+    /* okay */
     NEW (e, act_prs_expr_t);
     e->type = t;
     if (!file_have (l, f_id)) {

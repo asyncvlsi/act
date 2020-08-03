@@ -4,8 +4,8 @@ defproc foo(bool w)
 
 prs {
   [keeper=0] a -> b-
-  (&:i:4..3: b) -> a-
-  (|:i:7..6: a) -> w-
+  (&i:4..3: b) -> a-
+  (|i:7..6: a) -> w-
 }
 }
 
