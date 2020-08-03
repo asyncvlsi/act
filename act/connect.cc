@@ -25,6 +25,9 @@
 #include <string.h>
 #include "config.h"
 
+static int set_suboffset_limit = -1;
+
+
 /*
   Given a subconnection of the current type,
   search for it and return its index.
@@ -32,11 +35,19 @@
 int act_connection::suboffset (act_connection *c)
 {
   int i;
+
+  if (set_suboffset_limit == -1) {
+    if (config_exists ("act.subconnection_limit")) {
+      set_suboffset_limit = config_get_int ("act.subconnection_limit");
+    }
+    if (set_suboffset_limit < 0) { set_suboffset_limit = 30000; }
+  }
+  
   i = 0;
   while (1) {
     if (a[i] == c) return i;
     i++;
-    if (i > 10000) {
+    if (i > set_suboffset_limit) {
       warning ("Exceeded internal limit on subconnection computation.");
       return -1;
     }
