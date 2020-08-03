@@ -50,14 +50,13 @@ static int has_trailing_extension (const char *s, const char *ext)
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [-dltBR] [-C <conf>] [-p <proc>] [-o <file>] <act>\n", name);
-  fprintf (stderr, " -C <conf> Configuration file name\n");
+  fprintf (stderr, "Usage: %s [act options] [-dltBR] [-p <proc>] [-o <file>] <act>\n", name);
   fprintf (stderr, " -c <cells> Cell file name\n");
   fprintf (stderr, " -t        Only emit top-level cell (no sub-cells)\n");
   fprintf (stderr, " -p <proc> Emit process <proc>\n");
   fprintf (stderr, " -o <file> Save result to <file> rather than stdout\n");
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
-  fprintf (stderr, " -B	       Turn of black-box mode. Assume empty act process is an externally specified file\n");
+  fprintf (stderr, " -B	       Turn off black-box mode. Assume empty act process is an externally specified file\n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
   fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   exit (1);
