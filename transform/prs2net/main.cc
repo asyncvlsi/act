@@ -72,7 +72,6 @@ static char *cell_file;
 */
 static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 {
-  char *conf_file;
   char *proc_name;
   char *act_cmdline;
   int ch;
@@ -84,7 +83,6 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   *fpout = stdout;
   top_level_only = 0;
-  conf_file = NULL;
   proc_name = NULL;
   cell_file = NULL;
 
@@ -95,7 +93,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "SBdC:tp:o:lc:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "SBdtp:o:lc:")) != -1) {
     switch (ch) {
     case 'S':
       enable_shared_stat = 1;
@@ -111,13 +109,6 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
     case 'd':
       emit_parasitics = 1;
-      break;
-
-    case 'C':
-      if (conf_file) {
-	FREE (conf_file);
-      }
-      conf_file = Strdup (optarg);
       break;
 
     case 't':
@@ -163,21 +154,6 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   if (optind != *argc - 1) {
     fprintf (stderr, "Missing act file name.\n");
     usage ((*argv)[0]);
-  }
-
-  if (conf_file) {
-    /* read config file */
-    if (has_trailing_extension (conf_file, "conf")) {
-
-      Act::config_info (conf_file);
-      config_read (conf_file);
-    }
-    else {
-      char buf[10240];
-      sprintf (buf, "%s.conf", conf_file);
-      Act::config_info (buf);
-      config_read (buf);
-    }
   }
 
   config_set_default_int ("net.ignore_loadcap", ignore_loadcap);
