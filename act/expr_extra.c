@@ -110,6 +110,7 @@ static Expr *_parse_expr_func (LFILE *l)
     e->u.fn.s = Strdup (buf);
     e->u.fn.r = NULL;
     f = e;
+    expr_inc_parens ();
     if (!file_have (l, rpar)) {
       do {
 	NEW (f->u.e.r, Expr);
@@ -118,15 +119,18 @@ static Expr *_parse_expr_func (LFILE *l)
 	f->u.e.r = NULL;
 	f->u.e.l = expr_parse_any (l);
 	if (!f->u.e.l) {
+	  expr_dec_parens ();
 	  expr_free (e);
 	  return NULL;
 	}
       } while (file_have (l, comma));
       if (!file_have (l, rpar)) {
+	expr_dec_parens ();
 	expr_free (e);
 	return NULL;
       }
     }
+    expr_dec_parens ();
   }
   else {
     return NULL;
@@ -229,16 +233,19 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
       file_pop_position (l);
       return NULL;
     }
+    expr_inc_parens ();
     NEW (e, Expr);
     e->type = E_BUILTIN_BOOL;
     e->u.e.l = expr_parse_int (l);
     e->u.e.r = NULL;
     if (!e->u.e.l) {
+      expr_dec_parens ();
       FREE (e);
       file_set_position (l);
       file_pop_position (l);
       return NULL;
     }
+    expr_dec_parens ();
     if (!file_have (l, rpar)) {
       file_set_position (l);
       file_pop_position (l);
@@ -246,44 +253,11 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
       return NULL;
     }
   }
-  else if (file_have_keyw (l, "int")) {
-    if (!file_have (l, lpar)) {
+  else {
+    e = _parse_expr_func (l);
+    if (!e) {
       file_set_position (l);
-      file_pop_position (l);
-      return NULL;
     }
-    NEW (e, Expr);
-    e->type = E_BUILTIN_INT;
-    e->u.e.l = expr_parse_any (l);
-    e->u.e.r = NULL;
-    if (!e->u.e.l) {
-      FREE (e);
-      file_set_position (l);
-      file_pop_position (l);
-      return NULL;
-    }
-    if (!file_have (l, rpar)) {
-      if (file_have (l, comma)) {
-	e->u.e.r = expr_parse_int (l);
-      }
-      if (!e->u.e.r) {
-	file_set_position (l);
-	file_pop_position (l);
-	expr_free (e);
-	return NULL;
-      }
-      if (!file_have (l, rpar)) {
-	expr_free (e);
-	file_set_position (l);
-	file_pop_position (l);
-	return NULL;
-      }
-    }
-  }
-  else if (!(e = _parse_expr_func (l))) {
-    file_set_position (l);
-    file_pop_position (l);
-    return NULL;
   }
   file_pop_position (l);
   return e;
@@ -297,9 +271,51 @@ Expr *act_parse_expr_intexpr_base (LFILE *l)
   do_init(l);
   
   file_push_position (l);
-  e = _parse_expr_func (l);
-  if (!e) {
-    file_set_position (l);
+
+  if (file_have_keyw (l, "int")) {
+    if (!file_have (l, lpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e, Expr);
+    expr_inc_parens ();
+    e->type = E_BUILTIN_INT;
+    e->u.e.l = expr_parse_any (l);
+    e->u.e.r = NULL;
+    if (!e->u.e.l) {
+      expr_dec_parens ();
+      FREE (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      if (file_have (l, comma)) {
+	e->u.e.r = expr_parse_int (l);
+      }
+      if (!e->u.e.r) {
+	expr_dec_parens ();
+	file_set_position (l);
+	file_pop_position (l);
+	expr_free (e);
+	return NULL;
+      }
+      if (!file_have (l, rpar)) {
+	expr_dec_parens ();
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+    }
+    expr_dec_parens ();
+  }
+  else {
+    e = _parse_expr_func (l);
+    if (!e) {
+      file_set_position (l);
+    }
   }
   file_pop_position (l);
   return e;

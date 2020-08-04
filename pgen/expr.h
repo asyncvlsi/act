@@ -213,6 +213,9 @@ extern Expr *(*expr_parse_basecase_bool)(LFILE *l);
 
 extern int (*expr_parse_newtokens)(LFILE *l);
 
+extern void expr_inc_parens (void);  
+extern void expr_dec_parens (void);  
+
 
 extern int expr_gettoken (int t);
   /* needed for external parsing support */

@@ -51,6 +51,16 @@ static LFILE *Tl;
 
 static int end_gt_mode = 0;
 
+void expr_inc_parens (void)
+{
+  paren_count++;
+}
+
+void expr_dec_parens (void)
+{
+  paren_count--;
+}
+
 int expr_gettoken (int type)
 {
   return T[type];
