@@ -1562,10 +1562,12 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
 }
 
 static iHashtable *pmap = NULL;
+static int _expr_has_probes = 0;
 
 static Expr *_process_probes (Expr *e)
 {
   if (pmap->n > 0) {
+    _expr_has_probes = 1;
     for (int i=0; i < pmap->size; i++) {
       for (ihash_bucket_t *b = pmap->head[i]; b; b = b->next) {
 	if (b->i == 0) {
@@ -1729,6 +1731,9 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
 
   pmap = ihash_new (4);
   e = _chp_add_probes (e, ns, s, 1);
+  if (pmap->n > 0) {
+    _expr_has_probes = 1;
+  }
   ihash_free (pmap);
   return e;
 }
@@ -1739,6 +1744,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
   listitem_t *li;
   ValueIdx *vx;
+  int expr_has_else, expr_has_probes;
   
   if (!c) return NULL;
   NEW (ret, act_chp_lang_t);
@@ -1783,6 +1789,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_DOLOOP:
     gchd = NULL;
     gctl = NULL;
+    expr_has_probes = 0;
+    expr_has_else = 0;
     for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
       if (gctmp->id) {
 	int ilo, ihi;
@@ -1796,7 +1804,9 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  tmp->next = NULL;
 	  tmp->id = NULL;
 	  tmp->g = expr_expand (gctmp->g, ns, s);
+	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
+	  expr_has_probes = _expr_has_probes || expr_has_probes;
 	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
 	    FREE (tmp);
 	  }
@@ -1812,7 +1822,13 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	tmp->id = NULL;
 	tmp->next = NULL;
 	tmp->g = expr_expand (gctmp->g, ns, s);
+	_expr_has_probes = 0;
 	tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
+	expr_has_probes = _expr_has_probes || expr_has_probes;
+	if (!tmp->g && gctmp != c->u.gc) {
+	  /*-- null guard in head is the loop shortcut --*/
+	  expr_has_else = 1;
+	}
 	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
 	    c->type != ACT_CHP_DOLOOP) {
 	  FREE (tmp);
@@ -1833,6 +1849,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       NEW (tmp->s, act_chp_lang);
       tmp->s->type = ACT_CHP_SKIP;
       q_ins (gchd, gctl, tmp);
+    }
+    if (expr_has_else && expr_has_probes) {
+      act_error_ctxt (stderr);
+      fatal_error ("Cannot have an else clause when guards contain channels");
     }
     if (c->type != ACT_CHP_DOLOOP) {
       if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {

@@ -1,0 +1,3 @@
+In expanding testme
+In expanding ::<Global>
+FATAL: Cannot have an else clause when guards contain channels
