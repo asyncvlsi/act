@@ -557,7 +557,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (width) {
 	*width = 1;
       }
-      return T_INT;
+      return (lt & ~T_BOOL)|T_INT;
     }
     if (lt & T_INT) {
       if (!e->u.e.r) {
@@ -577,7 +577,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       else {
 	*width = 32;
       }
-      return T_INT;
+      return lt;
     }
     typecheck_err ("int(.) takes only an int or bool argument");
     return T_ERR;
