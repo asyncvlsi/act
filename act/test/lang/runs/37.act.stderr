@@ -1,0 +1,2 @@
+ERROR: File `37.act', line 8, col 10
+	else cannot be used in non-deterministic selections

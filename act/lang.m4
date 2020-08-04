@@ -565,8 +565,18 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
 | "[|" { guarded_cmd "[]" }* "|]"
 {{X:
     act_chp_lang_t *c;
+    act_chp_gc_t *gc;
     c = apply_X_select_stmt_opt0 ($0, $2);
     c->type = ACT_CHP_SELECT_NONDET;
+    
+    gc = c->u.gc;
+    while (gc) {
+      if (!gc->g) {
+	$E("`else' cannot be used in non-deterministic selections");
+      }
+      gc = gc->next;
+    }
+
     return c;
 }}
 ;
