@@ -1506,22 +1506,36 @@ lang_size[ActBody *]: "sizing" "{"
 
 size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  [";" dir wnumber_expr [ "," ID ] [ "," wint_expr ] ] "}"
 {{X:
-    A_NEW ($0->sizing_info->d, act_sizing_directive);
-    A_NEXT ($0->sizing_info->d).id = $1;
-    A_NEXT ($0->sizing_info->d).upfolds = NULL;
-    A_NEXT ($0->sizing_info->d).dnfolds = NULL;
-    A_NEXT ($0->sizing_info->d).flav_up = 0;
-    A_NEXT ($0->sizing_info->d).flav_dn = 0;
+    act_sizing_directive *d;
+
+    if (!list_isempty ($0->sz_loop_stack)) {
+      act_sizing_directive *parent;
+      parent = (act_sizing_directive *) stack_peek ($0->sz_loop_stack);
+      A_NEW (parent->d, act_sizing_directive);
+      d = &A_NEXT (parent->d);
+    }
+    else {
+      A_NEW ($0->sizing_info->d, act_sizing_directive);
+      d = &A_NEXT ($0->sizing_info->d);
+    }
+
+    d->loop_id = NULL;
+    
+    d->id = $1;
+    d->upfolds = NULL;
+    d->dnfolds = NULL;
+    d->flav_up = 0;
+    d->flav_dn = 0;
     
     if ($3) {
-      A_NEXT ($0->sizing_info->d).eup = $4;
-      A_NEXT ($0->sizing_info->d).edn = NULL;
+      d->eup = $4;
+      d->edn = NULL;
       
       if (!OPT_EMPTY ($5)) {
 	ActRet *r = OPT_VALUE ($6);
 	$A(r->type == R_STRING);
-	A_NEXT ($0->sizing_info->d).flav_up = act_dev_string_to_value (r->u.str);
-	if (A_NEXT ($0->sizing_info->d).flav_up == -1) {
+	d->flav_up = act_dev_string_to_value (r->u.str);
+	if (d->flav_up == -1) {
 	  $E("Unknown device flavor ``%s''", r->u.str);
 	}
 	FREE (r);
@@ -1531,20 +1545,20 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
       if (!OPT_EMPTY ($6)) {
 	ActRet *r = OPT_VALUE ($6);
 	$A(r->type == R_EXPR);
-	A_NEXT ($0->sizing_info->d).upfolds = r->u.exp;
+	d->upfolds = r->u.exp;
 	FREE (r);
       }
       OPT_FREE ($6);
     }
     else {
-      A_NEXT ($0->sizing_info->d).edn = $4;
-      A_NEXT ($0->sizing_info->d).eup = NULL;
+      d->edn = $4;
+      d->eup = NULL;
       
       if (!OPT_EMPTY ($5)) {
 	ActRet *r = OPT_VALUE ($5);
 	$A(r->type == R_STRING);
-	A_NEXT ($0->sizing_info->d).flav_dn = act_dev_string_to_value (r->u.str);
-	if (A_NEXT ($0->sizing_info->d).flav_dn == -1) {
+	d->flav_dn = act_dev_string_to_value (r->u.str);
+	if (d->flav_dn == -1) {
 	  $E("Unknown device flavor ``%s''", r->u.str);
 	}
 	FREE (r);
@@ -1554,7 +1568,7 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
       if (!OPT_EMPTY ($6)) {
 	ActRet *r = OPT_VALUE ($6);
 	$A(r->type == R_EXPR);
-	A_NEXT ($0->sizing_info->d).dnfolds = r->u.exp;
+	d->dnfolds = r->u.exp;
 	FREE (r);
       }
       OPT_FREE ($6);
@@ -1600,14 +1614,14 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
       }
       OPT_FREE (r4->u.l);
       if (r1->u.ival) {
-	A_NEXT ($0->sizing_info->d).eup = r2->u.exp;
-	A_NEXT ($0->sizing_info->d).upfolds = fold;
-	A_NEXT ($0->sizing_info->d).flav_up = flav;
+	d->eup = r2->u.exp;
+	d->upfolds = fold;
+	d->flav_up = flav;
       }
       else {
-	A_NEXT ($0->sizing_info->d).edn = r2->u.exp;
-	A_NEXT ($0->sizing_info->d).dnfolds = fold;
-	A_NEXT ($0->sizing_info->d).flav_dn = flav;
+	d->edn = r2->u.exp;
+	d->dnfolds = fold;
+	d->flav_dn = flav;
       }
       FREE (r1);
       FREE (r2);
@@ -1618,7 +1632,54 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
     A_INC ($0->sizing_info->d);
     return NULL;
 }}
-| ID wnumber_expr
+| "(" ";" ID ":" !noreal wint_expr [ ".." wint_expr ]
+{{X:
+    act_sizing_directive *d;
+    Expr *hi = NULL;
+    
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+
+    if (!list_isempty ($0->sz_loop_stack)) {
+      act_sizing_directive *parent;
+      parent = (act_sizing_directive *) stack_peek ($0->sz_loop_stack);
+      A_NEW (parent->d, act_sizing_directive);
+      d = &A_NEXT (parent->d);
+    }
+    else {
+      A_NEW ($0->sizing_info->d, act_sizing_directive);
+      d = &A_NEXT ($0->sizing_info->d);
+    }
+    
+    d->loop_id = $3;
+    
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+
+    d->lo = $5;
+    d->hi = hi;
+
+    A_INIT (d->d);
+    stack_push ($0->sz_loop_stack, d);
+}}
+ ":" { size_directive ";" }* ")"
+{{X:
+    $0->scope->Del ($3);
+    stack_pop ($0->sz_loop_stack);
+    return NULL;
+}}
+;
+
+
+size_setup: ID wnumber_expr
 {{X:
     /* ID can be:
            p_n_mode  0/1  0 = default, 1 = sqrt sizing
@@ -1637,11 +1698,13 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
     }
     return NULL;
 }}
+| /* nothing */
 ;
 
-size_body: { size_directive ";" }*
+size_body: { size_setup ";" }* { size_directive ";" }*
 {{X:
     list_free ($1);
+    list_free ($2);
     return NULL;
 }}  
 ;

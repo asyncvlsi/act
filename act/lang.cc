@@ -2577,6 +2577,39 @@ void sizing_print (FILE *fp, act_sizing *s)
   }
 }
 
+static void _fill_sizing_directive (ActNamespace *ns, Scope *s,
+				    act_sizing *ret, act_sizing_directive *d)
+{
+  if (d->loop_id) {
+    int ilo, ihi;
+    ValueIdx *vx;
+
+    act_syn_loop_setup (ns, s, d->loop_id, d->lo, d->hi,
+			&vx, &ilo, &ihi);
+
+    for (int iter=ilo; iter <= ihi; iter++) {
+      s->setPInt (vx->u.idx, iter);
+      for (int i=0; i < A_LEN (d->d); i++) {
+	_fill_sizing_directive (ns, s, ret, &d->d[i]);
+      }
+    }
+    act_syn_loop_teardown (ns, s, d->loop_id, vx);
+	
+  }
+  else {
+    A_NEW (ret->d, act_sizing_directive);
+    A_NEXT (ret->d).loop_id = NULL;
+    A_NEXT (ret->d).id = d->id->Expand (ns, s);
+    A_NEXT (ret->d).eup = expr_expand (d->eup, ns, s);
+    A_NEXT (ret->d).edn = expr_expand (d->edn, ns, s);
+    A_NEXT (ret->d).upfolds = expr_expand (d->upfolds, ns, s);
+    A_NEXT (ret->d).dnfolds = expr_expand (d->dnfolds, ns, s);
+    A_NEXT (ret->d).flav_up = d->flav_up;
+    A_NEXT (ret->d).flav_dn = d->flav_dn;
+    A_INC (ret->d);
+  }
+}
+
 act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
 {
   if (!sz) return NULL;
@@ -2617,15 +2650,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
   A_INIT (ret->d);
   if (A_LEN (sz->d) > 0) {
     for (int i=0; i < A_LEN (sz->d); i++) {
-      A_NEW (ret->d, act_sizing_directive);
-      A_NEXT (ret->d).id = sz->d[i].id->Expand (ns, s);
-      A_NEXT (ret->d).eup = expr_expand (sz->d[i].eup, ns, s);
-      A_NEXT (ret->d).edn = expr_expand (sz->d[i].edn, ns, s);
-      A_NEXT (ret->d).upfolds = expr_expand (sz->d[i].upfolds, ns, s);
-      A_NEXT (ret->d).dnfolds = expr_expand (sz->d[i].dnfolds, ns, s);
-      A_NEXT (ret->d).flav_up = sz->d[i].flav_up;
-      A_NEXT (ret->d).flav_dn = sz->d[i].flav_dn;
-      A_INC (ret->d);
+      _fill_sizing_directive (ns, s, ret, &sz->d[i]);
     }
   }
   return ret;

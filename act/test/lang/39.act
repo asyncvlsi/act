@@ -1,0 +1,11 @@
+defproc testme (bool? a; bool! b)
+{
+  prs { 
+    a => b-
+  }
+  sizing {
+   (;i:10: b {-1,lvt,2; +4,hvt,3 } )
+  }
+}
+
+testme t;

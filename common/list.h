@@ -83,6 +83,7 @@ void stack_ipush (list_t *l, int item);
 const void *stack_pop (list_t *l);
 int stack_ipop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
+#define stack_peek(l)  list_value (list_first (l))
 
 #define list_delete_head(l) stack_pop(l)
 #define list_delete_ihead(l) stack_ipop(l)

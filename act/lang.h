@@ -279,6 +279,12 @@ struct act_sizing_directive {
   int flav_up, flav_dn;
   Expr *eup, *edn;
   Expr *upfolds, *dnfolds;
+
+  /*-- sizing loop: NOTE: loop_id == NULL meanas the rest of the
+       fields are garbage  --*/
+  const char *loop_id;
+  Expr *lo, *hi;
+  A_DECL (act_sizing_directive, d);
 };
   
 struct act_sizing {

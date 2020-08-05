@@ -388,6 +388,7 @@ Act::Act (const char *s)
   tr.attr_table = config_get_table_string ("act.instance_attr");
 
   tr.sizing_info = NULL;
+  tr.sz_loop_stack = list_new ();
 
   tr.emit_depend = Act::emit_depend;
   tr.in_cond = 0;
