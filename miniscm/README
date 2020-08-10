@@ -1,0 +1,23 @@
+These files were authored by Rajit Manohar when he was a student at Caltech,
+and added to the magic distribution at the time. They are being
+re-distributed by him as part of the ACT distribution.
+
+They have been modified to be de-coupled from magic, so that they can
+be used in different contexts and with other tools/libraries.
+
+=== Original README contents below ===
+
+This is a mini-scheme interpreter, even though the files are all named
+lisp*.{c,h}.
+
+This interpreter is *extremely* slow. I can think of lots of ways to
+improve its memory usage and performance (a factor of 5 improvement
+seems easy), but it is very robust and it works. :) Besides, it turns
+out that the bottleneck in most common tasks is magic itself, not the
+interpreter.
+
+The memory usage of this interpreter is ridiculously high. Collect garbage
+often. :) Garbage collection is done automatically based on the
+variable scm-gc-frequency at the top-level . . . i.e., when you see
+magic's ">" prompt. To collect garbage at intermediate points in the
+computation, you have to call "collect-garbage" explicitly.
