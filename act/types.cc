@@ -2657,6 +2657,29 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
   return ret;
 }
 
+/*
+ * This only applies to non-parameter functions
+ */
+Expr *Function::toInline (int nargs, Expr **args)
+{
+  Assert (nargs == getNumPorts(), "Function for parameters used in CHP!");
+  
+  /* 
+     take 
+       "self = V"
+     and walk backward through the function!
+  */
+  if (pending) {
+    fatal_error ("Sorry, recursive functions (`%s') not supported.",
+		 getName());
+  }
+  pending = 1;
+
+  /* convert CHP body into an expression! */
+  
+  return NULL;
+}
+
 
 
 void Process::addIface (InstType *iface, list_t *lmap)

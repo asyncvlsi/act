@@ -417,6 +417,7 @@ class Function : public UserDef {
   Function *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   Expr *eval (ActNamespace *ns, int nargs, Expr **args);
+  Expr *toInline (int nargs, Expr **args);
   
  private:
   InstType *ret_type;
