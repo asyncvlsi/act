@@ -240,7 +240,7 @@ LispPrint (FILE *fp, LispObj *l)
   
   _LispGenTable (l);
 
-  for (int i=0; i < GenTable->size; i++) {
+  for (i=0; i < GenTable->size; i++) {
     for (b = GenTable->head[i]; b; b = b->next) {
       if (b->i) {
 	ihash_bucket_t *u = ihash_add (PrintTable, b->key);
