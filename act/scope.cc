@@ -122,15 +122,15 @@ Scope::~Scope ()
 {
   /* free items from the hash table */
   hash_bucket_t *b;
+  hash_iter_t iter;
   int i;
 
   if (expanded) {
-    for (i=0; i < H->size; i++) {
-      for (b = H->head[i]; b; b = b->next) {
-	ValueIdx *vx = (ValueIdx *)b->v;
-	/* delete connections too */
-	delete vx;
-      }
+    hash_iter_init (H, &iter);
+    while ((b = hash_iter_next (H, &iter))) {
+      ValueIdx *vx = (ValueIdx *)b->v;
+      /* delete connections too */
+      delete vx;
     }
   }
   hash_free (H);
@@ -247,19 +247,19 @@ void Scope::FlushExpand ()
   if (expanded) {
     int i;
     hash_bucket_t *b;
+    hash_iter_t iter;
     ValueIdx *v;
-    
-    for (i=0; i < H->size; i++) {
-      for (b = H->head[i]; b; b = b->next) {
-	v = (ValueIdx *)b->v;
-	Assert (v->t, "Huh");
-	if (!TypeFactory::isParamType (v->t->BaseType())) {
-	  if (v->u.obj.c) {
-	    warning ("FlushExpand() called, but object has a connection!");
-	  }
+
+    hash_iter_init (H, &iter);
+    while ((b = hash_iter_next (H, &iter))) {
+      v = (ValueIdx *)b->v;
+      Assert (v->t, "Huh");
+      if (!TypeFactory::isParamType (v->t->BaseType())) {
+	if (v->u.obj.c) {
+	  warning ("FlushExpand() called, but object has a connection!");
 	}
-	delete v;
       }
+      delete v;
     }
     A_FREE (vpint);
     A_FREE (vpints);
@@ -303,15 +303,15 @@ void Scope::Merge (Scope *s)
   
   int i;
   hash_bucket_t *b, *tmp;
+  hash_iter_t iter;
 
-  for (i=0; i < s->H->size; i++) {
-    for (b = s->H->head[i]; b; b = b->next) {
-      if (hash_lookup (H, b->key)) {
-	fatal_error ("Scope::Merge(): id `%s' already exists!", b->key);
-      }
-      tmp = hash_add (H, b->key);
-      tmp->v = b->v;
+  hash_iter_init (s->H, &iter);
+  while ((b = hash_iter_next (s->H, &iter))) {
+    if (hash_lookup (H, b->key)) {
+      fatal_error ("Scope::Merge(): id `%s' already exists!", b->key);
     }
+    tmp = hash_add (H, b->key);
+    tmp->v = b->v;
   }
 }
 

@@ -1566,23 +1566,25 @@ static int _expr_has_probes = 0;
 
 static Expr *_process_probes (Expr *e)
 {
+  ihash_iter_t iter;
+  ihash_bucket_t *b;
+  
   if (pmap->n > 0) {
     _expr_has_probes = 1;
-    for (int i=0; i < pmap->size; i++) {
-      for (ihash_bucket_t *b = pmap->head[i]; b; b = b->next) {
-	if (b->i == 0) {
-	  Expr *t;
-	  act_connection *c = (act_connection *)b->key;
-	  NEW (t, Expr);
-	  t->type = E_AND;
-	  t->u.e.r = e;
-	  e = t;
-	  NEW (t->u.e.l, Expr);
-	  t = t->u.e.l;
-	  t->type = E_PROBE;
-	  t->u.e.l = (Expr *)c->toid();
-	  t->u.e.r = NULL;
-	}
+    ihash_iter_init (pmap, &iter);
+    while ((b = ihash_iter_next (pmap, &iter))) {
+      if (b->i == 0) {
+	Expr *t;
+	act_connection *c = (act_connection *)b->key;
+	NEW (t, Expr);
+	t->type = E_AND;
+	t->u.e.r = e;
+	e = t;
+	NEW (t->u.e.l, Expr);
+	t = t->u.e.l;
+	t->type = E_PROBE;
+	t->u.e.l = (Expr *)c->toid();
+	t->u.e.r = NULL;
       }
     }
     ihash_clear (pmap);

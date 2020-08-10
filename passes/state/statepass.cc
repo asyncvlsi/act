@@ -30,11 +30,13 @@
 
 static act_connection *_inv_hash (struct iHashtable *H, int idx)
 {
-  for (int i=0; i < H->size; i++) {
-    for (ihash_bucket_t *ib = H->head[i]; ib; ib = ib->next) {
-      if (ib->i == idx) {
-	return (act_connection *)ib->key;
-      }
+  ihash_iter_t iter;
+  ihash_bucket_t *ib;
+  
+  ihash_iter_init (H, &iter);
+  while ((ib = ihash_iter_next (H, &iter))) {
+    if (ib->i == idx) {
+      return (act_connection *)ib->key;
     }
   }
   return NULL;
@@ -98,29 +100,31 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   alt_portchp.ints = 0;
   alt_portchp.chans = 0;
 
-  for (int i=0; i < b->cH->size; i++) {
-    for (ihash_bucket_t *hb = b->cH->head[i]; hb; hb = hb->next) {
-      act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
-      if (v->used && !v->isglobal) {
-	bool_count++;
-	if (v->isport) {
-	  alt_portbools++;
-	}
+  ihash_bucket_t *hb;
+  ihash_iter_t iter;
+  
+  ihash_iter_init (b->cH, &iter);
+  while ((hb = ihash_iter_next (b->cH, &iter))) {
+    act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
+    if (v->used && !v->isglobal) {
+      bool_count++;
+      if (v->isport) {
+	alt_portbools++;
       }
-      if (!v->used && v->usedchp && !v->isglobal) {
-	/* variables that are used in chp that are not used in the
-	   booleanized version */
-	chp_count++;
-	if (v->ischpport) {
-	  if (v->isint) {
-	    alt_portchp.ints++;
-	  }
-	  else if (v->ischan) {
-	    alt_portchp.chans++;
-	  }
-	  else {
-	    alt_portchp.bools++;
-	  }
+    }
+    if (!v->used && v->usedchp && !v->isglobal) {
+      /* variables that are used in chp that are not used in the
+	 booleanized version */
+      chp_count++;
+      if (v->ischpport) {
+	if (v->isint) {
+	  alt_portchp.ints++;
+	}
+	else if (v->ischan) {
+	  alt_portchp.chans++;
+	}
+	else {
+	  alt_portchp.bools++;
 	}
       }
     }
@@ -193,135 +197,136 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   si->chp_all.ints = 0;
   si->chp_all.chans = 0;
 
-  for (int i=0; i < b->cH->size; i++) {
-    for (ihash_bucket_t *ib = b->cH->head[i]; ib; ib = ib->next) {
-      int found = 0;
-      act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
-      int ocount = 0;
+  ihash_bucket_t *ib;
 
-      if (v->used) {
-	/* boolean state */
-	if (v->isport) {
-	  /*-- in the port list; so port state, not local state --*/
-	  for (int k=0; k < A_LEN (b->ports); k++) {
-	    if (b->ports[k].omit) continue;
-	    if (ib->key == (long)b->ports[k].c) {
-	      found = 1;
-	      break;
-	    }
-	    ocount++;
-	  }
-	  Assert (found, "What?");
-	  ihash_bucket_t *x = ihash_add (si->map, ib->key);
-	  x->i = ocount - si->nportbools;
-	}
-	else if (!v->isglobal) {
-	  /*-- globals not handled here --*/
-	  ihash_bucket_t *x = ihash_add (si->map, ib->key);
-	  x->i = idx++;
-	  ocount = x->i + si->nportbools;
-	}
+  ihash_iter_init (b->cH, &iter);
+  while ((ib = ihash_iter_next (b->cH, &iter))) {
+    int found = 0;
+    act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+    int ocount = 0;
 
-#if 0
-	ActId *id = ((act_connection *)ib->key)->toid();
-	printf ("   var: ");
-	id->Print (stdout);
-	printf (" [out=%d]", v->output ? 1 : 0);
-	printf ("\n");
-#endif
-
-	/*-- look for multi-drivers: globals are ignored --*/
-	if (!v->isglobal) {
-	  if (v->output) {
-	    if (bitset_tst (tmpbits, ocount)) {
-	      /* found multi driver! */
-	      bitset_set (si->multi, ocount);
-#if 0
-	      printf ("     -> multi-driver!\n");
-#endif
-	    }
-	    else {
-	      bitset_set (tmpbits, ocount);
-	    }
+    if (v->used) {
+      /* boolean state */
+      if (v->isport) {
+	/*-- in the port list; so port state, not local state --*/
+	for (int k=0; k < A_LEN (b->ports); k++) {
+	  if (b->ports[k].omit) continue;
+	  if (ib->key == (long)b->ports[k].c) {
+	    found = 1;
+	    break;
 	  }
-	  else {
-	    /* an input; mark it */
-	    bitset_set (inpbits, ocount);
-	  }
+	  ocount++;
 	}
-#if 0
-	delete id;
-#endif      
+	Assert (found, "What?");
+	ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	x->i = ocount - si->nportbools;
       }
-      
-      if (!v->used && v->usedchp) {
-	/* extra chp state */
-	if (v->ischpport) {
-	  for (int k=0; k < A_LEN (b->chpports); k++) {
-	    if (b->chpports[k].omit) continue;
-	    if (ib->key == (long)b->chpports[k].c) {
-	      found = 1;
-	      break;
-	    }
-	    {
-	      ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
-	      act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
-	      if (!xv->used) {
-		/* if it is used in the boolean pass, it's already
-		   counted there */
-		ocount++;
-	      }
-	    }
-	  }
-	  Assert (found, "What?");
-	}
-	else if (!v->isglobal) {
-	  ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
-	  x->i = chpidx++;
-	  ocount = x->i + si->nportchptot;
-
-	  if (v->ischan) {
-	    si->chp_all.chans++;
-	  }
-	  else if (v->isint) {
-	    si->chp_all.ints++;
-	  }
-	  else {
-	    si->chp_all.bools++;
-	  }
-	}
-
-#if 0
-	ActId *id = ((act_connection *)ib->key)->toid();
-	printf ("   var: ");
-	id->Print (stdout);
-	printf (" [out=%d]", v->output ? 1 : 0);
-	printf ("\n");
-#endif      
-	if (!v->isglobal) {
-	  if (v->output) {
-	    if (bitset_tst (tmpchp, ocount)) {
-	      /* found multi driver! */
-	      bitset_set (si->chpmulti, ocount);
-#if 0
-	      printf ("     -> multi-driver!\n");
-#endif
-	    }
-	    else {
-	      bitset_set (tmpchp, ocount);
-	    }
-	  }
-	  else {
-	    /* an input; mark it */
-	    bitset_set (inpchp, ocount);
-	  }
-	}
-#if 0
-	delete id;
-#endif      
-
+      else if (!v->isglobal) {
+	/*-- globals not handled here --*/
+	ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	x->i = idx++;
+	ocount = x->i + si->nportbools;
       }
+
+#if 0
+      ActId *id = ((act_connection *)ib->key)->toid();
+      printf ("   var: ");
+      id->Print (stdout);
+      printf (" [out=%d]", v->output ? 1 : 0);
+      printf ("\n");
+#endif
+
+      /*-- look for multi-drivers: globals are ignored --*/
+      if (!v->isglobal) {
+	if (v->output) {
+	  if (bitset_tst (tmpbits, ocount)) {
+	    /* found multi driver! */
+	    bitset_set (si->multi, ocount);
+#if 0
+	    printf ("     -> multi-driver!\n");
+#endif
+	  }
+	  else {
+	    bitset_set (tmpbits, ocount);
+	  }
+	}
+	else {
+	  /* an input; mark it */
+	  bitset_set (inpbits, ocount);
+	}
+      }
+#if 0
+      delete id;
+#endif      
     }
+      
+    if (!v->used && v->usedchp) {
+      /* extra chp state */
+      if (v->ischpport) {
+	for (int k=0; k < A_LEN (b->chpports); k++) {
+	  if (b->chpports[k].omit) continue;
+	  if (ib->key == (long)b->chpports[k].c) {
+	    found = 1;
+	    break;
+	  }
+	  {
+	    ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
+	    act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
+	    if (!xv->used) {
+	      /* if it is used in the boolean pass, it's already
+		 counted there */
+	      ocount++;
+	    }
+	  }
+	}
+	Assert (found, "What?");
+      }
+      else if (!v->isglobal) {
+	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	x->i = chpidx++;
+	ocount = x->i + si->nportchptot;
+
+	if (v->ischan) {
+	  si->chp_all.chans++;
+	}
+	else if (v->isint) {
+	  si->chp_all.ints++;
+	}
+	else {
+	  si->chp_all.bools++;
+	}
+      }
+
+#if 0
+      ActId *id = ((act_connection *)ib->key)->toid();
+      printf ("   var: ");
+      id->Print (stdout);
+      printf (" [out=%d]", v->output ? 1 : 0);
+      printf ("\n");
+#endif      
+      if (!v->isglobal) {
+	if (v->output) {
+	  if (bitset_tst (tmpchp, ocount)) {
+	    /* found multi driver! */
+	    bitset_set (si->chpmulti, ocount);
+#if 0
+	    printf ("     -> multi-driver!\n");
+#endif
+	  }
+	  else {
+	    bitset_set (tmpchp, ocount);
+	  }
+	}
+	else {
+	  /* an input; mark it */
+	  bitset_set (inpchp, ocount);
+	}
+      }
+#if 0
+      delete id;
+#endif      
+    }
+
   }
 
   Assert (idx == si->localbools, "What?");
@@ -622,71 +627,71 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   c_idx.bools = 0;
   c_idx.ints = 0;
   c_idx.chans = 0;
+
+  ihash_iter_init (b->cH, &iter);
   
-  for (int i=0; i < b->cH->size; i++) {
-    for (ihash_bucket_t *ib = b->cH->head[i]; ib; ib = ib->next) {
-      int found = 0;
-      act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
-      int ocount = 0;
+  while ((ib = ihash_iter_next (b->cH, &iter))) {
+    int found = 0;
+    act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+    int ocount = 0;
 
-      if (v->used) {
-	continue;
-      }
+    if (v->used) {
+      continue;
+    }
 
-      if (v->usedchp) {
-	/* extra chp state */
-	if (v->ischpport) {
-	  for (int k=0; k < A_LEN (b->chpports); k++) {
-	    if (b->chpports[k].omit) continue;
-	    if (ib->key == (long)b->chpports[k].c) {
-	      found = 1;
-	      break;
-	    }
-	    {
-	      ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
-	      act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
-	      if (!xv->used) {
-		/* if it is used in the boolean pass, it's already
-		   counted there */
-		if (v->ischan) {
-		  if (xv->ischan) {
-		    ocount++;
-		  }
-		}
-		else if (v->isint) {
-		  if (xv->isint) {
-		    ocount++;
-		  }
-		}
-		else if (!(xv->isint || xv->ischan)) {
+    if (v->usedchp) {
+      /* extra chp state */
+      if (v->ischpport) {
+	for (int k=0; k < A_LEN (b->chpports); k++) {
+	  if (b->chpports[k].omit) continue;
+	  if (ib->key == (long)b->chpports[k].c) {
+	    found = 1;
+	    break;
+	  }
+	  {
+	    ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
+	    act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
+	    if (!xv->used) {
+	      /* if it is used in the boolean pass, it's already
+		 counted there */
+	      if (v->ischan) {
+		if (xv->ischan) {
 		  ocount++;
 		}
 	      }
+	      else if (v->isint) {
+		if (xv->isint) {
+		  ocount++;
+		}
+	      }
+	      else if (!(xv->isint || xv->ischan)) {
+		ocount++;
+	      }
 	    }
 	  }
-	  Assert (found, "What?");
-	  ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
-	  if (v->ischan) {
-	    x->i = ocount - si->nportchp.chans;
-	  }
-	  else if (v->isint) {
-	    x->i = ocount - si->nportchp.ints;
-	  }
-	  else {
-	    x->i = ocount - si->nportchp.bools - si->nportbools;
-	  }
 	}
-	else if (!v->isglobal) {
-	  ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
-	  if (v->ischan) {
-	    x->i = c_idx.chans++;
-	  }
-	  else if (v->isint) {
-	    x->i = c_idx.ints++;
-	  }
-	  else {
-	    x->i = si->allbools + c_idx.bools++;
-	  }
+	Assert (found, "What?");
+	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	if (v->ischan) {
+	  x->i = ocount - si->nportchp.chans;
+	}
+	else if (v->isint) {
+	  x->i = ocount - si->nportchp.ints;
+	}
+	else {
+	  x->i = ocount - si->nportchp.bools - si->nportbools;
+	}
+      }
+      else if (!v->isglobal) {
+	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	if (v->ischan) {
+	  x->i = c_idx.chans++;
+	}
+	else if (v->isint) {
+	  x->i = c_idx.ints++;
+	}
+	else {
+	  x->i = si->allbools + c_idx.bools++;
 	}
       }
     }

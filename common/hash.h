@@ -44,7 +44,12 @@ struct Hashtable {
   int size;
   hash_bucket_t **head;
   int n;
-}; 
+};
+
+typedef struct {
+  hash_bucket_t *b;
+  int i;
+} hash_iter_t;
 
 typedef struct ihash_bucket {
   unsigned long key;
@@ -62,6 +67,11 @@ struct iHashtable {
   int n;
 };
 
+typedef struct {
+  ihash_bucket_t *b;
+  int i;
+} ihash_iter_t;
+    
 typedef struct chash_bucket {
   void *key;			/* key */
   union {
@@ -101,6 +111,12 @@ typedef void * (*CHASH_DUPFN) (void *);
 typedef void (*CHASH_FREEFN) (void *);
 typedef void (*CHASH_PRINTFN) (FILE *, void *);
 
+typedef struct {
+  chash_bucket_t *b;
+  int i;
+} chash_iter_t;
+    
+
 /* You can access all elements in struct Hashtable *h as follows:
 
 int i;
@@ -114,9 +130,7 @@ for (i = 0; i < h->size; i++)
 */
 
 struct Hashtable  *hash_new (int sz);
-int hash_function (int size, const char *key);
 struct iHashtable  *ihash_new (int sz);
-
 struct cHashtable  *chash_new (int sz);
 
 hash_bucket_t *hash_add (struct Hashtable *, const char *key);
@@ -139,6 +153,15 @@ void hash_free (struct Hashtable *);
 void ihash_free (struct iHashtable *);
 void chash_free (struct cHashtable *);
 
+
+void hash_iter_init (struct Hashtable *, hash_iter_t *i);
+void ihash_iter_init (struct iHashtable *, ihash_iter_t *i);
+void chash_iter_init (struct cHashtable *, chash_iter_t *i);
+
+hash_bucket_t *hash_iter_next (struct Hashtable *, hash_iter_t *i);
+ihash_bucket_t *ihash_iter_next (struct iHashtable *, ihash_iter_t *i);
+chash_bucket_t *chash_iter_next (struct cHashtable *, chash_iter_t *i);
+
   /* you can use this to build custom hash functions
 
      size = hash table size (must be a power of 2)
@@ -150,6 +173,7 @@ void chash_free (struct cHashtable *);
      prev   = previous return value if you want to chain calls to this
      function
    */
+int hash_function (int size, const char *key);
 int hash_function_continue (unsigned int size, 
 			    const unsigned char *k, int len, unsigned int prev,
 			    int iscont);

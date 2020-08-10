@@ -829,3 +829,77 @@ void chash_clear (struct cHashtable *h)
   }
   h->n = 0;
 }
+
+
+/*
+  Iterators
+*/
+void hash_iter_init (struct Hashtable *H, hash_iter_t *i)
+{
+  i->i = -1;
+  i->b = NULL;
+}
+
+hash_bucket_t *hash_iter_next (struct Hashtable *H, hash_iter_t *i)
+{
+  if (i->b) {
+    i->b = i->b->next;
+  }
+  while (!i->b) {
+    i->i++;
+    if (i->i >= H->size) {
+      return NULL;
+    }
+    else {
+      i->b = H->head[i->i];
+    }
+  }
+  return i->b;
+}
+
+void ihash_iter_init (struct iHashtable *H, ihash_iter_t *i)
+{
+  i->i = -1;
+  i->b = NULL;
+}
+
+ihash_bucket_t *ihash_iter_next (struct iHashtable *H, ihash_iter_t *i)
+{
+  if (i->b) {
+    i->b = i->b->next;
+  }
+  while (!i->b) {
+    i->i++;
+    if (i->i >= H->size) {
+      return NULL;
+    }
+    else {
+      i->b = H->head[i->i];
+    }
+  }
+  return i->b;
+}
+
+void chash_iter_init (struct cHashtable *H, chash_iter_t *i)
+{
+  i->i = -1;
+  i->b = NULL;
+}
+
+chash_bucket_t *chash_iter_next (struct cHashtable *H, chash_iter_t *i)
+{
+  if (i->b) {
+    i->b = i->b->next;
+  }
+  while (!i->b) {
+    i->i++;
+    if (i->i >= H->size) {
+      return NULL;
+    }
+    else {
+      i->b = H->head[i->i];
+    }
+  }
+  return i->b;
+}
+

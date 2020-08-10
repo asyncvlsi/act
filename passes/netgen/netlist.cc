@@ -165,23 +165,24 @@ static void compute_max_reff (netlist_t *N, int type)
 
   /* for each variable v, compute reff as the max of all paths */
   ihash_bucket_t *b;
-  for (int i=0; i < N->bN->cH->size; i++)
-    for (b = N->bN->cH->head[i]; b; b = b->next) {
-      act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
+  ihash_iter_t iter;
+  ihash_iter_init (N->bN->cH, &iter);
+  while ((b = ihash_iter_next (N->bN->cH, &iter))) {
+    act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
 
-      /* some variables are only there for connecting to sub-circuits */
-      if (!VINF(v)) continue;
+    /* some variables are only there for connecting to sub-circuits */
+    if (!VINF(v)) continue;
       
-      if (VINF(v)->n->reff_set[type]) {
-	/* over-ridden by attributes */
-	continue;
-      }
-      VINF(v)->n->reff[type] = -1;
-      for (li = list_first (VINF(v)->n->wl); li; li = list_next (li)) {
-	p = (path_t *) list_value (li);
-	VINF(v)->n->reff[type] = MAX(VINF(v)->n->reff[type], p->reff);
-      }
+    if (VINF(v)->n->reff_set[type]) {
+      /* over-ridden by attributes */
+      continue;
     }
+    VINF(v)->n->reff[type] = -1;
+    for (li = list_first (VINF(v)->n->wl); li; li = list_next (li)) {
+      p = (path_t *) list_value (li);
+      VINF(v)->n->reff[type] = MAX(VINF(v)->n->reff[type], p->reff);
+    }
+  }
 
   /* release storage */
   node_t *n;
@@ -1807,13 +1808,13 @@ static void release_atalloc (struct Hashtable *H)
 {
   int i;
   hash_bucket_t *b;
-  for (i=0; i < H->size; i++) {
-    for (b = H->head[i]; b; b = b->next) {
-      if (b->v) {
-	FREE (b->v);
-      }
-      b->v = NULL;
+  hash_iter_t iter;
+  hash_iter_init (H, &iter);
+  while ((b = hash_iter_next (H, &iter))) {
+    if (b->v) {
+      FREE (b->v);
     }
+    b->v = NULL;
   }
 }
 
@@ -2152,11 +2153,12 @@ static void free_nl (netlist_t *n)
   list_free (n->nsc_list);
 
   for (int k=0; k < 2; k++) {
-    for (int i=0; i < n->atH[k]->size; i++) {
-      for (hash_bucket_t *b = n->atH[k]->head[i]; b; b = b->next) {
-	at_lookup *al = (at_lookup *)b->v;
-	FREE (al);
-      }
+    hash_iter_t iter;
+    hash_bucket_t *b;
+    hash_iter_init (n->atH[k], &iter);
+    while ((b = hash_iter_next (n->atH[k], &iter))) {
+      at_lookup *al = (at_lookup *)b->v;
+      FREE (al);
     }
     hash_free (n->atH[k]);
   }

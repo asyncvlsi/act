@@ -397,6 +397,7 @@ void ActNamespace::Expand ()
   int i;
   ActNamespace *ns;
   hash_bucket_t *bkt;
+  hash_iter_t iter;
 
   if (this == global) {
     act_error_push ("::<Global>", NULL, 0);
@@ -427,11 +428,10 @@ void ActNamespace::Expand ()
   */
 
   /* Expand any sub-namespaces */
-  for (i=0; i < N->size; i++) {
-    for (bkt = N->head[i]; bkt; bkt = bkt->next) {
-      ns = (ActNamespace *)bkt->v;
-      ns->Expand();
-    }
+  hash_iter_init (N, &iter);
+  while ((bkt = hash_iter_next (N, &iter))) {
+    ns = (ActNamespace *)bkt->v;
+    ns->Expand();
   }
 
   /* Expand all meta parameters at the top level of the namespace. */

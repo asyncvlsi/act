@@ -1947,6 +1947,7 @@ void ActCellPass::dump_celldb (FILE *fp)
 {
   int i;
   chash_bucket_t *b;
+  chash_iter_t iter;
   struct act_prsinfo *pi;
   int cellmax = 0;
   int id, version;
@@ -1955,33 +1956,31 @@ void ActCellPass::dump_celldb (FILE *fp)
 
   if (!cell_table) return;
 
-  for (i=0; i < cell_table->size; i++) {
-    for (b = cell_table->head[i]; b; b = b->next) {
-      pi = (struct act_prsinfo *)b->v;
-      if (pi->cell) {
-	sscanf (pi->cell->getName()+1, "%dx%d", &id, &version);
-	cellmax = (cellmax > id) ? cellmax : id;
-      }
+  chash_iter_init (cell_table, &iter);
+  while ((b = chash_iter_next (cell_table, &iter))) {
+    pi = (struct act_prsinfo *)b->v;
+    if (pi->cell) {
+      sscanf (pi->cell->getName()+1, "%dx%d", &id, &version);
+      cellmax = (cellmax > id) ? cellmax : id;
     }
   }
   cellmax++;
 
-  for (i=0; i < cell_table->size; i++) {
-    for (b = cell_table->head[i]; b; b = b->next) {
-      pi = (struct act_prsinfo *)b->v;
-      A_NEW (cells, struct cell_name *);
-      NEW (A_NEXT (cells), struct cell_name);
-      A_NEXT (cells)->p = pi;
-      if (pi->cell) {
-	A_NEXT (cells)->name = pi->cell->getName();
-      }
-      else {
-	char buf[100];
-	snprintf (buf, 100, "g%dx0", cellmax++);
-	A_NEXT (cells)->name = Strdup (buf);
-      }
-      A_INC (cells);
+  chash_iter_init (cell_table, &iter);
+  while ((b = chash_iter_next (cell_table, &iter))) {
+    pi = (struct act_prsinfo *)b->v;
+    A_NEW (cells, struct cell_name *);
+    NEW (A_NEXT (cells), struct cell_name);
+    A_NEXT (cells)->p = pi;
+    if (pi->cell) {
+      A_NEXT (cells)->name = pi->cell->getName();
     }
+    else {
+      char buf[100];
+      snprintf (buf, 100, "g%dx0", cellmax++);
+      A_NEXT (cells)->name = Strdup (buf);
+    }
+    A_INC (cells);
   }
 
   /* lets sort the cell names */

@@ -717,17 +717,18 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   }
 
   /*-- collect globals --*/
-  for (int i=0; i < n->cH->size; i++) {
-    for (ihash_bucket_t *b = n->cH->head[i]; b; b = b->next) {
-      act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
-      if (!v->output) {
-	Assert (v->input == 1, "What?");
-      }
-      if (v->id->isglobal()) {
-	A_NEWM (n->used_globals, act_connection *);
-	A_NEXT (n->used_globals) = v->id;
-	A_INC (n->used_globals);
-      }
+  ihash_iter_t iter;
+  ihash_bucket_t *b;
+  ihash_iter_init (n->cH, &iter);
+  while ((b = ihash_iter_next (n->cH, &iter))) {
+    act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
+    if (!v->output) {
+      Assert (v->input == 1, "What?");
+    }
+    if (v->id->isglobal()) {
+      A_NEWM (n->used_globals, act_connection *);
+      A_NEXT (n->used_globals) = v->id;
+      A_INC (n->used_globals);
     }
   }
   
@@ -1346,16 +1347,16 @@ void ActBooleanizePass::free_local (void *v)
   act_boolean_netlist_t *n = (act_boolean_netlist_t *)v;
   int i;
   ihash_bucket_t *b;
+  ihash_iter_t iter;
   
   if (!n) return;
 
   Assert (n->cH, "Hmm");
 
-  for (int i=0; i < n->cH->size; i++) {
-    for (b = n->cH->head[i]; b; b = b->next) {
-      act_booleanized_var_t *v = (act_booleanized_var_t *) b->v;
-      FREE (v);
-    }
+  ihash_iter_init (n->cH, &iter);
+  while ((b = ihash_iter_next (n->cH, &iter))) {
+    act_booleanized_var_t *v = (act_booleanized_var_t *) b->v;
+    FREE (v);
   }
   ihash_free (n->cH);
   A_FREE (n->ports);
