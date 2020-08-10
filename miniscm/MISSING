@@ -1,0 +1,25 @@
+This is a strict subset of the scheme language as described in the
+revised (4) report. 
+
+The implementation is useful enough for a command-line interface, but
+is by no means complete. Missing items are described below.
+
+
+====
+
+Backquotes and quasi-qutations + character comma and sequence comma, and
+associated commands (unquote, quasiquote, unquote-splicing)
+
+characters and vectors
+
+list-tail
+list-ref
+
+"else" in cond?
+"do"
+delay and force
+continuations
+eq?
+assoc list functions
+memq functions
+numbers: complex, rational
