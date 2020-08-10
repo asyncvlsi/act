@@ -41,11 +41,15 @@ LispPathOpen (char *name, char *mode, char *pathspec)
     return fp;
   }
   if (pathspec) {
+    int done = 0;
     t = Strdup (pathspec);
     u = t;
     s = u;
-    while (*u) {
-      if (*u == ':') {
+    while (!done) {
+      if (*u == ':' || *u == '\0') {
+	if (*u == '\0') {
+	  done = 1;
+	}
 	*u = '\0';
 	MALLOC (tmp, char, strlen (s) + strlen (name) + 2);
 	sprintf (tmp, "%s/%s", s, name);

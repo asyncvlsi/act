@@ -33,9 +33,13 @@ SRCS=$(OBJSC:.o=.c)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(LIB): $(OBJS)
+$(LIB): $(OBJS) scm-install
 	ar ruv $(LIB) $(OBJS)
 	$(RANLIB) $(LIB)
+
+scm-install: default.scm
+	if [ ! -d $(INSTALLLIB)/scm ]; then mkdir $(INSTALLLIB)/scm; fi
+	$(VLSI_TOOLS_SRC)/scripts/install default.scm $(INSTALLLIB)/scm/default.scm
 
 -include Makefile.deps
 

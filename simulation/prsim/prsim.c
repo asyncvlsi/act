@@ -2402,12 +2402,20 @@ int main (int argc, char **argv)
   extern char *optarg;
   char *names;
   int ch;
+  char buf[10240];
 
   signal (SIGINT, signal_handler);
 
   read_line_init ();
 #ifdef USE_SCM
   LispInit ();
+
+  if (getenv ("ACT_HOME")) {
+    char *args[] = { "load-scm", "\"default.scm\"", NULL };
+    snprintf (buf, 10240, "%s/lib/scm", getenv ("ACT_HOME"));
+    LispSetVariable ("scm-library-path", buf);
+    LispEvaluate (2, args, 0);
+  }
 #endif  
 
   names = NULL;
