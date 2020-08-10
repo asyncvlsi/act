@@ -251,6 +251,24 @@ void Condition::AddObject (SimDES *s)
   list_append (waiting_objects, s);
 }
 
+/*
+ * Delete an object from the list of waiting objects for this
+ * condition
+ */
+void Condition::DelObject (SimDES *s)
+{
+  listitem_t *li, *prev;
+  prev = NULL;
+  for (li = list_first (waiting_objects); li; li = list_next (li)) {
+    if (s == (SimDES *) list_value (li)) {
+      list_delete_next (waiting_objects, prev);
+      return;
+    }
+    prev = li;
+  }
+  return;
+}
+
 /* we're done, notify all objects */
 void Condition::Wakeup (int ev_type, int delay)
 {

@@ -209,6 +209,8 @@ public:
 				// that have to be invoked when
 				// the wait completes
 
+  void DelObject (SimDES *s);
+
   void ReInit () {
     Assert (list_isempty (waiting_objects), "ReInit() with waiting objects?");
   }
