@@ -1787,6 +1787,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     NEW (e, act_dataflow_element);
     e->t = ACT_DFLOW_FUNC;
     e->u.func.lhs = $1;
+    e->u.func.istransparent = 0;
     if (act_type_var ($0->scope, $4, NULL) != T_CHAN) {
       $e("Identifier on the RHS of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
@@ -1816,6 +1817,13 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
       FREE (r2);
     }
     OPT_FREE ($3);
+    return e;
+}}
+| w_chan_int_expr "->" [ "(" wint_expr [ "," wint_expr ] ")" ] expr_id
+{{X:
+    act_dataflow_element *e;
+    e = apply_X_dataflow_items_opt0 ($0, $1, $3, $4);
+    e->u.func.istransparent = 1;
     return e;
 }}
 | "{" expr_id_or_star_or_bar "}" { expr_id_or_star "," }* "->" { expr_id_or_star "," }*

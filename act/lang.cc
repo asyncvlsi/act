@@ -2836,14 +2836,24 @@ void dflow_print (FILE *fp, act_dataflow *d)
     case ACT_DFLOW_FUNC:
       print_expr (fp, e->u.func.lhs);
       fprintf (fp, " -> ");
-      if (e->u.func.nbufs) {			\
-	fprintf (fp, "[");			\
-	print_expr (fp, e->u.func.nbufs);	\
-	if (e->u.func.init) {			\
+      if (e->u.func.nbufs) {
+	if (e->u.func.istransparent) {
+	  fprintf (fp, "(");
+	}
+	else {
+	  fprintf (fp, "[");
+	}
+	print_expr (fp, e->u.func.nbufs);	
+	if (e->u.func.init) {			
 	  fprintf (fp, ",");
 	  print_expr (fp, e->u.func.init);
 	}
-	fprintf (fp, "] ");
+	if (e->u.func.istransparent) {
+	  fprintf (fp, ") ");
+	}
+	else {
+	  fprintf (fp, "] ");
+	}
       }
       e->u.func.rhs->Print (fp);
       break;

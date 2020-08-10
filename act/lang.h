@@ -343,6 +343,7 @@ typedef struct  {
       Expr *lhs;		// expression
       ActId *rhs;		// channel output
       Expr *nbufs;		// # of buffers
+      int istransparent:1;	// transparent v/s opaque
       Expr *init;		// initial token, if any on the output
     } func;
     struct {
