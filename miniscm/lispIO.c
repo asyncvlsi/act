@@ -141,7 +141,7 @@ LispLoad (char *name, Sexp *s, Sexp *f)
 	  inp = LispFrameLookup (LispNewString ("scm-echo-result"), f);
 	  if (res && inp && LTYPE(inp) == S_BOOL && LBOOL(inp)) {
 	    LispPrint (stdout,res);
-	    fprintf (stderr, "\n");
+	    printf ("\n");
 	  }
 	  if (!res) {
 	    if (!LispInterruptExecution)
