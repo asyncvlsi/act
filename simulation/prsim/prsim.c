@@ -34,6 +34,11 @@
 
 #include <histedit.h>
 
+#ifdef USE_SCM
+#include <lisp.h>
+#endif
+
+
 #if !defined(LIBEDIT_MAJOR) && !defined(H_SETSIZE)
 #define OLD_LIBEDIT
 #endif
@@ -289,6 +294,17 @@ void signal_handler (int sig)
 {
   interrupted = 1;
   if (P) { P->flags |= PRS_STOP_SIMULATION; }
+#ifdef USE_SCM
+  LispInterruptExecution = 1;
+#endif  
+}
+
+void clr_interrupt (void)
+{
+  interrupted = 0;
+#ifdef USE_SCM
+  LispInterruptExecution = 0;
+#endif
 }
 
 static
@@ -365,7 +381,7 @@ void del_watchpoint (PrsNode *n)
   }
 }
 
-#if USE_SCM
+#ifdef USE_SCM
 
 #define RET_TYPE int
 #define ARG_LIST int argc, char **argv
@@ -373,13 +389,13 @@ void del_watchpoint (PrsNode *n)
 #define RETURN(x) return x
 #define STD_ARG(x)  char *s; char *usage = x; int iargc = 1
 
-#define GET_ARG(msg) do { if (iargc == argc) { printf ("%s", msg); return 0; } s = argc[iargc++]; } while (0)
+#define GET_ARG(msg) do { if (iargc == argc) { printf ("%s", msg); return 0; } s = argv[iargc++]; } while (0)
 
 #define GET_ARGCOLON(msg) GET_ARG(msg)
 
-#define GET_OPTARG do { if (iargc == argc) { s = NULL; } else { s = argc[iargc++]; } } while (0)
+#define GET_OPTARG do { if (iargc == argc) { s = NULL; } else { s = argv[iargc++]; } } while (0)
 
-#define CHEK_TRAILING(msg) do { if (iargc < argc && argc[iargc][0] != '#') { printf("%s", msg); return 0; } } while(0)
+#define CHECK_TRAILING(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); return 0; } } while(0)
 
 #else
 
@@ -1142,7 +1158,7 @@ RET_TYPE process_fanout (ARG_LIST)
   CHECK_TRAILING(usage);
 
   num = prs_num_fanout (n);
-  if (num == 0) return;
+  if (num == 0) RETURN (1);
   MALLOC (l, PrsExpr *, num);
   prs_fanout_rule (P, n, l);
   for (i=0; i < num; i++)
@@ -1215,7 +1231,7 @@ RET_TYPE process_cycle (ARG_LIST)
   while (!interrupted) {
     n = prs_cycle_cause_stop (P, &m, &seu, stop);
 
-    if (!n) RETURN (0);
+    if (!n) RETURN (1);
 
     flag = 0;
     if (tracing) { flag = 1; check_trace_stop (); }
@@ -2045,7 +2061,7 @@ static RET_TYPE process_exit_on_warn (ARG_LIST)
   RETURN (1);
 }
 
-#if USE_SCM
+#ifdef USE_SCM
 
 static int process_injectfile0 (int argc, char **argv)
 {
@@ -2064,7 +2080,7 @@ static int process_expectfile0 (int argc, char **argv)
 
 static int process_expectfile1 (int argc, char **argv)
 {
-  process_expectfile (1, argc, argv);
+  return process_expectfile (1, argc, argv);
 }
 
 #else 
@@ -2138,13 +2154,13 @@ static char *read_input_line (FILE *fp, char *prompt, char *buf, int len)
   }
 }
 
-static RET_TYPE process_help (void);
+static RET_TYPE process_help (ARG_LIST);
 
 /* --- Standard command processing --- */
 struct Command {
     char *name;
     char *help;
-#if USE_SCM
+#ifdef USE_SCM
     int (*f) (int argc, char **argv);
 #else
     void (*f) (void);
@@ -2215,13 +2231,13 @@ struct Command {
   { "dumpfile", "dumpfile <name> <file> - dump channel output to file", process_dumpfile }
 };
 
-static void process_help (void)
+static RET_TYPE process_help (ARG_LIST)
 {
-  char *s;
-  char *usage = "Usage: help\n";
+  STD_ARG("Usage: help\n");
   int i;
   
   CHECK_TRAILING(usage);
+  
   for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
     if (!Cmds[i].name) {
       printf ("\n== %s ==\n", Cmds[i].help);
@@ -2230,17 +2246,50 @@ static void process_help (void)
       printf ("   %s\n", Cmds[i].help);
     }
   }
+  RETURN (1);
 }
+
+
+#ifdef USE_SCM
+
+RET_TYPE dispatch_command (ARG_LIST)
+{
+  int i;
+  for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
+    if (!Cmds[i].name) continue;
+    if (strcmp (Cmds[i].name, argv[0]) == 0) {
+      return (*Cmds[i].f)(argc, argv);
+    }
+  }
+  printf ("Unknown command name `%s'\n", argv[0]);
+  return 0;
+}
+
+int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
+{
+  int i;
+  if (echo_cmd) {
+    printf ("[cmd]");
+    for (i=0; i < argc; i++) {
+      printf (" %s", argv[i]);
+    }
+    printf ("\n");
+  }
+  return dispatch_command (argc, argv);
+}
+
+#endif
 
 void do_command (char *s)
 {
   char *t;
   int i;
+  A_DECL (char *, args);
+  A_INIT (args);
 
   t = strtok (s, " \t");
   if (!t) return;
   if (strcmp (t, "#") == 0) return;
-    
   if (strcmp (t, "quit") == 0 || strcmp (t, "exit") == 0) {
     t = strtok (NULL, " \t");
     if (t && (strcmp (t, "#") != 0)) {
@@ -2249,6 +2298,25 @@ void do_command (char *s)
     stop_trace ();
     exit (0);
   }
+
+#ifdef USE_SCM
+  A_NEW (args, char *);
+  A_NEXT (args) = t;
+  A_INC (args);
+  do {
+    t = strtok (NULL, " \t");
+    if (t) {
+      A_NEW (args, char *);
+      A_NEXT (args) = t;
+      A_INC (args);
+    }
+  } while (t);
+
+  LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
+  //dispatch_command (A_LEN (args), args);
+  return;
+  
+#else  
   for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
     if (!Cmds[i].name) continue;
     if (strcmp (Cmds[i].name, s) == 0) {
@@ -2257,6 +2325,7 @@ void do_command (char *s)
     }
   }
   printf ("Unknown command name `%s'\n", s);
+#endif  
 }
 
 
@@ -2275,7 +2344,7 @@ void handle_user_input (FILE *fp)
 	return;
       }
       else {
-	interrupted = 0;
+	clr_interrupt ();
 	P->flags &= ~(PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING);
       }
     }
@@ -2290,7 +2359,7 @@ void handle_user_input (FILE *fp)
 	  return;
 	}
 	else {
-	  interrupted = 0;
+	  clr_interrupt (); 
 	  P->flags &= ~(PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING);
 	}
       }
@@ -2337,6 +2406,9 @@ int main (int argc, char **argv)
   signal (SIGINT, signal_handler);
 
   read_line_init ();
+#ifdef USE_SCM
+  LispInit ();
+#endif  
 
   names = NULL;
   opterr = 0;

@@ -14,6 +14,7 @@ fi
 
 echo "Building common library/generators..." && \
    make -C common install && \
-   make -C pgen install
+   make -C pgen install && \
+   make -C miniscm install 
 
 make && echo && echo 'Run "make install" to install the binaries'

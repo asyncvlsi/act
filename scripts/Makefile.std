@@ -49,6 +49,7 @@ LIBACT=-L$(INSTALLLIB) -lact -lvlsilib
 LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib
 LIBSSIM=-L$(INSTALLLIB) -lssim -lvlsilib
 LIBASIM=-L$(INSTALLLIB) -lasim -lvlsilib
+LIBACTSCM=-lactscm -lvlsilib
 
 LIBDEPEND=$(INSTALLLIB)/libvlsilib.a
 ACTDEPEND=$(INSTALLLIB)/libact.a $(LIBDEPEND)

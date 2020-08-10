@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2018 Rajit Manohar
+#  Copyright (c) 2011-2019 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,30 +18,24 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-BIN1=prsim.$(EXT)
-BIN2=prspack.$(EXT)
-TARGETS=$(BIN1) $(BIN2)
+LIB=libactscm_$(EXT).a
+TARGETLIBS=$(LIB)
 
-OBJS1=prsim.o channel.o prs.o
-OBJS2=prspack.o
+TARGETINCS=lisp.h
 
-OBJS=$(OBJS1) $(OBJS2)
+OBJSC=lispA-Z.o lispArith.o lispEval.o lispFrame.o \
+	lispGC.o lispIO.o lispBuiltin.o lispMain.o lispParse.o \
+	lispPrint.o lispString.o lispTrace.o lispPath.o
 
-SRCS=$(OBJS:.o=.c)
+OBJS=$(OBJSC)
+
+SRCS=$(OBJSC:.o=.c)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-#
-# If you want the mini-scm interpreter
-#
-DFLAGS+=-DUSE_SCM
-
-
-$(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCM) -ledit
-
-$(BIN2): $(LIB) $(OBJS2) $(LIBDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBCOMMON)
-
+$(LIB): $(OBJS)
+	ar ruv $(LIB) $(OBJS)
+	$(RANLIB) $(LIB)
 
 -include Makefile.deps
+
