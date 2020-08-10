@@ -365,8 +365,15 @@ void del_watchpoint (PrsNode *n)
   }
 }
 
+#define STD_ARG(x) char *s; char *usage = x
 
 #define GET_ARG(msg)  do { s = strtok (NULL, " \t"); if (!s) { printf ("%s", msg); return; } } while(0)
+
+
+#if 0
+#define GET_ARG(msg) do { if (iargc == argc) { printf ("%s", msg); return } s = argc[iargc++]; } while (0)
+#endif
+
 
 #define GET_ARGCOLON(msg)  do { s = strtok (NULL, " \t:"); if (!s) { printf ("%s",msg); return; } } while(0)
 
@@ -415,9 +422,8 @@ static void clear_nodeflag (PrsNode *n, void *val)
  */
 void process_vector (void)
 {
-  char *s;
+  STD_ARG("Usage: vector name [:type] node1 node2...\n");
   PrsNode *n;
-  char *usage = "Usage: vector name [:type] node1 node2...\n";
   hash_bucket_t *b;
   Vector *v;
   int count;
@@ -554,8 +560,7 @@ void add_trace_wrap (PrsNode *n, void *v) {
 
 void process_trace (void)
 {
-  char *s;
-  char *usage = "Usage: trace <file> <time>\n";
+  STD_ARG("Usage: trace <file> <time>\n");
   char *f;
   float tm;
   
@@ -600,9 +605,8 @@ void process_trace (void)
  */
 void process_vset (void)
 {
-  char *s;
+  STD_ARG("Usage: vset name value\n");
   PrsNode *n;
-  char *usage = "Usage: vset name value\n";
   hash_bucket_t *b;
   Vector *v;
   unsigned long val;
@@ -682,9 +686,8 @@ void process_vset (void)
 
 void process_vget (void)
 {
-  char *s;
+  STD_ARG("Usage: vget name\n");
   PrsNode *n;
-  char *usage = "Usage: vget name\n";
   hash_bucket_t *b;
   Vector *v;
 
@@ -706,9 +709,8 @@ void process_vget (void)
 
 void process_vclear (void)
 {
-  char *s;
+  STD_ARG("Usage: vclear name\n");
   PrsNode *n;
-  char *usage = "Usage: vclear name\n";
   hash_bucket_t *b;
   Vector *v;
   int i;
@@ -736,9 +738,8 @@ void process_vclear (void)
 
 void process_vwatch (void)
 {
-  char *s;
+  STD_ARG("Usage: vwatch name\n");
   PrsNode *n;
-  char *usage = "Usage: vwatch name\n";
   hash_bucket_t *b;
   Vector *v;
   int i;
@@ -763,9 +764,8 @@ void process_vwatch (void)
 
 void process_vunwatch (void)
 {
-  char *s;
+  STD_ARG("Usage: vunwatch name\n");
   PrsNode *n;
-  char *usage = "Usage: vunwatch name\n";
   hash_bucket_t *b;
   Vector *v;
   int i;
@@ -790,12 +790,11 @@ void process_vunwatch (void)
 
 void process_watchall (void)
 {
-  char *s;
-  char *usage = "Usage: watchall\n";
+  STD_ARG("Usage: watchall\n");
+  
   CHECK_TRAILING(usage);
 
   prs_apply (P, NULL, add_watchpoint_wrapper);
-
 }
 
 
@@ -804,10 +803,9 @@ void process_watchall (void)
  */
 void process_status (void)
 {
-  char *s;
+  STD_ARG("Usage: status T|1|F|0|X|U [[^]str]\n");
   char *t;
   PrsNode *n;
-  char *usage = "Usage: status T|1|F|0|X|U [[^]str]\n";
   int v;
   int type;
   
@@ -841,10 +839,9 @@ void process_status (void)
  */
 void process_set (void)
 {
-  char *s;
-  PrsNode *n;
+  STD_ARG("Usage: set <var> <value>\n");
   int val;
-  char *usage = "Usage: set <var> <value>\n";
+  PrsNode *n;
 
   GET_ARGCOLON(usage);
   n = prs_node (P, s);
@@ -873,11 +870,10 @@ void process_set (void)
  */
 void process_seu (void)
 {
-  char *s;
+  STD_ARG("Usage: set <var> <value> <start-delay> <dur>\n");
   PrsNode *n;
   int val;
   int start, duration;
-  char *usage = "Usage: set <var> <value> <start-delay> <dur>\n";
 
   GET_ARGCOLON(usage);
   n = prs_node (P, s);
@@ -909,11 +905,10 @@ void process_seu (void)
  */
 void process_alias (void)
 {
-  char *s;
+  STD_ARG("Usage: alias <var>\n");
   PrsNode *n;
   RawPrsNode *r;
   int val;
-  char *usage = "Usage: alias <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -936,11 +931,10 @@ void process_alias (void)
  */
 void process_set_principal (void)
 {
-  char *s;
+  STD_ARG("Usage: set_principal <var>\n");
   PrsNode *n;
   RawPrsNode *r;
   int val;
-  char *usage = "Usage: set_principal <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -985,10 +979,9 @@ void process_set_principal (void)
  */
 void process_get (void)
 {
-  char *s;
+  STD_ARG("Usage: get <var>\n");
   PrsNode *n;
   int val;
-  char *usage = "Usage: get <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1005,10 +998,9 @@ void process_get (void)
  */
 void process_uget (void)
 {
-  char *s;
+  STD_ARG("Usage: uget <var>\n");
   PrsNode *n;
   int val;
-  char *usage = "Usage: uget <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1026,8 +1018,8 @@ void process_uget (void)
  */
 void
 process_assert(void) {
-  static const char* usage = "Usage: assert <var> <value>\n";
-  char *s;
+  STD_ARG("Usage: assert <var> <value>\n");
+
   char *node_name;
   PrsNode *n;
   int val, expect;
@@ -1064,10 +1056,9 @@ process_assert(void) {
  */
 void process_fanin (void)
 {
-  char *s;
+  STD_ARG("Usage: fanin <var>\n");
   PrsNode *n;
   int val;
-  char *usage = "Usage: fanin <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1081,10 +1072,9 @@ void process_fanin (void)
 
 void process_fanin2 (void)
 {
-  char *s;
+  STD_ARG("Usage: fanin-get <var>\n");
   PrsNode *n;
   int val;
-  char *usage = "Usage: fanin-get <var>\n";
 
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1102,10 +1092,9 @@ void process_fanin2 (void)
  */
 void process_fanout (void)
 {
-  char *s;
+  STD_ARG("Usage: fanout <var>\n");
   PrsNode *n;
   int i, num;
-  char *usage = "Usage: fanout <var>\n";
   PrsExpr **l;
 
   GET_ARG(usage);
@@ -1166,10 +1155,9 @@ static void add_transition (PrsNode *n, PrsNode *m)
  */
 void process_cycle (void)
 {
+  STD_ARG("Usage: cycle [signal]\n");
   PrsNode *n;
   PrsNode *m;
-  char *s;
-  char *usage = "Usage: cycle [signal]\n";
   int flag;
   int seu;
   PrsNode *stop;
@@ -1247,10 +1235,9 @@ void process_cycle (void)
  */
 void process_step (void)
 {
+  STD_ARG("Usage: step [n]\n");
   PrsNode *n;
   PrsNode *m;
-  char *s;
-  char *usage = "Usage: step [n]\n";
   unsigned long i;
   unsigned long long tm;
   int seu;
@@ -1328,10 +1315,9 @@ void process_step (void)
  */
 void process_advance (void)
 {
+  STD_ARG("Usage: advance [n]\n");
   PrsNode *n;
   PrsNode *m;
-  char *s;
-  char *usage = "Usage: advance [n]\n";
   unsigned long i;
   unsigned long long tm;
   unsigned long long end_tm;
@@ -1407,9 +1393,8 @@ void process_advance (void)
 
 void process_watch (void)
 {
+  STD_ARG("Usage: watch node\n");
   PrsNode *n;
-  char *s;
-  char *usage = "Usage: watch node\n";
   
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1427,9 +1412,8 @@ void process_watch (void)
 
 void process_break (void)
 {
+  STD_ARG("Usage: breakpt node\n");
   PrsNode *n;
-  char *s;
-  char *usage = "Usage: breakpt node\n";
   GET_ARG(usage);
   
   n = prs_node (P, s);
@@ -1448,9 +1432,8 @@ void process_break (void)
 
 void process_unwatch (void)
 {
+  STD_ARG("Usage: unwatch node\n");
   PrsNode *n;
-  char *s;
-  char *usage = "Usage: unwatch node\n";
   
   GET_ARG(usage);
   n = prs_node (P, s);
@@ -1465,8 +1448,7 @@ void process_unwatch (void)
 
 void process_mode (void)
 {
-  char *s;
-  char *usage = "Usage: mode reset|run|unstab|nounstab\n";
+  STD_ARG("Usage: mode reset|run|unstab|nounstab\n");
   int v;
 
   GET_ARG(usage);
@@ -1496,8 +1478,7 @@ void process_mode (void)
 
 void process_timescale (void)
 {
-  char *s;
-  char *usage = "Usage: timescale <picoseconds>\n";
+  STD_ARG("Usage: timescale <picoseconds>\n");
   float f;
   int v;
 
@@ -1511,8 +1492,6 @@ void process_timescale (void)
   
   printf ("Set timescale to %f picoseconds.\n", f);
 }
-
-
 
 
 static void dump_tc (PrsNode *n, void *v)
@@ -1548,8 +1527,7 @@ static void _init_tracing (PrsNode *n, void *cookie)
 
 void process_pairtc (void)
 {
-  char *s;
-  char *usage = "Usage: pairtc\n";
+  STD_ARG("Usage: pairtc\n");
 
   if (pairwise_transition_counts) {
     printf ("Already set.\n");
@@ -1563,8 +1541,7 @@ void process_pairtc (void)
 
 void process_dumptc (void)
 {
-  char *s;
-  char *usage = "Usage: dumptc file\n";
+  STD_ARG("Usage: dumptc file\n");
   int v;
   FILE *fp;
   char *t;
@@ -1630,10 +1607,9 @@ void pop_file (void)
 
 void process_checkpoint (void)
 {
+  STD_ARG("Usage: chk-save filename\n");
   FILE *fp;
-  char *s;
   char *fname;
-  char *usage = "Usage: chk-save filename\n";
   int count;
 
   GET_ARG(usage);
@@ -1652,10 +1628,9 @@ void process_checkpoint (void)
 
 void process_restore (void)
 {
+  STD_ARG("Usage: chk-restore filename\n");
   FILE *fp;
-  char *s;
   char *fname;
-  char *usage = "Usage: chk-restore filename\n";
   int count;
 
   GET_ARG(usage);
@@ -1675,10 +1650,9 @@ void process_restore (void)
 
 void process_source (void)
 {
+  STD_ARG("Usage: source filename [<repeat-count>]\n");
   FILE *fp;
-  char *s;
   char *fname;
-  char *usage = "Usage: source filename [<repeat-count>]\n";
   int count;
 
   GET_ARG(usage);
@@ -1719,8 +1693,7 @@ void process_source (void)
 
 void process_initialize (void)
 {
-  char *s;
-  char *usage = "Usage: initialize\n";
+  STD_ARG("Usage: initialize\n");
 
   CHECK_TRAILING(usage);
   prs_initialize (P);
@@ -1731,9 +1704,9 @@ void process_initialize (void)
 // Usage is channel <channeltype> <size> <channelname>
 void process_channel (void) 
 {
-  char *s, *sChannelType, *sName;
+  STD_ARG("Usage: channel channeltype size channelname\n");
+  char *sChannelType, *sName;
   ChannelType *ctype;
-  char *usage = "Usage: channel channeltype size channelname\n";
   int size;
 
   GET_ARG(usage);
@@ -1754,8 +1727,7 @@ void process_channel (void)
 }
 
 void process_injectfile (int isLoop) {
-  char *s;
-  char *usage = "Usage: [loop-]injectfile channelname file\n";
+  STD_ARG("Usage: [loop-]injectfile channelname file\n");
   char *sChanName, *sFileName;
 
   GET_ARG(usage);
@@ -1771,8 +1743,7 @@ void process_injectfile (int isLoop) {
 
 void process_expectfile (int isLoop) 
 {
-  char *s;
-  char *usage = "Usage: [loop-]expectfile channelname file\n";
+  STD_ARG("Usage: [loop-]expectfile channelname file\n");
   char *sChanName, *sFileName;
 
   GET_ARG(usage);
@@ -1788,8 +1759,7 @@ void process_expectfile (int isLoop)
 
 void process_dumpfile (void)
 {
-  char *s;
-  char *usage = "Usage: dumpfile channelname file\n";
+  STD_ARG("Usage: dumpfile channelname file\n");
   char *sChanName, *sFileName;
 
   GET_ARG(usage);
@@ -1805,8 +1775,7 @@ void process_dumpfile (void)
 
 void process_pending (void)
 {
-  char *s;
-  char *usage = "Usage: pending [signal]\n";
+  STD_ARG("Usage: pending [signal]\n");
 
   if (!P->eventQueue || (heap_peek_min (P->eventQueue) == NULL)) {
     printf ("No pending events!\n");
@@ -1920,8 +1889,7 @@ static void process_expectfile1 (void)
 
 static void process_after (void)
 {
-  char *s;
-  char *usage = "Usage: after v min_u max_u min_d max_d\n";
+  STD_ARG("Usage: after v min_u max_u min_d max_d\n");
   PrsNode *n;
   unsigned int min_u, max_u, min_d, max_d;
 
@@ -1969,8 +1937,7 @@ static void process_after (void)
 
 static void process_random (void)
 {
-  char *s;
-  char *usage = "Usage: random [min max]\n";
+  STD_ARG("Usage: random [min max]\n");
   int v;
   unsigned int min_d, max_d;
 
@@ -1996,8 +1963,7 @@ static void process_random (void)
 
 static void process_random_seed (void)
 {
-  char *s;
-  char *usage = "Usage: random_seed seed\n";
+  STD_ARG("Usage: random_seed seed\n");
   int v;
 
   GET_ARG (usage);
@@ -2007,8 +1973,7 @@ static void process_random_seed (void)
 
 static void process_random_excl (void)
 {
-  char *s;
-  char *usage = "Usage: random_excl on|off\n";
+  STD_ARG("Usage: random_excl on|off\n");
   int v;
 
   GET_ARG (usage);
@@ -2033,8 +1998,7 @@ static void process_norandom (void)
 
 static void process_break_on_warn (void)
 {
-  char *s;
-  char *usage = "Usage: break-on-warn\n";
+  STD_ARG("Usage: break-on-warn\n");
 
   CHECK_TRAILING(usage);
   
@@ -2050,8 +2014,7 @@ static void process_break_on_warn (void)
 
 static void process_exit_on_warn (void)
 {
-  char *s;
-  char *usage = "Usage: exit-on-warn\n";
+  STD_ARG("Usage: exit-on-warn\n");
 
   CHECK_TRAILING(usage);
   
