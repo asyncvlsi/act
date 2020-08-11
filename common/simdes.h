@@ -211,6 +211,8 @@ public:
 
   void DelObject (SimDES *s);
 
+  int isWaiting (SimDES *s);
+
   void ReInit () {
     Assert (list_isempty (waiting_objects), "ReInit() with waiting objects?");
   }

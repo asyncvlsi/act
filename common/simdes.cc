@@ -286,6 +286,20 @@ int Condition::isWaiting ()
   return 1;
 }
 
+int Condition::isWaiting (SimDES *s)
+{
+  if (waiting_objects) {
+    listitem_t *li;
+    for (li = list_first (waiting_objects); li; li = list_next (li)) {
+      if (s == (SimDES *)list_value (li)) {
+	return 1;
+      }
+    }
+  }
+  return 0;
+}
+
+
 /*
  * Condition corresponding to waiting for all of "slots"
  * sub-conditions to be true.
