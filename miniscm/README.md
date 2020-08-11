@@ -5,6 +5,28 @@ of history about this implementation. It's designed to be used to augment a
 a command-line interface, with minimal ineraction with an existing set of
 commands.
 
+To use this library:
+
+* Initialization: Initialize the library by calling `LispInit()`. Any
+default values for built-in variables for your particular use of the
+interpreter can be set using `LispSetVariable()`.
+
+* To send a command to the interpreter, use `LispEvaluate()`
+
+* The interpreter assumes that there are a set of (unknown) built-in
+functions provided by the user of the library. Think of these as the 
+core commands that one would normally have implemented in a particular
+tool. To support this, you have to provide the function `LispDispatch()`. 
+This is called by
+the interpreter when it encounters a function it doesn't know about; by default
+this is assumed to be a function provided by `LispDispatch()`. Also
+the `builtin` call (see below) can be used to force an object to be viewed
+as a built-in function.
+
+* `LispInterruptExecution`: variable should be set to 1 to interrupt the execution; normally this is set in a signal handler.
+
+See the ''prsim'' source for an example.
+
 ## Supported core functions
 
 The subset of Scheme supported is summarized below.
@@ -90,3 +112,14 @@ The subset of Scheme supported is summarized below.
 * `(string-set! s k v)`: sets character of `s` at position `k` to `v`
 
 
+### Special variables
+
+The following variables are used by the engine internally:
+
+* `scm-library-path` : search path used for `load-scm`
+* `scm-trace-builtin` : Boolean, turn on tracing of builtin function calls
+* `scm-echo-result` : display result
+* `scm-echo-parser-input` : shows what the parser was provided as its input
+* `scm-echo-parser-output` : shows the result of parsing
+* `scm-gc-frequency` : frequency of garbage collection
+* `scm-stack-display-depth` : depth of stack trace displayed
