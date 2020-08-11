@@ -387,8 +387,9 @@ LispApply (Sexp *s, Sexp *l, Sexp *f)
     t = LLIST(CDR(t));
     len++;
   }
+  
   anum = (number < 0)  ? -number : number;
-  if (len < anum) {
+  if (len != anum) {
     fprintf (stderr, "apply: mismatch in # of arguments. Expected %d, got %d\n",
 	      anum, len);
     RETURN;
