@@ -611,9 +611,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
 
 	if (!x->isConnectable (y, 1)) {
-	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
-			 fn->getName(), i);
-	  return T_ERR;
+	  if ((TypeFactory::isIntType (x) && TypeFactory::isPIntType (y))
+	      ||
+	      (TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
+	    /* ok */
+	  }
+	  else {
+	    typecheck_err ("Function `%s': arg #%d has an incompatible type",
+			   fn->getName(), i);
+	    return T_ERR;
+	  }
 	}
       }
 

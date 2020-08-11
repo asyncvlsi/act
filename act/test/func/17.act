@@ -1,0 +1,19 @@
+function addone(int<8> x) : int<8>
+{
+  chp {
+    self := x + 1
+  }
+}
+
+defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
+{                                                      
+  chan(bool) OUT1;
+  chan(bool) tmp;
+  int x;
+  bool y;
+  chp {                                          
+    *[ [ y -> OUT!addone(1) [] else -> skip ] ]
+  }                                                    
+}                                                      
+
+testme t;

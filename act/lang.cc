@@ -653,8 +653,31 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
     break;
     
   case E_FUNCTION:
-    fatal_error ("FIXME function");
-    //_eval_function (ns, s, e, &ret);
+    {
+      Expr *tmp, *etmp;
+      Function *f = dynamic_cast<Function *>((UserDef *)e->u.fn.s);
+      f = f->Expand (ns, s, 0, NULL);
+      ret->u.fn.s = (char *) f;
+      if (!e->u.fn.r) {
+	ret->u.fn.r = NULL;
+      }
+      else {
+	NEW (tmp, Expr);
+	ret->u.fn.r = tmp;
+	etmp = e->u.fn.r;
+	do {
+	  tmp->u.e.l = expr_expand (etmp->u.e.l, ns, s, 0);
+	  if (etmp->u.e.r) {
+	    NEW (tmp->u.e.r, Expr);
+	    tmp = tmp->u.e.r;
+	  }
+	  else {
+	    tmp->u.e.r = NULL;
+	  }
+	  etmp = etmp->u.e.r;
+	} while (etmp);
+      }
+    }
     break;
 
   case E_VAR:
