@@ -38,8 +38,8 @@ $(LIB): $(OBJS) scm-install
 	$(RANLIB) $(LIB)
 
 scm-install: default.scm
-	-if [ ! -d $(INSTALLLIB)/scm ]; then mkdir $(INSTALLLIB)/scm; fi
-	-$(VLSI_TOOLS_SRC)/scripts/install default.scm $(INSTALLLIB)/scm/default.scm
+	@if [ ! -d $(INSTALLLIB)/scm ]; then mkdir $(INSTALLLIB)/scm; fi
+	@$(VLSI_TOOLS_SRC)/scripts/install default.scm $(INSTALLLIB)/scm/default.scm
 
 -include Makefile.deps
 

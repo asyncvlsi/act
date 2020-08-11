@@ -334,6 +334,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   Assert (si->localchp == si->chp_all.bools +
 	  si->chp_all.ints + si->chp_all.chans, "What?");
 
+  si->chp_local = si->chp_all;
+
 #if 0
   printf ("%s: stats: %d local; %d port\n", p->getName(),
 	  si->localbools, si->nportbools);

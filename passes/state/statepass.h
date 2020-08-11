@@ -88,6 +88,8 @@ typedef struct {
   int nportchptot;
 
   chp_offsets chp_all;
+  chp_offsets chp_local;	// local chp
+  
   int localchp;			// local chp variables
   
 
