@@ -1,0 +1,3 @@
+ERROR: File `10.act', line 28, col 11
+	Too many ports specified in connection specifier.
+	Type `bar' only has 0 ports!

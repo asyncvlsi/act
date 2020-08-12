@@ -1,0 +1,135 @@
+===0 Canonical: p [scope=global<>]
+ --> conn-list: p
+ -->0 returned: p
+conn: p* , 
+
+===0 Canonical: q [scope=global<>]
+ --> conn-list: q
+ -->0 returned: q
+conn: q* , 
+
+===0 Canonical: g [scope=bar<>]
+ --> conn-list: g
+ -->0 returned: g
+conn: g* , 
+
+===0 Canonical: g [scope=foo<>]
+ --> conn-list: g
+ -->0 returned: g
+conn: g* , 
+
+===0 Canonical: b [scope=foo<>]
+ --> conn-list: b
+ -->0 returned: b
+conn: b* , 
+
+===0 Canonical: g.p [scope=foo<>]
+ --> conn-list: g
+===1 Canonical: p [scope=global<>]
+ --> conn-list: p
+ -->1 returned: p
+conn: p* , 
+
+ -->0 returned: g.p
+conn: g.p* , 
+
+===0 Canonical: b[0] [scope=foo<>]
+ --> conn-list: b
+ -->0 returned: b[0]
+conn: b[0]* , 
+
+===0 Canonical: b[1] [scope=foo<>]
+ --> conn-list: b
+ -->0 returned: b[1]
+conn: b[1]* , 
+
+===0 Canonical: f1.g [scope=bar<>]
+ --> conn-list: f1
+===1 Canonical: g [scope=foo<>]
+ --> conn-list: g
+ -->1 returned: g
+conn: g* , 
+
+ -->0 returned: f1.g
+conn: f1.g* , 
+
+===0 Canonical: g [scope=bar<>]
+ --> conn-list: g
+ -->0 returned: g
+conn: g* , 
+
+===0 Canonical: f1.b [scope=bar<>]
+ --> conn-list: f1
+===1 Canonical: b [scope=foo<>]
+ --> conn-list: b
+ -->1 returned: b
+conn: b* , 
+
+ -->0 returned: f1.b
+conn: f1.b* , 
+
+===0 Canonical: b [scope=bar<>]
+ --> conn-list: b
+ -->0 returned: b
+conn: b* , 
+
+===0 Canonical: g [scope=foo2<>]
+ --> conn-list: g
+ -->0 returned: g
+conn: g* , 
+
+===0 Canonical: b [scope=foo2<>]
+ --> conn-list: b
+ -->0 returned: b
+conn: b* , 
+
+===0 Canonical: b[1] [scope=foo2<>]
+ --> conn-list: b
+ -->0 returned: b[1]
+conn: b[1]* , 
+
+===0 Canonical: f2.g [scope=bar<>]
+ --> conn-list: f2
+===1 Canonical: g [scope=foo2<>]
+ --> conn-list: g
+ -->1 returned: g
+conn: g* , 
+
+ -->0 returned: f2.g
+conn: f2.g* , 
+
+===0 Canonical: g [scope=bar<>]
+ --> conn-list: g=f1.g
+ -->0 returned: g
+conn: g* , f1.g , 
+
+===0 Canonical: f2.b [scope=bar<>]
+ --> conn-list: f2
+===1 Canonical: b [scope=foo2<>]
+ --> conn-list: b
+ -->1 returned: b
+conn: b* , 
+
+ -->0 returned: f2.b
+conn: f2.b* , 
+
+===0 Canonical: b [scope=bar<>]
+ --> conn-list: b=f1.b
+ -->0 returned: b
+conn: b* , f1.b , 
+
+===0 Canonical: b.g [scope=-global-]
+ --> conn-list: b(g)
+===1 Canonical: g [scope=bar<>]
+ --> conn-list: g=f2.g=f1.g
+ -->1 returned: g
+conn: g* , f2.g , f1.g , 
+
+ -->0 returned: b(g).g
+conn: b(g).g* , 
+
+===0 Canonical: g [scope=-global-]
+ --> conn-list: g(g)
+ -->0 returned: g(g)
+conn: g(g)* , 
+
