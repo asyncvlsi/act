@@ -1,0 +1,59 @@
+*
+*---- act defproc: wchb2<> -----
+* raw ports:  g.Vdd g.GND L.b.d[0] L.b.d[1] R.b.d[0] R.b.d[1]
+*
+.subckt wchb2 g_4Vdd g_4GND L_4b_4d_20_3 L_4b_4d_21_3 R_4b_4d_20_3 R_4b_4d_21_3
+*.PININFO g_4Vdd:I g_4GND:I L_4b_4d_20_3:I L_4b_4d_21_3:I R_4b_4d_20_3:O R_4b_4d_21_3:O
+*.POWER VDD g_4Vdd
+*.POWER GND g_4GND
+*.POWER NSUB g_4GND
+*.POWER PSUB g_4Vdd
+*
+* --- node flags ---
+*
+* R_4b_4d_20_3 (combinational)
+* R_4b_4d_21_3 (combinational)
+*
+* --- end node flags ---
+*
+M0_ #3 L_4b_4d_20_3 g_4Vdd g_4Vdd pch W=0.3U L=0.06U
+M1_ #7 L_4b_4d_21_3 g_4Vdd g_4Vdd pch W=0.3U L=0.06U
+M2_ R_4b_4d_20_3 __R_4d_20_3 #3 g_4Vdd pch W=0.3U L=0.06U
+M3_ R_4b_4d_21_3 __R_4d_21_3 #7 g_4Vdd pch W=0.3U L=0.06U
+.ends
+*---- end of process: wchb2<> -----
+*
+*---- act defproc: wchb1<> -----
+* raw ports:  g.Vdd g.GND L.b.d[0] R.b.d[0]
+*
+.subckt wchb1 g_4Vdd g_4GND L_4b_4d_20_3 R_4b_4d_20_3
+*.PININFO g_4Vdd:I g_4GND:I L_4b_4d_20_3:I R_4b_4d_20_3:O
+*.POWER VDD g_4Vdd
+*.POWER GND g_4GND
+*.POWER NSUB g_4GND
+*.POWER PSUB g_4Vdd
+*
+* --- node flags ---
+*
+* R_4b_4d_20_3 (combinational)
+*
+* --- end node flags ---
+*
+M0_ #3 L_4b_4d_20_3 g_4Vdd g_4Vdd pch W=0.3U L=0.06U
+M1_ R_4b_4d_20_3 __R_4d_20_3 #3 g_4Vdd pch W=0.3U L=0.06U
+.ends
+*---- end of process: wchb1<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports:  g.Vdd g.GND L.b.d[0] R.b.d[0] R.b.d[1]
+*
+.subckt foo g_4Vdd g_4GND L_4b_4d_20_3 R_4b_4d_20_3 R_4b_4d_21_3
+*.PININFO g_4Vdd:I g_4GND:I L_4b_4d_20_3:I R_4b_4d_20_3:O R_4b_4d_21_3:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xbuf2 g_4Vdd g_4GND M_4d_20_3 g_4GND R_4b_4d_20_3 R_4b_4d_21_3 wchb2
+xbuf1 g_4Vdd g_4GND L_4b_4d_20_3 M_4d_20_3 wchb1
+.ends
+*---- end of process: foo<> -----
