@@ -1,0 +1,28 @@
+deftype global <: int (bool p, q) { }
+
+defproc foo(global g; bool b[2])
+{
+  g.p = b[0];
+  prs {
+   g.p & b[0] & b[1] -> b[1]-
+  }
+}
+
+defproc foo2(global g; bool b[2])
+{
+  prs {
+   g.p & b[0] & b[1] -> b[1]-
+  }
+}
+
+defproc bar(global g)
+{
+  bool b[2];
+
+  foo f1(g,b);
+  foo2 f2(g,b);
+}
+
+global g;
+bar  b(g);
+

@@ -1946,7 +1946,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
     }
 
     for (li = list_first ($1); li; li = list_next (li)) {
-      if (pos > ud->getNumPorts()) {
+      if (pos >= ud->getNumPorts()) {
 	$E("Too many ports specified in connection specifier.\n\tType ``%s'' only has %d ports!", ud->getName(), ud->getNumPorts());
       }
       ae = (AExpr *) list_value (li);
