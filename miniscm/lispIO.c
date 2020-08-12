@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 #include "lisp.h"
 #include "lispInt.h"
