@@ -262,28 +262,28 @@ void Act::Init (int *iargc, char ***iargv)
       }
       FREE (s);
     }
-    else if (strncmp (argv[i], "-log", 4) == 0) {
+    else if (strncmp (argv[i], "-log=", 5) == 0) {
       char *s;
-      s = Strdup (argv[i]+4);
+      s = Strdup (argv[i]+5);
       Log::OpenLog (s);
       FREE (s);
     }
-    else if (strncmp (argv[i], "-cnf", 4) == 0) {
+    else if (strncmp (argv[i], "-cnf=", 5) == 0) {
       if (conf_file) {
 	FREE (conf_file);
       }
-      conf_file = Strdup (argv[i]+4);
+      conf_file = Strdup (argv[i]+5);
     }
-    else if (strncmp (argv[i], "-ref", 4) == 0) {
+    else if (strncmp (argv[i], "-ref=", 5) == 0) {
       /* refinement steps */
-      int r = atoi(argv[i]+4);
+      int r = atoi(argv[i]+5);
       if (r < 0) {
 	fatal_error ("-ref option needs a non-negative integer");
       }
       config_set_default_int ("act.refine_steps", r);
     }
-    else if (strncmp (argv[i], "-lev", 4) == 0) {
-      Log::UpdateLogLevel(argv[i]+4);
+    else if (strncmp (argv[i], "-lev=", 5) == 0) {
+      Log::UpdateLogLevel(argv[i]+5);
     }
     else {
       break;
