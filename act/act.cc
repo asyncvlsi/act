@@ -283,10 +283,7 @@ void Act::Init (int *iargc, char ***iargv)
       config_set_default_int ("act.refine_steps", r);
     }
     else if (strncmp (argv[i], "-lev", 4) == 0) {
-      char *s;
-      s = Strdup (argv[i]+4);
-      config_read (s);
-      FREE (s);
+      Log::UpdateLogLevel(argv[i]+4);
     }
     else {
       break;
