@@ -596,6 +596,46 @@ static void _merge_subtrees (UserDef *ux,
   }
 }
 
+static int _find_earlier_port_array_conn (act_connection *d1,
+					  act_connection *d2)
+{
+  /* p1 = p2: find "earlier" connections */
+  list_t *l1 = _act_create_connection_stackidx (d1, NULL);
+  list_t *l2 = _act_create_connection_stackidx (d2, NULL);
+  listitem_t *li1, *li2;
+  li1 = list_first (l1);
+  li2 = list_first (l2);
+  while (li1 && li2) {
+    int x1, x2;
+    x1 = (int)(long)list_value (li1);
+    x2 = (int)(long)list_value (li2);
+    if (x1 < x2) {
+      list_free (l1);
+      list_free (l2);
+      return 0;
+    }
+    else if (x1 > x2) {
+      list_free (l1);
+      list_free (l2);
+      return 1;
+    }
+    li1 = list_next (li1);
+    li2 = list_next (li2);
+  }
+  if (li1) {
+    list_free (l1);
+    list_free (l2);
+    return 1;
+  }
+  else if (li2) {
+    list_free (l1);
+    list_free (l2);
+    return 0;
+  }
+  //Assert (0, "Should not be here");
+  return 0;
+}
+
 /*
   d1 original canonical, d2 other connection
   should d2 become the new canonical one?
@@ -605,21 +645,30 @@ static int _raw_should_swap (UserDef *ux, act_connection *d1,
 {
   act_connection *tmp;
   ValueIdx *vx1, *vx2;
+  int depth1, depth2;
+  act_connection *t1, *t2;
 
   int p1, p2;
+
+  depth1 = 0;
+  depth2 = 0;
   
   /* for global flag, find the root value */
   tmp = d1;
   while (tmp->parent) {
+    depth1++;
     tmp = tmp->parent;
   }
+  t1 = tmp;
   Assert (tmp->vx, "What?");
   vx1 = tmp->vx;
 
   tmp = d2;
   while (tmp->parent) {
+    depth2++;
     tmp = tmp->parent;
   }
+  t2 = tmp;
   Assert (tmp->vx, "What?!");
   vx2 = tmp->vx;
 
@@ -659,40 +708,16 @@ static int _raw_should_swap (UserDef *ux, act_connection *d1,
 	if (p1 < p2) {
 	  return 0;
 	}
-	/* p1 = p2: find "earlier" connections */
-	list_t *l1 = _act_create_connection_stackidx (d1, NULL);
-	list_t *l2 = _act_create_connection_stackidx (d2, NULL);
-	listitem_t *li1, *li2;
-	li1 = list_first (l1);
-	li2 = list_first (l2);
-	while (li1 && li2) {
-	  int x1, x2;
-	  x1 = (int)(long)list_value (li1);
-	  x2 = (int)(long)list_value (li2);
-	  if (x1 < x2) {
-	    list_free (l1);
-	    list_free (l2);
-	    return 0;
+	return _find_earlier_port_array_conn (d1, d2);
+      }
+      else {
+	if (depth1 > 0 && depth2 > 0) {
+	  /* if they share a common prefix, then use the same test */
+	  if (t1 == t2) {
+	    /* XXX: this really needs to be double-checked... */
+	    return _find_earlier_port_array_conn (d2, d2);
 	  }
-	  else if (x1 > x2) {
-	    list_free (l1);
-	    list_free (l2);
-	    return 1;
-	  }
-	  li1 = list_next (li1);
-	  li2 = list_next (li2);
 	}
-	if (li1) {
-	  list_free (l1);
-	  list_free (l2);
-	  return 1;
-	}
-	else if (li2) {
-	  list_free (l1);
-	  list_free (l2);
-	  return 0;
-	}
-	Assert (0, "Should not be here");
       }
     }
   }

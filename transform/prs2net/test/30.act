@@ -1,0 +1,37 @@
+export deftype globals <: int (bool Vdd, GND) { }
+
+export template <pint N> deftype c1of <: int (bool d[N]) { }
+
+template<pint N> defchan e1of <: chan(int) (c1of<N> b; bool e) { }
+
+export defproc wchb1(globals g; e1of<2> L, R)
+{
+	c1of<1> _R;
+	R.b.d[1] = g.GND;
+	prs<g.Vdd, g.GND>
+	{
+		[keeper=0] ~L.b.d[0] & ~_R.d[0] -> R.b.d[0]+
+	}
+}
+
+export defproc wchb2(globals g; e1of<2> L, R)
+{
+	c1of<2> _R;
+	prs<g.Vdd, g.GND>
+	{
+	 [keeper=0] ~L.b.d[0] & ~_R.d[0] -> R.b.d[0]+
+	 [keeper=0] ~L.b.d[1] & ~_R.d[1] -> R.b.d[1]+
+	}
+}
+
+
+export defproc foo(globals g; e1of<2> L, R)
+{
+	e1of<2> M;
+	wchb1 buf1;
+	wchb2 buf2;
+	buf1(g, L, M);
+	buf2(g, M, R);
+}
+
+foo t;
