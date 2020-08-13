@@ -264,7 +264,7 @@ void Act::Init (int *iargc, char ***iargv)
     }
     else if (strncmp (argv[i], "-log", 4) == 0) {
       char *s;
-      s = Strdup (argv[i]+5);
+      s = Strdup (argv[i]+4);
       Log::OpenLog (s);
       FREE (s);
     }
@@ -272,11 +272,11 @@ void Act::Init (int *iargc, char ***iargv)
       if (conf_file) {
 	FREE (conf_file);
       }
-      conf_file = Strdup (argv[i]+5);
+      conf_file = Strdup (argv[i]+4);
     }
     else if (strncmp (argv[i], "-ref", 4) == 0) {
       /* refinement steps */
-      int r = atoi(argv[i]+5);
+      int r = atoi(argv[i]+4);
       if (r < 0) {
 	fatal_error ("-ref option needs a non-negative integer");
       }
@@ -284,7 +284,7 @@ void Act::Init (int *iargc, char ***iargv)
     }
     else if (strncmp (argv[i], "-lev", 4) == 0) {
       char *s;
-      s = Strdup (argv[i]+5);
+      s = Strdup (argv[i]+4);
       config_read (s);
       FREE (s);
     }
@@ -826,6 +826,12 @@ void Act::config_info (const char *name)
     (*L) << "Read configuration file: " << s << "\n";
     FREE (s);
   }
+}
+
+
+void Act::generic_msg (const char *msg)
+{
+  (*L) << msg;
 }
 
 

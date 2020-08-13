@@ -31,6 +31,7 @@
 #include <string.h>
 #include "misc.h"
 #include "config.h"
+#include "log.h"
 
 ActBody::ActBody()
 {
@@ -1559,17 +1560,31 @@ void ActBody_Inst::updateInstType (InstType *u)
 void ActBody_Print::Expand (ActNamespace *ns, Scope *s)
 {
   listitem_t *li;
+  const char *tmp;
+
+  tmp = act_error_top ();
+  if (tmp) {
+    Act::generic_msg ("[");
+    Act::generic_msg (tmp);
+    Act::generic_msg ("] ");
+  }
+  else {
+    Act::generic_msg ("msg: ");
+  }
+
   for (li = list_first (l); li; li = list_next (li)) {
     act_func_arguments_t *args = (act_func_arguments_t *) list_value (li);
     if (args->isstring) {
-      printf ("%s", string_char (args->u.s));
+      Act::generic_msg (string_char (args->u.s));
     }
     else {
+      char buf[10240];
       Expr *e = expr_expand (args->u.e, ns, s);
-      print_expr (stdout, e);
+      sprint_expr (buf, 10240, e);
+      Act::generic_msg (buf);
     }
   }
-  printf ("\n");
+  Act::generic_msg ("\n");
 }
 
 ActBody *ActBody_Print::Clone()

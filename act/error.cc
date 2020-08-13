@@ -89,3 +89,13 @@ void act_error_ctxt (FILE *fp)
     fprintf (fp, "\n");
   }
 }
+
+const char *act_error_top ()
+{
+  if (hd) {
+    return hd->s;
+  }
+  else {
+    return NULL;
+  }
+}

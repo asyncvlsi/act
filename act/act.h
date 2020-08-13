@@ -112,6 +112,7 @@ class Act {
    * Config debugging
    */
   static void config_info (const char *s);
+  static void generic_msg (const char *s);
 
 
   /**
