@@ -1554,3 +1554,26 @@ void ActBody_Inst::updateInstType (InstType *u)
 {
   t = t->refineBaseType (u);
 }
+
+
+void ActBody_Print::Expand (ActNamespace *ns, Scope *s)
+{
+  listitem_t *li;
+  for (li = list_first (l); li; li = list_next (li)) {
+    act_func_arguments_t *args = (act_func_arguments_t *) list_value (li);
+    if (args->isstring) {
+      printf ("%s", string_char (args->u.s));
+    }
+    else {
+      Expr *e = expr_expand (args->u.e, ns, s);
+      print_expr (stdout, e);
+    }
+  }
+  printf ("\n");
+}
+
+ActBody *ActBody_Print::Clone()
+{
+  return new ActBody_Print(l);
+}
+

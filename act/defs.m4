@@ -1462,8 +1462,15 @@ base_item[ActBody *]: instance
 {{X: return $1; }}
 | assertion
 {{X: return $1; }}
+| debug_output
+{{X: return $1; }}
 ;
 
+debug_output[ActBody *]: "${" { chp_log_item "," }* "}" ";"
+{{X:
+    return new ActBody_Print ($2);
+}}
+;
 
 assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
 {{X:

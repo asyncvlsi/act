@@ -345,7 +345,21 @@ private:
   } u;
   int type;
 };
-  
+
+class ActBody_Print : public ActBody {
+public:
+  ActBody_Print (list_t *_l) {
+    l = _l;
+  }
+  ~ActBody_Print () {
+    list_free (l);
+  }
+  void Expand (ActNamespace *, Scope *);
+  ActBody *Clone();
+private:
+  list_t *l;
+};
+
 
 class ActBody_Namespace : public ActBody {
 public:
