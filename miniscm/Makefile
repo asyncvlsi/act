@@ -33,7 +33,9 @@ SRCS=$(OBJSC:.o=.c)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(LIB): $(OBJS) scm-install
+install_conf: scm-install
+
+$(LIB): $(OBJS)
 	ar ruv $(LIB) $(OBJS)
 	$(RANLIB) $(LIB)
 
