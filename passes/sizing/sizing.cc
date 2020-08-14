@@ -151,6 +151,10 @@ static void _depth_map (act_prs_expr_t *e, int pad, int flip = 0)
   return;
 }
 
+static int allow_long_channel;
+static int min_width;
+static int std_n_length, std_p_length;
+static int is_p_type;
 
 static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
 			      int flip = 0)
@@ -195,7 +199,21 @@ static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
     NEW (e->u.v.sz, act_size_spec_t);
     e->u.v.sz->l = NULL;
     e->u.v.sz->flavor = flav;
-    e->u.v.sz->w = const_expr ((int)(sz + 0.5));
+    if (allow_long_channel && ((int)(sz+0.5) < min_width)) {
+      int w, l;
+      w = min_width;
+      if (is_p_type) {
+	l = (0.5 + (min_width+0.0)*(std_p_length)/(sz+0.0));
+      }
+      else {
+	l = (0.5 + (min_width+0.0)*(std_n_length)/(sz+0.0));
+      }
+      e->u.v.sz->l = const_expr (l);
+      e->u.v.sz->w = const_expr (min_width);
+    }
+    else {
+      e->u.v.sz->w = const_expr ((int)(sz + 0.5));
+    }
     if (nf != 1) {
       e->u.v.sz->folds = const_expr (nf);
     }
@@ -243,6 +261,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
 	if (cid == c) {
 	  if (_no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
+	      is_p_type = tmp->u.one.dir;
 	      _do_sizing (tmp->u.one.e,
 			  tmp->u.one.dir ? flav_up : flav_dn,
 			  tmp->u.one.dir ? up : dn,
@@ -268,10 +287,13 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
 	      tmp->next = newrule;
 	      tmp->u.one.arrow_type = 0;
 	      
+	      is_p_type = tmp->u.one.dir;
 	      _do_sizing (tmp->u.one.e,
 			  tmp->u.one.dir ? flav_up : flav_dn,
 			  tmp->u.one.dir ? up : dn,
 			  tmp->u.one.dir ? upf : dnf);
+
+	      is_p_type = newrule->u.one.dir;
 	      _do_sizing (newrule->u.one.e,
 			  newrule->u.one.dir ? flav_up : flav_dn,
 			  newrule->u.one.dir ? up : dn,
@@ -390,6 +412,16 @@ void *ActSizingPass::local_op (Process *p, int mode)
   }
   else {
     sc = p->CurScope();
+  }
+
+  if (config_exists ("act.sizing.use_long_channel")) {
+    allow_long_channel = config_get_int ("act.sizing.use_long_channel");
+    min_width = config_get_int ("act.net.min_width");
+    std_p_length = config_get_int ("act.net.std_p_length");
+    std_n_length = config_get_int ("act.net.std_n_length");
+  }
+  else {
+    allow_long_channel = 0;
   }
     
   for (int i=0; i < A_LEN (sz->d); i++) {
