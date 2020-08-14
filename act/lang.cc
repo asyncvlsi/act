@@ -664,14 +664,13 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
       else {
 	NEW (tmp, Expr);
 	ret->u.fn.r = tmp;
+	tmp->u.e.r = NULL;
 	etmp = e->u.fn.r;
 	do {
 	  tmp->u.e.l = expr_expand (etmp->u.e.l, ns, s, 0);
 	  if (etmp->u.e.r) {
 	    NEW (tmp->u.e.r, Expr);
 	    tmp = tmp->u.e.r;
-	  }
-	  else {
 	    tmp->u.e.r = NULL;
 	  }
 	  etmp = etmp->u.e.r;

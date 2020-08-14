@@ -321,7 +321,9 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
     {
       act_booleanized_var_t *v;
       v = var_lookup (N, (ActId *)e->u.e.l);
-      v->input = 1;
+      if (e->type == E_VAR) {
+	v->input = 1;
+      }
       if (ischp) {
 	v->usedchp = 1;
       }
