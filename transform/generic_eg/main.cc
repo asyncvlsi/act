@@ -55,9 +55,6 @@ int main (int argc, char **argv)
   /* expand it */
   a->Expand ();
  
-  /* read configuration file, if any */
-  config_read ("prs2net.conf");
-
   /* find the process specified on the command line */
   Process *p = a->findProcess (argv[2]);
 

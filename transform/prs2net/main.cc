@@ -210,8 +210,6 @@ int main (int argc, char **argv)
     fclose (oc);
   }
   
-  Act::config_info ("prs2net.conf");
-  config_read ("prs2net.conf");
   if (config_exists ("net.mangle_chars")) {
     a->mangle (config_get_string ("net.mangle_chars"));
   }

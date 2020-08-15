@@ -240,10 +240,7 @@ int main (int argc, char **argv)
   char *conf_mangle_string;
 
   Act::Init (&argc, &argv);
-  Act::config_info ("prs2net.conf");
   Act::config_info ("lint.conf");
-
-  config_read ("prs2net.conf");
   config_read ("lint.conf");
 
   for (i=0; i < NUM_ERR_TYPES; i++) {

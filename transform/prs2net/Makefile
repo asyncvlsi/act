@@ -22,8 +22,6 @@ BINARY=prs2net.$(EXT)
 
 TARGETS=$(BINARY)
 
-TARGETCONF=prs2net.conf
-
 OBJS=main.o 
 
 SRCS=$(OBJS:.o=.cc)

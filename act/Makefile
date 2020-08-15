@@ -28,7 +28,7 @@ TARGETINCS=lang.h expr.h act_parse_id.h path.h namespaces.h act.h \
 
 TARGETINCSUBDIR=act
 
-TARGETCONF=global.conf
+TARGETCONF=global.conf prs2net.conf
 
 OBJS1=expr.o path.o expr_extra.o
 OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
