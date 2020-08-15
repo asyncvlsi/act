@@ -414,11 +414,11 @@ void *ActSizingPass::local_op (Process *p, int mode)
     sc = p->CurScope();
   }
 
-  if (config_exists ("act.sizing.use_long_channel")) {
-    allow_long_channel = config_get_int ("act.sizing.use_long_channel");
-    min_width = config_get_int ("act.net.min_width");
-    std_p_length = config_get_int ("act.net.std_p_length");
-    std_n_length = config_get_int ("act.net.std_n_length");
+  if (config_exists ("net.sizing.use_long_channel")) {
+    allow_long_channel = config_get_int ("net.sizing.use_long_channel");
+    min_width = config_get_int ("net.min_width");
+    std_p_length = config_get_int ("net.std_p_length");
+    std_n_length = config_get_int ("net.std_n_length");
   }
   else {
     allow_long_channel = 0;
