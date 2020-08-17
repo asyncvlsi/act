@@ -41,9 +41,12 @@ extern void LispSetVariable(char *name, char *value);
 extern void LispEvaluate(int argc, char **argv, int infile);
 
 /* 
-   User must provide this function and this variable
+   User must provide these functions and variables
 */
 extern int LispDispatch (int argc, char **argv, int echo_cmd, int infile);
+/* return 0 for #f, 1 for #t, 2 for an int (returned by the following) */
+extern int LispGetReturnInt (void);
+
 extern int LispInterruptExecution;
 
 #endif /* __LISP_H__ */

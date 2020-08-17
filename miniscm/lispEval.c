@@ -266,6 +266,7 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
   char argstring[LISP_MAX_CMDLEN];
   int k = 0;
   int i, j;
+  int ret;
   
   argc = 1;
   argv[0] = name;
@@ -336,12 +337,24 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
   }
   else
     trace = LBOOL(l);
-  if (!LispDispatch (argc, argv, trace, lispInFile))
+  ret = LispDispatch (argc, argv, trace, lispInFile);
+  if (ret == 0) {
     RETURN;
-  l = LispNewObj ();
-  LTYPE(l) = S_BOOL;
-  LBOOL(l) = 1;
-  return l;
+  }
+  else if (ret == 1) {
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 1;
+    return l;
+  }
+  else if (ret == 2) {
+    l = LispNewObj ();
+    LTYPE (l) = S_INT;
+    LINTEGER (l) = LispGetReturnInt ();
+    return l;
+  }
+  /* default: return #f */
+  RETURN;
 }
 
 

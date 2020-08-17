@@ -21,7 +21,7 @@ This is called by
 the interpreter when it encounters a function it doesn't know about; by default
 this is assumed to be a function provided by `LispDispatch()`. Also
 the `builtin` call (see below) can be used to force an object to be viewed
-as a built-in function.
+as a built-in function. The function `LispGetReturnInt()` has to also be defined, and is used to pass integer values back to the interpreter.
 
 * `LispInterruptExecution`: variable should be set to 1 to interrupt the execution; normally this is set in a signal handler.
 

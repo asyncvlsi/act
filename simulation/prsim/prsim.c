@@ -391,11 +391,15 @@ void del_watchpoint (PrsNode *n)
 
 #define GET_ARG(msg) do { if (iargc == argc) { printf ("%s", msg); return 0; } s = argv[iargc++]; } while (0)
 
+#define GET_ARG_INTRET(msg) do { if (iargc == argc) { printf ("%s", msg); lisp_return_value = -2; return 2; } s = argv[iargc++]; } while (0)
+
 #define GET_ARGCOLON(msg) GET_ARG(msg)
 
 #define GET_OPTARG do { if (iargc == argc) { s = NULL; } else { s = argv[iargc++]; } } while (0)
 
 #define CHECK_TRAILING(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); return 0; } } while(0)
+
+#define CHECK_TRAILING_INTRET(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); lisp_return_value = -2; return 2; } } while(0)
 
 #else
 
@@ -1020,6 +1024,8 @@ RET_TYPE process_set_principal (ARG_LIST)
 }
 
 
+static int lisp_return_value;
+
 /*
  *   get n
  */
@@ -1039,6 +1045,33 @@ RET_TYPE process_get (ARG_LIST)
   CHECK_TRAILING(usage);
   RETURN (1);
 }
+
+#ifdef USE_SCM
+int process_sget (int argc, char **argv)
+{
+  STD_ARG("Usage: sget <var>\n");
+  PrsNode *n;
+  int val;
+
+  GET_ARG_INTRET(usage);
+  n = prs_node (P, s);
+  if (!n) {
+    lisp_return_value = -1;
+    return 2;
+  }
+  if (prs_nodeval (n) == PRS_VAL_T) {
+    lisp_return_value = 1;
+  }
+  else if (prs_nodeval (n) == PRS_VAL_F) {
+    lisp_return_value = 0;
+  }
+  else {
+    lisp_return_value = 2;
+  }
+  CHECK_TRAILING_INTRET(usage);
+  return 2;
+}
+#endif
 
 /*
  *   uget n
@@ -2204,6 +2237,9 @@ struct Command {
 
   { "set", "set <n> 0|1|X - set <n> to specified value", process_set },
   { "get", "get <n> - get value of node <n>", process_get },
+#ifdef USE_SCM
+  { "sget", "sget <n> - get value of node <n>, return value to scm", process_sget },
+#endif
   { "assert", "assert <n> <v> - assert that <n> is <v>", process_assert },
   { "uget", "uget <n> - get value of node <n> but report its canonical name", process_uget },
   { "alias", "alias <n> - list aliases for <n>", process_alias },
@@ -2263,6 +2299,11 @@ RET_TYPE dispatch_command (ARG_LIST)
   }
   printf ("Unknown command name `%s'\n", argv[0]);
   return 0;
+}
+
+int LispGetReturnInt (void)
+{
+  return lisp_return_value;
 }
 
 int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
