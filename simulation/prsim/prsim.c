@@ -2456,6 +2456,8 @@ int main (int argc, char **argv)
     snprintf (buf, 10240, "%s/lib/scm", getenv ("ACT_HOME"));
     LispSetVariable ("scm-library-path", buf);
     LispEvaluate (2, args, 0);
+    snprintf (buf, 10240, "%s/lib", getenv ("ACT_HOME"));
+    LispSetVariable ("scm-dynamic-path", buf);
   }
 #endif  
 
