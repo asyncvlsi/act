@@ -48,6 +48,7 @@ enum Sexp_types {
   S_SYM,
   S_MAGIC_BUILTIN,
   S_LAMBDA_BUILTIN,
+  S_LAMBDA_BUILTIN_DYNAMIC,
   S_LAMBDA,
   S_INT,
   S_FLOAT,
@@ -126,6 +127,8 @@ extern LispObj *LispApply (Sexp *s, Sexp *l, Sexp *f);
 extern LispObj *LispMagicSend (char *, Sexp *, Sexp *);
 extern LispObj *LispEvalBuiltin (char *, Sexp *, Sexp *);
 extern LispObj *LispBuiltinApply (int, Sexp *, Sexp *);
+extern LispObj *LispBuiltinApplyDynamic (int, Sexp *, Sexp *);
+extern int LispAddDynamicFunc (char *name, void *func);
 
 extern void LispPrint (FILE *, LispObj *);
 extern void LispPrintType (FILE *, LispObj *);
@@ -157,5 +160,6 @@ extern void LispStackClear (void);
 extern int lispInFile;		/* flag used for :setpoint */
 
 extern FILE *LispPathOpen (char *name, char *mode, char *pathspec);
+extern char *LispPathFile (char *name, char *pathspec);
 
 #endif /* __LISPINT_H__ */

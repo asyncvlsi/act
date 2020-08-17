@@ -41,6 +41,17 @@ struct LispBuiltinFn {
   LispObj *(*f) ();		/* built-in */
 };
 
+
+struct LispDynamicFn {
+  char *name;
+  const char *id;
+  LispObj *(*f) ();		/* dynamic */
+};
+
+static struct LispDynamicFn *DyTable = NULL;
+static int DyTableMax = 0;
+static int DyTableNum = 0;
+
 static struct LispBuiltinFn FnTable[] = {
 
 /*------------------------------------------------------------------------
@@ -172,6 +183,56 @@ LispFnInit (void)
 }
 
 
+/*------------------------------------------------------------------------
+ *
+ *  LispAddDynamicFunc --
+ *
+ *      Add a function to the dynamic function table
+ *
+ *  Results:
+ *      Returns 1 on success, 0 on error
+ *
+ *  Side effects:
+ *      None.
+ *
+ *------------------------------------------------------------------------
+ */
+int
+LispAddDynamicFunc (char *name, void *f)
+{
+  int i;
+  const char *id = LispNewString (name);
+
+  for (i=0; FnTable[i].name; i++) {
+    if (id == FnTable[i].id)
+      return 0;
+  }
+  for (i=0; i < DyTableNum; i++) {
+    if (DyTable[i].id == id) {
+      DyTable[i].f = (LispObj *(*)())f;
+      return 1;
+    }
+  }
+  if (DyTableNum == DyTableMax) {
+    if (DyTableMax == 0) {
+      DyTableMax = 32;
+      MALLOC (DyTable, struct LispDynamicFn, DyTableMax);
+    }
+    else {
+      DyTableMax *= 2;
+      REALLOC (DyTable, struct LispDynamicFn, DyTableMax);
+    }
+  }
+  DyTable[DyTableNum].name = Strdup (name);
+  DyTable[DyTableNum].id = id;
+  DyTable[DyTableNum].f = (LispObj *(*)()) f;
+  DyTableNum++;
+  return 1;
+}
+
+  
+
+
 /*-----------------------------------------------------------------------------
  *
  *  ispair --
@@ -231,6 +292,14 @@ lookup (char *s, Sexp *f)
       LBUILTIN(l) = i;
       return l;
     }
+  for (i=0; i < DyTableNum; i++) {
+    if (DyTable[i].id == k) {
+      l = LispNewObj ();
+      LTYPE(l) = S_LAMBDA_BUILTIN_DYNAMIC;
+      LBUILTIN(l) = i;
+      return l;
+    }
+  }
   /* look in frame */
   l = LispFrameLookup (s,f);
   if (l) return l;
@@ -314,6 +383,9 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
       break;
     case S_LAMBDA_BUILTIN:
       argv[argc] = FnTable[LBUILTIN(l)].name;
+      break;
+    case S_LAMBDA_BUILTIN_DYNAMIC:
+      argv[argc] = DyTable[LBUILTIN(l)].name;
       break;
     case S_MAGIC_BUILTIN:
       argv[argc] = LSYM(l);
@@ -445,6 +517,30 @@ LispBuiltinApply (int num, Sexp *s, Sexp *f)
   return FnTable[num].f(FnTable[num].name, s, f);
 }
 
+
+/*-----------------------------------------------------------------------------
+ *
+ *  LispBuiltinApplyDynamic --
+ *
+ *      Apply a builtin function to a list
+ *
+ *  Results:
+ *      The results of the builtin function
+ *
+ *  Side effects:
+ *      None.
+ *
+ *-----------------------------------------------------------------------------
+ */
+
+LispObj *
+LispBuiltinApplyDynamic (int num, Sexp *s, Sexp *f)
+{
+  /* XXX: FIXME */
+  return FnTable[num].f(FnTable[num].name, s, f);
+}
+
+
   
 /*------------------------------------------------------------------------
  *
@@ -486,6 +582,7 @@ evalList (Sexp *s, Sexp *f)
 
   if (LTYPE(CAR(s)) != S_MAGIC_BUILTIN &&
       LTYPE(CAR(s)) != S_LAMBDA_BUILTIN &&
+      LTYPE(CAR(s)) != S_LAMBDA_BUILTIN_DYNAMIC &&
       LTYPE(CAR(s)) != S_LAMBDA) {
     fprintf (stderr, "eval: First argument of list is not a procedure.\n");
     fprintf (stderr, "\t");
@@ -551,6 +648,8 @@ evalList (Sexp *s, Sexp *f)
       LispStackPush (FnTable[LBUILTIN(CAR(s))].name);
     else if (LTYPE(CAR(s)) == S_MAGIC_BUILTIN)
       LispStackPush (LSYM(CAR(s)));
+    else if (LTYPE(CAR(s)) == S_LAMBDA_BUILTIN_DYNAMIC)
+      LispStackPush (DyTable[LBUILTIN(CAR(s))].name);
     else {
       char *str;
       str = LispFrameRevLookup (CAR(s),f);
@@ -590,6 +689,11 @@ evalList (Sexp *s, Sexp *f)
   if (LTYPE(CAR(s)) == S_LAMBDA_BUILTIN) {
     LispStackPush (FnTable[LBUILTIN(CAR(s))].name);
     l = LispBuiltinApply (LBUILTIN(CAR(s)), LLIST(CDR(s)), f);
+    LispStackPop ();
+  }
+  else if (LTYPE(CAR(s)) == S_LAMBDA_BUILTIN_DYNAMIC) {
+    LispStackPush (DyTable[LBUILTIN(CAR(s))].name);
+    l = LispBuiltinApplyDynamic (LBUILTIN(CAR(s)), LLIST(CDR(s)), f);
     LispStackPop ();
   }
   else if (LTYPE(CAR(s)) == S_LAMBDA) {

@@ -67,3 +67,43 @@ LispPathOpen (char *name, char *mode, char *pathspec)
   }
   return NULL;
 }
+
+char *
+LispPathFile (char *name, char *pathspec)
+{
+  FILE *fp;
+  char *t, *u, *s;
+  char *tmp;
+
+  if ((fp = fopen (name, "r"))) {
+    fclose (fp);
+    return Strdup (name);
+  }
+  if (pathspec) {
+    int done = 0;
+    t = Strdup (pathspec);
+    u = t;
+    s = u;
+    while (!done) {
+      if (*u == ':' || *u == '\0') {
+	if (*u == '\0') {
+	  done = 1;
+	}
+	*u = '\0';
+	MALLOC (tmp, char, strlen (s) + strlen (name) + 2);
+	sprintf (tmp, "%s/%s", s, name);
+	fp = fopen (tmp, "r");
+	if (fp) {
+	  FREE (t);
+	  fclose (fp);
+	  return tmp;
+	}
+	FREE (tmp);
+	s = u+1;
+      }
+      u++;
+    }
+    FREE (t);
+  }
+  return NULL;
+}

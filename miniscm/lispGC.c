@@ -144,6 +144,7 @@ LispCopyObj (LispObj *l)
     LSYM(s) = LSYM(l);
     break;
   case S_LAMBDA_BUILTIN:
+  case S_LAMBDA_BUILTIN_DYNAMIC:
     LBUILTIN(s) = LBUILTIN(l);
     break;
   case S_LAMBDA:

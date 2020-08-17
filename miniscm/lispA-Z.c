@@ -197,6 +197,7 @@ LispIsProc (char *name, Sexp *s, Sexp *f)
   LTYPE(r) = S_BOOL;
   LBOOL(r) = !!(r && (LTYPE(ARG1(s)) == S_LAMBDA ||
 		      LTYPE(ARG1(s)) == S_LAMBDA_BUILTIN ||
+		      LTYPE(ARG1(s)) == S_LAMBDA_BUILTIN_DYNAMIC ||
 		      LTYPE(ARG1(s)) == S_MAGIC_BUILTIN));
   return r;
 }
@@ -303,6 +304,9 @@ EqualObjects (LispObj *l1, LispObj *l2)
     return LSYM(l1) == LSYM(l2);
     break;
   case S_LAMBDA_BUILTIN:
+    return LBUILTIN(l1) == LBUILTIN(l2);
+    break;
+  case S_LAMBDA_BUILTIN_DYNAMIC:
     return LBUILTIN(l1) == LBUILTIN(l2);
     break;
   case S_LAMBDA:
@@ -1220,12 +1224,15 @@ Lispapply (char *name, Sexp *s, Sexp *f)
 {
   if (!ARG1P(s) || !ARG2P(s) || LTYPE(ARG2(s)) != S_LIST ||
       (LTYPE(ARG1(s)) != S_LAMBDA && LTYPE(ARG1(s)) != S_LAMBDA_BUILTIN &&
-       LTYPE(ARG1(s)) != S_MAGIC_BUILTIN) || ARG3P(s)) {
+       LTYPE(ARG1(s)) != S_LAMBDA_BUILTIN_DYNAMIC &&
+       LTYPE(ARG1(s)) != S_MAGIC_BUILTIN ) || ARG3P(s)) {
     fprintf (stderr, "Usage: (%s proc list)\n", name);
     RETURN;
   }
   if (LTYPE(ARG1(s)) == S_LAMBDA_BUILTIN)
     return LispBuiltinApply (LBUILTIN(ARG1(s)), LLIST(ARG2(s)), f);
+  else if (LTYPE(ARG1(s)) == S_LAMBDA_BUILTIN_DYNAMIC)
+    return LispBuiltinApplyDynamic (LBUILTIN(ARG1(s)), LLIST(ARG2(s)), f);
   else if (LTYPE(ARG1(s)) == S_MAGIC_BUILTIN)
     return LispMagicSend (LSYM(ARG1(s)), LLIST(ARG2(s)), f);
   else

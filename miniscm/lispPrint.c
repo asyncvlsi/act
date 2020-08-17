@@ -195,6 +195,7 @@ _LispGenTable (LispObj *l)
   case S_BOOL:
   case S_SYM:
   case S_LAMBDA_BUILTIN:
+  case S_LAMBDA_BUILTIN_DYNAMIC:
   case S_MAGIC_BUILTIN:
     break;
   case S_LIST:
@@ -296,6 +297,9 @@ LispPrintType (FILE *fp, LispObj *l)
     break;
   case S_LAMBDA_BUILTIN:
     fprintf (fp, "#proc-builtin");
+    break;
+  case S_LAMBDA_BUILTIN_DYNAMIC:
+    fprintf (fp, "#proc-dynamic");
     break;
   case S_MAGIC_BUILTIN:
     fprintf (fp, "#proc-magic");

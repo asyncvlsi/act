@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <dlfcn.h>
 
 #include "lisp.h"
 #include "lispInt.h"
@@ -374,3 +375,143 @@ LispWait (char *name, Sexp *s, Sexp *f)
   LINTEGER(l) = stat;
   return l;
 }
+
+#define MAX_LIBS 16
+
+static int num_libs = 0;
+static void *tot_libs[MAX_LIBS];
+
+static int _stash_library (void *lib)
+{
+  if (lib == NULL) {
+    return -1;
+  }
+  if (num_libs == MAX_LIBS) {
+    return -2;
+  }
+  tot_libs[num_libs++] = lib;
+  return num_libs-1;
+}
+
+static void *_stash_get (int lib)
+{
+  if (lib < 0) return NULL;
+  if (lib >= num_libs) return NULL;
+  return tot_libs[lib];
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  LispDlopen --
+ *
+ *      (scm-dlopen "file")
+ *      Returns handler to library
+ *
+ *  Results:
+ *      The library ID if successful,  error if the library could not be opened
+ *
+ *  Side effects:
+ *      Library is opened and available
+ *
+ *-----------------------------------------------------------------------------
+ */
+LispObj *
+LispDlopen (char *name, Sexp *s, Sexp *f)
+{
+  LispObj *l;
+  char *tmp;
+  char *fname;
+  void *dl;
+  int ret;
+
+  if (!ARG1P(s) || LTYPE(ARG1(s)) != S_STRING || ARG2P(s)) {
+    fprintf (stderr, "Usage: (%s string)\n", name);
+    RETURN;
+  }
+  l = LispFrameLookup (LispNewString ("scm-dynamic-path"), f);
+  if (!l)
+    tmp = NULL;
+  else if (LTYPE(l) != S_STRING) {
+    fprintf (stderr, "%s: scm-dynamic-path is not a string\n", name);
+    RETURN;
+  }
+  else
+    tmp = LSTR(l);
+  if (!(fname = LispPathFile (LSTR(ARG1(s)), tmp))) {
+    fprintf (stderr, "%s: could not find library %s\n",name,LSTR(ARG1(s)));
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 0;
+    RETURN;
+  }
+
+  dl = dlopen (fname, RTLD_LAZY);
+  ret = _stash_library (dl);
+
+  if (ret >= 0) {
+    l = LispNewObj ();
+    LTYPE(l) = S_INT;
+    LINTEGER(l) = ret;
+    return l;
+  }
+  else {
+    if (ret == -1) {
+      fprintf (stderr, "%s: could not find library %s\n",name,LSTR(ARG1(s)));
+    }
+    else {
+      fprintf (stderr, "%s: too many open libraries\n",name);
+    }      
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 0;
+    RETURN;
+  }
+}
+
+
+LispObj *
+LispDlbind (char *name, Sexp *s, Sexp *f)
+{
+  LispObj *l;
+  char *fname;
+  void *func;
+  void *dl;
+  int ret;
+
+  if (!ARG1P(s) || !ARG2P(s) || !ARG3P(s) || ARG4P(s) ||
+      LTYPE(ARG1(s)) != S_INT || LTYPE(ARG2(s)) != S_STRING ||
+      LTYPE(ARG3(s)) != S_STRING) {
+    fprintf (stderr, "Usage: (%s int string string)\n", name);
+    RETURN;
+  }
+  dl = _stash_get (LINTEGER(ARG1(s)));
+  if (!dl) {
+    fprintf (stderr, "%s: could not find library #%d\n",name,LINTEGER(ARG1(s)));
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 0;
+    RETURN;
+  }
+  func = dlsym (dl, LSTR(ARG3(s)));
+  if (!func) {
+    fprintf (stderr, "%s: could not find function %s in library #%d\n",name,
+	     LSTR(ARG3(s)),
+	     LINTEGER(ARG1(s)));
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 0;
+    RETURN;
+  }
+  if (!LispAddDynamicFunc (LSTR(ARG2(s)), func)) {
+    fprintf (stderr, "%s: error binding function %s\n",name, LSTR(ARG2(s)));
+    l = LispNewObj ();
+    LTYPE(l) = S_BOOL;
+    LBOOL(l) = 0;
+    RETURN;
+  }
+  l = LispNewObj ();
+  LTYPE(l) = S_BOOL;
+  LBOOL(l) = 1;
+  return l;
+}
+
