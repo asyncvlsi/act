@@ -1470,9 +1470,6 @@ void ActBooleanizePass::_createNets (Process *p)
 	if (as) {
 	  as->step();
 	}
-	if (tmpa) {
-	  delete tmpa;
-	}
       } while (as && !as->isend());
     }
     if (as) {
