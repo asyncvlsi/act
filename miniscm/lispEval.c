@@ -115,6 +115,8 @@ static struct LispBuiltinFn FnTable[] = {
   { "save-scm", NULL, 0, LispWrite },
   { "spawn", NULL, 0, LispSpawn },
   { "wait", NULL, 0, LispWait },
+  { "dlopen", NULL, 0, LispDlopen },
+  { "dlbind", NULL, 0, LispDlbind },
 
   /* utilities */
   { "collect-garbage", NULL, 0, LispCollectGarbage },
@@ -536,8 +538,11 @@ LispBuiltinApply (int num, Sexp *s, Sexp *f)
 LispObj *
 LispBuiltinApplyDynamic (int num, Sexp *s, Sexp *f)
 {
-  /* XXX: FIXME */
-  return FnTable[num].f(FnTable[num].name, s, f);
+  LispObj *l;
+  LispObj *tmp = DyTable[num].f(DyTable[num].name, s);
+  l = LispCopyObj (tmp);
+  FREE (tmp);
+  return l;
 }
 
 

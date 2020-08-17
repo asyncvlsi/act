@@ -37,7 +37,7 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 DFLAGS+=-DUSE_SCM
 
 
-$(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND) $(LIBSCMDEPEND)
+$(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND) $(SCMDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCM) -ledit -ldl
 
 $(BIN2): $(LIB) $(OBJS2) $(LIBDEPEND)

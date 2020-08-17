@@ -162,4 +162,7 @@ extern int lispInFile;		/* flag used for :setpoint */
 extern FILE *LispPathOpen (char *name, char *mode, char *pathspec);
 extern char *LispPathFile (char *name, char *pathspec);
 
+extern LispObj *LispDlopen (char *name, Sexp *s, Sexp *f);
+extern LispObj *LispDlbind (char *name, Sexp *s, Sexp *f);
+  
 #endif /* __LISPINT_H__ */
