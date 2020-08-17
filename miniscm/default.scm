@@ -154,3 +154,8 @@
 ; Unix "system"
 ;
 (define system (lambda (str) (wait (spawn "sh" "-c" str))))
+
+;
+; Helper function
+;
+(define dlbinder (lambda (file) (let ((x (dlopen file))) (lambda (fname fimpl)  (dlbind x fname fimpl)))))
