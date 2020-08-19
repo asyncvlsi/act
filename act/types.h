@@ -749,24 +749,26 @@ class TypeFactory {
 */
 #define T_ERR         -1
 
-#define T_STRICT     0x20   // a port parameter that is in the
+#define T_STRICT     0x40   // a port parameter that is in the
 			    // "strict" list... i.e. not optional,
 			    // i.e. before the vertical bar
-#define T_PARAM      0x40   // a parameter type pint/... etc
+#define T_PARAM      0x80   // a parameter type pint/... etc
 
 #define T_INT        0x1
 #define T_REAL       0x2
 #define T_BOOL       0x4
 #define T_PROC       0x5
 #define T_CHAN       0x6
-#define T_DATA       0x7
-#define T_SELF       0x8   /* special type, "self" */
-#define T_PTYPE      0x9
-#define T_ARRAYOF    0x10
+#define T_DATA_INT   0x7
+#define T_DATA_BOOL  0x8
+#define T_SELF       0x9   /* special type, "self" */
+#define T_PTYPE      0x10
+#define T_ARRAYOF    0x20
 
-#define T_BASETYPE(x) ((x) & 0xf)
-#define T_BASETYPE_ISNUM(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
-#define T_BASETYPE_ISINTBOOL(x) (T_BASETYPE (x) == T_INT || T_BASETYPE (x) == T_BOOL)
+#define T_FIXBASETYPE(x)  ((((x) & 0x1f) == T_DATA_BOOL) ? T_BOOL : ((((x) & 0x1f) == T_DATA_INT) ? T_INT : ((x) & 0x1f)))
+#define T_BASETYPE(x) ((x) & 0x1f)
+#define T_BASETYPE_ISNUM(x) (T_FIXBASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
+#define T_BASETYPE_ISINTBOOL(x) ((T_FIXBASETYPE (x) == T_INT) || (T_FIXBASETYPE (x) == T_BOOL))
 
 int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
 int act_type_var (Scope *, ActId *, InstType **xit);

@@ -77,7 +77,9 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
       v->ischan = 1;
       v->width = TypeFactory::bitWidth (xit);
     }
-    else if (TypeFactory::isIntType (xit)) {
+    else if (TypeFactory::isIntType (xit) ||
+	     (TypeFactory::isDataType (xit) &&
+	      !TypeFactory::boolType (xit))) {
       v->isint = 1;
       v->width = TypeFactory::bitWidth (xit);
     }
@@ -921,7 +923,8 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       v->ischpport = 1;
       A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
 
-      if (TypeFactory::isIntType (t)) {
+      if (TypeFactory::isIntType (t) ||
+	  (TypeFactory::isDataType (t) && !TypeFactory::boolType (t))) {
 	v->isint = 1;
 	v->width = TypeFactory::bitWidth (t);
       }

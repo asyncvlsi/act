@@ -188,7 +188,12 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   if (d->isEnum()) {
     return T_INT|arr;
   }
-  return T_DATA|arr;
+  if (TypeFactory::boolType (t)) {
+    return T_DATA_BOOL|arr;
+  }
+  else {
+    return T_DATA_INT|arr;
+  }
 }
 
 int act_type_var (Scope *s, ActId *id, InstType **xit)
@@ -284,7 +289,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       return T_ERR;							\
     }									\
     flgs = lt & rt & (T_PARAM|T_STRICT);				\
-    if ((f & T_BOOL) && T_BASETYPE (lt) == T_BOOL && T_BASETYPE (rt) == T_BOOL) { \
+    if ((f & (T_BOOL|T_DATA_BOOL)) && (T_FIXBASETYPE (lt) == T_BOOL) && (T_FIXBASETYPE (rt) == T_BOOL)) { \
       return (((f) != (g) ? (g) : T_BOOL) & ~(T_PARAM|T_STRICT))|flgs;  \
     }                                                                   \
     if ((f & T_REAL) && T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) { \
@@ -294,7 +299,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
     }                                                                   \
-    if ((f & T_INT) && T_BASETYPE(lt) == T_INT && T_BASETYPE(rt) == T_INT) { \
+    if ((f & (T_INT|T_DATA_INT)) && (T_FIXBASETYPE(lt) == T_INT) && (T_FIXBASETYPE(rt) == T_INT)) { \
       WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_INT) & ~(T_PARAM|T_STRICT))|flgs;   \
     }                                                                   \
@@ -327,7 +332,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     /* Boolean, binary or int */
   case E_AND:
   case E_OR:
-    EQUAL_LT_RT(T_BOOL|T_INT, WIDTH_MAX);
+    EQUAL_LT_RT(T_BOOL|T_INT|T_DATA_BOOL|T_DATA_INT, WIDTH_MAX);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs bool/bool or int/int", expr_operator_name (e->type));
     return T_ERR;
     break;
@@ -426,12 +431,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
     /* Binary, integer only */
   case E_LSL:
-    EQUAL_LT_RT(T_INT, WIDTH_LSHIFT);
+    EQUAL_LT_RT(T_INT|T_DATA_INT, WIDTH_LSHIFT);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
 
   case E_LSR:
   case E_ASR:
-    EQUAL_LT_RT(T_INT, WIDTH_LEFT);
+    EQUAL_LT_RT(T_INT|T_DATA_INT, WIDTH_LEFT);
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
 
   case E_XOR:

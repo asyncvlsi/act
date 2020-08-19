@@ -2142,7 +2142,7 @@ void Channel::Print (FILE *fp)
 
 void Data::Print (FILE *fp)
 {
-  PrintHeader (fp, "defdata");
+  PrintHeader (fp, "deftype");
   fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */
@@ -2197,6 +2197,7 @@ void Channel::copyMethods (Channel *c)
     emethods[i] = c->geteMethod ((datatype_methods)i);
   }
 }
+
 
 
 int TypeFactory::bitWidth (Type *t)
@@ -2262,6 +2263,7 @@ int TypeFactory::boolType (Type *t)
   }
   { 
     Data *tmp = dynamic_cast<Data *>(t);
+
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
       return TypeFactory::boolType (tmp->getParent());
@@ -2281,8 +2283,48 @@ int TypeFactory::boolType (Type *t)
   }
   return -1;
 }
-XINSTMACRO(boolType)
 
+int TypeFactory::boolType (InstType *t)
+{
+  if (!t) return -1;
+  {
+    Chan *tmp = dynamic_cast <Chan *>(t->BaseType());
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->datatype();
+      //if (!x->isExpanded()) return -1;
+      return TypeFactory::boolType (x);
+    }
+  }
+  {
+    Channel *tmp = dynamic_cast <Channel *> (t->BaseType());
+    if (tmp) {
+      //if (!tmp->isExpanded()) return -1;
+      return TypeFactory::boolType (tmp->getParent());
+    }
+  }
+  { 
+    Data *tmp = dynamic_cast<Data *>(t->BaseType());
+
+    if (tmp) {
+      //if (!tmp->isExpanded()) return -1;
+      return TypeFactory::boolType (tmp->getParent());
+    }
+  }
+  {
+    Int *tmp = dynamic_cast<Int *>(t->BaseType());
+    if (tmp) {
+      return 0;
+    }
+  }
+  {
+    Bool *tmp = dynamic_cast<Bool *>(t->BaseType());
+    if (tmp) {
+      return 1;
+    }
+  }
+  return -1;
+}
 
 
 act_prs *UserDef::getprs ()
