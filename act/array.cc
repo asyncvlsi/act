@@ -1064,7 +1064,6 @@ void Arraystep::step()
   }
 
   /*-- not a subrange --*/
-  
   for (int i = base->dims - 1; i >= 0; i--) {
     deref[i]++;
     if (deref[i] <= base->r[i].u.ex.hi) {
@@ -1195,9 +1194,11 @@ void AExprstep::step()
     }
     break;
   case 3:
-    if (u.vx.a && !u.vx.a->isend()) {
+    if (u.vx.a) {
       u.vx.a->step();
-      return;
+      if (!u.vx.a->isend()) {
+	return;
+      }
     }
     if (u.vx.a) {
       delete u.vx.a;
@@ -1305,9 +1306,6 @@ void AExprstep::step()
 int AExprstep::isend()
 {
   if (type == 0 && !cur && stack_isempty (stack)) {
-    return 1;
-  }
-  if (type == 3 && (!u.vx.a || u.vx.a->isend())) {
     return 1;
   }
   return 0;

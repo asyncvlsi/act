@@ -302,6 +302,7 @@ void Act::Init (int *iargc, char ***iargv)
 
   Act::config_info ("global.conf");
   config_read ("global.conf");
+  Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
   if (conf_file) {
     config_read (conf_file);

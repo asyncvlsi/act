@@ -1,0 +1,13 @@
+template <pint in[2][1]>
+defproc test()
+{
+}
+
+pint X[1];
+pint Y[1];
+
+pint U[2][1];
+
+X[0] = 0; Y[0] = 0;
+
+test<{X, Y}> tmp;

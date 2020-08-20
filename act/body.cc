@@ -829,7 +829,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	AExprstep *bes = arhs->stepper();
 	/* any other parameter assignment */
 	while (!aes->isend()) {
-
+	  Assert (!bes->isend(), "What?");
 	  aes->getID (&lhsid, &lhsidx, NULL);
 	  if (lhsidx == -1) {
 	    /* it's a pure ID */
