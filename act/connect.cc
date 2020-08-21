@@ -524,7 +524,7 @@ static void _merge_subtrees (UserDef *ux,
   ValueIdx *vx;
   int sz;
 
-  vx = c1->getvx();
+  vx = c2->getvx();
 
   if (!c1->a) {
     if (c2->a) {
@@ -533,7 +533,7 @@ static void _merge_subtrees (UserDef *ux,
       /* now fix parent pointers */
       if (vx->t->arrayInfo()) {
 	/* the value is an array, but are we connecting arrays or derefs? */
-	if (c1->getctype() == 1) {
+	if (c2->getctype() == 1) {
 	  UserDef *ux;
 	  ux = dynamic_cast <UserDef *> (vx->t->BaseType());
 	  Assert (ux, "Why are we here?!");
@@ -561,7 +561,7 @@ static void _merge_subtrees (UserDef *ux,
   }
   else if (c2->a) {
     if (vx->t->arrayInfo()) {
-      if (c1->getctype() == 1) {
+      if (c2->getctype() == 1) {
 	UserDef *ux;
 	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
 	Assert (ux, "Why are we here?!");
