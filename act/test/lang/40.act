@@ -1,0 +1,9 @@
+defproc testme (chan(int) x[10]; chan(int) y)
+{
+  int w[10];
+  chp {
+    (;i:10: x[i]?w[i]); y!w[0]
+  }
+}
+
+testme t;

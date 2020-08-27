@@ -48,11 +48,12 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->isglobal = 0;
   v->isport = 0;
   v->ischpport = 0;
+  v->isfragmented = 0;
   v->extra = NULL;
   return v;
 }
 
-static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
+static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
 					  act_connection *c)
 {
   ihash_bucket_t *b;
@@ -112,7 +113,7 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   act_connection *c;
 
   c = id->Canonical (n->cur);
-  return var_lookup (n, c);
+  return _var_lookup (n, c);
 }
 
 
@@ -139,7 +140,7 @@ static void walk_expr (act_boolean_netlist_t *N, act_prs_expr_t *e)
     break;
     
   case ACT_PRS_EXPR_VAR:
-    v = var_lookup (N, e->u.v.id->Canonical (N->cur));
+    v = var_lookup (N, e->u.v.id);
     v->used = 1;
     v->input = 1;
     break;
@@ -734,12 +735,38 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
       A_NEXT (n->used_globals) = v->id;
       A_INC (n->used_globals);
     }
+
+    /*-- now check if this is fragmented --*/
+    act_connection *c = (act_connection *)b->key;
+    if (!c->hasSubconnections()) {
+      v->isfragmented = 0;
+    }
+    else {
+      if (c->vx) {
+	if (!c->vx->t->arrayInfo()) {
+	  v->isfragmented = 1;
+	}
+	else {
+	  for (int i=0; i <  c->numSubconnections(); i++) {
+	    if (c->hasSubconnections (i)) {
+	      if (c->a[i]->a) {
+		v->isfragmented = 1;
+		break;
+	      }
+	    }
+	  }
+	}
+      }
+      else {
+	v->isfragmented = 1;
+      }
+    }
   }
-  
+
   if (subinst) {
     n->isempty = 0;
   }
-  
+
   return n;
 }
 
@@ -787,7 +814,7 @@ static void mark_c_used (act_boolean_netlist_t *n,
     }
   }
   else {
-    v = var_lookup (n, c);
+    v = _var_lookup (n, c);
     if (type == 0) {
       v->used = 1;
       if (!subinst->ports[*count].input) {

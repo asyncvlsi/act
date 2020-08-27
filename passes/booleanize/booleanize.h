@@ -50,6 +50,10 @@ typedef struct act_booleanized_var {
   unsigned int ischpport:1;	/* 1 if this is in the chp port list,
 				   and isn't omitted; won't be set
 				   for black box processes */
+
+  unsigned int isfragmented:1;	/* 1 if this is a user-defined
+				   data/channel type that is
+				   fragmented */
   
   unsigned int width;		/* bit-width for chan/int */
   void *extra;			/* space for rent */

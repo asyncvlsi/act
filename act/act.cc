@@ -99,6 +99,8 @@ void Act::Init (int *iargc, char ***iargv)
   if (initialize) return;
   initialize = 1;
 
+  Assert (sizeof (void *) == sizeof (unsigned long), "Pointer hashing issues");
+
   Act::L = new Log("actcore", 'A');
   ActNamespace::Init();
   Type::Init();

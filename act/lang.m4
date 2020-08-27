@@ -246,6 +246,39 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
     }
     return c;
 }}
+;
+
+chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
+{{X:
+    act_chp_lang_t *c;
+
+    if (list_length ($1) > 1) {
+      NEW (c, act_chp_lang_t);
+      c->space = NULL;
+      c->type = ACT_CHP_COMMA;
+      c->u.semi_comma.cmd = $1;
+    }
+    else {
+      $A(list_length ($1) == 1);
+      c = (act_chp_lang_t *) list_value (list_first ($1));
+      list_free ($1);
+    }
+    return c;
+}}
+;
+
+chp_body_item[act_chp_lang_t *]: base_stmt
+{{X:
+    return $1;
+}}
+| select_stmt
+{{X:
+    return $1;
+}}
+| loop_stmt
+{{X:
+    return $1;
+}}
 | "(" ";" ID
 {{X:
     if ($0->scope->Lookup ($3)) {
@@ -274,25 +307,6 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
     c->u.loop.lo = $5;
     c->u.loop.hi = hi;
     c->u.loop.body = $8;
-    return c;
-}}
-;
-
-chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
-{{X:
-    act_chp_lang_t *c;
-
-    if (list_length ($1) > 1) {
-      NEW (c, act_chp_lang_t);
-      c->space = NULL;
-      c->type = ACT_CHP_COMMA;
-      c->u.semi_comma.cmd = $1;
-    }
-    else {
-      $A(list_length ($1) == 1);
-      c = (act_chp_lang_t *) list_value (list_first ($1));
-      list_free ($1);
-    }
     return c;
 }}
 | "(" "," ID
@@ -324,20 +338,6 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
     c->u.loop.hi = hi;
     c->u.loop.body = $8;
     return c;
-}}
-;
-
-chp_body_item[act_chp_lang_t *]: base_stmt
-{{X:
-    return $1;
-}}
-| select_stmt
-{{X:
-    return $1;
-}}
-| loop_stmt
-{{X:
-    return $1;
 }}
 ;
 
@@ -684,27 +684,27 @@ hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
 {{X:
     return apply_X_chp_body_opt0 ($0, $1);
 }}
-| "(" ";" ID
-{{X:
-    lapply_X_chp_body_1_2 ($0, $3);
-}}
-":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
-{{X:
-    return apply_X_chp_body_opt1 ($0, $3, $5, $6, $8);
-}}
 ;
 
 hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }* 
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
-| "(" "," ID
+| "(" ";" ID
 {{X:
-    lapply_X_chp_comma_list_1_2 ($0, $3);
+    lapply_X_chp_body_item_3_2 ($0, $3);
 }}
 ":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
 {{X:
-    return apply_X_chp_comma_list_opt1 ($0, $3, $5, $6, $8);
+    return apply_X_chp_body_item_opt3 ($0, $3, $5, $6, $8);
+}}
+| "(" "," ID
+{{X:
+    lapply_X_chp_body_item_4_2 ($0, $3);
+}}
+":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
+{{X:
+    return apply_X_chp_body_item_opt4 ($0, $3, $5, $6, $8);
 }}
 | hse_loop_stmt
 {{X:
