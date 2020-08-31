@@ -35,6 +35,7 @@ SimDES *SimDES::curobj = NULL;
 SimDES::SimDES ()
 {
   break_point = 0;
+  flags = 0;
 
   if (!all) {
     /* first time I'm here */

@@ -1474,7 +1474,10 @@ void AExprstep::getID (ActId **id, int *idx, int *size)
       *idx = u.id.a->index();
       if (size) {
 	*size = u.id.a->typesize();
-	Assert ((0 <= *idx) && (*idx < *size), "What?");
+	if (!((0 <= *idx) && (*idx < *size))) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Traversal of empty array identifier is not permitted");
+	}
       }
     }
     break;

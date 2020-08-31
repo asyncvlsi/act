@@ -167,7 +167,9 @@ class SimDES {
 
 protected:
   unsigned int break_point:2;	// set a breakpoint on this object
-  unsigned int bp_ev_type:6;    // event type for breakpoint, if required
+  unsigned int bp_ev_type:6;    // event type for breakpoint, if
+				// required
+  unsigned int flags:8;		// available flags
 
 private:
   static SimDES *curobj;	// current object being stepped
