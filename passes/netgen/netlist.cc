@@ -95,6 +95,8 @@ static void compute_max_reff (netlist_t *N, int type)
       
       if (e->type != type) continue;
       if (e->pchg) continue;
+      if (e->raw) continue;
+      
       if (e->a == n) {
 	m = e->b;
       }
