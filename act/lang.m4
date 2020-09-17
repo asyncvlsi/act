@@ -432,6 +432,9 @@ send_data[act_chp_lang_t *]: w_expr
 | "(" { w_expr "," }* ")" 
 {{X:
     act_chp_lang_t *c;
+
+    $E("Sending lists is not supported at present");
+    
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
     c->space = NULL;
@@ -472,6 +475,9 @@ recv_id[act_chp_lang_t *]: bool_or_int_expr_id
 | "(" { bool_or_int_expr_id "," }* ")" 
 {{X:
     act_chp_lang_t *c;
+    
+    $E("Receiving lists is not supported at present");
+    
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
     c->space = NULL;
