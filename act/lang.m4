@@ -286,7 +286,7 @@ chp_body_item[act_chp_lang_t *]: base_stmt
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" chp_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" chp_body ")"
 {{X:
     act_chp_lang_t *c;
     Expr *hi = NULL;
@@ -316,7 +316,7 @@ chp_body_item[act_chp_lang_t *]: base_stmt
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" chp_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" chp_body ")"
 {{X:
     act_chp_lang_t *c;
     Expr *hi = NULL;
@@ -606,7 +606,7 @@ guarded_cmd[act_chp_gc_t *]: wbool_allow_chan_expr "->" chp_body
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_allow_chan_expr "->" chp_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" wbool_allow_chan_expr "->" chp_body ")"
 {{X:
     ActRet *r;
     Expr *hi = NULL;
@@ -700,7 +700,7 @@ hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }*
 {{X:
     lapply_X_chp_body_item_3_2 ($0, $3);
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" hse_body ")"
 {{X:
     return apply_X_chp_body_item_opt3 ($0, $3, $5, $6, $8);
 }}
@@ -708,7 +708,7 @@ hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }*
 {{X:
     lapply_X_chp_body_item_4_2 ($0, $3);
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" hse_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" hse_body ")"
 {{X:
     return apply_X_chp_body_item_opt4 ($0, $3, $5, $6, $8);
 }}
@@ -761,7 +761,7 @@ hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" chp_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" wbool_expr "->" chp_body ")"
 {{X:
     return apply_X_guarded_cmd_opt1 ($0, $3, $5, $6, $8, $10);
 }}
@@ -1016,7 +1016,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
     }
     $0->scope->Add ($2, $0->tf->NewPInt ());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" prs_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" prs_body ")"
 {{X:
     act_prs_lang_t *p;
     
@@ -1104,7 +1104,7 @@ dir[int]: "+"  {{X: return 1; }}
 | "-" {{X: return 0; }}
 ;
 
-tree_subckt_spec: "<" wint_expr ">"
+tree_subckt_spec: "<" wpint_expr ">"
 {{X:
     ActRet *r;
     NEW (r, ActRet);
@@ -1207,7 +1207,7 @@ bool_or_int_expr_id[ActId *]: expr_id
       < width , length, flavor : somethingelse >
 
 */
-size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] [ ";" wint_expr ] ">"
+size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] [ ";" wpint_expr ] ">"
 {{X:
     act_size_spec_t *s;
     
@@ -1389,7 +1389,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     list_free ($3);
     return s;
 }}
-| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] "<" [ "[" wint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
+| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] "<" [ "[" wpint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
 {{X:
     /* a timing fork */
     act_spec *s;
@@ -1510,7 +1510,7 @@ lang_size[ActBody *]: "sizing" "{"
 }}
 ;
 
-size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  [";" dir wnumber_expr [ "," ID ] [ "," wint_expr ] ] "}"
+size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wpint_expr]  [";" dir wnumber_expr [ "," ID ] [ "," wpint_expr ] ] "}"
 {{X:
     act_sizing_directive *d;
 
@@ -1638,7 +1638,7 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wint_expr]  ["
     A_INC ($0->sizing_info->d);
     return NULL;
 }}
-| "(" ";" ID ":" !noreal wint_expr [ ".." wint_expr ]
+| "(" ";" ID ":" !noreal wpint_expr [ ".." wpint_expr ]
 {{X:
     act_sizing_directive *d;
     Expr *hi = NULL;
@@ -1787,7 +1787,7 @@ lang_dataflow[ActBody *]: "dataflow" "{" { dataflow_items ";" }* "}"
 ;
 
 dataflow_items[act_dataflow_element *]:
-w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
+w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 {{X:
     act_dataflow_element *e;
     NEW (e, act_dataflow_element);
@@ -1825,7 +1825,7 @@ w_chan_int_expr "->" [ "[" wint_expr [ "," wint_expr ] "]" ] expr_id
     OPT_FREE ($3);
     return e;
 }}
-| w_chan_int_expr "->" [ "(" wint_expr [ "," wint_expr ] ")" ] expr_id
+| w_chan_int_expr "->" [ "(" wpint_expr [ "," wpint_expr ] ")" ] expr_id
 {{X:
     act_dataflow_element *e;
     e = apply_X_dataflow_items_opt0 ($0, $1, $3, $4);

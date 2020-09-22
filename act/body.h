@@ -67,10 +67,18 @@ class ActId {
   ActId *Expand (ActNamespace *ns, Scope  *s); /**< expand ID */
   ActId *ExpandCHP (ActNamespace *ns, Scope *s); /**< expand CHP ID */
 
-  Expr *Eval (ActNamespace *ns, Scope *s, int is_lval = 0);
+  Expr *Eval (ActNamespace *ns, Scope *s, int is_lval = 0, int is_chp = 0);
   /**< evaluating an ID returns either: just the ID itself, for
      non-meta parameters (also for meta parameters if is_lval=1)
      or the value of the parameter for meta-parameters. */
+
+  Expr *EvalCHP (ActNamespace *ns, Scope *s, int is_lval = 0) {
+    return Eval (ns, s, is_lval, 1);
+  }
+  /**< evaluating an ID returns either: just the ID itself, for
+     non-meta parameters (also for meta parameters if is_lval=1)
+     or the value of the parameter for meta-parameters. The CHP
+     variant permits the ID to have a dynamic dereference */
 
   /**< 
      Find canonical root identifier in the current scope.

@@ -2048,7 +2048,7 @@ connection[ActBody *]: special_connection_id ";"
 {{X: return $1; }}
 ;
                       
-loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
+loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":" 
 {{X:
     if ($0->scope->Lookup ($3)) {
       $E("Identifier `%s' already defined in current scope", $3);
@@ -2148,7 +2148,7 @@ gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" base_item_list ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" wbool_expr "->" base_item_list ")"
 {{X:
     ActRet *r;
     Expr *hi = NULL;
@@ -2169,7 +2169,7 @@ gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
 ;
 
 
-loop_base[ActBody *]: "(" [ ";" ] ID ":" !noreal wint_expr [ ".." wint_expr ] ":" 
+loop_base[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":" 
 {{X:
     lapply_X_loop_0_6 ($0, $2, $3, $5, $6);
 }}
@@ -2211,7 +2211,7 @@ gc_1_base[ActBody_Select_gc *]: wbool_expr "->" base_body
 {{X:
     lapply_X_gc_1_1_2 ($0, $3);
 }}
-":" !noreal wint_expr [ ".." wint_expr ] ":" wbool_expr "->" base_body ")"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" wbool_expr "->" base_body ")"
 {{X:
     return apply_X_gc_1_opt1 ($0, $3, $5, $6, $8, $10);
 }}

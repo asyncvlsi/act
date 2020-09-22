@@ -61,7 +61,7 @@ T_INT[int]: "int"
 {{X: return 1; }}
 ;
 
-data_type[InstType *]: T_INT [ chan_dir ] [ "<" wint_expr ">" ]
+data_type[InstType *]: T_INT [ chan_dir ] [ "<" wpint_expr ">" ]
 {{X:
     ActRet *r;
     Type::direction d;
@@ -106,7 +106,7 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" wint_expr ">" ]
     OPT_FREE ($2);
     return $0->tf->NewBool (d);
 }}
-| "enum" [ chan_dir ] "<" wint_expr ">"
+| "enum" [ chan_dir ] "<" wpint_expr ">"
 {{X:
     ActRet *r;
     Type::direction d;
@@ -577,7 +577,7 @@ dense_range[Array *]: dense_one_range dense_range
 {{X: return $1; }}
 ;
 
-dense_one_range[Array *]: "[" wint_expr "]" 
+dense_one_range[Array *]: "[" wpint_expr "]" 
 {{X:
     Array *a = new Array ($2);
     return a;
@@ -596,7 +596,38 @@ sparse_range[Array *]: sparse_one_range sparse_range
 }}
 ;
 
-sparse_one_range[Array *]: "[" !noreal wint_expr [ ".." wint_expr ] "]"
+sparse_one_range[Array *]: "[" !noreal wpint_expr [ ".." wpint_expr ] "]"
+{{X:
+    Array *a; 
+    ActRet *r;
+    
+    if (OPT_EMPTY ($3)) {
+      a = new Array ($2);
+    }
+    else {
+      r = OPT_VALUE ($3);
+      $A(r->type == R_EXPR);
+      a = new Array ($2, r->u.exp);
+      FREE (r);
+    }
+    OPT_FREE ($3);
+    return a;
+}}
+;
+
+xsparse_range[Array *]: xsparse_one_range xsparse_range
+{{X:
+    $1->Concat ($2);
+    delete $2;
+    return $1;
+}}
+| xsparse_one_range
+{{X:
+    return $1;
+}}
+;
+
+xsparse_one_range[Array *]: "[" !noreal wint_expr [ ".." wint_expr ] "]"
 {{X:
     Array *a; 
     ActRet *r;

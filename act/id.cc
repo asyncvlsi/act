@@ -153,7 +153,7 @@ ActId *ActId::ExpandCHP (ActNamespace *ns, Scope *s)
  *
  *------------------------------------------------------------------------
  */
-Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
+Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 {
   InstType *it;
   ActId *id;
@@ -223,14 +223,31 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 	fprintf (stderr, "\n");
 	fatal_error ("Using `.' for an array, not an array de-reference");
       }
-      if (!it->arrayInfo()->Validate (id->arrayInfo())) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, " id: ");
-	this->Print (stderr);
-	fprintf (stderr, "\n type: ");
-	it->Print (stderr);
-	fprintf (stderr, "\n");
-	fatal_error ("Dereference out of range");
+      if (id->arrayInfo()->isDeref() &&
+	  id->arrayInfo()->isDynamicDeref()) {
+	if (is_chp) {
+	  /* ok */
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "; deref: ");
+	  id->arrayInfo()->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Dynamic de-references only permited in CHP/HSE");
+	}
+      }
+      else {
+	if (!it->arrayInfo()->Validate (id->arrayInfo())) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n type: ");
+	  it->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Dereference out of range");
+	}
       }
     }
 
@@ -333,15 +350,17 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval)
 
     /* now we check for each type */
     if (it->arrayInfo() && id->arrayInfo()) {
-      offset = it->arrayInfo()->Offset (id->arrayInfo());
-      if (offset == -1) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, " id: ");
-	this->Print (stderr);
-	fprintf (stderr, "\n");
-	fatal_error ("Index is out of range");
+      if (!id->arrayInfo()->isDynamicDeref()) {
+	offset = it->arrayInfo()->Offset (id->arrayInfo());
+	if (offset == -1) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Index is out of range");
+	}
+	Assert (offset != -1, "Hmm...");
       }
-      Assert (offset != -1, "Hmm...");
     }
 
     if (is_lval) {

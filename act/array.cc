@@ -600,6 +600,27 @@ int Array::Validate (Array *a)
   return 1;
 }
 
+
+/*------------------------------------------------------------------------
+ *  "a" is an ExpandRef'ed array
+ *  Returns 1 if "a" is a dynamic dereference, 0 otherwise
+ *------------------------------------------------------------------------
+ */
+int Array::isDynamicDeref ()
+{
+  if (!expanded) {
+    fatal_error ("Array::isDynamicDeref() should only be called for expanded arrays");
+  }
+  if (!isDeref()) {
+    return 0;
+  }
+  for (int i=0; i < dims; i++) {
+    if (r[i].u.ex.isrange == 2) return 1;
+  }
+  return 0;
+}
+
+
 /*------------------------------------------------------------------------
  * Print out array
  *------------------------------------------------------------------------

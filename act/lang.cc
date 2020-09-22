@@ -229,7 +229,7 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
   case E_LSR:
   case E_ASR:
     ret->u.e.l = chp_expr_expand (e->u.e.l, ns, s);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s);
+    ret->u.e.r = chp_expr_expand (e->u.e.r, ns, s);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	signed int v;
@@ -667,7 +667,7 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 	tmp->u.e.r = NULL;
 	etmp = e->u.fn.r;
 	do {
-	  tmp->u.e.l = expr_expand (etmp->u.e.l, ns, s, 0);
+	  tmp->u.e.l = chp_expr_expand (etmp->u.e.l, ns, s);
 	  if (etmp->u.e.r) {
 	    NEW (tmp->u.e.r, Expr);
 	    tmp = tmp->u.e.r;
@@ -685,7 +685,7 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
        for parameterized types returns the value. */
     /* XXX FIXME */
     xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
-    te = xid->Eval (ns, s, 0);
+    te = xid->EvalCHP (ns, s, 0);
     if (te->type != E_VAR) {
       delete xid;
     }
@@ -812,7 +812,7 @@ ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
   */
   idtmp = id->ExpandCHP (ns, s);
   
-  etmp = idtmp->Eval (ns, s, 1);
+  etmp = idtmp->EvalCHP (ns, s, 1);
   Assert (etmp->type == E_VAR, "Hmm");
   if ((ActId *)etmp->u.e.l != idtmp) {
     delete idtmp;
@@ -1827,7 +1827,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  NEW (tmp, act_chp_gc_t);
 	  tmp->next = NULL;
 	  tmp->id = NULL;
-	  tmp->g = expr_expand (gctmp->g, ns, s);
+	  tmp->g = chp_expr_expand (gctmp->g, ns, s);
 	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	  expr_has_probes = _expr_has_probes || expr_has_probes;
@@ -1845,7 +1845,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	NEW (tmp, act_chp_gc_t);
 	tmp->id = NULL;
 	tmp->next = NULL;
-	tmp->g = expr_expand (gctmp->g, ns, s);
+	tmp->g = chp_expr_expand (gctmp->g, ns, s);
 	_expr_has_probes = 0;
 	tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	expr_has_probes = _expr_has_probes || expr_has_probes;
@@ -1917,7 +1917,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 
   case ACT_CHP_ASSIGN:
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
-    ret->u.assign.e = expr_expand (c->u.assign.e, ns, s);
+    ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
     break;
     
   case ACT_CHP_SEND:
@@ -1925,7 +1925,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.comm.rhs = list_new ();
     for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
       list_append (ret->u.comm.rhs,
-		   expr_expand ((Expr *)list_value (li), ns, s));
+		   chp_expr_expand ((Expr *)list_value (li), ns, s));
     }
     break;
     
@@ -1950,7 +1950,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	arg->u.s = ra->u.s;
       }
       else {
-	arg->u.e = expr_expand (ra->u.e, ns, s);
+	arg->u.e = chp_expr_expand (ra->u.e, ns, s);
       }
       list_append (ret->u.func.rhs, arg);
     }

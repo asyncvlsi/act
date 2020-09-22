@@ -1,3 +1,2 @@
-In expanding bool
-In expanding ::<Global>
-FATAL: Array range value is a non-integer/non-constant value
+ERROR: File `14.act', line 12, col 12
+	Expression must be of type pint

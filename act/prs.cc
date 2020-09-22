@@ -535,7 +535,10 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
     act_parse_err (&p, "Expression in port parameter list can only use strict template parameters");
   }
   if (!(tc & T_INT)) {
-    act_parse_err (&p, "Expression must be of type int");
+    act_parse_err (&p, "Expression must be of type pint");
+  }
+  if (!(tc & T_PARAM)) {
+    act_parse_err (&p, "Expression must be of type pint");
   }
   return e;
 }
@@ -566,6 +569,9 @@ static Expr *_wnumber_expr (ActTree *a, Expr *e)
   }
   if (!(tc & (T_INT|T_REAL))) {
     act_parse_err (&p, "Expression must be of type int or real");
+  }
+  if (!(tc & T_PARAM)) {
+    act_parse_err (&p, "Expression must be of type pint or preal");
   }
   return e;
 }

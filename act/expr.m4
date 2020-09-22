@@ -305,7 +305,7 @@ expr_id[ActId *]: { base_id "." }*
 }}
 ;
 
-base_id[ActId *]: ID [ sparse_range ]
+base_id[ActId *]: ID [ xsparse_range ]
 /* completely unchecked */
 {{X:
     Array *a;
@@ -399,6 +399,9 @@ wnumber_expr[Expr *]: expr
     if (!(tc & (T_INT|T_REAL))) {
       $E("Expression must be of type int or real");
     }
+    if (!(tc & T_PARAM)) {
+      $E("Expression must be of type pint or preal");
+    }
     return e;
 }}
 ;
@@ -433,6 +436,38 @@ wint_expr[Expr *]: int_expr
     return e;
 }}
 ;
+
+wpint_expr[Expr *]: int_expr
+{{X:
+    Expr *e;
+    int tc;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    e = act_walk_X_expr ($0, $1);
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t");
+      print_expr ($f, e);
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    if (!(tc & T_INT)) {
+      $E("Expression must be of type pint");
+    }
+    if (!(tc & T_PARAM)) {
+      $E("Expression must be of type pint");
+    }
+    return e;
+}}
+;
+
 
 wbool_expr[Expr *]: bool_expr
 {{X:

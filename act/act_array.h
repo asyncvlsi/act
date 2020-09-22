@@ -159,6 +159,9 @@ class Array {
   int Validate (Array *a);	// check that the array deref is a
 				// valid deref for the array!
 
+  int isDynamicDeref ();	// check if this deref is a dynamic
+				// deref 
+
 
   int Offset (Array *a);	// return the offset within the array
 				// for deref a, -1 if there isn't one.
