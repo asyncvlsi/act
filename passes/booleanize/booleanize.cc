@@ -323,6 +323,11 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_VAR:
     {
       act_booleanized_var_t *v;
+
+      /*-- check if the Act ID has a dynamic dereference; this is only
+	   permitted in CHP bodies 
+	   --*/
+      
       v = var_lookup (N, (ActId *)e->u.e.l);
       if (e->type == E_VAR) {
 	v->input = 1;
@@ -343,6 +348,93 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   return;
 }
 
+static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
+{
+  if (!e) return;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_NE:
+  case E_EQ:
+    collect_chp_expr_vars (N, e->u.e.l);
+    collect_chp_expr_vars (N, e->u.e.r);
+    break;
+
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    collect_chp_expr_vars (N, e->u.e.l);
+    break;
+
+  case E_BITFIELD:
+    /* check ActId * e->u.e.l */
+    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
+    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
+    break;
+
+  case E_QUERY:
+    collect_chp_expr_vars (N, e->u.e.l);
+    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
+    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
+    collect_chp_expr_vars (N, e->u.e.r->u.e.l);
+    collect_chp_expr_vars (N, e->u.e.r->u.e.r);
+    break;
+
+  case E_CONCAT:
+    /* no dynamic vars */
+    break;
+
+  case E_FUNCTION:
+    e = e->u.e.r;
+    while (e) {
+      collect_chp_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    }
+    break;
+    
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_SELF:
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    /* check e->u.e.l */
+    break;
+
+  default:
+    fatal_error ("Unknown expression type (%d)\n", e->type);
+    break;
+  }
+  return;
+}
+
+static void generate_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
+{
+  generate_expr_vars (N, e, 1);
+}
+
+static void generate_hse_expr_vars (act_boolean_netlist_t *N, Expr *e)
+{
+  generate_expr_vars (N, e, 0);
+}
+  
 static void generate_hse_vars (act_boolean_netlist_t *N,
 			       act_chp_lang_t *c)
 {
@@ -366,7 +458,7 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	generate_expr_vars (N, gc->g, 0);
+	generate_hse_expr_vars (N, gc->g);
 	generate_hse_vars (N, gc->s);
       }
     }
@@ -386,7 +478,7 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
       Assert (v, "What?");
       v->used = 1;
       v->output = 1;
-      generate_expr_vars (N, c->u.assign.e, 0);
+      generate_hse_expr_vars (N, c->u.assign.e);
     }
     break;
     
@@ -419,7 +511,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	generate_expr_vars (N, gc->g, 1);
+	generate_chp_expr_vars (N, gc->g);
 	generate_chp_vars (N, gc->s);
       }
     }
@@ -439,7 +531,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       Assert (v, "What?");
       v->usedchp = 1;
       v->output = 1;
-      generate_expr_vars (N, c->u.assign.e, 1);
+      generate_chp_expr_vars (N, c->u.assign.e);
     }
     break;
 
@@ -452,7 +544,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       v->usedchp = 1;
       v->output = 1;
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	generate_expr_vars (N, (Expr *) list_value (li), 1);
+	generate_chp_expr_vars (N, (Expr *) list_value (li));
       }
     }
     break;
@@ -480,6 +572,74 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
   }
 }
 
+static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
+				      act_chp_lang_t *c)
+{
+  if (!c) return;
+
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	collect_chp_dynamic_vars (N, (act_chp_lang_t *) list_value (li));
+      }
+    }
+    break;
+    
+  case ACT_CHP_SELECT:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_LOOP:
+    {
+      act_chp_gc_t *gc;
+      for (gc = c->u.gc; gc; gc = gc->next) {
+	collect_chp_expr_vars (N, gc->g);
+	collect_chp_dynamic_vars (N, gc->s);
+      }
+    }
+    break;
+    
+  case ACT_CHP_SKIP:
+    return;
+    
+  case ACT_CHP_FUNC:
+    /* XXX: fix this later; these are built-in functions only */
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      /* check c->u.assign.id */
+      collect_chp_expr_vars (N, c->u.assign.e);
+    }
+    break;
+
+  case ACT_CHP_SEND:
+    {
+      listitem_t *li;
+      /* check c->u.comm.chan */
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	collect_chp_expr_vars (N, (Expr *) list_value (li));
+      }
+    }
+    break;
+
+  case ACT_CHP_RECV:
+    {
+      listitem_t *li;
+      /* check c->u.comm.chan */
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	/* check list_value (li) */
+      }
+    }
+    break;
+    
+  default:
+    fatal_error ("Sholud be expanded already?");
+    break;
+  }
+}
+
 
 static void generate_dflow_vars (act_boolean_netlist_t *N,
 				 act_dataflow_element *e)
@@ -489,7 +649,7 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 
   switch (e->t) {
   case ACT_DFLOW_FUNC:
-    generate_expr_vars (N, e->u.func.lhs, 1);
+    generate_chp_expr_vars (N, e->u.func.lhs);
     v = var_lookup (N, e->u.func.rhs);
     Assert (v, "Hmm");
     v->usedchp = 1;
@@ -625,6 +785,7 @@ static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
       v->usedchp = 1;
       v->input = 1;
     }
+    collect_chp_dynamic_vars (N, c->c);
     generate_chp_vars (N, c->c);
     N->isempty = 0;
     //c = c->next;

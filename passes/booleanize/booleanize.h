@@ -32,6 +32,20 @@ struct netlist_bool_port {
   unsigned int netid;		/* if set, points to net; -1 if not set */
 };
 
+/*
+  CHP programs can have complex dynamic accesses, with runtime array
+  references.
+
+  1. This must be a bool or an int type
+  2. Indexing this type has to get mapped to some index into a bunch
+     of bits
+*/
+typedef struct act_dynamic_var {
+  act_connection *id;  
+  unsigned int isint:1;
+} act_dynamic_var_t;
+  
+
 typedef struct act_booleanized_var {
   act_connection *id;		/* unique connection id */
   unsigned int input:1;		/* is a primary input variable */
