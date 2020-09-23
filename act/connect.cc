@@ -390,6 +390,7 @@ static int _should_swap (UserDef *ux, act_connection *c1,
 			 act_connection *c2);
 static int _raw_should_swap (UserDef *ux, act_connection *c1,
 			 act_connection *c2);
+static void _verify_subconn_canonical (UserDef *ux, act_connection *c);
 
 /*
   merge c2 into c1 (primary)
@@ -401,6 +402,14 @@ static void mk_raw_skip_connection (UserDef *ux,
 {
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
+
+#if 0  
+  printf ("here!\n");
+  printf ("[raw-skip] entry *****\n");
+  dump_conn_rec (c1);
+  dump_conn_rec (c2);
+  printf ("**********************\n");
+#endif  
 
   if (c2->next == c2) {
     /* nothing to do: c2 has no other connections */
@@ -476,11 +485,15 @@ static void mk_raw_skip_connection (UserDef *ux,
     return;
   }
 
+  /*-- XXX check this --*/
+  c1 = c1->primary();
+
   if (!c1->a) {
     c1->a = c2->a;
     for (int i=0; i < c2->numSubconnections(); i++) {
       if (c1->a[i]) {
 	c1->a[i]->parent = c1;
+	_verify_subconn_canonical (ux, c1->a[i]);
       }
     }
     c2->a = NULL;

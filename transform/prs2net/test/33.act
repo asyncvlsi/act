@@ -1,0 +1,38 @@
+defchan mytype <: chan(int) (bool d)
+{
+}
+
+defchan mytype2 <: chan(int) (mytype c)
+{
+}
+
+defproc myproc1(bool a, b)
+{
+	prs
+	{
+		a => b-
+	}
+}
+
+defproc myproc2(bool a; mytype2 A; mytype B)
+{
+	A.c.d = B.d;
+
+	prs
+	{
+		a => B.d-
+	}
+}
+
+defproc foo(mytype A)
+{
+	mytype2 B;
+	mytype C;
+
+	B.c = A;
+
+	myproc2 x(, B, C);
+	myproc1 y(C.d);
+}
+
+foo tst;

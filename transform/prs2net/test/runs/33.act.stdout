@@ -1,0 +1,56 @@
+*
+*---- act defproc: myproc1<> -----
+* raw ports:  a b
+*
+.subckt myproc1 a b
+*.PININFO a:I b:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* b (combinational)
+*
+* --- end node flags ---
+*
+M0_ b a Vdd Vdd pch W=0.3U L=0.06U
+M1_ b a GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: myproc1<> -----
+*
+*---- act defproc: myproc2<> -----
+* raw ports:  a A.c.d
+*
+.subckt myproc2 a A_4c_4d
+*.PININFO a:I A_4c_4d:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* A_4c_4d (combinational)
+*
+* --- end node flags ---
+*
+M0_ A_4c_4d a Vdd Vdd pch W=0.3U L=0.06U
+M1_ A_4c_4d a GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: myproc2<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports:  A.d
+*
+.subckt foo A_4d
+*.PININFO A_4d:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xy A_4d y_4b myproc1
+xx x_4a A_4d myproc2
+.ends
+*---- end of process: foo<> -----

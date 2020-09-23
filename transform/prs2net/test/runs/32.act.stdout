@@ -1,0 +1,230 @@
+*
+*---- act defproc: foo<> -----
+* raw ports:  g.Vdd g.GND A[0].d[0] A[0].d[1] A[1].d[0] A[1].d[1] A[2].d[0] A[2].d[1] A[3].d[0] A[3].d[1] P[0].d[0] P[0].d[1] P[1].d[0] P[1].d[1] P[2].d[0] P[2].d[1] P[3].d[0] P[3].d[1] P[4].d[0] P[4].d[1] P[5].d[0] P[5].d[1] P[6].d[0] P[6].d[1] P[7].d[0] P[7].d[1] P[8].d[0] P[8].d[1] P[9].d[0] P[9].d[1]
+*
+.subckt foo g_4Vdd g_4GND A_20_3_4d_20_3 A_20_3_4d_21_3 A_21_3_4d_20_3 A_21_3_4d_21_3 A_22_3_4d_20_3 A_22_3_4d_21_3 A_23_3_4d_20_3 A_23_3_4d_21_3 P_20_3_4d_20_3 P_20_3_4d_21_3 P_21_3_4d_20_3 P_21_3_4d_21_3 P_22_3_4d_20_3 P_22_3_4d_21_3 P_23_3_4d_20_3 P_23_3_4d_21_3 P_24_3_4d_20_3 P_24_3_4d_21_3 P_25_3_4d_20_3 P_25_3_4d_21_3 P_26_3_4d_20_3 P_26_3_4d_21_3 P_27_3_4d_20_3 P_27_3_4d_21_3 P_28_3_4d_20_3 P_28_3_4d_21_3 P_29_3_4d_20_3 P_29_3_4d_21_3
+*.PININFO g_4Vdd:I g_4GND:I A_20_3_4d_20_3:I A_20_3_4d_21_3:I A_21_3_4d_20_3:I A_21_3_4d_21_3:I A_22_3_4d_20_3:I A_22_3_4d_21_3:I A_23_3_4d_20_3:I A_23_3_4d_21_3:I P_20_3_4d_20_3:O P_20_3_4d_21_3:O P_21_3_4d_20_3:O P_21_3_4d_21_3:O P_22_3_4d_20_3:O P_22_3_4d_21_3:O P_23_3_4d_20_3:O P_23_3_4d_21_3:O P_24_3_4d_20_3:O P_24_3_4d_21_3:O P_25_3_4d_20_3:O P_25_3_4d_21_3:O P_26_3_4d_20_3:O P_26_3_4d_21_3:O P_27_3_4d_20_3:O P_27_3_4d_21_3:O P_28_3_4d_20_3:O P_28_3_4d_21_3:O P_29_3_4d_20_3:O P_29_3_4d_21_3:O
+*.POWER VDD g_4Vdd
+*.POWER GND g_4GND
+*.POWER NSUB g_4GND
+*.POWER PSUB g_4Vdd
+*
+* --- node flags ---
+*
+* P_20_3_4d_21_3 (combinational)
+* P_21_3_4d_21_3 (combinational)
+* P_23_3_4d_21_3 (combinational)
+* P_25_3_4d_21_3 (combinational)
+* P_20_3_4d_20_3 (combinational)
+* P_21_3_4d_20_3 (combinational)
+* P_23_3_4d_20_3 (combinational)
+* P_25_3_4d_20_3 (combinational)
+* P_22_3_4d_21_3 (combinational)
+* P_27_3_4d_21_3 (combinational)
+* P_22_3_4d_20_3 (combinational)
+* P_27_3_4d_20_3 (combinational)
+* P_24_3_4d_21_3 (combinational)
+* P_28_3_4d_21_3 (combinational)
+* P_24_3_4d_20_3 (combinational)
+* P_28_3_4d_20_3 (combinational)
+* P_26_3_4d_21_3 (combinational)
+* P_29_3_4d_21_3 (combinational)
+* P_26_3_4d_20_3 (combinational)
+* P_29_3_4d_20_3 (combinational)
+*
+* --- end node flags ---
+*
+M0_ #47 e0p_4d_21_3 g_4Vdd g_4Vdd pch W=0.72U L=0.06U
+M1_ #49 e1p_4d_21_3 g_4Vdd g_4Vdd pch W=0.72U L=0.06U
+M2_ #55 e0p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M3_ #61 e1p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M4_ #67 e0p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M5_ #73 e1p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M6_ #79 e0p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M7_ #85 e1p_4d_21_3 g_4Vdd g_4Vdd pch W=1.44U L=0.06U
+M8_ #87 es0p_4d_21_3 g_4Vdd g_4Vdd pch W=0.72U L=0.06U
+M9_ #89 es1p_4d_21_3 g_4Vdd g_4Vdd pch W=0.72U L=0.06U
+M10_ #46 e0p_4d_20_3 g_4GND g_4GND nch W=0.36U L=0.06U
+M11_ #48 e1p_4d_20_3 g_4GND g_4GND nch W=0.36U L=0.06U
+M12_ #52 e0p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M13_ #58 e1p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M14_ #64 e0p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M15_ #70 e1p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M16_ #76 e0p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M17_ #82 e1p_4d_20_3 g_4GND g_4GND nch W=0.72U L=0.06U
+M18_ #86 es0p_4d_20_3 g_4GND g_4GND nch W=0.36U L=0.06U
+M19_ #88 es1p_4d_20_3 g_4GND g_4GND nch W=0.36U L=0.06U
+M20_pass P_20_3_4d_21_3 e0p_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M21_pass P_20_3_4d_21_3 e0p_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M22_pass P_21_3_4d_21_3 es0p_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M23_pass P_21_3_4d_21_3 es0p_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M24_pass P_23_3_4d_21_3 e1p_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M25_pass P_23_3_4d_21_3 e1p_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M26_pass P_25_3_4d_21_3 es1p_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M27_pass P_25_3_4d_21_3 es1p_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M28_pass P_20_3_4d_20_3 e0n_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M29_pass P_20_3_4d_20_3 e0n_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M30_pass P_21_3_4d_20_3 es0n_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M31_pass P_21_3_4d_20_3 es0n_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M32_pass P_23_3_4d_20_3 e1n_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M33_pass P_23_3_4d_20_3 e1n_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M34_pass P_25_3_4d_20_3 es1n_4d_20_3 A_20_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M35_pass P_25_3_4d_20_3 es1n_4d_21_3 A_20_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M36_pass P_20_3_4d_21_3 e0n_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M37_pass P_20_3_4d_21_3 e0n_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M38_ P_20_3_4d_21_3 e0n_4d_20_3 #46 g_4GND nch W=0.36U L=0.06U
+M39_pass P_21_3_4d_21_3 es0n_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M40_pass P_21_3_4d_21_3 es0n_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M41_pass P_23_3_4d_21_3 e1n_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M42_pass P_23_3_4d_21_3 e1n_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M43_pass P_25_3_4d_21_3 es1n_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M44_pass P_25_3_4d_21_3 es1n_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M45_pass P_20_3_4d_20_3 e0p_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M46_pass P_20_3_4d_20_3 e0p_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M47_pass P_21_3_4d_20_3 es0p_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M48_pass P_21_3_4d_20_3 es0p_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M49_pass P_23_3_4d_20_3 e1p_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M50_pass P_23_3_4d_20_3 e1p_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M51_pass P_25_3_4d_20_3 es1p_4d_20_3 A_20_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M52_pass P_25_3_4d_20_3 es1p_4d_21_3 A_20_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M53_pass P_21_3_4d_21_3 e0p_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M54_pass P_21_3_4d_21_3 e0p_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M55_pass P_21_3_4d_21_3 e0n_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M56_pass P_21_3_4d_21_3 e0n_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M57_ P_21_3_4d_21_3 es0n_4d_20_3 #50 g_4GND nch W=0.72U L=0.06U
+M58_ P_23_3_4d_21_3 e1n_4d_20_3 #48 g_4GND nch W=0.36U L=0.06U
+M59_pass P_25_3_4d_21_3 e1p_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M60_pass P_25_3_4d_21_3 e1p_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M61_pass P_25_3_4d_21_3 e1n_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M62_pass P_25_3_4d_21_3 e1n_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M63_ P_25_3_4d_21_3 es1n_4d_20_3 #56 g_4GND nch W=0.72U L=0.06U
+M64_ P_20_3_4d_20_3 e0n_4d_21_3 #47 g_4Vdd pch W=0.72U L=0.06U
+M65_pass P_21_3_4d_20_3 e0p_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M66_pass P_21_3_4d_20_3 e0p_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M67_pass P_21_3_4d_20_3 e0n_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M68_pass P_21_3_4d_20_3 e0n_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M69_ P_21_3_4d_20_3 es0n_4d_21_3 #53 g_4Vdd pch W=1.44U L=0.06U
+M70_ P_23_3_4d_20_3 e1n_4d_21_3 #49 g_4Vdd pch W=0.72U L=0.06U
+M71_pass P_25_3_4d_20_3 e1p_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M72_pass P_25_3_4d_20_3 e1p_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M73_pass P_25_3_4d_20_3 e1n_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M74_pass P_25_3_4d_20_3 e1n_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M75_ P_25_3_4d_20_3 es1n_4d_21_3 #59 g_4Vdd pch W=1.44U L=0.06U
+M76_pass P_22_3_4d_21_3 es0p_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M77_pass P_22_3_4d_21_3 es0p_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M78_pass P_27_3_4d_21_3 es1p_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M79_pass P_27_3_4d_21_3 es1p_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M80_pass P_22_3_4d_20_3 es0n_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M81_pass P_22_3_4d_20_3 es0n_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M82_pass P_27_3_4d_20_3 es1n_4d_20_3 A_21_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M83_pass P_27_3_4d_20_3 es1n_4d_21_3 A_21_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M84_pass P_22_3_4d_21_3 es0n_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M85_pass P_22_3_4d_21_3 es0n_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M86_pass P_27_3_4d_21_3 es1n_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M87_pass P_27_3_4d_21_3 es1n_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M88_pass P_22_3_4d_20_3 es0p_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M89_pass P_22_3_4d_20_3 es0p_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M90_pass P_27_3_4d_20_3 es1p_4d_20_3 A_21_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M91_pass P_27_3_4d_20_3 es1p_4d_21_3 A_21_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M92_pass P_22_3_4d_21_3 e0p_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M93_pass P_22_3_4d_21_3 e0p_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M94_pass P_22_3_4d_21_3 e0n_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M95_pass P_22_3_4d_21_3 e0n_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M96_ P_22_3_4d_21_3 es0n_4d_20_3 #62 g_4GND nch W=0.72U L=0.06U
+M97_pass P_27_3_4d_21_3 e1p_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M98_pass P_27_3_4d_21_3 e1p_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M99_pass P_27_3_4d_21_3 e1n_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M100_pass P_27_3_4d_21_3 e1n_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M101_ P_27_3_4d_21_3 es1n_4d_20_3 #68 g_4GND nch W=0.72U L=0.06U
+M102_pass P_22_3_4d_20_3 e0p_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M103_pass P_22_3_4d_20_3 e0p_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M104_pass P_22_3_4d_20_3 e0n_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M105_pass P_22_3_4d_20_3 e0n_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M106_ P_22_3_4d_20_3 es0n_4d_21_3 #65 g_4Vdd pch W=1.44U L=0.06U
+M107_pass P_27_3_4d_20_3 e1p_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M108_pass P_27_3_4d_20_3 e1p_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M109_pass P_27_3_4d_20_3 e1n_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M110_pass P_27_3_4d_20_3 e1n_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M111_ P_27_3_4d_20_3 es1n_4d_21_3 #71 g_4Vdd pch W=1.44U L=0.06U
+M112_pass P_24_3_4d_21_3 es0p_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M113_pass P_24_3_4d_21_3 es0p_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M114_pass P_28_3_4d_21_3 es1p_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M115_pass P_28_3_4d_21_3 es1p_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M116_pass P_24_3_4d_20_3 es0n_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M117_pass P_24_3_4d_20_3 es0n_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M118_pass P_28_3_4d_20_3 es1n_4d_20_3 A_22_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M119_pass P_28_3_4d_20_3 es1n_4d_21_3 A_22_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M120_pass P_24_3_4d_21_3 es0n_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M121_pass P_24_3_4d_21_3 es0n_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M122_pass P_28_3_4d_21_3 es1n_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M123_pass P_28_3_4d_21_3 es1n_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M124_pass P_24_3_4d_20_3 es0p_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M125_pass P_24_3_4d_20_3 es0p_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M126_pass P_28_3_4d_20_3 es1p_4d_20_3 A_22_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M127_pass P_28_3_4d_20_3 es1p_4d_21_3 A_22_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M128_pass P_24_3_4d_21_3 e0p_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M129_pass P_24_3_4d_21_3 e0p_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M130_pass P_24_3_4d_21_3 e0n_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M131_pass P_24_3_4d_21_3 e0n_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M132_ P_24_3_4d_21_3 es0n_4d_20_3 #74 g_4GND nch W=0.72U L=0.06U
+M133_pass P_28_3_4d_21_3 e1p_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M134_pass P_28_3_4d_21_3 e1p_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M135_pass P_28_3_4d_21_3 e1n_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M136_pass P_28_3_4d_21_3 e1n_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M137_ P_28_3_4d_21_3 es1n_4d_20_3 #80 g_4GND nch W=0.72U L=0.06U
+M138_pass P_24_3_4d_20_3 e0p_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M139_pass P_24_3_4d_20_3 e0p_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M140_pass P_24_3_4d_20_3 e0n_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M141_pass P_24_3_4d_20_3 e0n_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M142_ P_24_3_4d_20_3 es0n_4d_21_3 #77 g_4Vdd pch W=1.44U L=0.06U
+M143_pass P_28_3_4d_20_3 e1p_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M144_pass P_28_3_4d_20_3 e1p_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M145_pass P_28_3_4d_20_3 e1n_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M146_pass P_28_3_4d_20_3 e1n_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M147_ P_28_3_4d_20_3 es1n_4d_21_3 #83 g_4Vdd pch W=1.44U L=0.06U
+M148_pass P_26_3_4d_21_3 es0p_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M149_pass P_26_3_4d_21_3 es0p_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M150_pass P_29_3_4d_21_3 es1p_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M151_pass P_29_3_4d_21_3 es1p_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M152_pass P_26_3_4d_20_3 es0n_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M153_pass P_26_3_4d_20_3 es0n_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M154_pass P_29_3_4d_20_3 es1n_4d_20_3 A_23_3_4d_21_3 g_4Vdd pch W=1.08U L=0.06U
+M155_pass P_29_3_4d_20_3 es1n_4d_21_3 A_23_3_4d_21_3 g_4GND nch W=0.54U L=0.06U
+M156_pass P_26_3_4d_21_3 es0n_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M157_pass P_26_3_4d_21_3 es0n_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M158_pass P_29_3_4d_21_3 es1n_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M159_pass P_29_3_4d_21_3 es1n_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M160_pass P_26_3_4d_20_3 es0p_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M161_pass P_26_3_4d_20_3 es0p_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M162_pass P_29_3_4d_20_3 es1p_4d_20_3 A_23_3_4d_20_3 g_4Vdd pch W=1.08U L=0.06U
+M163_pass P_29_3_4d_20_3 es1p_4d_21_3 A_23_3_4d_20_3 g_4GND nch W=0.54U L=0.06U
+M164_ P_26_3_4d_21_3 es0n_4d_20_3 #86 g_4GND nch W=0.36U L=0.06U
+M165_ P_29_3_4d_21_3 es1n_4d_20_3 #88 g_4GND nch W=0.36U L=0.06U
+M166_ P_26_3_4d_20_3 es0n_4d_21_3 #87 g_4Vdd pch W=0.72U L=0.06U
+M167_ P_29_3_4d_20_3 es1n_4d_21_3 #89 g_4Vdd pch W=0.72U L=0.06U
+M168_ #50 es0p_4d_20_3 #51 g_4GND nch W=0.72U L=0.06U
+M169_ #51 e0n_4d_20_3 #52 g_4GND nch W=0.72U L=0.06U
+M170_ #53 es0p_4d_21_3 #54 g_4Vdd pch W=1.44U L=0.06U
+M171_ #54 e0n_4d_21_3 #55 g_4Vdd pch W=1.44U L=0.06U
+M172_ #56 es1p_4d_20_3 #57 g_4GND nch W=0.72U L=0.06U
+M173_ #57 e1n_4d_20_3 #58 g_4GND nch W=0.72U L=0.06U
+M174_ #59 es1p_4d_21_3 #60 g_4Vdd pch W=1.44U L=0.06U
+M175_ #60 e1n_4d_21_3 #61 g_4Vdd pch W=1.44U L=0.06U
+M176_ #62 es0p_4d_20_3 #63 g_4GND nch W=0.72U L=0.06U
+M177_ #63 e0n_4d_20_3 #64 g_4GND nch W=0.72U L=0.06U
+M178_ #65 es0p_4d_21_3 #66 g_4Vdd pch W=1.44U L=0.06U
+M179_ #66 e0n_4d_21_3 #67 g_4Vdd pch W=1.44U L=0.06U
+M180_ #68 es1p_4d_20_3 #69 g_4GND nch W=0.72U L=0.06U
+M181_ #69 e1n_4d_20_3 #70 g_4GND nch W=0.72U L=0.06U
+M182_ #71 es1p_4d_21_3 #72 g_4Vdd pch W=1.44U L=0.06U
+M183_ #72 e1n_4d_21_3 #73 g_4Vdd pch W=1.44U L=0.06U
+M184_ #74 es0p_4d_20_3 #75 g_4GND nch W=0.72U L=0.06U
+M185_ #75 e0n_4d_20_3 #76 g_4GND nch W=0.72U L=0.06U
+M186_ #77 es0p_4d_21_3 #78 g_4Vdd pch W=1.44U L=0.06U
+M187_ #78 e0n_4d_21_3 #79 g_4Vdd pch W=1.44U L=0.06U
+M188_ #80 es1p_4d_20_3 #81 g_4GND nch W=0.72U L=0.06U
+M189_ #81 e1n_4d_20_3 #82 g_4GND nch W=0.72U L=0.06U
+M190_ #83 es1p_4d_21_3 #84 g_4Vdd pch W=1.44U L=0.06U
+M191_ #84 e1n_4d_21_3 #85 g_4Vdd pch W=1.44U L=0.06U
+.ends
+*---- end of process: foo<> -----

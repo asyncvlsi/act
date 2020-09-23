@@ -1,0 +1,119 @@
+export deftype globals <: int<6> (bool Vdd, GND, vpsub, vnsub, Reset, _Reset, pReset, sReset, _pReset, _sReset)
+{
+	sReset = Reset;
+	_sReset = _Reset;
+}
+
+preal PN = 2.0;
+
+export deftype pair <: int (bool d[2])
+{
+}
+
+defproc foo(globals g; pair A[4], B[4], Z, I[4], P[10])
+{
+	pint Na = 4;
+
+	pint psz = 18;
+	pint sz = 6;
+
+	preal n2 = 2.0*sz;
+	preal n4 = 4.0*sz;
+	preal p2 = 2.0*PN*sz;
+	preal p4 = 4.0*PN*sz;
+
+	pint Dp[8];
+
+	pair e0p, e0n, es0p, es0n, e1p, e1n, es1p, es1n;
+
+	pint Col[Na+4];
+	Col[0] = 0;
+	Dp[0] = 1;
+	Dp[1] = 1;
+	Dp[Na+1] = 1;
+	Dp[Na+2] = 1;
+	Dp[Na+3] = 0;
+	(i:2..Na: Dp[i] = 2; )
+	(i:(Na+3): Col[i+1] = Col[i]+Dp[i]; )
+
+	(i:Na:
+		prs <g.Vdd, g.GND>
+		{
+			[keeper=0] passp<PN*psz>(e0p.d[0], A[i].d[1], P[Col[i]].d[1])
+			[keeper=0] passn<psz>(e0p.d[1], A[i].d[1], P[Col[i]].d[1])
+			[keeper=0] passp<PN*psz>(e0n.d[0], A[i].d[0], P[Col[i]].d[1])
+			[keeper=0] passn<psz>(e0n.d[1], A[i].d[0], P[Col[i]].d[1])
+
+			[keeper=0] passp<PN*psz>(es0p.d[0], A[i].d[1], P[Col[i+1]].d[1])
+			[keeper=0] passn<psz>(es0p.d[1], A[i].d[1], P[Col[i+1]].d[1])
+			[keeper=0] passp<PN*psz>(es0n.d[0], A[i].d[0], P[Col[i+1]].d[1])
+			[keeper=0] passn<psz>(es0n.d[1], A[i].d[0], P[Col[i+1]].d[1])
+		
+			[keeper=0] passp<PN*psz>(e1p.d[0], A[i].d[1], P[Col[i+2]+Dp[i+2]-1].d[1])
+			[keeper=0] passn<psz>(e1p.d[1], A[i].d[1], P[Col[i+2]+Dp[i+2]-1].d[1])
+			[keeper=0] passp<PN*psz>(e1n.d[0], A[i].d[0], P[Col[i+2]+Dp[i+2]-1].d[1])
+			[keeper=0] passn<psz>(e1n.d[1], A[i].d[0], P[Col[i+2]+Dp[i+2]-1].d[1])
+
+			[keeper=0] passp<PN*psz>(es1p.d[0], A[i].d[1], P[Col[i+3]+Dp[i+3]-1].d[1])
+			[keeper=0] passn<psz>(es1p.d[1], A[i].d[1], P[Col[i+3]+Dp[i+3]-1].d[1])
+			[keeper=0] passp<PN*psz>(es1n.d[0], A[i].d[0], P[Col[i+3]+Dp[i+3]-1].d[1])
+			[keeper=0] passn<psz>(es1n.d[1], A[i].d[0], P[Col[i+3]+Dp[i+3]-1].d[1])
+
+			[keeper=0] passp<PN*psz>(e0p.d[0], A[i].d[0], P[Col[i]].d[0])
+			[keeper=0] passn<psz>(e0p.d[1], A[i].d[0], P[Col[i]].d[0])
+			[keeper=0] passp<PN*psz>(e0n.d[0], A[i].d[1], P[Col[i]].d[0])
+			[keeper=0] passn<psz>(e0n.d[1], A[i].d[1], P[Col[i]].d[0])
+
+			[keeper=0] passp<PN*psz>(es0p.d[0], A[i].d[0], P[Col[i+1]].d[0])
+			[keeper=0] passn<psz>(es0p.d[1], A[i].d[0], P[Col[i+1]].d[0])
+			[keeper=0] passp<PN*psz>(es0n.d[0], A[i].d[1], P[Col[i+1]].d[0])
+			[keeper=0] passn<psz>(es0n.d[1], A[i].d[1], P[Col[i+1]].d[0])
+
+			[keeper=0] passp<PN*psz>(e1p.d[0], A[i].d[0], P[Col[i+2]+Dp[i+2]-1].d[0])
+			[keeper=0] passn<psz>(e1p.d[1], A[i].d[0], P[Col[i+2]+Dp[i+2]-1].d[0])
+			[keeper=0] passp<PN*psz>(e1n.d[0], A[i].d[1], P[Col[i+2]+Dp[i+2]-1].d[0])
+			[keeper=0] passn<psz>(e1n.d[1], A[i].d[1], P[Col[i+2]+Dp[i+2]-1].d[0])
+
+			[keeper=0] passp<PN*psz>(es1p.d[0], A[i].d[0], P[Col[i+3]+Dp[i+3]-1].d[0])
+			[keeper=0] passn<psz>(es1p.d[1], A[i].d[0], P[Col[i+3]+Dp[i+3]-1].d[0])
+			[keeper=0] passp<PN*psz>(es1n.d[0], A[i].d[1], P[Col[i+3]+Dp[i+3]-1].d[0])
+			[keeper=0] passn<psz>(es1n.d[1], A[i].d[1], P[Col[i+3]+Dp[i+3]-1].d[0])
+		}
+	)
+
+	(i:(Na+1):
+		[ i = 0 ->
+				prs <g.Vdd, g.GND>
+				{
+					[keeper=0] e0p.d[0]<n2> & e0n.d[0] -> P[Col[i]].d[1]-
+					[keeper=0] ~e0p.d[1]<p2> & ~e0n.d[1] -> P[Col[i]].d[0]+
+
+					[keeper=0] e1p.d[0]<n2> & e1n.d[0] -> P[Col[i+2]+Dp[i+2]-1].d[1]-
+					[keeper=0] ~e1p.d[1]<p2> & ~e1n.d[1] -> P[Col[i+2]+Dp[i+2]-1].d[0]+
+				}
+		[] i > 0 ->
+			[ i = Na ->
+					prs <g.Vdd, g.GND>
+					{
+						[keeper=0] es0p.d[0]<n2> & es0n.d[0] -> P[Col[i]].d[1]-
+						[keeper=0] ~es0p.d[1]<p2> & ~es0n.d[1] -> P[Col[i]].d[0]+
+				
+						[keeper=0] es1p.d[0]<n2> & es1n.d[0] -> P[Col[i+2]+Dp[i+2]-1].d[1]-
+						[keeper=0] ~es1p.d[1]<p2> & ~es1n.d[1] -> P[Col[i+2]+Dp[i+2]-1].d[0]+
+					}
+			[] i < Na ->
+					prs <g.Vdd, g.GND>
+					{
+						[keeper=0] e0p.d[0]<n4> & e0n.d[0] & es0p.d[0] & es0n.d[0] -> P[Col[i]].d[1]-
+						[keeper=0] ~e0p.d[1]<p4> & ~e0n.d[1] & ~es0p.d[1] & ~es0n.d[1] -> P[Col[i]].d[0]+
+				
+						[keeper=0] e1p.d[0]<n4> & e1n.d[0] & es1p.d[0] & es1n.d[0] -> P[Col[i+2]+Dp[i+2]-1].d[1]-
+						[keeper=0] ~e1p.d[1]<p4> & ~e1n.d[1] & ~es1p.d[1] & ~es1n.d[1] -> P[Col[i+2]+Dp[i+2]-1].d[0]+
+					}
+			]
+		]
+	)
+}
+
+foo mult;
+
