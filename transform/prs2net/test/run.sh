@@ -58,14 +58,14 @@ do
         fi
 	$ACTTOOL -l -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
-	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
+	if ! ./cmp.sh runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
 		echo 
 		myecho "** FAILED TEST $i: stdout"
 		fail=`expr $fail + 1`
 		ok=0
 	fi
-	if ! ./cmp.sh runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
+	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
 	then
 		if [ $ok -eq 1 ]
 		then
