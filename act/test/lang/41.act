@@ -1,0 +1,13 @@
+defproc chp_test() {
+
+  int<32> a;
+  int<16> b;
+  
+
+  chp {
+      b := a{15}
+  }
+
+}
+
+chp_test ct;

@@ -674,10 +674,13 @@ static Expr *W (void)
     }
     else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
 	     /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {
+      int flg; 
       e = newexpr ();
       e->type = E_VAR;
       e->u.e.l = (Expr *) v;
       /* optional bitfield extraction */
+      flg = file_flags (Tl);
+      file_setflags (Tl, flg | FILE_FLAGS_NOREAL);
       if (file_have (Tl, T[E_CONCAT])) {
 	/* { constexpr .. constexpr } | { constexpr } */
 	f = I();
@@ -685,6 +688,7 @@ static Expr *W (void)
 	  SET (Tl); 
 	  POP (Tl);
 	  efree (e);
+	  file_setflags (Tl, flg);
 	  return NULL;
 	}
 	efree (f);
@@ -702,23 +706,31 @@ static Expr *W (void)
 	  SET (Tl);
 	  POP (Tl);
 	  efree (e);
+	  file_setflags (Tl, flg);
 	  return NULL;
 	}
+	file_setflags (Tl, flg);
 	f = newexpr ();
 	f->u.e.l = (void *)x;
 	f->u.e.r = (void *)y;
 	f->type = E_BITFIELD;
 	e->type = E_BITFIELD;
 	e->u.e.r = f;
-	if (x > y) {
+	if (y > x) {
+	  warning ("Bitfield operation {%d..%d} needs %d <= %d\n",
+		   (int)x, (int)y, (int)x, (int)y);
 	  efree (e);
 	  SET (Tl);
 	  POP (Tl);
 	  return NULL;
 	}
+	f = e->u.e.r->u.e.l;
+	e->u.e.r->u.e.l = e->u.e.r->u.e.r;
+	e->u.e.r->u.e.r = f;
 	POP (Tl);
       }
       else {
+	file_setflags (Tl, flg);
 	POP (Tl);
       }
     }

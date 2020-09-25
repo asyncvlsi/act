@@ -496,6 +496,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	if (xit->isExpanded()) {
 	  int hi, lo;
 	  Assert (e->u.e.r, "What?");
+	  lo = (long)e->u.e.r->u.e.l;
+	  hi = (long)e->u.e.r->u.e.r;
+#if 0	  
 	  if (!expr_is_a_const (e->u.e.r->u.e.l) ||
 	      e->u.e.r->u.e.l->type != E_INT) {
 	    typecheck_err ("Bitfield can only use const integer arguments");
@@ -508,6 +511,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  }
 	  hi = e->u.e.r->u.e.l->u.v;
 	  lo = e->u.e.r->u.e.r->u.v;
+#endif	  
 	  if (hi < lo) {
 	    typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
 	    return T_ERR;
@@ -521,7 +525,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  }
 	}
 	else {
-	  *width = 32;
+	  if (width) {
+	    *width = 32;
+	  }
 	}
 	return lt;
       }
@@ -580,7 +586,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
       }
       else {
-	*width = 32;
+	if (width) {
+	  *width = 32;
+	}
       }
       return lt;
     }

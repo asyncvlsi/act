@@ -1011,40 +1011,17 @@ act_connection *ActId::Canonical (Scope *s)
             foo became q[5]
   */
 
-  ActId *topf = NULL;
-
   id = this;
   idrest = id->Rest();
-  if (idrest) {
-    /* now check to see if id->Reset() has a *DIFFERENT* 
-       canonical name in the subtype! 
 
-       1. It is a global! In that case, abort this loop and return
-       the connection idx for the global.
-
-       2. It is the same, no change. Continue as below.
-       
-       3. It is a different name. By construction, the new name must
-       be a port.
-       
-       Replace id->Rest with the new id!
-    */
-
-    act_connection *cxrest;
-    ValueIdx *vxrest;
-    UserDef *ux;
-
-    /* find canonical connection of rest in the scope for the inst
-       type */
-
-    ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+  if (TypeFactory::isProcessType (vx->t) && vx->t->getIfaceType()) {
+    UserDef *ux = dynamic_cast<UserDef *>(vx->t->BaseType());
     Assert (ux, "What?");
-
-    if (TypeFactory::isProcessType (vx->t) && vx->t->getIfaceType()) {
-	/* extract the real type */
-      InstType *itmp = vx->t->getIfaceType();
-      Assert (itmp, "What?");
-      Process *proc = dynamic_cast<Process *> (ux);
+    
+    /* extract the real type */
+    InstType *itmp = vx->t->getIfaceType();
+    Assert (itmp, "What?");
+    Process *proc = dynamic_cast<Process *> (ux);
       Assert (proc, "What?");
       list_t *map = proc->findMap (itmp);
       if (!map) {
@@ -1083,7 +1060,38 @@ act_connection *ActId::Canonical (Scope *s)
       printf ("\n");
 #endif      
     }
+  
+#if 0
+  /*-- 
+    Since we now pull in subtype connections through ports, this
+    code is redundant.
+  --*/
+  ActId *topf = NULL;
+  
+  if (idrest) {
+    /* now check to see if id->Reset() has a *DIFFERENT* 
+       canonical name in the subtype! 
 
+       1. It is a global! In that case, abort this loop and return
+       the connection idx for the global.
+
+       2. It is the same, no change. Continue as below.
+       
+       3. It is a different name. By construction, the new name must
+       be a port.
+       
+       Replace id->Rest with the new id!
+    */
+
+    act_connection *cxrest;
+    ValueIdx *vxrest;
+    UserDef *ux;
+
+    /* find canonical connection of rest in the scope for the inst
+       type */
+
+    ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+    Assert (ux, "What?");
 
     
     cxrest = idrest->Canonical (ux->CurScope());
@@ -1219,7 +1227,8 @@ act_connection *ActId::Canonical (Scope *s)
     }
     list_free (stk);
   }
-
+#endif
+  
 #if 0
   printf ("canonical: ");
   id->Print (stdout);
@@ -1227,14 +1236,19 @@ act_connection *ActId::Canonical (Scope *s)
   printf (" [rest=");
   idrest->Print (stdout);
   printf ("]");
-#endif   
+#endif
+#if 0  
   printf (" [new=");
   topf->Print (stdout);
   printf ("] ");
   fflush (stdout);
+#endif  
   printf ("\n");
 #endif
+
+#if 0
   idrest = topf;
+#endif  
   
   do {
     /* vx is the value 
@@ -1329,9 +1343,11 @@ act_connection *ActId::Canonical (Scope *s)
     }
   } while (id);
 
+#if 0  
   if (topf) {
     delete topf;
   }
+#endif  
 
 #if 0
   level--;

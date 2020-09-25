@@ -401,12 +401,27 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ send_data
+send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
 {{X:
-    $3->u.comm.chan = $1;
-    /* XXX: typecheck send data with channel */
-    
-    return $3;
+    act_chp_lang_t *c;
+    if (OPT_EMPTY ($3)) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_SEND;
+      c->space = NULL;
+      c->u.comm.chan = $1;
+      c->u.comm.rhs = list_new ();
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_CHP_LANG);
+      act_chp_lang_t *c;
+      c = r->u.chp;
+      FREE (r);
+      c->u.comm.chan = $1;
+    }
+    OPT_FREE ($3);
+    return c;
 }}
 ;
 
@@ -444,12 +459,27 @@ send_data[act_chp_lang_t *]: w_expr
 }}
 ;
 
-recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type recv_id
+recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
 {{X:
-    $3->u.comm.chan = $1;
-    /* XXX: typecheck send data with channel */
-    
-    return $3;
+    act_chp_lang_t *c;
+    if (OPT_EMPTY ($3)) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_RECV;
+      c->space = NULL;
+      c->u.comm.chan = $1;
+      c->u.comm.rhs = list_new ();
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_CHP_LANG);
+      act_chp_lang_t *c;
+      c = r->u.chp;
+      FREE (r);
+      c->u.comm.chan = $1;
+    }
+    OPT_FREE ($3);
+    return c;
 }}
 ;
 

@@ -341,6 +341,24 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     break;
     
   case E_BITFIELD:
+    ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
+    PRINT_STEP;
+    snprintf (buf+k, sz, "{");
+    PRINT_STEP;
+    
+    snprintf (buf+k, sz, "%lu", (unsigned long)e->u.e.r->u.e.l);
+    PRINT_STEP;
+    
+    snprintf (buf+k, sz, "..");
+    PRINT_STEP;
+
+    snprintf (buf+k, sz, "%lu", (unsigned long)e->u.e.r->u.e.r);
+    PRINT_STEP;
+
+    snprintf (buf+k, sz, "}");
+    PRINT_STEP;
+    break;
+    
   default:
     fatal_error ("Unhandled case!\n");
     break;
@@ -1251,6 +1269,9 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     if (!expr_is_a_const (ret->u.e.l)) {
       NEW (ret->u.e.r, Expr);
       ret->u.e.r->type = E_BITFIELD;
+      ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
+      ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+#if 0      
       ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
       ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
       if (!expr_is_a_const (ret->u.e.r->u.e.l) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
@@ -1274,8 +1295,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	fprintf (stderr,"\n");
 	fatal_error ("Variable in bitfield operator is a non-integer");
       }
+#endif      
     }
     else {
+#if 0      
       Expr *lo, *hi;
       lo = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
       hi = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
@@ -1293,9 +1316,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	fprintf (stderr,"\n");
 	fatal_error ("Variable in bitfield operator is a non-integer");
       }
+#endif
+      unsigned int lo, hi;
+      lo = (unsigned long)e->u.e.r->u.e.l;
+      hi = (unsigned long)e->u.e.r->u.e.r;
       unsigned int v;
       v = ret->u.e.l->u.v;
       //FREE (ret->u.e.l);
+#if 0      
       if (lo->type != E_INT || hi->type != E_INT) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
@@ -1308,6 +1336,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       }
       else {
 	v = (v >> lo->u.v) & ~(~0UL << (hi->u.v - lo->u.v + 1));
+      }
+#endif
+      if (lo > hi) {
+	v = 0;
+      }
+      else {
+	v = (v >> lo) & ~(~0UL << (hi - lo + 1));
       }
       //FREE (lo);
       //FREE (hi);
