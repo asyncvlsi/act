@@ -415,7 +415,6 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
       ActRet *r;
       r = OPT_VALUE ($3);
       $A(r->type == R_CHP_LANG);
-      act_chp_lang_t *c;
       c = r->u.chp;
       FREE (r);
       c->u.comm.chan = $1;
@@ -473,7 +472,6 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
       ActRet *r;
       r = OPT_VALUE ($3);
       $A(r->type == R_CHP_LANG);
-      act_chp_lang_t *c;
       c = r->u.chp;
       FREE (r);
       c->u.comm.chan = $1;
