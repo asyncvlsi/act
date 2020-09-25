@@ -716,6 +716,7 @@ static Expr *W (void)
 	f->type = E_BITFIELD;
 	e->type = E_BITFIELD;
 	e->u.e.r = f;
+#if 0
 	if (y > x) {
 	  warning ("Bitfield operation {%d..%d} needs %d <= %d\n",
 		   (int)x, (int)y, (int)x, (int)y);
@@ -724,6 +725,7 @@ static Expr *W (void)
 	  POP (Tl);
 	  return NULL;
 	}
+#endif
 	f = e->u.e.r->u.e.l;
 	e->u.e.r->u.e.l = e->u.e.r->u.e.r;
 	e->u.e.r->u.e.r = f;
