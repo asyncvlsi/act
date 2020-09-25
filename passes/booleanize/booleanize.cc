@@ -283,10 +283,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
       }
       v->isint = 1;
     }
-    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
-    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
-    generate_expr_vars (N, e->u.e.r->u.e.l, ischp);
-    generate_expr_vars (N, e->u.e.r->u.e.r, ischp);
+    Assert (e->u.e.r, "What?");
     break;
 
   case E_QUERY:
@@ -382,8 +379,7 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 
   case E_BITFIELD:
     /* check ActId * e->u.e.l */
-    Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
-    Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
+    Assert (e->u.e.r, "What?");
     break;
 
   case E_QUERY:
