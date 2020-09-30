@@ -95,6 +95,8 @@ class ActId {
 
   ActId *Tail();
 
+  ValueIdx *rootVx (Scope *);	// return the root ValueIdx
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

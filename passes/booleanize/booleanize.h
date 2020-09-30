@@ -42,6 +42,7 @@ struct netlist_bool_port {
 */
 typedef struct act_dynamic_var {
   act_connection *id;
+  ActId *aid;
   unsigned int isint:1;
   unsigned int width;
   int size;

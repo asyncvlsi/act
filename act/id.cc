@@ -779,6 +779,11 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
   }
 }
 
+ValueIdx *ActId::rootVx (Scope *s)
+{
+  return rawValueIdx (s);
+}
+
 ValueIdx *ActId::rawValueIdx (Scope *s)
 {
   ValueIdx *vx;

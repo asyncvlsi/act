@@ -344,7 +344,6 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_VAR:
     {
       act_booleanized_var_t *v;
-      act_dynamic_var_t *dv;
 
       /*-- check if the Act ID has a dynamic dereference; this is only
 	   permitted in CHP bodies 
@@ -404,12 +403,11 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
 
   act_type_var (N->cur, tmp, &it);
 
-  delete tmp;
-
   ihash_bucket_t *b;
 
   b = ihash_lookup (N->cdH, (long)c);
   if (b) {
+    delete tmp;
     delete it;
     return;
   }
@@ -418,6 +416,8 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
     b = ihash_add (N->cdH, (long)c);
     NEW (v, act_dynamic_var_t);
     v->id = c;
+    v->aid = tmp;
+    v->width = 0;
     if (TypeFactory::boolType (it)) {
       v->isint = 0;
     }
@@ -954,10 +954,27 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
   return N;
 }
 
+
+static int _check_all_subconns (act_connection *c)
+{
+  if (c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      if (c->hasSubconnections (i)) {
+	if (c->a[i] != c->a[i]->primary()) {
+	  return 1;
+	}
+	return _check_all_subconns (c->a[i]);
+      }
+    }
+  }
+  return 0;
+}
+
 act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 {
   act_boolean_netlist_t *n;
   int subinst = 0;
+  int fail;
   Scope *sc;
 
   sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
@@ -967,6 +984,51 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     specify circuits
     ---*/
   n = process_local_lang (a, p);
+
+
+  /*--
+    Check that dynamic bits are valid
+    --*/
+  ihash_iter_t iter;
+  ihash_bucket_t *b;
+  ihash_iter_init (n->cdH, &iter);
+  fail = 0;
+  while ((b = ihash_iter_next (n->cdH, &iter))) {
+    act_dynamic_var_t *v;
+    act_connection *c;
+    ValueIdx *vx;
+    v = (act_dynamic_var_t *) b->v;
+    int newfail = 0;
+
+    if (v->id->isglobal()) {
+      newfail = 1;
+      warning ("Global dynamic arrays are not supported.");
+    }
+    if (!newfail && p) {
+      ActId *tmp;
+      tmp = v->id->toid();
+      if (p->FindPort (tmp->getName()) != 0) {
+	newfail = 1;
+	warning ("Dynamic arrays cannot be ports.");
+      }
+      delete tmp;
+    }
+    if (!newfail) {
+      newfail = _check_all_subconns (v->id);
+      if (newfail) {
+	warning ("Local dynamic arrays cannot have other partial connections");
+      }
+    }
+    if (newfail) {
+      fprintf (stderr, " ID: ");
+      v->aid->Print (stderr);
+      fprintf (stderr, "\n");
+      fail = 1;
+    }
+  }
+  if (fail) {
+    fatal_error ("Cannot proceed. Dynamic arrays used in unsupported ways.");
+  }
 
   ActInstiter i(sc);
 
@@ -989,8 +1051,6 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   }
 
   /*-- collect globals --*/
-  ihash_iter_t iter;
-  ihash_bucket_t *b;
   ihash_iter_init (n->cH, &iter);
   while ((b = ihash_iter_next (n->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
