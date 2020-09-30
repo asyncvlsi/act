@@ -1,0 +1,16 @@
+deftype data <: int (bool w[32]) { }
+
+defproc foo() {
+
+  data x[15];
+  int y, z;
+  data p;
+
+  chp {
+      z := x[y];
+      z := p.w[y]
+  }
+
+}
+
+foo ct;

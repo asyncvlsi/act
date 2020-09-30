@@ -1,0 +1,12 @@
+defproc foo() {
+
+  int x[15];
+  int y, z;
+
+  chp {
+      z := x[y]
+  }
+
+}
+
+foo ct;

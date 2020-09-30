@@ -41,8 +41,10 @@ struct netlist_bool_port {
      of bits
 */
 typedef struct act_dynamic_var {
-  act_connection *id;  
+  act_connection *id;
   unsigned int isint:1;
+  unsigned int width;
+  int size;
 } act_dynamic_var_t;
   
 
@@ -95,6 +97,7 @@ typedef struct {
   unsigned int isempty:1;	/* check if this is empty! */
 
   struct iHashtable *cH;   /* connection hash table (map to var)  */
+  struct iHashtable *cdH;  /* connection hash table for dynamic vars */
 
   A_DECL (struct netlist_bool_port, chpports);
   A_DECL (struct netlist_bool_port, ports);

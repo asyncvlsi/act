@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2019 Rajit Manohar
+ *  Copyright (c) 2019-2020 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -116,6 +116,29 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
+static int is_dynamic_id (ActId *id)
+{
+  int ret = 0;
+  ActId *pr = id;
+  if (id->arrayInfo()) {
+    if (id->arrayInfo()->isDynamicDeref()) {
+      ret = 1;
+    }
+  }
+  id = id->Rest();
+  while (id) {
+    if (id->arrayInfo()) {
+      if (id->arrayInfo()->isDynamicDeref()) {
+	fprintf (stderr, "In examining ID: ");
+	pr->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Only simple (first-level) dynamic derefs are supported");
+      }
+    }
+    id = id->Rest();
+  }
+  return ret;
+}
 
 /*
  * mark variables by walking expressions
@@ -238,6 +261,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   }
 }
 
+
 static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 {
   if (!e) return;
@@ -320,20 +344,30 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_VAR:
     {
       act_booleanized_var_t *v;
+      act_dynamic_var_t *dv;
 
       /*-- check if the Act ID has a dynamic dereference; this is only
 	   permitted in CHP bodies 
 	   --*/
-      
-      v = var_lookup (N, (ActId *)e->u.e.l);
-      if (e->type == E_VAR) {
-	v->input = 1;
-      }
-      if (ischp) {
-	v->usedchp = 1;
+      if (!is_dynamic_id ((ActId *)e->u.e.l)) {
+	v = var_lookup (N, (ActId *)e->u.e.l);
+	if (e->type == E_VAR) {
+	  v->input = 1;
+	}
+	if (ischp) {
+	  v->usedchp = 1;
+	}
+	else {
+	  v->used = 1;
+	}
       }
       else {
-	v->used = 1;
+	if (!ischp) {
+	  fprintf (stderr, "ID: ");
+	  ((ActId *)e->u.e.l)->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Dynamic de-reference not permitted in a non-CHP description");
+	}
       }
     }
     break;
@@ -344,6 +378,61 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   }
   return;
 }
+
+static act_dynamic_var_t *get_dynamic_id (act_boolean_netlist_t *N,
+					  ActId *id)
+{
+  ihash_bucket_t *b;
+  ActId *tmp = new ActId (id->getName());
+  act_connection *c = tmp->Canonical (N->cur);
+  delete tmp;
+
+  b = ihash_lookup (N->cdH, (long)c);
+  if (b) {
+    return (act_dynamic_var_t *)b->v;
+  }
+  else {
+    return NULL;
+  }
+}
+
+static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
+{
+  ActId *tmp = new ActId (id->getName());
+  act_connection *c = tmp->Canonical (N->cur);
+  InstType *it;
+
+  act_type_var (N->cur, tmp, &it);
+
+  delete tmp;
+
+  ihash_bucket_t *b;
+
+  b = ihash_lookup (N->cdH, (long)c);
+  if (b) {
+    delete it;
+    return;
+  }
+  else {
+    act_dynamic_var_t *v;
+    b = ihash_add (N->cdH, (long)c);
+    NEW (v, act_dynamic_var_t);
+    v->id = c;
+    if (TypeFactory::boolType (it)) {
+      v->isint = 0;
+    }
+    else {
+      v->isint = 1;
+      v->width = TypeFactory::bitWidth (it);
+    }
+    Assert (it->arrayInfo(), "What?");
+    v->size = it->arrayInfo()->size();
+    b->v = v;
+  }
+  delete it;
+  return;
+}
+
 
 static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
@@ -410,8 +499,18 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
     break;
 
   case E_PROBE:
+    if (is_dynamic_id ((ActId *)e->u.e.l)) {
+      fprintf (stderr, "ID: ");
+      ((ActId *)e->u.e.l)->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Dynamic de-reference only permitted for data types");
+    }
+    break;
+    
   case E_VAR:
-    /* check e->u.e.l */
+    if (is_dynamic_id ((ActId *)e->u.e.l)) {
+      _add_dynamic_id (N, ((ActId *)e->u.e.l));
+    }
     break;
 
   default:
@@ -605,7 +704,9 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 
   case ACT_CHP_ASSIGN:
     {
-      /* check c->u.assign.id */
+      if (is_dynamic_id (c->u.assign.id)) {
+	_add_dynamic_id (N, c->u.assign.id);
+      }
       collect_chp_expr_vars (N, c->u.assign.e);
     }
     break;
@@ -613,7 +714,11 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
   case ACT_CHP_SEND:
     {
       listitem_t *li;
-      /* check c->u.comm.chan */
+      if (is_dynamic_id (c->u.comm.chan)) {
+	fprintf (stderr, "ID: ");
+	c->u.comm.chan->Print (stderr);
+	fatal_error ("Dynamic reference not permitted for channels");
+      }
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
 	collect_chp_expr_vars (N, (Expr *) list_value (li));
       }
@@ -623,7 +728,11 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
   case ACT_CHP_RECV:
     {
       listitem_t *li;
-      /* check c->u.comm.chan */
+      if (is_dynamic_id (c->u.comm.chan)) {
+	fprintf (stderr, "ID: ");
+	c->u.comm.chan->Print (stderr);
+	fatal_error ("Dynamic reference not permitted for channels");
+      }
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
 	/* check list_value (li) */
       }
@@ -831,6 +940,7 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
   N->cur = cur;
   N->visited = 0;
   N->cH = ihash_new (32);
+  N->cdH = ihash_new (4);
   N->isempty = 1;
 
   
