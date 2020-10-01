@@ -358,6 +358,22 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     snprintf (buf+k, sz, "}");
     PRINT_STEP;
     break;
+
+  case E_CONCAT:
+    snprintf (buf+k, sz, "{");
+    PRINT_STEP;
+    while (e) {
+      sprint_expr (buf+k, sz, e->u.e.l);
+      PRINT_STEP;
+      if (e->u.e.r) {
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
+      }
+      e = e->u.e.r;
+    }
+    snprintf (buf+k, sz, "}");
+    PRINT_STEP;
+    break;
     
   default:
     fatal_error ("Unhandled case!\n");
