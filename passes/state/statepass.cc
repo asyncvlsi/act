@@ -713,6 +713,20 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   c_idx.ints = 0;
   c_idx.chans = 0;
 
+  ihash_iter_init (b->cdH, &iter);
+  while ((ib = ihash_iter_next (b->cdH, &iter))) {
+    act_dynamic_var_t *v = (act_dynamic_var_t *) ib->v;
+    ihash_bucket_t *x;
+    if (v->isint) {
+      x = ihash_add (si->chpmap, ib->key);
+      x->i = c_idx.ints;
+      c_idx.ints += v->a->size();
+    }
+    else {
+      /* bool, no problem */
+    }
+  }
+
   ihash_iter_init (b->cH, &iter);
   
   while ((ib = ihash_iter_next (b->cH, &iter))) {
