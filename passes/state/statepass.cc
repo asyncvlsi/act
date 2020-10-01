@@ -77,6 +77,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   }
 
   Assert (b->cH, "Hmm");
+  Assert (b->cdH, "Hmm...");
 
   /* 
      The booleanized vars come in two flavors:
@@ -89,7 +90,6 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
      Once we have the set of variables, then we need state only for
      output variables.
   */
-  int nvars = 0;
   int bool_count = 0;
   int chp_count = 0;
 
@@ -102,16 +102,36 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   ihash_bucket_t *hb;
   ihash_iter_t iter;
+
+  /*-- dynamic bools are assumed to be used in both chp and non-chp --*/
+  ihash_iter_init (b->cdH, &iter);
+  while ((hb = ihash_iter_next (b->cdH, &iter))) {
+    act_dynamic_var_t *v;
+    v = (act_dynamic_var_t *)hb->v;
+    if (v->isint) {
+      chp_count += v->a->size();
+    }
+    else {
+      bool_count += v->a->size();
+    }
+  }
   
   ihash_iter_init (b->cH, &iter);
   while ((hb = ihash_iter_next (b->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
+
+    if (ActBooleanizePass::isDynamicRef (b, v->id)) {
+      /*-- already counted --*/
+      continue;
+    }
+    
     if (v->used && !v->isglobal) {
       bool_count++;
       if (v->isport) {
 	alt_portbools++;
       }
     }
+    
     if (!v->used && v->usedchp && !v->isglobal) {
       /* variables that are used in chp that are not used in the
 	 booleanized version */
@@ -197,13 +217,77 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   si->chp_all.ints = 0;
   si->chp_all.chans = 0;
 
+
+  /*
+    Start with dynamic arrays. These are always local.
+  */
   ihash_bucket_t *ib;
+
+  ihash_iter_init (b->cdH, &iter);
+  while ((ib = ihash_iter_next (b->cdH, &iter))) {
+    act_dynamic_var_t *v = (act_dynamic_var_t *) ib->v;
+    ihash_bucket_t *x;
+    if (v->isint) {
+      x = ihash_add (si->chpmap, ib->key);
+      x->i = chpidx;
+      chpidx += v->a->size();
+
+      for (int i=0; i < v->a->size(); i++) {
+	if (bitset_tst (tmpchp, chpidx - 1 - i)) {
+	  bitset_set (si->chpmulti, chpidx - 1 - i);
+	}
+	else {
+	  bitset_set (tmpchp, chpidx - 1 - i);
+	}
+      }
+      si->chp_all.ints += v->a->size();
+    }
+    else {
+      x = ihash_add (si->map, ib->key);
+      x->i = idx;
+      idx += v->a->size();
+      for (int i=0; i < v->a->size(); i++) {
+	if (bitset_tst (tmpbits, idx - 1 - i)) {
+	  bitset_set (si->multi, chpidx - 1 - i);
+	}
+	else {
+	  bitset_set (tmpbits, chpidx - 1 - i);
+	}
+      }
+    }
+  }
 
   ihash_iter_init (b->cH, &iter);
   while ((ib = ihash_iter_next (b->cH, &iter))) {
     int found = 0;
     act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+    act_dynamic_var_t *dv;
     int ocount = 0;
+
+    if ((dv = ActBooleanizePass::isDynamicRef (b, v->id))) {
+      /*-- already handled and allocated by dynamic variable analysis! --*/
+      if (v->id->parent == dv->id) {
+	/* direct array ref! */
+	ocount = dv->id->suboffset (v->id);
+      }
+      else {
+	fatal_error ("Accessing pieces of a dynamic reference...");
+      }
+
+      if (dv->isint) {
+	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	ihash_bucket_t *y = ihash_lookup (si->chpmap, (long)dv->id);
+	Assert (y, "what?!");
+	x->i = y->i + ocount; /* offset */
+      }
+      else {
+	ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	ihash_bucket_t *y = ihash_lookup (si->map, (long)dv->id);
+	Assert (y, "what?!");
+	x->i = y->i + ocount; /* offset */
+      }
+      continue;
+    }
 
     if (v->used) {
       /* boolean state */
@@ -326,7 +410,6 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       delete id;
 #endif      
     }
-
   }
 
   Assert (idx == si->localbools, "What?");

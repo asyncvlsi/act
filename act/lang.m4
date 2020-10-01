@@ -1713,7 +1713,7 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wpint_expr]  [
 ;
 
 
-size_setup: ID wnumber_expr
+size_setup: ID "<-" wnumber_expr
 {{X:
     /* ID can be:
            p_n_mode  0/1  0 = default, 1 = sqrt sizing
@@ -1721,11 +1721,11 @@ size_setup: ID wnumber_expr
     */
     if (strcmp ($1, "p_n_mode") == 0) {
       $0->sizing_info->p_specified = 1;
-      $0->sizing_info->p_n_mode_e = $2;
+      $0->sizing_info->p_n_mode_e = $3;
     }
     else if (strcmp ($1, "unit_n") == 0) {
       $0->sizing_info->unit_n_specified = 1;
-      $0->sizing_info->unit_n_e = $2;
+      $0->sizing_info->unit_n_e = $3;
     }
     else {
       $E("Unknown sizing directive ``%s''", $1);

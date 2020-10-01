@@ -8,7 +8,7 @@ defproc unsized_foo(bool a, b, c, d)
 defproc foo <: unsized_foo () 
 {
   sizing {
-     unit_n 10;
+     unit_n <- 10;
      d {-2}
   }
 }

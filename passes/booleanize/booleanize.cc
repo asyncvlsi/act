@@ -116,29 +116,7 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
-static int is_dynamic_id (ActId *id)
-{
-  int ret = 0;
-  ActId *pr = id;
-  if (id->arrayInfo()) {
-    if (id->arrayInfo()->isDynamicDeref()) {
-      ret = 1;
-    }
-  }
-  id = id->Rest();
-  while (id) {
-    if (id->arrayInfo()) {
-      if (id->arrayInfo()->isDynamicDeref()) {
-	fprintf (stderr, "In examining ID: ");
-	pr->Print (stderr);
-	fprintf (stderr, "\n");
-	fatal_error ("Only simple (first-level) dynamic derefs are supported");
-      }
-    }
-    id = id->Rest();
-  }
-  return ret;
-}
+#define is_dynamic_id(x)  ((x)->isDynamicDeref())
 
 /*
  * mark variables by walking expressions
@@ -426,7 +404,7 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
       v->width = TypeFactory::bitWidth (it);
     }
     Assert (it->arrayInfo(), "What?");
-    v->size = it->arrayInfo()->size();
+    v->a = it->arrayInfo();
     b->v = v;
   }
   delete it;
@@ -622,10 +600,15 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
   case ACT_CHP_ASSIGN:
     {
       act_booleanized_var_t *v;
-      v = var_lookup (N, c->u.assign.id);
-      Assert (v, "What?");
-      v->usedchp = 1;
-      v->output = 1;
+      if (is_dynamic_id (c->u.assign.id)) {
+	_add_dynamic_id (N, c->u.assign.id);
+      }
+      else {
+	v = var_lookup (N, c->u.assign.id);
+	Assert (v, "What?");
+	v->usedchp = 1;
+	v->output = 1;
+      }
       generate_chp_expr_vars (N, c->u.assign.e);
     }
     break;
@@ -653,10 +636,15 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       v->usedchp = 1;
       v->input = 1;
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	v = var_lookup (N, (ActId *) list_value (li));
-	Assert (v, "what?");
-	v->usedchp = 1;
-	v->output = 1;
+	if (is_dynamic_id ((ActId *) list_value (li))) {
+	  _add_dynamic_id (N, (ActId *) list_value (li));
+	}
+	else {
+	  v = var_lookup (N, (ActId *) list_value (li));
+	  Assert (v, "what?");
+	  v->usedchp = 1;
+	  v->output = 1;
+	}
       }
     }
     break;
@@ -1898,4 +1886,23 @@ void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
     A_NEXT (n->nets[netid].pins).pin = net->pins[i].pin;
     A_INC (n->nets[netid].pins);
   }
+}
+
+
+act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
+						    act_connection *c)
+{
+  ihash_bucket_t *b;
+  if (!c) {
+    return 0;
+  }
+  c = c->primary();
+  while (c->parent) {
+    c = c->parent;
+  }
+  c = c->primary();
+  if ((b = ihash_lookup (n->cdH, (long)c))) {
+    return (act_dynamic_var_t *) b->v;
+  }
+  return NULL;
 }

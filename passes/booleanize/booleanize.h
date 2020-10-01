@@ -1,3 +1,4 @@
+
 /*************************************************************************
  *
  *  Copyright (c) 2019 Rajit Manohar
@@ -44,8 +45,8 @@ typedef struct act_dynamic_var {
   act_connection *id;
   ActId *aid;
   unsigned int isint:1;
-  unsigned int width;
-  int size;
+  Array *a;			// array info: dimensions
+  int width;
 } act_dynamic_var_t;
   
 
@@ -144,6 +145,9 @@ class ActBooleanizePass : public ActPass {
    */
   void createNets (Process *p = NULL);
 
+
+  static act_dynamic_var_t *isDynamicRef (act_boolean_netlist_t *,
+					  act_connection *);
   
   /*-- internal data structures and functions --*/
  private:
@@ -176,7 +180,5 @@ class ActBooleanizePass : public ActPass {
   void importPins (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_local_net_t *net);
 
 };
-
-
 
 #endif /* __ACT_BOOLEANIZE_H__ */

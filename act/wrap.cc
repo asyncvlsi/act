@@ -311,6 +311,24 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
     ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
     break;
+    
+  case E_CONCAT:
+    {
+      Expr *tmp;
+      tmp = ret;
+      while (e) {
+	tmp->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
+	if (e->u.e.r) {
+	  NEW (tmp->u.e.r, Expr);
+	  tmp = tmp->u.e.r;
+	  tmp->type = E_CONCAT;
+	  tmp->u.e.l = NULL;
+	  tmp->u.e.r = NULL;
+	}
+	e = e->u.e.r;
+      }
+    }
+    break;
 
   case E_BUILTIN_BOOL:
   case E_BUILTIN_INT:

@@ -477,11 +477,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (!T_BASETYPE_ISINTBOOL (lt)) {
 	typecheck_err ("{ } concat: all items must be int or bool");
       }
-      if (e->u.e.r) {
-	e = e->u.e.r;
-      }
+      e = e->u.e.r;
       rw += lw;
-    } while (e->type == E_CONCAT);
+    } while (e);
     if (width) {
       *width = rw;
     }

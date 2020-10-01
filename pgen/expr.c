@@ -195,6 +195,7 @@ int expr_parse_isany (LFILE *l)
       file_sym (l) == T[E_UMINUS] ||
       file_sym (l) == T[E_NOT] ||
       file_sym (l) == T[E_PROBE] ||
+      file_sym (l) == T[E_CONCAT] ||
       (expr_parse_newtokens && (*expr_parse_newtokens)(l))) {
     return 1;
   }
@@ -749,7 +750,6 @@ static Expr *W (void)
 	return NULL;
       }
     }
-#if 0
     else if (file_have (Tl, T[E_CONCAT])) {
       /* concatenation:
 	 { expr, expr, expr, expr, expr, ... }
@@ -758,6 +758,7 @@ static Expr *W (void)
       ret = e = newexpr ();
       e->type = E_CONCAT;
       e->u.e.l = I();
+      
       if (!e->u.e.l) {
 	efree (ret);
 	SET (Tl);
@@ -769,6 +770,7 @@ static Expr *W (void)
 	e = e->u.e.r;
 	e->type = E_CONCAT;
 	e->u.e.l = I();
+	e->u.e.r = NULL;
 	if (!e->u.e.l) {
 	  efree (ret);
 	  SET (Tl);
@@ -778,6 +780,15 @@ static Expr *W (void)
       }
       if (file_have (Tl, T[E_END])) {
 	e = ret;
+	if (ret->u.e.r) {
+	  POP (Tl);
+	}
+	else {
+	  efree (ret);
+	  SET (Tl);
+	  POP (Tl);
+	  return NULL;
+	}
       }
       else {
 	efree (ret);
@@ -786,7 +797,6 @@ static Expr *W (void)
 	return NULL;
       }
     }
-#endif
     else {
       if (v && expr_free_id) {
 	(*expr_free_id) (v);

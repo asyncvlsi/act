@@ -1493,3 +1493,29 @@ ActId *act_string_to_bool_id (const char *s)
   return ret;
 }
 
+
+
+int ActId::isDynamicDeref ()
+{
+  int ret = 0;
+  ActId *pr = this;
+  ActId *id = this;
+  if (id->arrayInfo()) {
+    if (id->arrayInfo()->isDynamicDeref()) {
+      ret = 1;
+    }
+  }
+  id = id->Rest();
+  while (id) {
+    if (id->arrayInfo()) {
+      if (id->arrayInfo()->isDynamicDeref()) {
+	fprintf (stderr, "In examining ID: ");
+	pr->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Only simple (first-level) dynamic derefs are supported");
+      }
+    }
+    id = id->Rest();
+  }
+  return ret;
+}

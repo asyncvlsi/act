@@ -738,6 +738,25 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
     
     break;
 
+
+  case E_CONCAT:
+    {
+      Expr *tmp;
+      ret->u.e.l = chp_expr_expand (e->u.e.l, ns, s);
+      ret->u.e.r = NULL;
+      tmp = ret;
+      while (e->u.e.r) {
+	e = e->u.e.r;
+	
+	NEW (tmp->u.e.r, Expr);
+	tmp = tmp->u.e.r;
+	tmp->type = E_CONCAT;
+	tmp->u.e.l = chp_expr_expand (e->u.e.l, ns, s);
+	tmp->u.e.r = NULL;
+      }
+    }
+    break;
+
 #if 0
   case E_ARRAY:
   case E_SUBRANGE:
@@ -759,7 +778,6 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;
   }
-  
   return ret;
 }
 

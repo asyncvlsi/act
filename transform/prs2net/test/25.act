@@ -5,7 +5,7 @@ defproc foo(bool a, b, c, d)
   ~a | ~b | ~c -> d+
   }
   sizing {
-     unit_n 10;
+     unit_n <- 10;
      d {-2}
   }
 }

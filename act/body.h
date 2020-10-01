@@ -97,6 +97,8 @@ class ActId {
 
   ValueIdx *rootVx (Scope *);	// return the root ValueIdx
 
+  int isDynamicDeref ();
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */
