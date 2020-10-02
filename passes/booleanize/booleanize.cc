@@ -395,7 +395,7 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
     NEW (v, act_dynamic_var_t);
     v->id = c;
     v->aid = tmp;
-    v->width = 0;
+    v->width = 1;
     if (TypeFactory::boolType (it)) {
       v->isint = 0;
     }

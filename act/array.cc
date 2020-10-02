@@ -537,6 +537,7 @@ int Array::Offset (Array *a)
     return offset;
   }
   else {
+    if (!next) { return -1; }
     offset = next->Offset (a);
     if (offset == -1) {
       return -1;
@@ -981,6 +982,23 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
 }
 
 
+Expr *Array::getDeref (int idx)
+{
+  Assert (0 <= idx && idx < dims, "Invalid dimension");
+  if (r[idx].u.ex.isrange == 0) {
+    Expr *tmp, *tmp2;
+    NEW (tmp, Expr);
+    tmp->type = E_INT;
+    tmp->u.v = r[idx].u.ex.lo;
+    tmp2 = TypeFactory::NewExpr (tmp);
+    FREE (tmp);
+    return tmp2;
+  }
+  else {
+    Assert (r[idx].u.ex.isrange == 2, "getDeref called without dynamic ref?");
+    return r[idx].u.ex.deref;
+  }
+}
 
 /*------------------------------------------------------------------------
  *

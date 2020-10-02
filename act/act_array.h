@@ -160,7 +160,10 @@ class Array {
 				// valid deref for the array!
 
   int isDynamicDeref ();	// check if this deref is a dynamic
-				// deref 
+				// deref
+
+
+  Expr *getDeref (int idx);
 
 
   int Offset (Array *a);	// return the offset within the array
