@@ -513,6 +513,7 @@ int Array::Offset (int *a)
     return offset;
   }
   else {
+    if (!next) { return -1; }
     offset = next->Offset (a);
     if (offset == -1) {
       return -1;
