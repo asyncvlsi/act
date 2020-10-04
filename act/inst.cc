@@ -624,6 +624,7 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
   InstType *x;
   int k = 0;
   int l;
+  int ischan = 0;
 
 #define PRINT_STEP				\
   do {						\
@@ -644,6 +645,10 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
   if (nl_mode) {
     UserDef *u = dynamic_cast<UserDef *> (t);
     if (u) {
+      if (TypeFactory::isExactChanType (u)) {
+	ischan = 1;
+      }
+
       if (u->getns() && u->getns() != ActNamespace::Global()) {
 	char *s = u->getns()->Name();
 	snprintf (buf+k, sz, "%s::", s);
@@ -669,7 +674,7 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 
   PRINT_STEP;
   
-  if (nt > 0) {
+  if (nt > 0 && !ischan) {
     /* templates are used for int, chan, ptype, and userdef */
     snprintf (buf+k, sz, "<");
     PRINT_STEP;

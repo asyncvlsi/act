@@ -683,20 +683,19 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l)
 {
   struct chanhashkey c;
   chash_bucket_t *b;
-  static Chan *_c = NULL;
-
-  if (!_c) {
-    _c = new Chan();
-    _c->p = NULL;
-    _c->name = NULL;
-  }
-
+  
   c.s = s;
   c.d = dir;
   c.t = l;
 
   b = chash_lookup (chanhash, &c);
   if (!b) {
+    Chan *_c;
+    
+    _c = new Chan();
+    _c->p = l;
+    _c->name = NULL;
+
     InstType *ch = new InstType (s, _c, 0);
 
     ch->setNumParams (1);

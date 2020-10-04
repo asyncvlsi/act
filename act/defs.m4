@@ -1117,10 +1117,14 @@ defchan: [ template_spec ]
 
       Chan *rootchan = dynamic_cast<Chan *>(chparent->BaseType());
       $A(rootchan);
-      ir = chparent->getTypeParam (0);
+      //ir = chparent->getTypeParam (0);
+      ir = rootchan->datatype();
     }
     else {
-      ir = $5->getTypeParam (0);
+      //ir = $5->getTypeParam (0);
+      Chan *ch = dynamic_cast<Chan *>($5->BaseType());
+      $A(ch);
+      ir = ch->datatype();
     }
     if (!ir) {
       $E("Cannot find root built-in type");
