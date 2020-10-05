@@ -739,6 +739,10 @@ class TypeFactory {
   static int boolType (Type *t); // 1 if a boolean within a channel or
 				 // a boolean type, -1 if NULL parent
   static int boolType (InstType *t);
+
+  static int isStructure (Type *t);
+  static int isStructure (InstType *it);
+  
 };
 
 
@@ -762,6 +766,7 @@ class TypeFactory {
 #define T_DATA_INT   0x7
 #define T_DATA_BOOL  0x8
 #define T_SELF       0x9   /* special type, "self" */
+#define T_DATA       0xa   /* structure */
 #define T_PTYPE      0x10
 #define T_ARRAYOF    0x20
 

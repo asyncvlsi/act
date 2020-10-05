@@ -188,11 +188,15 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   if (d->isEnum()) {
     return T_INT|arr;
   }
-  if (TypeFactory::boolType (t)) {
+  if (TypeFactory::boolType (t) == 1) {
     return T_DATA_BOOL|arr;
   }
-  else {
+  else if (TypeFactory::boolType (t) == 0) {
     return T_DATA_INT|arr;
+  }
+  else {
+    Assert (TypeFactory::isStructure (t), "What?");
+    return T_DATA|arr;
   }
 }
 

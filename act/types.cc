@@ -301,6 +301,24 @@ int TypeFactory::isDataType (Type *t)
 }
 INSTMACRO(isDataType)
 
+int TypeFactory::isStructure (Type *t)
+{
+  Data *tmp_d = dynamic_cast<Data *>(t);
+  if (!tmp_d) {
+    return 0;
+  }
+  if (tmp_d->getParent()) {
+    return TypeFactory::isStructure (tmp_d->getParent());
+  }
+  else {
+    /* no parent, so structure! */
+    return 1;
+  }
+}
+INSTMACRO(isStructure)
+
+  
+
 int TypeFactory::isIntType (Type *t)
 {
   Int *tmp_i = dynamic_cast<Int *>(t);
@@ -1592,9 +1610,15 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
   else if (dynamic_cast<Data *>(this)) {
     InstType *x;
-    Assert (parent, "Hmm...");
-    x = ux->root();
-    ux->CurScope()->Add ("self", x);
+
+    if (TypeFactory::isStructure (this)) {
+      /* no self for structures */
+    }
+    else {
+      Assert (parent, "Hmm...");
+      x = ux->root();
+      ux->CurScope()->Add ("self", x);
+    }
   }
   else if (dynamic_cast<Function *>(this)) {
     InstType *x = dynamic_cast<Function *>(this)->getRetType();

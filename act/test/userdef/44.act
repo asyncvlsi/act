@@ -1,0 +1,33 @@
+deftype memiface (chan?(bool) rd; chan?(int) addr, din; chan!(int) dout) { }
+
+template<pint N>
+defproc mem(memiface i)
+{
+  int x[N];
+  int a;
+  bool b;
+  chp {
+    *[ log ("hi");
+     [i.rd-> log("here"); i.addr?a, i.rd?; i.dout!x[a]
+     []~i.rd -> log("there"); i.addr?a, i.rd?; i.din?x[a]
+     ]]
+  }
+}
+
+defproc test()
+{
+  mem<32> m;
+  int x;
+
+  chp {
+     log("test mem");
+     m.i.rd!false,m.i.addr!0,m.i.din!5;
+     m.i.rd!false,m.i.addr!1,m.i.din!6;
+     m.i.rd!true,m.i.addr!0,m.i.dout?x;
+     log("got ", x);
+     m.i.rd!true,m.i.addr!1,m.i.dout?x;
+     log("got ", x)
+   }
+}
+   
+test t;
