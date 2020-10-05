@@ -116,8 +116,6 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
-#define is_dynamic_id(x)  ((x)->isDynamicDeref())
-
 /*
  * mark variables by walking expressions
  */
@@ -326,7 +324,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
       /*-- check if the Act ID has a dynamic dereference; this is only
 	   permitted in CHP bodies 
 	   --*/
-      if (!is_dynamic_id ((ActId *)e->u.e.l)) {
+      if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
 	v = var_lookup (N, (ActId *)e->u.e.l);
 	if (e->type == E_VAR) {
 	  v->input = 1;
@@ -378,6 +376,13 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
   ActId *tmp = new ActId (id->getName());
   act_connection *c = tmp->Canonical (N->cur);
   InstType *it;
+
+  if (id->Rest()) {
+    fprintf (stderr, "ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    fatal_error ("Only simple dynamic de-references permitted.");
+  }
 
   act_type_var (N->cur, tmp, &it);
 
@@ -477,7 +482,7 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
     break;
 
   case E_PROBE:
-    if (is_dynamic_id ((ActId *)e->u.e.l)) {
+    if (((ActId *)e->u.e.l)->isDynamicDeref()) {
       fprintf (stderr, "ID: ");
       ((ActId *)e->u.e.l)->Print (stderr);
       fprintf (stderr, "\n");
@@ -486,7 +491,7 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
     break;
     
   case E_VAR:
-    if (is_dynamic_id ((ActId *)e->u.e.l)) {
+    if (((ActId *)e->u.e.l)->isDynamicDeref()) {
       _add_dynamic_id (N, ((ActId *)e->u.e.l));
     }
     break;
@@ -600,7 +605,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
   case ACT_CHP_ASSIGN:
     {
       act_booleanized_var_t *v;
-      if (is_dynamic_id (c->u.assign.id)) {
+      if (c->u.assign.id->isDynamicDeref()) {
 	_add_dynamic_id (N, c->u.assign.id);
       }
       else {
@@ -636,7 +641,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       v->usedchp = 1;
       v->input = 1;
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	if (is_dynamic_id ((ActId *) list_value (li))) {
+	if (((ActId *) list_value (li))->isDynamicDeref()) {
 	  _add_dynamic_id (N, (ActId *) list_value (li));
 	}
 	else {
@@ -692,7 +697,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 
   case ACT_CHP_ASSIGN:
     {
-      if (is_dynamic_id (c->u.assign.id)) {
+      if (c->u.assign.id->isDynamicDeref()) {
 	_add_dynamic_id (N, c->u.assign.id);
       }
       collect_chp_expr_vars (N, c->u.assign.e);
@@ -702,7 +707,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
   case ACT_CHP_SEND:
     {
       listitem_t *li;
-      if (is_dynamic_id (c->u.comm.chan)) {
+      if (c->u.comm.chan->isDynamicDeref()) {
 	fprintf (stderr, "ID: ");
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
@@ -716,7 +721,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
   case ACT_CHP_RECV:
     {
       listitem_t *li;
-      if (is_dynamic_id (c->u.comm.chan)) {
+      if (c->u.comm.chan->isDynamicDeref()) {
 	fprintf (stderr, "ID: ");
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
