@@ -183,6 +183,7 @@ typedef struct act_chp_gc {
 
 typedef struct act_chp_lang {
   int type;
+  const char *label;		// label for this item, normally NULL
   void *space;			// this space for rent!
   union {
     struct {

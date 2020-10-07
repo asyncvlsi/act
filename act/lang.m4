@@ -236,6 +236,7 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
     if (list_length ($1) > 1) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_SEMI;
+      c->label = NULL;
       c->space = NULL;
       c->u.semi_comma.cmd = $1;
     }
@@ -254,6 +255,7 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 
     if (list_length ($1) > 1) {
       NEW (c, act_chp_lang_t);
+      c->label = NULL;
       c->space = NULL;
       c->type = ACT_CHP_COMMA;
       c->u.semi_comma.cmd = $1;
@@ -267,17 +269,29 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 }}
 ;
 
-chp_body_item[act_chp_lang_t *]: base_stmt
+chp_body_item[act_chp_lang_t *]: [ ID ":" ] base_stmt
 {{X:
-    return $1;
+    const char *lab;
+    if (OPT_EMPTY ($1)) {
+      lab = NULL;
+    }
+    else {
+      ActRet *r = OPT_VALUE ($1);
+      $A(r->type == R_STRING);
+      lab = r->u.str;
+      FREE (r);
+    }
+    OPT_FREE ($1);
+    $2->label = lab;
+    return $2;
 }}
-| select_stmt
+| [ ID ":" ] select_stmt
 {{X:
-    return $1;
+    return apply_X_chp_body_item_opt0 ($0, $1, $2);
 }}
-| loop_stmt
+| [ ID ":" ] loop_stmt
 {{X:
-    return $1;
+    return apply_X_chp_body_item_opt0 ($0, $1, $2);
 }}
 | "(" ";" ID
 {{X:
@@ -301,6 +315,7 @@ chp_body_item[act_chp_lang_t *]: base_stmt
     OPT_FREE ($6);
 
     NEW (c, act_chp_lang_t);
+    c->label = NULL;
     c->space = NULL;
     c->type = ACT_CHP_SEMILOOP;
     c->u.loop.id = $3;
@@ -332,6 +347,7 @@ chp_body_item[act_chp_lang_t *]: base_stmt
 
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_COMMALOOP;
+    c->label = NULL;
     c->space = NULL;
     c->u.loop.id = $3;
     c->u.loop.lo = $5;
@@ -355,11 +371,12 @@ base_stmt[act_chp_lang_t *]: send_stmt
 }}
 | "skip" 
 {{X:
-	act_chp_lang_t *c;
-	NEW (c, act_chp_lang_t);
-	c->type = ACT_CHP_SKIP;
-	c->space = NULL;
-	return c;
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SKIP;
+    c->label = NULL;
+    c->space = NULL;
+    return c;
 }}
 | "(" chp_body ")"
 {{X:
@@ -367,13 +384,14 @@ base_stmt[act_chp_lang_t *]: send_stmt
 }}
 | ID "(" { chp_log_item "," }* ")" /* log */
 {{X:
-	act_chp_lang_t *c;
-	NEW (c, act_chp_lang_t);
-	c->type = ACT_CHP_FUNC;
-	c->space = NULL;
-	c->u.func.name = string_create ($1);
-	c->u.func.rhs = $3;
-	return c;
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_FUNC;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.func.name = string_create ($1);
+    c->u.func.rhs = $3;
+    return c;
 }}
 ;
 
@@ -407,6 +425,7 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_SEND;
+      c->label = NULL;
       c->space = NULL;
       c->u.comm.chan = $1;
       c->u.comm.rhs = list_new ();
@@ -421,7 +440,7 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
     }
     OPT_FREE ($3);
     return c;
-}}
+  }}
 ;
 
 snd_typ[int]: "!"
@@ -437,6 +456,7 @@ send_data[act_chp_lang_t *]: w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
+    c->label = NULL;
     c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = list_new ();
@@ -451,6 +471,7 @@ send_data[act_chp_lang_t *]: w_expr
     
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
+    c->label = NULL;
     c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = $2;
@@ -464,6 +485,7 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_RECV;
+      c->label = NULL;
       c->space = NULL;
       c->u.comm.chan = $1;
       c->u.comm.rhs = list_new ();
@@ -494,6 +516,7 @@ recv_id[act_chp_lang_t *]: bool_or_int_expr_id
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
+    c->label = NULL;
     c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = list_new ();
@@ -508,6 +531,7 @@ recv_id[act_chp_lang_t *]: bool_or_int_expr_id
     
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
+    c->label = NULL;
     c->space = NULL;
     c->u.comm.chan = NULL;
     c->u.comm.rhs = $2;
@@ -520,6 +544,7 @@ assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
+    c->label = NULL;
     c->space = NULL;
     c->u.assign.id = $1;
     c->u.assign.e = $3;
@@ -532,6 +557,7 @@ assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
+    c->label = NULL;
     c->space = NULL;
     c->u.assign.id = $1;
     NEW (c->u.assign.e, Expr);
@@ -553,6 +579,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
 
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SELECT;
+    c->label = NULL;
     c->space = NULL;
     c->u.gc = NULL;
     for (li = list_first ($2); li; li = list_next (li)) {
@@ -588,6 +615,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SELECT;
+    c->label = NULL;
     c->space = NULL;
     NEW (c->u.gc, struct act_chp_gc);
     c->u.gc->g = $2;
@@ -676,6 +704,7 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_LOOP;
+    c->label = NULL;
     c->space = NULL;
     NEW (c->u.gc, act_chp_gc_t);
     c->u.gc->next = NULL;
