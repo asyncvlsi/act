@@ -2332,16 +2332,25 @@ void prs_print (FILE *fp, act_prs *prs)
   }
 }
 
-void chp_print (FILE *fp, act_chp_lang_t *c)
+static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
 {
+  int lprec;
+  
   if (!c) return;
   switch (c->type) {
   case ACT_CHP_COMMA:
   case ACT_CHP_SEMI:
     {
       listitem_t *li;
+
+      lprec = (c->type == ACT_CHP_SEMI ? 0 : 1);
+
+      if (prec > lprec) {
+	fprintf (fp, "(");
+      }
+
       for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-	chp_print (fp, (act_chp_lang_t *)list_value (li));
+	_chp_print (fp, (act_chp_lang_t *)list_value (li), lprec);
 	if (list_next (li)) {
 	  if (c->type == ACT_CHP_COMMA) {
 	    fprintf (fp, ",");
@@ -2351,6 +2360,11 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 	  }
 	}
       }
+
+      if (prec > lprec) {
+	fprintf (fp, ")");
+      }
+
     }
     break;
 
@@ -2368,7 +2382,7 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 
       if (c->type == ACT_CHP_DOLOOP) {
 	fprintf (fp, " ");
-	chp_print (fp, gc->s);
+	_chp_print (fp, gc->s, 0);
 	fprintf (fp, " <- ");
 	if (gc->g) {
 	  print_expr (fp, gc->g);
@@ -2392,7 +2406,7 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
 	  }
 	  if (gc->s) {
 	    fprintf (fp, " -> ");
-	    chp_print (fp, gc->s);
+	    _chp_print (fp, gc->s, 0);
 	  }
 	  if (gc->next) {
 	    fprintf (fp, " [] ");
@@ -2478,6 +2492,11 @@ void chp_print (FILE *fp, act_chp_lang_t *c)
     fatal_error ("Unknown type");
     break;
   }
+}
+
+void chp_print (FILE *fp, act_chp_lang_t *c)
+{
+  _chp_print (fp, c);
 }
 
 void chp_print (FILE *fp, act_chp *chp)
