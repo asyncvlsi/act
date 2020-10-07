@@ -2338,6 +2338,11 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   int lprec;
   
   if (!c) return;
+
+  if (c->label) {
+    fprintf (fp, "%s:", c->label);
+  }
+  
   switch (c->type) {
   case ACT_CHP_COMMA:
   case ACT_CHP_SEMI:
