@@ -97,7 +97,13 @@ class ActId {
 
   ValueIdx *rootVx (Scope *);	// return the root ValueIdx
 
-  int isDynamicDeref ();
+  int isDynamicDeref ();	// check if this ID has any array
+				// index that is not a constant value
+				// after expansion
+  
+  act_connection *rootCanonical (Scope *); // return root of the
+					   // canonical pointer for
+					   // this object
 
  private:
   mstring_t *name;		/**< name of the identifier */

@@ -1519,3 +1519,17 @@ int ActId::isDynamicDeref ()
   }
   return ret;
 }
+
+act_connection *ActId::rootCanonical (Scope *s)
+{
+  act_connection *c = Canonical (s);
+  
+  do {
+    while (c->parent) {
+      c = c->parent;
+    }
+    c = c->primary();
+  } while (c->parent);
+
+  return c;
+}
