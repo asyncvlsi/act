@@ -1898,14 +1898,20 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
 						    act_connection *c)
 {
   ihash_bucket_t *b;
+
   if (!c) {
     return 0;
   }
+  
   c = c->primary();
-  while (c->parent) {
-    c = c->parent;
-  }
-  c = c->primary();
+  
+  do {
+    while (c->parent) {
+      c = c->parent;
+    }
+    c = c->primary();
+  } while (c->parent);
+  
   if ((b = ihash_lookup (n->cdH, (long)c))) {
     return (act_dynamic_var_t *) b->v;
   }
