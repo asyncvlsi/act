@@ -38,6 +38,8 @@
  *---
  */
 
+static int chp_is_synth = 0;
+
 /*------------------------------------------------------------------------
  * CHP-Expand expression, replacing all paramters. If it is an lval, then
  * it must be a pure identifier at the end of of the day. Default is
@@ -683,6 +685,11 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
       Expr *tmp, *etmp;
       Function *f = dynamic_cast<Function *>((UserDef *)e->u.fn.s);
       f = f->Expand (ns, s, 0, NULL);
+
+      if (f->isExternal()) {
+	chp_is_synth = 0;
+      }
+      
       ret->u.fn.s = (char *) f;
       if (!e->u.fn.r) {
 	ret->u.fn.r = NULL;
@@ -1462,7 +1469,9 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   ret->gnd = fullexpand_var (c->gnd, ns, s);
   ret->psc = fullexpand_var (c->psc, ns, s);
   ret->nsc = fullexpand_var (c->nsc, ns, s);
+  chp_is_synth = 1;
   ret->c = chp_expand (c->c, ns, s);
+  ret->is_synthesizable = chp_is_synth;
 
   return ret;
 }
@@ -1565,15 +1574,19 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
     break;
     
   case E_FUNCTION:
-    NEW (t, Expr);
-    t->type = E_NOT;
-    t->u.e.l = e;
-    t->u.e.r = NULL;
+    if (invert) {
+      NEW (t, Expr);
+      t->type = E_NOT;
+      t->u.e.l = e;
+      t->u.e.r = NULL;
+    }
     while (e->u.e.r) {
       e->u.e.r->u.e.l = _chp_fix_nnf (e->u.e.r->u.e.l, 0);
       e = e->u.e.r;
     }
-    e = t;
+    if (invert) {
+      e = t;
+    }
     break;
 
   case E_PROBE:

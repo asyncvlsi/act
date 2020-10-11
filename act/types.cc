@@ -2797,3 +2797,10 @@ list_t *Process::findMap (InstType *x)
   x->MkArray (xtmp);
   return NULL;
 }
+
+
+int Function::isExternal ()
+{
+  return !getlang() || !getlang()->getchp();
+}
+

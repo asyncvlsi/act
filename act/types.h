@@ -418,6 +418,8 @@ class Function : public UserDef {
 
   Expr *eval (ActNamespace *ns, int nargs, Expr **args);
   Expr *toInline (int nargs, Expr **args);
+
+  int isExternal ();
   
  private:
   InstType *ret_type;

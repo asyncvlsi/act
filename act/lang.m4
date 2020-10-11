@@ -115,6 +115,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
       $A(r->type == R_CHP_LANG);
       NEW (chp, act_chp);
       //chp->next = NULL;
+      chp->is_synthesizable = 1;
       chp->c = r->u.chp;
       FREE (r);
       chp->vdd = $0->supply.vdd;
@@ -151,6 +152,7 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}"
       $A(r->type == R_CHP_LANG);
       NEW (chp, act_chp);
       //chp->next = NULL;
+      chp->is_synthesizable = 1;
       chp->c = r->u.chp;
       FREE (r);
       chp->vdd = $0->supply.vdd;
