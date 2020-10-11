@@ -43,6 +43,9 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->output = 0;
   v->used = 0;
   v->ischan = 0;
+  v->chanflag = 0;
+  v->proc_in = -1;
+  v->proc_out = -1;
   v->isint = 0;
   v->usedchp = 0;
   v->isglobal = 0;
@@ -225,6 +228,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
     
   case ACT_PRS_SUBCKT:
     /* handle elsewhere */
+    act_error_ctxt (stderr);
     warning("subckt { } in prs bodies is ignored; use defcell instead");
     for (act_prs_lang_t *x = p->u.l.p; x; x = x->next) {
       generate_prs_vars (N, x);
@@ -236,6 +240,139 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
     break;
   }
 }
+
+static int _block_id;
+
+#define _set_chan_passive_recv(x) _set_chan_dir ((x), 1)
+#define _set_chan_passive_send(x) _set_chan_dir ((x), 2)
+
+static void _set_chan_dir (act_booleanized_var_t *v, int dir)
+{
+  if (v->chanflag != 0 && (v->chanflag != dir)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Channel: ");
+    v->id->toid()->Print (stderr);
+    fprintf (stderr, "\n");
+    fatal_error ("Both ends of the channel are probed.");
+  }
+  v->chanflag = dir;
+}
+
+static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
+{
+  if (!e) return;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_NE:
+  case E_EQ:
+    update_chp_expr_vars (N, e->u.e.l);
+    update_chp_expr_vars (N, e->u.e.r);
+    break;
+
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    update_chp_expr_vars (N, e->u.e.l);
+    break;
+
+  case E_BITFIELD:
+    {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, (ActId *)e->u.e.l);
+      if (v->ischan) {
+	_set_chan_passive_recv (v);
+      }
+    }
+    break;
+
+  case E_QUERY:
+    update_chp_expr_vars (N, e->u.e.l);
+    update_chp_expr_vars (N, e->u.e.r->u.e.l);
+    update_chp_expr_vars (N, e->u.e.r->u.e.r);
+    break;
+
+  case E_CONCAT:
+    do {
+      update_chp_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    } while (e);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.e.r;
+    while (e) {
+      update_chp_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    }
+    break;
+    
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_SELF:
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    /*-- check if the Act ID has a dynamic dereference; this is only
+      permitted in CHP bodies 
+      --*/
+    if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
+      act_booleanized_var_t *v;
+      v = var_lookup (N, (ActId *)e->u.e.l);
+      if (e->type == E_VAR) {
+	v->input = 1;
+	if (v->ischan) {
+	  _set_chan_passive_recv (v);
+	}
+      }
+      else {
+	/* probe */
+	if (v->input && !v->output) {
+	  _set_chan_passive_recv (v);
+	}
+	else if (v->output && !v->input) {
+	  _set_chan_passive_send (v);
+	}
+	else if (v->input && v->output) {
+	  if (v->proc_in == _block_id) {
+	    _set_chan_passive_recv (v);
+	  }
+	  else if (v->proc_out == _block_id) {
+	    _set_chan_passive_send (v);
+	  }
+	  else {
+	    act_error_ctxt (stderr);
+	    warning ("Probe, send, and receive in different processes?");
+	  }
+	}
+      }
+    }
+    break;
+
+  default:
+    fatal_error ("Unknown expression type (%d)\n", e->type);
+    break;
+  }
+  return;
+}
+
 
 
 static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
@@ -338,6 +475,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
       }
       else {
 	if (!ischp) {
+	  act_error_ctxt (stderr);
 	  fprintf (stderr, "ID: ");
 	  ((ActId *)e->u.e.l)->Print (stderr);
 	  fprintf (stderr, "\n");
@@ -378,6 +516,7 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
   InstType *it;
 
   if (id->Rest()) {
+    act_error_ctxt (stderr);
     fprintf (stderr, "ID: ");
     id->Print (stderr);
     fprintf (stderr, "\n");
@@ -483,6 +622,7 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 
   case E_PROBE:
     if (((ActId *)e->u.e.l)->isDynamicDeref()) {
+      act_error_ctxt (stderr);
       fprintf (stderr, "ID: ");
       ((ActId *)e->u.e.l)->Print (stderr);
       fprintf (stderr, "\n");
@@ -531,6 +671,7 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
     break;
     
   case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_DOLOOP:
   case ACT_CHP_LOOP:
     {
@@ -561,31 +702,132 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
     break;
     
   default:
-    fatal_error ("Sholud be expanded already?");
+    fatal_error ("Should be expanded already?");
     break;
   }
 }
 
-static void generate_chp_vars (act_boolean_netlist_t *N,
+static void update_chp_probes (act_boolean_netlist_t *N,
 			       act_chp_lang_t *c)
 {
+  int pblock = _block_id;
+  int changed = 0;
   if (!c) return;
   act_booleanized_var_t *v;
 
   switch (c->type) {
   case ACT_CHP_COMMA:
+    if (pblock == -1) {
+      _block_id = 0;
+      changed = 1;
+    }
   case ACT_CHP_SEMI:
+    if (pblock == -1 && c->type == ACT_CHP_SEMI) {
+      _block_id = -2;
+    }
     {
       listitem_t *li;
       for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-	generate_chp_vars (N, (act_chp_lang_t *) list_value (li));
+	update_chp_probes (N, (act_chp_lang_t *) list_value (li));
+	if (changed) {
+	  _block_id++;
+	}
       }
     }
     break;
     
   case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_DOLOOP:
   case ACT_CHP_LOOP:
+    if (pblock == -1) {
+      _block_id = -2;
+    }
+    {
+      act_chp_gc_t *gc;
+      for (gc = c->u.gc; gc; gc = gc->next) {
+	update_chp_expr_vars (N, gc->g);
+	update_chp_probes (N, gc->s);
+      }
+    }
+    break;
+    
+  case ACT_CHP_SKIP:
+    return;
+    
+  case ACT_CHP_FUNC:
+    /* XXX: fix this later; these are built-in functions only */
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      act_booleanized_var_t *v;
+      if (!c->u.assign.id->isDynamicDeref()) {
+	v = var_lookup (N, c->u.assign.id);
+	Assert (v, "What?");
+
+      }
+      update_chp_expr_vars (N, c->u.assign.e);
+    }
+    break;
+
+  case ACT_CHP_SEND:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+	update_chp_expr_vars (N, (Expr *) list_value (li));
+      }
+    }
+    break;
+
+  case ACT_CHP_RECV:
+    break;
+    
+  default:
+    fatal_error ("Sholud be expanded already?");
+    break;
+  }
+  _block_id = pblock;
+}
+
+
+
+static void generate_chp_vars (act_boolean_netlist_t *N,
+			       act_chp_lang_t *c)
+{
+  int pblock = _block_id;
+  int changed = 0;
+  if (!c) return;
+  act_booleanized_var_t *v;
+
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+    if (pblock == -1) {
+      _block_id = 0;
+      changed = 1;
+    }
+  case ACT_CHP_SEMI:
+    if (pblock == -1 && c->type == ACT_CHP_SEMI) {
+      _block_id = -2;
+    }
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	generate_chp_vars (N, (act_chp_lang_t *) list_value (li));
+	if (changed) {
+	  _block_id++;
+	}
+      }
+    }
+    break;
+    
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_LOOP:
+    if (pblock == -1) {
+      _block_id = -2;
+    }
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
@@ -626,6 +868,16 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       Assert (v, "What?");
       v->usedchp = 1;
       v->output = 1;
+      if (v->proc_out == -1 || v->proc_out == _block_id) {
+	v->proc_out = _block_id;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Channel: ");
+	v->id->toid()->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Receive action in multiple concurrent blocks!");
+      }
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
 	generate_chp_expr_vars (N, (Expr *) list_value (li));
       }
@@ -640,6 +892,16 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       Assert (v, "What?");
       v->usedchp = 1;
       v->input = 1;
+      if (v->proc_in == -1 || v->proc_in == _block_id) {
+	v->proc_in = _block_id;
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Channel: ");
+	v->id->toid()->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Receive action in multiple concurrent blocks!");
+      }
       for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
 	if (((ActId *) list_value (li))->isDynamicDeref()) {
 	  _add_dynamic_id (N, (ActId *) list_value (li));
@@ -658,6 +920,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     fatal_error ("Sholud be expanded already?");
     break;
   }
+  _block_id = pblock;
 }
 
 static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
@@ -677,6 +940,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
     break;
     
   case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_DOLOOP:
   case ACT_CHP_LOOP:
     {
@@ -884,7 +1148,10 @@ static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
       v->input = 1;
     }
     collect_chp_dynamic_vars (N, c->c);
+    _block_id = -1;
     generate_chp_vars (N, c->c);
+    _block_id = -1;
+    update_chp_probes (N, c->c);
     N->isempty = 0;
     //c = c->next;
   }
@@ -995,6 +1262,7 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 
     if (v->id->isglobal()) {
       newfail = 1;
+      act_error_ctxt (stderr);
       warning ("Global dynamic arrays are not supported.");
     }
     if (!newfail && p) {
@@ -1002,6 +1270,7 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
       tmp = v->id->toid();
       if (p->FindPort (tmp->getName()) != 0) {
 	newfail = 1;
+	act_error_ctxt (stderr);
 	warning ("Dynamic arrays cannot be ports.");
       }
       delete tmp;
@@ -1009,6 +1278,7 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     if (!newfail) {
       newfail = _check_all_subconns (v->id);
       if (newfail) {
+	act_error_ctxt (stderr);
 	warning ("Local dynamic arrays cannot have other partial connections");
       }
     }

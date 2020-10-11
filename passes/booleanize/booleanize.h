@@ -56,8 +56,16 @@ typedef struct act_booleanized_var {
   unsigned int output:1;	/* set to 1 to force it to be an
 				   output */
   unsigned int used:1;		/* used flags */
-  unsigned int ischan:1;	/* for built-in channel variables that
+  unsigned int ischan:1;	/* for channel variables that
 				   have not been turned into bools! */
+
+  unsigned int chanflag:2;	/* flag for channels:
+				   0 = not determined by CHP or
+				       channel definition
+				   1 = passive receive, active send
+				   2 = active receive, passive send
+				*/
+  
   unsigned int isint:1;		/* for built-in int variables that
 				   have not been turned into bools! */
   unsigned int usedchp:1;	/* also used in CHP mode */
@@ -74,6 +82,13 @@ typedef struct act_booleanized_var {
 				   fragmented */
   
   unsigned int width;		/* bit-width for chan/int */
+
+  short proc_in, proc_out;	/*
+				  which of the top-level parallel blocks is
+				  an in/out, when a channel is used
+				  in both contexts within a chp block 
+				*/
+  
   void *extra;			/* space for rent */
 } act_booleanized_var_t;
 
