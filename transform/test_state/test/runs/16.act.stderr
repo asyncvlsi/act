@@ -1,3 +1,4 @@
+In expanding foo<>
 WARNING: Process `foo<>': local variable `a0': no driver
 WARNING: Process `foo<>': local variable `a1': no driver
 WARNING: Process `foo<>': local variable `b0': no driver

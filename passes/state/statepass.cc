@@ -67,6 +67,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   b = bp->getBNL (p);
   if (!b) {
+    act_error_ctxt (stderr);
     fatal_error ("Process `%s' does not have a booleanized view?",
 		 p->getName());
   }
@@ -271,6 +272,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	ocount = dv->id->suboffset (v->id);
       }
       else {
+	act_error_ctxt (stderr);
 	fatal_error ("Accessing pieces of a dynamic reference...");
       }
 
@@ -663,6 +665,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   }
 
   if (Act::warn_no_local_driver) {
+    int err_ctxt = 0;
     /* now check if there is some local state that is actually never
        driven! */
     for (int i=0; i < si->localbools; i++) {
@@ -671,6 +674,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	act_connection *tmpc = _inv_hash (si->map, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
+	if (!err_ctxt) {
+	  act_error_ctxt (stderr);
+	  err_ctxt = 1;
+	}
 	fprintf (stderr, "WARNING: Process `%s': local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);
@@ -685,6 +692,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	act_connection *tmpc = _inv_hash (si->chpmap, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
+	if (!err_ctxt) {
+	  act_error_ctxt (stderr);
+	  err_ctxt = 1;
+	}
 	fprintf (stderr, "WARNING: Process `%s': local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);

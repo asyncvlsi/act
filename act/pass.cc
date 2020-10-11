@@ -96,7 +96,14 @@ int ActPass::run (Process *p)
   visited_flag = new std::unordered_set<Process *> ();
   
   /* do the work */
+  if (p) {
+    act_error_push (p->getName(), NULL, 0);
+  }
+  else {
+    act_error_push ("-toplevel-", NULL, 0);
+  }
   recursive_op (p);
+  act_error_pop ();
   
   delete visited_flag;
   visited_flag = NULL;
@@ -113,7 +120,16 @@ void ActPass::run_recursive (Process *p, int mode)
   }
 
   visited_flag = new std::unordered_set<Process *> ();
+
+  if (p) {
+    act_error_push (p->getName(), NULL, 0);
+  }
+  else {
+    act_error_push ("-toplevel-", NULL, 0);
+  }
   recursive_op (p, mode);
+  act_error_pop ();
+  
   delete visited_flag;
   visited_flag = NULL;
 }
@@ -163,7 +179,15 @@ void ActPass::recursive_op (Process *p, int mode)
     if (TypeFactory::isProcessType (vx->t)) {
       Process *x = dynamic_cast<Process *> (vx->t->BaseType());
       if (x->isExpanded()) {
+	char *tmp;
+	int len;
+	len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	MALLOC (tmp, char, len);
+	snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	act_error_push (tmp, NULL, 0);
 	recursive_op (x, mode);
+	act_error_pop ();
+	FREE (tmp);
       }
     }
   }

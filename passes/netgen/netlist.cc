@@ -530,6 +530,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	    VINF(inv)->inv = n;
 	  }
 	  else {
+	    act_error_ctxt (stderr);
 	    fatal_error ("Complex inverter?");
 	  }
 	}
@@ -539,6 +540,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	    VINF(inv)->inv = n;
 	  }
 	  else {
+	    act_error_ctxt (stderr);
 	    fatal_error ("Complex inverter?");
 	  }
 	}
@@ -958,6 +960,7 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
   case ACT_PRS_EXPR_LABEL:
     at = hash_lookup (N->atH[EDGE_TYPE(type)], e->u.l.label);
     if (!at) {
+      act_error_ctxt (stderr);
       fatal_error ("@-expression with unknown label `%s'", e->u.l.label);
     }
     return compute_bool (N, ((at_lookup *)at->v)->e, type, sense);
@@ -1009,6 +1012,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	    && EDGE_TYPE (type) == EDGE_PFET) {
 	  b = hash_lookup (N->atH[EDGE_PFET], e->u.e.l->u.l.label);
 	  if (!b) {
+	    act_error_ctxt (stderr);
 	    fatal_error ("@-expression with unknown label `%s'", e->u.e.l->u.l.label);
 	  }
 	  at_node = ((at_lookup *)b->v)->n;
@@ -1018,6 +1022,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 		 && e->u.e.l->u.e.l->type == ACT_PRS_EXPR_LABEL) {
 	  b = hash_lookup (N->atH[EDGE_NFET], e->u.e.l->u.e.l->u.l.label);
 	  if (!b) {
+	    act_error_ctxt (stderr);
 	    fatal_error ("@-expression with unknown label `%s'", e->u.e.l->u.e.l->u.l.label);
 	  }
 	  at_node = ((at_lookup *)b->v)->n;
@@ -1092,6 +1097,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
     break;
       
   case ACT_PRS_EXPR_LABEL:
+    act_error_ctxt (stderr);
     fatal_error ("Label `%s' in a context where it was not recognized.",
 		 e->u.l.label);
     break;
@@ -1171,6 +1177,7 @@ static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
     break;
 
   case ACT_PRS_EXPR_LABEL:
+    act_error_ctxt (stderr);
     fatal_error ("@-expressions cannot be used in prs with a  #>");
     break;
 
@@ -1618,11 +1625,13 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 
     if (p->u.one.label) {
       if (istree) {
+	act_error_ctxt (stderr);
 	fatal_error ("@ variables cannot be within a tree { } block");
       }
       hash_bucket_t *b;
       b = hash_lookup (N->atH[d], (char *)p->u.one.id);
       if (b || hash_lookup (N->atH[1-d], (char *)p->u.one.id)) {
+	act_error_ctxt (stderr);
 	fatal_error ("Duplicate label `%s'", (char *)p->u.one.id);
       }
       b = hash_add  (N->atH[d], (char *)p->u.one.id);
@@ -1702,6 +1711,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       }
       else if (p->u.one.arrow_type == 1) {
 	if (istree) {
+	  act_error_ctxt (stderr);
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* => */
@@ -1719,6 +1729,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       else {
 	Assert (p->u.one.arrow_type == 2, "???");
 	if (istree) {
+	  act_error_ctxt (stderr);
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* #> */
@@ -1794,6 +1805,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     
   case ACT_PRS_SUBCKT:
     /* handle elsewhere */
+    act_error_ctxt (stderr);
     warning("subckt { } in prs bodies is ignored; use defcell instead");
     for (act_prs_lang_t *x = p->u.l.p; x; x = x->next) {
       generate_prs_graph (N, x);

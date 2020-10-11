@@ -321,6 +321,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	  sprintf (devname, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   act_dev_value_to_string (e->flavor));
 	  if (!config_exists (devname)) {
+	    act_error_ctxt (stderr);
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }
 	  fprintf (fp, " %s", config_get_string (devname));
@@ -383,11 +384,13 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 
 	  if (e->type == EDGE_NFET) {
 	    if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda) {
+	      act_error_ctxt (stderr);
 	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_n_w_in_lambda);
 	    }
 	  }
 	  else {
 	    if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda) {
+	      act_error_ctxt (stderr);
 	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_p_w_in_lambda);
 	    }
 	  }

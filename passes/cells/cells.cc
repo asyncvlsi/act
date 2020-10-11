@@ -2750,12 +2750,14 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
 
       if (A_LEN (pi->up) == 0 && A_LEN (pi->dn) == 0) {
+	act_error_ctxt (stderr);
 	warning("Cell `%s' has no production rules?", p->getName());
       }
 
       // XXX: HERE!!!
       b = chash_lookup (cell_table, pi);
       if (b) {
+	act_error_ctxt (stderr);
 	warning("Cell `%s' is a duplicate?", p->getName());
 	//printf ("-- cur cell --\n");
 	//_dump_prsinfo (pi);

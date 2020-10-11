@@ -303,6 +303,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
 	    }
 	  }
 	  else {
+	    act_error_ctxt (stderr);
 	    warning ("Sizing directive {+%g,-%g} specified for already sized rule", up/ratio, dn);
 	    fprintf (stderr, "\tskipped signal: `");
 	    tmp->u.one.id->Print (stderr);
@@ -363,6 +364,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
 
   if (sz->p_specified) {
     if (!getconst_int (sz->p_n_mode_e, &p_n_mode)) {
+      act_error_ctxt (stderr);
       fatal_error ("In `%s': p_n_mode expression is not a const",
 		   p ? p->getName() : "-toplevel-");
     }
@@ -377,6 +379,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
   }
   if (sz->unit_n_specified) {
     if (!getconst_int (sz->unit_n_e, &unit_n)) {
+      act_error_ctxt (stderr);
       fatal_error ("In `%s': unit_n expression is not a const",
 		   p ? p->getName() : "-toplevel-");
     }
@@ -390,10 +393,12 @@ void *ActSizingPass::local_op (Process *p, int mode)
     }
   }
   if (p_n_mode != 0 && p_n_mode != 1) {
+    act_error_ctxt (stderr);
     fatal_error ("In `%s': p_n_mode (%d) is not 0 or 1", p_n_mode,
 		 p ? p->getName() : "-toplevel-");
   }
   if (unit_n < 1) {
+    act_error_ctxt (stderr);
     fatal_error ("In `%s': unit_n (%d) is less than 1 ", unit_n,
 		 p ? p->getName() : "-toplevel-");
   }
@@ -442,9 +447,11 @@ void *ActSizingPass::local_op (Process *p, int mode)
 
     if (sz->d[i].eup) {
       if (!getconst_real (sz->d[i].eup, &dup)) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing expression is not a const");
       }
       if (dup < 0) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing expression is negative");
       }
       dup *= ratio;		/* keep the units fixed */
@@ -454,17 +461,21 @@ void *ActSizingPass::local_op (Process *p, int mode)
     }
     if (sz->d[i].upfolds) {
       if (!getconst_int (sz->d[i].upfolds, &upf)) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing folding value is not a const");
       }
       if (upf < 0) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing folding is negative");
       }
     }
     if (sz->d[i].edn) {
       if (!getconst_real (sz->d[i].edn, &ddn)) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing expression is not a const");
       }
       if (ddn < 0) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing expression is negative");
       }
     }
@@ -473,9 +484,11 @@ void *ActSizingPass::local_op (Process *p, int mode)
     }
     if (sz->d[i].dnfolds) {
       if (!getconst_int (sz->d[i].dnfolds, &dnf)) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing folding value is not a const");
       }
       if (dnf < 0) {
+	act_error_ctxt (stderr);
 	fatal_error ("Sizing folding is negative");
       }
     }
