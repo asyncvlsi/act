@@ -163,6 +163,8 @@ class ActBooleanizePass : public ActPass {
 
   static act_dynamic_var_t *isDynamicRef (act_boolean_netlist_t *,
 					  act_connection *);
+  static act_dynamic_var_t *isDynamicRef (act_boolean_netlist_t *,
+					  ActId *);
   
   /*-- internal data structures and functions --*/
  private:

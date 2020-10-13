@@ -2170,7 +2170,7 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
   ihash_bucket_t *b;
 
   if (!c) {
-    return 0;
+    return NULL;
   }
   
   c = c->primary();
@@ -2186,4 +2186,20 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
     return (act_dynamic_var_t *) b->v;
   }
   return NULL;
+}
+
+
+act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
+						    ActId *id)
+{
+  act_connection *cx;
+  if (id->isDynamicDeref ()) {
+    ValueIdx *vx = id->rootVx (n->cur);
+    Assert (vx->connection(), "What?");
+    cx = vx->connection();
+  }
+  else {
+    cx = id->Canonical (n->cur);
+  }
+  return ActBooleanizePass::isDynamicRef (n, cx);
 }
