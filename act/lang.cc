@@ -2506,6 +2506,10 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     }
     fprintf (fp, ")");
     break;
+
+  case ACT_CHP_HOLE: /* to support verification */
+    fprintf (fp, "_");
+    break;
     
   default:
     fatal_error ("Unknown type");

@@ -166,10 +166,11 @@ enum act_chp_lang_type {
   ACT_CHP_RECV = 9,
   ACT_CHP_FUNC = 10,
   ACT_CHP_SEMILOOP = 11,
-  ACT_CHP_COMMALOOP = 12
+  ACT_CHP_COMMALOOP = 12,
+  ACT_CHP_HOLE = 13
 };
 
-#define ACT_CHP_STMTEND 13
+#define ACT_CHP_STMTEND 14  /* 1 more than the last enumeration above */
 
 struct act_chp_lang;
 
