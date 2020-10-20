@@ -1625,7 +1625,13 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
   case E_FALSE:
     if (invert) e->type = E_TRUE;
     break;
-    
+
+  case E_CONCAT:
+    if (invert) {
+      fatal_error ("Unexpected type %d with inversion?", e->type);
+    }
+    break;
+
   case E_BUILTIN_INT:
   case E_BITFIELD:
   case E_INT:
@@ -1633,6 +1639,7 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
       fatal_error ("Unknown/unexpected type (%d)\n", e->type);
     }
     break;
+    
   default:
     fatal_error ("Unknown/unexpected type (%d)\n", e->type);
     break;
@@ -2614,6 +2621,7 @@ act_languages *act_languages::Expand (ActNamespace *ns, Scope *s)
   act_languages *ret = new act_languages ();
   if (chp) {
     ret->chp = chp_expand (chp, ns, s);
+    chp_check_channels (ret->chp->c, s);
   }
   if (hse) {
     ret->hse = chp_expand (hse, ns, s);
@@ -3083,4 +3091,154 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
     list_append (ret->dflow, f);
   }
   return ret;
+}
+
+static void chp_check_var (ActId *id, Scope *s)
+{
+  InstType *it;
+  ActId *orig;
+  if (!id->Rest()) return;
+
+  it = s->FullLookup (id->getName());
+  Assert (it, "What?");
+  orig = id;
+  while (id->Rest()) {
+    if (TypeFactory::isChanType (it) && id->Rest()) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "In CHP, identifier: `");
+      orig->Print (stderr);
+      fprintf (stderr, "'\n");
+      fatal_error ("Cannot access channel fragments in CHP!");
+    }
+    id = id->Rest();
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    Assert (u, "What?");
+    it = u->Lookup (id);
+    Assert (it, "What?");
+  }
+}
+
+static void chp_check_expr (Expr *e, Scope *s)
+{
+  if (!e) return;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    chp_check_expr (e->u.e.l, s);
+    chp_check_expr (e->u.e.r, s);
+
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    chp_check_expr (e->u.e.l, s);
+    break;
+
+  case E_QUERY:
+    chp_check_expr (e->u.e.l, s);
+    chp_check_expr (e->u.e.r->u.e.l, s);
+    chp_check_expr (e->u.e.r->u.e.r, s);
+    break;
+
+  case E_FUNCTION:
+    while (e->u.e.r) {
+      e = e->u.e.r;
+      chp_check_expr (e->u.e.l, s);
+    }
+    break;
+
+  case E_PROBE:
+    break;
+
+  case E_VAR:
+    chp_check_var ((ActId *)e->u.e.l, s);
+    break;
+
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    chp_check_expr (e->u.e.l, s);
+    break;
+
+  case E_TRUE:
+  case E_FALSE:
+  case E_INT:
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      chp_check_expr (e->u.e.l, s);
+      e = e->u.e.r;
+    }
+    break;
+    
+  case E_BITFIELD:
+    chp_check_var ((ActId *)e->u.e.l, s);
+    break;
+
+  default:
+    fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    break;
+  }
+}
+
+void chp_check_channels (act_chp_lang_t *c, Scope *s)
+{
+  listitem_t *li;
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      chp_check_channels ((act_chp_lang_t *) list_value (li), s);
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (act_chp_gc_t *gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+      chp_check_channels (gctmp->s, s);
+      chp_check_expr (gctmp->g, s);
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    chp_check_var (c->u.assign.id, s);
+    chp_check_expr (c->u.assign.e, s);
+    break;
+    
+  case ACT_CHP_SEND:
+    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      chp_check_expr ((Expr *)list_value (li), s);
+    }
+    break;
+    
+  case ACT_CHP_RECV:
+    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      chp_check_var ((ActId *)list_value (li), s);
+    }
+    break;
+
+  default:
+    break;
+  }
 }

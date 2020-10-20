@@ -1540,6 +1540,8 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       v->ischpport = 1;
       A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
 
+      Assert (!TypeFactory::isStructure (t), "What?");
+	
       if (TypeFactory::isIntType (t) ||
 	  (TypeFactory::isDataType (t) && !TypeFactory::boolType (t))) {
 	v->isint = 1;

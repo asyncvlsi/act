@@ -1245,6 +1245,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   case ActBody_Lang::LANG_CHP:
     if (!in_refinement) {
       c = chp_expand ((act_chp *)lang, ns, s);
+      chp_check_channels (c->c, s);
       if (all_lang->getchp()) {
 	act_error_ctxt (stderr);
 	fatal_error ("Only one chp body permitted");

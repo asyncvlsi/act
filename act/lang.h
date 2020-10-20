@@ -437,6 +437,7 @@ public:
 
 act_initialize *initialize_expand (act_initialize *, ActNamespace *, Scope *);
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
+void chp_check_channels (act_chp_lang_t *c, Scope *s);
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 void refine_expand (act_refine *, ActNamespace *, Scope *);
