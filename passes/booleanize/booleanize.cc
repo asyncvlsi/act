@@ -83,7 +83,7 @@ static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
     }
     else if (TypeFactory::isIntType (xit) ||
 	     (TypeFactory::isDataType (xit) &&
-	      !TypeFactory::boolType (xit))) {
+	      (TypeFactory::boolType (xit) == 0))) {
       v->isint = 1;
       v->width = TypeFactory::bitWidth (xit);
     }
@@ -293,9 +293,12 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_BITFIELD:
     {
       act_booleanized_var_t *v;
-      v = var_lookup (N, (ActId *)e->u.e.l);
-      if (v->ischan) {
-	_set_chan_passive_recv (v);
+
+      if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
+	v = var_lookup (N, (ActId *)e->u.e.l);
+	if (v->ischan) {
+	  _set_chan_passive_recv (v);
+	}
       }
     }
     break;
@@ -410,15 +413,27 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_BITFIELD:
     {
       act_booleanized_var_t *v;
-      v = var_lookup (N, (ActId *)e->u.e.l);
-      v->input = 1;
-      if (ischp) {
-	v->usedchp = 1;
+
+      if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
+	v = var_lookup (N, (ActId *)e->u.e.l);
+	v->input = 1;
+	if (ischp) {
+	  v->usedchp = 1;
+	}
+	else {
+	  v->used = 1;
+	}
+	v->isint = 1;
       }
       else {
-	v->used = 1;
+	if (!ischp) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "ID: ");
+	  ((ActId *)e->u.e.l)->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Dynamic de-reference not permitted in a non-CHP description");
+	}
       }
-      v->isint = 1;
     }
     Assert (e->u.e.r, "What?");
     break;
@@ -589,7 +604,9 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
     break;
 
   case E_BITFIELD:
-    /* check ActId * e->u.e.l */
+    if (((ActId *)e->u.e.l)->isDynamicDeref()) {
+      _add_dynamic_id (N, ((ActId *)e->u.e.l));
+    }
     Assert (e->u.e.r, "What?");
     break;
 
@@ -602,7 +619,10 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
     break;
 
   case E_CONCAT:
-    /* no dynamic vars */
+    while (e) {
+      collect_chp_expr_vars (N, e->u.e.l);
+      e = e->u.e.r;
+    }
     break;
 
   case E_FUNCTION:
@@ -1543,7 +1563,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       Assert (!TypeFactory::isStructure (t), "What?");
 	
       if (TypeFactory::isIntType (t) ||
-	  (TypeFactory::isDataType (t) && !TypeFactory::boolType (t))) {
+	  (TypeFactory::isDataType (t) && (TypeFactory::boolType (t) == 0))) {
 	v->isint = 1;
 	v->width = TypeFactory::bitWidth (t);
       }

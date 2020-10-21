@@ -3095,26 +3095,12 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
 
 static void chp_check_var (ActId *id, Scope *s)
 {
-  InstType *it;
-  ActId *orig;
-  if (!id->Rest()) return;
-
-  it = s->FullLookup (id->getName());
-  Assert (it, "What?");
-  orig = id;
-  while (id->Rest()) {
-    if (TypeFactory::isChanType (it) && id->Rest()) {
-      act_error_ctxt (stderr);
-      fprintf (stderr, "In CHP, identifier: `");
-      orig->Print (stderr);
-      fprintf (stderr, "'\n");
-      fatal_error ("Cannot access channel fragments in CHP!");
-    }
-    id = id->Rest();
-    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
-    Assert (u, "What?");
-    it = u->Lookup (id);
-    Assert (it, "What?");
+  if (id->isFragmented (s)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "In CHP, identifier: `");
+    id->Print (stderr);
+    fprintf (stderr, "'\n");
+    fatal_error ("Cannot access channel/integer fragments in CHP!");
   }
 }
 

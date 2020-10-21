@@ -287,6 +287,9 @@ int TypeFactory::isDataType (Type *t)
 {
   Data *tmp_d = dynamic_cast<Data *>(t);
   if (tmp_d) {
+    if (TypeFactory::isStructure (t)) {
+      return 0;
+    }
     return 1;
   }
   Int *tmp_i = dynamic_cast<Int *>(t);

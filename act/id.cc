@@ -1533,3 +1533,29 @@ act_connection *ActId::rootCanonical (Scope *s)
 
   return c;
 }
+
+
+int ActId::isFragmented (Scope *s)
+{
+  InstType *it;
+  ActId *tmp;
+  if (!Rest()) return 0;
+
+  tmp = this;
+  it = s->FullLookup (getName());
+  Assert (it, "What?");
+  while (tmp->Rest()) {
+    if (TypeFactory::isChanType (it)) {
+      return 1;
+    }
+    if (TypeFactory::isIntType (it)) {
+      return 1;
+    }
+    tmp = tmp->Rest();
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    Assert (u, "What?");
+    it = u->Lookup (tmp);
+    Assert (it, "What?");
+  }
+  return 0;
+}

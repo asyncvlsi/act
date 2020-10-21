@@ -100,6 +100,9 @@ class ActId {
   int isDynamicDeref ();	// check if this ID has any array
 				// index that is not a constant value
 				// after expansion
+
+  int isFragmented (Scope *);	// is this an ID that corresponds to a
+				// fragmented int/chan?
   
   act_connection *rootCanonical (Scope *); // return root of the
 					   // canonical pointer for
