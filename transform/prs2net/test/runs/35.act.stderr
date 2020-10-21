@@ -1,2 +1,4 @@
-In examining ID: p.w[y]
-FATAL: Only simple (first-level) dynamic derefs are supported
+In expanding foo
+In expanding ::<Global>
+In CHP, identifier: `p.w[y]'
+FATAL: Cannot access channel/integer fragments in CHP!

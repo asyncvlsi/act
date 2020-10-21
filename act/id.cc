@@ -1548,7 +1548,7 @@ int ActId::isFragmented (Scope *s)
     if (TypeFactory::isChanType (it)) {
       return 1;
     }
-    if (TypeFactory::isIntType (it)) {
+    if (TypeFactory::isDataType (it)) {
       return 1;
     }
     tmp = tmp->Rest();
