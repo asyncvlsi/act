@@ -53,6 +53,7 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->ischpport = 0;
   v->isfragmented = 0;
   v->extra = NULL;
+  v->width = 1;
   return v;
 }
 
