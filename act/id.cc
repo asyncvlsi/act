@@ -1559,3 +1559,43 @@ int ActId::isFragmented (Scope *s)
   }
   return 0;
 }
+
+ActId *ActId::unFragment (Scope *s)
+{
+  InstType *it;
+  ActId *tmp, *ret, *cur, *rtmp;
+  
+  if (!Rest()) return NULL;
+
+  tmp = this;
+  it = s->FullLookup (getName());
+  Assert (it, "What?");
+  while (tmp->Rest()) {
+    if (TypeFactory::isChanType (it)) {
+      break;
+    }
+    if (TypeFactory::isDataType (it)) {
+      break;
+    }
+    tmp = tmp->Rest();
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    Assert (u, "What?");
+    it = u->Lookup (tmp);
+    Assert (it, "What?");
+  }
+  if (!tmp->Rest()) {
+    return NULL;
+  }
+
+  cur = this;
+  ret = new ActId (string_cache (cur->getName()), cur->arrayInfo() ?
+		   cur->arrayInfo()->Clone() : NULL);
+  rtmp = ret;
+  while (cur != tmp) {
+    cur = cur->Rest();
+    rtmp->next = new ActId (string_cache (cur->getName()), cur->arrayInfo() ?
+			    cur->arrayInfo()->Clone() : NULL);
+    rtmp = rtmp->next;
+  }
+  return ret;
+}

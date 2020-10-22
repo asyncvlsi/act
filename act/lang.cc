@@ -3097,7 +3097,10 @@ static void chp_check_var (ActId *id, Scope *s)
 {
   if (id->isFragmented (s)) {
     act_error_ctxt (stderr);
-    fprintf (stderr, "In CHP, identifier: `");
+    fprintf (stderr, "In CHP, fragmented access `");
+    id->Print (stderr);
+    fprintf (stderr, "' to base identifier `");
+    id = id->unFragment (s);
     id->Print (stderr);
     fprintf (stderr, "'\n");
     fatal_error ("Cannot access channel/integer fragments in CHP!");

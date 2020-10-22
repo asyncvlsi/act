@@ -1,4 +1,4 @@
 In expanding foo
 In expanding ::<Global>
-In CHP, identifier: `p.w[y]'
+In CHP, fragmented access `p.w[y]' to base identifier `p'
 FATAL: Cannot access channel/integer fragments in CHP!
