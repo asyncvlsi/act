@@ -107,6 +107,10 @@ class ActId {
   ActId *unFragment (Scope *);	// for a fragmented ID, return the
 				// unfragmented piece
   
+  UserDef *canFragment (Scope *); // returns the userdef that can be
+				  // used to fragment the id, or NULL
+				  // if the id cannot be fragmented.
+  
   act_connection *rootCanonical (Scope *); // return root of the
 					   // canonical pointer for
 					   // this object

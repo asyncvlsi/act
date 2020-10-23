@@ -636,7 +636,7 @@ select_stmt[act_chp_lang_t *]: "[" { guarded_cmd "[]" }* "]"
     gc = c->u.gc;
     while (gc) {
       if (!gc->g) {
-	$E("`else' cannot be used in non-deterministic selections");
+	$W("`else' has been used in non-deterministic selections.\n\tI hope you know what you're doing.");
       }
       gc = gc->next;
     }

@@ -13,7 +13,7 @@
   all booleans (incl. inst): 0
 --- End Process: sub<> ---
 --- Process: foo<> ---
-   nbools = 1, nvars = 0
+   nbools = 1, nvars = 2
   localbools: 1
   portbools: 0
   ismulti: 0

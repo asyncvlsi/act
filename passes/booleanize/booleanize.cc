@@ -120,6 +120,57 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
+static void visit_var (act_boolean_netlist_t *N, ActId *id, int isinput)
+{
+  act_booleanized_var_t *v;
+  
+  v = var_lookup (N, id);
+  v->used = 1;
+
+  if (isinput == 1) {
+    v->input = 1;
+  }
+  else if (isinput == 0) {
+    v->output = 1;
+  }
+  
+  if (id->isFragmented (N->cur)) {
+    ActId *tmp = id->unFragment (N->cur);
+    v = var_lookup (N, tmp);
+    v->usedchp = 1;
+    /* XXX: now is this an input or an output? I don't know... */
+    v->input = 1;
+    
+    delete tmp;
+  }
+}
+
+static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
+{
+  act_booleanized_var_t *v;
+
+  if (!id) return;
+  
+  v = var_lookup (N, id);
+  v->usedchp = 1;
+
+  if (isinput == 1) {
+    v->input = 1;
+  }
+  else if (isinput == 0) {
+    v->output = 1;
+  }
+
+  UserDef *u = id->canFragment (N->cur);
+  if (u) {
+    /*-- use the type signature to visit pieces --*/
+    /* XXX HERE */
+
+  }
+}
+
+
+
 /*
  * mark variables by walking expressions
  */
@@ -143,9 +194,7 @@ static void walk_expr (act_boolean_netlist_t *N, act_prs_expr_t *e)
     break;
     
   case ACT_PRS_EXPR_VAR:
-    v = var_lookup (N, e->u.v.id);
-    v->used = 1;
-    v->input = 1;
+    visit_var (N, e->u.v.id, 1);
     break;
       
   case ACT_PRS_EXPR_LABEL:
@@ -173,48 +222,28 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
     walk_expr (N, p->u.one.e);
 
     if (!p->u.one.label) {
-      v = var_lookup (N, p->u.one.id);
-      v->used = 1;
-      v->output = 1;
+      visit_var (N, p->u.one.id, 0);
     }
     break;
 
   case ACT_PRS_GATE:
+    visit_var (N, p->u.p.s, 1);
+    visit_var (N, p->u.p.d, 1);
     if (p->u.p.g) {
-      v = var_lookup (N, p->u.p.s);
-      v->used = 1;
-      v->input = 1;
-      v = var_lookup (N, p->u.p.d);
-      v->used = 1;
-      v->input = 1;
-      v = var_lookup (N, p->u.p.g);
-      v->used = 1;
-      v->input = 1;
+      visit_var (N, p->u.p.g, 1);
     }
     if (p->u.p._g) {
-      v = var_lookup (N, p->u.p.s);
-      v->used = 1;
-      v->input = 1;
-      v = var_lookup (N, p->u.p.d);
-      v->used = 1;
-      v->input = 1;
-      v = var_lookup (N, p->u.p._g);
-      v->used = 1;
-      v->input = 1;
+      visit_var (N, p->u.p._g, 1);
     }
 
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
 	unsigned int v = attr->e->u.v;
 	if (v & 0x1) {
-	  act_booleanized_var_t *x = var_lookup (N, p->u.p.s);
-	  x->used = 1;
-	  x->output = 1;
+	  visit_var (N, p->u.p.s, 0);
 	}
 	if (v & 0x2) {
-	  act_booleanized_var_t *x = var_lookup (N, p->u.p.d);
-	  x->used = 1;
-	  x->output = 1;
+	  visit_var (N, p->u.p.d, 0);
 	}
       }
     }
@@ -416,15 +445,14 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
       act_booleanized_var_t *v;
 
       if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
-	v = var_lookup (N, (ActId *)e->u.e.l);
-	v->input = 1;
 	if (ischp) {
-	  v->usedchp = 1;
+	  visit_chp_var (N, (ActId *)e->u.e.l, 1);
+	  v = var_lookup (N, (ActId *)e->u.e.l);
+	  v->isint = 1;
 	}
 	else {
-	  v->used = 1;
+	  visit_var (N, (ActId *)e->u.e.l, 1);
 	}
-	v->isint = 1;
       }
       else {
 	if (!ischp) {
@@ -479,14 +507,17 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 	   --*/
       if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
 	v = var_lookup (N, (ActId *)e->u.e.l);
-	if (e->type == E_VAR) {
-	  v->input = 1;
-	}
 	if (ischp) {
-	  v->usedchp = 1;
+	  if (e->type == E_VAR) {
+	    visit_chp_var (N, (ActId *)e->u.e.l, 1);
+	  }
+	  else {
+	    visit_chp_var (N, (ActId *)e->u.e.l, -1);
+	  }
 	}
 	else {
-	  v->used = 1;
+	  Assert (e->type == E_VAR, "What?");
+	  visit_var (N, (ActId *)e->u.e.l, 1);
 	}
       }
       else {
@@ -713,11 +744,7 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
 
   case ACT_CHP_ASSIGN:
     {
-      act_booleanized_var_t *v;
-      v = var_lookup (N, c->u.assign.id);
-      Assert (v, "What?");
-      v->used = 1;
-      v->output = 1;
+      visit_var (N, c->u.assign.id, 0);
       generate_hse_expr_vars (N, c->u.assign.e);
     }
     break;
@@ -872,10 +899,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	_add_dynamic_id (N, c->u.assign.id);
       }
       else {
-	v = var_lookup (N, c->u.assign.id);
-	Assert (v, "What?");
-	v->usedchp = 1;
-	v->output = 1;
+	visit_chp_var (N, c->u.assign.id, 0);
       }
       generate_chp_expr_vars (N, c->u.assign.e);
     }
@@ -885,10 +909,10 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_booleanized_var_t *v;
       listitem_t *li;
+
+      visit_chp_var (N, c->u.comm.chan, 0);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
-      v->usedchp = 1;
-      v->output = 1;
       if (v->proc_out == -1 || v->proc_out == _block_id) {
 	v->proc_out = _block_id;
       }
@@ -909,10 +933,9 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_booleanized_var_t *v;
       listitem_t *li;
+      visit_chp_var (N, c->u.comm.chan, 1);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
-      v->usedchp = 1;
-      v->input = 1;
       if (v->proc_in == -1 || v->proc_in == _block_id) {
 	v->proc_in = _block_id;
       }
@@ -928,10 +951,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	  _add_dynamic_id (N, (ActId *) list_value (li));
 	}
 	else {
-	  v = var_lookup (N, (ActId *) list_value (li));
-	  Assert (v, "what?");
-	  v->usedchp = 1;
-	  v->output = 1;
+	  visit_chp_var (N, (ActId *) list_value (li), 0);
 	}
       }
     }
@@ -1033,10 +1053,7 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
   switch (e->t) {
   case ACT_DFLOW_FUNC:
     generate_chp_expr_vars (N, e->u.func.lhs);
-    v = var_lookup (N, e->u.func.rhs);
-    Assert (v, "Hmm");
-    v->usedchp = 1;
-    v->output = 1;
+    visit_chp_var (N, e->u.func.rhs, 0);
     break;
 
   case ACT_DFLOW_SPLIT:
@@ -1044,31 +1061,22 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
   case ACT_DFLOW_MIXER:
   case ACT_DFLOW_ARBITER:
     if (e->u.splitmerge.guard) {
-      v = var_lookup (N, e->u.splitmerge.guard);
-      if (v) {
-	v->usedchp = 1;
-	v->input = 1;
-      }
+      visit_chp_var (N, e->u.splitmerge.guard, 1);
     }
-    v = var_lookup (N, e->u.splitmerge.single);
-    Assert (v, "WHat?");
-    v->usedchp = 1;
+
     if (e->t == ACT_DFLOW_SPLIT) {
-      v->input = 1;
+      visit_chp_var (N, e->u.splitmerge.single, 1);
     }
     else {
-      v->output = 1;
+      visit_chp_var (N, e->u.splitmerge.single, 0);
     }
+    
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-      v = var_lookup (N, e->u.splitmerge.multi[i]);
-      if (v) {
-	v->usedchp = 1;
-	if (e->t == ACT_DFLOW_SPLIT) {
-	  v->output = 1;
-	}
-	else {
-	  v->input = 1;
-	}
+      if (e->t == ACT_DFLOW_SPLIT) {
+	visit_chp_var (N, e->u.splitmerge.multi[i], 0);
+      }
+      else {
+	visit_chp_var (N, e->u.splitmerge.multi[i], 1);
       }
     }
     break;

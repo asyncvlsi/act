@@ -1560,6 +1560,13 @@ int ActId::isFragmented (Scope *s)
   return 0;
 }
 
+UserDef *ActId::canFragment (Scope *s)
+{
+  InstType *it;
+  it = s->FullLookup (this, NULL);
+  return dynamic_cast<UserDef *> (it->BaseType());
+}
+
 ActId *ActId::unFragment (Scope *s)
 {
   InstType *it;
