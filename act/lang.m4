@@ -384,6 +384,10 @@ base_stmt[act_chp_lang_t *]: send_stmt
 {{X:
 	return $2;
 }}
+| "[" chp_body "]"
+{{X:
+	return $2;
+}}
 | ID "(" { chp_log_item "," }* ")" /* log */
 {{X:
     act_chp_lang_t *c;
