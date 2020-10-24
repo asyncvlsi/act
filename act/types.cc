@@ -2126,7 +2126,7 @@ void Channel::Print (FILE *fp)
 
 #define EMIT_METHOD_EXPRHEADER(id)		\
   do {						\
-    if (emethods[id]) {				\
+    if (emethods[id-4]) {			\
       if (firstmeth) {				\
 	fprintf (fp, "  methods {\n");		\
       }						\
@@ -2147,9 +2147,9 @@ void Channel::Print (FILE *fp)
 #define EMIT_METHODEXPR(id,name)		\
   do {						\
     EMIT_METHOD_EXPRHEADER(id);			\
-    if (emethods[id]) {				\
+    if (emethods[id-4]) {			\
       fprintf (fp, "  %s =", name);		\
-      print_expr (fp, emethods[id]);		\
+      print_expr (fp, emethods[id-4]);		\
       fprintf (fp, ";\n");			\
     }						\
   } while (0)
