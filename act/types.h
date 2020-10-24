@@ -433,8 +433,8 @@ enum datatype_methods {
     ACT_METHOD_GET = 1,
     ACT_METHOD_SEND_REST = 2,
     ACT_METHOD_RECV_REST = 3,
-    ACT_METHOD_SEND_PROBE = 0,
-    ACT_METHOD_RECV_PROBE = 1
+    ACT_METHOD_SEND_PROBE = 4,
+    ACT_METHOD_RECV_PROBE = 5
 };
 
 /**
@@ -471,9 +471,9 @@ class Channel : public UserDef {
   virtual ~Channel();
   
   void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
-  void setMethod (datatype_methods t, Expr *e) { emethods[t] = e; }
+  void setMethod (datatype_methods t, Expr *e) { emethods[t-4] = e; }
   act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
-  Expr *geteMethod(datatype_methods t) { return emethods[t]; }
+  Expr *geteMethod(datatype_methods t) { return emethods[t-4]; }
   void copyMethods (Channel *c);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
@@ -481,7 +481,7 @@ class Channel : public UserDef {
   void Print (FILE *fp);
   
  private:
-  struct act_chp_lang *methods[6];
+  struct act_chp_lang *methods[4];
   Expr *emethods[2];
 };
 

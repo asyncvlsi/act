@@ -2,7 +2,7 @@ defchan test <: chan(bool) (bool x, y)
 {
   methods {
     set {
-       x:=self
+       [self -> x+ [] ~self -> x- ]
     }
   }
 }

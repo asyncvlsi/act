@@ -548,6 +548,7 @@ recv_id[act_chp_lang_t *]: bool_or_int_expr_id
 assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
 {{X:
     act_chp_lang_t *c;
+    int tl, tr;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
     c->label = NULL;
@@ -555,7 +556,7 @@ assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
     c->u.assign.id = $1;
     c->u.assign.e = $3;
     /* XXX: typecheck w_expr here */
-    
+    tl = act_type_var ($0->scope, $1, NULL);
     return c;
 }}
 | bool_expr_id dir
@@ -796,6 +797,17 @@ hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }*
 hse_assign_stmt[act_chp_lang_t *]: bool_expr_id dir 
 {{X:
     return apply_X_assign_stmt_opt1 ($0, $1, $2);
+}}
+| bool_or_int_expr_id ":=" w_expr
+{{X:
+    act_chp_lang_t *ret = apply_X_assign_stmt_opt0 ($0, $1, $3);
+    if (!$1->Rest() && strcmp ($1->getName(), "self") == 0) {
+      return ret;
+    }
+    else {
+      $E("Assignments only permitted to ``self'' in HSE body");
+    }
+    return NULL;
 }}
 ;
 

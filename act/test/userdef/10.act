@@ -1,13 +1,12 @@
-deftype mystruct <: int<16> (int<4> f1, f2; int<8> f3)
+deftype mystruct <: int<16> (bool x[16])
 {
   methods {
     set {
-     f1 := self>>12;
-     f2 := (self>>8) & 0xf;
-     f3 := self & 0xff
+     (;i:16: [ ((self >> i) & 1) = 1 -> x[i]+ [] ((self >> i) & 1) = 0 -> x[i]-])
     }
     get {
-     self:=(f1<<12)|(f2<<8)|f3
+     self:=0;
+     (;i:16: self := self | (int(x[i]) << i))
     }
   }
 }

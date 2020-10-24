@@ -1,0 +1,16 @@
+deftype d1of2 <: int<1> (bool d0,d1)
+{
+   spec {
+    exclhi(d0,d1)
+   }
+   methods {
+     set {
+       [self=1->d1-;d0+ [] self=0->d0-;d1+]
+     }
+     get {
+       [d0->self:=1 [] d1->self:=0]
+     }
+   }
+}
+
+d1of2 q;
