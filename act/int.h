@@ -24,32 +24,72 @@
 
 #include <misc.h>
 
+
+#define ACT_BIGINT_BITS_ONE (8*sizeof (unsigned long))
+
 class BigInt {
  public:
-  BigInt ();
+  BigInt ();			// default int is 1-bit wide, signed, and
+				// dynamic
+  
+  BigInt (int w, int s = 1);	// static bitwidth bigint, signed
+  
   ~BigInt ();
 
   BigInt (BigInt &&);		// move constructor
   BigInt (BigInt &);		// copy constructor
-  
-  BigInt& operator=(BigInt &);		// assignment
-  BigInt& operator=(BigInt &&);		// move
 
-  BigInt operator-();
-
+  BigInt& operator=(BigInt &);         // assignment
+  BigInt& operator=(BigInt &&);	       // move
+    
   int operator<(BigInt &);
+  int operator<=(BigInt &);
   int operator>(BigInt &);
+  int operator>=(BigInt &);
   int operator==(BigInt &);
 
   BigInt &operator+(BigInt &);
   BigInt &operator-(BigInt &);
+  BigInt operator-();
   BigInt &operator*(BigInt &);
   BigInt &operator/(BigInt &);
+  BigInt &operator%(BigInt &);
+
+  BigInt &operator&(BigInt &);
+  BigInt &operator|(BigInt &);
+  BigInt &operator^(BigInt &);
+  BigInt &operator~();
+
+  BigInt &operator<<(unsigned long x);
+  BigInt &operator>>(unsigned long x);
+  BigInt &operator<<(BigInt &b);
+  BigInt &operator>>(BigInt &b);
+
+  inline int isOneInt() { return len == 1 ? 1 : 0; };
+
+  inline int isNegative();
+
+  static BigInt dynInt (int x);
+
+  void Print (FILE *fp);
 
  private:
-  int sign;
-  int len;
-  unsigned long *v;
+  unsigned int issigned:1;	// 1 if signed, 0 if unsigned
+  unsigned int isdynamic:1;	// 1 if the bitwidth is dynamic
+
+  int width;			// actual bitwidth
+  
+  int len;			// storage needed
+  unsigned long *v;		// actual bits; 2's complement
+				// rep. The number is sign-extended to
+				// the maximum width of the rep
+
+  void expandSpace(int amt = 1); // expand bitwidth by specified number
+				// of bits
+  void signExtend ();
+  void zeroExtend (int w);
+  void zeroClear ();
+
 };
 
 

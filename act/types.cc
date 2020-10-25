@@ -1120,7 +1120,7 @@ Data::Data (UserDef *u) : UserDef (*u)
   is_enum = 0;
   b = NULL;
 
-  for (i=0; i < 2; i++) {
+  for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
   }
 
@@ -1138,10 +1138,10 @@ Channel::Channel (UserDef *u) : UserDef (*u)
   /* copy over userdef */
   b = NULL;
 
-  for (i=0; i < 4; i++) {
+  for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
   }
-  for (i=0; i < 2; i++) {
+  for (i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
     emethods[i] = NULL;
   }
   MkCopy (u);
@@ -1709,7 +1709,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (ns->EditType (xd->name, xd) == 1, "What?");
   xd->is_enum = is_enum;
 
-  for (i=0; i < 2; i++) {
+  for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
   }
   
@@ -1735,10 +1735,10 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (ns->EditType (xc->name, xc) == 1, "What?");
 
-  for (i=0; i < 4; i++) {
+  for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
   }
-  for (i=0; i < 2; i++) {
+  for (i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
     xc->emethods[i] = expr_expand (emethods[i], ns, xc->CurScope(), 0);
   }
 
@@ -2126,7 +2126,7 @@ void Channel::Print (FILE *fp)
 
 #define EMIT_METHOD_EXPRHEADER(id)		\
   do {						\
-    if (emethods[id-4]) {			\
+    if (emethods[id-ACT_NUM_STD_METHODS]) {	\
       if (firstmeth) {				\
 	fprintf (fp, "  methods {\n");		\
       }						\
@@ -2144,14 +2144,14 @@ void Channel::Print (FILE *fp)
     }						\
   } while (0)
 
-#define EMIT_METHODEXPR(id,name)		\
-  do {						\
-    EMIT_METHOD_EXPRHEADER(id);			\
-    if (emethods[id-4]) {			\
-      fprintf (fp, "  %s =", name);		\
-      print_expr (fp, emethods[id-4]);		\
-      fprintf (fp, ";\n");			\
-    }						\
+#define EMIT_METHODEXPR(id,name)				\
+  do {								\
+    EMIT_METHOD_EXPRHEADER(id);					\
+    if (emethods[id-ACT_NUM_STD_METHODS]) {			\
+      fprintf (fp, "  %s =", name);				\
+      print_expr (fp, emethods[id-ACT_NUM_STD_METHODS]);	\
+      fprintf (fp, ";\n");					\
+    }								\
   } while (0)
 
   EMIT_METHOD(ACT_METHOD_SET, "set");
@@ -2160,6 +2160,7 @@ void Channel::Print (FILE *fp)
   EMIT_METHOD(ACT_METHOD_RECV_REST, "recv_rest");
   EMIT_METHODEXPR (ACT_METHOD_SEND_PROBE, "send_probe");
   EMIT_METHODEXPR (ACT_METHOD_RECV_PROBE, "recv_probe");
+  EMIT_METHODEXPR (ACT_METHOD_RECV_PROBE, "recv_value");
   if (!firstmeth) {
     fprintf (fp, "}\n");
   }
@@ -2209,17 +2210,17 @@ void UserDef::AppendBody (ActBody *x)
 
 void Data::copyMethods (Data *d)
 {
-  for (int i=0; i < 2; i++) {
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = d->getMethod ((datatype_methods)i);
   }
 }
 
 void Channel::copyMethods (Channel *c)
 {
-  for (int i=0; i < 4; i++) {
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = c->getMethod ((datatype_methods)i);
   }
-  for (int i=0; i < 2; i++) {
+  for (int i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
     emethods[i] = c->geteMethod ((datatype_methods)i);
   }
 }

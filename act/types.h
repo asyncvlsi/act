@@ -427,6 +427,8 @@ class Function : public UserDef {
 
 
 
+#define ACT_NUM_STD_METHODS 4
+#define ACT_NUM_EXPR_MEHODS 3
 
 enum datatype_methods {
     ACT_METHOD_SET = 0,
@@ -434,7 +436,8 @@ enum datatype_methods {
     ACT_METHOD_SEND_REST = 2,
     ACT_METHOD_RECV_REST = 3,
     ACT_METHOD_SEND_PROBE = 4,
-    ACT_METHOD_RECV_PROBE = 5
+    ACT_METHOD_RECV_PROBE = 5,
+    ACT_METHOD_RECV_VALUE = 6
 };
 
 /**
@@ -462,7 +465,7 @@ class Data : public UserDef {
 
 private:
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
-  struct act_chp_lang *methods[2]; /**< set and get methods for this data type */
+  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and get methods for this data type */
 };
 
 class Channel : public UserDef {
@@ -471,9 +474,9 @@ class Channel : public UserDef {
   virtual ~Channel();
   
   void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
-  void setMethod (datatype_methods t, Expr *e) { emethods[t-4] = e; }
+  void setMethod (datatype_methods t, Expr *e) { emethods[t-ACT_NUM_STD_METHODS] = e; }
   act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
-  Expr *geteMethod(datatype_methods t) { return emethods[t-4]; }
+  Expr *geteMethod(datatype_methods t) { return emethods[t-ACT_NUM_STD_METHODS]; }
   void copyMethods (Channel *c);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
@@ -485,8 +488,8 @@ class Channel : public UserDef {
   // channel direction?  1 = input, 2 = output, 3 = both
   
  private:
-  struct act_chp_lang *methods[4];
-  Expr *emethods[2];
+  struct act_chp_lang *methods[ACT_NUM_STD_METHODS];
+  Expr *emethods[ACT_NUM_EXPR_MEHODS];
 };
 
 class TypeFactory {
