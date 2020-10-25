@@ -458,5 +458,7 @@ act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
 
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 
+int act_hse_direction (act_chp_lang_t *, ActId *);
+
 
 #endif /* __LANG_H__ */

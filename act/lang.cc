@@ -3131,6 +3131,7 @@ static void chp_check_expr (Expr *e, Scope *s)
   case E_ASR:
     chp_check_expr (e->u.e.l, s);
     chp_check_expr (e->u.e.r, s);
+    break;
 
   case E_NOT:
   case E_COMPLEMENT:
@@ -3230,4 +3231,131 @@ void chp_check_channels (act_chp_lang_t *c, Scope *s)
   default:
     break;
   }
+}
+
+static int act_hse_direction (Expr *e, ActId *id)
+{
+  if (!e) return 0;
+  
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    return act_hse_direction (e->u.e.l, id) |
+      act_hse_direction (e->u.e.r, id);
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    return act_hse_direction (e->u.e.l, id);
+    break;
+
+  case E_QUERY:
+    return act_hse_direction (e->u.e.l, id) |
+      act_hse_direction (e->u.e.r->u.e.l, id) |
+      act_hse_direction (e->u.e.r->u.e.r, id);
+    break;
+
+  case E_FUNCTION:
+    while (e->u.e.r) {
+      e = e->u.e.r;
+      if (act_hse_direction (e->u.e.l, id)) {
+	return 1;
+      }
+    }
+    break;
+
+  case E_PROBE:
+    break;
+
+  case E_VAR:
+    if (strcmp (((ActId *)e->u.e.l)->getName(), id->getName()) == 0) {
+      return 1;
+    }
+    break;
+
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    return act_hse_direction (e->u.e.l, id);
+    break;
+
+  case E_TRUE:
+  case E_FALSE:
+  case E_INT:
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      if (act_hse_direction (e->u.e.l, id)) {
+	return 1;
+      }
+      e = e->u.e.r;
+    }
+    break;
+    
+  case E_BITFIELD:
+    if (strcmp (((ActId *)e->u.e.l)->getName(), id->getName()) == 0) {
+      return 1;
+    }
+    break;
+
+  default:
+    fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    break;
+  }
+  return 0;
+}
+
+int act_hse_direction (act_chp_lang_t *c, ActId *id)
+{
+  listitem_t *li;
+  int dir = 0;
+  if (!c) return 0;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      dir = dir | act_hse_direction ((act_chp_lang_t *) list_value (li), id);
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (act_chp_gc_t *gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+      dir |= act_hse_direction (gctmp->s, id);
+      dir |= act_hse_direction (gctmp->g, id);
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    if (strcmp (c->u.assign.id->getName(), id->getName()) == 0) {
+      dir = 2;
+    }
+    dir |= act_hse_direction (c->u.assign.e, id);
+    break;
+    
+  default:
+    break;
+  }
+  return dir;
 }

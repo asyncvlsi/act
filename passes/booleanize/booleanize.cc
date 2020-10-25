@@ -133,17 +133,207 @@ static void visit_var (act_boolean_netlist_t *N, ActId *id, int isinput)
   else if (isinput == 0) {
     v->output = 1;
   }
+
+  UserDef *u;
   
-  if (id->isFragmented (N->cur)) {
+  if ((u = id->isFragmented (N->cur))) {
     ActId *tmp = id->unFragment (N->cur);
     v = var_lookup (N, tmp);
     v->usedchp = 1;
-    /* XXX: now is this an input or an output? I don't know... */
-    v->input = 1;
-    
+
+    Channel *uc = dynamic_cast<Channel *>(u);
+    if (uc) {
+      int iodir;
+      
+      while (tmp) {
+	tmp = tmp->Rest();
+	id = id->Rest ();
+      }
+      Assert (id, "What?");
+
+      iodir = uc->chanDir (id, isinput);
+
+      if (iodir & 1) {
+	v->input = 1;
+      }
+      if (iodir & 2) {
+	v->output = 1;
+      }
+    }
+    else {
+      if (isinput == 1) {
+	v->input = 1;
+      }
+      else if (isinput == 0) {
+	v->output = 1;
+      }
+    }
     delete tmp;
   }
 }
+
+static void visit_bool_rec (act_boolean_netlist_t *N,
+			    UserDef *u, ActId *id, int isinput)
+{
+  ActId *tl;
+
+  tl = id;
+  while (tl->Rest()) {
+    tl = tl->Rest();
+  }
+  
+  for (int i=0; i < u->getNumPorts(); i++) {
+    const char *nm = u->getPortName (i);
+    InstType *it = u->getPortType (i);
+    ActId *extra = new ActId (nm);
+    ActId *prev;
+
+    tl->Append (extra);
+    prev = tl;
+    
+    tl = tl->Rest();
+
+    if (TypeFactory::isBoolType (it)) {
+      /* mark used */
+      if (it->arrayInfo()) {
+	Arraystep *s = it->arrayInfo()->stepper();
+	while (!s->isend()) {
+	  Array *a = s->toArray ();
+
+	  tl->setArray (a);
+	  visit_var (N, id, isinput);
+	  tl->setArray (NULL);
+
+	  delete a;
+	  
+	  s->step();
+	}
+	delete s;
+      }
+      else {
+	visit_var (N, id, isinput);
+      }
+    }
+    else if (TypeFactory::isUserType (it)) {
+      UserDef *nu = dynamic_cast<UserDef *>(it->BaseType());
+      Assert (nu, "What?");
+      /* mark recursively */
+      if (it->arrayInfo()) {
+	Arraystep *s = it->arrayInfo()->stepper();
+	while (!s->isend()) {
+	  Array *a = s->toArray();
+
+	  tl->setArray (a);
+	  /* XXX correct for data types, but for channel types we need to
+	     figure this out */
+	  visit_bool_rec (N, nu, id, isinput);
+	  tl->setArray (NULL);
+
+	  delete a;
+
+	  s->step();
+	}
+	delete s;
+      }
+      else {
+	visit_bool_rec (N, nu, id, isinput);
+      }
+    }
+    prev->prune();
+    delete extra;
+    tl = prev;
+  }
+}
+
+static void visit_channel_ports (act_boolean_netlist_t *N,
+				 Channel *ch, ActId *id, int isinput)
+{
+  ActId *tl;
+
+  tl = id;
+  while (tl->Rest()) {
+    tl = tl->Rest();
+  }
+  
+  /*-- now for each member of the channel, figure out the direction and
+     then call the boolean visitor recursively --*/
+  for (int i=0; i < ch->getNumPorts(); i++) {
+    const char *nm = ch->getPortName (i);
+    InstType *it = ch->getPortType (i);
+    ActId *extra = new ActId (nm);
+    ActId *prev;
+    int dir;
+
+    dir = ch->chanDir (extra, isinput);
+    if (dir & 2) {
+      dir = 0;
+    }
+    else if (dir & 1) {
+      dir = 1;
+    }
+    else {
+      dir = 0;
+    }
+
+    tl->Append (extra);
+    prev = tl;
+    
+    tl = tl->Rest();
+
+    if (TypeFactory::isBoolType (it)) {
+      /* mark used */
+      if (it->arrayInfo()) {
+	Arraystep *s = it->arrayInfo()->stepper();
+	while (!s->isend()) {
+	  Array *a = s->toArray ();
+
+	  tl->setArray (a);
+
+	  visit_var (N, id, dir);
+	  
+	  tl->setArray (NULL);
+
+	  delete a;
+	  
+	  s->step();
+	}
+	delete s;
+      }
+      else {
+	visit_var (N, id, dir);
+      }
+    }
+    else if (TypeFactory::isUserType (it)) {
+      UserDef *nu = dynamic_cast<UserDef *>(it->BaseType());
+      Assert (nu, "What?");
+      /* mark recursively */
+      if (it->arrayInfo()) {
+	Arraystep *s = it->arrayInfo()->stepper();
+	while (!s->isend()) {
+	  Array *a = s->toArray();
+
+	  tl->setArray (a);
+	  /* XXX correct for data types, but for channel types we need to
+	     figure this out */
+	  visit_bool_rec (N, nu, id, dir);
+	  tl->setArray (NULL);
+
+	  delete a;
+
+	  s->step();
+	}
+	delete s;
+      }
+      else {
+	visit_bool_rec (N, nu, id, dir);
+      }
+    }
+    prev->prune();
+    delete extra;
+    tl = prev;
+  }
+}
+
 
 static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
 {
@@ -162,10 +352,13 @@ static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
   }
 
   UserDef *u = id->canFragment (N->cur);
+  Channel *ch = NULL;
   if (u) {
-    /*-- use the type signature to visit pieces --*/
-    /* XXX HERE */
-
+    ch = dynamic_cast<Channel *>(u);
+  }
+  if (ch) {
+    /* recursively access all booleans */
+    visit_channel_ports (N, ch, id, isinput);
   }
 }
 
@@ -1347,7 +1540,10 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   while ((b = ihash_iter_next (n->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
     if (!v->output) {
-      Assert (v->input == 1, "What?");
+      /* if a channel isn't properly defined, no flags might be set
+	 for a chp variable 
+      */
+      Assert (v->usedchp == 1 || v->input == 1, "What?");
     }
     if (v->id->isglobal()) {
       A_NEWM (n->used_globals, act_connection *);

@@ -479,6 +479,10 @@ class Channel : public UserDef {
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
   void Print (FILE *fp);
+
+  int chanDir (ActId *id, int isinput);
+  // given that the id has the direction specified, what is the
+  // channel direction?  1 = input, 2 = output, 3 = both
   
  private:
   struct act_chp_lang *methods[4];

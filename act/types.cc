@@ -2807,3 +2807,89 @@ int Function::isExternal ()
   return !getlang() || !getlang()->getchp();
 }
 
+/*
+ *  return 1 for input, 2 for output
+ */
+int Channel::chanDir (ActId *id, int isinput)
+{
+  int iosend = 0, iorecv = 0;
+
+  InstType *it = I->Lookup (id->getName());
+
+  Assert (it, "Fragmented piece not in the port list?");
+  
+  int dir = it->getDir ();
+  if (dir == Type::INOUT) {
+    if (isinput) {
+      return 1;
+    }
+    else {
+      return 2;
+    }
+  }
+  else if (dir == Type::OUTIN) {
+    if (isinput) {
+      return 2;
+    }
+    else {
+      return 1;
+    }
+  }
+  else if (dir == Type::IN) {
+    if (isinput) {
+      return 3;
+    }
+    else {
+      return 0;
+    }
+  }
+  else if (dir == Type::OUT) {
+    if (isinput) {
+      return 0;
+    }
+    else {
+      return 3;
+    }
+  }
+
+  /*-- now look through methods --*/
+  if (methods[ACT_METHOD_SET]) {
+    iosend = act_hse_direction (methods[ACT_METHOD_SET], id);
+  }
+  if (!iosend && methods[ACT_METHOD_SEND_REST]) {
+    iosend = act_hse_direction (methods[ACT_METHOD_SEND_REST], id);
+  }
+
+  dir = 0;
+
+  if (isinput) {
+    if (iosend & 1) {
+      dir |= 2;
+    }
+  }
+  else {
+    if (iosend & 2) {
+      dir |= 2;
+    }
+  }
+  
+  if (methods[ACT_METHOD_GET]) {
+    iorecv = act_hse_direction (methods[ACT_METHOD_GET], id);
+  }
+  if (!iorecv && methods[ACT_METHOD_RECV_REST]) {
+    iorecv = act_hse_direction (methods[ACT_METHOD_RECV_REST], id);
+  }
+
+  if (isinput) {
+    if (iorecv & 1) {
+      dir |= 1;
+    }
+  }
+  else {
+    if (iorecv & 2) {
+      dir |= 1;
+    }
+  }
+  
+  return dir;
+}

@@ -101,8 +101,8 @@ class ActId {
 				// index that is not a constant value
 				// after expansion
 
-  int isFragmented (Scope *);	// is this an ID that corresponds to a
-				// fragmented int/chan?
+  UserDef *isFragmented (Scope *); // is this an ID that corresponds to a
+                                   // fragmented int/chan?
 
   ActId *unFragment (Scope *);	// for a fragmented ID, return the
 				// unfragmented piece
