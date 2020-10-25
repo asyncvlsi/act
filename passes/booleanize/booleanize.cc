@@ -222,15 +222,10 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
 	Arraystep *s = it->arrayInfo()->stepper();
 	while (!s->isend()) {
 	  Array *a = s->toArray();
-
 	  tl->setArray (a);
-	  /* XXX correct for data types, but for channel types we need to
-	     figure this out */
 	  visit_bool_rec (N, nu, id, isinput);
 	  tl->setArray (NULL);
-
 	  delete a;
-
 	  s->step();
 	}
 	delete s;
@@ -286,15 +281,10 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	Arraystep *s = it->arrayInfo()->stepper();
 	while (!s->isend()) {
 	  Array *a = s->toArray ();
-
 	  tl->setArray (a);
-
 	  visit_var (N, id, dir);
-	  
 	  tl->setArray (NULL);
-
 	  delete a;
-	  
 	  s->step();
 	}
 	delete s;
@@ -311,15 +301,10 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	Arraystep *s = it->arrayInfo()->stepper();
 	while (!s->isend()) {
 	  Array *a = s->toArray();
-
 	  tl->setArray (a);
-	  /* XXX correct for data types, but for channel types we need to
-	     figure this out */
 	  visit_bool_rec (N, nu, id, dir);
 	  tl->setArray (NULL);
-
 	  delete a;
-
 	  s->step();
 	}
 	delete s;
