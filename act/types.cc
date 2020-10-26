@@ -54,6 +54,17 @@ Expr *TypeFactory::expr_true = NULL;
 Expr *TypeFactory::expr_false = NULL;
 struct iHashtable *TypeFactory::expr_int = NULL;
 
+
+const char *act_builtin_method_name[ACT_NUM_STD_METHODS] =
+  { "set", "get", "send_rest", "recv_rest", "send_up", "recv_up" };
+
+const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS] =
+  { "send_probe", "recv_probe", "recv_value" };
+
+const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS] =  { 1, 1, 0 };
+
+
+
 Expr *const_expr (int val);
 
 /*------------------------------------------------------------------------
@@ -1141,7 +1152,7 @@ Channel::Channel (UserDef *u) : UserDef (*u)
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
   }
-  for (i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
+  for (i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     emethods[i] = NULL;
   }
   MkCopy (u);
@@ -1738,7 +1749,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
   }
-  for (i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
+  for (i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     xc->emethods[i] = expr_expand (emethods[i], ns, xc->CurScope(), 0);
   }
 
@@ -2134,33 +2145,32 @@ void Channel::Print (FILE *fp)
     }						\
   } while (0)
 
-#define EMIT_METHOD(id,name)			\
-  do {						\
-    EMIT_METHOD_HEADER(id);			\
-    if (methods[id]) {				\
-      fprintf (fp, "  %s {\n", name);		\
-      chp_print (fp, methods[id]);		\
-      fprintf (fp, "}\n");			\
-    }						\
-  } while (0)
-
-#define EMIT_METHODEXPR(id,name)				\
+#define EMIT_METHOD(id)						\
   do {								\
-    EMIT_METHOD_EXPRHEADER(id);					\
-    if (emethods[id-ACT_NUM_STD_METHODS]) {			\
-      fprintf (fp, "  %s =", name);				\
-      print_expr (fp, emethods[id-ACT_NUM_STD_METHODS]);	\
-      fprintf (fp, ";\n");					\
+    EMIT_METHOD_HEADER(id);					\
+    if (methods[id]) {						\
+      fprintf (fp, "  %s {\n", act_builtin_method_name[id]);	\
+      chp_print (fp, methods[id]);				\
+      fprintf (fp, "}\n");					\
     }								\
   } while (0)
 
-  EMIT_METHOD(ACT_METHOD_SET, "set");
-  EMIT_METHOD(ACT_METHOD_GET, "get");
-  EMIT_METHOD(ACT_METHOD_SEND_REST, "send_rest");
-  EMIT_METHOD(ACT_METHOD_RECV_REST, "recv_rest");
-  EMIT_METHODEXPR (ACT_METHOD_SEND_PROBE, "send_probe");
-  EMIT_METHODEXPR (ACT_METHOD_RECV_PROBE, "recv_probe");
-  EMIT_METHODEXPR (ACT_METHOD_RECV_PROBE, "recv_value");
+#define EMIT_METHODEXPR(id)						\
+  do {									\
+    EMIT_METHOD_EXPRHEADER(id);						\
+    if (emethods[id-ACT_NUM_STD_METHODS]) {				\
+      fprintf (fp, "  %s =", act_builtin_method_expr[id-ACT_NUM_STD_METHODS]); \
+      print_expr (fp, emethods[id-ACT_NUM_STD_METHODS]);		\
+      fprintf (fp, ";\n");						\
+    }									\
+  } while (0)
+
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+    EMIT_METHOD (i);
+  }
+  for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
+    EMIT_METHODEXPR (i + ACT_NUM_STD_METHODS);
+  }
   if (!firstmeth) {
     fprintf (fp, "}\n");
   }
@@ -2187,8 +2197,8 @@ void Data::Print (FILE *fp)
 
   int firstmeth = 1;
 
-  EMIT_METHOD(ACT_METHOD_SET, "set");
-  EMIT_METHOD(ACT_METHOD_GET, "get");
+  EMIT_METHOD(ACT_METHOD_SET);
+  EMIT_METHOD(ACT_METHOD_GET);
 
   if (!firstmeth) {
     fprintf (fp, " }\n");
@@ -2220,7 +2230,7 @@ void Channel::copyMethods (Channel *c)
   for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = c->getMethod ((datatype_methods)i);
   }
-  for (int i=0; i < ACT_NUM_EXPR_MEHODS; i++) {
+  for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     emethods[i] = c->geteMethod ((datatype_methods)i);
   }
 }

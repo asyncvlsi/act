@@ -427,17 +427,23 @@ class Function : public UserDef {
 
 
 
-#define ACT_NUM_STD_METHODS 4
-#define ACT_NUM_EXPR_MEHODS 3
+#define ACT_NUM_STD_METHODS 6
+#define ACT_NUM_EXPR_METHODS 3
+
+extern const char *act_builtin_method_name[ACT_NUM_STD_METHODS];
+extern const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS];
+extern const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS];
 
 enum datatype_methods {
     ACT_METHOD_SET = 0,
     ACT_METHOD_GET = 1,
     ACT_METHOD_SEND_REST = 2,
     ACT_METHOD_RECV_REST = 3,
-    ACT_METHOD_SEND_PROBE = 4,
-    ACT_METHOD_RECV_PROBE = 5,
-    ACT_METHOD_RECV_VALUE = 6
+    ACT_METHOD_SEND_UP = 4,
+    ACT_METHOD_RECV_UP = 5,
+    ACT_METHOD_SEND_PROBE = 0 + ACT_NUM_STD_METHODS,
+    ACT_METHOD_RECV_PROBE = 1 + ACT_NUM_STD_METHODS,
+    ACT_METHOD_RECV_VALUE = 2 + ACT_NUM_STD_METHODS
 };
 
 /**
@@ -453,10 +459,8 @@ class Data : public UserDef {
   void MkEnum () { is_enum = 1; }
   int isEnum () { return is_enum; }
 
-  void setMethod (datatype_methods t, struct act_chp_lang *h) {
-    methods[t] = h;
-  }
-  struct act_chp_lang *getMethod (datatype_methods t) { return methods[t]; }
+  void setMethod (int t, struct act_chp_lang *h) {  methods[t] = h; }
+  struct act_chp_lang *getMethod (int t) { return methods[t]; }
   void copyMethods (Data *d);
  
   Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
@@ -473,10 +477,10 @@ class Channel : public UserDef {
   Channel (UserDef *u);
   virtual ~Channel();
   
-  void setMethod (datatype_methods t, act_chp_lang *h) { methods[t] = h; }
-  void setMethod (datatype_methods t, Expr *e) { emethods[t-ACT_NUM_STD_METHODS] = e; }
-  act_chp_lang *getMethod(datatype_methods t) { return methods[t]; }
-  Expr *geteMethod(datatype_methods t) { return emethods[t-ACT_NUM_STD_METHODS]; }
+  void setMethod (int t, act_chp_lang *h) { methods[t] = h; }
+  void setMethod (int t, Expr *e) { emethods[t-ACT_NUM_STD_METHODS] = e; }
+  act_chp_lang *getMethod(int t) { return methods[t]; }
+  Expr *geteMethod(int t) { return emethods[t-ACT_NUM_STD_METHODS]; }
   void copyMethods (Channel *c);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
@@ -489,7 +493,7 @@ class Channel : public UserDef {
   
  private:
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS];
-  Expr *emethods[ACT_NUM_EXPR_MEHODS];
+  Expr *emethods[ACT_NUM_EXPR_METHODS];
 };
 
 class TypeFactory {

@@ -905,40 +905,23 @@ one_method: ID "{" hse_body "}"
       }
     }
     else if ($0->u_c) {
+      int found = 0;
       /* channel methods */
-      if (strcmp ($1, "set") == 0) {
-	if ($0->u_c->getMethod(ACT_METHOD_SET)) {
-	  $E("Duplicate ``set'' method");
-	}
-	$0->u_c->setMethod (ACT_METHOD_SET, $3);
-      }
-      else if (strcmp ($1, "get") == 0) {
-	if ($0->u_c->getMethod(ACT_METHOD_GET)) {
-	  $E("Duplicate ``get'' method");
-	}
-	$0->u_c->setMethod (ACT_METHOD_GET, $3);
-      }
-      else if ((strcmp ($1, "send_rest") == 0) || (strcmp ($1, "fill") == 0)) {
-	if ($0->u_c->getMethod (ACT_METHOD_SEND_REST)) {
-	  $E("Duplicate ``send_rest/fill'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_SEND_REST, $3);
+      for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+	if (strcmp ($1, act_builtin_method_name[i]) == 0) {
+	  if ($0->u_c->getMethod(i)) {
+	    $E("Duplicate ``%s'' method", act_builtin_method_name[i]);
+	  }
+	  $0->u_c->setMethod (i, $3);
+	  found = 1;
+	  break;
 	}
       }
-      else if ((strcmp ($1, "recv_rest") == 0) || (strcmp ($1, "drain") == 0)) {
-	if ($0->u_c->getMethod (ACT_METHOD_RECV_REST)) {
-	  $E("Duplicate ``recv_rest/drain'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_RECV_REST, $3);
-	}
-      }
-      else {
-	if ((strcmp ($1, "send_probe") == 0) ||
-	    (strcmp ($1, "recv_probe") == 0) ||
-	    (strcmp ($1, "recv_value") == 0)) {
-	  $E("send/recv probe syntax uses method expressions");
+      if (!found) {
+	for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
+	  if (strcmp ($1, act_builtin_method_expr[i]) == 0) {
+	    $E("method ``%s'' uses method expressions", act_builtin_method_expr[i]);
+	  }
 	}
 	$E("Method ``%s'' is not supported", $1);
       }
@@ -951,51 +934,26 @@ one_method: ID "{" hse_body "}"
 | ID "=" wint_or_bool_expr ";"
 {{X:
     if ($0->u_c) {
-      if (strcmp ($1, "send_probe") == 0) {
-	int tc = act_type_expr ($0->scope, $3, NULL);
-	if (tc & T_INT) {
-	  $E("send_probe method must be of type bool");
-	}
-	if ($0->u_c->geteMethod (ACT_METHOD_SEND_PROBE)) {
-	  $E("Duplicate ``send_probe'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_SEND_PROBE, $3);
-	}
-      }
-      else if (strcmp ($1, "recv_probe") == 0) {
-	int tc = act_type_expr ($0->scope, $3, NULL);
-	if (tc & T_INT) {
-	  $E("recv_probe method must be of type bool");
-	}
-	if ($0->u_c->geteMethod (ACT_METHOD_RECV_PROBE)) {
-	  $E("Duplicate ``recv_probe'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_RECV_PROBE, $3);
-	}
-      }
-      else if (strcmp ($1, "recv_value") == 0) {
-	int tc = act_type_expr ($0->scope, $3, NULL);
-	if (tc & T_INT) {
-	  if (TypeFactory::boolType ($0->u_c) != 0) {
-	    $E("recv_value method type must match channel data type");
+      int found = 0;
+      for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
+	if (strcmp ($1, act_builtin_method_expr[i]) == 0) {
+	  int tc = act_type_expr ($0->scope, $3, NULL);
+	  if (tc & T_INT) {
+	    if (act_builtin_method_boolret[i]) {
+	      $E("``%s'' method must be of type bool", act_builtin_method_expr[i]);
+	    }
 	  }
-	}
-	if (tc & T_BOOL) {
-	  if (TypeFactory::boolType ($0->u_c) != 1) {
-	    $E("recv_value method type must match channel data type");
+	  if ($0->u_c->geteMethod (i + ACT_NUM_EXPR_METHODS)) {
+	    $E("Duplicate ``%s'' method", act_builtin_method_expr[i]);
 	  }
-	}
-	if ($0->u_c->geteMethod (ACT_METHOD_RECV_VALUE)) {
-	  $E("Duplicate ``recv_value'' method");
-	}
-	else {
-	  $0->u_c->setMethod (ACT_METHOD_RECV_VALUE, $3);
+	  else {
+	    $0->u_c->setMethod (i + ACT_NUM_EXPR_METHODS, $3);
+	  }
+	  found = 1;
 	}
       }
-      else {
-	$E("Method-expression ``%s'' is not supported", $1);
+      if (!found) {
+ 	$E("Method-expression ``%s'' is not supported", $1);
       }
     }
     else {
