@@ -855,7 +855,7 @@ data_chan_body: ";"
       $A(0);
     }
 }}
-"{" base_body [ methods_body ] "}"
+"{" base_body [ methods_body ] [ lang_initialize ] "}"
 {{X:
     if ($0->u_c) {
       $0->u_c->MkDefined ();
