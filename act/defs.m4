@@ -943,11 +943,11 @@ one_method: ID "{" hse_body "}"
 	      $E("``%s'' method must be of type bool", act_builtin_method_expr[i]);
 	    }
 	  }
-	  if ($0->u_c->geteMethod (i + ACT_NUM_EXPR_METHODS)) {
+	  if ($0->u_c->geteMethod (i + ACT_NUM_STD_METHODS)) {
 	    $E("Duplicate ``%s'' method", act_builtin_method_expr[i]);
 	  }
 	  else {
-	    $0->u_c->setMethod (i + ACT_NUM_EXPR_METHODS, $3);
+	    $0->u_c->setMethod (i + ACT_NUM_STD_METHODS, $3);
 	  }
 	  found = 1;
 	}
