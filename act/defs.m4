@@ -1978,7 +1978,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 
 	type_set_position ($l, $c, $n);
 	if (!act_type_conn ($0->scope, id, ae)) {
-	  $e("Typechecking failed on connection!");
+	  $e("Typechecking failed on connection! (position: %d)", pos);
 	  fprintf ($f, "\n\t%s\n", act_type_errmsg ());
 	  exit (1);
 	}

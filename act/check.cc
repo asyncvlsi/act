@@ -1163,13 +1163,13 @@ int type_connectivity_check (InstType *lhs,
 	/* special case */
 	return 1;
       }
-      if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
+      if (tmp->isEqual(lhs->BaseType()) && !tmp->isEqual(rhs->BaseType())) {
 	return 2;
       }
-      else if (tmp == rhs->BaseType() && tmp != lhs->BaseType()) {
+      else if (tmp->isEqual(rhs->BaseType()) && !tmp->isEqual(lhs->BaseType())) {
 	return 3;
       }
-      Assert (tmp == lhs->BaseType() && tmp == rhs->BaseType(), "Hmm.");
+      Assert (tmp->isEqual (lhs->BaseType()) && tmp->isEqual(rhs->BaseType()), "Hmm.");
       return 1;
     }
   }
@@ -1180,13 +1180,13 @@ int type_connectivity_check (InstType *lhs,
 	/* special case */
 	return 1;
       }
-      if (tmp == lhs->BaseType() && tmp != rhs->BaseType()) {
+      if (tmp->isEqual (lhs->BaseType()) && !tmp->isEqual(rhs->BaseType())) {
 	return 2;
       }
-      else if (tmp == rhs->BaseType() && tmp != lhs->BaseType()) {
+      else if (tmp->isEqual (rhs->BaseType()) && !tmp->isEqual (lhs->BaseType())) {
 	return 3;
       }
-      Assert (tmp == lhs->BaseType() && tmp == rhs->BaseType(), "Hmm.");
+      Assert (tmp->isEqual (lhs->BaseType()) && tmp->isEqual (rhs->BaseType()), "Hmm.");
       return 1;
     }
   }
@@ -1477,10 +1477,12 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
 
   int lhslocal;
   InstType *lhs = act_actual_insttype (s, id, &lhslocal);
+
   if (!lhs) return T_ERR;
 
   int rhslocal;
   InstType *rhs = rae->getInstType (s, &rhslocal);
+
   if (!rhs) {
     delete lhs;
     return T_ERR;
