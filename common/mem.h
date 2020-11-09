@@ -48,9 +48,9 @@ public:
   Mem();
   ~Mem();
 
-  int ReadImage (char *s);
+  int ReadImage (const char *s);
   int ReadImage (FILE *fp);	// load fresh memory image
-  int MergeImage (char *s);
+  int MergeImage (const char *s);
   int MergeImage (FILE *fp);	// merge image from file with current mem
   void DumpImage (FILE *fp);	// write current mem to file
   

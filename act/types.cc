@@ -56,12 +56,13 @@ struct iHashtable *TypeFactory::expr_int = NULL;
 
 
 const char *act_builtin_method_name[ACT_NUM_STD_METHODS] =
-  { "set", "get", "send_rest", "recv_rest", "send_up", "recv_up" };
+  { "set", "get", "send_rest", "recv_rest", "send_up", "recv_up",
+    "send_init", "recv_init" };
 
 const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS] =
-  { "send_probe", "recv_probe", "recv_value" };
+  { "send_probe", "recv_probe" };
 
-const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS] =  { 1, 1, 0 };
+const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS] =  { 1, 1 };
 
 
 

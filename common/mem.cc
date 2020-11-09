@@ -409,7 +409,7 @@ Mem::ReadImage (FILE *fp)
  * read memory image from a file
  */
 int 
-Mem::ReadImage (char *s)
+Mem::ReadImage (const char *s)
 {
   FILE *fp;
   int i;
@@ -428,7 +428,7 @@ Mem::ReadImage (char *s)
  * read memory image from a file
  */
 int 
-Mem::MergeImage (char *s)
+Mem::MergeImage (const char *s)
 {
   FILE *fp;
   int i;
@@ -452,7 +452,7 @@ Mem::MergeImage (FILE *fp)
   char buf[1024];
   unsigned long a0,a1,v0,v1;
   unsigned long len;
-  LL a, v, tmp;
+  unsigned long a, v, tmp;
   int endian;
 
   while (fgets (buf, 1024, fp)) {

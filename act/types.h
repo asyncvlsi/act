@@ -427,8 +427,8 @@ class Function : public UserDef {
 
 
 
-#define ACT_NUM_STD_METHODS 6
-#define ACT_NUM_EXPR_METHODS 3
+#define ACT_NUM_STD_METHODS 8
+#define ACT_NUM_EXPR_METHODS 2
 
 extern const char *act_builtin_method_name[ACT_NUM_STD_METHODS];
 extern const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS];
@@ -441,9 +441,10 @@ enum datatype_methods {
     ACT_METHOD_RECV_REST = 3,
     ACT_METHOD_SEND_UP = 4,
     ACT_METHOD_RECV_UP = 5,
+    ACT_METHOD_SEND_INIT = 6,
+    ACT_METHOD_RECV_INIT = 7,
     ACT_METHOD_SEND_PROBE = 0 + ACT_NUM_STD_METHODS,
-    ACT_METHOD_RECV_PROBE = 1 + ACT_NUM_STD_METHODS,
-    ACT_METHOD_RECV_VALUE = 2 + ACT_NUM_STD_METHODS
+    ACT_METHOD_RECV_PROBE = 1 + ACT_NUM_STD_METHODS
 };
 
 /**
