@@ -321,6 +321,7 @@ struct act_sizing {
  */
 struct act_initialize {
   list_t *actions;
+  act_initialize *next;
 };
 
 

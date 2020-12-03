@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 1996, 2020 Rajit Manohar
+ *  Copyright (c) 2020 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,35 +21,43 @@
  */
 /*************************************************************************
  *
- *  lisp.h -- 
+ *  lispCli.h -- 
  *
- *   This module defines things that are exported by the
- *   mini-scheme interpreter command line language to the rest
- *   of the world.
+ *   Command-line interface wrapper  for interpreter
  *
  *************************************************************************
  */
-#ifndef __LISP_H__
-#define __LISP_H__
+#ifndef __LISPCLI_H__
+#define __LISPCLI_H__
 
 /*
-  Interface to the Lisp interpreter from the textio module
+  Interface to command-line interface
 */
+struct LispCliCommand {
+  const char *name;
+  const char *help;
+  int (*f) (int argc, char **argv);
+};
 
-extern void LispInit(void);
-extern void LispSetVariable(char *name, char *value);
-extern void LispEvaluate(int argc, char **argv, int infile);
-
-/* 
-   User must provide these functions and variables
+/*
+  Initialize CLI module
 */
-extern int LispDispatch (int argc, char **argv, int echo_cmd, int infile);
-/* return 0 for #f, 1 for #t, 2 for an int (returned by the following) */
-extern int LispGetReturnInt (void);
+void LispCliInit (const char *elrc, const char *histrc, const char *prompt,
+		  struct LispCliCommand *cmds, int cmd_len);
 
-extern int LispInterruptExecution;
+/* this version doesn't use editline */
+void LispCliInitPlain (const char *prompt,
+		       struct LispCliCommand *cmds, int cmd_len);
+
+/*
+  Cleanup CLI module
+*/
+void LispCliEnd (void);
+
+/*
+  Run CLI using fp as the input
+*/
+void LispCliRun (FILE *fp);
 
 
-
-#endif /* __LISP_H__ */
-
+#endif /* __LISPCLI_H__ */

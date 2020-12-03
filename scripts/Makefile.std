@@ -50,6 +50,7 @@ LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib
 LIBSSIM=-L$(INSTALLLIB) -lssim -lvlsilib
 LIBASIM=-L$(INSTALLLIB) -lasim -lvlsilib
 LIBACTSCM=-lactscm -lvlsilib
+LIBACTSCMCLI=-lactscmcli -lactscm -lvlsilib
 
 LIBDEPEND=$(INSTALLLIB)/libvlsilib.a
 ACTDEPEND=$(INSTALLLIB)/libact.a $(LIBDEPEND)
@@ -57,6 +58,7 @@ ACTPASSDEPEND=$(ACTDEPEND) $(INSTALLLIB)/libactpass.a
 SSIMDEPEND=$(INSTALLLIB)/libssim.a $(LIBDEPEND)
 ASIMDEPEND=$(INSTALLLIB)/libasim.a $(LIBDEPEND)
 SCMDEPEND=$(INSTALLLIB)/libactscm.a
+SCMCLIDEPEND=$(INSTALLLIB)/libactscm.a $(INSTALLLIB)/libactscmcli.a
 
 CC=$(C_COMPILER_NAME)
 CXX=$(CXX_COMPILER_NAME)
