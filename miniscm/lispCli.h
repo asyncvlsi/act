@@ -56,8 +56,10 @@ void LispCliEnd (void);
 
 /*
   Run CLI using fp as the input
+  
+    Return 0 if it was interrupted, 1 if successfully completed.
 */
-void LispCliRun (FILE *fp);
+int LispCliRun (FILE *fp);
 
 
 #endif /* __LISPCLI_H__ */

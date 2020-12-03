@@ -1279,6 +1279,11 @@ RET_TYPE process_cycle (ARG_LIST)
     }
     else {
       if (P->flags & PRS_STOPPED_ON_WARNING) {
+	if (exit_on_warn) {
+	  printf ("*** Exiting on warning.\n");
+	  stop_trace ();
+	  exit (2);
+	}
 	break;
       }
     }
@@ -2230,7 +2235,17 @@ int main (int argc, char **argv)
   else {
     LispCliInit (NULL, ".prsim_history", PROMPT, Cmds, sizeof (Cmds)/sizeof (Cmds[0]));
   }
-  LispCliRun (fp);
+  while (!LispCliRun (fp)) {
+    if (P->flags & PRS_STOPPED_ON_WARNING) {
+      if (exit_on_warn) {
+	printf ("*** Exiting on warning.\n");
+	stop_trace ();
+	exit (2);
+      }
+    }
+    P->flags &= ~(PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING);
+    clr_interrupt ();
+  }
   fclose (fp);
 
   stop_trace ();

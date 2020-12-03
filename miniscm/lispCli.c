@@ -410,20 +410,21 @@ static char *read_input_line (FILE *fp, char *buf, int len)
   }
 }
 
-static void handle_user_input (FILE *fp)
+static int handle_user_input (FILE *fp)
 {
   char buf[10240];
   char *s, *t;
 
   while ((s = read_input_line (fp, buf, 10240))) {
     if (LispInterruptExecution) {
-      if (flist) {
-	return;
-      }
+      return 0;
     }
     else {
       if (*s) {
 	do_command (s);
+	if (LispInterruptExecution) {
+	  return 0;
+	}
       }
       if (s != buf) {
 	FREE (s);
@@ -431,7 +432,8 @@ static void handle_user_input (FILE *fp)
       fflush (stdout);
       fflush (stderr);
     }
-  }	
+  }
+  return 1;
 }
 
 static int handle_source (int argc, char **argv)
@@ -489,11 +491,13 @@ static int handle_source (int argc, char **argv)
  *
  *  LispCliRun --
  *
- *   Run the command-line interface loop
+ *   Run the command-line interface loop.
+ *  
+ *   Return 1 if successful, 0 if interrupted
  *
  *------------------------------------------------------------------------
  */
-void LispCliRun (FILE *inp)
+int LispCliRun (FILE *inp)
 {
-  handle_user_input (inp);
+  return handle_user_input (inp);
 }
