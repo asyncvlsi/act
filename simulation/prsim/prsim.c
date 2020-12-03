@@ -34,10 +34,8 @@
 
 #include <histedit.h>
 
-#ifdef USE_SCM
 #include <lisp.h>
-#endif
-
+#include <lispCli.h>
 
 #if !defined(LIBEDIT_MAJOR) && !defined(H_SETSIZE)
 #define OLD_LIBEDIT
@@ -294,17 +292,13 @@ void signal_handler (int sig)
 {
   interrupted = 1;
   if (P) { P->flags |= PRS_STOP_SIMULATION; }
-#ifdef USE_SCM
   LispInterruptExecution = 1;
-#endif  
 }
 
 void clr_interrupt (void)
 {
   interrupted = 0;
-#ifdef USE_SCM
   LispInterruptExecution = 0;
-#endif
 }
 
 static
@@ -381,8 +375,6 @@ void del_watchpoint (PrsNode *n)
   }
 }
 
-#ifdef USE_SCM
-
 #define RET_TYPE int
 #define ARG_LIST int argc, char **argv
 
@@ -400,26 +392,6 @@ void del_watchpoint (PrsNode *n)
 #define CHECK_TRAILING(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); return 0; } } while(0)
 
 #define CHECK_TRAILING_INTRET(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); lisp_return_value = -2; return 2; } } while(0)
-
-#else
-
-/* old style */
-#define RET_TYPE void
-#define ARG_LIST void
-
-#define RETURN(x)  return
-
-#define STD_ARG(x) char *s; char *usage = x
-
-#define GET_ARG(msg)  do { s = strtok (NULL, " \t"); if (!s) { printf ("%s", msg); return; } } while(0)
-
-#define GET_ARGCOLON(msg)  do { s = strtok (NULL, " \t:"); if (!s) { printf ("%s",msg); return; } } while(0)
-
-#define GET_OPTARG  do { s = strtok (NULL, " \t"); } while (0)
-
-#define CHECK_TRAILING(msg) do { s = strtok (NULL, " \t"); if (s && s[0] != '#') { printf ("%s",msg); return; } } while (0)
-
-#endif
 
 
 static char *match_string;
@@ -1046,7 +1018,6 @@ RET_TYPE process_get (ARG_LIST)
   RETURN (1);
 }
 
-#ifdef USE_SCM
 int process_sget (int argc, char **argv)
 {
   STD_ARG("Usage: sget <var>\n");
@@ -1071,7 +1042,6 @@ int process_sget (int argc, char **argv)
   CHECK_TRAILING_INTRET(usage);
   return 2;
 }
-#endif
 
 /*
  *   uget n
@@ -1752,54 +1722,6 @@ RET_TYPE process_restore (ARG_LIST)
   RETURN (1);
 }
 
-
-RET_TYPE process_source (ARG_LIST)
-{
-  STD_ARG("Usage: source filename [<repeat-count>]\n");
-  FILE *fp;
-  char *fname;
-  int count;
-
-  GET_ARG(usage);
-  fname = Strdup (s);
-  
-  GET_OPTARG;
-  if (s == NULL) {
-    count = 1;
-  }
-  else {
-    count = atoi (s);
-  }
-#if 0
-  interrupted = 0;
-#endif
-  while (!interrupted && !(P->flags & PRS_STOPPED_ON_WARNING) && (count-- > 0)) {
-    if (in_stack (fname)) {
-      printf ("Recursive source command for file `%s'\n", fname);
-      RETURN (0);
-    }
-    push_file (fname);
-    CHECK_TRAILING(usage);
-    Assert (flist, "yow");
-    fp = fopen (flist->name, "r");
-    if (!fp) {
-      printf ("Could not open file `%s' for reading\n", flist->name);
-      RETURN (0);
-    }
-    handle_user_input (fp);
-    fclose (fp);
-    pop_file ();
-  }
-  if (interrupted) {
-    printf ("\t*** interrupted source %s\n", fname);
-  }
-  FREE (fname);
-  if (interrupted) {
-    RETURN (0);
-  }
-  RETURN (1);
-}
-
 RET_TYPE process_initialize (ARG_LIST)
 {
   STD_ARG("Usage: initialize\n");
@@ -1837,15 +1759,8 @@ RET_TYPE process_channel (ARG_LIST)
   RETURN (1);
 }
 
-#ifdef USE_SCM
 
 int process_injectfile (int isLoop, int argc, char **argv)
-
-#else
-
-void process_injectfile (int isLoop)
-  
-#endif
 {
   STD_ARG("Usage: [loop-]injectfile channelname file\n");
   char *sChanName, *sFileName;
@@ -1862,14 +1777,7 @@ void process_injectfile (int isLoop)
   RETURN (1);
 }
 
-#ifdef USE_SCM
-
 int process_expectfile (int isLoop, int argc, char **argv)
-
-#else
-
-void process_expectfile (int isLoop)
-#endif  
 {
   STD_ARG("Usage: [loop-]expectfile channelname file\n");
   char *sChanName, *sFileName;
@@ -2094,8 +2002,6 @@ static RET_TYPE process_exit_on_warn (ARG_LIST)
   RETURN (1);
 }
 
-#ifdef USE_SCM
-
 static int process_injectfile0 (int argc, char **argv)
 {
   return process_injectfile (0, argc, argv);
@@ -2115,30 +2021,6 @@ static int process_expectfile1 (int argc, char **argv)
 {
   return process_expectfile (1, argc, argv);
 }
-
-#else 
-
-static void process_injectfile0 (void)
-{
-  process_injectfile (0);
-}
-
-static void process_injectfile1 (void)
-{
-  process_injectfile (1);
-}
-
-static void process_expectfile0 (void)
-{
-  process_expectfile (0);
-}
-
-static void process_expectfile1 (void)
-{
-  process_expectfile (1);
-}
-
-#endif
 
 /*
  *************************************************************************
@@ -2190,22 +2072,11 @@ static char *read_input_line (FILE *fp, char *prompt, char *buf, int len)
 static RET_TYPE process_help (ARG_LIST);
 
 /* --- Standard command processing --- */
-struct Command {
-    char *name;
-    char *help;
-#ifdef USE_SCM
-    int (*f) (int argc, char **argv);
-#else
-    void (*f) (void);
-#endif  
-} Cmds[] = {
+struct LispCliCommand Cmds[] = {
 
   { NULL, "General", NULL },
 
-  { "help", "help - display this message", process_help },
-  { "exit", "exit - terminate", NULL },
   { "initialize", "initialize - initialize the simulation", process_initialize },
-  { "source", "source <file> - read in a script file", process_source },
   { "mode", "mode reset|run - set running mode", process_mode },
   { "random", "random [min max] - random timings", process_random },
   { "random_seed", "random_seed seed - set random number seed", process_random_seed },
@@ -2237,9 +2108,7 @@ struct Command {
 
   { "set", "set <n> 0|1|X - set <n> to specified value", process_set },
   { "get", "get <n> - get value of node <n>", process_get },
-#ifdef USE_SCM
   { "sget", "sget <n> - get value of node <n>, return value to scm", process_sget },
-#endif
   { "assert", "assert <n> <v> - assert that <n> is <v>", process_assert },
   { "uget", "uget <n> - get value of node <n> but report its canonical name", process_uget },
   { "alias", "alias <n> - list aliases for <n>", process_alias },
@@ -2267,161 +2136,6 @@ struct Command {
   { "dumpfile", "dumpfile <name> <file> - dump channel output to file", process_dumpfile }
 };
 
-static RET_TYPE process_help (ARG_LIST)
-{
-  STD_ARG("Usage: help\n");
-  int i;
-  
-  CHECK_TRAILING(usage);
-  
-  for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
-    if (!Cmds[i].name) {
-      printf ("\n== %s ==\n", Cmds[i].help);
-    }
-    else {
-      printf ("   %s\n", Cmds[i].help);
-    }
-  }
-  RETURN (1);
-}
-
-
-#ifdef USE_SCM
-
-RET_TYPE dispatch_command (ARG_LIST)
-{
-  int i;
-  for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
-    if (!Cmds[i].name) continue;
-    if (strcmp (Cmds[i].name, argv[0]) == 0) {
-      return (*Cmds[i].f)(argc, argv);
-    }
-  }
-  printf ("Unknown command name `%s'\n", argv[0]);
-  return 0;
-}
-
-int LispGetReturnInt (void)
-{
-  return lisp_return_value;
-}
-
-int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
-{
-  int i;
-  if (echo_cmd) {
-    printf ("[cmd]");
-    for (i=0; i < argc; i++) {
-      printf (" %s", argv[i]);
-    }
-    printf ("\n");
-  }
-  return dispatch_command (argc, argv);
-}
-
-#endif
-
-void do_command (char *s)
-{
-  char *t;
-  int i;
-  A_DECL (char *, args);
-  A_INIT (args);
-
-  t = strtok (s, " \t");
-  if (!t) return;
-  if (strcmp (t, "#") == 0) return;
-  if (strcmp (t, "quit") == 0 || strcmp (t, "exit") == 0) {
-    t = strtok (NULL, " \t");
-    if (t && (strcmp (t, "#") != 0)) {
-      printf ("Trailing garbage ignored, terminating anyway\n");
-    }
-    stop_trace ();
-    exit (0);
-  }
-
-#ifdef USE_SCM
-  A_NEW (args, char *);
-  A_NEXT (args) = t;
-  A_INC (args);
-  do {
-    t = strtok (NULL, " \t");
-    if (t) {
-      A_NEW (args, char *);
-      A_NEXT (args) = t;
-      A_INC (args);
-    }
-  } while (t);
-
-  LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
-  //dispatch_command (A_LEN (args), args);
-  return;
-  
-#else  
-  for (i=0; i < sizeof (Cmds)/sizeof (Cmds[0]); i++) {
-    if (!Cmds[i].name) continue;
-    if (strcmp (Cmds[i].name, s) == 0) {
-      (*Cmds[i].f)();
-      return;
-    }
-  }
-  printf ("Unknown command name `%s'\n", s);
-#endif  
-}
-
-
-/*
- *  Main parsing loop
- */
-void handle_user_input (FILE *fp)
-{
-  char buf[10240];
-  char *s, *t;
-  double tm;
-
-  while ((s = read_input_line (fp, PROMPT, buf, 10240))) {
-    if (interrupted) {
-      if (flist) {
-	return;
-      }
-      else {
-	clr_interrupt ();
-	P->flags &= ~(PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING);
-      }
-    }
-    else {
-      if (P->flags & PRS_STOPPED_ON_WARNING) {
-	if (exit_on_warn) {
-	  printf ("*** Exited on warning.\n");
-	  stop_trace ();
-	  exit (2);
-	}
-	if (flist) {
-	  return;
-	}
-	else {
-	  clr_interrupt (); 
-	  P->flags &= ~(PRS_STOP_SIMULATION|PRS_STOPPED_ON_WARNING);
-	}
-      }
-    }
-    if (!*s) goto done;
-    if (profile_cmd) {
-      tm = cputime_msec ();
-    }
-    do_command (s);
-    if (profile_cmd) {
-      tm = cputime_msec ();
-      printf ("time = %g ms\n", tm);
-    }
-  done:
-    if (s != buf) {
-      free (s);
-    }
-    fflush (stdout);
-    fflush (stderr);
-  }
-}
 
 
 static void _init_chaninfo (PrsNode *n, void *cookie)
@@ -2510,10 +2224,18 @@ int main (int argc, char **argv)
   /* add channel info and tracing to all the nodes*/
   prsim_init_channels ();
 
-  handle_user_input (fp);
+  if (no_readline) {
+    LispCliInitPlain (PROMPT, Cmds, sizeof (Cmds)/sizeof (Cmds[0]));
+  } 
+  else {
+    LispCliInit (NULL, ".prsim_history", PROMPT, Cmds, sizeof (Cmds)/sizeof (Cmds[0]));
+  }
+  LispCliRun (fp);
   fclose (fp);
 
   stop_trace ();
+
+  LispCliEnd ();
 
   return 0;
 }

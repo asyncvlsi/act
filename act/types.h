@@ -490,7 +490,18 @@ class Channel : public UserDef {
 
   int chanDir (ActId *id, int isinput);
   // given that the id has the direction specified, what is the
-  // channel direction?  1 = input, 2 = output, 3 = both
+  // channel direction?  1 = input, 2 = output, 3 = both, 0 = undetermined
+  // id is typically a fragmented piece of the channel, and hence this
+  // involves examining the channel methods as well.
+
+  int mustbeActiveSend ();
+  // return 1 if send has to be active, 0 if it has to be passive, -1
+  // if not determined by the channel type.
+
+  int mustbeActiveRecv ();
+  // return 1 if recv has to be active, 0 if it has to be passive, -1
+  // if not determined by the channel type.
+  
   
  private:
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS];

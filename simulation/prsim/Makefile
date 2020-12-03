@@ -31,14 +31,8 @@ SRCS=$(OBJS:.o=.c)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-#
-# If you want the mini-scm interpreter
-#
-DFLAGS+=-DUSE_SCM
-
-
-$(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND) $(SCMDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCM) -ledit -ldl
+$(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND) $(SCMCLIDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCMCLI) -ledit -ldl
 
 $(BIN2): $(LIB) $(OBJS2) $(LIBDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBCOMMON)

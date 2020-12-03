@@ -2904,18 +2904,21 @@ void initialize_print (FILE *fp, act_initialize *init)
   if (!init) return;
   if (!init->actions) return;
 
-  fprintf (fp, "Initialize {\n");
-  for (li = list_first (init->actions); li; li = list_next (li)) {
-    act_chp_lang_t *c = (act_chp_lang_t *)list_value (li);
-    fprintf (fp, " actions { ");
-    chp_print (fp, c);
-    fprintf (fp, " }");
-    if (list_next (li)) {
-      fprintf (fp, ";");
+  while (init) {
+    fprintf (fp, "Initialize {\n");
+    for (li = list_first (init->actions); li; li = list_next (li)) {
+      act_chp_lang_t *c = (act_chp_lang_t *)list_value (li);
+      fprintf (fp, " actions { ");
+      chp_print (fp, c);
+      fprintf (fp, " }");
+      if (list_next (li)) {
+	fprintf (fp, ";");
+      }
+      fprintf (fp, "\n");
     }
-    fprintf (fp, "\n");
+    fprintf (fp, "}\n");
+    init = init->next;
   }
-  fprintf (fp, "}\n");
 }
   
 act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
@@ -2935,6 +2938,7 @@ act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
       list_append (ret->actions, chp_expand (c, ns, s));
     }
   }
+  ret->next = initialize_expand (init->next, ns, s);
   return ret;
 }
 

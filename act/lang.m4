@@ -1839,6 +1839,7 @@ lang_initialize[ActBody *]: "Initialize" "{" { action_items ";" }* "}"
     act_initialize *init;
     NEW (init, act_initialize);
     init->actions = $3;
+    init->next = NULL;
     return new ActBody_Lang (init);
 }}
 ;

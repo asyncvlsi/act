@@ -19,15 +19,16 @@
 #
 #-------------------------------------------------------------------------
 LIB=libactscm_$(EXT).a
-TARGETLIBS=$(LIB)
+LIB2=libactscmcli_$(EXT).a
+TARGETLIBS=$(LIB) $(LIB2)
 
-TARGETINCS=lisp.h
+TARGETINCS=lisp.h lispCli.h
 
 OBJSC=lispA-Z.o lispArith.o lispEval.o lispFrame.o \
 	lispGC.o lispIO.o lispBuiltin.o lispMain.o lispParse.o \
 	lispPrint.o lispString.o lispTrace.o lispPath.o
 
-OBJS=$(OBJSC)
+OBJS=$(OBJSC) lispCli.o
 
 SRCS=$(OBJSC:.o=.c)
 
@@ -35,9 +36,13 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 install_conf: scm-install
 
-$(LIB): $(OBJS)
-	ar ruv $(LIB) $(OBJS)
+$(LIB): $(OBJSC)
+	ar ruv $(LIB) $(OBJSC)
 	$(RANLIB) $(LIB)
+
+$(LIB2): lispCli.o
+	ar ruv $(LIB2) lispCli.o
+	$(RANLIB) $(LIB2)
 
 scm-install: default.scm
 	@if [ ! -d $(INSTALLLIB)/scm ]; then mkdir $(INSTALLLIB)/scm; fi

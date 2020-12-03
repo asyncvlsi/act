@@ -2905,3 +2905,36 @@ int Channel::chanDir (ActId *id, int isinput)
   
   return dir;
 }
+
+
+int Channel::mustbeActiveSend ()
+{
+  if (geteMethod (ACT_METHOD_SEND_PROBE) &&
+      geteMethod (ACT_METHOD_RECV_PROBE)) {
+    fprintf (stderr, "Channel type: %s", getName());
+    fatal_error ("Channel cannot define probes on both send and receive");
+  }
+  if (geteMethod (ACT_METHOD_SEND_PROBE)) {
+    return 0;
+  }
+  else if (geteMethod (ACT_METHOD_RECV_PROBE)) {
+    return 1;
+  }
+  else {
+    return -1;
+  }
+}
+
+int Channel::mustbeActiveRecv ()
+{
+  int x = mustbeActiveSend();
+  if (x == 0) {
+    return 1;
+  }
+  else if (x == 1) {
+    return 0;
+  }
+  else {
+    return x;
+  }
+}

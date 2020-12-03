@@ -1201,7 +1201,6 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   UserDef *ux;
   act_prs *p;
   act_chp *c;
-  act_prs *old;
   act_spec *spec;
   act_sizing *sz;
   act_initialize *init;
@@ -1226,6 +1225,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   switch (t) {
   case ActBody_Lang::LANG_PRS:
     if (!in_refinement) {
+      act_prs *old;
       p = prs_expand ((act_prs *)lang, ns, s);
       if ((old = all_lang->getprs())) {
 	while (old->next) {
@@ -1237,9 +1237,6 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	all_lang->setprs (p);
       }
     }
-    else {
-      all_lang->setprs (NULL);
-    }
     break;
 
   case ActBody_Lang::LANG_CHP:
@@ -1250,11 +1247,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	act_error_ctxt (stderr);
 	fatal_error ("Only one chp body permitted");
       }
-      //c->next = all_lang->getchp();
       all_lang->setchp (c);
-    }
-    else {
-      all_lang->setchp (NULL);
     }
     break;
     
@@ -1265,11 +1258,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	act_error_ctxt (stderr);
 	fatal_error ("Only one hse body permitted");
       }
-      //c->next = all_lang->gethse();
       all_lang->sethse (c);
-    }
-    else {
-      all_lang->sethse (NULL);
     }
     break;
 
@@ -1311,22 +1300,21 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	all_lang->setsizing (sz);
       }
     }
-    else {
-      all_lang->setsizing (NULL);
-    }
     break;
 
   case ActBody_Lang::LANG_INIT:
     if (!in_refinement) {
+      act_initialize *old;
       init = initialize_expand ((act_initialize *)lang, ns, s);
-      if (all_lang->getinit()) {
-	act_error_ctxt (stderr);
-	fatal_error ("Multiple Initialize { } blocks are not permitted.");
+      if ((old = all_lang->getinit())) {
+	while (old->next) {
+	  old = old->next;
+	}
+	old->next = init;
       }
-      all_lang->setinit (init);
-    }
-    else {
-      all_lang->setinit (NULL);
+      else {
+	all_lang->setinit (init);
+      }
     }
     break;
 
@@ -1342,9 +1330,6 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
       else {
 	all_lang->setdflow (dflow);
       }
-    }
-    else {
-      all_lang->setdflow (NULL);
     }
     break;
   }
