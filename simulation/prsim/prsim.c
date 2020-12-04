@@ -383,7 +383,7 @@ void del_watchpoint (PrsNode *n)
 
 #define GET_ARG(msg) do { if (iargc == argc) { printf ("%s", msg); return 0; } s = argv[iargc++]; } while (0)
 
-#define GET_ARG_INTRET(msg) do { if (iargc == argc) { printf ("%s", msg); lisp_return_value = -2; return 2; } s = argv[iargc++]; } while (0)
+#define GET_ARG_INTRET(msg) do { if (iargc == argc) { printf ("%s", msg); LispSetReturnInt (-2); return 2; } s = argv[iargc++]; } while (0)
 
 #define GET_ARGCOLON(msg) GET_ARG(msg)
 
@@ -391,7 +391,7 @@ void del_watchpoint (PrsNode *n)
 
 #define CHECK_TRAILING(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); return 0; } } while(0)
 
-#define CHECK_TRAILING_INTRET(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); lisp_return_value = -2; return 2; } } while(0)
+#define CHECK_TRAILING_INTRET(msg) do { if (iargc < argc && argv[iargc][0] != '#') { printf("%s", msg); LispSetReturnInt (-2); return 2; } } while(0)
 
 
 static char *match_string;
@@ -996,8 +996,6 @@ RET_TYPE process_set_principal (ARG_LIST)
 }
 
 
-static int lisp_return_value;
-
 /*
  *   get n
  */
@@ -1027,17 +1025,17 @@ int process_sget (int argc, char **argv)
   GET_ARG_INTRET(usage);
   n = prs_node (P, s);
   if (!n) {
-    lisp_return_value = -1;
+    LispSetReturnInt (-1);
     return 2;
   }
   if (prs_nodeval (n) == PRS_VAL_T) {
-    lisp_return_value = 1;
+    LispSetReturnInt (1);
   }
   else if (prs_nodeval (n) == PRS_VAL_F) {
-    lisp_return_value = 0;
+    LispSetReturnInt (0);
   }
   else {
-    lisp_return_value = 2;
+    LispSetReturnInt (2);
   }
   CHECK_TRAILING_INTRET(usage);
   return 2;

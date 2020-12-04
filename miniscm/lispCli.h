@@ -61,5 +61,11 @@ void LispCliEnd (void);
 */
 int LispCliRun (FILE *fp);
 
+/* 
+  Use to set int return value
+*/
+void LispSetReturnInt (int val);
+
+
 
 #endif /* __LISPCLI_H__ */

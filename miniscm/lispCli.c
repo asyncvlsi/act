@@ -317,6 +317,11 @@ static int dispatch_command (int argc, char **argv)
 }
 
 
+void LispSetReturnInt (int val)
+{
+  lisp_return_value = val;
+}
+
 int LispGetReturnInt (void)
 {
   return lisp_return_value;
