@@ -2165,18 +2165,7 @@ int main (int argc, char **argv)
   signal (SIGINT, signal_handler);
 
   read_line_init ();
-#ifdef USE_SCM
   LispInit ();
-
-  if (getenv ("ACT_HOME")) {
-    char *args[] = { "load-scm", "\"default.scm\"", NULL };
-    snprintf (buf, 10240, "%s/lib/scm", getenv ("ACT_HOME"));
-    LispSetVariable ("scm-library-path", buf);
-    LispEvaluate (2, args, 0);
-    snprintf (buf, 10240, "%s/lib", getenv ("ACT_HOME"));
-    LispSetVariable ("scm-dynamic-path", buf);
-  }
-#endif  
 
   names = NULL;
   opterr = 0;

@@ -139,7 +139,7 @@ LispEvaluate (int argc, char **argv, int inFile)
  */
 
 void
-LispInit ()
+LispInit (void)
 {
   extern LispObj *LispMainFrameObj;
 
@@ -155,6 +155,16 @@ LispInit ()
 
   //LispSetEdit ("*unknown*");
   LispInterruptExecution = 0;
+
+  if (getenv ("ACT_HOME")) {
+    char buf[10240];
+    char *args[] = { "load-scm", "\"default.scm\"", NULL };
+    snprintf (buf, 10240, "%s/lib/scm", getenv ("ACT_HOME"));
+    LispSetVariable ("scm-library-path", buf);
+    LispEvaluate (2, args, 0);
+    snprintf (buf, 10240, "%s/lib", getenv ("ACT_HOME"));
+    LispSetVariable ("scm-dynamic-path", buf);
+  }
 }
 
 
