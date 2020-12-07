@@ -30,6 +30,10 @@
 #ifndef __LISPCLI_H__
 #define __LISPCLI_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+  
 /*
   Interface to command-line interface
 */
@@ -67,5 +71,8 @@ int LispCliRun (FILE *fp);
 void LispSetReturnInt (int val);
 
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __LISPCLI_H__ */

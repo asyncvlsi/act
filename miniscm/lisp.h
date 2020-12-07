@@ -32,6 +32,10 @@
 #ifndef __LISP_H__
 #define __LISP_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif  
+
 /*
   Interface to the Lisp interpreter from the textio module
 */
@@ -50,6 +54,9 @@ extern int LispGetReturnInt (void);
 extern int LispInterruptExecution;
 
 
+#ifdef __cplusplus
+}
+#endif  
 
 #endif /* __LISP_H__ */
 
