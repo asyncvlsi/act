@@ -25,7 +25,7 @@ jobs:
        - checkout
        - run: |
           yum install -y 'dnf-command(config-manager)'
-          yum config-manager --set-enabled PowerTools -y
+          yum config-manager --set-enabled powertools -y
           yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
