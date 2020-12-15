@@ -944,3 +944,8 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   }
   return 0;
 }
+
+ActStatePass::~ActStatePass()
+{
+  /* free stuff */
+}

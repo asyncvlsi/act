@@ -50,6 +50,15 @@ SimDES::SimDES ()
   }
 }
 
+void SimDES::Init()
+{
+  for (int i=0;  i < SIM_TIME_SIZE; i++) {
+    SimDES::tm_offset[i] = 0;
+  }
+  SimDES::curtime = 0;
+  initialized_sim = 1;
+}
+
 /*
   Nothing to do here...
 */

@@ -145,6 +145,8 @@ class SimDES {
 
   /*-- simulation management --*/
 
+  static void Init();		// reset simulation time
+
   static Event *Run();		// run the simulation
 
   static Event *Advance(int n = 1); // run n events
