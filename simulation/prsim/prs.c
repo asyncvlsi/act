@@ -2469,6 +2469,7 @@ static PrsNode *canonical_name (PrsNode *n)
   PrsNode *r, *tmp;
 
   if (n->alias && n->alias->alias) {
+    /* XXX: this should not be needed */
     /* flatten tree */
     r = n;
     while (n->alias) {
