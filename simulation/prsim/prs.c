@@ -2657,6 +2657,7 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
   if (n2->intiming) {
     ihash_bucket_t *b;
     if (!n1->intiming) {
+      int found = 0;
       PrsTiming *pt;
       n1->intiming = 1;
       /* delete n2 from the timing hash table */
@@ -2665,14 +2666,17 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       pt = (PrsTiming *) b->v;
       if (pt->n[0] == n2) {
 	pt->n[0] = n1;
+	found = 1;
       }
-      else if (pt->n[1] == n2) {
-	pt->n[1] = n2;
+      if (pt->n[1] == n2) {
+	pt->n[1] = n1;
+	found = 1;
       }
-      else if (pt->n[2] == n2) {
+      if (pt->n[2] == n2) {
 	pt->n[2] = n1;
+	found = 1;
       }
-      else {
+      if (!found) {
 	fatal_error ("Timing data structure error");
       }
       b = ihash_add (p->timing, (long)n1);
@@ -2720,6 +2724,7 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
 	Assert (k != 3, "What?");
       }
     }
+    ihash_delete (p->timing, (long)n2);
   }
   
   for (i=0; i < 2; i++) {
