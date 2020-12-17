@@ -276,6 +276,7 @@ static struct Hashtable *vH = NULL;	/* vector hash */
 struct watchlist {
   PrsNode *n;
   int bp:1;			/* 1 if also a breakpoint */
+  int alias:1;			/* show all aliases */
   Vector *v;
   struct watchlist *next;
 };
@@ -318,20 +319,22 @@ struct watchlist *in_watchlist (PrsNode *n)
 }
 
 static
-void add_watchpoint (PrsNode *n)
+struct watchlist *add_watchpoint (PrsNode *n)
 {
   struct watchlist *l;
 
   if ((l = in_watchlist (n)))
-    return;
+    return l;
   
   MALLOC (l, struct watchlist, 1);
   l->v = NULL;
   l->n = n;
+  l->alias = 0;
   l->next = wlist;
   wlist = l;
   l->bp = n->bp;
   n->bp = 1;
+  return l;
 }
 
 static 
@@ -1239,19 +1242,25 @@ RET_TYPE process_cycle (ARG_LIST)
     if (tracing) add_transition (n, m);
 
     if (n->bp) {
-      if (in_watchlist (n)) {
-	printf ("\t%10llu %s : %c", P->time, prs_nodename (P,n),
-		prs_nodechar(prs_nodeval(n)));
-	if (m) {
-	  printf ("  [by %s:=%c%s]", prs_nodename (P,m), 
-		  prs_nodechar (prs_nodeval (m)),
-		  seu ? " *seu*" : "");
-	}
-        if (!flag && CHINFO(n)->inVector) {
-	  printf (" vec ");
-	  fprint_vector (stdout, (Vector *)CHINFO(n)->inVector);
-        }
-	printf ("\n");
+      struct watchlist *l;
+      if ((l = in_watchlist (n))) {
+	RawPrsNode *r;
+	r = (RawPrsNode *)n;
+	do {
+	  printf ("\t%10llu %s : %c", P->time, prs_rawnodename (P,r),
+		  prs_nodechar(prs_nodeval(n)));
+	  if (m) {
+	    printf ("  [by %s:=%c%s]", prs_nodename (P,m), 
+		    prs_nodechar (prs_nodeval (m)),
+		    seu ? " *seu*" : "");
+	  }
+	  if (!flag && CHINFO(n)->inVector) {
+	    printf (" vec ");
+	    fprint_vector (stdout, (Vector *)CHINFO(n)->inVector);
+	  }
+	  printf ("\n");
+	  r = r->alias_ring;
+	} while (l->alias && (r != (RawPrsNode *)n));
       }
       // This is a channel's enable
       if (CHINFO(n)->hasChans) {
@@ -1477,6 +1486,28 @@ RET_TYPE process_watch (ARG_LIST)
   }
   CHECK_TRAILING(usage);
   add_watchpoint (n);
+  RETURN (1);
+}
+
+RET_TYPE process_watch_alias (ARG_LIST)
+{
+  STD_ARG("Usage: watch_alias node\n");
+  PrsNode *n;
+  struct watchlist *l;
+  
+  GET_ARG(usage);
+  n = prs_node (P, s);
+  if (!n) {
+    printf ("Node `%s' not found\n", s);
+    RETURN (0);
+  }
+  if (n->bp) {
+    printf ("Node `%s' already in a breakpoint/watchpoint\n", s);
+    RETURN (0);
+  }
+  CHECK_TRAILING(usage);
+  l = add_watchpoint (n);
+  l->alias = 1;
   RETURN (1);
 }
 
@@ -2095,6 +2126,7 @@ struct LispCliCommand Cmds[] = {
   { "advance", "advance <n> - run for <n> units of simulation time", process_advance },
   { "cycle", "cycle [<n>] - run simulation, and stop if <n> changes", process_cycle },
   { "watch", "watch <n> - add watchpoint for <n>", process_watch },
+  { "watch_alias", "watch_alias <n> - watch, except show all aliases", process_watch_alias },
   { "unwatch", "unwatch <n> - delete watchpoint for <n>", process_unwatch },
   { "watchall", "watchall - watch all nodes", process_watchall },
   { "breakpt", "breakpt <n> - set a breakpoint on <n>", process_break },
