@@ -112,12 +112,18 @@ public:
 
   stateinfo_t *getStateInfo (Process *p);
 
-  /* type: 0 = bool, 1 = int, 2 = chan */
-  /* return 0 on error */
-  int getTypeOffset (stateinfo_t *si,
-		     act_connection *c,
-		     int *offset,
-		     int *type);
+  /* type: 0 = bool, 1 = int, 2 = chan-in, 3 = chan-not-in */
+  
+  /* return 0 on error, 1 on success */
+  int getTypeOffset (stateinfo_t *si, act_connection *c,
+		     int *offset, int *type, int *width);
+  
+  int getTypeOffset (Process *p, act_connection *c,
+		     int *offset, int *type, int *width) {
+    return getTypeOffset (getStateInfo (p), c, offset, type, width);
+  }
+
+  chp_offsets getGlobals() { return _globals; }
 
 private:
   void *local_op (Process *p, int mode = 0);
@@ -126,10 +132,16 @@ private:
   stateinfo_t *countLocalState (Process *p);
   void printLocal (FILE *fp, Process *p);
   int _black_box_mode;
+
+  stateinfo_t *_root_si;	// top-level state info
+  chp_offsets _globals;
   
   ActBooleanizePass *bp;
   FILE *_fp;
 };
+
+
+
 
 
 #endif /* __ACT_PASS_STATE_H__ */

@@ -861,7 +861,99 @@ void ActStatePass::free_local (void *v)
 
 int ActStatePass::run (Process *p)
 {
-  return ActPass::run (p);
+  int res = ActPass::run (p);
+
+  /*-- set root stateinfo for global variables --*/
+  _root_si = getStateInfo (p);
+
+  /*-- compute global sizes and add mapping to top-level state table --*/
+  _globals.bools = 0;
+  _globals.ints = 0;
+  _globals.chans = 0;
+
+  act_boolean_netlist_t *nl = _root_si->bnl;
+
+  for (int i=0; i < A_LEN (nl->used_globals); i++) {
+    act_booleanized_var_t *v;
+    act_dynamic_var_t *dv;
+    ihash_bucket_t *b;
+
+    b = ihash_lookup (nl->cdH, (long)nl->used_globals[i]);
+    if (b) {
+      dv = (act_dynamic_var_t *) b->v;
+      if (dv->isint) {
+	_globals.ints += dv->a->size();
+      }
+      else {
+	_globals.bools += dv->a->size();
+      }
+    }
+    else {
+      b = ihash_lookup (nl->cH, (long)nl->used_globals[i]);
+      Assert (b, "What?");
+      v = (act_booleanized_var_t *) b->v;
+      Assert (v, "What?");
+      if (v->ischan) { 
+	_globals.chans++;
+      }
+      else if (v->isint) {
+	_globals.ints++;
+      }
+      else {
+	_globals.bools++;
+      }
+    }
+  }
+
+  /*-- add state info maps for globals --*/
+  chp_offsets idx;
+  idx.bools = 0;
+  idx.ints = 0;
+  idx.chans = 0;
+  
+  for (int i=0; i < A_LEN (nl->used_globals); i++) {
+    act_booleanized_var_t *v;
+    act_dynamic_var_t *dv;
+    ihash_bucket_t *b;
+
+    b = ihash_lookup (nl->cdH, (long)nl->used_globals[i]);
+    if (b) {
+      dv = (act_dynamic_var_t *) b->v;
+      if (dv->isint) {
+	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b->i = idx.ints - _globals.ints;
+	idx.ints += dv->a->size();
+      }
+      else {
+	b = ihash_add (_root_si->map, (long)nl->used_globals[i]);
+	b->i = idx.bools - _globals.bools;
+	idx.bools += dv->a->size();
+      }
+    }
+    else {
+      b = ihash_lookup (nl->cH, (long)nl->used_globals[i]);
+      Assert (b, "What?");
+      v = (act_booleanized_var_t *) b->v;
+      Assert (v, "What?");
+      if (v->ischan) {
+	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b->i = idx.chans - _globals.chans;
+	idx.chans++;
+      }
+      else if (v->isint) {
+	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b->i = idx.ints - _globals.ints;
+	idx.ints++;
+      }
+      else {
+	b = ihash_add (_root_si->map, (long)nl->used_globals[i]);
+	b->i = idx.bools - _globals.bools;
+	idx.bools++;
+      }
+    }
+  }
+  
+  return res;
 }
 
 void ActStatePass::Print (FILE *fp, Process *p)
@@ -909,41 +1001,124 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
 }
 
 
-
+/*
+ *------------------------------------------------------------------------
+ *
+ *  Returns offset for connection within the state context
+ *
+ *    Non-negative offset  : local state offset
+ *    Even negative offset : global variable; index is (-off)/2 - 1
+ *    Odd negative offset  : port; index is (-off+1)/2 - 1
+ *
+ * Returns: 1 on success, 0 on error
+ * Side effects: none
+ *
+ *------------------------------------------------------------------------
+ */
 int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
-				 int *offset, int *type)
+				 int *offset, int *type, int *width)
 {
   ihash_bucket_t *b;
 
-  Assert (si && c && offset && type, "What?");
+  if (!si) {
+    return 0;
+  }
 
-  b = ihash_lookup (si->map, (long)c);
+  Assert (si && c && offset, "What?");
+
+  /*-- check if this is a dynamic array --*/
+  b = ihash_lookup (si->bnl->cdH, (long)c);
   if (b) {
-    *type = 0;
+    act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
+    if (dv->isint) {
+      b = ihash_lookup (si->chpmap, (long)c);
+      if (type) {
+	*type = 1;
+      }
+      if (width) {
+	*width = dv->width;
+      }
+    }
+    else {
+      b = ihash_lookup (si->map, (long)c);
+      if (type) {
+	*type = 0;
+      }
+      if (width) {
+	*width = 1;
+      }
+    }
+    Assert (b, "What?");
     *offset = b->i;
     return 1;
   }
-  b = ihash_lookup (si->chpmap, (long)c);
-  if (b) {
-    act_booleanized_var_t *v;
 
-    *offset = b->i;
-    b = ihash_lookup (si->bnl->cH, (long)c);
-    Assert (b, "What?");
-    v = (act_booleanized_var_t *)b->v;
+  /*-- otherwise... --*/
+
+  b = ihash_lookup (si->bnl->cH, (long)c);
+  Assert (b, "No connection in conn hash?");
+  act_booleanized_var_t *v =  (act_booleanized_var_t *)b->v;
+
+  /* set type and width */
+  if (type) {
     if (v->ischan) {
-      *type = 2;
+      if (v->input) {
+	*type = 2;
+      }
+      else {
+	*type = 3;
+      }
+      if (width) {
+	*width = v->width;
+      }
     }
     else if (v->isint) {
       *type = 1;
+      if (width) {
+	*width = v->width;
+      }
     }
     else {
       *type = 0;
+      if (width) {
+	*width = 1;
+      }
     }
+  }
+
+  int glob;
+  if (c->isglobal()) {
+    glob = 1;
+    si = _root_si;
+  }
+  else {
+    glob = 0;
+  }
+
+  b = ihash_lookup (si->map, (long)c);
+  if (!b) {
+    b = ihash_lookup (si->chpmap, (long)c);
+  }
+  if (!b) {
+    return 0;
+  }
+
+  if (glob) {
+    /* global variables get even negative IDs */
+    Assert (b->i < 0, "Should have already been negative!");
+    *offset = 2*b->i;
     return 1;
   }
-  return 0;
-}
+
+  if (b->i < 0) {
+    /* local port index: odd negative index */
+    *offset = 2*b->i + 1;
+  }
+  else {
+    *offset = b->i;
+  }
+  return 1;
+}    
 
 ActStatePass::~ActStatePass()
 {

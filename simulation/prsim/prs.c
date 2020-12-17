@@ -2468,6 +2468,22 @@ static PrsNode *canonical_name (PrsNode *n)
 {
   PrsNode *r, *tmp;
 
+  if (n->alias && n->alias->alias) {
+    /* flatten tree */
+    r = n;
+    while (n->alias) {
+      n = n->alias;
+    }
+    if (n != r) {
+      while (r->alias) {
+	tmp = r->alias;
+	r->alias = n;
+	r = tmp;
+      }
+    }
+    return n;
+  }
+
   Assert (!n->alias || !n->alias->alias, "What on earth");
   
   if (n->alias) {
@@ -2477,20 +2493,6 @@ static PrsNode *canonical_name (PrsNode *n)
   else {
     return n;
   }
-
-#if 0
-  r = n;
-  while (n->alias)
-    n = n->alias;
-  if (n != r) {
-    while (r->alias) {
-      tmp = r->alias;
-      r->alias = n;
-      r = tmp;
-    }
-  }
-  return n;
-#endif
 }
 
 static void canonicalize_hashtable (Prs *p)
@@ -2515,11 +2517,12 @@ static void canonicalize_timing (Prs *p)
       int k;
 
       for (k=0; k < 3; k++) {
-	Assert (pt->n[k] == canonical_name (pt->n[k]), "What?");
-	if (UNSTAB_NODE (p, pt->n[0])) {
-	  fatal_error ("Node `%s' on LHS of timing constraint can be unstable",
+	//Assert (pt->n[k] == canonical_name (pt->n[k]), "What?");
+	pt->n[k] = canonical_name (pt->n[k]);
+      }
+      if (UNSTAB_NODE (p, pt->n[0])) {
+	fatal_error ("Node `%s' on LHS of timing constraint can be unstable",
 		       prs_nodename (p, pt->n[0]));
-	}
       }
       if (pt->n[1] == pt->n[2]) {
 	fprintf (stderr, "Duplicate node `%s'\n", prs_nodename(p,pt->n[1]));

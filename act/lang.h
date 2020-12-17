@@ -425,6 +425,15 @@ public:
 
   act_languages *Expand (ActNamespace *ns, Scope *s);
 
+  /*
+    Return 1 if the language block has some circuit description
+    language 
+  */
+  int haveCktLang () {
+    if (chp || hse || prs || dflow) return 1;
+    return 0;
+  }
+
  private:
   act_chp *chp, *hse;
   act_prs *prs;
