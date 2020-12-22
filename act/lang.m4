@@ -1915,6 +1915,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     list_t *l;
     NEW (e, act_dataflow_element);
     e->u.splitmerge.guard = $2;
+    e->u.splitmerge.nondetctrl = NULL;
     if ($2) {
       if (act_type_var ($0->scope, $2, NULL) != T_CHAN) {
 	$e("Identifier in the condition of a dataflow expression must be of channel type");
@@ -1949,7 +1950,9 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     }
     else {
       if (list_length ($6) != 1) {
-	$E("RHS has to be one item for a merge");
+	if (!(list_length ($6) == 2 && $0->non_det)) {
+	  $E("RHS has too many channels for a merge");
+	}
       }
       l = $4;
       if ($2) {
@@ -1959,12 +1962,24 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
       if (!e->u.splitmerge.single) {
 	$E("Can't merge to `*'");
       }
+      if (list_length ($6) == 2) {
+	e->u.splitmerge.nondetctrl =
+	  (ActId *) list_value (list_next (list_first ($6)));
+      }
       list_free ($6);
     }
     if (act_type_var ($0->scope, e->u.splitmerge.single, NULL) != T_CHAN) {
       $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
       e->u.splitmerge.single->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    if (e->u.splitmerge.nondetctrl &&
+	act_type_var ($0->scope, e->u.splitmerge.single, NULL) != T_CHAN) {
+      $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
+      fprintf ($f, "   ");
+      e->u.splitmerge.nondetctrl->Print ($f);
       fprintf ($f, "\n");
       exit (1);
     }

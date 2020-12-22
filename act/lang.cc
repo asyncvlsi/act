@@ -3024,6 +3024,10 @@ void dflow_print (FILE *fp, act_dataflow *d)
       }
       fprintf (fp, " -> ");
       e->u.splitmerge.single->Print (fp);
+      if (e->u.splitmerge.nondetctrl) {
+	fprintf (fp, ", ");
+	e->u.splitmerge.nondetctrl->Print (fp);
+      }
       break;
       
     default:
@@ -3086,6 +3090,12 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
 	}
       }
       f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
+      if (e->u.splitmerge.nondetctrl) {
+	f->u.splitmerge.nondetctrl = e->u.splitmerge.nondetctrl->Expand (ns, s);
+      }
+      else {
+	f->u.splitmerge.nondetctrl = NULL;
+      }
       break;
 
     default:

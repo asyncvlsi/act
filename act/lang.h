@@ -355,6 +355,8 @@ typedef struct  {
       ActId **multi;		// set of channels
       int nmulti;
       ActId *single;		// single channel
+      ActId *nondetctrl;	// channel for non-deterministic
+				// control out
     } splitmerge;
   } u;
 } act_dataflow_element;
@@ -429,7 +431,7 @@ public:
     Return 1 if the language block has some circuit description
     language 
   */
-  int haveCktLang () {
+  int hasCktLang () {
     if (chp || hse || prs || dflow) return 1;
     return 0;
   }
