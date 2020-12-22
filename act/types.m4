@@ -124,22 +124,34 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" wpint_expr ">" ]
     return $0->tf->NewEnum ($0->scope, d, $4);
 }};
 
-chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")"
+chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")" [ chan_dir ]
 {{X:
     ActRet *r;
     Type::direction d;
     InstType *ret;
     
     if (OPT_EXISTS ($2)) {
+      if (OPT_EXISTS ($6)) {
+	$E("Direction flags can only be specified once");
+      }
       r = OPT_VALUE ($2);
       $A(r->type == R_DIR);
       d = r->u.dir;
       FREE (r);
     }
     else {
-      d = Type::NONE;
+      if (OPT_EXISTS ($6)) {
+	r = OPT_VALUE ($6);
+	$A(r->type == R_DIR);
+	d = r->u.dir;
+	FREE (r);
+      }
+      else {
+	d = Type::NONE;
+      }
     }
     OPT_FREE ($2);
+    OPT_FREE ($6);
     InstType *t = $4;
 
     if (!TypeFactory::isDataType (t)) {
