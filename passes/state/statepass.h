@@ -125,6 +125,32 @@ public:
 
   chp_offsets getGlobals() { return _globals; }
 
+  int isGlobalOffset (int off) {
+    if (off >= 0) { return 0; }
+    off = -off;
+    if (off & 1) { return 0; }
+    return 1;
+  }
+
+  int isPortOffset (int off) {
+    if (off >= 0) { return 0; }
+    off = -off;
+    if (off & 1) { return 1; }
+    return 0;
+  }
+    
+  int portIdx (int off) {
+    Assert (isPortOffset (off), "What?");
+    off = -off;
+    return (off + 1)/2 - 1;
+  }
+
+  int globalIdx (int off) {
+    Assert (isGlobalOffset (off), "What?");
+    off = -off;
+    return off/2 - 1;
+  }
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
