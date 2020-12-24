@@ -1,0 +1,13 @@
+pint A = 6;
+pint B = 20;
+
+defproc test()
+{
+  bool a, b;
+  prs {
+    a<A,B> -> b-
+    ~a<A,B> -> b+
+  }
+}
+
+test t;

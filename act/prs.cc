@@ -308,7 +308,9 @@ static act_prs_expr_t *atom (LFILE *l)
       }
       e->u.v.sz = sz;
       if (file_have (l, COMMA)) {
-	if (file_have (l, f_id)) {
+	if (file_sym (l) == f_id &&
+	    (act_dev_string_to_value (file_tokenstring (l)) != -1)) {
+	  file_mustbe (l, f_id);
 	  sz->flavor = act_dev_string_to_value (file_prev (l));
 	  if (sz->flavor == -1) {
 	    act_parse_seterr (l, STD_ERRMSG ": unknown transistor flavor");
