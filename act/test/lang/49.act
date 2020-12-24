@@ -1,0 +1,12 @@
+defproc foo(bool x, y)
+{
+  bool w;
+  prs {
+   x <5,3,lvt> -> x-
+   w -> x-
+
+   passn<5,4,lvt>(x,x,y)
+  }
+}
+
+foo f;

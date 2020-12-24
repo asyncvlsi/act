@@ -162,6 +162,7 @@ typedef struct {
   /* sizing */
   act_sizing *sizing_info;
   list_t *sz_loop_stack;
+  int skip_id_check;
 
   /* special return value */
   int ptype_expand;

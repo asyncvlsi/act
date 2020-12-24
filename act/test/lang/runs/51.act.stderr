@@ -1,0 +1,2 @@
+ERROR: File `51.act', line 8, col 15
+	The identifier `lvi' does not exist in the current scope

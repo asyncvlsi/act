@@ -1282,7 +1282,7 @@ bool_or_int_expr_id[ActId *]: expr_id
       < width , length, flavor : somethingelse >
 
 */
-size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] [ ";" wpint_expr ] ">"
+size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_flav_expr ] [ "," ID ] [ ";" wpint_expr ] ">"
 {{X:
     act_size_spec_t *s;
     
@@ -1299,6 +1299,19 @@ size_spec[act_size_spec_t *]: "<" wnumber_expr [ "," wnumber_expr ] [ "," ID ] [
       $A(r->type == R_EXPR);
       s->l = r->u.exp;
       FREE (r);
+
+      if (s->l->type == E_VAR) {
+	ActId *tmp = (ActId *)s->l->u.e.l;
+	if (!tmp->Rest() && !tmp->arrayInfo() &&
+	    (act_dev_string_to_value (tmp->getName()) != -1)) {
+	  s->flavor = act_dev_string_to_value (tmp->getName());
+	  FREE (s->l);
+	  s->l = NULL;
+	  if (!OPT_EMPTY ($4)) {
+	    $E("Multiple device flavors?");
+	  }
+	}
+      }
     }
     OPT_FREE ($3);
 

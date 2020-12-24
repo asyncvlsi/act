@@ -217,6 +217,14 @@ expr_id[ActId *]: { base_id "." }*
       }
     }
 
+    if ($0->skip_id_check && list_length ($1) == 1 && ret->arrayInfo() == NULL) {
+      const char *tmp = ret->getName();
+      if (act_dev_string_to_value (tmp) != -1) {
+	$0->skip_id_check = 2;
+	return ret;
+      }
+    }
+
     s = $0->scope;
     /* step 1: check that ret exists in the current scope */
     it = s->FullLookup (cur->getName());
@@ -386,6 +394,43 @@ wnumber_expr[Expr *]: expr
     $0->column = $c;
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    if (!(tc & (T_INT|T_REAL))) {
+      $E("Expression must be of type int or real");
+    }
+    if (!(tc & T_PARAM)) {
+      $E("Expression must be of type pint or preal");
+    }
+    return e;
+}}
+;
+
+wnumber_flav_expr[Expr *]: expr
+{{X:
+    Expr *e;
+    int tc;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    if ($1->type == E_VAR) {
+      $0->skip_id_check = 1;
+    }
+    e = act_walk_X_expr ($0, $1);
+    if ($0->skip_id_check == 2) {
+      $0->skip_id_check = 0;
+      return e;
+    }
+    $0->skip_id_check = 0;
     $A($0->scope);
     tc = act_type_expr ($0->scope, e, NULL);
     if (tc == T_ERR) {

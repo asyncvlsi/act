@@ -12,11 +12,17 @@ int main (int argc, char **argv)
   if (argc > 3 || argc < 2 ||
       (argc == 3 
        && (strcmp (argv[1], "-e") != 0)
+       && (strcmp (argv[1], "-p") != 0)
        && (strcmp (argv[1], "-ep") != 0))) {
     fatal_error ("Usage: %s [-ep] <file.act>\n", argv[0]);
   }
   if (argc == 3) {
-    exp = 1;
+    if (strcmp (argv[1], "-p") != 0) {
+      exp = 1;
+    }
+    else {
+      exp = 0;
+    }
   }
   else {
     exp = 0;
@@ -25,7 +31,12 @@ int main (int argc, char **argv)
     pr = 1;
   }
   else {
-    pr = 0;
+    if (strcmp (argv[1], "-p") == 0) {
+      pr = 1;
+    }
+    else {
+      pr = 0;
+    }
   }
 
   a = new Act (argv[argc-1]);

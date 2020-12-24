@@ -390,6 +390,7 @@ Act::Act (const char *s)
 
   tr.sizing_info = NULL;
   tr.sz_loop_stack = list_new ();
+  tr.skip_id_check = 0;
 
   tr.emit_depend = Act::emit_depend;
   tr.in_cond = 0;
