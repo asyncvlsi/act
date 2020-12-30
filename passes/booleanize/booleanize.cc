@@ -60,16 +60,16 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
 static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
 					  act_connection *c)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
   if (!c) return NULL;
 
   c = c->primary();
 
-  b = ihash_lookup (n->cH, (long)c);
+  b = phash_lookup (n->cH, c);
   if (!b) {
     act_booleanized_var_t *v;
-    b = ihash_add (n->cH, (long)c);
+    b = phash_add (n->cH, c);
     v = var_alloc (n, c);
     b->v = v;
     if (c->isglobal()) {
@@ -97,13 +97,13 @@ static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
 static act_booleanized_var_t *raw_lookup (act_boolean_netlist_t *n,
 					  act_connection *c)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
   if (!c) return NULL;
 
   c = c->primary();
 
-  b = ihash_lookup (n->cH, (long)c);
+  b = phash_lookup (n->cH, c);
   if (!b) {
     return NULL;
   }
@@ -720,12 +720,12 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 static act_dynamic_var_t *get_dynamic_id (act_boolean_netlist_t *N,
 					  ActId *id)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   ActId *tmp = new ActId (id->getName());
   act_connection *c = tmp->Canonical (N->cur);
   delete tmp;
 
-  b = ihash_lookup (N->cdH, (long)c);
+  b = phash_lookup (N->cdH, c);
   if (b) {
     return (act_dynamic_var_t *)b->v;
   }
@@ -750,9 +750,9 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
 
   act_type_var (N->cur, tmp, &it);
 
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
-  b = ihash_lookup (N->cdH, (long)c);
+  b = phash_lookup (N->cdH, c);
   if (b) {
     delete tmp;
     delete it;
@@ -760,7 +760,7 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
   }
   else {
     act_dynamic_var_t *v;
-    b = ihash_add (N->cdH, (long)c);
+    b = phash_add (N->cdH, c);
     NEW (v, act_dynamic_var_t);
     v->id = c;
     v->aid = tmp;
@@ -1406,8 +1406,8 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
   N->p = proc;
   N->cur = cur;
   N->visited = 0;
-  N->cH = ihash_new (32);
-  N->cdH = ihash_new (4);
+  N->cH = phash_new (32);
+  N->cdH = phash_new (4);
   N->isempty = 1;
 
   
@@ -1456,11 +1456,11 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   /*--
     Check that dynamic bits are valid
     --*/
-  ihash_iter_t iter;
-  ihash_bucket_t *b;
-  ihash_iter_init (n->cdH, &iter);
+  phash_iter_t iter;
+  phash_bucket_t *b;
+  phash_iter_init (n->cdH, &iter);
   fail = 0;
-  while ((b = ihash_iter_next (n->cdH, &iter))) {
+  while ((b = phash_iter_next (n->cdH, &iter))) {
     act_dynamic_var_t *v;
     act_connection *c;
     ValueIdx *vx;
@@ -1521,8 +1521,8 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   }
 
   /*-- collect globals --*/
-  ihash_iter_init (n->cH, &iter);
-  while ((b = ihash_iter_next (n->cH, &iter))) {
+  phash_iter_init (n->cH, &iter);
+  while ((b = phash_iter_next (n->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
     if (!v->output) {
       /* if a channel isn't properly defined, no flags might be set
@@ -1724,8 +1724,8 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
 
   int bool_done = 0;
   int chp_done = 0;
-  ihash_bucket_t *b;
-  b = ihash_lookup (n->cH, (long)c);
+  phash_bucket_t *b;
+  b = phash_lookup (n->cH, c);
   if (b) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
     if (!v->used) {
@@ -2180,19 +2180,26 @@ void ActBooleanizePass::free_local (void *v)
 {
   act_boolean_netlist_t *n = (act_boolean_netlist_t *)v;
   int i;
-  ihash_bucket_t *b;
-  ihash_iter_t iter;
+  phash_bucket_t *b;
+  phash_iter_t iter;
   
   if (!n) return;
 
   Assert (n->cH, "Hmm");
 
-  ihash_iter_init (n->cH, &iter);
-  while ((b = ihash_iter_next (n->cH, &iter))) {
+  phash_iter_init (n->cH, &iter);
+  while ((b = phash_iter_next (n->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *) b->v;
     FREE (v);
   }
-  ihash_free (n->cH);
+  phash_iter_init (n->cdH, &iter);
+  while ((b = phash_iter_next (n->cdH, &iter))) {
+    act_dynamic_var_t *v = (act_dynamic_var_t *) b->v;
+    delete v->aid;
+    FREE (v);
+  }
+  phash_free (n->cH);
+  phash_free (n->cdH);
   A_FREE (n->ports);
   A_FREE (n->instports);
   A_FREE (n->nets);
@@ -2379,7 +2386,7 @@ void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
 act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
 						    act_connection *c)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
   if (!c) {
     return NULL;
@@ -2394,7 +2401,7 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
     c = c->primary();
   } while (c->parent);
   
-  if ((b = ihash_lookup (n->cdH, (long)c))) {
+  if ((b = phash_lookup (n->cdH, c))) {
     return (act_dynamic_var_t *) b->v;
   }
   return NULL;

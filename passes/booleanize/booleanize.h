@@ -113,8 +113,8 @@ typedef struct {
   unsigned int visited:1;	/* flags */
   unsigned int isempty:1;	/* check if this is empty! */
 
-  struct iHashtable *cH;   /* connection hash table (map to var)  */
-  struct iHashtable *cdH;  /* connection hash table for dynamic vars */
+  struct pHashtable *cH;   /* connection hash table (map to var)  */
+  struct pHashtable *cdH;  /* connection hash table for dynamic vars */
 
   A_DECL (struct netlist_bool_port, chpports);
   A_DECL (struct netlist_bool_port, ports);

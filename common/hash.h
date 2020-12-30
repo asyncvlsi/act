@@ -129,38 +129,49 @@ for (i = 0; i < h->size; i++)
 
 */
 
+#define phash_bucket_t ihash_bucket_t
+#define pHashtable  iHashtable
+#define phash_iter_t ihash_iter_t
+
 struct Hashtable  *hash_new (int sz);
 struct iHashtable  *ihash_new (int sz);
 struct cHashtable  *chash_new (int sz);
+#define phash_new ihash_new
 
 hash_bucket_t *hash_add (struct Hashtable *, const char *key);
 ihash_bucket_t *ihash_add (struct iHashtable *, long key);
 chash_bucket_t *chash_add (struct cHashtable *, void *key);
+#define phash_add(a,b) ihash_add((a),(unsigned long)(b))
 
 hash_bucket_t *hash_lookup (struct Hashtable *, const char *key);
 ihash_bucket_t *ihash_lookup (struct iHashtable *, long key);
 chash_bucket_t *chash_lookup (struct cHashtable *, void *key);
+#define phash_lookup(a,b) ihash_lookup((a),(unsigned long)(b))
 
 void hash_delete (struct Hashtable *, const char *key);
 void ihash_delete (struct iHashtable *, long key);
 void chash_delete (struct cHashtable *, void *key);
+#define phash_delete(a,b) ihash_delete((a),(unsigned long)(b))
 
 void hash_clear (struct Hashtable *); /* clears the hash table */
 void ihash_clear (struct iHashtable *);
 void chash_clear (struct cHashtable *);
+#define phash_clear ihash_clear  
 
 void hash_free (struct Hashtable *);
 void ihash_free (struct iHashtable *);
 void chash_free (struct cHashtable *);
-
+#define phash_free ihash_free
 
 void hash_iter_init (struct Hashtable *, hash_iter_t *i);
 void ihash_iter_init (struct iHashtable *, ihash_iter_t *i);
 void chash_iter_init (struct cHashtable *, chash_iter_t *i);
+#define phash_iter_init ihash_iter_init
 
 hash_bucket_t *hash_iter_next (struct Hashtable *, hash_iter_t *i);
 ihash_bucket_t *ihash_iter_next (struct iHashtable *, ihash_iter_t *i);
 chash_bucket_t *chash_iter_next (struct cHashtable *, chash_iter_t *i);
+#define phash_iter_next ihash_iter_next
 
   /* you can use this to build custom hash functions
 

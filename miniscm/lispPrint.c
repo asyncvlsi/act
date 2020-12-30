@@ -84,16 +84,16 @@ LispBufPrintName (char *s, char *t, int flag)
 
 static char obuf[128];
 //static HashTable PrintTable, GenTable;
-struct iHashtable *PrintTable, *GenTable;
+struct pHashtable *PrintTable, *GenTable;
 static int num_refs;
 
 static void
 _LispPrint (FILE *fp, LispObj *l)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   int i;
   if (LispInterruptExecution) return;
-  b = ihash_lookup (PrintTable, (long)l);
+  b = phash_lookup (PrintTable, l);
   if (b) {
     i = b->i;
     if (i) {
@@ -133,7 +133,7 @@ _LispPrint (FILE *fp, LispObj *l)
       _LispPrint (fp,CAR(s));
       while ((LTYPE(CDR(s)) == S_LIST) && LLIST(CDR(s))) {
 	fprintf (fp, " ");
-	b = ihash_lookup (PrintTable, (long)CDR(s));
+	b = phash_lookup (PrintTable, CDR(s));
 	if (b) {
 	  i = b->i;
 	  if (i) {
@@ -178,15 +178,15 @@ done:
 static void
 _LispGenTable (LispObj *l)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   int i;
   if (LispInterruptExecution) return;
-  b = ihash_lookup (GenTable, (long)l);
+  b = phash_lookup (GenTable, l);
   if (b) {
     b->i++;
     return;
   }
-  b = ihash_add (GenTable, (long)l);
+  b = phash_add (GenTable, l);
   b->i = 0;
   switch (LTYPE(l)) {
   case S_INT:
@@ -204,12 +204,12 @@ _LispGenTable (LispObj *l)
       s = LLIST(l);
       _LispGenTable (CAR(s));
       while ((LTYPE(CDR(s)) == S_LIST) && LLIST(CDR(s))) {
-	b = ihash_lookup (GenTable, (long)CDR(s));
+	b = phash_lookup (GenTable, CDR(s));
 	if (b) {
 	  b->i++;
 	  return;
 	}
-	b = ihash_add (GenTable, (long)CDR(s));
+	b = phash_add (GenTable, CDR(s));
 	b->i = 0;
 	s = LLIST(CDR(s));
 	_LispGenTable (CAR(s));
@@ -232,26 +232,26 @@ _LispGenTable (LispObj *l)
 void
 LispPrint (FILE *fp, LispObj *l)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   int i;
 
   num_refs = 0;
-  PrintTable = ihash_new (128);
-  GenTable = ihash_new (128);
+  PrintTable = phash_new (128);
+  GenTable = phash_new (128);
   
   _LispGenTable (l);
 
   for (i=0; i < GenTable->size; i++) {
     for (b = GenTable->head[i]; b; b = b->next) {
       if (b->i) {
-	ihash_bucket_t *u = ihash_add (PrintTable, b->key);
+	phash_bucket_t *u = phash_add (PrintTable, b->key);
 	u->i = 0;
       }
     }
   }
   _LispPrint (fp,l);
-  ihash_free (PrintTable);
-  ihash_free (GenTable);
+  phash_free (PrintTable);
+  phash_free (GenTable);
 }
 
 

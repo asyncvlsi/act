@@ -217,7 +217,7 @@ typedef struct {
   A_DECL(PrsExclRing *, exhi);	/* exclusive high ring */
   A_DECL(PrsExclRing *, exlo);	/* exclusive low ring */
 
-  struct iHashtable *timing;	/* timing constraints: map from
+  struct pHashtable *timing;	/* timing constraints: map from
 				   PrsNode * to head of timing list
 				*/
 

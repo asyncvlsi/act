@@ -336,7 +336,7 @@ static Prs *prs_lex_internal (LEX_T *L, char *names)
   p->energy = 0;
   A_INIT (p->exhi);
   A_INIT (p->exlo);
-  p->timing = ihash_new (4);
+  p->timing = phash_new (4);
 
   lex_getsym (L);
 
@@ -1831,10 +1831,10 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 
   /* n is the node that changed */
   if (n->intiming) {
-    ihash_bucket_t *b;
+    phash_bucket_t *b;
     PrsTiming *pt;
 
-    b = ihash_lookup (p->timing, (long)n);
+    b = phash_lookup (p->timing, n);
     Assert (b, "Hmm");
     pt = (PrsTiming *) b->v;
 
@@ -2510,7 +2510,7 @@ static void canonicalize_hashtable (Prs *p)
 static void canonicalize_timing (Prs *p)
 {
   int i;
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
   for (i=0; i < p->timing->size; i++)
     for (b = p->timing->head[i]; b; b = b->next) {
@@ -2656,13 +2656,13 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
     n1->excllo = 1;
   }
   if (n2->intiming) {
-    ihash_bucket_t *b;
+    phash_bucket_t *b;
     if (!n1->intiming) {
       int found = 0;
       PrsTiming *pt;
       n1->intiming = 1;
       /* delete n2 from the timing hash table */
-      b = ihash_lookup (p->timing, (long)n2);
+      b = phash_lookup (p->timing, n2);
       Assert (b, "Hmm...");
       pt = (PrsTiming *) b->v;
       if (pt->n[0] == n2) {
@@ -2680,17 +2680,17 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       if (!found) {
 	fatal_error ("Timing data structure error");
       }
-      b = ihash_add (p->timing, (long)n1);
+      b = phash_add (p->timing, n1);
       b->v = pt;
     }
     else {
       /* merge timing chains */
       PrsTiming *n1c, *n2c, *prev;
       int prevk;
-      b = ihash_lookup (p->timing, (long)n1);
+      b = phash_lookup (p->timing, n1);
       Assert (b, "Hmm");
       n1c = (PrsTiming *)b->v;
-      b = ihash_lookup (p->timing, (long)n2);
+      b = phash_lookup (p->timing, n2);
 
       Assert (b, "HMM");
       n2c = (PrsTiming *)b->v;
@@ -2710,7 +2710,7 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       }
       Assert (prev, "What?");
       prev->next[prevk] = n2c;
-      ihash_delete (p->timing, (long)n2);
+      phash_delete (p->timing, n2);
       n2->intiming = 0;
 
       while (n2c) {
@@ -2725,7 +2725,7 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
 	Assert (k != 3, "What?");
       }
     }
-    ihash_delete (p->timing, (long)n2);
+    phash_delete (p->timing, n2);
   }
   
   for (i=0; i < 2; i++) {
@@ -2959,19 +2959,19 @@ static void parse_timing (Prs *p, LEX_T *l)
   }
 
   for (i=0; i < 3; i++) {
-    ihash_bucket_t *b;
+    phash_bucket_t *b;
     n = lookup (lex_mustbe_id (p,l), p->H);
     constraint->n[i] = n;
     if ((i < 1 || n != constraint->n[i-1]) &&
 	(i < 2 || n != constraint->n[i-2])) {
       if (!n->intiming) {
 	n->intiming = 1;
-	b = ihash_lookup (p->timing, (long)n);
+	b = phash_lookup (p->timing, n);
 	Assert (!b, "intiming flag error");
-	b = ihash_add (p->timing, (long)n);
+	b = phash_add (p->timing, n);
       }
       else {
-	b = ihash_lookup (p->timing, (long)n);
+	b = phash_lookup (p->timing, n);
 	Assert (b, "intiming flag error");
 	constraint->next[i] = (PrsTiming *)b->v;
       } 

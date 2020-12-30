@@ -72,13 +72,12 @@ typedef struct {
   int allbools;			// total booleans needed for this
 				// process (minus its ports)
 
-  struct iHashtable *map;	// map from connection pointer to
+  struct pHashtable *map;	// map from connection pointer to
 				// unique integer from 0 .. localbools-1
                                 // for local booleans.
                                 // For port bools, negative numbers
 				// numbered from -nportbools to -1.
-  
-  
+
   /*--
     Analogous quantities for CHP level of abstraction
     --*/
@@ -96,7 +95,7 @@ typedef struct {
   bitset_t *chpmulti;		// 1 if multi-driver at the CHP level
   int chp_ismulti;		// multidriver through CHP
 
-  struct iHashtable *chpmap;	// connection * to index for
+  struct pHashtable *chpmap;	// connection * to index for
 				// bool/int/chan: note: idx is not unique!
   
 } stateinfo_t;

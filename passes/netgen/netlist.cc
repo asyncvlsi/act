@@ -276,14 +276,14 @@ static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
 
 static act_booleanized_var_t *var_lookup (netlist_t *n, act_connection *c)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   act_booleanized_var_t *v;
 
   if (!c) return NULL;
 
   c = c->primary();
 
-  b = ihash_lookup (n->bN->cH, (long)c);
+  b = phash_lookup (n->bN->cH, c);
   Assert (b, "What?!");
   v = (act_booleanized_var_t *) b->v;
   if (!v->extra) {
@@ -303,11 +303,11 @@ static act_booleanized_var_t *var_lookup (netlist_t *n, ActId *id)
 
 static node_t *node_lookup (netlist_t *n, act_connection *c)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   
   if (!c) return NULL;
   c = c->primary();
-  b = ihash_lookup (n->bN->cH, (long)c);
+  b = phash_lookup (n->bN->cH, c);
   if (b) {
     return VINF(((act_booleanized_var_t *)b->v))->n;
   }

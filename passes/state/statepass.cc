@@ -28,13 +28,13 @@
 #include <config.h>
 #include <act/passes/statepass.h>
 
-static act_connection *_inv_hash (struct iHashtable *H, int idx)
+static act_connection *_inv_hash (struct pHashtable *H, int idx)
 {
-  ihash_iter_t iter;
-  ihash_bucket_t *ib;
+  phash_iter_t iter;
+  phash_bucket_t *ib;
   
-  ihash_iter_init (H, &iter);
-  while ((ib = ihash_iter_next (H, &iter))) {
+  phash_iter_init (H, &iter);
+  while ((ib = phash_iter_next (H, &iter))) {
     if (ib->i == idx) {
       return (act_connection *)ib->key;
     }
@@ -101,12 +101,12 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   alt_portchp.ints = 0;
   alt_portchp.chans = 0;
 
-  ihash_bucket_t *hb;
-  ihash_iter_t iter;
+  phash_bucket_t *hb;
+  phash_iter_t iter;
 
   /*-- dynamic bools are assumed to be used in both chp and non-chp --*/
-  ihash_iter_init (b->cdH, &iter);
-  while ((hb = ihash_iter_next (b->cdH, &iter))) {
+  phash_iter_init (b->cdH, &iter);
+  while ((hb = phash_iter_next (b->cdH, &iter))) {
     act_dynamic_var_t *v;
     v = (act_dynamic_var_t *)hb->v;
     if (v->isint) {
@@ -117,8 +117,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
   
-  ihash_iter_init (b->cH, &iter);
-  while ((hb = ihash_iter_next (b->cH, &iter))) {
+  phash_iter_init (b->cH, &iter);
+  while ((hb = phash_iter_next (b->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
 
     if (ActBooleanizePass::isDynamicRef (b, v->id)) {
@@ -207,8 +207,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   int idx = 0;
   int chpidx = 0;
 
-  si->map = ihash_new (8);
-  si->chpmap = ihash_new (4);
+  si->map = phash_new (8);
+  si->chpmap = phash_new (4);
 
   /* map each connection pointer that corresponds to local state to an
      integer starting at zero
@@ -222,14 +222,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   /*
     Start with dynamic arrays. These are always local.
   */
-  ihash_bucket_t *ib;
+  phash_bucket_t *pb;
 
-  ihash_iter_init (b->cdH, &iter);
-  while ((ib = ihash_iter_next (b->cdH, &iter))) {
-    act_dynamic_var_t *v = (act_dynamic_var_t *) ib->v;
-    ihash_bucket_t *x;
+  phash_iter_init (b->cdH, &iter);
+  while ((pb = ihash_iter_next (b->cdH, &iter))) {
+    act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
+    phash_bucket_t *x;
     if (v->isint) {
-      x = ihash_add (si->chpmap, ib->key);
+      x = phash_add (si->chpmap, pb->key);
       x->i = chpidx;
       chpidx += v->a->size();
 
@@ -244,7 +244,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       si->chp_all.ints += v->a->size();
     }
     else {
-      x = ihash_add (si->map, ib->key);
+      x = phash_add (si->map, pb->key);
       x->i = idx;
       idx += v->a->size();
       for (int i=0; i < v->a->size(); i++) {
@@ -258,10 +258,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  ihash_iter_init (b->cH, &iter);
-  while ((ib = ihash_iter_next (b->cH, &iter))) {
+  phash_iter_init (b->cH, &iter);
+  while ((pb = phash_iter_next (b->cH, &iter))) {
     int found = 0;
-    act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+    act_booleanized_var_t *v = (act_booleanized_var_t *) pb->v;
     act_dynamic_var_t *dv;
     int ocount = 0;
 
@@ -277,14 +277,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
 
       if (dv->isint) {
-	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
-	ihash_bucket_t *y = ihash_lookup (si->chpmap, (long)dv->id);
+	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
+	phash_bucket_t *y = phash_lookup (si->chpmap, dv->id);
 	Assert (y, "what?!");
 	x->i = y->i + ocount; /* offset */
       }
       else {
-	ihash_bucket_t *x = ihash_add (si->map, ib->key);
-	ihash_bucket_t *y = ihash_lookup (si->map, (long)dv->id);
+	phash_bucket_t *x = phash_add (si->map, pb->key);
+	phash_bucket_t *y = phash_lookup (si->map, dv->id);
 	Assert (y, "what?!");
 	x->i = y->i + ocount; /* offset */
       }
@@ -297,25 +297,25 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	/*-- in the port list; so port state, not local state --*/
 	for (int k=0; k < A_LEN (b->ports); k++) {
 	  if (b->ports[k].omit) continue;
-	  if (ib->key == (long)b->ports[k].c) {
+	  if (pb->key == (unsigned long)b->ports[k].c) {
 	    found = 1;
 	    break;
 	  }
 	  ocount++;
 	}
 	Assert (found, "What?");
-	ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	phash_bucket_t *x = ihash_add (si->map, pb->key);
 	x->i = ocount - si->nportbools;
       }
       else if (!v->isglobal) {
 	/*-- globals not handled here --*/
-	ihash_bucket_t *x = ihash_add (si->map, ib->key);
+	phash_bucket_t *x = phash_add (si->map, pb->key);
 	x->i = idx++;
 	ocount = x->i + si->nportbools;
       }
 
 #if 0
-      ActId *id = ((act_connection *)ib->key)->toid();
+      ActId *id = ((act_connection *)pb->key)->toid();
       printf ("   var: ");
       id->Print (stdout);
       printf (" [out=%d]", v->output ? 1 : 0);
@@ -351,12 +351,12 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       if (v->ischpport) {
 	for (int k=0; k < A_LEN (b->chpports); k++) {
 	  if (b->chpports[k].omit) continue;
-	  if (ib->key == (long)b->chpports[k].c) {
+	  if (pb->key == (long)b->chpports[k].c) {
 	    found = 1;
 	    break;
 	  }
 	  {
-	    ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
+	    phash_bucket_t *xb = phash_lookup (b->cH, b->chpports[k].c);
 	    act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
 	    if (!xv->used) {
 	      /* if it is used in the boolean pass, it's already
@@ -368,7 +368,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	Assert (found, "What?");
       }
       else if (!v->isglobal) {
-	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
 	x->i = chpidx++;
 	ocount = x->i + si->nportchptot;
 
@@ -384,7 +384,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
 
 #if 0
-      ActId *id = ((act_connection *)ib->key)->toid();
+      ActId *id = ((act_connection *)pb->key)->toid();
       printf ("   var: ");
       id->Print (stdout);
       printf (" [out=%d]", v->output ? 1 : 0);
@@ -523,12 +523,12 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    sz--;
 	    for (int j=0; j < A_LEN (sub->ports); j++) {
 	      act_connection *c;
-	      ihash_bucket_t *bi;
+	      phash_bucket_t *bi;
 	      int ocount;
 	      if (sub->ports[j].omit) continue;
 
 	      c = b->instports[instcnt];
-	      bi = ihash_lookup (si->map, (long)c);
+	      bi = phash_lookup (si->map, c);
 
 	      if (c->isglobal()) {
 		/* ignore globals here */
@@ -599,7 +599,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    sz--;
 	    for (int j=0; j < A_LEN (sub->chpports); j++) {
 	      act_connection *c;
-	      ihash_bucket_t *bi;
+	      phash_bucket_t *bi;
 	      int ocount;
 	      if (sub->chpports[j].omit) continue;
 
@@ -608,7 +608,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      /* -- ignore globals -- */
 	      if (c->isglobal()) continue;
 
-	      ihash_bucket_t *xb = ihash_lookup (b->cH, (long)c);
+	      phash_bucket_t *xb = phash_lookup (b->cH, c);
 	      if (xb) {
 		act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
 		if (xv->used) {
@@ -617,7 +617,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		}
 	      }
 		
-	      bi = ihash_lookup (si->chpmap, (long)c);
+	      bi = phash_lookup (si->chpmap, c);
 	      if (bi) {
 		ocount = bi->i + si->nportchptot;
 	      }
@@ -716,20 +716,20 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   }
 
   /* re-do CHP numbering */
-  ihash_free (si->chpmap);
-  si->chpmap = ihash_new (4);
+  phash_free (si->chpmap);
+  si->chpmap = phash_new (4);
 
   chp_offsets c_idx;
   c_idx.bools = 0;
   c_idx.ints = 0;
   c_idx.chans = 0;
 
-  ihash_iter_init (b->cdH, &iter);
-  while ((ib = ihash_iter_next (b->cdH, &iter))) {
-    act_dynamic_var_t *v = (act_dynamic_var_t *) ib->v;
-    ihash_bucket_t *x;
+  phash_iter_init (b->cdH, &iter);
+  while ((pb = ihash_iter_next (b->cdH, &iter))) {
+    act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
+    phash_bucket_t *x;
     if (v->isint) {
-      x = ihash_add (si->chpmap, ib->key);
+      x = phash_add (si->chpmap, pb->key);
       x->i = c_idx.ints;
       c_idx.ints += v->a->size();
     }
@@ -738,11 +738,11 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  ihash_iter_init (b->cH, &iter);
+  phash_iter_init (b->cH, &iter);
   
-  while ((ib = ihash_iter_next (b->cH, &iter))) {
+  while ((pb = phash_iter_next (b->cH, &iter))) {
     int found = 0;
-    act_booleanized_var_t *v = (act_booleanized_var_t *) ib->v;
+    act_booleanized_var_t *v = (act_booleanized_var_t *) pb->v;
     int ocount = 0;
 
     if (v->used) {
@@ -754,12 +754,12 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       if (v->ischpport) {
 	for (int k=0; k < A_LEN (b->chpports); k++) {
 	  if (b->chpports[k].omit) continue;
-	  if (ib->key == (long)b->chpports[k].c) {
+	  if (pb->key == (unsigned long)b->chpports[k].c) {
 	    found = 1;
 	    break;
 	  }
 	  {
-	    ihash_bucket_t *xb = ihash_lookup (b->cH, (long)b->chpports[k].c);
+	    phash_bucket_t *xb = phash_lookup (b->cH, b->chpports[k].c);
 	    act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
 	    if (!xv->used) {
 	      /* if it is used in the boolean pass, it's already
@@ -781,7 +781,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	  }
 	}
 	Assert (found, "What?");
-	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
 	if (v->ischan) {
 	  x->i = ocount - si->nportchp.chans;
 	}
@@ -793,7 +793,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	}
       }
       else if (!v->isglobal) {
-	ihash_bucket_t *x = ihash_add (si->chpmap, ib->key);
+	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
 	if (v->ischan) {
 	  x->i = c_idx.chans++;
 	}
@@ -876,9 +876,9 @@ int ActStatePass::run (Process *p)
   for (int i=0; i < A_LEN (nl->used_globals); i++) {
     act_booleanized_var_t *v;
     act_dynamic_var_t *dv;
-    ihash_bucket_t *b;
+    phash_bucket_t *b;
 
-    b = ihash_lookup (nl->cdH, (long)nl->used_globals[i]);
+    b = phash_lookup (nl->cdH, nl->used_globals[i]);
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
       if (dv->isint) {
@@ -889,7 +889,7 @@ int ActStatePass::run (Process *p)
       }
     }
     else {
-      b = ihash_lookup (nl->cH, (long)nl->used_globals[i]);
+      b = phash_lookup (nl->cH, nl->used_globals[i]);
       Assert (b, "What?");
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
@@ -914,39 +914,39 @@ int ActStatePass::run (Process *p)
   for (int i=0; i < A_LEN (nl->used_globals); i++) {
     act_booleanized_var_t *v;
     act_dynamic_var_t *dv;
-    ihash_bucket_t *b;
+    phash_bucket_t *b;
 
-    b = ihash_lookup (nl->cdH, (long)nl->used_globals[i]);
+    b = phash_lookup (nl->cdH, nl->used_globals[i]);
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
       if (dv->isint) {
-	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
 	b->i = idx.ints - _globals.ints;
 	idx.ints += dv->a->size();
       }
       else {
-	b = ihash_add (_root_si->map, (long)nl->used_globals[i]);
+	b = phash_add (_root_si->map, nl->used_globals[i]);
 	b->i = idx.bools - _globals.bools;
 	idx.bools += dv->a->size();
       }
     }
     else {
-      b = ihash_lookup (nl->cH, (long)nl->used_globals[i]);
+      b = phash_lookup (nl->cH, nl->used_globals[i]);
       Assert (b, "What?");
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
       if (v->ischan) {
-	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
 	b->i = idx.chans - _globals.chans;
 	idx.chans++;
       }
       else if (v->isint) {
-	b = ihash_add (_root_si->chpmap, (long)nl->used_globals[i]);
+	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
 	b->i = idx.ints - _globals.ints;
 	idx.ints++;
       }
       else {
-	b = ihash_add (_root_si->map, (long)nl->used_globals[i]);
+	b = phash_add (_root_si->map, nl->used_globals[i]);
 	b->i = idx.bools - _globals.bools;
 	idx.bools++;
       }
@@ -1018,7 +1018,7 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
 int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
 				 int *offset, int *type, int *width)
 {
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
 
   if (!si) {
     return 0;
@@ -1027,11 +1027,11 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   Assert (si && c && offset, "What?");
 
   /*-- check if this is a dynamic array --*/
-  b = ihash_lookup (si->bnl->cdH, (long)c);
+  b = phash_lookup (si->bnl->cdH, c);
   if (b) {
     act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
     if (dv->isint) {
-      b = ihash_lookup (si->chpmap, (long)c);
+      b = phash_lookup (si->chpmap, c);
       if (type) {
 	*type = 1;
       }
@@ -1040,7 +1040,7 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
       }
     }
     else {
-      b = ihash_lookup (si->map, (long)c);
+      b = phash_lookup (si->map, c);
       if (type) {
 	*type = 0;
       }
@@ -1055,7 +1055,7 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
 
   /*-- otherwise... --*/
 
-  b = ihash_lookup (si->bnl->cH, (long)c);
+  b = phash_lookup (si->bnl->cH, c);
   Assert (b, "No connection in conn hash?");
   act_booleanized_var_t *v =  (act_booleanized_var_t *)b->v;
 
@@ -1095,9 +1095,9 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
     glob = 0;
   }
 
-  b = ihash_lookup (si->map, (long)c);
+  b = phash_lookup (si->map, c);
   if (!b) {
-    b = ihash_lookup (si->chpmap, (long)c);
+    b = phash_lookup (si->chpmap, c);
   }
   if (!b) {
     return 0;

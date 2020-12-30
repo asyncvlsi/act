@@ -1647,18 +1647,18 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
   return e;
 }
 
-static iHashtable *pmap = NULL;
+static pHashtable *pmap = NULL;
 static int _expr_has_probes = 0;
 
 static Expr *_process_probes (Expr *e)
 {
-  ihash_iter_t iter;
-  ihash_bucket_t *b;
+  phash_iter_t iter;
+  phash_bucket_t *b;
   
   if (pmap->n > 0) {
     _expr_has_probes = 1;
-    ihash_iter_init (pmap, &iter);
-    while ((b = ihash_iter_next (pmap, &iter))) {
+    phash_iter_init (pmap, &iter);
+    while ((b = phash_iter_next (pmap, &iter))) {
       if (b->i == 0) {
 	Expr *t;
 	act_connection *c = (act_connection *)b->key;
@@ -1673,7 +1673,7 @@ static Expr *_process_probes (Expr *e)
 	t->u.e.r = NULL;
       }
     }
-    ihash_clear (pmap);
+    phash_clear (pmap);
   }
   return e;
 }
@@ -1682,7 +1682,7 @@ static Expr *_process_probes (Expr *e)
 static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 {
   Expr *t;
-  ihash_bucket_t *b;
+  phash_bucket_t *b;
   act_connection *c;
 
   if (!e) return e;
@@ -1746,9 +1746,9 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 
   case E_PROBE:
     c = ((ActId *)e->u.e.l)->Canonical (s);
-    b = ihash_lookup (pmap, (long)c);
+    b = phash_lookup (pmap, c);
     if (!b) {
-      b = ihash_add (pmap, (long)c);
+      b = phash_add (pmap, c);
       b->i = 1;
     }
     break;
@@ -1783,12 +1783,12 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
       InstType *it = s->FullLookup ((ActId *)e->u.e.l, NULL);
       if (TypeFactory::isChanType (it)) {
 	c = ((ActId *)e->u.e.l)->Canonical (s);
-	b = ihash_lookup (pmap, (long)c);
+	b = phash_lookup (pmap, c);
 	if (b) {
 	  /*-- ok has been recorded already --*/
 	}
 	else {
-	  b = ihash_add (pmap, (long)c);
+	  b = phash_add (pmap, c);
 	  b->i = 0;		/* 0 = used as a variable */
 	}
       }
@@ -1817,12 +1817,12 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
 {
   e = _chp_fix_nnf (e, 0);
 
-  pmap = ihash_new (4);
+  pmap = phash_new (4);
   e = _chp_add_probes (e, ns, s, 1);
   if (pmap->n > 0) {
     _expr_has_probes = 1;
   }
-  ihash_free (pmap);
+  phash_free (pmap);
   return e;
 }
 
