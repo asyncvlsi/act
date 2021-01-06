@@ -2518,8 +2518,8 @@ static void canonicalize_timing (Prs *p)
       int k;
 
       for (k=0; k < 3; k++) {
-	//Assert (pt->n[k] == canonical_name (pt->n[k]), "What?");
-	pt->n[k] = canonical_name (pt->n[k]);
+	Assert (pt->n[k] == canonical_name (pt->n[k]), "What?");
+	//pt->n[k] = canonical_name (pt->n[k]);
       }
       if (UNSTAB_NODE (p, pt->n[0])) {
 	fatal_error ("Node `%s' on LHS of timing constraint can be unstable",
@@ -2659,26 +2659,24 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
     phash_bucket_t *b;
     if (!n1->intiming) {
       int found = 0;
-      PrsTiming *pt;
+      PrsTiming *pt, *tmp;
       n1->intiming = 1;
       /* delete n2 from the timing hash table */
       b = phash_lookup (p->timing, n2);
       Assert (b, "Hmm...");
       pt = (PrsTiming *) b->v;
-      if (pt->n[0] == n2) {
-	pt->n[0] = n1;
-	found = 1;
-      }
-      if (pt->n[1] == n2) {
-	pt->n[1] = n1;
-	found = 1;
-      }
-      if (pt->n[2] == n2) {
-	pt->n[2] = n1;
-	found = 1;
-      }
-      if (!found) {
-	fatal_error ("Timing data structure error");
+
+      tmp = pt;
+      while (tmp) {
+	int k;
+	for (k=0; k < 3; k++) {
+	  if (tmp->n[k] == n2) {
+	    tmp->n[k] = n1;
+	    tmp = tmp->next[k];
+	    break;
+	  }
+	}
+	Assert (k != 3, "Timing data structure error");
       }
       b = phash_add (p->timing, n1);
       b->v = pt;
@@ -2706,7 +2704,7 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
 	    break;
 	  }
 	}
-	Assert (k != 3, "What?");
+	Assert (k != 3, "Timing data structure error");
       }
       Assert (prev, "What?");
       prev->next[prevk] = n2c;
