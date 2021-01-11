@@ -460,14 +460,19 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	stateinfo_t *ti = (stateinfo_t *) getMap (x);
 	state_counts n_sub;
 
-	if (_inst_offsets) {
-	  if (!si->inst) {
-	    si->inst = phash_new (4);
-	  }
-	}
-
 	if (ti) {
 	  n_sub = ti->all;
+
+	  if (_inst_offsets) {
+	    if (!si->inst) {
+	      si->inst = phash_new (4);
+	    }
+	    phash_bucket_t *b;
+	    b = phash_add (si->inst, vx);
+	    state_counts *sc = new state_counts;
+	    *sc = si->all;
+	    b->v = sc;
+	  }
 	}
 	else {
 	  /* black box */

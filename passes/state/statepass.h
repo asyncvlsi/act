@@ -62,7 +62,7 @@ public:
   int numCHPVars() { return xbools + ints + chans; }
   int numAllVars() { return bools + xbools + ints + chans; }
 
-  void addVar (state_counts &s, int sz) {
+  void addVar (state_counts &s, int sz = 1) {
     bools += sz*s.bools;
     xbools += sz*s.xbools;
     chans += sz*s.chans;
