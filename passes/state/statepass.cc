@@ -91,20 +91,20 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
      Once we have the set of variables, then we need state only for
      output variables.
   */
+
+  state_counts sc;
+
   int bool_count = 0;
   int chp_count = 0;
 
   /* count non-global variables that are used */
-  int alt_portbools = 0;
-  chp_offsets alt_portchp;
-  alt_portchp.bools = 0;
-  alt_portchp.ints = 0;
-  alt_portchp.chans = 0;
-
+  state_counts alt_port;
+  
   phash_bucket_t *hb;
   phash_iter_t iter;
 
   /*-- dynamic bools are assumed to be used in both chp and non-chp --*/
+  /* dynamic bools cannot be in ports, so these must be local */
   phash_iter_init (b->cdH, &iter);
   while ((hb = phash_iter_next (b->cdH, &iter))) {
     act_dynamic_var_t *v;
@@ -129,7 +129,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     if (v->used && !v->isglobal) {
       bool_count++;
       if (v->isport) {
-	alt_portbools++;
+	alt_port.addBool();
       }
     }
     
@@ -139,13 +139,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       chp_count++;
       if (v->ischpport) {
 	if (v->isint) {
-	  alt_portchp.ints++;
+	  alt_port.addInt();
 	}
 	else if (v->ischan) {
-	  alt_portchp.chans++;
+	  alt_port.addChan();
 	}
 	else {
-	  alt_portchp.bools++;
+	  /* extra chp bools */
+	  alt_port.addCHPBool();
 	}
       }
     }
@@ -154,35 +155,43 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   stateinfo_t *si;
   NEW (si, stateinfo_t);
 
+  state_counts zero;
+
   si->bnl = b;
-  si->allbools = 0;
+
+  si->all = zero;
+  si->local = zero;
+  si->ports = alt_port;
+  
   si->map = NULL;
   si->ismulti = 0;
-  si->nportbools = alt_portbools;
 
-  /* init for hse/prs mode: only track bools */
-  si->localbools = bool_count - si->nportbools;
+  /* init for hse/prs mode: only track bools 
+
+     orig value is zero, so this sets the # of bools
+   */
+  si->local.addBool (bool_count - si->ports.numBools());
 
   /* init for chp mode: bools, ints, chans; note that fractured ints
      are tracked as fractured ints. */
 
   si->chp_ismulti = 0;
-  si->chpmap = NULL;
-  si->nportchp = alt_portchp;
-  si->nportchptot = alt_portchp.bools + alt_portchp.ints + alt_portchp.chans;
-  si->localchp = chp_count - si->nportchptot;
+  si->inst = NULL;
+
+  int nportchptot = si->ports.numCHPVars();
+  int localchp = chp_count - nportchptot;
 
 #if 0
   printf ("%s: start \n", p->getName());
-#endif  
+#endif
 
   bitset_t *tmpbits;
   bitset_t *inpbits;
-  
-  if (si->localbools + si->nportbools > 0) {
-    si->multi = bitset_new (si->localbools + si->nportbools);
-    tmpbits = bitset_new (si->localbools + si->nportbools);
-    inpbits = bitset_new (si->localbools + si->nportbools);
+
+  if (si->local.numBools() + si->ports.numBools() > 0) {
+    si->multi = bitset_new (si->local.numBools() + si->ports.numBools());
+    tmpbits = bitset_copy (si->multi);
+    inpbits = bitset_copy (si->multi);
   }
   else {
     si->multi = NULL;
@@ -192,14 +201,15 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   bitset_t *tmpchp;
   bitset_t *inpchp;
+  bitset_t *chpmulti;
 
-  if (si->localchp + si->nportchptot > 0) {
-    si->chpmulti = bitset_new (si->localchp + si->nportchptot);
-    tmpchp = bitset_new (si->localchp + si->nportchptot);
-    inpchp = bitset_new (si->localchp + si->nportchptot);
+  if (localchp + nportchptot > 0) {
+    chpmulti = bitset_new (localchp + nportchptot);
+    tmpchp = bitset_copy (chpmulti);
+    inpchp = bitset_copy (chpmulti);
   }
   else {
-    si->chpmulti = NULL;
+    chpmulti = NULL;
     tmpchp = NULL;
     inpchp = NULL;
   }
@@ -208,16 +218,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   int chpidx = 0;
 
   si->map = phash_new (8);
-  si->chpmap = phash_new (4);
 
   /* map each connection pointer that corresponds to local state to an
      integer starting at zero
   */
-
-  si->chp_all.bools = 0;
-  si->chp_all.ints = 0;
-  si->chp_all.chans = 0;
-
 
   /*
     Start with dynamic arrays. These are always local.
@@ -226,22 +230,30 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   phash_iter_init (b->cdH, &iter);
   while ((pb = ihash_iter_next (b->cdH, &iter))) {
+    /*---
+      XXX: what if a process has a dynamic array in CHP and then a
+      static array in the prs?
+      UNHANDLED SITUATION.
+      ---*/
+
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
     if (v->isint) {
-      x = phash_add (si->chpmap, pb->key);
+      x = phash_add (si->map, pb->key);
       x->i = chpidx;
+      Assert (v->a, "Huh?");
       chpidx += v->a->size();
+      si->all.addInt (v->a->size());
 
+      /* record info for multi-driver */
       for (int i=0; i < v->a->size(); i++) {
 	if (bitset_tst (tmpchp, chpidx - 1 - i)) {
-	  bitset_set (si->chpmulti, chpidx - 1 - i);
+	  bitset_set (chpmulti, chpidx - 1 - i);
 	}
 	else {
 	  bitset_set (tmpchp, chpidx - 1 - i);
 	}
       }
-      si->chp_all.ints += v->a->size();
     }
     else {
       x = phash_add (si->map, pb->key);
@@ -249,11 +261,13 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       idx += v->a->size();
       for (int i=0; i < v->a->size(); i++) {
 	if (bitset_tst (tmpbits, idx - 1 - i)) {
-	  bitset_set (si->multi, chpidx - 1 - i);
+	  bitset_set (si->multi, idx - 1 - i);
 	}
 	else {
-	  bitset_set (tmpbits, chpidx - 1 - i);
+	  bitset_set (tmpbits, idx - 1 - i);
 	}
+	/* XXX: check if this index is actually in the cH hash; if so, we
+	   have a problem */
       }
     }
   }
@@ -277,8 +291,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
 
       if (dv->isint) {
-	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
-	phash_bucket_t *y = phash_lookup (si->chpmap, dv->id);
+	phash_bucket_t *x = phash_add (si->map, pb->key);
+	phash_bucket_t *y = phash_lookup (si->map, dv->id);
 	Assert (y, "what?!");
 	x->i = y->i + ocount; /* offset */
       }
@@ -305,14 +319,22 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	}
 	Assert (found, "What?");
 	phash_bucket_t *x = ihash_add (si->map, pb->key);
-	x->i = ocount - si->nportbools;
+
+	/* port index is a negative value */
+	x->i = ocount - si->ports.numBools();
       }
       else if (!v->isglobal) {
 	/*-- globals not handled here --*/
 	phash_bucket_t *x = phash_add (si->map, pb->key);
 	x->i = idx++;
-	ocount = x->i + si->nportbools;
+	ocount = x->i + si->ports.numBools();
       }
+
+      /*
+	 ocount is used to set entries in the bitvector to check
+	 for missing drivers or multi drivers.
+	 Bit-vector format is: [ports] [rest of the state]
+      */
 
 #if 0
       ActId *id = ((act_connection *)pb->key)->toid();
@@ -368,18 +390,18 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	Assert (found, "What?");
       }
       else if (!v->isglobal) {
-	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
+	phash_bucket_t *x = phash_add (si->map, pb->key);
 	x->i = chpidx++;
-	ocount = x->i + si->nportchptot;
+	ocount = x->i + nportchptot;
 
 	if (v->ischan) {
-	  si->chp_all.chans++;
+	  si->all.addChan();
 	}
 	else if (v->isint) {
-	  si->chp_all.ints++;
+	  si->all.addInt();
 	}
 	else {
-	  si->chp_all.bools++;
+	  si->all.addCHPBool();
 	}
       }
 
@@ -394,7 +416,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	if (v->output) {
 	  if (bitset_tst (tmpchp, ocount)) {
 	    /* found multi driver! */
-	    bitset_set (si->chpmulti, ocount);
+	    bitset_set (chpmulti, ocount);
 #if 0
 	    printf ("     -> multi-driver!\n");
 #endif
@@ -414,20 +436,19 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  Assert (idx == si->localbools, "What?");
-  Assert (chpidx == si->localchp, "What?");
-  Assert (si->localchp == si->chp_all.bools +
-	  si->chp_all.ints + si->chp_all.chans, "What?");
+  Assert (idx == si->local.numBools(), "What?");
+  Assert (chpidx == localchp, "What?");
+  Assert (localchp == si->all.numCHPVars(), "What?");
 
-  si->chp_local = si->chp_all;
+  si->local.addCHPBool (si->all.numCHPBools());
+  si->local.addInt (si->all.numInts());
+  si->local.addChan (si->all.numChans());
+  si->all.addBool (si->local.numBools());
 
 #if 0
   printf ("%s: stats: %d local; %d port\n", p->getName(),
 	  si->localbools, si->nportbools);
 #endif
-
-  /* sum up instance state, and compute offsets for each instance */
-  si->allbools = si->localbools;
 
   ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
@@ -437,44 +458,32 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       Process *x = dynamic_cast<Process *>(vx->t->BaseType());
       if (x->isExpanded()) {
 	stateinfo_t *ti = (stateinfo_t *) getMap (x);
-	int n_sub_bools;
-	int n_sub_chp_bools;
-	int n_sub_chp_ints;
-	int n_sub_chp_chans;
+	state_counts n_sub;
+
+	if (_inst_offsets) {
+	  if (!si->inst) {
+	    si->inst = phash_new (4);
+	  }
+	}
 
 	if (ti) {
-	  n_sub_bools = ti->allbools;
-	  n_sub_chp_bools = ti->chp_all.bools;
-	  n_sub_chp_ints = ti->chp_all.ints;
-	  n_sub_chp_chans = ti->chp_all.chans;
+	  n_sub = ti->all;
 	}
 	else {
 	  /* black box */
 	  act_boolean_netlist_t *bn = bp->getBNL (x);
 	  Assert (bn, "What?");
-	  n_sub_bools = 0;
-	  n_sub_chp_chans = 0;
-	  n_sub_chp_ints = 0;
-	  n_sub_chp_bools = 0;
+	  n_sub = zero;
 	}
+	int sz;
 	/* map valueidx pointer to the current bool offset */
 	if (vx->t->arrayInfo()) {
-	  si->allbools += vx->t->arrayInfo()->size()*n_sub_bools;
+	  sz = vx->t->arrayInfo()->size();
 	}
 	else {
-	  si->allbools += n_sub_bools;
+	  sz = 1;
 	}
-
-	if (vx->t->arrayInfo()) {
-	  si->chp_all.bools += vx->t->arrayInfo()->size()*n_sub_chp_bools;
-	  si->chp_all.chans += vx->t->arrayInfo()->size()*n_sub_chp_chans;
-	  si->chp_all.ints += vx->t->arrayInfo()->size()*n_sub_chp_ints;
-	}
-	else {
-	  si->chp_all.bools += n_sub_chp_bools;
-	  si->chp_all.chans += n_sub_chp_chans;
-	  si->chp_all.ints += n_sub_chp_ints;
-	}
+	si->all.addVar (n_sub, sz);
       }
     }
   }
@@ -536,7 +545,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      }
 	      
 	      if (bi) {
-		ocount = bi->i + si->nportbools;
+		ocount = bi->i + si->ports.numBools();
 	      }
 	      else {
 		ocount = 0;
@@ -547,7 +556,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		  }
 		  ocount++;
 		}
-		Assert (ocount < si->nportbools, "What?");
+		Assert (ocount < si->ports.numBools(), "What?");
 	      }
 	      
 	      if (!sub->ports[j].input) {
@@ -617,9 +626,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		}
 	      }
 		
-	      bi = phash_lookup (si->chpmap, c);
+	      bi = phash_lookup (si->map, c);
 	      if (bi) {
-		ocount = bi->i + si->nportchptot;
+		ocount = bi->i + nportchptot;
 	      }
 	      else {
 		ocount = 0;
@@ -630,13 +639,13 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		  }
 		  ocount++;
 		}
-		Assert (ocount < si->nportchptot, "What?");
+		Assert (ocount < nportchptot, "What?");
 	      }
 	      
 	      if (!sub->chpports[j].input) {
 		if (bitset_tst (tmpchp, ocount)) {
 		  /* found multi driver! */
-		  bitset_set (si->chpmulti, ocount);
+		  bitset_set (chpmulti, ocount);
 		  if (subsi) {
 		    /* could be NULL, if it is a black box */
 		    subsi->chp_ismulti = 1;
@@ -668,9 +677,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     int err_ctxt = 0;
     /* now check if there is some local state that is actually never
        driven! */
-    for (int i=0; i < si->localbools; i++) {
-      if (bitset_tst (inpbits, i + si->nportbools) &&
-	  !bitset_tst (tmpbits, i + si->nportbools)) {
+    for (int i=0; i < si->local.numBools(); i++) {
+      if (bitset_tst (inpbits, i + si->ports.numBools()) &&
+	  !bitset_tst (tmpbits, i + si->ports.numBools())) {
 	act_connection *tmpc = _inv_hash (si->map, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
@@ -686,10 +695,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
     }
 
-    for (int i=0; i < si->localchp; i++) {
-      if (bitset_tst (inpchp, i + si->nportchptot) &&
-	  !bitset_tst (tmpchp, i + si->nportchptot)) {
-	act_connection *tmpc = _inv_hash (si->chpmap, i);
+    for (int i=0; i < localchp; i++) {
+      if (bitset_tst (inpchp, i + nportchptot) &&
+	  !bitset_tst (tmpchp, i + nportchptot)) {
+	act_connection *tmpc = _inv_hash (si->map, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
 	if (!err_ctxt) {
@@ -713,25 +722,22 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   if (tmpchp) {
     bitset_free (tmpchp);
     bitset_free (inpchp);
+    bitset_free (chpmulti);
   }
 
-  /* re-do CHP numbering */
-  phash_free (si->chpmap);
-  si->chpmap = phash_new (4);
+  /* re-do CHP numbering in the map! */
 
-  chp_offsets c_idx;
-  c_idx.bools = 0;
-  c_idx.ints = 0;
-  c_idx.chans = 0;
+  state_counts c_idx;
 
   phash_iter_init (b->cdH, &iter);
   while ((pb = ihash_iter_next (b->cdH, &iter))) {
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
     if (v->isint) {
-      x = phash_add (si->chpmap, pb->key);
-      x->i = c_idx.ints;
-      c_idx.ints += v->a->size();
+      x = phash_lookup (si->map, pb->key);
+      Assert (x, "What?");
+      x->i = c_idx.numInts();
+      c_idx.addInt (v->a->size());
     }
     else {
       /* bool, no problem */
@@ -739,13 +745,13 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   }
 
   phash_iter_init (b->cH, &iter);
-  
   while ((pb = phash_iter_next (b->cH, &iter))) {
     int found = 0;
     act_booleanized_var_t *v = (act_booleanized_var_t *) pb->v;
     int ocount = 0;
 
     if (v->used) {
+      /* in the normal bool count, so proper numbering: we're done */
       continue;
     }
 
@@ -781,27 +787,31 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	  }
 	}
 	Assert (found, "What?");
-	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
+	phash_bucket_t *x = phash_add (si->map, pb->key);
+	Assert (x, "What?");
 	if (v->ischan) {
-	  x->i = ocount - si->nportchp.chans;
+	  x->i = ocount - si->ports.numChans();
 	}
 	else if (v->isint) {
-	  x->i = ocount - si->nportchp.ints;
+	  x->i = ocount - si->ports.numInts();
 	}
 	else {
-	  x->i = ocount - si->nportchp.bools - si->nportbools;
+	  x->i = ocount - si->ports.numAllBools();
 	}
       }
       else if (!v->isglobal) {
-	phash_bucket_t *x = phash_add (si->chpmap, pb->key);
+	phash_bucket_t *x = phash_lookup (si->map, pb->key);
 	if (v->ischan) {
-	  x->i = c_idx.chans++;
+	  x->i = c_idx.numChans();
+	  c_idx.addChan();
 	}
 	else if (v->isint) {
-	  x->i = c_idx.ints++;
+	  x->i = c_idx.numInts();
+	  c_idx.addInt();
 	}
 	else {
-	  x->i = si->allbools + c_idx.bools++;
+	  x->i = si->all.numBools() + c_idx.numCHPBools();
+	  c_idx.addCHPBool();
 	}
       }
     }
@@ -824,7 +834,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   return si;
 }
 
-ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
+ActStatePass::ActStatePass (Act *a, int inst_offset) : ActPass (a, "collect_state")
 {
   /*-- need the booleanize pass --*/
   ActPass *ap = a->pass_find ("booleanize");
@@ -836,7 +846,9 @@ ActStatePass::ActStatePass (Act *a) : ActPass (a, "collect_state")
     Assert (bp, "What?");
   }
   AddDependency ("booleanize");
+
   _black_box_mode = config_get_int ("net.black_box_mode");
+  _inst_offsets = inst_offset;
 }
 
 void ActStatePass::free_local (void *v)
@@ -850,12 +862,6 @@ void ActStatePass::free_local (void *v)
   if (s->multi) {
     bitset_free (s->multi);
   }
-  if (s->chpmulti) {
-    bitset_free (s->chpmulti);
-  }
-  if (s->chpmap) {
-    ihash_free (s->chpmap);
-  }
   FREE (s);
 }
 
@@ -867,9 +873,6 @@ int ActStatePass::run (Process *p)
   _root_si = getStateInfo (p);
 
   /*-- compute global sizes and add mapping to top-level state table --*/
-  _globals.bools = 0;
-  _globals.ints = 0;
-  _globals.chans = 0;
 
   act_boolean_netlist_t *nl = _root_si->bnl;
 
@@ -882,10 +885,10 @@ int ActStatePass::run (Process *p)
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
       if (dv->isint) {
-	_globals.ints += dv->a->size();
+	_globals.addInt (dv->a->size());
       }
       else {
-	_globals.bools += dv->a->size();
+	_globals.addBool (dv->a->size());
       }
     }
     else {
@@ -894,22 +897,19 @@ int ActStatePass::run (Process *p)
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
       if (v->ischan) { 
-	_globals.chans++;
+	_globals.addChan();
       }
       else if (v->isint) {
-	_globals.ints++;
+	_globals.addInt();
       }
       else {
-	_globals.bools++;
+	_globals.addBool();
       }
     }
   }
 
   /*-- add state info maps for globals --*/
-  chp_offsets idx;
-  idx.bools = 0;
-  idx.ints = 0;
-  idx.chans = 0;
+  state_counts idx;
   
   for (int i=0; i < A_LEN (nl->used_globals); i++) {
     act_booleanized_var_t *v;
@@ -919,15 +919,14 @@ int ActStatePass::run (Process *p)
     b = phash_lookup (nl->cdH, nl->used_globals[i]);
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
+      b = phash_add (_root_si->map, nl->used_globals[i]);
       if (dv->isint) {
-	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
-	b->i = idx.ints - _globals.ints;
-	idx.ints += dv->a->size();
+	b->i = idx.numInts() - _globals.numInts();
+	idx.addInt (dv->a->size());
       }
       else {
-	b = phash_add (_root_si->map, nl->used_globals[i]);
-	b->i = idx.bools - _globals.bools;
-	idx.bools += dv->a->size();
+	b->i = idx.numBools() - _globals.numBools();
+	idx.addBool (dv->a->size());
       }
     }
     else {
@@ -935,20 +934,18 @@ int ActStatePass::run (Process *p)
       Assert (b, "What?");
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
+      b = phash_add (_root_si->map, nl->used_globals[i]);
       if (v->ischan) {
-	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
-	b->i = idx.chans - _globals.chans;
-	idx.chans++;
+	b->i = idx.numChans() - _globals.numChans();
+	idx.addChan ();
       }
       else if (v->isint) {
-	b = phash_add (_root_si->chpmap, nl->used_globals[i]);
-	b->i = idx.ints - _globals.ints;
-	idx.ints++;
+	b->i = idx.numInts() - _globals.numInts();
+	idx.addInt ();
       }
       else {
-	b = phash_add (_root_si->map, nl->used_globals[i]);
-	b->i = idx.bools - _globals.bools;
-	idx.bools++;
+	b->i = idx.numBools() - _globals.numBools();
+	idx.addBool();
       }
     }
   }
@@ -991,11 +988,11 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
   }
   else {
     fprintf (fp, "   nbools = %d, nvars = %d\n",
-	     si->localbools, si->localchp);
-    fprintf (fp, "  localbools: %d\n", si->localbools);
-    fprintf (fp, "  portbools: %d\n", si->nportbools);
+	     si->local.numBools(), si->local.numCHPVars());
+    fprintf (fp, "  localbools: %d\n", si->local.numBools());
+    fprintf (fp, "  portbools: %d\n", si->ports.numBools());
     fprintf (fp, "  ismulti: %d\n", si->ismulti);
-    fprintf (fp, "  all booleans (incl. inst): %d\n", si->allbools);
+    fprintf (fp, "  all booleans (incl. inst): %d\n", si->all.numBools());
   }
   fprintf (fp, "--- End Process: %s ---\n", p->getName());
 }
@@ -1030,8 +1027,9 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   b = phash_lookup (si->bnl->cdH, c);
   if (b) {
     act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
+    b = phash_lookup (si->map, c);
+    Assert (b, "What?");
     if (dv->isint) {
-      b = phash_lookup (si->chpmap, c);
       if (type) {
 	*type = 1;
       }
@@ -1040,7 +1038,6 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
       }
     }
     else {
-      b = phash_lookup (si->map, c);
       if (type) {
 	*type = 0;
       }
@@ -1096,9 +1093,6 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   }
 
   b = phash_lookup (si->map, c);
-  if (!b) {
-    b = phash_lookup (si->chpmap, c);
-  }
   if (!b) {
     return 0;
   }

@@ -38,21 +38,51 @@
  * local/all bools count.
  */
 
-struct chp_offsets {
-  int bools; // extra bools for chp, if any
+class state_counts {
+  int bools;			// HSE/PRS bools
+  
+  int xbools; // extra bools for chp, if any
   int chans;
   int ints;
+
+public:
+  void addInt (int v = 1) { ints += v; }
+  int numInts () { return ints; }
+  
+  void addBool (int v = 1) { bools += v; }
+  int numBools () { return bools; }
+  
+  void addChan (int v = 1) { chans += v; }
+  int numChans() { return chans; }
+  
+  void addCHPBool (int v = 1) { xbools += v; }
+  int numCHPBools () { return xbools; }
+  int numAllBools() { return bools + xbools; }
+
+  int numCHPVars() { return xbools + ints + chans; }
+  int numAllVars() { return bools + xbools + ints + chans; }
+
+  void addVar (state_counts &s, int sz) {
+    bools += sz*s.bools;
+    xbools += sz*s.xbools;
+    chans += sz*s.chans;
+    ints += sz*s.ints;
+  }
+  
+  state_counts() { bools = 0; xbools = 0; chans = 0; ints = 0; }
 };
 
 typedef struct {
   act_boolean_netlist_t *bnl;	// the basis for this calculation
 
-  
-  int nportbools;		// # of port bools [not omitted]
+  /* 
+   *  Usage of state for:
+   *    1. Just the used ports
+   *    2. Just the local state (not including sub-processes)
+   *    3. Local state plus sub-process state
+   */
+  state_counts ports, local, all;
 
-  int localbools;		// total number of Booleans needed for
-				// local state:
-  
   /*-- 
     Boolean variables are numbered
       0 ... nportbools-1 ... (nportbools + localbools - 1)
@@ -60,49 +90,36 @@ typedef struct {
   
   bitset_t *multi;		// bitset of local bools that are
 				// locally multi-driver. The size of
-				// this bitset is # of localbools + #
-				// of port bools. 0..nportbools-1 are
+				// this bitset is # of local.bools + #
+				// of port.bools. 0..ports.bools-1 are
 				// the ports, and the rest are
-				// numbered as per localbool numbering
+				// numbered as per local.bool numbering
 				// with nportbools as the offset.
 
   int ismulti;			// 1 if this process contributes to a
 				// multi-driver scenario
-
-  int allbools;			// total booleans needed for this
-				// process (minus its ports)
 
   struct pHashtable *map;	// map from connection pointer to
 				// unique integer from 0 .. localbools-1
                                 // for local booleans.
                                 // For port bools, negative numbers
 				// numbered from -nportbools to -1.
-
-  /*--
-    Analogous quantities for CHP level of abstraction
-    --*/
+                                //
+                                // Similar for port integers, and port
+                                // channels.
+                                // for chp extra booleans, the port
+                                // numbers are more negative, and the
+                                // local state is more positive.
   
-  chp_offsets nportchp;		// # of chp variables in the port [not
-				// omitted]
-  int nportchptot;
-
-  chp_offsets chp_all;
-  chp_offsets chp_local;	// local chp
-  
-  int localchp;			// local chp variables
-  
-
-  bitset_t *chpmulti;		// 1 if multi-driver at the CHP level
   int chp_ismulti;		// multidriver through CHP
 
-  struct pHashtable *chpmap;	// connection * to index for
-				// bool/int/chan: note: idx is not unique!
+  struct pHashtable *inst;	// used for instance offsets
   
 } stateinfo_t;
 
 class ActStatePass : public ActPass {
 public:
-  ActStatePass (Act *a);
+  ActStatePass (Act *a, int inst_offset = 0);
   ~ActStatePass ();
 
   int run (Process *p = NULL);
@@ -122,7 +139,7 @@ public:
     return getTypeOffset (getStateInfo (p), c, offset, type, width);
   }
 
-  chp_offsets getGlobals() { return _globals; }
+  state_counts getGlobals() { return _globals; }
 
   int isGlobalOffset (int off) {
     if (off >= 0) { return 0; }
@@ -157,9 +174,10 @@ private:
   stateinfo_t *countLocalState (Process *p);
   void printLocal (FILE *fp, Process *p);
   int _black_box_mode;
+  int _inst_offsets;
 
   stateinfo_t *_root_si;	// top-level state info
-  chp_offsets _globals;
+  state_counts _globals;
   
   ActBooleanizePass *bp;
   FILE *_fp;
