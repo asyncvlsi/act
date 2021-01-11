@@ -2898,6 +2898,42 @@ act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e)
   return r;
 }
 
+void act_prs_expr_free (act_prs_expr_t *e)
+{
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    act_prs_expr_free (e->u.e.l);
+    act_prs_expr_free (e->u.e.r);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    act_prs_expr_free (e->u.e.l);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  FREE (e);
+}
+
 void initialize_print (FILE *fp, act_initialize *init)
 {
   listitem_t *li;

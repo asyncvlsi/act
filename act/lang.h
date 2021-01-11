@@ -467,6 +467,7 @@ void act_print_size (FILE *fp, act_size_spec_t *sz);
 
 act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e);
 act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
+void act_prs_expr_free (act_prs_expr_t *e);
 
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 
