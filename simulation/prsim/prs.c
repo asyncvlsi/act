@@ -2680,6 +2680,8 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       }
       b = phash_add (p->timing, n1);
       b->v = pt;
+      phash_delete (p->timing, n2);
+      n2->intiming = 0;
     }
     else {
       /* merge timing chains */
@@ -2723,7 +2725,6 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
 	Assert (k != 3, "What?");
       }
     }
-    phash_delete (p->timing, n2);
   }
   
   for (i=0; i < 2; i++) {
