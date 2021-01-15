@@ -32,6 +32,7 @@ struct AGedge {
   int enext;		     /* next ptr for all edges for a vertex */
   int eback;
   void *info;
+  void *getInfo() { return info; }
 };
 
 struct AGvertex {
@@ -42,6 +43,7 @@ struct AGvertex {
   void *info;
   int hasFanout () { return ehd != -1; }
   int hasFanin () { return bhd != -1; }
+  void *getInfo() { return info; }
 };
 
 class AGraph {

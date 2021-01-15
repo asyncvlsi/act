@@ -19,4 +19,4 @@
   ismulti: 0
   all booleans (incl. inst): 32
 --- End Process: foo<> ---
-Globals: 0 bools
+Globals: 1 bools

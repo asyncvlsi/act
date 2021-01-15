@@ -1531,9 +1531,15 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
       Assert (v->usedchp == 1 || v->input == 1, "What?");
     }
     if (v->id->isglobal()) {
-      A_NEWM (n->used_globals, act_connection *);
-      A_NEXT (n->used_globals) = v->id;
-      A_INC (n->used_globals);
+      int i;
+      for (i=0; i < A_LEN (n->used_globals); i++) {
+	if (n->used_globals[i] == v->id) break;
+      }
+      if (i == A_LEN (n->used_globals)) {
+	A_NEWM (n->used_globals, act_connection *);
+	A_NEXT (n->used_globals) = v->id;
+	A_INC (n->used_globals);
+      }
     }
 
     /*-- now check if this is fragmented --*/
@@ -2104,9 +2110,18 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	break;
     }
     if (j == A_LEN (n->used_globals)) {
+      act_booleanized_var_t *vs =
+	raw_lookup (subinst, subinst->used_globals[i]);
+      Assert (vs, "What?");
       A_NEWM (n->used_globals, act_connection *);
       A_NEXT (n->used_globals) = subinst->used_globals[i];
       A_INC (n->used_globals);
+
+      act_booleanized_var_t *v = raw_lookup (n, subinst->used_globals[i]);
+      if (!v) {
+	v = _var_lookup (n, subinst->used_globals[i]);
+	*v = *vs;
+      }
     }
   }
 }

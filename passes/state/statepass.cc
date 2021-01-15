@@ -85,7 +85,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       - the raw booleans
       - the chp booleans
 
-     1. b->cH->n == local variables used
+     1. b->cH->n == local variables used + global bools used in this process
      2. port list: variables that are out of consideration
 
      Once we have the set of variables, then we need state only for
@@ -966,6 +966,7 @@ void ActStatePass::Print (FILE *fp, Process *p)
   }
   _fp = fp;
   run_recursive (p, 1);
+  printf ("Globals: %d bools\n", _globals.numBools());
 }
 
 stateinfo_t *ActStatePass::getStateInfo (Process *p)

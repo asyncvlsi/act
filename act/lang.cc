@@ -3409,3 +3409,85 @@ int act_hse_direction (act_chp_lang_t *c, ActId *id)
   }
   return dir;
 }
+
+
+static act_prs_expr_t *_conv_nnf (void *cookie,
+				  act_prs_expr_t *e,
+				  void *(*conv)(void *, void *), int flip)
+{				  
+  act_prs_expr_t *ret;
+  
+  if (!e) return NULL;
+
+  NEW (ret, act_prs_expr_t);
+  ret->type = e->type;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    if (flip) {
+      ret->type = (e->type == ACT_PRS_EXPR_AND ? ACT_PRS_EXPR_OR :
+		   ACT_PRS_EXPR_AND);
+    }
+    ret->u.e.l = _conv_nnf (cookie, e->u.e.l, conv, flip);
+    ret->u.e.r = _conv_nnf (cookie, e->u.e.r, conv, flip);
+    ret->u.e.pchg = NULL;
+    ret->u.e.pchg_type = -1;
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    FREE (ret);
+    ret = _conv_nnf (cookie, e->u.e.l, conv, 1-flip);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    if (conv) {
+      ret->u.v.id = (ActId *) (*conv) (cookie, e->u.v.id);
+    }
+    else {
+      ret->u.v = e->u.v;
+    }
+    ret->u.v.sz = NULL;
+
+    if (flip) {
+      act_prs_expr_t *t;
+      NEW (t, act_prs_expr_t);
+      t->type = ACT_PRS_EXPR_NOT;
+      t->u.e.l = ret;
+      t->u.e.r = NULL;
+      t->u.e.pchg = NULL;
+      t->u.e.pchg_type = -1;
+      ret = t;
+    }
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    if (flip) {
+      ret->type = (e->type == ACT_PRS_EXPR_TRUE ?
+		   ACT_PRS_EXPR_FALSE : ACT_PRS_EXPR_TRUE);
+    }
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    fatal_error ("@-labels should have been substituted!");
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    fatal_error ("and/or loop?!");
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+  return ret;
+}
+
+/* -- return nnf version of expression -- */
+act_prs_expr_t *act_prs_expr_nnf (void *cookie,
+				  act_prs_expr_t *e,
+				  void *(*conv)(void *, void *))
+{
+  return _conv_nnf (cookie, e, conv, 0);
+}
