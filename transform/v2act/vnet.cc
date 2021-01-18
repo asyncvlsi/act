@@ -106,7 +106,8 @@ VNet *verilog_read (const char *netlist, const char *actlib)
   return w;
 }
 
-struct library_vertex_info {
+class library_vertex_info : public AGinfo {
+ public:
   const char *pin;		/* pin name */
   unsigned int isclk:3;		/* clock state:
 				   0 = not a clock
@@ -128,7 +129,8 @@ struct library_vertex_info {
 
 /* XXX: assumption: an array port has all its elements in the same
    clock domain */
-struct library_edge_info {
+class  library_edge_info : public AGinfo {
+ public:
   int srcpin;			/* -1 if an I/O pin; otherwise the
                                     vertex id in the instance */
   int dstpin;			/* -1 if an I/O pin; otherwise the
@@ -148,7 +150,8 @@ static library_edge_info *newedge ()
 }
    
 
-struct inst_vertex_info {
+class inst_vertex_info : public AGinfo {
+ public:
   id_info_t *id;
   AGraph *g;
 };
@@ -182,6 +185,19 @@ AGvertex *find_pin (AGraph *g, const char *nm)
   return NULL;
 }
 
+class AGprocinfo : public AGinfo {
+ public:
+  Process *p;
+  AGprocinfo (Process *_p) { p = _p; }
+};
+
+
+class AGmoduleinfo : public AGinfo {
+ public:
+  module_t *m;
+  AGmoduleinfo (module_t *_m) { m = _m; }
+};
+
 
 static AGraph *_act_create_graph (VNet *v, Process *p)
 {
@@ -206,7 +222,7 @@ static AGraph *_act_create_graph (VNet *v, Process *p)
     Assert (p, "Expanded process found");
   }
 
-  g = new AGraph (p);
+  g = new AGraph (new AGprocinfo (p));
 
 #if 0
   printf ("Process: %s\n", instname);
@@ -451,7 +467,7 @@ AGraph *_module_create_graph (VNet *v, module_t *m)
   struct Hashtable *H;
   char buf[10240];
   
-  AGraph *g = new AGraph (m);
+  AGraph *g = new AGraph (new AGmoduleinfo(m));
 
   /* clear ispace field */
   for (id_info_t *id = m->hd; id; id = id->next) {

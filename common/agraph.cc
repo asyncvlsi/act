@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include "agraph.h"
 
-AGraph::AGraph(void *_info)
+AGraph::AGraph(AGinfo *_info)
 {
   A_INIT (edges);
   A_INIT (vertices);
@@ -40,7 +40,7 @@ AGraph::~AGraph()
   info = NULL;
 }
 
-void *AGraph::getInfo ()
+AGinfo *AGraph::getInfo ()
 {
   return info;
 }
@@ -51,7 +51,7 @@ int AGraph::V2idx (AGvertex *v)
   return (v - &vertices[0]);
 }
 
-int AGraph::addVertex (void *info)
+int AGraph::addVertex (AGinfo *info)
 {
   AGvertex *v;
   
@@ -68,7 +68,7 @@ int AGraph::addVertex (void *info)
   return v->vid;
 }
 
-int AGraph::addInput (void *info)
+int AGraph::addInput (AGinfo *info)
 {
   int v = addVertex (info);
   vertices[v].isio = 1;
@@ -78,7 +78,7 @@ int AGraph::addInput (void *info)
   return v;
 }
 
-int AGraph::addOutput (void *info)
+int AGraph::addOutput (AGinfo *info)
 {
   int v = addVertex (info);
   vertices[v].isio = 2;
@@ -88,7 +88,7 @@ int AGraph::addOutput (void *info)
   return v;
 }
 
-int AGraph::addEdge (int src, int dst, void *info)
+int AGraph::addEdge (int src, int dst, AGinfo *info)
 {
   AGedge *e;
   AGvertex *sv;
@@ -512,4 +512,37 @@ AGraphInpVertexIter& AGraphInpVertexIter::operator++()
 {
  i++;
  return *this;
+}
+
+void AGraph::printDot (FILE *fp, const char *name)
+{
+ AGvertex *v;
+ AGedge *e;
+ const char *t;
+ 
+ fprintf (fp, "digraph \"%s\" {\n", name ? name : "default_name");
+
+ for (int i=0; i < A_LEN (vertices); i++) {
+   v = &vertices[i];
+   if (v->info) {
+     t = v->info->info();
+   }
+   else {
+     t = "";
+   }
+   fprintf (fp, " v%d [label=\"#%d%s %s\"];\n", i, i,
+	    (v->isio == 0 ? "" : (v->isio == 1 ? "-i" : "-o")), t);
+ }
+
+ for (int i=0; i < A_LEN (edges); i++) {
+   e = &edges[i];
+   if (e->info) {
+     t = e->info->info();
+   }
+   else {
+     t = "";
+   }
+   fprintf (fp, " v%d -> v%d [label=\"%s\"];\n", e->src, e->dst, t);
+ }
+ fprintf (fp, "}\n");
 }

@@ -465,10 +465,21 @@ act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 void act_print_size (FILE *fp, act_size_spec_t *sz);
 
+
 act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e);
 act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
-act_prs_expr_t *act_prs_expr_nnf (void *cookie, act_prs_expr_t *e,
-				  void * (*conv_var) (void *, void *));
+
+
+typedef void *(*ACT_VAR_CONV) (void *, void *);
+
+/*
+  at_hash : hash table from label strings to act_prs_lang_t pointers
+*/
+act_prs_expr_t *act_prs_expr_nnf (void *cookie,
+				  struct Hashtable *at_hash,
+				  act_prs_expr_t *e,
+				  ACT_VAR_CONV conv_var);
+
 void act_prs_expr_free (act_prs_expr_t *e);
 
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);

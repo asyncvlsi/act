@@ -25,14 +25,19 @@
 #include <iterator>
 #include "array.h"
 
+class AGinfo {
+public:
+  virtual const char *info() { return ""; }
+};
 
 struct AGedge {
   int eid;
   int src, dst;
   int enext;		     /* next ptr for all edges for a vertex */
   int eback;
-  void *info;
-  void *getInfo() { return info; }
+  AGinfo *info;
+  AGinfo *getInfo() { return info; }
+  void setInfo (AGinfo *x) { info = x; }
 };
 
 struct AGvertex {
@@ -40,21 +45,22 @@ struct AGvertex {
   int ehd;
   int bhd;			// backward edges
   unsigned int isio:2;		// 0 = not I/O, 1 = inp, 2 = outp
-  void *info;
+  AGinfo *info;
   int hasFanout () { return ehd != -1; }
   int hasFanin () { return bhd != -1; }
-  void *getInfo() { return info; }
+  AGinfo *getInfo() { return info; }
+  void setInfo (AGinfo *x) { info = x; }
 };
 
 class AGraph {
  public:
-  AGraph(void *info = NULL);
+  AGraph(AGinfo *info = NULL);
   ~AGraph();
   
-  int addInput (void *info = NULL);
-  int addOutput (void *info = NULL);
-  int addVertex(void *info = NULL);
-  int addEdge(int src, int dst, void *info = NULL);
+  int addInput (AGinfo *info = NULL);
+  int addOutput (AGinfo *info = NULL);
+  int addVertex(AGinfo *info = NULL);
+  int addEdge(int src, int dst, AGinfo *info = NULL);
 
   int numEdges ();
   int numVertices ();
@@ -65,10 +71,12 @@ class AGraph {
   AGvertex *getInput (int i);
   AGvertex *getOutput (int i);
   int V2idx (AGvertex *v);
-  void *getInfo();
+  AGinfo *getInfo();
+
+  void printDot (FILE *fp, const char *name);
 
  private:
-  void *info;
+  AGinfo *info;
   A_DECL (AGedge, edges);
   A_DECL (AGvertex, vertices);
   A_DECL (int, inp);		// input vertices (index)

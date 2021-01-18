@@ -110,6 +110,17 @@ typedef struct {
                                 // for chp extra booleans, the port
                                 // numbers are more negative, and the
                                 // local state is more positive.
+
+  /* The port numbering is pos - total #ports.
+
+     But using the offset methods below reverses the port
+     numbering. This is so that the functions don't need to know the
+     number of ports.
+     
+     It is this reversed numbering that is used in all the tools when
+     converting negative idx to their actual location in an array.
+  */
+
   
   int chp_ismulti;		// multidriver through CHP
 
@@ -140,6 +151,8 @@ public:
   }
 
   state_counts getGlobals() { return _globals; }
+
+  stateinfo_t *rootStateInfo () { return _root_si; }
 
   int isGlobalOffset (int off) {
     if (off >= 0) { return 0; }

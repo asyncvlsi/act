@@ -3412,9 +3412,10 @@ int act_hse_direction (act_chp_lang_t *c, ActId *id)
 
 
 static act_prs_expr_t *_conv_nnf (void *cookie,
+				  struct Hashtable *at_hash,
 				  act_prs_expr_t *e,
 				  void *(*conv)(void *, void *), int flip)
-{				  
+{
   act_prs_expr_t *ret;
   
   if (!e) return NULL;
@@ -3428,15 +3429,15 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
       ret->type = (e->type == ACT_PRS_EXPR_AND ? ACT_PRS_EXPR_OR :
 		   ACT_PRS_EXPR_AND);
     }
-    ret->u.e.l = _conv_nnf (cookie, e->u.e.l, conv, flip);
-    ret->u.e.r = _conv_nnf (cookie, e->u.e.r, conv, flip);
+    ret->u.e.l = _conv_nnf (cookie, at_hash, e->u.e.l, conv, flip);
+    ret->u.e.r = _conv_nnf (cookie, at_hash, e->u.e.r, conv, flip);
     ret->u.e.pchg = NULL;
     ret->u.e.pchg_type = -1;
     break;
 
   case ACT_PRS_EXPR_NOT:
     FREE (ret);
-    ret = _conv_nnf (cookie, e->u.e.l, conv, 1-flip);
+    ret = _conv_nnf (cookie, at_hash, e->u.e.l, conv, 1-flip);
     break;
 
   case ACT_PRS_EXPR_VAR:
@@ -3447,7 +3448,7 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
       ret->u.v = e->u.v;
     }
     ret->u.v.sz = NULL;
-
+    
     if (flip) {
       act_prs_expr_t *t;
       NEW (t, act_prs_expr_t);
@@ -3469,7 +3470,33 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
     break;
 
   case ACT_PRS_EXPR_LABEL:
-    fatal_error ("@-labels should have been substituted!");
+    {
+      act_prs_lang_t *tmp;
+      hash_bucket_t *b;
+      b = hash_lookup (at_hash, e->u.l.label);
+      if (!b) {
+	fatal_error ("Label `%s' not found", e->u.l.label);
+      }
+      tmp = (act_prs_lang_t *) b->v;
+      Assert (tmp->type == ACT_PRS_RULE &&
+	      tmp->u.one.label  &&
+	      strcmp ((char *)tmp->u.one.e, e->u.l.label) == 0,
+	      "Error in at_hash map for nnf conversion");
+      if (flip) {
+	if (tmp->u.one.dir != 0) {
+	  fatal_error ("Label expression ~@%s used incorrectly", b->key);
+	}
+	FREE (ret);
+	ret = _conv_nnf (cookie, at_hash, tmp->u.one.e, conv, 0);
+      }
+      else {
+	if (tmp->u.one.dir != 1) {
+	  fatal_error ("Label expression @%s used incorrectly", b->key);
+	}
+	FREE (ret);
+	ret = _conv_nnf (cookie, at_hash, tmp->u.one.e, conv, 0);
+      }
+    }
     break;
 
   case ACT_PRS_EXPR_ANDLOOP:
@@ -3486,8 +3513,9 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
 
 /* -- return nnf version of expression -- */
 act_prs_expr_t *act_prs_expr_nnf (void *cookie,
+				  struct Hashtable *at_hash,
 				  act_prs_expr_t *e,
 				  void *(*conv)(void *, void *))
 {
-  return _conv_nnf (cookie, e, conv, 0);
+  return _conv_nnf (cookie, at_hash, e, conv, 0);
 }
