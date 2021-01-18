@@ -62,6 +62,9 @@ class AGraph {
   int addVertex(AGinfo *info = NULL);
   int addEdge(int src, int dst, AGinfo *info = NULL);
 
+  void mkInput (int v);
+  void mkOutput (int v);
+
   int numEdges ();
   int numVertices ();
   int numOutputs ();

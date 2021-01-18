@@ -78,6 +78,26 @@ int AGraph::addInput (AGinfo *info)
   return v;
 }
 
+void AGraph::mkInput (int v)
+{
+  Assert (v >= 0 && v < A_LEN (vertices), "vertex indx out of range");
+  Assert (vertices[v].isio == 0, "Already I/O vertex");
+  vertices[v].isio = 1;
+  A_NEW (inp, int);
+  A_NEXT (inp) = v;
+  A_INC (inp);
+}
+
+void AGraph::mkOutput (int v)
+{
+  Assert (v >= 0 && v < A_LEN (vertices), "vertex indx out of range");
+  Assert (vertices[v].isio == 0, "Already I/O vertex");
+  vertices[v].isio = 2;
+  A_NEW (outp, int);
+  A_NEXT (outp) = v;
+  A_INC (outp);
+}  
+
 int AGraph::addOutput (AGinfo *info)
 {
   int v = addVertex (info);
