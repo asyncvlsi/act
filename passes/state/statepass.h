@@ -180,6 +180,8 @@ public:
     return off/2 - 1;
   }
 
+  int instOffsets () { return _inst_offsets; }
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);

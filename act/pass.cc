@@ -93,7 +93,7 @@ int ActPass::run (Process *p)
     return 0;
   }
 
-  visited_flag = new std::unordered_set<Process *> ();
+  visited_flag = new std::unordered_set<UserDef *> ();
   
   /* do the work */
   if (p) {
@@ -119,7 +119,7 @@ void ActPass::run_recursive (Process *p, int mode)
     return;
   }
 
-  visited_flag = new std::unordered_set<Process *> ();
+  visited_flag = new std::unordered_set<UserDef *> ();
 
   if (p) {
     act_error_push (p->getName(), NULL, 0);
@@ -144,19 +144,21 @@ int ActPass::init ()
 }
 
 void *ActPass::local_op (Process *p, int mode) { return NULL; }
+void *ActPass::local_op (Channel *c, int mode) { return NULL; }
+void *ActPass::local_op (Data *d, int mode) { return NULL; }
 void ActPass::free_local (void *v) { if (v) { FREE (v); } }
 
 
 void ActPass::init_map ()
 {
   free_map ();
-  pmap = new std::map<Process *, void *> ();
+  pmap = new std::map<UserDef *, void *> ();
 }
 
 void ActPass::free_map ()
 {
   if (pmap) {
-    std::map<Process *, void *>::iterator it;
+    std::map<UserDef *, void *>::iterator it;
     for (it = pmap->begin(); it != pmap->end(); it++) {
       free_local (it->second);
     }
@@ -165,7 +167,7 @@ void ActPass::free_map ()
   pmap = NULL;
 }
 
-void ActPass::recursive_op (Process *p, int mode)
+void ActPass::recursive_op (UserDef *p, int mode)
 {
   ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
@@ -190,9 +192,51 @@ void ActPass::recursive_op (Process *p, int mode)
 	FREE (tmp);
       }
     }
+    else if (TypeFactory::isUserType (vx->t)) {
+      if (TypeFactory::isChanType (vx->t)) {
+	Channel *x = dynamic_cast<Channel *> (vx->t->BaseType());
+	Assert (x, "what?");
+	if (x->isExpanded()) {
+	  char *tmp;
+	  int len;
+	  len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	  MALLOC (tmp, char, len);
+	  snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	  act_error_push (tmp, NULL, 0);
+	  recursive_op (x, mode);
+	  act_error_pop ();
+	  FREE (tmp);
+	}
+      }
+      else {
+	Data *x = dynamic_cast<Data *> (vx->t->BaseType());
+	Assert (x, "what?");
+	if (x->isExpanded()) {
+	  char *tmp;
+	  int len;
+	  len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	  MALLOC (tmp, char, len);
+	  snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	  act_error_push (tmp, NULL, 0);
+	  recursive_op (x, mode);
+	  act_error_pop ();
+	  FREE (tmp);
+	}
+      }
+    }
   }
-
-  (*pmap)[p] = local_op (p, mode);
+  
+  if (TypeFactory::isProcessType (p) || (p == NULL)) {
+    (*pmap)[p] = local_op (dynamic_cast<Process *>(p), mode);
+  }
+  else if (TypeFactory::isChanType (p)) {
+    (*pmap)[p] = local_op (dynamic_cast<Channel *>(p), mode);
+  }
+  else {
+    Assert (TypeFactory::isDataType (p) || TypeFactory::isStructure (p),
+	    "What?");
+    (*pmap)[p] = local_op (dynamic_cast<Data *>(p), mode);
+  }
 }
 
  

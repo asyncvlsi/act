@@ -321,14 +321,16 @@ public:
   
 private:
   virtual void *local_op (Process *p, int mode = 0);
+  virtual void *local_op (Channel *c, int mode = 0);
+  virtual void *local_op (Data *d, int mode = 0);
   virtual void free_local (void *);
 
   int init (); // initialize or re-initialize
-  void recursive_op (Process *p, int mode = 0);
+  void recursive_op (UserDef *p, int mode = 0);
   void init_map ();
   void free_map ();
-  std::map<Process *, void *> *pmap;
-  std::unordered_set<Process *> *visited_flag;
+  std::map<UserDef *, void *> *pmap;
+  std::unordered_set<UserDef *> *visited_flag;
 
 public:
   

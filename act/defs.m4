@@ -752,6 +752,7 @@ defdata: [ template_spec ]
 	$E("A data type cannot be related to an interface");
       }
       if (TypeFactory::isStructure (phys_inst)) {
+	$E("A data type cannot be related to a structure");
 	ir = NULL;
       }
       else {
