@@ -22,7 +22,7 @@ LIB=libactscm_$(EXT).a
 LIB2=libactscmcli_$(EXT).a
 TARGETLIBS=$(LIB) $(LIB2)
 
-TARGETINCS=lisp.h lispCli.h
+TARGETINCS=lisp.h lispCli.h lispInt.h
 
 OBJSC=lispA-Z.o lispArith.o lispEval.o lispFrame.o \
 	lispGC.o lispIO.o lispBuiltin.o lispMain.o lispParse.o \
