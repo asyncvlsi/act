@@ -138,6 +138,7 @@ public:
   void Print (FILE *fp, Process *p = NULL);
 
   stateinfo_t *getStateInfo (Process *p);
+  act_boolean_netlist_t *getBNL (Process *p) { return bp->getBNL (p); }
 
   /* type: 0 = bool, 1 = int, 2 = chan-in, 3 = chan-not-in */
   
