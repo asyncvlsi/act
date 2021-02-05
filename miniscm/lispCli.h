@@ -53,6 +53,13 @@ void LispCliInit (const char *elrc, const char *histrc, const char *prompt,
 void LispCliInitPlain (const char *prompt,
 		       struct LispCliCommand *cmds, int cmd_len);
 
+/* add more commands: returns cmd_len on success, otherwise it
+   returns the id of the command that did not get added. */
+int LispCliAddCommands (struct LispCliCommand *cmds, int cmd_len);
+
+/*  change prompt */
+void LispCliSetPrompt (const char *prompt);
+
 /*
   Cleanup CLI module
 */

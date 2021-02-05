@@ -65,7 +65,7 @@ static char *prompt_func (EditLine *el)
   2. help <cmd>
   --*/
 
-static struct LispCliCommand *cli_commands;
+static struct LispCliCommand *cli_commands = NULL;
 static int num_commands = 0;
 static int use_editline;
 
@@ -83,8 +83,6 @@ void LispCliInit (const char *elrc, const char *histrc, const char *prompt,
   HistEvent ev;
 
   use_editline = 1;
-  cli_commands = cmds;
-  num_commands = cmd_len;
 
 #ifdef OLD_LIBEDIT
   el_ptr = el_init ("editline", stdin, stdout);
@@ -126,6 +124,11 @@ void LispCliInit (const char *elrc, const char *histrc, const char *prompt,
   el_set (el_ptr, EL_HIST, history, el_hist);
   el_set (el_ptr, EL_BIND, "^P", "ed-prev-history", NULL);
   el_set (el_ptr, EL_BIND, "^N", "ed-next-history", NULL);
+
+  if (LispCliAddCommands (cmds, cmd_len) != cmd_len) {
+    fatal_error ("Could not add initial command set!");
+  }
+  Assert (num_commands == cmd_len, "what?");
 }
 
 
@@ -133,8 +136,6 @@ void LispCliInitPlain (const char *prompt,
 		       struct LispCliCommand *cmds, int cmd_len)
 {
   use_editline = 0;
-  cli_commands = cmds;
-  num_commands = cmd_len;
 
   if (prompt) {
     prompt_val = Strdup (prompt);
@@ -142,6 +143,11 @@ void LispCliInitPlain (const char *prompt,
   else {
     prompt_val = Strdup (DEFAULT_PROMPT);
   }
+  
+  if (LispCliAddCommands (cmds, cmd_len) != cmd_len) {
+    fatal_error ("Could not add initial command set!");
+  }
+  Assert (num_commands == cmd_len, "what?");
 }
 
 
@@ -505,4 +511,69 @@ static int handle_source (int argc, char **argv)
 int LispCliRun (FILE *inp)
 {
   return handle_user_input (inp);
+}
+
+/*------------------------------------------------------------------------
+ *
+ *  LispCliSetPrompt --
+ *
+ *   Set the prompt to a new string
+ *
+ *------------------------------------------------------------------------
+ */
+void LispCliSetPrompt (const char *s)
+{
+  if (prompt_val) {
+    FREE (prompt_val);
+  }
+  if (s) {
+    prompt_val = Strdup (s);
+  }
+  else {
+    prompt_val = Strdup (DEFAULT_PROMPT);
+  }
+}
+
+
+/*------------------------------------------------------------------------
+ *
+ *  LispCliAddCommands --
+ *
+ *   Add new commands to the command-line interface
+ *
+ *------------------------------------------------------------------------
+ */
+int LispCliAddCommands (struct LispCliCommand *cmd, int cmd_len)
+{
+  int i, j;
+  
+  if (cmd_len <= 0) return cmd_len;
+
+  if (!cli_commands) {
+    MALLOC (cli_commands, struct LispCliCommand, cmd_len);
+  }
+  else {
+    REALLOC (cli_commands, struct LispCliCommand, cmd_len + num_commands);
+  }
+  for (i=0; i < cmd_len; i++) {
+    if (cmd[i].name) {
+      for (j=0; j < num_commands; j++) {
+	if (!cli_commands[j].name) continue;
+	if (strcmp (cli_commands[j].name, cmd[i].name) == 0) {
+	  warning ("Duplicate command name `%s'", cmd[i].name);
+	  return i;
+	}
+      }
+      if (strcmp (cmd[i].name, "help") == 0 ||
+	  strcmp (cmd[i].name, "exit") == 0 ||
+	  strcmp (cmd[i].name, "quit") == 0 ||
+	  strcmp (cmd[i].name, "source") == 0) {
+	  warning ("Reserved command name `%s'", cmd[i].name);
+	  return i;
+      }
+    }
+    cli_commands[num_commands] = cmd[i];
+    num_commands++;
+  }
+  return i;
 }
