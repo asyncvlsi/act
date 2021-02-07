@@ -193,8 +193,12 @@ typedef struct act_chp_lang {
     } assign;
     struct {
       ActId *chan;
-      list_t *rhs;		/* expression list or ID list for
-				   send vs recv */
+      list_t *rhs;		/* expression for send, id for recv.
+				   for bidirectional channels, send
+				   has expr followed by id, and recv
+				   has id followed by expr
+				*/
+      int flavor;		/* up, down, blank */
     } comm;
     struct {
       mstring_t *name;		/* function name */
@@ -481,6 +485,7 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 				  ACT_VAR_CONV conv_var);
 
 void act_prs_expr_free (act_prs_expr_t *e);
+void act_chp_free (act_chp_lang_t *);
 
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 

@@ -425,9 +425,17 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
+send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
+                                                  [ rcv_type recv_id ]
 {{X:
     act_chp_lang_t *c;
+    int t;
+    InstType *it;
+    Channel *ch1;
+    Chan *ch2;
+
+    t = act_type_var ($0->scope, $1, &it);
+    
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_SEND;
@@ -435,6 +443,11 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
       c->space = NULL;
       c->u.comm.chan = $1;
       c->u.comm.rhs = list_new ();
+      c->u.comm.flavor = $2;
+
+      if (!OPT_EMPTY ($4)) {
+	$E("Bidirectional data communication needs data in both directions!");
+      }
     }
     else {
       ActRet *r;
@@ -443,13 +456,44 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_typ [ send_data ]
       c = r->u.chp;
       FREE (r);
       c->u.comm.chan = $1;
+      c->u.comm.flavor = $2;
+
+      if (!OPT_EMPTY ($4)) {
+	r = OPT_VALUE ($4);
+	$A(r->type == R_INT);
+	if (c->u.comm.flavor != r->u.ival) {
+	  $E("Cannot mix flavors of ! and ?");
+	}
+	FREE (r);
+	r = OPT_VALUE2 ($4);
+	$A(r->type == R_CHP_LANG);
+	list_concat (c->u.comm.rhs, r->u.chp->u.comm.rhs);
+	act_chp_free (r->u.chp);
+      }
+    }
+    int isbidir = 0;
+    ch1 = dynamic_cast<Channel *> (it->BaseType());
+    if (ch1) {
+      isbidir = ch1->isBiDirectional();
+    }
+    else {
+      ch2 = dynamic_cast<Chan *> (it->BaseType());
+      Assert (ch2, "Hmm");
+      isbidir = ch2->isBiDirectional();
+    }
+    if (isbidir && OPT_EMPTY ($4)) {
+      $E("Bidirectional channel: missing ? operator");
+    }
+    else if (!isbidir && !OPT_EMPTY ($4)) {
+      $E("Unidirectional channel with bidirectional syntax?");
     }
     OPT_FREE ($3);
+    OPT_FREE ($4);
     return c;
   }}
 ;
 
-snd_typ[int]: "!"
+snd_type[int]: "!"
 {{X: return 0; }}
 | "!+"
 {{X: return 1; }}
@@ -486,15 +530,28 @@ send_data[act_chp_lang_t *]: w_expr
 ;
 
 recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
+                                        [ snd_type send_data ]
 {{X:
     act_chp_lang_t *c;
+    Channel *ch1;
+    Chan *ch2;
+    InstType *it;
+    int t;
+    
+    t = act_type_var ($0->scope, $1, &it);
+    
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_RECV;
       c->label = NULL;
       c->space = NULL;
       c->u.comm.chan = $1;
+      c->u.comm.flavor = $2;
       c->u.comm.rhs = list_new ();
+
+      if (!OPT_EMPTY ($4)) {
+	$E("Bidirectional data communication needs data in both directions!");
+      }
     }
     else {
       ActRet *r;
@@ -503,8 +560,39 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
       c = r->u.chp;
       FREE (r);
       c->u.comm.chan = $1;
+      c->u.comm.flavor = $2;
+
+      if (!OPT_EMPTY ($4)) {
+	r = OPT_VALUE ($4);
+	$A(r->type == R_INT);
+	if (c->u.comm.flavor != r->u.ival) {
+	  $E("Cannot mix flavors of ! and ?");
+	}
+	FREE (r);
+	r = OPT_VALUE2 ($4);
+	$A(r->type == R_CHP_LANG);
+	list_concat (c->u.comm.rhs, r->u.chp->u.comm.rhs);
+	act_chp_free (r->u.chp);
+      }
+    }
+    int isbidir = 0;
+    ch1 = dynamic_cast<Channel *> (it->BaseType());
+    if (ch1) {
+      isbidir = ch1->isBiDirectional();
+    }
+    else {
+      ch2 = dynamic_cast<Chan *> (it->BaseType());
+      Assert (ch2, "Hmm");
+      isbidir = ch2->isBiDirectional();
+    }
+    if (isbidir && OPT_EMPTY ($4)) {
+      $E("Bidirectional channel: missing ? operator");
+    }
+    else if (!isbidir && !OPT_EMPTY ($4)) {
+      $E("Unidirectional channel with bidirectional syntax?");
     }
     OPT_FREE ($3);
+    OPT_FREE ($4);
     return c;
 }}
 ;

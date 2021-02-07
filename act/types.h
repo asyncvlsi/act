@@ -127,6 +127,7 @@ class Chan : public Type {
 public:
   InstType *datatype() { return p; }
   InstType *acktype() { return ack; }
+  int isBiDirectional() { return ack == NULL ? 0 : 1; }
 
   friend class TypeFactory;
 };
@@ -503,7 +504,19 @@ class Channel : public UserDef {
   int mustbeActiveRecv ();
   // return 1 if recv has to be active, 0 if it has to be passive, -1
   // if not determined by the channel type.
-  
+
+  int isBiDirectional() {
+    Assert (parent, "what?");
+    Channel *p = dynamic_cast<Channel *>(parent->BaseType());
+    if (p) {
+      return p->isBiDirectional();
+    }
+    else {
+      Chan *p = dynamic_cast<Chan *>(parent->BaseType());
+      Assert (p, "What?");
+      return p->isBiDirectional();
+    }
+  }
   
  private:
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS];

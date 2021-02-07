@@ -791,7 +791,7 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 
 
 
-static void chp_free (act_chp_lang_t *c)
+void act_chp_free (act_chp_lang_t *c)
 {
   /* XXX FIXME */
 }
@@ -1952,7 +1952,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	    /* whole thing is a skip */
 	    /* XXX: need chp_free */
 	    ret->u.gc = gchd;
-	    chp_free (ret);
+	    act_chp_free (ret);
 	    NEW (ret, act_chp_lang);
 	    ret->type = ACT_CHP_SKIP;
 	    return ret;
@@ -1987,19 +1987,37 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     
   case ACT_CHP_SEND:
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    ret->u.comm.flavor = c->u.comm.flavor;
+
     ret->u.comm.rhs = list_new ();
-    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+    li = list_first (c->u.comm.rhs);
+    if (li) {
       list_append (ret->u.comm.rhs,
 		   chp_expr_expand ((Expr *)list_value (li), ns, s));
+      li = list_next (li);
+      if (li) {
+	list_append (ret->u.comm.rhs,
+		     expand_var_write ((ActId *)list_value (li), ns, s));
+	Assert (list_next (li) == NULL, "Hmm");
+      }
     }
     break;
     
   case ACT_CHP_RECV:
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    ret->u.comm.flavor = c->u.comm.flavor;
+
     ret->u.comm.rhs = list_new ();
-    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+    li = list_first (c->u.comm.rhs);
+    if (li) {
       list_append (ret->u.comm.rhs,
 		   expand_var_write ((ActId *)list_value (li), ns, s));
+      li = list_next (li);
+      if (li) {
+	list_append (ret->u.comm.rhs,
+		     chp_expr_expand ((Expr *)list_value (li), ns, s));
+	Assert (list_next (li) == NULL, "What?");
+      }
     }
     break;
 
