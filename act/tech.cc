@@ -275,6 +275,9 @@ void Technology::Init (const char *s)
     tech_strname (prefix, tables[i]);
     if (i == 6 || i == 7) {
       if (!config_exists (buf)) {
+	for (j=0; j < T->num_devs; j++) {
+	  T->sel[i-6][j] = NULL;
+	}
 	continue;
       }
     }
