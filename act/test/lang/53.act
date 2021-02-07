@@ -1,0 +1,12 @@
+
+
+defproc xchg (chan!(bool) x)
+{
+  bool a, b;
+
+  chp {
+    x!true?b
+  }
+}
+
+xchg g;

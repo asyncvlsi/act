@@ -1,0 +1,2 @@
+ERROR: File `54.act', line 8, col 6
+	Bidirectional channel: missing ? operator
