@@ -122,9 +122,11 @@ class Chan : public Type {
   /* type info here */
   const char *name;
   InstType *p;			// data type for expanded channel
+  InstType *ack;		// second data type for exchange channel
 
 public:
   InstType *datatype() { return p; }
+  InstType *acktype() { return ack; }
 
   friend class TypeFactory;
 };
@@ -638,8 +640,8 @@ class TypeFactory {
    * the channel
    * \return a unique pointer to the specified channel type
    */
-  InstType *NewChan (Scope *s, Type::direction dir, InstType *l);
-  Chan *NewChan (InstType *l);
+  InstType *NewChan (Scope *s, Type::direction dir, InstType *l, InstType *ack);
+  Chan *NewChan (InstType *l, InstType *ack);
 
   /**
    * Returns a unique pointer to the instance type specified
@@ -760,6 +762,13 @@ class TypeFactory {
    */
   static int bitWidth (Type *t);
   static int bitWidth (InstType *t);
+
+  /**
+   * For bidirectional channels only. Returns 0 for normal channels,
+   * -1 for non-channels
+   */
+  static int bitWidthTwo (Type *t);
+  static int bitWidthTwo (InstType *t);
   
   static int boolType (Type *t); // 1 if a boolean within a channel or
 				 // a boolean type, -1 if NULL parent

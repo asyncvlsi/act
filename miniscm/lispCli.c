@@ -125,7 +125,7 @@ void LispCliInit (const char *elrc, const char *histrc, const char *prompt,
   el_set (el_ptr, EL_BIND, "^P", "ed-prev-history", NULL);
   el_set (el_ptr, EL_BIND, "^N", "ed-next-history", NULL);
 
-  if (LispCliAddCommands (cmds, cmd_len) != cmd_len) {
+  if (LispCliAddCommands (NULL, cmds, cmd_len) != cmd_len) {
     fatal_error ("Could not add initial command set!");
   }
   Assert (num_commands == cmd_len, "what?");
@@ -144,7 +144,7 @@ void LispCliInitPlain (const char *prompt,
     prompt_val = Strdup (DEFAULT_PROMPT);
   }
   
-  if (LispCliAddCommands (cmds, cmd_len) != cmd_len) {
+  if (LispCliAddCommands (NULL, cmds, cmd_len) != cmd_len) {
     fatal_error ("Could not add initial command set!");
   }
   Assert (num_commands == cmd_len, "what?");
@@ -543,9 +543,12 @@ void LispCliSetPrompt (const char *s)
  *
  *------------------------------------------------------------------------
  */
-int LispCliAddCommands (struct LispCliCommand *cmd, int cmd_len)
+int LispCliAddCommands (const char *mod,
+			struct LispCliCommand *cmd, int cmd_len)
 {
   int i, j;
+  char *nm;
+  int mod_len;
   
   if (cmd_len <= 0) return cmd_len;
 
@@ -555,24 +558,39 @@ int LispCliAddCommands (struct LispCliCommand *cmd, int cmd_len)
   else {
     REALLOC (cli_commands, struct LispCliCommand, cmd_len + num_commands);
   }
+
+  if (mod) {
+    mod_len = strlen (mod);
+  }
+
   for (i=0; i < cmd_len; i++) {
+    nm = NULL;
     if (cmd[i].name) {
+      if (mod) {
+	MALLOC (nm, char, strlen (cmd[i].name) + mod_len + 2);
+	snprintf (nm, strlen (cmd[i].name) + mod_len + 2,
+		  "%s:%s", mod, cmd[i].name);
+      }
+      else {
+	nm = Strdup (cmd[i].name);
+      }
       for (j=0; j < num_commands; j++) {
 	if (!cli_commands[j].name) continue;
-	if (strcmp (cli_commands[j].name, cmd[i].name) == 0) {
-	  warning ("Duplicate command name `%s'", cmd[i].name);
+	if (strcmp (cli_commands[j].name, nm) == 0) {
+	  warning ("Duplicate command name `%s'", nm);
 	  return i;
 	}
       }
-      if (strcmp (cmd[i].name, "help") == 0 ||
-	  strcmp (cmd[i].name, "exit") == 0 ||
-	  strcmp (cmd[i].name, "quit") == 0 ||
-	  strcmp (cmd[i].name, "source") == 0) {
-	  warning ("Reserved command name `%s'", cmd[i].name);
+      if (strcmp (nm, "help") == 0 ||
+	  strcmp (nm, "exit") == 0 ||
+	  strcmp (nm, "quit") == 0 ||
+	  strcmp (nm, "source") == 0) {
+	  warning ("Reserved command name `%s'", nm);
 	  return i;
       }
     }
     cli_commands[num_commands] = cmd[i];
+    cli_commands[num_commands].name = nm;
     num_commands++;
   }
   return i;

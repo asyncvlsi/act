@@ -1,0 +1,4 @@
+chan(bool,bool) x;
+chan(bool) y;
+
+x = y;

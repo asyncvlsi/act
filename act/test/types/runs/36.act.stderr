@@ -1,0 +1,3 @@
+ERROR: File `36.act', line 4, col 2
+	Typechecking failed on connection!
+	Types `chan(bool,bool)' and `chan(bool)' are not compatible

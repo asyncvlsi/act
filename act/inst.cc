@@ -642,6 +642,10 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 #endif
   /* if this is a user-defined type, print its namespace if it is not
      global! */
+
+  if (TypeFactory::isExactChanType (t)) {
+    ischan = 1;
+  }
   if (nl_mode) {
     UserDef *u = dynamic_cast<UserDef *> (t);
     if (u) {

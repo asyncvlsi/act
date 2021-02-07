@@ -640,6 +640,7 @@ struct chanhashkey {
   Scope *s;
   Type::direction d;
   InstType *t;			// type
+  InstType *ack;
 };
 
 
@@ -654,6 +655,8 @@ int TypeFactory::chanhashfn (int sz, void *key)
     (sz, (const unsigned char *) &ch->d, sizeof (Type::direction), v, 1);
   v = hash_function_continue
     (sz, (const unsigned char *) &ch->t, sizeof (InstType *), v, 1);
+  v = hash_function_continue
+    (sz, (const unsigned char *) &ch->ack, sizeof (InstType *), v, 1);
   return v;
 }
 
@@ -666,6 +669,7 @@ int TypeFactory::chanmatchfn (void *key1, void *key2)
   if (c1->s != c2->s) return 0;
   if (c1->d != c2->d) return 0;
   if (c1->t != c2->t) return 0;
+  if (c1->ack != c2->ack) return 0;
   return 1;
 }
 
@@ -678,6 +682,7 @@ void *TypeFactory::chandupfn (void *key)
   cret->s = c->s;
   cret->d = c->d;
   cret->t = c->t;
+  cret->ack = c->ack;
   return cret;
 }
 
@@ -689,7 +694,7 @@ void TypeFactory::chanfreefn (void *key)
 
 
 
-Chan *TypeFactory::NewChan (InstType *l)
+Chan *TypeFactory::NewChan (InstType *l, InstType *ack)
 {
   struct chanhashkey c;
   chash_bucket_t *b;
@@ -697,6 +702,7 @@ Chan *TypeFactory::NewChan (InstType *l)
   c.s = NULL;
   c.d = Type::NONE;
   c.t = l;
+  c.ack = ack;
   b = chash_lookup (chanhash, &c);
   if (!b) {
     Chan *cx;
@@ -705,14 +711,18 @@ Chan *TypeFactory::NewChan (InstType *l)
     cx = new Chan();
     cx->name = NULL;
     cx->p = l;
+    cx->ack = ack;
     l->MkCached();
-
+    if (ack) {
+      ack->MkCached();
+    }
     b->v = cx;
   }
   return (Chan *)b->v;
 }
 
-InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l)
+InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l,
+				InstType *ack)
 {
   struct chanhashkey c;
   chash_bucket_t *b;
@@ -720,6 +730,7 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l)
   c.s = s;
   c.d = dir;
   c.t = l;
+  c.ack = ack;
 
   b = chash_lookup (chanhash, &c);
   if (!b) {
@@ -727,12 +738,21 @@ InstType *TypeFactory::NewChan (Scope *s, Type::direction dir, InstType *l)
     
     _c = new Chan();
     _c->p = l;
+    _c->ack = ack;
     _c->name = NULL;
 
     InstType *ch = new InstType (s, _c, 0);
 
-    ch->setNumParams (1);
+    if (ack) {
+      ch->setNumParams (2);
+    }
+    else {
+      ch->setNumParams (1);
+    }
     ch->setParam (0, l);
+    if (ack) {
+      ch->setParam (1, ack);
+    }
     ch->SetDir (dir);
     b = chash_add (chanhash, &c);
     b->v = ch;
@@ -760,6 +780,7 @@ InstType *TypeFactory::NewPType (Scope *s, InstType *t)
   c.s = s;
   c.d = Type::NONE;
   c.t = t;
+  c.ack = NULL;
 
   b = chash_lookup (ptypehash, &c);
 
@@ -784,6 +805,7 @@ PType *TypeFactory::NewPType (InstType *t)
   c.s = NULL;
   c.d = Type::NONE;
   c.t = t;
+  c.ack = NULL;
 
   b = chash_lookup (ptypehash, &c);
 
@@ -1899,6 +1921,10 @@ const char *Chan::getName ()
   else {
     sprintf (buf, "chan(");
     p->sPrint (buf+strlen (buf), 10239-strlen(buf));
+    if (ack) {
+      strcat (buf, ",");
+      ack->sPrint (buf + strlen (buf), 10239 - strlen (buf));
+    }
     strcat (buf, ")");
   }
   name = Strdup (buf);
@@ -1909,9 +1935,9 @@ const char *Chan::getName ()
 Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
   Chan *cx;
-  InstType *cp;
+  InstType *cp, *ack;
 
-  Assert (nt == 1, "Hmm");
+  Assert (nt == 1 || nt == 2, "Hmm");
   cp = u[0].u.tt->Expand (ns, s);
   if (TypeFactory::isParamType (cp)) {
     act_error_ctxt (stderr);
@@ -1921,9 +1947,25 @@ Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     fprintf (stderr, "\n");
     exit (1);
   }
-  cx = TypeFactory::Factory()->NewChan (cp);
+  ack = NULL;
+  if (nt == 2) {
+    ack = u[1].u.tt->Expand (ns, s);
+    if (TypeFactory::isParamType (ack)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Parameter to channel type is not a datatype\n");
+      fprintf (stderr, " parameter: ");
+      cp->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+  }
+  cx = TypeFactory::Factory()->NewChan (cp, ack);
   if (cx->p != cp) {
+    /*-- got a cached version --*/
     delete cp;
+    if (ack) {
+      delete ack;
+    }
   }
   return cx;
 }
@@ -2405,6 +2447,16 @@ int Chan::isEqual (Type *t)
   }
   else {
     if (p->isEqual (x->p, 1)) return 1;
+  }
+
+  if (!ack && !x->ack) return 1;
+  if (!ack || !x->ack) return 0;
+
+  if (ack->isExpanded()) {
+    if (ack->isEqual (x->ack)) return 1;
+  }
+  else {
+    if (ack->isEqual (x->ack, 1)) return 1;
   }
   return 0;
 }
@@ -2938,3 +2990,28 @@ int Channel::mustbeActiveRecv ()
     return x;
   }
 }
+
+
+
+int TypeFactory::bitWidthTwo (Type *t)
+{
+  if (!t) return -1;
+  {
+    Chan *tmp = dynamic_cast <Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->acktype();
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::bitWidth (x);
+    }
+  }
+  {
+    Channel *tmp = dynamic_cast <Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::bitWidthTwo (tmp->getParent());
+    }
+  }
+  return -1;
+}
+XINSTMACRO(bitWidthTwo)

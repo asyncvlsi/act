@@ -124,14 +124,14 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" wpint_expr ">" ]
     return $0->tf->NewEnum ($0->scope, d, $4);
 }};
 
-chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")" [ chan_dir ]
+chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical_inst_type ] ")" [ chan_dir ]
 {{X:
     ActRet *r;
     Type::direction d;
     InstType *ret;
     
     if (OPT_EXISTS ($2)) {
-      if (OPT_EXISTS ($6)) {
+      if (OPT_EXISTS ($7)) {
 	$E("Direction flags can only be specified once");
       }
       r = OPT_VALUE ($2);
@@ -140,8 +140,8 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")" [ chan_dir
       FREE (r);
     }
     else {
-      if (OPT_EXISTS ($6)) {
-	r = OPT_VALUE ($6);
+      if (OPT_EXISTS ($7)) {
+	r = OPT_VALUE ($7);
 	$A(r->type == R_DIR);
 	d = r->u.dir;
 	FREE (r);
@@ -151,13 +151,21 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type ")" [ chan_dir
       }
     }
     OPT_FREE ($2);
-    OPT_FREE ($6);
+    OPT_FREE ($7);
     InstType *t = $4;
-
-    if (!TypeFactory::isDataType (t)) {
+    InstType *ack = NULL;
+    if (OPT_EXISTS ($5)) {
+      ActRet *r = OPT_VALUE ($5);
+      $A(r->type == R_INST_TYPE);
+      ack = r->u.inst;
+      FREE (r);
+    }
+    OPT_FREE ($5);
+    if (!TypeFactory::isDataType (t) ||
+	(ack && !TypeFactory::isDataType (ack))) {
       $E("Channels can only send/receive data.");
     }
-    ret = $0->tf->NewChan ($0->scope, d, t);
+    ret = $0->tf->NewChan ($0->scope, d, t, ack);
 
     return ret;
 }}
