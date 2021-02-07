@@ -1,7 +1,6 @@
-
 /*************************************************************************
  *
- *  Copyright (c) 2019 Rajit Manohar
+ *  Copyright (c) 2019-2021 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -82,6 +81,8 @@ typedef struct act_booleanized_var {
 				   fragmented */
   
   unsigned int width;		/* bit-width for chan/int */
+  unsigned int w2;		/* bit-width for bidirectional
+				   channel ack */
 
   short proc_in, proc_out;	/*
 				  which of the top-level parallel blocks is

@@ -2478,40 +2478,36 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   case ACT_CHP_SEND:
     c->u.comm.chan->Print (fp);
     fprintf (fp, "!");
-    if (list_length (c->u.comm.rhs) > 1) {
-      fprintf (fp, "(");
-    }
     {
       listitem_t *li;
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	print_expr (fp, (Expr *)list_value (li));
-	if (list_next (li)) {
-	  fprintf (fp, ",");
+	li = list_next (li);
+	if (li) {
+	  fprintf (fp, "?");
+	  ((ActId *)list_value (li))->Print (fp);
+	  Assert (list_next (li) == NULL, "Huh?");
 	}
       }
-    }
-    if (list_length (c->u.comm.rhs) > 1) {
-      fprintf (fp, ")");
     }
     break;
     
   case ACT_CHP_RECV:
     c->u.comm.chan->Print (fp);
     fprintf (fp, "?");
-    if (list_length (c->u.comm.rhs) > 1) {
-      fprintf (fp, "(");
-    }
     {
       listitem_t *li;
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	((ActId *)list_value (li))->Print (fp);
-	if (list_next (li)) {
-	  fprintf (fp, ",");
+	li = list_next (li);
+	if (li) {
+	  fprintf (fp, "!");
+	  print_expr (fp, (Expr *)list_value (li));
+	  Assert (list_next (li) == NULL, "What?");
 	}
       }
-    }
-    if (list_length (c->u.comm.rhs) > 1) {
-      fprintf (fp, ")");
     }
     break;
 
@@ -3285,14 +3281,24 @@ void chp_check_channels (act_chp_lang_t *c, Scope *s)
     break;
     
   case ACT_CHP_SEND:
-    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+    li = list_first (c->u.comm.rhs);
+    if (li) {
       chp_check_expr ((Expr *)list_value (li), s);
+      li = list_next (li);
+      if (li) {
+	chp_check_var ((ActId *) list_value (li), s);
+      }
     }
     break;
     
   case ACT_CHP_RECV:
-    for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+    li = list_first (c->u.comm.rhs);
+    if (li) {
       chp_check_var ((ActId *)list_value (li), s);
+      li = list_next (li);
+      if (li) {
+	chp_check_expr ((Expr *)list_value (li), s);
+      }
     }
     break;
 

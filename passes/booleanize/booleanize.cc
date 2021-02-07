@@ -54,6 +54,7 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->isfragmented = 0;
   v->extra = NULL;
   v->width = 1;
+  v->w2 = 0;
   return v;
 }
 
@@ -1000,13 +1001,22 @@ static void update_chp_probes (act_boolean_netlist_t *N,
   case ACT_CHP_SEND:
     {
       listitem_t *li;
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	update_chp_expr_vars (N, (Expr *) list_value (li));
       }
     }
     break;
 
   case ACT_CHP_RECV:
+    {
+      listitem_t *li;
+      if (list_first (c->u.comm.rhs) &&
+	  list_next (list_first (c->u.comm.rhs))) {
+	update_chp_expr_vars
+	  (N, (Expr *) list_value (list_next (list_first (c->u.comm.rhs))));
+      }
+    }
     break;
     
   default:
@@ -1101,8 +1111,18 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fprintf (stderr, "\n");
 	fatal_error ("Receive action in multiple concurrent blocks!");
       }
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	generate_chp_expr_vars (N, (Expr *) list_value (li));
+	li = list_next (li);
+	if (li) {
+	  if (((ActId *) list_value (li))->isDynamicDeref()) {
+	    _add_dynamic_id (N, (ActId *) list_value (li));
+	  }
+	  else {
+	    visit_chp_var (N, (ActId *) list_value (li), 0);
+	  }
+	}		   
       }
     }
     break;
@@ -1124,12 +1144,17 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fprintf (stderr, "\n");
 	fatal_error ("Receive action in multiple concurrent blocks!");
       }
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	if (((ActId *) list_value (li))->isDynamicDeref()) {
 	  _add_dynamic_id (N, (ActId *) list_value (li));
 	}
 	else {
 	  visit_chp_var (N, (ActId *) list_value (li), 0);
+	}
+	li = list_next (li);
+	if (li) {
+	  generate_chp_expr_vars (N, (Expr *) list_value (li));
 	}
       }
     }
@@ -1195,8 +1220,15 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
       }
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
+      li = list_first (c->u.comm.rhs);
+      if (li) {
 	collect_chp_expr_vars (N, (Expr *) list_value (li));
+	li = list_next (li);
+	if (li) {
+	  if ( ((ActId *)list_value (li))->isDynamicDeref()) {
+	    _add_dynamic_id (N, (ActId *)list_value (li));
+	  }
+	}
       }
     }
     break;
@@ -1209,14 +1241,21 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
       }
-      for (li = list_first (c->u.comm.rhs); li; li = list_next (li)) {
-	/* check list_value (li) */
+      li = list_first (c->u.comm.rhs);
+      if (li) {
+	if (((ActId *)list_value (li))->isDynamicDeref()) {
+	  _add_dynamic_id (N, (ActId *)list_value (li));
+	}
+	li = list_next (li);
+	if (li) {
+	  collect_chp_expr_vars (N, (Expr *) list_value (li));
+	}
       }
     }
     break;
     
   default:
-    fatal_error ("Sholud be expanded already?");
+    fatal_error ("Should be expanded already?");
     break;
   }
 }
@@ -1766,6 +1805,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       else if (TypeFactory::isChanType (t)) {
 	v->ischan = 1;
 	v->width = TypeFactory::bitWidth (t);
+	v->w2 = TypeFactory::bitWidthTwo (t);
       }
     }
   }

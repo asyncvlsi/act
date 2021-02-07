@@ -3001,6 +3001,7 @@ int TypeFactory::bitWidthTwo (Type *t)
     if (tmp) {
       /* ok */
       InstType *x = tmp->acktype();
+      if (!x) return 0;
       if (!x->isExpanded()) return -1;
       return TypeFactory::bitWidth (x);
     }
