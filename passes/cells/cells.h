@@ -50,6 +50,9 @@ public:
 
   void Print (FILE *fp);
 
+  int numCellMax () { return cell_count-1; }
+  Process *getCell(int i);
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);

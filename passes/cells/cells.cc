@@ -1111,7 +1111,31 @@ void ActCellPass::add_passgates ()
   }
 }
 
-
+Process *ActCellPass::getCell (int x)
+{
+  char buf[100];
+  UserDef *u;
+  Process *proc;
+  
+  snprintf (buf, 100, "g%dx0<>", x);
+  Assert (cell_ns, "What?");
+  u = cell_ns->findType (buf);
+  if (!u) {
+    snprintf (buf, 100, "g%dx0", x);
+    u = cell_ns->findType (buf);
+    if (!u) {
+      return NULL;
+    }
+    proc = dynamic_cast <Process *>(u);
+    Assert (proc, "What?");
+    proc = proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
+  }
+  else {
+    proc = dynamic_cast <Process *>(u);
+    Assert (proc, "Cell name used for a different type");
+  }
+  return proc;
+}
 
 void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 {

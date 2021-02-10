@@ -279,6 +279,7 @@ class UserDef : public Type {
    * Looks up an identifier within the scope of the body of the type
    */
   InstType *Lookup (ActId *id) { return I->Lookup (id, 0); }
+  InstType *Lookup (const char *nm) { return I->Lookup (nm); }
 
   Scope *CurScope() { return I; }
 
