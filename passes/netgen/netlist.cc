@@ -266,6 +266,7 @@ static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
   vi->unstaticized = 0;
   vi->stateholding = 0;
   vi->usecf = 0;
+  vi->manualkeeper = 0;
   vi->inv = NULL;
   vi->extra = NULL;
 
@@ -1668,11 +1669,13 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	else if (strcmp (attr->attr, "iskeeper") == 0) {
 	  if (attr->e->u.v) {
 	    attr_type |= EDGE_KEEPER;
+	    VINF(v)->manualkeeper = 1;
 	  }
 	}
 	else if (strcmp (attr->attr, "isckeeper") == 0) {
 	  if (attr->e->u.v) {
 	    attr_type |= EDGE_CKEEPER;
+	    VINF(v)->manualkeeper = 2;
 	  }
 	}
 	else if (strcmp (attr->attr, "loadcap") == 0) {
