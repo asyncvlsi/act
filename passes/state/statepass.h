@@ -151,6 +151,12 @@ public:
     return getTypeOffset (getStateInfo (p), c, offset, type, width);
   }
 
+  act_connection *getConnFromOffset (stateinfo_t *si, int offset, int type,
+				     int *dy);
+  act_connection *getConnFromOffset (Process *p, int offset, int type, int *dy) {
+    return getConnFromOffset (getStateInfo (p), offset, type, dy);
+  }
+
   state_counts getGlobals() { return _globals; }
 
   stateinfo_t *rootStateInfo () { return _root_si; }

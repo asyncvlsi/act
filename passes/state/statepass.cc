@@ -1118,7 +1118,92 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
     *offset = b->i;
   }
   return 1;
-}    
+}
+
+
+act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int type, int *doff)
+{
+  if (!si) {
+    return NULL;
+  }
+
+  *doff = -1;
+
+  if (isGlobalOffset (off)) {
+    off = globalIdx (off);
+    si = rootStateInfo ();
+    if (off >= A_LEN (si->bnl->used_globals)) {
+      return NULL;
+    }
+    else {
+      return si->bnl->used_globals[off];
+    }
+  }
+  else if (isPortOffset (off)) {
+    off = portIdx (off);
+    /* -- first booleanized ports, then chp ports -- */
+    for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
+      if (si->bnl->chpports[i].omit) continue;
+      if (off == 0) {
+	return si->bnl->chpports[i].c;
+      }
+      off--;
+    }
+    for (int i=A_LEN (si->bnl->ports)-1; i >= 0; i--) {
+      if (si->bnl->ports[i].omit) continue;
+      if (off == 0) {
+	return si->bnl->ports[i].c;
+      }
+      off--;
+    }
+    /* something went wrong */
+    return NULL;
+  }
+  else {
+    act_connection *c;
+    phash_bucket_t *b;
+    phash_iter_t bi;
+
+    phash_iter_init (si->map, &bi);
+
+    /* -- check variables -- */
+    while ((b = phash_iter_next (si->map, &bi))) {
+      if (b->i == off) {
+	c = (act_connection *)b->key;
+	
+	/* check if c has the right type! */
+	phash_bucket_t *xb;
+	act_booleanized_var_t *v;
+	xb = phash_lookup (si->bnl->cH, c);
+
+	if (xb) {
+	  v = (act_booleanized_var_t *)xb->v;
+	  if (v->isint && type == 1) {
+	    return c;
+	  }
+	  else if (v->ischan && (type == 2 || type == 3)) {
+	    return c;
+	  }
+	  else if (type == 0) {
+	    return c;
+	  }
+	  else {
+	    Assert (0, "Mismatch between idx and type?");
+	  }
+	}
+	else {
+	  xb = phash_lookup (si->bnl->cdH, c);
+	  Assert (xb, "What?!");
+	  warning ("Handle dynamic arrays");
+	  return NULL;
+	}
+      }
+    }
+    /* -- dynamic info -- */
+    warning ("Handle dynamic arrays");
+    return NULL;
+  }  
+}
 
 ActStatePass::~ActStatePass()
 {

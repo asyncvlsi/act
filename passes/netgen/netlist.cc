@@ -2363,3 +2363,44 @@ netlist_t *ActNetlistPass::getNL (Process *p)
   
   return it->second;
 }
+
+void ActNetlistPass::spice_to_act_name (char *s, char *t, int sz, int xconv)
+{
+  char buf[10240];
+  int i = 0;
+  int possible_x = xconv;
+  char *tmp;
+  int countdots = 0;
+
+  tmp = s;
+  while (*tmp) {
+    if (*tmp == '.') countdots++;
+    tmp++;
+  }
+
+  while (*s) {
+    if (possible_x && *s == 'x') {
+      possible_x = 0;
+    }
+    else {
+      buf[i] = *s;
+      i++;
+      if (i == 10240) fatal_error ("Resize the buffer");
+      buf[i] = '\0';
+      if (*s == '.') {
+	countdots--;
+	if (countdots == 0) {
+	  possible_x = 0;
+	}
+	else {
+	  possible_x = xconv;
+	}
+      }
+      else {
+	possible_x = 0;
+      }
+    }
+    s++;
+  }
+  ActNamespace::Global()->Act()->unmangle_string (buf, t, sz);
+}

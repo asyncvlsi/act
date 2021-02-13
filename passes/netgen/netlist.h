@@ -191,6 +191,8 @@ class ActNetlistPass : public ActPass {
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
   static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);
 
+  static void spice_to_act_name (char *s, char *t, int sz, int xconv);
+  
  private:
   int init ();
   

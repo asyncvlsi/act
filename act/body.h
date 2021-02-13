@@ -115,6 +115,8 @@ class ActId {
 					   // canonical pointer for
 					   // this object
 
+  static ActId *parseId (char *s);
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

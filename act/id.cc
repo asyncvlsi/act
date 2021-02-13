@@ -1609,3 +1609,111 @@ ActId *ActId::unFragment (Scope *s)
   }
   return ret;
 }
+
+
+ActId *ActId::parseId (char *s)
+{
+  int nextdot;
+  int arrayinfo;
+  int len;
+
+  ActId *ret = NULL;
+  ActId *tmp;
+  ActId *tail;
+
+  do {
+    nextdot = -1;
+    
+    for (int i=0; s[i]; i++) {
+      if (s[i] == '.') {
+	nextdot = i;
+	break;
+      }
+    }
+    if (nextdot != -1) {
+      s[nextdot] = '\0';
+    }
+    if (nextdot != -1) {
+      len = nextdot;
+    }
+    else {
+      len = strlen (s);
+    }
+
+
+    arrayinfo = -1;
+    
+    for (int i=0; i < len; i++) {
+      if (s[i] == '[') {
+	arrayinfo = i;
+	s[i] = '\0';
+	break;
+      }
+    }
+
+    tmp = new ActId (s, NULL);
+
+    if (arrayinfo != -1) {
+      int i;
+      Array *ar;
+      s[arrayinfo] = '[';
+
+      ar = NULL;
+
+      do {
+	i = arrayinfo+1;
+	while (i < len && isdigit (s[i])) {
+	  i++;
+	}
+	if (i == len || s[i] != ']') {
+	  /* parse error */
+	  if (ret) {
+	    delete ret;
+	  }
+	  if (ar) {
+	    delete ar;
+	  }
+	  delete tmp;
+	  if (nextdot != -1) {
+	    s[nextdot] = '.';
+	  }
+	  return NULL;
+	}
+	if (!ar) {
+	  ar = new Array (atoi (s+arrayinfo+1));
+	}
+	else {
+	  ar->Concat (new Array (atoi(s+arrayinfo+1)));
+	}
+	arrayinfo = i + 1;
+      } while (s[arrayinfo] == '[');
+
+      if (s[arrayinfo] != '\0') {
+	if (ar) { delete ar; }
+	if (ret) { delete ret; }
+	delete tmp;
+	if (nextdot != -1) {
+	  s[nextdot] = '.';
+	}
+	return NULL;
+      }
+      tmp->setArray (ar);
+    }
+
+    if (!ret) {
+      ret = tmp;
+    }
+    else {
+      tail->Append (tmp);
+    }
+    tail = tmp;
+
+      
+    if (nextdot != -1) {
+      s[nextdot] = '.';
+      s = s + nextdot + 1;
+    }
+  } while (nextdot != -1);
+
+  return ret;
+}  
