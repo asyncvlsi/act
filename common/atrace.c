@@ -1418,9 +1418,10 @@ void atrace_advance_time (atrace *a, int nsteps)
   case ATRACE_DELTA:
   case ATRACE_DELTA_CAUSE:
     a->curstep += nsteps;
+    a->N[0]->v += nsteps*a->vdt;
     while (a->nextt >= 0 && a->curt >= 0 && (a->nextt < a->curstep*a->vdt)) {
       a->curt = a->nextt;
-      a->N[0]->v = a->curt;
+      //a->N[0]->v = a->curt;
       a->nextt = _read_record (a, a->curt);
     }
 #if 0    

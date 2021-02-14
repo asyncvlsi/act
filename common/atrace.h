@@ -238,6 +238,8 @@ void atrace_advance_time (atrace *, int nstep);
 #define ATRACE_NAME(a,n) ((a)->N[n])
 #define ATRACE_GET_NAME(a,n) ATRACE_NAME(a,n)->b->key
 #define ATRACE_GET_VAL(a,n)  ATRACE_NAME(a,n)->v
+#define ATRACE_GET_STEPSIZE(a)  ((a)->vdt)
+#define ATRACE_NODE_VAL(a,n) (n)->v
 
 void  atrace_signal_change_cause (atrace *, name_t *, float t, float v, name_t *);
   /* Record a signal change, with a cause for the change as well */
