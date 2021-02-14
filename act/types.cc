@@ -2966,6 +2966,13 @@ int Channel::mustbeActiveSend ()
     fprintf (stderr, "Channel type: %s", getName());
     fatal_error ("Channel cannot define probes on both send and receive");
   }
+  if (isBiDirectional()) {
+    if (geteMethod (ACT_METHOD_SEND_PROBE)) {
+      fprintf (stderr, "Channel type: %s", getName());
+      fatal_error ("Bidirectional channel cannot define probe on send");
+    }
+    return 1;
+  }
   if (geteMethod (ACT_METHOD_SEND_PROBE)) {
     return 0;
   }
@@ -2987,7 +2994,7 @@ int Channel::mustbeActiveRecv ()
     return 0;
   }
   else {
-    return x;
+    return -1;
   }
 }
 
