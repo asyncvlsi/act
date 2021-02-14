@@ -1187,20 +1187,44 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
 	  else if (type == 0) {
 	    return c;
 	  }
-	  else {
-	    Assert (0, "Mismatch between idx and type?");
-	  }
+	  /*-- else continue searching --*/
 	}
 	else {
+	  act_dynamic_var_t *dv;
 	  xb = phash_lookup (si->bnl->cdH, c);
 	  Assert (xb, "What?!");
-	  warning ("Handle dynamic arrays");
-	  return NULL;
+	  dv = (act_dynamic_var_t *)xb->v;
+	  if (type == 1 && dv->isint) {
+	    *doff = 0;
+	    return c;
+	  }
+	  else if (type == 0) {
+	    *doff = 0;
+	    return c;
+	  }
+	  /* -- else continue searching -- */
 	}
       }
     }
-    /* -- dynamic info -- */
-    warning ("Handle dynamic arrays");
+
+    /* -- search dynamic info -- */
+    phash_iter_init (si->bnl->cdH, &bi);
+    while ((b = phash_iter_next (si->bnl->cdH, &bi))) {
+      act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
+      act_connection *c = (act_connection *)b->key;
+      phash_bucket_t *xb = phash_lookup (si->map, c);
+      Assert (xb, "What?");
+      if (xb->i < off && off < xb->i + dv->a->size()) {
+	if (type == 1 && dv->isint) {
+	  *doff = off - xb->i;
+	  return c;
+	}
+	else if (type == 0) {
+	  *doff = off - xb->i;
+	  return c;
+	}
+      }
+    }
     return NULL;
   }  
 }
