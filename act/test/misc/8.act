@@ -1,0 +1,9 @@
+pint i = 0x10;
+
+pint j = 0b10000;
+
+{ i = j : "check hex/bin" };
+
+pint k = 0b1000;
+
+{ i = k : "check hex/bin" };
