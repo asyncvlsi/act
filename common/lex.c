@@ -750,13 +750,13 @@ extern int lex_getsym (LEX_T *l)
 	addtok (l, l->ch);
 	getch (l);
       }
-      else if ((lex_flags(l) & LEX_FLAGS_HEXINT) && 
+      else if ((lex_flags(l) & (LEX_FLAGS_HEXINT|LEX_FLAGS_BININT)) && 
 	       !(lex_flags(l) & LEX_FLAGS_DIGITID)) {
 	if (l->ch == '0') {
 	  found = 1;
 	  addtok (l, l->ch);
 	  getch (l);
-	  if (l->ch == 'x') {
+	  if (l->ch == 'x' && (lex_flags (l) & LEX_FLAGS_HEXINT)) {
 	    /* parse hex int */
 	    addtok (l, l->ch);
 	    getch (l);
@@ -770,6 +770,25 @@ extern int lex_getsym (LEX_T *l)
 		l->integer += 10 + l->ch - 'a';
 	      else
 		l->integer += 10 + l->ch - 'A';
+	      addtok (l, l->ch);
+	      getch (l);
+	    }
+	    /* return stuff here */
+	    if (found) {
+	      return l->sym = l_integer;
+	    }
+	    else {
+	      return l->sym = l_err;
+	    }
+	  }
+	  else if (l->ch == 'b' && (lex_flags (l) & LEX_FLAGS_BININT)) {
+	    /* parse binary int */
+	    addtok (l, l->ch);
+	    getch (l);
+	    while ((l->ch == '0') || (l->ch == '1')) {
+	      found = 1;
+	      l->integer <<= 1;
+	      l->integer += l->ch - '0';
 	      addtok (l, l->ch);
 	      getch (l);
 	    }

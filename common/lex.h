@@ -35,7 +35,9 @@
 #define LEX_FLAGS_NSTCOMMENT 0x40 /* nested C-style comments */
 #define LEX_FLAGS_HEXINT     0x80 /* hex consts: exclusive with
 				     DIGITID */
-#define LEX_FLAGS_ESCAPEID  0x100 /* \[chars][spc] is an ID */
+#define LEX_FLAGS_BININT    0x100 /* binary consts: exclusive with
+				     DIGITID */
+#define LEX_FLAGS_ESCAPEID  0x200 /* \[chars][spc] is an ID */
 
 #ifdef __cplusplus
 extern "C" {

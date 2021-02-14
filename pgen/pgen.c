@@ -109,6 +109,8 @@ A_DECL(char *, return_type);
 int gen_parse;
 int verbose;
 int verilog_ids;
+int hexdigit;
+int bindigit;
 
 A_DECL(char *, GWALK);
 
@@ -2098,6 +2100,14 @@ void emit_parser (void)
     pp_printf_text (pp, "  file_setflags (l, FILE_FLAGS_ESCAPEID);");
     pp_nl;
   }
+  if (hexdigit) {
+    pp_printf_text (pp, "  file_setflags (l, FILE_FLAGS_HEXINT);");
+    pp_nl;
+  }
+  if (bindigit) {
+    pp_printf_text (pp, "  file_setflags (l, FILE_FLAGS_BININT);");
+    pp_nl;
+  }
   pp_printf_text (pp, "   file_setflags (l, FILE_FLAGS_PARSELINE|file_flags(l));");
   pp_nl;
   if (found_expr) {
@@ -2724,11 +2734,13 @@ No options:
 */
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s <grammar> [-vpgcV] [-n prefix] { -w walk }*\n", s);
+  fprintf (stderr, "Usage: %s <grammar> [-vpgcVbh] [-n prefix] { -w walk }*\n", s);
   fprintf (stderr, "  -v : verbose warnings\n");
   fprintf (stderr, "  -p : generate parser\n");
   fprintf (stderr, "  -g : only print out grammar in the .gram file\n");
   fprintf (stderr, "  -c : emit cyclone code instead of C\n");
+  fprintf (stderr, "  -h : support hex constants\n");
+  fprintf (stderr, "  -b : support binary constants\n");
   fprintf (stderr, "  -V : support Verilog escaped IDs\n");
   fprintf (stderr, "  -w <walk> : specify walker that should be generated\n");
   fprintf (stderr, "  -n <name> : prefix used (default: std)\n");
@@ -2765,6 +2777,8 @@ int main (int argc, char **argv)
   gen_parse = 1;
   gen_allwalk = 1;
   gram_only = 0;
+  hexdigit = 0;
+  bindigit = 0;
 
   if (argc > 2) {
     int i;
@@ -2778,6 +2792,12 @@ int main (int argc, char **argv)
       }
       if (strcmp (argv[i], "-V") == 0) {
 	verilog_ids = 1;
+      }
+      else if (strcmp (argv[i], "-b") == 0) {
+	bindigit = 1;
+      }
+      else if (strcmp (argv[i], "-h") == 0) {
+	hexdigit = 1;
       }
       else if (strcmp (argv[i], "-g") == 0) {
 	gram_only = 1;

@@ -61,7 +61,7 @@ act.cy: act.m4 defs.m4 expr.m4 lang.m4 namespaces.m4 types.m4 expr.c expr.h
 	m4 -s act.m4 > act.cy
 
 act_parse_id.h act_walk.h act_parse.h act_parse_int.h act_parse.cc act_walk_X.cc: act.cy
-	$(INSTALLDIR)/bin/pgen act.cy -w X -p -n act
+	$(INSTALLDIR)/bin/pgen act.cy -w X -h -b -p -n act
 	-mv act_parse.c act_parse.cc
 	-mv act_walk_X.c act_walk_X.cc
 

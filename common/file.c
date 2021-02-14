@@ -101,9 +101,6 @@ LFILE *file_open (const char *s)
   l->l->l =lex_fopen (s);
   l->l->next = NULL;
 
-  // XXX: hack. fix this properly.
-  lex_setflags (l->l->l, lex_flags (l->l->l) | LEX_FLAGS_HEXINT);
-
   return l;
 }
 

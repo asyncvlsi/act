@@ -50,7 +50,7 @@ $(LOCAL_LIB): $(LOCAL_LIBOBJS)
 	$(RANLIB) $(LOCAL_LIB)
 
 v_parse_id.h v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
-	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -p -n v
+	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -h -b -p -n v
 	-mv v_parse.c v_parse.cc
 	-mv v_walk_X.c v_walk_X.cc
 	-touch v_parse_id.h
