@@ -24,6 +24,8 @@
 /* globals for sim object */
 int SimDES::initialized_sim = 0;
 
+int SimDES::_interrupt = 0;
+
 /* globals for events */
 Heap *SimDES::all = NULL;
 unsigned long SimDES::tm_offset[SIM_TIME_SIZE];
@@ -149,6 +151,9 @@ Event *SimDES::Run ()
       ev->obj->Step (ev->ev_type);
     }
     delete ev;
+    if (_interrupt) {
+      return NULL;
+    }
   }
   return ev;
 }

@@ -167,6 +167,9 @@ class SimDES {
   static unsigned long CurTimeLo (); // low order bits of the current time
   static SimDES *CurObj () { return curobj; }
 
+  static void interrupt () { _interrupt = 1; }
+  static void resume () { _interrupt = 0; }
+
 protected:
   unsigned int break_point:2;	// set a breakpoint on this object
   unsigned int bp_ev_type:6;    // event type for breakpoint, if
@@ -178,6 +181,8 @@ private:
 
   /*-- object management --*/
   static int initialized_sim;   // global check
+
+  static int _interrupt;	// interrupt flag
 
   /*-- simulation runtime --*/
 
