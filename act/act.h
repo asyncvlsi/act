@@ -104,6 +104,11 @@ class Act {
   static int warn_no_local_driver;
 
   /**
+   * Command-line arguments if -opt= is used
+   */
+  static list_t *cmdline_args;
+
+  /**
    * Parser flags 
    */
   static int emit_depend;

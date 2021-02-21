@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
 #include <act/act.h>
 #include "act_parse.h"
 #include "act_walk_X.h"
@@ -52,6 +53,7 @@ int Act::emit_depend;
 int Act::warn_double_expand;
 int Act::warn_no_local_driver;
 Log *Act::L;
+list_t *Act::cmdline_args;
 
 L_A_DECL (struct command_line_defs, vars);
 
@@ -86,7 +88,6 @@ _valid_id_string (char *s)
   return 1;
 }
 
-
 void Act::Init (int *iargc, char ***iargv)
 {
   static int initialize = 0;
@@ -95,6 +96,7 @@ void Act::Init (int *iargc, char ***iargv)
   int i, j;
   int tech_specified = 0;
   char *conf_file = NULL;
+  char *getopt_string = NULL;
 
   if (initialize) return;
   initialize = 1;
@@ -264,6 +266,13 @@ void Act::Init (int *iargc, char ***iargv)
       }
       FREE (s);
     }
+    else if (strncmp (argv[i], "-opt=", 5) == 0) {
+      /* -- getopt string! -- */
+      if (getopt_string) {
+	fatal_error ("-opt can only be used once!");
+      }
+      getopt_string = Strdup (argv[i] + 5);
+    }
     else if (strncmp (argv[i], "-log=", 5) == 0) {
       char *s;
       s = Strdup (argv[i]+5);
@@ -315,7 +324,49 @@ void Act::Init (int *iargc, char ***iargv)
   Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
+  Act::cmdline_args = NULL;
   
+  /* -- if getopt options -- */
+  if (getopt_string) {
+    int ch;
+    int opt_arg[256];
+    
+    /* continue parsing! */
+
+    for (int i=0; i < 256; i++) {
+      opt_arg[i] = 0;
+    }
+    for (int i=0; getopt_string[i]; i++) {
+      if (getopt_string[i] == 'W' || getopt_string[i] == 'D' ||
+	  getopt_string[i] == 'V' || getopt_string[i] == 'T') {
+	warning ("Option `%c' is already a core ACT option", getopt_string[i]);
+      }
+      if (getopt_string[i+1] && (getopt_string[i+1] == ':')) {
+	opt_arg[getopt_string[i]] = 1;
+	i++;
+      }
+    }
+
+    Act::cmdline_args = list_new ();
+    while ((ch = getopt (*iargc, *iargv, getopt_string)) != -1) {
+      if (ch == '?') {
+	warning ("unknown command-line option");
+      }
+      else {
+	list_iappend (Act::cmdline_args, ch);
+	if (opt_arg[ch]) {
+	  /* get arg */
+	  list_append (Act::cmdline_args, Strdup (optarg));
+	}
+	else {
+	  list_append (Act::cmdline_args, NULL);
+	}
+      }
+    }
+    *iargc -= (optind-1);
+    *iargv += (optind-1);
+    *iargv[0] = argv[0];
+  }
   return;
 }
 
