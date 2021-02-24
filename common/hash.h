@@ -36,6 +36,7 @@ typedef struct hash_bucket {
     void *v;
     int i;
     long l;
+    double f;
   };
   struct hash_bucket *next;
 } hash_bucket_t;
@@ -57,6 +58,7 @@ typedef struct ihash_bucket {
     void *v;
     int i;
     long l;
+    double f;
   };
   struct ihash_bucket *next;
 } ihash_bucket_t;
@@ -78,6 +80,7 @@ typedef struct chash_bucket {
     void *v;
     int i;
     long l;
+    double f;
   };
   struct chash_bucket *next;
 } chash_bucket_t;
