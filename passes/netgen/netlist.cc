@@ -1565,17 +1565,19 @@ static void update_bdds_exprs (netlist_t *N,
       ||
       (EDGE_TYPE (type) == EDGE_PFET && ((type & (EDGE_INVERT|EDGE_CELEM)) != 0))) {
     /* pull-down, n-type */
-    if (!VINF(v)->e_dn) {
-      VINF(v)->e_dn = e;
-    }
-    else {
-      NEW (tmp, act_prs_expr_t);
-      tmp->type = ACT_PRS_EXPR_OR;
-      tmp->u.e.l = VINF(v)->e_dn;
-      tmp->u.e.r = e;
-      tmp->u.e.pchg = NULL;
-      tmp->u.e.pchg_type = -1;
-      VINF(v)->e_dn = tmp;
+    if (!(type & (EDGE_KEEPER|EDGE_CKEEPER))) {
+      if (!VINF(v)->e_dn) {
+	VINF(v)->e_dn = e;
+      }
+      else {
+	NEW (tmp, act_prs_expr_t);
+	tmp->type = ACT_PRS_EXPR_OR;
+	tmp->u.e.l = VINF(v)->e_dn;
+	tmp->u.e.r = e;
+	tmp->u.e.pchg = NULL;
+	tmp->u.e.pchg_type = -1;
+	VINF(v)->e_dn = tmp;
+      }
     }
     b2 = VINF(v)->dn;
     VINF(v)->dn = bool_or (N->B, b2, b1);
@@ -1584,17 +1586,19 @@ static void update_bdds_exprs (netlist_t *N,
   }
   else {
     /* pull-up, p-type */
-    if (!VINF(v)->e_up) {
-      VINF(v)->e_up = e;
-    }
-    else {
-      NEW (tmp, act_prs_expr_t);
-      tmp->type = ACT_PRS_EXPR_OR;
-      tmp->u.e.l = VINF(v)->e_up;
-      tmp->u.e.r = e;
-      tmp->u.e.pchg = NULL;
-      tmp->u.e.pchg_type = -1;
-      VINF(v)->e_up = tmp;
+    if (!(type & (EDGE_KEEPER | EDGE_CKEEPER))) {
+      if (!VINF(v)->e_up) {
+	VINF(v)->e_up = e;
+      }
+      else {
+	NEW (tmp, act_prs_expr_t);
+	tmp->type = ACT_PRS_EXPR_OR;
+	tmp->u.e.l = VINF(v)->e_up;
+	tmp->u.e.r = e;
+	tmp->u.e.pchg = NULL;
+	tmp->u.e.pchg_type = -1;
+	VINF(v)->e_up = tmp;
+      }
     }
     b2 = VINF(v)->up;
     VINF(v)->up = bool_or (N->B, b2, b1);
@@ -1709,7 +1713,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
+	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL);
 	check_supply (N, p->u.one.id, d, (d == EDGE_NFET ? N->GND : N->Vdd));
       }
       else if (p->u.one.arrow_type == 1) {
@@ -1721,11 +1725,11 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL);
+	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL);
 	create_expr_edges (N, (1-d) | attr_type | EDGE_INVERT | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
 			   p->u.one.e, VINF(v)->n, 1);
-	update_bdds_exprs (N, v, p->u.one.e, d|EDGE_NORMAL|EDGE_INVERT);
+	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL|EDGE_INVERT);
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
       }
@@ -1739,11 +1743,11 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_NORMAL);
+	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_NORMAL);
 	create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
 			   (d == EDGE_NFET ? N->Vdd : N->GND),
 			   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d | EDGE_CELEM | EDGE_NORMAL);
+	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_CELEM | EDGE_NORMAL);
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
       }

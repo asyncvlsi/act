@@ -30,6 +30,10 @@ ifndef LEVEL
 LEVEL=0
 endif
 
+ifndef CPPSTD
+CPPSTD=c++11
+endif
+
 include $(VLSI_TOOLS_SRC)/scripts/config
 
 .SUFFIXES: .os
@@ -245,10 +249,10 @@ move-out:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $<
 
 .C.o:
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=c++11 $<
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=$(CPPSTD) $<
 
 .cc.o:
-	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=c++11 $<
+	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=$(CPPSTD) $<
 
 .c.os:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
