@@ -376,7 +376,9 @@ void convTable(atrace *A, FILE *f, const char *fileName,
   rawDataPos = rawData;
   num = (offset - 1) / numOfColumns;	/* Number of rows. */
 
+#if 0
   printf ("   steps: %d\n", num);
+#endif
 
   prevtm = -1;
   for(i = 0; i < num; i++) {
@@ -919,9 +921,11 @@ int main (int argc, char **argv)
   buf[i + 1] = 0;
 
   /*title = PyUnicode_FromString(&buf[titleStartPosition]);*/
+#if 0
   printf ("HSPICE trace file information\n");
   printf ("   Title: %s\n", &buf[titleStartPosition]);
   printf ("    Date: %s\n", &buf[dateStartPosition]);
+#endif
   
   buf[numOfSweepsEndPosition] = 0;	/* Check number of sweep parameters. */
   num = atoi(&buf[numOfSweepsPosition]);
@@ -933,13 +937,17 @@ int main (int argc, char **argv)
 				   and probes) */
   numOfVectors = atoi(&buf[numOfProbesPosition]);
 
+#if 0
   printf ("    #vec: %d\n", numOfVectors);
+#endif
   
   buf[numOfProbesPosition] = 0;
   numOfVariables = atoi(&buf[numOfVariablesPosition]);	/* Scale included. */
   numOfVectors = numOfVectors + numOfVariables;
 
+#if 0
   printf ("    #var: %d\n", numOfVariables);
+#endif
 
   /* Get type of variables. Scale is always real. */
   token = strtok(&buf[vectorDescriptionStartPosition], " \t\n");
@@ -971,7 +979,9 @@ int main (int argc, char **argv)
     if (!token) {
       fatal_error ("Could not find location of TIME in the trace file");
     }
+#if 0
     printf (" new #var: %d\n", numOfVariables);
+#endif
   }
 
   scale = Strdup (token);
