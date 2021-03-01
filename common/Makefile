@@ -46,9 +46,10 @@ OBJS1=$(OBJSC1) $(OBJSCC1)
 
 # asynchronous simulation
 OBJS4CPP=hconfig.o 
-OBJS4CPP2=simthread.o simdes.o
-OBJS4C=thread.o mutex.o count.o channel.o
-OBJS4C2=contexts_f.o 
+OBJS4CPP2=simdes.o
+#OBJS4CPP2=simthread.o simdes.o
+#OBJS4C=thread.o mutex.o count.o channel.o
+#OBJS4C2=contexts_f.o 
 
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2) amem.o
 
