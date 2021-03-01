@@ -1,2 +1,2 @@
 In expanding ::<Global>
-FATAL: Traversal of empty array identifier is not permitted
+FATAL: Instance `x': zero-length array creation not permitted
