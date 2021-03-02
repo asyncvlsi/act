@@ -1703,7 +1703,7 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
       Assert (list_next (li), "What?");
       list_t *lmap = (list_t *)list_value (list_next (li));
       li = list_next (li);
-      list_append (xp->ifaces, iface->Expand (ns, s));
+      list_append (xp->ifaces, iface->Expand (ns, xp->I));
       list_append (xp->ifaces, lmap);
     }
   }
