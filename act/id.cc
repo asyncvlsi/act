@@ -173,7 +173,8 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     fprintf (stderr, " id: ");
     this->Print (stderr);
     fprintf (stderr, "\n");
-    fatal_error ("Not found. Should have been caught earlier...");
+    fatal_error ("Identifer conditionally created, but used when it does not exist");
+    //fatal_error ("Not found. Should have been caught earlier...");
   }
   Assert (it->isExpanded (), "Hmm...");
 

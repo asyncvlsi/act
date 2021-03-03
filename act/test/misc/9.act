@@ -1,0 +1,5 @@
+[ false -> bool x; ]
+
+bool y;
+
+x = y;

@@ -1,0 +1,3 @@
+In expanding ::<Global>
+ id: x
+FATAL: Identifer conditionally created, but used when it does not exist
