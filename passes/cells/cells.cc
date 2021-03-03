@@ -1068,6 +1068,7 @@ void ActCellPass::add_passgates ()
     prs_body->psc = NULL;
     prs_body->nsc = NULL;
     prs_body->next = NULL;
+    prs_body->leak_adjust = 0;
 
     act_prs_lang_t *rules = NULL;
 
