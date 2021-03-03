@@ -139,6 +139,7 @@ typedef struct act_prs_lang {
 
 struct act_prs {
   ActId *vdd, *gnd, *psc, *nsc;
+  int leak_adjust;
   act_prs_lang_t *p;
   struct act_prs *next;
 };
@@ -306,10 +307,11 @@ struct act_sizing_directive {
 struct act_sizing {
   // p_n_mode  0/1  0 = default, 1 = sqrt sizing
   // unit_n 5
-  int p_specified, unit_n_specified;
-  Expr *p_n_mode_e, *unit_n_e;
+  int p_specified, unit_n_specified, leak_adjust_specified;
+  Expr *p_n_mode_e, *unit_n_e, *leak_adjust_e;
   int p_n_mode;
   int unit_n;
+  int leak_adjust;
   A_DECL (act_sizing_directive, d);
   act_sizing *next;
 };

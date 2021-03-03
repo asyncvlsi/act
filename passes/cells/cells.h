@@ -64,6 +64,7 @@ private:
   int proc_inst_count;
   int cell_count;
   struct idmap current_idmap;
+  int _leak_flag;
 
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);

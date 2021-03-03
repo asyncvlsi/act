@@ -1956,6 +1956,8 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
   N->psc_list = list_new ();
   N->nsc_list = list_new ();
 
+  N->leak_correct = 0;
+
   /* set Vdd/GND to be the first Vdd/GND there is */
   _set_current_supplies (N, p);
 
@@ -2023,6 +2025,9 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   while (p) {
     /* add vdd and gnd */
     _set_current_supplies (N, p);
+    if (p->leak_adjust) {
+      N->leak_correct = 1;
+    }
 
     for (act_prs_lang_t *prs = p->p; prs; prs = prs->next) {
       generate_prs_graph (N, prs);
@@ -2267,6 +2272,13 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   weak_to_strong_ratio = config_get_real ("net.weak_to_strong_ratio");
   min_w_in_lambda = config_get_int ("net.min_width");
   min_l_in_lambda = config_get_int ("net.min_length");
+
+  if (config_exists ("net.leakage_adjust")) {
+    leak_adjust = config_get_real ("net.leakage_adjust");
+  }
+  else {
+    leak_adjust = 0;
+  }
 
   local_vdd = config_get_string ("net.local_vdd");
   local_gnd = config_get_string ("net.local_gnd");

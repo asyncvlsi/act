@@ -897,7 +897,8 @@ act_prs *prs_expand (act_prs *p, ActNamespace *ns, Scope *s)
   ret->gnd = fullexpand_var (p->gnd, ns, s);
   ret->psc = fullexpand_var (p->psc, ns, s);
   ret->nsc = fullexpand_var (p->nsc, ns, s);
-  ret->p = prs_expand (p->p, ns, s); 
+  ret->p = prs_expand (p->p, ns, s);
+  ret->leak_adjust = p->leak_adjust;
   _merge_duplicate_rules (ret->p);
  
   if (p->next) {
@@ -2361,6 +2362,9 @@ void prs_print (FILE *fp, act_prs *prs)
       }
       fprintf (fp, "> ");
     }
+    if (prs->leak_adjust) {
+      fprintf (fp, " * ");
+    }
     fprintf (fp, "{\n");
     act_prs_lang_t *p;
     for (p = prs->p; p; p = p->next) {
@@ -2661,19 +2665,39 @@ void refine_print (FILE *fp, act_refine *r)
 
 void sizing_print (FILE *fp, act_sizing *s)
 {
+  int prev;
+
+#define SEMI_NEWLINE				\
+  do {						\
+      if (prev) {				\
+	fprintf (fp, ";\n");			\
+      }						\
+      else {					\
+	fprintf (fp, "\n");			\
+      }						\
+      prev = 1;					\
+  } while (0)
+    
   while (s) {
     fprintf (fp, "sizing {");
+    prev = 0;
     if (s->p_specified) {
-      fprintf (fp, "   p_n_mode ");
+      SEMI_NEWLINE;
+      fprintf (fp, "   p_n_mode <- ");
       print_expr (fp, s->p_n_mode_e);
-      fprintf (fp, ";\n");
     }
     if (s->unit_n_specified) {
-      fprintf (fp, "   unit_n ");
+      SEMI_NEWLINE;
+      fprintf (fp, "   unit_n <- ");
       print_expr (fp, s->unit_n_e);
-      fprintf (fp, ";\n");
+    }
+    if (s->leak_adjust_specified) {
+      SEMI_NEWLINE;
+      fprintf (fp, "   leak_adjust <- ");
+      print_expr (fp, s->leak_adjust_e);
     }
     for (int i=0; i < A_LEN (s->d); i++) {
+      SEMI_NEWLINE;
       fprintf (fp, "   ");
       s->d[i].id->Print (fp);
       fprintf (fp, " { ");
@@ -2702,9 +2726,9 @@ void sizing_print (FILE *fp, act_sizing *s)
 	  print_expr (fp, s->d[i].dnfolds);
 	}
       }
-      fprintf (fp, " };\n");
+      fprintf (fp, "}");
     }
-    fprintf (fp, "}\n");
+    fprintf (fp, "\n}\n");
     s = s->next;
   }
 }
@@ -2751,6 +2775,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
   ret->next = NULL;
   ret->p_specified = sz->p_specified;
   ret->unit_n_specified = sz->unit_n_specified;
+  ret->leak_adjust_specified = sz->leak_adjust_specified;
   if (ret->p_specified) {
     te = expr_expand (sz->p_n_mode_e, ns, s);
     ret->p_n_mode_e = te;
@@ -2773,6 +2798,17 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     }
     else if (te && te->type == E_REAL) {
       ret->unit_n = te->u.f;
+    }
+    else {
+      act_error_ctxt (stderr);
+      fatal_error ("Expression for unit_n is not a const?");
+    }
+  }
+  if (ret->leak_adjust_specified) {
+    te = expr_expand (sz->leak_adjust_e, ns, s);
+    ret->unit_n_e = te;
+    if (te && te->type == E_INT) {
+      ret->leak_adjust = te->u.v;
     }
     else {
       act_error_ctxt (stderr);

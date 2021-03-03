@@ -62,6 +62,8 @@ struct act_prsinfo {
   int *attr_map;
   A_DECL (struct act_varinfo, attrib);
 
+  int leak_adjust;
+
   int tval;			 /* for tree<>; -1 = none, 0 = mgn,
 				    otherwise tree  */
 
@@ -378,6 +380,10 @@ static int match_prsinfo (struct act_prsinfo *k1,
 			  int chk_width)
 {
   int i;
+
+  if (k1->leak_adjust != k2->leak_adjust) {
+    return 0;
+  }
 
   for (i=0; i < A_LEN (k1->attrib); i++) {
     if (k1->attrib[i].tree != k2->attrib[i].tree) return 0;
@@ -1562,6 +1568,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   ret->match_perm = NULL;
   ret->nattr = NULL;
   ret->at_perm = NULL;
+  ret->leak_adjust = _leak_flag;
 
   A_INIT (ret->attrib);
   A_INIT (ret->up);
@@ -1861,7 +1868,7 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
   if (p->nout > 1) {
     fprintf (fp, "[%d]", p->nout);
   }
-  fprintf (fp, ")\n{\n   prs {\n");
+  fprintf (fp, ")\n{\n   prs %s{\n", p->leak_adjust ? "* " : "");
 
   int idx = p->nout-1;
   for (int ii=0; ii < A_LEN (p->up); ii++) {
@@ -2530,6 +2537,17 @@ void ActCellPass::prs_to_cells (Process *p)
   lang = (p ? p->getlang() : ActNamespace::Global()->getlang());
   Assert (lang, "What?");
   act_prs *prs = lang->getprs();
+
+  _leak_flag = 0;
+  while (prs) {
+    if (prs->leak_adjust) {
+      _leak_flag = 1;
+    }
+    prs = prs->next;
+  }
+
+  prs = lang->getprs();
+  
   while (prs) {
     /*
       1. group all gates.
@@ -2732,6 +2750,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 				in_t->arrayInfo()->size() : 1,
 				out_t->arrayInfo() ?
 				out_t->arrayInfo()->size() : 1);
+      pi->leak_adjust = prs->leak_adjust;
 
 #if 0
       printf ("CELL: %s\n", p->getName());

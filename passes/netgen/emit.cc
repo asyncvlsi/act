@@ -223,12 +223,18 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
       int il, iw;
       int w, l;
       int fold;
+      int leak;
       
       if (e->visited || e->pruned) continue;
       e->visited = 1;
 
       w = e->w;
       l = e->l;
+      leak = 0;
+
+      if (e->l == min_l_in_lambda && n->leak_correct) {
+	leak = 1;
+      }
 
       /* discretize lengths */
       len_repeat = e->nlen;
@@ -325,7 +331,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }
 	  fprintf (fp, " %s", config_get_string (devname));
-	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, l*lambda*1e6);
+	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, (l*lambda + leak*leak_adjust)*1e6);
 
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {

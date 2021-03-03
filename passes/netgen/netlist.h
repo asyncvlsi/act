@@ -166,9 +166,11 @@ typedef struct {
   struct {
     int w, l;			/* current size */
     int nf;			/* current fold */
-    int flavor;			/* current flavor */
+    unsigned char flavor;	/* current flavor */
     int sw, sl;			/* staticizer sizes */
   } sz[2];    			/* sizes */
+
+  unsigned int leak_correct:1;	/* correct leakage */
 
 } netlist_t;
 
@@ -207,6 +209,7 @@ class ActNetlistPass : public ActPass {
   /* minimum transistor size */
   int min_w_in_lambda;
   int min_l_in_lambda;
+  double leak_adjust;
 
   /* maximum transistor size */
   int max_n_w_in_lambda;

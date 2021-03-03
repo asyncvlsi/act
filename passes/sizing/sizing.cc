@@ -358,157 +358,179 @@ void *ActSizingPass::local_op (Process *p, int mode)
      we have a sizing body, plus production rules; now apply the
      sizing info 
   */
+  int leak_adj = 0;
 
-  int p_n_mode;
-  int unit_n;
+  while (sz) {
 
-  if (sz->p_specified) {
-    if (!getconst_int (sz->p_n_mode_e, &p_n_mode)) {
+    int p_n_mode;
+    int unit_n;
+
+    if (sz->p_specified) {
+      if (!getconst_int (sz->p_n_mode_e, &p_n_mode)) {
+	act_error_ctxt (stderr);
+	fatal_error ("In `%s': p_n_mode expression is not a const",
+		     p ? p->getName() : "-toplevel-");
+      }
+    }
+    else {
+      if (config_exists ("net.sizing.p_n_mode")) {
+	p_n_mode = config_get_int ("net.sizing.p_n_mode");
+      }
+      else {
+	p_n_mode = 0;
+      }
+    }
+    if (sz->unit_n_specified) {
+      if (!getconst_int (sz->unit_n_e, &unit_n)) {
+	act_error_ctxt (stderr);
+	fatal_error ("In `%s': unit_n expression is not a const",
+		     p ? p->getName() : "-toplevel-");
+      }
+    }
+    else {
+      if (config_exists ("net.sizing.unit_n")) {
+	unit_n = config_get_int ("net.sizing.unit_n");
+      }
+      else {
+	unit_n = 5;
+      }
+    }
+    if (sz->leak_adjust_specified && (leak_adj == 0)) {
+      if (!getconst_int (sz->leak_adjust_e, &leak_adj)) {
+	act_error_ctxt (stderr);
+	fatal_error ("In `%s': leak_adjust expression is not a const",
+		     p ? p->getName() : "-toplevel-");
+      }
+    }
+    if (p_n_mode != 0 && p_n_mode != 1) {
       act_error_ctxt (stderr);
-      fatal_error ("In `%s': p_n_mode expression is not a const",
-		   p ? p->getName() : "-toplevel-");
+      fatal_error ("In `%s': p_n_mode (%d) is not 0 or 1", 
+		   p ? p->getName() : "-toplevel-", p_n_mode);
     }
-  }
-  else {
-    if (config_exists ("net.sizing.p_n_mode")) {
-      p_n_mode = config_get_int ("net.sizing.p_n_mode");
-    }
-    else {
-      p_n_mode = 0;
-    }
-  }
-  if (sz->unit_n_specified) {
-    if (!getconst_int (sz->unit_n_e, &unit_n)) {
+    if (unit_n < 1) {
       act_error_ctxt (stderr);
-      fatal_error ("In `%s': unit_n expression is not a const",
-		   p ? p->getName() : "-toplevel-");
+      fatal_error ("In `%s': unit_n (%d) is less than 1 ",
+		   p ? p->getName() : "-toplevel-", unit_n);
     }
-  }
-  else {
-    if (config_exists ("net.sizing.unit_n")) {
-      unit_n = config_get_int ("net.sizing.unit_n");
+    if (leak_adj != 0 && leak_adj != 1) {
+      act_error_ctxt (stderr);
+      fatal_error ("In `%s': leak_adj (%d) most be 0 or 1 ", 
+		   p ? p->getName() : "-toplevel-", leak_adj);
+    }
+
+    double ratio;
+    ActNamespace *ns;
+    Scope *sc;
+
+    ratio = config_get_real ("net.p_n_ratio");
+    if (p_n_mode == 1) {
+      ratio = sqrt (ratio);
+    }
+
+    if (!p) {
+      sc = ActNamespace::Global()->CurScope();
     }
     else {
-      unit_n = 5;
+      sc = p->CurScope();
     }
-  }
-  if (p_n_mode != 0 && p_n_mode != 1) {
-    act_error_ctxt (stderr);
-    fatal_error ("In `%s': p_n_mode (%d) is not 0 or 1", p_n_mode,
-		 p ? p->getName() : "-toplevel-");
-  }
-  if (unit_n < 1) {
-    act_error_ctxt (stderr);
-    fatal_error ("In `%s': unit_n (%d) is less than 1 ", unit_n,
-		 p ? p->getName() : "-toplevel-");
-  }
 
-  double ratio;
-  ActNamespace *ns;
-  Scope *sc;
-
-  ratio = config_get_real ("net.p_n_ratio");
-  if (p_n_mode == 1) {
-    ratio = sqrt (ratio);
-  }
-
-  if (!p) {
-    sc = ActNamespace::Global()->CurScope();
-  }
-  else {
-    sc = p->CurScope();
-  }
-
-  if (config_exists ("net.sizing.use_long_channel")) {
-    allow_long_channel = config_get_int ("net.sizing.use_long_channel");
-    min_width = config_get_int ("net.min_width");
-    std_p_length = config_get_int ("net.std_p_length");
-    std_n_length = config_get_int ("net.std_n_length");
-  }
-  else {
-    allow_long_channel = 0;
-  }
+    if (config_exists ("net.sizing.use_long_channel")) {
+      allow_long_channel = config_get_int ("net.sizing.use_long_channel");
+      min_width = config_get_int ("net.min_width");
+      std_p_length = config_get_int ("net.std_p_length");
+      std_n_length = config_get_int ("net.std_n_length");
+    }
+    else {
+      allow_long_channel = 0;
+    }
     
-  for (int i=0; i < A_LEN (sz->d); i++) {
-    /* apply directive! */
-    act_connection *c;
-    double dup, ddn;
-    int upf, dnf;
-    int fup, fdn;
+    for (int i=0; i < A_LEN (sz->d); i++) {
+      /* apply directive! */
+      act_connection *c;
+      double dup, ddn;
+      int upf, dnf;
+      int fup, fdn;
 
-    upf = 1;
-    dnf = 1;
-    fup = 0;
-    fdn = 0;
+      upf = 1;
+      dnf = 1;
+      fup = 0;
+      fdn = 0;
     
-    c = sz->d[i].id->Canonical (sc);
-    fup = sz->d[i].flav_up;
-    fdn = sz->d[i].flav_dn;
+      c = sz->d[i].id->Canonical (sc);
+      fup = sz->d[i].flav_up;
+      fdn = sz->d[i].flav_dn;
 
-    if (sz->d[i].eup) {
-      if (!getconst_real (sz->d[i].eup, &dup)) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing expression is not a const");
+      if (sz->d[i].eup) {
+	if (!getconst_real (sz->d[i].eup, &dup)) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing expression is not a const");
+	}
+	if (dup < 0) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing expression is negative");
+	}
+	dup *= ratio;		/* keep the units fixed */
       }
-      if (dup < 0) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing expression is negative");
+      else {
+	dup = -1;
       }
-      dup *= ratio;		/* keep the units fixed */
-    }
-    else {
-      dup = -1;
-    }
-    if (sz->d[i].upfolds) {
-      if (!getconst_int (sz->d[i].upfolds, &upf)) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing folding value is not a const");
+      if (sz->d[i].upfolds) {
+	if (!getconst_int (sz->d[i].upfolds, &upf)) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing folding value is not a const");
+	}
+	if (upf < 0) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing folding is negative");
+	}
       }
-      if (upf < 0) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing folding is negative");
+      if (sz->d[i].edn) {
+	if (!getconst_real (sz->d[i].edn, &ddn)) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing expression is not a const");
+	}
+	if (ddn < 0) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing expression is negative");
+	}
       }
-    }
-    if (sz->d[i].edn) {
-      if (!getconst_real (sz->d[i].edn, &ddn)) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing expression is not a const");
+      else {
+	ddn = -1;
       }
-      if (ddn < 0) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing expression is negative");
+      if (sz->d[i].dnfolds) {
+	if (!getconst_int (sz->d[i].dnfolds, &dnf)) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing folding value is not a const");
+	}
+	if (dnf < 0) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Sizing folding is negative");
+	}
       }
-    }
-    else {
-      ddn = -1;
-    }
-    if (sz->d[i].dnfolds) {
-      if (!getconst_int (sz->d[i].dnfolds, &dnf)) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing folding value is not a const");
+      if (dup == -1) {
+	dup = ddn*ratio;
+	upf = dnf;
+	fup = fdn;
       }
-      if (dnf < 0) {
-	act_error_ctxt (stderr);
-	fatal_error ("Sizing folding is negative");
+      if (ddn == -1) {
+	ddn = dup/ratio;
+	dnf = upf;
+	fdn = fup;
       }
-    }
-    if (dup == -1) {
-      dup = ddn*ratio;
-      upf = dnf;
-      fup = fdn;
-    }
-    if (ddn == -1) {
-      ddn = dup/ratio;
-      dnf = upf;
-      fdn = fup;
-    }
-    dup *= unit_n;
-    ddn *= unit_n;
+      dup *= unit_n;
+      ddn *= unit_n;
 
-    /* find all rules with this and apply sizing */
-    for (act_prs *tprs = prs; tprs; tprs = tprs->next) {
-      _apply_sizing (c, fup, fdn, dup, upf, ddn, dnf, ratio, tprs->p, sc);
+      /* find all rules with this and apply sizing */
+      for (act_prs *tprs = prs; tprs; tprs = tprs->next) {
+	_apply_sizing (c, fup, fdn, dup, upf, ddn, dnf, ratio, tprs->p, sc);
+      }
     }
+
+    sz = sz->next;
+  }
+  
+  if (leak_adj && prs) {
+    prs->leak_adjust = 1;
   }
   return NULL;
 }

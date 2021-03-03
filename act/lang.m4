@@ -175,7 +175,7 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}"
 }}
 ;
 
-lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
+lang_prs[ActBody *]: "prs" [ supply_spec ] [ "*" ] "{"
 {{X:
     $0->attr_num = config_get_table_size ("act.prs_attr");
     $0->attr_table = config_get_table_string ("act.prs_attr");
@@ -186,29 +186,35 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] "{"
     act_prs *p;
 
     b = NULL;
-    p = NULL;
-    if (!OPT_EMPTY ($4)) {
-      ActRet *r;
 
-      r = OPT_VALUE ($4);
+    NEW (p, act_prs);
+    p->leak_adjust = 0;
+    p->p = NULL;
+    p->vdd = $0->supply.vdd;
+    p->gnd = $0->supply.gnd;
+    p->nsc = $0->supply.nsc;
+    p->psc = $0->supply.psc;
+    p->next = NULL;
+
+    if (!OPT_EMPTY ($3)) {
+      p->leak_adjust = 1;
+    }
+    OPT_FREE ($3);
+    
+    if (!OPT_EMPTY ($5)) {
+      ActRet *r;
+      r = OPT_VALUE ($5);
       $A(r->type == R_PRS_LANG);
-      NEW (p, act_prs);
       p->p = r->u.prs;
       FREE (r);
-      p->vdd = $0->supply.vdd;
-      p->gnd = $0->supply.gnd;
-      p->nsc = $0->supply.nsc;
-      p->psc = $0->supply.psc;
-      p->next = NULL;
     }
-    if (p) {
-      b = new ActBody_Lang (p);
-    }
+    b = new ActBody_Lang (p);
     $0->supply.vdd = NULL;
     $0->supply.gnd = NULL;
     $0->supply.psc = NULL;
     $0->supply.nsc = NULL;
     OPT_FREE ($2);
+    OPT_FREE ($5);
 
     $0->attr_num = config_get_table_size ("act.instance_attr");
     $0->attr_table = config_get_table_string ("act.instance_attr");
@@ -1672,6 +1678,7 @@ lang_size[ActBody *]: "sizing" "{"
     NEW ($0->sizing_info, act_sizing);
     $0->sizing_info->p_specified = 0;
     $0->sizing_info->unit_n_specified = 0;
+    $0->sizing_info->leak_adjust_specified = 0;
     A_INIT ($0->sizing_info->d);
     $0->sizing_info->next = NULL;
 }}
@@ -1874,6 +1881,10 @@ size_setup: ID "<-" wnumber_expr
     else if (strcmp ($1, "unit_n") == 0) {
       $0->sizing_info->unit_n_specified = 1;
       $0->sizing_info->unit_n_e = $3;
+    }
+    else if (strcmp ($1, "leak_adjust") == 0) {
+      $0->sizing_info->leak_adjust_specified = 1;
+      $0->sizing_info->leak_adjust_e = $3;
     }
     else {
       $E("Unknown sizing directive ``%s''", $1);
