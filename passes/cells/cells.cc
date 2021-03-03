@@ -1195,6 +1195,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   prs_body->psc = NULL;
   prs_body->nsc = NULL;
   prs_body->next = NULL;
+  prs_body->leak_adjust = pi->leak_adjust;
 
   act_prs_lang_t *rules = NULL;
 
