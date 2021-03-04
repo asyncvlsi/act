@@ -2806,13 +2806,16 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
   }
   if (ret->leak_adjust_specified) {
     te = expr_expand (sz->leak_adjust_e, ns, s);
-    ret->unit_n_e = te;
+    ret->leak_adjust_e = te;
     if (te && te->type == E_INT) {
       ret->leak_adjust = te->u.v;
     }
+    else if (te && te->type == E_REAL) {
+      ret->leak_adjust = te->u.f;
+    }
     else {
       act_error_ctxt (stderr);
-      fatal_error ("Expression for unit_n is not a const?");
+      fatal_error ("Expression for leak_adjust is not a const?");
     }
   }
   A_INIT (ret->d);
