@@ -2311,6 +2311,7 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
     manufacturing_grid = config_get_real ("lefdef.manufacturing_grid")*1e-6;
   }
   else {
+    warning ("No lefdef.manufacturing_grid; using 0.5nm default.");
     /*-- agreement with layout generation --*/
     manufacturing_grid = 0.0005*1e-6;
   }
