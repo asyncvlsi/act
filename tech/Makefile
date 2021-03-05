@@ -23,6 +23,8 @@ EXE=techgen.$(EXT)
 
 TARGETS=$(EXE)
 
+TARGETCONF=layout.conf
+
 SRCS=techgen.cc
 OBJS=$(SRCS:.cc=.o)
 

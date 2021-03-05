@@ -24,6 +24,8 @@ LOCAL_LIB=libverilog_$(EXT).a
 
 TARGETS=$(BINARY) $(BINARY2)
 
+TARGETCONF=s2a.conf
+
 TARGETINCS=v_parse_id.h
 
 LOCAL_LIBOBJS=wrap.o v_parse.o v_walk_X.o vnet.o

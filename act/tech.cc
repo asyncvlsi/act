@@ -89,6 +89,11 @@ void Technology::Init (const char *s)
 
   Assert (NTYPE == 0 && PTYPE == 1, "Hmm");
 
+  if (Technology::T) {
+    /* -- already initialized -- */
+    return;
+  }
+
   Technology::T = new Technology();
 
   A_DECL (char *, contacts);
@@ -678,13 +683,13 @@ void Technology::Init (const char *s)
   
   snprintf (buf+k, BUF_SZ-k-1, "via.nspacing");
   if (config_get_table_size (buf) != sz) {
-    fatal_error ("%s: table size must match number of types", sz);
+    fatal_error ("%s: table size must match number of types (%d)", buf, sz);
   }
   pmat->via_n = config_get_table_int (buf);
   
   snprintf (buf+k, BUF_SZ-k-1, "via.pspacing");
   if (config_get_table_size (buf) != sz) {
-    fatal_error ("%s: table size must match number of types", sz);
+    fatal_error ("%s: table size must match number of types (%d)", buf, sz);
   }
   pmat->via_p = config_get_table_int (buf);
   

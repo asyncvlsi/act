@@ -26,6 +26,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <act/act.h>
+#include <act/tech.h>
 #include "act_parse.h"
 #include "act_walk_X.h"
 #include <config.h>
