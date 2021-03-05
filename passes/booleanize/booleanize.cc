@@ -2069,7 +2069,7 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	      c = sub->Canonical (s);
 	      Assert (c == c->primary (), "What?");
 	      /* mark c as used */
-	      mark_c_used (n, subinst, c, count, 1);
+	      mark_c_used (n, subinst, c, count2, 1);
 	    }
 	    *count2 = *count2 + 1;
 	  }
