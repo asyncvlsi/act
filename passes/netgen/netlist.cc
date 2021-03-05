@@ -22,6 +22,7 @@
  **************************************************************************
  */
 #include <map>
+#include <math.h>
 #include <string.h>
 #include "netlist.h"
 #include "hash.h"
@@ -45,6 +46,7 @@ const char *ActNetlistPass::global_gnd = NULL;
 const char *ActNetlistPass::local_vdd = NULL;
 const char *ActNetlistPass::local_gnd = NULL;
 Act *ActNetlistPass::current_act = NULL;
+int ActNetlistPass::grids_per_lambda = 0;
 
 
 #define VINF(x) ((struct act_nl_varinfo *)((x)->extra))
@@ -475,8 +477,8 @@ static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
 	  
   e = edge_alloc (N, N->GND, N->Vdd, w, N->nsc);
   e->type = EDGE_PFET;
-  e->w = min_w;
-  e->l = len;
+  e->w = min_w*ActNetlistPass::getGridsPerLambda();
+  e->l = len*ActNetlistPass::getGridsPerLambda();
   e->keeper = 1;
 }
 
@@ -488,8 +490,8 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
 	  
   e = edge_alloc (N, N->Vdd, N->GND, w, N->psc);
   e->type = EDGE_NFET;
-  e->w = min_w;
-  e->l = len;
+  e->w = min_w*ActNetlistPass::getGridsPerLambda();
+  e->l = len*ActNetlistPass::getGridsPerLambda();
   e->keeper = 1;
 }
 
@@ -592,8 +594,8 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	tmp = node_alloc (N, NULL);
 	e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
 	e->type = EDGE_PFET;
-	e->w = min_w_in_lambda;
-	e->l = min_l_in_lambda;
+	e->w = min_w_in_lambda*getGridsPerLambda();
+	e->l = min_l_in_lambda*getGridsPerLambda();
 	e->keeper = 1;
 	e->combf = 1;
 	create_expr_edges (N, EDGE_PFET|EDGE_FEEDBACK|EDGE_INVERT,
@@ -603,8 +605,8 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	tmp = node_alloc (N, NULL);
 	e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
 	e->type = EDGE_NFET;
-	e->w = min_w_in_lambda;
-	e->l = min_l_in_lambda;
+	e->w = min_w_in_lambda*getGridsPerLambda();
+	e->l = min_l_in_lambda*getGridsPerLambda();
 	e->keeper = 1;
 	e->combf = 1;
 	create_expr_edges (N, EDGE_NFET|EDGE_FEEDBACK|EDGE_INVERT,
@@ -641,8 +643,8 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	    (len < min_l_in_lambda)) {
 	  e = edge_alloc (N, n->v->inv, N->Vdd, n, N->nsc);
 	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda + len;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = (min_l_in_lambda + len)*getGridsPerLambda();
 	  e->keeper = 1;
 	}
 	else {
@@ -671,16 +673,16 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	  /* resistor */
 	  e = edge_alloc (N, N->GND, N->Vdd, tmp, N->nsc);
 	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda;
-	  e->l = len;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = len*getGridsPerLambda();
 	  e->keeper = 1;
 #endif	  
 
 	  /* inv */
 	  e = edge_alloc (N, n->v->inv, weak_vdd, n, N->nsc);
 	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = min_l_in_lambda*getGridsPerLambda();
 	  e->keeper = 1;
 	}
 
@@ -700,8 +702,8 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	    (len < min_l_in_lambda)) {
 	  e = edge_alloc (N, n->v->inv, N->GND, n, N->psc);
 	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda + len;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = (min_l_in_lambda + len)*getGridsPerLambda();
 	  e->keeper = 1;
 	}
 	else {
@@ -730,16 +732,16 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
 	  /* resistor */
 	  e = edge_alloc (N, N->Vdd, N->GND, tmp, N->psc);
 	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda;
-	  e->l = len;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = len*getGridsPerLambda();
 	  e->keeper = 1;
 #endif	  
 
 	  /* inv */
 	  e = edge_alloc (N, n->v->inv, weak_gnd, n, N->psc);
 	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda;
-	  e->l = min_l_in_lambda;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = min_l_in_lambda*getGridsPerLambda();
 	  e->keeper = 1;
 	}
       }
@@ -841,14 +843,16 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       n->sz[f->type].flavor = f->flavor;
 
       if (sz->w) {
-	f->w = (sz->w->type == E_INT ? sz->w->u.v : sz->w->u.f);
+	f->w = (sz->w->type == E_INT ? sz->w->u.v*getGridsPerLambda() :
+		sz->w->u.f*getGridsPerLambda());
 	n->sz[f->type].w = f->w;
       }
       else {
 	f->w = n->sz[f->type].w;
       }
       if (sz->l) {
-	f->l = (sz->l->type == E_INT ? sz->l->u.v : sz->l->u.f);
+	f->l = (sz->l->type == E_INT ? sz->l->u.v*getGridsPerLambda() :
+		sz->l->u.f*getGridsPerLambda());
 	n->sz[f->type].l = f->l;
       }
       else {
@@ -869,8 +873,8 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->nfolds = n->sz[f->type].nf;
       f->flavor = n->sz[f->type].flavor;
     }
-    f->w = MAX(f->w, min_w_in_lambda);
-    f->l = MAX(f->l, min_l_in_lambda);
+    f->w = MAX(f->w, min_w_in_lambda*getGridsPerLambda());
+    f->l = MAX(f->l, min_l_in_lambda*getGridsPerLambda());
   }
   else if (EDGE_SIZE (type) == EDGE_STATINV
 	   || EDGE_SIZE(type) == EDGE_FEEDBACK) {
@@ -885,16 +889,18 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->flavor = sz->flavor;
 
       if (sz->w) {
-	f->w = (sz->w->type == E_INT ? sz->w->u.v : sz->w->u.f);
+	f->w = (sz->w->type == E_INT ? sz->w->u.v*getGridsPerLambda() :
+		sz->w->u.f*getGridsPerLambda());
       }
       else {
-	f->w = min_w_in_lambda;
+	f->w = min_w_in_lambda*getGridsPerLambda();
       }
       if (sz->l) {
-	f->l = (sz->l->type == E_INT ? sz->l->u.v : sz->l->u.f);
+	f->l = (sz->l->type == E_INT ? sz->l->u.v*getGridsPerLambda() :
+		sz->l->u.f*getGridsPerLambda());
       }
       else {
-	f->l = min_l_in_lambda;
+	f->l = min_l_in_lambda*getGridsPerLambda();
       }
       if (sz->folds) {
 	Assert (sz->folds->type == E_INT, "What?");
@@ -905,12 +911,12 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       }
     }
     else {
-      f->w = min_w_in_lambda;
-      f->l = min_l_in_lambda;
+      f->w = min_w_in_lambda*getGridsPerLambda();
+      f->l = min_l_in_lambda*getGridsPerLambda();
     }
   }
-  if (f->w/f->nfolds < min_w_in_lambda) {
-    f->nfolds = f->w/min_w_in_lambda;
+  if (f->w/f->nfolds < min_w_in_lambda*getGridsPerLambda()) {
+    f->nfolds = f->w/(min_w_in_lambda*getGridsPerLambda());
   }
 }
 
@@ -1619,10 +1625,10 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     d = (p->u.one.dir == 0 ? EDGE_NFET : EDGE_PFET);
 
     /*-- reset default sizes per production rule --*/
-    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
-    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width")*getGridsPerLambda();
+    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length")*getGridsPerLambda();
+    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width")*getGridsPerLambda();
+    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length")*getGridsPerLambda();
     N->sz[EDGE_NFET].nf = 1;
     N->sz[EDGE_PFET].nf = 1;
     N->sz[EDGE_NFET].flavor = 0;
@@ -1756,10 +1762,10 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 
   case ACT_PRS_GATE:
     /*-- reset default sizes per gate --*/
-    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
-    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
-    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
-    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
+    N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width")*getGridsPerLambda();
+    N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length")*getGridsPerLambda();
+    N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width")*getGridsPerLambda();
+    N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length")*getGridsPerLambda();
     N->sz[EDGE_NFET].nf = 1;
     N->sz[EDGE_PFET].nf = 1;
     for (attr = p->u.p.attr; attr; attr = attr->next) {
@@ -1854,17 +1860,27 @@ static void _set_current_supplies (netlist_t *N, act_prs *p)
   if (p && p->psc) cpsc = p->psc->Canonical(N->bN->cur);
   if (p && p->nsc) cnsc = p->nsc->Canonical(N->bN->cur);
 
-  N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width");
-  N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length");
-  N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width");
-  N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length");
+  N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_NFET].l = config_get_int ("net.std_n_length") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_NFET].sw = config_get_int ("net.stat_n_width") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_NFET].sl = config_get_int ("net.stat_n_length") *
+    ActNetlistPass::getGridsPerLambda();
+  
   N->sz[EDGE_NFET].nf = 1;
   N->sz[EDGE_NFET].flavor = 0;
 
-  N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width");
-  N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length");
-  N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width");
-  N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length");
+  N->sz[EDGE_PFET].w = config_get_int ("net.std_p_width") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_PFET].l = config_get_int ("net.std_p_length") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_PFET].sw = config_get_int ("net.stat_p_width") *
+    ActNetlistPass::getGridsPerLambda();
+  N->sz[EDGE_PFET].sl = config_get_int ("net.stat_p_length") *
+    ActNetlistPass::getGridsPerLambda();
+  
   N->sz[EDGE_PFET].nf = 1;
   N->sz[EDGE_PFET].flavor = 0;
 
@@ -2291,6 +2307,20 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   discrete_len = config_get_int ("net.discrete_length");
 
   lambda = config_get_real ("net.lambda");
+  if (config_exists ("lefdef.manufacturing_grid")) {
+    manufacturing_grid = config_get_real ("lefdef.manufacturing_grid")*1e-6;
+  }
+  else {
+    /*-- agreement with layout generation --*/
+    manufacturing_grid = 0.0005*1e-6;
+  }
+
+  grids_per_lambda = (int) ((lambda+0.1*manufacturing_grid)/manufacturing_grid);
+
+  if (fabs (grids_per_lambda*manufacturing_grid - lambda) > 1e-6) {
+    fatal_error ("lambda (%g) must be an integer multiple of the manufacturing grid (%g)\n", lambda, manufacturing_grid);
+  }
+
   ignore_loadcap = config_get_int ("net.ignore_loadcap");
   emit_parasitics = config_get_int ("net.emit_parasitics");
   

@@ -29,6 +29,7 @@
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
+
 void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 {
   Assert (p->isExpanded(), "Process must be expanded!");
@@ -232,7 +233,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
       l = e->l;
       leak = 0;
 
-      if (e->l == min_l_in_lambda && n->leak_correct) {
+      if (e->l == min_l_in_lambda*getGridsPerLambda() && n->leak_correct) {
 	leak = 1;
       }
 
@@ -331,7 +332,8 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }
 	  fprintf (fp, " %s", config_get_string (devname));
-	  fprintf (fp, " W=%gU L=%gU", w*lambda*1e6, (l*lambda + leak*leak_adjust)*1e6);
+	  fprintf (fp, " W=%gU L=%gU", w*manufacturing_grid*1e6,
+		   (l*manufacturing_grid + leak*leak_adjust)*1e6);
 
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
@@ -362,8 +364,8 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	      gap = fet_spacing_diffonly;
 	    }
 	    fprintf (fp, "+ AS=%gP PS=%gU",
-		     (e->w*gap)*(lambda*lambda)*1e12,
-		     2*(e->w + gap)*lambda*1e6);
+		     (e->w/getGridsPerLambda()*gap)*(lambda*lambda)*1e12,
+		     2*(e->w/getGridsPerLambda() + gap)*lambda*1e6);
 
 	    if (il == len_repeat-1) {
 	      if (drain->v) {
@@ -382,22 +384,22 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
 	      gap = fet_spacing_diffonly;
 	    }
 	    fprintf (fp, " AD=%gP PD=%gU\n",
-		     (e->w*gap)*(lambda*lambda)*1e12,
-		     2*(e->w + gap)*lambda*1e6);
+		     (e->w/getGridsPerLambda()*gap)*(lambda*lambda)*1e12,
+		     2*(e->w/getGridsPerLambda() + gap)*lambda*1e6);
 	  }
 
 	  fflush (fp);
 
 	  if (e->type == EDGE_NFET) {
-	    if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda) {
+	    if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda*getGridsPerLambda()) {
 	      act_error_ctxt (stderr);
-	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_n_w_in_lambda);
+	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_n_w_in_lambda);
 	    }
 	  }
 	  else {
-	    if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda) {
+	    if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda*getGridsPerLambda()) {
 	      act_error_ctxt (stderr);
-	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w, max_p_w_in_lambda);
+	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_p_w_in_lambda);
 	    }
 	  }
 	}

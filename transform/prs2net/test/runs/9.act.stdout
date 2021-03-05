@@ -15,7 +15,7 @@
 *
 * --- end node flags ---
 *
-M0_ b a Vdd Vdd pch W=0.21U L=0.06U
-M1_ b a GND GND nch W=0.33U L=0.06U
+M0_ b a Vdd Vdd pch W=0.235U L=0.06U
+M1_ b a GND GND nch W=0.355U L=0.06U
 .ends
 *---- end of process: foo<> -----

@@ -196,6 +196,8 @@ class ActNetlistPass : public ActPass {
   static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);
 
   static void spice_to_act_name (char *s, char *t, int sz, int xconv);
+
+  static int getGridsPerLambda() { return grids_per_lambda; }
   
  private:
   int init ();
@@ -205,6 +207,8 @@ class ActNetlistPass : public ActPass {
 
   /* lambda value */
   double lambda;
+  double manufacturing_grid;
+  static int grids_per_lambda;
   
   /* minimum transistor size */
   int min_w_in_lambda;

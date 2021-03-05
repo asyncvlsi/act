@@ -133,7 +133,8 @@ void g (void *x, ActId *prefix, Process *p)
       _print_node (N, fp, prefix, e->a);
       fprintf (fp, " ");
       _print_node (N, fp, prefix, e->b);
-      fprintf (fp, " %d %d\n", e->l, e->w);
+      fprintf (fp, " %d %d\n", e->l/ActNetlistPass::getGridsPerLambda(),
+	       e->w/ActNetlistPass::getGridsPerLambda());
       e->visited = 1;
     }
   }
