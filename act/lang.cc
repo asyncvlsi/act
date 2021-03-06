@@ -3032,97 +3032,103 @@ act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
 }
 
 
+void dflow_print (FILE *fp, act_dataflow_element *e)
+{
+  switch (e->t) {
+  case ACT_DFLOW_FUNC:
+    print_expr (fp, e->u.func.lhs);
+    fprintf (fp, " -> ");
+    if (e->u.func.nbufs) {
+      if (e->u.func.istransparent) {
+        fprintf (fp, "(");
+      }
+      else {
+        fprintf (fp, "[");
+      }
+      print_expr (fp, e->u.func.nbufs);
+      if (e->u.func.init) {
+        fprintf (fp, ",");
+        print_expr (fp, e->u.func.init);
+      }
+      if (e->u.func.istransparent) {
+        fprintf (fp, ") ");
+      }
+      else {
+        fprintf (fp, "] ");
+      }
+    }
+    e->u.func.rhs->Print (fp);
+    break;
+
+  case ACT_DFLOW_SPLIT:
+    fprintf (fp, "{");
+    e->u.splitmerge.guard->Print (fp);
+    fprintf (fp, "} ");
+    e->u.splitmerge.single->Print (fp);
+    fprintf (fp, " -> ");
+    for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+      if (e->u.splitmerge.multi[i]) {
+        e->u.splitmerge.multi[i]->Print (fp);
+      }
+      else {
+        fprintf (fp, "*");
+      }
+      if (i != e->u.splitmerge.nmulti-1) {
+        fprintf (fp, ", ");
+      }
+    }
+    break;
+
+  case ACT_DFLOW_MERGE:
+  case ACT_DFLOW_MIXER:
+  case ACT_DFLOW_ARBITER:
+    fprintf (fp, "{");
+    if (e->t == ACT_DFLOW_MERGE) {
+      e->u.splitmerge.guard->Print (fp);
+    }
+    else if (e->t == ACT_DFLOW_MIXER) {
+      fprintf (fp, "*");
+    }
+    else {
+      fprintf (fp, "|");
+    }
+    fprintf (fp, "} ");
+    for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+      if (e->u.splitmerge.multi[i]) {
+        e->u.splitmerge.multi[i]->Print (fp);
+      }
+      else {
+        fprintf (fp, "*");
+      }
+      if (i != e->u.splitmerge.nmulti-1) {
+        fprintf (fp, ", ");
+      }
+    }
+    fprintf (fp, " -> ");
+    e->u.splitmerge.single->Print (fp);
+    if (e->u.splitmerge.nondetctrl) {
+      fprintf (fp, ", ");
+      e->u.splitmerge.nondetctrl->Print (fp);
+    }
+    break;
+
+  default:
+    fatal_error ("What?");
+    break;
+  }
+}
+
+
 void dflow_print (FILE *fp, act_dataflow *d)
 {
   listitem_t *li;
   act_dataflow_element *e;
-  
+
   if (!d) return;
   fprintf (fp, "dataflow {\n");
   for (li = list_first (d->dflow); li; li = list_next (li)) {
     e = (act_dataflow_element *) list_value (li);
-    switch (e->t) {
-    case ACT_DFLOW_FUNC:
-      print_expr (fp, e->u.func.lhs);
-      fprintf (fp, " -> ");
-      if (e->u.func.nbufs) {
-	if (e->u.func.istransparent) {
-	  fprintf (fp, "(");
-	}
-	else {
-	  fprintf (fp, "[");
-	}
-	print_expr (fp, e->u.func.nbufs);	
-	if (e->u.func.init) {			
-	  fprintf (fp, ",");
-	  print_expr (fp, e->u.func.init);
-	}
-	if (e->u.func.istransparent) {
-	  fprintf (fp, ") ");
-	}
-	else {
-	  fprintf (fp, "] ");
-	}
-      }
-      e->u.func.rhs->Print (fp);
-      break;
-
-    case ACT_DFLOW_SPLIT:
-      fprintf (fp, "{");
-      e->u.splitmerge.guard->Print (fp);
-      fprintf (fp, "} ");
-      e->u.splitmerge.single->Print (fp);
-      fprintf (fp, " -> ");
-      for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-	if (e->u.splitmerge.multi[i]) {
-	  e->u.splitmerge.multi[i]->Print (fp);
-	}
-	else {
-	  fprintf (fp, "*");
-	}
-	if (i != e->u.splitmerge.nmulti-1) {
-	  fprintf (fp, ", ");
-	}
-      }
-      break;
-      
-    case ACT_DFLOW_MERGE:
-    case ACT_DFLOW_MIXER:
-    case ACT_DFLOW_ARBITER:
-      fprintf (fp, "{");
-      if (e->t == ACT_DFLOW_MERGE) {
-	e->u.splitmerge.guard->Print (fp);
-      }
-      else if (e->t == ACT_DFLOW_MIXER) {
-	fprintf (fp, "*");
-      }
-      else {
-	fprintf (fp, "|");
-      }
-      fprintf (fp, "} ");
-      for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-	if (e->u.splitmerge.multi[i]) {
-	  e->u.splitmerge.multi[i]->Print (fp);
-	}
-	else {
-	  fprintf (fp, "*");
-	}
-	if (i != e->u.splitmerge.nmulti-1) {
-	  fprintf (fp, ", ");
-	}
-      }
-      fprintf (fp, " -> ");
-      e->u.splitmerge.single->Print (fp);
-      if (e->u.splitmerge.nondetctrl) {
-	fprintf (fp, ", ");
-	e->u.splitmerge.nondetctrl->Print (fp);
-      }
-      break;
-      
-    default:
-      fatal_error ("What?");
-      break;
-    }
+    dflow_print(fp, e);
     if (list_next (li)) {
       fprintf (fp, ";");
     }
