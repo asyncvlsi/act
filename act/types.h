@@ -419,6 +419,7 @@ class Function : public UserDef {
   InstType *getRetType () { return ret_type; }
 
   Function *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+  void Print (FILE *fp);
 
   Expr *eval (ActNamespace *ns, int nargs, Expr **args);
   Expr *toInline (int nargs, Expr **args);

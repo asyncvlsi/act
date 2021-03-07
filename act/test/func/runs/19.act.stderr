@@ -1,0 +1,3 @@
+ERROR: File `19.act', line 16, col 27
+	Typechecking failed on expression!
+	Function `addone': template arg #0 has an incompatible type

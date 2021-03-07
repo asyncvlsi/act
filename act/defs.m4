@@ -520,6 +520,9 @@ function_formal_list: port_formal_list | param_formal_list ;
 
 param_formal_list: { param_inst ";" }*
 {{X:
+    if ($0->func_template) {
+      $E("Function cannot be templated and have template parameters");
+    }
     list_free ($1);
     return NULL;
 }}
@@ -1260,13 +1263,21 @@ bare_id_list[list_t *]: { ID "," }*
  *
  *------------------------------------------------------------------------
  */
-deffunc: [ "export" ] "function"
+deffunc: [ template_spec ] "function"
 {{X:
-    $0->u = new UserDef ($0->curns);
-    if (!OPT_EMPTY ($1)) {
-      $0->u->MkExported();
+    if (OPT_EMPTY ($1)) {
+      $0->u = new UserDef ($0->curns);
+    }
+    else {
+      $A($0->u);
     }
     OPT_FREE ($1);
+    if ($0->u->getNumParams() > 0) {
+      $0->func_template = 1;
+    }
+    else {
+      $0->func_template = 0;
+    }
 }}
 ID 
 {{X:
@@ -1325,7 +1336,7 @@ ID
     if ($0->u_f->getNumPorts() > 0 && TypeFactory::isParamType ($8)) {
       $E("Function ``%s'': return type incompatible with arguments", $3);
     }
-    if ($0->u_f->getNumParams() > 0 && !TypeFactory::isParamType ($8)) {
+    if (($0->u_f->getNumParams() > 0 && !$0->func_template) && !TypeFactory::isParamType ($8)) {
       $E("Function ``%s'': return type incompatible with arguments", $3);
     }
 

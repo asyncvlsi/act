@@ -609,6 +609,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       InstType *rtype = fn->getRetType();
       int kind = 0;
       Expr *tmp = e->u.fn.r;
+      Expr *e2;
       int strict_flag = T_STRICT;
 
       if (TypeFactory::isParamType (rtype)) {
@@ -616,6 +617,14 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       else {
 	kind = 1;
+      }
+
+      if (tmp->type == E_GT) {
+	e2 = tmp->u.e.l;
+	tmp = tmp->u.e.r;
+      }
+      else {
+	e2 = NULL;
       }
 
       for (int i=0;
@@ -637,8 +646,24 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_ERR;
 	  }
 	}
+	tmp = tmp->u.e.r;
       }
 
+      if (e2) {
+	Assert (kind == 1, "What?");
+	tmp = e2;
+	for (int i=0; i < fn->getNumParams(); i++) {
+	  InstType *x = fn->getPortType (-(i+1));
+	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
+	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
+	  if (!x->isConnectable (y, 1)) {
+	    typecheck_err ("Function `%s': template arg #%d has an incompatible type",
+			   fn->getName(), i);
+	    return T_ERR;
+	  }
+	}
+	tmp = tmp->u.e.r;
+      }
       /*-- provide return type --*/
       
       if (TypeFactory::isParamType(rtype)) {

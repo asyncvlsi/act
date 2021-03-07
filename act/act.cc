@@ -433,6 +433,7 @@ Act::Act (const char *s)
   tr.supply.nsc = NULL;
   
   tr.strict_checking = 0;
+  tr.func_template = 0;
 
   tr.in_tree = 0;
   tr.in_subckt = 0;

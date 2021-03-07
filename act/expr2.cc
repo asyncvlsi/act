@@ -323,9 +323,33 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
       Assert (f, "Hmm.");
       snprintf (buf+k, sz, "%s", f->getName());
       PRINT_STEP;
+
+      if (e->u.fn.r->type == E_GT) {
+	snprintf (buf+k, sz, "<");
+	PRINT_STEP;
+	tmp = e->u.fn.r->u.e.l;
+	while (tmp) {
+	  sprint_expr (buf+k, sz, tmp->u.e.l);
+	  PRINT_STEP;
+	  tmp = tmp->u.e.r;
+	  if (tmp) {
+	    snprintf (buf+k, sz, ",");
+	    PRINT_STEP;
+	  }
+	}
+	snprintf (buf+k, sz, ">");
+	PRINT_STEP;
+      }
+      
       snprintf (buf+k, sz, "(");
       PRINT_STEP;
-      tmp = e->u.fn.r;
+
+      if (e->u.fn.r->type == E_GT) {
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
       while (tmp) {
 	sprint_expr (buf+k, sz, tmp->u.e.l);
 	PRINT_STEP;
@@ -412,6 +436,21 @@ static int _id_equal (Expr *a, Expr *b)
   ia = (ActId *)a;
   ib = (ActId *)b;
   return ia->isEqual (ib);
+}
+
+static int expr_args_equal (Expr *a, Expr *b)
+{
+  while (a && b) {
+    if (!expr_equal (a->u.e.l, b->u.e.l)) {
+      return 0;
+    }
+    a = a->u.e.r;
+    b = b->u.e.r;
+  }
+  if (a || b) {
+    return 0;
+  }
+  return 1;
 }
 
 /**
@@ -541,17 +580,23 @@ int expr_equal (Expr *a, Expr *b)
       Expr *at, *bt;
       at = a->u.fn.r;
       bt = b->u.fn.r;
-      while (at && bt) {
-	if (!expr_equal (at->u.e.l, bt->u.e.l)) {
-	  return 0;
-	}
-	at = at->u.e.r;
-	bt = bt->u.e.r;
-      }
-      if (at || bt) {
+
+      if (at->type != bt->type) {
 	return 0;
       }
-      return 1;
+
+      if (at->type == E_LT) {
+	return expr_args_equal (at, bt);
+      }
+      else {
+	if (!expr_args_equal (at->u.e.l, bt->u.e.l)) {
+	  return 0;
+	}
+	if (!expr_args_equal (at->u.e.r, bt->u.e.r)) {
+	  return 0;
+	}
+	return 1;
+      }
     }
     break;
 

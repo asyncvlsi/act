@@ -134,6 +134,8 @@ typedef struct {
      template parameters can be only used in port lists */
   int strict_checking;
 
+  int func_template;
+
   /* used for nested subckt/tree in prs bodies. No nesting allowed */
   int in_tree;
   int in_subckt;

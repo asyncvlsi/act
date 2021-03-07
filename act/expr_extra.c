@@ -35,6 +35,7 @@
 static int tokand, tokor, lpar, rpar, ddot, colon;
 static int double_colon, comma;
 static int inttok, booltok;
+static int langle, rangle;
 
 
 static void do_init (LFILE *l)
@@ -47,6 +48,8 @@ static void do_init (LFILE *l)
     rpar = expr_gettoken (E_RPAR);
     ddot = expr_gettoken (E_BITFIELD);
     colon = expr_gettoken (E_COLON);
+    langle = expr_gettoken (E_LT);
+    rangle = expr_gettoken (E_GT);
     double_colon = file_addtoken (l, "::");
     comma = file_addtoken (l, ",");
     inttok = file_addtoken (l, "int");
@@ -60,6 +63,7 @@ static Expr *_parse_expr_func (LFILE *l)
 {
   Expr *e, *f;
   int etype;
+  Expr *templ = NULL;
   
   do_init(l);
   
@@ -103,7 +107,47 @@ static Expr *_parse_expr_func (LFILE *l)
       PRINT_STEP;
     }
 
+    if (file_have (l, langle)) {
+      Expr *tt;
+      expr_endgtmode (1);
+
+      NEW (templ, Expr);
+      templ->type = E_LT;
+      templ->u.e.r = NULL;
+      templ->u.e.l = expr_parse_any (l);
+      if (!templ->u.e.l) {
+	FREE (templ);
+	FREE (e);
+	expr_endgtmode (0);
+	return NULL;
+      }
+      tt = templ;
+      
+      while (file_have (l, comma)) {
+	NEW (tt->u.e.r, Expr);
+	tt = tt->u.e.r;
+	tt->type = E_LT;
+	tt->u.e.r = NULL;
+	tt->u.e.l = expr_parse_any (l);
+	if (!tt->u.e.l) {
+	  expr_free (templ);
+	  FREE (e);
+	  expr_endgtmode (0);
+	  return NULL;
+	}
+      }
+      expr_endgtmode (0);
+      if (!file_have (l, rangle)) {
+	expr_free (templ);
+	FREE (e);
+	return NULL;
+      }
+    }
+
     if (!file_have (l, lpar)) {
+      if (templ) {
+	expr_free (templ);
+      }
       FREE (e);
       return NULL;
     }
@@ -121,14 +165,27 @@ static Expr *_parse_expr_func (LFILE *l)
 	if (!f->u.e.l) {
 	  expr_dec_parens ();
 	  expr_free (e);
+	  if (templ) {
+	    expr_free (templ);
+	  }
 	  return NULL;
 	}
       } while (file_have (l, comma));
       if (!file_have (l, rpar)) {
 	expr_dec_parens ();
 	expr_free (e);
+	if (templ) {
+	  expr_free (templ);
+	}
 	return NULL;
       }
+    }
+    if (templ) {
+      NEW (f, Expr);
+      f->type = E_GT;
+      f->u.e.l = templ;
+      f->u.e.r = e->u.fn.r;
+      e->u.fn.r = f;
     }
     expr_dec_parens ();
   }

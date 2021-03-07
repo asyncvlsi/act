@@ -684,7 +684,39 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
     {
       Expr *tmp, *etmp;
       Function *f = dynamic_cast<Function *>((UserDef *)e->u.fn.s);
-      f = f->Expand (ns, s, 0, NULL);
+
+      if (e->u.fn.r->type == E_GT) {
+	/* template parameters */
+	int count = 0;
+	Expr *w;
+	w = e->u.fn.r->u.e.l;
+	while (w) {
+	  count++;
+	  w = w->u.e.r;
+	}
+	inst_param *inst;
+	if (count == 0) {
+	  f = f->Expand (ns, s, 0, NULL);
+	}
+	else {
+	  MALLOC (inst, inst_param, count);
+	  w = e->u.fn.r->u.e.l;
+	  for (int i=0; i < count; i++) {
+	    inst[i].isatype = 0;
+	    inst[i].u.tp = new AExpr (w->u.e.l);
+	    inst[i].u.tp = inst[i].u.tp->Expand (ns, s, 0);
+	    w = w->u.e.r;
+	  }
+	  f = f->Expand (ns, s, count, inst);
+	  for (int i=0; i < count; i++) {
+	    delete inst[i].u.tp;
+	  }
+	  FREE (inst);
+	}
+      }
+      else {
+	f = f->Expand (ns, s, 0, NULL);
+      }
 
       if (f->isExternal()) {
 	chp_is_synth = 0;
@@ -696,13 +728,20 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
       }
       else {
 	NEW (tmp, Expr);
+	tmp->type = E_LT;
 	ret->u.fn.r = tmp;
 	tmp->u.e.r = NULL;
-	etmp = e->u.fn.r;
+	if (e->u.fn.r->type == E_GT) {
+	  etmp = e->u.fn.r->u.e.r;
+	}
+	else {
+	  etmp = e->u.fn.r;
+	}
 	do {
 	  tmp->u.e.l = chp_expr_expand (etmp->u.e.l, ns, s);
 	  if (etmp->u.e.r) {
 	    NEW (tmp->u.e.r, Expr);
+	    tmp->type = E_LT;
 	    tmp = tmp->u.e.r;
 	    tmp->u.e.r = NULL;
 	  }
@@ -1477,6 +1516,94 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   return ret;
 }
 
+static int _has_probe (Expr *e)
+{
+  if (!e) return 0;
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    return _has_probe (e->u.e.l) || _has_probe (e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    return _has_probe (e->u.e.l);
+    break;
+
+  case E_QUERY:
+    return _has_probe (e->u.e.l) ||
+      _has_probe (e->u.e.r->u.e.l) ||
+      _has_probe (e->u.e.r->u.e.r);
+    break;
+    
+  case E_FUNCTION:
+    {
+      Expr *tmp = e->u.fn.r;
+      Assert (!tmp || tmp->type == E_LT, "Function elaboration?");
+      while (tmp) {
+	if (_has_probe (tmp->u.e.l)) {
+	  return 1;
+	}
+	tmp = tmp->u.e.r;
+      }
+    }
+    return 0;
+    break;
+
+  case E_PROBE:
+    return 1;
+    break;
+
+  case E_VAR:
+  case E_TRUE:
+  case E_FALSE:
+  case E_INT:
+    return 0;
+    break;
+
+  case E_BITFIELD:
+    return _has_probe (e->u.e.r->u.e.l) ||
+      _has_probe (e->u.e.r->u.e.r);
+    break;
+    
+  case E_CONCAT:
+    while (e) {
+      if (_has_probe (e->u.e.l)) {
+	return 1;
+      }
+      e = e->u.e.r;
+    }
+    return 0;
+
+  case E_BUILTIN_BOOL:
+  case E_BUILTIN_INT:
+    return _has_probe (e->u.e.l);
+    break;
+
+  default:
+    fatal_error ("Unknown/unexpected type (%d)\n", e->type);
+    return 1;
+    break;
+  }
+}
+    
+
 static Expr *_chp_fix_nnf (Expr *e, int invert)
 {
   Expr *t;
@@ -1581,9 +1708,15 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
       t->u.e.l = e;
       t->u.e.r = NULL;
     }
-    while (e->u.e.r) {
-      e->u.e.r->u.e.l = _chp_fix_nnf (e->u.e.r->u.e.l, 0);
-      e = e->u.e.r;
+    {
+      Expr *tmp = e->u.fn.r;
+      Assert (!tmp || tmp->type == E_LT, "Function elaboration?");
+      while (tmp) {
+	if (_has_probe (tmp->u.e.l)) {
+	  warning ("Probes in function arguments not correctly supported");
+	}
+	tmp = tmp->u.e.r;
+      }
     }
     if (invert) {
       e = t;
@@ -1767,14 +1900,7 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
     break;
     
   case E_FUNCTION:
-    t = e;
-    while (t->u.e.r) {
-      t->u.e.r->u.e.l = _chp_add_probes (t->u.e.r->u.e.l, ns, s, 0);
-      t = t->u.e.r;
-    }
-    if (isbool) {
-      e = _process_probes (e);
-    }
+    /*-- nothing to do --*/
     break;
 
   case E_BITFIELD:
@@ -3249,9 +3375,11 @@ static void chp_check_expr (Expr *e, Scope *s)
     break;
 
   case E_FUNCTION:
-    while (e->u.e.r) {
-      e = e->u.e.r;
+    Assert (!e->u.fn.r || e->u.fn.r->type == E_LT, "Function expansion");
+    e = e->u.fn.r;
+    while (e) {
       chp_check_expr (e->u.e.l, s);
+      e = e->u.e.r;
     }
     break;
 
@@ -3385,11 +3513,13 @@ static int act_hse_direction (Expr *e, ActId *id)
     break;
 
   case E_FUNCTION:
-    while (e->u.e.r) {
-      e = e->u.e.r;
+    Assert (!e->u.fn.r || e->u.fn.r->type == E_LT, "Function expand error");
+    e = e->u.fn.r;
+    while (e) {
       if (act_hse_direction (e->u.e.l, id)) {
 	return 1;
       }
+      e = e->u.e.r;
     }
     break;
 

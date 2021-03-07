@@ -559,9 +559,11 @@ static Expr *FF (void)
   if ((f->type == E_GT) && (end_gt_mode == 1)) {
     int have_comma = 0;
     int have_semi = 0;
+    int have_bar = 0;
     int comma_token = -1;
     int semi_token = -1;
- 
+    int bar_token = -1;
+
     have_comma = file_istoken (Tl, ",");
     if (have_comma) {
       comma_token = file_addtoken (Tl, ",");
@@ -570,8 +572,13 @@ static Expr *FF (void)
     if (have_semi) {
       semi_token = file_addtoken (Tl, ";");
     }
+    have_bar = file_istoken (Tl, "[]");
+    if (have_bar) {
+      bar_token = file_addtoken (Tl, "[]");
+    }
     if ((have_comma && (file_sym (Tl) == comma_token)) ||
 	(have_semi && (file_sym (Tl) == semi_token)) ||
+	(have_bar && (file_sym (Tl) == bar_token)) ||
 	(file_sym (Tl) == T[E_RPAR] && paren_count == 0)) {
       /* unwind */
       SET (Tl);

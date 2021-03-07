@@ -1798,7 +1798,7 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (ns->EditType (xd->name, xd) == 1, "What?");
 
-  xd->setRetType (ret_type->Expand (ns, s));
+  xd->setRetType (ret_type->Expand (ns, xd->I));
   
   return xd;
 }
@@ -2246,6 +2246,31 @@ void Data::Print (FILE *fp)
   if (!firstmeth) {
     fprintf (fp, " }\n");
   }
+  fprintf (fp, "}\n\n");
+}
+
+void Function::Print (FILE *fp)
+{
+  PrintHeader (fp, "function");
+  fprintf (fp, " : ");
+  ret_type->Print (fp);
+  fprintf (fp, "\n{\n");
+  if (!expanded) {
+    /* print act bodies */
+    ActBody *bi;
+
+    for (bi = b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+  }
+  else {
+    CurScope()->Print (fp);
+  }
+
+  /* print language bodies */
+  lang->Print (fp);
+
+  
   fprintf (fp, "}\n\n");
 }
 

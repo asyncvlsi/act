@@ -193,6 +193,35 @@ static int find_colon (char *s)
   return -1;
 }
 
+static Expr *walk_fn_args (ActTree *cookie, Expr *e, int *nargs)
+{
+  Expr *rtmp;
+  Expr *etmp;
+  int args = 0;
+  Expr *ret = NULL;
+
+  rtmp = ret;
+  etmp = e;
+  while (etmp) {
+    args++;
+    if (ret == NULL) {
+      NEW (ret, Expr);
+      rtmp = ret;
+    }
+    else {
+      NEW (rtmp->u.e.r, Expr);
+      rtmp = rtmp->u.e.r;
+    }
+    rtmp->type = etmp->type;
+    rtmp->u.e.r = NULL;
+    rtmp->u.e.l = act_walk_X_expr (cookie, etmp->u.e.l);
+    etmp = etmp->u.e.r;
+  }
+  *nargs = args;
+  return ret;
+}
+
+
 /*------------------------------------------------------------------------
  *
  * Expression walk
@@ -348,6 +377,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       char *prev;
       int i;
       int args = 0;
+      int args2 = 0;
 
       i = find_colon (e->u.fn.s);
       if (i == -1) {
@@ -405,33 +435,76 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	  act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
       }
       ret->u.fn.s = (char *) u;
-      Expr *etmp = e->u.fn.r;
-      Expr *rtmp;
+      int is_templ;
 
-      rtmp = ret;
-      ret->u.fn.r = NULL;
-
-      while (etmp) {
-	args++;
-	if (ret == rtmp) {
-	  NEW (ret->u.fn.r, Expr);
-	  rtmp = ret->u.fn.r;
-	}
-	else {
-	  NEW (rtmp->u.e.r, Expr);
-	  rtmp = rtmp->u.e.r;
-	}
-	rtmp->u.e.r = NULL;
-	rtmp->type = etmp->type;
-	rtmp->u.e.l = act_walk_X_expr (cookie, etmp->u.e.l);
-	etmp = etmp->u.e.r;
+      if (e->u.fn.r->type == E_GT) {
+	NEW (ret->u.fn.r, Expr);
+	ret->u.fn.r->type = E_GT;
+	ret->u.fn.r->u.e.l = walk_fn_args (cookie, e->u.fn.r->u.e.l, &args);
+	ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.fn.r->u.e.r, &args2);
+	is_templ = 1;
       }
-      if (args != (u->getNumParams() + u->getNumPorts())) {
-	struct act_position p;
-	p.l = cookie->line;
-	p.c = cookie->column;
-	p.f = cookie->file;
-	act_parse_err (&p, "`%s': incorrect number of arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts() + u->getNumParams(), args);
+      else {
+	ret->u.fn.r = walk_fn_args (cookie, e->u.fn.r, &args);
+	args2 = 0;
+	is_templ = 0;
+      }
+
+      Function *uf = dynamic_cast<Function *>(u);
+      Assert (uf, "What?");
+
+      if (TypeFactory::isParamType (uf->getRetType())) {
+	if (is_templ) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
+	}
+      }
+      else {
+	if (u->getNumParams() > 0) {
+	  if (!is_templ) {
+	    struct act_position p;
+	    p.l = cookie->line;
+	    p.c = cookie->column;
+	    p.f = cookie->file;
+	    act_parse_err (&p, "`%s': missing template parameters", e->u.fn.s);
+	  }
+	}
+	else if (is_templ) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
+	}
+      }
+      
+      if (is_templ) {
+	if (args != u->getNumParams()) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s': incorrect number of template arguments (expected %d, got %d)", e->u.fn.s, u->getNumParams(), args);
+	}
+	if (args2 != u->getNumPorts()) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s': incorrect number of parameter arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts(), args2);
+	}
+      }
+      else {
+	if (args != (u->getNumParams() + u->getNumPorts())) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "`%s': incorrect number of arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts() + u->getNumParams(), args);
+	}
       }
     }
     break;
