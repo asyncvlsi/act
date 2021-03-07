@@ -19,6 +19,8 @@
  *
  **************************************************************************
  */
+#include <stdio.h>
+#include <string.h>
 #include <act/act.h>
 #include <act/passes.h>
 #include <lispCli.h>
