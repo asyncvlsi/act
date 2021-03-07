@@ -177,7 +177,7 @@ int main (int argc, char **argv)
     if (!fp) {
       fatal_error ("Could not open file `%s' for reading", argv[1]);
     }
-    for (int i=2; i < argc; i++) {
+    for (int i=1; i < argc; i++) {
       argv[i-1] = argv[i];
     }
     argc--;
