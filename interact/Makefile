@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2011-2019 Rajit Manohar
+#  Copyright (c) 2021 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,9 +18,17 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-#
-# Make everything, in the right order
-# 
-SUBDIRS=common pgen miniscm act passes transform simulation tech interact
+EXE=interact.$(EXT)
+
+TARGETS=$(EXE)
+
+OBJS=main.o act_cmds.o
+
+SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+$(EXE): $(OBJS) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(EXE) $(LIBACTPASS) $(LIBASIM) $(LIBACTSCMCLI) -ldl -ledit
+
+-include Makefile.deps

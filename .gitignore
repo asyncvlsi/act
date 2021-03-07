@@ -8,3 +8,4 @@ x86_64_*
 lib*_arm64_*.a
 lib*_i386_*.a
 lib*_x86_64_*.a
+.act_history

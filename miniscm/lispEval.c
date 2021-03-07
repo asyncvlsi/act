@@ -427,6 +427,12 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
     LINTEGER (l) = LispGetReturnInt ();
     return l;
   }
+  else if (ret == 3) {
+    l = LispNewObj ();
+    LTYPE (l) = S_STRING;
+    LSTR (l) = LispGetReturnString ();
+    return l;
+  }
   /* default: return #f */
   RETURN;
 }

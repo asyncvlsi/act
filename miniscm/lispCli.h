@@ -82,6 +82,10 @@ int LispCliRun (FILE *fp);
 */
 void LispSetReturnInt (int val);
 
+/*
+  Use to set a string return value
+*/
+void LispSetReturnString (char *s);  
 
 #ifdef __cplusplus
 }

@@ -41,6 +41,7 @@
 #include "lispargs.h"
 #include "lispCli.h"
 #include <array.h>
+#include "hash.h"
 
 
 #define DEFAULT_PROMPT "cli> "
@@ -68,6 +69,7 @@ static char *prompt_func (EditLine *el)
 static struct LispCliCommand *cli_commands = NULL;
 static int num_commands = 0;
 static int use_editline;
+static struct Hashtable *cli_hash = NULL;
 
 /*------------------------------------------------------------------------
  *
@@ -258,10 +260,12 @@ void pop_file (void)
 static int handle_source (int argc, char **argv);
 
 static int lisp_return_value;
+static char *lisp_return_string = NULL;
 
 static int dispatch_command (int argc, char **argv)
 {
   int i;
+  hash_bucket_t *b;
 
   if (strcmp (argv[0], "source") == 0) {
     return handle_source (argc, argv);
@@ -311,10 +315,11 @@ static int dispatch_command (int argc, char **argv)
       return 0;
     }
   }
-  
-  for (i=0; i < num_commands; i++) {
-    if (!cli_commands[i].name) continue;
-    if (strcmp (cli_commands[i].name, argv[0]) == 0) {
+  if (cli_hash) {
+    b = hash_lookup (cli_hash, argv[0]);
+    if (b) {
+      i = b->i;
+      Assert (strcmp (cli_commands[i].name, argv[0]) == 0, "Sanity check");
       return (*cli_commands[i].f)(argc, argv);
     }
   }
@@ -331,6 +336,21 @@ void LispSetReturnInt (int val)
 int LispGetReturnInt (void)
 {
   return lisp_return_value;
+}
+
+void LispSetReturnString (char *str)
+{
+  if (lisp_return_string) {
+    FREE (lisp_return_string);
+  }
+  lisp_return_string = Strdup (str);
+}
+
+char *LispGetReturnString (void)
+{
+  char *tmp = lisp_return_string;
+  lisp_return_string = NULL;
+  return tmp;
 }
 
 int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
@@ -549,11 +569,13 @@ int LispCliAddCommands (const char *mod,
   int i, j;
   char *nm;
   int mod_len;
+  hash_bucket_t *b;
   
   if (cmd_len <= 0) return cmd_len;
 
   if (!cli_commands) {
     MALLOC (cli_commands, struct LispCliCommand, cmd_len);
+    cli_hash = hash_new (8);
   }
   else {
     REALLOC (cli_commands, struct LispCliCommand, cmd_len + num_commands);
@@ -574,23 +596,26 @@ int LispCliAddCommands (const char *mod,
       else {
 	nm = Strdup (cmd[i].name);
       }
-      for (j=0; j < num_commands; j++) {
-	if (!cli_commands[j].name) continue;
-	if (strcmp (cli_commands[j].name, nm) == 0) {
-	  warning ("Duplicate command name `%s'", nm);
-	  return i;
-	}
+      if (hash_lookup (cli_hash, nm)) {
+	warning ("Duplicate command name `%s'", nm);
+	FREE (nm);
+	return i;
       }
       if (strcmp (nm, "help") == 0 ||
 	  strcmp (nm, "exit") == 0 ||
 	  strcmp (nm, "quit") == 0 ||
 	  strcmp (nm, "source") == 0) {
 	  warning ("Reserved command name `%s'", nm);
+	  FREE (nm);
 	  return i;
       }
     }
     cli_commands[num_commands] = cmd[i];
     cli_commands[num_commands].name = nm;
+    if (nm) {
+      b = hash_add (cli_hash, nm);
+      b->i = num_commands;
+    }
     num_commands++;
   }
   return i;
