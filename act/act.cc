@@ -49,10 +49,12 @@ struct command_line_defs {
 
 int Act::max_recurse_depth;
 int Act::max_loop_iterations;
-int Act::warn_emptyselect;
 int Act::emit_depend;
-int Act::warn_double_expand;
-int Act::warn_no_local_driver;
+
+#define WARNING_FLAG(x,y) \
+  int Act::x;
+#include "warn.def"
+
 Log *Act::L;
 list_t *Act::cmdline_args;
 
@@ -110,17 +112,26 @@ void Act::Init (int *iargc, char ***iargv)
 
   config_set_default_int ("act.max_recurse_depth", 1000);
   config_set_default_int ("act.max_loop_iterations", 1000);
-  config_set_default_int ("act.warn.emptyselect", 0);
-  config_set_default_int ("act.warn.dup_pass", 1);
-  config_set_default_int ("act.warn_no_local_driver", 1);
+  
+#define WARNING_FLAG(x,y) \
+  config_set_default_int ("act.warn." #x, y);
+
+#include "warn.def"  
   
   Act::emit_depend = 0;
-  Act::warn_double_expand = 1;
+  Act::double_expand = 1;
 
   Log::OpenStderr ();
   Log::Initialize_LogLevel ("");
 
   A_INIT (vars);
+
+  A_DECL (int, args_remain);
+  A_INIT (args_remain);
+
+  A_NEW (args_remain, int);
+  A_NEXT (args_remain) = 0;
+  A_INC (args_remain);
 
   for (i=1; i < argc; i++) {
     if (strncmp (argv[i], "-D", 2) == 0) {
@@ -229,23 +240,32 @@ void Act::Init (int *iargc, char ***iargv)
       s = Strdup (argv[i]+2);
       tmp = strtok (s, ",");
       while (tmp) {
-	if (strcmp (tmp, "empty-select") == 0) {
-	  config_set_int ("act.warn.emptyselect", 1);
-	}
-	else if (strcmp (tmp, "dup-pass:off") == 0) {
-	  config_set_int ("act.warn.dup_pass", 0);
-	}
-	else if (strcmp (tmp, "local-driver:off") == 0) {
-	  config_set_int ("act.warn_no_local_driver", 0);
-	}
-	else if (strcmp (tmp, "all") == 0) {
-	  config_set_int ("act.warn.emptyselect", 1);
-	  config_set_int ("act.warn.dup_pass", 1);
+#define WARNING_FLAG(x,y)						\
+	if (strncmp (tmp, #x, sizeof (#x)-1) == 0) {			\
+	  if (strcmp (tmp + sizeof(#x)-1, ":on") == 0) {		\
+	    config_set_int ("act.warn." #x, 1);				\
+	  }								\
+	  else if (strcmp (tmp + sizeof(#x)-1, ":off") == 0) {		\
+	    config_set_int ("act.warn." #x, 0);				\
+	  }								\
+	  else {							\
+	    fatal_error ("-W option `%s' must end in :off or :on", tmp); \
+	  }								\
+        } else
+#include "warn.def"
+	if (strcmp (tmp, "all:on") == 0) {
+#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 1);
+#include "warn.def"
+	} else if (strcmp (tmp, "all:off") == 0) {
+#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 0);
+#include "warn.def"
 	}
 	else {
 	  fprintf (stderr, "FATAL: -W option `%s' is unknown", tmp);
-	  fprintf (stderr, "  legal values:\n");
-	  fprintf (stderr, "     empty-select, dup-pass:off, local-driver:off, all\n");
+	  fprintf (stderr, "  legal options are:\n   ");
+#define WARNING_FLAG(x,y) fprintf (stderr, " " #x);
+#include "warn.def"
+	  fprintf (stderr, "\nAppend :on or :off to turn the flag on/off\n");
 	  exit (1);
 	}
 	tmp = strtok (NULL, ",");
@@ -298,15 +318,18 @@ void Act::Init (int *iargc, char ***iargv)
       Log::UpdateLogLevel(argv[i]+5);
     }
     else {
-      break;
+      A_NEW (args_remain, int);
+      A_NEXT (args_remain) = i;
+      A_INC (args_remain);
     }
   }
   /* arguments from position 1 ... 1 + (i-1) have been wacked */
-  *iargc = (argc - i + 1);
+  *iargc = A_LEN (args_remain);
   for (j=1; j < *iargc; j++) {
-    argv[j] = argv[j+(i-1)];
+    argv[j] = argv[args_remain[j]];
   }
   argv[j] = NULL;
+  A_FREE (args_remain);
 
   if (!tech_specified) {
     config_stdtech_path ("generic");
@@ -321,8 +344,10 @@ void Act::Init (int *iargc, char ***iargv)
     Act::config_info (conf_file);
   }
 
-  Act::warn_emptyselect = config_get_int ("act.warn.emptyselect");
-  Act::warn_no_local_driver = config_get_int ("act.warn_no_local_driver");
+#define WARNING_FLAG(x,y) \
+  Act::x = config_get_int ("act.warn." #x);
+#include "warn.def"
+  
   Act::max_recurse_depth = config_get_int ("act.max_recurse_depth");
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
   Act::cmdline_args = NULL;

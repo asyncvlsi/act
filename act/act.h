@@ -88,21 +88,10 @@ class Act {
    */
   static int max_loop_iterations;
 
-  /**
-   * Warn on empty selection in main ACT language
-   */
-  static int warn_emptyselect;
-
-  /**
-   * Warn if Expand is called on something that is already expanded
-   */
-  static int warn_double_expand;
-
-  /**
-   * Warn if a local signal has no driver
-   */
-  static int warn_no_local_driver;
-
+#define WARNING_FLAG(x,y) \
+  static int x ;
+#include "warn.def"
+  
   /**
    * Command-line arguments if -opt= is used
    */

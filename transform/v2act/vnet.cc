@@ -726,7 +726,7 @@ AGraph *_module_create_graph (VNet *v, module_t *m)
       printf ("[NET %s (%d)]:\n", b->key, ni->idriver);
 #endif      
       if (ni->idriver == -2) {
-	if (Act::warn_no_local_driver) {
+	if (Act::no_local_driver) {
 	  if (!config_exists ("s2a.warnings.no_driver") ||
 	      (config_get_int ("s2a.warnings.no_driver") == 1)) {
 	    warning ("Missing driver, net `%s'", b->key);

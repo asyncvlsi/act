@@ -24,7 +24,7 @@ TARGETLIBS=$(LIB)
 
 TARGETINCS=lang.h expr.h act_parse_id.h path.h namespaces.h act.h \
 	types.h inst.h iter.h act_array.h basetype.h body.h value.h \
-	tech.h int.h
+	tech.h int.h warn.def
 
 TARGETINCSUBDIR=act
 

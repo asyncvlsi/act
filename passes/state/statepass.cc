@@ -678,7 +678,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  if (Act::warn_no_local_driver) {
+  if (Act::no_local_driver) {
     int err_ctxt = 0;
     /* now check if there is some local state that is actually never
        driven! */

@@ -840,10 +840,10 @@ void ActCellPass::flush_pending (Scope *sc)
       //ac->Next()->Print (stdout);
       //printf (" --- \n");
 
-      int oval = Act::warn_double_expand;
-      Act::warn_double_expand = 0;
+      int oval = Act::double_expand;
+      Act::double_expand = 0;
       ac->Expandlist (NULL, sc);
-      Act::warn_double_expand = oval;
+      Act::double_expand = oval;
       //printf ("---\n");
     }
     A_FREE (groupprs);
@@ -2287,10 +2287,10 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     //printf (" --- \n");
 
 
-    int oval = Act::warn_double_expand;
-    Act::warn_double_expand = 0;
+    int oval = Act::double_expand;
+    Act::double_expand = 0;
     ac->Expandlist (NULL, sc);
-    Act::warn_double_expand = oval;
+    Act::double_expand = oval;
 
     if (pi->match_perm) {
       FREE (pi->match_perm);
@@ -2384,10 +2384,10 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
     //printf (" --- \n");
 
 
-  int oval = Act::warn_double_expand;
-  Act::warn_double_expand = 0;
+  int oval = Act::double_expand;
+  Act::double_expand = 0;
   ac->Expandlist (NULL, sc);
-  Act::warn_double_expand = oval;
+  Act::double_expand = oval;
 }
 
 

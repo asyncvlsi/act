@@ -1,0 +1,17 @@
+/* warn on empty selections in the main ACT language */
+WARNING_FLAG(empty_select, 0)
+
+/* warn if Expand() is called on someting that is already expanded */
+WARNING_FLAG(double_expand, 1)
+
+/* warn if a local signal has no driver */
+WARNING_FLAG(no_local_driver, 1)
+
+/* warn if a duplicate pass is being added */
+WARNING_FLAG(dup_pass, 1)
+
+/* warn if a language is being substituted for another */
+WARNING_FLAG(lang_subst, 1)
+
+#undef WARNING_FLAG
+

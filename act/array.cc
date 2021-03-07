@@ -842,7 +842,7 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
   
   if (expanded) {
     /* eh, why am I here anyway */
-    if (Act::warn_double_expand) {
+    if (Act::double_expand) {
       act_error_ctxt (stderr);
       warning ("Not sure why Array::Expand() was called");
     }
@@ -930,7 +930,7 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
   
   if (expanded) {
     /* eh, why am I here anyway */
-    if (Act::warn_double_expand) {
+    if (Act::double_expand) {
       act_error_ctxt (stderr);
       warning ("Not sure why Array::ExpandCHP() was called");
     }

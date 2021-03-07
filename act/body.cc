@@ -1127,7 +1127,7 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
     }
   }
   /* all guards false, skip it */
-  if (Act::warn_emptyselect) {
+  if (Act::empty_select) {
     act_error_ctxt (stderr);
     warning ("All guards in selection are false.");
   }
