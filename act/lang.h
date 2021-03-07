@@ -380,6 +380,7 @@ void refine_print (FILE *, act_refine *);
 void sizing_print (FILE *, act_sizing *);
 void initialize_print (FILE *, act_initialize *);
 void dflow_print (FILE *, act_dataflow *);
+void dflow_print (FILE *, act_dataflow_element *);
 
 class ActNamespace;
 class Scope;
