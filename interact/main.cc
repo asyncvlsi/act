@@ -166,6 +166,7 @@ int main (int argc, char **argv)
   LispCliInit (NULL, ".act_history", "interact> ", Cmds,
 	       sizeof (Cmds)/sizeof (Cmds[0]));
 
+  conf_cmds_init ();
   act_cmds_init ();
 
   if (argc == 1) {

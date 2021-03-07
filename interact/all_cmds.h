@@ -21,3 +21,6 @@
  */
 
 void act_cmds_init (void);
+void conf_cmds_init (void);
+
+

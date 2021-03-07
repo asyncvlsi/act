@@ -52,6 +52,7 @@ extern int LispDispatch (int argc, char **argv, int echo_cmd, int infile);
    following), 3 for a string */
 extern int LispGetReturnInt (void);
 extern char *LispGetReturnString (void);
+extern double LispGetReturnFloat (void);
 
 extern int LispInterruptExecution;
 

@@ -22,7 +22,7 @@ EXE=interact.$(EXT)
 
 TARGETS=$(EXE)
 
-OBJS=main.o act_cmds.o
+OBJS=main.o act_cmds.o conf_cmds.o
 
 SRCS=$(OBJS:.o=.cc)
 

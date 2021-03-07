@@ -23,6 +23,7 @@
 #include <string.h>
 #include <act/act.h>
 #include <act/passes.h>
+#include <config.h>
 #include <lispCli.h>
 #include "all_cmds.h"
 
@@ -36,6 +37,7 @@ enum design_state {
 static design_state current_state;
 
 static Act *act_design = NULL;
+static Process *act_toplevel = NULL;
 
 static const char *get_state_str (design_state d)
 {
@@ -132,7 +134,6 @@ static int process_save (int argc, char **argv)
   return 1;
 }
 
-
 static int process_expand (int argc, char **argv)
 {
   if (!std_argcheck (argc, argv, 1, "", STATE_DESIGN)) {
@@ -142,6 +143,24 @@ static int process_expand (int argc, char **argv)
   current_state = STATE_EXPANDED;
   return 1;
 }
+
+static int process_set_top (int argc, char **argv)
+{
+  if (!std_argcheck (argc, argv, 2, "<process>", STATE_EXPANDED)) {
+    return 0;
+  }
+  act_toplevel = act_design->findProcess (argv[1]);
+  if (!act_toplevel) {
+    fprintf (stderr, "%s: could not find process `%s'", argv[0], argv[1]);
+    return 0;
+  }
+  if (!act_toplevel->isExpanded()) {
+    fprintf (stderr, "%s: process `%s' is not expanded", argv[0], argv[1]);
+    return 0;
+  }
+  return 1;
+}
+
 
 /* -- cells -- */
 static ActCellPass *getCellPass()
@@ -192,12 +211,20 @@ static int process_cell_save (int argc, char **argv)
 }
 
 static struct LispCliCommand act_cmds[] = {
-  { NULL, "Core ACT library (use `act:' prefix)", NULL },
+  { NULL, "ACT core functions (use `act:' prefix)", NULL },
   { "read", "read <file> - read in the ACT design", process_read },
   { "merge", "merge <file> - merge in additional ACT file", process_merge },
   { "expand", "expand - expand/elaborate ACT design", process_expand },
   { "save", "save <file> - save current ACT to a file", process_save },
-  { NULL, "   ~~ Cell management ~~", NULL },
+  { "top", "top <process> - set <process> as the design root", process_set_top },
+#if 0  
+  { NULL, "ACT circuits (use `act:' prefix)", NULL },
+  { "ckt:map", "ckt:map - generate transistor-level description", process_ckt_map },
+  { "ckt:save_sp", "ckt:save_sp <file> - save SPICE netlist to <file>", process_ckt_save_sp },
+  { "ckt:save_vnet", "ckt:save_vnet <file> - save Verilog netlist to <file>", process_ckt_save_vnet },
+  { "ckt:save_prs", "ckt:save_prs <file> - save flat production rule set to <file>", process_ckt_save_prs },
+#endif
+  { NULL, "ACT cells (use `act:' prefix)", NULL },
   { "cell:map", "cell:map - map gates to cell library", process_cell_map },
   { "cell:save", "cell:save <file> - save cells to file", process_cell_save },
 };

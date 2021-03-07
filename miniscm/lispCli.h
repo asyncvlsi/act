@@ -87,6 +87,11 @@ void LispSetReturnInt (int val);
 */
 void LispSetReturnString (char *s);  
 
+/*
+  Use to set a floating point return value
+*/
+void LispSetReturnFloat (double val);
+
 #ifdef __cplusplus
 }
 #endif

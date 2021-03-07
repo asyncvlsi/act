@@ -261,6 +261,7 @@ static int handle_source (int argc, char **argv);
 
 static int lisp_return_value;
 static char *lisp_return_string = NULL;
+static double lisp_return_real;
 
 static int dispatch_command (int argc, char **argv)
 {
@@ -336,6 +337,11 @@ void LispSetReturnInt (int val)
   lisp_return_value = val;
 }
 
+void LispSetReturnFloat (double v)
+{
+  lisp_return_real = v;
+}
+
 int LispGetReturnInt (void)
 {
   return lisp_return_value;
@@ -354,6 +360,11 @@ char *LispGetReturnString (void)
   char *tmp = lisp_return_string;
   lisp_return_string = NULL;
   return tmp;
+}
+
+double LispGetReturnFloat (void)
+{
+  return lisp_return_real;
 }
 
 int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
