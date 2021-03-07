@@ -1,0 +1,33 @@
+#!/usr/bin/env interact
+#
+#  prs2cells implemented using interact
+#  
+
+#
+# check arguments
+#
+if (=? (getargc) 4) #t (begin (echo "Usage:" (getargv 0) "<actfile> <cellin> <cellout>") (quit))
+
+#
+# read design and merge in cell library
+#
+act:read (getargv 1)
+act:merge (getargv 2)
+
+#
+# expand
+#
+act:expand
+
+#
+# map to cells, and save new cells file
+#
+act:cell:map
+act:cell:save (getargv 3)
+
+#
+# print act design to stdout
+#
+act:save "-"
+
+quit

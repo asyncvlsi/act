@@ -314,6 +314,9 @@ static int dispatch_command (int argc, char **argv)
       printf ("Usage: help [cmd]\n");
       return 0;
     }
+  } else if (strcmp (argv[0], "quit") == 0 || strcmp (argv[0], "exit") == 0) {
+    LispCliEnd ();
+    exit (0);
   }
   if (cli_hash) {
     b = hash_lookup (cli_hash, argv[0]);

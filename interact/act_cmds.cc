@@ -69,6 +69,27 @@ static int std_argcheck (int argc, char **argv, int argnum, const char *usage,
   return 1;
 }
 
+static FILE *std_open_output (const char *cmd, const char *s)
+{
+  FILE *fp;
+  if (strcmp (s, "-") == 0) {
+    fp = stdout;
+  }
+  else {
+    fp = fopen (s, "w");
+    if (!fp) {
+      fatal_error ("%s: could not open file `%s' for writing", cmd, s);
+    }
+  }
+  return fp;
+}
+
+static void std_close_output (FILE *fp)
+{
+  if (fp != stdout) {
+    fclose (fp);
+  }
+}
 
 static int process_read (int argc, char **argv)
 {
@@ -101,12 +122,11 @@ static int process_save (int argc, char **argv)
     warning ("%s: no design", argv[0]);
     return 0;
   }
-  fp = fopen (argv[1], "w");
-  if (!fp) {
-    fatal_error ("Could not open file `%s' for writing", argv[1]);
-  }
+
+  fp = std_open_output (argv[0], argv[1]);
   act_design->Print (fp);
-  fclose (fp);
+  std_close_output (fp);
+
   return 1;
 }
 
@@ -162,12 +182,10 @@ static int process_cell_save (int argc, char **argv)
     cp->run ();
   }
 
-  fp = fopen (argv[1], "w");
-  if (!fp) {
-    fatal_error ("Could not write to file `%s'", argv[1]);
-  }
+  fp = std_open_output (argv[0], argv[1]);
   cp->Print (fp);
-  fclose (fp);
+  std_close_output (fp);
+  
   return 1;
 }
 
