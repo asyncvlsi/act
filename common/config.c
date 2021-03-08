@@ -914,6 +914,30 @@ int config_exists (const char *s)
   return 1;
 }
 
+/*------------------------------------------------------------------------
+ *
+ *  config_gettype --
+ *
+ *   Returns type (-1 if it doesn't exist)
+ *     0 = int
+ *     1 = real
+ *     2 = string
+ *     3 = int table
+ *     4 = real table
+ *     5 = string table
+ *    -1 = no such variable
+ *
+ *------------------------------------------------------------------------
+ */
+int config_gettype (const char *s)
+{
+  hash_bucket_t *b;
+  if (!H || !(b = hash_lookup (H, s))) {
+    return -1;
+  }
+  return ((config_t *)b->v)->type;
+}
+
 
 /*------------------------------------------------------------------------
  *

@@ -87,6 +87,8 @@ void config_clear (void);
 
 /* check if variable exists */
 int config_exists (const char *s);
+int config_gettype (const char *s);   /* 0 : int, 1 : real, 2 : string, 3 + ... = table */
+					 
 
 /* dump config table to file */
 void config_dump (FILE *s);
