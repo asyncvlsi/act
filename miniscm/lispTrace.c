@@ -152,6 +152,7 @@ LispStackDisplay (void)
     depth = LINTEGER(l);
   else
     depth = 5;
+  fprintf (stderr, "Execution aborted.\n");
   if (depth > 0)
     fprintf (stderr, "Stack trace:\n");
   while (t && i < depth) {
@@ -159,7 +160,7 @@ LispStackDisplay (void)
     fprintf (stderr, "\tcalled from: %s\n", t->s);
     t = t->next;
   }
-  if (i < depth)
+  if (i < depth || depth == 0)
     fprintf (stderr, "\tcalled from: -top-level-\n");
 }
 
