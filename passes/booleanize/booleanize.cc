@@ -1298,6 +1298,15 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
     }
     break;
 
+  case ACT_DFLOW_CLUSTER:
+    {
+      listitem_t *li;
+      for (li = list_first (e->u.dflow_cluster); li; li = list_next (li)) {
+	generate_dflow_vars (N, (act_dataflow_element *)list_value (li));
+      }
+    }
+    break;
+    
   default:
     fatal_error ("Unknown type");
     break;
