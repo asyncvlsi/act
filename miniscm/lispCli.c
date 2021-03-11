@@ -316,8 +316,15 @@ static int dispatch_command (int argc, char **argv)
       return 0;
     }
   } else if (strcmp (argv[0], "quit") == 0 || strcmp (argv[0], "exit") == 0) {
+    int code = 0;
     LispCliEnd ();
-    exit (0);
+    if (argc > 1) {
+      code = atoi (argv[1]);
+      if (argc > 2) {
+	fprintf (stderr, "Trailing garbage ignored, terminating anyway\n");
+      }
+    }
+    exit (code);
   }
   if (cli_hash) {
     b = hash_lookup (cli_hash, argv[0]);
@@ -392,12 +399,17 @@ static void do_command (char *s)
   if (!t) return;
   if (*t == '#') return;
   if (strcmp (t, "quit") == 0 || strcmp (t, "exit") == 0) {
+    int code = 0;
     t = strtok (NULL, " \t");
     if (t && (*t != '#')) {
-      fprintf (stderr, "Trailing garbage ignored, terminating anyway\n");
+      code = atoi (t);
+      t = strtok (NULL, " \t");
+      if (t && (*t != '#')) {
+	fprintf (stderr, "Trailing garbage ignored, terminating anyway\n");
+      }
     }
     LispCliEnd ();
-    exit (0);
+    exit (code);
   }
 
   A_NEW (args, char *);
