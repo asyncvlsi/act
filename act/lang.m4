@@ -2118,7 +2118,15 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     }
     list_free (l);
     return e;
-}}  
+}}
+| "dataflow_cluster" "{" { dataflow_items ";" }* "}"
+{{X:
+    act_dataflow_element *e;
+    NEW (e, act_dataflow_element);
+    e->t = ACT_DFLOW_CLUSTER;
+    e->u.dflow_cluster = $3;
+    return e;
+}}
 ;
 
 expr_id_or_star[ActId *]: expr_id

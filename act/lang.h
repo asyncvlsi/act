@@ -343,7 +343,8 @@ enum act_dataflow_element_types {
  ACT_DFLOW_SPLIT = 1,
  ACT_DFLOW_MERGE = 2,
  ACT_DFLOW_MIXER = 3,
- ACT_DFLOW_ARBITER = 4
+ ACT_DFLOW_ARBITER = 4,
+ ACT_DFLOW_CLUSTER = 5
 };
 
 typedef struct  {
@@ -364,6 +365,7 @@ typedef struct  {
       ActId *nondetctrl;	// channel for non-deterministic
 				// control out
     } splitmerge;
+    list_t *dflow_cluster;
   } u;
 } act_dataflow_element;
 

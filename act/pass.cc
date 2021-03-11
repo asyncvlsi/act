@@ -22,6 +22,7 @@
 #include <act/act.h>
 #include <act/iter.h>
 #include <string.h>
+#include <dlfcn.h>
 
 
 ActPass::ActPass (Act *_a, const char *s)
@@ -243,4 +244,176 @@ void ActPass::recursive_op (UserDef *p, int mode)
 void *ActPass::getMap (Process *p)
 {
   return (*pmap)[p];
+}
+
+
+
+/*
+ *
+ * Load a pass from a .so/.dylib file
+ *
+ */
+list_t *ActDynamicPass::_sh_libs = NULL;
+
+
+ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
+				const char *prefix) : ActPass (a, name)
+{
+  listitem_t *li;
+  void *lib_ptr;
+  char buf[1024];
+
+  if (!_sh_libs) {
+    _sh_libs = list_new ();
+  }
+
+  lib_ptr = NULL;
+
+  for (li = list_first (_sh_libs); li; li = list_next (li)) {
+    act_sh_passlib_info *tmp = (act_sh_passlib_info *) list_value (li);
+    if (strcmp (lib, tmp->lib) == 0) {
+      lib_ptr = tmp->lib_ptr;
+      tmp->refs++;
+      break;
+    }
+  }
+
+  if (!lib_ptr) {
+    act_sh_passlib_info *tmp;
+    lib_ptr = dlopen (lib, RTLD_LAZY);
+    NEW (tmp, act_sh_passlib_info);
+    tmp->lib = Strdup (lib);
+    _libused = tmp->lib;
+    tmp->lib_ptr = lib_ptr;
+    tmp->refs = 1;
+    list_append (_sh_libs, tmp);
+  }
+
+  /* -- maps to everything -- */
+  Assert (lib_ptr, "What?!");
+
+  /* -- names:
+
+     <prefix>_init
+     <prefix>_run
+     <prefix>_local_proc
+     <prefix>_local_chan
+     <prefix>_local_data
+     <prefix>_free_local
+
+  -- */
+
+  snprintf (buf, 1024, "%s_init", prefix);
+  _d._init = (void (*)(ActPass *))dlsym (lib_ptr, buf);
+  if (!_d._init) {
+    warning ("Dynamic pass `%s': missing %s\n", buf);
+  }
+
+  snprintf (buf, 1024, "%s_run", prefix);
+  _d._run = (void (*)(Process *))dlsym (lib_ptr, buf);
+
+  snprintf (buf, 1024, "%s_recursive", prefix);
+  _d._recursive = (void (*)(Process *, int))dlsym (lib_ptr,  buf);
+  
+  snprintf (buf, 1024, "%s_local_proc", prefix);
+  _d._proc = (void *(*)(Process *, int))dlsym (lib_ptr, buf);
+  
+  snprintf (buf, 1024, "%s_local_data", prefix);
+  _d._data = (void *(*)(Data *, int))dlsym (lib_ptr, buf);
+
+  snprintf (buf, 1024, "%s_local_chan", prefix);
+  _d._chan = (void *(*)(Channel *, int))dlsym (lib_ptr, buf);
+
+  snprintf (buf, 1024, "%s_free", prefix);
+  _d._free = (void(*)(void *))dlsym (lib_ptr, buf);
+
+  snprintf (buf, 1024, "%s_done", prefix);
+  _d._done = (void(*)(void))dlsym (lib_ptr, buf);
+
+  if (_d._init) {
+    (*_d._init)(this);
+  }
+}
+
+int ActDynamicPass::run (Process *p)
+{
+  int ret = ActPass::run (p);
+
+  if (_d._run) {
+    (*_d._run)(p);
+  }
+  
+  return ret;
+}
+
+void ActDynamicPass::run_recursive (Process *p, int mode)
+{
+  ActPass::run_recursive (p, mode);
+ 
+  if (_d._recursive) {
+    (*_d._recursive) (p, mode);
+  }
+}
+
+void *ActDynamicPass::local_op (Process *p, int mode)
+{
+  if (_d._proc) {
+    return (*_d._proc)(p, mode);
+  }
+  return NULL;
+}
+
+void *ActDynamicPass::local_op (Channel *c, int mode)
+{
+  if (_d._chan) {
+    return (*_d._chan)(c, mode);
+  }
+  return NULL;
+}
+
+void *ActDynamicPass::local_op (Data *d, int mode)
+{
+  if (_d._data) {
+    return (*_d._data)(d, mode);
+  }
+  return NULL;
+}
+
+void ActDynamicPass::free_local (void *v)
+{
+  if (_d._free) {
+    (*_d._free) (v);
+  }
+}
+
+ActDynamicPass::~ActDynamicPass ()
+{
+  listitem_t *li;
+  listitem_t *prev;
+
+  if (_d._done) {
+    (*_d._done) ();
+  }
+  
+  Assert (_sh_libs, "What?");
+  prev = NULL;
+  for (li = list_first (_sh_libs); li; li = list_next (li)) {
+    act_sh_passlib_info *tmp = (act_sh_passlib_info *) list_value (li);
+    Assert (tmp->refs > 0, "What?");
+    if (strcmp (tmp->lib, _libused) == 0) {
+      tmp->refs--;
+      if (tmp->refs == 0) {
+	/* unload library */
+	dlclose (tmp->lib_ptr);
+	FREE (tmp->lib);
+	FREE (tmp);
+	list_delete_next (_sh_libs, prev);
+      }
+      break;
+    }
+  }
+  if (list_length (_sh_libs) == 0) {
+    list_free (_sh_libs);
+    _sh_libs = NULL;
+  }
 }

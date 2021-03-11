@@ -3157,6 +3157,20 @@ act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
   return ret;
 }
 
+static void dflow_print (FILE *fp, list_t *dflow)
+{
+  listitem_t *li;
+  act_dataflow_element *e;
+  
+  for (li = list_first (dflow); li; li = list_next (li)) {
+    e = (act_dataflow_element *) list_value (li);
+    dflow_print(fp, e);
+    if (list_next (li)) {
+      fprintf (fp, ";");
+    }
+    fprintf (fp, "\n");
+  }
+}
 
 void dflow_print (FILE *fp, act_dataflow_element *e)
 {
@@ -3238,6 +3252,12 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
     }
     break;
 
+  case ACT_DFLOW_CLUSTER:
+    fprintf (fp, "dataflow_cluster {\n");
+    dflow_print (fp, e->u.dflow_cluster);
+    fprintf (fp, "}\n");
+    break;
+    
   default:
     fatal_error ("What?");
     break;
@@ -3252,27 +3272,19 @@ void dflow_print (FILE *fp, act_dataflow *d)
 
   if (!d) return;
   fprintf (fp, "dataflow {\n");
-  for (li = list_first (d->dflow); li; li = list_next (li)) {
-    e = (act_dataflow_element *) list_value (li);
-    dflow_print(fp, e);
-    if (list_next (li)) {
-      fprintf (fp, ";");
-    }
-    fprintf (fp, "\n");
-  }
+  dflow_print (fp, d->dflow);
   fprintf (fp, "}\n");
 }
-  
-act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
+
+static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 {
   listitem_t *li;
   act_dataflow_element *e, *f;
-  act_dataflow *ret;
+  list_t *ret;
   
-  if (!d) return NULL;
-  NEW (ret, act_dataflow);
-  ret->dflow = list_new ();
-  for (li = list_first (d->dflow); li; li = list_next (li)) {
+  if (!dflow) return NULL;
+  ret = list_new ();
+  for (li = list_first (dflow); li; li = list_next (li)) {
     e = (act_dataflow_element *) list_value (li);
     NEW (f, act_dataflow_element);
     f->t = e->t;
@@ -3319,12 +3331,26 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
       }
       break;
 
+    case ACT_DFLOW_CLUSTER:
+      f->u.dflow_cluster = dflow_expand (e->u.dflow_cluster, ns, s);
+      break;
+
     default:
       fatal_error ("What?");
       break;
     }
-    list_append (ret->dflow, f);
+    list_append (ret, f);
   }
+  return ret;
+}
+
+act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
+{
+  act_dataflow *ret;
+  
+  if (!d) return NULL;
+  NEW (ret, act_dataflow);
+  ret->dflow = dflow_expand (d->dflow, ns, s);
   return ret;
 }
 

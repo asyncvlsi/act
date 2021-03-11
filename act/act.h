@@ -313,6 +313,7 @@ public:
   int completed()  { return (_finished == 2) ? 1 : 0; }
   int pending()  { return (_finished == 1) ? 1 : 0; }
   void *getMap (Process *p);
+  Act *getAct () { return a; }
   virtual void run_recursive (Process *p = NULL, int mode = 0);
   
 private:
@@ -330,6 +331,48 @@ private:
 
 public:
   
+};
+
+struct act_sh_passlib_info {
+  char *lib;
+  void *lib_ptr;
+  int refs;
+};
+
+class ActDynamicPass;
+
+struct act_sh_dispatch_table {
+  void (*_init) (ActPass *ap);
+  void (*_run) (Process *p);
+  void (*_recursive) (Process *p, int mode);
+  void *(*_proc) (Process *p, int mode);
+  void *(*_chan) (Channel *c, int mode);
+  void *(*_data) (Data *d, int mode);
+  void (*_free) (void *);
+  void (*_done) (void);
+};
+
+class ActDynamicPass : public ActPass {
+public:
+  ActDynamicPass (Act *_a, const char *name, const char *lib, const char *prefix);
+  // load a dynamic pass from a shared object file
+  
+  ~ActDynamicPass ();		// release storage
+
+  int run (Process *p = NULL);
+  void run_recursive (Process *p = NULL, int mode = 0);
+
+private:
+  virtual void *local_op (Process *p, int mode = 0);
+  virtual void *local_op (Channel *c, int mode = 0);
+  virtual void *local_op (Data *d, int mode = 0);
+  virtual void free_local (void *);
+
+  char *_libused;
+  act_sh_dispatch_table _d;
+
+  /* open shared object libraries */
+  static list_t *_sh_libs;
 };
 
 
