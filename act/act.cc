@@ -50,6 +50,7 @@ struct command_line_defs {
 int Act::max_recurse_depth;
 int Act::max_loop_iterations;
 int Act::emit_depend;
+char *Act::_getopt_string;
 
 #define WARNING_FLAG(x,y) \
   int Act::x;
@@ -99,7 +100,8 @@ void Act::Init (int *iargc, char ***iargv)
   int i, j;
   int tech_specified = 0;
   char *conf_file = NULL;
-  char *getopt_string = NULL;
+
+  _getopt_string = NULL;
 
   if (initialize) return;
   initialize = 1;
@@ -289,10 +291,10 @@ void Act::Init (int *iargc, char ***iargv)
     }
     else if (strncmp (argv[i], "-opt=", 5) == 0) {
       /* -- getopt string! -- */
-      if (getopt_string) {
+      if (_getopt_string) {
 	fatal_error ("-opt can only be used once!");
       }
-      getopt_string = Strdup (argv[i] + 5);
+      _getopt_string = Strdup (argv[i] + 5);
     }
     else if (strncmp (argv[i], "-log=", 5) == 0) {
       char *s;
@@ -352,48 +354,52 @@ void Act::Init (int *iargc, char ***iargv)
   Act::max_loop_iterations = config_get_int ("act.max_loop_iterations");
   Act::cmdline_args = NULL;
   
+  return;
+}
+
+void Act::getOptions (int *iargc, char ***iargv)
+{
+  int ch;
+  int opt_arg[256];
+  char *argv0 = (*iargv)[0];
+  
   /* -- if getopt options -- */
-  if (getopt_string) {
-    int ch;
-    int opt_arg[256];
+  if (!_getopt_string) return;
     
-    /* continue parsing! */
-
-    for (int i=0; i < 256; i++) {
-      opt_arg[i] = 0;
+  /* continue parsing! */
+  for (int i=0; i < 256; i++) {
+    opt_arg[i] = 0;
+  }
+  for (int i=0; _getopt_string[i]; i++) {
+    if (_getopt_string[i] == 'W' || _getopt_string[i] == 'D' ||
+	_getopt_string[i] == 'V' || _getopt_string[i] == 'T') {
+      warning ("Option `%c' is already a core ACT option", _getopt_string[i]);
     }
-    for (int i=0; getopt_string[i]; i++) {
-      if (getopt_string[i] == 'W' || getopt_string[i] == 'D' ||
-	  getopt_string[i] == 'V' || getopt_string[i] == 'T') {
-	warning ("Option `%c' is already a core ACT option", getopt_string[i]);
-      }
-      if (getopt_string[i+1] && (getopt_string[i+1] == ':')) {
-	opt_arg[getopt_string[i]] = 1;
-	i++;
-      }
+    if (_getopt_string[i+1] && (_getopt_string[i+1] == ':')) {
+      opt_arg[_getopt_string[i]] = 1;
+      i++;
     }
+  }
 
-    Act::cmdline_args = list_new ();
-    while ((ch = getopt (*iargc, *iargv, getopt_string)) != -1) {
-      if (ch == '?') {
-	warning ("unknown command-line option");
+  Act::cmdline_args = list_new ();
+  while ((ch = getopt (*iargc, *iargv, _getopt_string)) != -1) {
+    if (ch == '?') {
+      warning ("unknown command-line option");
+    }
+    else {
+      list_iappend (Act::cmdline_args, ch);
+      if (opt_arg[ch]) {
+	/* get arg */
+	list_append (Act::cmdline_args, Strdup (optarg));
       }
       else {
-	list_iappend (Act::cmdline_args, ch);
-	if (opt_arg[ch]) {
-	  /* get arg */
-	  list_append (Act::cmdline_args, Strdup (optarg));
-	}
-	else {
-	  list_append (Act::cmdline_args, NULL);
-	}
+	list_append (Act::cmdline_args, NULL);
       }
     }
-    *iargc -= (optind-1);
-    *iargv += (optind-1);
-    *iargv[0] = argv[0];
   }
-  return;
+  *iargc -= (optind-1);
+  *iargv += (optind-1);
+  *iargv[0] = argv0;
 }
 
 

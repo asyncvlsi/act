@@ -149,6 +149,7 @@
 
 (define scm-gc-frequency 5)		; collect garbage every so often
 
+(define scm-stack-display-depth 10)      ; debug display
 
 ;
 ; Unix "system"
