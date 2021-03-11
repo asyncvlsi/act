@@ -76,7 +76,7 @@ class Act {
    *  options left after ACT has extracted the ones it understands
    */
   static void Init (int *argc, char ***argv);
-  static void getOptions (int *argc, char ***argv);
+  static int getOptions (int *argc, char ***argv);
 
   /**
    * Maximum depth of recursion for expanding types

@@ -357,14 +357,15 @@ void Act::Init (int *iargc, char ***iargv)
   return;
 }
 
-void Act::getOptions (int *iargc, char ***iargv)
+int Act::getOptions (int *iargc, char ***iargv)
 {
   int ch;
   int opt_arg[256];
   char *argv0 = (*iargv)[0];
+  int return_code = 1;
   
   /* -- if getopt options -- */
-  if (!_getopt_string) return;
+  if (!_getopt_string) return return_code;
     
   /* continue parsing! */
   for (int i=0; i < 256; i++) {
@@ -384,7 +385,7 @@ void Act::getOptions (int *iargc, char ***iargv)
   Act::cmdline_args = list_new ();
   while ((ch = getopt (*iargc, *iargv, _getopt_string)) != -1) {
     if (ch == '?') {
-      warning ("unknown command-line option");
+      return_code = 0;
     }
     else {
       list_iappend (Act::cmdline_args, ch);
@@ -400,6 +401,7 @@ void Act::getOptions (int *iargc, char ***iargv)
   *iargc -= (optind-1);
   *iargv += (optind-1);
   *iargv[0] = argv0;
+  return return_code;
 }
 
 
