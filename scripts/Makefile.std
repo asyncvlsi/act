@@ -49,8 +49,8 @@ INSTALLACT=$(INSTALLDIR)/act
 EXT=$(ARCH)_$(OS)
 
 LIBCOMMON=-L$(INSTALLLIB) -lvlsilib
-LIBACT=-L$(INSTALLLIB) -lact -lvlsilib
-LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib
+LIBACT=-L$(INSTALLLIB) -lact -lvlsilib -ldl
+LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib -ldl
 LIBSSIM=-L$(INSTALLLIB) -lssim -lvlsilib
 LIBASIM=-L$(INSTALLLIB) -lasim -lvlsilib
 LIBACTSCM=-lactscm -lvlsilib
