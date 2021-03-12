@@ -77,6 +77,7 @@ class Act {
    */
   static void Init (int *argc, char ***argv);
   static int getOptions (int *argc, char ***argv);
+  static void setOptionString (char *str);
 
   /**
    * Maximum depth of recursion for expanding types

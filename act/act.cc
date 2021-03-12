@@ -357,6 +357,14 @@ void Act::Init (int *iargc, char ***iargv)
   return;
 }
 
+void Act::setOptionString (char *s)
+{
+  if (_getopt_string) {
+    FREE (_getopt_string);
+  }
+  _getopt_string = Strdup (s);
+}
+
 int Act::getOptions (int *iargc, char ***iargv)
 {
   int ch;
@@ -401,6 +409,10 @@ int Act::getOptions (int *iargc, char ***iargv)
   *iargc -= (optind-1);
   *iargv += (optind-1);
   *iargv[0] = argv0;
+
+  FREE (_getopt_string);
+  _getopt_string = NULL;
+  
   return return_code;
 }
 
