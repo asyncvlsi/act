@@ -89,13 +89,14 @@ void ActBody_Inst::Print (FILE *fp)
 {
   char buf[10240];
   Array *a = NULL;
-  if (t->isExpanded()) {
+
+  a = t->arrayInfo();
+  t->clrArray ();
+  if (t->isExpanded() && TypeFactory::isUserType (t)) {
     t->sPrint (buf, 10240);
     ActNamespace::Act()->mfprintf (fp, "%s", buf);
   }
   else {
-    a = t->arrayInfo();
-    t->clrArray ();
     t->Print (fp);
   }
   fprintf (fp, " %s", id);

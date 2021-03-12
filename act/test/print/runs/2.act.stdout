@@ -1,6 +1,6 @@
-defproc testme (chan_1int_332_4_2 l; chan_1int_332_4_2 r);
+defproc testme (chan(int<32>) l; chan(int<32>) r);
 
-defproc testme (chan_1int_332_4_2 l; chan_1int_332_4_2 r)
+defproc testme (chan(int<32>) l; chan(int<32>) r)
 {
 
 /* instances */

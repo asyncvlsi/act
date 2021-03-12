@@ -2048,20 +2048,14 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
 
   if (parent) {
     fprintf (fp, "<: ");
-    if (!expanded) {
+    if (!expanded || !TypeFactory::isUserType (parent)) {
       parent->Print (fp);
     }
     else {
-      if (!TypeFactory::isUserType (parent)) {
-	parent->sPrint (buf, 10240, 1);
-	fprintf (fp, "%s", buf);
-      }
-      else {
-	UserDef *u = dynamic_cast<UserDef *>(parent->BaseType());
-	Assert (u, "what?");
-	ActNamespace::Act()->mfprintfproc (fp, u);
-	skip_ports = u->getNumPorts();
-      }
+      UserDef *u = dynamic_cast<UserDef *>(parent->BaseType());
+      Assert (u, "what?");
+      ActNamespace::Act()->mfprintfproc (fp, u);
+      skip_ports = u->getNumPorts();
     }
     fprintf (fp, " ");
   }
@@ -2073,7 +2067,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       InstType *it = getPortType (i);
       Array *a = it->arrayInfo();
       it->clrArray ();
-      if (it->isExpanded()) {
+      if (it->isExpanded() && TypeFactory::isUserType (it)) {
 	it->sPrint (buf, 10240, 1);
 	ActNamespace::Act()->mfprintf (fp, "%s", buf);
       }

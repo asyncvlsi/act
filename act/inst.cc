@@ -649,10 +649,6 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
   if (nl_mode) {
     UserDef *u = dynamic_cast<UserDef *> (t);
     if (u) {
-      if (TypeFactory::isExactChanType (u)) {
-	ischan = 1;
-      }
-
       if (u->getns() && u->getns() != ActNamespace::Global()) {
 	char *s = u->getns()->Name();
 	snprintf (buf+k, sz, "%s::", s);
