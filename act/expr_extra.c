@@ -338,7 +338,14 @@ Expr *act_parse_expr_intexpr_base (LFILE *l)
     NEW (e, Expr);
     expr_inc_parens ();
     e->type = E_BUILTIN_INT;
-    e->u.e.l = expr_parse_any (l);
+    e->u.e.l = expr_parse_bool (l);
+    if (!e->u.e.l || (file_sym (l) != rpar)) {
+      expr_free (e->u.e.l);
+      file_set_position (l);
+      Assert (file_have_keyw (l, "int"), "What?");
+      Assert (file_have (l, lpar), "What?");
+      e->u.e.l = expr_parse_any (l);
+    }
     e->u.e.r = NULL;
     if (!e->u.e.l) {
       expr_dec_parens ();
