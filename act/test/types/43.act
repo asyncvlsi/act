@@ -1,0 +1,11 @@
+defproc main ()
+{
+
+chan(int<32>) a;
+chan(int<1>) b;
+
+dataflow {
+int(int(a,32)!=0) -> b
+}
+}
+
