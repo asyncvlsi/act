@@ -286,8 +286,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 #define EQUAL_LT_RT2(f,g,mode)						\
   do {									\
     lt = act_type_expr (s, e->u.e.l, &lw, only_chan);			\
+    if (lt == T_ERR) return T_ERR;					\
     rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
-    if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
+    if (rt == T_ERR) return T_ERR;					\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
       return T_ERR;							\
@@ -314,8 +315,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 #define INT_OR_REAL(mode)						\
   do {									\
     lt = act_type_expr (s, e->u.e.l, &lw, only_chan);			\
+    if (lt == T_ERR) return T_ERR;					\
     rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
-    if (lt == T_ERR || rt == T_ERR) return T_ERR;			\
+    if (rt == T_ERR) return T_ERR;					\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
       typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
       return T_ERR;							\
@@ -344,18 +346,21 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_ANDLOOP:
   case E_ORLOOP:
     lt = act_type_expr (s, e->u.e.r->u.e.l, &lw, 0);
+    if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop range is not of integer type");
       return T_ERR;
     }
     if (e->u.e.r->u.e.r->u.e.l) {
       lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, &lw, 0);
+      if (lt == T_ERR) return T_ERR;
       if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
 	typecheck_err ("Loop range is not of integer type");
 	return T_ERR;
       }
     }
     lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
+    if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE (lt) != T_BOOL || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of bool type");
       return T_ERR;
@@ -450,6 +455,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
   case E_QUERY:
     lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
+    if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE(lt) == T_BOOL && !( lt & T_ARRAYOF )) {
       e = e->u.e.r;
       EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
@@ -554,6 +560,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     
   case E_BUILTIN_INT:
     lt = act_type_expr (s, e->u.e.l, width, only_chan);
+    if (lt == T_ERR)  return T_ERR;
     if (lt & T_ARRAYOF) {
       typecheck_err ("int(.) can't accept array arguments");
       return T_ERR;
@@ -577,7 +584,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	typecheck_err ("int(.) with int argument requires width argument:");
 	return T_ERR;
       }
-      rt = act_type_expr (s, e->u.e.l, NULL, only_chan);
+      rt = act_type_expr (s, e->u.e.r, NULL, only_chan);
+      if (rt == T_ERR)  return T_ERR;
       if (!(rt & T_INT) || !(rt & T_PARAM) || (rt & T_ARRAYOF)) {
 	typecheck_err ("int(.): second argument has to be an int parameter");
 	return T_ERR;
