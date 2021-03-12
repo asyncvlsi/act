@@ -1,0 +1,8 @@
+defproc test (chan!(int) out)
+{
+  dataflow {
+    int(4,3) -> out
+  }
+}
+
+test t;

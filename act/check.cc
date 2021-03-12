@@ -578,7 +578,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	return T_ERR;
       }
       rt = act_type_expr (s, e->u.e.l, NULL, only_chan);
-      if (!(rt & T_INT) || !(rt & T_PARAM) || !(rt & T_ARRAYOF)) {
+      if (!(rt & T_INT) || !(rt & T_PARAM) || (rt & T_ARRAYOF)) {
 	typecheck_err ("int(.): second argument has to be an int parameter");
 	return T_ERR;
       }
