@@ -1464,17 +1464,18 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	unsigned long x = ret->u.e.l->u.v;
 	int width = ret->u.e.r->u.v;
-	x = x & (~(1 << width));
 
+	x = x & (~(1UL << width));
+	
 	ret->type = E_INT;
 	ret->u.v = x;
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
       }
-      else {
+      else if (!expr_is_a_const (ret->u.e.r)) {
 	act_error_ctxt (stderr);
-	fatal_error ("int() operator requires a constant expression");
+	fatal_error ("int() operator requires a constant expression for the second argument");
       }
     }
     break;

@@ -1,0 +1,8 @@
+defproc test (chan!(int) out)
+{
+  dataflow {
+     int(int(int(int(2,32)+int(7,32),32)*int(9,32),32)/int(4,32),32) -> out
+  }
+}
+
+test t;

@@ -1,0 +1,33 @@
+defproc calc (chan?(int<32>) calc_in_0; chan?(int<32>) calc_in_1; chan?(int<32>) calc_in_2; chan?(int<32>) calc_in_3; chan!(int<32>) calc_out)
+{
+  /* Define channels */
+  chan(int<32>) calc_I0_;
+  chan(int<32>) calc_I1_;
+  chan(int<32>) calc_I2_;
+  /* Handle invocations */
+  /* Define dataflow script */
+  dataflow {
+    calc_in_0 + calc_in_1 -> calc_I0_;
+    calc_I0_ * calc_in_2 -> calc_I1_;
+    calc_I1_ / calc_in_3 -> calc_I2_;
+    calc_I2_ -> calc_out
+  }
+}     
+
+defproc calc2 (chan?(int<32>) calc_in_0; chan?(int<32>) calc_in_1; chan?(int<32>) calc_in_2; chan?(int<32>) calc_in_3; chan!(int<32>) calc_out)
+{
+  /* Define channels */
+  chan(int<32>) calc_I0_;
+  chan(int<32>) calc_I1_;
+  chan(int<32>) calc_I2_;
+  /* Handle invocations */
+  /* Define dataflow script */
+  dataflow {
+    calc_in_0 + calc_in_1 -> calc_I0_;
+    calc_I0_ * calc_in_2 -> calc_I1_;
+    calc_I1_ / calc_in_3 -> calc_I2_;
+    int(int(int(calc_in_0+calc_in_1,32)*calc_in_2,32)/calc_in_3,32) -> calc_out
+  }
+}     
+
+calc2 c;
