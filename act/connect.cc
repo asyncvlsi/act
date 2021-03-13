@@ -1477,3 +1477,22 @@ act_connection *act_connection::primary()
   }
   return root;
 }
+
+
+bool act_connection::hasAnyConnection (void)
+{
+  if (!isPrimary()) return true;
+  if (hasDirectconnections()) return true;
+  
+  if (hasSubconnections()) {
+    for (int i=0; i < numSubconnections(); i++) {
+      if (hasSubconnections (i)) {
+	if (a[i]->hasAnyConnection()) {
+	  return true;
+	}
+      }
+    }
+  }
+  
+  return false;
+}

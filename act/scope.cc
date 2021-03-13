@@ -231,7 +231,9 @@ void Scope::Del (const char *s)
     
     if (!TypeFactory::isParamType (v->t->BaseType())) {
       if (v->u.obj.c) {
-	warning ("Del() called, but object has a connection!");
+	if (v->hasAnyConnection()) {
+  	   warning ("Del() called, but object has a connection!");
+	}
       }
     }
     delete v;

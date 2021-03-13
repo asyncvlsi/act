@@ -77,6 +77,7 @@ public:
   // returns true when there are other things connected to
   // the object directly
   bool hasDirectconnections() { return next != this; }
+  bool hasAnyConnection();
 
   // returns true when there is a subconnection at index i
   bool hasDirectconnections(int i) { return a && a[i] && a[i]->hasDirectconnections(); }
@@ -136,6 +137,7 @@ public:
 
   /* assumes object is not a parameter type */
   bool hasConnection()  { return init && (u.obj.c != NULL); }
+  bool hasAnyConnection() { if (!hasConnection()) return false; else return u.obj.c->hasAnyConnection(); }
   bool hasConnection(int i) { return init && (u.obj.c != NULL) && (u.obj.c->a) && (u.obj.c->a[i]); }
 
   bool hasSubconnections() { return hasConnection() && connection()->hasSubconnections(); }
