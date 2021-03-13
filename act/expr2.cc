@@ -132,7 +132,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
   case E_GT:  EMIT_BIN (7, ">"); break;
   case E_LE:  EMIT_BIN (7, "<="); break;
   case E_GE:  EMIT_BIN (7, ">="); break;
-  case E_EQ:  EMIT_BIN (7, "=="); break;
+  case E_EQ:  EMIT_BIN (7, "="); break;
   case E_NE:  EMIT_BIN (7, "!="); break;
 
   case E_AND: EMIT_BIN (6, "&"); break;
