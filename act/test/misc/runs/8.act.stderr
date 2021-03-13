@@ -1,5 +1,5 @@
 In expanding ::<Global>
 *** Assertion failed ***
- assertion: i==k
+ assertion: i=k
    message: check hex/bin
 FATAL: Aborted execution on failed assertion
