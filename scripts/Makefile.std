@@ -257,3 +257,5 @@ move-out:
 .c.os:
 	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
 
+.cc.os:
+	$(CXX) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) -std=$(CPPSTD) $< -o $*.os

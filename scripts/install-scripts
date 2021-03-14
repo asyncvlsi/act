@@ -1,6 +1,7 @@
+#!/bin/sh
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2011-2019 Rajit Manohar
+#  Copyright (c) 2021 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,9 +19,46 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-#
-# Make everything, in the right order
-# 
-SUBDIRS=common pgen miniscm act passes transform simulation tech scripts
 
-include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+#
+#
+# Basic install script for scripts/: copy file over if it changes,
+# and replace VLSI_TOOLS_SRC with ACT_HOME
+#
+#
+
+if [ $# -ne 0 ]
+then
+        echo "Usage: `basename $0`"
+        exit 1
+fi
+
+for i in install config Makefile.std getarch getbaseos getos move-in move-out mymakedepend
+do
+    sed 's/VLSI_TOOLS_SRC/ACT_HOME/g' < $i > tmpfile
+    src=tmpfile
+    dest=$ACT_HOME/scripts/$i
+
+    if [ -r $src ]
+    then
+	if cmp -s $src $dest
+	then
+            : # echo "[Unchanged $src]"
+	else
+            if [ -f $dest ]
+            then
+                mv $dest ${dest}.old
+            fi
+            echo "[Installing $i]"
+            cp $src $dest
+	fi
+    else
+	echo "$i is unreadable"
+    fi
+    rm -f tmpfile
+done
+
+for i in install getarch getos getbaseos move-in move-out mymakedepend
+do
+    chmod +x $ACT_HOME/scripts/$i
+done

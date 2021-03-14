@@ -35,6 +35,7 @@ ActPass::ActPass (Act *_a, const char *s)
   name = _a->pass_name (s);
   pmap = NULL;
   visited_flag = NULL;
+  _stash = NULL;
 }
 
 ActPass::~ActPass ()
@@ -280,7 +281,28 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 
   if (!lib_ptr) {
     act_sh_passlib_info *tmp;
-    lib_ptr = dlopen (lib, RTLD_LAZY);
+    FILE *fp;
+
+    fp = fopen (lib, "r");
+    if (fp) {
+      fclose (fp);
+      lib_ptr = dlopen (lib, RTLD_LAZY);
+    }
+    else {
+      if (getenv ("ACT_HOME")) {
+	snprintf (buf, 1024, "%s/lib/%s", getenv ("ACT_HOME"), lib);
+	fp = fopen (buf, "r");
+	if (fp) {
+	  fclose (fp);
+	  lib_ptr = dlopen (buf, RTLD_LAZY);
+	}
+      }
+    }
+    if (!lib_ptr) {
+      fprintf (stderr, "Dynamic pass: `%s' not found\n", lib);
+      return;
+    }
+    
     NEW (tmp, act_sh_passlib_info);
     tmp->lib = Strdup (lib);
     _libused = tmp->lib;
@@ -310,25 +332,25 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   }
 
   snprintf (buf, 1024, "%s_run", prefix);
-  _d._run = (void (*)(Process *))dlsym (lib_ptr, buf);
+  _d._run = (void (*)(ActPass *, Process *))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_recursive", prefix);
-  _d._recursive = (void (*)(Process *, int))dlsym (lib_ptr,  buf);
+  _d._recursive = (void (*)(ActPass *, Process *, int))dlsym (lib_ptr,  buf);
   
   snprintf (buf, 1024, "%s_local_proc", prefix);
-  _d._proc = (void *(*)(Process *, int))dlsym (lib_ptr, buf);
+  _d._proc = (void *(*)(ActPass *, Process *, int))dlsym (lib_ptr, buf);
   
   snprintf (buf, 1024, "%s_local_data", prefix);
-  _d._data = (void *(*)(Data *, int))dlsym (lib_ptr, buf);
+  _d._data = (void *(*)(ActPass *, Data *, int))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_local_chan", prefix);
-  _d._chan = (void *(*)(Channel *, int))dlsym (lib_ptr, buf);
+  _d._chan = (void *(*)(ActPass *, Channel *, int))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_free", prefix);
-  _d._free = (void(*)(void *))dlsym (lib_ptr, buf);
+  _d._free = (void(*)(ActPass *, void *))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_done", prefix);
-  _d._done = (void(*)(void))dlsym (lib_ptr, buf);
+  _d._done = (void(*)(ActPass *))dlsym (lib_ptr, buf);
 
   if (_d._init) {
     (*_d._init)(this);
@@ -340,7 +362,7 @@ int ActDynamicPass::run (Process *p)
   int ret = ActPass::run (p);
 
   if (_d._run) {
-    (*_d._run)(p);
+    (*_d._run)(this, p);
   }
   
   return ret;
@@ -351,14 +373,14 @@ void ActDynamicPass::run_recursive (Process *p, int mode)
   ActPass::run_recursive (p, mode);
  
   if (_d._recursive) {
-    (*_d._recursive) (p, mode);
+    (*_d._recursive) (this, p, mode);
   }
 }
 
 void *ActDynamicPass::local_op (Process *p, int mode)
 {
   if (_d._proc) {
-    return (*_d._proc)(p, mode);
+    return (*_d._proc)(this, p, mode);
   }
   return NULL;
 }
@@ -366,7 +388,7 @@ void *ActDynamicPass::local_op (Process *p, int mode)
 void *ActDynamicPass::local_op (Channel *c, int mode)
 {
   if (_d._chan) {
-    return (*_d._chan)(c, mode);
+    return (*_d._chan)(this, c, mode);
   }
   return NULL;
 }
@@ -374,7 +396,7 @@ void *ActDynamicPass::local_op (Channel *c, int mode)
 void *ActDynamicPass::local_op (Data *d, int mode)
 {
   if (_d._data) {
-    return (*_d._data)(d, mode);
+    return (*_d._data)(this, d, mode);
   }
   return NULL;
 }
@@ -382,7 +404,7 @@ void *ActDynamicPass::local_op (Data *d, int mode)
 void ActDynamicPass::free_local (void *v)
 {
   if (_d._free) {
-    (*_d._free) (v);
+    (*_d._free) (this, v);
   }
 }
 
@@ -392,7 +414,7 @@ ActDynamicPass::~ActDynamicPass ()
   listitem_t *prev;
 
   if (_d._done) {
-    (*_d._done) ();
+    (*_d._done) (this);
   }
   
   Assert (_sh_libs, "What?");

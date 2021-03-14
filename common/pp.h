@@ -163,6 +163,11 @@ extern void pp_close (pp_t *);
      Close a pretty-printer
   */
 
+extern void pp_stop (pp_t *);
+  /*
+    Flush and free a pretty-printer without closing the output file
+  */
+
 #ifdef __cplusplus
 }
 #endif

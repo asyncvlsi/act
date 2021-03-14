@@ -316,6 +316,9 @@ public:
   void *getMap (Process *p);
   Act *getAct () { return a; }
   virtual void run_recursive (Process *p = NULL, int mode = 0);
+
+  void *getStash () { return _stash; }
+  void setStash (void *x) { _stash = x; }
   
 private:
   virtual void *local_op (Process *p, int mode = 0);
@@ -329,9 +332,7 @@ private:
   void free_map ();
   std::map<UserDef *, void *> *pmap;
   std::unordered_set<UserDef *> *visited_flag;
-
-public:
-  
+  void *_stash;
 };
 
 struct act_sh_passlib_info {
@@ -344,13 +345,13 @@ class ActDynamicPass;
 
 struct act_sh_dispatch_table {
   void (*_init) (ActPass *ap);
-  void (*_run) (Process *p);
-  void (*_recursive) (Process *p, int mode);
-  void *(*_proc) (Process *p, int mode);
-  void *(*_chan) (Channel *c, int mode);
-  void *(*_data) (Data *d, int mode);
-  void (*_free) (void *);
-  void (*_done) (void);
+  void (*_run) (ActPass *ap, Process *p);
+  void (*_recursive) (ActPass *ap, Process *p, int mode);
+  void *(*_proc) (ActPass *ap, Process *p, int mode);
+  void *(*_chan) (ActPass *ap, Channel *c, int mode);
+  void *(*_data) (ActPass *ap, Data *d, int mode);
+  void (*_free) (ActPass *ap, void *v);
+  void (*_done) (ActPass *ap);
 };
 
 class ActDynamicPass : public ActPass {
