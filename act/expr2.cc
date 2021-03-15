@@ -1461,6 +1461,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     }
     else {
       ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
+      /* XXX: should we simplify this?! */
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	unsigned long x = ret->u.e.l->u.v;
 	int width = ret->u.e.r->u.v;
@@ -1539,6 +1540,25 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret = te;
     break;
 
+  case E_CONCAT:
+    {
+      Expr *f = ret;
+      ret->u.e.l = NULL;
+      ret->u.e.r = NULL;
+      while (e) {
+	f->u.e.l = expr_expand (e->u.e.l, ns, s, 0);
+	if (e->u.e.r) {
+	  NEW (f->u.e.r, Expr);
+	  f = f->u.e.r;
+	  f->type = E_CONCAT;
+	  f->u.e.l = NULL;
+	  f->u.e.r = NULL;
+	}
+	e = e->u.e.r;
+      }
+    }
+    break;
+    
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;
