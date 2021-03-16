@@ -1235,9 +1235,10 @@ int type_connectivity_check (InstType *lhs,
   char buf1[1024], buf2[1024];
   lhs->sPrint (buf1, 1024);
   rhs->sPrint (buf2, 1024);
-  
-  typecheck_errappend ("Types `%s' and `%s' are not compatible",
-		       buf1, buf2);
+
+  if (strcmp (buf1, buf2) != 0) {
+    typecheck_errappend ("Types `%s' and `%s' are not compatible", buf1, buf2);
+  }
 
   return 0;
 }
