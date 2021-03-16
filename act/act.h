@@ -317,11 +317,6 @@ public:
   Act *getAct () { return a; }
   virtual void run_recursive (Process *p = NULL, int mode = 0);
 
-  void *getStash () { return _stash; }
-  void setStash (void *x) { _stash = x; }
-
-  struct Hashtable *getConfig ();
-  
 private:
   virtual void *local_op (Process *p, int mode = 0);
   virtual void *local_op (Channel *c, int mode = 0);
@@ -334,8 +329,6 @@ private:
   void free_map ();
   std::map<UserDef *, void *> *pmap;
   std::unordered_set<UserDef *> *visited_flag;
-  void *_stash;
-  struct Hashtable *_config_state;
 };
 
 struct act_sh_passlib_info {
@@ -367,6 +360,13 @@ public:
   int run (Process *p = NULL);
   void run_recursive (Process *p = NULL, int mode = 0);
 
+  void setParam (const char *name, void *v);
+  void setParam (const char *name, int v);
+  int getIntParam (const char *name);
+  void *getPtrParam (const char *name);
+
+  struct Hashtable *getConfig ();
+  
 private:
   virtual void *local_op (Process *p, int mode = 0);
   virtual void *local_op (Channel *c, int mode = 0);
@@ -375,6 +375,8 @@ private:
 
   char *_libused;
   act_sh_dispatch_table _d;
+  struct Hashtable *_params;
+  struct Hashtable *_config_state;
 
   /* open shared object libraries */
   static list_t *_sh_libs;

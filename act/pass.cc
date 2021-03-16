@@ -36,7 +36,6 @@ ActPass::ActPass (Act *_a, const char *s)
   name = _a->pass_name (s);
   pmap = NULL;
   visited_flag = NULL;
-  _stash = NULL;
 }
 
 ActPass::~ActPass ()
@@ -248,14 +247,6 @@ void *ActPass::getMap (Process *p)
   return (*pmap)[p];
 }
 
-struct Hashtable *ActPass::getConfig (void)
-{
-  if (!_config_state) {
-    _config_state = config_get_state();
-  }
-  return _config_state;
-}
-
 /*
  *
  * Load a pass from a .so/.dylib file
@@ -272,6 +263,8 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   char buf[1024];
 
   getConfig ();
+
+  _params = NULL;
 
   if (!_sh_libs) {
     _sh_libs = list_new ();
@@ -366,6 +359,15 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   }
 }
 
+struct Hashtable *ActDynamicPass::getConfig (void)
+{
+  if (!_config_state) {
+    _config_state = config_get_state();
+  }
+  return _config_state;
+}
+
+
 int ActDynamicPass::run (Process *p)
 {
   int ret = ActPass::run (p);
@@ -447,4 +449,52 @@ ActDynamicPass::~ActDynamicPass ()
     list_free (_sh_libs);
     _sh_libs = NULL;
   }
+}
+
+void ActDynamicPass::setParam (const char *name, void *v)
+{
+  hash_bucket_t *b;
+  if (!_params) {
+    _params = hash_new (4);
+  }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    b = hash_add (_params, name);
+  }
+  b->v = v;
+}
+
+void ActDynamicPass::setParam (const char *name, int v)
+{
+  hash_bucket_t *b;
+  if (!_params) {
+    _params = hash_new (4);
+  }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    b = hash_add (_params, name);
+  }
+  b->i = v;
+}
+
+int ActDynamicPass::getIntParam (const char *name)
+{
+  hash_bucket_t *b;
+  if (!_params) { return -1; }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    return -1;
+  }
+  return b->i;
+}
+
+void *ActDynamicPass::getPtrParam (const char *name)
+{
+  hash_bucket_t *b;
+  if (!_params) { return NULL; }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    return NULL;
+  }
+  return b->v;
 }
