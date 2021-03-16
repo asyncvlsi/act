@@ -499,16 +499,14 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_BITFIELD:
     {
       InstType *xit;
+      int lo, hi;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
       if (T_BASETYPE (lt) == T_INT) {
 	if (xit->isExpanded()) {
-	  int hi, lo;
 	  Assert (e->u.e.r, "What?");
-	  lo = (long)e->u.e.r->u.e.l;
-	  hi = (long)e->u.e.r->u.e.r;
-#if 0	  
-	  if (!expr_is_a_const (e->u.e.r->u.e.l) ||
-	      e->u.e.r->u.e.l->type != E_INT) {
+	  Assert (e->u.e.r->u.e.r, "What?");
+	  if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
+				  e->u.e.r->u.e.l->type != E_INT)) {
 	    typecheck_err ("Bitfield can only use const integer arguments");
 	    return T_ERR;
 	  }
@@ -517,9 +515,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    typecheck_err ("Bitfield can only use const integer arguments");
 	    return T_ERR;
 	  }
-	  hi = e->u.e.r->u.e.l->u.v;
 	  lo = e->u.e.r->u.e.r->u.v;
-#endif	  
+	  if (e->u.e.r->u.e.l) {
+	    hi = e->u.e.r->u.e.l->u.v;
+	  }
+	  else {
+	    hi = lo;
+	  }
 	  if (hi < lo) {
 	    typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
 	    return T_ERR;

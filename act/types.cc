@@ -539,10 +539,13 @@ static int expr_hash (int sz, Expr *w, int prev)
   case E_BITFIELD:
     prev = hash_function_continue 
       (sz, (const unsigned char *)&w->u.e.l, sizeof (Expr *), prev, 1);
-    prev = hash_function_continue 
-      (sz, (const unsigned char *)&w->u.e.r->u.e.l, sizeof (Expr *), prev, 1);
-    prev = hash_function_continue 
-      (sz, (const unsigned char *)&w->u.e.r->u.e.r, sizeof (Expr *), prev, 1);
+    if (w->u.e.r->u.e.l) {
+      prev = expr_hash (sz, w->u.e.r->u.e.l, prev);
+    }
+    else {
+      prev = expr_hash (sz, w->u.e.r->u.e.r, prev);
+    }
+    prev = expr_hash (sz, w->u.e.r->u.e.r, prev);
     break;
 
   case E_FUNCTION:

@@ -595,7 +595,6 @@ static Expr *W (void)
   int tilde = 0;
   Expr *e, *f;
   void *v;
-  unsigned long x, y;
 
   PUSH (Tl);
   if (file_sym (Tl) == T[E_UMINUS]) {
@@ -678,50 +677,43 @@ static Expr *W (void)
       flg = file_flags (Tl);
       file_setflags (Tl, flg | FILE_FLAGS_NOREAL);
       if (file_have (Tl, T[E_CONCAT])) {
+	Expr *bf;
 	/* { constexpr .. constexpr } | { constexpr } */
 	f = I();
-	if (!const_intexpr (f, &x)) {
+	if (!f) {
 	  SET (Tl); 
 	  POP (Tl);
 	  efree (e);
 	  file_setflags (Tl, flg);
 	  return NULL;
 	}
-	efree (f);
-	y = x;
+	NEW (bf, Expr);
+	bf->type = E_BITFIELD;
+	bf->u.e.l = f;
+	bf->u.e.r = NULL;
 	if (file_have (Tl, T[E_BITFIELD])) {
 	  f = I();
-	  if (!const_intexpr (f, &y)) {
+	  if (!f) {
 	    SET (Tl);
 	    POP (Tl);
 	    efree (e);
+	    efree (bf);
+	    file_setflags (Tl, flg);
+	    return NULL;
 	  }
-	  efree (f);
+	  bf->u.e.r = f;
 	}
 	if (!file_have (Tl, T[E_END])) {
 	  SET (Tl);
 	  POP (Tl);
 	  efree (e);
+	  efree (bf);
 	  file_setflags (Tl, flg);
 	  return NULL;
 	}
 	file_setflags (Tl, flg);
-	f = newexpr ();
-	f->u.e.l = (void *)x;
-	f->u.e.r = (void *)y;
-	f->type = E_BITFIELD;
 	e->type = E_BITFIELD;
-	e->u.e.r = f;
-#if 0
-	if (y > x) {
-	  warning ("Bitfield operation {%d..%d} needs %d <= %d\n",
-		   (int)x, (int)y, (int)x, (int)y);
-	  efree (e);
-	  SET (Tl);
-	  POP (Tl);
-	  return NULL;
-	}
-#endif
+	e->u.e.r = bf;
 	f = e->u.e.r->u.e.l;
 	e->u.e.r->u.e.l = e->u.e.r->u.e.r;
 	e->u.e.r->u.e.r = f;

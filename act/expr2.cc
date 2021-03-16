@@ -369,14 +369,16 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
     snprintf (buf+k, sz, "{");
     PRINT_STEP;
-    
-    snprintf (buf+k, sz, "%lu", (unsigned long)e->u.e.r->u.e.l);
-    PRINT_STEP;
-    
-    snprintf (buf+k, sz, "..");
-    PRINT_STEP;
 
-    snprintf (buf+k, sz, "%lu", (unsigned long)e->u.e.r->u.e.r);
+    if (e->u.e.r->u.e.l) {
+      sprint_expr (buf+k, sz, e->u.e.r->u.e.l);
+      PRINT_STEP;
+
+      snprintf (buf+k, sz, "..");
+      PRINT_STEP;
+    }
+
+    sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
     PRINT_STEP;
 
     snprintf (buf+k, sz, "}");
@@ -1332,17 +1334,16 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       ret->u.e.r->type = E_BITFIELD;
       ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
       ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
-#if 0      
       ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
       ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
-      if (!expr_is_a_const (ret->u.e.r->u.e.l) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
+      if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
 	print_expr (stderr, e);
 	fprintf (stderr,"\n");
 	fatal_error ("Bitfield operator has non-const components");
       }
-      if (ret->u.e.r->u.e.l->type != E_INT) {
+      if (ret->u.e.r->u.e.l && (ret->u.e.r->u.e.l->type != E_INT)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
 	print_expr (stderr, e);
@@ -1356,20 +1357,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	fprintf (stderr,"\n");
 	fatal_error ("Variable in bitfield operator is a non-integer");
       }
-#endif      
     }
     else {
-#if 0      
+      unsigned long v;
       Expr *lo, *hi;
-      lo = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
-      hi = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
-      if (!expr_is_a_const (lo) || !expr_is_a_const (hi)) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Bitfield operator has const variable but non-const components");
-      }
+
       if (ret->u.e.l->type != E_INT) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
@@ -1377,36 +1369,44 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	fprintf (stderr,"\n");
 	fatal_error ("Variable in bitfield operator is a non-integer");
       }
-#endif
-      unsigned int lo, hi;
-      lo = (unsigned long)e->u.e.r->u.e.l;
-      hi = (unsigned long)e->u.e.r->u.e.r;
-      unsigned int v;
       v = ret->u.e.l->u.v;
-      //FREE (ret->u.e.l);
-#if 0      
-      if (lo->type != E_INT || hi->type != E_INT) {
+      if (e->u.e.r->u.e.l) {
+	lo = expr_expand (e->u.e.r->u.e.l, ns, s, is_lval);
+      }
+      else {
+	lo = NULL;
+      }
+      hi = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
+      Assert (hi, "What?");
+      
+      unsigned int lov, hiv;
+
+      if ((lo && lo->type != E_INT) || hi->type != E_INT) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
 	print_expr (stderr, e);
 	fprintf (stderr,"\n");
 	fatal_error ("Bitfield parameter in operator is a non-integer");
       }
-      if (lo->u.v > hi->u.v) {
-	v = 0;
+
+      hiv = hi->u.v;
+      if (lo) {
+	lov = lo->u.v;
       }
       else {
-	v = (v >> lo->u.v) & ~(~0UL << (hi->u.v - lo->u.v + 1));
+	lov = hiv;
       }
-#endif
-      if (lo > hi) {
-	v = 0;
+      
+      if (lov > hiv) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "\texpanding expr: ");
+	print_expr (stderr, e);
+	fprintf (stderr, "\n");
+	fatal_error ("Bitfield {%d..%d} : empty!", hiv, lov);
       }
       else {
-	v = (v >> lo) & ~(~0UL << (hi - lo + 1));
+	v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
       }
-      //FREE (lo);
-      //FREE (hi);
       ret->type = E_INT;
       ret->u.v = v;
       tmp = TypeFactory::NewExpr (ret);
