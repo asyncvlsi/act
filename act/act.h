@@ -319,6 +319,8 @@ public:
 
   void *getStash () { return _stash; }
   void setStash (void *x) { _stash = x; }
+
+  struct Hashtable *getConfig ();
   
 private:
   virtual void *local_op (Process *p, int mode = 0);
@@ -333,6 +335,7 @@ private:
   std::map<UserDef *, void *> *pmap;
   std::unordered_set<UserDef *> *visited_flag;
   void *_stash;
+  struct Hashtable *_config_state;
 };
 
 struct act_sh_passlib_info {

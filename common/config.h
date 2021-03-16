@@ -93,6 +93,10 @@ int config_gettype (const char *s);   /* 0 : int, 1 : real, 2 : string, 3 + ... 
 /* dump config table to file */
 void config_dump (FILE *s);
 
+struct Hashtable *config_get_state (void);
+void config_set_state (struct Hashtable *h);
+  
+
 #ifdef __cplusplus
 }
 #endif

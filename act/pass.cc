@@ -23,6 +23,7 @@
 #include <act/iter.h>
 #include <string.h>
 #include <dlfcn.h>
+#include "config.h"
 
 
 ActPass::ActPass (Act *_a, const char *s)
@@ -247,7 +248,13 @@ void *ActPass::getMap (Process *p)
   return (*pmap)[p];
 }
 
-
+struct Hashtable *ActPass::getConfig (void)
+{
+  if (!_config_state) {
+    _config_state = config_get_state();
+  }
+  return _config_state;
+}
 
 /*
  *
@@ -263,6 +270,8 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   listitem_t *li;
   void *lib_ptr;
   char buf[1024];
+
+  getConfig ();
 
   if (!_sh_libs) {
     _sh_libs = list_new ();
@@ -337,13 +346,13 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   snprintf (buf, 1024, "%s_recursive", prefix);
   _d._recursive = (void (*)(ActPass *, Process *, int))dlsym (lib_ptr,  buf);
   
-  snprintf (buf, 1024, "%s_local_proc", prefix);
+  snprintf (buf, 1024, "%s_proc", prefix);
   _d._proc = (void *(*)(ActPass *, Process *, int))dlsym (lib_ptr, buf);
   
-  snprintf (buf, 1024, "%s_local_data", prefix);
+  snprintf (buf, 1024, "%s_data", prefix);
   _d._data = (void *(*)(ActPass *, Data *, int))dlsym (lib_ptr, buf);
 
-  snprintf (buf, 1024, "%s_local_chan", prefix);
+  snprintf (buf, 1024, "%s_chan", prefix);
   _d._chan = (void *(*)(ActPass *, Channel *, int))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_free", prefix);

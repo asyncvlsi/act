@@ -81,6 +81,21 @@ static struct search_path {
 L_A_DECL (char *, files_read);
 L_A_DECL (char, global_prefix);
 
+struct Hashtable *config_get_state (void)
+{
+  return H;
+}
+
+void config_set_state (struct Hashtable *h)
+{
+  if (H == NULL) {
+    H = h;
+  }
+  if (H != h) {
+    fatal_error ("config: Inconsistent hashes");
+  }
+}
+
 /*------------------------------------------------------------------------
  *
  *  config_append_path --
