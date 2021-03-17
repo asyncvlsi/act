@@ -2325,7 +2325,13 @@ int TypeFactory::bitWidth (Type *t)
     Data *tmp = dynamic_cast<Data *>(t);
     if (tmp) {
       if (!tmp->isExpanded()) return -1;
-      return TypeFactory::bitWidth (tmp->getParent());
+      if (tmp->getParent ()) {
+	return TypeFactory::bitWidth (tmp->getParent());
+      }
+      else {
+	/* bitwidth of a structure */
+	return -1;
+      }
     }
   }
   {
@@ -2368,7 +2374,12 @@ int TypeFactory::boolType (Type *t)
 
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
-      return TypeFactory::boolType (tmp->getParent());
+      if (tmp->getParent()) {
+	return TypeFactory::boolType (tmp->getParent());
+      }
+      else {
+	return -1;
+      }
     }
   }
   {
@@ -2410,7 +2421,12 @@ int TypeFactory::boolType (InstType *t)
 
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
-      return TypeFactory::boolType (tmp->getParent());
+      if (tmp->getParent()) { 
+	return TypeFactory::boolType (tmp->getParent());
+      }
+      else {
+	return -1;
+      }
     }
   }
   {

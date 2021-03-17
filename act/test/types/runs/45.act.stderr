@@ -1,0 +1,2 @@
+ERROR: File `45.act', line 6, col 12
+	Identifier `X' is an output channel

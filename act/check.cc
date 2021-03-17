@@ -79,6 +79,9 @@ static void dumpflags(int f)
   else if (T_BASETYPE (f) == T_BOOL) {
     printf ("[t-bool]");
   }
+  else if (f & T_DATA) {
+    printf ("[t-struct]");
+  }
   if (f & T_STRICT) {
     printf ("[t-strict]");
   }
@@ -168,6 +171,9 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   }
   if (TypeFactory::isBoolType (t)) {
     return T_BOOL|arr;
+  }
+  if (TypeFactory::isStructure (t)) {
+    return T_DATA|arr;
   }
   if (!TypeFactory::isDataType (t)) {
     if (TypeFactory::isChanType (t)) {

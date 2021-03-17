@@ -1,0 +1,8 @@
+
+defproc testme (chan!(int) X)
+{
+  int x, y;
+  chp {
+    X!y ; X?x
+  }
+}

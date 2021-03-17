@@ -441,7 +441,14 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
     Chan *ch2;
 
     t = act_type_var ($0->scope, $1, &it);
-    
+
+    if (it->getDir() == Type::direction::IN) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is an input channel\n");
+      exit (1);
+    }
+
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_SEND;
@@ -545,7 +552,14 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
     int t;
     
     t = act_type_var ($0->scope, $1, &it);
-    
+
+    if (it->getDir() == Type::direction::OUT) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is an output channel\n");
+      exit (1);
+    }
+
     if (OPT_EMPTY ($3)) {
       NEW (c, act_chp_lang_t);
       c->type = ACT_CHP_RECV;
@@ -1335,7 +1349,7 @@ chan_expr_id[ActId *]: expr_id
     if (T_BASETYPE(t) != T_CHAN) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
-      fprintf ($f, "'' is not of of a channel type\n");
+      fprintf ($f, "'' is not of a channel type\n");
       exit (1);
     }
     else if (t & T_ARRAYOF) {

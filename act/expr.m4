@@ -140,16 +140,14 @@ lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
     e->type = E_VAR;
     e->u.e.l = (Expr *)$1;
 
-    if ($0->strict_checking) {
-      tc = act_type_expr ($0->scope, e, NULL);
-      if (tc == T_ERR) {
-	$e("Typechecking failed on expression!");
-	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
-	exit (1);
-      }
-      if ((tc & T_STRICT) == 0) {
-	$E("Expressions in port parameter list can only use strict template parameters");
-      }
+    tc = act_type_var ($0->scope, $1, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
     }
       
     a = new AExpr (e);
@@ -350,16 +348,16 @@ w_c_expr[Expr *]: expr
     $0->file = $n;
     e = act_walk_X_expr ($0, $1);
     $A($0->scope);
-    if ($0->strict_checking) {
-      tc = act_type_expr ($0->scope, e, NULL);
-      if (tc == T_ERR) {
-	$e("Typechecking failed on expression!");
-	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
-	exit (1);
-      }
-      if ((tc & T_STRICT) == 0) {
-	$E("Expressions in port parameter list can only use strict template parameters");
-      }
+
+    tc = act_type_expr ($0->scope, e, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+      
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
     }
     return e;
 }}
