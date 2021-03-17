@@ -321,11 +321,11 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 }
 
 
-static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
+static act_connection *visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
 {
   act_booleanized_var_t *v;
 
-  if (!id) return;
+  if (!id) return NULL;
   
   v = var_lookup (N, id);
   v->usedchp = 1;
@@ -346,6 +346,7 @@ static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
     /* recursively access all booleans */
     visit_channel_ports (N, ch, id, isinput);
   }
+  return v->id;
 }
 
 
@@ -1101,6 +1102,15 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       visit_chp_var (N, c->u.comm.chan, 0);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
+
+      if (v->id->getDir() == Type::direction::IN) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Channel: ");
+	v->id->toid()->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Send action on an input port!");
+      }
+      
       if (v->proc_out == -1 || v->proc_out == _block_id) {
 	v->proc_out = _block_id;
       }
@@ -1109,7 +1119,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fprintf (stderr, "Channel: ");
 	v->id->toid()->Print (stderr);
 	fprintf (stderr, "\n");
-	fatal_error ("Receive action in multiple concurrent blocks!");
+	fatal_error ("Send action in multiple concurrent blocks!");
       }
       li = list_first (c->u.comm.rhs);
       if (li) {
@@ -1134,6 +1144,15 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       visit_chp_var (N, c->u.comm.chan, 1);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
+
+      if (v->id->getDir() == Type::direction::OUT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Channel: ");
+	v->id->toid()->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Receive action on an output port!");
+      }
+      
       if (v->proc_in == -1 || v->proc_in == _block_id) {
 	v->proc_in = _block_id;
       }

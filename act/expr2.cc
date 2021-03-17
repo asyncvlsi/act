@@ -1466,7 +1466,9 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	unsigned long x = ret->u.e.l->u.v;
 	int width = ret->u.e.r->u.v;
 
-	x = x & (~(1UL << width));
+	if (width < 64) {
+	  x = x & (~(1UL << width));
+	}
 	
 	ret->type = E_INT;
 	ret->u.v = x;
