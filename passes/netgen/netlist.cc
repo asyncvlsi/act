@@ -1293,6 +1293,14 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
 
 void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 {
+  if (!ActNetlistPass::local_vdd) {
+    ActNetlistPass::local_vdd = config_get_string ("net.local_vdd");
+    ActNetlistPass::local_gnd = config_get_string ("net.local_gnd");
+
+    ActNetlistPass::global_vdd = config_get_string ("net.global_vdd");
+    ActNetlistPass::global_gnd = config_get_string ("net.global_gnd");
+  }
+
   if (n->v) {
     ActId *id = n->v->v->id->toid();
     id->sPrint (buf, sz);

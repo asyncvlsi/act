@@ -21,6 +21,7 @@
  */
 #include <act/act.h>
 #include <act/iter.h>
+#include <act/tech.h>
 #include <string.h>
 #include <dlfcn.h>
 #include "config.h"
@@ -254,7 +255,6 @@ void *ActPass::getMap (Process *p)
  */
 list_t *ActDynamicPass::_sh_libs = NULL;
 
-
 ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 				const char *prefix) : ActPass (a, name)
 {
@@ -264,6 +264,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 
   getConfig ();
 
+  T = Technology::T;
   _params = NULL;
 
   if (!_sh_libs) {
@@ -353,6 +354,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 
   snprintf (buf, 1024, "%s_done", prefix);
   _d._done = (void(*)(ActPass *))dlsym (lib_ptr, buf);
+
 
   if (_d._init) {
     (*_d._init)(this);
@@ -477,6 +479,19 @@ void ActDynamicPass::setParam (const char *name, int v)
   b->i = v;
 }
 
+void ActDynamicPass::setParam (const char *name, double v)
+{
+  hash_bucket_t *b;
+  if (!_params) {
+    _params = hash_new (4);
+  }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    b = hash_add (_params, name);
+  }
+  b->f = v;
+}
+
 int ActDynamicPass::getIntParam (const char *name)
 {
   hash_bucket_t *b;
@@ -486,6 +501,17 @@ int ActDynamicPass::getIntParam (const char *name)
     return -1;
   }
   return b->i;
+}
+
+double ActDynamicPass::getRealParam (const char *name)
+{
+  hash_bucket_t *b;
+  if (!_params) { return -1; }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    return -1;
+  }
+  return b->f;
 }
 
 void *ActDynamicPass::getPtrParam (const char *name)

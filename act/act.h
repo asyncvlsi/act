@@ -337,6 +337,7 @@ struct act_sh_passlib_info {
   int refs;
 };
 
+class Technology;
 class ActDynamicPass;
 
 struct act_sh_dispatch_table {
@@ -362,10 +363,13 @@ public:
 
   void setParam (const char *name, void *v);
   void setParam (const char *name, int v);
+  void setParam (const char *name, double v);
   int getIntParam (const char *name);
   void *getPtrParam (const char *name);
+  double getRealParam (const char *name);
 
   struct Hashtable *getConfig ();
+  Technology *getTech () { return T; }
   
 private:
   virtual void *local_op (Process *p, int mode = 0);
@@ -377,7 +381,8 @@ private:
   act_sh_dispatch_table _d;
   struct Hashtable *_params;
   struct Hashtable *_config_state;
-
+  Technology *T;
+  
   /* open shared object libraries */
   static list_t *_sh_libs;
 };

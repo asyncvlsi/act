@@ -348,6 +348,8 @@ class ActNamespace {
   static ActNamespace *Global () { return global; }
   static class Act *Act() { return act; }
 
+  static void setAct (class Act *a);
+
   void setBody (ActBody *b) { B = b; }
   void AppendBody (ActBody *b);
 

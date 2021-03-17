@@ -442,7 +442,11 @@ void ActNamespace::Expand ()
   act_error_pop ();
 }
 
-
+void ActNamespace::setAct (class Act *a)
+{
+  ActNamespace::act = a;
+  ActNamespace::global = a->Global();
+}
 
 
 /*
