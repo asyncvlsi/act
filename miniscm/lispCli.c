@@ -354,7 +354,7 @@ int LispGetReturnInt (void)
   return lisp_return_value;
 }
 
-void LispSetReturnString (char *str)
+void LispSetReturnString (const char *str)
 {
   if (lisp_return_string) {
     FREE (lisp_return_string);

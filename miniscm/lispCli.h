@@ -85,7 +85,7 @@ void LispSetReturnInt (int val);
 /*
   Use to set a string return value
 */
-void LispSetReturnString (char *s);  
+void LispSetReturnString (const char *s);  
 
 /*
   Use to set a floating point return value
