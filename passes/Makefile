@@ -23,7 +23,7 @@ TARGETINCSUBDIR=act
 SUBDIRS=flatten netgen cells booleanize state sizing
 
 LIB1=libactpass_$(EXT).a
-LIB2=libactpass_sh.so
+LIB2=libactpass_sh_$(EXT).so
 
 TARGETLIBS=$(LIB1) $(LIB2)
 

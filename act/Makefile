@@ -19,7 +19,7 @@
 #
 #-------------------------------------------------------------------------
 LIB=libact_$(EXT).a
-SHLIB=libact_sh.so
+SHLIB=libact_sh_$(EXT).so
 
 TARGETLIBS=$(LIB) $(SHLIB)
 

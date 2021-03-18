@@ -2,12 +2,22 @@
 
 . $VLSI_TOOLS_SRC/scripts/config
 
+EXT=${ARCH}_${OS}
+
 lib=$1
 shift
 
+tgt=`expr $lib : "\(.*\)_${EXT}.so$"`
+if [ "x$tgt" = "x" ]
+then
+	tgt=$lib
+else
+	tgt=${tgt}.so
+fi
+
 if [ $BASEOS = "darwin" ]
 then
-	$CXX_COMPILER_NAME $SH_LINK_OPTIONS -o $lib "$@" -install_name $ACT_HOME/lib/$lib
+	$CXX_COMPILER_NAME $SH_LINK_OPTIONS -o $lib "$@" -install_name $ACT_HOME/lib/$tgt
 else
 	$CXX_COMPILER_NAME $SH_LINK_OPTIONS -o $lib "$@"
 fi

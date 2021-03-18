@@ -24,7 +24,7 @@ LIB1=libvlsilib_$(EXT).a
 #LIB3=libsim_$(EXT).a -- removed
 LIB4=libasim_$(EXT).a
 
-SHLIB1=libvlsilib_sh.so
+SHLIB1=libvlsilib_sh_$(EXT).so
 
 TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4) $(SHLIB1) $(SHLIB4)
 
