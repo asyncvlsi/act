@@ -18,11 +18,11 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=booleanize.o 
+EXTRA=booleanize.o booleanize.os
 TARGETINCS=booleanize.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=$(EXTRA:.o=.cc)
+SRCS=booleanize.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

@@ -100,7 +100,7 @@ if [ "x$baseos" = "xdarwin" ]
 then
     sh_link=-dynamiclib
 else
-    sh_link="\"-shared -Wl,-x\""
+    sh_link="\"-shared -Wl,-x,-rpath=$ACT_HOME/lib\""
 fi    
 
 
@@ -122,7 +122,7 @@ INSTALLDIR=$installdir
 C_COMPILER_NAME=$c_compiler_name
 CXX_COMPILER_NAME=$cxx_compiler_name
 C_COMPILER_FLAGS=$c_compiler_flags
-SH_BUILD_OPTIONS=-fPIC
+SH_BUILD_OPTIONS="-shared -DPIC -fPIC"
 SH_LINK_OPTIONS=$sh_link
 EOF
 

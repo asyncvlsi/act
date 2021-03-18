@@ -24,7 +24,9 @@ LIB1=libvlsilib_$(EXT).a
 #LIB3=libsim_$(EXT).a -- removed
 LIB4=libasim_$(EXT).a
 
-TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4)
+SHLIB1=libvlsilib_sh.so
+
+TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4) $(SHLIB1) $(SHLIB4)
 
 TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
@@ -41,6 +43,8 @@ OBJSCC1=log.o sim.o agraph.o
 
 OBJS1=$(OBJSC1) $(OBJSCC1)
 
+SHOBJS1=$(OBJS1:.o=.os)
+
 # shared libs hsim integration
 #OBJS2=hash2.os atrace2.os ns.os misc.os
 
@@ -52,13 +56,14 @@ OBJS4CPP2=simdes.o
 #OBJS4C2=contexts_f.o 
 
 OBJS4=$(OBJS4C) $(OBJS4C2) $(OBJS4CPP) $(OBJS4CPP2) amem.o
+SHOBJS4=$(OBJS4:.o=.os)
 
 SRCS=$(OBJSC1:.o=.c) $(OBJSCC1:.o=.cc) $(OBJS3C:.o=.c) $(OBJS3CPP:.o=.cc) \
 	$(OBJS4C:.o=.c) $(OBJS4CPP:.o=.cc)  $(OBJS4CPP2:.o=.cc)
 
 # ns.c
 
-OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2)
+OBJS=$(OBJS1) $(OBJS3) $(OBJS4) $(OBJS2) $(SHOBJS1)
 CLEAN=hash2.c hash2.h atrace2.c atrace2.h 
 
 DEPEND_FLAGS=-DASYNCHRONOUS -DFAIR
@@ -110,6 +115,9 @@ channel.o: channel.c
 amem.o: mem.cc
 	$(CXX) -c $(CFLAGS) $(DFLAGS)  -DFAIR -DASYNCHRONOUS $< -o amem.o
 
+amem.os: mem.cc
+	$(CXX) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) -DFAIR -DASYNCHRONOUS $< -o amem.os
+
 #acheckpoint.o: checkpoint.cc
 #	$(CXX) -c $(CFLAGS) $(DFLAGS) -DFAIR -DASYNCHRONOUS $<  -o acheckpoint.o
 
@@ -120,12 +128,18 @@ $(LIB1): $(OBJS1)
 	ar ruv $(LIB1) $(OBJS1)
 	$(RANLIB) $(LIB1)
 
+$(SHLIB1): $(SHOBJS1)
+	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB1) $(SHOBJS1)
+
 $(LIB4): $(OBJS4)
 	ar ruv $(LIB4) $(OBJS4)
 	$(RANLIB) $(LIB4)
 
+$(SHLIB4): $(SHOBJS4)
+	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB4) $(SHOBJS4)
+
 $(LIB2): $(OBJS2)
-	$(CC) $(SH_LINK_OPTIONS) -o $(LIB2) $(OBJS2)
+	$(CC) $(shell echo $(SH_LINK_OPTIONS)) -o $(LIB2) $(OBJS2)
 
 hash2.os: hash2.h
 atrace2.os: atrace2.h

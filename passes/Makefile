@@ -18,10 +18,14 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-TARGETLIBS=libactpass_$(EXT).a
 TARGETINCS=passes.h
 TARGETINCSUBDIR=act
 SUBDIRS=flatten netgen cells booleanize state sizing
+
+LIB1=libactpass_$(EXT).a
+LIB2=libactpass_sh.so
+
+TARGETLIBS=$(LIB1) $(LIB2)
 
 USEOBJS=booleanize/$(EXT)/booleanize.o \
 	netgen/$(EXT)/netlist.o \
@@ -31,10 +35,17 @@ USEOBJS=booleanize/$(EXT)/booleanize.o \
 	state/$(EXT)/statepass.o \
 	sizing/$(EXT)/sizing.o
 
+SHOBJS=$(USEOBJS:.o=.os)
+
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(TARGETLIBS): $(USEOBJS)
-	ar ruv $(TARGETLIBS) $(USEOBJS)
-	$(RANLIB) $(TARGETLIBS)
+$(LIB1): $(USEOBJS)
+	ar ruv $(LIB1) $(USEOBJS)
+	$(RANLIB) $(LIB1)
+
+$(LIB2): $(SHOBJS)
+	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(LIB2) $(SHOBJS) $(SHLIBACT)
+
+
 
 -include Makefile.deps

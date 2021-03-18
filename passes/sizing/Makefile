@@ -18,11 +18,11 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=sizing.o 
+EXTRA=sizing.o  sizing.os
 TARGETINCS=sizing.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=$(EXTRA:.o=.cc)
+SRCS=sizing.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

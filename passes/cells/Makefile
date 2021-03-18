@@ -18,11 +18,11 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=cells.o 
+EXTRA=cells.o  cells.os
 TARGETINCS=cells.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=$(EXTRA:.o=.cc)
+SRCS=cells.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

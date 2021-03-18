@@ -18,7 +18,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=netlist.o emit.o
+EXTRA=netlist.o emit.o netlist.os emit.os
 TARGETINCS=netlist.h
 TARGETINCSUBDIR=act/passes
 

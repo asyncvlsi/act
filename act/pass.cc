@@ -303,6 +303,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
     }
     if (!lib_ptr) {
       fprintf (stderr, "Dynamic pass: `%s' not found\n", lib);
+      fprintf (stderr, "%s\n", dlerror());
       return;
     }
     

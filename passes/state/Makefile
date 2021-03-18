@@ -18,11 +18,11 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=statepass.o 
+EXTRA=statepass.o statepass.os
 TARGETINCS=statepass.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=$(EXTRA:.o=.cc)
+SRCS=statepass.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

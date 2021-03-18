@@ -19,8 +19,9 @@
 #
 #-------------------------------------------------------------------------
 LIB=libact_$(EXT).a
+SHLIB=libact_sh.so
 
-TARGETLIBS=$(LIB)
+TARGETLIBS=$(LIB) $(SHLIB)
 
 TARGETINCS=lang.h expr.h act_parse_id.h path.h namespaces.h act.h \
 	types.h inst.h iter.h act_array.h basetype.h body.h value.h \
@@ -37,6 +38,8 @@ OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 
 OBJS=$(OBJS1) $(OBJS2)
 
+SHOBJS=$(OBJS:.o=.os)
+
 SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.cc)
 
 GENERATED=act_parse.cc act_walk_X.cc
@@ -52,6 +55,9 @@ include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 $(LIB): $(OBJS)
 	ar ruv $(LIB) $(OBJS)
 	$(RANLIB) $(LIB)
+
+$(SHLIB): $(SHOBJS)
+	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB) $(SHOBJS) $(SHLIBCOMMON)
 
 docs: 
 	doxygen

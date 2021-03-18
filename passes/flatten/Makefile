@@ -21,11 +21,11 @@
 
 weird: install_inc all
 
-EXTRA=flatten.o
+EXTRA=flatten.o flatten.os
 TARGETINCS=aflat.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=$(EXTRA:.o=.cc)
+SRCS=flatten.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

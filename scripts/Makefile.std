@@ -49,8 +49,11 @@ INSTALLACT=$(INSTALLDIR)/act
 EXT=$(ARCH)_$(OS)
 
 LIBCOMMON=-L$(INSTALLLIB) -lvlsilib
+SHLIBCOMMON=-L$(INSTALLLIB) -lvlsilib_sh
 LIBACT=-L$(INSTALLLIB) -lact -lvlsilib -ldl
+SHLIBACT=-L$(INSTALLLIB) -lact_sh -lvlsilib_sh -ldl
 LIBACTPASS=-L$(INSTALLLIB) -lactpass -lact -lvlsilib -ldl
+SHLIBACTPASS=-L$(INSTALLLIB) -lactpass_sh -lact_sh -lvlsilib_sh -ldl
 LIBSSIM=-L$(INSTALLLIB) -lssim -lvlsilib
 LIBASIM=-L$(INSTALLLIB) -lasim -lvlsilib
 LIBACTSCM=-lactscm -lvlsilib
@@ -255,7 +258,7 @@ move-out:
 	$(CXX) -c $(CFLAGS) $(DFLAGS) -std=$(CPPSTD) $<
 
 .c.os:
-	$(CC) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) $< -o $*.os
+	$(CC) -c $(CFLAGS) $(DFLAGS) $(shell echo $(SH_BUILD_OPTIONS)) $< -o $*.os
 
 .cc.os:
-	$(CXX) -c $(CFLAGS) $(DFLAGS) $(SH_BUILD_OPTIONS) -std=$(CPPSTD) $< -o $*.os
+	$(CXX) -c $(CFLAGS) $(DFLAGS) $(shell echo $(SH_BUILD_OPTIONS)) -std=$(CPPSTD) $< -o $*.os
