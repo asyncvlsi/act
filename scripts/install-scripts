@@ -33,7 +33,7 @@ then
         exit 1
 fi
 
-for i in install config Makefile.std getarch getbaseos getos move-in move-out mymakedepend
+for i in install config Makefile.std getarch getbaseos getos move-in move-out mymakedepend linkso
 do
     sed 's/VLSI_TOOLS_SRC/ACT_HOME/g' < $i > tmpfile
     src=tmpfile

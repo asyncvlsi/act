@@ -44,8 +44,6 @@ $(LIB1): $(USEOBJS)
 	$(RANLIB) $(LIB1)
 
 $(LIB2): $(SHOBJS)
-	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(LIB2) $(SHOBJS) $(SHLIBACT)
-
-
+	$(VLSI_TOOLS_SRC)/scripts/linkso $(LIB2) $(SHOBJS) $(SHLIBACT)
 
 -include Makefile.deps

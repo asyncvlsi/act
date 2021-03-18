@@ -57,7 +57,7 @@ $(LIB): $(OBJS)
 	$(RANLIB) $(LIB)
 
 $(SHLIB): $(SHOBJS)
-	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB) $(SHOBJS) $(SHLIBCOMMON)
+	$(VLSI_TOOLS_SRC)/scripts/linkso $(SHLIB) $(SHOBJS) $(SHLIBCOMMON)
 
 docs: 
 	doxygen

@@ -129,13 +129,14 @@ $(LIB1): $(OBJS1)
 	$(RANLIB) $(LIB1)
 
 $(SHLIB1): $(SHOBJS1)
-	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB1) $(SHOBJS1)
+	$(VLSI_TOOLS_SRC)/scripts/linkso $(SHLIB1) $(SHOBJS1)
 
 $(LIB4): $(OBJS4)
 	ar ruv $(LIB4) $(OBJS4)
 	$(RANLIB) $(LIB4)
 
 $(SHLIB4): $(SHOBJS4)
+	$(VLSI_TOOLS_SRC)/scripts/linkso $(SHLIB4) $(SHOBJS4)
 	$(CXX) $(shell echo $(SH_LINK_OPTIONS)) -o $(SHLIB4) $(SHOBJS4)
 
 $(LIB2): $(OBJS2)
