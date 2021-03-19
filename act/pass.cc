@@ -290,6 +290,11 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
     if (fp) {
       fclose (fp);
       lib_ptr = dlopen (lib, RTLD_LAZY);
+      if (!lib_ptr) {
+	fprintf (stderr, "Error loading dynamic pass `%s\n", lib);
+	fprintf (stderr, "%s\n", dlerror());
+	return;
+      }
     }
     else {
       if (getenv ("ACT_HOME")) {
@@ -298,6 +303,11 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 	if (fp) {
 	  fclose (fp);
 	  lib_ptr = dlopen (buf, RTLD_LAZY);
+	  if (!lib_ptr) {
+	    fprintf (stderr, "Error loading dynamic pass `%s\n", lib);
+	    fprintf (stderr, "%s\n", dlerror());
+	    return;
+	  }
 	}
       }
     }
