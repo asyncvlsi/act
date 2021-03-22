@@ -262,6 +262,8 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   void *lib_ptr;
   char buf[1024];
 
+  _config_state = NULL;
+
   getConfig ();
 
   T = Technology::T;
