@@ -895,7 +895,7 @@ void Scope::BindParam (ActId *id, AExpr *ae)
   InstType *actual;
   
   AExpr *rhsval;
-  AExprstep *aes;
+  AExprstep *aes = NULL;
 
   if (subrange_info) {
     actual = act_actual_insttype (this, id, NULL);
@@ -961,7 +961,6 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	delete as;
       }
       else {
-	aes = rhsval->stepper();
 	if (vx->immutable && issetPInt (vx->u.idx)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, " Id: %s\n", id->getName());
@@ -1011,7 +1010,6 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	delete as;
       }
       else {
-	aes = rhsval->stepper();
 	if (vx->immutable && issetPInts (vx->u.idx)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, " Id: %s\n", id->getName());
@@ -1061,8 +1059,6 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	delete as;
       }
       else {
-	aes = rhsval->stepper();
-
 	if (vx->immutable && issetPReal (vx->u.idx)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, " Id: %s\n", id->getName());
@@ -1113,8 +1109,6 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	delete as;
       }
       else {
-	aes = rhsval->stepper();
-
 	if (vx->immutable && issetPBool (vx->u.idx)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, " Id: %s\n", id->getName());

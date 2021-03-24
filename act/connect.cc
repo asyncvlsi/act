@@ -635,14 +635,12 @@ static int _find_earlier_port_array_conn (act_connection *d1,
     li1 = list_next (li1);
     li2 = list_next (li2);
   }
+  list_free (l1);
+  list_free (l2);
   if (li1) {
-    list_free (l1);
-    list_free (l2);
     return 1;
   }
   else if (li2) {
-    list_free (l1);
-    list_free (l2);
     return 0;
   }
   //Assert (0, "Should not be here");

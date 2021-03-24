@@ -123,6 +123,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
       chp->nsc = $0->supply.nsc;
       chp->psc = $0->supply.psc;
     }
+    OPT_FREE ($4);
     
     if (chp) {
       b = new ActBody_Lang (chp);

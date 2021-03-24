@@ -1883,6 +1883,8 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   step->step();
   Assert (step->isend(), "Hmm?");
 
+  delete step;
+
   return ix;
 }
 

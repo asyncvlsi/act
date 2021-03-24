@@ -2072,22 +2072,26 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
     $0->in_cond++;
+    OPT_FREE ($2);
 }}
    base_item_list ")"
 {{X:
     $0->scope->Del ($3);
     $0->in_cond--;
     if (OPT_EMPTY ($6)) {
+      OPT_FREE ($6);
       return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, NULL, $8);
     }
     else {
       ActRet *r;
+      Expr *tmp;
       r = OPT_VALUE ($6);
       $A(r->type == R_EXPR);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, r->u.exp, $8);
+      tmp = r->u.exp;
       FREE (r);
+      OPT_FREE ($6);
+      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, tmp, $8);
     }
-    OPT_FREE ($6);
 }}
 | "*["
 {{X: $0->in_cond++; }}
