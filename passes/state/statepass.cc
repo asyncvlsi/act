@@ -867,6 +867,10 @@ void ActStatePass::free_local (void *v)
   if (s->multi) {
     bitset_free (s->multi);
   }
+  if (s->inst) {
+    phash_free (s->inst);
+  }
+  
   FREE (s);
 }
 
@@ -974,7 +978,13 @@ stateinfo_t *ActStatePass::getStateInfo (Process *p)
   if (!completed()) {
     return NULL;
   }
-  void *v = getMap (p);
+  void *v;
+  if (p) {
+    v = getMap (p);
+  }
+  else {
+    v = _root_si;
+  }
   return (stateinfo_t *) v;
 }
 
@@ -1120,7 +1130,6 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   return 1;
 }
 
-
 act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int type, int *doff)
 {
   if (!si) {
@@ -1228,6 +1237,31 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
     return NULL;
   }  
 }
+
+/*------------------------------------------------------------------------
+ *
+ *  Check if the connection exists
+ *
+ *------------------------------------------------------------------------
+ */
+bool ActStatePass::connExists (stateinfo_t *si, act_connection *c)
+{
+  phash_bucket_t *b;
+  
+  b = phash_lookup (si->bnl->cdH, c);
+
+  if (!b) {
+    b = phash_lookup (si->bnl->cH, c);
+  }
+  
+  if (b) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
 
 ActStatePass::~ActStatePass()
 {

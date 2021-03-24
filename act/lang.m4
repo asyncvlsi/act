@@ -53,8 +53,8 @@ language_body[ActBody *]: lang_chp
 | lang_initialize
 {{X:
     /* only permitted in the top-level global namespace */
-    if ($0->u_p || $0->u_f || $0->u_i) {
-      $E("Initialize { } block is only permitted in the top-level namespace, or within channel/type definitions!");
+    if ($0->u_p || $0->u_f || $0->u_i || $0->u_c) {
+      $E("Initialize { } block is only permitted in the top-level namespace!");
     }
     return $1;
 }}
@@ -1971,7 +1971,7 @@ lang_initialize[ActBody *]: "Initialize" "{" { action_items ";" }* "}"
 }}
 ;
 
-action_items[act_chp_lang_t *]: ID "{" chp_body "}"
+action_items[act_chp_lang_t *]: ID "{" hse_body "}"
 {{X:
     if (strcmp ($1, "actions") != 0) {
       $E("Actions within an initialize block have to be called `actions'");

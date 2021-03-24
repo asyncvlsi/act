@@ -1,0 +1,6 @@
+bool Reset;
+
+Initialize {
+  actions { Reset+ };
+  actions { Reset- }
+}

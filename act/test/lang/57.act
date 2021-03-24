@@ -1,0 +1,11 @@
+bool Reset;
+
+defproc reset_block()
+{
+ Initialize {
+  actions { Reset+ };
+  actions { Reset- }
+ }
+}
+
+reset_block b;

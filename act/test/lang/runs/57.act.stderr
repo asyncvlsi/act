@@ -1,0 +1,2 @@
+ERROR: File `57.act', line 5, col 12
+	Initialize { } block is only permitted in the top-level namespace!

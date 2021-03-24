@@ -145,6 +145,8 @@ public:
   /* return 0 on error, 1 on success */
   int getTypeOffset (stateinfo_t *si, act_connection *c,
 		     int *offset, int *type, int *width);
+
+  bool connExists (stateinfo_t *si, act_connection *c);
   
   int getTypeOffset (Process *p, act_connection *c,
 		     int *offset, int *type, int *width) {

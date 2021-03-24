@@ -552,7 +552,7 @@ ActSizingPass::ActSizingPass (Act *a) : ActPass (a, "sizing")
 
 void ActSizingPass::free_local (void *v)
 {
-  
+  /* v is NULL */
 }
 
 int ActSizingPass::run (Process *p)
