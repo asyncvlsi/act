@@ -266,6 +266,62 @@ one_assign: "assign" id_deref "=" id_deref ";"
 
     return NULL;
 }}
+| "assign" id_deref "=" "{" { id_deref "," }* "}" ";"
+{{X:
+    conn_rhs_t *r;
+    conn_info_t *ci;
+    listitem_t *li;
+    int idx;
+    int len_gt_1 = 0;
+
+    if (list_length ($5) > 1) {
+      id_info_t *x;
+      len_gt_1 = 1;
+      if ($2->isderef) {
+	$E("LHS of assign statement cannot include array deref");
+      }
+
+      x = $2->id;
+      if (A_LEN (x->a) != 1) {
+	$E("LHS must be a simple 1-D array only");
+      }
+      idx = x->a[0].hi;
+    }
+    else {
+      idx = -1;
+    }
+
+    for (li = list_first ($5); li; li = list_next (li)) {
+      id_deref_t *x;
+
+      x = (id_deref_t *) list_value (li);
+      
+      NEW (r, conn_rhs_t);
+      r->id = *x;
+      FREE (x);
+      r->issubrange = 0;
+
+      NEW (ci, conn_info_t);
+
+      A_NEW (CURMOD($0)->conn, conn_info_t *);
+      A_NEXT (CURMOD ($0)->conn) = ci;
+      A_INC (CURMOD ($0)->conn);
+      
+      ci->r = r;
+      ci->l = NULL;
+      ci->prefix = NULL;
+      ci->id = *($2);
+      ci->isclk = 0;
+
+      if (len_gt_1) {
+	ci->id.isderef = 1;
+	ci->id.deref = idx--;
+      }
+    }
+    FREE ($2);
+    
+    return NULL;
+}}
 ;
 
 instances: one_instance instances | /* empty */ ;
