@@ -79,7 +79,7 @@ typedef struct act_booleanized_var {
   unsigned int isfragmented:1;	/* 1 if this is a user-defined
 				   data/channel type that is
 				   fragmented */
-  
+
   unsigned int width;		/* bit-width for chan/int */
   unsigned int w2;		/* bit-width for bidirectional
 				   channel ack */
@@ -94,8 +94,9 @@ typedef struct act_booleanized_var {
 } act_booleanized_var_t;
 
 typedef struct {
-  ActId *inst;
-  act_connection *pin;
+  ActId *inst;			/* path to instance */
+  act_connection *pin;		/* pin name */
+  Process *cell;		/* whose pin is it? */
 } act_local_pin_t;
   
 
@@ -124,6 +125,7 @@ typedef struct {
   A_DECL (act_connection *, used_globals);
 
   A_DECL (act_local_net_t, nets); // nets
+  struct pHashtable *nH;	  // hash to map c to net index
 
 } act_boolean_netlist_t;
 
@@ -194,7 +196,10 @@ class ActBooleanizePass : public ActPass {
   /*--- create netlist helper functions ---*/
   void _createNets (Process *p);
   int addNet (act_boolean_netlist_t *n, act_connection *c);
-  void addPin (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_connection *pin);
+  void addPin (act_boolean_netlist_t *n, int netid,
+	       const char *name, Array *a,
+	       Process *proc,
+	       act_connection *pin);
   void importPins (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_local_net_t *net);
 
 };

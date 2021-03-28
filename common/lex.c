@@ -417,6 +417,53 @@ static void skipspace (LEX_T *l)
     }
     skipwhite (l);
   }
+  if (l->flags & LEX_FLAGS_PARENCOM) {
+    while (l->ch == '(') {
+      getch (l);
+      if (l->ch == '*') {
+	int done = 0;
+	int nest = 0;
+	addws (l, '(');
+	addws (l, '*');
+	getch (l);
+	nest = 1;
+	while (!lex_eof (l) && !done) {
+	  addws (l,l->ch);
+	  if (l->ch == '*') {
+	    getch (l);
+	    if (l->ch == ')') {
+	      addws (l, ')');
+	      nest--;
+	      if (nest == 0 || !(lex_flags (l)&LEX_FLAGS_NSTCOMMENT))
+		done = 1;
+	    }
+	    else {
+	      ungetch (l);
+	      l->ch = '*';
+	    }
+	  }
+	  else if (l->ch == '(') {
+	    getch (l);
+	    if (l->ch == '*') {
+	      addws (l, '*');
+	      nest++;
+	    }
+	    else {
+	      ungetch (l);
+	      l->ch = '(';
+	    }
+	  }
+	  getch (l);
+	}
+      }
+      else {
+	ungetch (l);
+	l->ch = '(';
+	return;
+      }
+      skipwhite (l);
+    }
+  }
 }
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

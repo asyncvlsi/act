@@ -2093,7 +2093,7 @@ void emit_parser (void)
   pp_nl;
   pp_printf_text (pp, "#include \"%s_parse.def\"", prefix); pp_nl;
   if (verilog_ids) {
-    pp_printf_text (pp, "  file_setflags (l, file_flags(l)|FILE_FLAGS_ESCAPEID);");
+    pp_printf_text (pp, "  file_setflags (l, file_flags(l)|FILE_FLAGS_ESCAPEID|FILE_FLAGS_PARENCOM);");
     pp_nl;
   }
   if (hexdigit) {

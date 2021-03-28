@@ -48,6 +48,7 @@ extern "C" {
 #define FILE_FLAGS_HEXINT      LEX_FLAGS_HEXINT     
 #define FILE_FLAGS_BININT      LEX_FLAGS_BININT     
 #define FILE_FLAGS_ESCAPEID    LEX_FLAGS_ESCAPEID
+#define FILE_FLAGS_PARENCOM    LEX_FLAGS_PARENCOM
 
 typedef struct _file_ LFILE;
 

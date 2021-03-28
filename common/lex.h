@@ -38,6 +38,7 @@
 #define LEX_FLAGS_BININT    0x100 /* binary consts: exclusive with
 				     DIGITID */
 #define LEX_FLAGS_ESCAPEID  0x200 /* \[chars][spc] is an ID */
+#define LEX_FLAGS_PARENCOM  0x400 /* Allow (* *) comments */
 
 #ifdef __cplusplus
 extern "C" {

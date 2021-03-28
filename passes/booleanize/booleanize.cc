@@ -1477,6 +1477,8 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
   N->cdH = phash_new (4);
   N->isempty = 1;
 
+  N->nH = NULL;
+
   
   /*-- process all local variables that are used --*/
   if (lang) {
@@ -2329,6 +2331,9 @@ void ActBooleanizePass::_createNets (Process *p)
 
   ActInstiter i(p ? p->CurScope() : a->Global()->CurScope());
 
+  if (n->nH) return;
+  n->nH = phash_new (8);
+
   int iport = 0;
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = (*i);
@@ -2360,7 +2365,7 @@ void ActBooleanizePass::_createNets (Process *p)
 
 	  if (sub->ports[j].netid == -1) {
 	    /* there is nothing to be done here */
-	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
+	    addPin (n, netid, vx->getName(), tmpa, instproc, sub->ports[j].c);
 	  }
 	  else {
 	    importPins (n, netid, vx->getName(), tmpa,
@@ -2416,21 +2421,30 @@ void ActBooleanizePass::createNets (Process *p)
 int ActBooleanizePass::addNet (act_boolean_netlist_t *n, act_connection *c)
 {
   int i;
-  for (i=0; i < A_LEN (n->nets); i++) {
-    if (n->nets[i].net == c) return i;
+  phash_bucket_t *b;
+
+  b = phash_lookup (n->nH, c);
+  if (b) {
+    return b->i;
   }
+  b = phash_add (n->nH, c);
+
   A_NEW (n->nets, act_local_net_t);
   A_NEXT (n->nets).net = c;
   A_NEXT (n->nets).skip = 0;
   A_NEXT (n->nets).port = 0;
   A_INIT (A_NEXT (n->nets).pins);
   A_INC (n->nets);
-  return A_LEN (n->nets)-1;
+
+  b->i = A_LEN (n->nets)-1;
+
+  return b->i;
 }
 
 void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
 				int netid,
 				const char *name, Array *a,
+				Process *proc,
 				act_connection *pin)
 {
   Assert (0 <= netid && netid < A_LEN (n->nets), "What?");
@@ -2441,6 +2455,7 @@ void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
   inst->setArray (a);
   A_NEXT (n->nets[netid].pins).inst = inst;
   A_NEXT (n->nets[netid].pins).pin = pin;
+  A_NEXT (n->nets[netid].pins).cell = proc;
   A_INC (n->nets[netid].pins);
 }
 
@@ -2461,6 +2476,8 @@ void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
     inst->Append (net->pins[i].inst);
     A_NEXT (n->nets[netid].pins).inst = inst;
     A_NEXT (n->nets[netid].pins).pin = net->pins[i].pin;
+    Assert (net->pins[i].cell, "Hmm");
+    A_NEXT (n->nets[netid].pins).cell = net->pins[i].cell;
     A_INC (n->nets[netid].pins);
   }
 }
