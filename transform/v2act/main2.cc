@@ -37,6 +37,7 @@ static void usage (char *s)
   exit (1);
 }
 
+char *lib_namespace;
 
 int main (int argc, char **argv)
 {
@@ -53,9 +54,17 @@ int main (int argc, char **argv)
 
   clkname = NULL;
   fname = NULL;
+  lib_namespace = Strdup ("sync");
 
-  while ((ch = getopt (argc, argv, "c:o:")) != -1) {
+  while ((ch = getopt (argc, argv, "c:o:n:")) != -1) {
     switch (ch) {
+    case 'n':
+      if (lib_namespace) {
+	FREE (lib_namespace);
+      }
+      lib_namespace = Strdup (optarg);
+      break;
+      
     case 'c':
       if (clkname) {
 	FREE (clkname);

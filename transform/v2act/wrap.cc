@@ -223,6 +223,6 @@ Process *verilog_find_lib (Act *a, const char *nm)
 {
   char buf[10240];
 
-  sprintf (buf, "sync::%s", nm);
+  sprintf (buf, "%s::%s", lib_namespace, nm);
   return a->findProcess (buf);
 }

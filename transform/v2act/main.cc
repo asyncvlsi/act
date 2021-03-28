@@ -32,16 +32,18 @@ char *channame;
 
 static void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [act-options] [-a] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
+  fprintf (stderr, "Usage: %s [act-options] [-a] [-n lib_namespace] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
   fprintf (stderr, "  -a : async output\n");
   fprintf (stderr, "  -C <chan>: change default channel name to <chan>\n");
   fprintf (stderr, "  -c <clkname>: specifies the clock port name [default: clock]\n");
   fprintf (stderr, "  -o <file> : specify output file name [default: stdout]\n");
   fprintf (stderr, "  -l <lib>  : synchronous library (act file) [default: sync.act]\n");
+  fprintf (stderr, "  -n <ns>   : look for library components in namespace <ns>\n");
   exit (1);
 }
 
 int mode;			/* sync or async mode */
+char *lib_namespace;
 
 int main (int argc, char **argv)
 {
@@ -68,9 +70,17 @@ int main (int argc, char **argv)
   clkname = NULL;
   fname = NULL;
   libname = NULL;
+  lib_namespace = Strdup ("sync");
 
-  while ((ch = getopt (argc, argv, "C:c:ao:l:")) != -1) {
+  while ((ch = getopt (argc, argv, "C:c:ao:l:n:")) != -1) {
     switch (ch) {
+    case 'n':
+      if (lib_namespace) {
+	FREE (lib_namespace);
+      }
+      lib_namespace = Strdup (optarg);
+      break;
+      
     case 'C':
       if (channame) {
 	FREE (channame);
