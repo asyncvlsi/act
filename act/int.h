@@ -22,7 +22,7 @@
 #ifndef __ACT_INT_H__
 #define __ACT_INT_H__
 
-#include <misc.h>
+#include <common/misc.h>
 
 
 #define ACT_BIGINT_BITS_ONE (8*sizeof (unsigned long))

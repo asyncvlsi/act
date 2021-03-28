@@ -22,8 +22,8 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include "misc.h"
-#include "file.h"
+#include <common/misc.h>
+#include <common/file.h>
 #include "expr.h"
 
 #include "prs.h"

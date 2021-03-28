@@ -23,8 +23,8 @@
  */
 #include <string.h>
 #include "expr.h"
-#include "file.h"
-#include "misc.h"
+#include <common/file.h>
+#include <common/misc.h>
 
 static int T[E_NUMBER] = {
   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,

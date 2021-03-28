@@ -24,9 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "v2act.h"
-#include "misc.h"
-
-
 
 
 static void _label_clock_helper (VNet *v, module_t *m, const char *clk)

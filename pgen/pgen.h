@@ -25,9 +25,11 @@
 #define __PGEN_H__
 
 #include <stdio.h>
-#include "array.h"
-#include "pp.h"
-#include "bitset.h"
+
+#include <common/array.h>
+#include <common/pp.h>
+#include <common/bitset.h>
+#include <common/misc.h>
 
 extern char *prefix;
 

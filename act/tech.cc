@@ -23,11 +23,11 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <config.h>
-#include <misc.h>
-#include <array.h>
+#include <common/config.h>
+#include <common/misc.h>
+#include <common/array.h>
+#include <act/act.h>
 #include <act/lang.h>
-#include <act/passes/netlist.h>
 #include "tech.h"
 
 #define BUF_SZ 10240
@@ -66,6 +66,9 @@ static void verify_range_table (const char *nm)
     }
   }
 }
+
+#define EDGE_PFET 1
+#define EDGE_NFET 0
 
 #define PTYPE EDGE_PFET
 #define NTYPE EDGE_NFET

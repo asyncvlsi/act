@@ -27,7 +27,7 @@
 #include <act/act.h>
 #include <act/passes.h>
 #include <act/passes/cells.h>
-#include "config.h"
+#include <common/config.h>
 
 
 static void usage (char *name)

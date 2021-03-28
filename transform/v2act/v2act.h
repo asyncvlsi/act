@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <act/act.h>
+#include <common/misc.h>
 #include "vnet.h"
 
 

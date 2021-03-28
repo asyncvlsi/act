@@ -25,10 +25,10 @@
 #include <math.h>
 #include <string.h>
 #include "netlist.h"
-#include "hash.h"
-#include "qops.h"
-#include "bitset.h"
-#include "config.h"
+#include <common/hash.h>
+#include <common/qops.h>
+#include <common/bitset.h>
+#include <common/config.h>
 #include <act/iter.h>
 #include <act/passes/sizing.h>
 

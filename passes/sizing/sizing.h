@@ -28,8 +28,8 @@
 #include <act/act.h>
 #include <act/iter.h>
 #include <act/passes/booleanize.h>
-#include "hash.h"
-#include "array.h"
+#include <common/hash.h>
+#include <common/array.h>
 
 class ActSizingPass : public ActPass {
 public:

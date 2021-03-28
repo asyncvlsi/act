@@ -27,9 +27,9 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <string.h>
-#include "list.h"
-#include "misc.h"
-#include "hash.h"
+#include <common/list.h>
+#include <common/misc.h>
+#include <common/hash.h>
 
 
 #if 0

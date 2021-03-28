@@ -29,9 +29,9 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <string.h>
-#include "misc.h"
-#include "config.h"
-#include "log.h"
+#include <common/misc.h>
+#include <common/config.h>
+#include <common/log.h>
 
 ActBody::ActBody()
 {

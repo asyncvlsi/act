@@ -25,7 +25,7 @@
 #include <string.h>
 #include <pwd.h>
 #include <ctype.h>
-#include "misc.h"
+#include <common/misc.h>
 #include "path.h"
 
 static int first = 1;

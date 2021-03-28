@@ -26,11 +26,11 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "list.h"
-#include "except.h"
-#include "qops.h"
-#include "misc.h"
-#include "config.h"
+#include <common/list.h>
+#include <common/except.h>
+#include <common/qops.h>
+#include <common/misc.h>
+#include <common/config.h>
 #include <act/lang.h>
 #include <act/path.h>
 #include <act/namespaces.h>

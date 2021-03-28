@@ -25,7 +25,7 @@
 #define __ACT_ARRAY_H__
 
 #include <act/expr.h>
-#include "list.h"
+#include <common/list.h>
 
 class ActNamespace;
 class Scope;

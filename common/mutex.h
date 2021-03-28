@@ -24,7 +24,7 @@
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
 
-#include "thread.h"
+#include <common/thread.h>
 
 #ifdef __cplusplus
 extern "C" {

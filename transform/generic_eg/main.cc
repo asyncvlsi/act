@@ -26,7 +26,7 @@
 #include <string.h>
 #include <act/act.h>
 #include <act/passes/netlist.h>
-#include "config.h"
+#include <common/config.h>
 
 
 static void usage (char *name)

@@ -25,7 +25,7 @@
 #define __FILE_H__
 
 #include <stdio.h>
-#include "lex.h"
+#include <common/lex.h>
 
 #ifdef __cplusplus
 extern "C" {

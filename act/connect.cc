@@ -23,7 +23,7 @@
  */
 #include <act/act.h>
 #include <string.h>
-#include "config.h"
+#include <common/config.h>
 
 static int set_suboffset_limit = -1;
 

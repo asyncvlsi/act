@@ -25,7 +25,7 @@
 #include <string.h>
 #include <map>
 #include <utility>
-#include <config.h>
+#include <common/config.h>
 #include <act/passes/statepass.h>
 
 static act_connection *_inv_hash (struct pHashtable *H, int idx)

@@ -27,10 +27,10 @@
 #include <stdio.h>
 #include <act/act.h>
 #include <act/passes/booleanize.h>
-#include "bool.h"
-#include "list.h"
-#include "bitset.h"
-#include "array.h"
+#include <common/bool.h>
+#include <common/list.h>
+#include <common/bitset.h>
+#include <common/array.h>
 
 #define EDGE_NFET 0
 #define EDGE_PFET 1

@@ -20,8 +20,8 @@
  **************************************************************************
  */
 #include <act/expr.h>
-#include <file.h>
-#include <misc.h>
+#include <common/file.h>
+#include <common/misc.h>
 #include <string.h>
 
 /*--- WARNING: replicated here ---*/

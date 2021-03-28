@@ -24,7 +24,7 @@
 #ifndef __ATRACE_H__
 #define __ATRACE_H__
 
-#include "hash.h"
+#include <common/hash.h>
 
 #ifdef __cplusplus
 extern "C" {

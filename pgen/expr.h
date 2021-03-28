@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#include "file.h"
-#include "pp.h"
+#include <common/file.h>
+#include <common/pp.h>
 #include "id.h"
 
 #define  E_AND 	 0

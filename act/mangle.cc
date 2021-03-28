@@ -25,7 +25,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <act/act.h>
-#include "misc.h"
+#include <common/misc.h>
 
 /*
   Code for mangling/unmangling special characters to sanitize output

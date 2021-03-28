@@ -23,8 +23,8 @@
  */
 #include <stdio.h>
 #include <act/types.h>
-#include "misc.h"
-#include "qops.h"
+#include <common/misc.h>
+#include <common/qops.h>
 
 struct err_ctxt {
   const char *s;

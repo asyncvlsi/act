@@ -28,6 +28,7 @@
 #include <act/lang.h>
 #include <act/body.h>
 #include <act/value.h>
+#include <common/config.h>
 #include <map>
 #include <unordered_set>
 

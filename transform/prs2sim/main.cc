@@ -27,7 +27,7 @@
 #include <act/passes/netlist.h>
 #include <act/passes/aflat.h>
 #include <map>
-#include "config.h"
+#include <common/config.h>
 
 void usage (char *s)
 {

@@ -35,8 +35,8 @@
  */
 #include <stdio.h>
 #include <iostream>
-#include "mytime.h"
-#include "sim.h"
+#include <common/mytime.h>
+#include <common/sim.h>
 
 using std::ostream;
 

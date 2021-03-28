@@ -28,7 +28,7 @@
 #include <act/namespaces.h>
 #include <act/act_array.h>
 #include <act/expr.h>
-#include <mstring.h>
+#include <common/mstring.h>
 #include <act/inst.h>
 
 class ActBody;

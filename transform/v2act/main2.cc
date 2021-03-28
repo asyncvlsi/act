@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <config.h>
+#include <common/config.h>
 #include "vnet.h"
-#include "misc.h"
-#include "agraph.h"
+#include <common/misc.h>
+#include <common/agraph.h>
 
 static void usage (char *s)
 {

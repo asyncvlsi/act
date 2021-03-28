@@ -30,8 +30,8 @@
 #include <act/value.h>
 #include <act/iter.h>
 #include <string.h>
-#include "misc.h"
-#include "hash.h"
+#include <common/misc.h>
+#include <common/hash.h>
 
 /**
  * Create all the static members

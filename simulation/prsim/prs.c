@@ -29,8 +29,8 @@
 #include <math.h>
 #include <stdlib.h>
 #include "prs.h"
-#include "misc.h"
-#include "heap.h"
+#include <common/misc.h>
+#include <common/heap.h>
 
 /* used for printing purposes */
 char __prs_nodechstring[] = { '1', '0', 'X' };

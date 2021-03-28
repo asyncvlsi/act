@@ -199,4 +199,8 @@ class ActBooleanizePass : public ActPass {
 
 };
 
+
+
+
+
 #endif /* __ACT_BOOLEANIZE_H__ */

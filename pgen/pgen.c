@@ -24,14 +24,10 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include "misc.h"
-#include "array.h"
-#include "lex.h"
-#include "pp.h"
+#include <common/lex.h>
 
 #include "pgen.h"
 
-#include "bitset.h"
 
 /*
   LHS: RHS | RHS ... | RHS ;
@@ -1722,8 +1718,8 @@ void emit_parser (void)
   pp = std_open (buf);
   pp_printf_text (pp, "#ifndef __%s_PARSE_EXT_H__\n", prefix);
   pp_printf_text (pp, "#define __%s_PARSE_EXT_H__\n\n", prefix);
-  pp_printf_text (pp, "#include \"list.h\"\n");
-  pp_printf_text (pp, "#include \"misc.h\"\n");
+  pp_printf_text (pp, "#include <common/list.h>\n");
+  pp_printf_text (pp, "#include <common/misc.h>\n");
   if (found_expr) {
     pp_printf_text (pp, "#include \"expr.h\"\n", prefix);
   }
@@ -1745,8 +1741,8 @@ void emit_parser (void)
   pp = std_open (buf);
   pp_printf_text (pp, "#ifndef __%s_PARSE_H__\n", prefix);
   pp_printf_text (pp, "#define __%s_PARSE_H__\n\n", prefix);
-  pp_printf_text (pp, "#include \"list.h\"\n");
-  pp_printf_text (pp, "#include \"file.h\"\n");
+  pp_printf_text (pp, "#include <common/list.h>\n");
+  pp_printf_text (pp, "#include <common/file.h>\n");
   if (found_expr) {
     pp_printf_text (pp, "#include \"expr.h\"\n");
   }
@@ -1958,8 +1954,8 @@ void emit_parser (void)
   pp = std_open (buf);
   pp_printf_text (pp, "#include <stdio.h>\n");
   pp_printf (pp, "#include <stdlib.h>"); pp_nl;
-  pp_printf_text (pp, "#include \"file.h\"\n"); 
-  pp_printf_text (pp, "#include \"mstring.h\"\n"); 
+  pp_printf_text (pp, "#include <common/file.h>\n"); 
+  pp_printf_text (pp, "#include <common/mstring.h>\n"); 
   pp_printf_text (pp, "#include \"%s_parse.h\"\n", prefix);
   pp_printf_text (pp, "#include \"%s_parse_int.h\"\n", prefix);
   pp_printf (pp, "typedef struct %s_DefToken Token;", prefix);
@@ -1967,8 +1963,8 @@ void emit_parser (void)
   pp_nl;
 
   pp_printf_text (pp, "#include <stdarg.h>\n");
-  pp_printf_text (pp, "#include \"except.h\"\n");
-  pp_printf_text (pp, "#include \"misc.h\"\n");
+  pp_printf_text (pp, "#include <common/except.h>\n");
+  pp_printf_text (pp, "#include <common/misc.h>\n");
   pp_printf_text (pp, "#define EXC_LPF 2\n");
   pp_nl;
 

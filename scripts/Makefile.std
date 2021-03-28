@@ -134,7 +134,7 @@ $(SUBDIRS_INSTALLINC):
 	@$(MAKE) -C  $(patsubst %_installinc,%,$@) installincsub install_inc
 
 clean: move-in cleansub
-	-/bin/rm $(OBJS) *~ Makefile.deps $(CLEAN)
+	-/bin/rm $(OBJS) $(SHOBJS) *~ Makefile.deps $(CLEAN)
 	-rmdir $(EXT)
 
 realclean: clean realcleansub

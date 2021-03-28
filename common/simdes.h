@@ -49,11 +49,11 @@
  *
  */
 #include <stdio.h>
-#include "misc.h"
-#include "heap.h"
-#include "list.h"
-#include "bitset.h"
-#include "sim.h"
+#include <common/misc.h>
+#include <common/heap.h>
+#include <common/list.h>
+#include <common/bitset.h>
+#include <common/sim.h>
 
 class SimDES;
 

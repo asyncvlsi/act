@@ -25,7 +25,7 @@
 #include <string.h>
 #include <map>
 #include <utility>
-#include <config.h>
+#include <common/config.h>
 #include <math.h>
 #include <act/passes/statepass.h>
 #include <act/passes/sizing.h>

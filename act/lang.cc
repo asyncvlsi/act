@@ -28,8 +28,8 @@
 #include <act/body.h>
 #include <act/value.h>
 #include "prs.h"
-#include "qops.h"
-#include "config.h"
+#include <common/qops.h>
+#include <common/config.h>
 #include <string.h>
 
 /*--- 

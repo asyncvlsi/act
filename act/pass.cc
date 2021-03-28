@@ -24,7 +24,7 @@
 #include <act/tech.h>
 #include <string.h>
 #include <dlfcn.h>
-#include "config.h"
+#include <common/config.h>
 
 
 ActPass::ActPass (Act *_a, const char *s)
@@ -274,6 +274,15 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   }
 
   lib_ptr = NULL;
+
+  _d._init = NULL;
+  _d._run = NULL;
+  _d._recursive = NULL;
+  _d._proc = NULL;
+  _d._data = NULL;
+  _d._chan = NULL;
+  _d._free = NULL;
+  _d._done = NULL;
 
   for (li = list_first (_sh_libs); li; li = list_next (li)) {
     act_sh_passlib_info *tmp = (act_sh_passlib_info *) list_value (li);

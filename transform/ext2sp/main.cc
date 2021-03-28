@@ -23,11 +23,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ext.h"
-#include "hash.h"
-#include "array.h"
-#include "config.h"
-#include "misc.h"
+#include <common/ext.h>
+#include <common/hash.h>
+#include <common/array.h>
+#include <common/config.h>
+#include <common/misc.h>
 #include <act/act.h>
 
 static double mincap = 0.1e-15;

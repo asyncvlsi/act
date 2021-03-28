@@ -22,8 +22,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <agraph.h>
-#include <config.h>
+#include <common/agraph.h>
+#include <common/config.h>
 #include "vnet.h"
 #include "v_parse.h"
 #include "v_walk_X.h"

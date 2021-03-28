@@ -24,10 +24,10 @@
 #ifndef __NAMESPACES_H__
 #define __NAMESPACES_H__
 
-#include "hash.h"
-#include "list.h"
-#include "bitset.h"
-#include "array.h"
+#include <common/hash.h>
+#include <common/list.h>
+#include <common/bitset.h>
+#include <common/array.h>
 
 class Act;
 class ActBody;

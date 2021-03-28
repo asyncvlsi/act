@@ -28,9 +28,9 @@
 #include <map>
 #include <act/act.h>
 #include <act/iter.h>
-#include "hash.h"
-#include "bitset.h"
-#include "array.h"
+#include <common/hash.h>
+#include <common/bitset.h>
+#include <common/array.h>
 
 struct act_prsinfo;
 

@@ -78,14 +78,14 @@
  *
  */
 #include <stdio.h>
-#include "sim.h"
-#include "thread.h"
-#include "channel.h"
+#include <common/sim.h>
+#include <common/thread.h>
+#include <common/channel.h>
 
-#include "misc.h"
-#include "hconfig.h"
-#include "log.h"
-#include "machine.h"
+#include <common/misc.h>
+#include <common/hconfig.h>
+#include <common/log.h>
+#include <common/machine.h>
 
 class UnCheckPoint;	// forward
 

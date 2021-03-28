@@ -24,7 +24,7 @@
 #include <map>
 #include <string.h>
 #include "netlist.h"
-#include "config.h"
+#include <common/config.h>
 #include <act/iter.h>
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))

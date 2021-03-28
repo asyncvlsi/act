@@ -29,9 +29,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
-#include "misc.h"
-#include "array.h"
-#include "atrace.h"
+#include <common/misc.h>
+#include <common/array.h>
+#include <common/atrace.h>
 
 #define BLOCKHEADERSIZE					4
 

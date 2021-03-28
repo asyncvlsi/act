@@ -29,8 +29,8 @@
 #include <act/act.h>
 #include <act/body.h>
 #include <string.h>
-#include "misc.h"
-#include "array.h"
+#include <common/misc.h>
+#include <common/array.h>
 
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;

@@ -25,9 +25,9 @@
 #define __LANG_H__
 
 #include "expr.h"
-#include <mstring.h>
-#include <list.h>
-#include <array.h>
+#include <common/mstring.h>
+#include <common/list.h>
+#include <common/array.h>
 
 class ActId;
 

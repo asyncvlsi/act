@@ -40,8 +40,8 @@
 #include "lispInt.h"
 #include "lispargs.h"
 #include "lispCli.h"
-#include <array.h>
-#include "hash.h"
+#include <common/array.h>
+#include <common/hash.h>
 
 
 #define DEFAULT_PROMPT "cli> "

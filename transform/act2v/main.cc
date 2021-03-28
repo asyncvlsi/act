@@ -27,7 +27,7 @@
 #include <act/act.h>
 #include <act/passes/booleanize.h>
 #include <act/iter.h>
-#include <config.h>
+#include <common/config.h>
 #include <map>
 
 

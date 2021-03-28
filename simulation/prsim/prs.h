@@ -24,12 +24,12 @@
 #ifndef __PRS_H__
 #define __PRS_H__
 
-#include "hash.h"
-#include "lex.h"
-#include "heap.h"
-#include "mytime.h"
-#include "array.h"
-#include "names.h"
+#include <common/hash.h>
+#include <common/lex.h>
+#include <common/heap.h>
+#include <common/mytime.h>
+#include <common/array.h>
+#include <common/names.h>
 
 #ifdef __cplusplus
 extern "C" {

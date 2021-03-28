@@ -28,6 +28,8 @@ SHLIB1=libvlsilib_sh_$(EXT).so
 
 TARGETLIBS=$(LIB1) $(LIB2) $(LIB3) $(LIB4) $(SHLIB1) $(SHLIB4)
 
+TARGETINCSUBDIR=common
+
 TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	avl.h lzw.h lex.h file.h heap.h except.h pp.h list.h bool.h \
 	names.h mstring.h mytime.h \

@@ -29,14 +29,14 @@
 #include <act/tech.h>
 #include "act_parse.h"
 #include "act_walk_X.h"
-#include <config.h>
-#include "array.h"
+#include <common/config.h>
+#include <common/array.h>
 
 #ifdef DEBUG_PERFORMANCE
-#include "mytime.h"
+#include <common/mytime.h>
 #endif
 
-#include <log.h>
+#include <common/log.h>
 
 struct command_line_defs {
   char *varname;

@@ -23,9 +23,9 @@
 #include "booleanize.h"
 #include <map>
 #include <string.h>
-#include "hash.h"
-#include "qops.h"
-#include "config.h"
+#include <common/hash.h>
+#include <common/qops.h>
+#include <common/config.h>
 #include <act/iter.h>
 
 /*-- variables --*/

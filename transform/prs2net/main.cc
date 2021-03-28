@@ -27,7 +27,7 @@
 #include <act/act.h>
 #include <act/passes/netlist.h>
 #include <act/passes/cells.h>
-#include <config.h>
+#include <common/config.h>
 
 /*
   Check for trailing .extension

@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 #include <act/lang.h>
-#include "file.h"
+#include <common/file.h>
 #include "treetypes.h"
 
 #ifdef __cplusplus
