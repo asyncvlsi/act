@@ -167,7 +167,7 @@ _increment_fanout (conn_rhs_t *r, id_deref_t *lhs)
       }
     }
     else {
-      Assert (lhs == NULL, "no way");
+      //Assert (lhs == NULL, "no way");
       if (r->issubrange) {
 	for (i=r->lo; i <= r->hi; i++) {
 	  info->fa[i - info->a[0].lo]++;

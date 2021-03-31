@@ -322,6 +322,10 @@ one_assign: "assign" id_deref "=" id_deref ";"
     
     return NULL;
 }}
+| "assign" id_deref "=" id_deref_range ";"
+{{X:
+    return apply_X_one_assign_opt1 ($0, $2, $4);
+}}
 ;
 
 instances: one_instance instances | /* empty */ ;
@@ -558,7 +562,25 @@ bad_port_style: id_or_const_or_array
 }}
 ;
 
+id_deref_range[list_t *]: id "[" INT ":" INT "]"
+{{X:
+    list_t *l;
+    int hi = $3;
+    int lo = $5;
 
+    l = list_new ();
+    while (hi >= lo) {
+      id_deref_t *d;
+      NEW (d, id_deref_t);
+      d->id = $1;
+      d->isderef = 1;
+      d->deref = hi;
+      list_append (l, d);
+      hi--;
+    }
+    return l;
+}}
+;
 
 id_deref[id_deref_t *]: id [ "[" INT "]" ]
 {{X:

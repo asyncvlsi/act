@@ -2289,6 +2289,10 @@ void ActBooleanizePass::free_local (void *v)
   A_FREE (n->instports);
   A_FREE (n->nets);
   FREE (n);
+
+  if (n->nH) {
+    phash_free (n->nH);
+  }
 }
 
 ActBooleanizePass::ActBooleanizePass(Act *a) : ActPass(a, "booleanize")
@@ -2301,6 +2305,7 @@ ActBooleanizePass::ActBooleanizePass(Act *a) : ActPass(a, "booleanize")
     black_box_mode = 1;
     config_set_default_int ("net.black_box_mode", 1);
   }
+  _create_nets_run = 0;
 }
 
 ActBooleanizePass::~ActBooleanizePass()
@@ -2365,7 +2370,7 @@ void ActBooleanizePass::_createNets (Process *p)
 
 	  if (sub->ports[j].netid == -1) {
 	    /* there is nothing to be done here */
-	    addPin (n, netid, vx->getName(), tmpa, instproc, sub->ports[j].c);
+	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
 	  }
 	  else {
 	    importPins (n, netid, vx->getName(), tmpa,
@@ -2414,9 +2419,11 @@ void ActBooleanizePass::_createNets (Process *p)
 
 void ActBooleanizePass::createNets (Process *p)
 {
-  run_recursive (p, 1);
+  if (!_create_nets_run) {
+    run_recursive (p, 1);
+  }
+  _create_nets_run = 1;
 }
-
 
 int ActBooleanizePass::addNet (act_boolean_netlist_t *n, act_connection *c)
 {
@@ -2444,7 +2451,6 @@ int ActBooleanizePass::addNet (act_boolean_netlist_t *n, act_connection *c)
 void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
 				int netid,
 				const char *name, Array *a,
-				Process *proc,
 				act_connection *pin)
 {
   Assert (0 <= netid && netid < A_LEN (n->nets), "What?");
@@ -2455,7 +2461,6 @@ void ActBooleanizePass::addPin (act_boolean_netlist_t *n,
   inst->setArray (a);
   A_NEXT (n->nets[netid].pins).inst = inst;
   A_NEXT (n->nets[netid].pins).pin = pin;
-  A_NEXT (n->nets[netid].pins).cell = proc;
   A_INC (n->nets[netid].pins);
 }
 
@@ -2476,8 +2481,6 @@ void ActBooleanizePass::importPins (act_boolean_netlist_t *n,
     inst->Append (net->pins[i].inst);
     A_NEXT (n->nets[netid].pins).inst = inst;
     A_NEXT (n->nets[netid].pins).pin = net->pins[i].pin;
-    Assert (net->pins[i].cell, "Hmm");
-    A_NEXT (n->nets[netid].pins).cell = net->pins[i].cell;
     A_INC (n->nets[netid].pins);
   }
 }

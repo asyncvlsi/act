@@ -176,6 +176,8 @@ class ActBooleanizePass : public ActPass {
 
   int black_box_mode;
 
+  int _create_nets_run;
+
   /*-- internal functions: generate booleans for a process --*/
   act_boolean_netlist_t *_create_local_bools (Process *p);
 
@@ -198,7 +200,6 @@ class ActBooleanizePass : public ActPass {
   int addNet (act_boolean_netlist_t *n, act_connection *c);
   void addPin (act_boolean_netlist_t *n, int netid,
 	       const char *name, Array *a,
-	       Process *proc,
 	       act_connection *pin);
   void importPins (act_boolean_netlist_t *n, int netid, const char *name, Array *a, act_local_net_t *net);
 
