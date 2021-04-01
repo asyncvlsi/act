@@ -1387,28 +1387,14 @@ func_body[ActBody *]: ";"
 }}
 ;
 
-func_body_items[ActBody *]: { alias_or_inst ";" }* lang_chp
+func_body_items[ActBody *]: alias_or_inst_list lang_chp
 {{X:
     listitem_t *li;
     ActBody *b, *tmp, *tl;
 
-    b = (ActBody *)list_value (list_first ($1));
-    tl = b;
-    for (li = list_next (list_first ($1)); li; li = list_next (li)) {
-      tmp = (ActBody *)list_value (li);
-      if (tl) {
-	if (tmp) {
-	  tl->Append (tmp);
-	  tl = tmp;
-	}
-      }
-      else {
-	tl = tmp;
-      }
-    }
-    list_free ($1);
-    if (tl) {
-      tl->Append ($2);
+    b = $1;
+    if (b) {
+      b->Append ($2);
       return b;
     }
     else {
@@ -1417,8 +1403,9 @@ func_body_items[ActBody *]: { alias_or_inst ";" }* lang_chp
 }}
 ;
 
-alias_or_inst[ActBody *]: instance
+alias_or_inst_list[ActBody *]: instance alias_or_inst_list
 {{X:
+    $1->Append ($2);
     return $1;
 }}
 | /* nothing */

@@ -1,0 +1,26 @@
+function foo (int a; int b) : int
+{
+
+	int c;
+	int d;
+
+	chp {
+		c := 0, d := 1;
+		self := a + b + c + d
+	}
+
+}
+
+defproc test () 
+{
+
+	int a, b, c;
+
+	chp {
+		b := 0, c := 0;
+		a := foo(b,c)
+	}
+
+}
+
+test t;
