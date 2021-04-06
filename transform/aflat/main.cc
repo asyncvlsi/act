@@ -378,8 +378,12 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
 	      as[0]->step();
 	    }
 	  }
-	  delete as[0];
-	  delete as[1];
+	  if (as[0]) {
+	    delete as[0];
+	  }
+	  if (as[1]) {
+	    delete as[1];
+	  }
 	  if (aref[1]) {
 	    tl[0]->setArray (aref[1]);
 	  }

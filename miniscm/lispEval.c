@@ -439,6 +439,12 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
     LFLOAT (l) = LispGetReturnFloat ();
     return l;
   }
+  else if (ret == 5) {
+    l = LispNewObj ();
+    LTYPE (l) = S_LIST;
+    LLIST (l) = (Sexp *) LispGetReturnSexp ();
+    return l;
+  }
   /* default: return #f */
   RETURN;
 }

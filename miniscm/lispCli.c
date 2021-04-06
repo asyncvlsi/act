@@ -42,6 +42,7 @@
 #include "lispCli.h"
 #include <common/array.h>
 #include <common/hash.h>
+#include <common/list.h>
 
 
 #define DEFAULT_PROMPT "cli> "
@@ -262,6 +263,7 @@ static int handle_source (int argc, char **argv);
 static int lisp_return_value;
 static char *lisp_return_string = NULL;
 static double lisp_return_real;
+static list_t *lisp_return_list = NULL;
 
 static int dispatch_command (int argc, char **argv)
 {
@@ -372,6 +374,81 @@ char *LispGetReturnString (void)
 double LispGetReturnFloat (void)
 {
   return lisp_return_real;
+}
+
+void LispSetReturnListStart (void)
+{
+  if (lisp_return_list) {
+    list_free (lisp_return_list);
+  }
+  lisp_return_list = list_new ();
+}
+
+void LispAppendReturnInt (int v)
+{
+  LispObj *l = LispNewObj ();
+  LTYPE (l) = S_INT;
+  LINTEGER (l) = v;
+  list_append (lisp_return_list, l);
+}
+
+void LispAppendReturnFloat (double v)
+{
+  LispObj *l = LispNewObj ();
+  LTYPE (l) = S_FLOAT;
+  LFLOAT (l) = v;
+  list_append (lisp_return_list, l);
+}
+
+void LispAppendReturnString (const char *s)
+{
+  LispObj *l = LispNewObj ();
+  LTYPE (l) = S_STRING;
+  LSTR (l) = Strdup (s);
+  list_append (lisp_return_list, l);
+}
+
+static Sexp *lisp_return_sexp = NULL;
+
+void *LispGetReturnSexp (void)
+{
+  return lisp_return_sexp;
+}
+
+
+void LispSetReturnListEnd (void)
+{
+  Sexp *t;
+  listitem_t *li;
+  LispObj *term;
+  
+  lisp_return_sexp = NULL;
+  t = NULL;
+
+  for (li = list_first (lisp_return_list); li; li = list_next (li)) {
+    Sexp *cell;
+    LispObj *x = (LispObj *) list_value (li);
+
+    cell = LispNewSexp ();
+    CAR (cell) = x;
+    
+    if (!t) {
+      lisp_return_sexp = cell;
+    }
+    else {
+      CDR (t) = LispNewObj ();
+      LTYPE (CDR(t)) = S_LIST;
+      LLIST (CDR(t)) = cell;
+    }
+    t = cell;
+  }
+  if (t) {
+    CDR (t) = LispNewObj ();
+    LTYPE (CDR (t)) = S_LIST;
+    LLIST (CDR (t)) = NULL;
+  }
+  list_free (lisp_return_list);
+  lisp_return_list = NULL;
 }
 
 int LispDispatch (int argc, char **argv, int echo_cmd, int infile)

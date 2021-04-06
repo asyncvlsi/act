@@ -92,6 +92,15 @@ void LispSetReturnString (const char *s);
 */
 void LispSetReturnFloat (double val);
 
+/*
+  Use to create a list return value
+*/
+void LispSetReturnListStart (void);
+void LispAppendReturnInt (int val);
+void LispAppendReturnString (const char *s);
+void LispAppendReturnFloat (double val);
+void LispSetReturnListEnd (void);
+
 #ifdef __cplusplus
 }
 #endif
