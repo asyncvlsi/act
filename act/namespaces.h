@@ -357,6 +357,11 @@ class ActNamespace {
   act_spec *getspec ();
   act_languages *getlang() { return lang; }
 
+  list_t *getSubNamespaces ();
+  list_t *getProcList();
+  list_t *getDataList();
+  list_t *getChanList();
+
  private:
   act_languages *lang;
 

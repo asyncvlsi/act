@@ -316,7 +316,10 @@ public:
   int pending()  { return (_finished == 1) ? 1 : 0; }
   void *getMap (Process *p);
   Act *getAct () { return a; }
+  ActPass *getPass (const char *name) { return a->pass_find (name); }
+  
   virtual void run_recursive (Process *p = NULL, int mode = 0);
+
 
 private:
   virtual void *local_op (Process *p, int mode = 0);

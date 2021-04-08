@@ -526,3 +526,73 @@ act_spec *ActNamespace::getspec()
 {
   return lang->getspec();
 }
+
+
+list_t *ActNamespace::getSubNamespaces()
+{
+  list_t *tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+
+  tmp = list_new ();
+
+  hash_iter_init (N, &it);
+  while ((b = hash_iter_next (N, &it))) {
+    list_append (tmp, b->key);
+  }
+  return tmp;
+}
+
+list_t *ActNamespace::getProcList ()
+{
+  list_t *tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+
+  tmp = list_new ();
+
+  hash_iter_init (T, &it);
+  while ((b = hash_iter_next (T, &it))) {
+    UserDef *u = (UserDef *)b->v;
+    if (TypeFactory::isProcessType (u)) {
+      list_append (tmp, b->key);
+    }
+  }
+  return tmp;
+}
+
+list_t *ActNamespace::getDataList ()
+{
+  list_t *tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+
+  tmp = list_new ();
+
+  hash_iter_init (T, &it);
+  while ((b = hash_iter_next (T, &it))) {
+    UserDef *u = (UserDef *)b->v;
+    if (TypeFactory::isDataType (u)) {
+      list_append (tmp, b->key);
+    }
+  }
+  return tmp;
+}
+
+list_t *ActNamespace::getChanList ()
+{
+  list_t *tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+
+  tmp = list_new ();
+
+  hash_iter_init (T, &it);
+  while ((b = hash_iter_next (T, &it))) {
+    UserDef *u = (UserDef *)b->v;
+    if (TypeFactory::isChanType (u)) {
+      list_append (tmp, b->key);
+    }
+  }
+  return tmp;
+}
