@@ -1444,7 +1444,7 @@ static ActId *singleton_id (char *s)
 /*
  * Convert a constant string into an ActId
  */
-ActId *act_string_to_bool_id (const char *s)
+ActId *act_string_to_id (const char *s)
 {
   char *t, *tmp, *pos;
   ActId *ret, *cur;

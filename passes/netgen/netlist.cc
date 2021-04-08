@@ -1265,7 +1265,7 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
     }
     else {
       *t = dot;
-      ActId *id = act_string_to_bool_id (s);
+      ActId *id = act_string_to_id (s);
       if (!id) {
 	fatal_error ("Could not convert string `%s' to an ActId", s);
       }
