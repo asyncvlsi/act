@@ -140,6 +140,12 @@ class ActId {
   */
   ActId *nonProcSuffix (Process *p, Process **ret);
 
+  /*
+    Check that any array indices are valid and this is a non-arrayed
+    identifier.
+  */
+  int validateDeref (Scope *sc);
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

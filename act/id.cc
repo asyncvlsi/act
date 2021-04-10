@@ -1761,3 +1761,51 @@ ActId *ActId::nonProcSuffix (Process *p, Process **ret)
   *ret = prev_proc;
   return prev;
 }
+
+
+int ActId::validateDeref (Scope *sc)
+{
+  ValueIdx *vx = sc->FullLookupVal (getName());
+  if (!vx) return 0;
+  
+  /* -- check all the array indices! -- */
+  ValueIdx *ux = vx;
+  ActId *rid = this;
+  while (ux) {
+    int aoff;
+    if (ux->t->arrayInfo()) {
+      if (!rid->arrayInfo() || !rid->arrayInfo()->isDeref()) {
+	/* error */
+	return 0;
+      }
+      aoff = ux->t->arrayInfo()->Offset (rid->arrayInfo());
+    }
+    else {
+      if (rid->arrayInfo()) {
+	return 0;
+      }
+      aoff = 0;
+    }
+    if (aoff == -1) {
+      return 0;
+    }
+
+    rid = rid->Rest();
+    
+    UserDef *user = dynamic_cast<UserDef *> (ux->t->BaseType());
+    if (user) {
+      sc = user->CurScope();
+      Assert (rid, "What?");
+      ux = sc->LookupVal (rid->getName());
+    }
+    else {
+      ux = NULL;
+    }
+    if (rid && !ux) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+
