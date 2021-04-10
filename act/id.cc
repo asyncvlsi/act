@@ -1395,6 +1395,7 @@ ActId *ActId::Tail ()
   return ret;
 }
 
+#if 0
 static ActId *singleton_id (char *s)
 {
   char *tmp;
@@ -1493,8 +1494,7 @@ ActId *act_string_to_id (const char *s)
   FREE (t);
   return ret;
 }
-
-
+#endif
 
 int ActId::isDynamicDeref ()
 {
@@ -1611,6 +1611,20 @@ ActId *ActId::unFragment (Scope *s)
   return ret;
 }
 
+ActId *ActId::parseId (const char *s)
+{
+  ActId *ret;
+  
+  if (!s) return NULL;
+  
+  char *t = Strdup (s);
+
+  ret = ActId::parseId (t);
+
+  FREE (t);
+
+  return ret;
+}
 
 ActId *ActId::parseId (char *s)
 {
@@ -1621,6 +1635,8 @@ ActId *ActId::parseId (char *s)
   ActId *ret = NULL;
   ActId *tmp;
   ActId *tail;
+
+  if (!s) return NULL;
 
   do {
     nextdot = -1;
@@ -1718,3 +1734,30 @@ ActId *ActId::parseId (char *s)
 
   return ret;
 }  
+
+ActId *ActId::nonProcSuffix (Process *p, Process **ret)
+{
+  InstType *it;
+  ActId *itmp = this;
+  ActId *prev = NULL;
+  Process *prev_proc = NULL;
+  
+  while (itmp) {
+    it = p->CurScope()->FullLookup (itmp->getName());
+    Assert (it, "pre-cursor function should have checked for this!");
+    if (!TypeFactory::isProcessType (it)) {
+      if (prev_proc == NULL) {
+	*ret = p;
+	return itmp;
+      }
+      break;
+    }
+    prev_proc = p;
+    prev = itmp;
+    p = dynamic_cast<Process *> (it->BaseType());
+    Assert (p, "Hmm");
+    itmp = itmp->Rest();
+  }
+  *ret = prev_proc;
+  return prev;
+}

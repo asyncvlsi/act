@@ -1,0 +1,2 @@
+ERROR: File `47.act', line 9, col 5
+	Functions cannot be used to create instances: foo

@@ -578,6 +578,12 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
       fprintf ($f, "\n");
       exit (1);
     }
+    if (TypeFactory::isFuncType (t)) {
+      $e("Functions cannot be used to create instances: %s", gs);
+      print_ns_string ($f, $2);
+      fprintf ($f, "\n");
+      exit (1);
+    }
     OPT_FREE ($1);
     list_free ($2);
     return t;

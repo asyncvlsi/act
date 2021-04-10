@@ -191,6 +191,8 @@ public:
 
   int instOffsets () { return _inst_offsets; }
 
+  int globalBoolOffset (ActId *id);
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);

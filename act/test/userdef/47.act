@@ -1,0 +1,9 @@
+function foo (int a) : int
+{
+  chp {
+    self := 1
+  }
+}
+
+
+foo x;
