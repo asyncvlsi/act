@@ -286,7 +286,7 @@ static int dispatch_command (int argc, char **argv)
 	  printf ("\n== %s ==\n", cli_commands[i].help);
 	}
 	else {
-	  printf ("   %s\n", cli_commands[i].help);
+	  printf ("   %s %s\n", cli_commands[i].name, cli_commands[i].help);
 	}
       }
       return 1;
@@ -299,14 +299,16 @@ static int dispatch_command (int argc, char **argv)
 	printf ("   source <filename> [<repeat-count>] - read in a script file\n\n");
       }
       else {
+	int sl = strlen (argv[1]);
+	int count = 0;
 	for (i=0; i < num_commands; i++) {
 	  if (!cli_commands[i].name) continue;
-	  if (strcmp (cli_commands[i].name, argv[1]) == 0) {
-	    printf ("   %s\n", cli_commands[i].help);
-	    break;
+	  if (strncmp (cli_commands[i].name, argv[1], sl) == 0) {
+	    printf ("   %s %s\n", cli_commands[i].name, cli_commands[i].help);
+	    count++;
 	  }
 	}
-	if (i == num_commands) {
+	if (count == 0) {
 	  fprintf (stderr, "Error: command `%s' not found\n", argv[1]);
 	  return 0;
 	}
