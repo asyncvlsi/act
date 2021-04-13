@@ -58,7 +58,7 @@ do
     rm -f tmpfile
 done
 
-for i in install getarch getos getbaseos move-in move-out mymakedepend
+for i in install getarch getos getbaseos move-in move-out mymakedepend linkso
 do
     chmod +x $ACT_HOME/scripts/$i
 done

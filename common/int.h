@@ -19,13 +19,13 @@
  *
  **************************************************************************
  */
-#ifndef __ACT_INT_H__
-#define __ACT_INT_H__
+#ifndef __COMMON_INT_H__
+#define __COMMON_INT_H__
 
 #include <common/misc.h>
 
 
-#define ACT_BIGINT_BITS_ONE (8*sizeof (unsigned long))
+#define BIGINT_BITS_ONE (8*sizeof (unsigned long))
 
 class BigInt {
  public:
