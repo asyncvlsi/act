@@ -2170,7 +2170,7 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
     for (int i=0; i < tmp->count-1; i++) {
       tmp->ids[i] = s->ids[i]->Expand (ns, sc);
     }
-    if (tmp->type != -1) {
+    if (!ACT_SPEC_ISTIMING (tmp)) {
       tmp->ids[tmp->count-1] = s->ids[tmp->count-1]->Expand (ns, sc);
     }
     else {
@@ -2682,7 +2682,7 @@ void spec_print (FILE *fp, act_spec *spec)
   char **specs = config_get_table_string ("act.spec_types");
   fprintf (fp, "spec {\n");
   while (spec) {
-    if (spec->type == -1) {
+    if (ACT_SPEC_ISTIMING (spec)) {
       fprintf (fp, "   timing ");
 
 #define SPEC_PRINT_ID(x)			\
@@ -2709,7 +2709,12 @@ void spec_print (FILE *fp, act_spec *spec)
 	fprintf (fp, " : ");
       }
       SPEC_PRINT_ID (1);
-      fprintf (fp, " < ");
+      if (spec->type == -1) {
+	fprintf (fp, " < ");
+      }
+      else {
+	fprintf (fp, " << ");
+      }
       if (spec->ids[3]) {
 	fprintf (fp, "[");
 	print_expr (fp, (Expr *)spec->ids[3]);

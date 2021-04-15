@@ -1586,14 +1586,14 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     list_free ($3);
     return s;
 }}
-| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] "<" [ "[" wpint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
+| "timing" [ bool_expr_id [ dir ] ":" ] [ "?" ] bool_expr_id_or_array [ "*" ] [ dir ] timing_type [ "[" wpint_expr "]" ] bool_expr_id_or_array [ "*" ] [ dir ]
 {{X:
     /* a timing fork */
     act_spec *s;
     int i;
     
     NEW (s, act_spec);
-    s->type = -1;
+    s->type = $7;
     s->count = 4; 		/* the last value is the delay
 				   margin, if any */
     MALLOC (s->ids, ActId *, s->count);
@@ -1681,7 +1681,18 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       FREE (r);
     }
     OPT_FREE ($8);
+
     return s;
+}}
+;
+
+timing_type[int]: "<"
+{{X:
+    return -1;
+}}
+| "<<"
+{{X:
+    return -2;
 }}
 ;
 

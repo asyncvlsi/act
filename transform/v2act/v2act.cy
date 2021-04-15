@@ -266,7 +266,7 @@ one_assign: "assign" id_deref "=" id_deref ";"
 
     return NULL;
 }}
-| "assign" id_deref "=" "{" { id_deref "," }* "}" ";"
+| "assign" id_deref "=" id_deref_range_list ";"
 {{X:
     conn_rhs_t *r;
     conn_info_t *ci;
@@ -274,7 +274,7 @@ one_assign: "assign" id_deref "=" id_deref ";"
     int idx;
     int len_gt_1 = 0;
 
-    if (list_length ($5) > 1) {
+    if (list_length ($4) > 1) {
       id_info_t *x;
       len_gt_1 = 1;
       if ($2->isderef) {
@@ -291,7 +291,7 @@ one_assign: "assign" id_deref "=" id_deref ";"
       idx = -1;
     }
 
-    for (li = list_first ($5); li; li = list_next (li)) {
+    for (li = list_first ($4); li; li = list_next (li)) {
       id_deref_t *x;
 
       x = (id_deref_t *) list_value (li);
@@ -318,13 +318,31 @@ one_assign: "assign" id_deref "=" id_deref ";"
 	ci->id.deref = idx--;
       }
     }
+    list_free ($4);
     FREE ($2);
-    
     return NULL;
 }}
-| "assign" id_deref "=" id_deref_range ";"
+| "assign" id_deref_range "=" id_deref_range_list ";"
 {{X:
-    return apply_X_one_assign_opt1 ($0, $2, $4);
+    listitem_t *li1, *li2;
+
+    if (list_length ($2) != list_length ($4)) {
+      $W("assign statement is incompatible? (%d vs %d items)",
+	 list_length ($2), list_length ($4));
+    }
+
+    for (li1 = list_first ($2), li2 = list_first ($4);
+	 li1 && li2; li1 = list_next (li1), li2 = list_next (li2)) {
+      id_deref_t *x1, *x2;
+
+      x1 = (id_deref_t *) list_value (li1);
+      x2 = (id_deref_t *) list_value (li2);
+
+      apply_X_one_assign_opt0 ($0, x1, x2);
+    }
+    list_free ($2);
+    list_free ($4);
+    return NULL;
 }}
 ;
 
@@ -561,6 +579,39 @@ bad_port_style: id_or_const_or_array
     return NULL;
 }}
 ;
+
+id_deref_range_list[list_t *]: id_deref_range
+{{X:
+    return $1;
+}}
+| "{" { id_deref_or_range "," }* "}"
+{{X:
+    list_t *l;
+    listitem_t *li;
+
+    l = list_new ();
+    for (li = list_first ($2); li; li = list_next (li)) {
+      list_t *tmp = (list_t *)list_value (li);
+      list_concat (l, tmp);
+      list_free (tmp);
+    }
+    return l;
+}}
+;
+
+id_deref_or_range[list_t *]: id_deref_range
+{{X:
+    return $1;
+}}
+| id_deref
+{{X:
+    list_t *l;
+    l = list_new ();
+    list_append (l, $1);
+    return l;
+}}
+;
+
 
 id_deref_range[list_t *]: id "[" INT ":" INT "]"
 {{X:

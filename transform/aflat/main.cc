@@ -230,7 +230,7 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
   const char *tmp;
   ActId *id;
   while (spec) {
-    if (spec->type == -1) {
+    if (ACT_SPEC_ISTIMING (spec)) {
       /* timing constraint: special representation */
       if (export_format == PRSIM_FMT) {
 	Expr *e = (Expr *)spec->ids[3];

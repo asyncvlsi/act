@@ -1,0 +1,10 @@
+bool a, b, c;
+pint w;
+
+spec {
+  timing a : b- < c+
+  timing a+ : b- < c+
+  timing a+ : ?b < c-
+  timing a+ : b << c
+  timing a+ : b < c+
+}

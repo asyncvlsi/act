@@ -249,10 +249,12 @@ struct act_chp {
  *------------------------------------------------------------------------
  */
 
+#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2)
+
 struct act_spec {
   int isrequires;		/* 1 if this is a requires clause */
   
-  int type;    /* -1 = timing. in this case, 
+  int type;    /* -1/-2 = timing. in this case, 
 		  directive: timing lhs : first < [expr] second
 		  (a) count = 4
 		  (b) ids[0] = lhs, ids[1] = first, ids[2] = second
