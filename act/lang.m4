@@ -432,8 +432,8 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
-                                                  [ rcv_type recv_id ]
+send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
+                                                  [ rcv_type bool_or_int_expr_id ]
 {{X:
     act_chp_lang_t *c;
     int t;
@@ -450,15 +450,16 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
       exit (1);
     }
 
-    if (OPT_EMPTY ($3)) {
-      NEW (c, act_chp_lang_t);
-      c->type = ACT_CHP_SEND;
-      c->label = NULL;
-      c->space = NULL;
-      c->u.comm.chan = $1;
-      c->u.comm.rhs = list_new ();
-      c->u.comm.flavor = $2;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SEND;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.comm.chan = $1;
+    c->u.comm.var = NULL;
+    c->u.comm.e = NULL;
+    c->u.comm.flavor = $2;
 
+    if (OPT_EMPTY ($3)) {
       if (!OPT_EMPTY ($4)) {
 	$E("Bidirectional data communication needs data in both directions!");
       }
@@ -466,11 +467,9 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
     else {
       ActRet *r;
       r = OPT_VALUE ($3);
-      $A(r->type == R_CHP_LANG);
-      c = r->u.chp;
+      $A(r->type == R_EXPR);
+      c->u.comm.e = r->u.exp;
       FREE (r);
-      c->u.comm.chan = $1;
-      c->u.comm.flavor = $2;
 
       if (!OPT_EMPTY ($4)) {
 	r = OPT_VALUE ($4);
@@ -480,9 +479,9 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ send_data ]
 	}
 	FREE (r);
 	r = OPT_VALUE2 ($4);
-	$A(r->type == R_CHP_LANG);
-	list_concat (c->u.comm.rhs, r->u.chp->u.comm.rhs);
-	act_chp_free (r->u.chp);
+	$A(r->type == R_ID);
+	c->u.comm.var = r->u.id;
+	FREE (r);
       }
     }
     int isbidir = 0;
@@ -515,36 +514,9 @@ snd_type[int]: "!"
 {{X: return 2; }}
 ;
 
-send_data[act_chp_lang_t *]: w_expr 
-{{X:
-    act_chp_lang_t *c;
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_SEND;
-    c->label = NULL;
-    c->space = NULL;
-    c->u.comm.chan = NULL;
-    c->u.comm.rhs = list_new ();
-    list_append (c->u.comm.rhs, $1);
-    return c;
-}}
-| "(" { w_expr "," }* ")" 
-{{X:
-    act_chp_lang_t *c;
 
-    $E("Sending lists is not supported at present");
-    
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_SEND;
-    c->label = NULL;
-    c->space = NULL;
-    c->u.comm.chan = NULL;
-    c->u.comm.rhs = $2;
-    return c;
-}}
-;
-
-recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
-                                        [ snd_type send_data ]
+recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ bool_or_int_expr_id ]
+                                        [ snd_type w_expr ]
 {{X:
     act_chp_lang_t *c;
     Channel *ch1;
@@ -561,15 +533,16 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
       exit (1);
     }
 
-    if (OPT_EMPTY ($3)) {
-      NEW (c, act_chp_lang_t);
-      c->type = ACT_CHP_RECV;
-      c->label = NULL;
-      c->space = NULL;
-      c->u.comm.chan = $1;
-      c->u.comm.flavor = $2;
-      c->u.comm.rhs = list_new ();
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_RECV;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.comm.chan = $1;
+    c->u.comm.flavor = $2;
+    c->u.comm.var = NULL;
+    c->u.comm.e = NULL;
 
+    if (OPT_EMPTY ($3)) {
       if (!OPT_EMPTY ($4)) {
 	$E("Bidirectional data communication needs data in both directions!");
       }
@@ -577,11 +550,9 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
     else {
       ActRet *r;
       r = OPT_VALUE ($3);
-      $A(r->type == R_CHP_LANG);
-      c = r->u.chp;
+      $A(r->type == R_ID);
+      c->u.comm.var = r->u.id;
       FREE (r);
-      c->u.comm.chan = $1;
-      c->u.comm.flavor = $2;
 
       if (!OPT_EMPTY ($4)) {
 	r = OPT_VALUE ($4);
@@ -591,9 +562,9 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ recv_id ]
 	}
 	FREE (r);
 	r = OPT_VALUE2 ($4);
-	$A(r->type == R_CHP_LANG);
-	list_concat (c->u.comm.rhs, r->u.chp->u.comm.rhs);
-	act_chp_free (r->u.chp);
+	$A(r->type == R_EXPR);
+	c->u.comm.e = r->u.exp;
+	FREE (r);
       }
     }
     int isbidir = 0;
@@ -624,34 +595,6 @@ rcv_type[int]: "?"
 {{X: return 1; }}
 | "?-"
 {{X: return 2; }}
-;
-
-recv_id[act_chp_lang_t *]: bool_or_int_expr_id
-{{X:
-    act_chp_lang_t *c;
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_RECV;
-    c->label = NULL;
-    c->space = NULL;
-    c->u.comm.chan = NULL;
-    c->u.comm.rhs = list_new ();
-    list_append (c->u.comm.rhs, $1);
-    return c;
-}}
-| "(" { bool_or_int_expr_id "," }* ")" 
-{{X:
-    act_chp_lang_t *c;
-    
-    $E("Receiving lists is not supported at present");
-    
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_RECV;
-    c->label = NULL;
-    c->space = NULL;
-    c->u.comm.chan = NULL;
-    c->u.comm.rhs = $2;
-    return c;
-}}
 ;
 
 assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr

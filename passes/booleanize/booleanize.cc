@@ -321,7 +321,8 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 }
 
 
-static act_connection *visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput)
+static act_connection *visit_chp_var (act_boolean_netlist_t *N,
+				      ActId *id, int isinput)
 {
   act_booleanized_var_t *v;
 
@@ -1000,23 +1001,9 @@ static void update_chp_probes (act_boolean_netlist_t *N,
     break;
 
   case ACT_CHP_SEND:
-    {
-      listitem_t *li;
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	update_chp_expr_vars (N, (Expr *) list_value (li));
-      }
-    }
-    break;
-
   case ACT_CHP_RECV:
-    {
-      listitem_t *li;
-      if (list_first (c->u.comm.rhs) &&
-	  list_next (list_first (c->u.comm.rhs))) {
-	update_chp_expr_vars
-	  (N, (Expr *) list_value (list_next (list_first (c->u.comm.rhs))));
-      }
+    if (c->u.comm.e) {
+      update_chp_expr_vars (N, c->u.comm.e);
     }
     break;
     
@@ -1121,19 +1108,17 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fprintf (stderr, "\n");
 	fatal_error ("Send action in multiple concurrent blocks!");
       }
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	generate_chp_expr_vars (N, (Expr *) list_value (li));
-	li = list_next (li);
-	if (li) {
-	  if (((ActId *) list_value (li))->isDynamicDeref()) {
-	    _add_dynamic_id (N, (ActId *) list_value (li));
-	  }
-	  else {
-	    visit_chp_var (N, (ActId *) list_value (li), 0);
-	  }
-	}		   
+      if (c->u.comm.e) {
+	generate_chp_expr_vars (N, c->u.comm.e);
       }
+      if (c->u.comm.var) {
+	if (c->u.comm.var->isDynamicDeref()) {
+	  _add_dynamic_id (N, c->u.comm.var);
+	}
+	else {
+	  visit_chp_var (N, c->u.comm.var, 0);
+	}
+      }		   
     }
     break;
 
@@ -1163,19 +1148,18 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fprintf (stderr, "\n");
 	fatal_error ("Receive action in multiple concurrent blocks!");
       }
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	if (((ActId *) list_value (li))->isDynamicDeref()) {
-	  _add_dynamic_id (N, (ActId *) list_value (li));
+
+      if (c->u.comm.e) {
+	generate_chp_expr_vars (N, c->u.comm.e);
+      }
+      if (c->u.comm.var) {
+	if (c->u.comm.var->isDynamicDeref()) {
+	  _add_dynamic_id (N, c->u.comm.var);
 	}
 	else {
-	  visit_chp_var (N, (ActId *) list_value (li), 0);
+	  visit_chp_var (N, c->u.comm.var, 0);
 	}
-	li = list_next (li);
-	if (li) {
-	  generate_chp_expr_vars (N, (Expr *) list_value (li));
-	}
-      }
+      }		   
     }
     break;
     
@@ -1239,15 +1223,11 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
       }
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	collect_chp_expr_vars (N, (Expr *) list_value (li));
-	li = list_next (li);
-	if (li) {
-	  if ( ((ActId *)list_value (li))->isDynamicDeref()) {
-	    _add_dynamic_id (N, (ActId *)list_value (li));
-	  }
-	}
+      if (c->u.comm.e) {
+	collect_chp_expr_vars (N, c->u.comm.e);
+      }
+      if (c->u.comm.var && c->u.comm.var->isDynamicDeref()) {
+	_add_dynamic_id (N, c->u.comm.var);
       }
     }
     break;
@@ -1260,15 +1240,11 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	c->u.comm.chan->Print (stderr);
 	fatal_error ("Dynamic reference not permitted for channels");
       }
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	if (((ActId *)list_value (li))->isDynamicDeref()) {
-	  _add_dynamic_id (N, (ActId *)list_value (li));
-	}
-	li = list_next (li);
-	if (li) {
-	  collect_chp_expr_vars (N, (Expr *) list_value (li));
-	}
+      if (c->u.comm.e) {
+	collect_chp_expr_vars (N, c->u.comm.e);
+      }
+      if (c->u.comm.var && c->u.comm.var->isDynamicDeref()) {
+	_add_dynamic_id (N, c->u.comm.var);
       }
     }
     break;

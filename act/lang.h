@@ -194,11 +194,8 @@ typedef struct act_chp_lang {
     } assign;
     struct {
       ActId *chan;
-      list_t *rhs;		/* expression for send, id for recv.
-				   for bidirectional channels, send
-				   has expr followed by id, and recv
-				   has id followed by expr
-				*/
+      ActId *var;		/* variable for assignment */
+      Expr *e;			/* expression to be sent */
       int flavor;		/* up, down, blank */
     } comm;
     struct {
@@ -485,6 +482,9 @@ typedef void *(*ACT_VAR_CONV) (void *, void *);
 
 /*
   at_hash : hash table from label strings to act_prs_lang_t pointers
+  All variable pointers at the leaves are converted using the conv_var
+  function that is an argument. First argument of the function is the
+  cookie, the second is the ID pointer for the expression.
 */
 act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 				  struct Hashtable *at_hash,

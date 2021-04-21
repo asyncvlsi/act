@@ -2095,41 +2095,23 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     break;
     
   case ACT_CHP_SEND:
-    ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
-    ret->u.comm.flavor = c->u.comm.flavor;
-
-    ret->u.comm.rhs = list_new ();
-    li = list_first (c->u.comm.rhs);
-    if (li) {
-      list_append (ret->u.comm.rhs,
-		   chp_expr_expand ((Expr *)list_value (li), ns, s));
-      li = list_next (li);
-      if (li) {
-	list_append (ret->u.comm.rhs,
-		     expand_var_write ((ActId *)list_value (li), ns, s));
-	Assert (list_next (li) == NULL, "Hmm");
-      }
-    }
-    break;
-    
   case ACT_CHP_RECV:
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
     ret->u.comm.flavor = c->u.comm.flavor;
-
-    ret->u.comm.rhs = list_new ();
-    li = list_first (c->u.comm.rhs);
-    if (li) {
-      list_append (ret->u.comm.rhs,
-		   expand_var_write ((ActId *)list_value (li), ns, s));
-      li = list_next (li);
-      if (li) {
-	list_append (ret->u.comm.rhs,
-		     chp_expr_expand ((Expr *)list_value (li), ns, s));
-	Assert (list_next (li) == NULL, "What?");
-      }
+    if (c->u.comm.var) {
+      ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);
+    }
+    else {
+      ret->u.comm.var = NULL;
+    }
+    if (c->u.comm.e) {
+      ret->u.comm.e = chp_expr_expand (c->u.comm.e, ns, s);
+    }
+    else {
+      ret->u.comm.e = NULL;
     }
     break;
-
+    
   case ACT_CHP_FUNC:
     ret->u.func.name = c->u.func.name;
     ret->u.func.rhs = list_new ();
@@ -2592,15 +2574,12 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     fprintf (fp, "!");
     {
       listitem_t *li;
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	print_expr (fp, (Expr *)list_value (li));
-	li = list_next (li);
-	if (li) {
-	  fprintf (fp, "?");
-	  ((ActId *)list_value (li))->Print (fp);
-	  Assert (list_next (li) == NULL, "Huh?");
-	}
+      if (c->u.comm.e) {
+	print_expr (fp, c->u.comm.e);
+      }
+      if (c->u.comm.var) {
+	fprintf (fp, "?");
+	c->u.comm.var->Print (fp);
       }
     }
     break;
@@ -2609,16 +2588,12 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     c->u.comm.chan->Print (fp);
     fprintf (fp, "?");
     {
-      listitem_t *li;
-      li = list_first (c->u.comm.rhs);
-      if (li) {
-	((ActId *)list_value (li))->Print (fp);
-	li = list_next (li);
-	if (li) {
-	  fprintf (fp, "!");
-	  print_expr (fp, (Expr *)list_value (li));
-	  Assert (list_next (li) == NULL, "What?");
-	}
+      if (c->u.comm.var) {
+	c->u.comm.var->Print (fp);
+      }
+      if (c->u.comm.e) {
+	fprintf (fp, "!");
+	print_expr (fp, c->u.comm.e);
       }
     }
     break;
@@ -3467,24 +3442,12 @@ void chp_check_channels (act_chp_lang_t *c, Scope *s)
     break;
     
   case ACT_CHP_SEND:
-    li = list_first (c->u.comm.rhs);
-    if (li) {
-      chp_check_expr ((Expr *)list_value (li), s);
-      li = list_next (li);
-      if (li) {
-	chp_check_var ((ActId *) list_value (li), s);
-      }
-    }
-    break;
-    
   case ACT_CHP_RECV:
-    li = list_first (c->u.comm.rhs);
-    if (li) {
-      chp_check_var ((ActId *)list_value (li), s);
-      li = list_next (li);
-      if (li) {
-	chp_check_expr ((Expr *)list_value (li), s);
-      }
+    if (c->u.comm.e) {
+      chp_check_expr (c->u.comm.e, s);
+    }
+    if (c->u.comm.var) {
+      chp_check_var (c->u.comm.var, s);
     }
     break;
 
