@@ -162,8 +162,8 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical
       FREE (r);
     }
     OPT_FREE ($5);
-    if (!TypeFactory::isDataType (t) ||
-	(ack && !TypeFactory::isDataType (ack))) {
+    if ((!TypeFactory::isDataType (t) && !TypeFactory::isStructure (t)) ||
+	(ack && !TypeFactory::isDataType (ack) && !TypeFactory::isStructure (t))) {
       $E("Channels can only send/receive data.");
     }
     if (!TypeFactory::isValidChannelDataType (t) ||

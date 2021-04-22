@@ -433,7 +433,7 @@ chp_log_item[act_func_arguments_t *]: w_expr
 ;
 
 send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
-                                                  [ rcv_type bool_or_int_expr_id ]
+                                                  [ rcv_type assignable_expr_id ]
 {{X:
     act_chp_lang_t *c;
     int t;
@@ -510,6 +510,7 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     if (!act_type_chan ($0->scope, ch2, 1, c->u.comm.e, c->u.comm.var)) {
       $E("CHP send: type-checking failed.\n\t%s", act_type_errmsg());
     }
+
     return c;
 }}
 ;
@@ -523,7 +524,7 @@ snd_type[int]: "!"
 ;
 
 
-recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ bool_or_int_expr_id ]
+recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
                                         [ snd_type w_expr ]
 {{X:
     act_chp_lang_t *c;
@@ -613,7 +614,7 @@ rcv_type[int]: "?"
 {{X: return 2; }}
 ;
 
-assign_stmt[act_chp_lang_t *]: bool_or_int_expr_id ":=" w_expr
+assign_stmt[act_chp_lang_t *]: assignable_expr_id ":=" w_expr
 {{X:
     act_chp_lang_t *c;
     int tl, tr;
@@ -866,7 +867,7 @@ hse_assign_stmt[act_chp_lang_t *]: bool_expr_id dir
 {{X:
     return apply_X_assign_stmt_opt1 ($0, $1, $2);
 }}
-| bool_or_int_expr_id ":=" w_expr
+| assignable_expr_id ":=" w_expr
 {{X:
     act_chp_lang_t *ret = apply_X_assign_stmt_opt0 ($0, $1, $3);
     if (!$1->Rest() && strcmp ($1->getName(), "self") == 0) {
@@ -1322,20 +1323,20 @@ chan_expr_id[ActId *]: expr_id
 }}
 ;
 
-bool_or_int_expr_id[ActId *]: expr_id
+assignable_expr_id[ActId *]: expr_id
 {{X:
     int t;
     t = act_type_var ($0->scope, $1, NULL);
-    if (!T_BASETYPE_ISINTBOOL (t)) {
-      $e("Identifier ``");
-      $1->Print ($f, NULL);
-      fprintf ($f, "'' is not of type bool/int\n");
-      exit (1);
-    }
-    else if (t & T_ARRAYOF) {
+    if (t & T_ARRAYOF) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is of array type\n");
+      exit (1);
+    }
+    if (!T_BASETYPE_ISINTBOOL (t) && !(t & T_DATA)) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'' is not of type bool/int/structure\n");
       exit (1);
     }
     return $1;

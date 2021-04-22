@@ -715,6 +715,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    *width = 1;
 	  }
 	}
+	else if (TypeFactory::isStructure (rtype)) {
+	  ret |= T_DATA;
+	  if (width) {
+	    *width = -1;
+	  }
+	}
 	else {
 	  Assert (0, "Unknown return type");
 	}
@@ -1607,8 +1613,8 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
     
   if (it1) {
     ret = 0;
-    if (!TypeFactory::isDataType (it1) && !TypeFactory::isPIntType (it1) &&
-	!TypeFactory::isPBoolType (it1)) {
+    if (!TypeFactory::isDataType (it1) && !TypeFactory::isStructure (it1) &&
+	!TypeFactory::isPIntType (it1) && !TypeFactory::isPBoolType (it1)) {
       typecheck_err ("Channels require data types!");
     }
     else {
@@ -1649,7 +1655,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
       return 0;
     }
     ret = 0;
-    if (!TypeFactory::isDataType (it2) &&
+    if (!TypeFactory::isDataType (it2) && !TypeFactory::isStructure (it2) &&
 	!TypeFactory::isPIntType (it2) &&
 	!TypeFactory::isPBoolType (it2)) {
       typecheck_err ("Channels require data types!");

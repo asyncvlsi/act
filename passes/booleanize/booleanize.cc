@@ -321,13 +321,49 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 }
 
 
-static act_connection *visit_chp_var (act_boolean_netlist_t *N,
-				      ActId *id, int isinput)
+static void visit_chp_var (act_boolean_netlist_t *N,
+			   ActId *id, int isinput)
 {
   act_booleanized_var_t *v;
 
-  if (!id) return NULL;
-  
+  if (!id) return;
+
+  InstType *it = N->cur->FullLookup (id, NULL);
+  if (TypeFactory::isStructure (it)) {
+    /* visit the pieces */
+    Data *d = dynamic_cast<Data *>(it->BaseType());
+    ActId *tail;
+    tail  = id;
+    while (tail->Rest()) {
+      tail = tail->Rest();
+    }
+    for (int i=0; i < d->getNumPorts(); i++) {
+      InstType *xt = d->getPortType (i);
+      ActId *piece;
+      piece = new ActId (d->getPortName (i));
+      tail->Append (piece);
+
+      if (xt->arrayInfo()) {
+	Arraystep *as = xt->arrayInfo()->stepper();
+	while (!as->isend()) {
+	  Array *a = as->toArray ();
+	  piece->setArray (a);
+	  visit_chp_var (N, id, isinput);
+	  piece->setArray (NULL);
+	  delete a;
+	  as->step();
+	}
+	delete as;
+      }
+      else {
+	visit_chp_var (N, id, isinput);
+      }
+      tail->prune();
+      delete piece;
+    }
+    return;
+  }
+
   v = var_lookup (N, id);
   v->usedchp = 1;
 
@@ -347,7 +383,7 @@ static act_connection *visit_chp_var (act_boolean_netlist_t *N,
     /* recursively access all booleans */
     visit_channel_ports (N, ch, id, isinput);
   }
-  return v->id;
+  return;
 }
 
 
