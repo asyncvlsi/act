@@ -1,0 +1,12 @@
+
+
+deftype dualrail <: int<1> (bool t, f) { }
+
+
+chan(int<1>) y;
+
+dualrail d;
+
+chp {
+   y!d
+}

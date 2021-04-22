@@ -5,7 +5,7 @@ defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
   int x;
   bool y;
   chp {                                          
-    *[ [ #tmp -> OUT!1 [] else -> skip ] ]
+    *[ [ #tmp -> OUT!false [] else -> skip ] ]
   }                                                    
 }                                                      
 

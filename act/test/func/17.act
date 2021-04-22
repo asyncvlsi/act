@@ -12,7 +12,7 @@ defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
   int x;
   bool y;
   chp {                                          
-    *[ [ y -> OUT!addone(1) [] else -> skip ] ]
+    *[ [ y -> OUT!bool(addone(1)) [] else -> skip ] ]
   }                                                    
 }                                                      
 

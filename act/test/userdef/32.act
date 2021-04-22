@@ -3,7 +3,7 @@ defchan e1of2 <: chan(bool) (bool t, f, e) { }
 defproc buffer (e1of2 l; chan(bool) r)
 {
   chan(bool) y;
-  int x;
+  bool x;
 
   l = y;
   

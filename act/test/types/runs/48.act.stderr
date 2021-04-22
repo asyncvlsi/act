@@ -1,0 +1,3 @@
+ERROR: File `48.act', line 11, col 5
+	CHP send: type-checking failed.
+	Integer/non-integer types are incompatible.

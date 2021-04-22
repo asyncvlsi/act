@@ -1,0 +1,7 @@
+
+
+deftype dualrail <: int<1> (bool t, f) { }
+
+
+chan(dualrail) x;
+chan(int<1>) y;

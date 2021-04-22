@@ -70,13 +70,13 @@ static void dumpflags(int f)
 {
   if (f == T_ERR) { printf ("[t-ERR]"); return; }
   printf ("[v=%x]", f);
-  if (T_BASETYPE (f) == T_INT) {
+  if (T_BASETYPE_INT (f)) {
     printf ("[t-int]");
   }
   else if (T_BASETYPE (f) == T_REAL) { 
     printf ("[t-real]");
   }
-  else if (T_BASETYPE (f) == T_BOOL) {
+  else if (T_BASETYPE_BOOL (f)) {
     printf ("[t-bool]");
   }
   else if (f & T_DATA) {
@@ -353,21 +353,21 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_ORLOOP:
     lt = act_type_expr (s, e->u.e.r->u.e.l, &lw, 0);
     if (lt == T_ERR) return T_ERR;
-    if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
+    if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop range is not of integer type");
       return T_ERR;
     }
     if (e->u.e.r->u.e.r->u.e.l) {
       lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, &lw, 0);
       if (lt == T_ERR) return T_ERR;
-      if (T_BASETYPE (lt) != T_INT || (lt & T_ARRAYOF)) {
+      if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
 	typecheck_err ("Loop range is not of integer type");
 	return T_ERR;
       }
     }
     lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
     if (lt == T_ERR) return T_ERR;
-    if (T_BASETYPE (lt) != T_BOOL || (lt & T_ARRAYOF)) {
+    if (!T_BASETYPE_BOOL (lt) || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of bool type");
       return T_ERR;
     }
@@ -462,7 +462,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_QUERY:
     lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
     if (lt == T_ERR) return T_ERR;
-    if (T_BASETYPE(lt) == T_BOOL && !( lt & T_ARRAYOF )) {
+    if (T_BASETYPE_BOOL(lt) && !( lt & T_ARRAYOF )) {
       e = e->u.e.r;
       EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
       typecheck_err ("Query expression: two options must have compatible types");
@@ -507,7 +507,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       InstType *xit;
       int lo, hi;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
-      if (T_BASETYPE (lt) == T_INT) {
+      if (T_BASETYPE_INT (lt)) {
 	if (xit->isExpanded()) {
 	  Assert (e->u.e.r, "What?");
 	  Assert (e->u.e.r->u.e.r, "What?");
@@ -577,7 +577,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       typecheck_err ("int(.) can't accept real arguments");
       return T_ERR;
     }
-    if (lt & T_BOOL) {
+    if (T_BASETYPE_BOOL (lt)) {
       if (e->u.e.r) {
 	typecheck_err ("int(.) with a Boolean argument doesn't accept second arg");
 	return T_ERR;
@@ -585,16 +585,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (width) {
 	*width = 1;
       }
-      return (lt & ~T_BOOL)|T_INT;
+      return (lt & ~(T_BOOL|T_DATA_BOOL))|T_INT;
     }
-    if (lt & T_INT) {
+    if (T_BASETYPE_INT (lt)) {
       if (!e->u.e.r) {
 	typecheck_err ("int(.) with int argument requires width argument:");
 	return T_ERR;
       }
       rt = act_type_expr (s, e->u.e.r, NULL, only_chan);
       if (rt == T_ERR)  return T_ERR;
-      if (!(rt & T_INT) || !(rt & T_PARAM) || (rt & T_ARRAYOF)) {
+      if (!T_BASETYPE_INT(rt) || !(rt & T_PARAM) || (rt & T_ARRAYOF)) {
 	typecheck_err ("int(.): second argument has to be an int parameter");
 	return T_ERR;
       }
@@ -830,7 +830,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  *width = TypeFactory::bitWidth (xit);
 	}
 	else {
-	  if (T_BASETYPE(lt) == T_BOOL) {
+	  if (T_BASETYPE_BOOL(lt)) {
 	    *width = 1;
 	  }
 	  else {
@@ -1092,6 +1092,13 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
     /* special case */
     it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
     return it;
+  }
+  else if (e->type == E_FUNCTION) {
+    /* special case */
+    UserDef *u = (UserDef *) e->u.fn.s;
+    Assert (TypeFactory::isFuncType (u), "Hmm.");
+    Function *fn = dynamic_cast<Function *>(u);
+    return fn->getRetType();
   }
   ret = act_type_expr (s, e, NULL);
 
@@ -1563,3 +1570,118 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   }
   return ret;
 }
+
+
+
+/*------------------------------------------------------------------------
+ *
+ * Typecheck channel with expression / id pair
+ *
+ *------------------------------------------------------------------------
+ */
+int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
+{
+  int ret = 1;
+  InstType *it1, *it2;
+
+  if (e) {
+    it1 = act_expr_insttype (sc, e, NULL);
+  }
+  else {
+    it1 = NULL;
+  }
+  if (id) {
+    if (act_type_var (sc, id, &it2) == T_ERR) {
+      typecheck_err ("Could not find variable type");
+      return 0;
+    }
+  }
+  else {
+    it2 = NULL;
+  }
+  if (!is_send) {
+    InstType *tmp = it1;
+    it1 = it2;
+    it2 = tmp;
+  }
+    
+  if (it1) {
+    ret = 0;
+    if (!TypeFactory::isDataType (it1) && !TypeFactory::isPIntType (it1) &&
+	!TypeFactory::isPBoolType (it1)) {
+      typecheck_err ("Channels require data types!");
+    }
+    else {
+      if (TypeFactory::isBoolType (ch->datatype())) {
+	if (TypeFactory::isBaseBoolType (it1) || TypeFactory::isPBoolType (it1)) {
+	  ret = 1;
+	}
+	else {
+	  typecheck_err ("Boolean/non-boolean types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isIntType (ch->datatype())) {
+	if (TypeFactory::isBaseIntType (it1) || TypeFactory::isPIntType (it1)) {
+	  ret = 1;
+	}
+	else {
+	  typecheck_err ("Integer/non-integer types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isStructure (ch->datatype())) {
+	if (TypeFactory::isStructure (it1)) {
+	  if (type_connectivity_check (it1, ch->datatype(), 0)) {
+	    ret = 1;
+	  }
+	}
+	else {
+	  typecheck_err ("Structure/non-structure types are incompatible.");
+	}
+      }
+    }
+  }
+  if (!ret) {
+    return 0;
+  }
+  
+  if (it2) {
+    if (!ch->acktype()) {
+      return 0;
+    }
+    ret = 0;
+    if (!TypeFactory::isDataType (it2) &&
+	!TypeFactory::isPIntType (it2) &&
+	!TypeFactory::isPBoolType (it2)) {
+      typecheck_err ("Channels require data types!");
+    }
+    else {
+      if (TypeFactory::isBoolType (ch->acktype())) {
+	if (TypeFactory::isBaseBoolType (it2) || TypeFactory::isPBoolType (it2)) {
+	  ret = 1;
+	}
+	else {
+	  typecheck_err ("Boolean/non-boolean types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isIntType (ch->acktype())) {
+	if (TypeFactory::isBaseIntType (it2) || TypeFactory::isPIntType (it2)) {
+	  ret = 1;
+	}
+	else {
+	  typecheck_err ("Integer/non-integer types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isStructure (ch->acktype())) {
+	if (TypeFactory::isStructure (it2)) {
+	  if (type_connectivity_check (it2, ch->acktype(), 0)) {
+	    ret = 1;
+	  }
+	}
+	else {
+	  typecheck_err ("Structure/non-structure types are incompatible.");
+	}
+      }
+    }
+  }
+  return ret;
+}  

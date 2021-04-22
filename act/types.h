@@ -519,7 +519,6 @@ class Channel : public UserDef {
       return p->isBiDirectional();
     }
   }
-  
  private:
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS];
   Expr *emethods[ACT_NUM_EXPR_METHODS];
@@ -723,6 +722,12 @@ class TypeFactory {
   static int isExactChanType (Type *t);
   static int isExactChanType (InstType *it);
 
+  /* 1 only for  valid data types within a chan(...) 
+     Assumes that "t" is in fact a data type as a pre-condition.
+   */
+  static int isValidChannelDataType (Type *t);
+  static int isValidChannelDataType (InstType *t);
+
   /**
    * Determines if the specified type is a process type or not
    *
@@ -792,6 +797,14 @@ class TypeFactory {
   static int isStructure (Type *t);
   static int isStructure (InstType *it);
   
+  /*-- a user type that is rooted in a bool or a bool --*/
+  static int isBaseBoolType (Type *t);
+  static int isBaseBoolType (InstType *t);
+
+  /*-- a user type that is rooted in an int or an int --*/
+  static int isBaseIntType (Type *t);
+  static int isBaseIntType (InstType *t);
+  
 };
 
 
@@ -823,6 +836,8 @@ class TypeFactory {
 #define T_BASETYPE(x) ((x) & 0x1f)
 #define T_BASETYPE_ISNUM(x) (T_FIXBASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
 #define T_BASETYPE_ISINTBOOL(x) ((T_FIXBASETYPE (x) == T_INT) || (T_FIXBASETYPE (x) == T_BOOL))
+#define T_BASETYPE_INT(x) (T_FIXBASETYPE(x) == T_INT)
+#define T_BASETYPE_BOOL(x) (T_FIXBASETYPE(x) == T_BOOL)
 
 int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
 int act_type_var (Scope *, ActId *, InstType **xit);
@@ -839,6 +854,8 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal);
 InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);
 
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
+int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
+
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
 

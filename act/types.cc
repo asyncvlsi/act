@@ -332,7 +332,6 @@ int TypeFactory::isStructure (Type *t)
 }
 INSTMACRO(isStructure)
 
-  
 
 int TypeFactory::isIntType (Type *t)
 {
@@ -413,6 +412,35 @@ int TypeFactory::isExactChanType (Type *t)
   return 0;
 }
 INSTMACRO(isExactChanType)
+
+
+int TypeFactory::isValidChannelDataType (Type *t)
+{
+  Data *x = dynamic_cast<Data *>(t);
+  if (!x) {
+    /* is an int/enum/bool */
+    return 1;
+  }
+  if (!isStructure (t)) {
+    return 0;
+  }
+
+  /* -- now check that this is a structure with only data fields! -- */
+  for (int i=0; i < x->getNumPorts(); i++) {
+    if (!isValidChannelDataType (x->getPortType(i)->BaseType())) {
+      return 0;
+    }
+  }
+
+  if (x->getParent()) {
+    if (!isValidChannelDataType (x->getParent())) {
+      return 0;
+    }
+  }
+  return 1;
+}
+INSTMACRO(isValidChannelDataType);
+
 
 int TypeFactory::isProcessType (Type *t)
 {
@@ -3063,3 +3091,45 @@ int TypeFactory::bitWidthTwo (Type *t)
   return -1;
 }
 XINSTMACRO(bitWidthTwo)
+
+
+int TypeFactory::isBaseBoolType (Type *t)
+{
+  Bool *tmp_b = dynamic_cast<Bool *>(t);
+  if (tmp_b) {
+    return 1;
+  }
+  Data *tmp_d = dynamic_cast<Data *>(t);
+  if (!tmp_d) {
+    return 0;
+  }
+  if (isStructure (t)) {
+    return 0;
+  }
+  if (isBoolType (tmp_d->root())) {
+    return 1;
+  }
+  return 0;
+}
+INSTMACRO(isBaseBoolType)
+  
+int TypeFactory::isBaseIntType (Type *t)
+{
+  Int *tmp_i = dynamic_cast<Int *>(t);
+  if (tmp_i) {
+    return 1;
+  }
+  Data *tmp_d = dynamic_cast<Data *>(t);
+  if (!tmp_d) {
+    return 0;
+  }
+  if (isStructure (t)) {
+    return 0;
+  }
+  if (isIntType (tmp_d->root())) {
+    return 1;
+  }
+  return 0;
+}
+INSTMACRO(isBaseIntType)
+  

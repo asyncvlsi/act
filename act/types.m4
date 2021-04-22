@@ -152,6 +152,7 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical
     }
     OPT_FREE ($2);
     OPT_FREE ($7);
+
     InstType *t = $4;
     InstType *ack = NULL;
     if (OPT_EXISTS ($5)) {
@@ -165,6 +166,19 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical
 	(ack && !TypeFactory::isDataType (ack))) {
       $E("Channels can only send/receive data.");
     }
+    if (!TypeFactory::isValidChannelDataType (t) ||
+	(ack && !TypeFactory::isValidChannelDataType (ack))) {
+      $e("User-defined channel data type must be a structure with pure data.\n");
+      fprintf ($f, "\tType%s: ", ack ? "s" : "");
+      t->Print ($f);
+      if (ack) {
+	fprintf ($f, ", ");
+	ack->Print ($f);
+      }
+      fprintf ($f, "\n");
+      exit (1);
+    }
+	
     ret = $0->tf->NewChan ($0->scope, d, t, ack);
 
     return ret;

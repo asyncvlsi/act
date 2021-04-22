@@ -488,6 +488,9 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     ch1 = dynamic_cast<Channel *> (it->BaseType());
     if (ch1) {
       isbidir = ch1->isBiDirectional();
+      Assert (ch1->root(), "What?");
+      ch2 = dynamic_cast<Chan *>(ch1->root()->BaseType());
+      Assert (ch2, "What?");
     }
     else {
       ch2 = dynamic_cast<Chan *> (it->BaseType());
@@ -502,8 +505,13 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     }
     OPT_FREE ($3);
     OPT_FREE ($4);
+
+    /* now typecheck channel */
+    if (!act_type_chan ($0->scope, ch2, 1, c->u.comm.e, c->u.comm.var)) {
+      $E("CHP send: type-checking failed.\n\t%s", act_type_errmsg());
+    }
     return c;
-  }}
+}}
 ;
 
 snd_type[int]: "!"
@@ -571,6 +579,9 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ bool_or_int_expr_id ]
     ch1 = dynamic_cast<Channel *> (it->BaseType());
     if (ch1) {
       isbidir = ch1->isBiDirectional();
+      Assert (ch1->root(), "What?");
+      ch2 = dynamic_cast<Chan *>(ch1->root()->BaseType());
+      Assert (ch2, "What?");
     }
     else {
       ch2 = dynamic_cast<Chan *> (it->BaseType());
@@ -585,6 +596,11 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ bool_or_int_expr_id ]
     }
     OPT_FREE ($3);
     OPT_FREE ($4);
+
+    if (!act_type_chan ($0->scope, ch2, 0, c->u.comm.e, c->u.comm.var)) {
+      $E("CHP receive: type-checking failed.\n\t%s", act_type_errmsg());
+    }
+    
     return c;
 }}
 ;

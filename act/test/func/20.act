@@ -7,7 +7,7 @@ function addone(int<8> x) : int<8>
 }
 
 
-defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
+defproc testme (chan?(int<8>) A, B; chan!(int) OUT)
 {                                                      
   chan(bool) OUT1;
   chan(bool) tmp;
