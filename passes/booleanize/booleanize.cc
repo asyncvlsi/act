@@ -585,14 +585,22 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
       --*/
     if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
       act_booleanized_var_t *v;
-      v = var_lookup (N, (ActId *)e->u.e.l);
       if (e->type == E_VAR) {
-	v->input = 1;
-	if (v->ischan) {
-	  _set_chan_passive_recv (v);
+	InstType *it;
+	it = N->cur->FullLookup ((ActId *)e->u.e.l, NULL);
+	if (TypeFactory::isStructure (it)) {
+	  /* skip */
+	}
+	else {
+	  v = var_lookup (N, (ActId *)e->u.e.l);
+	  v->input = 1;
+	  if (v->ischan) {
+	    _set_chan_passive_recv (v);
+	  }
 	}
       }
       else {
+	v = var_lookup (N, (ActId *)e->u.e.l);
 	/* probe */
 	if (v->input && !v->output) {
 	  _set_chan_passive_recv (v);
@@ -723,7 +731,6 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 	   permitted in CHP bodies 
 	   --*/
       if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
-	v = var_lookup (N, (ActId *)e->u.e.l);
 	if (ischp) {
 	  if (e->type == E_VAR) {
 	    visit_chp_var (N, (ActId *)e->u.e.l, 1);
@@ -779,7 +786,9 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
   act_connection *c = tmp->Canonical (N->cur);
   InstType *it;
 
-  if (id->Rest()) {
+  act_type_var (N->cur, tmp, &it);
+
+  if (id->Rest() && !TypeFactory::isStructure (it)) {
     act_error_ctxt (stderr);
     fprintf (stderr, "ID: ");
     id->Print (stderr);
@@ -787,7 +796,14 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
     fatal_error ("Only simple dynamic de-references permitted.");
   }
 
-  act_type_var (N->cur, tmp, &it);
+  if (!TypeFactory::isDataType (it) &&
+      !TypeFactory::isValidChannelDataType (it)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    fatal_error ("Dynamic de-references can only contain data.");
+  }
 
   phash_bucket_t *b;
 
@@ -804,10 +820,18 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
     v->id = c;
     v->aid = tmp;
     v->width = 1;
-    if (TypeFactory::boolType (it)) {
+    if (TypeFactory::isStructure (it)) {
+      v->isstruct = dynamic_cast<Data *>(it->BaseType());
+      Assert (v->isstruct, "What?");
+      v->isint = 0;
+      v->width = -1;
+    }
+    else if (TypeFactory::boolType (it)) {
+      v->isstruct = NULL;
       v->isint = 0;
     }
     else {
+      v->isstruct = NULL;
       v->isint = 1;
       v->width = TypeFactory::bitWidth (it);
     }
@@ -1028,9 +1052,17 @@ static void update_chp_probes (act_boolean_netlist_t *N,
     {
       act_booleanized_var_t *v;
       if (!c->u.assign.id->isDynamicDeref()) {
-	v = var_lookup (N, c->u.assign.id);
-	Assert (v, "What?");
-
+	InstType *it = N->cur->FullLookup (c->u.assign.id, NULL);
+	if (TypeFactory::isStructure (it)) {
+	  /* ignore it */
+	}
+	else {
+	  v = var_lookup (N, c->u.assign.id);
+	  Assert (v, "What?");
+	  if (v->ischan) {
+	    warning ("FIXME Channel assignment!");
+	  }
+	}
       }
       update_chp_expr_vars (N, c->u.assign.e);
     }

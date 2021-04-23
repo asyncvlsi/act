@@ -146,6 +146,9 @@ public:
   int getTypeOffset (stateinfo_t *si, act_connection *c,
 		     int *offset, int *type, int *width);
 
+  int getTypeDynamicStructOffset (stateinfo_t *si, act_connection *c,
+				  int *offset_i, int *offset_b);
+
   bool connExists (stateinfo_t *si, act_connection *c);
   
   int getTypeOffset (Process *p, act_connection *c,
@@ -192,6 +195,8 @@ public:
   int instOffsets () { return _inst_offsets; }
 
   int globalBoolOffset (ActId *id);
+
+  static void getStructCount (Data *d, state_counts *sc);
 
 private:
   void *local_op (Process *p, int mode = 0);

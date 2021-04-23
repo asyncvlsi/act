@@ -53,6 +53,48 @@ void *ActStatePass::local_op (Process *p, int mode)
   return getMap (p);
 }
 
+
+void ActStatePass::getStructCount (Data *d, state_counts *sc)
+{
+  for (int i=0; i < d->getNumPorts(); i++ ) {
+    InstType *it = d->getPortType (i);
+    int sz;
+    if (it->arrayInfo()) {
+      sz = it->arrayInfo()->size();
+    }
+    else {
+      sz = 1;
+    }
+    if (TypeFactory::isIntType (it)) {
+      sc->addInt(sz);
+    }
+    else if (TypeFactory::isBoolType (it)) {
+      sc->addBool(sz);
+    }
+    else if (TypeFactory::isStructure (it)) {
+      state_counts tmp;
+      Data *d = dynamic_cast<Data *>(it->BaseType());
+      Assert (d, "Hmm");
+      getStructCount (d, &tmp);
+      sc->addVar (tmp, sz);
+    }
+    else {
+      Data *d = dynamic_cast<Data *> (it->BaseType());
+      Assert (d, "Hmm");
+      if (TypeFactory::isIntType (d->root())) {
+	sc->addInt(sz);
+      }
+      else if (TypeFactory::isBoolType (d->root())) {
+	sc->addBool(sz);
+      }
+      else {
+	Assert (0, "structure/data invariant violated!");
+      }
+    }
+  }
+  return;
+}
+
 /*
  * Count all the local booleans, and create a map from connection
  * pointers corresponding to them to integers.
@@ -109,7 +151,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   while ((hb = phash_iter_next (b->cdH, &iter))) {
     act_dynamic_var_t *v;
     v = (act_dynamic_var_t *)hb->v;
-    if (v->isint) {
+    if (v->isstruct) {
+      state_counts ns;
+      getStructCount (v->isstruct, &ns);
+      Assert (ns.numChans() == 0, "Dynamic structures with channels!");
+      chp_count += ns.numInts()*v->a->size();
+      bool_count += ns.numBools()*v->a->size();
+    }
+    else if (v->isint) {
       chp_count += v->a->size();
     }
     else {
@@ -738,13 +787,26 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   while ((pb = ihash_iter_next (b->cdH, &iter))) {
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
-    if (v->isint) {
+    if (v->isstruct) {
+      state_counts ts;
+      x = phash_lookup (si->map, pb->key);
+      Assert (x, "What?");
+      x->i = c_idx.numBools();
+      x = phash_lookup (si->map, (act_connection *)(((unsigned long)pb->key)|1));
+      Assert (!x, "Hmm");
+      x = phash_add (si->map, (act_connection *)(((unsigned long)pb->key)|1));
+      x->i = c_idx.numInts();
+      getStructCount (v->isstruct, &ts);
+      c_idx.addVar (ts, v->a->size());
+    }
+    else if (v->isint) {
       x = phash_lookup (si->map, pb->key);
       Assert (x, "What?");
       x->i = c_idx.numInts();
       c_idx.addInt (v->a->size());
     }
     else {
+      c_idx.addBool (v->a->size());
       /* bool, no problem */
     }
   }
@@ -1128,6 +1190,48 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
     *offset = b->i;
   }
   return 1;
+}
+
+
+int ActStatePass::getTypeDynamicStructOffset (stateinfo_t *si,
+					      act_connection *c,
+					      int *offset_i, int *offset_b)
+{
+  phash_bucket_t *b;
+
+  if (!si) {
+    return 0;
+  }
+
+  Assert (si && c && offset_i && offset_b, "What?");
+
+  /*-- check if this is a dynamic array --*/
+  b = phash_lookup (si->bnl->cdH, c);
+  if (b) {
+    act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
+    if (!dv->isstruct) {
+      return 0;
+    }
+    b = phash_lookup (si->map, c);
+    if (b) {
+      *offset_b = b->i;
+    }
+    else {
+      *offset_b = -1;
+    }
+    b = phash_lookup (si->map, (act_connection *)(((unsigned long)c)|1));
+    if (b) {
+      *offset_i = b->i;
+    }
+    else {
+      *offset_i = -1;
+    }
+    if (*offset_i == -1 && *offset_b == -1) {
+      return 0;
+    }
+    return 1;
+  }
+  return 0;
 }
 
 act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int type, int *doff)

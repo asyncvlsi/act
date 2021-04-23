@@ -44,11 +44,16 @@ typedef struct act_dynamic_var {
   act_connection *id;
   ActId *aid;
   unsigned int isint:1;
+  Data *isstruct;	   // structure (width is ignored)
   Array *a;			// array info: dimensions
   int width;
 } act_dynamic_var_t;
   
 
+/*
+  Structures are expanded out as individual variables for normal
+  accesses. Only dynamic references are maintained as structures.
+*/
 typedef struct act_booleanized_var {
   act_connection *id;		/* unique connection id */
   unsigned int input:1;		/* is a primary input variable */
