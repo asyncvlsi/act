@@ -1686,6 +1686,26 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     n->isempty = 0;
   }
 
+  list_t *final_filter = list_new ();
+  phash_iter_init (n->cH, &iter);
+  while ((b = phash_iter_next (n->cH, &iter))) {
+    act_connection *c = (act_connection *)b->key;
+    if (isDynamicRef (n, c)) {
+      list_append (final_filter, c);
+    }
+  }
+  for (listitem_t *li = list_first (final_filter); li; li = list_next (li)) {
+    act_booleanized_var_t *v;
+    act_connection *c = (act_connection *)list_value (li);
+    b = phash_lookup (n->cH, c);
+    Assert (b, "What?");
+
+    v = (act_booleanized_var_t *)b->v;
+    FREE (v);
+    phash_delete (n->cH, c);
+  }
+  list_free (final_filter);
+
   return n;
 }
 
