@@ -1369,6 +1369,10 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
       }
     }
     break;
+
+  case ACT_DFLOW_SINK:
+    visit_chp_var (N, e->u.sink.chan, 1);
+    break;
     
   default:
     fatal_error ("Unknown type");

@@ -2113,6 +2113,22 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     e->u.dflow_cluster = $3;
     return e;
 }}
+| expr_id "->" "*"
+{{X:
+    act_dataflow_element *e;
+    NEW (e, act_dataflow_element);
+    e->t = ACT_DFLOW_SINK;
+
+    if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
+      $e("Identifier on the LHS of a dataflow sink must be of channel type");
+      fprintf ($f, "   ");
+      $1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    e->u.sink.chan = $1;
+    return e;
+}}
 ;
 
 expr_id_or_star[ActId *]: expr_id

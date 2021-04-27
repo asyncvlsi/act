@@ -3214,6 +3214,11 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
     }
     break;
 
+  case ACT_DFLOW_SINK:
+    e->u.sink.chan->Print (fp);
+    fprintf (fp, " -> *");
+    break;
+
   case ACT_DFLOW_CLUSTER:
     fprintf (fp, "dataflow_cluster {\n");
     dflow_print (fp, e->u.dflow_cluster);
@@ -3295,6 +3300,10 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 
     case ACT_DFLOW_CLUSTER:
       f->u.dflow_cluster = dflow_expand (e->u.dflow_cluster, ns, s);
+      break;
+
+    case ACT_DFLOW_SINK:
+      f->u.sink.chan = e->u.sink.chan->Expand (ns, s);
       break;
 
     default:
