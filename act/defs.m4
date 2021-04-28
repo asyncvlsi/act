@@ -1403,13 +1403,28 @@ func_body_items[ActBody *]: alias_or_inst_list lang_chp
 }}
 ;
 
-alias_or_inst_list[ActBody *]: instance alias_or_inst_list
+alias_or_inst_list[ActBody *]: al_item alias_or_inst_list
 {{X:
     $1->Append ($2);
     return $1;
 }}
 | /* nothing */
 ;
+
+al_item[ActBody *]: instance
+{{X:
+    return $1;
+}}
+| assertion
+{{X:
+    return $1;
+}}
+| debug_output
+{{X:
+    return $1;
+}}
+;
+
 
 /*------------------------------------------------------------------------
  *

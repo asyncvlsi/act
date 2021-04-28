@@ -534,6 +534,8 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
     update_chp_expr_vars (N, e->u.e.l);
     break;
 
@@ -662,6 +664,8 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
     generate_expr_vars (N, e->u.e.l, ischp);
     break;
 
@@ -873,6 +877,8 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
     collect_chp_expr_vars (N, e->u.e.l);
     break;
 
