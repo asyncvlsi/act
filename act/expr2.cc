@@ -181,7 +181,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     break;
 
   case E_INT:
-    snprintf (buf+k, sz, "%d", e->u.v);
+    snprintf (buf+k, sz, "%ld", e->u.v);
     PRINT_STEP;
     break;
 

@@ -1499,10 +1499,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       if (i < spec_nt && u[i].u.tp) {
 	if (xa) {
 	  Assert (xa->isExpanded(), "Array info is not expanded");
-	  sz += 16*xa->size()+2;
+	  sz += 32*xa->size()+2;
 	}
 	else {
-	  sz += 16;
+	  sz += 32;
 	}
       }
     }
