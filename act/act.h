@@ -393,7 +393,7 @@ private:
 
 
 /* this should be elsewhere */
-Expr *const_expr (int);
+Expr *const_expr (long);
 Expr *const_expr_bool (int);
 Expr *const_expr_real (double);
 

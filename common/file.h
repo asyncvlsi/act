@@ -83,7 +83,7 @@ char *file_tokenstring (LFILE *);
 const char *file_tokenname (LFILE *l, int tok);
 int file_sym (LFILE *);
 char *file_prev (LFILE *);
-int file_integer (LFILE *);
+long file_integer (LFILE *);
 double file_real (LFILE *);
 
 #ifdef __cplusplus

@@ -121,7 +121,7 @@ ActRet *act_wrap_X_expr (Expr *e)
 
 
 /* return a constant expression with specified value */
-Expr *const_expr (int val)
+Expr *const_expr (long val)
 {
   Expr *e, *f;
 

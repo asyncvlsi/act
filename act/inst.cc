@@ -27,8 +27,6 @@
 #include <act/types.h>
 #include <act/inst.h>
 
-Expr *const_expr (int val);
-
 InstType::InstType (Scope *_s, Type *_t, int is_temp)
 {
   expanded = 0;

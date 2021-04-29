@@ -48,7 +48,7 @@
 #define OPT_VALUE3(x)    LIST_VALUE (list_next (list_next (list_first (x))))
 #define OPT_VALUE4(x)    LIST_VALUE (list_next (list_next (list_next (list_first (x)))))
 
-Expr *const_expr (int val);
+Expr *const_expr (long val);
 Expr *act_walk_X_expr (ActTree *cookie, Expr *e);
 void print_ns_string (FILE *fp, list_t *l);
 

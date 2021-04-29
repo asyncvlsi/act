@@ -329,7 +329,7 @@ char *file_prev (LFILE *l)
   return lex_prev (l->l->l);
 }
 
-int file_integer (LFILE *l)
+long file_integer (LFILE *l)
 {
   return lex_integer (l->l->l);
 }

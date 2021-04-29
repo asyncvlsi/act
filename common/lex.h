@@ -261,7 +261,7 @@ extern int lex_eof (LEX_T *l);
      Undefined if there has not been an identifier token received previously.
    */
 
-#define lex_integer(l) ((signed)(l)->integer)
+#define lex_integer(l) ((signed long)(l)->integer)
    /*
      Returns the integer in the input stream. Undefined if
      there has not been an integer in the input stream.

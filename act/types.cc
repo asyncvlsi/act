@@ -64,10 +64,6 @@ const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS] =
 
 const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS] =  { 1, 1 };
 
-
-
-Expr *const_expr (int val);
-
 /*------------------------------------------------------------------------
  *
  *  Parameter types (preal, pbool, pint, ptype)
