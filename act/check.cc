@@ -804,9 +804,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_INT:
     if (width) {
       int w = 0;
-      long val = e->u.v;
-      if (val < 0) {
-	val = -val;
+      unsigned long val;
+      if ((long)e->u.v < 0) {
+	val = -((long)e->u.v);
+      }
+      else {
+	val = e->u.v;
       }
       while (val) {
 	w++;
