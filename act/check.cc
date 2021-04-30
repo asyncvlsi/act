@@ -505,7 +505,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_BITFIELD:
     {
       InstType *xit;
-      int lo, hi;
+      long lo, hi;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
       if (T_BASETYPE_INT (lt)) {
 	if (xit->isExpanded()) {
@@ -804,7 +804,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_INT:
     if (width) {
       int w = 0;
-      int val = e->u.v;
+      long val = e->u.v;
       if (val < 0) {
 	val = -val;
       }

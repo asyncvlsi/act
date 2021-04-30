@@ -202,7 +202,7 @@ private:
 				// sadly.  0 =  deref, 1 = range, 2 = dynamic
 	union {
 	  struct {
-	    int lo, hi;
+	    long lo, hi;
 	  };
 	  Expr *deref;
 	};

@@ -674,16 +674,16 @@ int Array::sPrintOne (char *buf, int sz, int style)
     else {
       if (r[i].u.ex.isrange == 1) {
 	if (r[i].u.ex.lo == 0) {
-	  snprintf (buf+k, sz, "%d", r[i].u.ex.hi+1);
+	  snprintf (buf+k, sz, "%ld", r[i].u.ex.hi+1);
 	  PRINT_STEP;
 	}
 	else {
-	  snprintf (buf+k, sz, "%d..%d", r[i].u.ex.lo, r[i].u.ex.hi);
+	  snprintf (buf+k, sz, "%ld..%ld", r[i].u.ex.lo, r[i].u.ex.hi);
 	  PRINT_STEP;
 	}
       }
       else if (r[i].u.ex.isrange == 0) {
-	snprintf (buf+k, sz, "%d", r[i].u.ex.lo);
+	snprintf (buf+k, sz, "%ld", r[i].u.ex.lo);
 	PRINT_STEP;
       }
       else if (r[i].u.ex.isrange == 2) {
@@ -1592,7 +1592,7 @@ void Array::dumprange (struct range *r)
   fprintf (stderr, "[");
   for (i=0; i < dims; i++) {
     if (i != 0) fprintf (stderr, "][");
-    fprintf (stderr, "%d..%d", r[i].u.ex.lo, r[i].u.ex.hi);
+    fprintf (stderr, "%ld..%ld", r[i].u.ex.lo, r[i].u.ex.hi);
   }
   fprintf (stderr, "]");
 }

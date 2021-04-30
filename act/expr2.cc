@@ -964,17 +964,17 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	unsigned int v;
+	unsigned long v;
 
 	v = ret->u.e.l->u.v;
 	if (e->type == E_AND) {
-	  v = v & ((unsigned int)ret->u.e.r->u.v);
+	  v = v & ((unsigned long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_OR) {
-	  v = v | ((unsigned int)ret->u.e.r->u.v);
+	  v = v | ((unsigned long)ret->u.e.r->u.v);
 	}
 	else {
-	  v = v ^ ((unsigned int)ret->u.e.r->u.v);
+	  v = v ^ ((unsigned long)ret->u.e.r->u.v);
 	}
 	//FREE (ret->u.e.l);
 	//FREE (ret->u.e.r);
@@ -986,7 +986,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	ret = tmp;
       }
       else if (ret->u.e.l->type == E_TRUE || ret->u.e.l->type == E_FALSE) {
-	unsigned int v;
+	unsigned long v;
 
 	v = (ret->u.e.l->type == E_TRUE) ? 1 : 0;
 	if (e->type == E_AND) {
@@ -1034,32 +1034,32 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	signed int v;
+	signed long v;
 
 	v = ret->u.e.l->u.v;
 	if (e->type == E_PLUS) {
-	  v = v + ((signed int)ret->u.e.r->u.v);
+	  v = v + ((signed long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MINUS) {
-	  v = v - ((signed int)ret->u.e.r->u.v);
+	  v = v - ((signed long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MULT) {
-	  v = v * ((signed int)ret->u.e.r->u.v);
+	  v = v * ((signed long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_DIV) {
-	  v = v / ((signed int)ret->u.e.r->u.v);
+	  v = v / ((signed long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_MOD) {
-	  v = v % ((signed int)ret->u.e.r->u.v);
+	  v = v % ((signed long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_LSL) {
-	  v = v << ((unsigned int)ret->u.e.r->u.v);
+	  v = v << ((unsigned long)ret->u.e.r->u.v);
 	}
 	else if (e->type == E_LSR) {
-	  v = ((unsigned int)v) >> ((unsigned int)ret->u.e.r->u.v);
+	  v = ((unsigned long)v) >> ((unsigned long)ret->u.e.r->u.v);
 	}
 	else { /* ASR */
-	  v = (signed)v >> ((unsigned int)ret->u.e.r->u.v);
+	  v = (signed long)v >> ((unsigned long)ret->u.e.r->u.v);
 	}
 	//FREE (ret->u.e.l);
 	//FREE (ret->u.e.r);
@@ -1078,7 +1078,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 		   || e->type == E_DIV)) {
 	double v;
 
-#define VAL(e) (((e)->type == E_INT) ? (unsigned int)(e)->u.v : (e)->u.f)
+#define VAL(e) (((e)->type == E_INT) ? (unsigned long)(e)->u.v : (e)->u.f)
 
 	v = VAL(ret->u.e.l);
 	if (e->type == E_PLUS) {
@@ -1119,26 +1119,26 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	signed int v;
+	signed long v;
 
 	v = ret->u.e.l->u.v;
 	if (e->type == E_LT) {
-	  v = (v < ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v < ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_GT) {
-	  v = (v > ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v > ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_LE) {
-	  v = (v <= ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v <= ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_GE) {
-	  v = (v >= ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v >= ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else if (e->type == E_EQ) {
-	  v = (v == ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v == ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	else { /* NE */
-	  v = (v != ((signed int)ret->u.e.r->u.v) ? 1 : 0);
+	  v = (v != ((signed long)ret->u.e.r->u.v) ? 1 : 0);
 	}
 	//FREE (ret->u.e.l);
 	//FREE (ret->u.e.r);
@@ -1269,7 +1269,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
-	signed int v = ret->u.e.l->u.v;
+	signed long v = ret->u.e.l->u.v;
 	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = -v;
@@ -1379,7 +1379,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
       hi = expr_expand (e->u.e.r->u.e.r, ns, s, is_lval);
       Assert (hi, "What?");
       
-      unsigned int lov, hiv;
+      unsigned long lov, hiv;
 
       if ((lo && lo->type != E_INT) || hi->type != E_INT) {
 	act_error_ctxt (stderr);
