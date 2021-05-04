@@ -803,6 +803,9 @@ defdata: [ template_spec ]
 	$0->u_d->copyMethods (dp);
       }
     }
+    else {
+      ir = NULL;
+    }
 
     if (ir) {
       $0->scope->Add ("self", ir);
