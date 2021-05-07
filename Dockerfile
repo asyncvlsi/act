@@ -8,7 +8,7 @@ FROM ubuntu:20.04
 # Install tools needed for development
 RUN apt update && \
     apt upgrade --yes && \
-    apt install --yes build-essential m4 libedit-dev zlib1g-dev libboost-dev git
+    apt install --yes build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git
 
 ENV VLSI_TOOLS_SRC=/work
 ENV ACT_HOME=/usr/local/cad
@@ -26,7 +26,8 @@ RUN mkdir -p $ACT_HOME && \
 RUN git clone https://github.com/asyncvlsi/interact.git && \
     git clone --branch sdtcore https://github.com/asyncvlsi/chp2prs.git && \
     git clone https://github.com/asyncvlsi/dflowmap.git && \
-    for p in interact chp2prs dflowmap; do \
+    git clone https://github.com/asyncvlsi/irsim.git && \
+    for p in interact chp2prs dflowmap irsim; do \
       cd $p && (./configure || true) && make depend && make && make install && cd .. \
     ; done && echo "$ACT_HOME/lib" > /etc/ld.so.conf.d/act.conf
  
