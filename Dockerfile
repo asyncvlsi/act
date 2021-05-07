@@ -1,6 +1,8 @@
 #
 # Usage: docker build . -t act
-# To run: docker run -it -v`pwd`:/work act
+# To run (X11 support): docker run -it -v`pwd`:/work -e DISPLAY="$DISPLAY" -v /tmp/.X11-unix:/tmp/.X11-unix act
+#
+# Note: X11 support broken on Ubuntu when docker installed using 'snap'
 #
 
 FROM ubuntu:20.04
@@ -8,6 +10,7 @@ FROM ubuntu:20.04
 # Install tools needed for development
 RUN apt update && \
     apt upgrade --yes && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata && \
     apt install --yes build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git
 
 ENV VLSI_TOOLS_SRC=/work
