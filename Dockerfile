@@ -21,12 +21,14 @@ RUN mkdir -p $ACT_HOME && \
     ./build && \
     make install
 
+# TODO: Can add Dali: https://docs.nvidia.com/deeplearning/dali/user-guide/docs/compilation.html
+
 RUN git clone https://github.com/asyncvlsi/interact.git && \
     git clone --branch sdtcore https://github.com/asyncvlsi/chp2prs.git && \
     git clone https://github.com/asyncvlsi/dflowmap.git && \
     for p in interact chp2prs dflowmap; do \
       cd $p && (./configure || true) && make depend && make && make install && cd .. \
-    ; done
+    ; done && echo "$ACT_HOME/lib" > /etc/ld.so.conf.d/act.conf
  
 # Cleanup all we can to keep container as lean as possible
 RUN apt remove --yes build-essential git && \
