@@ -24,13 +24,12 @@ RUN mkdir -p $ACT_HOME && \
     ./build && \
     make install
 
-# TODO: Can add Dali: https://docs.nvidia.com/deeplearning/dali/user-guide/docs/compilation.html
+# git clone https://github.com/asyncvlsi/dflowmap.git && \ -> add dflowmap
 
 RUN git clone https://github.com/asyncvlsi/interact.git && \
     git clone --branch sdtcore https://github.com/asyncvlsi/chp2prs.git && \
-    git clone https://github.com/asyncvlsi/dflowmap.git && \
     git clone https://github.com/asyncvlsi/irsim.git && \
-    for p in interact chp2prs dflowmap irsim; do \
+    for p in interact chp2prs irsim; do \
       cd $p && (./configure || true) && make depend && make && make install && cd .. \
     ; done && echo "$ACT_HOME/lib" > /etc/ld.so.conf.d/act.conf
 
