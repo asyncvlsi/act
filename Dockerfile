@@ -33,6 +33,10 @@ RUN git clone https://github.com/asyncvlsi/interact.git && \
     for p in interact chp2prs dflowmap irsim; do \
       cd $p && (./configure || true) && make depend && make && make install && cd .. \
     ; done && echo "$ACT_HOME/lib" > /etc/ld.so.conf.d/act.conf
+
+# Build Tclkit
+RUN wget http://kitcreator.rkeene.org/fossil/tarball/kitcreator-trunk-tip.tar.gz?uuid=trunk -O- | tar xvz && \
+    cd kitcreator-trunk-tip && ./kitcreator --enable-64bit --enable-threads
  
 # Cleanup all we can to keep container as lean as possible
 RUN apt remove --yes build-essential git && \
