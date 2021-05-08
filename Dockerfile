@@ -11,7 +11,7 @@ FROM ubuntu:20.04
 RUN apt update && \
     apt upgrade --yes && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata && \
-    apt install --yes build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git
+    apt install --yes build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git curl
 
 ENV VLSI_TOOLS_SRC=/work
 ENV ACT_HOME=/usr/local/cad
@@ -34,8 +34,8 @@ RUN git clone https://github.com/asyncvlsi/interact.git && \
     ; done && echo "$ACT_HOME/lib" > /etc/ld.so.conf.d/act.conf
 
 # Build Tclkit
-RUN wget http://kitcreator.rkeene.org/fossil/tarball/kitcreator-trunk-tip.tar.gz?uuid=trunk -O- | tar xvz && \
-    cd kitcreator-trunk-tip && ./kitcreator --enable-64bit --enable-threads
+RUN curl http://kitcreator.rkeene.org/fossil/tarball/kitcreator-trunk-tip.tar.gz?uuid=trunk | tar xvz && \
+    cd kitcreator-trunk-tip && build/pre.sh && ./kitcreator --enable-64bit --enable-threads
  
 # Cleanup all we can to keep container as lean as possible
 RUN apt remove --yes build-essential git && \
