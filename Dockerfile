@@ -1,10 +1,11 @@
 #
 # Usage: docker build . -t act
-# To run (X11 support using tclkit on port 8015): 
-#  docker run -it -v`pwd`:/work -p8015:8015/tcp -e DISPLAY="$DISPLAY" -v /tmp/.X11-unix:/tmp/.X11-unix act
+# To run (X11 support using tclkit on port 8015->now 443): 
+#  docker run -it -v`pwd`:/work -p443:443/tcp -e DISPLAY="$DISPLAY" -v /tmp/.X11-unix:/tmp/.X11-unix act
 #
 # Note: X11 support broken on Ubuntu when docker installed using 'snap'
 #
+# Use minimal Ubuntu 18.04? Not much better
 FROM ubuntu:20.04 AS build
 
 ENV VLSI_TOOLS_SRC=/work
@@ -16,7 +17,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get upgrade --yes && \
     apt-get install -y --no-install-recommends tzdata && \
-    apt-get install -y build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git curl autoconf \
+    apt-get install -y build-essential m4 libedit-dev zlib1g-dev libboost-dev tcl-dev tk-dev git curl autoconf vim \
       tigervnc-standalone-server tigervnc-xorg-extension tigervnc-viewer matchbox-window-manager libxss1 
 
 WORKDIR $VLSI_TOOLS_SRC
@@ -54,4 +55,5 @@ RUN apt remove --yes build-essential git autoconf && \
 
 # Expose Tclkit port
 EXPOSE 8015/tcp
+# EXPOSE 443/tcp
 CMD ["/bin/bash"]
