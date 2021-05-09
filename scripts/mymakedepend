@@ -42,8 +42,10 @@ else
       if [ "x$s" = "x.cc" ]
       then
           g++ -MM -std=c++11 $@ $i >> Makefile.deps
+          g++ -MM -std=c++11 $@ $i | sed 's/\.o:/.os:/g' >> Makefile.deps
       else
 	  gcc -MM $@ $i >> Makefile.deps
+	  gcc -MM $@ $i | sed 's/\.o:/\.os:/g' >> Makefile.deps
       fi
     done
 fi

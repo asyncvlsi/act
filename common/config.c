@@ -778,8 +778,8 @@ void config_set_default_int (const char *s, int v)
     c = newconfig ();
     c->type = CONFIG_INT;
     b->v = c;
+    c->u.i = v;
   }
-  c->u.i = v;
 }
 
 void config_set_default_real (const char *s, double v)
@@ -802,8 +802,8 @@ void config_set_default_real (const char *s, double v)
     c = newconfig ();
     c->type = CONFIG_REAL;
     b->v = c;
+    c->u.r = v;
   }
-  c->u.r = v;
 }
 
 
@@ -828,8 +828,8 @@ void config_set_default_string (const char *s, const char *t)
     c = newconfig ();
     c->type = CONFIG_STR;
     b->v = c;
+    c->u.s = Strdup (t);
   }
-  c->u.s = Strdup (t);
 }
 
 
