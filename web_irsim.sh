@@ -9,9 +9,9 @@ if {\$ix >= 0} {
     set argc 0
     set argv {}
 # source /usr/local/cad/bin/Tk/TkPool/TkPool.tcl
-exec /usr/local/lib/irsim/tcl/tkcon.tcl \
-	-eval "source /usr/local/lib/irsim/tcl/console.tcl" \
-	-slave "package require Tk; set argc $#; set argv { "$@" }; \
+exec /usr/local/lib/irsim/tcl/tkcon.tcl \\
+	-eval "source /usr/local/lib/irsim/tcl/console.tcl" \\
+	-slave "package require Tk; set argc $#; set argv { $@ }; \\
 	source /usr/local/lib/irsim/tcl/irsim.tcl"
 EOF
 cd /usr/local/cad/bin
