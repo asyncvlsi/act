@@ -1,0 +1,8 @@
+defchan a1of2 <: chan(bool) (bool t, f, a) {  }
+
+deftype dualrail <: bool (bool t, f) { }
+
+chan(bool) a;
+chan(dualrail) b;
+
+a = b;
