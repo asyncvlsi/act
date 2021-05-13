@@ -114,8 +114,16 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PREC_END (10);
     break;
     
-  case E_NOT: EMIT_UNOP(10, "~"); break;
-  case E_COMPLEMENT: EMIT_UNOP(10, "~"); break;
+  case E_NOT: 
+  case E_COMPLEMENT:  
+	if (e->u.e.l->type == E_INT && ((signed)e->u.e.l->u.v < 0)) {
+           EMIT_UNOP(10, "~("); 
+           snprintf (buf+k, sz, ")"); PRINT_STEP;
+        }
+        else {
+           EMIT_UNOP(10, "~"); 
+        }
+        break;
   case E_UMINUS: EMIT_UNOP(10, "-"); break;
 
   case E_MULT: EMIT_BIN (9, "*"); break;
