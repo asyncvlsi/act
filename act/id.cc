@@ -1626,11 +1626,29 @@ ActId *ActId::parseId (const char *s)
   return ret;
 }
 
-ActId *ActId::parseId (char *s)
+ActId *ActId::parseId (const char *s, const char delim1, const char arrayL,
+		       const char arrayR, const char delim2)
+{
+  ActId *ret;
+  
+  if (!s) return NULL;
+  
+  char *t = Strdup (s);
+
+  ret = ActId::parseId (t, delim1, arrayL, arrayR, delim2);
+
+  FREE (t);
+
+  return ret;
+}
+
+ActId *ActId::parseId (char *s, const char delim1, const char arrayL,
+		       const char arrayR, const char delim2)
 {
   int nextdot;
   int arrayinfo;
   int len;
+  int which_delim = 1;
 
   ActId *ret = NULL;
   ActId *tmp;
@@ -1642,7 +1660,13 @@ ActId *ActId::parseId (char *s)
     nextdot = -1;
     
     for (int i=0; s[i]; i++) {
-      if (s[i] == '.') {
+      if (s[i] == delim1) {
+	which_delim = 1;
+	nextdot = i;
+	break;
+      }
+      else if (s[i] == delim2) {
+	which_delim = 2;
 	nextdot = i;
 	break;
       }
@@ -1657,11 +1681,10 @@ ActId *ActId::parseId (char *s)
       len = strlen (s);
     }
 
-
     arrayinfo = -1;
     
     for (int i=0; i < len; i++) {
-      if (s[i] == '[') {
+      if (s[i] == arrayL) {
 	arrayinfo = i;
 	s[i] = '\0';
 	break;
@@ -1673,7 +1696,7 @@ ActId *ActId::parseId (char *s)
     if (arrayinfo != -1) {
       int i;
       Array *ar;
-      s[arrayinfo] = '[';
+      s[arrayinfo] = arrayL;
 
       ar = NULL;
 
@@ -1682,7 +1705,7 @@ ActId *ActId::parseId (char *s)
 	while (i < len && isdigit (s[i])) {
 	  i++;
 	}
-	if (i == len || s[i] != ']') {
+	if (i == len || s[i] != arrayR) {
 	  /* parse error */
 	  if (ret) {
 	    delete ret;
@@ -1692,7 +1715,12 @@ ActId *ActId::parseId (char *s)
 	  }
 	  delete tmp;
 	  if (nextdot != -1) {
-	    s[nextdot] = '.';
+	    if (which_delim == 1) {
+	      s[nextdot] = delim1;
+	    }
+	    else {
+	      s[nextdot] = delim2;
+	    }
 	  }
 	  return NULL;
 	}
@@ -1703,14 +1731,19 @@ ActId *ActId::parseId (char *s)
 	  ar->Concat (new Array (atoi(s+arrayinfo+1)));
 	}
 	arrayinfo = i + 1;
-      } while (s[arrayinfo] == '[');
+      } while (s[arrayinfo] == arrayL);
 
       if (s[arrayinfo] != '\0') {
 	if (ar) { delete ar; }
 	if (ret) { delete ret; }
 	delete tmp;
 	if (nextdot != -1) {
-	  s[nextdot] = '.';
+	  if (which_delim == 1) {
+	    s[nextdot] = delim1;
+	  }
+	  else {
+	    s[nextdot] = delim2;
+	  }
 	}
 	return NULL;
       }
@@ -1727,12 +1760,23 @@ ActId *ActId::parseId (char *s)
 
       
     if (nextdot != -1) {
-      s[nextdot] = '.';
+      if (which_delim == 1) {
+	s[nextdot] = delim1;
+      }
+      else {
+	s[nextdot] = delim2;
+      }
       s = s + nextdot + 1;
     }
   } while (nextdot != -1);
 
   return ret;
+}  
+
+
+ActId *ActId::parseId (char *s)
+{
+  return parseId (s, '.', '[', ']', '.');
 }  
 
 ActId *ActId::nonProcSuffix (Process *p, Process **ret)

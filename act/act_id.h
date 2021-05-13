@@ -125,6 +125,11 @@ class ActId {
 					   // this object
 
 
+  static ActId *parseId (char *s, const char delim1, const char arrayL,
+			 const char arrayR, const char delim2);
+  static ActId *parseId (const char *s, const char delim1, const char arrayL,
+			 const char arrayR, const char delim2);
+
   static ActId *parseId (const char *s);
   static ActId *parseId (char *s);
 
