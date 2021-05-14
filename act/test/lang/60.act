@@ -1,0 +1,5 @@
+chan(int) a, b, c;
+
+dataflow  {
+   a + ~(1<<63) -> b
+}

@@ -1,0 +1,11 @@
+defproc main (chan(int<32>)! main_out)
+{
+  chan(int<32>) a;
+
+  dataflow {
+    (a ^ (1 << 63)) - (1 << 63) -> main_out
+  }
+}
+
+main m;
+
