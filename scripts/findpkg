@@ -1,0 +1,37 @@
+#!/bin/sh
+
+#
+# No standard way to find some packages, let's just try a bunch
+# of options!
+#
+trial="/usr /usr/local /usr/local/opt /opt /opt/local /opt/homebrew /usr/local/homebrew"
+
+if [ $# -ne 2 ]
+then
+	echo "Usage: $0 -i or $0 -l <include-dir-or-file>"
+	exit 1
+fi
+
+file=$2
+
+case $1 in
+-i) include=1;;
+-l) include=0;;
+*) echo "Usage: $0 -i or $0 -l <include-dir-or-file>"; exit 1;;
+esac
+
+for i in $trial $ACT_HOME
+do
+	if [ -d $i/include/$file -o -f $i/include/$file ]
+	then
+		if [ $include -eq 1 ]
+		then
+			echo "-I${i}/include"
+		else 
+			echo "-L${i}/lib"
+		fi
+		exit 0
+	fi
+done
+
+exit 1
