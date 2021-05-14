@@ -1,0 +1,19 @@
+defproc main (chan(int<32>)! main_out);
+
+defproc main (chan(int<32>)! main_out)
+{
+
+/* instances */
+chan(int<32>) a;
+
+/* connections */
+dataflow {
+(a^9223372036854775808)-9223372036854775808 -> main_out
+}
+}
+
+
+/* instances */
+main m;
+
+/* connections */
