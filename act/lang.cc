@@ -2544,7 +2544,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
 	_chp_print (fp, gc->s, 0);
 	fprintf (fp, " <- ");
 	if (gc->g) {
-	  print_expr (fp, gc->g);
+	  print_uexpr (fp, gc->g);
 	}
 	else {
 	  fprintf (fp, "true");
@@ -2561,7 +2561,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
 	    }
 	  }
 	  else {
-	    print_expr (fp, gc->g);
+	    print_uexpr (fp, gc->g);
 	  }
 	  if (gc->s) {
 	    fprintf (fp, " -> ");
@@ -2587,7 +2587,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   case ACT_CHP_ASSIGN:
     c->u.assign.id->Print (fp);
     fprintf (fp, ":=");
-    print_expr (fp, c->u.assign.e);
+    print_uexpr (fp, c->u.assign.e);
     break;
     
   case ACT_CHP_SEND:
@@ -2596,7 +2596,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     {
       listitem_t *li;
       if (c->u.comm.e) {
-	print_expr (fp, c->u.comm.e);
+	print_uexpr (fp, c->u.comm.e);
       }
       if (c->u.comm.var) {
 	fprintf (fp, "?");
@@ -2614,7 +2614,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
       }
       if (c->u.comm.e) {
 	fprintf (fp, "!");
-	print_expr (fp, c->u.comm.e);
+	print_uexpr (fp, c->u.comm.e);
       }
     }
     break;
@@ -2630,7 +2630,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
 	fprintf (fp, "\"%s\"", string_char (a->u.s));
       }
       else {
-	print_expr (fp, a->u.e);
+	print_uexpr (fp, a->u.e);
       }
     }
     fprintf (fp, ")");
@@ -3159,7 +3159,7 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
 {
   switch (e->t) {
   case ACT_DFLOW_FUNC:
-    print_expr (fp, e->u.func.lhs);
+    print_uexpr (fp, e->u.func.lhs);
     fprintf (fp, " -> ");
     if (e->u.func.nbufs) {
       if (e->u.func.istransparent) {

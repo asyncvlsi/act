@@ -68,7 +68,8 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
  
 #define PREC_BEGIN(myprec)			\
   do {						\
-    if ((myprec) < prec) {			\
+    int uprec = (prec < 0 ? -prec : prec);	\
+    if ((myprec) < uprec) {			\
       snprintf (buf+k, sz, "(");		\
       PRINT_STEP;				\
     }						\
@@ -76,32 +77,35 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 
 #define PREC_END(myprec)			\
   do {						\
-    if ((myprec) < prec) {			\
+    int uprec = (prec < 0 ? -prec : prec);	\
+    if ((myprec) < uprec) {			\
       snprintf (buf+k, sz, ")");		\
       PRINT_STEP;				\
     }						\
   } while (0)
 
-#define EMIT_BIN(myprec,sym)				\
-  do {							\
-    PREC_BEGIN(myprec);					\
-    _print_expr (buf+k, sz, e->u.e.l, (myprec));	\
-    PRINT_STEP;						\
-    snprintf (buf+k, sz, "%s", (sym));			\
-    PRINT_STEP;						\
-    _print_expr (buf+k, sz, e->u.e.r, (myprec));	\
-    PRINT_STEP;						\
-    PREC_END (myprec);					\
+#define EMIT_BIN(myprec,sym)					\
+  do {								\
+    int my_sign = (prec < 0 ? -1 : 1);				\
+    PREC_BEGIN(myprec);						\
+    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec));	\
+    PRINT_STEP;							\
+    snprintf (buf+k, sz, "%s", (sym));				\
+    PRINT_STEP;							\
+    _print_expr (buf+k, sz, e->u.e.r, my_sign*(myprec));	\
+    PRINT_STEP;							\
+    PREC_END (myprec);						\
   } while (0)
 
-#define EMIT_UNOP(myprec,sym)				\
-  do {							\
-    PREC_BEGIN(myprec);					\
-    snprintf (buf+k, sz, "%s", sym);			\
-    PRINT_STEP;						\
-    _print_expr (buf+k, sz, e->u.e.l, (myprec));	\
-    PRINT_STEP;						\
-    PREC_END (myprec);					\
+#define EMIT_UNOP(myprec,sym)					\
+  do {								\
+    int my_sign = (prec < 0 ? -1 : 1);				\
+    PREC_BEGIN(myprec);						\
+    snprintf (buf+k, sz, "%s", sym);				\
+    PRINT_STEP;							\
+    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec));	\
+    PRINT_STEP;							\
+    PREC_END (myprec);						\
   } while (0)
     
   switch (e->type) {
@@ -114,16 +118,11 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PREC_END (10);
     break;
     
-  case E_NOT: 
-  case E_COMPLEMENT:  
-	if (e->u.e.l->type == E_INT && ((signed)e->u.e.l->u.v < 0)) {
-           EMIT_UNOP(10, "~("); 
-           snprintf (buf+k, sz, ")"); PRINT_STEP;
-        }
-        else {
-           EMIT_UNOP(10, "~"); 
-        }
-        break;
+  case E_NOT: EMIT_UNOP(10,"~"); break;
+
+  case E_COMPLEMENT: EMIT_UNOP(10,"~"); break;
+
+    
   case E_UMINUS: EMIT_UNOP(10, "-"); break;
 
   case E_MULT: EMIT_BIN (9, "*"); break;
@@ -156,17 +155,17 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
     snprintf (buf+k, sz, "%s:", (char *)e->u.e.l->u.e.l);
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 0);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 1);
     PRINT_STEP;
     if (e->u.e.r->u.e.r->u.e.l) {
       snprintf (buf+k, sz, "..");
       PRINT_STEP;
-      _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 0);
+      _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 1);
       PRINT_STEP;
     }
     snprintf (buf+k, sz, ":");
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, 0);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, 1);
     PRINT_STEP;
     snprintf (buf+k, sz, ")");
     PRINT_STEP;
@@ -189,7 +188,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     break;
 
   case E_INT:
-    snprintf (buf+k, sz, "%ld", e->u.v);
+    if (prec < 0) {
+      snprintf (buf+k, sz, "%lu", e->u.v);
+    }
+    else {
+      snprintf (buf+k, sz, "%ld", e->u.v);
+    }
     PRINT_STEP;
     break;
 
@@ -423,7 +427,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 void sprint_expr (char *buf, int sz, Expr *e)
 {
   if (sz <= 1) return;
-  _print_expr (buf, sz, e, 0);
+  _print_expr (buf, sz, e, 1);
 }
   
 void print_expr (FILE *fp, Expr *e)
@@ -431,6 +435,20 @@ void print_expr (FILE *fp, Expr *e)
   char buf[10240];
   buf[0] = '\0';
   sprint_expr (buf, 10240, e);
+  fprintf (fp, "%s", buf);
+}
+
+void sprint_uexpr (char *buf, int sz, Expr *e)
+{
+  if (sz <= 1) return;
+  _print_expr (buf, sz, e, -1);
+}
+  
+void print_uexpr (FILE *fp, Expr *e)
+{
+  char buf[10240];
+  buf[0] = '\0';
+  sprint_uexpr (buf, 10240, e);
   fprintf (fp, "%s", buf);
 }
 
@@ -1254,7 +1272,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	ret = tmp;
       }
       else if (ret->u.e.l->type == E_INT) {
-	unsigned int v = ret->u.e.l->u.v;
+	unsigned long v = ret->u.e.l->u.v;
 	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = ~v;

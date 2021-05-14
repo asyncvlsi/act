@@ -847,6 +847,8 @@ const char *act_type_errmsg (void);
 
 void print_expr (FILE *fp, Expr *e);
 void sprint_expr (char *buf, int sz, Expr *e);
+void print_uexpr (FILE *fp, Expr *e);
+void sprint_uexpr (char *buf, int sz, Expr *e);
 int expr_is_a_const (Expr *e);
 Expr *expr_dup_const (Expr *e);
 void type_set_position (int l, int c, char *n);
