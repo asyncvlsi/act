@@ -33,7 +33,7 @@ then
         exit 1
 fi
 
-for i in install config Makefile.std getarch getbaseos getos move-in move-out mymakedepend linkso findpkg
+for i in install config Makefile.std getarch getbaseos getos move-in move-out mymakedepend linkso findpkg tconfig
 do
     sed 's/VLSI_TOOLS_SRC/ACT_HOME/g' < $i > tmpfile
     src=tmpfile
@@ -58,7 +58,7 @@ do
     rm -f tmpfile
 done
 
-for i in install getarch getos getbaseos move-in move-out mymakedepend linkso findpkg
+for i in install getarch getos getbaseos move-in move-out mymakedepend linkso findpkg tconfig
 do
     chmod +x $ACT_HOME/scripts/$i
 done
