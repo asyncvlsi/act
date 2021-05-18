@@ -821,15 +821,14 @@ void config_set_default_string (const char *s, const char *t)
     if (c->type != CONFIG_STR) {
       fatal_error ("Changing types on default!");
     }
-    FREE (c->u.s);
   }
   else {
     b = hash_add (H, s);
     c = newconfig ();
     c->type = CONFIG_STR;
     b->v = c;
+    c->u.s = Strdup (t);
   }
-  c->u.s = Strdup (t);
 }
 
 
