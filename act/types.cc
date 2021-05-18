@@ -1330,6 +1330,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     else {
       x = p->Expand (ns, ux->I); // this is the real type of the parameter
 
+      if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
+	act_error_ctxt (stderr);
+	fatal_error ("Template parameter `%s': zero-length array creation not permitted", getPortName (-(i+1)));
+      }
+
       /* add parameter to the scope */
       ux->AddMetaParam (x, pn[i]);
 
@@ -1658,7 +1663,16 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 
   /*-- create ports --*/
   for (int i=0; i < nports; i++) {
-    Assert (ux->AddPort (getPortType(i)->Expand (ns, ux->I), getPortName (i)), "What?");
+    InstType *chk;
+    Assert (ux->AddPort ((chk = getPortType(i)->Expand (ns, ux->I)),
+			 getPortName (i)), "What?");
+
+    if (chk->arrayInfo() && chk->arrayInfo()->size() == 0) {
+      act_error_ctxt (stderr);
+      fatal_error ("Port `%s': zero-length array creation not permitted",
+		   getPortName (i));
+    }
+    
     ActId *tmp = new ActId (getPortName (i));
     tmp->Canonical (ux->CurScope());
     delete tmp;
