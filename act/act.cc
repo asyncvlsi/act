@@ -92,6 +92,201 @@ _valid_id_string (char *s)
   return 1;
 }
 
+
+/*-- returns 1 if matched and processed, 0 otherwise --*/
+int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
+{
+  if (strncmp (argvp, "-D", 2) == 0) {
+    char *tmp, *s, *t;
+    int isint;
+    int s_value;
+    unsigned int u_value;
+
+    tmp = Strdup (argvp+2);
+    /* tmp should look like var=true or var=false */
+    s = tmp;
+    while (*s && *s != '=') {
+      s++;
+    }
+
+    if (*s != '=') {
+      fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
+    }
+    *s = '\0';
+    s++;
+    if (strcmp (s, "true") != 0 &&
+	strcmp (s, "false") != 0) {
+      if (strncmp (s, "0x", 2) == 0) {
+	isint = 1; /* pint */
+	t = s+2;
+	while (*t) {
+	  if (('0' <= *t  && *t <= '9')
+	      || ('a' <= *t && *t <= 'f')
+	      || ('A' <= *t && *t <= 'F')) {
+	    t++;
+	  }
+	  else {
+	    isint = -1;
+	    break;
+	  }
+	}
+	if (isint != -1) {
+	  sscanf (s+2, "%x", &u_value);
+	}
+      }
+      else {
+	if (*s == '-') {
+	  isint = 2;
+	  t = s + 1;
+	}
+	else {
+	  isint = 1;
+	  t = s;
+	}
+	while (*t) {
+	  if ('0' <= *t  && *t <= '9') {
+	    t++;
+	  }
+	  else {
+	    isint = -1;
+	    break;
+	  }
+	}
+	if (isint == 1) {
+	  sscanf (s, "%u", &u_value);
+	}
+	else if (isint == 2) {
+	  sscanf (s, "%d", &s_value);
+	}
+      }
+    }
+    else {
+      isint = 0;
+      if (strcmp (s, "true") == 0) {
+	u_value = 1;
+      }
+      else {
+	u_value = 0;
+      }
+    }
+
+    if (isint == -1) {
+      fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
+    }
+
+    if (!_valid_id_string (tmp)) {
+      fatal_error ("-D option: variable `%s' is not a valid identifier",
+		   tmp);
+    }
+
+    A_NEW (vars, struct command_line_defs);
+    A_NEXT (vars).varname = tmp;
+    if (isint == 0) {
+      A_NEXT (vars).u_value = u_value;
+    }
+    else if (isint == 1) {
+      A_NEXT (vars).u_value = u_value;
+    }
+    else if (isint == 2) {
+      A_NEXT (vars).s_value = s_value;
+    }
+    A_NEXT (vars).isint = isint;
+    A_INC (vars);
+  }
+  else if (strncmp (argvp, "-T", 2) == 0) {
+    config_stdtech_path (argvp+2);
+    *tech_specified = 1;
+  }
+  else if (strncmp (argvp, "-W", 2) == 0) {
+    char *s, *tmp;
+    s = Strdup (argvp+2);
+    tmp = strtok (s, ",");
+    while (tmp) {
+#define WARNING_FLAG(x,y)						\
+      if (strncmp (tmp, #x, sizeof (#x)-1) == 0) {			\
+	if (strcmp (tmp + sizeof(#x)-1, ":on") == 0) {			\
+	  config_set_int ("act.warn." #x, 1);				\
+	}								\
+	else if (strcmp (tmp + sizeof(#x)-1, ":off") == 0) {		\
+	  config_set_int ("act.warn." #x, 0);				\
+	}								\
+	else {								\
+	  fatal_error ("-W option `%s' must end in :off or :on", tmp);	\
+	}								\
+      } else
+#include "warn.def"
+      if (strcmp (tmp, "all:on") == 0) {
+#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 1);
+#include "warn.def"
+      } else if (strcmp (tmp, "all:off") == 0) {
+#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 0);
+#include "warn.def"
+      }
+      else {
+	fprintf (stderr, "FATAL: -W option `%s' is unknown", tmp);
+	fprintf (stderr, "  legal options are:\n   ");
+#define WARNING_FLAG(x,y) fprintf (stderr, " " #x);
+#include "warn.def"
+	fprintf (stderr, "\nAppend :on or :off to turn the flag on/off\n");
+	exit (1);
+      }
+      tmp = strtok (NULL, ",");
+    }
+    FREE (s);
+  }
+  else if (strncmp (argvp, "-V", 2) == 0) {
+    char *s, *tmp;
+    s = Strdup (argvp+2);
+    tmp = strtok (s, ",");
+    while (tmp) {
+      if (strcmp (tmp, "config") == 0) {
+	Log::UpdateLogLevel("A");
+      }
+      else {
+	fatal_error ("-V option `%s' is unknown", tmp);
+      }
+      tmp = strtok (NULL, ",");
+    }
+    FREE (s);
+  }
+  else if (strncmp (argvp, "-opt=", 5) == 0) {
+    /* -- getopt string! -- */
+    if (_getopt_string) {
+      fatal_error ("-opt can only be used once!");
+    }
+    _getopt_string = Strdup (argvp + 5);
+  }
+  else if (strncmp (argvp, "-log=", 5) == 0) {
+    char *s;
+    s = Strdup (argvp+5);
+    Log::OpenLog (s);
+    FREE (s);
+  }
+  else if (strncmp (argvp, "-cnf=", 5) == 0) {
+    if (*conf) {
+      FREE (*conf);
+    }
+    *conf = Strdup (argvp+5);
+  }
+  else if (strncmp (argvp, "-ref=", 5) == 0) {
+    /* refinement steps */
+    int r = atoi(argvp+5);
+    if (r < 0) {
+      fatal_error ("-ref option needs a non-negative integer");
+    }
+    config_set_default_int ("act.refine_steps", r);
+  }
+  else if (strncmp (argvp, "-lev=", 5) == 0) {
+    Log::UpdateLogLevel(argvp+5);
+  }
+  else {
+    return 0;
+  }
+  return 1;
+}
+
+  
+
 void Act::Init (int *iargc, char ***iargv)
 {
   static int initialize = 0;
@@ -135,191 +330,22 @@ void Act::Init (int *iargc, char ***iargv)
   A_NEXT (args_remain) = 0;
   A_INC (args_remain);
 
+  if (getenv ("ACT_STD_CMDLINE")) {
+    char *tmp = Strdup (getenv ("ACT_STD_CMDLINE"));
+    char *s = strtok (tmp, " \t");
+    while (s && *s) {
+      if (!_process_act_arg (s, &tech_specified, &conf_file)) {
+	warning ("ACT_STD_CMDLINE `%s' is not an ACT argument; skipped",
+		 s);
+      }
+      s = strtok (NULL, " \t");
+    }
+    FREE (tmp);
+  }
+  
+
   for (i=1; i < argc; i++) {
-    if (strncmp (argv[i], "-D", 2) == 0) {
-      char *tmp, *s, *t;
-      int isint;
-      int s_value;
-      unsigned int u_value;
-
-      tmp = Strdup (argv[i]+2);
-      /* tmp should look like var=true or var=false */
-      s = tmp;
-      while (*s && *s != '=') {
-	s++;
-      }
-
-      if (*s != '=') {
-	fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
-      }
-      *s = '\0';
-      s++;
-      if (strcmp (s, "true") != 0 &&
-	  strcmp (s, "false") != 0) {
-	if (strncmp (s, "0x", 2) == 0) {
-	  isint = 1; /* pint */
-	  t = s+2;
-	  while (*t) {
-	    if (('0' <= *t  && *t <= '9')
-		|| ('a' <= *t && *t <= 'f')
-		|| ('A' <= *t && *t <= 'F')) {
-	      t++;
-	    }
-	    else {
-	      isint = -1;
-	      break;
-	    }
-	  }
-	  if (isint != -1) {
-	    sscanf (s+2, "%x", &u_value);
-	  }
-	}
-	else {
-	  if (*s == '-') {
-	    isint = 2;
-	    t = s + 1;
-	  }
-	  else {
-	    isint = 1;
-	    t = s;
-	  }
-	  while (*t) {
-	    if ('0' <= *t  && *t <= '9') {
-	      t++;
-	    }
-	    else {
-	      isint = -1;
-	      break;
-	    }
-	  }
-	  if (isint == 1) {
-	    sscanf (s, "%u", &u_value);
-	  }
-	  else if (isint == 2) {
-	    sscanf (s, "%d", &s_value);
-	  }
-	}
-      }
-      else {
-	isint = 0;
-	if (strcmp (s, "true") == 0) {
-	  u_value = 1;
-	}
-	else {
-	  u_value = 0;
-	}
-      }
-
-      if (isint == -1) {
-	fatal_error ("-D option must be of the form -Dvar=value (bool or int)");
-      }
-
-      if (!_valid_id_string (tmp)) {
-	fatal_error ("-D option: variable `%s' is not a valid identifier",
-		     tmp);
-      }
-
-      A_NEW (vars, struct command_line_defs);
-      A_NEXT (vars).varname = tmp;
-      if (isint == 0) {
-	A_NEXT (vars).u_value = u_value;
-      }
-      else if (isint == 1) {
-	A_NEXT (vars).u_value = u_value;
-      }
-      else if (isint == 2) {
-	A_NEXT (vars).s_value = s_value;
-      }
-      A_NEXT (vars).isint = isint;
-      A_INC (vars);
-    }
-    else if (strncmp (argv[i], "-T", 2) == 0) {
-      config_stdtech_path (argv[i]+2);
-      tech_specified = 1;
-    }
-    else if (strncmp (argv[i], "-W", 2) == 0) {
-      char *s, *tmp;
-      s = Strdup (argv[i]+2);
-      tmp = strtok (s, ",");
-      while (tmp) {
-#define WARNING_FLAG(x,y)						\
-	if (strncmp (tmp, #x, sizeof (#x)-1) == 0) {			\
-	  if (strcmp (tmp + sizeof(#x)-1, ":on") == 0) {		\
-	    config_set_int ("act.warn." #x, 1);				\
-	  }								\
-	  else if (strcmp (tmp + sizeof(#x)-1, ":off") == 0) {		\
-	    config_set_int ("act.warn." #x, 0);				\
-	  }								\
-	  else {							\
-	    fatal_error ("-W option `%s' must end in :off or :on", tmp); \
-	  }								\
-        } else
-#include "warn.def"
-	if (strcmp (tmp, "all:on") == 0) {
-#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 1);
-#include "warn.def"
-	} else if (strcmp (tmp, "all:off") == 0) {
-#define WARNING_FLAG(x,y) config_set_int ("act.warn." #x, 0);
-#include "warn.def"
-	}
-	else {
-	  fprintf (stderr, "FATAL: -W option `%s' is unknown", tmp);
-	  fprintf (stderr, "  legal options are:\n   ");
-#define WARNING_FLAG(x,y) fprintf (stderr, " " #x);
-#include "warn.def"
-	  fprintf (stderr, "\nAppend :on or :off to turn the flag on/off\n");
-	  exit (1);
-	}
-	tmp = strtok (NULL, ",");
-      }
-      FREE (s);
-    }
-    else if (strncmp (argv[i], "-V", 2) == 0) {
-      char *s, *tmp;
-      s = Strdup (argv[i]+2);
-      tmp = strtok (s, ",");
-      while (tmp) {
-	if (strcmp (tmp, "config") == 0) {
-	  Log::UpdateLogLevel("A");
-	}
-	else {
-	  fatal_error ("-V option `%s' is unknown", tmp);
-	}
-	tmp = strtok (NULL, ",");
-      }
-      FREE (s);
-    }
-    else if (strncmp (argv[i], "-opt=", 5) == 0) {
-      /* -- getopt string! -- */
-      if (_getopt_string) {
-	fatal_error ("-opt can only be used once!");
-      }
-      _getopt_string = Strdup (argv[i] + 5);
-    }
-    else if (strncmp (argv[i], "-log=", 5) == 0) {
-      char *s;
-      s = Strdup (argv[i]+5);
-      Log::OpenLog (s);
-      FREE (s);
-    }
-    else if (strncmp (argv[i], "-cnf=", 5) == 0) {
-      if (conf_file) {
-	FREE (conf_file);
-      }
-      conf_file = Strdup (argv[i]+5);
-    }
-    else if (strncmp (argv[i], "-ref=", 5) == 0) {
-      /* refinement steps */
-      int r = atoi(argv[i]+5);
-      if (r < 0) {
-	fatal_error ("-ref option needs a non-negative integer");
-      }
-      config_set_default_int ("act.refine_steps", r);
-    }
-    else if (strncmp (argv[i], "-lev=", 5) == 0) {
-      Log::UpdateLogLevel(argv[i]+5);
-    }
-    else {
+    if (!_process_act_arg (argv[i], &tech_specified, &conf_file)) {
       A_NEW (args_remain, int);
       A_NEXT (args_remain) = i;
       A_INC (args_remain);

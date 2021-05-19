@@ -81,6 +81,76 @@ static struct search_path {
 L_A_DECL (char *, files_read);
 L_A_DECL (char, global_prefix);
 
+
+/*--- expand any environment variables ---*/
+static char *create_string (const char *s)
+{
+  char *ret;
+  char *tmp;
+  int len;
+  int pos;
+
+  ret = Strdup (s);
+
+  len = strlen (s) + 1;
+
+  pos = 0;
+
+  while (ret[pos]) {
+    while (ret[pos] && ret[pos] != '$') {
+      pos++;
+    }
+    if (ret[pos] == '$' && ret[pos+1] == '{') {
+      char *var;
+      /* could be environment variable */
+      var = ret + pos + 2;
+      tmp = var;
+      while (*tmp && *tmp != '}') {
+	tmp++;
+      }
+      if (*tmp != '}') {
+	fatal_error ("Incomplete environment variable: `%s'", &ret[pos]);
+      }
+      *tmp = '\0';
+      char *env = getenv (var);
+      if (env) {
+	int delta = strlen (env) - (strlen (var) + 3);
+	if (delta > 0) {
+	  int mv_pos;
+	  REALLOC (ret, char,  len + delta);
+
+	  mv_pos = pos + 3 + strlen (var);
+	  /* shift all characters */
+	  for (int i=len; i >= mv_pos; i--) {
+	    ret[i+delta] = ret[i];
+	  }
+	}
+	for (int i=0; i < strlen (env); i++) {
+	  ret[pos] = env[i];
+	  pos++;
+	}
+	if (delta < 0) {
+	  /* shift string back */
+	  len += delta;
+	  for (int i=pos; i < len; i++) {
+	    ret[i] = ret[i-delta];
+	  }
+	}
+      }
+      else {
+	warning ("Undefined environment variable `%s'", var);
+	*tmp = '}';
+	pos++;
+      }
+    }
+    else {
+      pos++;
+    }
+  }
+  
+  return ret;
+}
+
 struct Hashtable *config_get_state (void)
 {
   return H;
@@ -413,7 +483,7 @@ void config_read (const char *name)
 	fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
       }
       buf2[strlen(buf2)-1] = '\0';
-      c->u.s = Strdup (buf2+1);
+      c->u.s = create_string (buf2+1);
       b->v = c;
     }
     else if  (strcmp (s, "real") == 0) {
@@ -532,7 +602,7 @@ void config_read (const char *name)
 
 	  buf2[strlen(buf2)-1] = '\0';
 
-	  A_APPEND (x, char *, Strdup (buf2+1));
+	  A_APPEND (x, char *, create_string (buf2+1));
 
 	  s = strtok (NULL, " \t");
 
@@ -827,7 +897,7 @@ void config_set_default_string (const char *s, const char *t)
     c = newconfig ();
     c->type = CONFIG_STR;
     b->v = c;
-    c->u.s = Strdup (t);
+    c->u.s = create_string (t);
   }
 }
 
@@ -906,7 +976,7 @@ void config_set_string (const char *s, const char *t)
     b->v = c;
   }
   c->set = 1;
-  c->u.s = Strdup (t);
+  c->u.s = create_string (t);
 }
 
 

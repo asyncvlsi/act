@@ -285,6 +285,7 @@ private:
 
   static char *_getopt_string;
   
+  static int _process_act_arg (const char *argvp, int *tech_specified, char **conf);
 };
 
 class ActPass {
