@@ -1,4 +1,4 @@
-defproc test() 
+defproc foo() 
 {
   bool a, b, c;
   prs {   
