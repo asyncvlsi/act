@@ -921,7 +921,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 }
 
 /*
-  type == 0 or EDGE_CELEM
+  type == n/p  with optional EDGE_CELEM
 */
 static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sense = 0)
 {
@@ -965,6 +965,7 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
     break;
 
   case ACT_PRS_EXPR_LABEL:
+    /* only occurs in a simple prs */
     at = hash_lookup (N->atH[EDGE_TYPE(type)], e->u.l.label);
     if (!at) {
       act_error_ctxt (stderr);
@@ -1557,7 +1558,7 @@ static void update_bdds_exprs (netlist_t *N,
   act_prs_expr_t *tmp;
 
   if (type & EDGE_INVERT) {
-    b1 = compute_bool (N, e, 0, 1);
+    b1 = compute_bool (N, e, type, 1);
     NEW (tmp, act_prs_expr_t);
     tmp->type = ACT_PRS_EXPR_NOT;
     tmp->u.e.l = e;
@@ -1572,7 +1573,7 @@ static void update_bdds_exprs (netlist_t *N,
   }
   else {
     /* normal */
-    b1 = compute_bool (N, e, 0, 0);
+    b1 = compute_bool (N, e, type, 0);
   }
   
   if (((EDGE_TYPE (type) == EDGE_NFET) && ((type & (EDGE_INVERT|EDGE_CELEM)) == 0))
