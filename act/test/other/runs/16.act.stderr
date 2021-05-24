@@ -1,0 +1,4 @@
+In expanding ::<Global>
+Identifiers `a' and `b' are not connected.
+   message: Not connected?
+FATAL: Aborted execution on failed assertion

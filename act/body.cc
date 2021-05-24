@@ -435,6 +435,32 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
     fprintf (stderr, "\n");
     exit (1);
   }
+  else if (type == 2) {
+    ActId *x1, *x2;
+    act_connection *c1, *c2;
+
+    x1 = u.t2.id1->Expand (ns, s);
+    x2 = u.t2.id2->Expand (ns, s);
+
+    c1 = x1->Canonical (s);
+    c2 = x2->Canonical (s);
+    if (((u.t2.op == 0) && (c1 != c2)) || ((u.t2.op == 1) && (c1 == c2))) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Identifiers `");
+      x1->Print (stderr);
+      fprintf (stderr, "' and `");
+      x2->Print (stderr);
+      fprintf (stderr, "' are %sconnected.\n", u.t2.op == 0 ? "not " : "");
+
+      if (u.t2.msg) {
+	char *s = Strdup (u.t2.msg+1);
+	s[strlen(s)-1] = '\0';
+	fprintf (stderr, "   message: %s\n", s);
+      }
+      fatal_error ("Aborted execution on failed assertion");
+      exit (1);
+    }
+  }
 }
 
 static void print_id (act_connection *c)

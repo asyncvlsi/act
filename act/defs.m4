@@ -1516,8 +1516,46 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
     }
     return b;
 }}
+| "{" expr_id conn_op expr_id [ ":" STRING ] "}" ";"
+{{X:
+    int tc;
+    ActBody *b;
+    tc = act_type_var ($0->scope, $2, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    tc = act_type_var ($0->scope, $4, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    
+    if (OPT_EMPTY ($5)) {
+      b = new ActBody_Assertion ($2, $4, $3);
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($5);
+      $A(r->type == R_STRING);
+      b = new ActBody_Assertion ($2, $4, $3, r->u.str);
+      FREE (r);
+    }
+    return b;
+}}
 ;
 
+conn_op[int]: "==="
+{{X:
+    return 0;
+}}
+| "!=="
+{{X:
+  return 1;
+}}
+;
 
 instance[ActBody *]: inst_type
 {{X:

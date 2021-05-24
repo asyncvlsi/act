@@ -249,6 +249,14 @@ public:
     u.t0.e = _e;
     u.t0.msg = _msg;
   }
+  ActBody_Assertion (ActId *_id1, ActId *_id2, int op,
+		     const char *_msg = NULL) {
+    type = 2;
+    u.t2.id1 = _id1;
+    u.t2.id2 = _id2;
+    u.t2.msg = _msg;
+    u.t2.op = op;
+  }
   ActBody_Assertion (InstType *nu, InstType *old) {
     type = 1;
     u.t1.nu = nu;
@@ -272,6 +280,11 @@ private:
     struct {
       InstType *nu, *old;
     } t1;
+    struct {
+      int op;
+      ActId *id1, *id2;
+      const char *msg;
+    } t2;
   } u;
   int type;
 };

@@ -1,0 +1,5 @@
+bool a, b;
+
+{ a === b : "Not connected?" };
+
+a = b;
