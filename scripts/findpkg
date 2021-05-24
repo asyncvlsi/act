@@ -22,7 +22,7 @@ esac
 
 for i in $trial $ACT_HOME
 do
-	if [ -d $i/include/$file -o -f $i/include/${file}.h -o -f $i/include/act/${file}.h ]
+	if [ -d $i/include/$file -o -d $i/include/act/$file -o -f $i/include/${file}.h -o -f $i/include/act/${file}.h ]
 	then
 		if [ $include -eq 1 ]
 		then
