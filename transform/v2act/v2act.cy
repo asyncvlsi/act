@@ -630,7 +630,7 @@ id_deref_range_list[list_t *]: id_deref_range
 	d->id = verilog_gen_id ($0, "Vdd");
 	d->id->isport = 1;
       }
-      stack_push (l, d);
+      list_append (l, d);
     }
     return l;
 }}

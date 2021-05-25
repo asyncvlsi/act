@@ -6,10 +6,10 @@ defproc blk0 (bool? e0[5]; bool! out[5])
    /*--- types ---*/
    bool f;
    /*--- connections ---*/
-   out[4]=Vdd;
-   out[3]=GND;
+   out[4]=GND;
+   out[3]=Vdd;
    out[2]=GND;
-   out[1]=Vdd;
-   out[0]=GND;
+   out[1]=GND;
+   out[0]=Vdd;
 }
 

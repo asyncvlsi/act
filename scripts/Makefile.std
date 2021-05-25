@@ -145,8 +145,8 @@ depend: $(GENERATED) dependsub
 
 install: move-in install_bin install_lib install_inc install_conf install_act move-out installsub
 
-install_bin: $(TARGETS)
-	@for i in dummy_bad_name $(TARGETS); \
+install_bin: $(TARGETS) $(TARGETSCRIPTS)
+	@for i in dummy_bad_name $(TARGETS) $(TARGETSCRIPTS); \
                 do \
                 if [ $$i != "dummy_bad_name" ]; \
                 then \

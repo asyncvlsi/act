@@ -1,0 +1,23 @@
+/* -- declarations -- */
+defproc blk0 (bool? e0[13]; bool! out[13]);
+
+defproc blk0 (bool? e0[13]; bool! out[13])
+{
+   /*--- types ---*/
+   bool f;
+   /*--- connections ---*/
+   out[12]=GND;
+   out[11]=Vdd;
+   out[10]=GND;
+   out[9]=GND;
+   out[8]=Vdd;
+   out[7]=GND;
+   out[6]=Vdd;
+   out[5]=Vdd;
+   out[4]=Vdd;
+   out[3]=GND;
+   out[2]=Vdd;
+   out[1]=GND;
+   out[0]=GND;
+}
+
