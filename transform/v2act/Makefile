@@ -20,9 +20,10 @@
 #-------------------------------------------------------------------------
 BINARY=v2act.$(EXT)
 BINARY2=sv2act.$(EXT)
+BINARY3=v2act_quote.sed
 LOCAL_LIB=libverilog_$(EXT).a
 
-TARGETS=$(BINARY) $(BINARY2)
+TARGETS=$(BINARY) $(BINARY2) $(BINARY3)
 
 TARGETCONF=s2a.conf
 

@@ -597,6 +597,43 @@ id_deref_range_list[list_t *]: id_deref_range
     }
     return l;
 }}
+| INT "'b" STRING
+{{X:
+    list_t *l;
+    int pos = 1;
+
+    l = list_new ();
+    for (int i=0; i < $1; i++) {
+      int digit;
+      if (!$3[pos]) {
+	$W("Binary constant doesn't have enough digits");
+	digit = 0;
+      }
+      else {
+	digit = $3[pos] == '0' ? 0 : 1;
+	pos++;
+      }
+
+      id_deref_t *d;
+      NEW (d, id_deref_t);
+      d->isderef = 0;
+      d->deref = 0;
+
+      if (digit == 0) {
+	d->id = verilog_gen_id ($0, "GND");
+	d->id->isport = 1;
+      }
+      else {
+	if (digit != 1) {
+	  $W("Binary constant has non-binary digit (%d)", d);
+	}
+	d->id = verilog_gen_id ($0, "Vdd");
+	d->id->isport = 1;
+      }
+      stack_push (l, d);
+    }
+    return l;
+}}
 ;
 
 id_deref_or_range[list_t *]: id_deref_range

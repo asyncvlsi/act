@@ -1,0 +1,85 @@
+import "globals.act";
+
+namespace benchlib {
+
+export defproc fdef2a1 (bool? D, E, CLK, CLR; bool! Q);
+export defproc fdef2a3 (bool? D, E, CLK, CLR; bool! Q);
+export defproc fdef2a6 (bool? D, E, CLK, CLR; bool! Q);
+export defproc fdef2a9 (bool? D, E, CLK, CLR; bool! Q);
+export defproc and2a3 (bool? A, B; bool! Y);
+export defproc and2a6 (bool? A, B; bool! Y);
+export defproc and2a9 (bool? A, B; bool! Y);
+export defproc and3a1 (bool? A, B, C; bool! Y);
+export defproc and3a3 (bool? A, B, C; bool! Y);
+export defproc and3a9 (bool? A, B, C; bool! Y);
+export defproc and4a6 (bool? A, B, C, D; bool! Y);
+export defproc or2a1 (bool? A, B; bool! Y);
+export defproc or2a3 (bool? A, B; bool! Y);
+export defproc or2a6 (bool? A, B; bool! Y);
+export defproc or3a1 (bool? A, B, C; bool! Y);
+export defproc or3a2 (bool? A, B, C; bool! Y);
+export defproc or3a6 (bool? A, B, C; bool! Y);
+export defproc or4a3 (bool? A, B, C, D; bool! Y);
+export defproc or4a6 (bool? A, B, C, D; bool! Y);
+export defproc ao1f1 (bool? A, B, C; bool! Y);
+export defproc ao1f3 (bool? A, B, C; bool! Y);
+export defproc ao1f6 (bool? A, B, C; bool! Y);
+export defproc ao1f9 (bool? A, B, C; bool! Y);
+export defproc ao1a1 (bool? A, B, C; bool! Y);
+export defproc ao1a6 (bool? A, B, C; bool! Y);
+export defproc oa1f1 (bool? A, B, C; bool! Y);
+export defproc oa1f2 (bool? A, B, C; bool! Y);
+export defproc oa1f3 (bool? A, B, C; bool! Y);
+export defproc xor2a1 (bool? A, B; bool! Y);
+export defproc xor2a6 (bool? A, B; bool! Y);
+export defproc xor3a1 (bool? A, B, C; bool! Y);
+export defproc xor3a3 (bool? A, B, C; bool! Y);
+export defproc mx2a1 (bool? D0, D1, S; bool! Y);
+export defproc mx2a3 (bool? D0, D1, S; bool! Y);
+export defproc inv1a1 (bool? A; bool! Y);
+export defproc inv1a2 (bool? A; bool! Y);
+export defproc inv1a3 (bool? A; bool! Y);
+export defproc inv1a6 (bool? A; bool! Y);
+export defproc inv1a9 (bool? A; bool! Y);
+export defproc buf1a3 (bool? A; bool! Y);
+export defproc buf1a15 (bool? A; bool! Y);
+export defproc fa1a1 (bool? A, B, CI; bool! CO, S);
+export defproc fac2a1 (bool? A, B, CI; bool! CO);
+
+/* -- other lib -- */
+
+export defproc INVX1 (bool? A; bool! Y);
+export defproc INVX2 (bool? A; bool! Y);
+export defproc INVX4 (bool? A; bool! Y);
+export defproc INVX8 (bool? A; bool! Y);
+export defproc CLKBUF1 (bool? A; bool! Y);
+export defproc CLKBUF2 (bool? A; bool! Y);
+export defproc CLKBUF3 (bool? A; bool! Y);
+
+export defproc BUFX2 (bool? A; bool! Y);
+export defproc BUFX4 (bool? A; bool! Y);
+export defproc NOR2X1 (bool? A, B; bool! Y);
+export defproc NOR3X1 (bool? A, B, C; bool! Y);
+export defproc OR2X1 (bool? A, B; bool! Y);
+export defproc OR2X2 (bool? A, B; bool! Y);
+export defproc NAND2X1 (bool? A, B; bool! Y);
+export defproc NAND3X1 (bool? A, B, C; bool! Y);
+export defproc AND2X1 (bool? A, B; bool! Y);
+export defproc AND2X2 (bool? A, B; bool! Y);
+export defproc XOR2X1 (bool? A, B; bool! Y);
+export defproc XNOR2X1 (bool? A, B; bool! Y);
+export defproc MUX2X1 (bool? A, B, S; bool! Y);
+export defproc OAI21X1 (bool? A, B, C; bool! Y);
+export defproc AOI21X1 (bool? A, B, C; bool! Y);
+export defproc OAI22X1 (bool? A, B, C, D; bool! Y);
+export defproc AOI22X1 (bool? A, B, C, D; bool! Y);
+export defproc HAX1 (bool? A, B; bool! YC, YS);
+export defproc FAX1 (bool? A, B, C; bool! YC, YS);
+export defproc TBUF1 (bool? A, EN; bool! Y);
+export defproc TBUF2 (bool? A, EN; bool! Y);
+export defproc LATCH (bool? CLK, D; bool! Q);
+export defproc DFFPOSX1 (bool? CLK, D; bool! Q);
+export defproc DFFNEGX1 (bool? CLK, D; bool! Q);
+export defproc DFFSR (bool? CLK, R, S, D; bool! Q);
+
+}

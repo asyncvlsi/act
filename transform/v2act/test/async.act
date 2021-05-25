@@ -1,0 +1,241 @@
+namespace async {
+
+export defchan e1of2 <: chan(int<1>) (bool e, d0, d1) { }
+
+export 
+defproc source_Vdd (e1of2! out)
+{
+
+}
+
+export
+defproc source_GND (e1of2! out)
+{
+
+}
+
+export 
+template <pint N>
+defproc copy (e1of2? in; e1of2! out[N])
+{
+
+}
+
+export defproc fdef2a1 (e1of2? D, E, CLK, CLR; e1of2! Q)
+{
+
+}
+
+export defproc fdef2a3 (e1of2? D, E, CLK, CLR; e1of2! Q)
+{
+
+}
+
+export defproc fdef2a6 (e1of2? D, E, CLK, CLR; e1of2! Q)
+{
+
+}
+
+export defproc fdef2a9 (e1of2? D, E, CLK, CLR; e1of2! Q)
+{
+
+}
+
+export defproc and2a3 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc and2a6 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc and2a9 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc and3a1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc and3a3 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc and3a9 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc and4a6 (e1of2? A, B, C, D; e1of2! Y)
+{
+
+}
+
+export defproc or2a1 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc or2a3 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc or2a6 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc or3a1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc or3a2 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc or3a6 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc or4a3 (e1of2? A, B, C, D; e1of2! Y)
+{
+
+}
+
+export defproc or4a6 (e1of2? A, B, C, D; e1of2! Y)
+{
+
+}
+
+export defproc ao1f1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc ao1f3 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc ao1f6 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc ao1f9 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc ao1a1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc ao1a6 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc oa1f1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc oa1f2 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc oa1f3 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+
+export defproc xor2a1 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc xor2a6 (e1of2? A, B; e1of2! Y)
+{
+
+}
+
+export defproc xor3a1 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc xor3a3 (e1of2? A, B, C; e1of2! Y)
+{
+
+}
+
+export defproc mx2a1 (e1of2? D0, D1, S; e1of2! Y)
+{
+
+}
+
+export defproc mx2a3 (e1of2? D0, D1, S; e1of2! Y)
+{
+
+}
+
+export defproc inv1a1 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc inv1a2 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc inv1a3 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc inv1a6 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc inv1a9 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc buf1a3 (e1of2? A; e1of2! Y)
+{
+
+}
+
+export defproc buf1a15 (e1of2? A; e1of2! Y)
+{
+
+}
+
+
+export defproc fa1a1 (e1of2? A, B, CI; e1of2! CO, S)
+{
+
+}
+
+export defproc fac2a1 (e1of2? A, B, CI; e1of2! CO)
+{
+
+}
+
+}

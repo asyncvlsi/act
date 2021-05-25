@@ -333,6 +333,11 @@ void Technology::Init (const char *s)
 
 	snprintf (buf+k, BUF_SZ-k-1, "%s.notchspacing", diff[j]);
 	mat->notchspacing = config_get_int (buf);
+
+	if (mat->notchspacing < mat->polyspacing) {
+	  warning ("`%s': notch spacing (%d) is less than the poly spacing (%d).  Hope that is okay.",
+		   diff[j], mat->notchspacing, mat->polyspacing);
+	}
 	
 	snprintf (buf+k, BUF_SZ-k-1, "%s.overhang", diff[j]);
 	verify_range_table (buf);
