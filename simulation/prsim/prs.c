@@ -1495,7 +1495,24 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
 
     /* node being set to X, but is already X. This could occur because a
        node can get set to X due to things other than guards becoming X */
-    if (pe->val == PRS_VAL_X && n->val == PRS_VAL_X) return n;
+    if (pe->val == PRS_VAL_X && n->val == PRS_VAL_X) {
+      /* If this is an X, check to see if its guards are in a state to
+	 clean up the X */
+      if (n->queue == NULL) {
+	/* check set to 1 */
+	if (n->up[G_NORM] && n->up[G_NORM]->val == PRS_VAL_T && (!n->dn[G_NORM] || n->dn[G_NORM]->val == PRS_VAL_F)) {
+	  ne = newevent (p, n, PRS_VAL_T);
+	  ne->cause = saved_cause;
+	  heap_insert (p->eventQueue, NEWTIMEUP (p, ne, G_NORM), ne);
+	}
+	else if (n->dn[G_NORM] && n->dn[G_NORM]->val == PRS_VAL_T && (!n->up[G_NORM] || n->up[G_NORM]->val == PRS_VAL_F)) {
+	  ne = newevent (p, n, PRS_VAL_F);
+	  ne->cause = saved_cause;
+	  heap_insert (p->eventQueue, NEWTIMEDN (p, ne, G_NORM), ne);
+	}
+      }
+      return n;
+    }
 
     if (!(n->seu || UNSTAB_NODE (p,n) || n->val != pe->val)) {
       print_event (p,pe);
