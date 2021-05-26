@@ -580,7 +580,7 @@ bad_port_style: id_or_const_or_array
 }}
 ;
 
-id_deref_range_list[list_t *]: id_deref_range
+id_deref_range_list[list_t *]: id_deref_or_range
 {{X:
     return $1;
 }}
@@ -595,6 +595,19 @@ id_deref_range_list[list_t *]: id_deref_range
       list_concat (l, tmp);
       list_free (tmp);
     }
+    return l;
+}}
+;
+
+id_deref_or_range[list_t *]: id_deref_range
+{{X:
+    return $1;
+}}
+| id_deref
+{{X:
+    list_t *l;
+    l = list_new ();
+    list_append (l, $1);
     return l;
 }}
 | INT "'b" STRING
@@ -632,19 +645,6 @@ id_deref_range_list[list_t *]: id_deref_range
       }
       list_append (l, d);
     }
-    return l;
-}}
-;
-
-id_deref_or_range[list_t *]: id_deref_range
-{{X:
-    return $1;
-}}
-| id_deref
-{{X:
-    list_t *l;
-    l = list_new ();
-    list_append (l, $1);
     return l;
 }}
 ;
