@@ -145,7 +145,7 @@ LispAtomParse (char **pstr, int quoted)
     }
     else {
       LTYPE(l) = S_INT;
-      sscanf (q, "%d", &LINTEGER(l));
+      sscanf (q, "%ld", &LINTEGER(l));
     }
     *str = c;
   }

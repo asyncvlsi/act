@@ -351,7 +351,7 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
     switch (LTYPE(l)) {
     case S_INT:
       argv[argc] = argstring+k;
-      sprintf (argstring+k, "%d", LINTEGER(l));
+      sprintf (argstring+k, "%ld", LINTEGER(l));
       k = k + strlen(argstring+k)+1;
       break;
     case S_FLOAT:

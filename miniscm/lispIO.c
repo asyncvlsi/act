@@ -486,7 +486,7 @@ LispDlbind (char *name, Sexp *s, Sexp *f)
   }
   dl = _stash_get (LINTEGER(ARG1(s)));
   if (!dl) {
-    fprintf (stderr, "%s: could not find library #%d\n",name,LINTEGER(ARG1(s)));
+    fprintf (stderr, "%s: could not find library #%ld\n",name,LINTEGER(ARG1(s)));
     l = LispNewObj ();
     LTYPE(l) = S_BOOL;
     LBOOL(l) = 0;
@@ -494,7 +494,7 @@ LispDlbind (char *name, Sexp *s, Sexp *f)
   }
   func = dlsym (dl, LSTR(ARG3(s)));
   if (!func) {
-    fprintf (stderr, "%s: could not find function %s in library #%d\n",name,
+    fprintf (stderr, "%s: could not find function %s in library #%ld\n",name,
 	     LSTR(ARG3(s)),
 	     LINTEGER(ARG1(s)));
     l = LispNewObj ();

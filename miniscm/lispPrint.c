@@ -109,7 +109,7 @@ _LispPrint (FILE *fp, LispObj *l)
   }
   switch (LTYPE(l)) {
   case S_INT:
-    fprintf (fp,"%d", LINTEGER(l));
+    fprintf (fp,"%ld", LINTEGER(l));
     break;
   case S_FLOAT:
     fprintf (fp, "%lf", LFLOAT(l));

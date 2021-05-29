@@ -80,7 +80,7 @@ int LispCliRun (FILE *fp);
 /* 
   Use to set int return value
 */
-void LispSetReturnInt (int val);
+void LispSetReturnInt (long val);
 
 /*
   Use to set a string return value
@@ -96,7 +96,7 @@ void LispSetReturnFloat (double val);
   Use to create a list return value
 */
 void LispSetReturnListStart (void);
-void LispAppendReturnInt (int val);
+void LispAppendReturnInt (long val);
 void LispAppendReturnString (const char *s);
 void LispAppendReturnFloat (double val);
 void LispSetReturnListEnd (void);

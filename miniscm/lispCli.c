@@ -260,7 +260,7 @@ void pop_file (void)
 
 static int handle_source (int argc, char **argv);
 
-static int lisp_return_value;
+static long lisp_return_value;
 static char *lisp_return_string = NULL;
 static double lisp_return_real;
 static list_t *lisp_return_list = NULL;
@@ -343,7 +343,7 @@ static int dispatch_command (int argc, char **argv)
 }
 
 
-void LispSetReturnInt (int val)
+void LispSetReturnInt (long val)
 {
   lisp_return_value = val;
 }
@@ -353,7 +353,7 @@ void LispSetReturnFloat (double v)
   lisp_return_real = v;
 }
 
-int LispGetReturnInt (void)
+long LispGetReturnInt (void)
 {
   return lisp_return_value;
 }
@@ -386,7 +386,7 @@ void LispSetReturnListStart (void)
   lisp_return_list = list_new ();
 }
 
-void LispAppendReturnInt (int v)
+void LispAppendReturnInt (long v)
 {
   LispObj *l = LispNewObj ();
   LTYPE (l) = S_INT;

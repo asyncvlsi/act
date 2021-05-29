@@ -50,7 +50,7 @@ extern void LispEvaluate(int argc, char **argv, int infile);
 extern int LispDispatch (int argc, char **argv, int echo_cmd, int infile);
 /* return 0 for #f/abort, 1 for #t, 2 for an int (returned by the
    following), 3 for a string, 4 for float, 5 for sexp */
-extern int LispGetReturnInt (void);
+extern long LispGetReturnInt (void);
 extern char *LispGetReturnString (void);
 extern double LispGetReturnFloat (void);
 extern void *LispGetReturnSexp (void);

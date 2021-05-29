@@ -101,7 +101,7 @@ typedef struct LispObj {
   unsigned char t;		/* type */
   union {
     struct Sexp *l;
-    int i;
+    long i;
     double d;
     char *s;
   } u;

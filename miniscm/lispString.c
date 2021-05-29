@@ -161,7 +161,7 @@ LispNumberToString (char *name, Sexp *s, Sexp *f)
   if (LTYPE(ARG1(s)) == S_FLOAT)
     sprintf (buf, "%lf", LFLOAT(ARG1(s)));
   else
-    sprintf (buf, "%d", LINTEGER(ARG1(s)));
+    sprintf (buf, "%ld", LINTEGER(ARG1(s)));
   LSTR(l) = Strdup (buf);
   return l;
 }
@@ -219,7 +219,7 @@ LispStringToNumber (char *name, Sexp *s, Sexp *f)
     }
     else {
       LTYPE(l) = S_INT;
-      sscanf (LSTR(ARG1(s)), "%d", &LINTEGER(l));
+      sscanf (LSTR(ARG1(s)), "%ld", &LINTEGER(l));
     }
   }
   return l;
