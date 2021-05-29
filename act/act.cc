@@ -332,14 +332,35 @@ void Act::Init (int *iargc, char ***iargv)
 
   if (getenv ("ACT_STD_CMDLINE")) {
     char *tmp = Strdup (getenv ("ACT_STD_CMDLINE"));
-    char *s = strtok (tmp, " \t");
-    while (s && *s) {
+
+    /* simple strtok */
+    char *s, *nexts;
+    char tch;
+
+    nexts = tmp;
+
+#define SEPCHAR(x) (((x) == ' ') || ((x) == '\t'))
+
+    do {
+      /*-- find split --*/
+      s = nexts;
+      while (*nexts != '\0' && !SEPCHAR (*nexts)) {
+	nexts++;
+      }
+      tch = *nexts;
+      *nexts = '\0';
+
       if (!_process_act_arg (s, &tech_specified, &conf_file)) {
 	warning ("ACT_STD_CMDLINE `%s' is not an ACT argument; skipped",
 		 s);
       }
-      s = strtok (NULL, " \t");
-    }
+
+      /* skip space/tab */
+      *nexts = tch;
+      while (*nexts != '\0' && SEPCHAR (*nexts)) {
+	  nexts++;
+      }
+    } while (*nexts != '\0');
     FREE (tmp);
   }
   
