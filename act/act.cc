@@ -341,7 +341,7 @@ void Act::Init (int *iargc, char ***iargv)
 
 #define SEPCHAR(x) (((x) == ' ') || ((x) == '\t'))
 
-    do {
+    while (*nexts != '\0') {
       /*-- find split --*/
       s = nexts;
       while (*nexts != '\0' && !SEPCHAR (*nexts)) {
@@ -360,7 +360,7 @@ void Act::Init (int *iargc, char ***iargv)
       while (*nexts != '\0' && SEPCHAR (*nexts)) {
 	  nexts++;
       }
-    } while (*nexts != '\0');
+    }
     FREE (tmp);
   }
   
