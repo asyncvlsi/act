@@ -1553,7 +1553,9 @@ static int _check_all_subconns (act_connection *c)
 	if (c->a[i] != c->a[i]->primary()) {
 	  return 1;
 	}
-	return _check_all_subconns (c->a[i]);
+	if (_check_all_subconns (c->a[i])) {
+	  return 1;
+	}
       }
     }
   }
