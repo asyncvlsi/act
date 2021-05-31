@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Connection: x = y
+  LHS: chan(int<32>)
+  RHS: chan(int<4>)
+FATAL: Type-checking failed on connection
+	Types `chan(int<32>)' and `chan(int<4>)' are not compatible

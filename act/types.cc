@@ -2524,22 +2524,22 @@ int Chan::isEqual (Type *t)
   if (!p || !x->p) return 0;
 
   if (p->isExpanded()) {
-    if (p->isEqual (x->p)) return 1;
+    if (!p->isEqual (x->p)) return 0;
   }
   else {
-    if (p->isEqual (x->p, 1)) return 1;
+    if (!p->isEqual (x->p, 1)) return 0;
   }
 
   if (!ack && !x->ack) return 1;
   if (!ack || !x->ack) return 0;
 
   if (ack->isExpanded()) {
-    if (ack->isEqual (x->ack)) return 1;
+    if (!ack->isEqual (x->ack)) return 0;
   }
   else {
-    if (ack->isEqual (x->ack, 1)) return 1;
+    if (!ack->isEqual (x->ack, 1)) return 0;
   }
-  return 0;
+  return 1;
 }
 
 
