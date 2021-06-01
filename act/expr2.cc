@@ -1045,6 +1045,52 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	fatal_error ("Incompatible types for &/| operator");
       }
     }
+    else if ((e->type == E_AND || e->type == E_OR) &&
+	     (expr_is_a_const (ret->u.e.l) || expr_is_a_const (ret->u.e.r))) {
+      Expr *ce, *re;
+      if (expr_is_a_const (ret->u.e.l)) {
+	ce = ret->u.e.l;
+	re = ret->u.e.r;}
+      else {
+	ce = ret->u.e.r;
+	re = ret->u.e.l;
+      }
+
+      if (e->type == E_AND) {
+	if (ce->type == E_INT && ce->u.v == 0) {
+	  /* return 0 */
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re but with a new free function */
+	}
+	else if (ce->type == E_TRUE) {
+	  FREE (ret);
+	  ret = re;
+	}
+	else if (ret->u.e.l->type == E_FALSE) {
+	    /* return false */
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re */
+	}
+      }
+      else if (e->type == E_OR) {
+	if (ce->type == E_INT && ce->u.v == 0) {
+	  FREE (ret);
+	  ret = re;
+	}
+	else if (ce->type == E_TRUE) {
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re */
+	}
+	else if (ret->u.e.l->type == E_FALSE) {
+	    /* return false */
+	  FREE (ret);
+	  ret = re;
+	}
+      }
+    }
     break;
 
   case E_PLUS:
@@ -1130,6 +1176,55 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 	print_expr (stderr, e);
 	fprintf (stderr,"\n");
 	fatal_error ("Incompatible types for arithmetic operator");
+      }
+    }
+    else if ((e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
+	      || e->type == E_DIV || e->type == E_MOD) &&
+	     (expr_is_a_const (ret->u.e.l) || expr_is_a_const (ret->u.e.r))) {
+      Expr *ce, *re;
+      if (expr_is_a_const (ret->u.e.l)) {
+	ce = ret->u.e.l;
+	re = ret->u.e.r;}
+      else {
+	ce = ret->u.e.r;
+	re = ret->u.e.l;
+      }
+      if (e->type == E_PLUS && VAL(ce) == 0) {
+	FREE (ret);
+	ret = re;
+      }
+      else if (e->type == E_MINUS && VAL(ce) == 0) {
+	if (ce == ret->u.e.r) {
+	  FREE (ret);
+	  ret = re;
+	}
+	else {
+	  ret->type = E_UMINUS;
+	  ret->u.e.l = re;
+	  ret->u.e.r = NULL;
+	}
+      }
+      else if (e->type == E_MULT && VAL(ce) == 0) {
+	FREE (ret);
+	ret = ce;
+	/* XXX: free re */
+      }
+      else if (e->type == E_MULT && VAL(ce) == 1) {
+	FREE (ret);
+	ret = re;
+      }
+      else if (e->type == E_DIV && VAL(ce) == 0 && (ce == ret->u.e.l)) {
+	FREE (ret);
+	ret = ce;
+	/* XXX: free re */
+      }
+      else if (e->type == E_DIV && VAL(ce) == 1 && (ce == ret->u.e.r)) {
+	FREE (ret);
+	ret = re;
+      }
+      else if (e->type == E_MOD && VAL(ce) == 0 && (ce == ret->u.e.l)) {
+	FREE (ret);
+	ret = ce;
       }
     }
     break;
@@ -1323,7 +1418,22 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
     LVAL_ERROR;
     ret->u.e.l = expr_expand (e->u.e.l, ns, s, is_lval);
     if (!expr_is_a_const (ret->u.e.l)) {
+      Expr *tmp;
       ret->u.e.r = expr_expand (e->u.e.r, ns, s, is_lval);
+
+      tmp = ret->u.e.r;
+
+      if (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r)) {
+	Expr *ce = tmp->u.e.l;
+	if ((tmp->u.e.l->type == E_TRUE && tmp->u.e.r->type == E_TRUE) ||
+	    (tmp->u.e.l->type == E_FALSE && tmp->u.e.r->type == E_FALSE) ||
+	    (VAL(tmp->u.e.l) == VAL(tmp->u.e.r))) {
+	  /* XXX need to free ret->u.e.l */
+	  FREE (ret);
+	  FREE (tmp);
+	  ret = ce;
+	}
+      }
     }
     else {
       //FREE (ret->u.e.l);

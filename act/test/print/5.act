@@ -1,0 +1,10 @@
+chan(int) a, b, c;
+
+dataflow {
+  a + b + 0 -> c;
+  a + b - 0 -> c;
+  0 - a + b -> c;
+  a + 0 - b -> c;
+  (a>0) ? 0 : 0 -> c;
+  (a>0) ? 0 : 1 -> c
+}
