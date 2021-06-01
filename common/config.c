@@ -143,7 +143,7 @@ static char *create_string (const char *s)
 	pos++;
       }
     }
-    else {
+    else if (ret[pos]) {
       pos++;
     }
   }
