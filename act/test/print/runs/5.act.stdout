@@ -1,0 +1,16 @@
+
+
+/* instances */
+chan(int<32>) b;
+chan(int<32>) a;
+chan(int<32>) c;
+
+/* connections */
+dataflow {
+a+b -> c;
+a+b -> c;
+-a+b -> c;
+a-b -> c;
+0 -> c;
+a>0 ? 0 : 1 -> c
+}
