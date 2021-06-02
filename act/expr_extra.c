@@ -253,6 +253,7 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
     e->u.e.r->u.e.l = f;
 
     NEW (e->u.e.r->u.e.r, Expr);
+    e->u.e.r->u.e.r->type = etype;
     e->u.e.r->u.e.r->u.e.l = NULL;
     e->u.e.r->u.e.r->u.e.r = NULL;
 
