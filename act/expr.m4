@@ -619,3 +619,16 @@ wbool_allow_chan_expr[Expr *]: bool_expr
 }}
 ;
 
+
+w_chan_id[ActId *]: expr_id
+{{X:
+    if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
+      $e("Identifier must be of channel type");
+      fprintf ($f, "   ");
+      $1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    return $1;
+}}
+;

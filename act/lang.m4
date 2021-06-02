@@ -1951,14 +1951,49 @@ action_items[act_chp_lang_t *]: ID "{" hse_body "}"
 }}
 ;
 
-lang_dataflow[ActBody *]: "dataflow" "{" { dataflow_items ";" }* "}"
+lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ] { dataflow_items ";" }* "}"
 {{X:
     act_dataflow *dflow;
     NEW (dflow, act_dataflow);
-    dflow->dflow = $3;
+    dflow->dflow = $4;
+    if (OPT_EMPTY ($3)) {
+      dflow->order = NULL;
+    }
+    else {
+      ActRet *r;
+      r = OPT_VALUE ($3);
+      $A(r->type == R_LIST);
+      dflow->order = r->u.l;
+      FREE (r);
+    }
+    OPT_FREE ($3);
+
     return new ActBody_Lang (dflow);
 }}
 ;
+
+dataflow_ordering[list_t *]: ID "{" { order_list ";" }* "}"
+{{X:
+    if (strcmp ($1, "order") == 0) {
+      return $3;
+    }
+    else {
+      $E("Only `order' directives currently supported in dataflow block");
+    }
+    return NULL;
+}}
+;
+
+order_list[act_dataflow_order *]: { w_chan_id "," }* "<" { w_chan_id "," }*
+{{X:
+    act_dataflow_order *d;
+    NEW (d, act_dataflow_order);
+    d->lhs = $1;
+    d->rhs = $3;
+    return d;
+}}    
+;
+    
 
 dataflow_items[act_dataflow_element *]:
 w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id

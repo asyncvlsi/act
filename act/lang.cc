@@ -3252,6 +3252,36 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
   }
 }
 
+static void dflow_order_print (FILE *fp, list_t *l)
+{
+  if (!l) return;
+  fprintf (fp, "order {\n");
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    act_dataflow_order *x = (act_dataflow_order *) list_value (li);
+    for (listitem_t *mi = list_first (x->lhs); mi; mi = list_next (mi)) {
+      ActId *tmp = (ActId *) list_value (mi);
+      tmp->Print (fp);
+      if (list_next (mi)) {
+	fprintf (fp, ",");
+      }
+    }
+    fprintf (fp, " < ");
+    for (listitem_t *mi = list_first (x->rhs); mi; mi = list_next (mi)) {
+      ActId *tmp = (ActId *) list_value (mi);
+      tmp->Print (fp);
+      if (list_next (mi)) {
+	fprintf (fp, ",");
+      }
+    }
+    if (list_next (li)) {
+      fprintf (fp, ";\n");
+    }
+    else {
+      fprintf (fp, "\n");
+    }
+  }
+  fprintf (fp, "}\n");
+}
 
 void dflow_print (FILE *fp, act_dataflow *d)
 {
@@ -3260,6 +3290,7 @@ void dflow_print (FILE *fp, act_dataflow *d)
 
   if (!d) return;
   fprintf (fp, "dataflow {\n");
+  dflow_order_print (fp, d->order);
   dflow_print (fp, d->dflow);
   fprintf (fp, "}\n");
 }
@@ -3333,6 +3364,36 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
     }
     list_append (ret, f);
   }
+  
+  return ret;
+}
+
+static
+list_t *dflow_order_expand (list_t *l, ActNamespace *ns, Scope *s)
+{
+  act_dataflow_order *x, *tmp;
+  list_t *ret;
+
+  if (!l) return NULL;
+   
+  ret = list_new ();
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    tmp = (act_dataflow_order *) list_value (li);
+    NEW (x, act_dataflow_order);
+    x->lhs = list_dup (tmp->lhs);
+    x->rhs = list_dup (tmp->rhs);
+
+    /* expand ids */
+    for (listitem_t *mi = list_first (x->lhs); mi; mi = list_next (mi)) {
+      ActId *tmp = (ActId *) list_value (mi);
+      list_value (mi) = tmp->Expand (ns, s);
+    }    
+    for (listitem_t *mi = list_first (x->rhs); mi; mi = list_next (mi)) {
+      ActId *tmp = (ActId *) list_value (mi);
+      list_value (mi) = tmp->Expand (ns, s);
+    }    
+    list_append (ret, x);
+  }
   return ret;
 }
 
@@ -3343,6 +3404,7 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
   if (!d) return NULL;
   NEW (ret, act_dataflow);
   ret->dflow = dflow_expand (d->dflow, ns, s);
+  ret->order = dflow_order_expand (d->order, ns, s);
   return ret;
 }
 

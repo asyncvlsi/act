@@ -1,0 +1,6 @@
+chan?(int) a, b, c;
+
+dataflow {
+  order { a, a < b, b; b < c }
+  a -> b
+}

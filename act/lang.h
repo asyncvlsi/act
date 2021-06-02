@@ -372,8 +372,14 @@ typedef struct  {
   } u;
 } act_dataflow_element;
 
+struct act_dataflow_order {
+  list_t *lhs;
+  list_t *rhs;
+};
+
 struct act_dataflow {
   list_t *dflow;
+  list_t *order;
 };
 
 void prs_print (FILE *, act_prs *);
