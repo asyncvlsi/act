@@ -25,7 +25,7 @@
 #include <common/misc.h>
 #include <common/file.h>
 #include "expr.h"
-
+#include "types.h"
 #include "prs.h"
 #include "act_parse_int.h"
 #include <act/types.h>
@@ -663,4 +663,73 @@ void *act_walk_X_prs_expr (ActTree *a, void *v)
 void act_free_a_prs_expr (void *v)
 {
   _freeexpr ((act_prs_expr_t *)v);
+}
+
+
+static void _free_ex_expr (act_prs_expr_t *e)
+{
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+  case ACT_PRS_EXPR_NOT:
+    _free_ex_expr (e->u.e.l);
+    _free_ex_expr (e->u.e.r);
+    _free_ex_expr (e->u.e.pchg);
+    break;
+    
+  case ACT_PRS_EXPR_VAR:
+    if (e->u.v.id) {
+      delete (ActId *)e->u.v.id;
+    }
+    if (e->u.v.sz) {
+      if (e->u.v.sz->l) {
+	expr_ex_free (e->u.v.sz->l);
+      }
+      if (e->u.v.sz->w) {
+	expr_ex_free (e->u.v.sz->w);
+      }
+      if (e->u.v.sz->folds) {
+	expr_ex_free (e->u.v.sz->folds);
+      }
+      FREE (e->u.v.sz);
+    }
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    if (e->u.l.label) {
+      FREE (e->u.l.label);
+    }
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    if (e->u.loop.id) {
+      FREE (e->u.loop.id);
+    }
+    if (e->u.loop.lo) {
+      expr_ex_free (e->u.loop.lo);
+    }
+    if (e->u.loop.hi) {
+      expr_ex_free (e->u.loop.hi);
+    }
+    _free_ex_expr (e->u.loop.e);
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+    
+  default:
+    fatal_error ("what?");
+    break;
+  }
+  FREE (e);
+}
+
+
+
+void act_free_a_prs_exexpr (void *v)
+{
+  _free_ex_expr ((act_prs_expr_t *)v);
 }

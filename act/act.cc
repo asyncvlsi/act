@@ -463,6 +463,53 @@ int Act::getOptions (int *iargc, char ***iargv)
   return return_code;
 }
 
+static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
+{
+  tr->curns = G;
+  tr->global = tr->curns;
+  tr->os = new ActOpen ();
+  tr->tf = tf;
+  tr->scope = tr->curns->CurScope ();
+
+  tr->u = NULL;
+
+  tr->u_p = NULL;
+  tr->u_d = NULL;
+  tr->u_c = NULL;
+  tr->u_f = NULL;
+  tr->u_i = NULL;
+  tr->t = NULL;
+
+  tr->t_inst = NULL;
+
+  tr->i_t = NULL;
+  tr->i_id = NULL;
+  tr->a_id = NULL;
+
+  tr->supply.vdd = NULL;
+  tr->supply.gnd = NULL;
+  tr->supply.psc = NULL;
+  tr->supply.nsc = NULL;
+  
+  tr->strict_checking = 0;
+  tr->func_template = 0;
+
+  tr->in_tree = 0;
+  tr->in_subckt = 0;
+
+  tr->attr_num = config_get_table_size ("act.instance_attr");
+  tr->attr_table = config_get_table_string ("act.instance_attr");
+
+  tr->sizing_info = NULL;
+  tr->sz_loop_stack = list_new ();
+  tr->skip_id_check = 0;
+
+  tr->emit_depend = Act::emit_depend;
+  tr->in_cond = 0;
+
+  tr->ptype_expand = 0;
+  tr->ptype_name = NULL;
+}
 
 Act::Act (const char *s)
 {
@@ -498,50 +545,7 @@ Act::Act (const char *s)
     return;
   }
 
-  tr.curns = ActNamespace::global;
-  tr.global = tr.curns;
-  tr.os = new ActOpen ();
-  tr.tf = tf;
-  tr.scope = tr.curns->CurScope ();
-
-  tr.u = NULL;
-
-  tr.u_p = NULL;
-  tr.u_d = NULL;
-  tr.u_c = NULL;
-  tr.u_f = NULL;
-  tr.u_i = NULL;
-  tr.t = NULL;
-
-  tr.t_inst = NULL;
-
-  tr.i_t = NULL;
-  tr.i_id = NULL;
-  tr.a_id = NULL;
-
-  tr.supply.vdd = NULL;
-  tr.supply.gnd = NULL;
-  tr.supply.psc = NULL;
-  tr.supply.nsc = NULL;
-  
-  tr.strict_checking = 0;
-  tr.func_template = 0;
-
-  tr.in_tree = 0;
-  tr.in_subckt = 0;
-
-  tr.attr_num = config_get_table_size ("act.instance_attr");
-  tr.attr_table = config_get_table_string ("act.instance_attr");
-
-  tr.sizing_info = NULL;
-  tr.sz_loop_stack = list_new ();
-  tr.skip_id_check = 0;
-
-  tr.emit_depend = Act::emit_depend;
-  tr.in_cond = 0;
-
-  tr.ptype_expand = 0;
-  tr.ptype_name = NULL;
+  _init_tr (&tr, tf, ActNamespace::global);
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
@@ -689,46 +693,7 @@ void Act::Merge (const char *s)
     return;
   }
 
-  tr.curns = ActNamespace::global;
-  tr.global = tr.curns;
-  tr.os = new ActOpen ();
-  tr.tf = tf;
-  tr.scope = tr.curns->CurScope ();
-
-  tr.u = NULL;
-
-  tr.u_p = NULL;
-  tr.u_d = NULL;
-  tr.u_c = NULL;
-  tr.u_f = NULL;
-  tr.u_i = NULL;
-  tr.t = NULL;
-
-  tr.t_inst = NULL;
-
-  tr.i_t = NULL;
-  tr.i_id = NULL;
-  tr.a_id = NULL;
-
-  tr.supply.vdd = NULL;
-  tr.supply.gnd = NULL;
-  tr.supply.psc = NULL;
-  tr.supply.nsc = NULL;
-  
-  tr.strict_checking = 0;
-
-  tr.in_tree = 0;
-  tr.in_subckt = 0;
-
-  tr.attr_num = config_get_table_size ("act.instance_attr");
-  tr.attr_table = config_get_table_string ("act.instance_attr");
-
-  tr.sizing_info = NULL;
-
-  tr.in_cond = 0;
-  tr.ptype_expand = 0;
-  tr.ptype_name = NULL;
-  
+  _init_tr (&tr, tf, ActNamespace::global);
 
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();

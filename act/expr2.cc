@@ -1925,3 +1925,53 @@ AExprstep *AExpr::stepper()
 }
 
   
+
+
+
+static void efree_ex (Expr *e)
+{
+  if (!e) return;
+
+  switch (e->type) {
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+  case E_REAL:
+    break;
+
+  case E_FUNCTION:
+    efree_ex (e->u.fn.r);
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+    if (e->u.e.l) {
+      delete (ActId *)e->u.e.l;
+    }
+    break;
+
+  case E_BITFIELD:
+    if (e->u.e.l) {
+      delete (ActId *) (e->u.e.l);
+    }
+    FREE (e->u.e.r);
+    break;
+
+  case E_RAWFREE:
+    if (e->u.e.l)  FREE (e->u.e.l);
+    if (e->u.e.r) efree_ex (e->u.e.r);
+    break;
+
+  default:
+    if (e->u.e.l) efree_ex (e->u.e.l);
+    if (e->u.e.r) efree_ex (e->u.e.r);
+    break;
+  }
+  FREE (e);
+  return;
+}
+
+void expr_ex_free (Expr *e)
+{
+  efree_ex (e);
+}

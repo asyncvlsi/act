@@ -860,6 +860,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
 
 int expr_equal (Expr *a, Expr *b);
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
+void expr_ex_free (Expr *);
 
 /* for expanded expressions */
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */

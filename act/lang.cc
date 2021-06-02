@@ -988,8 +988,8 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
     if (pick == 0) {
       act_prs_expr_t *t;
       /* RIGHT */
-      act_free_a_prs_expr (ret->u.e.l);
-      act_free_a_prs_expr (ret->u.e.pchg);
+      act_free_a_prs_exexpr (ret->u.e.l);
+      act_free_a_prs_exexpr (ret->u.e.pchg);
       t = ret->u.e.r;
       FREE (ret);
       ret = t;
@@ -997,8 +997,8 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
     else if (pick == 1) {
       act_prs_expr_t *t;
       /* LEFT */
-      act_free_a_prs_expr (ret->u.e.r);
-      act_free_a_prs_expr (ret->u.e.pchg);
+      act_free_a_prs_exexpr (ret->u.e.r);
+      act_free_a_prs_exexpr (ret->u.e.pchg);
       t = ret->u.e.l;
       FREE (ret);
       ret = t;
@@ -1066,7 +1066,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	    ret = at;
 	    if (ret->type == ACT_PRS_EXPR_TRUE) {
 	      if (p->type == ACT_PRS_EXPR_ANDLOOP) {
-		act_free_a_prs_expr (ret);
+		act_free_a_prs_exexpr (ret);
 		ret = NULL;
 	      }
 	      else {
@@ -1078,7 +1078,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 		break;
 	      }
 	      else {
-		act_free_a_prs_expr (ret);
+		act_free_a_prs_exexpr (ret);
 		ret = NULL;
 	      }
 	    }
@@ -1089,7 +1089,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	    }
 	    else {
 	      /* we're done! */
-	      act_free_a_prs_expr (ret);
+	      act_free_a_prs_exexpr (ret);
 	      ret = at;
 	      break;
 	    }
@@ -1097,7 +1097,7 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	  else if (at->type == ACT_PRS_EXPR_FALSE) {
 	    if (p->type == ACT_PRS_EXPR_ANDLOOP) {
 	      /* we're done */
-	      act_free_a_prs_expr (ret);
+	      act_free_a_prs_exexpr (ret);
 	      ret = at;
 	      break;
 	    }
