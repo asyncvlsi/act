@@ -732,6 +732,7 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
 	/* Emit local apply function, if necessary */
 	if (tl->a[k].opt_next && (k != A_LEN(tl->a)-1) &&
 	    tl->a[k].opt_next[walk_id].s) {
+          int l;
 	  /* Specified walker for a subset of the entire production; 
 	     Create the local apply function
 	  */
@@ -740,7 +741,7 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
 		     BNF[i].lhs, j, k);
 	  pp_printf (app, "void lapply_%s_%s_%d_%d (%s *", WNAME,
 		     BNF[i].lhs, j, k, WCOOKIE);
-	  for (int l=0; l <= k; l++) {
+	  for (l=0; l <= k; l++) {
 	    if (HAS_DATA (tl->a[l])) {
 	      pp_printf (app, ", %s", production_to_ret_type (&tl->a[l]));
 	      switch (tl->a[l].type) {
