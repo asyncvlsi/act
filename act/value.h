@@ -100,6 +100,10 @@ public:
   act_connection *primary(); // return primary designee for this connection
 
   Type::direction getDir(); // get direction flags: none, in, or out.
+
+  /* -- disconnect: only works for non-primary connections.
+     Returns true on success, false otherwise -- */
+  bool disconnect ();
 };
 
 
@@ -124,7 +128,7 @@ public:
 				otherwise. Note that global =>
 				immutable, but not the other way
 				around. */
-  
+
   union {
     long idx;		   /**< Base index for allocated storage for
 			      ptypes */

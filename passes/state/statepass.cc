@@ -901,7 +901,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   return si;
 }
 
-ActStatePass::ActStatePass (Act *a, int inst_offset) : ActPass (a, "collect_state")
+ActStatePass::ActStatePass (Act *a, int inst_offset) : ActPass (a, "collect_state", 1)
 {
   /*-- need the booleanize pass --*/
   ActPass *ap = a->pass_find ("booleanize");

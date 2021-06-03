@@ -1320,3 +1320,45 @@ bool act_connection::hasAnyConnection (void)
   
   return false;
 }
+
+
+
+/*------------------------------------------------------------------------
+ *
+ *  disconnect --
+ *
+ *    Only works for non-canonical names. If a connection is not
+ *    canonical, this will remove it from the connection list.
+ *
+ *------------------------------------------------------------------------
+ */
+bool act_connection::disconnect (void)
+{
+  act_connection *prim;
+  if (isPrimary()) {
+    return false;
+  }
+  if (a) {
+    /*-- also no subconnections! --*/
+    return false;
+  }
+
+  prim = primary();
+
+  act_connection *tmp;
+  tmp = prim;
+  while (tmp->next != prim) {
+    if (tmp->next == this) {
+      /*-- delete it from the ring --*/
+      tmp->next = this->next;
+      this->next = this;
+      this->up = NULL;
+      break;
+    }
+    tmp = tmp->next;
+  }
+  if (this->up) {
+    fatal_error ("Not sure what happened!");
+  }
+  return true;
+}

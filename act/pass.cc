@@ -27,16 +27,19 @@
 #include <common/config.h>
 
 
-ActPass::ActPass (Act *_a, const char *s)
+ActPass::ActPass (Act *_a, const char *s, int doroot)
 {
   Assert (_a, "ActPass: requires non-NULL Act pointer!");
   _finished = 0;
   a = _a;
   deps = list_new ();
+  fwdeps = list_new ();
   _a->pass_register (s, this);
   name = _a->pass_name (s);
   pmap = NULL;
   visited_flag = NULL;
+  _root_dirty = doroot;
+  _root = NULL;
 }
 
 ActPass::~ActPass ()
@@ -44,6 +47,7 @@ ActPass::~ActPass ()
   free_map ();
   a->pass_unregister (getName());
   list_free (deps);
+  list_free (fwdeps);
 }
 
 int ActPass::AddDependency (const char *pass)
@@ -53,6 +57,8 @@ int ActPass::AddDependency (const char *pass)
     fatal_error ("Adding dependency to unknown pass `%s'", pass);
   }
   list_append (deps, p);
+  list_append (p->fwdeps, this);
+  
   return 1;
 }
 
@@ -91,6 +97,8 @@ const char *ActPass::getName ()
 int ActPass::run (Process *p)
 {
   init();
+
+  _root = p;
 
   if (!rundeps (p)) {
     return 0;
@@ -228,17 +236,24 @@ void ActPass::recursive_op (UserDef *p, int mode)
       }
     }
   }
-  
-  if (TypeFactory::isProcessType (p) || (p == NULL)) {
-    (*pmap)[p] = local_op (dynamic_cast<Process *>(p), mode);
-  }
-  else if (TypeFactory::isChanType (p)) {
-    (*pmap)[p] = local_op (dynamic_cast<Channel *>(p), mode);
+
+  if (mode >= 0) {
+    if (TypeFactory::isProcessType (p) || (p == NULL)) {
+      (*pmap)[p] = local_op (dynamic_cast<Process *>(p), mode);
+    }
+    else if (TypeFactory::isChanType (p)) {
+      (*pmap)[p] = local_op (dynamic_cast<Channel *>(p), mode);
+    }
+    else {
+      Assert (TypeFactory::isDataType (p) || TypeFactory::isStructure (p),
+	      "What?");
+      (*pmap)[p] = local_op (dynamic_cast<Data *>(p), mode);
+    }
   }
   else {
-    Assert (TypeFactory::isDataType (p) || TypeFactory::isStructure (p),
-	    "What?");
-    (*pmap)[p] = local_op (dynamic_cast<Data *>(p), mode);
+    void *v = (*pmap)[p];
+    free_local (v);
+    (*pmap)[p] = NULL;
   }
 }
 
@@ -545,4 +560,147 @@ void *ActDynamicPass::getPtrParam (const char *name)
     return NULL;
   }
   return b->v;
+}
+
+void ActPass::_actual_update (Process *p)
+{
+  if (_root_dirty) {
+    p = _root;
+  }
+  
+  if (p) {
+    act_error_push (p->getName(), NULL, 0);
+  }
+  else {
+    act_error_push ("-toplevel-", NULL, 0);
+  }
+
+  /* -- free the information -- */
+  visited_flag = new std::unordered_set<UserDef *> ();
+  recursive_op (p, -1);
+  delete visited_flag;
+
+  /*-- re-compute --*/
+  visited_flag = new std::unordered_set<UserDef *> ();
+  recursive_op (p);
+  delete visited_flag;
+  
+  act_error_pop ();
+  
+  visited_flag = NULL;
+}
+
+struct pass_edges {
+  int from, to;
+};
+ 
+void ActPass::update (Process *p)
+{
+  /* need to find all forward dependencies, and then do a topological
+     sort, and run the passes in that order */
+  A_DECL (pass_edges, e);
+  A_DECL (ActPass *, x);
+  A_DECL (int, xfi);
+  
+  A_INIT (x);
+  A_INIT (e);
+  A_INIT (xfi);
+
+  A_APPEND (x, ActPass *, this);
+  A_APPEND (xfi, int, 0);
+
+  for (int i=0; i < A_LEN (x); i++) {
+    ActPass *tmp = x[i];
+    for (listitem_t *li = list_first (tmp->fwdeps); li; li = list_next (li)) {
+      ActPass *dep = (ActPass *) list_value (li);
+      int to = -1;
+
+      for (int j=0; j < A_LEN (x); j++) {
+	if (dep == x[j]) {
+	  to = j;
+	  break;
+	}
+      }
+      if (to == -1) {
+	to = A_LEN (x);
+
+	A_APPEND (x, ActPass *, dep);
+	A_APPEND (xfi, int, 0);
+      }
+      
+      pass_edges et;
+      et.from = i;
+      et.to = to;
+
+      A_APPEND (e, pass_edges, et);
+    }
+  }
+
+  /*-- we now have the dependency graph --*/
+  for (int i=0; i < A_LEN (e); i++) {
+    xfi[e[i].to]++;
+  }
+
+  /*-- propagate dirty flags --*/
+  int change = 1;
+  while (change) {
+    change = 0;
+    for (int i=0; i < A_LEN (e); i++) {
+      if (x[e[i].from]->_root_dirty &&
+	  !x[e[i].to]->_root_dirty) {
+	x[e[i].to]->_root_dirty = 2;
+	change = 1;
+      }
+    }
+  }
+
+  list_t *l; // zero count vertices
+  l = list_new ();
+  for (int i=0; i < A_LEN (x); i++) {
+    if (xfi[i] == 0) {
+      list_iappend (l, i);
+    }
+  }
+
+  int count = 0;
+  while (!list_isempty (l)) {
+    count++;
+    int idx = stack_ipop (l);
+
+    x[idx]->_actual_update (p);
+    if (x[idx]->_root_dirty) {
+      p = _root;
+    }
+
+    /*-- this can be made a lot faster too... --*/
+    for (int i=0; i < A_LEN (e); i++) {
+      if (e[i].from == idx) {
+	xfi[e[i].to]--;
+	Assert (xfi[e[i].to] >= 0, "What?");
+	if (xfi[e[i].to] == 0) {
+	  list_iappend (l, e[i].to);
+	}
+      }
+    }
+  }
+  list_free (l);
+
+  if (count != A_LEN (x)) {
+    fprintf (stderr, "Did not run all forward dependencies. Is there a cycle?\n");
+    for (int i=0; i < A_LEN (e); i++) {
+      fprintf (stderr, "  %s -> %s\n", x[e[i].from]->name, x[e[i].to]->name);
+    }
+    exit (1);
+  }
+
+  /* reset dirty bit */
+  for (int i=0; i < A_LEN (x); i++) {
+    if (x[i]->_root_dirty == 2) {
+      x[i]->_root_dirty = 0;
+    }
+  }
+
+  A_FREE (e);
+  A_FREE (x);
+  A_FREE (xfi);
 }

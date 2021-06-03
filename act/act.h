@@ -293,18 +293,31 @@ protected:
   int _finished;		// has the pass finished execution?
   Act *a;			// main act data structure
   list_t *deps;			// ActPass dependencies
+
+  list_t *fwdeps;		// passes that depend on me
+  
   const char *name;
 
+  int _root_dirty;
+  Process *_root;
   
+  virtual void _actual_update (Process *p);
+
 public:
-  ActPass (Act *_a, const char *name); // create, initialize, and
-				       // register pass
+  ActPass (Act *_a, const char *name, int doroot = 0);
+  // Create, initialize, and register pass
+  // A pass sets "doroot" to 1 if any update to a process
+  // propagates all the way back up to the root of the design.
+  // We assume that the list of ports never change.
   
   ~ActPass ();			       // release storage
 
 
   int AddDependency (const char *pass); // insert dependency on an
 					// actpass
+
+  /*-- re-compute information computed by this pass --*/
+  void update (Process *p);
 
   int rundeps (Process *p = NULL);
 
@@ -318,7 +331,8 @@ public:
   void *getMap (Process *p);
   Act *getAct () { return a; }
   ActPass *getPass (const char *name) { return a->pass_find (name); }
-  
+
+  /* -- negative modes are used internally; do not use! -- */
   virtual void run_recursive (Process *p = NULL, int mode = 0);
 
 
@@ -330,6 +344,7 @@ private:
 
   int init (); // initialize or re-initialize
   void recursive_op (UserDef *p, int mode = 0);
+
   void init_map ();
   void free_map ();
   std::map<UserDef *, void *> *pmap;

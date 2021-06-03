@@ -57,7 +57,6 @@ private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
 
-
   /*-- private data structures --*/
   struct cHashtable *cell_table;
   ActNamespace *cell_ns;
@@ -65,6 +64,10 @@ private:
   int cell_count;
   struct idmap current_idmap;
   int _leak_flag;
+
+  int _propagate_cells;
+
+  void _actual_update (Process *);
 
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);

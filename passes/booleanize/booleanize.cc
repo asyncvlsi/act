@@ -2364,11 +2364,12 @@ void ActBooleanizePass::free_local (void *v)
   A_FREE (n->ports);
   A_FREE (n->instports);
   A_FREE (n->nets);
-  FREE (n);
 
   if (n->nH) {
     phash_free (n->nH);
   }
+  
+  FREE (n);
 }
 
 ActBooleanizePass::ActBooleanizePass(Act *a) : ActPass(a, "booleanize")
