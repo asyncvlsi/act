@@ -114,6 +114,7 @@ static char *create_string (const char *s)
       *tmp = '\0';
       char *env = getenv (var);
       if (env) {
+        int i;
 	int delta = strlen (env) - (strlen (var) + 3);
 	if (delta > 0) {
 	  int mv_pos;
@@ -121,18 +122,18 @@ static char *create_string (const char *s)
 
 	  mv_pos = pos + 3 + strlen (var);
 	  /* shift all characters */
-	  for (int i=len; i >= mv_pos; i--) {
+	  for (i=len; i >= mv_pos; i--) {
 	    ret[i+delta] = ret[i];
 	  }
 	}
-	for (int i=0; i < strlen (env); i++) {
+	for (i=0; i < strlen (env); i++) {
 	  ret[pos] = env[i];
 	  pos++;
 	}
 	if (delta < 0) {
 	  /* shift string back */
 	  len += delta;
-	  for (int i=pos; i < len; i++) {
+	  for (i=pos; i < len; i++) {
 	    ret[i] = ret[i-delta];
 	  }
 	}
