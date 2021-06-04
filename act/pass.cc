@@ -667,9 +667,13 @@ void ActPass::update (Process *p)
     count++;
     int idx = stack_ipop (l);
 
-    x[idx]->_actual_update (p);
-    if (x[idx]->_root_dirty) {
-      p = _root;
+    /* if the pass has completed then re-run it; if it hasn't been run
+       yet we are fine */
+    if (x[idx]->completed()) {
+      x[idx]->_actual_update (p);
+      if (x[idx]->_root_dirty) {
+	p = _root;
+      }
     }
 
     /*-- this can be made a lot faster too... --*/
