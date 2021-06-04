@@ -40,6 +40,7 @@ ActPass::ActPass (Act *_a, const char *s, int doroot)
   visited_flag = NULL;
   _root_dirty = doroot;
   _root = NULL;
+  _update_propagate = 1;
 }
 
 ActPass::~ActPass ()
@@ -615,6 +616,8 @@ void ActPass::update (Process *p)
       ActPass *dep = (ActPass *) list_value (li);
       int to = -1;
 
+      if (!dep->_update_propagate) continue;
+
       for (int j=0; j < A_LEN (x); j++) {
 	if (dep == x[j]) {
 	  to = j;
@@ -639,19 +642,6 @@ void ActPass::update (Process *p)
   /*-- we now have the dependency graph --*/
   for (int i=0; i < A_LEN (e); i++) {
     xfi[e[i].to]++;
-  }
-
-  /*-- propagate dirty flags --*/
-  int change = 1;
-  while (change) {
-    change = 0;
-    for (int i=0; i < A_LEN (e); i++) {
-      if (x[e[i].from]->_root_dirty &&
-	  !x[e[i].to]->_root_dirty) {
-	x[e[i].to]->_root_dirty = 2;
-	change = 1;
-      }
-    }
   }
 
   list_t *l; // zero count vertices
@@ -695,13 +685,6 @@ void ActPass::update (Process *p)
       fprintf (stderr, "  %s -> %s\n", x[e[i].from]->name, x[e[i].to]->name);
     }
     exit (1);
-  }
-
-  /* reset dirty bit */
-  for (int i=0; i < A_LEN (x); i++) {
-    if (x[i]->_root_dirty == 2) {
-      x[i]->_root_dirty = 0;
-    }
   }
 
   A_FREE (e);

@@ -298,6 +298,7 @@ protected:
   
   const char *name;
 
+  int _update_propagate;
   int _root_dirty;
   Process *_root;
   
@@ -335,6 +336,8 @@ public:
   /* -- negative modes are used internally; do not use! -- */
   virtual void run_recursive (Process *p = NULL, int mode = 0);
 
+  void disableUpdate () { _update_propagate = 0; }
+  void enableUpdate () { _update_propagate = 1; }
 
 private:
   virtual void *local_op (Process *p, int mode = 0);

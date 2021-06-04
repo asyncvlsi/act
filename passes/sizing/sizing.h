@@ -37,15 +37,10 @@ public:
   ~ActSizingPass ();
 
   int run (Process *p = NULL);
-  void disableUpdate () { _update = 0; }
-  void enableUpdate () { _update = 1; }
 
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
-
-  void _actual_update (Process *p);
-  int _update;
 
   ActBooleanizePass *bp;
 };

@@ -548,7 +548,9 @@ ActSizingPass::ActSizingPass (Act *a) : ActPass (a, "sizing")
     Assert (bp, "What?");
   }
   AddDependency ("booleanize");
-  _update = 1;
+
+  /* -- by default, sizing doesn't need to update -- */
+  disableUpdate ();
 }
 
 void ActSizingPass::free_local (void *v)
@@ -559,11 +561,4 @@ void ActSizingPass::free_local (void *v)
 int ActSizingPass::run (Process *p)
 {
   return ActPass::run (p);
-}
-
-void ActSizingPass::_actual_update (Process *p)
-{
-  if (_update) {
-    ActPass::_actual_update (p);
-  }
 }

@@ -2854,31 +2854,10 @@ int ActCellPass::run (Process *p)
      predecessor, and the cell pass is idempotent so we stop
      propagation here by overriding the _actual_update function.
   */
-  _propagate_cells = 1;
-
-  Assert (a->pass_find ("sizing"), "How is this possible?");
-  ActSizingPass *sz = dynamic_cast<ActSizingPass *> (a->pass_find ("sizing"));
-  sz->disableUpdate();
-
   ActBooleanizePass *bp = dynamic_cast<ActBooleanizePass *> (a->pass_find ("booleanize"));
-
   bp->update (p);
 
-  _propagate_cells = 0;
-  sz->enableUpdate();
-
   return ret;
-}
-
-/*
-  If the update was requested by this pass, don't run it again
-*/
-void ActCellPass::_actual_update (Process *p)
-{
-  if (_propagate_cells) {
-    return;
-  }
-  ActPass::_actual_update (p);
 }
 
 
@@ -2901,7 +2880,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   cell_ns = NULL;
   proc_inst_count = 0;
   cell_count = 0;
-  _propagate_cells = 0;
+  disableUpdate ();
 
   if (!a->pass_find ("sizing")) {
     ActSizingPass *sp = new ActSizingPass (a);

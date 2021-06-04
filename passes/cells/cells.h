@@ -65,10 +65,6 @@ private:
   struct idmap current_idmap;
   int _leak_flag;
 
-  int _propagate_cells;
-
-  void _actual_update (Process *);
-
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
   void add_passgates ();
