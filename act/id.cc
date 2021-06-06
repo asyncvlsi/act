@@ -831,6 +831,59 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 }  
 
 
+act_connection *ActId::myConnection (Scope *s)
+{
+  ValueIdx *vx = rawValueIdx (s);
+
+  if (!vx) {
+    return NULL;
+  }
+  if (Rest() && Rest()->Rest()) {
+    return NULL;
+  }
+
+  if (!Rest()) {
+    if (arrayInfo()) {
+      return NULL;
+    }
+    else {
+      return vx->u.obj.c;
+    }
+  }
+
+  if (!vx->u.obj.c->hasSubconnections()) {
+    return NULL;
+  }
+
+  UserDef *u = dynamic_cast <UserDef *> (vx->t->BaseType());
+  if (!u) {
+    return NULL;
+  }
+
+  int idx = u->FindPort (Rest()->getName());
+  if (idx <= 0) {
+    return NULL;
+  }
+  idx--;
+
+  act_connection *tmp;
+  tmp = vx->u.obj.c->getsubconn (idx, idx+1 /* should not need this param! */);
+
+  if (!Rest()->arrayInfo()) {
+    return tmp;
+  }
+  else {
+    InstType *xt = u->getPortType (idx);
+
+    if (!xt->arrayInfo()) return NULL;
+    idx = xt->arrayInfo()->Offset (Rest()->arrayInfo());
+    if (idx == -1) {
+      return NULL;
+    }
+    return tmp->getsubconn (idx, idx+1);
+  }
+}
+
 static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();

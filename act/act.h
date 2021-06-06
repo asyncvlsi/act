@@ -340,9 +340,17 @@ public:
   void enableUpdate () { _update_propagate = 1; }
 
 private:
+  /* -- called before sub-tree -- */
+  virtual void *pre_op (Process *p, int mode = 0);
+  virtual void *pre_op (Channel *c, int mode = 0);
+  virtual void *pre_op (Data *d, int mode = 0);
+
+  /* -- called after sub-tree -- */
   virtual void *local_op (Process *p, int mode = 0);
   virtual void *local_op (Channel *c, int mode = 0);
   virtual void *local_op (Data *d, int mode = 0);
+
+  /* - release storage (if any) -- */
   virtual void free_local (void *);
 
   int init (); // initialize or re-initialize

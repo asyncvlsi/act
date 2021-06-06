@@ -496,7 +496,7 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
 }
 
 
-void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
+void ActNetlistPass::generate_staticizers (netlist_t *N,
 					   int num_vdd_share,
 					   int num_gnd_share,
 					   int vdd_len,
@@ -749,7 +749,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
   }
 
   if (weak_vdd) {
-    if (is_toplevel) {
+    if (N->bN->p == _root) {
       /* flush it! */
       _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
       N->weak_supply_vdd = 0;
@@ -770,7 +770,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N, int is_toplevel,
     }
   }
   if (weak_gnd) {
-    if (is_toplevel) {
+    if (N->bN->p == _root) {
       /* flush it! */
       _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
       N->weak_supply_gnd = 0;
@@ -1991,7 +1991,6 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
 
 
 void ActNetlistPass::generate_netgraph (netlist_t *N,
-					int is_toplevel,
 					int num_vdd_sharing,
 					int num_gnd_sharing,
 					int vdd_len,
@@ -2018,7 +2017,7 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   Assert (cur == N->bN->cur, "Hmm");
 
   if (!p) {
-    if (is_toplevel) {
+    if (N->bN->p == _root) {
       /* flush any shared vdd/gnd nodes for subcircuits */
       if (weak_vdd) {
 	_alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
@@ -2068,7 +2067,7 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   compute_max_reff (N, EDGE_PFET);
 
   /*-- generate staticizers --*/
-  generate_staticizers (N, is_toplevel, num_vdd_sharing, num_gnd_sharing,
+  generate_staticizers (N, num_vdd_sharing, num_gnd_sharing,
 			vdd_len, gnd_len, weak_vdd, weak_gnd);
 
   /*-- fold transistors --*/
@@ -2096,20 +2095,15 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   return;
 }
 
-netlist_t *ActNetlistPass::generate_netlist (Process *p, int is_toplevel)
+netlist_t *ActNetlistPass::genNetlist (Process *p)
 {
   int sub_proc_vdd = 0, sub_proc_gnd = 0;
   int vdd_len = 0, gnd_len = 0;
 
-  if (p) {
-    Assert (p->isExpanded(), "Process must be expanded!");
-  }
+  netlist_t *n = _initialize_empty_netlist (bools->getBNL (p));
+  node_t *weak_vdd = NULL, *weak_gnd = NULL;
 
-  if (netmap->find(p) != netmap->end()) {
-    /* handled this already */
-    return (*netmap)[p];
-  }
-
+  /* handle all processes instantiated by this one */
   Scope *sc;
   if (p) {
     sc = p->CurScope();
@@ -2121,17 +2115,13 @@ netlist_t *ActNetlistPass::generate_netlist (Process *p, int is_toplevel)
   /* Create netlist for all sub-processes */
   ActInstiter i(sc);
 
-  netlist_t *n = _initialize_empty_netlist (bools->getBNL (p));
-
-  node_t *weak_vdd = NULL, *weak_gnd = NULL;
-
-  /* handle all processes instantiated by this one */
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     if (TypeFactory::isProcessType (vx->t)) {
       int cnt = 1;
-      netlist_t *tn =
-	generate_netlist (dynamic_cast<Process *>(vx->t->BaseType()), 0);
+      netlist_t *tn = (netlist_t *)
+	getMap (dynamic_cast<Process *>(vx->t->BaseType()));
+      Assert (tn, "What?");
 
       /* count the # of shared weak drivers so far, and track the
 	 weakness of the weak supply */
@@ -2185,15 +2175,27 @@ netlist_t *ActNetlistPass::generate_netlist (Process *p, int is_toplevel)
     }
   }
 
-  generate_netgraph (n, is_toplevel, sub_proc_vdd, sub_proc_gnd,
+  generate_netgraph (n, sub_proc_vdd, sub_proc_gnd,
 		     vdd_len, gnd_len,
 		     weak_vdd, weak_gnd);
-  (*netmap)[p] = n;
+
   return n;
 }
 
-static void free_nl (netlist_t *n)
+void *ActNetlistPass::local_op (Process *p, int mode)
 {
+  if (mode == 0) {
+    return genNetlist (p);
+  }
+  else if (mode == 1) {
+    return emitNetlist (p);
+  }
+  return NULL;
+}
+
+void ActNetlistPass::free_local (void *v)
+{
+  netlist_t *n = (netlist_t *) v;
   if (!n) return;
   
   //bool_free (n->B); XXX write bdd clear routine
@@ -2221,12 +2223,7 @@ static void free_nl (netlist_t *n)
       edge_t *e = (edge_t *) list_value (li);
       e->visited = 0;
     }
-    if (tmp->v) {
-      Assert (tmp->v->v, "Hmm");
-      tmp->v->v->extra = NULL;
-    }
   }
-  
 
   tmp = n->hd;
   while (tmp) {
@@ -2286,8 +2283,6 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 
   bools = dynamic_cast <ActBooleanizePass *>(pass);
   Assert (bools, "Huh?");
-
-  netmap = NULL;
 
   weak_share_min = 1;
   weak_share_max = 1;
@@ -2357,67 +2352,20 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 
 ActNetlistPass::~ActNetlistPass()
 {
-  if (netmap) {
-    std::map<Process *, netlist_t *>::iterator it;
-    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
-      free_nl (it->second);
-    }
-    delete netmap;
-  }
-  netmap = NULL;
   bools = NULL;
 }
-
-int ActNetlistPass::init ()
-{
-  if (netmap) {
-    std::map<Process *, netlist_t *>::iterator it;
-    for (it = (*netmap).begin(); it != (*netmap).end(); it++) {
-      free_nl (it->second);
-    }
-    delete netmap;
-  }
-
-  netmap = new std::map<Process *, netlist_t *>();
-
-  _finished = 1;
-
-  return 1;
-}
-
   
 int ActNetlistPass::run(Process *p)
 {
-  init ();
-
-  /*-- run dependencies --*/
-  if (!rundeps (p)) {
-    return 0;
-  }
-
-  /*-- ok, run this --*/
-  generate_netlist (p, 1);
-  
-  /*-- done --*/
-  _finished = 2;
-  
-  return 1;
+  return ActPass::run (p);
 }
-
 
 netlist_t *ActNetlistPass::getNL (Process *p)
 {
   if (!completed ()) {
     fatal_error ("ActNetlistPass::getNL() called without pass being run!");
   }
-  Assert (netmap, "huh");
-
-  std::map<Process *, netlist_t *>::iterator it = netmap->find (p);
-  if (it == netmap->end()) {
-    return NULL;
-  }
-  
-  return it->second;
+  return (netlist_t *) getMap (p);
 }
 
 void ActNetlistPass::spice_to_act_name (char *s, char *t, int sz, int xconv)

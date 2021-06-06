@@ -87,7 +87,7 @@ void act_push_import (char *file);
  *  @return 1 if the specified import has been previously procsssed,
  *  0 otherwise
  */
-int act_isimported (char *file);
+int act_isimported (const char *file);
 
 #ifdef __cplusplus
 }

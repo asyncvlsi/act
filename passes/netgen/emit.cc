@@ -30,44 +30,28 @@
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
 
-void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
+netlist_t *ActNetlistPass::emitNetlist (Process *p)
 {
-  Assert (p->isExpanded(), "Process must be expanded!");
-
+  FILE *fp = _outfp;
   netlist_t *n = getNL (p);
+
   if (!n) {
-    fprintf (stderr, "Could not find process `%s'", p->getName());
+    fprintf (stderr, "Could not find process `%s'", p ? p->getName() : "-none");
     fprintf (stderr, " in created netlists; inconstency!\n");
     fatal_error ("Internal inconsistency or error in pass ordering!");
   }
 
-  if (n->bN->visited) return;
-  n->bN->visited = 1;
-
-  if (n->bN->p->isBlackBox() && black_box_mode) return;
-
-  ActInstiter i(p->CurScope());
-  
-  if (!top_level_only) {
-    /* emit sub-processes */
-
-    /* handle all processes instantiated by this one */
-    for (i = i.begin(); i != i.end(); i++) {
-      ValueIdx *vx = *i;
-      if (TypeFactory::isProcessType (vx->t)) {
-	emit_netlist (dynamic_cast<Process *>(vx->t->BaseType()), fp);
-      }
-    }
-  }
+  if (n->bN->p && n->bN->p->isBlackBox() && black_box_mode) return n;
+  if (top_level_only && p != _root) return n;
 
   fprintf (fp, "*\n");
-  if (p->getns() && p->getns() != ActNamespace::Global()) {
+  if (p && p->getns() && p->getns() != ActNamespace::Global()) {
     char *tmp = p->getns()->Name();
     fprintf (fp, "*---- act defproc: %s::%s -----\n", tmp, p->getName());
     FREE (tmp);
   }
   else {
-    fprintf (fp, "*---- act defproc: %s -----\n", p->getName());
+    fprintf (fp, "*---- act defproc: %s -----\n", p ? p->getName() : "-none-");
   }
   if (a->mangle_active()) {
     fprintf (fp, "* raw ports: ");
@@ -80,29 +64,30 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
     }
     fprintf (fp, "\n*\n");
   }
-  fprintf (fp, ".subckt ");
-  /* special mangling for processes that only end in <> */
-  a->mfprintfproc (fp, p);
   int out = 0;
-  for (int k=0; k < A_LEN (n->bN->ports); k++) {
-    if (n->bN->ports[k].omit) continue;
-    ActId *id = n->bN->ports[k].c->toid();
-    char buf[10240];
-    id->sPrint (buf, 10240);
-    a->mfprintf (fp, " %s", buf);
-    delete id;
-    out = 1;
-  }
+  if (p) {
+    fprintf (fp, ".subckt ");
+    /* special mangling for processes that only end in <> */
+    a->mfprintfproc (fp, p);
+    for (int k=0; k < A_LEN (n->bN->ports); k++) {
+      if (n->bN->ports[k].omit) continue;
+      ActId *id = n->bN->ports[k].c->toid();
+      char buf[10240];
+      id->sPrint (buf, 10240);
+      a->mfprintf (fp, " %s", buf);
+      delete id;
+      out = 1;
+    }
 
-  if (n->weak_supply_vdd > 0) {
-    fprintf (fp, " #%d", n->nid_wvdd);
-  }
+    if (n->weak_supply_vdd > 0) {
+      fprintf (fp, " #%d", n->nid_wvdd);
+    }
 
-  if (n->weak_supply_gnd > 0) {
-    fprintf (fp, " #%d", n->nid_wgnd);
+    if (n->weak_supply_gnd > 0) {
+      fprintf (fp, " #%d", n->nid_wgnd);
+    }
+    fprintf (fp, "\n");
   }
-  
-  fprintf (fp, "\n");
 
   /* print pininfo */
   if (out) {
@@ -416,7 +401,9 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
       e->visited = 0;
     }
   }
-  
+
+  ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
+
   /*-- emit instances --*/
   int iport = 0;
   int iweak = 0;
@@ -426,7 +413,7 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
       netlist_t *sub;
       Process *instproc = dynamic_cast<Process *>(vx->t->BaseType ());
       int ports_exist;
-      sub = netmap->find (instproc)->second;
+      sub = getNL (instproc);
       
       ports_exist = 0;
       for (int i=0; i < A_LEN (sub->bN->ports); i++) {
@@ -509,28 +496,20 @@ void ActNetlistPass::emit_netlist (Process *p, FILE *fp)
   Assert (iweak == A_LEN (n->instport_weak), "Hmm...");
   
   fprintf (fp, ".ends\n");
-  fprintf (fp, "*---- end of process: %s -----\n", p->getName());
+  fprintf (fp, "*---- end of process: %s -----\n", p ? p->getName() : "-none-");
 
-  return;
+  return n;
 }
-
 
 void ActNetlistPass::Print (FILE *fp, Process *p)
 {
-  Assert (p, "act_emit_netlist() requires a non-NULL process!");
-  Assert (p->isExpanded (), "Process must be expanded!");
+  Assert (!p || p->isExpanded (), "Process must be expanded!");
 
   if (!completed()) {
     fatal_error ("ActNetlistPass::Print() called before pass is run!");
   }
   
-  emit_netlist (p, fp);
-
-  /*--- clear visited flag ---*/
-  std::map<Process *, netlist_t *>::iterator it;
-  for (it = netmap->begin(); it != netmap->end(); it++) {
-    netlist_t *n = it->second;
-    Assert (n->bN, "Hmm...");
-    n->bN->visited = 0;
-  }
+  _outfp = fp;
+  run_recursive (p, 1);
+  _outfp = NULL;
 }

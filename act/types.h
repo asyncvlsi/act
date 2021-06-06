@@ -394,11 +394,42 @@ class Process : public UserDef {
   list_t *findMap (InstType *iface);
   void mkRefined() { has_refinement = 1; }
   int hasRefinment() { return has_refinement; }
+
+  /*-- edit API --*/
+
+  /*
+   *  Take "name" and replace its base type with "t"
+   *  For this to succeed, "t" must have exactly the same port list 
+   *  as the orginal type for "name"
+   * 
+   *  Returns true on success, false on failure.
+   */
+  bool updateInst (char *name, Process *t);
+
+  /*
+   *
+   *  Buffer insertion
+   *
+   *    Take name.port, disconnect it from whatever it is driving,
+   *    and then create a new instance "buf" (has to have one input
+   *    port and one output port).
+   *
+   *    Returns the name of the newly created buffer instance, or NULL
+   *    if it failed.
+   *
+   *    port has to be either a simple id or id[num]
+   */
+  const char *addBuffer (char *name, ActId *port, Process *buf);
+  
   
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */
-  int has_refinement;		/**< 1 if there is a refinement body */
+  int has_refinement;		/**< 1 if there is a refinement body
+				   */
+
+  int bufcnt;
+  list_t *changelist;
 };
 
 

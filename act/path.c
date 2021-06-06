@@ -260,7 +260,7 @@ void act_push_import (char *file)
   pending = t;
 }
 
-int act_isimported (char *file)
+int act_isimported (const char *file)
 {
   struct import_list *t;
 

@@ -200,9 +200,9 @@ class ActNetlistPass : public ActPass {
   static int getGridsPerLambda() { return grids_per_lambda; }
   
  private:
-  int init ();
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *v);
   
-  std::map<Process *, netlist_t *> *netmap;
   ActBooleanizePass *bools;
 
   /* lambda value */
@@ -254,8 +254,8 @@ class ActNetlistPass : public ActPass {
 
   int weak_share_min, weak_share_max;
 
-  netlist_t *generate_netlist (Process *p, int is_toplevel = 0);
-  void generate_netgraph (netlist_t *N, int is_toplevel,
+  netlist_t *generate_netlist (Process *p);
+  void generate_netgraph (netlist_t *N,
 			  int num_vdd_share,
 			  int num_gnd_share,
 			  int vdd_len,
@@ -263,11 +263,16 @@ class ActNetlistPass : public ActPass {
 			  node_t *weak_vdd, node_t *weak_gnd);
 
   void generate_prs_graph (netlist_t *N, act_prs_lang_t *p, int istree = 0);
-  void generate_staticizers (netlist_t *N, int is_toplevel,
+  void generate_staticizers (netlist_t *N,
 			     int num_vdd_share,
 			     int num_gnd_share,
 			     int vdd_len, int gnd_len,
 			     node_t *weak_vdd, node_t *weak_gnd);
+
+  FILE *_outfp;
+
+  netlist_t *genNetlist (Process *p);
+  netlist_t *emitNetlist (Process *p);
 
   void fold_transistors (netlist_t *N);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
@@ -275,7 +280,6 @@ class ActNetlistPass : public ActPass {
   void create_expr_edges (netlist_t *N, int type, node_t *left,
 			  act_prs_expr_t *e, node_t *right, int sense);
   
-  void emit_netlist (Process *p, FILE *fp);
 };
 
 

@@ -1089,28 +1089,6 @@ void UserDef::MkCopy (UserDef *u)
 }
 
 
-Process::Process (UserDef *u) : UserDef (*u)
-{
-  is_cell = 0;
-  b = NULL;
-  ifaces = NULL;
-  has_refinement = 0;
-
-  /* copy over userdef */
-  MkCopy (u);
-}
-
-Process::~Process ()
-{
-  if (b) {
-    delete b;
-  }
-  if (ifaces) {
-    list_free (ifaces);
-    ifaces = NULL;
-  }
-}
-
 Function::Function (UserDef *u) : UserDef (*u)
 {
   b = NULL;
@@ -1721,52 +1699,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 }
 
 
-Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
-{
-  Process *xp;
-  UserDef *ux;
-  int cache_hit;
-
-  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
-
-  if (cache_hit) {
-    return dynamic_cast<Process *> (ux);
-  }
-
-  xp = new Process (ux);
-  delete ux;
-
-  Assert (ns->EditType (xp->name, xp) == 1, "What?");
-  xp->is_cell = is_cell;
-
-  if (ifaces) {
-    listitem_t *li;
-    xp->ifaces = list_new ();
-    for (li = list_first (ifaces); li; li = list_next (li)) {
-      InstType *iface = (InstType *)list_value (li);
-      Assert (list_next (li), "What?");
-      list_t *lmap = (list_t *)list_value (list_next (li));
-      li = list_next (li);
-      list_append (xp->ifaces, iface->Expand (ns, xp->I));
-      list_append (xp->ifaces, lmap);
-    }
-  }
-  else {
-    xp->ifaces = NULL;
-  }  
-  return xp;
-}
-
-int Process::isBlackBox ()
-{
-  if (isExpanded()) {
-    Assert (unexpanded, "What?");
-    return unexpanded->isDefined() && (unexpanded->getBody() == NULL);
-  }
-  else {
-    return isDefined () && (getBody() == NULL);
-  }
-}
 
 Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
@@ -2160,33 +2092,6 @@ InstType *UserDef::root ()
  *  Printing functions
  *------------------------------------------------------------------------
  */
-void Process::Print (FILE *fp)
-{
-  if (isCell()) {
-    PrintHeader (fp, "defcell");
-  }
-  else {
-    PrintHeader (fp, "defproc");
-  }
-  fprintf (fp, "\n{\n");
-  if (!expanded) {
-    /* print act bodies */
-    ActBody *bi;
-
-    for (bi = b; bi; bi = bi->Next()) {
-      bi->Print (fp);
-    }
-  }
-  else {
-    CurScope()->Print (fp);
-  }
-
-  /* print language bodies */
-  lang->Print (fp);
-
-  
-  fprintf (fp, "}\n\n");
-}
 
 void Channel::Print (FILE *fp)
 {
@@ -2890,59 +2795,6 @@ Expr *Function::toInline (int nargs, Expr **args)
 
   /* convert CHP body into an expression! */
   
-  return NULL;
-}
-
-
-
-void Process::addIface (InstType *iface, list_t *lmap)
-{
-  if (!ifaces) {
-    ifaces = list_new ();
-  }
-  list_append (ifaces, iface);
-  list_append (ifaces, lmap);
-}
-
-int Process::hasIface (InstType *x, int weak)
-{
-  listitem_t *li;
-  if (!ifaces) return 0;
-  for (li = list_first (ifaces); li; li = list_next (li)) {
-    InstType *itmp = (InstType *)list_value (li);
-    Assert (itmp, "What?");
-    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
-    Assert (tmp, "What?");
-    if (itmp->isEqual (x, weak)) {
-      return 1;
-    }
-    li = list_next (li);
-  }
-  return 0;
-}
-
-list_t *Process::findMap (InstType *x)
-{
-  listitem_t *li;
-
-  if (!ifaces) return NULL;
-
-  Array *xtmp = x->arrayInfo();
-  x->clrArray();
-  
-  for (li = list_first (ifaces); li; li = list_next (li)) {
-    InstType *itmp = (InstType *)list_value (li);
-    Assert (itmp, "What?");
-    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
-    Assert (tmp, "What?");
-
-    if (itmp->isEqual (x)) {
-      x->MkArray (xtmp);
-      return (list_t *)list_value (list_next (li));
-    }
-    li = list_next (li);
-  }
-  x->MkArray (xtmp);
   return NULL;
 }
 

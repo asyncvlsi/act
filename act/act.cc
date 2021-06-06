@@ -31,6 +31,7 @@
 #include "act_walk_X.h"
 #include <common/config.h>
 #include <common/array.h>
+#include <act/path.h>
 
 #ifdef DEBUG_PERFORMANCE
 #include <common/mytime.h>
@@ -702,6 +703,10 @@ void Act::Merge (const char *s)
   expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
   expr_parse_basecase_num = act_parse_expr_intexpr_base;
   expr_parse_newtokens = act_expr_parse_newtokens;
+
+  if (act_isimported (s)) {
+    return;
+  }
 
   a = act_parse (s);
 

@@ -94,6 +94,17 @@ class ActId {
   */
   act_connection *Canonical (Scope *s);
 
+  /**<
+     Return the connection pointer corresponding to this particular
+     id, NULL if something unexpected occurred.
+
+     Note: we assume this connection pointer already exists, and this
+     is only used for either foo or foo.bar
+
+     TODO : generalize this if needed later
+  */
+  act_connection *myConnection (Scope *s);
+
 
   void setArray (Array *_a) { a = _a; }
   void prune () { next = NULL; }

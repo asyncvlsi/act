@@ -1044,3 +1044,18 @@ InstType *InstType::refineBaseType (InstType *update)
     return x;
   }
 }
+
+InstType *InstType::refineBaseType (Type *update)
+{
+  if (temp_type) {
+    t = update;			/* just replace the base type */
+    return this;
+  }
+  else {
+    InstType *x = new InstType (this);
+    x->t = update;
+    x->a = this->a;
+    x->MkCached ();
+    return x;
+  }
+}

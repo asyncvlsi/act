@@ -34,7 +34,7 @@ TARGETCONF=global.conf prs2net.conf
 OBJS1=expr.o path.o expr_extra.o
 OBJS2=namespaces.o act_parse.o act_walk_X.o wrap.o act.o prs.o types.o \
 	body.o check.o error.o array.o expr2.o id.o lang.o iter.o \
-	mangle.o inst.o scope.o connect.o pass.o tech.o
+	mangle.o inst.o scope.o connect.o pass.o tech.o process.o
 
 OBJS=$(OBJS1) $(OBJS2)
 

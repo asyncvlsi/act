@@ -158,6 +158,9 @@ int ActPass::init ()
 void *ActPass::local_op (Process *p, int mode) { return NULL; }
 void *ActPass::local_op (Channel *c, int mode) { return NULL; }
 void *ActPass::local_op (Data *d, int mode) { return NULL; }
+void *ActPass::pre_op (Process *p, int mode) { return NULL; }
+void *ActPass::pre_op (Channel *c, int mode) { return NULL; }
+void *ActPass::pre_op (Data *d, int mode) { return NULL; }
 void ActPass::free_local (void *v) { if (v) { FREE (v); } }
 
 
@@ -187,6 +190,29 @@ void ActPass::recursive_op (UserDef *p, int mode)
     return;
   }
   visited_flag->insert (p);
+
+  if (mode >= 0) {
+    if (TypeFactory::isProcessType (p) || (p == NULL)) {
+      void *v = pre_op (dynamic_cast<Process *>(p), mode);
+      if (v) {
+	(*pmap)[p] = v;
+      }
+    }
+    else if (TypeFactory::isChanType (p)) {
+      void *v = pre_op (dynamic_cast<Channel *>(p), mode);
+      if (v) {
+	(*pmap)[p] = v;
+      }
+    }
+    else {
+      Assert (TypeFactory::isDataType (p) || TypeFactory::isStructure (p),
+	      "What?");
+      void *v = pre_op (dynamic_cast<Data *>(p), mode);
+      if (v) {
+	(*pmap)[p] = v;
+      }
+    }
+  }
 
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;

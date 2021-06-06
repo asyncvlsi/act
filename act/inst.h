@@ -162,6 +162,7 @@ class InstType {
   int hasinstGlobal() { return 0; }
 
   InstType *refineBaseType (InstType *update);
+  InstType *refineBaseType (Type *update);
 
   void setPTypeID (char *s) { ptype_id = string_cache (s); }
   const  char *getPTypeID () { return ptype_id; }
