@@ -1948,6 +1948,8 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
   netlist_t *N;
   act_prs *p;
   Scope *cur;
+  phash_iter_t it;
+  phash_bucket_t *b;
   
   NEW (N, netlist_t);
 
@@ -1982,6 +1984,13 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
   N->nsc_list = list_new ();
 
   N->leak_correct = 0;
+
+  /* clear extra flag! */
+  phash_iter_init (bN->cH, &it);
+  while ((b = phash_iter_next (bN->cH, &it))) {
+    act_booleanized_var_t *v = (act_booleanized_var_t *) b->v;
+    v->extra = NULL;
+  }
 
   /* set Vdd/GND to be the first Vdd/GND there is */
   _set_current_supplies (N, p);
