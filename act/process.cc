@@ -196,6 +196,10 @@ bool Process::updateInst (char *name, Process *t)
     return false;
   }
 
+  if (!t->isCell()) {
+    return false;
+  }
+  
   x = I->Lookup (name);
   if (x == NULL) {
     return false;
@@ -243,6 +247,10 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
   }
 
   if (buf->getNumPorts() != 2) {
+    return NULL;
+  }
+
+  if (!buf->isCell()) {
     return NULL;
   }
 
