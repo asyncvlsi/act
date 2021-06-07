@@ -1,3 +1,3 @@
-In expanding foo<4>
+In expanding foo<4> (25.act:1)
 In expanding ::<Global>
 FATAL: Instance `w' being created multiple times!

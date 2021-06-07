@@ -831,7 +831,14 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   char *tmp;
   MALLOC (tmp, char, 10240);
   sPrint (tmp, 10240);
-  act_error_push (tmp, NULL, 0);
+
+  UserDef *tmp_u = dynamic_cast<UserDef *> (BaseType());
+  if (tmp_u) {
+    act_error_push (tmp, tmp_u->getFile(), tmp_u->getLine());
+  }
+  else {
+    act_error_push (tmp, NULL, 0);
+  }
 
   /* expand template parameters, and then expand the type */
   inst_param *xu;

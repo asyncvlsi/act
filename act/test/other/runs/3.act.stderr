@@ -1,5 +1,5 @@
-In expanding bar_type<W>
-In expanding foo_type<2,2>
+In expanding bar_type<W> (3.act:1)
+In expanding foo_type<2,2> (3.act:4)
 In expanding ::<Global>
  id: W
 FATAL: Uninitialized identifier

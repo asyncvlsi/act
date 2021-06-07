@@ -1,5 +1,5 @@
-In expanding foo<3,4>
-In expanding bar<4>
+In expanding foo<3,4> (3.act:1)
+In expanding bar<4> (3.act:4)
 In expanding ::<Global>
 Connection: x = y
   LHS: bool[3]

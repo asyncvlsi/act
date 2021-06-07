@@ -2845,17 +2845,9 @@ int ActCellPass::run (Process *p)
   int ret = ActPass::run (p);
 
   /* 
-     We've changed the netlist: mark the booleanize pass dirty and
-     update all dependent passes.
+     We've changed the netlist: all passes need to be re-computed!
   */
-  Assert (a->pass_find ("booleanize"), "How is this possible?");
-
-  /* special case: the cell pass is *requesting* an update to its
-     predecessor, and the cell pass is idempotent so we stop
-     propagation here by overriding the _actual_update function.
-  */
-  ActBooleanizePass *bp = dynamic_cast<ActBooleanizePass *> (a->pass_find ("booleanize"));
-  bp->update (p);
+  ActPass::refreshAll (a, p);
 
   return ret;
 }

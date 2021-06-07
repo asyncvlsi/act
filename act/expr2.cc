@@ -795,7 +795,7 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
   Expr *e, *f;
   Assert (x, "What?");
 
-  act_error_push (x->getName(), NULL, 0);
+  act_error_push (x->getName(), x->getFile(), x->getLine());
   if (!TypeFactory::isParamType (x->getRetType())) {
     /* ok just expand the arguments */
     Function *xf;

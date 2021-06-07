@@ -55,6 +55,8 @@ template_spec: [ "export" ] "template"
 {{X:
     $A($0->u == NULL);
     $0->u = new UserDef ($0->curns);
+    $0->u->setFile ($n);
+    $0->u->setLine ($l);
     if (!OPT_EMPTY ($1)) {
       $0->u->MkExported();
     }
@@ -71,6 +73,8 @@ template_spec: [ "export" ] "template"
 {{X:
     $A($0->u == NULL);
     $0->u = new UserDef ($0->curns);
+    $0->u->setFile ($n);
+    $0->u->setLine ($l);
     $0->u->MkExported();
     return NULL;
 }}
@@ -151,6 +155,8 @@ defproc_or_cell: [ template_spec ]
 {{X:
     if (OPT_EMPTY ($1)) {
       $0->u = new UserDef($0->curns);
+      $0->u->setFile ($n);
+      $0->u->setLine ($l);
     }
     else {
       $A($0->u);
@@ -674,6 +680,8 @@ defdata: [ template_spec ]
 {{X:
     if (OPT_EMPTY ($1)) {
       $0->u = new UserDef ($0->curns);
+      $0->u->setFile ($n);
+      $0->u->setLine ($l);
     }
     else {
       $A($0->u);
@@ -1013,6 +1021,8 @@ defchan: [ template_spec ]
 {{X:
     if (OPT_EMPTY ($1)) {
       $0->u = new UserDef($0->curns);
+      $0->u->setFile ($n);
+      $0->u->setLine ($l);
     }
     else {
       $A($0->u);
@@ -1207,6 +1217,8 @@ defenum: "defenum" ID
     }
 
     u = new UserDef($0->curns);
+    $0->u->setFile ($n);
+    $0->u->setLine ($l);
     d = new Data (u);
     delete u;
     $0->u_d = d;
@@ -1269,6 +1281,8 @@ deffunc: [ template_spec ] "function"
 {{X:
     if (OPT_EMPTY ($1)) {
       $0->u = new UserDef ($0->curns);
+      $0->u->setFile ($n);
+      $0->u->setLine ($l);
     }
     else {
       $A($0->u);
@@ -2295,6 +2309,8 @@ defiface: [ template_spec ]
 {{X:
     if (OPT_EMPTY ($1)) {
       $0->u = new UserDef($0->curns);
+      $0->u->setFile ($n);
+      $0->u->setLine ($l);
     }
     else {
       $A($0->u);

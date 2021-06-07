@@ -1023,6 +1023,9 @@ UserDef::UserDef (ActNamespace *ns)
   I = new Scope(ns->CurScope());
   I->setUserDef (this);
   _ns = ns;
+
+  file = NULL;
+  lineno = 0;
 }
 
 UserDef::~UserDef()
@@ -1086,6 +1089,9 @@ void UserDef::MkCopy (UserDef *u)
   lang = u->lang;
 
   u->lang = new act_languages ();
+
+  file = u->file;
+  lineno = u->lineno;
 }
 
 
@@ -1269,6 +1275,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   /* create a new userdef type */
   ux = new UserDef (ns);
   ux->unexpanded = this;
+  ux->file = file;
+  ux->lineno = lineno;
 
   if (defined) {
     ux->MkDefined();

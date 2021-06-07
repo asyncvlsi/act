@@ -140,7 +140,7 @@ int ActPass::run (Process *p)
   
   /* do the work */
   if (p) {
-    act_error_push (p->getName(), NULL, 0);
+    act_error_push (p->getName(), p->getFile(), p->getLine());
   }
   else {
     act_error_push ("-toplevel-", NULL, 0);
@@ -165,7 +165,7 @@ void ActPass::run_recursive (Process *p, int mode)
   visited_flag = new std::unordered_set<UserDef *> ();
 
   if (p) {
-    act_error_push (p->getName(), NULL, 0);
+    act_error_push (p->getName(), p->getFile(), p->getLine());
   }
   else {
     act_error_push ("-toplevel-", NULL, 0);
@@ -255,7 +255,7 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	len = strlen (x->getName()) + strlen (vx->getName()) + 10;
 	MALLOC (tmp, char, len);
 	snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
-	act_error_push (tmp, NULL, 0);
+	act_error_push (tmp, x->getFile(), x->getLine());
 	recursive_op (x, mode);
 	act_error_pop ();
 	FREE (tmp);
@@ -271,7 +271,7 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	  len = strlen (x->getName()) + strlen (vx->getName()) + 10;
 	  MALLOC (tmp, char, len);
 	  snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
-	  act_error_push (tmp, NULL, 0);
+	  act_error_push (tmp, x->getFile(), x->getLine());
 	  recursive_op (x, mode);
 	  act_error_pop ();
 	  FREE (tmp);
@@ -286,7 +286,7 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	  len = strlen (x->getName()) + strlen (vx->getName()) + 10;
 	  MALLOC (tmp, char, len);
 	  snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
-	  act_error_push (tmp, NULL, 0);
+	  act_error_push (tmp, x->getFile(), x->getLine());
 	  recursive_op (x, mode);
 	  act_error_pop ();
 	  FREE (tmp);
@@ -627,7 +627,7 @@ void ActPass::_actual_update (Process *p)
   }
   
   if (p) {
-    act_error_push (p->getName(), NULL, 0);
+    act_error_push (p->getName(), p->getFile(), p->getLine());
   }
   else {
     act_error_push ("-toplevel-", NULL, 0);

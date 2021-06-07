@@ -1,6 +1,6 @@
-In expanding foo<0>
-In expanding foo<1>
-In expanding foo<2>
-In expanding foo<3>
+In expanding foo<0> (10.act:3)
+In expanding foo<1> (10.act:3)
+In expanding foo<2> (10.act:3)
+In expanding foo<3> (10.act:3)
 In expanding ::<Global>
 FATAL: Port `x': zero-length array creation not permitted

@@ -1,6 +1,6 @@
-In expanding foo<>
-In expanding foo<>
-In expanding fuz<> (inst: a)
+In expanding foo<> (24.act:19)
+In expanding foo<> (24.act:19)
+In expanding fuz<> (inst: a) (24.act:10)
 WARNING: Process `foo<>': local variable `a[0].a': no driver
 WARNING: Process `foo<>': local variable `a[1].a': no driver
 WARNING: Process `foo<>': local variable `a[2].a': no driver

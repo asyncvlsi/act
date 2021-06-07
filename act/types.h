@@ -153,6 +153,18 @@ class UserDef : public Type {
   UserDef (ActNamespace *ns); /**< constructor, initialize everything correctly */
   virtual ~UserDef (); /**< destructor, releases storage */
 
+  /// Get file name where this was defined
+  const char *getFile() { return file; }
+
+  /// Set file name
+  void setFile(const  char *s) { file = string_cache (s); }
+
+  /// Get line number where this was defined
+  int getLine() { return lineno; }
+
+  /// Set file name
+  void setLine(int num) { lineno = num; }
+  
   /**
    * Specifies if this is an exported user-defined type or not
    *
@@ -351,6 +363,9 @@ class UserDef : public Type {
   UserDef *unexpanded;		/**< unexpanded type, if any **/
 
   int level;		  /**< default modeling level for the type **/
+
+  const char *file; /**< file name (if known) where this was defined **/
+  int lineno;       /**< line number (if known) where this was defined **/
 };
 
 
