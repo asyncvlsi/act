@@ -26,6 +26,20 @@
 #include <dlfcn.h>
 #include <common/config.h>
 
+class InternalDummyPass : public ActPass
+{
+ public:
+  InternalDummyPass (Act *_a);
+
+};
+
+
+InternalDummyPass::InternalDummyPass (Act *_a) : ActPass (_a, "_refresh_", 0)
+{
+
+}
+
+
 
 ActPass::ActPass (Act *_a, const char *s, int doroot)
 {
@@ -41,7 +55,24 @@ ActPass::ActPass (Act *_a, const char *s, int doroot)
   _root_dirty = doroot;
   _root = NULL;
   _update_propagate = 1;
+
+  ActPass *_tmp = _a->pass_find ("_refresh_");
+  if (!_tmp) {
+    new InternalDummyPass (_a);
+  }
+  if (strcmp ("_refresh_", s) != 0) {
+    AddDependency ("_refresh_");
+  }
 }
+
+void ActPass::refreshAll (Act *a, Process *p)
+{
+  ActPass *_tmp = a->pass_find ("_refresh_");
+  Assert (_tmp, "How is this possible?");
+
+  _tmp->update (p);
+}
+
 
 ActPass::~ActPass ()
 {

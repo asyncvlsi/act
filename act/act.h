@@ -339,6 +339,8 @@ public:
   void disableUpdate () { _update_propagate = 0; }
   void enableUpdate () { _update_propagate = 1; }
 
+  static void refreshAll (Act *a, Process *p = NULL);
+
 private:
   /* -- called before sub-tree -- */
   virtual void *pre_op (Process *p, int mode = 0);
