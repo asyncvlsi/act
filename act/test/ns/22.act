@@ -1,0 +1,6 @@
+import "2.act";
+import foo => xfoo;
+
+open xfoo::foo::bar -> bar;
+
+bar::bar x;

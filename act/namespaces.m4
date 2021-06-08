@@ -172,6 +172,24 @@ import_item: "import" STRING ";"
     OPT_FREE ($4);
     return NULL;
 }}
+| "import" ID "=>" ID ";"
+{{X:
+    ActNamespace *ns;
+    ActNamespace *newns;
+
+    ns = $0->curns->findNS ($2);
+    if (!ns) {
+      $E("Namespace `%s' not found.", $2);
+    }
+    newns = $0->curns->findNS ($4);
+    if (!newns) {
+      newns = new ActNamespace ($0->curns, $4);
+    }
+    ns->MkExported();
+    ns->Unlink ();
+    ns->Link (newns, $2);
+    return NULL;
+}}
 ;
 
 /*------------------------------------------------------------------------
