@@ -275,7 +275,7 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
     if (r < 0) {
       fatal_error ("-ref option needs a non-negative integer");
     }
-    config_set_default_int ("act.refine_steps", r);
+    config_set_int ("act.refine_steps", r);
   }
   else if (strncmp (argvp, "-lev=", 5) == 0) {
     Log::UpdateLogLevel(argvp+5);

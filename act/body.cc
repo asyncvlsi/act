@@ -1250,10 +1250,16 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     all_lang = ux->getlang();
   }
 
-  Process *proc = dynamic_cast<Process *>(ux);
-  if (proc && proc->hasRefinment() && ActNamespace::Act()->getRefSteps() > 0) {
+  if (ux && ux->hasRefinement() && ActNamespace::Act()->getRefSteps() > 0) {
     in_refinement = 1;
   }
+
+#if 0
+  printf ("in ux: %s\n", ux ? ux->getName() : "-none-");
+  printf ("  in-ref: %d\n", in_refinement);
+  printf ("  cursteps: %d\n", ActNamespace::Act()->getRefSteps());
+  printf ("  hasRef: %d\n", ux ? ux->hasRefinement() : -1);
+#endif
 
   switch (t) {
   case ActBody_Lang::LANG_PRS:

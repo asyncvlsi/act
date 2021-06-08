@@ -2769,7 +2769,9 @@ act_languages *act_languages::Expand (ActNamespace *ns, Scope *s)
 void refine_print (FILE *fp, act_refine *r)
 {
   if (!r || !r->b) return;
+  fprintf (fp, "refine {\n");
   r->b->Print (fp);
+  fprintf (fp, "}\n");
 }
 
 void sizing_print (FILE *fp, act_sizing *s)

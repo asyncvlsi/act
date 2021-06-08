@@ -1888,8 +1888,7 @@ size_body: { size_setup ";" }* { size_directive ";" }*
 }}  
 ;
 
-lang_refine[ActBody *]: "refine" "{"
-refine_body "}"
+lang_refine[ActBody *]: "refine" "{" base_item_list "}"
 {{X:
     act_refine *r;
     ActBody *b;
@@ -1898,37 +1897,6 @@ refine_body "}"
 
     b = new ActBody_Lang (r);
     return b;
-}}
-;
-
-refine_body[ActBody *]: refine_item refine_body
-{{X:
-    if ($1 == NULL) {
-      return $2;
-    }
-    if ($2 == NULL) {
-      return $1;
-    }
-    $1->Append ($2);
-    return $1;
-}}
-| refine_item
-{{X:
-    return $1;
-}}
-;
-
-refine_item[ActBody *]: instance
-{{X:
-    return $1;
-}}
-| connection
-{{X:
-    return $1;
-}}
-| alias
-{{X:
-    return $1;
 }}
 ;
 

@@ -331,6 +331,9 @@ class UserDef : public Type {
 
   int isLeaf(); /**< if there are no sub-circuits, return 1 */
 
+  void mkRefined() { has_refinement = 1; }
+  int hasRefinement() { return has_refinement; }
+
  protected:
   InstType *parent;		/**< implementation relationship, if any */
   
@@ -366,6 +369,7 @@ class UserDef : public Type {
 
   const char *file; /**< file name (if known) where this was defined **/
   int lineno;       /**< line number (if known) where this was defined **/
+  int has_refinement;	      /**< 1 if there is a refinement body **/
 };
 
 
@@ -407,8 +411,6 @@ class Process : public UserDef {
   void addIface (InstType *iface, list_t *imap);
   int hasIface (InstType *x, int weak); // weak check for interface equality
   list_t *findMap (InstType *iface);
-  void mkRefined() { has_refinement = 1; }
-  int hasRefinment() { return has_refinement; }
 
   /*-- edit API --*/
 
@@ -440,8 +442,6 @@ class Process : public UserDef {
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */
-  int has_refinement;		/**< 1 if there is a refinement body
-				   */
 
   int bufcnt;
   list_t *changelist;

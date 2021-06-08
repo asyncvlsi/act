@@ -40,7 +40,6 @@ Process::Process (UserDef *u) : UserDef (*u)
   is_cell = 0;
   b = NULL;
   ifaces = NULL;
-  has_refinement = 0;
   changelist = NULL;
   bufcnt = 0;
 

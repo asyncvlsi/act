@@ -1026,6 +1026,8 @@ UserDef::UserDef (ActNamespace *ns)
 
   file = NULL;
   lineno = 0;
+
+  has_refinement = 0;
 }
 
 UserDef::~UserDef()
@@ -1092,6 +1094,7 @@ void UserDef::MkCopy (UserDef *u)
 
   file = u->file;
   lineno = u->lineno;
+  has_refinement = u->has_refinement;
 }
 
 
@@ -1277,6 +1280,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   ux->unexpanded = this;
   ux->file = file;
   ux->lineno = lineno;
+  ux->has_refinement = has_refinement;
 
   if (defined) {
     ux->MkDefined();
