@@ -1042,7 +1042,7 @@ InstType *InstType::refineBaseType (InstType *update)
     return this;
   }
   else {
-    InstType *x = new InstType (this);
+    InstType *x = new InstType (this,1);
     x->t = update->t;
     x->nt = update->nt;
     x->u = update->u;
@@ -1059,7 +1059,7 @@ InstType *InstType::refineBaseType (Type *update)
     return this;
   }
   else {
-    InstType *x = new InstType (this);
+    InstType *x = new InstType (this,1);
     x->t = update;
     x->a = this->a;
     x->MkCached ();

@@ -403,6 +403,8 @@ public:
 
   struct Hashtable *getConfig ();
   Technology *getTech () { return T; }
+
+  bool loaded() { return _load_success; }
   
 private:
   virtual void *local_op (Process *p, int mode = 0);
@@ -410,6 +412,8 @@ private:
   virtual void *local_op (Data *d, int mode = 0);
   virtual void free_local (void *);
 
+  bool _load_success;
+  
   char *_libused;
   act_sh_dispatch_table _d;
   struct Hashtable *_params;

@@ -357,6 +357,8 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   _d._free = NULL;
   _d._done = NULL;
 
+  _load_success = false;
+
   for (li = list_first (_sh_libs); li; li = list_next (li)) {
     act_sh_passlib_info *tmp = (act_sh_passlib_info *) list_value (li);
     if (strcmp (lib, tmp->lib) == 0) {
@@ -376,7 +378,9 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
       lib_ptr = dlopen (lib, RTLD_LAZY);
       if (!lib_ptr) {
 	fprintf (stderr, "Error loading dynamic pass `%s\n", lib);
-	fprintf (stderr, "%s\n", dlerror());
+	if (dlerror()) {
+	  fprintf (stderr, "%s\n", dlerror());
+	}
 	return;
       }
     }
@@ -389,7 +393,9 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
 	  lib_ptr = dlopen (buf, RTLD_LAZY);
 	  if (!lib_ptr) {
 	    fprintf (stderr, "Error loading dynamic pass `%s\n", lib);
-	    fprintf (stderr, "%s\n", dlerror());
+	    if (dlerror()) {
+	      fprintf (stderr, "%s\n", dlerror());
+	    }
 	    return;
 	  }
 	}
@@ -397,7 +403,9 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
     }
     if (!lib_ptr) {
       fprintf (stderr, "Dynamic pass: `%s' not found\n", lib);
-      fprintf (stderr, "%s\n", dlerror());
+      if (dlerror()) {
+	fprintf (stderr, "%s\n", dlerror());
+      }
       return;
     }
     
@@ -426,7 +434,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   snprintf (buf, 1024, "%s_init", prefix);
   _d._init = (void (*)(ActPass *))dlsym (lib_ptr, buf);
   if (!_d._init) {
-    warning ("Dynamic pass `%s': missing %s\n", buf);
+    warning ("Dynamic pass `%s': missing %s\n", prefix, buf);
   }
 
   snprintf (buf, 1024, "%s_run", prefix);
@@ -454,6 +462,9 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   if (_d._init) {
     (*_d._init)(this);
   }
+
+  _load_success = true;
+  
 }
 
 struct Hashtable *ActDynamicPass::getConfig (void)

@@ -422,6 +422,9 @@ override_one_spec: user_type bare_id_list ";"
 	fprintf ($f, "\n");
 	exit (1);
       }
+      Array *tmpa;
+      tmpa = it->arrayInfo();
+      it->clrArray();
       while (chk) {
 	if (chk->isEqual (it, 1)) {
 	  break;
@@ -437,6 +440,7 @@ override_one_spec: user_type bare_id_list ";"
 	  $A(chk->arrayInfo() == NULL);
 	}
       }
+      it->MkArray (tmpa);
       if (!chk) {
 	$e("Illegal override; the new type doesn't implement the original.\n");
 	fprintf ($f, "\tOriginal: ");
