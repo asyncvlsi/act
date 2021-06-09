@@ -2809,7 +2809,20 @@ static Expr **_lookup_binding (struct hash_stack *Hs, const char *name, int err 
   while (Hs) {
     b = hash_lookup (Hs->state, name);
     if (b) {
-      return (Expr **) b->v;
+      int ni, nb;
+      int sz = 1;
+      InstType *it = Hs->sc->Lookup (name);
+      if (TypeFactory::isStructure (it)) {
+	Data *d = dynamic_cast<Data *>(it->BaseType());
+	d->getStructCount (&nb, &ni);
+	sz = nb + ni;
+      }
+      Expr **ret;
+      MALLOC (ret, Expr *, sz);
+      for (int i=0; i < sz; i++) {
+	ret[i] = ((Expr **)b->v)[i];
+      }
+      return ret;
     }
     Hs = Hs->parent;
   }
@@ -3048,7 +3061,7 @@ static Expr **_expand_inline (struct hash_stack *Hs, Expr *e)
     break;
     
   case E_SELF:
-    rets = _lookup_binding (Hs, NULL);
+    rets = _lookup_binding (Hs, "self");
     break;
     
   case E_VAR:
