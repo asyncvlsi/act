@@ -1,6 +1,3 @@
-update binding for: self
-entry 0 is: y+1
-here, got: y+1
 defproc test ();
 ;
 

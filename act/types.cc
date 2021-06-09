@@ -2827,6 +2827,7 @@ static void _update_binding (struct hash_stack *Hs, ActId *id, Expr **update)
   int sz = 1;
   Data *xd;
 
+#if 0
   printf ("update binding for: ");
   id->Print (stdout);
   printf ("\n");
@@ -2834,6 +2835,7 @@ static void _update_binding (struct hash_stack *Hs, ActId *id, Expr **update)
   printf ("entry 0 is: ");
   print_expr (stdout, update[0]);
   printf ("\n");
+#endif
   
   Assert (xit, "What?");
   xd = NULL;

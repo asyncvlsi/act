@@ -173,11 +173,10 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
 	  Expr **x2;
 	  Assert (!TypeFactory::isStructure (fx->getRetType()), "What?");
 	  x2 = fx->toInline (args, arglist);
-	  if (x2) {
-	    tmp = x2[0];
-	    FREE (x2);
-	    e = tmp;
-	  }
+	  Assert (x2, "What?");
+	  tmp = x2[0];
+	  FREE (x2);
+	  e = tmp;
 	}
 	else {
 	  list_append (_complex_inlines, fx);
@@ -186,9 +185,6 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
       if (args > 0) {
 	FREE (arglist);
       }
-      printf ("here, got: ");
-      print_expr (stdout, e);
-      printf ("\n");
     }
     break;
     
