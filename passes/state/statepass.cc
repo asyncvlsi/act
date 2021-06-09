@@ -56,42 +56,10 @@ void *ActStatePass::local_op (Process *p, int mode)
 
 void ActStatePass::getStructCount (Data *d, state_counts *sc)
 {
-  for (int i=0; i < d->getNumPorts(); i++ ) {
-    InstType *it = d->getPortType (i);
-    int sz;
-    if (it->arrayInfo()) {
-      sz = it->arrayInfo()->size();
-    }
-    else {
-      sz = 1;
-    }
-    if (TypeFactory::isIntType (it)) {
-      sc->addInt(sz);
-    }
-    else if (TypeFactory::isBoolType (it)) {
-      sc->addBool(sz);
-    }
-    else if (TypeFactory::isStructure (it)) {
-      state_counts tmp;
-      Data *d = dynamic_cast<Data *>(it->BaseType());
-      Assert (d, "Hmm");
-      getStructCount (d, &tmp);
-      sc->addVar (tmp, sz);
-    }
-    else {
-      Data *d = dynamic_cast<Data *> (it->BaseType());
-      Assert (d, "Hmm");
-      if (TypeFactory::isIntType (d->root())) {
-	sc->addInt(sz);
-      }
-      else if (TypeFactory::isBoolType (d->root())) {
-	sc->addBool(sz);
-      }
-      else {
-	Assert (0, "structure/data invariant violated!");
-      }
-    }
-  }
+  int nb, ni;
+  d->getStructCount (&nb, &ni);
+  sc->addInt (ni);
+  sc->addBool (nb);
   return;
 }
 

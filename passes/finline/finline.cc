@@ -27,7 +27,7 @@
 
 ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
 {
-  /* nothing to do here */
+  _complex_inlines = NULL;
 }
 
 void *ActCHPFuncInline::local_op (Process *p, int mode)
@@ -36,12 +36,37 @@ void *ActCHPFuncInline::local_op (Process *p, int mode)
   if (!p->getlang()) return NULL;
 
   if (p->getlang()->getchp()) {
+    _complex_inlines = list_new ();
     _inline_funcs (p->getlang()->getchp()->c);
+    if (!list_isempty (_complex_inlines)) {
+      warning ("Complex function inlines are currently skipped!");
+      fprintf (stderr, "  Functions:");
+      for (listitem_t *li = list_first (_complex_inlines);
+	   li; li = list_next (li)) {
+	Function *fx = (Function *) list_value (li);
+	fprintf (stderr, " %s", fx->getName());
+      }
+      fprintf (stderr, "\n");
+    }
+    list_free (_complex_inlines);
+    _complex_inlines = NULL;
   }
   if (p->getlang()->getdflow()) {
+    _complex_inlines = list_new ();
     for (listitem_t *li = list_first (p->getlang()->getdflow()->dflow);
 	 li; li = list_next (li)) {
       _inline_funcs ((act_dataflow_element *) list_value (li));
+    }
+    if (!list_isempty (_complex_inlines)) {
+      fprintf (stderr, "ERROR: Complex functions can't be inlined in a dataflow block.");
+      fprintf (stderr, "  Functions:");
+      for (listitem_t *li = list_first (_complex_inlines);
+	   li; li = list_next (li)) {
+	Function *fx = (Function *) list_value (li);
+	fprintf (stderr, " %s", fx->getName());
+      }
+      fprintf (stderr, "\n");
+      exit (1);
     }
   }
   return NULL;
@@ -60,6 +85,7 @@ int ActCHPFuncInline::run (Process *p)
 Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
 {
   Expr *tmp;
+  
   if (!e) return e;
   switch (e->type) {
   case E_AND:
@@ -109,13 +135,61 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
     break;
 
   case E_FUNCTION:
-    tmp = e;
-    tmp = tmp->u.e.r;
-    while (e) {
-      tmp->u.e.l = _inline_funcs (tmp->u.e.l);
-      tmp = tmp->u.e.r;
+    {
+      int args;
+      Expr **arglist;
+      
+      tmp = e;
+      tmp = tmp->u.fn.r;
+      /* fix arguments */
+      args = 0;
+      while (tmp) {
+	args++;
+	tmp->u.e.l = _inline_funcs (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+
+      if (args > 0) {
+	MALLOC (arglist, Expr *, args);
+	tmp = e->u.fn.r;
+	args = 0;
+	while (tmp) {
+	  arglist[args++] = tmp->u.e.l;
+	  tmp = tmp->u.e.r;
+	}
+      }
+      else {
+	arglist = NULL;
+      }
+
+      /*-- now simplify! --*/
+      UserDef *ux = (UserDef *) e->u.fn.s;
+      Assert (ux, "Hmm.");
+      Function *fx = dynamic_cast<Function *> (ux);
+      Assert (fx, "Hmm");
+
+      if (!fx->isExternal()) {
+	if (fx->isSimpleInline()) {
+	  Expr **x2;
+	  Assert (!TypeFactory::isStructure (fx->getRetType()), "What?");
+	  x2 = fx->toInline (args, arglist);
+	  if (x2) {
+	    tmp = x2[0];
+	    FREE (x2);
+	    e = tmp;
+	  }
+	}
+	else {
+	  list_append (_complex_inlines, fx);
+	}
+      }
+      if (args > 0) {
+	FREE (arglist);
+      }
+      printf ("here, got: ");
+      print_expr (stdout, e);
+      printf ("\n");
     }
-    /*-- now simplify! --*/
     break;
     
   case E_INT:
@@ -168,10 +242,12 @@ void ActCHPFuncInline::_inline_funcs (act_chp_lang_t *c)
   switch (c->type) {
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
+    /* XXX: check special case of function that returns a structure */
     c->u.comm.e = _inline_funcs (c->u.comm.e);
     break;
 
   case ACT_CHP_ASSIGN:
+    /* XXX: check special case of function that returns a structure */
     c->u.assign.e = _inline_funcs (c->u.assign.e);
     break;
 

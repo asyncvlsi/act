@@ -56,6 +56,8 @@ Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 
   NEW (ret, Expr);
   ret->type = e->type;
+  ret->u.e.l = NULL;
+  ret->u.e.r = NULL;
 
   switch (e->type) {
 

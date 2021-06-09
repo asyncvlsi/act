@@ -22,6 +22,6 @@
 # Make everything, in the right order
 # 
 SUBDIRS=aflat prs2net prs2sim prs2cells v2act ext2sp adepend act2v \
-	test_state
+	test_state test_inline
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

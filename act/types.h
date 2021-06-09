@@ -468,12 +468,18 @@ class Function : public UserDef {
   void Print (FILE *fp);
 
   Expr *eval (ActNamespace *ns, int nargs, Expr **args);
-  Expr *toInline (int nargs, Expr **args);
+  Expr **toInline (int nargs, Expr **args);
 
   int isExternal ();
+  int isSimpleInline () { return is_simple_inline; }
+  void chkInline ();
   
  private:
   InstType *ret_type;
+  int is_simple_inline;
+
+  void _chk_inline (Expr *e);
+  void _chk_inline (struct act_chp_lang *c);
 };
 
 
@@ -519,7 +525,12 @@ class Data : public UserDef {
   
   void Print (FILE *fp);
 
+  void getStructCount (int *nbools, int *nints);
+  int getStructOffset (ActId *field);
+
 private:
+  void _get_struct_count (int *nbools, int *nints);
+  
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and get methods for this data type */
 };

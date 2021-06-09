@@ -2,7 +2,7 @@
  *
  *  This file is part of the ACT library
  *
- *  Copyright (c) 2020 Manohar
+ *  Copyright (c) 2021 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,25 +21,55 @@
  *
  **************************************************************************
  */
-#ifndef __ACT_PASS_FINLINE_H__
-#define __ACT_PASS_FINLINE_H__
-
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <act/act.h>
+#include <act/passes.h>
+#include <common/config.h>
 
-class ActCHPFuncInline : public ActPass {
-public:
-  ActCHPFuncInline (Act *a);
-  int run (Process *p = NULL);
+static void usage (char *name)
+{
+  fprintf (stderr, "Usage: %s [act-options] <actfile> <process>\n", name);
+  exit (1);
+}
 
-private:
-  void *local_op (Process *p, int mode = 0);
-  void free_local (void *);
 
-  list_t *_complex_inlines;
+int main (int argc, char **argv)
+{
+  Act *a;
+  char *proc;
 
-  Expr *_inline_funcs (Expr *);
-  void _inline_funcs (act_chp_lang_t *);
-  void _inline_funcs (act_dataflow_element *);
-};
+  /* initialize ACT library */
+  Act::Init (&argc, &argv);
 
-#endif /* __ACT_PASS_FINLINE_H__ */
+  /* some usage check */
+  if (argc != 3) {
+    usage (argv[0]);
+  }
+
+  /* read in the ACT file */
+  a = new Act (argv[1]);
+
+  /* expand it */
+  a->Expand ();
+ 
+  /* find the process specified on the command line */
+  Process *p = a->findProcess (argv[2]);
+
+  if (!p) {
+    fatal_error ("Could not find process `%s' in file `%s'", argv[2], argv[1]);
+  }
+
+  if (!p->isExpanded()) {
+    fatal_error ("Process `%s' is not expanded.", argv[2]);
+  }
+
+  /* do stuff here */
+  ActCHPFuncInline *ip = new ActCHPFuncInline (a);
+  ip->run (p);
+
+  a->Print (stdout);
+
+  return 0;
+}

@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2018-2020 Rajit Manohar
+#  Copyright (c) 2018 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,33 +18,17 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-TARGETINCS=passes.h
-TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen cells booleanize state sizing finline
+BINARY=test_inlinepass.$(EXT)
 
-LIB1=libactpass_$(EXT).a
-LIB2=libactpass_sh_$(EXT).so
+TARGETS=$(BINARY)
 
-TARGETLIBS=$(LIB1) $(LIB2)
+OBJS=main.o 
 
-USEOBJS=booleanize/$(EXT)/booleanize.o \
-	netgen/$(EXT)/netlist.o \
-	netgen/$(EXT)/emit.o \
-	flatten/$(EXT)/flatten.o \
-	cells/$(EXT)/cells.o \
-	state/$(EXT)/statepass.o \
-	sizing/$(EXT)/sizing.o  \
-	finline/$(EXT)/finline.o
-
-SHOBJS=$(USEOBJS:.o=.os)
+SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(LIB1): $(USEOBJS)
-	ar ruv $(LIB1) $(USEOBJS)
-	$(RANLIB) $(LIB1)
-
-$(LIB2): $(SHOBJS)
-	$(VLSI_TOOLS_SRC)/scripts/linkso $(LIB2) $(SHOBJS) $(SHLIBACT)
+$(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
 
 -include Makefile.deps

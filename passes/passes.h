@@ -31,6 +31,7 @@
 #include <act/passes/cells.h>
 #include <act/passes/statepass.h>
 #include <act/passes/sizing.h>
+#include <act/passes/finline.h>
 
 
 #endif /* __ACT_PASSES_H__ */

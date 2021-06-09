@@ -868,6 +868,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval)
 
   NEW (ret, Expr);
   ret->type = e->type;
+  ret->u.e.l = NULL;
+  ret->u.e.r = NULL;
 
 #define LVAL_ERROR							\
     do {								\
