@@ -945,6 +945,8 @@ Expr *expr_dup_const (Expr *e);
 #define ACT_EXPR_EXFLAG_ISLVAL   0x1
 #define ACT_EXPR_EXFLAG_PARTIAL  0x2
 #define ACT_EXPR_EXFLAG_CHPEX    0x4
+#define ACT_EXPR_EXFLAG_DUPONLY  0x8
+
 extern int _act_chp_is_synth_flag;
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2);
 

@@ -1053,7 +1053,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	fatal_error ("Incompatible types for &/| operator");
       }
     }
-    else if (pc && (e->type == E_AND || e->type == E_OR) &&
+    else if ((e->type == E_AND || e->type == E_OR) &&
 	     (expr_is_a_const (ret->u.e.l) || expr_is_a_const (ret->u.e.r))) {
       Expr *ce, *re;
       if (expr_is_a_const (ret->u.e.l)) {
@@ -1066,20 +1066,24 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 
       if (e->type == E_AND) {
 	if (ce->type == E_INT && ce->u.v == 0) {
-	  /* return 0 */
-	  FREE (ret);
-	  ret = ce;
-	  /* XXX: free re but with a new free function */
+	  if (pc) {
+	    /* return 0 */
+	    FREE (ret);
+	    ret = ce;
+	    /* XXX: free re but with a new free function */
+	  }
 	}
 	else if (ce->type == E_TRUE) {
 	  FREE (ret);
 	  ret = re;
 	}
 	else if (ret->u.e.l->type == E_FALSE) {
+	  if (pc) {
 	    /* return false */
-	  FREE (ret);
-	  ret = ce;
-	  /* XXX: free re */
+	    FREE (ret);
+	    ret = ce;
+	    /* XXX: free re */
+	  }
 	}
       }
       else if (e->type == E_OR) {
@@ -1088,12 +1092,14 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	  ret = re;
 	}
 	else if (ce->type == E_TRUE) {
-	  FREE (ret);
-	  ret = ce;
-	  /* XXX: free re */
+	  if (pc) {
+	    /* return true */
+	    FREE (ret);
+	    ret = ce;
+	    /* XXX: free re */
+	  }
 	}
 	else if (ret->u.e.l->type == E_FALSE) {
-	    /* return false */
 	  FREE (ret);
 	  ret = re;
 	}
@@ -1186,8 +1192,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	fatal_error ("Incompatible types for arithmetic operator");
       }
     }
-    else if (pc &&
-	     (e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
+    else if ((e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
 	      || e->type == E_DIV || e->type == E_MOD) &&
 	     (expr_is_a_const (ret->u.e.l) || expr_is_a_const (ret->u.e.r))) {
       Expr *ce, *re;
@@ -1214,26 +1219,33 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	}
       }
       else if (e->type == E_MULT && VAL(ce) == 0) {
-	FREE (ret);
-	ret = ce;
-	/* XXX: free re */
+	if (pc) {
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re */
+	}
       }
       else if (e->type == E_MULT && VAL(ce) == 1) {
 	FREE (ret);
 	ret = re;
       }
       else if (e->type == E_DIV && VAL(ce) == 0 && (ce == ret->u.e.l)) {
-	FREE (ret);
-	ret = ce;
-	/* XXX: free re */
+	if (pc) {
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re */
+	}
       }
       else if (e->type == E_DIV && VAL(ce) == 1 && (ce == ret->u.e.r)) {
 	FREE (ret);
 	ret = re;
       }
       else if (e->type == E_MOD && VAL(ce) == 0 && (ce == ret->u.e.l)) {
-	FREE (ret);
-	ret = ce;
+	if (pc) {
+	  FREE (ret);
+	  ret = ce;
+	  /* XXX: free re */
+	}
       }
     }
     break;
@@ -1430,21 +1442,22 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     if (!expr_is_a_const (ret->u.e.l)) {
       Expr *tmp = ret->u.e.r;
 
-      if (pc && expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r)) {
+      if (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r)) {
 	Expr *ce = tmp->u.e.l;
 	if ((tmp->u.e.l->type == E_TRUE && tmp->u.e.r->type == E_TRUE) ||
 	    (tmp->u.e.l->type == E_FALSE && tmp->u.e.r->type == E_FALSE) ||
 	    (VAL(tmp->u.e.l) == VAL(tmp->u.e.r))) {
 	  /* XXX need to free ret->u.e.l */
-	  FREE (ret);
-	  FREE (tmp);
-	  ret = ce;
+	  if (pc) {
+	    FREE (ret);
+	    FREE (tmp);
+	    ret = ce;
+	  }
 	}
       }
     }
     else {
       Expr *tmp = ret->u.e.r;
-
       if (pc ||
 	  (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r))) {
 	//FREE (ret->u.e.l);
@@ -1476,101 +1489,111 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 
   case E_BITFIELD:
     LVAL_ERROR;
-    if (flags & ACT_EXPR_EXFLAG_CHPEX) {
-      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+    if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone();
     }
     else {
-      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
-    }
-    if (!expr_is_a_const (ret->u.e.l)) {
-      NEW (ret->u.e.r, Expr);
-      ret->u.e.r->type = E_BITFIELD;
-      ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
-      ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
-      ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
-      ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
-      if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Bitfield operator has non-const components");
-      }
-      if (ret->u.e.r->u.e.l && (ret->u.e.r->u.e.l->type != E_INT)) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Variable in bitfield operator is a non-integer");
-      }
-      if (ret->u.e.r->u.e.r->type != E_INT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Variable in bitfield operator is a non-integer");
-      }
-    }
-    else {
-      unsigned long v;
-      Expr *lo, *hi;
-
-      if (ret->u.e.l->type != E_INT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Variable in bitfield operator is a non-integer");
-      }
-      v = ret->u.e.l->u.v;
-      if (e->u.e.r->u.e.l) {
-	lo = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
+      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
       }
       else {
-	lo = NULL;
+	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
       }
-      hi = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
-      Assert (hi, "What?");
+      if (!expr_is_a_const (ret->u.e.l)) {
+	NEW (ret->u.e.r, Expr);
+	ret->u.e.r->type = E_BITFIELD;
+	ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
+	ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+	ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
+	ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
+	if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Bitfield operator has non-const components");
+	}
+	if (ret->u.e.r->u.e.l && (ret->u.e.r->u.e.l->type != E_INT)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Variable in bitfield operator is a non-integer");
+	}
+	if (ret->u.e.r->u.e.r->type != E_INT) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Variable in bitfield operator is a non-integer");
+	}
+      }
+      else {
+	unsigned long v;
+	Expr *lo, *hi;
+
+	if (ret->u.e.l->type != E_INT) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Variable in bitfield operator is a non-integer");
+	}
+	v = ret->u.e.l->u.v;
+	if (e->u.e.r->u.e.l) {
+	  lo = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
+	}
+	else {
+	  lo = NULL;
+	}
+	hi = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
+	Assert (hi, "What?");
       
-      unsigned long lov, hiv;
+	unsigned long lov, hiv;
 
-      if ((lo && lo->type != E_INT) || hi->type != E_INT) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr,"\n");
-	fatal_error ("Bitfield parameter in operator is a non-integer");
-      }
+	if ((lo && lo->type != E_INT) || hi->type != E_INT) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Bitfield parameter in operator is a non-integer");
+	}
 
-      hiv = hi->u.v;
-      if (lo) {
-	lov = lo->u.v;
-      }
-      else {
-	lov = hiv;
-      }
+	hiv = hi->u.v;
+	if (lo) {
+	  lov = lo->u.v;
+	}
+	else {
+	  lov = hiv;
+	}
       
-      if (lov > hiv) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "\texpanding expr: ");
-	print_expr (stderr, e);
-	fprintf (stderr, "\n");
-	fatal_error ("Bitfield {%d..%d} : empty!", hiv, lov);
+	if (lov > hiv) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Bitfield {%d..%d} : empty!", hiv, lov);
+	}
+	else {
+	  v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
+	}
+	ret->type = E_INT;
+	ret->u.v = v;
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
       }
-      else {
-	v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
-      }
-      ret->type = E_INT;
-      ret->u.v = v;
-      tmp = TypeFactory::NewExpr (ret);
-      FREE (ret);
-      ret = tmp;
     }
     break;
 
   case E_PROBE:
     LVAL_ERROR;
-    ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
+    if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
+    }
+    else {
+      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
+    }
     break;
 
   case E_BUILTIN_INT:
@@ -1675,7 +1698,12 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	}
       }
       else {
-	f = f->Expand (ns, s, 0, NULL);
+	if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+	  /* nothing here */
+	}
+	else {
+	  f = f->Expand (ns, s, 0, NULL);
+	}
       }
 
       if (f->isExternal()) {
@@ -1715,21 +1743,26 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     /* expand an ID:
        this either returns an expanded ID, or 
        for parameterized types returns the value. */
-    if (flags & ACT_EXPR_EXFLAG_CHPEX) {
-      /* chp mode expansion */
-      xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
-      te = xid->EvalCHP (ns, s, 0);
+    if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+      ret->u.e.l = (Expr *)((ActId *)e->u.e.l)->Clone ();
     }
     else {
-      /* non-chp expansion */
-      xid = ((ActId *)e->u.e.l)->Expand (ns, s);
-      te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
+      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+	/* chp mode expansion */
+	xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+	te = xid->EvalCHP (ns, s, 0);
+      }
+      else {
+	/* non-chp expansion */
+	xid = ((ActId *)e->u.e.l)->Expand (ns, s);
+	te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
+      }
+      if (te->type != E_VAR) {
+	delete xid;
+      }
+      FREE (ret);
+      ret = te;
     }
-    if (te->type != E_VAR) {
-      delete xid;
-    }
-    FREE (ret);
-    ret = te;
     break;
 
   case E_INT:
