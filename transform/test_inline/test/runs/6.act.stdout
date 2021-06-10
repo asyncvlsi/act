@@ -1,0 +1,32 @@
+defproc test ();
+;
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+int<32> x;
+
+/* connections */
+chp {
+x:=y+1+1-2*(y+1)
+}
+}
+
+function addone (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+1-2*x
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
