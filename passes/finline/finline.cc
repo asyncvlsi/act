@@ -145,7 +145,6 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
       args = 0;
       while (tmp) {
 	args++;
-	tmp->u.e.l = _inline_funcs (tmp->u.e.l);
 	tmp = tmp->u.e.r;
       }
 
@@ -154,7 +153,8 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
 	tmp = e->u.fn.r;
 	args = 0;
 	while (tmp) {
-	  arglist[args++] = tmp->u.e.l;
+	  arglist[args++] = expr_expand (tmp->u.e.l, NULL, NULL,
+					 ACT_EXPR_EXFLAG_DUPONLY);
 	  tmp = tmp->u.e.r;
 	}
       }

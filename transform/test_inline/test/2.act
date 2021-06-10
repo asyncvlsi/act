@@ -1,0 +1,26 @@
+function addthree (int x) : int
+{
+  chp {
+    self := x + 3
+  }
+}
+
+function addone (int x) : int
+{ 
+  chp {
+    self := x + 1;
+    self := addthree(self)
+  }
+}
+
+
+defproc test ()
+{
+  int x, y;
+
+  chp {
+    x := addone (y)
+  }
+}
+
+test t;

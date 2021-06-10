@@ -1,0 +1,46 @@
+here, run another inline (addthree<>)
+returned...
+defproc test ();
+;
+;
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+int<32> x;
+
+/* connections */
+chp {
+x:=y+1+3
+}
+}
+
+function addthree (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+3
+}
+}
+
+function addone (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+1;self:=addthree<>(self)
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

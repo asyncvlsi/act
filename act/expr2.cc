@@ -383,15 +383,20 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
 
     if (e->u.e.r->u.e.l) {
-      sprint_expr (buf+k, sz, e->u.e.r->u.e.l);
+      sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
       PRINT_STEP;
 
       snprintf (buf+k, sz, "..");
       PRINT_STEP;
+
+      sprint_expr (buf+k, sz, e->u.e.r->u.e.l);
+      PRINT_STEP;
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
+      PRINT_STEP;
     }
 
-    sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
-    PRINT_STEP;
 
     snprintf (buf+k, sz, "}");
     PRINT_STEP;
@@ -1491,6 +1496,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     LVAL_ERROR;
     if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
       ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone();
+      NEW (ret->u.e.r, Expr);
+      ret->u.e.r->type = E_BITFIELD;
+      ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
+      ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
     }
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
@@ -1502,8 +1511,6 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       if (!expr_is_a_const (ret->u.e.l)) {
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = E_BITFIELD;
-	ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
-	ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
 	ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
 	ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
 	if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
