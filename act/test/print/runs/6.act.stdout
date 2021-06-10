@@ -1,0 +1,11 @@
+
+
+/* instances */
+int<32> b;
+int<32> a;
+int<32> c;
+
+/* connections */
+chp {
+c:=a+b;c:=a+b;c:=-a+b;c:=a-b;c:=0;c:=a>0 ? 0 : 1
+}

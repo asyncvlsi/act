@@ -867,9 +867,14 @@ class TypeFactory {
 
 
 
-/*
-  Typecheck expression: returns -1 on failure
-*/
+/*------------------------------------------------------------------------
+ *
+ *
+ *  Typechecking identifiers and expression: returns -1 on failure
+ *
+ *
+ *------------------------------------------------------------------------
+ */
 #define T_ERR         -1
 
 #define T_STRICT     0x40   // a port parameter that is in the
@@ -890,41 +895,71 @@ class TypeFactory {
 #define T_ARRAYOF    0x20
 
 #define T_FIXBASETYPE(x)  ((((x) & 0x1f) == T_DATA_BOOL) ? T_BOOL : ((((x) & 0x1f) == T_DATA_INT) ? T_INT : ((x) & 0x1f)))
+
 #define T_BASETYPE(x) ((x) & 0x1f)
+
 #define T_BASETYPE_ISNUM(x) (T_FIXBASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
+
 #define T_BASETYPE_ISINTBOOL(x) ((T_FIXBASETYPE (x) == T_INT) || (T_FIXBASETYPE (x) == T_BOOL))
+
 #define T_BASETYPE_INT(x) (T_FIXBASETYPE(x) == T_INT)
+
 #define T_BASETYPE_BOOL(x) (T_FIXBASETYPE(x) == T_BOOL)
+
 
 int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
 int act_type_var (Scope *, ActId *, InstType **xit);
+int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
+
 int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);
-const char *act_type_errmsg (void);
+int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
 
-void print_expr (FILE *fp, Expr *e);
-void sprint_expr (char *buf, int sz, Expr *e);
-void print_uexpr (FILE *fp, Expr *e);
-void sprint_uexpr (char *buf, int sz, Expr *e);
-int expr_is_a_const (Expr *e);
-Expr *expr_dup_const (Expr *e);
-void type_set_position (int l, int c, char *n);
 InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal);
 InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);
 
-int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
-int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
+void type_set_position (int l, int c, char *n);
+const char *act_type_errmsg (void);
 
+
+/*------------------------------------------------------------------------
+ *
+ *  Helper functions for expression manipulation
+ *
+ *------------------------------------------------------------------------
+ */
 int expr_equal (Expr *a, Expr *b);
-Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, int is_lval = 0);
+
+void print_expr (FILE *fp, Expr *e);
+void sprint_expr (char *buf, int sz, Expr *e);
+
+/* unsigned variations of the functions above */
+void print_uexpr (FILE *fp, Expr *e);
+void sprint_uexpr (char *buf, int sz, Expr *e);
+
+int expr_is_a_const (Expr *e);
+Expr *expr_dup_const (Expr *e);
+
+/* unified expression expansion code, with flags to control
+   different variations */
+#define ACT_EXPR_EXFLAG_ISLVAL   0x1
+#define ACT_EXPR_EXFLAG_PARTIAL  0x2
+#define ACT_EXPR_EXFLAG_CHPEX    0x4
+extern int _act_chp_is_synth_flag;
+Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2);
+
+/* free an expanded expression */
 void expr_ex_free (Expr *);
 
-/* for expanded expressions */
+/*-- more options for expanded expressions --*/
+
 #define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */
+
 #define E_ARRAY (E_END + 11) /* an expanded paramter array
 				- the l field will point to the ValueIdx
 				- the r field will point to the Scope 
 			     */
+
 #define E_SUBRANGE (E_END + 12) /* like array, but it is a subrange
 				   - l points to the ValueIdx
 				   - r points to another Expr whose
@@ -937,7 +972,6 @@ void expr_ex_free (Expr *);
 /* 
    For loops:
       e->l->l = id, e->r->l = lo, e->r->r->l = hi, e->r->r->r = expr
-
       WARNING: replicated in expr_extra.c
 */
 #define E_ANDLOOP (E_END + 21) 
