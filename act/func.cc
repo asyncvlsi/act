@@ -383,19 +383,120 @@ static void _run_function_fwd (struct hash_stack *Hs, act_chp_lang_t *c)
       }
       nh = 0;
       for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
-	guards[nh] = _ex_one (_expand_inline (Hs, gc->g));
+	if (gc->g) {
+	  guards[nh] = _ex_one (_expand_inline (Hs, gc->g));
+	}
+	else {
+	  guards[nh] = NULL;
+	}
 	if (gc->s) {
 	  _run_function_fwd (&Hnew[nh], gc->s);
 	}
 	nh++;
       }
 
-      /* -- merge the results -- */
-      fatal_error ("XXX: Merge selection results");
+      struct Hashtable *Hmerge = hash_new (4);
+      hash_iter_t it;
+      hash_bucket_t *b;
+
+      for (int i=0; i < nh; i++)  {
+	hash_iter_init (Hnew[i].state, &it);
+	while ((b = hash_iter_next (Hnew[i].state, &it))) {
+	  if (!hash_lookup (Hmerge, b->key)) {
+	    hash_add (Hmerge, b->key);
+	  }
+	}
+      }
       
+      /*-- Hmerge contains all the modified state --*/
+      hash_iter_init (Hmerge, &it);
+      while ((b = hash_iter_next (Hmerge, &it))) {
+	hash_bucket_t *xb;
+	/* construct expression for b->key! */
+	int sz = 1;
+	Expr **inpval;
+	Expr *cur;
 
-      /* -- for each variable that has something -- */
+	inpval = _lookup_binding (Hs, b->key, 0);
 
+	InstType *et = Hs->sc->Lookup (b->key);
+	Assert (et, "What?");
+	if (TypeFactory::isIntType (et)) {
+	  if (inpval) {
+	    cur = inpval[0];
+	  }
+	  else {
+	    cur = const_expr (0);
+	  }
+	}
+	else if (TypeFactory::isBoolType (et)) {
+	  if (inpval) {
+	    cur = inpval[0];
+	  }
+	  else {
+	    cur = const_expr_bool (0);
+	  }
+	}
+	else {
+	  Assert (TypeFactory::isStructure (et), "What?");
+	  fatal_error ("Fix structures!");
+	  /*-- compute sz --*/
+	}
+
+	Expr *update = NULL;
+	Expr *newval = NULL;
+	
+	for (int i=0; i < nh; i++) {
+	  xb = hash_lookup (Hnew[i].state, b->key);
+	  if (!update || guards[i]) {
+	    if (!update) {
+	      Assert (guards[i], "weird else clause?!");
+	      NEW (update, Expr);
+	      newval = update;
+	    }
+	    else {
+	      NEW (update->u.e.r, Expr);
+	      update = update->u.e.r;
+	    }
+	    update->type = E_QUERY;
+	    update->u.e.l = guards[i];
+	    update->u.e.r = NULL;
+	  }
+	  else {
+	    /* 
+	       update && !guards[i] : else clause, nothing to do here,
+	       just update update->u.e.r 
+	    */
+	    Assert (i == nh-1, "else is not the last case?");
+	  }
+	  Expr *curval;
+	  if (xb) {
+	    Expr **val = (Expr **) xb->v;
+	    curval = val[0];
+	  }
+	  else {
+	    curval = expr_expand (cur, NULL, NULL, ACT_EXPR_EXFLAG_DUPONLY);
+	  }
+		
+	  if (i == nh-1) {
+	    update->u.e.r = curval;
+	  }
+	  else {
+	    NEW (update->u.e.r, Expr);
+	    update = update->u.e.r;
+	    update->type = E_COLON;
+	    update->u.e.l = curval;
+	    update->u.e.r = NULL;
+	  }
+	}
+	Expr **bind;
+	MALLOC (bind, Expr *, 1);
+	bind[0] = newval;
+	ActId *tmpid = new ActId (b->key);
+	_update_binding (Hs, tmpid, bind);
+	delete tmpid;
+      }
+      
 
       FREE (guards);
       for (int i=0; i < nh; i++) {
