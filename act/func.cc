@@ -309,12 +309,8 @@ static Expr **_expand_inline (struct hash_stack *Hs, Expr *e)
       Assert (!fx->isExternal(), "Why are we here?");
       Assert (fx->isSimpleInline(), "Why are we here?");
 
-      printf ("here, run another inline (%s)\n", fx->getName());
-      
       rets = fx->toInline (args, arglist);
       Assert (rets, "What?!");
-
-      printf ("returned...\n");
       
       if (args > 0) {
 	FREE (arglist);
@@ -323,19 +319,11 @@ static Expr **_expand_inline (struct hash_stack *Hs, Expr *e)
     break;
     
   case E_INT:
-    ret->u.v = e->u.v;
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
-    break;
-    
   case E_REAL:
-    ret->u.f = e->u.f;
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
-    break;
-    
   case E_TRUE:
   case E_FALSE:
+    FREE (ret);
+    ret = e;
     MALLOC (rets, Expr *, 1);
     rets[0] = ret;
     break;

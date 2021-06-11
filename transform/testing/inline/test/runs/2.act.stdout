@@ -1,5 +1,3 @@
-here, run another inline (addthree<>)
-returned...
 defproc test ();
 ;
 ;
