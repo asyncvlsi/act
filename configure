@@ -100,9 +100,11 @@ if [ "x$baseos" = "xdarwin" ]
 then
     sh_build=-fPIC 
     sh_link=-dynamiclib
+    sh_exe_options=
 else
     sh_build="\"-shared -DPIC -fPIC\""
     sh_link="\"-shared -Wl,-x,-rpath=$ACT_HOME/lib\""
+    sh_exe_options="\"-Wl,-rpath=$ACT_HOME/lib\""
 fi    
 
 
@@ -126,6 +128,7 @@ CXX_COMPILER_NAME=$cxx_compiler_name
 C_COMPILER_FLAGS=$c_compiler_flags
 SH_BUILD_OPTIONS=$sh_build
 SH_LINK_OPTIONS=$sh_link
+SH_EXE_OPTIONS=$sh_exe
 EOF
 
 if ! $full_pathname/scripts/check
