@@ -155,7 +155,29 @@ static void _update_binding (struct hash_stack *Hs, ActId *id, Expr **update)
     Assert (off + sz2 <= sz, "Hmm");
     for (int i=0; i < sz2; i++) {
       res[off+i] = update[i];
+#if 0      
+      printf ("set offset %d to ", off+i);
+      if (update[i]) {
+	print_expr (stdout, update[i]);
+      }
+      else {
+	printf ("null");
+      }
+      printf ("\n");
+#endif      
     }
+#if 0
+    for (int i=0; i < sz; i++) {
+      printf ("cur %d = ", i);
+      if (res[i]) {
+	print_expr (stdout, res[i]);
+      }
+      else {
+	printf ("null");
+      }
+      printf ("\n");
+    }
+#endif	
   }
   else {
     for (int i=0; i < sz; i++) {
@@ -398,6 +420,10 @@ static void _run_function_fwd (struct hash_stack *Hs, act_chp_lang_t *c)
       struct Hashtable *Hmerge = hash_new (4);
       hash_iter_t it;
       hash_bucket_t *b;
+      Expr *intconst, *boolconst;
+
+      intconst = const_expr (0);
+      boolconst = const_expr_bool (0);
 
       for (int i=0; i < nh; i++)  {
 	hash_iter_init (Hnew[i].state, &it);
@@ -415,89 +441,119 @@ static void _run_function_fwd (struct hash_stack *Hs, act_chp_lang_t *c)
 	/* construct expression for b->key! */
 	int sz = 1;
 	Expr **inpval;
-	Expr *cur;
+	int *types;
 
 	inpval = _lookup_binding (Hs, b->key, 0);
 
 	InstType *et = Hs->sc->Lookup (b->key);
 	Assert (et, "What?");
 	if (TypeFactory::isIntType (et)) {
-	  if (inpval) {
-	    cur = inpval[0];
-	  }
-	  else {
-	    cur = const_expr (0);
-	  }
+	  MALLOC (types, int, 1);
+	  types[0] = 1;
 	}
 	else if (TypeFactory::isBoolType (et)) {
-	  if (inpval) {
-	    cur = inpval[0];
-	  }
-	  else {
-	    cur = const_expr_bool (0);
-	  }
+	  MALLOC (types, int, 1);
+	  types[0] = 0;
 	}
 	else {
 	  Assert (TypeFactory::isStructure (et), "What?");
-	  fatal_error ("Fix structures!");
-	  /*-- compute sz --*/
+	  Data *d = dynamic_cast <Data *> (et->BaseType());
+	  int nb, ni;
+	  ActId **fields;
+	  d->getStructCount (&nb, &ni);
+	  sz = nb + ni;
+	  fields = d->getStructFields (&types);
+	  for (int i=0; i < sz; i++) {
+	    delete fields[i];
+	  }
+	  FREE (fields);
 	}
 
-	Expr *update = NULL;
-	Expr *newval = NULL;
-	
-	for (int i=0; i < nh; i++) {
-	  xb = hash_lookup (Hnew[i].state, b->key);
-	  if (!update || guards[i]) {
-	    if (!update) {
-	      Assert (guards[i], "weird else clause?!");
-	      NEW (update, Expr);
-	      newval = update;
+	Expr *update;
+	Expr **newval;
+
+	MALLOC (newval, Expr *, sz);
+
+	for (int idx=0; idx < sz; idx++) {
+	  /* for each of the fields... */
+	  update = NULL;
+	  for (int i=0; i < nh; i++) {
+	    xb = hash_lookup (Hnew[i].state, b->key);
+	    if (!update || guards[i]) {
+	      if (!update) {
+		Assert (guards[i], "weird else clause?!");
+		NEW (update, Expr);
+		newval[idx] = update;
+	      }
+	      else {
+		NEW (update->u.e.r, Expr);
+		update = update->u.e.r;
+	      }
+	      update->type = E_QUERY;
+	      if (idx == 0) {
+		update->u.e.l = guards[i];
+	      }
+	      else {
+		update->u.e.l = expr_expand (guards[i], NULL, NULL,
+					     ACT_EXPR_EXFLAG_DUPONLY);
+	      }
+	      update->u.e.r = NULL;
+	    }
+	    else {
+	      /* 
+		 update && !guards[i] : else clause, nothing to do here,
+		 just update update->u.e.r 
+	      */
+	      Assert (i == nh-1, "else is not the last case?");
+	    }
+	    Expr *curval;
+	    if (xb) {
+	      Expr **val = (Expr **) xb->v;
+	      curval = val[idx];
+	    }
+	    else {
+	      if (inpval && inpval[idx]) {
+		curval = inpval[idx];
+	      }
+	      else {
+		if (types[idx] == 0) {
+		  curval = boolconst;
+		}
+		else {
+		  curval = intconst;
+		}
+	      }
+	    }
+	    if (i == nh-1 && !guards[i]) {
+	      update->u.e.r = curval;
 	    }
 	    else {
 	      NEW (update->u.e.r, Expr);
 	      update = update->u.e.r;
+	      update->type = E_COLON;
+	      update->u.e.l = curval;
+	      update->u.e.r = NULL;
+
+	      if (i == nh-1) {
+		if (inpval && inpval[idx]) {
+		  update->u.e.r = expr_expand (inpval[idx], NULL, NULL,
+					       ACT_EXPR_EXFLAG_DUPONLY);
+		}
+		else if (types[idx] == 0) {
+		  update->u.e.r = boolconst;
+		}
+		else {
+		  update->u.e.r = intconst;
+		}
+	      }
 	    }
-	    update->type = E_QUERY;
-	    update->u.e.l = guards[i];
-	    update->u.e.r = NULL;
-	  }
-	  else {
-	    /* 
-	       update && !guards[i] : else clause, nothing to do here,
-	       just update update->u.e.r 
-	    */
-	    Assert (i == nh-1, "else is not the last case?");
-	  }
-	  Expr *curval;
-	  if (xb) {
-	    Expr **val = (Expr **) xb->v;
-	    curval = val[0];
-	  }
-	  else {
-	    curval = expr_expand (cur, NULL, NULL, ACT_EXPR_EXFLAG_DUPONLY);
-	  }
-		
-	  if (i == nh-1) {
-	    update->u.e.r = curval;
-	  }
-	  else {
-	    NEW (update->u.e.r, Expr);
-	    update = update->u.e.r;
-	    update->type = E_COLON;
-	    update->u.e.l = curval;
-	    update->u.e.r = NULL;
 	  }
 	}
-	Expr **bind;
-	MALLOC (bind, Expr *, 1);
-	bind[0] = newval;
+	FREE (types);
 	ActId *tmpid = new ActId (b->key);
-	_update_binding (Hs, tmpid, bind);
+	_update_binding (Hs, tmpid, newval);
 	delete tmpid;
       }
-      
-
       FREE (guards);
       for (int i=0; i < nh; i++) {
 	hash_free (Hnew[i].state);

@@ -488,6 +488,19 @@ void ActNamespace::Print (FILE *fp)
       else if (TypeFactory::isChanType (t)) {
 	u->PrintHeader (fp, "defchan");
       }
+      else if (TypeFactory::isFuncType (t)) {
+	Function *f = dynamic_cast<Function *> (t);
+	u->PrintHeader (fp, "function");
+	fprintf (fp, " : ");
+	f->getRetType()->Print (fp);
+      }
+      else if (TypeFactory::isStructure (t)) {
+	u->PrintHeader (fp, "deftype");
+      }
+      else {
+	fprintf (stderr, "Got: %s\n", t->getName());
+	fatal_error ("Unhandled case...");
+      }
       fprintf (fp, ";\n");
     }
   }

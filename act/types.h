@@ -527,9 +527,11 @@ class Data : public UserDef {
 
   void getStructCount (int *nbools, int *nints);
   int getStructOffset (ActId *field);
+  ActId **getStructFields (int **types);
 
 private:
   void _get_struct_count (int *nbools, int *nints);
+  void _get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix);
   
   unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and get methods for this data type */

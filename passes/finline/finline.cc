@@ -35,6 +35,13 @@ void *ActCHPFuncInline::local_op (Process *p, int mode)
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
 
+  if (p) {
+    _cursc = p->CurScope();
+  }
+  else {
+    _cursc = ActNamespace::Global()->CurScope();
+  }
+  
   if (p->getlang()->getchp()) {
     _complex_inlines = list_new ();
     _inline_funcs (p->getlang()->getchp()->c);
@@ -136,54 +143,10 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
 
   case E_FUNCTION:
     {
-      int args;
-      Expr **arglist;
-      
-      tmp = e;
-      tmp = tmp->u.fn.r;
-      /* fix arguments */
-      args = 0;
-      while (tmp) {
-	args++;
-	tmp = tmp->u.e.r;
-      }
-
-      if (args > 0) {
-	MALLOC (arglist, Expr *, args);
-	tmp = e->u.fn.r;
-	args = 0;
-	while (tmp) {
-	  arglist[args++] = expr_expand (tmp->u.e.l, NULL, NULL,
-					 ACT_EXPR_EXFLAG_DUPONLY);
-	  tmp = tmp->u.e.r;
-	}
-      }
-      else {
-	arglist = NULL;
-      }
-
-      /*-- now simplify! --*/
-      UserDef *ux = (UserDef *) e->u.fn.s;
-      Assert (ux, "Hmm.");
-      Function *fx = dynamic_cast<Function *> (ux);
-      Assert (fx, "Hmm");
-
-      if (!fx->isExternal()) {
-	if (fx->isSimpleInline()) {
-	  Expr **x2;
-	  Assert (!TypeFactory::isStructure (fx->getRetType()), "What?");
-	  x2 = fx->toInline (args, arglist);
-	  Assert (x2, "What?");
-	  tmp = x2[0];
-	  FREE (x2);
-	  e = tmp;
-	}
-	else {
-	  list_append (_complex_inlines, fx);
-	}
-      }
-      if (args > 0) {
-	FREE (arglist);
+      Expr **x2 = _inline_funcs_general (e);
+      if (x2) {
+	e = x2[0];
+	FREE (x2);
       }
     }
     break;
@@ -203,6 +166,62 @@ Expr *ActCHPFuncInline::_inline_funcs (Expr *e)
   }
   return e;
 }
+
+Expr **ActCHPFuncInline::_inline_funcs_general (Expr *e)
+{
+  Assert (e->type == E_FUNCTION, "What?!");
+
+  Expr *tmp;
+  int args;
+  Expr **arglist;
+      
+  tmp = e;
+  tmp = tmp->u.fn.r;
+  /* fix arguments */
+  args = 0;
+  while (tmp) {
+    args++;
+    tmp = tmp->u.e.r;
+  }
+
+  if (args > 0) {
+    MALLOC (arglist, Expr *, args);
+    tmp = e->u.fn.r;
+    args = 0;
+    while (tmp) {
+      arglist[args++] = expr_expand (tmp->u.e.l, NULL, NULL,
+				     ACT_EXPR_EXFLAG_DUPONLY);
+      tmp = tmp->u.e.r;
+    }
+  }
+  else {
+    arglist = NULL;
+  }
+
+  /*-- now simplify! --*/
+  UserDef *ux = (UserDef *) e->u.fn.s;
+  Assert (ux, "Hmm.");
+  Function *fx = dynamic_cast<Function *> (ux);
+  Assert (fx, "Hmm");
+
+  Expr **x2;
+
+  if (!fx->isExternal()) {
+    if (fx->isSimpleInline()) {
+      x2 = fx->toInline (args, arglist);
+      Assert (x2, "What?");
+    }
+    else {
+      list_append (_complex_inlines, fx);
+      x2 = NULL;
+    }
+  }
+  if (args > 0) {
+    FREE (arglist);
+  }
+  return x2;
+}
+
 
 void ActCHPFuncInline::_inline_funcs (act_dataflow_element *e)
 {
@@ -238,13 +257,78 @@ void ActCHPFuncInline::_inline_funcs (act_chp_lang_t *c)
   switch (c->type) {
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
-    /* XXX: check special case of function that returns a structure */
-    c->u.comm.e = _inline_funcs (c->u.comm.e);
+    {
+      int is_struct = 0;
+      InstType *it = _cursc->FullLookup (c->u.comm.chan, NULL);
+      if (TypeFactory::isUserType (it)) {
+	it = dynamic_cast<UserDef *>(it->BaseType())->root();
+      }
+      Chan *cx = dynamic_cast <Chan *> (it->BaseType());
+      Assert (cx, "What?");
+      if (TypeFactory::isStructure (cx->datatype())) {
+	is_struct = 1;
+      }
+
+      if (!is_struct) {
+	c->u.comm.e = _inline_funcs (c->u.comm.e);
+      }
+      else {
+	/* XXX: check special case of function that returns a structure */
+	warning ("Structure return value inlining for send data not currently supported!");
+      }
+    }
     break;
 
   case ACT_CHP_ASSIGN:
-    /* XXX: check special case of function that returns a structure */
-    c->u.assign.e = _inline_funcs (c->u.assign.e);
+    {
+      InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
+      if (TypeFactory::isStructure (it)) {
+	if (c->u.assign.e->type == E_VAR) {
+	  /* nothing to be done here */
+	}
+	else {
+	  Expr **vals = _inline_funcs_general (c->u.assign.e);
+	  Data *d;
+	  int *types;
+	  int nb, ni;
+
+	  if (!vals) {
+	    fatal_error ("Work on complex function inlining");
+	  }
+	  
+	  d = dynamic_cast <Data *>(it->BaseType());
+	  Assert (d, "Hmm");
+	  ActId **fields = d->getStructFields (&types);
+	  FREE (types);
+	  d->getStructCount (&nb, &ni);
+	  int sz = nb + ni;
+	  list_t *l = list_new ();
+	  for (int i=0; i < sz; i++) {
+	    act_chp_lang_t *tc;
+
+	    if (vals[i]) {
+	      NEW (tc, act_chp_lang_t);
+	      tc->type = ACT_CHP_ASSIGN;
+	      tc->label = NULL;
+	      tc->space = NULL;
+	      tc->u.assign.id = c->u.assign.id->Clone();
+	      tc->u.assign.id->Tail()->Append (fields[i]);
+	      tc->u.assign.e = vals[i];
+	      list_append (l, tc);
+	    }
+	    else {
+	      delete fields[i];
+	    }
+	  }
+	  FREE (fields);
+	  c->type = ACT_CHP_SEMI;
+	  c->u.semi_comma.cmd = l;
+	}
+      }
+      else {
+	c->u.assign.e = _inline_funcs (c->u.assign.e);
+      }
+    }
     break;
 
   case ACT_CHP_SEMI:

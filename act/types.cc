@@ -1889,6 +1889,55 @@ int Data::getStructOffset (ActId *field)
   return -1;
 }
 
+ActId **Data::getStructFields (int **types)
+{
+  Assert (TypeFactory::isStructure (this), "What?");
+  int nb, ni;
+  getStructCount (&nb, &ni);
+
+  ActId **ret;
+  int idx;
+  MALLOC (ret, ActId *, nb + ni);
+  MALLOC (*types, int, nb + ni);
+
+  idx = 0;
+
+  _get_struct_fields (ret, *types, &idx, NULL);
+  Assert (idx == nb + ni, "What?");
+
+  return ret;
+}
+
+void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
+{
+  Assert (TypeFactory::isStructure (this), "What?!");
+  
+  for (int i=0; i < getNumPorts(); i++) {
+    if (TypeFactory::isStructure (getPortType (i))) {
+      Data *d = dynamic_cast<Data *> (getPortType(i)->BaseType());
+      _get_struct_fields (a, pos, types, prefix);
+    }
+    else {
+      ActId *tmp = new ActId (getPortName (i));
+      if (prefix) {
+	a[*pos] = prefix->Clone();
+	a[*pos]->Tail()->Append (tmp);
+      }
+      else {
+	a[*pos] = tmp;
+      }
+      if (TypeFactory::isBoolType (getPortType (i))) {
+	types[*pos] = 0;
+      }
+      else {
+	Assert (TypeFactory::isIntType (getPortType (i)), "Structure invariant violated?");
+	types[*pos] = 1;
+      }
+      *pos = *pos + 1;
+    }
+  }
+}
+
 int Function::isExternal ()
 {
   return !getlang() || !getlang()->getchp();

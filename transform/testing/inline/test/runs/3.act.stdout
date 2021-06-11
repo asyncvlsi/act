@@ -1,5 +1,5 @@
 defproc test ();
-;
+function addone (int<32> x) : int<32>;
 
 defproc test ()
 {

@@ -1345,6 +1345,7 @@ ID
 	delete $0->u_f;
 	$0->u_f = dynamic_cast<Function *>(u);
 	$A($0->u_f);
+	$0->scope = $0->u_f->CurScope();
       }
       else {
 	$E("Name ``%s'' previously defined as a different type", $3);

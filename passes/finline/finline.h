@@ -37,9 +37,13 @@ private:
 
   list_t *_complex_inlines;
 
+  Scope *_cursc;
   Expr *_inline_funcs (Expr *);
+  Expr **_inline_funcs_general (Expr *);
+  
   void _inline_funcs (act_chp_lang_t *);
   void _inline_funcs (act_dataflow_element *);
+  
 };
 
 #endif /* __ACT_PASS_FINLINE_H__ */
