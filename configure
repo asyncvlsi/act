@@ -128,7 +128,7 @@ CXX_COMPILER_NAME=$cxx_compiler_name
 C_COMPILER_FLAGS=$c_compiler_flags
 SH_BUILD_OPTIONS=$sh_build
 SH_LINK_OPTIONS=$sh_link
-SH_EXE_OPTIONS=$sh_exe
+SH_EXE_OPTIONS=$sh_exe_options
 EOF
 
 if ! $full_pathname/scripts/check
