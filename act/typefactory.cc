@@ -853,6 +853,21 @@ Expr *TypeFactory::NewExpr (Expr *x)
   return NULL;
 }
 
+static int _ceil_log2 (int w)
+{
+  int i;
+  int addone = 0;
+
+  i = 0;
+  while (w > 1) {
+    if (w & 1) {
+      addone = 1;
+    }
+    w = w >> 1;
+    i = i + 1;
+  }
+  return i + addone;
+}
 
 int TypeFactory::bitWidth (Type *t)
 {
@@ -889,7 +904,12 @@ int TypeFactory::bitWidth (Type *t)
   {
     Int *tmp = dynamic_cast<Int *>(t);
     if (tmp) {
-      return tmp->w;
+      if (tmp->kind == 2) {
+	return _ceil_log2 (tmp->w);
+      }
+      else {
+	return tmp->w;
+      }
     }
   }
   {

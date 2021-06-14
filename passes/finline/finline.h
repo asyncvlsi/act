@@ -35,15 +35,23 @@ private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
 
-  list_t *_complex_inlines;
-
   Scope *_cursc;
-  Expr *_inline_funcs (Expr *);
-  Expr **_inline_funcs_general (Expr *);
+  Expr *_inline_funcs (list_t *, Expr *);
+  Expr **_inline_funcs_general (list_t *, Expr *);
   
-  void _inline_funcs (act_chp_lang_t *);
-  void _inline_funcs (act_dataflow_element *);
-  
+  void _inline_funcs (list_t *, act_chp_lang_t *);
+  void _inline_funcs (list_t *, act_dataflow_element *);
+
+  void _full_inline (act_chp_lang_t *c);
+  void _do_complex_inline (struct pHashtable *, list_t *, act_chp_lang_t *);
+  void _complex_inline_helper (struct pHashtable *, act_chp_lang_t *);
+
+  void _collect_complex_inlines (list_t *, Expr *);
+  act_chp_lang_t *_do_inline (struct pHashtable *, list_t *);
+  void _apply_complex_inlines (list_t *, Expr *);
+
+  int _get_fresh_idx (const char *prefix, int *idx);
+  int _useidx;
 };
 
 #endif /* __ACT_PASS_FINLINE_H__ */

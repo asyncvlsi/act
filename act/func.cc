@@ -655,6 +655,8 @@ Expr **Function::toInline (int nargs, Expr **args)
 
   /* XXX: release all storage */
   hash_free (Hs.state);
+
+  pending = 0;
   
   return xret;
 }
