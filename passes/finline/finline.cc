@@ -1023,9 +1023,10 @@ static Expr *_expr_clone_subst (struct fn_inline_args *fn, Expr *e)
   case E_REAL:
   case E_TRUE:
   case E_FALSE:
-  case E_PROBE:
+    FREE (ret);
+    ret = e;
     break;
-
+    
   default:
     fatal_error ("Unknown expression type (%d)\n", e->type);
     break;
@@ -1037,6 +1038,7 @@ static act_chp_lang_t *_chp_clone_subst (struct fn_inline_args *fn,
 					 act_chp_lang_t *c)
 {
   act_chp_lang_t *ret;
+#if 0
   static int depth = 0;
 
   printf ("[%d] Clone: %s\n", depth, fn->fx->getName());
@@ -1052,9 +1054,12 @@ static act_chp_lang_t *_chp_clone_subst (struct fn_inline_args *fn,
   printf ("   "); chp_print (stdout, c);
   printf ("\n[%d] ===\n\n", depth);
   depth++;
+#endif
   
   if (!c) {
+#if 0
     depth--;
+#endif
     return NULL;
   }
   
@@ -1115,10 +1120,12 @@ static act_chp_lang_t *_chp_clone_subst (struct fn_inline_args *fn,
     break;
   }
 
+#if 0
   depth--;
   printf ("\n[%d] === returning ===\n   ", depth);
   chp_print (stdout, ret);
   printf ("\n[%d] ==========\n\n", depth);
+#endif
 
   return ret;
 }
