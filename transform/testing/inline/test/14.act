@@ -1,0 +1,20 @@
+function addone (int x) : int
+{ 
+  int w;
+  chp {
+    w := 0;
+    *[ w < 2 -> self := x + 1; w := w + 1 ]
+  }
+}
+
+
+defproc test ()
+{
+  int x, y;
+
+  chp {
+    x := addone (addone (y+1)*4)
+  }
+}
+
+test t;

@@ -1,0 +1,38 @@
+defproc test ();
+function addone (int<32> x) : int<32>;
+
+defproc test ()
+{
+
+/* instances */
+int<32> fuse_1;
+int<32> fuse_0;
+int<32> farg_0;
+int<32> y;
+int<32> x;
+int<32> floc_0;
+int<32> fret_0;
+
+/* connections */
+chp {
+farg_0:=y+1;floc_0:=0;*[floc_0<2 -> fret_0:=farg_0+1;floc_0:=floc_0+1];fuse_0:=fret_0;farg_0:=fuse_0*4;floc_0:=0;*[floc_0<2 -> fret_0:=farg_0+1;floc_0:=floc_0+1];fuse_1:=fret_0;x:=fuse_1
+}
+}
+
+function addone (int<32> x) : int<32>
+{
+
+/* instances */
+int<32> w;
+
+/* connections */
+chp {
+w:=0;*[w<2 -> self:=x+1;w:=w+1]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
