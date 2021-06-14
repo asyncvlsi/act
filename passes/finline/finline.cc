@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include "finline.h"
 #include <act/iter.h>
+#include <string.h>
 
 
 ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
