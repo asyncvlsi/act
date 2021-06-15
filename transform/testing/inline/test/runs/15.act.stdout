@@ -1,0 +1,32 @@
+defproc test ();
+function addone (int<32> x) : int<32>;
+
+defproc test ()
+{
+
+/* instances */
+chan(int<32>) y;
+chan(int<32>) x;
+
+/* connections */
+dataflow {
+y+1 -> x
+}
+}
+
+function addone (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+1
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

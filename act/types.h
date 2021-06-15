@@ -863,6 +863,9 @@ class TypeFactory {
   /*-- a user type that is rooted in an int or an int --*/
   static int isBaseIntType (Type *t);
   static int isBaseIntType (InstType *t);
+
+  /*-- extract data type field from a channel --*/
+  static InstType *getChanDataType (InstType *t);
   
 };
 

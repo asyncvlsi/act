@@ -1081,3 +1081,30 @@ int TypeFactory::isBaseIntType (Type *t)
 }
 INSTMACRO(isBaseIntType)
   
+
+InstType *TypeFactory::getChanDataType (InstType *t)
+{
+  if (!t) return NULL;
+  {
+    Chan *tmp = dynamic_cast <Chan *>(t->BaseType());
+    if (tmp) {
+      /* ok */
+      return tmp->datatype();
+    }
+  }
+  {
+    Channel *tmp = dynamic_cast <Channel *> (t->BaseType());
+    if (tmp) {
+      while (!TypeFactory::isExactChanType (tmp->getParent())) {
+	t = tmp->getParent ();
+	tmp = dynamic_cast <Channel *> (t->BaseType());
+	Assert (tmp, "What?");
+      }
+      Assert (tmp->getParent(), "What?");
+      Chan *tmp2 = dynamic_cast <Chan *> (tmp->getParent()->BaseType());
+      Assert (tmp2, "What?");
+      return tmp2->datatype();
+    }
+  }
+  return NULL;
+}
