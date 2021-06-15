@@ -165,7 +165,7 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     }
     snprintf (buf+k, sz, ":");
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, 1);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, (prec < 0 ? -1 : 1));
     PRINT_STEP;
     snprintf (buf+k, sz, ")");
     PRINT_STEP;
@@ -173,16 +173,16 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 
   case E_QUERY: /* prec = 3 */
     PREC_BEGIN(3);
-    _print_expr (buf+k, sz, e->u.e.l, 3);
+    _print_expr (buf+k, sz, e->u.e.l, (prec < 0 ? -3 : 3));
     PRINT_STEP;
     snprintf (buf+k, sz, " ? ");
     PRINT_STEP;
     Assert (e->u.e.r->type == E_COLON, "Hmm");
-    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 3);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, (prec < 0 ? -3 : 3));
     PRINT_STEP;
     snprintf (buf+k, sz, " : ");
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.r, 3);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r, (prec < 0 ? -3 : 3));
     PRINT_STEP;
     PREC_END(3);
     break;
@@ -304,7 +304,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
   case E_BUILTIN_BOOL:
     snprintf (buf+k, sz, "bool(");
     PRINT_STEP;
-    sprint_expr (buf+k, sz, e->u.e.l);
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.l);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.l);
+    }
     PRINT_STEP;
     snprintf (buf+k, sz, ")");
     PRINT_STEP;
@@ -314,7 +319,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
   case E_BUILTIN_INT:
     snprintf (buf+k, sz, "int(");
     PRINT_STEP;
-    sprint_expr (buf+k, sz, e->u.e.l);
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.l);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.l);
+    }      
     PRINT_STEP;
     if (e->u.e.r) {
       snprintf (buf+k, sz, ",");
@@ -341,7 +351,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 	PRINT_STEP;
 	tmp = e->u.fn.r->u.e.l;
 	while (tmp) {
-	  sprint_expr (buf+k, sz, tmp->u.e.l);
+	  if (prec < 0) {
+	    sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	  }
+	  else {
+	    sprint_expr (buf+k, sz, tmp->u.e.l);
+	  }
 	  PRINT_STEP;
 	  tmp = tmp->u.e.r;
 	  if (tmp) {
@@ -363,7 +378,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 	tmp = e->u.fn.r;
       }
       while (tmp) {
-	sprint_expr (buf+k, sz, tmp->u.e.l);
+	if (prec < 0) {
+	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	}
+	else {
+	  sprint_expr (buf+k, sz, tmp->u.e.l);
+	}
 	PRINT_STEP;
 	tmp = tmp->u.e.r;
 	if (tmp) {
@@ -383,21 +403,34 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     PRINT_STEP;
 
     if (e->u.e.r->u.e.l) {
-      sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
+      }
       PRINT_STEP;
 
       snprintf (buf+k, sz, "..");
       PRINT_STEP;
 
-      sprint_expr (buf+k, sz, e->u.e.r->u.e.l);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.l);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.e.r->u.e.l);
+      }
       PRINT_STEP;
     }
     else {
-      sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.e.r->u.e.r);
+      }
       PRINT_STEP;
     }
-
-
     snprintf (buf+k, sz, "}");
     PRINT_STEP;
     break;
@@ -406,7 +439,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     snprintf (buf+k, sz, "{");
     PRINT_STEP;
     while (e) {
-      sprint_expr (buf+k, sz, e->u.e.l);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.e.l);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.e.l);
+      }
       PRINT_STEP;
       if (e->u.e.r) {
 	snprintf (buf+k, sz, ",");
