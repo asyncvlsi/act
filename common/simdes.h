@@ -81,7 +81,7 @@ class SimDES;
 
 /* flags */
 #define SIM_EV_FLAG_WAKEUP 0x1
-#define SIM_EV_MAX    63
+#define SIM_EV_MAX    16383
 
 class Event {
 public:
@@ -101,7 +101,7 @@ private:
   unsigned int kill:1;		// set to 1 to make this an event that
 				// is discarded
   
-  unsigned int ev_type:6;	// event type
+  unsigned int ev_type:15;	// event type
 
   SimDES *obj;		// information about the event (see above)
 
