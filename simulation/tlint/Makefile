@@ -22,7 +22,7 @@ BIN=tlint.$(EXT)
 BIN2=tr2alint.$(EXT)
 TARGETS=$(BIN) $(BIN2)
 
-TARGETCONF=lint.conf
+TARGETCONF=lint.conf lint_opts.conf
 
 OBJS2=hs.o
 OBJS1=tlint.o
