@@ -505,10 +505,26 @@ void sprint_uexpr (char *buf, int sz, Expr *e)
   
 void print_uexpr (FILE *fp, Expr *e)
 {
-  char buf[10240];
+  char *buf;
+  int bufsz = 10240;
+
+  MALLOC (buf, char, bufsz);
   buf[0] = '\0';
-  sprint_uexpr (buf, 10240, e);
-  fprintf (fp, "%s", buf);
+  buf[bufsz-1] = '\0';
+  buf[bufsz-2] = '\0';
+  while (1) {
+    sprint_uexpr (buf, bufsz, e);
+    if (buf[bufsz-2] == '\0') {
+      fprintf (fp, "%s", buf);
+      FREE (buf);
+      return;
+    }
+    bufsz *= 2;
+    REALLOC (buf, char, bufsz);
+    buf[0] = '\0';
+    buf[bufsz-1] = '\0';
+    buf[bufsz-2] = '\0';
+  }
 }
 
 
