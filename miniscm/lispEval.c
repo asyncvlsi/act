@@ -33,6 +33,7 @@
 #include "lispInt.h"
 #include "lispA-Z.h"
 #include "lispargs.h"
+#include "lispCli.h"
 
 struct LispBuiltinFn {
   char *name;
@@ -412,40 +413,40 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
   else
     trace = LBOOL(l);
   ret = LispDispatch (argc, argv, trace, lispInFile);
-  if (ret == 0) {
+  if (ret == LISP_RET_ERROR) {
     RETURN;
   }
-  else if (ret == 1) {
+  else if (ret == LISP_RET_TRUE || ret == LISP_RET_FALSE) {
     l = LispNewObj ();
     LTYPE(l) = S_BOOL;
-    LBOOL(l) = 1;
+    LBOOL(l) = (ret == LISP_RET_TRUE ? 1 : 0);
     return l;
   }
-  else if (ret == 2) {
+  else if (ret == LISP_RET_INT) {
     l = LispNewObj ();
     LTYPE (l) = S_INT;
     LINTEGER (l) = LispGetReturnInt ();
     return l;
   }
-  else if (ret == 3) {
+  else if (ret == LISP_RET_STRING) {
     l = LispNewObj ();
     LTYPE (l) = S_STRING;
     LSTR (l) = LispGetReturnString ();
     return l;
   }
-  else if (ret == 4) {
+  else if (ret == LISP_RET_FLOAT) {
     l = LispNewObj ();
     LTYPE (l) = S_FLOAT;
     LFLOAT (l) = LispGetReturnFloat ();
     return l;
   }
-  else if (ret == 5) {
+  else if (ret == LISP_RET_LIST) {
     l = LispNewObj ();
     LTYPE (l) = S_LIST;
     LLIST (l) = (Sexp *) LispGetReturnSexp ();
     return l;
   }
-  /* default: return #f */
+  /* default: error */
   RETURN;
 }
 

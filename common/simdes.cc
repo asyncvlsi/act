@@ -163,7 +163,7 @@ Event *SimDES::Run ()
  * returns NULL on success, otherwise the event that caused the
  * simulation to stop (breakpoint)
  */
-Event *SimDES::Advance (int n)
+Event *SimDES::Advance (long n)
 {
   Event *ev;
   unsigned long tm;
@@ -199,7 +199,7 @@ Event *SimDES::Advance (int n)
  * Returns NULL on success, otherwise returns the event that caused
  * the simulation to stop (breakpoint)
  */
-Event *SimDES::AdvanceTime (int delay)
+Event *SimDES::AdvanceTime (long delay)
 {
   Event *ev;
   unsigned long tm;
@@ -444,3 +444,14 @@ int WaitForOne::Notify (int ev_type)
 }
 
 int WaitForOne::Notify (int ev_type, int slot) { return Notify (ev_type); }
+
+
+bool SimDES::hasPendingEvent (void)
+{
+  if (heap_size (all) > 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}

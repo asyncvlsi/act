@@ -451,7 +451,7 @@ RET_TYPE process_vector (ARG_LIST)
   b = hash_lookup (vH, s);
   if (b) {
     printf ("Vector `%s' already exists\n", s);
-    RETURN(0);
+    RETURN(LISP_RET_ERROR);
   }
   b = hash_add (vH, s);
   NEW (v, Vector);
@@ -464,7 +464,7 @@ RET_TYPE process_vector (ARG_LIST)
     hash_delete (vH, b->key);
     A_FREE (v->n);
     FREE (v);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if ((strcmp (s, ":dualrail") == 0)) {
     v->vtype = V_DUALRAIL;
@@ -474,7 +474,7 @@ RET_TYPE process_vector (ARG_LIST)
       hash_delete (vH, b->key);
       A_FREE (v->n);
       FREE (v);
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
   }
   else if ((strcmp (s, ":1ofN") == 0)) {
@@ -491,7 +491,7 @@ RET_TYPE process_vector (ARG_LIST)
       hash_delete (vH, b->key);
       A_FREE (v->n);
       FREE (v);
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
     GET_OPTARG;
     if (!s) {
@@ -499,7 +499,7 @@ RET_TYPE process_vector (ARG_LIST)
       hash_delete (vH, b->key);
       A_FREE (v->n);
       FREE (v);
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
   }
   count = 0;
@@ -530,7 +530,7 @@ RET_TYPE process_vector (ARG_LIST)
     goto err;
   }
   b->v = (void *)v;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
  err:
   for (count = 0; count < A_LEN (v->n); count++) {
     CHINFO(v->n[count])->inVector = NULL;
@@ -538,7 +538,7 @@ RET_TYPE process_vector (ARG_LIST)
   A_FREE (v->n);
   hash_delete (vH, b->key);
   FREE (v);
-  RETURN (0);
+  RETURN (LISP_RET_ERROR);
 }
 
 static atrace *tracing = NULL;
@@ -581,7 +581,7 @@ RET_TYPE process_trace (ARG_LIST)
   
   if (tracing) {
     printf ("Still tracing! Skipped\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
 
   GET_ARG (usage);
@@ -592,7 +592,7 @@ RET_TYPE process_trace (ARG_LIST)
 
   if (sscanf (s, "%f", &tm) != 1) {
     printf ("%s", usage);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   /* transition is 20ps */
   printf ("Creating trace file, %.2fns in duration (~ %d transition delays)\n",
@@ -600,21 +600,21 @@ RET_TYPE process_trace (ARG_LIST)
 
   if ((int)(tm*1e-9/prs_timescale) <= 0) {
     printf ("Invalid duration!\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   tracing = atrace_create (f, ATRACE_DELTA_CAUSE, tm*1e-9, 
 			   prs_timescale/10.0);
 
   if (!tracing) {
     printf ("Could not create trace file!\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
 
   prs_apply (P, NULL, add_trace_wrap);
   tracing_start_time = P->time;
   tracing_stop_time = P->time + (int)(tm*1e-9/prs_timescale);
 
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -632,12 +632,12 @@ RET_TYPE process_vset (ARG_LIST)
   GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   b = hash_lookup (vH, s);
   if (!b) {
     printf ("Vector `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   v = (Vector *)b->v;
   GET_ARG(usage);
@@ -647,7 +647,7 @@ RET_TYPE process_vset (ARG_LIST)
       CHECK_TRAILING(usage);
       for (i=0; i < A_LEN (v->n); i++) 
 	prs_set_node (P, v->n[i], PRS_VAL_F);
-      RETURN (1);
+      RETURN (LISP_RET_TRUE);
     }
   }
   sscanf (s, "%lu", &val);
@@ -680,7 +680,7 @@ RET_TYPE process_vset (ARG_LIST)
     for (i=0; i < A_LEN (v->n)/v->num; i++) {
       if (val < 0 || val >= v->num) {
 	printf ("Value %lu exceeds bounds for 1ofN (N=%d)", val, v->num);
-	RETURN (0);
+	RETURN (LISP_RET_ERROR);
       }
       for (j=0; j < v->num; j++) {
 	if (j != val) {
@@ -699,7 +699,7 @@ RET_TYPE process_vset (ARG_LIST)
       }
     }
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_vget (ARG_LIST)
@@ -712,17 +712,17 @@ RET_TYPE process_vget (ARG_LIST)
   GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   b = hash_lookup (vH, s);
   if (!b) {
     printf ("Vector `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   v = (Vector *)b->v;
   CHECK_TRAILING(usage);
   fprint_vector (stdout, v);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_vclear (ARG_LIST)
@@ -736,12 +736,12 @@ RET_TYPE process_vclear (ARG_LIST)
   GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   b = hash_lookup (vH, s);
   if (!b) {
     printf ("Vector `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   v = (Vector *)b->v;
   CHECK_TRAILING(usage);
@@ -751,7 +751,7 @@ RET_TYPE process_vclear (ARG_LIST)
   A_FREE (v->n);
   hash_delete (vH, b->key);
   FREE (v);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_vwatch (ARG_LIST)
@@ -765,19 +765,19 @@ RET_TYPE process_vwatch (ARG_LIST)
   GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   b = hash_lookup (vH, s);
   if (!b) {
     printf ("Vector `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   v = (Vector *)b->v;
   CHECK_TRAILING(usage);
   for (i=0; i < A_LEN (v->n); i++) {
     add_watchpoint (v->n[i]);
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_vunwatch (ARG_LIST)
@@ -791,19 +791,19 @@ RET_TYPE process_vunwatch (ARG_LIST)
   GET_ARG(usage);
   if (!vH) {
     printf ("No vectors defined\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   b = hash_lookup (vH, s);
   if (!b) {
     printf ("Vector `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   v = (Vector *)b->v;
   CHECK_TRAILING(usage);
   for (i=0; i < A_LEN (v->n); i++) {
     del_watchpoint (v->n[i]);
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_watchall (ARG_LIST)
@@ -814,7 +814,7 @@ RET_TYPE process_watchall (ARG_LIST)
 
   prs_apply (P, NULL, add_watchpoint_wrapper);
   
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -838,11 +838,11 @@ RET_TYPE process_status (ARG_LIST)
     v = PRS_VAL_X;
   else {
     printf ("%s", usage);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (s[1]) {
     printf ("%s", usage);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_OPTARG;
   match_string = s;
@@ -852,7 +852,7 @@ RET_TYPE process_status (ARG_LIST)
   prs_apply (P, (void*)(long)v, check_nodeval);
   prs_apply (P, (void*)NULL, clear_nodeflag);
   printf ("\n");
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
  
 /*
@@ -868,7 +868,7 @@ RET_TYPE process_set (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG(usage);
   if (strcmp (s, "0") == 0)
@@ -879,11 +879,11 @@ RET_TYPE process_set (ARG_LIST)
     val = PRS_VAL_X;
   else {
     printf ("Value must be `0', `1', or `X'\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   prs_set_node (P, n, val);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -901,7 +901,7 @@ RET_TYPE process_seu (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG(usage);
   if (strcmp (s, "0") == 0)
@@ -912,7 +912,7 @@ RET_TYPE process_seu (ARG_LIST)
     val = PRS_VAL_X;
   else {
     printf ("Value must be `0', `1', or `X'\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG (usage);
   start = atoi (s);
@@ -920,7 +920,7 @@ RET_TYPE process_seu (ARG_LIST)
   duration = atoi (s);
   CHECK_TRAILING(usage);
   prs_set_seu (P, n, val, P->time + start, duration);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -937,7 +937,7 @@ RET_TYPE process_alias (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   r = (RawPrsNode *)n;
@@ -947,7 +947,7 @@ RET_TYPE process_alias (ARG_LIST)
     r = r->alias_ring;
   } while (r != (RawPrsNode *)n);
   printf ("\n");
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -964,7 +964,7 @@ RET_TYPE process_set_principal (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   /* make this the primary name for the node */
 
@@ -986,7 +986,7 @@ RET_TYPE process_set_principal (ARG_LIST)
 
     if (r == (RawPrsNode *)n) {
       printf ("Warning: this should not have happened!\n");
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
     /* swap bucket pointers! */
     
@@ -995,7 +995,7 @@ RET_TYPE process_set_principal (ARG_LIST)
     n->b = b;
   }
   CHECK_TRAILING(usage);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1012,11 +1012,11 @@ RET_TYPE process_get (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   printf ("%s: %c\n", s, prs_nodechar (prs_nodeval (n)));
   CHECK_TRAILING(usage);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 int process_sget (int argc, char **argv)
@@ -1057,11 +1057,11 @@ RET_TYPE process_uget (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   printf ("%s: %c\n", prs_nodename (P,n), prs_nodechar (prs_nodeval (n)));
   CHECK_TRAILING(usage);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1081,7 +1081,7 @@ RET_TYPE process_assert(ARG_LIST)
   n = prs_node (P, node_name);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG(usage);
   if (strcmp (s, "0") == 0)
@@ -1092,7 +1092,7 @@ RET_TYPE process_assert(ARG_LIST)
     expect = PRS_VAL_X;
   else {
     printf ("Value must be `0', `1', or `X'\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   val = prs_nodeval(n);
   if (val != expect) {
@@ -1102,7 +1102,7 @@ RET_TYPE process_assert(ARG_LIST)
 	// abort(), exit(), throw?
   }
   CHECK_TRAILING(usage);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -1118,11 +1118,11 @@ RET_TYPE process_fanin (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   prs_printrule (P,n,0);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_fanin2 (ARG_LIST)
@@ -1135,12 +1135,12 @@ RET_TYPE process_fanin2 (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   /* prs_dump_node (P,n);*/
   prs_printrule (P,n,1);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -1157,19 +1157,19 @@ RET_TYPE process_fanout (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
 
   num = prs_num_fanout (n);
-  if (num == 0) RETURN (1);
+  if (num == 0) RETURN (LISP_RET_TRUE);
   MALLOC (l, PrsExpr *, num);
   prs_fanout_rule (P, n, l);
   for (i=0; i < num; i++)
     prs_print_expr (P,l[i]);
   FREE (l);
 
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static void stop_trace (void)
@@ -1235,7 +1235,7 @@ RET_TYPE process_cycle (ARG_LIST)
   while (!interrupted) {
     n = prs_cycle_cause_stop (P, &m, &seu, stop);
 
-    if (!n) RETURN (1);
+    if (!n) RETURN (LISP_RET_TRUE);
 
     flag = 0;
     if (tracing) { flag = 1; check_trace_stop (); }
@@ -1278,7 +1278,7 @@ RET_TYPE process_cycle (ARG_LIST)
 		  seu ? " *seu*" : "");
 	}
 	printf ("\n");
-	RETURN (0);
+	RETURN (LISP_RET_ERROR);
       }
     } 
     if (interrupted) { 
@@ -1294,9 +1294,9 @@ RET_TYPE process_cycle (ARG_LIST)
 	break;
       }
     }
-    if (n == stop) RETURN (1);
+    if (n == stop) RETURN (LISP_RET_TRUE);
   }
-  RETURN (0);
+  RETURN (LISP_RET_ERROR);
 }
 
 
@@ -1366,7 +1366,7 @@ RET_TYPE process_step (ARG_LIST)
 		  seu ? " *seu*" : "");
 	}
 	printf ("\n");
-	RETURN (0);
+	RETURN (LISP_RET_ERROR);
       }
     }
     if (interrupted) {
@@ -1379,9 +1379,9 @@ RET_TYPE process_step (ARG_LIST)
     }
   }
   if (interrupted) {
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 /*
@@ -1451,7 +1451,7 @@ RET_TYPE process_advance (ARG_LIST)
 		  seu ? " *seu*" : "");
 	}
 	printf ("\n");
-	RETURN (0);
+	RETURN (LISP_RET_ERROR);
       }
     }
     if (interrupted) {
@@ -1464,9 +1464,9 @@ RET_TYPE process_advance (ARG_LIST)
     }
   }
   if (interrupted) {
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_watch (ARG_LIST)
@@ -1478,15 +1478,15 @@ RET_TYPE process_watch (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (n->bp) {
     printf ("Node `%s' already in a breakpoint/watchpoint\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   add_watchpoint (n);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_watch_alias (ARG_LIST)
@@ -1499,16 +1499,16 @@ RET_TYPE process_watch_alias (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (n->bp) {
     printf ("Node `%s' already in a breakpoint/watchpoint\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   l = add_watchpoint (n);
   l->alias = 1;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_break (ARG_LIST)
@@ -1520,15 +1520,15 @@ RET_TYPE process_break (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (in_watchlist (n)) {
     printf ("Node `%s' already in watch list\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   n->bp = 1;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
   
 
@@ -1541,11 +1541,11 @@ RET_TYPE process_unwatch (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   del_watchpoint (n);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1565,7 +1565,7 @@ RET_TYPE process_mode (ARG_LIST)
     v = 3;
   else {
     printf ("%s", usage);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
 
@@ -1577,7 +1577,7 @@ RET_TYPE process_mode (ARG_LIST)
     P->flags |= PRS_UNSTAB;
   else
     P->flags &= ~PRS_UNSTAB;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_timescale (ARG_LIST)
@@ -1595,7 +1595,7 @@ RET_TYPE process_timescale (ARG_LIST)
   prs_timescale = f * 1e-12;
   
   printf ("Set timescale to %f picoseconds.\n", f);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1636,13 +1636,13 @@ RET_TYPE process_pairtc (ARG_LIST)
 
   if (pairwise_transition_counts) {
     printf ("Already set.\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   CHECK_TRAILING(usage);
   pairwise_transition_counts = 1;
   prs_apply (P, NULL, _init_tracing);
   P->flags |= PRS_TRACE_PAIRS;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_dumptc (ARG_LIST)
@@ -1659,12 +1659,12 @@ RET_TYPE process_dumptc (ARG_LIST)
   if (!(fp = fopen (t, "w"))) {
     fprintf (stderr, "Error: could not open file `%s' for dump; dump aborted\n", t);
     FREE (t);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   FREE (t);
   prs_apply (P, (void *)fp, dump_tc);
   fclose (fp);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1726,12 +1726,12 @@ RET_TYPE process_checkpoint (ARG_LIST)
   fp = fopen (fname, "w");
   if (!fp) {
     fprintf (fp, "Could not open file `%s' for writing\n", fname);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   prs_checkpoint (P, fp);
   channel_checkpoint (&C, fp);
   fclose (fp);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_restore (ARG_LIST)
@@ -1748,12 +1748,12 @@ RET_TYPE process_restore (ARG_LIST)
   fp = fopen (fname, "r");
   if (!fp) {
     fprintf (fp, "Could not open file `%s' for reading\n", fname);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   prs_restore (P, fp);
   channel_restore (&C, fp);
   fclose (fp);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_initialize (ARG_LIST)
@@ -1763,7 +1763,7 @@ RET_TYPE process_initialize (ARG_LIST)
   CHECK_TRAILING(usage);
   prs_initialize (P);
   prs_reset_time (P);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 // Function called to create a channel
@@ -1790,7 +1790,7 @@ RET_TYPE process_channel (ARG_LIST)
 
   // Need to make sure that this is a legal channel type
   create_channel(P, &C, sChannelType, size, sName);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1808,7 +1808,7 @@ int process_injectfile (int isLoop, int argc, char **argv)
   CHECK_TRAILING(usage);
 
   channel_injectfile(P, &C, sChanName, sFileName, isLoop);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 int process_expectfile (int isLoop, int argc, char **argv)
@@ -1825,7 +1825,7 @@ int process_expectfile (int isLoop, int argc, char **argv)
   CHECK_TRAILING(usage);
 
   channel_expectfile(P, &C, sChanName, sFileName, isLoop);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_dumpfile (ARG_LIST)
@@ -1842,7 +1842,7 @@ RET_TYPE process_dumpfile (ARG_LIST)
   CHECK_TRAILING(usage);
 
   channel_dumpfile(P, &C, sChanName, sFileName);
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 RET_TYPE process_pending (ARG_LIST)
@@ -1851,7 +1851,7 @@ RET_TYPE process_pending (ARG_LIST)
 
   if (!P->eventQueue || (heap_peek_min (P->eventQueue) == NULL)) {
     printf ("No pending events!\n");
-    RETURN (1);
+    RETURN (LISP_RET_TRUE);
   }
 
   GET_OPTARG;
@@ -1869,7 +1869,7 @@ RET_TYPE process_pending (ARG_LIST)
     PrsNode *n = prs_node (P, s);
     if (!n) {
       printf ("Node `%s' not found\n", s);
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
     if (n->queue) {
       PrsEvent *e = n->queue;
@@ -1884,7 +1884,7 @@ RET_TYPE process_pending (ARG_LIST)
       printf ("No pending event.\n");
     }
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static RET_TYPE process_after (ARG_LIST)
@@ -1897,11 +1897,11 @@ static RET_TYPE process_after (ARG_LIST)
   n = prs_node (P, s);
   if (!n) {
     printf ("Node `%s' not found\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (n->up[1] || n->dn[1]) {
     printf ("Node `%s' has weak rules; cannot use this feature\n", s);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG(usage);
   min_u = atoi(s);
@@ -1909,11 +1909,11 @@ static RET_TYPE process_after (ARG_LIST)
   max_u = atoi(s);
   if (min_u > max_u) {
     printf ("min up delay should be <= max up delay\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (min_u < 1) {
     printf ("min up delay cannot be less than 1\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   GET_ARG(usage);
   min_d = atoi(s);
@@ -1921,18 +1921,18 @@ static RET_TYPE process_after (ARG_LIST)
   max_d = atoi(s);
   if (min_d > max_d) {
     printf ("min dn delay should be <= max dn delay\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   if (min_d < 1) {
     printf ("min dn delay cannot be less than 1\n");
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
   n->after_range = 1;
   n->delay_up[0] = min_u;
   n->delay_up[1] = max_u;
   n->delay_dn[0] = min_d;
   n->delay_dn[1] = max_d;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
   
 
@@ -1954,14 +1954,14 @@ static RET_TYPE process_random (ARG_LIST)
     max_d = atoi (s);
     if (min_d > max_d) {
       printf ("min delay should be <= max delay\n");
-      RETURN (0);
+      RETURN (LISP_RET_ERROR);
     }
     P->flags |= PRS_RANDOM_TIMING;
     P->flags |= PRS_RANDOM_TIMING_RANGE;
     P->min_delay = min_d;
     P->max_delay = max_d;
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static RET_TYPE process_random_seed (ARG_LIST)
@@ -1972,7 +1972,7 @@ static RET_TYPE process_random_seed (ARG_LIST)
   GET_ARG (usage);
   v = atoi (s);
   P->seed = v;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static RET_TYPE process_random_excl (ARG_LIST)
@@ -1989,9 +1989,9 @@ static RET_TYPE process_random_excl (ARG_LIST)
   }
   else {
     printf ("%s", usage);
-    RETURN (0);
+    RETURN (LISP_RET_ERROR);
   }
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 
@@ -1999,7 +1999,7 @@ static RET_TYPE process_norandom (ARG_LIST)
 {
   P->flags &= ~PRS_RANDOM_TIMING;
   P->flags &= ~PRS_RANDOM_TIMING_RANGE;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static RET_TYPE process_break_on_warn (ARG_LIST)
@@ -2016,7 +2016,7 @@ static RET_TYPE process_break_on_warn (ARG_LIST)
   }
   printf ("Stop on instability/interference: %s\n", (P->flags & PRS_STOP_ON_WARNING ? "On" : "Off"));
   exit_on_warn = 0;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static RET_TYPE process_exit_on_warn (ARG_LIST)
@@ -2033,7 +2033,7 @@ static RET_TYPE process_exit_on_warn (ARG_LIST)
   }
   printf ("Exit on instability/interference: %s\n", (P->flags & PRS_STOP_ON_WARNING ? "On" : "Off"));
   exit_on_warn = 1;
-  RETURN (1);
+  RETURN (LISP_RET_TRUE);
 }
 
 static int process_injectfile0 (int argc, char **argv)

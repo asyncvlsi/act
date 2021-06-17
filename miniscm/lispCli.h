@@ -77,6 +77,14 @@ void LispCliEnd (void);
 */
 int LispCliRun (FILE *fp);
 
+#define LISP_RET_ERROR -1
+#define LISP_RET_FALSE  0
+#define LISP_RET_TRUE   1
+#define LISP_RET_INT    2
+#define LISP_RET_STRING 3
+#define LISP_RET_FLOAT  4
+#define LISP_RET_LIST   5
+
 /* 
   Use to set int return value
 */

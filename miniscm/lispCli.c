@@ -289,7 +289,7 @@ static int dispatch_command (int argc, char **argv)
 	  printf ("   %s %s\n", cli_commands[i].name, cli_commands[i].help);
 	}
       }
-      return 1;
+      return LISP_RET_TRUE;
     }
     else if (argc == 2) {
       if (strcmp (argv[1], "help") == 0) {
@@ -310,14 +310,14 @@ static int dispatch_command (int argc, char **argv)
 	}
 	if (count == 0) {
 	  fprintf (stderr, "Error: command `%s' not found\n", argv[1]);
-	  return 0;
+	  return LISP_RET_ERROR;
 	}
       }
-      return 1;
+      return LISP_RET_TRUE;
     }
     else {
       printf ("Usage: help [cmd]\n");
-      return 0;
+      return LISP_RET_ERROR;
     }
   } else if (strcmp (argv[0], "quit") == 0 || strcmp (argv[0], "exit") == 0) {
     int code = 0;
@@ -339,7 +339,7 @@ static int dispatch_command (int argc, char **argv)
     }
   }
   fprintf (stderr, "Unknown command name `%s'\n", argv[0]);
-  return 0;
+  return LISP_RET_ERROR;
 }
 
 
@@ -580,7 +580,7 @@ static int handle_source (int argc, char **argv)
     
   if (argc != 2 && argc != 3) {
     fprintf (stderr, "Usage: source <filename> [<repeat-count>]\n");
-    return 0;
+    return LISP_RET_ERROR;
   }
 
   fname = Strdup (argv[1]);
@@ -596,7 +596,7 @@ static int handle_source (int argc, char **argv)
     if (in_stack (fname)) {
       fprintf (stderr, "Error: recursive source command for file `%s'\n",
 	       fname);
-      return 0;
+      return LISP_RET_ERROR;
     }
     push_file (fname);
     Assert (flist, "Hmm");
@@ -604,7 +604,7 @@ static int handle_source (int argc, char **argv)
     if (!fp) {
       fprintf (stderr, "Error: could not open file `%s' for reading\n",
 	       flist->name);
-      return 0;
+      return LISP_RET_ERROR;
     }
     handle_user_input (fp);
     fclose (fp);
@@ -615,10 +615,10 @@ static int handle_source (int argc, char **argv)
   }
   FREE (fname);
   if (LispInterruptExecution) {
-    return 0;
+    return LISP_RET_ERROR;
   }
   else {
-    return 1;
+    return LISP_RET_TRUE;
   }
 }
 

@@ -149,10 +149,13 @@ class SimDES {
 
   static Event *Run();		// run the simulation
 
-  static Event *Advance(int n = 1); // run n events
-  static Event *AdvanceTime (int delay); // run all events upto
-				       // specified delay in the future
+  static Event *Advance(long n = 1); // run n events
+  static Event *AdvanceTime (long delay); // run all events upto
+				       // specified delay in the
+				       // future
 
+  /** @return true if there are pending events **/
+  static bool hasPendingEvent();
 
   static int isEmpty() { return initialized_sim ? 0 : 1; }
   /*
