@@ -24,6 +24,8 @@
 #include <common/misc.h>
 #include <string.h>
 
+void *act_parse_a_fexpr (LFILE *);
+
 /*--- WARNING: replicated here ---*/
 
 #define E_ANDLOOP (E_END + 21) 
@@ -383,6 +385,186 @@ Expr *act_parse_expr_intexpr_base (LFILE *l)
     }
   }
   file_pop_position (l);
+  return e;
+}
+
+static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
+{
+  Expr *e, *f;
+  int etype;
+  
+  do_init(l);
+
+  file_push_position (l);
+
+  if (file_have (l, lpar)) {
+    if (file_have (l, tokand)) {
+      etype = E_ANDLOOP;
+    }
+    else if (file_have (l, tokor)) {
+      etype = E_ORLOOP;
+    }
+    else {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e, Expr);
+    e->type = etype;
+    e->u.e.l = NULL;
+    e->u.e.r = NULL;
+
+    if (!file_have (l, f_id)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e->u.e.l, Expr);
+    e->u.e.l->type = E_RAWFREE;
+    e->u.e.l->u.e.l = (Expr *)Strdup (file_prev (l));
+    e->u.e.l->u.e.r = NULL;
+
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    if (!(f = (Expr *) act_parse_a_fexpr (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e->u.e.r, Expr);
+    e->u.e.r->type = etype;
+    e->u.e.r->u.e.l = f;
+
+    NEW (e->u.e.r->u.e.r, Expr);
+    e->u.e.r->u.e.r->type = etype;
+    e->u.e.r->u.e.r->u.e.l = NULL;
+    e->u.e.r->u.e.r->u.e.r = NULL;
+
+    if (file_have (l, ddot)) {
+      if (!(f = (Expr *) act_parse_a_fexpr (l))) {
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+      e->u.e.r->u.e.r->u.e.l = f;
+    }
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!(e->u.e.r->u.e.r->u.e.r = act_parse_a_fexpr (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+  }
+  else if (file_have_keyw (l, "bool")) {
+    if (!file_have (l, lpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    expr_inc_parens ();
+    NEW (e, Expr);
+    e->type = E_BUILTIN_BOOL;
+    e->u.e.l = act_parse_a_fexpr (l);
+    e->u.e.r = NULL;
+    if (!e->u.e.l) {
+      expr_dec_parens ();
+      FREE (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    expr_dec_parens ();
+    if (!file_have (l, rpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      expr_free (e);
+      return NULL;
+    }
+  }
+  else {
+    e = _parse_expr_func (l);
+    if (!e) {
+      file_set_position (l);
+    }
+  }
+  file_pop_position (l);
+  return e;
+}
+
+
+Expr *act_expr_any_basecase (LFILE *l)
+{
+  Expr *e;
+
+  do_init(l);
+  
+  file_push_position (l);
+
+  if (file_have_keyw (l, "int")) {
+    if (!file_have (l, lpar)) {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e, Expr);
+    expr_inc_parens ();
+    e->type = E_BUILTIN_INT;
+    e->u.e.l = (Expr *) act_parse_a_fexpr (l);
+    if (!e->u.e.l) {
+      expr_dec_parens ();
+      FREE (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    e->u.e.r = NULL;
+    if (!file_have (l, rpar)) {
+      if (file_have (l, comma)) {
+	e->u.e.r = (Expr *) act_parse_a_fexpr (l);
+      }
+      if (!e->u.e.r) {
+	expr_dec_parens ();
+	file_set_position (l);
+	file_pop_position (l);
+	expr_free (e);
+	return NULL;
+      }
+      if (!file_have (l, rpar)) {
+	expr_dec_parens ();
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+    }
+    expr_dec_parens ();
+  }
+  else {
+    file_pop_position (l);
+    return f_parse_expr_syn_loop_bool (l);
+  }
   return e;
 }
 

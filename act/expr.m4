@@ -386,7 +386,9 @@ w_expr[Expr *]: expr
 }}
 ;
 
-w_chan_int_expr[Expr *]: expr
+/* WARNING: only used for dataflow */
+
+w_chan_int_expr[Expr *]: EXTERN[fexpr]
 {{X:
     Expr *e;
     int tc;
@@ -394,7 +396,8 @@ w_chan_int_expr[Expr *]: expr
     $0->line = $l;
     $0->column = $c;
     $0->file = $n;
-    e = act_walk_X_expr ($0, $1);
+    e = (Expr *) $1;
+
     $A($0->scope);
     tc = act_type_expr ($0->scope, e, NULL, 1);
     if (tc == T_ERR) {

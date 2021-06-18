@@ -32,6 +32,7 @@
 #include <common/config.h>
 #include <common/array.h>
 #include <act/path.h>
+#include "fexpr.h"
 
 #ifdef DEBUG_PERFORMANCE
 #include <common/mytime.h>
@@ -553,6 +554,7 @@ Act::Act (const char *s)
 #endif
   expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
   expr_parse_basecase_num = act_parse_expr_intexpr_base;
+  expr_parse_basecase_extra = act_expr_any_basecase;
   expr_parse_newtokens = act_expr_parse_newtokens;
 
   a = act_parse (s);
