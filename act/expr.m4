@@ -393,9 +393,6 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
     Expr *e;
     int tc;
 
-    $0->line = $l;
-    $0->column = $c;
-    $0->file = $n;
     e = (Expr *) $1;
     $A($0->scope);
     tc = act_type_expr ($0->scope, e, NULL);
@@ -418,9 +415,6 @@ w_chan_int_expr[Expr *]: EXTERN[fexpr]
     Expr *e;
     int tc;
 
-    $0->line = $l;
-    $0->column = $c;
-    $0->file = $n;
     e = (Expr *) $1;
 
     $A($0->scope);

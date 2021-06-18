@@ -614,7 +614,13 @@ rcv_type[int]: "?"
 {{X: return 2; }}
 ;
 
-assign_stmt[act_chp_lang_t *]: assignable_expr_id ":=" w_expr_chp
+assign_stmt[act_chp_lang_t *]: assignable_expr_id ":="
+{{X:
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+}}
+w_expr_chp
 {{X:
     act_chp_lang_t *c;
     int tl, tr;
@@ -1919,7 +1925,13 @@ action_items[act_chp_lang_t *]: ID "{" hse_body "}"
 }}
 ;
 
-lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ] { dataflow_items ";" }* "}"
+lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ]
+{{X:
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+}}
+{ dataflow_items ";" }* "}"
 {{X:
     act_dataflow *dflow;
     NEW (dflow, act_dataflow);
@@ -1967,6 +1979,11 @@ dataflow_items[act_dataflow_element *]:
 w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 {{X:
     act_dataflow_element *e;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    
     NEW (e, act_dataflow_element);
     e->t = ACT_DFLOW_FUNC;
     e->u.func.lhs = $1;
@@ -2014,6 +2031,11 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     act_dataflow_element *e;
     listitem_t *li;
     list_t *l;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    
     NEW (e, act_dataflow_element);
     e->u.splitmerge.guard = $2;
     e->u.splitmerge.nondetctrl = NULL;
@@ -2108,7 +2130,13 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     list_free (l);
     return e;
 }}
-| "dataflow_cluster" "{" { dataflow_items ";" }* "}"
+| "dataflow_cluster" "{"
+{{X:
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+}}
+{ dataflow_items ";" }* "}"
 {{X:
     act_dataflow_element *e;
     NEW (e, act_dataflow_element);
@@ -2119,6 +2147,11 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 | expr_id "->" "*"
 {{X:
     act_dataflow_element *e;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+
     NEW (e, act_dataflow_element);
     e->t = ACT_DFLOW_SINK;
 

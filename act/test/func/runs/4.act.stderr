@@ -1,2 +1,2 @@
-ERROR: File `4.act', line 4, col 16
+ERROR: File `4.act', line 13, col 6
 	`g': incorrect number of arguments (expected 1, got 2)
