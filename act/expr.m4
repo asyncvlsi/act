@@ -386,6 +386,31 @@ w_expr[Expr *]: expr
 }}
 ;
 
+
+/* WARNING: only used for CHP */
+w_expr_chp[Expr *]: EXTERN[fexpr]
+{{X:
+    Expr *e;
+    int tc;
+
+    $0->line = $l;
+    $0->column = $c;
+    $0->file = $n;
+    e = (Expr *) $1;
+    $A($0->scope);
+    tc = act_type_expr ($0->scope, e, NULL);
+    if (tc == T_ERR) {
+      $e("Typechecking failed on expression!");
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
+      $E("Expressions in port parameter list can only use strict template parameters");
+    }
+    return e;
+}}
+;
+
 /* WARNING: only used for dataflow */
 
 w_chan_int_expr[Expr *]: EXTERN[fexpr]

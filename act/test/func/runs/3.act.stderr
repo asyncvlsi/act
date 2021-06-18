@@ -1,2 +1,2 @@
-ERROR: File `3.act', line 13, col 12
+ERROR: File `3.act', line 4, col 16
 	Could not find `f' in namespace `::'

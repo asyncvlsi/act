@@ -759,6 +759,10 @@ static void expr_print (Expr *e)
     printf ("[var %p]", e->u.e.l);
     break;
 
+  case E_FUNCTION:
+    printf ("[func %s]", e->u.fn.s);
+    break;
+
   default:
     fatal_error ("Unhandled case %d!\n", e->type);
     break;

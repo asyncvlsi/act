@@ -614,7 +614,7 @@ rcv_type[int]: "?"
 {{X: return 2; }}
 ;
 
-assign_stmt[act_chp_lang_t *]: assignable_expr_id ":=" w_expr
+assign_stmt[act_chp_lang_t *]: assignable_expr_id ":=" w_expr_chp
 {{X:
     act_chp_lang_t *c;
     int tl, tr;
