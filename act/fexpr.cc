@@ -771,7 +771,7 @@ void *act_parse_a_fexpr (LFILE *l)
   int count = 0;
   Expr *e;
 
-  INIT (E_LSR, ">>");
+  INIT2 (E_LSR, ">>");
 
   file_push_position (l);
   
