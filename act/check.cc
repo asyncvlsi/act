@@ -463,9 +463,14 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
     if (lt == T_ERR) return T_ERR;
     if (T_BASETYPE_BOOL(lt) && !( lt & T_ARRAYOF )) {
+      char buf1[4000], buf2[4000];
       e = e->u.e.r;
       EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
-      typecheck_err ("Query expression: two options must have compatible types");
+
+      sprint_uexpr (buf1, 4000, e->u.e.l);
+      sprint_uexpr (buf2, 4000, e->u.e.r);
+      
+      typecheck_err ("Query expression: two options must have compatible types\n\tOpt1: %s\n\tOpt2: %s", buf1, buf2);
     }
     else {
       typecheck_err ("Query expr requires a boolean type");

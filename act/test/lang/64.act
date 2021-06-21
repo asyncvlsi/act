@@ -1,0 +1,5 @@
+chan(int) a, b, c;
+
+dataflow {
+int(a>0) = 0 ? 40 : int(b<0) = 1 -> c
+}

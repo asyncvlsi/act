@@ -1,0 +1,5 @@
+ERROR: File `64.act', line 4, col 4
+	Typechecking failed on expression!
+	Query expression: two options must have compatible types
+	Opt1: 40
+	Opt2: int(b<0)=1
