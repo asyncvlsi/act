@@ -562,7 +562,7 @@ static Expr *expr_parse (void)
       while (top_op != -1 &&
 	     ((_prec_table[top_op] > _prec_table[tok]) ||
 	      (_prec_table[top_op] == _prec_table[tok] &&
-	       top_op != E_QUERY))) {
+	       top_op != E_QUERY && top_op != E_COLON))) {
 	/* while there's something on the top of the op stack that
 	   has higher precedence than the input token, unwind the stack */
 
