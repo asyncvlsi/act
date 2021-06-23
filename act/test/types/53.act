@@ -1,0 +1,26 @@
+deftype axp (chan?!(int) cmd; chan!?(int) resp) { }
+
+
+
+defproc riscv(axp! port)
+{
+  int x;
+  chp {
+     port.cmd!x
+  }
+}
+
+
+defproc avp(axp? port)
+{
+}
+
+defproc vecsys ()
+{
+  riscv r;
+  avp x;
+
+  x.port = r.port;
+}
+
+vecsys s;

@@ -1328,6 +1328,26 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    {
+      act_connection *d = ret->u.comm.chan->Canonical (s);
+
+      if (c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Send operation on an input channel.\n");
+	fprintf (stderr, "\tChannel: ");
+	ret->u.comm.chan->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      else if (c->type == ACT_CHP_RECV && d->getDir() == Type::direction::OUT) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Receive operation on an output channel.\n");
+	fprintf (stderr, "\tChannel: ");
+	ret->u.comm.chan->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+    }
     ret->u.comm.flavor = c->u.comm.flavor;
     if (c->u.comm.var) {
       ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);

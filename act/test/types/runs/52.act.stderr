@@ -1,0 +1,5 @@
+In expanding riscv (52.act:5)
+In expanding vecsys (52.act:18)
+In expanding ::<Global>
+Receive operation on an output channel.
+	Channel: port.cmd
