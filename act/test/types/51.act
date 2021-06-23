@@ -1,0 +1,8 @@
+function f (pint x) : pint
+{ 
+  chp {
+    self := x + 1 
+  }
+}
+
+int<f(4)> x;

@@ -61,7 +61,7 @@ T_INT[int]: "int"
 {{X: return 1; }}
 ;
 
-data_type[InstType *]: T_INT [ chan_dir ] [ "<" wpint_expr ">" ]
+data_type[InstType *]: T_INT [ chan_dir ] [ "<" !endgt wpint_expr ">" !noendgt ]
 {{X:
     ActRet *r;
     Type::direction d;
