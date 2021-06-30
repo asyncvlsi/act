@@ -972,7 +972,7 @@ int ActApplyPass::run (Process *p)
   }
 
   if (!apply_conn_fn && !apply_proc_fn) {
-    warning ("ActApplyPass::run() without any functions to call. Doing nothing.");
+    /*-- do nothing --*/
   }
   else {
     if (!p) {
