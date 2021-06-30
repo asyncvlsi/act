@@ -33,14 +33,29 @@ class ActApplyPass : public ActPass {
 
   int run (Process *p = NULL);
 
+  void run_per_type (Process *p = NULL);
+
   void setCookie (void *);
   void setInstFn (void (*f) (void *, ActId *, Process *));
   void setConnPairFn (void (*f) (void *, ActId *, ActId *));
+
+  void setProcFn (void (*f) (void *, Process *));
+  void setChannelFn (void (*f) (void *, Channel *));
+  void setDataFn (void (*f) (void *, Data *));
 
   void printns (FILE *fp);
 
  private:
   int init ();
+
+  void *local_op (Process *p, int mode);
+  void *local_op (Channel *c, int mode);
+  void *local_op (Data *d, int mode);
+  
+
+  void (*apply_per_proc_fn) (void *, Process *);
+  void (*apply_per_channel_fn) (void *, Channel *);
+  void (*apply_per_data_fn) (void *, Data *);
 
   
   void (*apply_proc_fn) (void *, ActId *, Process *);

@@ -1099,6 +1099,9 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   /*-- otherwise... --*/
 
   b = phash_lookup (si->bnl->cH, c);
+  if (!b) {
+    return 0;
+  }
   Assert (b, "No connection in conn hash?");
   act_booleanized_var_t *v =  (act_booleanized_var_t *)b->v;
 

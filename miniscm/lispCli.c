@@ -410,6 +410,34 @@ void LispAppendReturnString (const char *s)
   list_append (lisp_return_list, l);
 }
 
+static list_t *lisp_return_list_stk = NULL;
+
+void LispAppendListStart (void)
+{
+  if (!lisp_return_list_stk) {
+    lisp_return_list_stk = list_new ();
+    stack_push (lisp_return_list_stk, lisp_return_list);
+    lisp_return_list = list_new ();
+  }
+}
+
+static Sexp *_list_to_sexp (list_t *l);
+
+void LispAppendListEnd (void)
+{
+  LispObj *l;
+  Assert (lisp_return_list_stk != NULL, "LispAppendListEnd(): too many calls");
+  Assert (!list_isempty (lisp_return_list_stk),
+	  "LispAppendListEnd(): too many calls");
+
+  l = LispNewObj ();
+  LTYPE(l) = S_LIST;
+  LLIST(l) = _list_to_sexp (lisp_return_list);
+
+  lisp_return_list = (list_t *) stack_pop (lisp_return_list_stk);
+  list_append (lisp_return_list, l);
+}
+
 static Sexp *lisp_return_sexp = NULL;
 
 void *LispGetReturnSexp (void)
@@ -418,16 +446,21 @@ void *LispGetReturnSexp (void)
 }
 
 
-void LispSetReturnListEnd (void)
+/*
+  Convert a list of lispObjs into a lisp Sexp and release storage for
+  the list
+*/
+static Sexp *_list_to_sexp (list_t *l)
 {
   Sexp *t;
   listitem_t *li;
   LispObj *term;
+  Sexp *ret;
   
-  lisp_return_sexp = NULL;
   t = NULL;
+  ret = NULL;
 
-  for (li = list_first (lisp_return_list); li; li = list_next (li)) {
+  for (li = list_first (l); li; li = list_next (li)) {
     Sexp *cell;
     LispObj *x = (LispObj *) list_value (li);
 
@@ -435,7 +468,7 @@ void LispSetReturnListEnd (void)
     CAR (cell) = x;
     
     if (!t) {
-      lisp_return_sexp = cell;
+      ret = cell;
     }
     else {
       CDR (t) = LispNewObj ();
@@ -449,7 +482,15 @@ void LispSetReturnListEnd (void)
     LTYPE (CDR (t)) = S_LIST;
     LLIST (CDR (t)) = NULL;
   }
-  list_free (lisp_return_list);
+  list_free (l);
+  return ret;
+}
+
+void LispSetReturnListEnd (void)
+{
+  Assert (!lisp_return_list_stk ||
+	  list_isempty (lisp_return_list_stk), "LispSetReturnListEnd() called while pending lists!");
+  lisp_return_sexp = _list_to_sexp (lisp_return_list);
   lisp_return_list = NULL;
 }
 

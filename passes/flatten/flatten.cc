@@ -895,6 +895,10 @@ ActApplyPass::ActApplyPass (Act *a) : ActPass (a, "apply")
   apply_conn_fn = NULL;
   cookie = NULL;
 
+  apply_per_proc_fn = NULL;
+  apply_per_channel_fn = NULL;
+  apply_per_data_fn = NULL;
+
   prefixes = NULL;
   prefix_array = NULL;
   suffixes = NULL;
@@ -940,9 +944,28 @@ void ActApplyPass::setConnPairFn (void (*f) (void *, ActId *, ActId *))
   apply_conn_fn = f;
 }
 
+void ActApplyPass::setProcFn (void (*f) (void *, Process *))
+{
+  apply_per_proc_fn = f;
+}
+
+void ActApplyPass::setChannelFn (void (*f) (void *, Channel *))
+{
+  apply_per_channel_fn = f;
+}
+
+void ActApplyPass::setDataFn (void (*f) (void *, Data *))
+{
+  apply_per_data_fn = f;
+}
+
 int ActApplyPass::run (Process *p)
 {
   init ();
+
+  if (!completed()) {
+    ActPass::run (p);
+  }
 
   if (!a->Global()->CurScope()->isExpanded()) {
     fatal_error ("ActApplyPass: must be called after expansion!");
@@ -962,4 +985,41 @@ int ActApplyPass::run (Process *p)
   
   _finished = 2;
   return 1;
+}
+
+
+void *ActApplyPass::local_op (Process *p, int mode)
+{
+  if (mode == 1) {
+    if (apply_per_proc_fn) {
+      (*apply_per_proc_fn) (cookie, p);
+    }
+  }
+  return NULL;
+}
+  
+void *ActApplyPass::local_op (Channel *c, int mode)
+{
+  if (mode == 1) {
+    if (apply_per_channel_fn) {
+      (*apply_per_channel_fn) (cookie, c);
+    }
+  }
+  return NULL;
+}
+
+
+void *ActApplyPass::local_op (Data *d, int mode)
+{
+  if (mode == 1) {
+    if (apply_per_data_fn) {
+      (*apply_per_data_fn) (cookie, d);
+    }
+  }
+  return NULL;
+}
+
+void ActApplyPass::run_per_type (Process *p)
+{
+  run_recursive (p, 1);
 }
