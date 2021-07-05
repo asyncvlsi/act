@@ -383,7 +383,7 @@ struct act_sh_dispatch_table {
   void (*_free) (ActPass *ap, void *v);
   void (*_done) (ActPass *ap);
 
-  int (*_runcmd) (ActPass *ap);
+  int (*_runcmd) (ActPass *ap, const char *name);
 };
 
 class ActDynamicPass : public ActPass {
@@ -403,7 +403,7 @@ public:
   void *getPtrParam (const char *name);
   double getRealParam (const char *name);
 
-  int runcmd (void);
+  int runcmd (const char *name);
 
   struct Hashtable *getConfig ();
   Technology *getTech () { return T; }

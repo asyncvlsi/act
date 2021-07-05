@@ -459,7 +459,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   _d._done = (void(*)(ActPass *))dlsym (lib_ptr, buf);
 
   snprintf (buf, 1024, "%s_runcmd", prefix);
-  _d._runcmd = (int(*)(ActPass *))dlsym (lib_ptr, buf);
+  _d._runcmd = (int(*)(ActPass *, const char *))dlsym (lib_ptr, buf);
   
 
   if (_d._init) {
@@ -499,10 +499,10 @@ void ActDynamicPass::run_recursive (Process *p, int mode)
   }
 }
 
-int ActDynamicPass::runcmd (void)
+int ActDynamicPass::runcmd (const char *name)
 {
   if (_d._runcmd) {
-    return (*_d._runcmd) (this);
+    return (*_d._runcmd) (this, name);
   }
   else {
     return -1;
