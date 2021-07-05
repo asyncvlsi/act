@@ -1021,5 +1021,8 @@ void *ActApplyPass::local_op (Data *d, int mode)
 
 void ActApplyPass::run_per_type (Process *p)
 {
+  if (!completed()) {
+    run (p);
+  }
   run_recursive (p, 1);
 }
