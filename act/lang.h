@@ -168,10 +168,12 @@ enum act_chp_lang_type {
   ACT_CHP_FUNC = 10,
   ACT_CHP_SEMILOOP = 11,
   ACT_CHP_COMMALOOP = 12,
-  ACT_CHP_HOLE = 13
+  ACT_CHP_HOLE = 13,
+  ACT_CHP_ASSIGNSELF = 14   /* same as assign, used to indicate self
+			       assignment in some tools */
 };
 
-#define ACT_CHP_STMTEND 14  /* 1 more than the last enumeration above */
+#define ACT_CHP_STMTEND 15  /* 1 more than the last enumeration above */
 
 struct act_chp_lang;
 

@@ -1321,6 +1321,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     break;
 
   case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
     ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
     break;
@@ -1836,6 +1837,7 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     break;
 
   case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
     c->u.assign.id->Print (fp);
     fprintf (fp, ":=");
     print_uexpr (fp, c->u.assign.e);
