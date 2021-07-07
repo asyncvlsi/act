@@ -1516,7 +1516,7 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
 {{X:
     ActBody *b;
     
-    InstType *it = act_expr_insttype ($0->scope, $2, NULL);
+    InstType *it = act_expr_insttype ($0->scope, $2, NULL, 0);
     if (!TypeFactory::isPBoolType (it->BaseType()) ||
 	it->arrayInfo() != NULL) {
       $E("Assertion requires a Boolean expression of parameters/consts only");

@@ -651,7 +651,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       for (int i=0;
 	   i < (kind == 0 ? fn->getNumParams() : fn->getNumPorts()); i++) {
 	InstType *x = fn->getPortType (kind == 0 ? -(i+1) : i);
-	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
+	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
+
+	if (!y) {
+	  return T_ERR;
+	}
 
 	strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
 
@@ -660,7 +664,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    if (TypeFactory::isChanType (y)) {
 	      y = TypeFactory::getChanDataType (y);
 	    }
-	    else {
+	    else if (tmp->u.e.l->type == E_VAR ||
+		     !TypeFactory::isDataType (y)) {
 	      typecheck_err ("Function `%s': arg #%d has an incompatible type",
 			     fn->getName(), i);
 	      return T_ERR;
@@ -693,7 +698,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	tmp = e2;
 	for (int i=0; i < fn->getNumParams(); i++) {
 	  InstType *x = fn->getPortType (-(i+1));
-	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL);
+	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
 	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
 	  if (!x->isConnectable (y, 1)) {
 	    typecheck_err ("Function `%s': template arg #%d has an incompatible type",
@@ -1107,7 +1112,7 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
   return it;
 }
 
-InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
+InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
 {
   int ret;
   InstType *it;
@@ -1132,7 +1137,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal)
     Function *fn = dynamic_cast<Function *>(u);
     return fn->getRetType();
   }
-  ret = act_type_expr (s, e, NULL);
+  ret = act_type_expr (s, e, NULL, only_chan);
 
   if (ret == T_ERR) {
     return NULL;
@@ -1452,7 +1457,7 @@ InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
     break;
 
   case AExpr::EXPR:
-    { InstType *it = act_expr_insttype (s, (Expr *)l, &xlocal);
+    { InstType *it = act_expr_insttype (s, (Expr *)l, &xlocal, 0);
       if (islocal) {
 	*islocal &= xlocal;
       }
@@ -1617,7 +1622,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
   InstType *it1, *it2;
 
   if (e) {
-    it1 = act_expr_insttype (sc, e, NULL);
+    it1 = act_expr_insttype (sc, e, NULL, 0);
   }
   else {
     it1 = NULL;

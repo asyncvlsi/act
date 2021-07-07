@@ -1,0 +1,18 @@
+function addone (int x) : int
+{ 
+  chp {
+    self := x{4..2} + 1
+  }
+}
+
+
+defproc test ()
+{
+  chan(int) x, y;
+
+  dataflow {
+    addone (y+1) -> x
+  }
+}
+
+test t;

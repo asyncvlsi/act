@@ -256,13 +256,56 @@ static Expr **_expand_inline (struct hash_stack *Hs, Expr *e)
       Expr *r = res[0];
       FREE (res);
       if (r->type != E_VAR) {
+	/* use shifts to implement bitfields */
+	if (e->u.e.r->u.e.l) {
+	  unsigned long mask_amt;
+	  Assert (e->u.e.r->u.e.l->type == E_INT &&
+		  e->u.e.r->u.e.r->type == E_INT, "WHat?");
+
+	  /* (r >> (e->u.e.r->u.e.l)) & ((1 << (r - l + 1)) - 1) */
+
+	  /* XXX bitwidth */
+	  if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v > 64) {
+	    warning ("Bitwidth limit exceeded?");
+	  }
+	  else if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v == 64) {
+	    mask_amt = 0xffffffffffffffff;
+	  }
+	  else {
+	    mask_amt = (1UL << (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v + 1)) - 1;
+	  }
+	  ret->type = E_AND;
+	  ret->u.e.r = const_expr (mask_amt);
+	  NEW (ret->u.e.l, Expr);
+	  ret->u.e.l->type = E_LSR;
+	  ret->u.e.l->u.e.l = expr_dup (r);
+	  ret->u.e.l->u.e.r = e->u.e.r->u.e.l;
+	}
+	else {
+	  ret->type = E_AND;
+	  ret->u.e.r = const_expr (1);
+	  NEW (ret->u.e.l, Expr);
+	  ret->u.e.l->type = E_LSR;
+	  ret->u.e.l->u.e.l = expr_dup (r);
+	  ret->u.e.l->u.e.r = e->u.e.r->u.e.r;
+	}
+#if 0
+	if (Hs->sc->getUserDef()) {
+	  fprintf (stderr, "While inlining: `%s'\n",
+		   Hs->sc->getUserDef()->getName());
+	  print_expr (stderr, r);
+	  fprintf (stderr, "\n");
+	}
 	fatal_error ("Can't inline bitfields of expressions");
+#endif
       }
-      ret->u.e.l = r->u.e.l;
-      NEW (ret->u.e.r, Expr);
-      ret->u.e.r->type = e->u.e.r->type;
-      ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
-      ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+      else {
+	ret->u.e.l = r->u.e.l;
+	NEW (ret->u.e.r, Expr);
+	ret->u.e.r->type = e->u.e.r->type;
+	ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
+	ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+      }
     }
     MALLOC (rets, Expr *, 1);
     rets[0] = ret;
@@ -648,7 +691,8 @@ Expr **Function::toInline (int nargs, Expr **args)
   hash_bucket_t *b;
   b = hash_lookup (Hs.state, "self");
   if (!b) {
-    warning ("Function inlining failed; self was not assigned!");
+    warning ("%s: Function inlining failed; self was not assigned!",
+	     getName());
     return NULL;
   }
   Expr **xret = (Expr **) b->v;

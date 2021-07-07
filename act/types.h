@@ -920,7 +920,7 @@ int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
 
-InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal);
+InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan);
 InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);
 
 void type_set_position (int l, int c, char *n);
@@ -954,6 +954,8 @@ Expr *expr_dup_const (Expr *e);
 
 extern int _act_chp_is_synth_flag;
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2);
+
+#define expr_dup(e) expr_expand ((e), NULL, NULL, ACT_EXPR_EXFLAG_DUPONLY)
 
 /* free an expanded expression */
 void expr_ex_free (Expr *);
