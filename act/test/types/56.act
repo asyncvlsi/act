@@ -1,0 +1,30 @@
+deftype test1 (int<4> x) { }
+
+deftype foo <: int<4> (bool b[4]) { }
+
+deftype newtest <: test1()
++{ foo x; } 
+{  }
+
+
+defproc testme() {
+
+newtest new;
+
+test1 t;
+
+foo f;
+
+new = t;
+
+bool w;
+
+w = new.x.b[0];
+
+f = t.x;
+//f = new.x;
+
+}
+
+
+testme w;

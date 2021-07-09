@@ -1023,7 +1023,9 @@ act_connection *ActId::Canonical (Scope *s)
   
   Assert (s->isExpanded(), "ActId::Canonical called on unexpanded scope");
 
-#if 0
+  //#define DEBUG_CONNECTIONS
+
+#ifdef DEBUG_CONNECTIONS
   static int level = 0;
   printf ("===%d Canonical: ", level);
   Print (stdout);
@@ -1034,15 +1036,24 @@ act_connection *ActId::Canonical (Scope *s)
   vx = rawValueIdx(s);
   cx = vx->u.obj.c;
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
   printf ("Type-vx: ");
   vx->t->Print (stdout);
   printf ("\n");
 #endif  
 
   cx = cx->primary();
+  
+  vx = cx->getvx();
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
+  printf ("Type-vx-update: ");
+  vx->t->Print (stdout);
+  printf ("\n");
+#endif  
+  
+
+#ifdef DEBUG_CONNECTIONS
   printf (" --> conn-list: ");
   print_id (cx);
   {
@@ -1186,7 +1197,7 @@ act_connection *ActId::Canonical (Scope *s)
     Assert (vxrest, "What?");
     if (vxrest->global) {
       /* we're done! */
-#if 0
+#ifdef DEBUG_CONNECTIONS
       level--;
       printf (" -->%d returned-early: ", level);
       print_id (cxrest);
@@ -1288,15 +1299,13 @@ act_connection *ActId::Canonical (Scope *s)
   }
 #endif
   
-#if 0
+#ifdef DEBUG_CONNECTIONS
   printf ("canonical: ");
   id->Print (stdout);
-#if 0
   printf (" [rest=");
   idrest->Print (stdout);
   printf ("]");
-#endif
-#if 0  
+#if 0
   printf (" [new=");
   topf->Print (stdout);
   printf ("] ");
@@ -1408,7 +1417,7 @@ act_connection *ActId::Canonical (Scope *s)
   }
 #endif  
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
   level--;
   printf (" -->%d returned: ", level);
   print_id (cx);

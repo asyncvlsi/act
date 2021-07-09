@@ -830,7 +830,9 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   ValueIdx *vx1, *vx2, *vxtmp;
   int do_swap = 0;
 
-#if 0
+//#define DEBUG_CONNECTIONS  
+
+#ifdef DEBUG_CONNECTIONS
   printf ("before-connect: %s and %s\n", s1, s2);
   
   dump_conn_rec (c1);
@@ -1034,7 +1036,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   /* now merge any subtrees */
   _merge_subtrees (ux, c1, c2);
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
   printf ("after-connect: ");
   c1 = c1->primary();
   dump_conn_rec (c1);
