@@ -766,13 +766,7 @@ defdata: [ template_spec ]
       if (TypeFactory::isInterfaceType (phys_inst->BaseType())) {
 	$E("A data type cannot be related to an interface");
       }
-      if (TypeFactory::isStructure (phys_inst)) {
-	$E("A data type cannot be related to a structure");
-	ir = NULL;
-      }
-      else {
-	ir = phys_inst;
-      }
+      ir = phys_inst;
 
       if (phys_inst->getDir() != Type::NONE) {
 	$E("Direction flags not permitted on parent type");
@@ -827,6 +821,12 @@ defdata: [ template_spec ]
 "(" [ port_formal_list ] ")"
 {{X:
     UserDef *u;
+
+    if ($0->u_d->getParent() &&
+	TypeFactory::isStructure ($0->u_d->getParent()) &&
+	!OPT_EMPTY ($6)) {
+      $E("`%s': structure implementation cannot extend the port list!", $3);
+    }
 
     if ((u = $0->curns->findType ($3))) {
       if (u->isEqual ($0->u_d)) {

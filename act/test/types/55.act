@@ -2,8 +2,16 @@ deftype test1 (int<4> x) { }
 
 deftype foo <: int<4> (bool x[4]) { }
 
-deftype newtest <: test1(bool w)
+deftype newtest <: test1()
 +{ foo x; } 
 {  }
 
 newtest x;
+
+test1 t;
+
+x = t;
+
+bool w;
+
+w = x.x.x[0];
