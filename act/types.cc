@@ -278,6 +278,9 @@ void UserDef::MkCopy (UserDef *u)
   expanded = u->expanded; u->expanded = 0;
   pending = u->pending; u->pending = 0;
 
+  lang = u->lang;
+  u->lang = new act_languages ();
+
   nt = u->nt; u->nt = 0;
   
   pt = u->pt; u->pt = NULL;
@@ -296,9 +299,8 @@ void UserDef::MkCopy (UserDef *u)
   b = u->b; u->b = NULL;
   _ns = u->_ns; u->_ns = NULL;
 
-  lang = u->lang;
-
-  u->lang = new act_languages ();
+  unexpanded = u->unexpanded;
+  level = u->level;
 
   file = u->file;
   lineno = u->lineno;
