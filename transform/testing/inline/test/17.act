@@ -1,0 +1,29 @@
+deftype mystruct (int a; bool  b; int c) { }
+
+function addone (int x) : mystruct
+{ 
+  mystruct tmp;
+  chp {
+     tmp.a := 0;
+     tmp.b := true;
+     tmp.c := 1;
+    [ x > 3 -> tmp.a := tmp.a + 1
+    [] else -> tmp.c := tmp.c - 1
+    ]; 
+     self := tmp
+  }
+}
+
+
+defproc test ()
+{
+  int y;
+  mystruct res, res2;
+
+  chp {
+    res := addone (y+1);
+    res2 := res
+  }
+}
+
+test t;

@@ -134,7 +134,7 @@ public:
 
 
 class InstType;
-
+class UserMacro;
 
 
 
@@ -150,7 +150,11 @@ class InstType;
  */
 class UserDef : public Type {
  public:
-  UserDef (ActNamespace *ns); /**< constructor, initialize everything correctly */
+  UserDef (ActNamespace *ns); /**< constructor, initialize everything
+				 correctly */
+
+  UserDef (UserDef *x);  /**< move over info from x to current type */
+
   virtual ~UserDef (); /**< destructor, releases storage */
 
   /// Get file name where this was defined
@@ -334,6 +338,8 @@ class UserDef : public Type {
   void mkRefined() { has_refinement = 1; }
   int hasRefinement() { return has_refinement; }
 
+  UserMacro *newMacro (const char *name);
+
  protected:
   InstType *parent;		/**< implementation relationship, if any */
   
@@ -370,6 +376,11 @@ class UserDef : public Type {
   const char *file; /**< file name (if known) where this was defined **/
   int lineno;       /**< line number (if known) where this was defined **/
   int has_refinement;	      /**< 1 if there is a refinement body **/
+
+  int emitMacros (FILE *fp);
+
+  /// user-defined macros
+  A_DECL (UserMacro *, um);
 };
 
 
@@ -482,8 +493,6 @@ class Function : public UserDef {
   void _chk_inline (struct act_chp_lang *c);
 };
 
-
-
 #define ACT_NUM_STD_METHODS 8
 #define ACT_NUM_EXPR_METHODS 2
 
@@ -582,6 +591,34 @@ class Channel : public UserDef {
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS];
   Expr *emethods[ACT_NUM_EXPR_METHODS];
 };
+
+
+class UserMacro {
+public:
+  UserMacro (UserDef *u, const char *name);
+  ~UserMacro ();
+
+  void Print (FILE *fp);
+  UserMacro *Expand (UserDef *ux, ActNamespace *ns, Scope *s);
+
+  int addPort (InstType *it, const char *name);
+
+  const char *getName () { return _nm; }
+
+  void setBody (struct act_chp_lang *);
+
+private:
+  const char *_nm;
+  UserDef *parent;		/**< user-defined type with this macro */
+
+  int nports;			/**< number of ports */
+  InstType **port_t;		/**< port types */
+  const char **port_n;		/**< port names */
+
+  struct act_chp_lang *c;	/**< body */
+};
+
+
 
 class TypeFactory {
  private:

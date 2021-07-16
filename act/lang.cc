@@ -1166,6 +1166,13 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
   return e;
 }
 
+static int _chp_expanding_macro = 0;
+
+void chp_expand_macromode (int v)
+{
+  _chp_expanding_macro = v;
+}
+
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
   act_chp_lang_t *ret;
@@ -1332,7 +1339,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     {
       act_connection *d = ret->u.comm.chan->Canonical (s);
 
-      if (c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN) {
+      if ((c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN &&
+	   _chp_expanding_macro == 0) ||
+	  (c->type == ACT_CHP_SEND && d->getDir() == Type::direction::OUT &&
+	   _chp_expanding_macro == 1)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "Send operation on an input channel.\n");
 	fprintf (stderr, "\tChannel: ");
@@ -1340,7 +1350,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	fprintf (stderr, "\n");
 	exit (1);
       }
-      else if (c->type == ACT_CHP_RECV && d->getDir() == Type::direction::OUT) {
+      else if ((c->type == ACT_CHP_RECV && d->getDir() == Type::direction::OUT && _chp_expanding_macro == 0) ||
+	       (c->type == ACT_CHP_RECV && d->getDir() == Type::direction::IN && _chp_expanding_macro == 1)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "Receive operation on an output channel.\n");
 	fprintf (stderr, "\tChannel: ");

@@ -34,17 +34,13 @@
  *
  *------------------------------------------------------------------------
  */
-
-Process::Process (UserDef *u) : UserDef (*u)
+Process::Process (UserDef *u) : UserDef (u)
 {
   is_cell = 0;
   b = NULL;
   ifaces = NULL;
   changelist = NULL;
   bufcnt = 0;
-
-  /* copy over userdef */
-  MkCopy (u);
 }
 
 Process::~Process ()
@@ -129,6 +125,14 @@ void Process::Print (FILE *fp)
 
   /* print language bodies */
   lang->Print (fp);
+
+  if (A_LEN (um) > 0) {
+    fprintf (fp, " methods {\n");
+    for (int i=0; i < A_LEN (um); i++) {
+      um[i]->Print (fp);
+    }
+    fprintf (fp, " }\n");
+  }
 
   fprintf (fp, "}\n\n");
 }

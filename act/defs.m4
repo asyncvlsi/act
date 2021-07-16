@@ -323,7 +323,7 @@ proc_body:
       $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
     }
 }}
-  "{" def_body  "}"
+  "{" def_body  [ methods_body ] "}"
 {{X:
     OPT_FREE ($1);
     OPT_FREE ($2);
@@ -526,6 +526,13 @@ port_formal_list: { single_port_item ";" }*
 }}
 ;
 
+macro_formal_list: { single_macro_port_item ";" }*
+{{X:
+    list_free ($1);
+    return NULL;
+}}
+;
+
 function_formal_list: port_formal_list | param_formal_list ;
 
 param_formal_list: { param_inst ";" }*
@@ -673,6 +680,78 @@ single_port_item: physical_inst_type id_list
     return NULL;
 }}
 ;
+
+
+single_macro_port_item: physical_inst_type id_list
+{{X:
+    listitem_t *li;
+    ActRet *r;
+    InstType *it;
+    UserDef *u;
+
+    if (!TypeFactory::isDataType ($1)) {
+      r = (ActRet *) list_value (list_first ($2));
+      $A(r->type == R_STRING);
+      $E("Parameter ``%s'': port parameter for a macro cannot be a process", r->u.str);
+    }
+
+    if ($0->u_p) {
+      u = $0->u_p;
+    }
+    else if ($0->u_c) {
+      u = $0->u_c;
+    }
+    else if ($0->u_d) {
+      u = $0->u_d;
+    }
+    else {
+      $A(0);
+    }
+
+    /* Walk through identifiers */
+    for (li = list_first ($2); li; li = list_next (li)) {
+      r = (ActRet *) list_value (li);
+      $A(r->type == R_STRING);
+      const char *id_name = r->u.str;
+      FREE (r);
+
+      li = list_next (li);
+
+      r = (ActRet *) list_value (li);
+      $A(r->type == R_LIST);
+      list_t *m = r->u.l;
+      FREE (r);
+
+      if (OPT_EMPTY (m)) {
+	/* nothing---use the base insttype directly */
+	it = $1;
+      }
+      else {
+	/* we need to replicate the insttype */
+	it = new InstType ($1);
+	r = OPT_VALUE (m);
+	$A(r->type == R_ARRAY);
+	r->u.array->mkArray ();
+	it->MkArray (r->u.array);
+	it->MkCached ();
+	FREE (r);
+      }
+      list_free (m);
+
+      $0->scope->Add (id_name, it);
+
+      if (u->FindPort (id_name) != 0) {
+	$E("Macro argument conflicts with port/parameter name: ``%s''", id_name);
+      }
+      if (!$0->um->addPort (it, id_name)) {
+	$E("Duplicate macro port name: ``%s''", id_name);
+      }
+    }
+    list_free ($2);
+    return NULL;
+}}
+;
+
 
 /*------------------------------------------------------------------------
  *
@@ -822,12 +901,6 @@ defdata: [ template_spec ]
 {{X:
     UserDef *u;
 
-    if ($0->u_d->getParent() &&
-	TypeFactory::isStructure ($0->u_d->getParent()) &&
-	!OPT_EMPTY ($6)) {
-      $E("`%s': structure implementation cannot extend the port list!", $3);
-    }
-
     if ((u = $0->curns->findType ($3))) {
       if (u->isEqual ($0->u_d)) {
 	delete $0->u_d;
@@ -945,7 +1018,7 @@ one_method: ID "{" hse_body "}"
       }
     }
     else {
-      $E("Methods body in unknown context?");
+      $E("This particlar style of method body is only permitted in channels or data types");
     }
     return NULL;
 }}
@@ -975,8 +1048,43 @@ one_method: ID "{" hse_body "}"
       }
     }
     else {
-      $E("Method-expression in invalid context");
+      $E("This particlar style of method body is only permitted in channel types");
     }
+    return NULL;
+}}
+| "macro" ID
+{{X:
+    if ($0->u_p) {
+      $0->um = $0->u_p->newMacro ($2);
+    }
+    else if ($0->u_c) {
+      $0->um = $0->u_c->newMacro ($2);
+    }
+    else if ($0->u_d) {
+      $0->um = $0->u_d->newMacro ($2);
+    }
+    else {
+      $E("Macro in invalid unknown context");
+    }
+    if (!$0->um) {
+      $E("Duplicate macro name: ``%s''", $2);
+    }
+    $0->scope = new Scope ($0->scope, 0);
+}}  
+"(" [ macro_formal_list ] ")" "{" [ chp_body ] "}"
+{{X:
+    /* function formal list must be data types; no parameters allowed */
+    if (!OPT_EMPTY ($7)) {
+      ActRet *r = OPT_VALUE ($7);
+      $A(r->type == R_CHP_LANG);
+      $0->um->setBody (r->u.chp);
+    }
+    $0->um = NULL;
+
+    Scope *tmp = $0->scope;
+    $0->scope = tmp->Parent ();
+    delete tmp;
+    
     return NULL;
 }}
 ;

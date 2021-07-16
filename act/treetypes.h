@@ -172,6 +172,9 @@ typedef struct {
   int ptype_templ_nargs;
   inst_param *ptype_templ;
 
+  /* userdef macro */
+  UserMacro *um;
+  
 } ActTree;
 
 

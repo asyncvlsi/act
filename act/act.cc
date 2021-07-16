@@ -511,6 +511,8 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
 
   tr->ptype_expand = 0;
   tr->ptype_name = NULL;
+
+  tr->um = NULL;
 }
 
 Act::Act (const char *s)

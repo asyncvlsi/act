@@ -605,7 +605,38 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
       if (TypeFactory::isStructure (it)) {
 	if (c->u.assign.e->type == E_VAR) {
-	  /* nothing to be done here */
+	  int *types;
+	  int nb, ni;
+	  ActId *e_rhs;
+
+	  e_rhs = (ActId *) c->u.assign.e->u.e.l;
+	  
+	  /* element-wise assignment */
+	  Data *d = dynamic_cast<Data *> (it->BaseType());
+	  Assert (d, "Hmm");
+	  ActId **fields = d->getStructFields (&types);
+	  FREE (types);
+	  d->getStructCount (&nb, &ni);
+	  int sz = nb + ni;
+	  list_t *l = list_new ();
+	  for (int i=0; i < sz; i++) {
+	    act_chp_lang_t *tc;
+	    NEW (tc, act_chp_lang_t);
+	    tc->type = ACT_CHP_ASSIGN;
+	    tc->label = NULL;
+	    tc->space = NULL;
+	    tc->u.assign.id = c->u.assign.id->Clone();
+	    tc->u.assign.id->Tail()->Append (fields[i]);
+	    NEW (tc->u.assign.e, Expr);
+	    tc->u.assign.e->type = E_VAR;
+	    tc->u.assign.e->u.e.r = NULL;
+	    tc->u.assign.e->u.e.l = (Expr *) e_rhs->Clone();
+	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
+	    list_append (l, tc);
+	  }
+	  FREE (fields);
+	  c->type = ACT_CHP_SEMI;
+	  c->u.semi_comma.cmd = l;
 	}
 	else {
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");

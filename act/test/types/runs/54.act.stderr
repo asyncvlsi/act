@@ -1,2 +1,0 @@
-ERROR: File `54.act', line 5, col 8
-	newtest: structure implementation cannot extend the port list!

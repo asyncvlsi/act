@@ -226,6 +226,8 @@ UserDef::UserDef (ActNamespace *ns)
   lineno = 0;
 
   has_refinement = 0;
+
+  A_INIT (um);
 }
 
 UserDef::~UserDef()
@@ -258,6 +260,14 @@ UserDef::~UserDef()
   }
   if (b) {
     delete b;
+  }
+
+  if (A_LEN (um) > 0) {
+    for (int i=0; i < A_LEN (um); i++) {
+      Assert (um[i], "NULL macro?");
+      delete um[i];
+    }
+    A_FREE (um);
   }
 }
 
@@ -293,17 +303,17 @@ void UserDef::MkCopy (UserDef *u)
   file = u->file;
   lineno = u->lineno;
   has_refinement = u->has_refinement;
+
+  A_ASSIGN (um, u->um);
+  u->um = NULL;
 }
 
 
-Function::Function (UserDef *u) : UserDef (*u)
+Function::Function (UserDef *u) : UserDef (u)
 {
   b = NULL;
   ret_type = NULL;
   is_simple_inline = 0;
-  
-  /* copy over userdef */
-  MkCopy (u);
 }
 
 Function::~Function ()
@@ -314,10 +324,9 @@ Function::~Function ()
 }
 
 
-Interface::Interface (UserDef *u) : UserDef (*u)
+Interface::Interface (UserDef *u) : UserDef (u)
 {
-  /* copy over userdef */
-  MkCopy (u);
+
 }
 
 Interface::~Interface() { }
@@ -363,18 +372,16 @@ int UserDef::isPort (const  char *s)
 }
 
 
-Data::Data (UserDef *u) : UserDef (*u)
+Data::Data (UserDef *u) : UserDef (u)
 {
   int i;
-  /* copy over userdef */
+
   is_enum = 0;
   b = NULL;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
   }
-
-  MkCopy (u);
 }
 
 Data::~Data()
@@ -382,10 +389,10 @@ Data::~Data()
   
 }
 
-Channel::Channel (UserDef *u) : UserDef (*u)
+Channel::Channel (UserDef *u) : UserDef (u)
 {
   int i;
-  /* copy over userdef */
+
   b = NULL;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
@@ -394,7 +401,6 @@ Channel::Channel (UserDef *u) : UserDef (*u)
   for (i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     emethods[i] = NULL;
   }
-  MkCopy (u);
 }
 
 Channel::~Channel()
@@ -904,6 +910,13 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     b->Expandlist (ns, ux->I);
   }
 
+  /*-- expand macros --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    A_NEW (ux->um, UserMacro *);
+    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I);
+    A_INC (ux->um);
+  }
+
   ux->pending = 0;
   recursion_depth--;
   return ux;
@@ -1336,6 +1349,9 @@ void Channel::Print (FILE *fp)
   for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     EMIT_METHODEXPR (i + ACT_NUM_STD_METHODS);
   }
+
+  firstmeth = emitMacros (fp) ? 1 : firstmeth;
+  
   if (!firstmeth) {
     fprintf (fp, "}\n");
   }
@@ -1364,6 +1380,8 @@ void Data::Print (FILE *fp)
 
   EMIT_METHOD(ACT_METHOD_SET);
   EMIT_METHOD(ACT_METHOD_GET);
+
+  firstmeth = emitMacros (fp) ? 1 : firstmeth;
 
   if (!firstmeth) {
     fprintf (fp, " }\n");
@@ -2071,3 +2089,41 @@ int Channel::mustbeActiveRecv ()
 }
 
 
+int UserDef::emitMacros (FILE *fp)
+{
+  if (A_LEN (um) > 0) {
+    for (int i=0; i < A_LEN (um); i++) {
+      UserMacro *u = um[i];
+      Assert (u, "Hmm");
+      u->Print (fp);
+      fprintf (fp, "\n");
+    }
+    return 1;
+  }
+  return 0;
+}
+
+/*--- macros ---*/
+
+
+UserMacro *UserDef::newMacro (const char *name)
+{
+  name = string_cache (name);
+  for (int i=0; i < A_LEN (um); i++) {
+    if (strcmp (um[i]->getName(), name) == 0) {
+      return NULL;
+    }
+  }
+  A_NEW (um, UserMacro *);
+  A_NEXT (um) = new UserMacro (this, name);
+  A_INC (um);
+  return um[A_LEN(um)-1];
+}
+
+
+/* copy over userdef */
+UserDef::UserDef (UserDef *x)
+{
+  A_INIT (um);
+  MkCopy (x);
+}

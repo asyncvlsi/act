@@ -443,7 +443,8 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
 
     t = act_type_var ($0->scope, $1, &it);
 
-    if (it->getDir() == Type::direction::IN) {
+    if ((it->getDir() == Type::direction::IN && $0->um == NULL) ||
+	(it->getDir() == Type::direction::OUT && $0->um != NULL)) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is an input channel\n");
@@ -535,7 +536,8 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
     
     t = act_type_var ($0->scope, $1, &it);
 
-    if (it->getDir() == Type::direction::OUT) {
+    if ((it->getDir() == Type::direction::OUT && $0->um == NULL) ||
+	(it->getDir() == Type::direction::IN && $0->um != NULL)) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is an output channel\n");
