@@ -391,10 +391,6 @@ base_stmt[act_chp_lang_t *]: send_stmt
 {{X:
 	return $2;
 }}
-| "[" chp_body "]"
-{{X:
-	return $2;
-}}
 | ID "(" { chp_log_item "," }* ")" /* log */
 {{X:
     act_chp_lang_t *c;
@@ -404,6 +400,67 @@ base_stmt[act_chp_lang_t *]: send_stmt
     c->space = NULL;
     c->u.func.name = string_create ($1);
     c->u.func.rhs = $3;
+    return c;
+}}
+| base_id "." ID "(" [ { w_expr "," }** ] ")"
+{{X:
+    act_chp_lang_t *c;
+    int tc;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_MACRO;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.macro.id = $1;
+
+    $A($1->Rest() == NULL);
+
+    InstType *it = $0->scope->FullLookup ($1->getName());
+    if (!it) {
+      $E("The identifier ``%s'' does not exist in the current scope.",
+	 $1->getName());
+    }
+
+    if ($1->isRange()) {
+      $E("Macro calls cannot use an array range specification (``%s'')",
+	 $1->getName());
+    }
+
+    if ($1->isDeref() && (it->arrayInfo() == NULL)) {
+      $E("Array de-reference to a non-arrayed value ``%s''", $1->getName());
+    }
+
+    if (!TypeFactory::isUserType (it)) {
+      $E("``%s'': macro calls can only be made to a user-defined type.",
+	 $1->getName());
+    }
+
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    $A(u);
+
+    if (u->isDefined() && !u->getMacro ($3)) {
+      $E("Macro ``%s'' not found for ``%s'' (type ``%s'')",
+	 $3, $1->getName(), u->getName());
+    }
+
+    c->u.macro.name = string_create ($3);
+    
+    if (OPT_EMPTY ($5)) {
+      c->u.macro.rhs = NULL;
+    }
+    else {
+      ActRet *r = OPT_VALUE ($5);
+      $A(r->type == R_LIST);
+      c->u.macro.rhs = list_new ();
+      for (listitem_t *li = list_first (r->u.l); li; li = list_next (li)) {
+	ActRet *r2 = (ActRet *) list_value (li);
+	$A(r2->type == R_EXPR);
+	list_append (c->u.macro.rhs, r2->u.exp);
+	FREE (r2);
+      }
+      list_free (r->u.l);
+      FREE (r);
+    }
+    OPT_FREE ($5);
     return c;
 }}
 ;
@@ -440,16 +497,8 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     InstType *it;
     Channel *ch1;
     Chan *ch2;
-
+    
     t = act_type_var ($0->scope, $1, &it);
-
-    if ((it->getDir() == Type::direction::IN && $0->um == NULL) ||
-	(it->getDir() == Type::direction::OUT && $0->um != NULL)) {
-      $e("Identifier ``");
-      $1->Print ($f, NULL);
-      fprintf ($f, "'' is an input channel\n");
-      exit (1);
-    }
 
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
@@ -535,14 +584,6 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
     int t;
     
     t = act_type_var ($0->scope, $1, &it);
-
-    if ((it->getDir() == Type::direction::OUT && $0->um == NULL) ||
-	(it->getDir() == Type::direction::IN && $0->um != NULL)) {
-      $e("Identifier ``");
-      $1->Print ($f, NULL);
-      fprintf ($f, "'' is an output channel\n");
-      exit (1);
-    }
 
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;

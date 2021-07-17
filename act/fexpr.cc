@@ -576,7 +576,7 @@ static Expr *expr_parse (void)
 	printf ("[%d] unwind op: ", depth);
 	_print_tok (top_op);
 	printf ("\n");
-#endif      
+#endif
 
 	if (top_op == E_COLON) {
 	  stack_pop (stk_op);
@@ -610,6 +610,24 @@ static Expr *expr_parse (void)
 	}
 
 	/* handled the top operand */
+	stack_pop (stk_op);
+	top_op = _stack_top_op (stk_op);
+      }
+      if (tok == E_COLON && _stack_top_op (stk_op) == E_COLON) {
+	if (!_unwind_op (top_op, stk_op, stk_res)) {
+#ifdef EXPR_VERBOSE
+	  printf ("[%d] <fail>\n", depth--);
+#endif
+	  return NULL;
+	}
+	stack_pop (stk_op);
+	top_op = _stack_top_op (stk_op);
+	if (!_unwind_op (top_op, stk_op, stk_res)) {
+#ifdef EXPR_VERBOSE
+	  printf ("[%d] <fail>\n", depth--);
+#endif
+	  return NULL;
+	}
 	stack_pop (stk_op);
 	top_op = _stack_top_op (stk_op);
       }
@@ -763,6 +781,16 @@ static void expr_print (Expr *e)
     printf ("[func %s]", e->u.fn.s);
     break;
 
+  case 58:
+    printf ("int(");
+    expr_print (e->u.e.l);
+    if (e->u.e.r) {
+      printf (",");
+      expr_print (e->u.e.r);
+    }
+    printf (")");
+    break;
+
   default:
     fatal_error ("Unhandled case %d!\n", e->type);
     break;
@@ -792,7 +820,7 @@ void *act_parse_a_fexpr (LFILE *l)
   }
   file_pop_position (l);
 
-#ifdef EXPR_VERBOSE  
+#if EXPR_VERBOSE
   if (e) {
     printf ("GOT: ");
     expr_print (e);

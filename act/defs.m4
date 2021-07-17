@@ -1073,12 +1073,14 @@ one_method: ID "{" hse_body "}"
 }}  
 "(" [ macro_formal_list ] ")" "{" [ chp_body ] "}"
 {{X:
+    OPT_FREE ($4);
     /* function formal list must be data types; no parameters allowed */
     if (!OPT_EMPTY ($7)) {
       ActRet *r = OPT_VALUE ($7);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
     }
+    OPT_FREE ($7);
     $0->um = NULL;
 
     Scope *tmp = $0->scope;

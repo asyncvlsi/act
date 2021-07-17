@@ -169,11 +169,13 @@ enum act_chp_lang_type {
   ACT_CHP_SEMILOOP = 11,
   ACT_CHP_COMMALOOP = 12,
   ACT_CHP_HOLE = 13,
-  ACT_CHP_ASSIGNSELF = 14   /* same as assign, used to indicate self
+  ACT_CHP_ASSIGNSELF = 14,   /* same as assign, used to indicate self
 			       assignment in some tools */
+  ACT_CHP_MACRO = 15	     /* macro call, gets removed when
+				chp_expand is called */
 };
 
-#define ACT_CHP_STMTEND 15  /* 1 more than the last enumeration above */
+#define ACT_CHP_STMTEND 16  /* 1 more than the last enumeration above */
 
 struct act_chp_lang;
 
@@ -204,6 +206,13 @@ typedef struct act_chp_lang {
       mstring_t *name;		/* function name */
       list_t *rhs;		/* arguments */
     } func;
+
+    struct {
+      ActId *id;
+      mstring_t *name;
+      list_t *rhs;
+    } macro;			// macro call
+    
     struct {
       list_t *cmd;
     } semi_comma;

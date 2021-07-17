@@ -162,6 +162,11 @@ class ActId {
   */
   int validateDeref (Scope *sc);
 
+  /*
+    Return a freshly allocated ID without any final array dereference
+  */
+  ActId *stripArray ();
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

@@ -1915,3 +1915,23 @@ int ActId::validateDeref (Scope *sc)
 }
 
 
+ActId *ActId::stripArray ()
+{
+  ActId *tmp, *ret;
+
+  ret = Clone();
+
+  tmp = ret;
+  while (tmp->Rest()) {
+    tmp = tmp->Rest();
+  }
+  Array *x = tmp->arrayInfo();
+  if (x) {
+    delete x;
+  }
+  tmp->setArray (NULL);
+
+  return ret;
+}
+
+  

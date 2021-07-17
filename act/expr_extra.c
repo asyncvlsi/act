@@ -558,6 +558,12 @@ Expr *act_expr_any_basecase (LFILE *l)
 	file_pop_position (l);
 	return NULL;
       }
+      else {
+	file_pop_position (l);
+      }
+    }
+    else {
+      file_pop_position (l);
     }
     expr_dec_parens ();
   }

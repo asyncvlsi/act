@@ -2122,6 +2122,17 @@ UserMacro *UserDef::newMacro (const char *name)
   return um[A_LEN(um)-1];
 }
 
+UserMacro *UserDef::getMacro (const char *name)
+{
+  name = string_cache (name);
+  for (int i=0; i < A_LEN (um); i++) {
+    if (strcmp (um[i]->getName(), name) == 0) {
+      return um[i];
+    }
+  }
+  return NULL;
+}
+
 
 /* copy over userdef */
 UserDef::UserDef (UserDef *x)

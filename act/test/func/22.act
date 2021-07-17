@@ -1,0 +1,27 @@
+defproc stack (chan?(int) push; chan!(int) pop)
+{
+   int x;
+
+   methods {
+   
+   macro pushmacro (int v) {
+	push!v
+   }
+   macro popmacro (int v) {
+       pop?v
+   }
+  }
+}
+
+
+
+defproc test()
+{
+  stack s;
+  chp {
+     s.pushmacro(4)
+  }
+  
+}
+
+test t;

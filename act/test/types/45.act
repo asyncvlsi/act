@@ -6,3 +6,5 @@ defproc testme (chan!(int) X)
     X!y ; X?x
   }
 }
+
+testme x;

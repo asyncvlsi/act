@@ -1330,6 +1330,19 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_ASSIGN:
   case ACT_CHP_ASSIGNSELF:
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
+    {
+      ActId *tmp = ret->u.assign.id->stripArray ();
+      act_connection *d = tmp->Canonical (s);
+      if (d->getDir() == Type::direction::IN) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Assignment to an input variable.\n");
+	fprintf (stderr, "\tVariable: ");
+	ret->u.assign.id->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      delete tmp;
+    }
     ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
     break;
     
@@ -1363,6 +1376,20 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.comm.flavor = c->u.comm.flavor;
     if (c->u.comm.var) {
       ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);
+      
+      ActId *tmp = ret->u.comm.var->stripArray();
+      act_connection *d = tmp->Canonical (s);
+      if (d->getDir() == Type::direction::IN) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Communication action writes an input variable.\n");
+	fprintf (stderr, "\tChannel: ");
+	ret->u.comm.chan->Print (stderr);
+	fprintf (stderr, "; variable: ");
+	ret->u.comm.var->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      delete tmp;
     }
     else {
       ret->u.comm.var = NULL;
@@ -1392,8 +1419,38 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       list_append (ret->u.func.rhs, arg);
     }
     break;
+
+  case ACT_CHP_MACRO:
+    {
+      ActId *x = expand_var_read (c->u.macro.id, ns, s);
+      InstType *it = s->FullLookup (x->getName());
+      Assert (TypeFactory::isUserType (it), "This should have been caught earlier!");
+      UserDef *u = dynamic_cast <UserDef *> (it->BaseType());
+      Assert (u, "Hmm");
+      UserMacro *um = u->getMacro (string_char (c->u.macro.name));
+      if (!um) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Macro name `%s' not found for instance `%s' (type `%s')\n",
+		 string_char (c->u.macro.name), x->getName(), u->getName());
+	exit (1);
+      }
+
+      if (um->getNumPorts() !=
+	  (c->u.macro.rhs ? list_length (c->u.macro.rhs) : 0)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Macro ``%s'': mismatch in number of arguments (requires %d)\n",
+		 um->getName(), um->getNumPorts());
+	exit (1);
+      }
+      
+      /*-- XXX: now just plonk down chp for this macro here with
+           appropriate substitutions [expand exprs, check types] --*/
+      ret->type = ACT_CHP_SKIP;
+    }
+    break;
     
   default:
+    fatal_error ("Unknown chp type %d", ret->type);
     break;
   }
   return ret;
@@ -1902,6 +1959,21 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
 
   case ACT_CHP_HOLE: /* to support verification */
     fprintf (fp, "_");
+    break;
+    
+  case ACT_CHP_MACRO:
+    c->u.macro.id->Print (fp);
+    fprintf (fp, ".%s(", string_char (c->u.macro.name));
+    if (c->u.macro.rhs) {
+      listitem_t *li;
+      for (li = list_first (c->u.macro.rhs); li; li = list_next (li)) {
+	print_expr (fp, (Expr *)list_value (li));
+	if (list_next (li)) {
+	  fprintf (fp, ",");
+	}
+      }
+    }
+    fprintf (fp, ")");
     break;
     
   default:

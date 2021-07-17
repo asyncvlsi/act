@@ -339,6 +339,7 @@ class UserDef : public Type {
   int hasRefinement() { return has_refinement; }
 
   UserMacro *newMacro (const char *name);
+  UserMacro *getMacro (const char *name);
 
  protected:
   InstType *parent;		/**< implementation relationship, if any */
@@ -604,6 +605,7 @@ public:
   int addPort (InstType *it, const char *name);
 
   const char *getName () { return _nm; }
+  int getNumPorts() { return nports; }
 
   void setBody (struct act_chp_lang *);
 

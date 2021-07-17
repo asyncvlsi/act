@@ -1,2 +1,4 @@
-ERROR: File `45.act', line 6, col 12
-	Identifier `X' is an output channel
+In expanding testme (45.act:2)
+In expanding ::<Global>
+Receive operation on an output channel.
+	Channel: X
