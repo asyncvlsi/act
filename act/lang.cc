@@ -1459,6 +1459,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 		 um->getName(), um->getNumPorts());
 	exit (1);
       }
+
+      
       
       /*-- XXX: now just plonk down chp for this macro here with
            appropriate substitutions [expand exprs, check types] --*/
