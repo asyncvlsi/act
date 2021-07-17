@@ -1,0 +1,5 @@
+chan(int) a, b, c, d, e;
+
+dataflow {
+ a = 0 ? b = 0 ? a : b : c  -> e
+}

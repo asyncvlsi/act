@@ -622,6 +622,15 @@ static Expr *expr_parse (void)
 	}
 	stack_pop (stk_op);
 	top_op = _stack_top_op (stk_op);
+	if (top_op != E_QUERY) {
+	  SET (Tl);
+	  POP (Tl);
+	  _release (stk_op, stk_res);
+#ifdef EXPR_VERBOSE
+	  printf ("[%d] <fail>\n", depth--);
+#endif
+	  return NULL;
+	}
 	if (!_unwind_op (top_op, stk_op, stk_res)) {
 #ifdef EXPR_VERBOSE
 	  printf ("[%d] <fail>\n", depth--);
@@ -820,7 +829,7 @@ void *act_parse_a_fexpr (LFILE *l)
   }
   file_pop_position (l);
 
-#if EXPR_VERBOSE
+#ifdef EXPR_VERBOSE
   if (e) {
     printf ("GOT: ");
     expr_print (e);
