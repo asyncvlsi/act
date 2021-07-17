@@ -322,7 +322,7 @@ class UserDef : public Type {
     Assert (0, "Don't call this ever");
   }
   
-  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit);
+  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit, int is_process = 0);
 
   /* append in the case of multiple bodies! */
 
@@ -600,7 +600,7 @@ public:
   ~UserMacro ();
 
   void Print (FILE *fp);
-  UserMacro *Expand (UserDef *ux, ActNamespace *ns, Scope *s);
+  UserMacro *Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_proc);
 
   int addPort (InstType *it, const char *name);
 

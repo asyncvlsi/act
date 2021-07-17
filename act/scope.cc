@@ -1375,3 +1375,28 @@ InstType *Scope::FullLookup (ActId *id, Array **aref)
   }
   return it;
 }
+
+
+InstType *Scope::localLookup (ActId *id, Array **aref)
+{
+  ValueIdx *vx;
+  InstType *it;
+  
+  if (!id) return NULL;
+
+  vx = LookupVal (id->getName());
+  if (!vx) return NULL;
+
+  it = vx->t;
+  while (id->Rest()) {
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    if (!u) return NULL;
+    id = id->Rest();
+    it = u->Lookup (id);
+    if (!it) return NULL;
+  }
+  if (aref) {
+    *aref = id->arrayInfo();
+  }
+  return it;
+}

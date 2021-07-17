@@ -52,6 +52,26 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
 
 act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
 
+static int _chp_expanding_macro = 0;
+
+void chp_expand_macromode (int v)
+{
+  _chp_expanding_macro = v;
+}
+
+void act_chp_macro_check (Scope *s, ActId *id)
+{
+  if (_chp_expanding_macro) {
+    if (!s->localLookup (id, NULL)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "\tIdentifier is not accessible from macro: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+  }
+}
+
 static ActId *fullexpand_var (ActId *id, ActNamespace *ns, Scope *s)
 {
   ActId *idtmp;
@@ -1119,8 +1139,9 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
   case E_BITFIELD:
   case E_VAR:
     /*--  check if this is an channel! --*/
+    act_chp_macro_check (s, (ActId *)e->u.e.l);
     {
-      InstType *it = s->FullLookup ((ActId *)e->u.e.l, NULL);
+      InstType *it =  s->FullLookup ((ActId *)e->u.e.l, NULL);
       if (TypeFactory::isChanType (it)) {
 	c = ((ActId *)e->u.e.l)->Canonical (s);
 	b = phash_lookup (pmap, c);
@@ -1164,13 +1185,6 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
   }
   phash_free (pmap);
   return e;
-}
-
-static int _chp_expanding_macro = 0;
-
-void chp_expand_macromode (int v)
-{
-  _chp_expanding_macro = v;
 }
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
@@ -1343,19 +1357,21 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       }
       delete tmp;
     }
+    act_chp_macro_check (s, ret->u.assign.id);
     ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
     break;
     
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
+    act_chp_macro_check (s, ret->u.comm.chan);
     {
       act_connection *d = ret->u.comm.chan->Canonical (s);
 
       if ((c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN &&
-	   _chp_expanding_macro == 0) ||
+	   _chp_expanding_macro != 2) ||
 	  (c->type == ACT_CHP_SEND && d->getDir() == Type::direction::OUT &&
-	   _chp_expanding_macro == 1)) {
+	   _chp_expanding_macro == 2)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "Send operation on an input channel.\n");
 	fprintf (stderr, "\tChannel: ");
@@ -1363,8 +1379,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	fprintf (stderr, "\n");
 	exit (1);
       }
-      else if ((c->type == ACT_CHP_RECV && d->getDir() == Type::direction::OUT && _chp_expanding_macro == 0) ||
-	       (c->type == ACT_CHP_RECV && d->getDir() == Type::direction::IN && _chp_expanding_macro == 1)) {
+      else if ((c->type == ACT_CHP_RECV && d->getDir() == Type::direction::OUT && _chp_expanding_macro != 2) ||
+	       (c->type == ACT_CHP_RECV && d->getDir() == Type::direction::IN && _chp_expanding_macro == 2)) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "Receive operation on an output channel.\n");
 	fprintf (stderr, "\tChannel: ");
@@ -1376,6 +1392,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.comm.flavor = c->u.comm.flavor;
     if (c->u.comm.var) {
       ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);
+      act_chp_macro_check (s, ret->u.comm.var);
       
       ActId *tmp = ret->u.comm.var->stripArray();
       act_connection *d = tmp->Canonical (s);

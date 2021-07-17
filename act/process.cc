@@ -61,7 +61,7 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   UserDef *ux;
   int cache_hit;
 
-  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit, 1);
 
   if (cache_hit) {
     return dynamic_cast<Process *> (ux);

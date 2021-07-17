@@ -115,7 +115,7 @@ int UserMacro::addPort (InstType *t, const char *id)
   return 1;
 }
 
-UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s)
+UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_proc)
 {
   UserMacro *ret = new UserMacro (ux, _nm);
 
@@ -134,7 +134,16 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s)
     tsc->Add (ret->port_n[i], ret->port_t[i]);
   }
 
-  chp_expand_macromode (1);
+  for (int i=0; i < ux->getNumPorts(); i++) {
+    tsc->Add (ux->getPortName (i), ux->getPortType (i));
+  }
+
+  if (is_proc) {
+    chp_expand_macromode (2);
+  }
+  else {
+    chp_expand_macromode (1);
+  }
   ret->c = chp_expand (c, ns, tsc);
   chp_expand_macromode (0);
 
@@ -148,3 +157,5 @@ void UserMacro::setBody (struct act_chp_lang *chp)
 {
   c = chp;
 }
+
+

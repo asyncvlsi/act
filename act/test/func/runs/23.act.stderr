@@ -1,0 +1,4 @@
+In expanding stack (23.act:1)
+In expanding test (23.act:18)
+In expanding ::<Global>
+	Identifier is not accessible from macro: x

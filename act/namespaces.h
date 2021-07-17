@@ -59,7 +59,6 @@ class Scope {
   InstType *Lookup (const char *s);
   InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
 						id; default report an error */
-
   /* u = plain vanilla user-def type with potential template parameters */
   void refineBaseType (const char *s, InstType *u);
   
@@ -70,6 +69,8 @@ class Scope {
   /**< return actual type of ID,  after full lookup including
      parent scopes. aref is used to store final array reference in
      id, if any */
+
+  InstType *localLookup (ActId *id, Array **aref);
 
   /* 
      only for expanded scopes

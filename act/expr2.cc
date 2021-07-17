@@ -24,6 +24,7 @@
 #include <act/types.h>
 #include <act/body.h>
 #include <act/value.h>
+#include <act/lang.h>
 #include <string.h>
 
 #define PRINT_STEP				\
@@ -1574,6 +1575,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
 	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+	act_chp_macro_check (s, (ActId *)ret->u.e.l);
       }
       else {
 	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
@@ -1828,6 +1830,9 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	/* chp mode expansion */
 	xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
 	te = xid->EvalCHP (ns, s, 0);
+	if (te->type == E_VAR) {
+	  act_chp_macro_check (s, (ActId *)te->u.e.l);
+	}
       }
       else {
 	/* non-chp expansion */

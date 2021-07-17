@@ -515,6 +515,7 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 
 void act_prs_expr_free (act_prs_expr_t *e);
 void act_chp_free (act_chp_lang_t *);
+void act_chp_macro_check (Scope *s, ActId *id);
 
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 

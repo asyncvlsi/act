@@ -455,7 +455,7 @@ static int recursion_depth = 0;
  *
  *------------------------------------------------------------------------
  */
-UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u, int *cache_hit)
+UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u, int *cache_hit, int is_proc)
 {
   UserDef *ux;
   int k, sz, len;
@@ -915,7 +915,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   /*-- expand macros --*/
   for (int i=0; i < A_LEN (um); i++) {
     A_NEW (ux->um, UserMacro *);
-    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I);
+    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I, is_proc);
     A_INC (ux->um);
   }
 
