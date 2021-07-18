@@ -27,6 +27,7 @@
 #include <act/inst.h>
 #include <act/body.h>
 #include <act/value.h>
+#include <act/inline.h>
 #include "prs.h"
 #include <common/qops.h>
 #include <common/config.h>
@@ -1460,11 +1461,34 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	exit (1);
       }
 
+      /* expand all parameters */
+      Scope *tsc = new Scope (s, 1);
+      act_inline_table *tab;
+      tab = act_inline_new (tsc, NULL);
+      if (um->getNumPorts() > 0) {
+	listitem_t *li = list_first (c->u.macro.rhs);
+	for (int i=0; i < um->getNumPorts(); i++) {
+	  Expr **etmp;
+	  MALLOC (etmp, Expr *, 1);
+	  etmp[0] = chp_expr_expand ((Expr *)list_value (li), ns, s);
+	  tsc->Add (um->getPortName (i), um->getPortType (i));
+	  ActId *tmp = new ActId (um->getPortName (i));
+	  act_inline_setval (tab, tmp, etmp);
+	  delete tmp;
+
+	  li = list_next (li);
+	}
+      }
+
+      /* now bind parameters to symbols */
+      FREE (ret);
+      ret = um->substitute (c->u.macro.id, tab);
       
-      
-      /*-- XXX: now just plonk down chp for this macro here with
-           appropriate substitutions [expand exprs, check types] --*/
-      ret->type = ACT_CHP_SKIP;
+      /*-- re-expand, do all the checks --*/
+      ret = chp_expand (ret, ns, s);
+
+      delete tsc;
+      act_inline_free (tab);
     }
     break;
     

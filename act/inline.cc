@@ -76,6 +76,17 @@ static Expr *_ex_one (Expr **x)
   return e;
 }
 
+int act_inline_isbound (act_inline_table *tab, const char *name)
+{
+  while (tab) {
+    if (hash_lookup (tab->state, name)) {
+      return 1;
+    }
+    tab = tab->parent;
+  }
+  return 0;
+}
+
 static Expr **_lookup_binding (act_inline_table *Hs,
 			       const char *name, int err = 1)
 {

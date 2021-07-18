@@ -593,6 +593,7 @@ class Channel : public UserDef {
   Expr *emethods[ACT_NUM_EXPR_METHODS];
 };
 
+struct act_inline_table;
 
 class UserMacro {
 public:
@@ -606,8 +607,12 @@ public:
 
   const char *getName () { return _nm; }
   int getNumPorts() { return nports; }
+  const char *getPortName (int i) { return port_n[i]; }
+  InstType *getPortType (int i) { return port_t[i]; }
 
   void setBody (struct act_chp_lang *);
+
+  struct act_chp_lang *substitute (ActId *instnm, act_inline_table *tab); 
 
 private:
   const char *_nm;

@@ -32,6 +32,7 @@ void act_inline_free (act_inline_table *);
 
 void act_inline_setval (act_inline_table *, ActId *id, Expr **e);
 Expr **act_inline_getval (act_inline_table *, const char *s);
+int act_inline_isbound (act_inline_table *, const char *s);
 
 Expr **act_inline_expr (act_inline_table *, Expr *, int recurse_fn = 1);
 Expr *act_inline_expr_simple (act_inline_table *, Expr *, int recurse_fn = 1);
