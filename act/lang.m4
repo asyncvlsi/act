@@ -500,6 +500,10 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     
     t = act_type_var ($0->scope, $1, &it);
 
+    if (!TypeFactory::isChanType (it)) {
+      $E("Send action requires a channel identifier ``%s''", $1->getName());
+    }
+
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_SEND;
     c->label = NULL;
@@ -585,6 +589,10 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
     
     t = act_type_var ($0->scope, $1, &it);
 
+    if (!TypeFactory::isChanType (it)) {
+      $E("Receive action requires a channel identifier ``%s''", $1->getName());
+    }
+    
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_RECV;
     c->label = NULL;

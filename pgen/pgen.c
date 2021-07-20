@@ -942,11 +942,13 @@ static char *fix_percents (char *s)
   } while (0)
 
 
-#define RETRY						        \
-  do {								\
-    pp_printf (pp, "THROW (EXC_LPF);");				\
+#define RETRY					\
+  do {						\
+    if (in_end_gt) {				\
+       pp_printf (pp, "expr_endgtmode (0);");	\
+    }						\
+    pp_printf (pp, "THROW (EXC_LPF);");		\
   } while (0)
-
 
 void emit_tmptok_wrapper (pp_t *pp, int type)
 {
@@ -1103,6 +1105,7 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
   bnf_item_t *b;
   token_list_t *tmp;
   int nbraces, nret;
+  static int in_end_gt = 0;
     
   nest++;
   nbraces = 0;
@@ -1246,9 +1249,11 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
 	pp_nl;
       }
       if (tl->a[i].end_gt == 1) {
+	in_end_gt++;
 	pp_printf (pp, "expr_endgtmode (1);");
       }
       else if (tl->a[i].end_gt == -1) {
+	in_end_gt--;
 	pp_printf (pp, "expr_endgtmode (0);");
       }
       pp_printf (pp, "if (!file_have_keyw (l, \"%s\")) {", 
@@ -1258,7 +1263,7 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
 	pp_printf (pp, "file_setflags (l, tmp_flag);");
       }
       emit_frees_upto_curtoken (pp, tl, nest, i);
-      ERR2("keyword", (char*)tl->a[i].toks); 
+      ERR2("keyword", (char*)tl->a[i].toks);
       RETRY; 
       END_INDENT;
       pp_puts (pp, "}"); pp_nl;
@@ -1273,9 +1278,11 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       }
       if (tl->a[i].end_gt == 1) {
 	pp_printf (pp, "expr_endgtmode (1);");
+	in_end_gt++;
       }
       else if (tl->a[i].end_gt == -1) {
 	pp_printf (pp, "expr_endgtmode (0);");
+	in_end_gt--;
       }
       pp_printf (pp, "if (!file_have (l, TOK_%ld)) {", (long)tl->a[i].toks);
       BEGIN_INDENT; 

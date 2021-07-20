@@ -1471,6 +1471,26 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  Expr **etmp;
 	  MALLOC (etmp, Expr *, 1);
 	  etmp[0] = chp_expr_expand ((Expr *)list_value (li), ns, s);
+	  int tr;
+
+	  /* -- typecheck -- */
+	  tr = act_type_expr (s, etmp[0], NULL);
+	  if (!T_BASETYPE_ISINTBOOL (tr)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed in macro argument #%d\n", i);
+	    fprintf (stderr, "\tType must be int or bool\n");
+	    exit (1);
+	  }
+
+	  if ((T_BASETYPE_INT (tr) && !TypeFactory::isIntType (um->getPortType (i))) ||
+	      (T_BASETYPE_BOOL (tr) && !TypeFactory::isBoolType (um->getPortType (i)))) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed in macro argument #%d\n\t", i);
+	    fprintf (stderr, "\tint/bool mismatch\n");
+	    exit (1);
+	  }	    
+	  
+	  
 	  tsc->Add (um->getPortName (i), um->getPortType (i));
 	  ActId *tmp = new ActId (um->getPortName (i));
 	  act_inline_setval (tab, tmp, etmp);
