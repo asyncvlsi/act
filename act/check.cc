@@ -526,12 +526,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    typecheck_err ("Bitfield can only use const integer arguments");
 	    return T_ERR;
 	  }
-	  lo = e->u.e.r->u.e.r->u.v;
+	  hi = e->u.e.r->u.e.r->u.v;
 	  if (e->u.e.r->u.e.l) {
-	    hi = e->u.e.r->u.e.l->u.v;
+	    lo = e->u.e.r->u.e.l->u.v;
 	  }
 	  else {
-	    hi = lo;
+	    lo = hi;
 	  }
 	  if (hi < lo) {
 	    typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);

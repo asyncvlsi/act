@@ -1477,7 +1477,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  tr = act_type_expr (s, etmp[0], NULL);
 	  if (!T_BASETYPE_ISINTBOOL (tr)) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, "Typechecking failed in macro argument #%d\n", i);
+	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n", um->getName(), i);
+	    if (tr == T_ERR) {
+	      fprintf (stderr, "  %s\n", act_type_errmsg());
+	    }
 	    fprintf (stderr, "\tType must be int or bool\n");
 	    exit (1);
 	  }
@@ -1485,7 +1488,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  if ((T_BASETYPE_INT (tr) && !TypeFactory::isIntType (um->getPortType (i))) ||
 	      (T_BASETYPE_BOOL (tr) && !TypeFactory::isBoolType (um->getPortType (i)))) {
 	    act_error_ctxt (stderr);
-	    fprintf (stderr, "Typechecking failed in macro argument #%d\n\t", i);
+	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n\t", um->getName(), i);
 	    fprintf (stderr, "\tint/bool mismatch\n");
 	    exit (1);
 	  }	    
