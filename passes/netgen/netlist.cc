@@ -206,6 +206,7 @@ static void compute_max_reff (netlist_t *N, int type)
 struct at_lookup {
   node_t *n;
   act_prs_expr_t *e;
+  int max_depth;
 };
 
 static at_lookup *at_alloc (void)
@@ -214,6 +215,7 @@ static at_lookup *at_alloc (void)
   NEW (a, at_lookup);
   a->n = NULL;
   a->e = NULL;
+  a->max_depth = 0;
   return a;
 }
 
@@ -996,14 +998,18 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
  *  sense = 1 : complemented 
  *
  *  type has two parts: the EDGE_TYPE has EDGE_PFET or EDGE_NFET
- *                      the EDGE_SIZE piece (normal, feedback, small inv)
+ *                      the EDGE_SIZE piece (normal, feedback, small
+ *                      inv)
+ *
+ *  Returns max depth
  */
-void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
+int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 					act_prs_expr_t *e, node_t *right, int sense)
 {
   node_t *mid;
   node_t *at_node;
-  if (!e) return;
+  int ldepth, rdepth;
+  if (!e) return 0;
 
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
@@ -1024,6 +1030,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	    fatal_error ("@-expression with unknown label `%s'", e->u.e.l->u.l.label);
 	  }
 	  at_node = ((at_lookup *)b->v)->n;
+	  ldepth = ((at_lookup *)b->v)->max_depth;
 	}
 	else if (e->u.e.l->type == ACT_PRS_EXPR_NOT
 		 && EDGE_TYPE (type) == EDGE_NFET
@@ -1034,17 +1041,18 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	    fatal_error ("@-expression with unknown label `%s'", e->u.e.l->u.e.l->u.l.label);
 	  }
 	  at_node = ((at_lookup *)b->v)->n;
+	  ldepth = ((at_lookup *)b->v)->max_depth;
 	}
       }
       /* create edges recursively */
       if (!at_node) {
 	mid = node_alloc (N, NULL);
-	create_expr_edges (N, type, left, e->u.e.l, mid, sense);
-	create_expr_edges (N, type, mid, e->u.e.r, right, sense);
+	ldepth = create_expr_edges (N, type, left, e->u.e.l, mid, sense);
+	rdepth = create_expr_edges (N, type, mid, e->u.e.r, right, sense);
       }
       else {
 	mid = at_node;
-	create_expr_edges (N, type, mid, e->u.e.r, right, sense);
+	rdepth = create_expr_edges (N, type, mid, e->u.e.r, right, sense);
       }
 
       /* internal precharge */
@@ -1058,16 +1066,20 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	}
       }
       /*-- end of AND --*/
+      ldepth = ldepth + rdepth;
     }
     else {
       /* it is an OR */
-      create_expr_edges (N, type, left, e->u.e.l, right, sense);
-      create_expr_edges (N, type, left, e->u.e.r, right, sense);
+      ldepth = create_expr_edges (N, type, left, e->u.e.l, right, sense);
+      rdepth = create_expr_edges (N, type, left, e->u.e.r, right, sense);
+      if (rdepth > ldepth) {
+	ldepth = rdepth;
+      }
     }
     break;
     
   case ACT_PRS_EXPR_NOT:
-    create_expr_edges (N, type, left, e->u.e.l, right, 1-sense);
+    ldepth = create_expr_edges (N, type, left, e->u.e.l, right, 1-sense);
     break;
     
   case ACT_PRS_EXPR_VAR:
@@ -1102,6 +1114,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       fprintf (stderr, "\n");
       exit (1);
     }
+    ldepth = 1;
     break;
       
   case ACT_PRS_EXPR_LABEL:
@@ -1113,6 +1126,7 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
   case ACT_PRS_EXPR_TRUE:
     if (sense == 1) {
       /* done, disconnected */
+      ldepth = 0;
     }
     else {
       edge_t *f;
@@ -1129,11 +1143,13 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       f = edge_alloc (N, supply, left, right, sub);
       f->type = EDGE_TYPE (type);
       set_fet_params (N, f, type, NULL);
+      ldepth = 1;
     }
     break;
   case ACT_PRS_EXPR_FALSE:
     if (sense == 0) {
       /* left and right are disconnected; done */
+      ldepth = 0;
     }
     else {
       edge_t *f;
@@ -1150,12 +1166,14 @@ void ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       f = edge_alloc (N, supply, left, right, sub);
       f->type = EDGE_TYPE (type);
       set_fet_params (N, f, type, NULL);
+      ldepth = 1;
     }
     break;
   default:
     fatal_error ("Unknown type");
     break;
   }
+  return ldepth;
 }
 
 static act_prs_expr_t *synthesize_celem (act_prs_expr_t *e)
@@ -1628,6 +1646,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
   int d;
   if (!p) return;
   act_attr_t *attr;
+  int depth;
 
   switch (p->type) {
   case ACT_PRS_RULE:
@@ -1659,11 +1678,23 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       b->v = a;
       a->n = node_alloc (N, NULL);
       a->e = p->u.one.e;
-      create_expr_edges (N, d | EDGE_NORMAL,
-			 (d == EDGE_NFET ? N->GND : N->Vdd),
-			 p->u.one.e, ((at_lookup *)b->v)->n, 0);
-
-      b = hash_lookup (N->atH[d], (char *)p->u.one.id);
+      depth = create_expr_edges (N, d | EDGE_NORMAL,
+				 (d == EDGE_NFET ? N->GND : N->Vdd),
+				 p->u.one.e, ((at_lookup *)b->v)->n, 0);
+      a->max_depth = depth;
+      //b = hash_lookup (N->atH[d], (char *)p->u.one.id);
+      if (d == EDGE_NFET && series_n_warning) {
+	if (depth >= series_n_warning) {
+	  act_error_ctxt (stderr);
+	  warning ("Label `%s': series nfet chain length %d exceeds threshold (%d)\n", b->key, depth, series_n_warning);
+	}
+      }
+      else if (d == EDGE_PFET && series_p_warning) {
+	if (depth >= series_p_warning) {
+	  act_error_ctxt (stderr);
+	  warning ("Label `%s': series pfet chain length %d exceeds threshold (%d)\n", b->key, depth, series_p_warning);
+	}
+      }
     }
     else {
       act_booleanized_var_t *v;
@@ -1725,10 +1756,12 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 
       if (p->u.one.arrow_type == 0) {
 	/* -> */
-	create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
+	depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
 			   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL);
+	_check_emit_warning (d, depth, p->u.one.id);
+	
 	check_supply (N, p->u.one.id, d, (d == EDGE_NFET ? N->GND : N->Vdd));
       }
       else if (p->u.one.arrow_type == 1) {
@@ -1737,14 +1770,18 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* => */
-	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
-			   (d == EDGE_NFET ? N->GND : N->Vdd),
-			   p->u.one.e, VINF(v)->n, 0);
+	depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL,
+				   (d == EDGE_NFET ? N->GND : N->Vdd),
+				   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL);
-	create_expr_edges (N, (1-d) | attr_type | EDGE_INVERT | EDGE_NORMAL,
-			   (d == EDGE_NFET ? N->Vdd : N->GND),
-			   p->u.one.e, VINF(v)->n, 1);
+	_check_emit_warning (d, depth, p->u.one.id);
+	
+	depth = create_expr_edges (N, (1-d) | attr_type | EDGE_INVERT | EDGE_NORMAL,
+				   (d == EDGE_NFET ? N->Vdd : N->GND),
+				   p->u.one.e, VINF(v)->n, 1);
 	update_bdds_exprs (N, v, p->u.one.e, d|attr_type|EDGE_NORMAL|EDGE_INVERT);
+	_check_emit_warning (1-d, depth, p->u.one.id);
+
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
       }
@@ -1755,14 +1792,18 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* #> */
-	create_expr_edges (N, d | attr_type | EDGE_NORMAL,
-			   (d == EDGE_NFET ? N->GND : N->Vdd),
-			   p->u.one.e, VINF(v)->n, 0);
+	depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL,
+				   (d == EDGE_NFET ? N->GND : N->Vdd),
+				   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_NORMAL);
-	create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
-			   (d == EDGE_NFET ? N->Vdd : N->GND),
-			   p->u.one.e, VINF(v)->n, 0);
+	_check_emit_warning (d, depth, p->u.one.id);
+	
+	depth = create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
+				   (d == EDGE_NFET ? N->Vdd : N->GND),
+				   p->u.one.e, VINF(v)->n, 0);
 	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_CELEM | EDGE_NORMAL);
+	_check_emit_warning (1-d, depth, p->u.one.id);
+
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);
       }
@@ -2357,6 +2398,19 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   max_n_w_in_lambda = config_get_int ("net.max_n_width");
   max_p_w_in_lambda = config_get_int ("net.max_p_width");
 
+  if (config_exists ("net.series_n_warning")) {
+    series_n_warning = config_get_int ("net.series_n_warning");
+  }
+  else {
+    series_n_warning = 0;
+  }
+  
+  if (config_exists ("net.series_p_warning")) {
+    series_p_warning = config_get_int ("net.series_p_warning");
+  }
+  else {
+    series_p_warning = 0;
+  }
 }
 
 ActNetlistPass::~ActNetlistPass()
@@ -2416,4 +2470,27 @@ void ActNetlistPass::spice_to_act_name (char *s, char *t, int sz, int xconv)
     s++;
   }
   ActNamespace::Global()->Act()->unmangle_string (buf, t, sz);
+}
+
+
+void ActNetlistPass::_check_emit_warning (int d, int depth, ActId *id)
+{
+  if (d == EDGE_NFET && series_n_warning) {
+    if (depth >= series_n_warning) {
+      act_error_ctxt (stderr);
+      warning ("PRS series nfet length %d >= threshold (%d)", depth, series_n_warning);
+      fprintf (stderr, "Rule for: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+    }
+  }
+  else if (d == EDGE_PFET && series_p_warning) {
+    if (depth >= series_p_warning) {
+      act_error_ctxt (stderr);
+      warning ("PRS series pfet length %d >= threshold (%d)", depth, series_p_warning);
+      fprintf (stderr, "Rule for: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+    }
+  }
 }

@@ -233,7 +233,7 @@ class ActNetlistPass : public ActPass {
   int n_fold;
   int p_fold;
   int discrete_len;
-  
+
   /* local and global Vdd/GND */
   static const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
   static Act *current_act;
@@ -254,6 +254,10 @@ class ActNetlistPass : public ActPass {
 
   int weak_share_min, weak_share_max;
 
+  /* series gate warnings */
+  int series_n_warning;
+  int series_p_warning;
+  
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,
 			  int num_vdd_share,
@@ -277,9 +281,10 @@ class ActNetlistPass : public ActPass {
   void fold_transistors (netlist_t *N);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 		       act_size_spec_t *sz);
-  void create_expr_edges (netlist_t *N, int type, node_t *left,
-			  act_prs_expr_t *e, node_t *right, int sense);
-  
+  int create_expr_edges (netlist_t *N, int type, node_t *left,
+			 act_prs_expr_t *e, node_t *right, int sense);
+
+  void _check_emit_warning (int d, int depth, ActId *id);
 };
 
 
