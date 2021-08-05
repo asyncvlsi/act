@@ -1536,7 +1536,12 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
     tmp->isrequires = s->isrequires;
     MALLOC (tmp->ids, ActId *, tmp->count);
     for (int i=0; i < tmp->count-1; i++) {
-      tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+      if (s->ids[i]) {
+	tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+      }
+      else {
+	tmp->ids[i] = NULL;
+      }
     }
     if (!ACT_SPEC_ISTIMING (tmp)) {
       tmp->ids[tmp->count-1] = s->ids[tmp->count-1]->Expand (ns, sc);
