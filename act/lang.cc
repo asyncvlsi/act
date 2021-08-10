@@ -1508,7 +1508,12 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       ret = um->substitute (c->u.macro.id, tab);
       
       /*-- re-expand, do all the checks --*/
-      ret = chp_expand (ret, ns, s);
+      {
+	int tmp = Act::double_expand;
+	Act::double_expand = 0;
+	ret = chp_expand (ret, ns, s);
+	Act::double_expand = tmp;
+      }
 
       delete tsc;
       act_inline_free (tab);
