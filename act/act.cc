@@ -1001,3 +1001,45 @@ int Act::getLevel (ActId *id)
   }
   return -1;
 }
+
+
+void act_add_global_pint (const char *name, int val)
+{
+  int argc = 1;
+  char **argv;
+
+  MALLOC (argv, char *, 2);
+  argv[0] = Strdup ("-internal-");
+  argv[1] = NULL;
+
+  Act::Init (&argc, &argv);
+  FREE (argv[0]);
+  FREE (argv);
+
+
+  A_NEW (vars, struct command_line_defs);
+  A_NEXT (vars).varname = Strdup (name);
+  A_NEXT (vars).u_value = val;
+  A_NEXT (vars).isint = 1;
+  A_INC (vars);
+}
+
+void act_add_global_pbool (const char *name, int val)
+{
+  int argc = 1;
+  char **argv;
+
+  MALLOC (argv, char *, 2);
+  argv[0] = Strdup ("-internal-");
+  argv[1] = NULL;
+
+  Act::Init (&argc, &argv);
+  FREE (argv[0]);
+  FREE (argv);
+
+  A_NEW (vars, struct command_line_defs);
+  A_NEXT (vars).varname = Strdup (name);
+  A_NEXT (vars).u_value = val ? 1 : 0;
+  A_NEXT (vars).isint = 0;
+  A_INC (vars);
+}

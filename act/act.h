@@ -434,4 +434,14 @@ Expr *const_expr (long);
 Expr *const_expr_bool (int);
 Expr *const_expr_real (double);
 
+
+/*
+   Should be called after Act::Init() to add global parameter
+   definitions.
+
+   MUST BE CALLED BEFORE an Act object is created!
+*/
+void act_add_global_pint (const char *name, int val);
+void act_add_global_pbool (const char *name, int val);
+
 #endif /* __ACT_H__ */
