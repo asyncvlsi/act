@@ -279,6 +279,7 @@ class Contact : public Material {
     asym_surround_up = 0;
     asym_surround_dn = 0;
     name = s;
+    style = NULL;
   }
   int isSym() { return (asym_surround_up == 0) && (asym_surround_dn == 0); }
   int isAsym() { return !isSym(); }
@@ -292,6 +293,9 @@ class Contact : public Material {
   int viaGenerate() { return spc_x > 0; }
   int viaGenX() { return spc_x; }
   int viaGenY() { return spc_y; }
+
+  const char *getDrawingStyle () { return style; }
+  void setDrawingStyle (const char *s) { style = s; }
   
 protected:
   Material *lower, *upper;
@@ -304,6 +308,8 @@ protected:
 
   double antenna_ratio;
   double antenna_diff_ratio;
+
+  const char *style;
 
   // generate
   int spc_x, spc_y;

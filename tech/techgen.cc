@@ -227,7 +227,14 @@ static void emit_styles (pp_t *pp)
   for (int i=0; i < Technology::T->nmetals; i++) {
     pp_printf (pp, "m%d metal%d", i+1, i+1); pp_nl;
     if (i > 0) {
-      pp_printf (pp, "m%dc metal%d metal%d via%darrow", i+1, i, i+1, i);
+      char tbuf[100];
+      if (Technology::T->metal[i-1]->getUpC()->getDrawingStyle()) {
+	snprintf (tbuf, 100, "%s", Technology::T->metal[i-1]->getUpC()->getDrawingStyle());
+      }
+      else {
+	snprintf (tbuf, 100, "via%d", i);
+      }
+      pp_printf (pp, "m%dc metal%d metal%d %s", i+1, i, i+1, tbuf);
       pp_nl;
     }
   }

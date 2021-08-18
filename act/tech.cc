@@ -887,6 +887,12 @@ void Technology::Init (const char *s)
     cmat->lower = NULL;
     cmat->upper = NULL;
 
+    snprintf (buf+k, BUF_SZ-k-1, "%s_dstyle", contacts[i]);
+    if (config_exists (buf)) {
+      t = config_get_string (buf);
+      cmat->setDrawingStyle (t);
+    }
+
     if (T->gdsH) {
       snprintf (buf+k, BUF_SZ-k-1, "%s_gds", contacts[i]);
       ADDGDS_TEMPL(cmat);
