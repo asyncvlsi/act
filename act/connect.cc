@@ -27,6 +27,8 @@
 
 static int set_suboffset_limit = -1;
 
+//#define DEBUG_CONNECTIONS
+
 
 /*
   Given a subconnection of the current type,
@@ -165,10 +167,14 @@ ActId *act_connection::toid()
 
 int act_connection::numSubconnections()
 {
+  if (!a) { return 0; }
+  return numTotSubconnections ();
+}
+
+int act_connection::numTotSubconnections()
+{
   ValueIdx *_vx;
   int type;
-
-  if (!a) { return 0; }
 
   _vx = getvx();
   type = getctype();
@@ -361,6 +367,34 @@ static void dump_conn_rec (act_connection *c)
   if (level == 0) printf ("^^^^^^^^^^^^^^^^\n");
 }
 
+/*
+  Return a list of parent connection pointers. used to check for
+  self-connections using the following _internal_connection()
+  function.
+*/
+list_t *_parent_list (act_connection *c)
+{
+  list_t *l = list_new ();
+  do {
+    list_append (l, c);
+    c = c->parent;
+  } while (c);
+  return l;
+}
+
+static int _internal_connection (list_t *l, act_connection *c)
+{
+  while (c) {
+    for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+      if (c == (act_connection *) list_value (li)) {
+	return 1;
+      }
+    }
+    c = c->parent;
+  }
+  return 0;
+}
+
 void _act_mk_raw_connection (act_connection *c1, act_connection *c2)
 {
   /* c1 is the root, not c2 */
@@ -403,7 +437,7 @@ static void mk_raw_skip_connection (UserDef *ux,
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
 
-#if 0  
+#if 0
   printf ("here!\n");
   printf ("[raw-skip] entry *****\n");
   dump_conn_rec (c1);
@@ -821,6 +855,55 @@ static int _should_swap (UserDef *ux, act_connection *c1,
   return _raw_should_swap (ux, c1->primary(), c2->primary());
 }
 
+static void _fix_noncanonical_subconns (act_connection *c)
+{
+  act_connection *prim = c->primary();
+  if (c == prim) return;
+
+#ifdef DEBUG_CONNECTIONS
+  printf ("In _fix_noncanonical_subconns!\n");
+#endif
+
+  list_t *l = _parent_list (c);
+
+  if (c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      if (c->a[i]) {
+	act_connection *tmp = c->a[i]->next;
+	act_connection *prev = c->a[i];
+	while (tmp != c->a[i]) {
+	  if (!_internal_connection (l, tmp)) {
+	    /* we need to cut tmp out of this connection ring */
+	    Assert (tmp->up != tmp, "Residual is canonical?");
+
+	    act_connection *pc = prim->getsubconn (i, prim->numTotSubconnections());
+
+	    prev->next = tmp->next; /* cut */
+
+	    pc = pc->primary();
+	    tmp->up = pc;
+	    act_connection *old_pc_next = pc->next;
+	    pc->next = tmp;
+	    tmp->next = old_pc_next;
+#ifdef DEBUG_CONNECTIONS
+	    printf ("found residual: ");
+	    print_id (tmp);
+	    printf ("\n");
+#endif
+	    tmp = prev->next;
+	  }
+	  else {
+	    prev = tmp;
+	    tmp = tmp->next;
+	  }
+	}
+      }
+    }
+  }
+
+  list_free (l);
+}
+
 
 void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 			const char *s2, act_connection *c2)
@@ -829,8 +912,6 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   act_connection *d1, *d2;
   ValueIdx *vx1, *vx2, *vxtmp;
   int do_swap = 0;
-
-//#define DEBUG_CONNECTIONS  
 
 #ifdef DEBUG_CONNECTIONS
   printf ("before-connect: %s and %s\n", s1, s2);
@@ -1036,8 +1117,17 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   /* now merge any subtrees */
   _merge_subtrees (ux, c1, c2);
 
+  /* if c1 has sub-connections that are canonical and are not in the
+     c1 primary connection list, then they need to be removed and
+     migrated into c1 primary.
+  */
+  _fix_noncanonical_subconns (c1);
+
 #ifdef DEBUG_CONNECTIONS
   printf ("after-connect: ");
+  dump_conn_rec (c1);
+
+  printf ("after-connect-on-primary: ");
   c1 = c1->primary();
   dump_conn_rec (c1);
 #endif

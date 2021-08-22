@@ -86,7 +86,13 @@ public:
   // with potential subconnections to it
   bool hasSubconnections() { return a != NULL; }
   bool hasSubconnections(int i) { return a && a[i]; }
+
+
+  // returns the number of potential subconnections; returns 0 if none exist
   int numSubconnections();
+
+  // returns the number of potential subconnection fields
+  int numTotSubconnections();
   
   ValueIdx *getvx();		/* this returns the root ValueIdx for
 				   this particular connection */
