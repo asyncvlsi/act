@@ -34,6 +34,10 @@
 #define pp_TAB pp_nltab; pp_setb (pp)
 #define pp_UNTAB pp_endb (pp); pp_nl
 #define pp_SPACE pp_nl; pp_nl
+
+#ifndef MAX
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#endif
  
 static void emit_header (pp_t *pp)
 {
@@ -468,6 +472,15 @@ void emit_cif (pp_t *pp)
   pp_SPACE;
 }
 
+void emit_spacing (pp_t *pp, const char *nm1, const char *nm2, int amt, int touching_ok = 0)
+{
+  pp_printf (pp, "spacing %s %s %d %s\\", nm1, nm2, amt,
+	     touching_ok ? "touching_ok" : "");
+  pp_nl;
+  pp_printf (pp, "   \"%s to %s spacing < %d \"", nm1, nm2, amt);
+  pp_nl;
+}
+
 void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
 {
   const char *name;
@@ -478,39 +491,143 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
   else {
     name = nm;
   }
+
+  /* a material can be also its upcontact or downcontact */
+  
+
+  pp_printf (pp, "# rules for %s", mat->getName());
+  pp_nl;
   
   pp_printf (pp, "width %s %d \\", name, mat->minWidth());
   pp_nl;
   pp_printf (pp, "   \"%s width < %d\"", mat->getName(), mat->minWidth());
   pp_nl;
 
-  pp_printf (pp, "spacing %s %s %d touching_ok \\", name, name,
-	     mat->minSpacing());
+  emit_spacing (pp, name, name, mat->minSpacing (), 1);
+
+  if (mat->minArea() != 0) {
+    pp_printf (pp, "area %s %d %d \\", name, mat->minArea(),
+	       mat->minArea()/mat->minWidth());
+    pp_nl;
+    pp_printf (pp, "  \"%s minimum area < %d\"", mat->getName(),
+	       mat->minArea());
+    pp_nl;
+  }
+}
+
+
+
+void emit_overhang (pp_t *pp, Material *mat1, const char *nm, int amt)
+{
+  if (!mat1) return;
+
+  pp_printf (pp, "# more rules for %s", mat1->getName());
   pp_nl;
-  pp_printf (pp, "   \"%s spacing < %d \"", mat->getName(), mat->minSpacing());
+  
+  pp_printf (pp, "overhang %s %s %d \\", mat1->getName(), nm, amt);
   pp_nl;
+  pp_printf (pp, "   \"%s overhang of %s < %d\"", mat1->getName(),  nm, amt);
   pp_nl;
 }
 
 void emit_drc (pp_t *pp)
 {
+  char buf[1024];
   pp_printf (pp, "drc"); pp_TAB;
 
   /* base layers */
   for (int i=0; i < Technology::T->num_devs; i++) {
     for (int j=0; j < 2; j++) {
-      emit_width_spacing (pp, Technology::T->diff[j][i]);
-      emit_width_spacing (pp, Technology::T->well[j][i]);
+      Material *diff = Technology::T->diff[j][i];
+      Contact *diffc = Technology::T->diff[j][i]->getUpC();
+      Material *fet = Technology::T->fet[j][i];
+
+      if (diff && diffc && fet) {
+	snprintf (buf, 1024, "%s,%s,%s", diff->getName(),
+		  diffc->getName(), fet->getName());
+      }
+      else if (diff) {
+	snprintf (buf, 1024, "%s", diff->getName());
+      }
+      emit_width_spacing (pp, Technology::T->diff[j][i], buf);
+      emit_overhang (pp, Technology::T->diff[j][i],
+		     Technology::T->fet[j][i]->getName(),
+		     Technology::T->diff[j][i]->effOverhang (0));
+      
+      if (diff) {
+	emit_width_spacing (pp, Technology::T->diff[j][i]->getUpC());
+      }
+
       emit_width_spacing (pp, Technology::T->fet[j][i]);
-      emit_width_spacing (pp, Technology::T->welldiff[j][i]);
+
+      diff = Technology::T->welldiff[j][i];
+      if (Technology::T->welldiff[j][i]) {
+	diffc = Technology::T->welldiff[j][i]->getUpC();
+      }
+      else {
+	diffc = NULL;
+      }
+      if (diff && diffc) {
+	snprintf (buf, 1024, "%s,%s", diff->getName(), diffc->getName());
+      }
+      else if (diff) {
+	snprintf (buf, 1024, "%s", diff->getName());
+      }
+      emit_width_spacing (pp, Technology::T->welldiff[j][i], buf);
+      emit_width_spacing (pp, Technology::T->well[j][i]);
+      emit_width_spacing (pp, Technology::T->welldiff[j][i]->getUpC());
+    }
+
+    /*-- well to oppdiff spacing --*/
+
+    /*-- fet / diff spacing, touching_ok --*/
+
+    /* ndc to fet */
+
+  }
+
+  emit_spacing (pp, "allndiff", "allpdiff", 
+		Technology::T->getMaxDiffSpacing ());
+  emit_spacing (pp, "allnndiff", "allppdiff", 
+		Technology::T->getMaxDiffSpacing ());
+
+  emit_spacing (pp, "allndiff", "allppdiff", 
+		Technology::T->getMaxDiffSpacing (),
+		1);
+  emit_spacing (pp, "allpdiff", "allnndiff", 
+		Technology::T->getMaxDiffSpacing (),
+		1);
+  
+  /*-- poly rules --*/
+  
+  snprintf (buf, 1024, "allpolynonfet,allfet");
+  emit_width_spacing (pp, Technology::T->poly, buf);
+  emit_width_spacing (pp, Technology::T->poly->getUpC());
+
+  emit_overhang (pp, Technology::T->poly, "allfet",
+		 Technology::T->poly->getOverhang (0));
+
+  int pspacing = 0;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      if (Technology::T->diff[j][i]) {
+	pspacing = MAX (pspacing, Technology::T->diff[j][i]->getPolySpacing());
+      }
     }
   }
 
+  emit_spacing (pp, "allpolynonfet", "allactivenonfet,allfet", pspacing, 0);
+
+  /* poly spacing to active */
+  
+  /*-- other poly rules --*/
+
+
   /* metal */
   for (int i=0; i < Technology::T->nmetals; i++) {
-    char buf[1024];
     sprintf (buf, "(allm%d)/m%d", i+1, i+1);
     emit_width_spacing (pp, Technology::T->metal[i], buf);
+    emit_width_spacing (pp, Technology::T->metal[i]->getUpC());
   }
   
   
@@ -540,14 +657,17 @@ void emit_extract (pp_t *pp)
   for (int i=0; i < Technology::T->nmetals-1; i++) {
     pp_printf (pp, "planeorder via%d %d", i+1, order++); pp_nl;
   }
-  /*
+  
+  pp_printf (pp, "planeorder comment %d", order++);
+  
+  /* -- devices --
+
    fet pfet pdiff,pdc 2 pfet Vdd! nwell 50 46
    fet pfet pdiff,pdc 1 pfet Vdd! nwell 50 46
    fet nfet ndiff,ndc 2 nfet GND! pwell 56 48
    fet nfet ndiff,ndc 1 nfet GND! pwell 56 48
-  */
 
-  pp_printf (pp, "planeorder comment %d", order++);
+  */
 
   pp_UNTAB;
   pp_printf (pp, "end");
@@ -637,19 +757,93 @@ void emit_plot (pp_t *pp)
 
 void emit_aliases (pp_t *pp)
 {
+  int first;
   pp_printf (pp, "aliases"); pp_TAB;
 
   for (int i=0; i < Technology::T->nmetals; i++) {
     pp_printf (pp, "allm%d *m%d", i+1, i+1); pp_nl;
   }
 
-  /*
-    allnfets	   nfet
-    allpfets 	   pfet
-    allfets 	   allnfets,allpfets,varactor
+  pp_printf (pp, "allpolynonfet %s,%s", Technology::T->poly->getName(),
+	     Technology::T->poly->getUpC()->getName());
+  pp_nl;
 
+  pp_printf (pp, "allfet ");
+  first = 1;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      if (Technology::T->fet[j][i]) {
+	if (!first) {
+	  pp_printf (pp, ",");
+	}
+	first = 0;
+	pp_printf (pp, "%s", Technology::T->fet[j][i]->getName());
+      }
+    }
+  }
+  pp_nl;
+
+  pp_printf (pp, "allndiff ");
+  first = 1;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    int j = 0; /* n */
+    if (Technology::T->diff[j][i]) {
+      if (!first) { pp_printf (pp, ","); } first = 0;
+      pp_printf (pp, "%s", Technology::T->diff[j][i]->getName());
+      if (Technology::T->diff[j][i]->getUpC()) {
+	pp_printf (pp, ",%s", Technology::T->diff[j][i]->getUpC()->getName());
+      }
+    }
+  }
+  pp_nl;
+
+  pp_printf (pp, "allppdiff ");
+  first = 1;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    int j = 0; /* p */
+    if (Technology::T->welldiff[j][i]) {
+      if (!first) { pp_printf (pp, ","); } first = 0;
+      pp_printf (pp, "%s", Technology::T->welldiff[j][i]->getName());
+      if (Technology::T->welldiff[j][i]->getUpC()) {
+	pp_printf (pp, ",%s", Technology::T->welldiff[j][i]->getUpC()->getName());
+      }
+    }
+  }
+  pp_nl;
+
+  pp_printf (pp, "allpdiff ");
+  first = 1;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    int j = 1; /* p */
+    if (Technology::T->diff[j][i]) {
+      if (!first) { pp_printf (pp, ","); } first = 0;
+      pp_printf (pp, "%s", Technology::T->diff[j][i]->getName());
+      if (Technology::T->diff[j][i]->getUpC()) {
+	pp_printf (pp, ",%s", Technology::T->diff[j][i]->getUpC()->getName());
+      }
+    }
+  }
+  pp_nl;
+
+  pp_printf (pp, "allnndiff ");
+  first = 1;
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    int j = 1; /* n */
+    if (Technology::T->welldiff[j][i]) {
+      if (!first) { pp_printf (pp, ","); } first = 0;
+      pp_printf (pp, "%s", Technology::T->welldiff[j][i]->getName());
+      if (Technology::T->welldiff[j][i]->getUpC()) {
+	pp_printf (pp, ",%s", Technology::T->welldiff[j][i]->getUpC()->getName());
+      }
+    }
+  }
+  pp_nl;
+
+
+  pp_printf (pp, "allactivenonfet allndiff,allpdiff,allnndiff,allppdiff");
+  
+  /*
     allnactivenonfet *ndiff,*nsd
-    allnactive	   allnactivenonfet,allnfets
 
     allpactivenonfet *pdiff,*psd
     allpactive	   allpactivenonfet,allpfets

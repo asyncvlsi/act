@@ -20,7 +20,7 @@ case $1 in
 *) echo "Usage: $0 -i or $0 -l <include-dir-or-file>"; exit 1;;
 esac
 
-for i in $trial $ACT_HOME
+for i in $trial $ACT_HOME $FINDPKG_EXTRA_DIRS
 do
 	if [ -d $i/include/$file -o -d $i/include/act/$file -o -f $i/include/${file}.h -o -f $i/include/act/${file}.h ]
 	then
