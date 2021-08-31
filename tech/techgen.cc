@@ -475,7 +475,16 @@ void emit_cif (pp_t *pp)
 void emit_spacing (pp_t *pp, const char *nm1, const char *nm2, int amt, int touching_ok = 0)
 {
   pp_printf (pp, "spacing %s %s %d %s\\", nm1, nm2, amt,
-	     touching_ok ? "touching_ok" : "touching_illegal");
+	     touching_ok == 1 ? "touching_ok" : "touching_illegal");
+  pp_nl;
+  pp_printf (pp, "   \"%s to %s spacing < %d \"", nm1, nm2, amt);
+  pp_nl;
+}
+
+void emit_spacing_corner (pp_t *pp, const char *nm1, const char *nm2, int amt,
+			  const char *corner)
+{
+  pp_printf (pp, "spacing %s %s %d corner_ok %s\\", nm1, nm2, amt, corner);
   pp_nl;
   pp_printf (pp, "   \"%s to %s spacing < %d \"", nm1, nm2, amt);
   pp_nl;
@@ -634,7 +643,9 @@ void emit_drc (pp_t *pp)
   }
 
   /* poly spacing to active */
-  emit_spacing (pp, "allpolynonfet", "allactivenonfet,allfet", pspacing, 0);
+  emit_spacing (pp, "allpolynonfet", "allfet", pspacing, 1);
+  emit_spacing_corner (pp, "allpolynonfet", "allactivenonfet", pspacing,
+		       "allfet");
 
   /*-- other poly rules --*/
 
