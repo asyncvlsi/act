@@ -475,7 +475,7 @@ void emit_cif (pp_t *pp)
 void emit_spacing (pp_t *pp, const char *nm1, const char *nm2, int amt, int touching_ok = 0)
 {
   pp_printf (pp, "spacing %s %s %d %s\\", nm1, nm2, amt,
-	     touching_ok ? "touching_ok" : "");
+	     touching_ok ? "touching_ok" : "touching_illegal");
   pp_nl;
   pp_printf (pp, "   \"%s to %s spacing < %d \"", nm1, nm2, amt);
   pp_nl;
@@ -517,6 +517,9 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
 
 
 
+/*
+  Emit overhang of mat1 over nm by amt 
+*/
 void emit_overhang (pp_t *pp, Material *mat1, const char *nm, int amt)
 {
   if (!mat1) return;
@@ -576,14 +579,28 @@ void emit_drc (pp_t *pp)
       emit_width_spacing (pp, Technology::T->welldiff[j][i], buf);
       emit_width_spacing (pp, Technology::T->well[j][i]);
       emit_width_spacing (pp, Technology::T->welldiff[j][i]->getUpC());
+
+      if (Technology::T->fet[j][i] && Technology::T->diff[j][i]) {
+	pp_printf (pp, "# diff to contact spacing"); pp_nl;
+	emit_spacing (pp, Technology::T->fet[j][i]->getName(),
+		      Technology::T->diff[j][i]->getName(),
+		      Technology::T->diff[j][i]->getSpacing (i), 1);
+	emit_spacing (pp, Technology::T->fet[j][i]->getName(),
+		      Technology::T->diff[j][i]->getUpC()->getName(),
+		      Technology::T->diff[j][i]->getViaFet () -
+		      (Technology::T->diff[j][i]->getUpC()->minWidth()+1)/2);
+      }
+
+      if (Technology::T->well[j][i]) {
+	WellMat *well = Technology::T->well[j][i];
+	emit_overhang (pp, well, Technology::T->diff[j][i]->getName(),
+		       well->getOverhang());
+
+	emit_spacing (pp, well->getName(),
+		      Technology::T->diff[1-j][i]->getName(),
+		      well->getOverhang() + well->oppSpacing (i));
+      }
     }
-
-    /*-- well to oppdiff spacing --*/
-
-    /*-- fet / diff spacing, touching_ok --*/
-
-    /* ndc to fet */
-
   }
 
   emit_spacing (pp, "allndiff", "allpdiff", 
@@ -616,10 +633,9 @@ void emit_drc (pp_t *pp)
     }
   }
 
+  /* poly spacing to active */
   emit_spacing (pp, "allpolynonfet", "allactivenonfet,allfet", pspacing, 0);
 
-  /* poly spacing to active */
-  
   /*-- other poly rules --*/
 
 
@@ -659,16 +675,26 @@ void emit_extract (pp_t *pp)
   }
   
   pp_printf (pp, "planeorder comment %d", order++);
+  pp_nl;
+
+  char **act_flav = config_get_table_string ("act.dev_flavors");
   
-  /* -- devices --
-
-   fet pfet pdiff,pdc 2 pfet Vdd! nwell 50 46
-   fet pfet pdiff,pdc 1 pfet Vdd! nwell 50 46
-   fet nfet ndiff,ndc 2 nfet GND! pwell 56 48
-   fet nfet ndiff,ndc 1 nfet GND! pwell 56 48
-
-  */
-
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    /* j = 0 : nfet */
+    pp_printf (pp, "device mosfet nfet_%s %s allndiff %s,space Gnd!",
+	       act_flav[i], 
+	       Technology::T->fet[0][i]->getName(),
+	       Technology::T->well[0][i] ?
+	       Technology::T->well[0][i]->getName() : "space/w");
+    pp_nl;
+	       
+    pp_printf (pp, "device mosfet pfet_%s %s allpdiff %s,space Vdd!",
+	       act_flav[i],
+	       Technology::T->fet[1][i]->getName(),
+	       Technology::T->well[1][i] ?
+	       Technology::T->well[1][i]->getName() : "space/w");
+    pp_nl;
+  }
   pp_UNTAB;
   pp_printf (pp, "end");
   pp_SPACE;
