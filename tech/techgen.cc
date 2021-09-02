@@ -529,22 +529,33 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
 /*
   Emit overhang of mat1 over nm by amt 
 */
+void emit_overhang (pp_t *pp, Material *mat1,
+		    const char *mat1s, const char *nm, int amt)
+{
+  if (!mat1) return;
+  
+  pp_printf (pp, "# more rules for %s", mat1->getName());
+  pp_nl;
+  
+  pp_printf (pp, "overhang %s %s %d \\", mat1s, nm, amt);
+  pp_nl;
+  pp_printf (pp, "   \"%s overhang of %s < %d\"", mat1->getName(),  nm, amt);
+  pp_nl;
+
+}
+
 void emit_overhang (pp_t *pp, Material *mat1, const char *nm, int amt)
 {
   if (!mat1) return;
 
-  pp_printf (pp, "# more rules for %s", mat1->getName());
-  pp_nl;
-  
-  pp_printf (pp, "overhang %s %s %d \\", mat1->getName(), nm, amt);
-  pp_nl;
-  pp_printf (pp, "   \"%s overhang of %s < %d\"", mat1->getName(),  nm, amt);
-  pp_nl;
+  emit_overhang (pp, mat1, mat1->getName(), nm, amt);
 }
 
 void emit_drc (pp_t *pp)
 {
   char buf[1024];
+  char buf2[1024];
+  
   pp_printf (pp, "drc"); pp_TAB;
 
   /* base layers */
@@ -562,7 +573,17 @@ void emit_drc (pp_t *pp)
 	snprintf (buf, 1024, "%s", diff->getName());
       }
       emit_width_spacing (pp, Technology::T->diff[j][i], buf);
-      emit_overhang (pp, Technology::T->diff[j][i],
+
+      if (diff && diffc) {
+	snprintf (buf2, 1024, "%s,%s", diff->getName(),
+		  diffc->getName());
+      }
+      else if (diff) {
+	snprintf (buf2, 1024, "%s", diff->getName());
+      }
+
+      
+      emit_overhang (pp, Technology::T->diff[j][i], buf2,
 		     Technology::T->fet[j][i]->getName(),
 		     Technology::T->diff[j][i]->effOverhang (0));
       
@@ -590,19 +611,38 @@ void emit_drc (pp_t *pp)
       emit_width_spacing (pp, Technology::T->welldiff[j][i]->getUpC());
 
       if (Technology::T->fet[j][i] && Technology::T->diff[j][i]) {
+	int spc;
 	pp_printf (pp, "# diff to contact spacing"); pp_nl;
 	emit_spacing (pp, Technology::T->fet[j][i]->getName(),
 		      Technology::T->diff[j][i]->getName(),
 		      Technology::T->diff[j][i]->getSpacing (i), 1);
+
+	spc = Technology::T->diff[j][i]->getViaFet() -
+	  (Technology::T->diff[j][i]->getUpC()->minWidth()-
+	   Technology::T->diff[j][i]->getUpC()->getSym()+1)/2;
+	if (spc == 0) {
+	  spc = 1;
+	}
+	
 	emit_spacing (pp, Technology::T->fet[j][i]->getName(),
-		      Technology::T->diff[j][i]->getUpC()->getName(),
-		      Technology::T->diff[j][i]->getViaFet () -
-		      (Technology::T->diff[j][i]->getUpC()->minWidth()+1)/2);
+		      Technology::T->diff[j][i]->getUpC()->getName(), spc);
       }
 
       if (Technology::T->well[j][i]) {
 	WellMat *well = Technology::T->well[j][i];
-	emit_overhang (pp, well, Technology::T->diff[j][i]->getName(),
+#if 0	
+	if (well->getUpC()) {
+	  snprintf (buf2, 1024, "%s,%s", well->getName(),
+		    well->getUpC()->getName());
+	}
+	else {
+	  snprintf (buf2, 1024, "%s", well->getName());
+	}
+	/* XX FIXME */
+#endif
+	
+	emit_overhang (pp, well, /*buf2, */
+		       Technology::T->diff[j][i]->getName(),
 		       well->getOverhang());
 
 	emit_spacing (pp, well->getName(),
@@ -630,7 +670,7 @@ void emit_drc (pp_t *pp)
   emit_width_spacing (pp, Technology::T->poly, buf);
   emit_width_spacing (pp, Technology::T->poly->getUpC());
 
-  emit_overhang (pp, Technology::T->poly, "allfet",
+  emit_overhang (pp, Technology::T->poly, "allpolynonfet", "allfet",
 		 Technology::T->poly->getOverhang (0));
 
   int pspacing = 0;
