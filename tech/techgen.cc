@@ -613,10 +613,6 @@ void emit_drc (pp_t *pp)
       if (Technology::T->fet[j][i] && Technology::T->diff[j][i]) {
 	int spc;
 	pp_printf (pp, "# diff to contact spacing"); pp_nl;
-	emit_spacing (pp, Technology::T->fet[j][i]->getName(),
-		      Technology::T->diff[j][i]->getName(),
-		      Technology::T->diff[j][i]->getSpacing (i), 1);
-
 	spc = Technology::T->diff[j][i]->getViaFet() -
 	  (Technology::T->diff[j][i]->getUpC()->minWidth()-
 	   Technology::T->diff[j][i]->getUpC()->getSym()+1)/2;
