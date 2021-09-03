@@ -201,6 +201,20 @@ class PolyMat : public RoutingMat {
   int getNotchOverhang (int w) { return (*notch_overhang)[w]; }
   Contact *getUpC() { return viaup; }
 
+  int getViaNSpacing (int type) {
+    if (!via_n) {
+      return 1;
+    }
+    return via_n[type];
+  }
+  
+  int getViaPSpacing (int type) {
+    if (!via_p) {
+      return 1;
+    }
+    return via_p[type];
+  }
+
   
  protected:
   RangeTable *overhang;		/* poly overhang beyond diffusion */

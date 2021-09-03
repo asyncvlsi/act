@@ -643,6 +643,15 @@ void emit_drc (pp_t *pp)
       }
       emit_width_spacing (pp, Technology::T->diff[j][i], buf);
 
+      /* emit poly contact to diff spacing */
+      emit_spacing (pp, Technology::T->poly->getUpC()->getName(),
+		    buf,
+		    (j == 0 ? 
+		     Technology::T->poly->getViaNSpacing (i) :
+		     Technology::T->poly->getViaPSpacing (i)));
+      
+      
+
       if (diff && diffc) {
 	snprintf (buf2, 1024, "%s,%s", diff->getName(),
 		  diffc->getName());
@@ -737,6 +746,9 @@ void emit_drc (pp_t *pp)
 
   emit_overhang (pp, Technology::T->poly, "allpolynonfet", "allfet",
 		 Technology::T->poly->getOverhang (0));
+
+
+  
 
   int pspacing = 0;
   for (int i=0; i < Technology::T->num_devs; i++) {
