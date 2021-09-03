@@ -524,6 +524,75 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
   }
 }
 
+void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
+{
+  const char *name;
+  if (!mat) return;
+  if (!nm) {
+    name = mat->getName();
+  }
+  else {
+    name = nm;
+  }
+
+  /* a material can be also its upcontact or downcontact */
+  
+
+  pp_printf (pp, "# rules for %s", mat->getName());
+  pp_nl;
+  
+  pp_printf (pp, "width %s %d \\", name, mat->minWidth());
+  pp_nl;
+  pp_printf (pp, "   \"%s width < %d\"", mat->getName(), mat->minWidth());
+  pp_nl;
+
+  emit_spacing (pp, name, name, mat->minSpacing (), 1);
+
+  if (mat->minArea() != 0) {
+    pp_printf (pp, "area %s %d %d \\", name, mat->minArea(),
+	       mat->minArea()/mat->minWidth());
+    pp_nl;
+    pp_printf (pp, "  \"%s minimum area < %d\"", mat->getName(),
+	       mat->minArea());
+    pp_nl;
+  }
+
+  if (mat->getSym() > 0) {
+    pp_printf (pp, "surround %s %s %d absense_illegal \\",
+	       mat->getName(), mat->getLowerName(), mat->getSym());
+    pp_nl;
+    pp_printf (pp, "   \"%s surround of via %s < %d\"",
+	       mat->getLowerName(), mat->getName(), mat->getSym());
+    pp_nl;
+  }
+  if (mat->getSymUp() > 0) {
+    pp_printf (pp, "surround %s %s %d absense_illegal \\",
+	       mat->getName(), mat->getUpperName(), mat->getSymUp());
+    pp_nl;
+    pp_printf (pp, "   \"%s surround of via %s < %d\"",
+	       mat->getUpperName(), mat->getName(), mat->getSymUp());
+    pp_nl;
+  }
+  if (mat->isAsym()) {
+    if (mat->getAsym() > 0) {
+      pp_printf (pp, "surround %s %s %d directional \\",
+		 mat->getName(), mat->getLowerName(), mat->getAsym());
+      pp_nl;
+      pp_printf (pp, "   \"%s surround of via %s < %d in one direction\"",
+		 mat->getLowerName(), mat->getName(), mat->getAsym());
+      pp_nl;
+    }
+    if (mat->getAsymUp() > 0) {
+      pp_printf (pp, "surround %s %s %d directional \\",
+		 mat->getName(), mat->getUpperName(), mat->getAsymUp());
+      pp_nl;
+      pp_printf (pp, "   \"%s surround of via %s < %d in one direction\"",
+		 mat->getUpperName(), mat->getName(), mat->getAsymUp());
+      pp_nl;
+    }
+  }
+}
+
 
 
 /*
@@ -588,7 +657,7 @@ void emit_drc (pp_t *pp)
 		     Technology::T->diff[j][i]->effOverhang (0));
       
       if (diff) {
-	emit_width_spacing (pp, Technology::T->diff[j][i]->getUpC());
+	emit_width_spacing_c (pp, Technology::T->diff[j][i]->getUpC());
       }
 
       emit_width_spacing (pp, Technology::T->fet[j][i]);
@@ -608,7 +677,7 @@ void emit_drc (pp_t *pp)
       }
       emit_width_spacing (pp, Technology::T->welldiff[j][i], buf);
       emit_width_spacing (pp, Technology::T->well[j][i]);
-      emit_width_spacing (pp, Technology::T->welldiff[j][i]->getUpC());
+      emit_width_spacing_c (pp, Technology::T->welldiff[j][i]->getUpC());
 
       if (Technology::T->fet[j][i] && Technology::T->diff[j][i]) {
 	int spc;
@@ -664,7 +733,7 @@ void emit_drc (pp_t *pp)
   
   snprintf (buf, 1024, "allpolynonfet,allfet");
   emit_width_spacing (pp, Technology::T->poly, buf);
-  emit_width_spacing (pp, Technology::T->poly->getUpC());
+  emit_width_spacing_c (pp, Technology::T->poly->getUpC());
 
   emit_overhang (pp, Technology::T->poly, "allpolynonfet", "allfet",
 		 Technology::T->poly->getOverhang (0));
@@ -690,7 +759,7 @@ void emit_drc (pp_t *pp)
   for (int i=0; i < Technology::T->nmetals; i++) {
     sprintf (buf, "(allm%d)/m%d", i+1, i+1);
     emit_width_spacing (pp, Technology::T->metal[i], buf);
-    emit_width_spacing (pp, Technology::T->metal[i]->getUpC());
+    emit_width_spacing_c (pp, Technology::T->metal[i]->getUpC());
   }
   
   

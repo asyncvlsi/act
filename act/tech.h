@@ -297,6 +297,9 @@ class Contact : public Material {
 
   const char *getDrawingStyle () { return style; }
   void setDrawingStyle (const char *s) { style = s; }
+
+  const char *getLowerName() { return lower->getName(); }
+  const char *getUpperName() { return upper->getName(); }
   
 protected:
   Material *lower, *upper;
