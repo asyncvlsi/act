@@ -768,12 +768,9 @@ readext:
     l = lex_restring (l, buf);
     lex_getsym (l);
     if (lex_have_keyw (l, "scale")) {
-      rscale = lex_integer (l);
-      lex_mustbe (l, l_integer);
-      cscale = lex_integer (l);
-      lex_mustbe (l, l_integer);
-      lscale = lex_integer (l)*1e-8;
-      lex_mustbe (l, l_integer);
+      rscale = lex_mustbe_number (l);
+      cscale = lex_mustbe_number (l);
+      lscale = lex_mustbe_number (l)*1e-8;
     }
     else if (lex_have_keyw (l, "use")) {
       int i;
@@ -841,6 +838,84 @@ readext:
       subcell->next = ext->subcells;
       ext->subcells = subcell;
       subcell->ext = ext_read (subcell->file);
+    }
+    else if (lex_have_keyw (l, "device")) {
+      if (lex_have_keyw (l, "mosfet")) {
+	double gperim, t1perim, t2perim;
+	int dev;
+
+	MALLOC (fet, struct ext_fets, 1);
+	if (device_names) {
+	  for (dev = 0; dev < num_devices; dev++) {
+	    if (lex_have_keyw (l, device_names[dev])) {
+	      break;
+	    }
+	  }
+	  if (dev == num_devices) {
+	    fatal_error ("fet %s: unknown device type at %s:%d\n",
+			 lex_tokenstring (l), name, line);
+	  }
+	  fet->type = dev;
+	}
+	else {
+	  if (lex_have_keyw (l, "nfet"))
+	    fet->type = EXT_FET_NTYPE;
+	  else {
+	    lex_mustbe_keyw (l, "pfet");
+	    fet->type = EXT_FET_PTYPE;
+	  }
+	}
+	/* coordinates; ignore */
+	lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
+	lex_mustbe_number (l);
+
+	double dim1, dim2;
+
+	dim1 = lex_mustbe_number (l)*lscale;
+	dim2 = lex_mustbe_number (l)*lscale;
+
+	/* substrate */
+	fet->sub = Strdup (lex_mustbe_string_id (l, name, line));
+
+	/* gate */
+	fet->g = Strdup(lex_mustbe_string_id (l, name, line));
+
+	gperim = lex_mustbe_number (l)*lscale; /* convert to SI units */
+	fet->isweak = 0;
+	if (strcmp (lex_tokenstring(l), "0") == 0)
+	  lex_getsym (l);
+	else
+	  do {
+	    lex_mustbe (l, l_string);
+	    if (strcmp (lex_prev(l), "\"weak\"") == 0)
+	      fet->isweak = 1;
+	  } while (lex_have (l,l_comma));
+
+	/* t1 */
+	fet->t1 = Strdup(lex_mustbe_string_id (l, name, line));
+	t1perim = lex_mustbe_number (l)*lscale; /* convert to SI units */
+	if (strcmp (lex_tokenstring (l), "0") == 0)
+	  lex_getsym (l);
+	else
+	  do lex_mustbe (l, l_string); while (lex_have (l,l_comma));
+
+	/* t2 */
+	fet->t2 = lex_shouldbe_string_id (l);
+	if (!fet->t2) {
+	  fatal_error ("fet in layout does not have enough terminals; t=%s; gate=%s", fet->t1, fet->g);
+	}
+	fet->t2 = Strdup(fet->t2);
+	t2perim = lex_mustbe_number (l)*lscale; /* convert to SI unitS
+						   */
+
+	fet->width = (t1perim + 0.0 + t2perim)/2;
+	fet->length = (gperim + 0.0)/2;
+
+	//if (fet->length < 2) { fet->length = 2; }
+	fet->next = ext->fet;
+	ext->fet = fet;
+      }
+      /* XXX: other devices ignored right now */
     }
     else if (lex_have_keyw (l, "fet")) {
       double gperim, t1perim, t2perim;
@@ -936,24 +1011,26 @@ readext:
 
       addcap (ext, Strdup (s), NULL, x, CAP_GND);
 
-      ap = add_ap_empty (ext, Strdup (s));
-      if (device_names) {
-	int j;
-	MALLOC (ap->area, double, num_devices);
-	MALLOC (ap->perim, double, num_devices);
-	for (j = 0; j < num_devices; j++) {
-	  ap->area[j] = lex_mustbe_number(l)*lscale*lscale;
-	  ap->perim[j] = lex_mustbe_number (l)*lscale;
+      if (!lex_eof (l)) {
+	ap = add_ap_empty (ext, Strdup (s));
+	if (device_names) {
+	  int j;
+	  MALLOC (ap->area, double, num_devices);
+	  MALLOC (ap->perim, double, num_devices);
+	  for (j = 0; j < num_devices; j++) {
+	    ap->area[j] = lex_mustbe_number(l)*lscale*lscale;
+	    ap->perim[j] = lex_mustbe_number (l)*lscale;
+	  }
 	}
-      }
-      else {
-	MALLOC (ap->area, double, 2);
-	MALLOC (ap->perim, double, 2);
-	ap->area[0] = lex_mustbe_number(l)*lscale*lscale;
-	ap->perim[0] = lex_mustbe_number (l)*lscale;
+	else {
+	  MALLOC (ap->area, double, 2);
+	  MALLOC (ap->perim, double, 2);
+	  ap->area[0] = lex_mustbe_number(l)*lscale*lscale;
+	  ap->perim[0] = lex_mustbe_number (l)*lscale;
 
-	ap->area[1] = lex_mustbe_number(l)*lscale*lscale;
-	ap->perim[1] = lex_mustbe_number (l)*lscale;
+	  ap->area[1] = lex_mustbe_number(l)*lscale*lscale;
+	  ap->perim[1] = lex_mustbe_number (l)*lscale;
+	}
       }
       expand_aliases (s, Strdup(s), ext, 0);
     }

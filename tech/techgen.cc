@@ -786,7 +786,7 @@ void emit_extract (pp_t *pp)
 
   pp_printf (pp, "style generic"); pp_nl;
   pp_printf (pp, "cscale 1"); pp_nl;
-  pp_printf (pp, "lambda 5"); pp_nl;
+  pp_printf (pp, "lambda %f", (float)Technology::T->scale/10.0); pp_nl;
   pp_printf (pp, "step 100"); pp_nl;
   pp_printf (pp, "sidehalo 8"); pp_nl;
   pp_printf (pp, "rscale 1"); pp_nl;
@@ -806,18 +806,44 @@ void emit_extract (pp_t *pp)
   pp_nl;
 
   char **act_flav = config_get_table_string ("act.dev_flavors");
+  char **dev_names = config_get_table_string ("net.ext_devs");
+  char **map_name = config_get_table_string ("net.ext_map");
   
   for (int i=0; i < Technology::T->num_devs; i++) {
+    char tmp[128];
+    char *devnm;
+    snprintf (tmp, 128, "nfet_%s", act_flav[i]);
+    devnm = NULL;
+    for (int k=0; k < config_get_table_size ("net.ext_map"); k++) {
+       if (strcmp (map_name[k], tmp) == 0) {
+          devnm = dev_names[k];
+          break;
+       }
+    }
+    if (!devnm) {
+	fatal_error ("Device name map inconsistency!"); 
+    }
     /* j = 0 : nfet */
-    pp_printf (pp, "device mosfet nfet_%s %s allndiff %s,space Gnd!",
-	       act_flav[i], 
+    pp_printf (pp, "device mosfet %s %s allndiff %s,space Gnd!",
+	       devnm,
 	       Technology::T->fet[0][i]->getName(),
 	       Technology::T->well[0][i] ?
 	       Technology::T->well[0][i]->getName() : "space/w");
     pp_nl;
 	       
-    pp_printf (pp, "device mosfet pfet_%s %s allpdiff %s,space Vdd!",
-	       act_flav[i],
+    snprintf (tmp, 128, "pfet_%s", act_flav[i]);
+    devnm = NULL;
+    for (int k=0; k < config_get_table_size ("net.ext_map"); k++) {
+       if (strcmp (map_name[k], tmp) == 0) {
+          devnm = dev_names[k];
+          break;
+       }
+    }
+    if (!devnm) {
+	fatal_error ("Device name map inconsistency!"); 
+    }
+    pp_printf (pp, "device mosfet %s %s allpdiff %s,space Vdd!",
+	       devnm,
 	       Technology::T->fet[1][i]->getName(),
 	       Technology::T->well[1][i] ?
 	       Technology::T->well[1][i]->getName() : "space/w");
