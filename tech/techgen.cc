@@ -809,6 +809,33 @@ void emit_extract (pp_t *pp)
   char **act_flav = config_get_table_string ("act.dev_flavors");
   char **dev_names = config_get_table_string ("net.ext_devs");
   char **map_name = config_get_table_string ("net.ext_map");
+
+  /* emit resistance classes */
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    pp_printf (pp, "resist (");
+    pp_printf (pp, "%s,%s/a",
+	       Technology::T->diff[0][i]->getName(),
+	       Technology::T->diff[0][i]->getUpC()->getName());
+    if (Technology::T->welldiff[0][i]) {
+      pp_printf (pp, ",%s,%s/a",
+		 Technology::T->welldiff[0][i]->getName(),
+		 Technology::T->welldiff[0][i]->getUpC()->getName());
+    }
+    pp_printf (pp, ") 1000"); /* XXX need number here! */
+    pp_nl;
+    pp_printf (pp, "resist (");
+    pp_printf (pp, "%s,%s/a",
+	       Technology::T->diff[1][i]->getName(),
+	       Technology::T->diff[1][i]->getUpC()->getName());
+    if (Technology::T->welldiff[1][i]) {
+      pp_printf (pp, ",%s,%s/a",
+		 Technology::T->welldiff[1][i]->getName(),
+		 Technology::T->welldiff[1][i]->getUpC()->getName());
+    }
+    pp_printf (pp, ") 1000"); /* XXX need number here! */
+    pp_nl;
+  }
+  /* poly, m1 m2, etc. */
   
   for (int i=0; i < Technology::T->num_devs; i++) {
     char tmp[128];

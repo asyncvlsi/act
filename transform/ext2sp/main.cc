@@ -31,6 +31,7 @@
 #include <act/act.h>
 
 static double mincap = 0.1e-15;
+static double scale = 1.0;
 static int use_subckt_models = 0;
 const char *gnd_node = "GND";
 static char SEP_CHAR = ':';
@@ -95,8 +96,9 @@ char *name_munge (const char *name)
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] [-c <mincap>] <file.ext>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-c <mincap>] [-s <scale>] <file.ext>\n", name);
   fprintf (stderr, " -c <mincap> : filter caps at or below this threshold\n");
+  fprintf (stderr, " -s <scale>  : scale all units by <scale>\n");
   exit (1);
 }
 
@@ -492,6 +494,23 @@ static void import_subcell_conns (struct Hashtable *N,
   FREE (strbuf);
 }
 
+static void print_number (FILE *fp, double x)
+{
+  if (x > 1e3) {
+    fprintf (fp, "%gK", x*1e-3);
+  }
+  if (x > 1e-3) {
+    fprintf (fp, "%g", x);
+  }
+  else if (x > 1e-9) {
+    fprintf (fp, "%gU", x*1e6);
+  }
+  else {
+    fprintf (fp, "%gP", x*1e12);
+  }
+}
+
+
 void ext2spice (const char *name, struct ext_file *E, int toplevel)
 {
   hash_bucket_t *b;
@@ -551,7 +570,7 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   else {
     printf ("*\n");
     printf ("*---------------------------------------------------\n");
-    printf ("*  Main extract file %s\n", name);
+    printf ("*  Main extract file %s [scale=%g]\n", name, scale);
     printf ("*---------------------------------------------------\n");
     printf ("*\n");
   }
@@ -632,13 +651,20 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
 	  printf ("nfet ");
 	}
       }
-      printf ("W=%gU L=%gU", fl->width*1e6, fl->length*1e6);
-      printf ("\n+ AS=%gP PS=%gU", tsrc->area[fl->type]*1e12,
-	      tsrc->perim[fl->type]*1e6);
+      printf ("W=");
+      print_number (stdout, fl->width*scale);
+      printf (" L=");
+      print_number (stdout, fl->length*scale);
+      printf ("\n+ AS=");
+      print_number (stdout, tsrc->area[fl->type]*scale*scale);
+      printf (" PS=");
+      print_number (stdout, tsrc->perim[fl->type]*scale);
       tsrc->area[fl->type] = 0;
       tsrc->perim[fl->type] = 0;
-      printf (" AD=%gP PD=%gU", tdrain->area[fl->type]*1e12,
-	      tdrain->perim[fl->type]*1e6);
+      printf (" AD=");
+      print_number (stdout, tdrain->area[fl->type]*scale*scale);
+      printf (" PD=");
+      print_number (stdout, tdrain->perim[fl->type]*scale);
       tdrain->area[fl->type] = 0;
       tdrain->perim[fl->type] = 0;
       printf ("\n");
@@ -738,10 +764,13 @@ int main (int argc, char **argv)
 
   Act::Init (&argc, &argv);
 
-  while ((ch = getopt (argc, argv, "c:")) != -1) {
+  while ((ch = getopt (argc, argv, "c:s:")) != -1) {
     switch (ch) {
     case 'c':
       mincap = atof (optarg);
+      break;
+    case 's':
+      scale = atof (optarg);
       break;
     default:
       usage(argv[0]);
