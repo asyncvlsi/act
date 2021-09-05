@@ -559,7 +559,7 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
   }
 
   if (mat->getSym() > 0) {
-    pp_printf (pp, "surround %s %s %d absense_illegal \\",
+    pp_printf (pp, "surround %s %s %d absence_illegal \\",
 	       mat->getName(), mat->getLowerName(), mat->getSym());
     pp_nl;
     pp_printf (pp, "   \"%s surround of via %s < %d\"",
@@ -567,7 +567,7 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
     pp_nl;
   }
   if (mat->getSymUp() > 0) {
-    pp_printf (pp, "surround %s %s %d absense_illegal \\",
+    pp_printf (pp, "surround %s %s %d absence_illegal \\",
 	       mat->getName(), mat->getUpperName(), mat->getSymUp());
     pp_nl;
     pp_printf (pp, "   \"%s surround of via %s < %d\"",
