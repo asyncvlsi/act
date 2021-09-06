@@ -6,13 +6,13 @@
 * -- connections ---
 * -- fets ---
 M1 a_1_0# a Vdd w_n12_n6# p W=3.3U L=0.6U
-+ AS=4.95P PS=9.6U AD=2.97P PD=8.4U
++ AS=4.95P PS=9.6U AD=2.97P PD=8.4U 
 M2 out b a_1_0# w_n12_n6# p W=3.3U L=0.6U
-+ AS=0P PS=0P AD=4.95P PD=9.6U
++ AS=0P PS=0P AD=4.95P PD=9.6U 
 M3 out a GND GND n W=1.2U L=0.6U
-+ AS=3.6P PS=10.8U AD=2.16P PD=6U
++ AS=3.6P PS=10.8U AD=2.16P PD=6U 
 M4 GND b out GND n W=1.2U L=0.6U
-+ AS=0P PS=0P AD=0P PD=0P
++ AS=0P PS=0P AD=0P PD=0P 
 * -- caps ---
 C5 w_n12_n6# Vdd 0.427167F
 C6 b a 0.131378F

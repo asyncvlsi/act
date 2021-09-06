@@ -6,9 +6,9 @@
 * -- connections ---
 * -- fets ---
 M1 out in Vdd w_n2_8# p W=3.3U L=0.6U
-+ AS=4.95P PS=9.6U AD=4.95P PD=9.6U
++ AS=4.95P PS=9.6U AD=4.95P PD=9.6U 
 M2 out in GND GND n W=1.2U L=0.6U
-+ AS=1.8P PS=5.4U AD=1.8P PD=5.4U
++ AS=1.8P PS=5.4U AD=1.8P PD=5.4U 
 * -- caps ---
 C3 out Vdd 0.115435F
 C4 out w_n2_8# 0.300639F
