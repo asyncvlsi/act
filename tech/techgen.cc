@@ -525,6 +525,21 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
   }
 }
 
+void emit_surround (pp_t *pp, const char *mat, const char *surround, int amt, int absence_ok = 0)
+{
+  pp_printf (pp, "surround %s %s %d absence_%s \\",
+	     mat, surround, amt, absence_ok ? "ok" : "illegal");
+  pp_nl;
+  pp_printf (pp, "   \"%s surround of %s < %d\"",
+	     surround, mat, amt);
+  pp_nl;
+}
+
+void emit_surround (pp_t *pp, Material *mat, const char *surround, int amt)
+{
+  emit_surround (pp, mat->getName(), surround, amt);
+}
+
 void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
 {
   const char *name;
@@ -559,20 +574,10 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
   }
 
   if (mat->getSym() > 0) {
-    pp_printf (pp, "surround %s %s %d absence_illegal \\",
-	       mat->getName(), mat->getLowerName(), mat->getSym());
-    pp_nl;
-    pp_printf (pp, "   \"%s surround of via %s < %d\"",
-	       mat->getLowerName(), mat->getName(), mat->getSym());
-    pp_nl;
+    emit_surround (pp, mat, mat->getLowerName(), mat->getSym());
   }
   if (mat->getSymUp() > 0) {
-    pp_printf (pp, "surround %s %s %d absence_illegal \\",
-	       mat->getName(), mat->getUpperName(), mat->getSymUp());
-    pp_nl;
-    pp_printf (pp, "   \"%s surround of via %s < %d\"",
-	       mat->getUpperName(), mat->getName(), mat->getSymUp());
-    pp_nl;
+    emit_surround (pp, mat, mat->getUpperName(), mat->getSymUp());
   }
   if (mat->isAsym()) {
     if (mat->getAsym() > 0) {
@@ -620,6 +625,7 @@ void emit_overhang (pp_t *pp, Material *mat1, const char *nm, int amt)
 
   emit_overhang (pp, mat1, mat1->getName(), nm, amt);
 }
+
 
 void emit_drc (pp_t *pp)
 {
@@ -670,6 +676,11 @@ void emit_drc (pp_t *pp)
 	emit_width_spacing_c (pp, Technology::T->diff[j][i]->getUpC());
       }
 
+      if (Technology::T->well[j][i]) {
+	emit_surround (pp, buf, Technology::T->well[j][i]->getName(),
+		       Technology::T->well[j][i]->getOverhang(), 1);
+      }
+
       emit_width_spacing (pp, Technology::T->fet[j][i]);
 
       diff = Technology::T->welldiff[j][i];
@@ -715,10 +726,6 @@ void emit_drc (pp_t *pp)
 	}
 	/* XX FIXME */
 #endif
-	
-	emit_overhang (pp, well, /*buf2, */
-		       Technology::T->diff[j][i]->getName(),
-		       well->getOverhang());
 
 	emit_spacing (pp, well->getName(),
 		      Technology::T->diff[1-j][i]->getName(),
