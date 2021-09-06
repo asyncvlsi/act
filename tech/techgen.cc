@@ -944,6 +944,15 @@ void emit_plowing (pp_t *pp)
   pp_SPACE;
 }
 
+void emit_plot_map (pp_t *pp, Contact *c)
+{
+  if (!c) return;
+
+  pp_printf (pp, "map %s %s %s", c->getName(),
+	     c->getLowerName(), c->getUpperName());
+  pp_nl;
+}
+
 void emit_plot (pp_t *pp)
 {
   pp_printf (pp, "plot"); pp_TAB;
@@ -963,6 +972,20 @@ void emit_plot (pp_t *pp)
       pp_printf (pp, "draw %s", Technology::T->diff[j][i]->getName());
       pp_nl;
     }
+  pp_nl;
+
+  emit_plot_map (pp, Technology::T->poly->getUpC());
+
+  for (int i=0; i < Technology::T->nmetals-1; i++) {
+    emit_plot_map (pp, Technology::T->metal[i]->getUpC());
+  }
+
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      emit_plot_map (pp, Technology::T->diff[j][i]->getUpC());
+    }
+  }
+
   pp_UNTAB;
   pp_UNTAB;
   pp_printf (pp, "end");

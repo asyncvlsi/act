@@ -517,6 +517,7 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   int l;
   struct Hashtable *N;
   int devcount = 1;
+  const char *extra_fet_string;
   
   b = hash_lookup (seen, name);
   if (b) {
@@ -527,6 +528,13 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   /*-- create names table --*/
   N = hash_new (32);
   b->v = N;
+
+  if (config_exists ("net.extra_fet_string")) {
+    extra_fet_string = config_get_string ("net.extra_fet_string");
+  }
+  else {
+    extra_fet_string = NULL;
+  }
 
   for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
     int xl, xh, yl, yh;
@@ -667,6 +675,10 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
       print_number (stdout, tdrain->perim[fl->type]*scale);
       tdrain->area[fl->type] = 0;
       tdrain->perim[fl->type] = 0;
+
+      if (extra_fet_string) {
+	printf (" %s", extra_fet_string);
+      }
       printf ("\n");
     }
   }
@@ -727,7 +739,6 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
       }
     }
   }
-
 
   if (!toplevel) {
     printf (".ends\n");
