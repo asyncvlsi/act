@@ -183,14 +183,17 @@ int main (int argc, char **argv)
   /* print as sim file 
      units: lambda in centimicrons
    */
-  int units = (1.0e8*config_get_real ("net.lambda")+0.5);
+  double units = 1.0e8*config_get_real ("net.lambda");
   if (units <= 0) {
     warning ("Technology lambda is less than 1 centimicron; setting to 1");
     units = 1;
   }
-
-  fprintf (fps, "| units: %d tech: %s format: MIT\n", units, config_get_string ("net.name"));
-
+  if (units == (int) units) {
+    fprintf (fps, "| units: %d tech: %s format: MIT\n", (int)units, config_get_string ("net.name"));
+  } else {
+    fprintf (fps, "| units: %g tech: %s format: MIT\n", units, config_get_string ("net.name"));
+  }
+  
   ActApplyPass *app = new ActApplyPass (a);
 
   app->setCookie (fps);
