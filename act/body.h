@@ -157,6 +157,8 @@ class ActBody_Loop : public ActBody {
 
   ActBody *Clone();
 
+  ActBody *getBody() { return b; }
+
  private:
   ActBody_Loop::type t;			/**< type of loop */
   const char *id;			/**< loop variable */
@@ -198,6 +200,9 @@ class ActBody_Select_gc {
 
   ActBody *Clone();
 
+  ActBody *getBody() { return s; }
+  ActBody_Select_gc *getNext() { return next; }
+
 private:
   const char *id;
   Expr *lo, *hi;
@@ -226,6 +231,8 @@ class ActBody_Select : public ActBody {
 
   ActBody *Clone();
 
+  ActBody_Select_gc *getGC() { return gc; }
+
 private:
   ActBody_Select_gc *gc;
 };
@@ -237,6 +244,8 @@ class ActBody_Genloop : public ActBody {
   }
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone();
+
+  ActBody_Select_gc *getGC() { return gc; }
 
 private:
   ActBody_Select_gc *gc;
