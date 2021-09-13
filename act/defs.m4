@@ -1123,6 +1123,14 @@ base_body_item[ActBody *]: lang_spec
 {{X:
     return $1;
 }}
+| assertion
+{{X:
+    return $1;
+}}
+| debug_output
+{{X:
+    return $1;
+}}
 ;
 
 /*------------------------------------------------------------------------
