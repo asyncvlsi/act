@@ -28,6 +28,11 @@ If there is an issue building the software and you want to do a clean build, use
 
 Once you've built the tools, run "make install" to install the files, and  "make runtest" to run through a set of test cases.
 
+## Standard library
+
+The ACT (standard library)[https://github.com/asyncvlsi/stdlib] (analogous to the C++ standard template library) is under development. We recommend
+installing it as part of your ACT install, as some of the other tools might assume some standard ACT files exist.
+
 ## More information:
 
 More detailed documentation is available here:
