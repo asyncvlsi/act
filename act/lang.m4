@@ -876,17 +876,19 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
 }}
 ;
 
-hse_body[act_chp_lang_t *]: { hse_body_item ";" }*
+hse_body[act_chp_lang_t *]: { hse_comma_item ";" }*
 {{X:
     return apply_X_chp_body_opt0 ($0, $1);
 }}
 ;
 
-hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }* 
+hse_comma_item[act_chp_lang_t *]: { hse_body_item "," }*
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
-| "(" ";" ID
+;
+
+hse_body_item[act_chp_lang_t *]: "(" ";" ID
 {{X:
     lapply_X_chp_body_item_3_2 ($0, $3);
 }}
@@ -917,6 +919,10 @@ hse_body_item[act_chp_lang_t *]: { hse_assign_stmt "," }*
 | "(" hse_body ")"
 {{X:
     return $2;
+}}
+| hse_assign_stmt
+{{X:
+    return $1;
 }}
 ;
 
