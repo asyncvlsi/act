@@ -1871,12 +1871,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     
     break;
 
-#if 0
   case E_ARRAY:
   case E_SUBRANGE:
     ret->u = e->u;
     break;
-#endif
 
   case E_SELF:
     xid = new ActId ("self");
@@ -1907,7 +1905,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       }
     }
     break;
-    
+
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;

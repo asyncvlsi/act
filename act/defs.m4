@@ -234,9 +234,6 @@ def_or_proc ID
 	$E("Direction flags not permitted on parent type");
       }
 
-      /* XXX: inheritence type v, parent it */
-      $0->u_p->SetParent (it);
-
       /* now merge parameters */
       Process *pp = dynamic_cast<Process *>(it->BaseType());
       $A(pp);
@@ -252,6 +249,10 @@ def_or_proc ID
 	  exit (1);
 	}
       }
+
+      /* XXX: inheritence type v, parent it */
+      $0->u_p->SetParent (it);
+
       /* now add in port parameters */
       for (int i=0; i < pp->getNumPorts(); i++) {
 	const char *s = pp->getPortName (i);

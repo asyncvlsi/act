@@ -307,6 +307,7 @@ class AExpr {
   AExprstep *stepper();  /* return stepper! */
 
   InstType *isType ();
+  int isArrayExpr();
 
  private:
   enum type t;

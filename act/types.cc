@@ -227,6 +227,9 @@ UserDef::UserDef (ActNamespace *ns)
 
   has_refinement = 0;
 
+  inherited_templ = 0;
+  inherited_param = NULL;
+
   A_INIT (um);
 }
 
@@ -269,6 +272,10 @@ UserDef::~UserDef()
     }
     A_FREE (um);
   }
+
+  if (inherited_param) {
+    FREE (inherited_param);
+  }
 }
 
 void UserDef::MkCopy (UserDef *u)
@@ -306,6 +313,10 @@ void UserDef::MkCopy (UserDef *u)
   lineno = u->lineno;
   has_refinement = u->has_refinement;
 
+  inherited_templ = u->inherited_templ;
+  inherited_param = u->inherited_param;
+  u->inherited_param = NULL;
+
   A_ASSIGN (um, u->um);
   u->um = NULL;
 }
@@ -336,7 +347,45 @@ Interface::~Interface() { }
 
 void UserDef::SetParent (InstType *t)
 {
+  UserDef *x;
   parent = t;
+
+  if (!t) return;
+
+  x = dynamic_cast<UserDef *>(t->BaseType());
+  if (x && x->getNumParams() > 0) {
+    if (x->inherited_templ > 0 || t->getNumParams() > 0) {
+      int i = 0;
+      inst_param *ip = NULL;
+      MALLOC (inherited_param, inst_param *, nt);
+
+      for (int j=0; j < nt; j++) {
+	inherited_param[j] = NULL;
+      }
+
+      if (x->inherited_templ > 0) {
+	i = nt - x->getNumParams();
+	for (int j=0; j < x->inherited_templ; j++) {
+	  inherited_param[i+j] = x->inherited_param[j];
+	  inherited_templ++;
+	}
+      }
+      if (t->getNumParams() > 0) {
+	ip = t->allParams ();
+	i = 0;
+	for (int j=0; j < t->getNumParams(); j++) {
+	  while (inherited_param[i] && i < nt) {
+	    i++;
+	  }
+	  if (i == nt) {
+	    fatal_error ("Too many template parameters specified?");
+	  }
+	  inherited_param[i++] = &ip[j];
+	  inherited_templ++;
+	}
+      }
+    }
+  }
 }
 
 
@@ -478,8 +527,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   for (int i=0; i < spec_nt; i++) {
     printf (" param %d: ", i);
     u[i].u.tp->Print (stdout);
-    printf (" [u+i=%x]\n", u+i);
   }
+  printf ("Parent specified: %d\n", inherited_templ);
 #endif
 
   /* create a new userdef type */
@@ -511,21 +560,19 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   }
 
   /* create bindings for type parameters */
-  int i, ii;
+  int i;
+  int ii = 0;
 
-  ii = 0;
   for (i=0; i < nt; i++) {
-#if 0
-    printf ("i=%d, ii=%d\n", i, ii);
-#endif    
-    p = getPortType (-(i+1));
-    if (!p)  {
+    p =  getPortType (-(i+1));
+    if (!p) {
       Assert (0, "Enumeration?");
       /* this is an enumeration type, there is nothing to be done here */
       ux->AddMetaParam (NULL, pn[i]);
     }
     else {
-      x = p->Expand (ns, ux->I); // this is the real type of the parameter
+      x = p->Expand (ns, ux->I); // this is the real type of the
+				 // parameter
 
       if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
 	act_error_ctxt (stderr);
@@ -535,109 +582,79 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       /* add parameter to the scope */
       ux->AddMetaParam (x, pn[i]);
 
-      while (i < nt && uparent && uparent->isPort (getPortName (-(i+1)))) {
-#if 0
-	printf ("uparent: i=%d, ii=%d\n", i, ii);
-#endif
-	/* walk through instparent and continue bindings */
-	if (instparent->getNumParams() > 0) {
-	  /* walk through this list, incrementing i and repeating the
-	     param stuff */
-	  for (int j=0; j < instparent->getNumParams(); j++) {
-#if 0
-	    printf ("[j=%d] Bind: %s\n", j, pn[i]);
-#endif
-	    if (TypeFactory::isPTypeType (p->BaseType())) {
-	      x = instparent->getTypeParam (j);
-	      x = x->Expand (ns, ux->I);
-	      ux->I->BindParam (pn[i], x);
-	    }
-	    else {
-	      InstType *rhstype;
-	      AExpr *rhsval = instparent->getAExprParam (j);
-	      rhsval = rhsval->Expand (ns, ux->I);
-	      rhstype = rhsval->getInstType (ux->I, NULL, 1);
-	      if (type_connectivity_check (x, rhstype) != 1) {
-		act_error_ctxt (stderr);
-		fprintf (stderr, "Typechecking failed, ");
-		x->Print (stderr);
-		fprintf (stderr, "  v/s ");
-		rhstype->Print (stderr);
-		fprintf (stderr, "\n\t%s\n", act_type_errmsg());
-		exit (1);
-	      }
-	      ux->I->BindParam (pn[i], rhsval);
-	      delete rhstype;
-	      delete rhsval;
-	    }
-	    i++;
-	    if (i < nt) {
-	      p = getPortType (-(i+1));
-	      Assert (p, "Hmm");
-	      x = p->Expand (ns, ux->I);
-	      ux->AddMetaParam (x, pn[i]);
-	    }
-	    else {
-	      p = NULL;
-	    }
-	  }
-	}
-	instparent = uparent->getParent();
-	if (instparent) {
-	  uparent = dynamic_cast<UserDef *>(instparent->BaseType());
+      /* this one gets bound to:
+	  - the next specified parameter, if it exists
+	  - the next inherited parameter, if it exists 
+      */
+      inst_param *bind_param = NULL;
+      int bind_src = 0;
+      if (inherited_templ > 0 && inherited_param[i]) {
+	bind_param = inherited_param[i];
+	bind_src = 0;
+      }
+      else if (ii < spec_nt) {
+	bind_param = &u[ii];
+	bind_src = 1;
+	ii++;
+      }
+      else {
+	bind_param = NULL;
+      }
+
+      if (!bind_param) continue;
+
+      if (TypeFactory::isPTypeType (p->BaseType())) {
+	if (!bind_param->isatype) {
+	  AExpr *rhsval = bind_param->u.tp;
+	  x = rhsval->isType();
 	}
 	else {
-	  uparent = NULL;
+	  x = bind_param->u.tt;
+	}
+	if (x) {
+	  x = x->Expand (ns, ux->I);
+	  ux->I->BindParam (pn[i], x);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "   Parameter: ");
+	  bind_param->u.tp->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Typechecking failed for parameter %d: expected type.", i);
 	}
       }
-      
-#if 0
-      printf ("Bind: [%d] %s (ii=%d, spec_nt=%d)\n", i, pn[i], ii, spec_nt);
-#endif
-      if (i < nt) {
-	if (TypeFactory::isPTypeType (p->BaseType())) {
-	  if (ii < spec_nt && u[ii].u.tt) {
-	    if (u[ii].isatype) {
-	      x = u[ii].u.tt /*->Expand (ns, ux->I)*/;
-	    }
-	    else {
-	      x = u[ii].u.tp->isType();
-	      if (!x) {
-		act_error_ctxt (stderr);
-		fprintf (stderr, "Typechecking failed, ");
-		u[ii].u.tp->Print (stderr);
-		fprintf (stderr, "  v/s ");
-		p->Print (stderr);
-		exit (1);
-	      }
-	    }
-	    ux->I->BindParam (pn[i], x);
-	    ii++;
-	  }
+      else  {
+	InstType *rhstype;
+
+	if (bind_param->isatype) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "   Parameter: ");
+	  bind_param->u.tt->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Typechecking failed for parameter %d: expected value.", i);
 	}
-	else {
-	  Assert (TypeFactory::isParamType (x), "What?");
-	  if (ii < spec_nt && u[ii].u.tp) {
-	    InstType *rhstype;
-	    AExpr *rhsval = u[ii].u.tp /*->Expand (ns, ux->I)*/;
-	    rhstype = rhsval->getInstType (s, NULL, 1);
-	    if (type_connectivity_check (x, rhstype) != 1) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, "Typechecking failed, ");
-	      x->Print (stderr);
-	      fprintf (stderr, "  v/s ");
-	      rhstype->Print (stderr);
-	      fprintf (stderr, "\n\t%s\n", act_type_errmsg());
-	      exit (1);
-	    }
-	    ux->I->BindParam (pn[i], rhsval);
-	    ii++;
-	    delete rhstype;
-	  }
+
+	AExpr *rhsval = bind_param->u.tp;
+	if (!rhsval->isArrayExpr()) {
+	  rhsval = rhsval->Expand (ns, ux->I);
 	}
+	rhstype = rhsval->getInstType (ux->I, NULL, 1);
+	if (type_connectivity_check (x, rhstype) != 1) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "Typechecking failed, ");
+	  x->Print (stderr);
+	  fprintf (stderr, "  v/s ");
+	  rhstype->Print (stderr);
+	  fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	  exit (1);
+	}
+	ux->I->BindParam (pn[i], rhsval);
+	delete rhstype;
+	delete rhsval;
       }
     }
   }
+
   /*
      create a name for it!
      (old name)"<"string-from-types">"
@@ -1441,7 +1458,7 @@ void Channel::copyMethods (Channel *c)
     methods[i] = c->getMethod ((datatype_methods)i);
   }
   for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
-    emethods[i] = c->geteMethod ((datatype_methods)i);
+    emethods[i] = c->geteMethod ((datatype_methods)(i+ACT_NUM_STD_METHODS));
   }
 }
 

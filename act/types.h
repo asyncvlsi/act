@@ -378,6 +378,9 @@ class UserDef : public Type {
   int lineno;       /**< line number (if known) where this was defined **/
   int has_refinement;	      /**< 1 if there is a refinement body **/
 
+  int inherited_templ;
+  inst_param **inherited_param;
+
   int emitMacros (FILE *fp);
 
   /// user-defined macros

@@ -1997,3 +1997,16 @@ InstType *AExpr::isType ()
   if (e->type != E_TYPE) return NULL;
   return (InstType *) e->u.e.l;
 }
+
+int AExpr::isArrayExpr ()
+{
+  Expr *e;
+  if (t != AExpr::EXPR)  return 0;
+  e = (Expr *)l;
+  if (e->type == E_ARRAY) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
