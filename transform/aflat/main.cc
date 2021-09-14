@@ -571,14 +571,14 @@ static void aflat_ns (ActNamespace *ns)
   aflat_dump (ns->CurScope(), ns->getprs(), ns->getspec());
 }
 		     
-void aflat_body (void *cookie, ActId *prefix, Process *p)
+void aflat_body (void *cookie, ActId *prefix, UserDef *u)
 {
-  Assert (p->isExpanded(), "What?");
+  Assert (u->isExpanded(), "What?");
   current_prefix = prefix;
   if (labels) {
     hash_clear (labels);
   }
-  aflat_dump (p->CurScope(), p->getprs(), p->getspec());
+  aflat_dump (u->CurScope(), u->getprs(), u->getspec());
   current_prefix = NULL;
 }
 

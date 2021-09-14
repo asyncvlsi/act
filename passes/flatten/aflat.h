@@ -36,7 +36,7 @@ class ActApplyPass : public ActPass {
   void run_per_type (Process *p = NULL);
 
   void setCookie (void *);
-  void setInstFn (void (*f) (void *, ActId *, Process *));
+  void setInstFn (void (*f) (void *, ActId *, UserDef *));
   void setConnPairFn (void (*f) (void *, ActId *, ActId *));
 
   void setProcFn (void (*f) (void *, Process *));
@@ -58,7 +58,7 @@ class ActApplyPass : public ActPass {
   void (*apply_per_data_fn) (void *, Data *);
 
   
-  void (*apply_proc_fn) (void *, ActId *, Process *);
+  void (*apply_user_fn) (void *, ActId *, UserDef *);
   void (*apply_conn_fn) (void *, ActId *, ActId *);
   void *cookie;
   

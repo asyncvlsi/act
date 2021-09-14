@@ -653,7 +653,6 @@ void ActApplyPass::_flat_scope (Scope *s)
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx;
     UserDef *ux;
-    Process *px;
     InstType *it;
     int count;
 
@@ -677,7 +676,6 @@ void ActApplyPass::_flat_scope (Scope *s)
     ux = dynamic_cast<UserDef *>(it->BaseType());
     
     if (ux) {
-      px = dynamic_cast <Process *>(ux);
       /* set scope here */
       if (it->arrayInfo()) {
 	Arraystep *step = it->arrayInfo()->stepper();
@@ -688,9 +686,9 @@ void ActApplyPass::_flat_scope (Scope *s)
 	    push_name (vx->getName(), step->toArray());
 
 	    /*-- process me --*/
-	    if (px && apply_proc_fn) {
+	    if (apply_user_fn) {
 	      ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
-	      (*apply_proc_fn) (cookie, proc_inst, px);
+	      (*apply_user_fn) (cookie, proc_inst, ux);
 	      nullify_arrays (proc_inst);
 	      delete proc_inst;
 	    }
@@ -707,9 +705,9 @@ void ActApplyPass::_flat_scope (Scope *s)
 	push_name (vx->getName());
 
 	/*-- process me --*/
-	if (px && apply_proc_fn) {
+	if (apply_user_fn) {
 	  ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
-	  (*apply_proc_fn) (cookie, proc_inst, px);
+	  (*apply_user_fn) (cookie, proc_inst, ux);
 	  nullify_arrays (proc_inst);
 	  delete proc_inst;
 	}
@@ -891,7 +889,7 @@ void ActApplyPass::_flat_ns (ActNamespace *ns)
 
 ActApplyPass::ActApplyPass (Act *a) : ActPass (a, "apply")
 {
-  apply_proc_fn = NULL;
+  apply_user_fn = NULL;
   apply_conn_fn = NULL;
   cookie = NULL;
 
@@ -934,9 +932,9 @@ void ActApplyPass::setCookie (void *x)
   cookie = x;
 }
 
-void ActApplyPass::setInstFn (void (*f) (void *, ActId *, Process *))
+void ActApplyPass::setInstFn (void (*f) (void *, ActId *, UserDef *))
 {
-  apply_proc_fn = f;
+  apply_user_fn = f;
 }
 
 void ActApplyPass::setConnPairFn (void (*f) (void *, ActId *, ActId *))
@@ -971,7 +969,7 @@ int ActApplyPass::run (Process *p)
     fatal_error ("ActApplyPass: must be called after expansion!");
   }
 
-  if (!apply_conn_fn && !apply_proc_fn) {
+  if (!apply_conn_fn && !apply_user_fn) {
     /*-- do nothing --*/
   }
   else {
