@@ -398,7 +398,8 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
     tmp = act_spec_string (spec->type);
     Assert (tmp, "Hmm");
     if ((export_format == PRSIM_FMT &&
-	 (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0)) ||
+	 (strcmp (tmp, "mk_exclhi") == 0 || strcmp (tmp, "mk_excllo") == 0 ||
+	  strcmp (tmp, "rand_init") == 0)) ||
 	(export_format == LVS_FMT &&
 	 (strcmp (tmp, "exclhi") == 0 || strcmp (tmp, "excllo") == 0))) {
       if (spec->count > 0) {

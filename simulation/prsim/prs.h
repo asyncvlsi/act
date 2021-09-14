@@ -82,6 +82,8 @@ typedef struct prs_node {
 
   unsigned int intiming:1;	/* part of a timing constraint */
 
+  unsigned int rand_init:1;	/* rand init */
+
   int delay_up[2];		/* after delay on the node (up) */
   int delay_dn[2];		/* after delay on node (down) */
   long sz, max;

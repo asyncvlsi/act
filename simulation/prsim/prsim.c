@@ -22,6 +22,7 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
@@ -1964,6 +1965,29 @@ static RET_TYPE process_random (ARG_LIST)
   RETURN (LISP_RET_TRUE);
 }
 
+
+static void _init_rand_init (PrsNode *n, void *cookie)
+{
+  if (n->rand_init && n->val == PRS_VAL_X) {
+    if (rand_r (&P->seed) > RAND_MAX/2) {
+      prs_set_node (P, n, PRS_VAL_T);
+    }
+    else {
+      prs_set_node (P, n, PRS_VAL_F);
+    }
+  }
+}
+
+static RET_TYPE process_rand_init (ARG_LIST)
+{
+  STD_ARG("Usage: rand_init\n");
+
+  prs_apply (P, NULL, _init_rand_init);
+
+  RETURN (LISP_RET_TRUE);
+}
+
+
 static RET_TYPE process_random_seed (ARG_LIST)
 {
   STD_ARG("Usage: random_seed seed\n");
@@ -2116,6 +2140,9 @@ struct LispCliCommand Cmds[] = {
   { "random_seed", "seed - set random number seed", process_random_seed },
   { "norandom", "- deterministic timings", process_norandom },
   { "random_excl", "random_excl on|off - turn on/off random exclhi/lo firings", process_random_excl },
+
+  { "rand_init", "rand_init - randomly set signals that are X that have rand_init directives", process_rand_init },
+  
   { "after", "<n> <minu> <maxu> <mind> <maxd> - node set to random times within range", process_after },
   { "dumptc", "<file> - dump transition counts for nodes to <file>", process_dumptc },
   { "pairtc", "- turns on <input/output> pair transition counts", process_pairtc },

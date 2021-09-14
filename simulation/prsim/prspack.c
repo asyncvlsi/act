@@ -117,15 +117,21 @@ int main (int argc, char **argv)
     }
     else if (lex_have_keyw (l, "mk_exclhi") ||
 	     lex_have_keyw (l, "mk_excllo") ||
-	     lex_have_keyw (l, "mk_excl")) {
+	     lex_have_keyw (l, "mk_excl") ||
+	     lex_have_keyw (l, "rand_init")) {
       int type = 0;
       if (strcmp (lex_prev (l), "mk_excllo") == 0) {
 	putchar ('\04');
 	type = '\04';
       }
-      else {
+      else if ((strcmp (lex_prev (l), "mk_exclhi") == 0) ||
+	       (strcmp (lex_prev (l), "mk_excl") == 0)) {
 	putchar ('\05');
 	type = '\05';
+      }
+      else {
+	putchar ('\07');
+	type = '\07';
       }
       lex_mustbe (l, syms[LPAR]);
       putchar ('(');
