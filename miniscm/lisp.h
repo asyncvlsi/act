@@ -42,7 +42,7 @@ extern "C" {
 
 extern void LispInit(void);
 extern void LispSetVariable(char *name, char *value);
-extern void LispEvaluate(int argc, char **argv, int infile);
+extern int LispEvaluate(int argc, char **argv, int infile);
 
 /* 
    User must provide these functions and variables

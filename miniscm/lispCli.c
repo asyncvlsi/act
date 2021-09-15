@@ -508,7 +508,7 @@ int LispDispatch (int argc, char **argv, int echo_cmd, int infile)
 }
 
 
-static void do_command (char *s)
+static int do_command (char *s)
 {
   char *t;
   int i;
@@ -516,8 +516,8 @@ static void do_command (char *s)
   A_INIT (args);
 
   t = strtok (s, " \t");
-  if (!t) return;
-  if (*t == '#') return;
+  if (!t) return 1;
+  if (*t == '#') return 1;
   if (strcmp (t, "quit") == 0 || strcmp (t, "exit") == 0) {
     int code = 0;
     t = strtok (NULL, " \t");
@@ -545,7 +545,7 @@ static void do_command (char *s)
     }
   } while (t);
 
-  LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
+  return LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
 }
 
 
@@ -591,6 +591,7 @@ static int handle_user_input (FILE *fp)
 {
   char buf[10240];
   char *s, *t;
+  int res;
 
   while ((s = read_input_line (fp, buf, 10240))) {
     if (LispInterruptExecution) {
@@ -598,8 +599,11 @@ static int handle_user_input (FILE *fp)
     }
     else {
       if (*s) {
-	do_command (s);
+	res = do_command (s);
 	if (LispInterruptExecution) {
+	  return 0;
+	}
+	if (!res) {
 	  return 0;
 	}
       }
@@ -618,6 +622,7 @@ static int handle_source (int argc, char **argv)
   FILE *fp;
   char *fname;
   int count;
+  int res;
     
   if (argc != 2 && argc != 3) {
     fprintf (stderr, "Usage: source <filename> [<repeat-count>]\n");
@@ -632,7 +637,8 @@ static int handle_source (int argc, char **argv)
     count = 1;
   }
 
-  while (!LispInterruptExecution && (count > 0)) {
+  res = 1;
+  while (!LispInterruptExecution && res == 1 && (count > 0)) {
     count--;
     if (in_stack (fname)) {
       fprintf (stderr, "Error: recursive source command for file `%s'\n",
@@ -647,7 +653,7 @@ static int handle_source (int argc, char **argv)
 	       flist->name);
       return LISP_RET_ERROR;
     }
-    handle_user_input (fp);
+    res = handle_user_input (fp);
     fclose (fp);
     pop_file ();
   }
@@ -655,7 +661,7 @@ static int handle_source (int argc, char **argv)
     fprintf (stderr, "\t*** interrupted source command `%s'\n", fname);
   }
   FREE (fname);
-  if (LispInterruptExecution) {
+  if (LispInterruptExecution || res == 0) {
     return LISP_RET_ERROR;
   }
   else {

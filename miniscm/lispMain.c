@@ -47,14 +47,14 @@ int LispInterruptExecution;
  *      a list of commands in a local Cmd queue.
  *
  *  Results:
- *      None.
+ *      Returns 0 if the evaluation failed; 1 otherwise.
  *
  *  Side effects:
  *      None.
  *
  *------------------------------------------------------------------------
  */
-void
+int
 LispEvaluate (int argc, char **argv, int inFile)
 {
   extern Sexp *LispMainFrame;
@@ -64,6 +64,7 @@ LispEvaluate (int argc, char **argv, int inFile)
   int i,j,k;
   static int my_depth = 0;
   int old_infile;
+  int ret_val;
 
   old_infile = lispInFile;
   lispInFile = inFile;
@@ -94,6 +95,8 @@ LispEvaluate (int argc, char **argv, int inFile)
   l = LispParseString (output_buf);
   res = LispFrameLookup (LispNewString ("scm-echo-parser-output"),
 			 LispMainFrame);
+
+  ret_val = 1;
   if (l) {
     if (res && LTYPE(res) == S_BOOL && LBOOL(res)) {
       printf (" >> ");
@@ -102,6 +105,9 @@ LispEvaluate (int argc, char **argv, int inFile)
     }
     LispInterruptExecution = 0;
     res = LispEval(l,LispMainFrame);
+    if (res == NULL) {
+      ret_val = 0;
+    }
   }
   if (l && res) {
     l = LispFrameLookup (LispNewString ("scm-echo-result"),LispMainFrame);
@@ -120,6 +126,7 @@ LispEvaluate (int argc, char **argv, int inFile)
     LispGC (LispMainFrameObj);
   my_depth--;
   lispInFile = old_infile;
+  return ret_val;
 }
 
 
@@ -161,7 +168,7 @@ LispInit (void)
     char *args[] = { "load-scm", "\"default.scm\"", NULL };
     snprintf (buf, 10240, "%s/lib/scm", getenv ("ACT_HOME"));
     LispSetVariable ("scm-library-path", buf);
-    LispEvaluate (2, args, 0);
+    Assert (LispEvaluate (2, args, 0) == 1, "Unexpected internal error!");
     snprintf (buf, 10240, "%s/lib", getenv ("ACT_HOME"));
     LispSetVariable ("scm-dynamic-path", buf);
   }
