@@ -194,6 +194,8 @@ public:
 
   int instOffsets () { return _inst_offsets; }
 
+  int checkIdExists (ActId *id);  /*< checks if the full ID path is
+				    valid */
   int globalBoolOffset (ActId *id);
 
   static void getStructCount (Data *d, state_counts *sc);

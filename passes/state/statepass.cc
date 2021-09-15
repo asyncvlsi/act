@@ -1475,3 +1475,155 @@ int ActStatePass::globalBoolOffset (ActId *id)
 
   return soff.numBools() + local_si_id;
 }
+
+
+int ActStatePass::checkIdExists (ActId *id)
+{
+  Process *top_level = _root_si->bnl->p;
+  
+  /* -- partition processes -- */
+  Process *loc;
+  ActId *rest = id->nonProcSuffix (top_level, &loc);
+
+  if (!loc) return 0;
+  
+  Assert (loc, "Hmm");
+
+  /* -- "rest" may actually be available at a higher level of the
+     hierarchy since it may be connected to ports or globals.
+     -- */
+  stateinfo_t *si;
+  act_connection *conn = rest->Canonical (loc->CurScope());
+  phash_bucket_t *ib;
+
+  if (!conn) return 0;
+  
+  Assert (conn, "Hmm");
+  
+  if (conn->isglobal()) {
+    /* global ID: done! */
+    si = _root_si;
+    Assert (si, "Hmm");
+    ib = phash_lookup (si->map, conn);
+    if (!ib) return 0;
+    Assert (ib, "Hmm");
+    loc = top_level;
+  }
+  else {
+    /* is it a port? */
+    si = getStateInfo (loc);
+    Assert (si, "Hmm");
+    ib = phash_lookup (si->map, conn);
+    if (!ib) return 0;
+    Assert (ib, "Hmmmmm");
+    while (loc != top_level && (ib->i < 0)) {
+      /* port in a subprocess! */
+      ActId *rootid;
+      InstType *it;
+      Process *cproc = top_level;
+
+      /* find parent id */
+      rootid = id;
+      while (rootid->Rest() != rest) {
+	it = cproc->CurScope()->FullLookup (rootid->getName());
+	if (!it || !TypeFactory::isProcessType (it)) return 0;
+	Assert (TypeFactory::isProcessType (it), "What?");
+	cproc = dynamic_cast<Process *> (it->BaseType());
+	rootid = rootid->Rest();
+      }
+
+      /* segment: tmp.port */
+      ActId *tmp = new ActId (rootid->getName(), rootid->arrayInfo());
+      tmp->Append (conn->toid());
+      conn = tmp->Canonical (cproc->CurScope());
+      delete tmp;
+
+      /* repeat this! */
+      rest = rootid;
+      loc = cproc;
+      si = getStateInfo (loc);
+      Assert (si, "Hmm");
+      ib = phash_lookup (si->map, conn);
+      if (!ib) {
+	return 0;
+      }
+      Assert (ib, "What?");
+    }
+  }
+
+  
+  if (!((ib->i >= 0) || ((top_level == loc) && rest == id))) {
+    return 0;
+  }
+
+  /* -- conn : canonical connection
+     -- loc  : root process
+     -- rest : the ID segment corresponding to it.
+  */
+  state_counts soff;
+
+  Scope *sc = top_level->CurScope();
+  ValueIdx *vx = sc->FullLookupVal (id->getName());
+  if (!vx) return 0;
+  Assert (vx, "Hmm");
+
+  /* -- check all the array indices! -- */
+  ValueIdx *ux = vx;
+  ActId *rid = id;
+  
+  
+  ux = vx;
+  rid = id;
+  sc = top_level->CurScope();
+  si = _root_si;
+
+  while (rid != rest) {
+    int aoff;
+    if (ux->t->arrayInfo()) {
+      if (!rid->arrayInfo() || !rid->arrayInfo()->isDeref()) {
+	return 0;
+      }
+      aoff = ux->t->arrayInfo()->Offset (rid->arrayInfo());
+    }
+    else {
+      if (rid->arrayInfo()) {
+	return 0;
+      }
+      aoff = 0;
+    }
+    if (aoff == -1) {
+      return 0;
+    }
+
+    ib = phash_lookup (si->inst, ux);
+    if (!ib) {
+      return 0;
+    }
+    soff.addVar (*((state_counts *)ib->v));
+
+    Process *user = dynamic_cast<Process *> (ux->t->BaseType());
+    if (!user) {
+      return 0;
+    }
+    Assert (user, "Partitioning failed?");
+
+    si = getStateInfo (user);
+    if (!si) {
+      return 0;
+    }
+    Assert (si, "Hmm...");
+
+    if (aoff > 0) {
+      soff.addVar (si->all, aoff);
+    }
+
+    rid = rid->Rest();
+    sc = user->CurScope();
+    if (!rid) {
+      return 0;
+    }
+    Assert (rid, "What?");
+    ux = sc->LookupVal (rid->getName());
+  }
+  return 1;
+}
