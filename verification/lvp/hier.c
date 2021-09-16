@@ -8,7 +8,7 @@
 #include <string.h>
 
 #include "hier.h"
-#include "misc.h"
+#include <common/misc.h>
 
 /*------------------------------------------------------------------------*/
 

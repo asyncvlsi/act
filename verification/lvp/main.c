@@ -12,9 +12,9 @@
 
 #include <stdio.h>
 #include "lvs.h"
-#include "misc.h"
+#include <common/misc.h>
 #include "cap.h"
-#include "config.h"
+#include <common/config.h>
 
 /*
  *
@@ -492,6 +492,9 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   N_P_Ratio = 1.0/config_get_real ("net.p_n_ratio");
   comb_threshold = config_get_real ("lvp.CombThreshold");
   stateholding_threshold = config_get_real ("lvp.StateThreshold");
+
+  strength_ratio_dn = config_get_real ("lvp.NResetPStat");
+  strength_ratio_up = config_get_real ("lvp.PResetNStat");
 
   do_cmdline_options ();
 #ifndef DIGITAL_ONLY

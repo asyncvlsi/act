@@ -10,10 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 #include "var.h"
-#include "pp.h"
-#include "bool.h"
+#include <common/pp.h>
 #include "table.h"
-#include "ext.h"
 
 /*
  *

@@ -5,7 +5,7 @@
  *************************************************************************/
 #include <stdio.h>
 #include "dots.h"
-#include "misc.h"
+#include <common/misc.h>
 
 void init_dots (dots_t *t)
 {

@@ -1,0 +1,17 @@
+template<pint N>
+defproc testme (bool x[N])
+{
+  bool y[N];
+  x = y;
+}
+
+
+template<pint W> 
+defproc test2 <: testme<W> (bool w[W])
+{
+  bool q;
+  w[0] = q;
+}
+
+test2<4> x;
+

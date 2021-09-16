@@ -27,10 +27,6 @@ SRCS=$(OBJS:.o=.c) init.cc
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-install_conf: lvp.conf
-	@$(VLSI_TOOLS_SRC)/scripts/install lvp.conf $(INSTALLLIB)/act/lvp.conf
-
-
 DFLAGS+=-DDIGITAL_ONLY
 
 $(BINARY): $(LIB) $(OBJS1) init.o $(ACTDEPEND)

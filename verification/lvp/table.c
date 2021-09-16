@@ -4,7 +4,7 @@
  *
  *************************************************************************/
 #include <stdio.h>
-#include "misc.h"
+#include <common/misc.h>
 #include "table.h"
 #include "lvs.h"
 

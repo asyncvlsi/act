@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "var.h"
-#include "misc.h"
+#include <common/misc.h>
 
 /*
  *------------------------------------------------------------------------

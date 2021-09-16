@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "lvs.h"
-#include "misc.h"
+#include <common/misc.h>
 
 static int interrupted = 0;
 

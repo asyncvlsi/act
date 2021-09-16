@@ -6,10 +6,10 @@
 #ifndef __VAR_H__
 #define __VAR_H__
 
-#include "hash.h"
-#include "bool.h"
+#include <common/hash.h>
+#include <common/bool.h>
+#include <common/ext.h>
 #include "dots.h"
-#include "ext.h"
 
 #define VAR_INIT_SIZE 128
 

@@ -6,8 +6,8 @@
 #include <stdio.h>
 #include "var.h"
 #include "lvs.h"
-#include "misc.h"
-#include "bool.h"
+#include <common/misc.h>
+#include <common/bool.h>
 
 static struct excllists *EXTRA_EXCLHI = NULL, *EXTRA_EXCLLO = NULL;
 

@@ -316,6 +316,7 @@ void UserDef::MkCopy (UserDef *u)
   inherited_templ = u->inherited_templ;
   inherited_param = u->inherited_param;
   u->inherited_param = NULL;
+  u->inherited_templ = 0;
 
   A_ASSIGN (um, u->um);
   u->um = NULL;
@@ -372,7 +373,7 @@ void UserDef::SetParent (InstType *t)
       }
       if (t->getNumParams() > 0) {
 	ip = t->allParams ();
-	i = 0;
+	i = nt - x->getNumParams();
 	for (int j=0; j < t->getNumParams(); j++) {
 	  while (inherited_param[i] && i < nt) {
 	    i++;
@@ -635,6 +636,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	}
 
 	AExpr *rhsval = bind_param->u.tp;
+
 	if (!rhsval->isArrayExpr()) {
 	  rhsval = rhsval->Expand (ns, ux->I);
 	}

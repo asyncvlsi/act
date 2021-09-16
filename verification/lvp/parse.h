@@ -7,10 +7,10 @@
 #define __PARSE_H__
 
 #include <stdio.h>
-#include "lex.h"
+#include <common/lex.h>
+#include <common/pp.h>
+#include <common/bool.h>
 #include "var.h"
-#include "pp.h"
-#include "bool.h"
 
 enum {
   E_AND, E_OR, E_NOT, E_TRUE, E_FALSE, E_ID
