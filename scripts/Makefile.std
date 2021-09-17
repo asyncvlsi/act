@@ -183,10 +183,22 @@ install_act: $(TARGETACT)
                 then \
                         if [ -d $(INSTALLACT) ]; \
                         then \
-                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLACT)/$$i; \
+				if [ "x$(TARGETACTSUBDIR)" = "x" ]; \
+				then \
+                                tgt=$$i; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLACT)/$$tgt; \
+				else \
+					if [ ! -d $(INSTALLACT)/$(TARGETACTSUBDIR) ]; \
+					then \
+					mkdir $(INSTALLACT)/$(TARGETACTSUBDIR); \
+					fi; \
+                                tgt=$$i; \
+                                $(VLSI_TOOLS_SRC)/scripts/install $$i $(INSTALLACT)/$(TARGETACTSUBDIR)/$$tgt; \
+				fi; \
                         fi; \
                 fi; \
 		done
+
 
 install_lib: $(TARGETLIBS)
 	@for i in dummy_bad_name $(TARGETLIBS); \
