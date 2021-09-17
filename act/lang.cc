@@ -1519,6 +1519,12 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       act_inline_free (tab);
     }
     break;
+
+  case ACT_HSE_FRAGMENTS:
+    ret->u.frag.nextlabel = c->u.frag.nextlabel;
+    ret->u.frag.body = chp_expand (c->u.frag.body, ns, s);
+    ret->u.frag.next = chp_expand (c->u.frag.next, ns, s);
+    break;
     
   default:
     fatal_error ("Unknown chp type %d", ret->type);
@@ -2051,6 +2057,17 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
     }
     fprintf (fp, ")");
     break;
+
+  case ACT_HSE_FRAGMENTS:
+    do {
+      _chp_print (fp, c->u.frag.body);
+      fprintf (fp, " : %s", c->u.frag.nextlabel);
+      c = c->u.frag.next;
+      if (c) {
+	fprintf (fp, ";\n%s : ", c->label);
+      }
+    } while (c);
+    break; 
     
   default:
     fatal_error ("Unknown type");

@@ -1,0 +1,6 @@
+bool x, y, z;
+
+hse {
+  a : x+;y+ : b;
+  b : z+ : a
+}

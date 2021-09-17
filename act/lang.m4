@@ -139,7 +139,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
 }}
 ;
 
-lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_body ] "}" 
+lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_bodies ] "}" 
 {{X:
     ActBody *b;
     act_chp *chp;
@@ -875,6 +875,50 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
     return c;
 }}
 ;
+
+hse_bodies[act_chp_lang_t *]: hse_body
+{{X:
+    return $1;
+}}
+| labelled_hse_bodies
+{{X:
+    return $1;
+}}
+;
+
+labelled_hse_bodies[act_chp_lang_t *]: { label_hse_fragment ";" }*
+{{X:
+    listitem_t *li;
+    act_chp_lang_t *ret, *prev;
+    ret = NULL;
+    prev = NULL;
+    for (li = list_first ($1); li; li = list_next (li)) {
+      if (!ret) {
+	ret = (act_chp_lang_t *)list_value (li);
+	prev = ret;
+      }
+      else {
+	prev->u.frag.next = (act_chp_lang_t *)list_value (li);
+	prev = prev->u.frag.next;
+      }
+    }
+    return ret;
+}}
+;
+
+label_hse_fragment[act_chp_lang_t *]: ID ":" hse_body ":" ID
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_HSE_FRAGMENTS;
+    c->label = $1;
+    c->u.frag.nextlabel = $5;
+    c->u.frag.body = $3;
+    c->u.frag.next = NULL;
+    return c;
+}}
+;
+    
 
 hse_body[act_chp_lang_t *]: { hse_comma_item ";" }*
 {{X:

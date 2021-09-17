@@ -171,8 +171,10 @@ enum act_chp_lang_type {
   ACT_CHP_HOLE = 13,
   ACT_CHP_ASSIGNSELF = 14,   /* same as assign, used to indicate self
 			       assignment in some tools */
-  ACT_CHP_MACRO = 15	     /* macro call, gets removed when
+  ACT_CHP_MACRO = 15,	     /* macro call, gets removed when
 				chp_expand is called */
+
+  ACT_HSE_FRAGMENTS = 16
 };
 
 #define ACT_CHP_STMTEND 16  /* 1 more than the last enumeration above */
@@ -226,6 +228,11 @@ typedef struct act_chp_lang {
       Expr *lo, *hi;
       struct act_chp_lang *body;
     } loop;			/* syntactic replication */
+
+    struct {
+      const char *nextlabel;
+      struct act_chp_lang *body, *next;
+    } frag;			/* HSE fragments */
     
   } u;
 } act_chp_lang_t;
