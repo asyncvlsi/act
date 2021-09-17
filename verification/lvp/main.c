@@ -485,9 +485,11 @@ void parse_arguments (int argc, char **eargv, char **file1, char **file2)
   }
   if (config_exists ("lvp.WeakByWidth")) {
     width_threshold = config_get_real ("lvp.WeakByWidth");
+    strip_by_width = 1;
   }
   if (config_exists ("lvp.WeakByStrength")) {
     strip_threshold = config_get_real ("lvp.WeakByStrength");
+    strip_by_width = 0;
   }
   N_P_Ratio = 1.0/config_get_real ("net.p_n_ratio");
   comb_threshold = config_get_real ("lvp.CombThreshold");
