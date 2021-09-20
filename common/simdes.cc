@@ -148,7 +148,10 @@ Event *SimDES::Run ()
 	break;
       }
       curobj = ev->obj;
-      ev->obj->Step (ev->ev_type);
+      if (!ev->obj->Step (ev->ev_type)) {
+	delete ev;
+	return NULL;
+      }
     }
     delete ev;
     if (_interrupt) {
@@ -181,7 +184,10 @@ Event *SimDES::Advance (long n)
 	break;
       }
       curobj = ev->obj;
-      ev->obj->Step (ev->ev_type);
+      if (!ev->obj->Step (ev->ev_type)) {
+	delete ev;
+	return NULL;
+      }
     }
     delete ev;
     n--;
@@ -230,7 +236,10 @@ Event *SimDES::AdvanceTime (long delay)
 	break;
       }
       curobj = ev->obj;
-      ev->obj->Step (ev->ev_type);
+      if (!ev->obj->Step (ev->ev_type)) {
+	delete ev;
+	return NULL;
+      }
     }
     delete ev;
   } while (1);

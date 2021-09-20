@@ -41,10 +41,11 @@
  *           execution. It should return the time of the first event
  *           for this object, or -1 if there isn't any.
  *
- *        void Step (int)
+ *        int Step (int)
  *
  *           Invoked whenever the object operations are to be
- *           processed.
+ *           processed. Returns 1 on success, 0 if the simulation
+ *           should stop.
  *
  *
  */
@@ -130,7 +131,7 @@ class SimDES {
    *  The main function for the simulation. Step() is used to make
    *  forward progress. See above. All state changes should happen in Step().
    */
-  virtual void Step (int ev_type) = 0;
+  virtual int Step (int ev_type) = 0;
 
   void Pause (int delay); 	// pause yourself by the specified
 				// delay---after executing this
@@ -278,7 +279,7 @@ private:
 #define STANDARD_SIM_TEMPLATE			\
    void Print (FILE *fp) { }			\
    int Init ();					\
-   void Step (int);				\
+   int Step (int);				\
    void DumpStats (void) { }
 
 
