@@ -98,6 +98,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
     switch (ch) {
     case 's':
       scale_factor = atof (optarg);
+      config_set_real ("net.output_scale_factor", scale_factor);
       break;
       
     case 'S':
@@ -106,18 +107,22 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
       
     case 'l':
       ignore_loadcap = 1;
+      config_set_int ("net.ignore_loadcap", ignore_loadcap);
       break;
 
     case 'B':
       black_box_mode = 0;
+      config_set_int ("net.black_box_mode", black_box_mode);
       break;
 
     case 'd':
       emit_parasitics = 1;
+      config_set_int ("net.emit_parasitics", emit_parasitics);
       break;
 
     case 't':
       top_level_only = 1;
+      config_set_int ("net.top_level_only", top_level_only);
       break;
 
     case 'p':
@@ -161,11 +166,6 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
     usage ((*argv)[0]);
   }
 
-  config_set_default_int ("net.ignore_loadcap", ignore_loadcap);
-  config_set_default_int ("net.emit_parasitics", emit_parasitics);
-  config_set_default_int ("net.black_box_mode", black_box_mode);
-  config_set_default_int ("net.top_level_only", top_level_only);
-  config_set_default_real ("net.output_scale_factor", scale_factor);
   
   if (!proc_name) {
     fprintf (stderr, "Missing process name.\n");

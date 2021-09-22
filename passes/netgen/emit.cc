@@ -29,6 +29,21 @@
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
+static void print_number (FILE *fp, double x)
+{
+  if (x > 1e3) {
+    fprintf (fp, "%gK", x*1e-3);
+  }
+  if (x > 1e-3) {
+    fprintf (fp, "%g", x);
+  }
+  else if (x > 1e-9) {
+    fprintf (fp, "%gU", x*1e6);
+  }
+  else {
+    fprintf (fp, "%gP", x*1e12);
+  }
+}
 
 netlist_t *ActNetlistPass::emitNetlist (Process *p)
 {
@@ -320,10 +335,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }
 	  fprintf (fp, " %s", config_get_string (devname));
-	  fprintf (fp, " W=%gU L=%gU", w*manufacturing_grid*1e6
-		   *output_scale_factor,
-		   (l*manufacturing_grid + leak*leak_adjust)*1e6
-		   *output_scale_factor);
+	  fprintf (fp, " W=");
+	  print_number (fp, w*manufacturing_grid*output_scale_factor);
+	  fprintf (fp, " L=");
+	  print_number (fp, (l*manufacturing_grid + leak*leak_adjust)
+			*output_scale_factor);
 
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
@@ -332,7 +348,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  else {
 	    fprintf (fp, "\n");
 	  }
-      
+
 	  /* area/perim for source/drain */
 	  if (emit_parasitics) {
 	    int gap;
@@ -353,10 +369,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    else {
 	      gap = fet_spacing_diffonly;
 	    }
-	    fprintf (fp, "+ AS=%gP PS=%gU",
-		     (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2)*1e12,
-		     2*(e->w/getGridsPerLambda() + gap)*
-		     lambda*output_scale_factor*1e6);
+	    fprintf (fp, "+ AS=");
+	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
+	    fprintf (fp, " PS=");
+	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
+			  lambda*output_scale_factor);
 
 	    if (il == len_repeat-1) {
 	      if (drain->v) {
@@ -374,9 +391,12 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    else {
 	      gap = fet_spacing_diffonly;
 	    }
-	    fprintf (fp, " AD=%gP PD=%gU\n",
-		     (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2)*1e12,
-		     2*(e->w/getGridsPerLambda() + gap)*lambda*output_scale_factor*1e6);
+	    fprintf (fp, " AD=");
+	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
+	    fprintf (fp, " PD=");
+	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
+			  lambda*output_scale_factor);
+	    fprintf (fp, "\n");
 	  }
 
 	  fflush (fp);
