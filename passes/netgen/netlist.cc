@@ -2378,6 +2378,12 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 
   ignore_loadcap = config_get_int ("net.ignore_loadcap");
   emit_parasitics = config_get_int ("net.emit_parasitics");
+  if (config_exists ("net.output_scale_factor")) {
+    output_scale_factor = config_get_real ("net.output_scale_factor");
+  }
+  else {
+    output_scale_factor = 1;
+  }
   
   fet_spacing_diffonly = config_get_int ("net.fet_spacing_diffonly");
   fet_spacing_diffcontact = config_get_int ("net.fet_spacing_diffcontact");

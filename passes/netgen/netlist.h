@@ -241,6 +241,7 @@ class ActNetlistPass : public ActPass {
   /* printing flags */
   int ignore_loadcap;
   int emit_parasitics;
+  double output_scale_factor;
   
   int fet_spacing_diffonly;
   int fet_spacing_diffcontact;

@@ -59,6 +59,7 @@ static void usage (char *name)
   fprintf (stderr, " -B	       Turn off black-box mode. Assume empty act process is an externally specified file\n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
   fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
+  fprintf (stderr, " -s <scale> Scale all transistor parameters by <scale>\n");
   exit (1);
 }
 
@@ -79,7 +80,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   int emit_parasitics = 0;
   int black_box_mode = 1;
   int top_level_only = 0;
-
+  double scale_factor = 1.0;
 
   *fpout = stdout;
   top_level_only = 0;
@@ -93,8 +94,12 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "SBdtp:o:lc:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "SBdtp:o:lc:s:")) != -1) {
     switch (ch) {
+    case 's':
+      scale_factor = atof (optarg);
+      break;
+      
     case 'S':
       enable_shared_stat = 1;
       break;
@@ -160,6 +165,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   config_set_default_int ("net.emit_parasitics", emit_parasitics);
   config_set_default_int ("net.black_box_mode", black_box_mode);
   config_set_default_int ("net.top_level_only", top_level_only);
+  config_set_default_real ("net.output_scale_factor", scale_factor);
   
   if (!proc_name) {
     fprintf (stderr, "Missing process name.\n");
