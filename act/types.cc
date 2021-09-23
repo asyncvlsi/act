@@ -54,6 +54,57 @@ const char *UserDef::getName()
   return name;
 }
 
+void UserDef::printActName (FILE *fp)
+{
+  int i = 0;
+  int in_param = 0;
+  int param_count = 0;
+
+  int max_count = nt;
+  if (parent && TypeFactory::isUserType (parent)) {
+    max_count = nt - (dynamic_cast<UserDef *> (parent->BaseType()))->getNumParams();
+  }
+
+  while (name[i]) {
+    if (!in_param && name[i] != '<') {
+      fputc (name[i], fp);
+    }
+    else if (in_param) {
+      if (name[i] == 't') {
+	fprintf (fp, "true");
+      }
+      else if (name[i] == 'f') {
+	fprintf (fp, "false");
+      }
+      else if (name[i] == ',') {
+	if (name[i+1] == '>' || name[i+1] == ',') {
+	  fputc ('>', fp);
+	  return;
+	}
+	param_count++;
+	if (param_count == max_count) {
+	  fputc ('>', fp);
+	  return;
+	}
+	fputc (name[i], fp);
+      }
+      else {
+	fputc (name[i], fp);
+      }
+    }
+    else {
+      /* name[i] == '<' */
+      if (name[i+1] != '>' && name[i+1] != ',' && max_count > 0) {
+	fputc (name[i], fp);
+	in_param = 1;
+      }
+      else {
+	return;
+      }
+    }
+    i++;
+  }
+}
 
 int UserDef::AddMetaParam (InstType *t, const char *id)
 {
@@ -698,8 +749,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   for (int i=0; i < nt; i++) {
     InstType *x;
     Array *xa;
+    ValueIdx *vx;
 
     x = ux->getPortType (-(i+1));
+    vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
       if (xa) {
@@ -732,7 +785,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     }
     else {
       /* check array info */
-      if (i < spec_nt && u[i].u.tp) {
+      if (vx->init) {
 	if (xa) {
 	  Assert (xa->isExpanded(), "Array info is not expanded");
 	  sz += 32*xa->size()+2;
@@ -804,8 +857,8 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 			ux->I->getPReal (vx->u.idx + as->index()));
 	    }
 	    else if (TypeFactory::isPBoolType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%d",
-			ux->I->getPBool (vx->u.idx + as->index()));
+	      snprintf (buf+k, sz, "%c",
+			ux->I->getPBool (vx->u.idx + as->index()) ? 't' : 'f');
 	    }
 	    else {
 	      fatal_error ("What type is this?");
@@ -832,7 +885,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	      snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->u.idx));
 	    }
 	    else if (TypeFactory::isPBoolType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%d", ux->I->getPBool (vx->u.idx));
+	      snprintf (buf+k, sz, "%c", ux->I->getPBool (vx->u.idx) ? 't' : 'f');
 	    }
 	    else {
 	      fatal_error ("What type is this?");
