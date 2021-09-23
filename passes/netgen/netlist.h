@@ -233,6 +233,8 @@ class ActNetlistPass : public ActPass {
   int n_fold;
   int p_fold;
   int discrete_len;
+  int discrete_fet_length_sz;
+  int *discrete_fet_length;
 
   /* local and global Vdd/GND */
   static const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
@@ -280,6 +282,8 @@ class ActNetlistPass : public ActPass {
   netlist_t *emitNetlist (Process *p);
 
   void fold_transistors (netlist_t *N);
+  int  find_length_window (edge_t *e);
+  int  find_length_fit (int len);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 		       act_size_spec_t *sz);
   int create_expr_edges (netlist_t *N, int type, node_t *left,

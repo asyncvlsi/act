@@ -112,6 +112,23 @@ static int hash (struct strHashtable *h, const char *k)
   return sum & (size-1);
 }
 
+static void check_table (struct strHashtable *H)
+{
+  int i;
+  mstring_t *h;
+
+  for(i=0; i < H->size; i++) {
+    for (h = H->head[i]; h; h = h->next) {
+      if (i != hash (H, &h->s[0])) {
+	printf ("XXX: hash table messed up!\n");
+	printf ("Entry: `%s' [len=%d]\n", &h->s[0], (int)strlen (&h->s[0]));
+	exit (1);
+      }
+    }
+  }
+}
+
+
 static void resize_table (struct strHashtable *H)
 {
   struct strHashtable Hnew;
@@ -196,6 +213,9 @@ mstring_t *string_create (const char *s)
     sH->head[i] = b;
     sH->n++;
   }
+
+  /*check_table (sH);*/
+
   return b;
 }
 		       

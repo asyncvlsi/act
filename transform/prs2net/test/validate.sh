@@ -19,5 +19,10 @@ fi
 
 for i in $list
 do
-	$ACTTOOL -l -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	if [ -f conf_$i ]
+	then
+		$ACTTOOL -cnf=conf_$i -l -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	else
+		$ACTTOOL -l -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	fi
 done

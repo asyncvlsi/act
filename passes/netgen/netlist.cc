@@ -428,6 +428,44 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_KEEPER   (0x10 << 3) // keeper edge (force)
 #define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
 
+int ActNetlistPass::find_length_fit (int len)
+{
+  for (int i=0; i < discrete_fet_length_sz/2; i++) {
+    if (discrete_fet_length[2*i]*getGridsPerLambda() <= len &&
+	len <= discrete_fet_length[2*i+1]*getGridsPerLambda()) {
+      /* we are fine */
+      return len;
+    }
+    if (i != (discrete_fet_length_sz/2-1)) {
+      if (len < discrete_fet_length[2*i+2]*getGridsPerLambda()) {
+	/* length is between current window and next window */
+	return discrete_fet_length[2*i+1]*getGridsPerLambda();
+      }
+    }
+  }
+  return discrete_fet_length[discrete_fet_length_sz-1]*getGridsPerLambda();
+}
+
+int ActNetlistPass::find_length_window (edge_t *e)
+{
+  int i;
+  int last = -1;
+  for (i=0; i < discrete_fet_length_sz/2; i++) {
+    if (discrete_fet_length[2*i]*getGridsPerLambda() <= e->l &&
+	e->l <= discrete_fet_length[2*i+1]*getGridsPerLambda()) {
+      /* we are fine */
+      return -1;
+    }
+    if (i != (discrete_fet_length_sz/2-1)) {
+      if (e->l < discrete_fet_length[2*i+2]*getGridsPerLambda()) {
+	/* length is between current window and next window */
+	return 2*i;
+	break;
+      }
+    }
+  }
+  return discrete_fet_length_sz - 2;
+}
 
 void ActNetlistPass::fold_transistors (netlist_t *N)
 {
@@ -436,7 +474,8 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
   edge_t *e;
   int fold;
 
-  if (n_fold == 0 && p_fold == 0 && discrete_len == 0) return;
+  if (n_fold == 0 && p_fold == 0 && discrete_len == 0 &&
+      discrete_fet_length_sz == 0) return;
 
   for (n = N->hd; n; n = n->next) {
     for (li = list_first (n->e); li; li = list_next (li)) {
@@ -444,10 +483,10 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
       if (e->visited > 0) continue;
       e->visited = 1;
       if (e->type == EDGE_NFET) {
-	fold = n_fold;
+	fold = n_fold*getGridsPerLambda();
       }
       else {
-	fold = p_fold;
+	fold = p_fold*getGridsPerLambda();
       }
       if (fold > 0 && (e->w/e->nfolds) > fold) {
 	e->nfolds = e->w/fold;
@@ -455,8 +494,18 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
 	  e->nfolds++;
 	}
       }
+
       if (discrete_len > 0) {
-	e->nlen = (e->l + discrete_len - 1)/discrete_len;
+	e->nlen = (e->l + getGridsPerLambda()*discrete_len - 1)/(getGridsPerLambda()*discrete_len);
+      }
+      else if (discrete_fet_length_sz > 0) {
+	int last = find_length_window (e);
+	if (last != -1) {
+	  /* closest smaller window is [last, last+1]; we assume the
+	     residual width can be handled with one transistor */
+	  e->nlen = (e->l + discrete_fet_length[last+1]*getGridsPerLambda() - 1)/(discrete_fet_length[last+1]*getGridsPerLambda());
+	  Assert (e->nlen > 1, "How is this possible?");
+	}
       }
     }
   }
@@ -2359,6 +2408,24 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   n_fold = config_get_int ("net.fold_nfet_width");
   p_fold = config_get_int ("net.fold_pfet_width");
   discrete_len = config_get_int ("net.discrete_length");
+  if (config_exists ("net.fet_length_ranges")) {
+    discrete_fet_length = config_get_table_int ("net.fet_length_ranges");
+    discrete_fet_length_sz = config_get_table_size ("net.fet_length_ranges");
+    if ((discrete_fet_length_sz % 2) != 0) {
+      warning ("Discrete fet length table should be even length; ignoring last value");
+      discrete_fet_length_sz--;
+    }
+    for (int i=0; i < discrete_fet_length_sz; i++) {
+      if (i == 0) continue;
+      if (discrete_fet_length[i-1] > discrete_fet_length[i]) {
+	fatal_error ("Error in netlist fet_length_ranges table: widths must be non-decreasing.");
+      }
+    }
+  }
+  else {
+    discrete_fet_length_sz = 0;
+    discrete_fet_length = NULL;
+  }
 
   lambda = config_get_real ("net.lambda");
   if (config_exists ("lefdef.manufacturing_grid")) {

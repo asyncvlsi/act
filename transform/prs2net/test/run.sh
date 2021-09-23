@@ -56,7 +56,12 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL -l -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	if [ -f conf_$i ]
+	then
+		$ACTTOOL -cnf=conf_$i -l -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	else 
+		$ACTTOOL -l -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+	fi
 	ok=1
 	if ! ./cmp.sh runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then

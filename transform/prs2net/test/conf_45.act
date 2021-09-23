@@ -1,0 +1,5 @@
+begin net
+
+int_table fet_length_ranges 2 4
+
+end

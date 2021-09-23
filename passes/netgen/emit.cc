@@ -228,6 +228,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       int w, l;
       int fold;
       int leak;
+      int len_idx;
       
       if (e->visited || e->pruned) continue;
       e->visited = 1;
@@ -243,7 +244,12 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       /* discretize lengths */
       len_repeat = e->nlen;
       if (discrete_len > 0) {
-	l = discrete_len;
+	l = discrete_len*getGridsPerLambda();
+      }
+      else if (len_repeat > 1) {
+	len_idx = find_length_window (e);
+	Assert (len_idx != -1, "Hmm");
+	l = discrete_fet_length[len_idx+1]*getGridsPerLambda();
       }
 
       if (e->type == EDGE_NFET) {
@@ -338,8 +344,16 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  fprintf (fp, " W=");
 	  print_number (fp, w*manufacturing_grid*output_scale_factor);
 	  fprintf (fp, " L=");
-	  print_number (fp, (l*manufacturing_grid + leak*leak_adjust)
-			*output_scale_factor);
+
+	  if (len_repeat > 1 && discrete_len == 0 && il == len_repeat-1) {
+	    print_number (fp, (find_length_fit (e->l - (e->nlen-1)*l)*
+			  manufacturing_grid + leak*leak_adjust)
+			  *output_scale_factor);
+	  }
+	  else {
+	    print_number (fp, (l*manufacturing_grid + leak*leak_adjust)
+			  *output_scale_factor);
+	  }
 
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
