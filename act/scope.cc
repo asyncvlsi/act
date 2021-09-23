@@ -213,6 +213,16 @@ int Scope::Add (const char *s, InstType *it)
       v->u.obj.c = NULL;
     }
   }
+
+#if 0
+  fprintf (stderr, "Add ");
+  if (u) { fprintf (stderr, "%s ", u->getName()); }
+  fprintf (stderr, "[scope=%x ex:%d] %s ", this, expanded, b->key);
+  fprintf (stderr, " <> ");
+  it->Print (stderr);
+  fprintf (stderr, "\n");
+#endif  
+  
   return 1;
 }
 
@@ -841,7 +851,9 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
 void Scope::BindParam (ActId *id, AExpr *ae)
 {
 #if 0
-  fprintf (stderr, "Bind [scope=%x] ", this);
+  fprintf (stderr, "Bind ");
+  if (u) { fprintf (stderr, "%s ", u->getName()); }
+  fprintf (stderr, "[scope=%x] ", this);
   id->Print (stderr);
   fprintf (stderr, " = ");
   ae->Print (stderr);

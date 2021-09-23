@@ -1,6 +1,6 @@
 In expanding testme (18.act:21)
 In expanding ::<Global>
 Connecting `f' and `bb' failed.
-	Type 1: baz<>
-	Type 2: bar<>
+	Type 1: baz<5>
+	Type 2: bar<5>
 FATAL: Illegal combination of types

@@ -523,13 +523,16 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
      u = expanded instance paramters
   */
 #if 0
-  printf ("Hello, expand userdef %s\n", getName());
-  printf ("Expanding userdef, nt=%d, spec_nt=%d\n", nt, spec_nt);
+  fprintf (stderr, "[In expand userdef] %s [parent: %d]\n", getName(),
+	   inherited_templ);
+  fprintf (stderr, "  nt=%d, spec_nt=%d  <", nt, spec_nt);
   for (int i=0; i < spec_nt; i++) {
-    printf (" param %d: ", i);
-    u[i].u.tp->Print (stdout);
+    u[i].u.tp->Print (stderr);
+    if (i != spec_nt-1) {
+      fprintf (stderr, " , ");
+    }
   }
-  printf ("Parent specified: %d\n", inherited_templ);
+  fprintf (stderr, ">\n");
 #endif
 
   /* create a new userdef type */
@@ -650,6 +653,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	  fprintf (stderr, "\n\t%s\n", act_type_errmsg());
 	  exit (1);
 	}
+#if 0	
+	printf ("    <> bind %s := ", pn[i]);
+	rhsval->Print (stdout);
+	printf ("\n");
+#endif	
 	ux->I->BindParam (pn[i], rhsval);
 	delete rhstype;
 	delete rhsval;
@@ -657,6 +665,17 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     }
   }
 
+  int parent_start;
+  if (parent && TypeFactory::isUserType (parent)) {
+    parent_start = (nt - (dynamic_cast<UserDef *> (parent->BaseType()))->getNumParams());
+    if (parent_start >= spec_nt) {
+      parent_start = -1;
+    }
+  }
+  else {
+    parent_start = -1;
+  }
+  
   /*
      create a name for it!
      (old name)"<"string-from-types">"
@@ -763,7 +782,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       }
     }
     else {
-      if (i < spec_nt && u[i].u.tp) {
+      if (vx->init) {
 	if (xa) {
 	  Arraystep *as;
 	  
@@ -853,14 +872,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   if (parent) {
     uparent = dynamic_cast <UserDef *> (parent->BaseType());
     if (uparent) {
-      for (i=0; i < spec_nt; i++) {
-	if (uparent->isPort (pn[i])) {
-	  break;
-	}
-      }
-      if (i < spec_nt) {
+      if (parent_start != -1) {
 	InstType *parent2 = new InstType (parent);
-	parent2->appendParams (spec_nt - i, u+i);
+	parent2->appendParams (spec_nt - parent_start, u+parent_start);
 	ux->SetParent (parent2->Expand (ns, ux->CurScope()));
 	delete parent2;
       }
