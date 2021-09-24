@@ -61,14 +61,14 @@
  */
 
 
-#define A_DECL(type,name)  int name##_num; int name##_max; type *name;
-#define L_A_DECL(type,name)  static int name##_num = 0; static int name##_max = 0; static type *name = NULL;
-#define E_A_DECL(type,name)  extern int name##_num; extern int name##_max; extern type *name;
+#define A_DECL(type,name)  unsigned int name##_num; unsigned int name##_max; type *name;
+#define L_A_DECL(type,name)  static unsigned int name##_num = 0; static unsigned int name##_max = 0; static type *name = NULL;
+#define E_A_DECL(type,name)  extern unsigned int name##_num; extern unsigned int name##_max; extern type *name;
 
 #define A_LEN(name)  name##_num
 #define A_MAX(name)  name##_max
 
-#define A_ARG_DECL(type,name)  int name##_num, int name##_max, type *name
+#define A_ARG_DECL(type,name)  unsigned int name##_num, unsigned int name##_max, type *name
 #define A_ARG(name)  name##_num,name##_max,name
 
 #define A_INIT(name) do { A_LEN(name) = 0; A_MAX(name) = 0; } while (0)

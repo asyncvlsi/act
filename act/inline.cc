@@ -524,7 +524,7 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
   while ((b = hash_iter_next (Hmerge, &it))) {
     hash_bucket_t *xb;
     /* construct expression for b->key! */
-    int sz = 1;
+    unsigned int sz = 1;
     Expr **inpval;
     int *types;
 
