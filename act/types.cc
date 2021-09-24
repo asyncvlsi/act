@@ -58,35 +58,17 @@ void UserDef::printActName (FILE *fp)
 {
   int i = 0;
   int in_param = 0;
-  int param_count = 0;
-
-  int max_count = nt;
-  if (parent && TypeFactory::isUserType (parent)) {
-    max_count = nt - (dynamic_cast<UserDef *> (parent->BaseType()))->getNumParams();
-  }
 
   while (name[i]) {
     if (!in_param && name[i] != '<') {
       fputc (name[i], fp);
     }
     else if (in_param) {
-      if (name[i] == 't') {
+      if (name[i] == 't' && name[i-1] == ',') {
 	fprintf (fp, "true");
       }
-      else if (name[i] == 'f') {
+      else if (name[i] == 'f' && name[i-1] == ',') {
 	fprintf (fp, "false");
-      }
-      else if (name[i] == ',') {
-	if (name[i+1] == '>' || name[i+1] == ',') {
-	  fputc ('>', fp);
-	  return;
-	}
-	param_count++;
-	if (param_count == max_count) {
-	  fputc ('>', fp);
-	  return;
-	}
-	fputc (name[i], fp);
       }
       else {
 	fputc (name[i], fp);
@@ -94,7 +76,7 @@ void UserDef::printActName (FILE *fp)
     }
     else {
       /* name[i] == '<' */
-      if (name[i+1] != '>' && name[i+1] != ',' && max_count > 0) {
+      if (name[i+1] != '>') {
 	fputc (name[i], fp);
 	in_param = 1;
       }
@@ -556,7 +538,9 @@ static int recursion_depth = 0;
  *
  *------------------------------------------------------------------------
  */
-UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u, int *cache_hit, int is_proc)
+UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
+			  int spec_nt, inst_param *u,
+			  int *cache_hit, int is_proc)
 {
   UserDef *ux;
   int k, sz, len;
@@ -779,9 +763,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
       }
       /* x is now the value of the parameter */
       if (x) {
-	sz += strlen (x->BaseType()->getName()) + 2;
+	sz += strlen (x->BaseType()->getName()) + 3;
       }
-      /* might have directions, upto 2 characters worth */
+      /* might have directions, upto 2 characters worth, @ for type */
     }
     else {
       /* check array info */
@@ -806,9 +790,19 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
   k += len;
   sz -= len;
 
+  ii=0;
+
   for (int i=0; i < nt; i++) {
     ValueIdx *vx;
-    if (i != 0) {
+
+    if (inherited_templ > 0 && inherited_param[i]) {
+      continue;
+    }
+    if (ii == spec_nt) {
+      break;
+    }
+
+    if (ii != 0) {
       snprintf (buf+k, sz, ",");
       len = strlen (buf+k); k += len; sz -= len;
     }
@@ -817,19 +811,19 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
     vx = ux->I->LookupVal (pn[i]);
     xa = x->arrayInfo();
     if (TypeFactory::isPTypeType (x->BaseType())) {
-      if (i < spec_nt) {
-	if (u[i].isatype) {
-	  x = u[i].u.tt;
+      if (ii < spec_nt) {
+	if (u[ii].isatype) {
+	  x = u[ii].u.tt;
 	}
 	else {
-	  x = u[i].u.tp->isType();
+	  x = u[ii].u.tp->isType();
 	}	  
       }
       else {
 	x = NULL;
       }
       if (x) {
-	snprintf (buf+k, sz, "%s%s", x->BaseType()->getName(),
+	snprintf (buf+k, sz, "@%s%s", x->BaseType()->getName(),
 		  Type::dirstring (x->getDir()));
 	len = strlen (buf+k); k += len; sz -= len;
       }
@@ -894,6 +888,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s, int spec_nt, inst_param *u
 	}
       }
     }
+    ii++;
   }
   snprintf (buf+k, sz, ">");
   k++; sz--;
