@@ -285,7 +285,7 @@ void config_pop_prefix (void)
   while (i > 0 && global_prefix[i] != '.') {
     i--;
   }
-  A_LEN (global_prefix) = i;
+  A_LEN_RAW (global_prefix) = i;
   global_prefix[i] = '\0';
 }
 

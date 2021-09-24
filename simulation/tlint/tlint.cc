@@ -879,7 +879,7 @@ int is_init_prs_firing (PrsNode *n, int val)
       for (; i < A_LEN(initbuf)-1; i++) {
 	initbuf[i] = initbuf[i+1];
       }
-      A_LEN(initbuf)--;
+      A_LEN_RAW(initbuf)--;
       return 1;
     }
   }
@@ -901,7 +901,7 @@ int is_reordered_buf (PrsNode *n, int val, double tm)
 	for (; i < A_LEN(reorder_buf)-1; i++) {
 	  reorder_buf[i] = reorder_buf[i+1];
 	}
-	A_LEN(reorder_buf)--;
+	A_LEN_RAW(reorder_buf)--;
 	found = 1;
 	break;
       }
@@ -914,7 +914,7 @@ int is_reordered_buf (PrsNode *n, int val, double tm)
       for (i=0; i < A_LEN(reorder_buf)-count; i++) {
 	reorder_buf[i] = reorder_buf[i+count];
       }
-      A_LEN(reorder_buf) -= count;
+      A_LEN_RAW(reorder_buf) -= count;
       break;
     }
   }

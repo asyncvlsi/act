@@ -350,7 +350,7 @@ unsigned long Scope::AllocPInt(int count)
   else {
     bitset_expand (vpint_set, ret + count);
   }
-  A_LEN (vpint) += count;
+  A_LEN_RAW (vpint) += count;
   return ret;
 }
 
@@ -367,7 +367,7 @@ void Scope::DeallocPInt (unsigned long idx, int count)
     for (unsigned long i = idx; i < idx + count; i++) {
       bitset_clr (vpint_set, i);
     }
-    A_LEN (vpint) -= count;
+    A_LEN_RAW (vpint) -= count;
     
     return;
   }
@@ -419,7 +419,7 @@ unsigned long Scope::AllocPInts(int count)
   else {
     bitset_expand (vpints_set, A_LEN (vpints)+count);
   }
-  A_LEN (vpints) += count;
+  A_LEN_RAW (vpints) += count;
   return ret;
 }
 
@@ -436,7 +436,7 @@ void Scope::DeallocPInts (unsigned long idx, int count)
     for (unsigned long i = idx; i < idx + count; i++) {
       bitset_clr (vpints_set, i);
     }
-    A_LEN (vpints) -= count;
+    A_LEN_RAW (vpints) -= count;
     
     return;
   }
@@ -483,7 +483,7 @@ unsigned long Scope::AllocPReal(int count)
   else {
     bitset_expand (vpreal_set, A_LEN (vpreal)+count);
   }
-  A_LEN (vpreal) += count;
+  A_LEN_RAW (vpreal) += count;
   return ret;
 }
 
@@ -500,7 +500,7 @@ void Scope::DeallocPReal (unsigned long idx, int count)
     for (unsigned long i = idx; i < idx + count; i++) {
       bitset_clr (vpreal_set, i);
     }
-    A_LEN (vpreal) -= count;
+    A_LEN_RAW (vpreal) -= count;
     return;
   }
   /* otherwise, ignore it. too bad! */
@@ -548,7 +548,7 @@ unsigned long Scope::AllocPType(int count)
   else {
     bitset_expand (vptype_set, A_LEN (vptype)+count);
   }
-  A_LEN (vptype) += count;
+  A_LEN_RAW (vptype) += count;
   return ret;
 }
 
@@ -565,7 +565,7 @@ void Scope::DeallocPType (unsigned long idx, int count)
     for (unsigned long i = idx; i < idx + count; i++) {
       bitset_clr (vptype_set, i);
     }
-    A_LEN (vptype) -= count;
+    A_LEN_RAW (vptype) -= count;
     return;
   }
   /* otherwise, ignore it. too bad! */

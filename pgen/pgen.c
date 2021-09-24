@@ -341,6 +341,7 @@ void base_parse_token_list (LEX_T *l, token_list_t *t)
 void parse_token_list (LEX_T *l)
 {
   A_NEW (curBNF->a, token_list_t);
+  A_INIT (A_NEXT (curBNF->a).a);
   base_parse_token_list (l, &A_NEXT (curBNF->a));
   A_INC (curBNF->a);
 }
@@ -1372,9 +1373,9 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       /* parse body, add it to a list */
       pp_printf (pp, "TRY { ");
       pp_nl;
-      A_LEN (tmp->a)--;
+      A_LEN_RAW (tmp->a)--;
       nret = emit_code_for_parsing_tokens (pp, tmp);
-      A_LEN (tmp->a)++;
+      A_LEN_RAW (tmp->a)++;
       for (j=0; j < A_LEN (tmp->a); j++) {
 	emit_code_helper (pp, tmp, j, i, nest, prefix);
       }

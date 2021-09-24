@@ -2242,7 +2242,7 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     for (; i < A_LEN (pendingprs); i++) {
       pendingprs[i-1] = pendingprs[i];
     }
-    A_LEN(pendingprs)--;
+    A_LEN_RAW(pendingprs)--;
 
     
   }

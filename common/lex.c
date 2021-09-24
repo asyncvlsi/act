@@ -122,7 +122,7 @@ static void ungetch (LEX_T *l)
     l->buflen ++;
     if (!l->buf)
       fatal_error ("ungetch:: realloc failed, size=%d", sizeof(char));
-    for (i=l->buflen; i > 0; i--)
+    for (i=l->buflen-1; i > 0; i--)
       l->buf[i] = l->buf[i-1];
     l->buf[0] = l->ch;
   }

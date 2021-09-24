@@ -1717,7 +1717,7 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
       }
     }
   }
-  A_LEN(pendingQ) = 0;
+  A_LEN_RAW(pendingQ) = 0;
 
   /* process created excl events
      - put the event onto the heap if it does not violate
@@ -1726,7 +1726,7 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
      - drop the event otherwise!
   */
   if (p->flags & PRS_RANDOM_EXCL) {
-    A_LEN(exclshuffle) = 0;
+    A_LEN_RAW(exclshuffle) = 0;
     for (i=0; i < A_LEN(prsexclhi); i++) {
       A_NEW (exclshuffle, int);
       A_NEXT (exclshuffle) = i;
@@ -1796,10 +1796,10 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
       deleteevent (p, ea->p);
     }
   }
-  A_LEN(prsexclhi) = 0;
+  A_LEN_RAW(prsexclhi) = 0;
 
   if (p->flags & PRS_RANDOM_EXCL) {
-    A_LEN (exclshuffle) = 0;
+    A_LEN_RAW (exclshuffle) = 0;
     for (i=0; i < A_LEN(prsexcllo); i++) {
       A_NEW (exclshuffle, int);
       A_NEXT (exclshuffle) = i;
@@ -1860,7 +1860,7 @@ PrsNode *prs_step_cause  (Prs *p, PrsNode **cause,  int *pseu)
       deleteevent (p, ea->p);
     }
   }
-  A_LEN(prsexcllo) = 0;
+  A_LEN_RAW(prsexcllo) = 0;
 
   /* n is the node that changed */
   if (n->intiming) {

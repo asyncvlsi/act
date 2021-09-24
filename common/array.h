@@ -65,34 +65,35 @@
 #define L_A_DECL(type,name)  static unsigned int name##_num = 0; static unsigned int name##_max = 0; static type *name = NULL;
 #define E_A_DECL(type,name)  extern unsigned int name##_num; extern unsigned int name##_max; extern type *name;
 
-#define A_LEN(name)  name##_num
+#define A_LEN_RAW(name)  name##_num
+#define A_LEN(name)  ((signed)A_LEN_RAW(name))
 #define A_MAX(name)  name##_max
 
 #define A_ARG_DECL(type,name)  unsigned int name##_num, unsigned int name##_max, type *name
 #define A_ARG(name)  name##_num,name##_max,name
 
-#define A_INIT(name) do { A_LEN(name) = 0; A_MAX(name) = 0; } while (0)
+#define A_INIT(name) do { A_LEN_RAW(name) = 0; A_MAX(name) = 0; } while (0)
 
 #define A_ASSIGN(nn,on)				\
    do {						\
       A_FREE (nn);				\
-      A_LEN(nn) = A_LEN(on);			\
+      A_LEN_RAW(nn) = A_LEN_RAW(on);		\
       A_MAX(nn) = A_MAX(on);			\
-      A_LEN(on) = A_MAX(on) = 0;		\
+      A_LEN_RAW(on) = A_MAX(on) = 0;		\
       nn = on;					\
    } while (0)
 
 #define A_ALIAS(nn,on)				\
    do {						\
       A_FREE (nn);				\
-      A_LEN(nn) = A_LEN(on);			\
+      A_LEN_RAW(nn) = A_LEN_RAW(on);		\
       A_MAX(nn) = A_MAX(on);			\
       nn = on;					\
    } while (0)
 
 #define A_NEW(name,type)			\
     do {					\
-      if (A_LEN(name) == A_MAX(name)) {		\
+      if (A_LEN_RAW(name) == A_MAX(name)) {	\
 	if (A_MAX(name) == 0) {			\
 	  A_MAX(name) = 32;			\
 	  MALLOC (name, type, A_MAX(name));	\
@@ -107,7 +108,7 @@
 /* like a_new, but uses smallest allocation to start off */
 #define A_NEWM(name,type)			\
     do {					\
-      if (A_LEN(name) == A_MAX(name)) {		\
+      if (A_LEN_RAW(name) == A_MAX(name)) {	\
 	if (A_MAX(name) == 0) {			\
 	  A_MAX(name) = 1;			\
 	  MALLOC (name, type, A_MAX(name));	\
@@ -119,23 +120,23 @@
       }						\
     } while (0)
 
-#define A_NEWP(name,type,sz)			\
-    do {					\
-      if (A_LEN(name) + (sz) > A_MAX(name)) {	\
-	if (A_MAX(name) == 0) {			\
-	  A_MAX(name) = (sz);			\
-	  MALLOC (name, type, A_MAX(name));	\
-	}					\
-	else {					\
-	  A_MAX(name) = A_MAX(name) + (sz);	\
-	  REALLOC (name, type, A_MAX(name));	\
-	}					\
-      }						\
+#define A_NEWP(name,type,sz)				\
+    do {						\
+      if (A_LEN_RAW(name) + (sz) > A_MAX(name)) {	\
+	if (A_MAX(name) == 0) {				\
+	  A_MAX(name) = (sz);				\
+	  MALLOC (name, type, A_MAX(name));		\
+	}						\
+	else {						\
+	  A_MAX(name) = A_MAX(name) + (sz);		\
+	  REALLOC (name, type, A_MAX(name));		\
+	}						\
+      }							\
     } while (0)						
 
-#define A_NEXT(name)  name[A_LEN(name)]
-#define A_LAST(name)  name[A_LEN(name)-1]
-#define A_INC(name)  A_LEN(name)++
+#define A_NEXT(name)  name[A_LEN_RAW(name)]
+#define A_LAST(name)  name[A_LEN_RAW(name)-1]
+#define A_INC(name)   A_LEN_RAW(name)++
 
 #define A_APPEND(name,type,v)			\
    do {						\
