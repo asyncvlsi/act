@@ -2706,14 +2706,19 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       tmp = pt;
       while (tmp) {
 	int k;
+	PrsTiming *nxt = NULL;
+	int flag = 0;
 	for (k=0; k < 3; k++) {
 	  if (tmp->n[k] == n2) {
 	    tmp->n[k] = n1;
-	    tmp = tmp->next[k];
-	    break;
+	    if (!nxt) {
+	      flag = 1;
+	      nxt = tmp->next[k];
+	    }
 	  }
 	}
-	Assert (k != 3, "Timing data structure error");
+	Assert (flag, "Timing data structure error");
+	tmp = nxt;
       }
       b = phash_add (p->timing, n1);
       b->v = pt;
@@ -2749,17 +2754,59 @@ static void merge_nodes (Prs *p, PrsNode *n1, PrsNode *n2)
       prev->next[prevk] = n2c;
       phash_delete (p->timing, n2);
       n2->intiming = 0;
-
       while (n2c) {
 	int k;
 	for (k=0; k < 3; k++) {
-	  if (n2c->n[k] == n2) {
-	    n2c->n[k] = n1;
-	    n2c = n2c->next[k];
+	  if (n2c->n[k] == n1) {
 	    break;
 	  }
 	}
-	Assert (k != 3, "What?");
+	if (k != 3) {
+	  /* already in the timing chain! */
+	  PrsTiming *nxt = NULL;
+	  for (k=0; k < 3; k++) {
+	    if (n2c->n[k] == n2) {
+	      n2c->n[k] = n1;
+	      if (!nxt) {
+		nxt = n2c->next[k];
+	      }
+	      n2c->next[k] = NULL;
+	    }
+	  }
+	  /* no dups */
+	  prev->next[prevk] = nxt;
+
+	  /* make sure next pointer is in the right slot */
+	  for (k=0; k < 3; k++) {
+	    if (n2c->n[k] == n1 && n2c->next[k] == NULL) {
+	      int j;
+	      for (j=k+1; j < 3; j++) {
+		if (n2c->n[j] == n1 && n2c->next[j] != NULL) {
+		  n2c->next[k] = n2c->next[j];
+		  n2c->next[j] = NULL;
+		}
+	      }
+	    }
+	  }
+	  n2c = nxt;
+	}
+	else {
+	  PrsTiming *nxt = NULL;
+	  int flag = 0;
+	  for (k=0; k < 3; k++) {
+	    if (n2c->n[k] == n2) {
+	      if (!nxt) {
+		nxt = n2c->next[k];
+		prevk = k;
+	      }
+	      flag = 1;
+	      n2c->n[k] = n1;
+	    }
+	  }
+	  prev = n2c;
+	  n2c = nxt;
+	  Assert (flag, "What?");
+	}
       }
     }
   }
