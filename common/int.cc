@@ -192,6 +192,18 @@ BigInt& BigInt::operator=(BigInt &&b)
   return *this;
 }
 
+void BigInt::setVal (int n, UNIT_TYPE nv)
+{
+ if (n > len) {
+   expandSpace(sizeof(UNIT_TYPE));
+ }
+ v[n] = nv;
+ if (isSigned()) {
+   signExtend();
+ }
+}
+  
+
 #ifdef BIGINT_TEST
 void BigInt::SetV (int n, UNIT_TYPE nv)
 {
@@ -1473,6 +1485,26 @@ void BigInt::hPrint (FILE *fp)
 #else
 		if (sizeof(UNIT_TYPE) == 1) {
 			fprintf (fp, "%02x_", v[i]);
+		}
+#endif
+	}
+}
+
+void BigInt::hexPrint (FILE *fp)
+{
+ for (int i=len-1; i >= 0; i--) {
+#ifndef BIGINT_TEST
+		if (sizeof(UNIT_TYPE) == 8) {
+					     if (i != len-1) {
+						   fprintf (fp, "%016lx", v[i]);
+					     }
+					     else {
+						   fprintf (fp, "%lx", v[i]);
+					     }
+		} 
+#else
+		if (sizeof(UNIT_TYPE) == 1) {
+					     fprintf (fp, "%02x", v[i]);
 		}
 #endif
 	}

@@ -85,8 +85,8 @@ class BigInt {
   int operator>(BigInt &);	
   int operator>=(BigInt &);	
   int operator==(BigInt &);	
-  int operator!=(BigInt &);	
-	
+  int operator!=(BigInt &);
+
 #ifdef BIGINT_TEST
 	int operator==(unsigned long);
 	int operator==(long);
@@ -128,6 +128,10 @@ class BigInt {
 	
   std::string sPrint ();	//print in hex to string
   void hPrint (FILE *fp);	//print in hex
+  void hexPrint (FILE *fp);
+
+  UNIT_TYPE getVal(int n) { return v[n]; }
+  void setVal (int n, UNIT_TYPE nv);
 	
  private:
   unsigned int issigned:1;	// 1 - signed, 0 - unsigned
