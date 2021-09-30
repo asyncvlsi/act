@@ -130,8 +130,16 @@ class BigInt {
   void hPrint (FILE *fp);	//print in hex
   void hexPrint (FILE *fp);
 
-  UNIT_TYPE getVal(int n) { return v[n]; }
-  void setVal (int n, UNIT_TYPE nv);
+  UNIT_TYPE getVal(int n) { if (len >= 2) return u.v[n]; else return u.value; }
+  void setVal (int n, UNIT_TYPE nv) {
+    if (n > len) {
+      expandSpace(sizeof(UNIT_TYPE));
+    }
+    _setVal (n, nv);
+    if (isSigned()) {
+      signExtend();
+    }
+  }
 	
  private:
   unsigned int issigned:1;	// 1 - signed, 0 - unsigned
@@ -139,12 +147,46 @@ class BigInt {
 
   unsigned int width;			// actual bitwidth
   
-  int len;			//number of unit type vars needed to store the value
-  UNIT_TYPE *v;	// actual bits; 2's complement
+  int len;			//number of unit type vars needed to
+				//store the value
+  union {
+    UNIT_TYPE *v;	// actual bits; 2's complement
+    UNIT_TYPE value;
+  } u;
 								// rep. The number is sign-extended to
 								// the maximum width of the rep
 
   inline int isOneInt() { return len == 1 ? 1 : 0; };
+
+  inline void _setVal (int n, UNIT_TYPE nv) {
+    if (len >= 2) {
+      u.v[n] = nv;
+    }
+    else {
+      u.value = nv;
+    }
+  }
+
+  inline void _adjlen (int newlen) {
+    if (len == newlen) return;
+    if (len <= 1) {
+      if (newlen >= 2) {
+	UNIT_TYPE oval = u.value;
+	MALLOC (u.v, UNIT_TYPE, newlen);
+	u.v[0] = oval;
+      }
+    }
+    else {
+      if (newlen >= 2) {
+	REALLOC (u.v, UNIT_TYPE, newlen);
+      }
+      else {
+	UNIT_TYPE oval = u.v[0];
+	FREE (u.v);
+	u.value = oval;
+      }
+    }
+  }
 
   void signExtend ();
 
@@ -155,7 +197,7 @@ class BigInt {
 	void squeezeSpace(int amt); // reduce bitwidth by # of bits
   void zeroClear ();
 
-	UNIT_TYPE* getV() { return v; };
+  UNIT_TYPE* getV() { if (len >= 2) return u.v; else return &u.value; };
 };
 
 
