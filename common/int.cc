@@ -797,7 +797,7 @@ BigInt &BigInt::operator+(BigInt &b)
 
   int dif;
   UNIT_TYPE x, nx;
-  if (nc && isDynamic()){
+  if (isDynamic()) {
     if (width == len * BIGINT_BITS_ONE) {
       dif = 0;
     } else {
@@ -807,15 +807,22 @@ BigInt &BigInt::operator+(BigInt &b)
       nx = 0;
       nx = ~nx;
       nx = nx >> (BIGINT_BITS_ONE - dif);
-      width++;
-      expandSpace(1);
-      if (len >= 2) {
-	u.v[len-1]++;
+      if (nc) {
+	width++;
+	expandSpace(1);
+	if (len >= 2) {
+	  u.v[len-1]++;
+	}
+	else {
+	  u.value++;
+	}
       }
       else {
-	u.value++;
+	if (~nx & getVal (len-1)) {
+	  width++;
+	}
       }
-    } 
+    }
   }
 
   if (isSigned()) {
