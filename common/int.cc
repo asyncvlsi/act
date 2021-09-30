@@ -483,25 +483,6 @@ void BigInt::toUnsigned()
   zeroClear();
 }
 
-int BigInt::isSigned()
-{
-  return issigned;
-}
-
-void BigInt::toDynamic()
-{
-  isdynamic = 1;
-}
-
-void BigInt::toStatic()
-{
-  isdynamic = 0;
-}
-
-int BigInt::isDynamic()
-{
-  return isdynamic;
-}
 /*------------------------------------------------------------------------
  *
  *  Comparison operators
