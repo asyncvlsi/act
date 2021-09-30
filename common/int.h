@@ -186,6 +186,8 @@ private:
     }
   }
 
+  void _add (BigInt &b, int cin);
+
   void signExtend ();
 
   int isZero();	//number is all zeros

@@ -371,7 +371,7 @@ BigInt BigInt::operator-()
   }
   if (c && isDynamic()) {
     b.expandSpace (1);
-    if (len >= 1) {
+    if (b.len >= 2) {
       b.u.v[len-1] = 0;
       if (sa) {
 	b.u.v[len-1] = ~b.u.v[len-1];
@@ -385,7 +385,6 @@ BigInt BigInt::operator-()
     }
     b.width++;
   }
-
   return b;
 }
 
@@ -730,9 +729,8 @@ int BigInt::operator>=(BigInt &b)
  *
  *------------------------------------------------------------------------
  */
-BigInt &BigInt::operator+(BigInt &b)
+void BigInt::_add (BigInt &b, int cin)
 {
-
   if (isSigned() != b.isSigned()) {
     issigned = 0;
     b.issigned = 0;
@@ -773,7 +771,7 @@ BigInt &BigInt::operator+(BigInt &b)
   }
 
   c = 0;
-  nc = 0;
+  nc = cin;
   for (i = 0; i < len; i++) {
     UNIT_TYPE value;
     c = nc;
@@ -828,14 +826,17 @@ BigInt &BigInt::operator+(BigInt &b)
   if (isSigned()) {
     signExtend();
   }
+}
 
+
+BigInt &BigInt::operator+(BigInt &b)
+{
+  _add (b, 0);
   return *this;
-
 }
 
 BigInt &BigInt::operator-(BigInt &b)
 {
-
   if (isSigned() != b.isSigned()) {
     issigned = 0;
     b.issigned = 0;
