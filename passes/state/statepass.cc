@@ -1230,17 +1230,17 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
   else if (isPortOffset (off)) {
     off = portIdx (off);
     /* -- first booleanized ports, then chp ports -- */
-    for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
-      if (si->bnl->chpports[i].omit) continue;
-      if (off == 0) {
-	return si->bnl->chpports[i].c;
-      }
-      off--;
-    }
     for (int i=A_LEN (si->bnl->ports)-1; i >= 0; i--) {
       if (si->bnl->ports[i].omit) continue;
       if (off == 0) {
 	return si->bnl->ports[i].c;
+      }
+      off--;
+    }
+    for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
+      if (si->bnl->chpports[i].omit) continue;
+      if (off == 0) {
+	return si->bnl->chpports[i].c;
       }
       off--;
     }
