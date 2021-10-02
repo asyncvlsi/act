@@ -911,6 +911,10 @@ int ActStatePass::run (Process *p)
   /*-- set root stateinfo for global variables --*/
   _root_si = getStateInfo (p);
 
+  if (!_root_si) {
+    return res;
+  }
+
   /*-- compute global sizes and add mapping to top-level state table --*/
 
   act_boolean_netlist_t *nl = _root_si->bnl;

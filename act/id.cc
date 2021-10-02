@@ -1901,8 +1901,12 @@ int ActId::validateDeref (Scope *sc)
     UserDef *user = dynamic_cast<UserDef *> (ux->t->BaseType());
     if (user) {
       sc = user->CurScope();
-      Assert (rid, "What?");
-      ux = sc->LookupVal (rid->getName());
+      if (rid) {
+	ux = sc->LookupVal (rid->getName());
+      }
+      else {
+	return 1;
+      }
     }
     else {
       ux = NULL;
