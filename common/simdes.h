@@ -98,6 +98,8 @@ public:
   void *operator new (size_t sz);
   void operator delete (void *v);
 
+  SimDES *getObj () { return obj; }
+
 private:
   unsigned int kill:1;		// set to 1 to make this an event that
 				// is discarded
@@ -157,6 +159,7 @@ class SimDES {
 
   /** @return true if there are pending events **/
   static bool hasPendingEvent();
+  static bool matchPendingEvent (bool (*matchfn) (Event *));
 
   static int isEmpty() { return initialized_sim ? 0 : 1; }
   /*

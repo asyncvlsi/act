@@ -464,3 +464,14 @@ bool SimDES::hasPendingEvent (void)
     return false;
   }
 }
+
+
+bool SimDES::matchPendingEvent (bool (*matchfn) (Event *))
+{
+  for (int i=0; i < heap_size (all); i++) {
+    if ((*matchfn)((Event *)all->value[i])) {
+      return true;
+    }
+  }
+  return false;
+}
