@@ -408,7 +408,7 @@ void check_nodeval (PrsNode *n, void *val)
 
   n->flag = 1;
 
-  if (n->val == v) {
+  if (n->val == v && (n->sz != 0 || n->up[0] || n->up[1] || n->dn[0] || n->dn[1])) {
     if (match_string) {
       if (match_string[0] == '^') {
 	if (strncmp (prs_nodename (P,n), match_string+1, match_len-1) == 0) {
