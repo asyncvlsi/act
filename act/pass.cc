@@ -55,6 +55,7 @@ ActPass::ActPass (Act *_a, const char *s, int doroot)
   _root_dirty = doroot;
   _root = NULL;
   _update_propagate = 1;
+  _sticky_visited = 0;
 
   ActPass *_tmp = _a->pass_find ("_refresh_");
   if (!_tmp) {
@@ -162,7 +163,9 @@ void ActPass::run_recursive (Process *p, int mode)
     return;
   }
 
-  visited_flag = new std::unordered_set<UserDef *> ();
+  if (!visited_flag) {
+    visited_flag = new std::unordered_set<UserDef *> ();
+  }
 
   if (p) {
     act_error_push (p->getName(), p->getFile(), p->getLine());
@@ -172,9 +175,11 @@ void ActPass::run_recursive (Process *p, int mode)
   }
   recursive_op (p, mode);
   act_error_pop ();
-  
-  delete visited_flag;
-  visited_flag = NULL;
+
+  if (!_sticky_visited) {
+    delete visited_flag;
+    visited_flag = NULL;
+  }
 }
 
 int ActPass::init ()

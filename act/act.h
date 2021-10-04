@@ -291,6 +291,7 @@ private:
 class ActPass {
 protected:
   int _finished;		// has the pass finished execution?
+  int _sticky_visited;		// sticky visited flag
   Act *a;			// main act data structure
   list_t *deps;			// ActPass dependencies
 
@@ -338,6 +339,10 @@ public:
 
   void disableUpdate () { _update_propagate = 0; }
   void enableUpdate () { _update_propagate = 1; }
+
+
+  void mkStickyVisited () { _sticky_visited = 1; }
+  void clrStickyVisited() { _sticky_visited = 0; }
 
   static void refreshAll (Act *a, Process *p = NULL);
 
