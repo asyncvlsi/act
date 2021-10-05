@@ -267,7 +267,13 @@ void emit_types (VNet *v)
 	if (id->ismodname) continue;
 	fprintf (v->out, "   ");
 	if (id->isinst) {
-	  fprintf (v->out, "%s ", id->nm);
+	  if (id->m == NULL && lib_namespace) {
+	    /* external module */
+	    fprintf (v->out, "%s::%s ", lib_namespace, id->nm);
+	  }
+	  else {
+	    fprintf (v->out, "%s ", id->nm);
+	  }
 	  _emit_one_type_rhs (v->out, id);
 	}
 	else {
