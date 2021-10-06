@@ -1246,21 +1246,30 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
       /* -- chp ports: wrong -- */
       for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
 	if (si->bnl->chpports[i].omit) continue;
-	/* -- XXX FIXME check type! -- */
-	/*
-	  if (type matches) {
-	     if (off == 0) {
-	        return
-             }
-	     else {
-	        off--;
-	     }
-	  }
-	*/
-	if (off == 0) {
-	  return si->bnl->chpports[i].c;
+	phash_bucket_t *xb = phash_lookup (si->bnl->cH,
+					   si->bnl->chpports[i].c);
+	if (!xb) {
+	  continue;
 	}
-	off--;
+	act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
+	if ((type == 2 || type == 3) && xv->ischan) {
+	  if (off == 0) {
+	    return si->bnl->chpports[i].c;
+	  }
+	  off--;
+	}
+	else if (type == 1 && xv->isint) {
+	  if (off == 0) {
+	    return si->bnl->chpports[i].c;
+	  }
+	  off--;
+	}
+	else if (type == 0 && !(xv->isint || xv->ischan)) {
+	  if (off == 0) {
+	    return si->bnl->chpports[i].c;
+	  }
+	  off--;
+	}
       }
     }
     /* something went wrong */
