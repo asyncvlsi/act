@@ -59,6 +59,13 @@ void SimDES::Init()
   }
   SimDES::curtime = 0;
   initialized_sim = 1;
+
+  for (int i=0; i < all->sz; i++) {
+    Event *ev = (Event *) all->value[i];
+    delete ev;
+    all->value[i] = NULL;
+  }
+  all->sz = 0;
 }
 
 /*

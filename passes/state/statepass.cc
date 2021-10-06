@@ -712,7 +712,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	fprintf (stderr, "WARNING: Process `%s': local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);
-	fprintf (stderr, "': no driver\n");
+	fprintf (stderr, "': no driver\n", i);
 	delete tmpid;
       }
     }
@@ -727,10 +727,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	  act_error_ctxt (stderr);
 	  err_ctxt = 1;
 	}
-	fprintf (stderr, "WARNING: Process `%s': local variable `",
+	fprintf (stderr, "WARNING: Process `%s': chp local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);
-	fprintf (stderr, "': no driver\n");
+	fprintf (stderr, "': no driver\n", i);
 	delete tmpid;
       }
     }
@@ -1229,20 +1229,25 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
   }
   else if (isPortOffset (off)) {
     off = portIdx (off);
-    /* -- first booleanized ports, then chp ports -- */
-    for (int i=A_LEN (si->bnl->ports)-1; i >= 0; i--) {
-      if (si->bnl->ports[i].omit) continue;
-      if (off == 0) {
-	return si->bnl->ports[i].c;
+    if (type == 0) {
+      /* -- booleanized ports -- */
+      for (int i=A_LEN (si->bnl->ports)-1; i >= 0; i--) {
+	if (si->bnl->ports[i].omit) continue;
+	if (off == 0) {
+	  return si->bnl->ports[i].c;
+	}
+	off--;
       }
-      off--;
     }
-    for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
-      if (si->bnl->chpports[i].omit) continue;
-      if (off == 0) {
-	return si->bnl->chpports[i].c;
+    else {
+      /* -- chp ports -- */
+      for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
+	if (si->bnl->chpports[i].omit) continue;
+	if (off == 0) {
+	  return si->bnl->chpports[i].c;
+	}
+	off--;
       }
-      off--;
     }
     /* something went wrong */
     return NULL;
