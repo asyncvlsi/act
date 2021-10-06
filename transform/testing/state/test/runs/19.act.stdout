@@ -1,22 +1,22 @@
 --- Process: sub2<> ---
-   nbools = 1, nvars = 0
-  localbools: 1
-  portbools: 1
+   loc-nbools = 1, loc-nvars = 0
+   port-nbools = 1, port-chpvars = 1
   ismulti: 0
   all booleans (incl. inst): 1
+  all chpvars (incl. inst): 0
 --- End Process: sub2<> ---
 --- Process: sub<> ---
-   nbools = 0, nvars = 0
-  localbools: 0
-  portbools: 1
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 1, port-chpvars = 2
   ismulti: 0
   all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
 --- End Process: sub<> ---
 --- Process: foo<> ---
-   nbools = 1, nvars = 2
-  localbools: 1
-  portbools: 0
+   loc-nbools = 1, loc-nvars = 2
+   port-nbools = 0, port-chpvars = 0
   ismulti: 0
   all booleans (incl. inst): 3
+  all chpvars (incl. inst): 2
 --- End Process: foo<> ---
 Globals: 0 bools

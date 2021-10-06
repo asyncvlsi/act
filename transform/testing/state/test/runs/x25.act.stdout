@@ -1,0 +1,22 @@
+--- Process: buffer<> ---
+   loc-nbools = 0, loc-nvars = 1
+   port-nbools = 0, port-chpvars = 8
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 1
+--- End Process: buffer<> ---
+--- Process: src<> ---
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 3, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
+--- End Process: src<> ---
+--- Process: foo<> ---
+   loc-nbools = 3, loc-nvars = 5
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 3
+  all chpvars (incl. inst): 6
+--- End Process: foo<> ---
+Globals: 0 bools

@@ -1,8 +1,8 @@
 --- Process: foo<> ---
-   nbools = 4, nvars = 0
-  localbools: 4
-  portbools: 0
+   loc-nbools = 4, loc-nvars = 0
+   port-nbools = 0, port-chpvars = 0
   ismulti: 0
   all booleans (incl. inst): 4
+  all chpvars (incl. inst): 0
 --- End Process: foo<> ---
 Globals: 0 bools

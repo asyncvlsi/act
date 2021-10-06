@@ -1,12 +1,13 @@
 --- Process: nand2<> ---
   ** black box **
   portbools: 3
+    portchp: 3
 --- End Process: nand2<> ---
 --- Process: foo<> ---
-   nbools = 2, nvars = 0
-  localbools: 2
-  portbools: 3
+   loc-nbools = 2, loc-nvars = 0
+   port-nbools = 3, port-chpvars = 0
   ismulti: 0
   all booleans (incl. inst): 2
+  all chpvars (incl. inst): 0
 --- End Process: foo<> ---
 Globals: 0 bools

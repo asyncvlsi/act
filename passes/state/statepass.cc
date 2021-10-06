@@ -712,7 +712,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	fprintf (stderr, "WARNING: Process `%s': local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);
-	fprintf (stderr, "': no driver\n", i);
+	fprintf (stderr, "': no driver\n");
 	delete tmpid;
       }
     }
@@ -730,7 +730,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	fprintf (stderr, "WARNING: Process `%s': chp local variable `",
 		 p ? p->getName() : "-toplevel-");
 	tmpid->Print (stderr);
-	fprintf (stderr, "': no driver\n", i);
+	fprintf (stderr, "': no driver\n");
 	delete tmpid;
       }
     }
@@ -1035,14 +1035,16 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
     Assert (bn, "Hmm");
     fprintf (fp, "  ** black box **\n");
     fprintf (fp, "  portbools: %d\n", A_LEN (bn->ports));
+    fprintf (fp, "    portchp: %d\n", A_LEN (bn->chpports));
   }
   else {
-    fprintf (fp, "   nbools = %d, nvars = %d\n",
+    fprintf (fp, "   loc-nbools = %d, loc-nvars = %d\n",
 	     si->local.numBools(), si->local.numCHPVars());
-    fprintf (fp, "  localbools: %d\n", si->local.numBools());
-    fprintf (fp, "  portbools: %d\n", si->ports.numBools());
+    fprintf (fp, "   port-nbools = %d, port-chpvars = %d\n",
+	     si->ports.numBools(), si->ports.numCHPVars());
     fprintf (fp, "  ismulti: %d\n", si->ismulti);
     fprintf (fp, "  all booleans (incl. inst): %d\n", si->all.numBools());
+    fprintf (fp, "  all chpvars (incl. inst): %d\n", si->all.numCHPVars());
   }
   fprintf (fp, "--- End Process: %s ---\n", p->getName());
 }
@@ -1229,7 +1231,7 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
   }
   else if (isPortOffset (off)) {
     off = portIdx (off);
-    if (type == 0) {
+    if (type == 0 && off < si->ports.numBools()) {
       /* -- booleanized ports -- */
       for (int i=A_LEN (si->bnl->ports)-1; i >= 0; i--) {
 	if (si->bnl->ports[i].omit) continue;
@@ -1240,9 +1242,21 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
       }
     }
     else {
-      /* -- chp ports -- */
+      off = off - si->ports.numBools();
+      /* -- chp ports: wrong -- */
       for (int i=A_LEN (si->bnl->chpports)-1; i >= 0; i--) {
 	if (si->bnl->chpports[i].omit) continue;
+	/* -- XXX FIXME check type! -- */
+	/*
+	  if (type matches) {
+	     if (off == 0) {
+	        return
+             }
+	     else {
+	        off--;
+	     }
+	  }
+	*/
 	if (off == 0) {
 	  return si->bnl->chpports[i].c;
 	}

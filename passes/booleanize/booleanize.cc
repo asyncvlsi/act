@@ -121,11 +121,14 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
+static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput);
+
 static void visit_var (act_boolean_netlist_t *N, ActId *id, int isinput)
 {
   act_booleanized_var_t *v;
   
   v = var_lookup (N, id);
+
   v->used = 1;
 
   if (isinput == 1) {
@@ -202,7 +205,7 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
 	  Array *a = s->toArray ();
 
 	  tl->setArray (a);
-	  visit_var (N, id, isinput);
+	  visit_chp_var (N, id, isinput);
 	  tl->setArray (NULL);
 
 	  delete a;
@@ -212,7 +215,7 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
 	delete s;
       }
       else {
-	visit_var (N, id, isinput);
+	visit_chp_var (N, id, isinput);
       }
     }
     else if (TypeFactory::isUserType (it)) {
@@ -283,7 +286,7 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	while (!s->isend()) {
 	  Array *a = s->toArray ();
 	  tl->setArray (a);
-	  visit_var (N, id, dir);
+	  visit_chp_var (N, id, dir);
 	  tl->setArray (NULL);
 	  delete a;
 	  s->step();
@@ -291,7 +294,7 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	delete s;
       }
       else {
-	visit_var (N, id, dir);
+	visit_chp_var (N, id, dir);
       }
     }
     else if (TypeFactory::isUserType (it)) {
@@ -1718,6 +1721,30 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   }
   list_free (final_filter);
 
+#if 0
+  /* DEBUG */
+  printf ("---- %s ----\n", p->getName());
+  printf ("B:");
+  for (int i=0; i < A_LEN (n->ports); i++) {
+    printf (" ");
+    n->ports[i].c->toid()->Print (stdout);
+    if (n->ports[i].omit) {
+      printf ("*");
+    }
+  }
+  printf ("\n");
+  printf ("C:");
+  for (int i=0; i < A_LEN (n->chpports); i++) {
+    printf (" ");
+    n->chpports[i].c->toid()->Print (stdout);
+    if (n->chpports[i].omit) {
+      printf ("*");
+    }
+  }
+  printf ("\n");
+  printf ("-----\n");
+#endif  
+  
   return n;
 }
 
@@ -1892,12 +1919,14 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       }
     }
     if (mode != 2 && !bool_done) {
-      v->used = 1;
+      /* XXX: why should we set the used flag here? */
+      //v->used = 1;
       v->isport = 1;
       A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
     }
     if (mode != 1 && !chp_done) {
-      v->usedchp = 1;
+      /* XXX: why should we set the used flag here? */
+      //v->usedchp = 1;
       v->ischpport = 1;
       A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
 
@@ -1923,7 +1952,6 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     if (mode != 1) {
       A_LAST (n->chpports).omit = 1;
     }
-    return;
   }
 
   if (!bool_done && mode != 2) {
@@ -1932,7 +1960,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
 	 make this faster with a map if necessary since it is O(n^2) */
       if (c == n->ports[i].c) {
 	A_LAST (n->ports).omit = 1;
-	return;
+	break;
       }
     }
   }
@@ -1943,7 +1971,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
 	 make this faster with a map if necessary since it is O(n^2) */
       if (c == n->chpports[i].c) {
 	A_LAST (n->chpports).omit = 1;
-	return;
+	break;
       }
     }
   }
@@ -2011,11 +2039,14 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
 	  }
 	  tail->setArray (t);
 	  if (TypeFactory::isChanType (it)) {
+	    /* the pieces of the channel have to be registed for both
+	       CHP and non-CHP */
 	    flatten_ports_to_bools (n, sub, s,
 				    dynamic_cast<UserDef *>(it->BaseType ()),
-				    1);
+				    0);
 	    c = sub->Canonical (s);
 	    Assert (c == c->primary(), "What?");
+	    /*-- register the channel itself at the CHP level --*/
 	    append_base_port (n, c, it->BaseType(), 2);
 	  }
 	  else {
@@ -2160,15 +2191,11 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	  tail->setArray (t);
 
 	  int *cnt = count2;
-	  if (TypeFactory::isChanType (it)) {
-	    /* at this point, we don't add to chp ports */
-	    cnt = NULL;
-	  }
 	  rec_update_used_flags (n, subinst, sub, s,
 				 dynamic_cast<UserDef *>(it->BaseType ()),
 				 count, cnt);
 
-	  if (!cnt && count2) {
+	  if (TypeFactory::isChanType (it)) {
 	    /* we set the chp port here, as we are in a base case */
 	    Assert (*count2 < A_LEN (subinst->chpports), "What?");
 	    if (!subinst->chpports[*count2].omit) {
