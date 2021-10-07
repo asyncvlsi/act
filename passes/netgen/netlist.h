@@ -69,7 +69,7 @@ struct act_nl_varinfo {
 
   unsigned int unstaticized:1;	/* unstaticized! */
   unsigned int stateholding:1;	/* state-holding variable */
-  unsigned int usecf:1;		/* combinational feedback */
+  unsigned int usecf:2;		/* combinational feedback (2 = default) */
   unsigned int manualkeeper:2;	/* node has a manually specified
 				   keeper: 0 = no, 1 = std, 2 = comb feedback */
 

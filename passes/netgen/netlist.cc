@@ -269,7 +269,7 @@ static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
 
   vi->unstaticized = 0;
   vi->stateholding = 0;
-  vi->usecf = 0;
+  vi->usecf = 2;
   vi->manualkeeper = 0;
   vi->inv = NULL;
   vi->extra = NULL;
@@ -636,7 +636,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
       }
 
       /*-- node has forward inverter --*/
-      if (n->v->usecf || cf_keepers) {
+      if ((n->v->usecf == 1) || (cf_keepers && (n->v->usecf == 2))) {
 	/* combinational feedback */
 	node_t *tmp;
 	edge_t *e;
