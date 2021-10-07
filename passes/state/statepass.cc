@@ -236,6 +236,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   si->map = phash_new (8);
 
+  struct pHashtable *_cmap = phash_new (4);
+
   /* map each connection pointer that corresponds to local state to an
      integer starting at zero
   */
@@ -256,7 +258,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
     if (v->isint) {
-      x = phash_add (si->map, pb->key);
+      x = phash_add (/*si->map*/ _cmap, pb->key);
       x->i = chpidx;
       Assert (v->a, "Huh?");
       chpidx += v->a->size();
@@ -273,7 +275,8 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
     }
     else {
-      x = phash_add (si->map, pb->key);
+      /* any dynamic variable has to be in chp */
+      x = phash_add (/*si->map*/ _cmap, pb->key);
       x->i = idx;
       idx += v->a->size();
       for (int i=0; i < v->a->size(); i++) {
@@ -308,14 +311,14 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       }
 
       if (dv->isint) {
-	phash_bucket_t *x = phash_add (si->map, pb->key);
-	phash_bucket_t *y = phash_lookup (si->map, dv->id);
+	phash_bucket_t *x = phash_add (/*si->map*/ _cmap, pb->key);
+	phash_bucket_t *y = phash_lookup (/*si->map*/ _cmap, dv->id);
 	Assert (y, "what?!");
 	x->i = y->i + ocount; /* offset */
       }
       else {
-	phash_bucket_t *x = phash_add (si->map, pb->key);
-	phash_bucket_t *y = phash_lookup (si->map, dv->id);
+	phash_bucket_t *x = phash_add (/*si->map*/ _cmap, pb->key);
+	phash_bucket_t *y = phash_lookup (/*si->map*/ _cmap, dv->id);
 	Assert (y, "what?!");
 	x->i = y->i + ocount; /* offset */
       }
@@ -407,7 +410,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	Assert (found, "What?");
       }
       else if (!v->isglobal) {
-	phash_bucket_t *x = phash_add (si->map, pb->key);
+	phash_bucket_t *x = phash_add (/*si->map*/ _cmap, pb->key);
 	x->i = chpidx++;
 	ocount = x->i + nportchptot;
 
@@ -648,7 +651,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		}
 	      }
 		
-	      bi = phash_lookup (si->map, c);
+	      bi = phash_lookup (/*si->map*/ _cmap, c);
 	      if (bi) {
 		ocount = bi->i + nportchptot;
 	      }
@@ -720,7 +723,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     for (int i=0; i < localchp; i++) {
       if (bitset_tst (inpchp, i + nportchptot) &&
 	  !bitset_tst (tmpchp, i + nportchptot)) {
-	act_connection *tmpc = _inv_hash (si->map, i);
+	act_connection *tmpc = _inv_hash (/*si->map*/ _cmap, i);
 	Assert (tmpc, "How did we get here?");
 	ActId *tmpid = tmpc->toid();
 	if (!err_ctxt) {
@@ -757,8 +760,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     phash_bucket_t *x;
     if (v->isstruct) {
       state_counts ts;
-      x = phash_lookup (si->map, pb->key);
+      x = phash_lookup (/*si->map*/ _cmap, pb->key);
       Assert (x, "What?");
+      phash_delete (_cmap, pb->key);
+      x = phash_add (si->map, pb->key);
       x->i = c_idx.numBools();
       x = phash_lookup (si->map, (act_connection *)(((unsigned long)pb->key)|1));
       Assert (!x, "Hmm");
@@ -768,8 +773,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       c_idx.addVar (ts, v->a->size());
     }
     else if (v->isint) {
-      x = phash_lookup (si->map, pb->key);
+      x = phash_lookup (/*si->map*/ _cmap, pb->key);
       Assert (x, "What?");
+      phash_delete (_cmap, pb->key);
+      x = phash_add (si->map, pb->key);
       x->i = c_idx.numInts();
       c_idx.addInt (v->a->size());
     }
@@ -835,7 +842,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	}
       }
       else if (!v->isglobal) {
-	phash_bucket_t *x = phash_lookup (si->map, pb->key);
+	phash_bucket_t *x = phash_lookup (/*si->map*/ _cmap, pb->key);
+	Assert (x, "Hmm!");
+	phash_delete (_cmap, pb->key);
+	x = phash_add (si->map, pb->key);
 	if (v->ischan) {
 	  x->i = c_idx.numChans();
 	  c_idx.addChan();
@@ -864,7 +874,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   printf ("   chan:: port: %d; all: %d\n",
 	  si->nportchp.chans, si->chp_all.chans);
   printf ("%s: done\n\n", p->getName());
-#endif  
+#endif
+
+  Assert (_cmap->n == 0, "Sanity check on chp state generation failed");
+  phash_free (_cmap);
 
   return si;
 }
@@ -1252,6 +1265,9 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
 	  continue;
 	}
 	act_booleanized_var_t *xv = (act_booleanized_var_t *)xb->v;
+	if (xv->used) {
+	  continue;
+	}
 	if ((type == 2 || type == 3) && xv->ischan) {
 	  if (off == 0) {
 	    return si->bnl->chpports[i].c;
