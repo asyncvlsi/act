@@ -299,6 +299,106 @@ void myintmergesort (int *a, int sz)
 }
 
 
+static int  _mygensort (char *a, char *b, int elem_sz,
+			int sz, int (*cmpfn)(char *, char *))
+{
+  char *x, *y, *z;
+  int i, j;
+  int p;
+  
+  if (sz == 1) {
+    return 0;
+  }
+  if ((p = _mygensort (a, b, elem_sz, sz/2, cmpfn))) {
+    x = b;
+    z = a;
+  }
+  else {
+    x = a;
+    z = b;
+  }
+  if (_mygensort (a+(sz/2)*elem_sz, b+(sz/2)*elem_sz, elem_sz, sz-sz/2, cmpfn)) {
+    if (p == 0) {
+      /* copy */
+      y = a+(sz/2)*elem_sz;
+      for (i=0; i < (sz-sz/2)*elem_sz; i++) {
+	y[i] = (b+(sz/2)*elem_sz)[i];
+      }
+    }
+    else {
+      y = b+(sz/2)*elem_sz;
+    }
+  }
+  else {
+    if (p == 1) {
+      /* copy */
+      y = b+(sz/2)*elem_sz;
+      for (i=0; i < (sz-sz/2)*elem_sz; i++) {
+	y[i] = (a+(sz/2)*elem_sz)[i];
+      }
+    }
+    else {
+      y = a+(sz/2)*elem_sz;
+    }
+  }
+
+  /* -- merge -- */
+  i = 0;
+  j = 0;
+  while (i < sz/2 || j < (sz-sz/2)) {
+    int k;
+    if (i < sz/2) {
+      if (j < (sz-sz/2)) {
+	if ((*cmpfn) (x+ i*elem_sz, y + j*elem_sz) <= 0) {
+	  for (k=0; k < elem_sz; k++) {
+	    z[(i+j)*elem_sz + k] = x[i*elem_sz + k];
+	  }
+	  i++;
+	}
+	else {
+	  for (k=0; k < elem_sz; k++) {
+	    z[(i+j)*elem_sz + k] = y[j*elem_sz + k];
+	  }
+	  j++;
+	}
+      }
+      else {
+	for (k=0; k < elem_sz; k++) {
+	  z[(i+j)*elem_sz + k] = x[i*elem_sz + k];
+	}
+	i++;
+      }
+    }
+    else {
+      for (k=0; k < elem_sz; k++) {
+	z[(i+j)*elem_sz + k] = y[j*elem_sz + k];
+      }
+      j++;
+    }
+  }
+  return (1-p);
+}
+		     
+void mygenmergesort (char *a, int elem_sz, int sz,
+		     int (*cmpfn)(char *, char *))
+{
+  char *b;
+  int i;
+
+  if (sz <= 1) return;
+
+  MALLOC (b, char, sz*elem_sz);
+
+  if (_mygensort (a, b, elem_sz, sz, cmpfn)) {
+    for (i=0; i < sz*elem_sz; i++) {
+      a[i] = b[i];
+    }
+  }
+  FREE (b);
+}
+
+
+
 /*
   p has size sz
   aux has size sz+1
