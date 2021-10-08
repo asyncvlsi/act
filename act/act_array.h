@@ -191,6 +191,7 @@ private:
 
   int dims;			/**< number of dimensions */
 
+#pragma GCC diagnostic ignored "-Wpedantic"
   /* this is */
   struct range {
     union {
@@ -215,6 +216,8 @@ private:
 
     } u;
   } *r;				/**< range for each dimension */
+#pragma GCC diagnostic pop
+
 
 
   void dumprange (struct range *r);
