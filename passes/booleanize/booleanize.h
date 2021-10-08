@@ -109,7 +109,7 @@ typedef struct {
   act_connection *net; // this could be a global
   unsigned int skip:1; // skip this net
   unsigned int port:1; // is a port
-  A_DECL (act_local_pin_t, pins);
+  A_DECL (act_local_pin_t, pins)
 } act_local_net_t;
 
 
@@ -123,13 +123,13 @@ typedef struct {
   struct pHashtable *cH;   /* connection hash table (map to var)  */
   struct pHashtable *cdH;  /* connection hash table for dynamic vars */
 
-  A_DECL (struct netlist_bool_port, chpports);
-  A_DECL (struct netlist_bool_port, ports);
-  A_DECL (act_connection *, instports);
-  A_DECL (act_connection *, instchpports);
-  A_DECL (act_connection *, used_globals);
+  A_DECL (struct netlist_bool_port, chpports)
+  A_DECL (struct netlist_bool_port, ports)
+  A_DECL (act_connection *, instports)
+  A_DECL (act_connection *, instchpports)
+  A_DECL (act_connection *, used_globals)
 
-  A_DECL (act_local_net_t, nets); // nets
+  A_DECL (act_local_net_t, nets) // nets
   struct pHashtable *nH;	  // hash to map c to net index
 
 } act_boolean_netlist_t;

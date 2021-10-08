@@ -318,7 +318,7 @@ struct act_sizing_directive {
        fields are garbage  --*/
   const char *loop_id;
   Expr *lo, *hi;
-  A_DECL (act_sizing_directive, d);
+  A_DECL (act_sizing_directive, d)
 };
   
 struct act_sizing {
@@ -329,7 +329,7 @@ struct act_sizing {
   int p_n_mode;
   int unit_n;
   int leak_adjust;
-  A_DECL (act_sizing_directive, d);
+  A_DECL (act_sizing_directive, d)
   act_sizing *next;
 };
 

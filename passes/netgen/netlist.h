@@ -160,7 +160,7 @@ typedef struct {
 				   exported */
   int nid_wvdd, nid_wgnd;	/* node ids! */
 
-  A_DECL (int, instport_weak);	/* node # for instance ports for weak
+  A_DECL (int, instport_weak)	/* node # for instance ports for weak
 				   supplies */
 
   struct {

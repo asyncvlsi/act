@@ -35,7 +35,7 @@
 struct act_prsinfo;
 
 struct idmap {
-  A_DECL (ActId *, ids);
+  A_DECL (ActId *, ids)
   int nout;
   int nat;
 };

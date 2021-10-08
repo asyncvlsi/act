@@ -385,7 +385,7 @@ class UserDef : public Type {
   int emitMacros (FILE *fp);
 
   /// user-defined macros
-  A_DECL (UserMacro *, um);
+  A_DECL (UserMacro *, um)
 };
 
 

@@ -176,16 +176,16 @@ class Scope {
   ActNamespace *ns;		/* if it is a namespace scope */
 
   /* values that are per scope, rather than per instance */
-  A_DECL (unsigned long, vpint);
+  A_DECL (unsigned long, vpint)
   bitset_t *vpint_set;
 
-  A_DECL (long, vpints);
+  A_DECL (long, vpints)
   bitset_t *vpints_set;
 
-  A_DECL (double, vpreal);
+  A_DECL (double, vpreal)
   bitset_t *vpreal_set;
 
-  A_DECL (InstType *, vptype);
+  A_DECL (InstType *, vptype)
   bitset_t *vptype_set;
 
   unsigned long vpbool_len;
