@@ -34,7 +34,7 @@ BigInt::BigInt()
   len = 1;
   width = 1;
   u.value = 0;
-  isdynamic = 1;
+  isdynamic = 0;
   issigned = 0;
 }
 
@@ -52,8 +52,7 @@ BigInt::BigInt(int w, int s, int d)
     for (int i=0; i < len; i++) {
       u.v[i] = 0;
     }
-  }
-  else {
+  } else {
     u.value = 0;
   }
   isdynamic = d;
@@ -65,11 +64,11 @@ BigInt::~BigInt()
   if (len >= 2) {
     FREE (u.v);
     u.v = NULL;
-  }
-  else {
+  } else {
     u.value = 0;
   }
   len = 0;
+  width = 0;
 }
 
 /*-- copy constructor --*/
@@ -84,8 +83,7 @@ BigInt::BigInt (BigInt &b)
     for (int i=0; i < len; i++) {
       u.v[i] = b.u.v[i];
     }
-  }
-  else {
+  } else {
     u.value = b.u.value;
   }
 }
@@ -98,15 +96,13 @@ BigInt::BigInt (BigInt &&b)
   len = b.len;
   if (len >= 2) {
     u.v = b.u.v;
-  }
-  else {
+  } else {
     u.value = b.u.value;
   }
   width = b.width;
   if (len >= 2) {
     b.u.v = NULL;
-  }
-  else {
+  } else {
     b.u.value = 0;
   }
   b.len = 0;
@@ -128,10 +124,31 @@ BigInt& BigInt::operator=(BigInt &b)
     for (int i=0; i < len; i++) {
       u.v[i] = b.u.v[i];
     }
-  }
-  else {
+  } else {
     u.value = b.u.value;
   }
+  return *this;
+}
+
+BigInt& BigInt::operator=(BigInt &&b)
+{
+  if (&b == this) { return *this; }
+  if (len >= 2) {
+    FREE (u.v);
+  }
+  isdynamic = b.isdynamic;
+  issigned = b.issigned;
+  len = b.len;
+  width = b.width;
+  if (len >= 2) {
+    u.v = b.u.v;
+  } else {
+    u.value = b.u.value;
+  }
+
+  b.u.v = NULL;
+  b.len = 0;
+
   return *this;
 }
 
@@ -192,12 +209,12 @@ BigInt& BigInt::operator=(const std::string &b)
     } else {
       word_str = *it + word_str;
       if (it == b.rend()-3) {
-	filler = "0";
-	for (int k = 0; k < ((b.size()-2) % (BIGINT_BITS_ONE/4)); k++) {
-	  word_str = filler + word_str;
-	}
-	_setVal (word_num, strtoul(word_str.c_str(),0,16));
-	break;
+        filler = "0";
+        for (int k = 0; k < ((b.size()-2) % (BIGINT_BITS_ONE/4)); k++) {
+          word_str = filler + word_str;
+        }
+        _setVal (word_num, strtoul(word_str.c_str(),0,16));
+        break;
       }
       word_cnt++;
     }
@@ -206,28 +223,6 @@ BigInt& BigInt::operator=(const std::string &b)
   return *this;
 }
 
-BigInt& BigInt::operator=(BigInt &&b)
-{
-  if (&b == this) { return *this; }
-  if (len >= 2) {
-    FREE (u.v);
-  }
-  isdynamic = b.isdynamic;
-  issigned = b.issigned;
-  len = b.len;
-  width = b.width;
-  if (len >= 2) {
-    u.v = b.u.v;
-  }
-  else {
-    u.value = b.u.value;
-  }
-
-  b.u.v = NULL;
-  b.len = 0;
-
-  return *this;
-}
 
 
 #ifdef BIGINT_TEST
@@ -273,7 +268,7 @@ void BigInt::expandSpace (int amt)
   Assert (x > len, "What?");
  
   int sa = 0;
-  sa = isSigned() & isNegative();
+  sa = isSigned() && isNegative();
 
   if (sa) {
     signExtend();
@@ -284,11 +279,10 @@ void BigInt::expandSpace (int amt)
     for (; len < x; len++) {
       u.v[len] = 0;
       if (sa) {
-	u.v[len] = ~u.v[len];
+        u.v[len] = ~u.v[len];
       }
     }
-  }
-  else {
+  } else {
     len = x;
   }
 }
@@ -313,8 +307,7 @@ void BigInt::squeezeSpace (int amt)
   res = res >> tmp;
   if (len >= 2) {
     u.v[len-1] = u.v[len-1] & res;
-  }
-  else {
+  } else {
     u.value = u.value & res;
   }
 
@@ -325,7 +318,6 @@ void BigInt::squeezeSpace (int amt)
     signExtend();
   }
 }
-
 
 /*------------------------------------------------------------------------
  *
@@ -344,8 +336,7 @@ BigInt BigInt::operator-()
     for (int i=0; i < len; i++) {
       b.u.v[i] = ~b.u.v[i];
     }
-  }
-  else {
+  } else {
     b.u.value = ~b.u.value;
   }
 
@@ -353,19 +344,18 @@ BigInt BigInt::operator-()
     if (len >= 2) {
       b.u.v[i] = b.u.v[i] + c;
       if (b.u.v[i] == 0) {
-	c = 1;
+        c = 1;
       } else {
-	c = 0;
-	break;
+        c = 0;
+        break;
       }
-    }
-    else {
+    } else {
       b.u.value = b.u.value + c;
       if (b.u.value == 0) {
-	c = 1;
+        c = 1;
       } else {
-	c = 0;
-	break;
+        c = 0;
+        break;
       }
     }
   }
@@ -374,13 +364,12 @@ BigInt BigInt::operator-()
     if (b.len >= 2) {
       b.u.v[len-1] = 0;
       if (sa) {
-	b.u.v[len-1] = ~b.u.v[len-1];
+        b.u.v[len-1] = ~b.u.v[len-1];
       }
-    }
-    else {
+    } else {
       b.u.value = 0;
       if (sa) {
-	b.u.value = ~b.u.value;
+        b.u.value = ~b.u.value;
       }
     }
     b.width++;
@@ -446,14 +435,17 @@ void BigInt::signExtend ()
  */
 void BigInt::zeroClear ()
 {
-  int res = width - (len-1)*BIGINT_BITS_ONE;
-  UNIT_TYPE x;
-  x = 0;
-  x = ~x;
-  x = x << res;
-  x = ~x;
-  if (x != 0) {
-    _setVal (len-1, getVal (len-1) & x);
+  int need = width % BIGINT_BITS_ONE;
+  if (need != 0) {
+    int res = width - (len-1)*BIGINT_BITS_ONE;
+    if (res != 0) {
+      UNIT_TYPE x;
+      x = 0;
+      x = ~x;
+      x = x << res;
+      x = ~x;
+      _setVal (len-1, getVal (len-1) & x);
+    }
   }
 }
 
@@ -502,9 +494,10 @@ int BigInt::operator==(BigInt &b)
  
   za = isZero();
   zb = b.isZero();
+
   if (za && zb) return 1;
   if (za || zb) return 0;
-	
+  
   sa = isSigned() & isNegative();
   sb = b.isSigned() & b.isNegative();
 
@@ -512,28 +505,28 @@ int BigInt::operator==(BigInt &b)
     for (i=len-1; i >= b.len; i--) {
       UNIT_TYPE mask = 0;
       if (sb == 1) {
-	mask = ~mask;
-	if (getVal (i) != mask) {
-	  return 0;
-	}
+        mask = ~mask;
+        if (getVal (i) != mask) {
+          return 0;
+        }
       } else {
-	if (getVal(i) != mask) {
-	  return 0;
-	}
+        if (getVal(i) != mask) {
+          return 0;
+        }
       }
     }
-  }	else {
+  } else {
     for (i=b.len-1; i >= len; i--) {
       UNIT_TYPE mask = 0;
-      if (sa == 1) {
-	mask = ~mask;
-	if (b.getVal (i) != mask) {
-	  return 0;
-	}
+      if (sa) {
+        mask = ~mask;
+        if (b.getVal (i) != mask) {
+          return 0;
+        }
       } else {
-	if (b.getVal (i) != mask) {
-	  return 0;
-	}
+        if (b.getVal (i) != mask) {
+          return 0;
+        }
       }
     }
   }
@@ -651,31 +644,31 @@ int BigInt::operator<(BigInt &b)
   /* now actual unsigned compare */
   if (len > b.len) {
     for (i=len-1; i >= b.len; i--) {
-      if (sa == 0) {
-	if (getVal (i)) {
-	  res = 1;  // I am larger
-	  break;
-	}
+      if (!sa) {
+        if (getVal (i)) {
+          res = 1;  // I am larger
+          break;
+        }
       } else {
-	if (~getVal (i)) {
-	  res = 0;
-	  break;
-	}
+        if (~getVal (i)) {
+          res = 0;
+          break;
+        }
       }
     }
     /* either res is set, or i = b.len - 1 */
   } else {
     for (i=b.len-1; i >= len; i--) {
-      if (sa == 0) {
-	if (b.getVal (i)) {
-	  res = 0;
-	  break;
-	}
+      if (!sa) {
+        if (b.getVal (i)) {
+          res = 0;
+          break;
+        }
       } else {
-	if (~b.getVal (i)) {
-	  res = 1;
-	  break;
-	}
+        if (~b.getVal (i)) {
+          res = 1;
+          break;
+        }
       }
     }
     /* either res is set, or i = len - 1 */
@@ -685,22 +678,22 @@ int BigInt::operator<(BigInt &b)
       UNIT_TYPE me, bv;
       me = getVal (i);
       bv = b.getVal (i);
-      if (sa == 0) {
-	if (me > bv) {
-	  res = 1;
-	  break;
-	} else if (me < bv) {
-	  res = 0;
-	  break;
-	}
+      if (!sa) {
+        if (me > bv) {
+          res = 1;
+          break;
+        } else if (me < bv) {
+          res = 0;
+          break;
+        }
       } else {
-	if (me > bv) {
-	  res = 1;
-	  break;
-	} else if (me < bv) {
-	  res = 0;
-	  break;
-	}
+        if (me > bv) {
+          res = 1;
+          break;
+        } else if (me < bv) {
+          res = 0;
+          break;
+        }
       }
     }
   }
@@ -748,12 +741,11 @@ void BigInt::_add (BigInt &b, int cin)
   if (len < b.len) {
     if (isDynamic()) {
       _adjlen (b.len);
-      Assert (b.len > 1, "What?");
       for (i=len; i < b.len; i++) {
-	u.v[i] = 0;
-	if (sa == 1) {
-	  u.v[i] = ~u.v[i];
-	}
+        u.v[i] = 0;
+        if (sa) {
+          u.v[i] = ~u.v[i];
+        }
       }
       len = b.len;
       width = b.width;
@@ -764,7 +756,7 @@ void BigInt::_add (BigInt &b, int cin)
     for (i=b.len; i < len; i++) {
       b_ext._setVal (i-b.len, 0);
       if (sb == 1) {
-	b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
+        b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
       }
     }
     b_ext.width = width - b.width;
@@ -777,8 +769,7 @@ void BigInt::_add (BigInt &b, int cin)
     c = nc;
     if (i < b.len) {
       value = b.getVal (i);
-    }
-    else {
+    } else {
       value = b_ext.getVal (i-b.len);
     }
     _setVal (i, getVal (i) + value);
@@ -795,39 +786,40 @@ void BigInt::_add (BigInt &b, int cin)
 
   int dif;
   UNIT_TYPE x, nx;
+  if (width == len * BIGINT_BITS_ONE) {
+    dif = 0;
+  } else {
+    dif = width - (len-1) * BIGINT_BITS_ONE;
+  }
+  nx = 0;
+  nx = ~nx;
+  if (dif != 0) {
+    nx = nx >> (BIGINT_BITS_ONE - dif);
+  }
+  
   if (isDynamic()) {
-    if (width == len * BIGINT_BITS_ONE) {
-      dif = 0;
+    if (nc) {
+      UNIT_TYPE one = 1;
+      expandSpace(1);
+      width++;
+      sa = isSigned() && isNegative();
+      if (!sa) {
+        u.v[len-1] = u.v[len-1] + 1;
+      }
     } else {
-      dif = width - (len-1) * BIGINT_BITS_ONE;
-    }
-    if (dif != 0) {
-      nx = 0;
-      nx = ~nx;
-      nx = nx >> (BIGINT_BITS_ONE - dif);
-      if (nc) {
-	width++;
-	expandSpace(1);
-	if (len >= 2) {
-	  u.v[len-1]++;
-	}
-	else {
-	  u.value++;
-	}
-      }
-      else {
-	if (~nx & getVal (len-1)) {
-	  width++;
-	}
+      if (~nx & getVal (len-1)) {
+        width++;
       }
     }
+  } else {
+    _setVal(len-1, (getVal(len-1) & nx));
   }
 
   if (isSigned()) {
     signExtend();
   }
 }
-
+ 
 
 BigInt &BigInt::operator+(BigInt &b)
 {
@@ -837,6 +829,7 @@ BigInt &BigInt::operator+(BigInt &b)
 
 BigInt &BigInt::operator-(BigInt &b)
 {
+
   if (isSigned() != b.isSigned()) {
     issigned = 0;
     b.issigned = 0;
@@ -852,21 +845,22 @@ BigInt &BigInt::operator-(BigInt &b)
   int c, nc;
   int sa, sb;
 
-  sa = issigned & isNegative();
-  sb = b.issigned & b.isNegative();
-  
+  sa = isSigned() && isNegative();
+  sb = b.isSigned() && b.isNegative();
+
   BigInt b_ext;
   if (len < b.len) {
     if (isDynamic()) {
       _adjlen (b.len);
       for (i=len; i < b.len; i++) {
-	u.v[i] = 0;
-	if (sa) {
-	  u.v[i] = ~u.v[i];
-	}
+        u.v[i] = 0;
+        if (sa) {
+          u.v[i] = ~u.v[i];
+        }
       }
-      len = b.len;
+      if (sa) {  signExtend(); }
       width = b.width;
+      len = b.len;
     }
   } else if (b.len < len) {
     b_ext._adjlen (len-b.len);
@@ -874,15 +868,16 @@ BigInt &BigInt::operator-(BigInt &b)
     for (i=b.len; i < len; i++) {
       b_ext._setVal (i-b.len, 0);
       if (sb == 1) {
-	b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
+        b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
       }
     }
+    if (sb) {  b.signExtend(); }
     b_ext.width = width - b.width;
   }
- 
-  nb = (-b);
-  b_ext = ~b_ext;
 
+  nb = (-b);
+  b_ext = (~b_ext);
+  
   c = 0;
   nc = 0;
   for (i = 0; i < len; i++) {
@@ -890,11 +885,10 @@ BigInt &BigInt::operator-(BigInt &b)
     c = nc;
     if (i < nb.len) {
       value = nb.getVal (i);
-    }
-    else {
+    } else {
       value = b_ext.getVal (i-nb.len);
     }
-    _setVal (i, getVal (i) +  value);
+    _setVal (i, getVal (i) + value);
     if (getVal (i) < value) {
       nc = 1;
     } else {
@@ -905,9 +899,11 @@ BigInt &BigInt::operator-(BigInt &b)
       nc = 1;
     }
   }
-  
+
   if (isSigned()) {
     signExtend();
+  } else {
+    zeroClear();
   }
 
   return *this;
@@ -943,7 +939,7 @@ BigInt BigInt::operator*(BigInt &b)
       UNIT_TYPE mask = 0;
       mask = ~mask;
       for (auto i = b.len; i < tmp.len; i++) {
-	tmp._setVal (i, mask);
+        tmp._setVal (i, mask);
       }
     }
     return tmp;
@@ -955,7 +951,7 @@ BigInt BigInt::operator*(BigInt &b)
       UNIT_TYPE mask = 0;
       mask = ~mask;
       for (auto i = len; i < tmp.len; i++) {
-	tmp._setVal (i, mask);
+        tmp._setVal (i, mask);
       }
     }
     return tmp;
@@ -999,7 +995,7 @@ BigInt BigInt::operator*(BigInt &b)
 
       a1 = y.getVal (i) & um;
       b1 = x.getVal (j) & um;
-      a2 = y.getVal (i) >> (BIGINT_BITS_ONE/2);	
+      a2 = y.getVal (i) >> (BIGINT_BITS_ONE/2); 
       b2 = x.getVal (j) >> (BIGINT_BITS_ONE/2);
 
       par_prod1 = a1 * b1;
@@ -1010,14 +1006,14 @@ BigInt BigInt::operator*(BigInt &b)
 
       l = k+1;
       while (carry == 1) {
-	tmp._setVal (l, tmp.getVal (l) + carry);
-	if (tmp.getVal (l) == 0) {
-	  carry = 1;
-	  l++;
-	} else {
-	  carry = 0;
-	  break;
-	}
+        tmp._setVal (l, tmp.getVal (l) + carry);
+        if (tmp.getVal (l) == 0) {
+          carry = 1;
+          l++;
+        } else {
+          carry = 0;
+          break;
+        }
       }
 
       par_prod3 = a2 * b2;
@@ -1026,14 +1022,14 @@ BigInt BigInt::operator*(BigInt &b)
 
       l = k+2;
       while (carry == 1) {
-	tmp._setVal (l, tmp.getVal (l) + carry);
-	if (tmp.getVal (l) == 0) {
-	  carry = 1;
-	  l++;
-	} else {
-	  carry = 0;
-	  break;
-	}
+        tmp._setVal (l, tmp.getVal (l) + carry);
+        if (tmp.getVal (l) == 0) {
+          carry = 1;
+          l++;
+        } else {
+          carry = 0;
+          break;
+        }
       }
 
       tmp._setVal (k+1, tmp.getVal (k+1) + par_prod3);
@@ -1055,19 +1051,19 @@ BigInt BigInt::operator*(BigInt &b)
       tmp._setVal (k+1, (tmp.getVal (k+1) & lm) | ((mid & lm) >> BIGINT_BITS_ONE/2));
 
       if (carry > 0) {
-	carry = carry << (BIGINT_BITS_ONE/2);
-
-	l = k + 1;
-	while (carry > 0) {
-	  if ((UNIT_TYPE)(tmp.getVal (l) + carry) < tmp.getVal (l)) {
-	    tmp._setVal (l, tmp.getVal (l) + carry);
-	    carry = 1;
-	    l++;
-	  } else {
-	    tmp._setVal (l, tmp.getVal (l) + carry);
-	    carry = 0;
-	  }
-	}
+        carry = carry << (BIGINT_BITS_ONE/2);
+        
+        l = k + 1;
+        while (carry > 0) {
+          if ((UNIT_TYPE)(tmp.getVal (l) + carry) < tmp.getVal (l)) {
+            tmp._setVal (l, tmp.getVal (l) + carry);
+            carry = 1;
+            l++;
+          } else {
+            tmp._setVal (l, tmp.getVal (l) + carry);
+            carry = 0;
+          }
+        }
       }
     }
   }
@@ -1080,9 +1076,8 @@ BigInt BigInt::operator*(BigInt &b)
   return tmp;
 }
 
-BigInt BigInt::operator/(BigInt &b)
+void BigInt::_div(BigInt &b, int func)
 {
-
   if (isSigned() != b.isSigned()) {
     issigned = 0;
     b.issigned = 0;
@@ -1092,19 +1087,28 @@ BigInt BigInt::operator/(BigInt &b)
     fatal_error("Ouch! Divide by zero...");
   }
 
-  if (isZero() || b.isOne()){
-    return (*this);
-  }
-
-  if (*this == b) {
-    for (auto i = 0; i < len; i++) {
-      if (i == 0) {
-	_setVal (i, 1);
-      } else {
-	_setVal (i, 0);
-      }
+  if (func == 0) {
+    if (isZero() || b.isOne()){
+      return;
     }
-    return *this;
+    
+    if (*this == b) {
+      for (auto i = 0; i < len; i++) {
+        if (i == 0) {
+          _setVal (i, 1);
+        } else {
+          _setVal (i, 0);
+        }
+      }
+      return;
+    }
+  } else {
+    if (*this == b || isZero() || b.isOne()) {
+      for (auto i = 0; i < len; i++) {
+        _setVal (i, 0);
+      }
+      return;
+    }
   }
 
   int sa = 0;
@@ -1125,11 +1129,16 @@ BigInt BigInt::operator/(BigInt &b)
   }
 
   if (width <= BIGINT_BITS_ONE && b.width <= BIGINT_BITS_ONE) {
-    y._setVal (0, y.getVal (0)/x.getVal (0));
+    if (func == 0) {
+      y._setVal (0, y.getVal (0)/x.getVal (0));
+    } else {
+      y._setVal (0, y.getVal (0)%x.getVal (0));
+    }
     if (sa) {
       y = (-y);
     }
-    return y;
+    *this = y;
+    return;
   }
 
   x.toUnsigned();
@@ -1140,10 +1149,12 @@ BigInt BigInt::operator/(BigInt &b)
   for (int i = 0; i < len; i++) {
     tmp_q._setVal (i, 0);
     tmp_r._setVal (i, 0);
+    tmp_q.toUnsigned();
     tmp_r.toUnsigned();
-    tmp_q.toStatic();
-    tmp_r.toStatic();
   }
+  
+  tmp_q.toStatic();
+  tmp_r.toStatic();
 
   BigInt one;
   one.toStatic();
@@ -1154,7 +1165,7 @@ BigInt BigInt::operator/(BigInt &b)
   unsigned int word_num = len-1;
   unsigned int res = width % BIGINT_BITS_ONE;
   unsigned int shift = (res == 0) ? (BIGINT_BITS_ONE -1) : (res -1);
-
+  
   for (auto k = width; k > 0; k--) {
     tmp_q = tmp_q << 1;
     tmp_r = tmp_r << 1;
@@ -1176,101 +1187,41 @@ BigInt BigInt::operator/(BigInt &b)
   }
 
   if (sa) {
-    tmp_q = (-tmp_q);
-    tmp_q.toSigned();
+    if (func == 0) {
+      tmp_q = (-tmp_q);
+      tmp_q.toSigned();
+    } else {
+      tmp_r = (-tmp_r);
+      tmp_r.toSigned();
+    } 
   }
 
-  return tmp_q;
+  if (isDynamic() == 0) {
+    if (func == 0) {
+      tmp_q.adjlen(len);
+    } else {
+      tmp_r.adjlen(len);
+    }
+  }
+
+  if (func == 0) {
+    *this = tmp_q;
+  } else {
+    *this = tmp_r;
+  }
+
+}
+
+BigInt BigInt::operator/(BigInt &b)
+{
+  _div(b, 0);
+  return *this;
 }
 
 BigInt BigInt::operator%(BigInt &b)
 {
-  if (isSigned() != b.isSigned()) {
-    issigned = 0;
-    b.issigned = 0;
-  }
-
-  if (b.isZero()) {
-    fatal_error("Ouch! MOD(Divide) by zero...");
-  }
-
-  if (*this == b || isZero() || b.isOne()) {
-    for (auto i = 0; i < len; i++) {
-      _setVal (i, 0);
-    }
-    return *this;
-  }
-
-  int sa = 0;
-  BigInt x;
-  if (b.isSigned() && b.isNegative()) {
-    x = (-b);
-    sa = sa ^ 0x1;
-  } else {
-    x = b;
-  }
-
-  BigInt y;
-  if (isSigned()  && isNegative()) {
-    y = (-(*this));
-    sa = sa ^ 0x1;
-  } else {
-    y = *this;
-  }
-
-  if (width <= BIGINT_BITS_ONE && b.width <= BIGINT_BITS_ONE) {
-    y._setVal (0, y.getVal (0)%x.getVal (0));
-    if (sa) {
-      y = (-y);
-    }
-    return y;
-  }
-
-  x.toUnsigned();
-  y.toUnsigned();
-
-  BigInt tmp_r(*this);
-  for (int i = 0; i < len; i++) {
-    tmp_r._setVal (i, 0);
-    tmp_r.toUnsigned();
-    tmp_r.toStatic();
-  }
-
-  BigInt one;
-  one.toStatic();
-  one.toUnsigned();
-  UNIT_TYPE l_one = 1;
-  one = l_one;
-
-  unsigned int word_num = len-1;
-  unsigned int res = width % BIGINT_BITS_ONE;
-  unsigned int shift = (res == 0) ? BIGINT_BITS_ONE -1 : res -1;
-
-  for (auto k = width; k > 0; k--) {
-    tmp_r = tmp_r << 1;
-
-    if (((y.getVal (word_num) >> shift) & 0x1) == 1) {
-      tmp_r = tmp_r + one;
-    }
-
-    if (tmp_r >= x) {
-      tmp_r = tmp_r - x;
-    }
-
-    if (shift == 0) {
-      word_num--;
-      shift = BIGINT_BITS_ONE -1;
-    } else {
-      shift--;
-    }
-  }
-
-  if (sa) {
-    tmp_r = (-tmp_r);
-    tmp_r.toSigned();
-  }
-
-  return tmp_r;
+  _div(b, 1);
+  return *this;
 }
 
 /*------------------------------------------------------------------------
@@ -1299,10 +1250,12 @@ unsigned int BigInt::nBit(unsigned long n)
  */
 int BigInt::isZero ()
 {
-  for (auto i = 0; i < len; i++) {
-    if (getVal (i) != 0) {
-      return 0;
+  if (len >= 2) {
+    for (auto i = 0; i < len; i++) {
+      if (u.v[i] != 0) return 0;
     }
+  } else {
+    if (u.value != 0) return 0;
   }
   return 1;
 }
@@ -1312,7 +1265,7 @@ int BigInt::isOne ()
   if (getVal (0) == 1) {
     for (auto i = 1; i < len; i++) {
       if (getVal (i) != 0) {
-	return 0;
+        return 0;
       }
     }
     return 1;
@@ -1321,14 +1274,28 @@ int BigInt::isOne ()
   }
 }
 
+int BigInt::isOneInt()
+{
+  if (len == 1) {
+    return 1;
+  } else if (len >= 2) {
+    for (auto i = 1; i < len; i++) {
+      if (u.v[i] != 0) {
+        return 0;
+      }
+    }
+    squeezeSpace((len-1) * BIGINT_BITS_ONE);
+    return 1;
+  }
+}
 /*------------------------------------------------------------------------
  *
  *  Logical operations
  *
  *------------------------------------------------------------------------
  */
-#define LOGICAL_SETUP				\
-  BigInt x = b;					\
+#define LOGICAL_SETUP       \
+  BigInt x = b;         \
   x.setWidth (width)
   
 BigInt &BigInt::operator&(BigInt &b)
@@ -1395,7 +1362,9 @@ BigInt &BigInt::operator<<(UNIT_TYPE x)
   if (x == 0) return *this;
 
   if (isDynamic()) {
-    expandSpace (x);
+    if ((width + x) > (len*BIGINT_BITS_ONE)) {
+      expandSpace (x);
+    }
     width += x;
   }
 
@@ -1421,35 +1390,35 @@ BigInt &BigInt::operator>>(UNIT_TYPE x)
 {
   if (x == 0) return *this;
 
-  int sa = isNegative() & isSigned();
+  int sa = isNegative() && isSigned();
 
   if (x >= width) {
-    if (isdynamic) {
+    if (isDynamic()) {
       _adjlen (1);
       len = 1;
       width = 1;
       _setVal (0, 0);
       if (sa) {
-	_setVal (0, ~getVal (0));
+        _setVal (0, ~getVal (0));
       }
-    }	else {
+    } else {
       for (int i=0; i < len; i++) {
-	_setVal (i, 0);
-	if (sa) {
-	  _setVal (i, ~getVal (i));
-	}
+        _setVal (i, 0);
+        if (sa) {
+          _setVal (i, ~getVal (i));
+        }
       }
     }
 
     return *this;
+  } else {
+    if (isDynamic()) {
+      width -= x;
+    }
   }
 
   int stride = x / BIGINT_BITS_ONE;
   UNIT_TYPE mask = 0;
-
-  if (isDynamic()) {
-    width -= x;
-  }
 
   x = x % BIGINT_BITS_ONE;
 
@@ -1463,17 +1432,17 @@ BigInt &BigInt::operator>>(UNIT_TYPE x)
     } 
   }
 
+  UNIT_TYPE y = 0;
   if (sa) {
-    UNIT_TYPE y = 0;
     y = ~y;
-    for (auto i = len-stride; i < len; i++) {
-      _setVal (i, y);
-    }
-    y = y << (BIGINT_BITS_ONE - x);
-    _setVal (len-stride-1, getVal (len-stride-1) | y);
   }
+  for (auto i = len-stride; i < len; i++) {
+    _setVal (i, y);
+  }
+  y = y << (BIGINT_BITS_ONE - x);
+  _setVal (len-stride-1, getVal (len-stride-1) | y);
 
-  if (stride > 0) {
+  if (isDynamic() && stride > 0) {
     _adjlen (len-stride);
     len -= stride;
   }
@@ -1548,10 +1517,10 @@ void BigInt::hexPrint (FILE *fp)
 #ifndef BIGINT_TEST
     if (sizeof(UNIT_TYPE) == 8) {
       if (i != len-1) {
-	fprintf (fp, "%016lx", getVal (i));
+  fprintf (fp, "%016lx", getVal (i));
       }
       else {
-	fprintf (fp, "%lx", getVal (i));
+  fprintf (fp, "%lx", getVal (i));
       }
     } 
 #else
