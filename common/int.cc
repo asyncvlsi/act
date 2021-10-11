@@ -518,7 +518,7 @@ int BigInt::operator==(BigInt &b)
   } else {
     for (i=b.len-1; i >= len; i--) {
       UNIT_TYPE mask = 0;
-      if (sa == 1) {
+      if (sa) {
         mask = ~mask;
         if (b.getVal (i) != mask) {
           return 0;
@@ -644,7 +644,7 @@ int BigInt::operator<(BigInt &b)
   /* now actual unsigned compare */
   if (len > b.len) {
     for (i=len-1; i >= b.len; i--) {
-      if (sa == 0) {
+      if (!sa) {
         if (getVal (i)) {
           res = 1;  // I am larger
           break;
@@ -659,7 +659,7 @@ int BigInt::operator<(BigInt &b)
     /* either res is set, or i = b.len - 1 */
   } else {
     for (i=b.len-1; i >= len; i--) {
-      if (sa == 0) {
+      if (!sa) {
         if (b.getVal (i)) {
           res = 0;
           break;
@@ -678,7 +678,7 @@ int BigInt::operator<(BigInt &b)
       UNIT_TYPE me, bv;
       me = getVal (i);
       bv = b.getVal (i);
-      if (sa == 0) {
+      if (!sa) {
         if (me > bv) {
           res = 1;
           break;
@@ -743,7 +743,7 @@ void BigInt::_add (BigInt &b, int cin)
       _adjlen (b.len);
       for (i=len; i < b.len; i++) {
         u.v[i] = 0;
-        if (sa == 1) {
+        if (sa) {
           u.v[i] = ~u.v[i];
         }
       }
@@ -803,7 +803,7 @@ void BigInt::_add (BigInt &b, int cin)
       expandSpace(1);
       width++;
       sa = isSigned() && isNegative();
-      if (sa == 0) {
+      if (!sa) {
         u.v[len-1] = u.v[len-1] + 1;
       }
     } else {
@@ -854,7 +854,7 @@ BigInt &BigInt::operator-(BigInt &b)
       _adjlen (b.len);
       for (i=len; i < b.len; i++) {
         u.v[i] = 0;
-        if (sa == 1) {
+        if (sa) {
           u.v[i] = ~u.v[i];
         }
       }
