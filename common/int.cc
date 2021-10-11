@@ -1287,6 +1287,8 @@ int BigInt::isOneInt()
     squeezeSpace((len-1) * BIGINT_BITS_ONE);
     return 1;
   }
+  /* never gets here */
+  return 0;
 }
 /*------------------------------------------------------------------------
  *
