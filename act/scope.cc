@@ -1323,12 +1323,14 @@ void Scope::Print (FILE *fp)
 
 void Scope::playBody (ActBody *b)
 {
-  if (!b) return;
   for (; b; b = b->Next()) {
     ActBody_Inst *inst = dynamic_cast<ActBody_Inst *> (b);
     if (inst) {
       if (!Lookup (inst->getName())) {
-	Add (inst->getName(), inst->getType());
+	InstType *cit = new InstType (inst->getType(), 1);
+	cit->MkCached ();
+	cit->MkArray (cit->arrayInfo());
+	Add (inst->getName(), cit);
       }
     }
     else {

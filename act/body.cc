@@ -1480,7 +1480,13 @@ ActBody *ActBody_Conn::Clone ()
 
 ActBody *ActBody_Inst::Clone ()
 {
-  ActBody_Inst *ret = new ActBody_Inst(t,id);
+  InstType *cit;
+
+  cit = new InstType (t, 1);
+  cit->MkCached ();
+  cit->MkArray (t->arrayInfo());
+
+  ActBody_Inst *ret = new ActBody_Inst(cit,id);
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1515,8 +1521,8 @@ ActBody *ActBody_Select::Clone ()
 {
   ActBody_Select *ret;
 
-  ret = new ActBody_Select (gc);  // XXX: clone gc here if you free
-				  // body
+  ret = new ActBody_Select (gc->Clone());
+
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1527,8 +1533,8 @@ ActBody *ActBody_Genloop::Clone ()
 {
   ActBody_Genloop *ret;
 
-  ret = new ActBody_Genloop (gc);  // XXX: clone gc here if you free
-				  // body
+  ret = new ActBody_Genloop (gc->Clone());
+
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1660,4 +1666,15 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
       }
     }
   }
+}
+
+
+ActBody_Select_gc *ActBody_Select_gc::Clone ()
+{
+  ActBody_Select_gc *ret =
+    new ActBody_Select_gc (id, lo, hi, g, s->Clone());
+  if (next) {
+    ret->next = next->Clone();
+  }
+  return ret;
 }
