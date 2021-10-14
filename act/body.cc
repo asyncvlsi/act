@@ -1617,3 +1617,47 @@ ActBody *ActBody_Print::Clone()
   return new ActBody_Print(l);
 }
 
+
+void ActBody::updateInstType (list_t *namelist, InstType *it)
+{
+  ActBody *b = this;
+  listitem_t *li;
+
+  for (b = this; b; b = b->Next()) {
+    if (dynamic_cast<ActBody_Inst *> (b)) {
+      ActBody_Inst *bi = dynamic_cast<ActBody_Inst *> (b);
+      for (li = list_first (namelist); li; li = list_next (li)) {
+	if (strcmp ((char *)list_value (li), bi->getName()) == 0) {
+	  break;
+	}
+      }
+      if (li) {
+	bi->updateInstType (it);
+      }
+    }
+    else if (dynamic_cast<ActBody_Loop *> (b)) {
+      ActBody_Loop *bl = dynamic_cast<ActBody_Loop *> (b);
+      if (bl->getBody()) {
+	bl->getBody()->updateInstType (namelist, it);
+      }
+    }
+    else {
+      ActBody_Select_gc *sel;
+      if (dynamic_cast<ActBody_Select *> (b)) {
+	sel = dynamic_cast<ActBody_Select *> (b)->getGC();
+      }
+      else if (dynamic_cast<ActBody_Genloop *> (b)) {
+	sel = dynamic_cast<ActBody_Genloop *> (b)->getGC();
+      }
+      else {
+	sel = NULL;
+      }
+      while (sel) {
+	if (sel->getBody()) {
+	  sel->getBody()->updateInstType (namelist, it);
+	}
+	sel = sel->getNext();
+      }
+    }
+  }
+}

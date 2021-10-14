@@ -52,6 +52,8 @@ class ActBody {
 
   virtual void Print (FILE *fp) { }
 
+  void updateInstType (list_t *namelist, InstType *it);
+
  private:
   ActBody *next;
 };

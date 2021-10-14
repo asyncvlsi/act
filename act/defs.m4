@@ -472,20 +472,8 @@ override_one_spec: user_type bare_id_list ";"
       $A(0);
     }
     /* walk through the body, editing instances */
-    while (b) {
-      ActBody_Inst *bi;
-      bi = dynamic_cast <ActBody_Inst *> (b);
-      if (bi) {
-	for (li = list_first ($2); li; li = list_next (li)) {
-	  if (strcmp ((char *)list_value (li), bi->getName()) == 0) {
-	    break;
-	  }
-	}
-	if (li) {
-	  bi->updateInstType ($1);
-	}
-      }
-      b = b->Next();
+    if (b) {
+      b->updateInstType ($2, $1);
     }
     /* walk through the ports, editing instances */
     UserDef *px;

@@ -1039,7 +1039,6 @@ InstType *InstType::refineBaseType (InstType *update)
     t = update->t;		/* just replace the base type */
     nt = update->nt;
     u = update->u;
-    a = update->a;
     return this;
   }
   else {
