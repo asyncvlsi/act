@@ -74,7 +74,7 @@ DFLAGS=-DARCH_$(ARCH) -DOS_$(OS) -DBASEOS_$(BASEOS) -I$(INSTALLINC) # -D_FORTIFY
 ifndef DEPEND_FLAGS
 DEPEND_FLAGS=-I.
 endif
-CFLAGS=$(C_COMPILER_FLAGS) 
+CFLAGS=$(C_COMPILER_FLAGS) -g
 
 
 all: installincsub dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out postsub

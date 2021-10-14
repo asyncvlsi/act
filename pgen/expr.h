@@ -81,7 +81,7 @@ typedef struct expr {
       struct expr *l, *r;
     } e;
     struct {
-      char *s;
+      char *s;  // This must really be a pointer to a Function object. The name of the function is ((Function *)s)->getName(). We should make this a Function*
       struct expr *r;
     } fn;
     struct {

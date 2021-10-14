@@ -191,7 +191,14 @@ private:
 
   int dims;			/**< number of dimensions */
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wpedantic"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpedantic"
+#elif defined(_MSC_VER)
+#endif
   /* this is */
   struct range {
     union {
@@ -216,7 +223,12 @@ private:
 
     } u;
   } *r;				/**< range for each dimension */
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic pop
+#elif defined(_MSC_VER)
+#endif
 
 
 

@@ -689,6 +689,10 @@ Act::Act (const char *s)
   }
 }
 
+Act::~Act () {
+	// TODO this leaks a whole lot of stuff
+}
+
 void Act::Merge (const char *s)
 {
   act_Token *a;
