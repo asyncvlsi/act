@@ -1327,10 +1327,7 @@ void Scope::playBody (ActBody *b)
     ActBody_Inst *inst = dynamic_cast<ActBody_Inst *> (b);
     if (inst) {
       if (!Lookup (inst->getName())) {
-	InstType *cit = new InstType (inst->getType(), 1);
-	cit->MkCached ();
-	cit->MkArray (cit->arrayInfo());
-	Add (inst->getName(), cit);
+	Add (inst->getName(), inst->getType());
       }
     }
     else {

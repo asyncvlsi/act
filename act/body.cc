@@ -1480,13 +1480,7 @@ ActBody *ActBody_Conn::Clone ()
 
 ActBody *ActBody_Inst::Clone ()
 {
-  InstType *cit;
-
-  cit = new InstType (t, 1);
-  cit->MkCached ();
-  cit->MkArray (t->arrayInfo());
-
-  ActBody_Inst *ret = new ActBody_Inst(cit,id);
+  ActBody_Inst *ret = new ActBody_Inst(t,id);
   if (Next()) {
     ret->Append (Next()->Clone());
   }
