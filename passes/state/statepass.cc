@@ -1443,6 +1443,7 @@ int ActStatePass::globalBoolOffset (ActId *id)
       ActId *tmp = new ActId (rootid->getName(), rootid->arrayInfo());
       tmp->Append (conn->toid());
       conn = tmp->Canonical (cproc->CurScope());
+      tmp->setArray (NULL);
       delete tmp;
 
       /* repeat this! */
@@ -1584,6 +1585,7 @@ int ActStatePass::checkIdExists (ActId *id)
       ActId *tmp = new ActId (rootid->getName(), rootid->arrayInfo());
       tmp->Append (conn->toid());
       conn = tmp->Canonical (cproc->CurScope());
+      tmp->setArray (NULL);
       delete tmp;
 
       /* repeat this! */

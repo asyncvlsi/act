@@ -51,6 +51,8 @@
 #define OLD_LIBEDIT
 #endif
 
+void (*lisp_cli_exit_hook) (void) = NULL;
+
 static History *el_hist;
 static EditLine *el_ptr;
 static char *prompt_val;
@@ -173,6 +175,10 @@ void LispCliEnd (void)
 
     history (el_hist, &ev, H_END, NULL);
     el_end (el_ptr);
+  }
+
+  if (lisp_cli_exit_hook) {
+    (*lisp_cli_exit_hook) ();
   }
 }
 

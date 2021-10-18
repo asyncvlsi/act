@@ -20,7 +20,7 @@
  **************************************************************************
  */
 /*
-	TODO: 
+  TODO: 
 */
 //#define BIGINT_TEST
 
@@ -65,26 +65,26 @@
 
 class BigInt {
 public:
-  BigInt ();			// default int is 1-bit wide, unsigned and dynamic
+  BigInt ();      // default int is 1-bit wide, unsigned and dynamic
   
-  BigInt (int w, int s, int d);	
+  BigInt (int w, int s, int d); 
   
   ~BigInt ();
 
-  BigInt (BigInt &);		// copy constructor
-  BigInt (BigInt &&);		// move constructor
+  BigInt (BigInt &);    // copy constructor
+  BigInt (BigInt &&);   // move constructor
 
-  BigInt& operator=(BigInt &);         		// copy assignment
-  BigInt& operator=(BigInt &&);	       		// move assignment
-  BigInt& operator=(UNIT_TYPE &);  		// assignment
-  BigInt& operator=(const std::string &);	// assignment (must start with 0x)
+  BigInt& operator=(BigInt &);            // copy assignment
+  BigInt& operator=(BigInt &&);           // move assignment
+  BigInt& operator=(UNIT_TYPE &);     // assignment
+  BigInt& operator=(const std::string &); // assignment (must start with 0x)
   void SetV (int, UNIT_TYPE);
     
-  int operator<(BigInt &);	
+  int operator<(BigInt &);  
   int operator<=(BigInt &); 
-  int operator>(BigInt &);	
-  int operator>=(BigInt &);	
-  int operator==(BigInt &);	
+  int operator>(BigInt &);  
+  int operator>=(BigInt &); 
+  int operator==(BigInt &); 
   int operator!=(BigInt &);
 
 #ifdef BIGINT_TEST
@@ -94,40 +94,41 @@ public:
   int operator!=(long);
 #endif
 
-  BigInt &operator+(BigInt &);	
-  BigInt &operator-(BigInt &);	
-  BigInt operator-(); 					
-  BigInt operator*(BigInt &);		
-  BigInt operator/(BigInt &);		
-  BigInt operator%(BigInt &);		
+  BigInt &operator+(BigInt &);  
+  BigInt &operator-(BigInt &);  
+  BigInt operator-();           
+  BigInt operator*(BigInt &);   
+  BigInt operator/(BigInt &);   
+  BigInt operator%(BigInt &);   
 
-  BigInt &operator&(BigInt &);	
-  BigInt &operator|(BigInt &);	
-  BigInt &operator^(BigInt &);	
-  BigInt &operator~();					
+  BigInt &operator&(BigInt &);  
+  BigInt &operator|(BigInt &);  
+  BigInt &operator^(BigInt &);  
+  BigInt &operator~();          
 
-  BigInt &operator<<(UNIT_TYPE x); 	
-  BigInt &operator>>(UNIT_TYPE x);	
-  BigInt &operator<<(BigInt &b); 	
-  BigInt &operator>>(BigInt &b);	
+  BigInt &operator<<(UNIT_TYPE x);  
+  BigInt &operator>>(UNIT_TYPE x);  
+  BigInt &operator<<(BigInt &b);  
+  BigInt &operator>>(BigInt &b);  
 
-  unsigned int nBit(unsigned long n);	//returns Nth bit
+  unsigned int nBit(unsigned long n); //returns Nth bit
 
   int isNegative(); //0 - Non-negative, 1 - Negative
 
-  int isSigned() { return issigned; }		//return sign flag
-  void toSigned();	//set sign flag and sign extend
+  int isSigned() { return issigned; }   //return sign flag
+  void toSigned();  //set sign flag and sign extend
   void toUnsigned();//reset sign flag and clear sign extension
 
-  int isDynamic() { return isdynamic; }	//return dynamic flag
+  int isDynamic() { return isdynamic; } //return dynamic flag
   void toStatic() { isdynamic = 0; }    //set dynamic flag
-  void toDynamic() { isdynamic = 1; }	//reset dynamic flag
+  void toDynamic() { isdynamic = 1; } //reset dynamic flag
 
   void setWidth (unsigned int); //set bitwidth with zero/sign extension
   unsigned int getWidth() { return width; };
-	
-  std::string sPrint ();	//print in hex to string
-  void hPrint (FILE *fp);	//print in hex
+  unsigned int getLen() { return len; };
+  
+  std::string sPrint ();  //print in hex to string
+  void hPrint (FILE *fp); //print in hex
   void hexPrint (FILE *fp);
 
   UNIT_TYPE getVal(int n) { if (len >= 2) return u.v[n]; else return u.value; }
@@ -140,21 +141,22 @@ public:
       signExtend();
     }
   }
-	
+  void adjlen(int l) { _adjlen(l); }
+  
 private:
   
-  unsigned int width;	       // actual bitwidth
-  short len;		       // UNIT_TYPE amount
+  unsigned int width;        // actual bitwidth
+  short len;           // UNIT_TYPE amount
   unsigned int issigned:1;     // 1 - signed, 0 - unsigned
   unsigned int isdynamic:1;    // 1 - dynamic(no overflows) 0 - static
   
   union {
-    UNIT_TYPE *v;	// actual bits; 2's complement
-    UNIT_TYPE value;	// used when len <= 1 to avoid allocation
+    UNIT_TYPE *v; // actual bits; 2's complement
+    UNIT_TYPE value;  // used when len <= 1 to avoid allocation
   } u;
   // rep. The number is sign-extended to the maximum width of the rep
 
-  inline int isOneInt() { return len == 1 ? 1 : 0; };
+  int isOneInt();
 
   inline void _setVal (int n, UNIT_TYPE nv) {
     if (len >= 2) {
@@ -169,33 +171,34 @@ private:
     if (len == newlen) return;
     if (len <= 1) {
       if (newlen >= 2) {
-	UNIT_TYPE oval = u.value;
-	MALLOC (u.v, UNIT_TYPE, newlen);
-	u.v[0] = oval;
+        UNIT_TYPE oval = u.value;
+        MALLOC (u.v, UNIT_TYPE, newlen);
+        u.v[0] = oval;
       }
-    }
-    else {
+    } else {
       if (newlen >= 2) {
-	REALLOC (u.v, UNIT_TYPE, newlen);
-      }
-      else {
-	UNIT_TYPE oval = u.v[0];
-	FREE (u.v);
-	u.value = oval;
+        REALLOC (u.v, UNIT_TYPE, newlen);
+      } else {
+        UNIT_TYPE oval = u.v[0];
+        FREE (u.v);
+        u.value = oval;
       }
     }
   }
 
   void _add (BigInt &b, int cin);
+  void _div (BigInt &b, int func);  //0 - div, 1 - rem
 
   void signExtend ();
 
-  int isZero();	//number is all zeros
-  int isOne();	//number is one
+  int isZero(); //number is all zeros
+  int isOne();  //number is one
 
   void expandSpace(int amt); // expand bitwidth b by # of bits
   void squeezeSpace(int amt); // reduce bitwidth by # of bits
   void zeroClear ();
+
+  void cutZero(); //helper function to zero MSB zeros
 
   UNIT_TYPE* getV() { if (len >= 2) return u.v; else return &u.value; };
 };

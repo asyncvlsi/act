@@ -1323,7 +1323,6 @@ void Scope::Print (FILE *fp)
 
 void Scope::playBody (ActBody *b)
 {
-  if (!b) return;
   for (; b; b = b->Next()) {
     ActBody_Inst *inst = dynamic_cast<ActBody_Inst *> (b);
     if (inst) {

@@ -71,6 +71,11 @@ void LispCliSetPrompt (const char *prompt);
 void LispCliEnd (void);
 
 /*
+  Exit hook
+*/
+extern void (*lisp_cli_exit_hook) (void);
+
+/*
   Run CLI using fp as the input
   
     Return 0 if it was interrupted, 1 if successfully completed.

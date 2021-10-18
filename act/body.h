@@ -52,6 +52,8 @@ class ActBody {
 
   virtual void Print (FILE *fp) { }
 
+  void updateInstType (list_t *namelist, InstType *it);
+
  private:
   ActBody *next;
 };
@@ -198,10 +200,10 @@ class ActBody_Select_gc {
 #endif
   int isElse() { return g == NULL ? 1 : 0; }
 
-  ActBody *Clone();
-
   ActBody *getBody() { return s; }
   ActBody_Select_gc *getNext() { return next; }
+
+  ActBody_Select_gc *Clone ();
 
 private:
   const char *id;

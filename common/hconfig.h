@@ -21,8 +21,8 @@
  *
  **************************************************************************
  */
-#ifndef __CONFIG_H__
-#define __CONFIG_H__
+#ifndef __H_CONFIG_H__
+#define __H_CONFIG_H__
 
 #define DEFAULT_CONFIG_FILE     "sim.conf"
 
@@ -53,4 +53,4 @@ void RegisterDefault (const char *name, float val);
 void RegisterDefault (const char *name, const char *s);
 void OverrideConfig (const char *name, const char *value);
 
-#endif /* __CONFIG_H__ */
+#endif /* __H_CONFIG_H__ */
