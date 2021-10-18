@@ -580,7 +580,7 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
     emit_surround (pp, mat, mat->getUpperName(), mat->getSymUp());
   }
   if (mat->isAsym()) {
-    if (mat->getAsym() > 0) {
+    if (mat->getAsym() > 0 && (mat->getAsym() != mat->getSym())) {
       pp_printf (pp, "surround %s %s %d directional \\",
 		 mat->getName(), mat->getLowerName(), mat->getAsym());
       pp_nl;
@@ -588,7 +588,7 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
 		 mat->getLowerName(), mat->getName(), mat->getAsym());
       pp_nl;
     }
-    if (mat->getAsymUp() > 0) {
+    if (mat->getAsymUp() > 0 && (mat->getAsymUp() != mat->getSymUp())) {
       pp_printf (pp, "surround %s %s %d directional \\",
 		 mat->getName(), mat->getUpperName(), mat->getAsymUp());
       pp_nl;
