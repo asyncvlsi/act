@@ -196,7 +196,14 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
     A_INC (vars);
   }
   else if (strncmp (argvp, "-T", 2) == 0) {
-    config_stdtech_path (argvp+2);
+    if (argvp[2] == '/') {
+      /* absolute path specified */
+      config_append_path (argvp+2);
+      config_append_path (".");
+    }
+    else {
+      config_stdtech_path (argvp+2);
+    }
     *tech_specified = 1;
   }
   else if (strncmp (argvp, "-W", 2) == 0) {
