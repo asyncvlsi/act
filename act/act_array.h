@@ -34,6 +34,26 @@ class ActId;
 class InstType;
 class ValueIdx;
 
+
+struct _act_array_expr_pair {
+  Expr *lo, *hi;
+};
+
+struct _act_array_exprex_pair {
+  long lo, hi;
+};
+
+struct _act_array_internal {
+  unsigned int isrange:2;	// it is a range... need this info,
+				// sadly.
+				// 0 =  deref, 1 = range, 2 = dynamic
+  union {
+    struct _act_array_exprex_pair idx;
+    Expr *deref;
+  };
+};
+
+
 /**
  *
  *  Dense arrays, sparse arrays, and array dereferences
@@ -194,28 +214,10 @@ private:
   /* this is */
   struct range {
     union {
-      struct {
-	Expr *lo, *hi;
-      } ue;			/* unexpanded */
-      struct {
-	unsigned int isrange:2;	// it is a range... need this info,
-				// sadly.  0 =  deref, 1 = range, 2 = dynamic
-	union {
-	  struct {
-	    long lo, hi;
-	  };
-	  Expr *deref;
-	};
-      } ex;			/* expanded.
-				   when an array is attached to an
-				   ActId, this is the correct value;
-				   in other contexts you have things
-				   like 0..val-1
-				*/
-
+      struct _act_array_expr_pair ue; // unexanded
+      struct _act_array_internal ex;  // expanded
     } u;
   } *r;				/**< range for each dimension */
-
 
   void dumprange (struct range *r);
   void _merge_range (int idx, Array *prev, struct range *m);

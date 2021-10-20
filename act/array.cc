@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  This file is part of the ACT library
+ *  This File is part of the ACT library
  *
  *  Copyright (c) 2018-2019 Rajit Manohar
  *
@@ -47,7 +47,7 @@ int Array::arrayhashfn (int sz, void *key)
 			      sizeof (int), h, 1);
   for (int i=0; i < a->dims; i++) {
     h = hash_function_continue (sz, (const unsigned char *) &a->r[i].u.ex.lo, sizeof (int), h, 1);
-    h = hash_function_continue (sz, (const unsigned char *) &a->r[i].u.ex.hi, sizeof (int), h, 1);
+    h = hash_function_continue (sz, (const unsigned char *) &a->r[i].u.ex.idx.hi, sizeof (int), h, 1);
     tmp = a->r[i].u.ex.isrange;
     h = hash_function_continue (sz, (const unsigned char *) &tmp, sizeof (char), h, 1);
   }
@@ -69,7 +69,7 @@ int Array::arraymatchfn (void *key1, void *key2)
   for (int i=0; i < k1->dims; i++) {
     if (k1->r[i].u.ex.isrange != k2->r[i].u.ex.isrange) return 0;
     if (k1->r[i].u.ex.lo != k2->r[i].u.ex.lo) return 0;
-    if (k1->r[i].u.ex.hi != k2->r[i].u.ex.hi) return 0;
+    if (k1->r[i].u.ex.idx.hi != k2->r[i].u.ex.idx.hi) return 0;
   }
   return 1;
 }
@@ -131,8 +131,8 @@ Array::Array (int lo, int hi)
 {
   dims = 1;
   NEW (r, struct range);
-  r->u.ex.lo = lo;
-  r->u.ex.hi = hi;
+  r->u.ex.idx.lo = lo;
+  r->u.ex.idx.hi = hi;
   r->u.ex.isrange = 1;
   deref = 0;
   expanded = 1;
@@ -148,8 +148,8 @@ Array::Array (int idx)
 {
   dims = 1;
   NEW (r, struct range);
-  r->u.ex.lo = idx;
-  r->u.ex.hi = idx;
+  r->u.ex.idx.lo = idx;
+  r->u.ex.idx.hi = idx;
   r->u.ex.isrange = 0;
   deref = 1;
   expanded = 1;
@@ -307,11 +307,11 @@ int Array::isEqual (Array *a, int strict)
     for (i=(strict == -1 ? 1 : 0); i < dims; i++) {
       if (r1[i].u.ex.isrange != r2[i].u.ex.isrange) return 0;
       if (strict == 1) {
-	if ((r1[i].u.ex.lo != r2[i].u.ex.lo) || (r1[i].u.ex.hi != r2[i].u.ex.hi))
+	if ((r1[i].u.ex.idx.lo != r2[i].u.ex.idx.lo) || (r1[i].u.ex.idx.hi != r2[i].u.ex.idx.hi))
 	  return 0;
       }
       else {
-	if ((r1[i].u.ex.hi - r1[i].u.ex.lo) != (r2[i].u.ex.hi - r2[i].u.ex.lo))
+	if ((r1[i].u.ex.idx.hi - r1[i].u.ex.idx.lo) != (r2[i].u.ex.idx.hi - r2[i].u.ex.idx.lo))
 	  return 0;
       }
     }
@@ -439,17 +439,17 @@ int Array::in_range (Array *a)
 
     Assert (a->r[i].u.ex.isrange != 2, "Dynamic arrays not supported");
 
-    /*Assert (a->r[i].u.ex.lo == a->r[i].u.ex.hi, "What?");*/
-    d = a->r[i].u.ex.lo;
-    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+    /*Assert (a->r[i].u.ex.idx.lo == a->r[i].u.ex.idx.hi, "What?");*/
+    d = a->r[i].u.ex.idx.lo;
+    if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
       return -1;
     }
-    sz = sz / (r[i].u.ex.hi - r[i].u.ex.lo + 1);
-    offset = offset + (d - r[i].u.ex.lo)*sz;
+    sz = sz / (r[i].u.ex.idx.hi - r[i].u.ex.idx.lo + 1);
+    offset = offset + (d - r[i].u.ex.idx.lo)*sz;
 
     /* this is here to handle the subrange case */
-    d = a->r[i].u.ex.hi;
-    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+    d = a->r[i].u.ex.idx.hi;
+    if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
       return -1;
     }
     
@@ -482,11 +482,11 @@ int Array::in_range (int *a)
     Assert (r[i].u.ex.isrange != 2, "Dynamic arrays not supported");
 
     d = a[i];
-    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+    if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
       return -1;
     }
-    sz = sz / (r[i].u.ex.hi - r[i].u.ex.lo + 1);
-    offset = offset + (d - r[i].u.ex.lo)*sz;
+    sz = sz / (r[i].u.ex.idx.hi - r[i].u.ex.idx.lo + 1);
+    offset = offset + (d - r[i].u.ex.idx.lo)*sz;
 
     Assert ((i != dims-1) || (sz == 1), "Wait a sec");
   }
@@ -577,8 +577,8 @@ int Array::Validate (Array *a)
   for (i=0; i < dims; i++) {
     /* a is going to be from an ID */
     Assert (a->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
-    d = a->r[i].u.ex.hi;
-    if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+    d = a->r[i].u.ex.idx.hi;
+    if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
       if (next) {
 	return next->Validate (a);
       }
@@ -586,10 +586,10 @@ int Array::Validate (Array *a)
 	return 0;
       }
     }
-    if (a->r[i].u.ex.lo != a->r[i].u.ex.hi) {
+    if (a->r[i].u.ex.idx.lo != a->r[i].u.ex.idx.hi) {
       /* subrange, check the extreme ends */
-      d = a->r[i].u.ex.lo;
-      if (r[i].u.ex.lo > d || r[i].u.ex.hi < d) {
+      d = a->r[i].u.ex.idx.lo;
+      if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
 	if (next) {
 	  return next->Validate (a);
 	}
@@ -673,17 +673,17 @@ int Array::sPrintOne (char *buf, int sz, int style)
     }
     else {
       if (r[i].u.ex.isrange == 1) {
-	if (r[i].u.ex.lo == 0) {
-	  snprintf (buf+k, sz, "%ld", r[i].u.ex.hi+1);
+	if (r[i].u.ex.idx.lo == 0) {
+	  snprintf (buf+k, sz, "%ld", r[i].u.ex.idx.hi+1);
 	  PRINT_STEP;
 	}
 	else {
-	  snprintf (buf+k, sz, "%ld..%ld", r[i].u.ex.lo, r[i].u.ex.hi);
+	  snprintf (buf+k, sz, "%ld..%ld", r[i].u.ex.idx.lo, r[i].u.ex.idx.hi);
 	  PRINT_STEP;
 	}
       }
       else if (r[i].u.ex.isrange == 0) {
-	snprintf (buf+k, sz, "%ld", r[i].u.ex.lo);
+	snprintf (buf+k, sz, "%ld", r[i].u.ex.idx.lo);
 	PRINT_STEP;
       }
       else if (r[i].u.ex.isrange == 2) {
@@ -778,7 +778,7 @@ int Array::range_size(int d)
   Assert (!isSparse(), "Only applicable to dense arrays");
   Assert (r[d].u.ex.isrange != 2, "Dynamic arrays not supported");
 
-  return r[d].u.ex.hi - r[d].u.ex.lo + 1;
+  return r[d].u.ex.idx.hi - r[d].u.ex.idx.lo + 1;
 }
 
 /*
@@ -790,8 +790,8 @@ void Array::update_range (int d, int lo, int hi)
   Assert (0 <= d && d < dims, "Invalid dimension");
   Assert (!isSparse(), "Only applicable to dense arrays");
   
-  r[d].u.ex.lo = lo;
-  r[d].u.ex.hi = hi;
+  r[d].u.ex.idx.lo = lo;
+  r[d].u.ex.idx.hi = hi;
   range_sz = -1;
 }
 
@@ -811,12 +811,12 @@ int Array::size()
     for (int i=0; i < dims; i++) {
       Assert (r[i].u.ex.isrange != 2, "Dynamic reference not supported");
 
-      if (r[i].u.ex.hi < r[i].u.ex.lo) {
+      if (r[i].u.ex.idx.hi < r[i].u.ex.idx.lo) {
 	count = 0;
 	break;
       }
       else {
-	count = count*(r[i].u.ex.hi-r[i].u.ex.lo+1);
+	count = count*(r[i].u.ex.idx.hi-r[i].u.ex.idx.lo+1);
       }
     }
     range_sz = count;
@@ -886,20 +886,20 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
 	act_error_ctxt (stderr);
 	fatal_error ("Array range value is a non-integer/non-constant value");
       }
-      ret->r[i].u.ex.lo = lval->u.v;
-      ret->r[i].u.ex.hi = hval->u.v;
+      ret->r[i].u.ex.idx.lo = lval->u.v;
+      ret->r[i].u.ex.idx.hi = hval->u.v;
       ret->r[i].u.ex.isrange = 1;
       //FREE (lval);
     }
     else {
       if (is_ref) {
-	ret->r[i].u.ex.lo = hval->u.v;
-	ret->r[i].u.ex.hi = hval->u.v;
+	ret->r[i].u.ex.idx.lo = hval->u.v;
+	ret->r[i].u.ex.idx.hi = hval->u.v;
 	ret->r[i].u.ex.isrange = 0;
       }
       else {
-	ret->r[i].u.ex.lo = 0;
-	ret->r[i].u.ex.hi = hval->u.v - 1;
+	ret->r[i].u.ex.idx.lo = 0;
+	ret->r[i].u.ex.idx.hi = hval->u.v - 1;
 	ret->r[i].u.ex.isrange = 1;
       }
     }
@@ -964,8 +964,8 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
 
     if (hval->type == E_INT) {
       ret->r[i].u.ex.isrange = 0;
-      ret->r[i].u.ex.lo = hval->u.v;
-      ret->r[i].u.ex.hi = hval->u.v;
+      ret->r[i].u.ex.idx.lo = hval->u.v;
+      ret->r[i].u.ex.idx.hi = hval->u.v;
     }
     else {
       ret->r[i].u.ex.isrange = 2;
@@ -990,7 +990,7 @@ Expr *Array::getDeref (int idx)
     Expr *tmp, *tmp2;
     NEW (tmp, Expr);
     tmp->type = E_INT;
-    tmp->u.v = r[idx].u.ex.lo;
+    tmp->u.v = r[idx].u.ex.idx.lo;
     tmp2 = TypeFactory::NewExpr (tmp);
     FREE (tmp);
     return tmp2;
@@ -1037,15 +1037,15 @@ Arraystep::Arraystep (Array *a, Array *sub)
   for (int i = 0; i < base->dims; i++) {
     if (subrange) {
       Assert (subrange->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
-      deref[i] = subrange->r[i].u.ex.lo;
+      deref[i] = subrange->r[i].u.ex.idx.lo;
     }
     else {
       Assert (base->r[i].u.ex.isrange != 2, "Dynamic reference not supported");
       if (base->r[i].u.ex.isrange) {
-	deref[i] = base->r[i].u.ex.lo;
+	deref[i] = base->r[i].u.ex.idx.lo;
       }
       else {
-	deref[i] = base->r[i].u.ex.hi + 1;
+	deref[i] = base->r[i].u.ex.idx.hi + 1;
       }
     }
   }
@@ -1079,15 +1079,15 @@ void Arraystep::step()
   if (subrange) {
     /* ok, we need to do a step */
     for (int i = base->dims - 1; i >= 0; i--) {
-      if (insubrange->r[i].u.ex.lo == insubrange->r[i].u.ex.hi)
+      if (insubrange->r[i].u.ex.idx.lo == insubrange->r[i].u.ex.idx.hi)
 	continue;
       deref[i]++;
-      if (deref[i] <= insubrange->r[i].u.ex.hi) {
+      if (deref[i] <= insubrange->r[i].u.ex.idx.hi) {
 	/* we're done */
 	idx = base->Offset (deref);
 	return;
       }
-      deref[i] = insubrange->r[i].u.ex.lo;
+      deref[i] = insubrange->r[i].u.ex.idx.lo;
     }
     if (!insubrange->next) {
       idx = -1;
@@ -1096,7 +1096,7 @@ void Arraystep::step()
     else {
       insubrange = insubrange->next;
       for (int i=0; i < base->dims; i++) {
-	deref[i] = insubrange->r[i].u.ex.lo;
+	deref[i] = insubrange->r[i].u.ex.idx.lo;
       }
       idx = base->Offset (deref);
       return;
@@ -1106,13 +1106,13 @@ void Arraystep::step()
   /*-- not a subrange --*/
   for (int i = base->dims - 1; i >= 0; i--) {
     deref[i]++;
-    if (deref[i] <= base->r[i].u.ex.hi) {
+    if (deref[i] <= base->r[i].u.ex.idx.hi) {
       /* we're done */
       idx++;
       return;
     }
     /* ok, we've wrapped. need to increase the next index */
-    deref[i] = base->r[i].u.ex.lo;
+    deref[i] = base->r[i].u.ex.idx.lo;
   }
 
   /* we're here, we've overflowed this range */
@@ -1125,7 +1125,7 @@ void Arraystep::step()
   
   /* set the index to the lowest one in the next range */
   for (int i = 0; i < base->dims; i++) {
-    deref[i] = base->r[i].u.ex.lo;
+    deref[i] = base->r[i].u.ex.idx.lo;
   }
   idx++;
 }
@@ -1570,8 +1570,8 @@ void AExprstep::getsimpleID (ActId **id, int *idx, int *size)
 int Array::overlapping (struct range *a, struct range *b)
 {
   for (int i=0; i < dims; i++) {
-    if (a[i].u.ex.lo > b[i].u.ex.hi) return 0;
-    if (a[i].u.ex.hi < b[i].u.ex.lo) return 0;
+    if (a[i].u.ex.idx.lo > b[i].u.ex.idx.hi) return 0;
+    if (a[i].u.ex.idx.hi < b[i].u.ex.idx.lo) return 0;
   }
   return 1;
 }
@@ -1592,7 +1592,7 @@ void Array::dumprange (struct range *r)
   fprintf (stderr, "[");
   for (i=0; i < dims; i++) {
     if (i != 0) fprintf (stderr, "][");
-    fprintf (stderr, "%ld..%ld", r[i].u.ex.lo, r[i].u.ex.hi);
+    fprintf (stderr, "%ld..%ld", r[i].u.ex.idx.lo, r[i].u.ex.idx.hi);
   }
   fprintf (stderr, "]");
 }
@@ -1610,8 +1610,8 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
   
  start: /* basically a tail recursion */
   for (; idx < dims; idx++) {
-    if ((r[idx].u.ex.lo != mr[idx].u.ex.lo) ||
-	(r[idx].u.ex.hi != mr[idx].u.ex.hi))
+    if ((r[idx].u.ex.idx.lo != mr[idx].u.ex.idx.lo) ||
+	(r[idx].u.ex.idx.hi != mr[idx].u.ex.idx.hi))
       break;
   }
   if (idx == dims) {
@@ -1640,7 +1640,7 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
        (2) [c..b] + {{recursive insert of rest of the dims}}
        (3) [b+1..d] + [rest of dims of RHS]
   */
-  if (mr[idx].u.ex.lo < r[idx].u.ex.lo) {
+  if (mr[idx].u.ex.idx.lo < r[idx].u.ex.idx.lo) {
     struct range *tr;
     /* swap mr and r */
     tr = r;
@@ -1661,7 +1661,7 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
 
   while (1) {
     /* if the ranges are now disjoint, we can just insert and quit */
-    if (r[idx].u.ex.hi < mr[idx].u.ex.lo) {
+    if (r[idx].u.ex.idx.hi < mr[idx].u.ex.idx.lo) {
       tmp = CloneOne();
       for (int i=0; i < dims; i++) {
 	tmp->r[i] = mr[i];
@@ -1672,43 +1672,43 @@ void Array::_merge_range (int idx, Array *prev, struct range *mr)
       return;
     }
     
-    if (r[idx].u.ex.lo < mr[idx].u.ex.lo) {
+    if (r[idx].u.ex.idx.lo < mr[idx].u.ex.idx.lo) {
       /* range split, and re-try */
       tmp = CloneOne();
-      Assert (r[idx].u.ex.hi >= mr[idx].u.ex.lo, "Eh?");
-      r[idx].u.ex.hi = mr[idx].u.ex.lo-1;
-      tmp->r[idx].u.ex.lo = mr[idx].u.ex.lo;
+      Assert (r[idx].u.ex.idx.hi >= mr[idx].u.ex.idx.lo, "Eh?");
+      r[idx].u.ex.idx.hi = mr[idx].u.ex.idx.lo-1;
+      tmp->r[idx].u.ex.idx.lo = mr[idx].u.ex.idx.lo;
       tmp->next = next;
       next = tmp;
       FREE (mr);
       continue;
     }
-    else if (r[idx].u.ex.lo == mr[idx].u.ex.lo) {
+    else if (r[idx].u.ex.idx.lo == mr[idx].u.ex.idx.lo) {
       /* find the shared part of this dimension */
-      if (r[idx].u.ex.hi < mr[idx].u.ex.hi) {
+      if (r[idx].u.ex.idx.hi < mr[idx].u.ex.idx.hi) {
 	tmp = CloneOne();
 	for (int i=0; i < dims; i++) {
 	  tmp->r[i] = mr[i];
 	}
-	tmp->r[idx].u.ex.lo = r[idx].u.ex.hi+1;
+	tmp->r[idx].u.ex.idx.lo = r[idx].u.ex.idx.hi+1;
 	tmp->next = next;
 	next = tmp;
-	mr[idx].u.ex.hi = r[idx].u.ex.hi;
+	mr[idx].u.ex.idx.hi = r[idx].u.ex.idx.hi;
 	goto start;
       }
-      else if (mr[idx].u.ex.hi < r[idx].u.ex.hi) {
+      else if (mr[idx].u.ex.idx.hi < r[idx].u.ex.idx.hi) {
 	tmp = CloneOne();
-	tmp->r[idx].u.ex.lo = mr[idx].u.ex.hi+1;
+	tmp->r[idx].u.ex.idx.lo = mr[idx].u.ex.idx.hi+1;
 	tmp->next = next;
 	next = tmp;
-	r[idx].u.ex.hi = mr[idx].u.ex.hi;
+	r[idx].u.ex.idx.hi = mr[idx].u.ex.idx.hi;
 	goto start;
       }
       else {
 	Assert (0, "Should not be here");
       }
     }
-    else if (r[idx].u.ex.lo > mr[idx].u.ex.lo) {
+    else if (r[idx].u.ex.idx.lo > mr[idx].u.ex.idx.lo) {
       Assert (0, "This should have been fixed earlier?");
     }
   }
@@ -1766,14 +1766,14 @@ void Array::Merge (Array *a)
 
     /* check special case */
     for (i=0; i < dims; i++) {
-      if (a->r[i].u.ex.lo == tmp->r[i].u.ex.lo &&
-	  a->r[i].u.ex.hi == tmp->r[i].u.ex.hi) continue;
+      if (a->r[i].u.ex.idx.lo == tmp->r[i].u.ex.idx.lo &&
+	  a->r[i].u.ex.idx.hi == tmp->r[i].u.ex.idx.hi) continue;
       if (adjacent == 0) {
-	if (a->r[i].u.ex.lo == (tmp->r[i].u.ex.hi + 1)) {
+	if (a->r[i].u.ex.idx.lo == (tmp->r[i].u.ex.idx.hi + 1)) {
 	  adjacent = 1;
 	  idx = i;
 	}
-	else if (tmp->r[i].u.ex.lo == (a->r[i].u.ex.hi+1)) {
+	else if (tmp->r[i].u.ex.idx.lo == (a->r[i].u.ex.idx.hi+1)) {
 	  adjacent = -1;
 	  idx = i;
 	}
@@ -1789,11 +1789,11 @@ void Array::Merge (Array *a)
       Assert (adjacent != 0, "Should have been caught earlier!");
       /* simple concatenation */
       if (adjacent == 1) {
-	tmp->r[idx].u.ex.hi = a->r[idx].u.ex.hi;
+	tmp->r[idx].u.ex.idx.hi = a->r[idx].u.ex.idx.hi;
       }
       else {
 	Assert (adjacent == -1, "hmm");
-	tmp->r[idx].u.ex.lo = a->r[idx].u.ex.lo;
+	tmp->r[idx].u.ex.idx.lo = a->r[idx].u.ex.idx.lo;
       }
       tmp->range_sz = -1;
       return;
@@ -1809,14 +1809,14 @@ void Array::Merge (Array *a)
      Otherwise: split range
     */
     for (i=0; i < dims; i++) {
-      if (a->r[i].u.ex.lo != tmp->r[i].u.ex.lo ||
-	  a->r[i].u.ex.hi != tmp->r[i].u.ex.hi)
+      if (a->r[i].u.ex.idx.lo != tmp->r[i].u.ex.idx.lo ||
+	  a->r[i].u.ex.idx.hi != tmp->r[i].u.ex.idx.hi)
 	break;
     }
 
     Assert (i != dims, "What?");
     
-    if (a->r[i].u.ex.hi < tmp->r[i].u.ex.lo) {
+    if (a->r[i].u.ex.idx.hi < tmp->r[i].u.ex.idx.lo) {
       Array *m = a->Clone();
       /* insert to the left, done */
       if (!prev) {
@@ -1837,7 +1837,7 @@ void Array::Merge (Array *a)
       }
       return;
     }
-    else if (a->r[i].u.ex.lo > tmp->r[i].u.ex.hi) {
+    else if (a->r[i].u.ex.idx.lo > tmp->r[i].u.ex.idx.hi) {
       /* go right */
       prev = tmp;
       tmp = tmp->next;
@@ -1919,15 +1919,15 @@ Array *Array::unOffset (int idx)
 
   sz = 1;
   for (int i=1; i < dims; i++) {
-    sz *= (tmp->r[i].u.ex.hi - tmp->r[i].u.ex.lo + 1);
+    sz *= (tmp->r[i].u.ex.idx.hi - tmp->r[i].u.ex.idx.lo + 1);
   }
   for (int i=0; i < dims; i++) {
     ret->r[i].u.ex.isrange = 0;
-    ret->r[i].u.ex.lo = tmp->r[i].u.ex.lo + ((unsigned int)idx/sz);
-    ret->r[i].u.ex.hi = ret->r[i].u.ex.lo;
+    ret->r[i].u.ex.idx.lo = tmp->r[i].u.ex.idx.lo + ((unsigned int)idx/sz);
+    ret->r[i].u.ex.idx.hi = ret->r[i].u.ex.idx.lo;
     idx = idx % sz;
     if (i != dims-1) {
-      sz = sz/(tmp->r[i+1].u.ex.hi - tmp->r[i+1].u.ex.lo + 1);
+      sz = sz/(tmp->r[i+1].u.ex.idx.hi - tmp->r[i+1].u.ex.idx.lo + 1);
     }
   }
   return ret;
@@ -1983,8 +1983,8 @@ Array *Arraystep::toArray ()
   MALLOC (a->r, struct Array::range, a->dims);
   for (int i = 0; i < a->dims; i++) {
     a->r[i].u.ex.isrange = 0;
-    a->r[i].u.ex.lo = deref[i];
-    a->r[i].u.ex.hi = deref[i];
+    a->r[i].u.ex.idx.lo = deref[i];
+    a->r[i].u.ex.idx.hi = deref[i];
   }
   return a;
 }
