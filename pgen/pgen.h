@@ -60,7 +60,7 @@ typedef struct token_type token_type_t;
 /* list of tokens (implemented as an array) */
 typedef struct token_list {
   bitset_t *s;
-  A_DECL (token_type_t, a)
+  A_DECL (token_type_t, a);
 } token_list_t;
 
 struct body_info {
@@ -160,11 +160,11 @@ void std_close (pp_t *);
 extern int found_expr;
 extern int cyclone_code;
 
-E_A_DECL(char *, WALK)
-E_A_DECL(char *, cookie_type)
-E_A_DECL(char *, return_type)
+E_A_DECL(char *, WALK);
+E_A_DECL(char *, cookie_type);
+E_A_DECL(char *, return_type);
 extern int gen_parse;
-E_A_DECL(char *, GWALK)
+E_A_DECL(char *, GWALK);
 
 void print_munged_string (pp_t *pp, char *s, char *file, int line);
 char *user_ret_id (int id);

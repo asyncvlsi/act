@@ -59,7 +59,7 @@ enum vector_type {
 typedef struct {
   int vtype;
   int num;			/* for 1ofN */
-  A_DECL (PrsNode *, n)
+  A_DECL (PrsNode *, n);
   char *key;
 } Vector;
 

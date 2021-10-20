@@ -61,9 +61,9 @@
  */
 
 
-#define A_DECL(type,name)  unsigned int name##_num; unsigned int name##_max; type *name;
-#define L_A_DECL(type,name)  static unsigned int name##_num = 0; static unsigned int name##_max = 0; static type *name = NULL;
-#define E_A_DECL(type,name)  extern unsigned int name##_num; extern unsigned int name##_max; extern type *name;
+#define A_DECL(type,name)  unsigned int name##_num; unsigned int name##_max; type *name
+#define L_A_DECL(type,name)  static unsigned int name##_num = 0; static unsigned int name##_max = 0; static type *name = NULL
+#define E_A_DECL(type,name)  extern unsigned int name##_num; extern unsigned int name##_max; extern type *name
 
 #define A_LEN_RAW(name)  name##_num
 #define A_LEN(name)  ((signed)A_LEN_RAW(name))
