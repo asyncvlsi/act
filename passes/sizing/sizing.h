@@ -34,7 +34,6 @@
 class ActSizingPass : public ActPass {
 public:
   ActSizingPass (Act *a);
-  ~ActSizingPass ();
 
   int run (Process *p = NULL);
 

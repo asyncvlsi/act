@@ -312,7 +312,7 @@ public:
   // propagates all the way back up to the root of the design.
   // We assume that the list of ports never change.
   
-  ~ActPass ();			       // release storage
+  virtual ~ActPass ();			       // release storage
 
 
   int AddDependency (const char *pass); // insert dependency on an
