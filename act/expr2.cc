@@ -1722,7 +1722,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	int width = ret->u.e.r->u.v;
 
 	if (width < 64) {
-	  x = x & (~(1UL << width));
+	  x = x & ((1UL << width)-1);
 	}
 	
 	ret->type = E_INT;
