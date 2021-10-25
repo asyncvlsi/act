@@ -1145,6 +1145,8 @@ static act_chp_lang_t *_chp_clone_subst (struct fn_inline_args *fn,
 
   case ACT_CHP_SKIP:
   case ACT_CHP_FUNC:
+  case ACT_CHP_HOLE:
+    ret->type = ACT_CHP_SKIP;
     break;
 
   default:
