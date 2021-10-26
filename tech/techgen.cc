@@ -788,6 +788,38 @@ void emit_drc (pp_t *pp)
   pp_SPACE;
 }
 
+void emit_lef (pp_t *pp)
+{
+  int i, j;
+  pp_printf (pp, "lef"); pp_TAB;
+
+  for (i=0; i < Technology::T->num_devs; i++) {
+    for (j=0; j < 2; j++) {
+      if (Technology::T->well[j][i]) {
+	pp_printf (pp, "masterslice %s %s", Technology::T->well[j][i]->getName(),
+		   Technology::T->well[j][i]->getName());
+	pp_nl;
+      }
+    }
+  }
+
+  for (int i=0; i < Technology::T->nmetals; i++) {
+    pp_printf (pp, "routing m%d m%d metal%d", i+1, i+1, i+1);
+    pp_nl;
+  }
+
+  for (int i=0; i < Technology::T->nmetals-1; i++) {
+    pp_printf (pp, "cut m%dc via%d %s",
+	       i+2, i+1, Technology::T->metal[i]->viaUpName());
+    pp_nl;
+  }
+
+  pp_UNTAB;
+  pp_printf (pp, "end");
+  pp_SPACE;
+}
+
+
 void emit_extract (pp_t *pp)
 {
   pp_printf (pp, "extract"); pp_TAB;
@@ -1123,6 +1155,7 @@ int main (int argc, char **argv)
   emit_cif (pp);
   emit_mzrouter (pp);
   emit_drc (pp);
+  emit_lef (pp);
   emit_extract (pp);
   emit_wiring (pp);
   emit_router (pp);
