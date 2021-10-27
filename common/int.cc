@@ -1276,9 +1276,7 @@ int BigInt::isOne ()
 
 int BigInt::isOneInt()
 {
-  if (len == 1) {
-    return 1;
-  } else if (len >= 2) {
+  if (len >= 2) {
     for (auto i = 1; i < len; i++) {
       if (u.v[i] != 0) {
         return 0;
@@ -1286,9 +1284,9 @@ int BigInt::isOneInt()
     }
     squeezeSpace((len-1) * BIGINT_BITS_ONE);
     return 1;
+  } else {
+    return 1;
   }
-  /* never gets here */
-  return 0;
 }
 /*------------------------------------------------------------------------
  *
@@ -1296,10 +1294,6 @@ int BigInt::isOneInt()
  *
  *------------------------------------------------------------------------
  */
-#define LOGICAL_SETUP       \
-  BigInt x = b;         \
-  x.setWidth (width)
-  
 BigInt &BigInt::operator&(BigInt &b)
 {
   if (isSigned() != b.isSigned()) {
@@ -1307,10 +1301,16 @@ BigInt &BigInt::operator&(BigInt &b)
     b.issigned = 0;
   }
 
-  LOGICAL_SETUP;
-
-  for (int i=0; i < len; i++) {
-    _setVal (i, getVal (i) & x.getVal (i));
+  int mil = std::min(len, b.len); //min length
+  int mal = std::max(len, b.len); //max length
+  adjlen(mal);
+  len = mal;
+  for (int i = 0; i < mal; i++) {
+    if (i < mil) {
+      setVal (i, getVal (i) & b.getVal (i));
+    } else {
+      setVal (i, 0);
+    }
   }
 
   return (*this);
@@ -1323,10 +1323,16 @@ BigInt &BigInt::operator|(BigInt &b)
     b.issigned = 0;
   }
 
-  LOGICAL_SETUP;
-  
-  for (int i=0; i < len; i++) {
-    _setVal (i, getVal (i) | x.getVal (i));
+  int mil = std::min(len, b.len); //min length
+  int mal = std::max(len, b.len); //max length
+  adjlen(mal);
+  len = mal;
+  for (int i = 0; i < mal; i++) {
+    if (i < mil) {
+      setVal (i, getVal (i) | b.getVal (i));
+    } else {
+      setVal (i, 0);
+    }
   }
 
   return (*this);
@@ -1339,10 +1345,16 @@ BigInt &BigInt::operator^(BigInt &b)
     b.issigned = 0;
   }
 
-  LOGICAL_SETUP;
-  
-  for (int i=0; i < len; i++) {
-    _setVal (i, getVal (i) ^ x.getVal (i));
+  int mil = std::min(len, b.len); //min length
+  int mal = std::max(len, b.len); //max length
+  adjlen(mal);
+  len = mal;
+  for (int i = 0; i < mal; i++) {
+    if (i < mil) {
+      setVal (i, getVal (i) ^ b.getVal (i));
+    } else {
+      setVal (i, 0);
+    }
   }
 
   return (*this);
@@ -1351,9 +1363,11 @@ BigInt &BigInt::operator^(BigInt &b)
 BigInt &BigInt::operator~()
 {
   for (int i=0; i < len; i++) {
-    _setVal (i, ~getVal (i));
+    setVal (i, ~getVal (i));
   }
-  zeroClear ();
+  if (!isSigned()) {
+    zeroClear ();
+  }
 
   return (*this);
 }
