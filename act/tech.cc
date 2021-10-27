@@ -1119,6 +1119,20 @@ int Technology::getMaxDiffSpacing ()
   return spc;
 }
 
+int Technology::getMaxWellDiffSpacing ()
+{
+  int i, j;
+  int spc = -1;
+  for (i=0; i < num_devs; i++) {
+    for (j=0; j < 2; j++) {
+      if (welldiff[j][0] && spc < welldiff[j][0]->getOppDiffSpacing (i)) {
+	spc = welldiff[j][0]->getOppDiffSpacing (i);
+      }
+    }
+  }
+  return spc;
+}
+
 int Technology::getMaxSameDiffSpacing ()
 {
   int i, j;

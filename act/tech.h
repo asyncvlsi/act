@@ -372,6 +372,10 @@ class Technology {
   int getMaxDiffSpacing ();	/* this space  guarantees correct
 				   spacing between any two types of
 				   diffusion (not including welldiff) */
+
+  int getMaxWellDiffSpacing ();	/* this space  guarantees correct
+				   spacing between any two types of
+				   well diffusion */
   
   int getMaxSameDiffSpacing (); /* this space guarantees correct
 				   spacing between two diffusions of

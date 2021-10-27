@@ -737,7 +737,7 @@ void emit_drc (pp_t *pp)
   emit_spacing (pp, "allndiff", "allpdiff", 
 		Technology::T->getMaxDiffSpacing ());
   emit_spacing (pp, "allnndiff", "allppdiff", 
-		Technology::T->getMaxDiffSpacing ());
+		Technology::T->getMaxWellDiffSpacing ());
 
   emit_spacing (pp, "allndiff", "allppdiff", 
 		Technology::T->getMaxDiffSpacing (),
