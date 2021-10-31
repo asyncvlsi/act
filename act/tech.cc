@@ -587,15 +587,26 @@ void Technology::Init (const char *s)
 				  config_get_table_int (buf));
 
   /* might need this for gridded technologies */
+  snprintf (buf+k, BUF_SZ-k-1, "lef_width");
+  if (config_exists (buf) && config_get_int (buf) < pmat->width->min()) {
+    fatal_error ("%s: minimum lef_width has to be at least", buf);
+  }
+  if (config_exists (buf)) {
+    pmat->r.lef_width = config_get_int (buf);
+  }
+  else {
+    pmat->r.lef_width = pmat->width->min();
+  }
+
   snprintf (buf+k, BUF_SZ-k-1, "pitch");
   if (config_exists (buf)) {
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: minimum pitch has to be at least 1", buf);
     }
-    pmat->pitch = config_get_int (buf);
+    pmat->r.pitch = config_get_int (buf);
   }
   else {
-    pmat->pitch = pmat->minSpacing() + pmat->minWidth();
+    pmat->r.pitch = pmat->minSpacing() + pmat->minWidth();
   }
   
   snprintf (buf+k, BUF_SZ-k-1, "direction");
@@ -789,15 +800,26 @@ void Technology::Init (const char *s)
       }
     }
 
+    snprintf (buf+j, BUF_SZ-j-1, "lef_width");
+    if (config_exists (buf) && config_get_int (buf) < mat->width->min()) {
+      fatal_error ("%s: minimum lef_width has to be at least", buf);
+    }
+    if (config_exists (buf)) {
+      mat->r.lef_width = config_get_int (buf);
+    }
+    else {
+      mat->r.lef_width = mat->width->min();
+    }
+
     snprintf (buf+j, BUF_SZ-j-1, "pitch");
     if (config_exists (buf) && config_get_int (buf) < 1) {
       fatal_error ("%s: minimum pitch has to be at least 1", buf);
     }
     if (config_exists (buf)) {
-      mat->pitch = config_get_int (buf);
+      mat->r.pitch = config_get_int (buf);
     }
     else {
-      mat->pitch = mat->width->min() + mat->minSpacing();
+      mat->r.pitch = mat->width->min() + mat->minSpacing();
     }
     
     snprintf (buf+j, BUF_SZ-j-1, "direction");
@@ -967,7 +989,18 @@ void Technology::Init (const char *s)
     int *wt = new int[1];
     wt[0] = config_get_int (buf);
     cmat->width = new RangeTable (1, wt);
-    
+
+    snprintf (buf+k, BUF_SZ-k-1, "%s.lef_width", t);
+    if (config_exists (buf) && config_get_int (buf) < cmat->width->min()) {
+      fatal_error ("%s: has to be at least the minimum width", buf);
+    }
+    if (config_exists (buf)) {
+      cmat->lef_width = config_get_int (buf);
+    }
+    else {
+      cmat->lef_width = cmat->width->min();
+    }
+
     snprintf (buf+k, BUF_SZ-k-1, "%s.spacing", t);
     if (config_get_int (buf) < 1) {
       fatal_error ("%s: has to be at least 1", buf);
