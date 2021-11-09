@@ -289,11 +289,11 @@ void BigInt::expandSpace (int amt)
 
 void BigInt::squeezeSpace (int amt)
 {
-  unsigned int tmp, x;
+  unsigned int tmp;
   tmp = width - (len-1)*BIGINT_BITS_ONE;
-
+  unsigned int x = 0;
   if (tmp <= amt) {
-    x = (width - amt)/BIGINT_BITS_ONE;
+    x = (width - amt + BIGINT_BITS_ONE-1)/BIGINT_BITS_ONE;
     if (x < len) {
       _adjlen (x);
       len = x;
@@ -498,13 +498,13 @@ int BigInt::operator==(BigInt &b)
   if (za && zb) return 1;
   if (za || zb) return 0;
   
-  sa = isSigned() & isNegative();
-  sb = b.isSigned() & b.isNegative();
+  sa = isSigned() && isNegative();
+  sb = b.isSigned() && b.isNegative();
 
   if (len > b.len) {
     for (i=len-1; i >= b.len; i--) {
       UNIT_TYPE mask = 0;
-      if (sb == 1) {
+      if (sb) {
         mask = ~mask;
         if (getVal (i) != mask) {
           return 0;
@@ -515,7 +515,7 @@ int BigInt::operator==(BigInt &b)
         }
       }
     }
-  } else {
+  } else if (b.len > len) {
     for (i=b.len-1; i >= len; i--) {
       UNIT_TYPE mask = 0;
       if (sa) {
@@ -530,7 +530,7 @@ int BigInt::operator==(BigInt &b)
       }
     }
   }
-  for (; i >= 0; i--) {
+  for (i = std::min(len, b.len)-1; i >= 0; i--) {
     if (getVal (i) != b.getVal (i)) {
       return 0;
     }
@@ -1387,12 +1387,24 @@ BigInt &BigInt::operator<<(UNIT_TYPE x)
   int stride = x / BIGINT_BITS_ONE;
   x = x % BIGINT_BITS_ONE;
 
-  for (int i=len-1-stride; i >= 0; i--) {
+  UNIT_TYPE mask = 0;
+  mask = ~mask << x;
+  for (int i = len-1; i >= 0; i--) {
     if (i + stride < len) {
-      _setVal (i+stride, getVal (i) << x);
-    }
-    if (i > 0) {
-      _setVal (i+stride, getVal (i+stride) | (getVal (i-1) >> (BIGINT_BITS_ONE - x)));
+      if (getVal(i) != 0) {
+        _setVal(i+stride, getVal(i) << x);
+      } else {
+        _setVal(i+stride, 0);
+     }
+      if (i > 0) {
+        if (getVal(i-1) != 0){
+          if (x != 0) {
+            _setVal(i+stride, getVal(i+stride)|(getVal(i-1) >> (BIGINT_BITS_ONE - x)));
+          }
+        } else {
+          _setVal(i+stride, getVal(i+stride)&(mask << x));
+        }
+      }
     }
   }
   for (int i=0; i < stride; i++) {
@@ -1444,7 +1456,9 @@ BigInt &BigInt::operator>>(UNIT_TYPE x)
   for (auto i = 0; i < len-stride; i++) {
     _setVal (i, getVal (i+stride) >> x);
     if ((i + stride + 1)  < len) {
-      _setVal (i, getVal (i) | (getVal (i+stride+1) & mask) << (BIGINT_BITS_ONE - x));
+      if (x != 0) {
+        _setVal (i, getVal (i) | (getVal (i+stride+1) & mask) << (BIGINT_BITS_ONE - x));
+      }
     } 
   }
 
@@ -1455,7 +1469,9 @@ BigInt &BigInt::operator>>(UNIT_TYPE x)
   for (auto i = len-stride; i < len; i++) {
     _setVal (i, y);
   }
-  y = y << (BIGINT_BITS_ONE - x);
+  if (x != 0) {
+    y = y << (BIGINT_BITS_ONE - x);
+  }
   _setVal (len-stride-1, getVal (len-stride-1) | y);
 
   if (isDynamic() && stride > 0) {
