@@ -95,11 +95,8 @@ class Material {
     spacing_w = NULL;
     minarea = 0;
     maxarea = 0;
-    xgrid = 0;
-    ygrid = 0;
     viaup = NULL;
     viadn = NULL;
-    pitch = 0;
     runlength = -1;
     runlength_mode = -1;
     parallelrunlength = NULL;
@@ -133,9 +130,6 @@ protected:
 
   int minarea;			/* 0 means no constraint */
   int maxarea;			/* 0 means no constraint */
-  int xgrid, ygrid;		/* 0,0 if not on a grid */
-
-  int pitch;
 
   Contact *viaup, *viadn;
 
@@ -153,6 +147,9 @@ struct RoutingRules {
   double antenna_ratio;		// antenna ratios for this layer
   double antenna_diff_ratio;
   
+  int pitch;
+  int lef_width;
+
   unsigned int routex:1;	/* can be used for x routing */
   unsigned int routey:1;	/* can be used for y routing */
 
@@ -162,8 +159,9 @@ struct RoutingRules {
 
 class RoutingMat : public Material {
 public:
-  RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; }
-  int getPitch() { return pitch; }
+  RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; r.pitch = 0; r.lef_width = 0; }
+  int getPitch() { return r.pitch; }
+  int getLEFWidth() { return r.lef_width; }
   Contact *getUpC() { return viaup; }
   int getSpacing(int w) { return (*spacing_w)[w]; }
   int isComplexSpacing() {
@@ -295,6 +293,7 @@ class Contact : public Material {
     asym_surround_dn = 0;
     name = s;
     style = NULL;
+    lef_width = 0;
   }
   int isSym() { return (asym_surround_up == 0) && (asym_surround_dn == 0); }
   int isAsym() { return !isSym(); }
@@ -309,6 +308,8 @@ class Contact : public Material {
   int viaGenX() { return spc_x; }
   int viaGenY() { return spc_y; }
 
+  int getLEFWidth() { return lef_width; }
+
   const char *getDrawingStyle () { return style; }
   void setDrawingStyle (const char *s) { style = s; }
 
@@ -317,6 +318,8 @@ class Contact : public Material {
   
 protected:
   Material *lower, *upper;
+
+  int lef_width;
 
   int sym_surround_dn;
   int sym_surround_up;
