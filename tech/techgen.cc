@@ -540,6 +540,17 @@ void emit_surround (pp_t *pp, Material *mat, const char *surround, int amt)
   emit_surround (pp, mat->getName(), surround, amt);
 }
 
+void emit_surround_metal (pp_t *pp, Material *mat, const char *surround, int amt)
+{
+  pp_printf (pp, "surround %s *%s %d absence_illegal \\",
+	     mat->getName(), surround, amt);
+  pp_nl;
+  pp_printf (pp, "   \"%s surround of %s < %d\"",
+	     surround, mat->getName(), amt);
+  pp_nl;
+}
+
+
 void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
 {
   const char *name;
@@ -590,6 +601,65 @@ void emit_width_spacing_c (pp_t *pp, Contact *mat, char *nm = NULL)
     }
     if (mat->getAsymUp() > 0 && (mat->getAsymUp() != mat->getSymUp())) {
       pp_printf (pp, "surround %s %s %d directional \\",
+		 mat->getName(), mat->getUpperName(), mat->getAsymUp());
+      pp_nl;
+      pp_printf (pp, "   \"%s surround of via %s < %d in one direction\"",
+		 mat->getUpperName(), mat->getName(), mat->getAsymUp());
+      pp_nl;
+    }
+  }
+}
+
+void emit_width_spacing_metalc (pp_t *pp, Contact *mat, char *nm = NULL)
+{
+  const char *name;
+  if (!mat) return;
+  if (!nm) {
+    name = mat->getName();
+  }
+  else {
+    name = nm;
+  }
+
+  /* a material can be also its upcontact or downcontact */
+  
+
+  pp_printf (pp, "# rules for %s", mat->getName());
+  pp_nl;
+  
+  pp_printf (pp, "width %s %d \\", name, mat->minWidth());
+  pp_nl;
+  pp_printf (pp, "   \"%s width < %d\"", mat->getName(), mat->minWidth());
+  pp_nl;
+
+  emit_spacing (pp, name, name, mat->minSpacing (), 1);
+
+  if (mat->minArea() != 0) {
+    pp_printf (pp, "area %s %d %d \\", name, mat->minArea(),
+	       mat->minArea()/mat->minWidth());
+    pp_nl;
+    pp_printf (pp, "  \"%s minimum area < %d\"", mat->getName(),
+	       mat->minArea());
+    pp_nl;
+  }
+
+  if (mat->getSym() > 0) {
+    emit_surround_metal (pp, mat, mat->getLowerName(), mat->getSym());
+  }
+  if (mat->getSymUp() > 0) {
+    emit_surround_metal (pp, mat, mat->getUpperName(), mat->getSymUp());
+  }
+  if (mat->isAsym()) {
+    if (mat->getAsym() > 0 && (mat->getAsym() != mat->getSym())) {
+      pp_printf (pp, "surround %s *%s %d directional \\",
+		 mat->getName(), mat->getLowerName(), mat->getAsym());
+      pp_nl;
+      pp_printf (pp, "   \"%s surround of via %s < %d in one direction\"",
+		 mat->getLowerName(), mat->getName(), mat->getAsym());
+      pp_nl;
+    }
+    if (mat->getAsymUp() > 0 && (mat->getAsymUp() != mat->getSymUp())) {
+      pp_printf (pp, "surround %s *%s %d directional \\",
 		 mat->getName(), mat->getUpperName(), mat->getAsymUp());
       pp_nl;
       pp_printf (pp, "   \"%s surround of via %s < %d in one direction\"",
@@ -779,7 +849,7 @@ void emit_drc (pp_t *pp)
   for (int i=0; i < Technology::T->nmetals; i++) {
     sprintf (buf, "(allm%d)/m%d", i+1, i+1);
     emit_width_spacing (pp, Technology::T->metal[i], buf);
-    emit_width_spacing_c (pp, Technology::T->metal[i]->getUpC());
+    emit_width_spacing_metalc (pp, Technology::T->metal[i]->getUpC());
   }
   
   
