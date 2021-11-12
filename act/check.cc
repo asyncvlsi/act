@@ -518,6 +518,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       InstType *xit;
       long lo, hi;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      if (lt == T_ERR) return T_ERR;
       if (T_BASETYPE_INT (lt)) {
 	if (xit->isExpanded()) {
 	  Assert (e->u.e.r, "What?");
@@ -768,6 +769,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     {
       InstType *xit;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      if (lt == T_ERR) return T_ERR;
       if (only_chan) {
 	if (lt == T_CHAN) {
 	  ActId *tmp;
@@ -824,6 +826,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       return T_ERR;
     }
     lt = act_type_var (s, (ActId *)e->u.e.l, NULL);
+    if (lt == T_ERR) return T_ERR;
     if (lt == T_CHAN) {
       if (width) {
 	*width = 1;
@@ -873,6 +876,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       InstType *xit;
       lt = act_type_var (s, tmpid, &xit);
       delete tmpid;
+      if (lt == T_ERR) return T_ERR;
       if (width) {
 	if (xit->isExpanded()) {
 	  *width = TypeFactory::bitWidth (xit);

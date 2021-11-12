@@ -1,0 +1,3 @@
+ERROR: File `68.act', line 5, col 12
+	Typechecking failed on expression!
+	Identifier `x' is not an array type
