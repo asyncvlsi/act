@@ -212,6 +212,12 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
   int is_strict;
 
   it = _act_get_var_type (s, id, &id, &is_strict);
+
+  if (!it->arrayInfo() && id->arrayInfo()) {
+    typecheck_err ("Identifier `%s' is not an array type", id->getName());
+    return T_ERR;
+  }
+
   if (xit) {
     *xit = it;
   }
@@ -766,6 +772,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	if (lt == T_CHAN) {
 	  ActId *tmp;
 	  InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+
+	  if (!it->arrayInfo() && tmp->arrayInfo()) {
+	    typecheck_err ("Identifier `%s' is not an array type", tmp->getName());
+	    return T_ERR;
+	  }
 
 	  if (it->arrayInfo() && !tmp->isDeref()) {
 	    typecheck_err ("Array specifier not permitted in channel expression");

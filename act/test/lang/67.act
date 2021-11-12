@@ -1,0 +1,9 @@
+defproc test() 
+{
+   int<4> x;
+   chp {
+     x[3..0] := 4
+   }
+}
+
+test t;

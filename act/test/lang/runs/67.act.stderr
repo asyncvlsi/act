@@ -1,0 +1,3 @@
+ERROR: File `67.act', line 5, col 7
+	Identifier `x[3..0]': type-checking error
+	Identifier `x' is not an array type

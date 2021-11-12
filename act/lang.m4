@@ -1434,6 +1434,13 @@ assignable_expr_id[ActId *]: expr_id
 {{X:
     int t;
     t = act_type_var ($0->scope, $1, NULL);
+    if (t == T_ERR) {
+      $e("Identifier ``");
+      $1->Print ($f, NULL);
+      fprintf ($f, "'': type-checking error\n");
+      fprintf ($f, "\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
     if (t & T_ARRAYOF) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
