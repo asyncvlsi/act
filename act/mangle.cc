@@ -31,7 +31,7 @@
   Code for mangling/unmangling special characters to sanitize output
 */
 
-static char mangle_result[] = 
+static unsigned char mangle_result[] =
   { '_', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     'a', 'b', 'c', 'd', 'e', 'f', 'z', 'h', 'i', 'j', 'k',
     'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
@@ -40,7 +40,7 @@ static char mangle_result[] =
 static int mangle_invidx[256];
 
 
-int Act::mangle_set_char (char c)
+int Act::mangle_set_char (unsigned char c)
 {
   int i;
   for (i=0; i < sizeof (mangle_result)/sizeof (mangle_result[0]); i++) {
@@ -51,7 +51,7 @@ int Act::mangle_set_char (char c)
   if (i == sizeof (mangle_result)/sizeof (mangle_result[0])) {
     return 0;
   }
-  char t = mangle_result[i];
+  unsigned char t = mangle_result[i];
   mangle_result[i] = mangle_result[0];
   mangle_result[0] = t;
   return 1;
@@ -92,13 +92,13 @@ void Act::mangle (char *str)
   mangle_invidx[(int)mangle_result[0]] = 0;
 
   for (i=0; (i+1) < max_len && str[i]; i++) {
-    if (mangle_characters[(int)str[i]] >= 0) {
+    if (mangle_characters[(unsigned)str[i]] >= 0) {
       fatal_error ("Cannot install mangle string `%s': dup char `%c'",
 		   str, str[i]);
     }
     mangle_invidx[(int)mangle_result[i+1]] = i+1;
-    mangle_characters[(int)str[i]] = mangle_result[i+1];
-    inv_map[(int)mangle_result[i+1]] = str[i];
+    mangle_characters[(unsigned)str[i]] = mangle_result[i+1];
+    inv_map[(int)mangle_result[i+1]] = (unsigned)str[i];
 
 #if 0
     if (str[i] == '<') {
@@ -137,7 +137,7 @@ int Act::mangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (mangle_characters[(int)*src] >= 0) {
+    if (mangle_characters[(unsigned)*src] >= 0) {
       //&&
       //((*src != '_') || inv_map[*(src+1)] == -1)) {
       /* modify _ mangling; special case.
@@ -150,7 +150,7 @@ int Act::mangle_string (const char *src, char *dst, int sz)
       *dst++ = mangle_result[0];
       sz--;
       if (sz == 0) return -1;
-      *dst++ = mangle_characters[(int)*src];
+      *dst++ = mangle_characters[(unsigned)*src];
       sz--;
     }
     else {
@@ -194,7 +194,7 @@ int Act::unmangle_string (const char *src, char *dst, int sz)
     //    if ((*src == mangle_result[0]) &&
     //	(mangle_invidx[*(src+1)] != -1)) {
       src++;
-      *dst++ = inv_map[(int)*src];
+      *dst++ = inv_map[(unsigned)*src];
 #if 0      
       if (inv_map[*src] == '<') {
 	mangle_mode++;

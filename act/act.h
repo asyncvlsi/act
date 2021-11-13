@@ -141,7 +141,7 @@ class Act {
    * @param s is a string corresponding to the list of characters to
    * be mangled.
    */
-  int mangle_set_char (char c);
+  int mangle_set_char (unsigned char c);
   
   void mangle (char *s);
 
@@ -262,7 +262,7 @@ private:
   TypeFactory *tf;		/* type factory for the file */
   ActNamespace *gns;		/* global namespace */
 
-  char mangle_characters[256];
+  int mangle_characters[256];
   int inv_map[256];
   int any_mangling;
   int mangle_langle_idx;  /* index of '<' */
