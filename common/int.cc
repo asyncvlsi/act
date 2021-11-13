@@ -29,15 +29,6 @@
  *
  *------------------------------------------------------------------------
  */
-BigInt::BigInt()
-{
-  len = 1;
-  width = 1;
-  u.value = 0;
-  isdynamic = 0;
-  issigned = 0;
-}
-
 BigInt::BigInt(int w, int s, int d)
 {
   len = 0;
@@ -57,18 +48,6 @@ BigInt::BigInt(int w, int s, int d)
   }
   isdynamic = d;
   issigned = s;
-}
-
-BigInt::~BigInt()
-{
-  if (len >= 2) {
-    FREE (u.v);
-    u.v = NULL;
-  } else {
-    u.value = 0;
-  }
-  len = 0;
-  width = 0;
 }
 
 /*-- copy constructor --*/

@@ -65,11 +65,17 @@
 
 class BigInt {
 public:
-  BigInt ();      // default int is 1-bit wide, unsigned and dynamic
-  
+  BigInt () {
+    len = 1;
+  }
+
   BigInt (int w, int s, int d); 
-  
-  ~BigInt ();
+
+  ~BigInt () {
+    if (len >= 2) {
+      FREE (u.v);
+    }
+  }
 
   BigInt (BigInt &);    // copy constructor
   BigInt (BigInt &&);   // move constructor
