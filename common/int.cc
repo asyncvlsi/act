@@ -1370,19 +1370,11 @@ BigInt &BigInt::operator<<(UNIT_TYPE x)
   mask = ~mask << x;
   for (int i = len-1; i >= 0; i--) {
     if (i + stride < len) {
-      if (getVal(i) != 0) {
-        _setVal(i+stride, getVal(i) << x);
-      } else {
-        _setVal(i+stride, 0);
-     }
-      if (i > 0) {
-        if (getVal(i-1) != 0){
-          if (x != 0) {
-            _setVal(i+stride, getVal(i+stride)|(getVal(i-1) >> (BIGINT_BITS_ONE - x)));
-          }
-        } else {
-          _setVal(i+stride, getVal(i+stride)&(mask << x));
-        }
+      if (i > 0 && (x != 0)) {
+	_setVal (i+stride, (getVal (i) << x) | (getVal (i-1) >> (BIGINT_BITS_ONE-x)));
+      }
+      else {
+	_setVal(i+stride, getVal(i) << x);
       }
     }
   }
