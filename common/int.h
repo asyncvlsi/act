@@ -67,6 +67,10 @@ class BigInt {
 public:
   BigInt () {
     len = 1;
+    width = 1;
+    u.value = 0;
+    isdynamic = 0;
+    issigned = 0;
   }
 
   BigInt (int w, int s, int d); 
