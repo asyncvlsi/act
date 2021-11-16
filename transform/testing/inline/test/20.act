@@ -1,0 +1,23 @@
+function bar (int<1> arg) : int<1>
+{
+
+  int<1> f;
+
+  chp {
+   f := 0;
+  *[ arg > 0 -> f := f + 1; arg := arg - 1 ];
+   self := f + 2
+  }
+}
+
+defproc test ()
+{
+  
+  int<1> ff;
+
+  chp {
+    ff := bar(bar(1))
+  }
+}
+
+test t;

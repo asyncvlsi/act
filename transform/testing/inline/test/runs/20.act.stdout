@@ -1,0 +1,37 @@
+defproc test ();
+function bar (int<1> arg) : int<1>;
+
+defproc test ()
+{
+
+/* instances */
+int<1> fuse_1;
+int<1> fuse_0;
+int<1> farg_0;
+int<1> ff;
+int<1> floc_0;
+int<1> fret_0;
+
+/* connections */
+chp {
+farg_0:=1;floc_0:=0;*[farg_0>0 -> floc_0:=floc_0+1;farg_0:=farg_0-1];fret_0:=floc_0+2;fuse_0:=fret_0;farg_0:=fuse_0;floc_0:=0;*[farg_0>0 -> floc_0:=floc_0+1;farg_0:=farg_0-1];fret_0:=floc_0+2;fuse_1:=fret_0;ff:=fuse_1
+}
+}
+
+function bar (int<1> arg) : int<1>
+{
+
+/* instances */
+int<1> f;
+
+/* connections */
+chp {
+f:=0;*[arg>0 -> f:=f+1;arg:=arg-1];self:=f+2
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

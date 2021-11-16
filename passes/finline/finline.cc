@@ -242,7 +242,8 @@ Expr **ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
     args = 0;
     while (tmp) {
       arglist[args++] = expr_expand (tmp->u.e.l, NULL, NULL,
-				     ACT_EXPR_EXFLAG_DUPONLY);
+				     ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_CHPEX);
+      arglist[args-1] = _inline_funcs (l, arglist[args-1]);
       tmp = tmp->u.e.r;
     }
   }
