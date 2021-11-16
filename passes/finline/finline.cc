@@ -72,7 +72,12 @@ void ActCHPFuncInline::_full_inline (act_chp_lang_t *c)
   }
 
   /* -- now do a one-step complex inline -- */
-  _do_complex_inline (NULL, l, c);
+  if (list_isempty (l)) {
+    _structure_assign (c);
+  }
+  else {
+    _do_complex_inline (NULL, l, c);
+  }
 
   list_free (l);
 }
@@ -554,6 +559,108 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
   }
 }
 
+
+void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
+{
+  if (!c) return;
+
+  switch (c->type) {
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    {
+      InstType *it = _cursc->FullLookup (c->u.comm.chan, NULL);
+      if (TypeFactory::isUserType (it)) {
+	it = dynamic_cast<UserDef *>(it->BaseType())->root();
+      }
+      Chan *cx = dynamic_cast <Chan *> (it->BaseType());
+      Assert (cx, "What?");
+      if (TypeFactory::isStructure (cx->datatype())) {
+	/* XXX: check special case of function that returns a structure */
+	warning ("Structure return value inlining for send data not currently supported!");
+      }
+    }
+    break;
+
+  case ACT_CHP_ASSIGN:
+    {
+      InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
+      if (TypeFactory::isStructure (it)) {
+	if (c->u.assign.e->type == E_VAR) {
+	  int *types;
+	  int nb, ni;
+	  ActId *e_rhs;
+
+	  e_rhs = (ActId *) c->u.assign.e->u.e.l;
+	  
+	  /* element-wise assignment */
+	  Data *d = dynamic_cast<Data *> (it->BaseType());
+	  Assert (d, "Hmm");
+	  ActId **fields = d->getStructFields (&types);
+	  FREE (types);
+	  d->getStructCount (&nb, &ni);
+	  int sz = nb + ni;
+	  list_t *l = list_new ();
+	  for (int i=0; i < sz; i++) {
+	    act_chp_lang_t *tc;
+	    NEW (tc, act_chp_lang_t);
+	    tc->type = ACT_CHP_ASSIGN;
+	    tc->label = NULL;
+	    tc->space = NULL;
+	    tc->u.assign.id = c->u.assign.id->Clone();
+	    tc->u.assign.id->Tail()->Append (fields[i]);
+	    NEW (tc->u.assign.e, Expr);
+	    tc->u.assign.e->type = E_VAR;
+	    tc->u.assign.e->u.e.r = NULL;
+	    tc->u.assign.e->u.e.l = (Expr *) e_rhs->Clone();
+	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
+	    list_append (l, tc);
+	  }
+	  FREE (fields);
+	  c->type = ACT_CHP_SEMI;
+	  c->u.semi_comma.cmd = l;
+	}
+	else {
+	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
+	  Function *func = (Function *) c->u.assign.e->u.fn.s;
+	  if (!func->isExternal() && !func->isSimpleInline()) {
+	    fatal_error ("Fix this please (complex inline struct)!");
+	  }
+	}
+      }
+    }
+    break;
+
+  case ACT_CHP_SEMI:
+  case ACT_CHP_COMMA:
+    for (listitem_t *li = list_first (c->u.semi_comma.cmd);
+	 li; li = list_next (li)) {
+      _structure_assign ((act_chp_lang_t *) list_value (li));
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
+      if (gc->s) {
+	_structure_assign (gc->s);
+      }
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+  case ACT_CHP_FUNC:
+  case ACT_CHP_HOLE:
+    break;
+
+  case ACT_CHP_SEMILOOP:
+  case ACT_CHP_COMMALOOP:
+  default:
+    fatal_error ("Unknown CHP type %d", c->type);
+    break;
+  }
+}
 
 
 

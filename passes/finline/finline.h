@@ -50,6 +50,8 @@ private:
   act_chp_lang_t *_do_inline (struct pHashtable *, list_t *);
   void _apply_complex_inlines (list_t *, Expr *);
 
+  void _structure_assign (act_chp_lang_t *c);
+
   int _get_fresh_idx (const char *prefix, int *idx);
   int _useidx;
 };
