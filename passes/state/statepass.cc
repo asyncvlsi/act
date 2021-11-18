@@ -1090,6 +1090,11 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
 
   /*-- check if this is a dynamic array --*/
   b = phash_lookup (si->bnl->cdH, c);
+
+  if (!b && c->isglobal() && _root_si) {
+    b = phash_lookup (_root_si->bnl->cdH, c);
+  }
+  
   if (b) {
     act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
     b = phash_lookup (si->map, c);
@@ -1116,39 +1121,43 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   }
 
   /*-- otherwise... --*/
-
   b = phash_lookup (si->bnl->cH, c);
-  if (!b) {
-    return 0;
-  }
-  Assert (b, "No connection in conn hash?");
-  act_booleanized_var_t *v =  (act_booleanized_var_t *)b->v;
 
-  /* set type and width */
-  if (type) {
-    if (v->ischan) {
-      if (v->input) {
-	*type = 2;
+  if (!b && c->isglobal()) {
+    b = phash_lookup (_root_si->bnl->cH, c);
+  }
+  if (b) {
+    act_booleanized_var_t *v =  (act_booleanized_var_t *)b->v;
+
+    /* set type and width */
+    if (type) {
+      if (v->ischan) {
+	if (v->input) {
+	  *type = 2;
+	}
+	else {
+	  *type = 3;
+	}
+	if (width) {
+	  *width = v->width;
+	}
+      }
+      else if (v->isint) {
+	*type = 1;
+	if (width) {
+	  *width = v->width;
+	}
       }
       else {
-	*type = 3;
-      }
-      if (width) {
-	*width = v->width;
-      }
-    }
-    else if (v->isint) {
-      *type = 1;
-      if (width) {
-	*width = v->width;
+	*type = 0;
+	if (width) {
+	  *width = 1;
+	}
       }
     }
-    else {
-      *type = 0;
-      if (width) {
-	*width = 1;
-      }
-    }
+  }
+  else {
+    return 0;
   }
 
   int glob;
@@ -1376,7 +1385,7 @@ bool ActStatePass::connExists (stateinfo_t *si, act_connection *c)
   if (!b) {
     b = phash_lookup (si->bnl->cH, c);
   }
-  
+
   if (b) {
     return true;
   }
