@@ -291,7 +291,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       *width = rw;				\
     }						\
     else if (mode == WIDTH_LSHIFT) {		\
-      *width = lw + (1 << rw);			\
+      *width = lw + ((1 << rw)-1);		\
     }						\
   }
   
