@@ -1,0 +1,10 @@
+
+add_subdirectory(aflat)
+add_subdirectory(prs2net)
+add_subdirectory(prs2sim)
+add_subdirectory(prs2cells)
+add_subdirectory(v2act)
+add_subdirectory(ext2sp)
+add_subdirectory(adepend)
+add_subdirectory(act2v)
+add_subdirectory(testing)

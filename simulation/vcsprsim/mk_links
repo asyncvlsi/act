@@ -1,9 +1,0 @@
-#!/bin/sh
-
-for i in ../../common/avl.c ../../common/avl.h ../../common/heap.c ../../common/heap.h ../../common/lex.c ../../common/lex.h ../../common/lzw.c ../../common/lzw.h ../../common/misc.c ../../common/misc.h ../../common/names.c ../../common/names.h ../prsim/prs.c ../prsim/prs.h ../../common/heap.h ../../common/heap.c
-do 
-	if [ ! -f `basename $i` ]
-	then
-		ln -s $i .
-	fi
-done
