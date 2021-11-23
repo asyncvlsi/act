@@ -253,6 +253,7 @@ static act_chp_lang_t *_chp_subst_helper (ActId *id, act_inline_table *tab,
 
   NEW (ret, act_chp_lang_t);
   ret->type = c->type;
+  ret->label = c->label;
 
   switch (c->type) {
   case ACT_CHP_COMMA:
