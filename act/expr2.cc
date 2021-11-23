@@ -25,7 +25,9 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <act/lang.h>
+#include <common/int.h>
 #include <string.h>
+#include <string>
 
 #define PRINT_STEP				\
   do {						\
@@ -190,7 +192,13 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
 
   case E_INT:
     if (prec < 0) {
-      snprintf (buf+k, sz, "%lu", e->u.v);
+      if (e->u.v_extra) {
+	std::string s = ((BigInt *)e->u.v_extra)->sPrint ();
+	snprintf (buf+k, sz, "0x%s", s.c_str());
+      }
+      else {
+	snprintf (buf+k, sz, "%lu", e->u.v);
+      }
     }
     else {
       snprintf (buf+k, sz, "%ld", e->u.v);
@@ -330,7 +338,12 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
     if (e->u.e.r) {
       snprintf (buf+k, sz, ",");
       PRINT_STEP;
-      sprint_expr (buf+k, sz, e->u.e.r);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.e.r);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.e.r);
+      }
       PRINT_STEP;
     }
     snprintf (buf+k, sz, ")");
@@ -937,12 +950,14 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
  *   pc = 1 means partial constant propagation is used
  *------------------------------------------------------------------------
  */
-Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
+static Expr *_expr_expand (int *width,
+			   Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 {
   Expr *ret, *te;
   ActId *xid;
   Expr *tmp;
   int pc;
+  int lw, rw;
   
   if (!e) return NULL;
 
@@ -992,7 +1007,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       
       for (i=ilo; i <= ihi; i++) {
 	s->setPInt (vx->u.idx, i);
-	Expr *tmp = expr_expand (e->u.e.r->u.e.r->u.e.r, ns, s, flags);
+	Expr *tmp = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.r, ns, s, flags);
 	if (is_const && expr_is_a_const (tmp)) {
 	  if (tmp->type == E_TRUE || tmp->type == E_FALSE) {
 	    if (e->type == E_ANDLOOP) {
@@ -1070,8 +1085,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_OR:
   case E_XOR:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	unsigned long v;
@@ -1193,8 +1208,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_LSR:
   case E_ASR:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	signed long v;
@@ -1335,8 +1350,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_EQ:
   case E_NE:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	signed long v;
@@ -1420,7 +1435,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     
   case E_NOT:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1449,7 +1464,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     
   case E_COMPLEMENT:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1487,7 +1502,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
     
   case E_UMINUS:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
 	signed long v = ret->u.e.l->u.v;
@@ -1517,8 +1532,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 
   case E_QUERY:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
     if (!expr_is_a_const (ret->u.e.l)) {
       Expr *tmp = ret->u.e.r;
 
@@ -1563,8 +1578,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_COLON:
     LVAL_ERROR;
     /* you only get here for non-const things */
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
-    ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
     break;
 
   case E_BITFIELD:
@@ -1587,8 +1602,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       if (!expr_is_a_const (ret->u.e.l)) {
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = E_BITFIELD;
-	ret->u.e.r->u.e.l = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
-	ret->u.e.r->u.e.r = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
+	ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
+	ret->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags);
 	if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "\texpanding expr: ");
@@ -1624,12 +1639,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	}
 	v = ret->u.e.l->u.v;
 	if (e->u.e.r->u.e.l) {
-	  lo = expr_expand (e->u.e.r->u.e.l, ns, s, flags);
+	  lo = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
 	}
 	else {
 	  lo = NULL;
+	  lw = -1;
 	}
-	hi = expr_expand (e->u.e.r->u.e.r, ns, s, flags);
+	hi = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags);
 	Assert (hi, "What?");
       
 	unsigned long lov, hiv;
@@ -1683,7 +1699,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     LVAL_ERROR;
-    ret->u.e.l = expr_expand (e->u.e.l, ns, s, flags);
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     if (!e->u.e.r) {
       ret->u.e.r = NULL;
       if (expr_is_a_const (ret->u.e.l)) {
@@ -1722,7 +1738,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       }
     }
     else {
-      ret->u.e.r = expr_expand (e->u.e.r, ns, s, flags);
+      ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
       /* XXX: should we simplify this?! */
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	unsigned long x = ret->u.e.l->u.v;
@@ -1813,7 +1829,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	  etmp = e->u.fn.r;
 	}
 	do {
-	  tmp->u.e.l = expr_expand (etmp->u.e.l, ns, s, flags);
+	  tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
 	  if (etmp->u.e.r) {
 	    NEW (tmp->u.e.r, Expr);
 	    tmp->type = E_LT;
@@ -1901,7 +1917,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
       ret->u.e.l = NULL;
       ret->u.e.r = NULL;
       while (e) {
-	f->u.e.l = expr_expand (e->u.e.l, ns, s,
+	f->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s,
 				(flags & ~ACT_EXPR_EXFLAG_ISLVAL));
 	if (e->u.e.r) {
 	  NEW (f->u.e.r, Expr);
@@ -1923,6 +1939,11 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   return ret;
 }
 
+Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
+{
+  int w;
+  return _expr_expand (&w, e, ns, s, flags);
+}
 
 /*------------------------------------------------------------------------
  *  Is this a constant? This works only after it has been expanded out.
