@@ -1090,6 +1090,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	//FREE (ret->u.e.r);
 	ret->type = E_INT;
 	ret->u.v = v;
+        ret->u.v_extra = NULL;
 
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
@@ -1228,6 +1229,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 
 	ret->type = E_INT;
 	ret->u.v = v;
+        ret->u.v_extra = NULL;
 
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
@@ -1468,6 +1470,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = ~v;
+        ret->u.v_extra = NULL;
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
@@ -1491,6 +1494,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	//FREE (ret->u.e.l);
 	ret->type = E_INT;
 	ret->u.v = -v;
+        ret->u.v_extra = NULL;
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
@@ -1658,6 +1662,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	}
 	ret->type = E_INT;
 	ret->u.v = v;
+        ret->u.v_extra = NULL;
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
@@ -1700,6 +1705,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	  if (ret->u.e.l->type == E_TRUE) {
 	    ret->type = E_INT;
 	    ret->u.v = 1;
+            ret->u.v_extra = NULL;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
 	    ret = tmp;
@@ -1707,6 +1713,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	  else {
 	    ret->type = E_INT;
 	    ret->u.v = 0;
+            ret->u.v_extra = NULL;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
 	    ret = tmp;
@@ -1727,6 +1734,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
 	
 	ret->type = E_INT;
 	ret->u.v = x;
+        ret->u.v_extra = NULL;
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
@@ -1850,6 +1858,7 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
   case E_INT:
     LVAL_ERROR;
     ret->u.v = e->u.v;
+    ret->u.v_extra = NULL;
 
     tmp = TypeFactory::NewExpr (ret);
     FREE (ret);
