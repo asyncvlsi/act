@@ -950,8 +950,40 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
  *   pc = 1 means partial constant propagation is used
  *------------------------------------------------------------------------
  */
-static Expr *_expr_expand (int *width,
-			   Expr *e, ActNamespace *ns, Scope *s, unsigned int flags)
+static BigInt *_int_const (unsigned long v)
+{
+  BigInt *btmp;
+
+  /* compute bitwidth */
+  int w = 0;
+  unsigned long itmp;
+  
+  itmp = v;
+  while (itmp) {
+    itmp = itmp >> 1;
+    w++;
+  }
+  if (w == 0) { w = 1; }
+  btmp = new BigInt (w, 0, 1);
+  btmp->setVal (0, v);
+  btmp->setWidth (w);
+
+  return btmp;
+}
+
+static int _int_width (unsigned long v)
+{
+  int w = 0;
+  while (v) {
+    v = v >> 1;
+    w++;
+  }
+  if (w == 0) { w = 1; }
+  return w;
+}
+
+static Expr *_expr_expand (int *width, Expr *e,
+			   ActNamespace *ns, Scope *s, unsigned int flags)
 {
   Expr *ret, *te;
   ActId *xid;
@@ -979,11 +1011,14 @@ static Expr *_expr_expand (int *width,
       }									\
     } while (0)
 
+#include "expr_width.h"  
+
   switch (e->type) {
 
   case E_ANDLOOP:
   case E_ORLOOP:
     LVAL_ERROR;
+    *width = 1;
     {
       int ilo, ihi;
       ValueIdx *vx;
@@ -1087,6 +1122,7 @@ static Expr *_expr_expand (int *width,
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+    WIDTH_UPDATE(WIDTH_MAX);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	unsigned long v;
@@ -1210,6 +1246,26 @@ static Expr *_expr_expand (int *width,
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+
+    if (e->type == E_PLUS || e->type == E_MINUS) {
+      WIDTH_UPDATE (WIDTH_MAX1);
+    }
+    else if (e->type == E_MULT) {
+      WIDTH_UPDATE (WIDTH_SUM);
+    }
+    else if (e->type == E_DIV || e->type == E_LSR || e->type == E_ASR) {
+      WIDTH_UPDATE (WIDTH_LEFT);
+    }
+    else if (e->type == E_MOD) {
+      WIDTH_UPDATE (WIDTH_RIGHT);
+    }
+    else if (e->type == E_LSL) {
+      WIDTH_UPDATE (WIDTH_LSHIFT);
+    }
+    else {
+      Assert (0, "What?");
+    }
+    
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
 	signed long v;
@@ -1436,6 +1492,7 @@ static Expr *_expr_expand (int *width,
   case E_NOT:
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    *width = lw;
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1465,6 +1522,7 @@ static Expr *_expr_expand (int *width,
   case E_COMPLEMENT:
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    *width = lw;
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
@@ -1503,6 +1561,7 @@ static Expr *_expr_expand (int *width,
   case E_UMINUS:
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    *width = lw;
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
 	signed long v = ret->u.e.l->u.v;
@@ -1534,6 +1593,7 @@ static Expr *_expr_expand (int *width,
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+    WIDTH_UPDATE (WIDTH_MAX);
     if (!expr_is_a_const (ret->u.e.l)) {
       Expr *tmp = ret->u.e.r;
 
@@ -1580,6 +1640,7 @@ static Expr *_expr_expand (int *width,
     /* you only get here for non-const things */
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+    WIDTH_UPDATE (WIDTH_MAX);
     break;
 
   case E_BITFIELD:
@@ -1590,6 +1651,7 @@ static Expr *_expr_expand (int *width,
       ret->u.e.r->type = E_BITFIELD;
       ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
       ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+      *width = -1;
     }
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
@@ -1624,6 +1686,12 @@ static Expr *_expr_expand (int *width,
 	  print_expr (stderr, e);
 	  fprintf (stderr,"\n");
 	  fatal_error ("Variable in bitfield operator is a non-integer");
+	}
+	if (ret->u.e.r->u.e.l) {
+	  *width = ret->u.e.r->u.e.r->u.v - ret->u.e.r->u.e.l->u.v + 1;
+	}
+	else {
+	  *width = 1;
 	}
       }
       else {
@@ -1676,6 +1744,7 @@ static Expr *_expr_expand (int *width,
 	else {
 	  v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
 	}
+	*width = (hiv - lov + 1);
 	ret->type = E_INT;
 	ret->u.v = v;
         ret->u.v_extra = NULL;
@@ -1694,6 +1763,7 @@ static Expr *_expr_expand (int *width,
     else {
       ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
     }
+    *width = 1;
     break;
 
   case E_BUILTIN_INT:
@@ -1736,16 +1806,17 @@ static Expr *_expr_expand (int *width,
 	  }
 	}
       }
+      *width = 1;
     }
     else {
       ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
       /* XXX: should we simplify this?! */
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	unsigned long x = ret->u.e.l->u.v;
-	int width = ret->u.e.r->u.v;
+	int _width = ret->u.e.r->u.v;
 
-	if (width < 64) {
-	  x = x & ((1UL << width)-1);
+	if (_width < 64) {
+	  x = x & ((1UL << _width)-1);
 	}
 	
 	ret->type = E_INT;
@@ -1754,10 +1825,14 @@ static Expr *_expr_expand (int *width,
 	tmp = TypeFactory::NewExpr (ret);
 	FREE (ret);
 	ret = tmp;
+	*width = _width;
       }
       else if (!expr_is_a_const (ret->u.e.r)) {
 	act_error_ctxt (stderr);
 	fatal_error ("int() operator requires a constant expression for the second argument");
+      }
+      else {
+	*width = ret->u.e.r->u.v;
       }
     }
     break;
@@ -1766,10 +1841,13 @@ static Expr *_expr_expand (int *width,
     LVAL_ERROR;
     if (!(flags & ACT_EXPR_EXFLAG_CHPEX)) {
       _eval_function (ns, s, e, &ret);
+      *width = -1;
     }
     else {
       Expr *tmp, *etmp;
       Function *f = dynamic_cast<Function *>((UserDef *)e->u.fn.s);
+      
+      *width = TypeFactory::bitWidth (f->getRetType());
       
       if (e->u.fn.r->type == E_GT) {
 	/* template parameters */
@@ -1856,12 +1934,30 @@ static Expr *_expr_expand (int *width,
 	te = xid->EvalCHP (ns, s, 0);
 	if (te->type == E_VAR) {
 	  act_chp_macro_check (s, (ActId *)te->u.e.l);
+	  InstType *it;
+	  act_type_var (s, (ActId *)te->u.e.l, &it);
+	  *width = TypeFactory::bitWidth (it);
+	}
+	else if (te->type == E_INT) {
+	  if (te->u.v_extra == NULL) {
+	    /* XXX: add stuff here */
+	  }
+	  *width = _int_width (te->u.v);
+	}
+	else {
+	  *width = -1;
 	}
       }
       else {
 	/* non-chp expansion */
 	xid = ((ActId *)e->u.e.l)->Expand (ns, s);
 	te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
+	if (te->type == E_INT) {
+	  *width = _int_width (te->u.v);
+	}
+	else {
+	  *width = -1;
+	}
       }
       if (te->type != E_VAR) {
 	delete xid;
@@ -1875,6 +1971,7 @@ static Expr *_expr_expand (int *width,
     LVAL_ERROR;
     ret->u.v = e->u.v;
     ret->u.v_extra = NULL;
+    *width = _int_width (ret->u.v);
 
     tmp = TypeFactory::NewExpr (ret);
     FREE (ret);
@@ -1893,7 +1990,7 @@ static Expr *_expr_expand (int *width,
     tmp = TypeFactory::NewExpr (ret);
     FREE (ret);
     ret = tmp;
-    
+    *width = 1;
     break;
 
   case E_ARRAY:
@@ -1916,9 +2013,11 @@ static Expr *_expr_expand (int *width,
       Expr *f = ret;
       ret->u.e.l = NULL;
       ret->u.e.r = NULL;
+      *width = 0;
       while (e) {
 	f->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s,
 				(flags & ~ACT_EXPR_EXFLAG_ISLVAL));
+	*width += lw;
 	if (e->u.e.r) {
 	  NEW (f->u.e.r, Expr);
 	  f = f->u.e.r;
