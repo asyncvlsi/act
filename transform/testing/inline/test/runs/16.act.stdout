@@ -10,7 +10,7 @@ chan(int<32>) x;
 
 /* connections */
 dataflow {
-(y+1>>2&7)+1 -> x
+(y+1>>0x2&7)+0x1 -> x
 }
 }
 
@@ -21,7 +21,7 @@ function addone (int<32> x) : int<32>
 
 /* connections */
 chp {
-self:=x{4..2}+1
+self:=x{0x4..0x2}+0x1
 }
 }
 

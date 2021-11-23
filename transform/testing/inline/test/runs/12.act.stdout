@@ -15,7 +15,7 @@ int<32> fret_0;
 
 /* connections */
 chp {
-farg_0:=y;floc_0:=0;*[floc_0<2 -> fret_0:=(farg_0+1)*2;floc_0:=floc_0+1];fuse_0:=fret_0;x:=fuse_0
+farg_0:=y;floc_0:=0x0;*[floc_0<0x2 -> fret_0:=(farg_0+0x1)*0x2;floc_0:=floc_0+0x1];fuse_0:=fret_0;x:=fuse_0
 }
 }
 
@@ -26,7 +26,7 @@ function tryme (int<32> x) : int<32>
 
 /* connections */
 chp {
-self:=x*2
+self:=x*0x2
 }
 }
 
@@ -38,7 +38,7 @@ int<32> w;
 
 /* connections */
 chp {
-w:=0;*[w<2 -> self:=(x+1)*2;w:=w+1]
+w:=0x0;*[w<0x2 -> self:=(x+0x1)*0x2;w:=w+0x1]
 }
 }
 

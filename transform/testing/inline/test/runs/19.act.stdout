@@ -9,7 +9,7 @@ int<1> ff;
 
 /* connections */
 chp {
-ff:=1+2+2
+ff:=0x1+0x2+0x2
 }
 }
 
@@ -21,7 +21,7 @@ int<1> f;
 
 /* connections */
 chp {
-self:=arg+2
+self:=arg+0x2
 }
 }
 

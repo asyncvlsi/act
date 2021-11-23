@@ -10,7 +10,7 @@ int<32> x;
 
 /* connections */
 chp {
-x:=y{4}
+x:=y{0x4}
 }
 }
 
@@ -21,7 +21,7 @@ function addone (int<32> x) : int<32>
 
 /* connections */
 chp {
-self:=x{4}
+self:=x{0x4}
 }
 }
 

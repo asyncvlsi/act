@@ -7,5 +7,5 @@ int<32> c;
 
 /* connections */
 chp {
-c:=a+b;c:=a+b;c:=-a+b;c:=a-b;c:=0;c:=a>0 ? 0 : 1
+c:=a+b;c:=a+b;c:=-a+b;c:=a-b;c:=0x0;c:=a>0x0 ? 0x0 : 0x1
 }

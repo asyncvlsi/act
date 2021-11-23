@@ -11,7 +11,7 @@ mystruct res;
 
 /* connections */
 chp {
-res.a:=y+1>3 ? 0+1 : 0;res.b:=y+1>3 ? true : true;res.c:=y+1>3 ? 1 : 0-1
+res.a:=y+0x1>0x3 ? 0x0+0x1 : 0x0;res.b:=y+1>3 ? true : true;res.c:=y+1>3 ? 0x1 : 0x0-0x1
 }
 }
 
@@ -23,7 +23,7 @@ mystruct tmp;
 
 /* connections */
 chp {
-tmp.a:=0;tmp.b:=true;tmp.c:=1;[x>3 -> tmp.a:=tmp.a+1 [] else -> tmp.c:=tmp.c-1];self:=tmp
+tmp.a:=0x0;tmp.b:=true;tmp.c:=0x1;[x>0x3 -> tmp.a:=tmp.a+0x1 [] else -> tmp.c:=tmp.c-0x1];self:=tmp
 }
 }
 

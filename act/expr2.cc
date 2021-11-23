@@ -1973,9 +1973,23 @@ static Expr *_expr_expand (int *width, Expr *e,
     ret->u.v_extra = NULL;
     *width = _int_width (ret->u.v);
 
-    tmp = TypeFactory::NewExpr (ret);
-    FREE (ret);
-    ret = tmp;
+    if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+      if (e->u.v_extra) {
+	BigInt *btmp = new BigInt();
+	*btmp = *((BigInt *)e->u.v_extra);
+	ret->u.v_extra = btmp;
+      }
+      else {
+	BigInt *btmp = new BigInt (*width, 0, 1);
+	btmp->setVal (0, ret->u.v);
+	ret->u.v_extra = btmp;
+      }
+    }
+    else {
+      tmp = TypeFactory::NewExpr (ret);
+      FREE (ret);
+      ret = tmp;
+    }
     break;
 
   case E_REAL:
@@ -2272,6 +2286,9 @@ static void efree_ex (Expr *e)
 
   switch (e->type) {
   case E_INT:
+    if (e->u.v_extra) {
+      delete ((BigInt *)e->u.v_extra);
+    }
   case E_TRUE:
   case E_FALSE:
   case E_REAL:
