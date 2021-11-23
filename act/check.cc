@@ -26,6 +26,7 @@
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/value.h>
+#include <common/int.h>
 #include "act_parse_int.h"
 #include "act_walk.extra.h"
 
@@ -250,50 +251,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   printf ("check: %s\n", expr_operator_name (e->type));
   printf (" lt: %x  rt: %x\n", lt, rt);      
   */
+#include "expr_width.h"  
 
-  /*
-    Modes:
-       0 = max of lw. rw
-       1 = max of lw, rw + 1
-       2 = sum of lw, rw
-       3 = 1 (bool result)
-  */
-#define WIDTH_MAX   0
-#define WIDTH_MAX1  1
-#define WIDTH_SUM   2
-#define WIDTH_BOOL  3
-#define WIDTH_LEFT  4
-#define WIDTH_RIGHT 5
-#define WIDTH_LSHIFT 6
-
-#ifndef MAX
-#define MAX(a,b) ((a) < (b) ? (b) : (a))
-#endif  
-
-#define WIDTH_UPDATE(mode)			\
-  if (width) {					\
-    if (mode == WIDTH_MAX) {			\
-      *width = MAX(lw,rw);			\
-    }						\
-    else if (mode == WIDTH_MAX1) {		\
-      *width = MAX(lw,rw)+1;			\
-    }						\
-    else if (mode == WIDTH_SUM) {		\
-      *width = lw+rw;				\
-    }						\
-    else if (mode == WIDTH_BOOL) {		\
-      *width = 1;				\
-    }						\
-    else if (mode == WIDTH_LEFT) {		\
-      *width = lw;				\
-    }						\
-    else if (mode == WIDTH_RIGHT) {		\
-      *width = rw;				\
-    }						\
-    else if (mode == WIDTH_LSHIFT) {		\
-      *width = lw + ((1 << rw)-1);		\
-    }						\
-  }
   
 #define EQUAL_LT_RT2(f,g,mode)						\
   do {									\
@@ -847,17 +806,24 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     if (width) {
       int w = 0;
       unsigned long val;
-      if ((long)e->u.v < 0) {
-	val = -((long)e->u.v);
+
+      if (e->u.v_extra) {
+	BigInt *b = (BigInt *) e->u.v_extra;
+	*width = b->getWidth ();
       }
       else {
-	val = e->u.v;
+	if ((long)e->u.v < 0) {
+	  val = -((long)e->u.v);
+	}
+	else {
+	  val = e->u.v;
+	}
+	while (val) {
+	  w++;
+	  val = val >> 1;
+	}
+	*width = (w+1);
       }
-      while (val) {
-	w++;
-	val = val >> 1;
-      }
-      *width = (w+1);
     }
     return (T_INT|T_PARAM|T_STRICT);
     break;

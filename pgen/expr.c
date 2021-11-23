@@ -342,6 +342,7 @@ Expr *B (void)
       e = newexpr ();
       e->type = E_TRUE;
       e->u.v = 1;
+      e->u.v_extra = NULL;
     }
     else if (strcmp (file_tokenstring (Tl), "false") == 0) {
       POP (Tl);
@@ -349,6 +350,7 @@ Expr *B (void)
       e = newexpr ();
       e->type = E_FALSE;
       e->u.v = 0;
+      e->u.v_extra = NULL;
     }
     else {
       if (expr_parse_id) {
@@ -629,6 +631,7 @@ static Expr *W (void)
       POP (Tl);
       e = newexpr ();
       e->type = E_INT;
+      e->u.v_extra = NULL;
       if (uminus) {
 	e->u.v = -file_integer (Tl);
       }
@@ -659,6 +662,7 @@ static Expr *W (void)
       e = newexpr ();
       e->type = E_TRUE;
       e->u.v = 1;
+      e->u.v_extra = NULL;
     }
     else if (strcmp (file_tokenstring (Tl), "false") == 0) {
       POP (Tl);
@@ -666,6 +670,7 @@ static Expr *W (void)
       e = newexpr ();
       e->type = E_FALSE;
       e->u.v = 0;
+      e->u.v_extra = NULL;
     }
     else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
 	     /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {

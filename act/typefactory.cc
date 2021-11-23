@@ -21,6 +21,7 @@
  */
 #include <act/act.h>
 #include <act/types.h>
+#include <common/int.h>
 
 /**
  * Create all the static members
@@ -833,6 +834,17 @@ Expr *TypeFactory::NewExpr (Expr *x)
   else if (x->type == E_INT) {
     ihash_bucket_t *b;
 
+    if (x->u.v_extra) {
+      Expr *t;
+      BigInt *tmp = new BigInt();
+      NEW (t, Expr);
+      t->type = E_INT;
+      t->u.v = x->u.v;
+      *tmp = *((BigInt *)x->u.v_extra);
+      t->u.v_extra = tmp;
+      return t;
+    }
+    
     b = ihash_lookup (TypeFactory::expr_int, x->u.v);
     if (b) {
       return (Expr *)b->v;
@@ -843,6 +855,7 @@ Expr *TypeFactory::NewExpr (Expr *x)
       NEW (t, Expr);
       t->type = E_INT;
       t->u.v = x->u.v;
+      t->u.v_extra = NULL;
       b->v = t;
       return t;
     }

@@ -1182,6 +1182,7 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    else if (t->e->type == E_INT) {
 	      if (t->e->u.v < a->e->u.v) {
 		t->e->u.v = a->e->u.v;
+		t->e->u.v_extra = NULL;
 	      }
 	    }
 	    else {
@@ -1199,6 +1200,7 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    else if (t->e->type == E_INT) {
 	      if (t->e->u.v > a->e->u.v) {
 		t->e->u.v = a->e->u.v;
+		t->e->u.v_extra = NULL;
 	      }
 	    }
 	    else {
@@ -1220,6 +1222,7 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    /* AND */
 	    if (t->e->type == E_INT) {
 	      t->e->u.v &= a->e->u.v;
+	      t->e->u.v_extra = NULL;
 	    }
 	    else {
 	      act_error_ctxt (stderr);

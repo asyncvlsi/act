@@ -187,11 +187,12 @@ static Expr *expr_basecase (void)
     e = newexpr ();
     e->type = E_INT;
     e->u.v = file_integer (Tl);
+    e->u.v_extra = NULL;
   }
   else if (file_have (Tl, f_real)) {
     e = newexpr ();
     e->type = E_REAL;
-    e->u.v = file_real (Tl);
+    e->u.f = file_real (Tl);
   }
   else if (expr_parse_basecase_extra &&
 	   ((e = (*expr_parse_basecase_extra)(Tl)))) {

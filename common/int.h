@@ -153,6 +153,8 @@ public:
   }
   void adjlen(int l) { _adjlen(l); }
   
+  int isZero(); //number is all zeros
+  
 private:
   
   unsigned int width;        // actual bitwidth
@@ -201,7 +203,6 @@ private:
 
   void signExtend ();
 
-  int isZero(); //number is all zeros
   int isOne();  //number is one
 
   void expandSpace(int amt); // expand bitwidth b by # of bits

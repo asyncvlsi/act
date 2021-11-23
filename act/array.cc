@@ -991,6 +991,7 @@ Expr *Array::getDeref (int idx)
     NEW (tmp, Expr);
     tmp->type = E_INT;
     tmp->u.v = r[idx].u.ex.idx.lo;
+    tmp->u.v_extra = NULL;
     tmp2 = TypeFactory::NewExpr (tmp);
     FREE (tmp);
     return tmp2;

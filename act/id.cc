@@ -436,6 +436,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 
       ret->type = E_INT;
       ret->u.v = s->getPInt (offset + vx->u.idx);
+      ret->u.v_extra = NULL;
 
       tmp = TypeFactory::NewExpr (ret);
       FREE (ret);
@@ -448,6 +449,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 
       ret->type = E_INT;
       ret->u.v = s->getPInts (offset + vx->u.idx);
+      ret->u.v_extra = NULL;
 
       tmp = TypeFactory::NewExpr (ret);
       FREE (ret);

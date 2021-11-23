@@ -89,7 +89,10 @@ typedef struct expr {
       unsigned long extra;
     } x;
     double f;
-    unsigned long v;
+    struct {
+      unsigned long v;
+      void *v_extra;
+    };
   } u;
 } Expr;
 

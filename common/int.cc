@@ -1485,11 +1485,16 @@ std::string BigInt::sPrint()
   for (int i = len-1; i >= 0; i--) {
 #ifndef BIGINT_TEST
     if (sizeof(UNIT_TYPE) == 8) {
-      sprintf(buf, "%016lx", getVal (i));
+      if (i == len-1) {
+	sprintf(buf, "%lx", getVal (i));
+      }
+      else {
+	sprintf(buf, "%016lx", getVal (i));
+      }
     } 
 #else
     if (sizeof(UNIT_TYPE) == 1) {
-      sprintf(buf, "%02x", getVal (i));
+	sprintf(buf, "%02x", getVal (i));
     }
 #endif
     s += buf; 
