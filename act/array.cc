@@ -956,7 +956,7 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
     Expr *hval;
 
     Assert (r[i].u.ue.hi, "Invalid array range");
-    hval = expr_expand (r[i].u.ue.hi, ns, s);
+    hval = expr_expand (r[i].u.ue.hi, ns, s, ACT_EXPR_EXFLAG_CHPEX);
     if (r[i].u.ue.lo) {
       act_error_ctxt (stderr);
       fatal_error ("Range specifier for CHP array?");

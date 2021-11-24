@@ -1,0 +1,21 @@
+defproc testme (chan(int<256>) L);
+
+defproc testme (chan(int<256>) L)
+{
+
+/* instances */
+int<1> b;
+int<1> a;
+int<256> inp;
+
+/* connections */
+chp {
+L?inp;a:=inp;L?inp;b:=inp;L!0x7
+}
+}
+
+
+/* instances */
+testme t;
+
+/* connections */

@@ -1,0 +1,12 @@
+defproc testme (chan(int<256>) L) {
+  int<256> inp;
+  int<1> a;
+  int<1> b;
+  chp {
+    L?inp; a:=inp;
+    L?inp; b:=inp;
+    L!(~((a + b) * 0))
+  }
+}
+testme t;
+
