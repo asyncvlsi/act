@@ -1883,11 +1883,11 @@ static Expr *_expr_expand (int *width, Expr *e,
 
 	if (ret->u.e.l->u.v_extra) {
 	  BigInt *l = (BigInt *) ret->u.e.l->u.v_extra;
-	  delete l;
+	  *l = (*l) >> lov;
 	  FREE (ret->u.e.l);
-	  l = new BigInt (1, 0, (hiv-lov+1));
-	  l->setVal (0, v);
+	  l->setWidth (hiv-lov+1);
 	  ret->u.v_extra = l;
+	  ret->u.v = l->getVal (0);
 	}
 	else {
 	  ret->u.v_extra = NULL;
