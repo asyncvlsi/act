@@ -257,7 +257,19 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
-    if (v->isint) {
+    if (v->isstruct) {
+      state_counts ts;
+      getStructCount (v->isstruct, &ts);
+      x = phash_add (_cmap, pb->key);
+      x->i = idx;
+      Assert (v->a, "What?");
+      idx += v->a->size()*ts.numBools();
+      x = phash_add (_cmap, (act_connection*) (((unsigned long)pb->key)|1));
+      x->i = chpidx;
+      chpidx += ts.numInts()*v->a->size();
+      si->all.addVar (ts, v->a->size());
+    }
+    else if (v->isint) {
       x = phash_add (/*si->map*/ _cmap, pb->key);
       x->i = chpidx;
       Assert (v->a, "Huh?");
@@ -771,6 +783,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       x->i = c_idx.numInts();
       getStructCount (v->isstruct, &ts);
       c_idx.addVar (ts, v->a->size());
+      phash_delete (_cmap, (act_connection*)(((unsigned long)pb->key)|1));
     }
     else if (v->isint) {
       x = phash_lookup (/*si->map*/ _cmap, pb->key);
@@ -781,8 +794,13 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       c_idx.addInt (v->a->size());
     }
     else {
-      c_idx.addBool (v->a->size());
       /* bool, no problem */
+      x = phash_lookup (_cmap, pb->key);
+      Assert (x, "What?");
+      phash_delete (_cmap, pb->key);
+      x = phash_add (si->map, pb->key);
+      x->i = c_idx.numBools();
+      c_idx.addBool (v->a->size());
     }
   }
 

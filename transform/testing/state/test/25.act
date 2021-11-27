@@ -1,0 +1,18 @@
+deftype bar (int<4> a, b)
+{ 
+
+}
+
+defproc foo() 
+{
+int i;
+bar x[10];
+
+chp {
+   i := 0;
+  x[i] := x[i+1];
+  skip
+}
+}
+
+foo f;
