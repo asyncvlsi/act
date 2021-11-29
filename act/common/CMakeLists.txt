@@ -65,6 +65,7 @@ set_target_properties(
 set_target_properties(ActCommon PROPERTIES OUTPUT_NAME actcommon)
 
 install (TARGETS ActCommon
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include/act/common
 )

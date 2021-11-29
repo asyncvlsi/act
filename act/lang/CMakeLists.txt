@@ -30,14 +30,12 @@ add_custom_command(
           lang.m4
           namespaces.m4
           types.m4
-          expr.c
           expr.h)
 
 add_library(
   ActLang
   act_walk.extra.h
   lang.h
-  expr.h
   ${CMAKE_CURRENT_BINARY_DIR}/act_parse_id.h
   ${CMAKE_CURRENT_BINARY_DIR}/act_parse.h
   ${CMAKE_CURRENT_BINARY_DIR}/act_parse_int.h
@@ -58,6 +56,7 @@ add_library(
   warn.def
   act_id.h
   inline.h
+  expr.h
   expr.c
   path.c
   expr_extra.c
@@ -97,6 +96,7 @@ set_target_properties(ActLang PROPERTIES OUTPUT_NAME actlang)
 
 add_subdirectory(test)
 install (TARGETS ActLang
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include/act/lang
 )

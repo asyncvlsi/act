@@ -8,8 +8,9 @@ jobs:
      steps:
        - checkout
        - run: |
+          ls act/lang
           apt-get -q update -y
-          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential
+          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential cmake
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
@@ -21,10 +22,11 @@ jobs:
        - image: centos:8
      steps:
        - checkout
+       - status
        - run: |
           yum install -y 'dnf-command(config-manager)'
           yum config-manager --set-enabled powertools -y
-          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
+          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4 cmake
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install

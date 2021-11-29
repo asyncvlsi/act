@@ -35,6 +35,7 @@ set_target_properties(
 set_target_properties(ActMiniScheme PROPERTIES OUTPUT_NAME actscm)
 
 install (TARGETS ActMiniScheme
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include/act/miniscm
 )

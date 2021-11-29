@@ -28,6 +28,7 @@ set_target_properties(ActPasses PROPERTIES OUTPUT_NAME actpass)
 
 
 install (TARGETS ActPasses
+    ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     PUBLIC_HEADER DESTINATION include/act/passes
 )
