@@ -24,7 +24,7 @@
 #ifndef __LANG_H__
 #define __LANG_H__
 
-#include "expr.h"
+#include "act/lang/expr.h"
 #include "act/common/mstring.h"
 #include "act/common/list.h"
 #include "act/common/array.h"
