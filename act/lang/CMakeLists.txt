@@ -91,8 +91,7 @@ add_library(
 target_link_libraries(ActLang ActCommon)
 
 set_target_properties(
-   ActLang PROPERTIES PUBLIC_HEADER "act.h;act_array.h;act_id.h;basetype.h;body.h;expr.h;
-  expr_width.h;inline.h;inst.h;iter.h;lang.h;namespaces.h;path.h;tech.h;types.h;value.h;warn.def"
+   ActLang PROPERTIES PUBLIC_HEADER "act.h;act_array.h;act_id.h;basetype.h;body.h;expr.h;expr_width.h;inline.h;inst.h;iter.h;lang.h;namespaces.h;path.h;tech.h;types.h;value.h;warn.def"
 )
 set_target_properties(ActLang PROPERTIES OUTPUT_NAME actlang)
 
