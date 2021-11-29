@@ -74,6 +74,8 @@ extern "C" {
 
 #define E_FUNCTION 100
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
 typedef struct expr {
   int type;
   union {
@@ -95,6 +97,7 @@ typedef struct expr {
     };
   } u;
 } Expr;
+#pragma GCC diagnostic pop
 
 /* Function calls are represented as:
    
