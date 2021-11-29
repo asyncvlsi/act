@@ -6,11 +6,13 @@ echo "*               Testing tool: prs2net                                  *"
 echo "************************************************************************"
 echo
 
+ACTTOOL="$VLSI_TOOLS_SRC/build/act/transform/prs2net/prs2net"
 
-ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
-OS=`$VLSI_TOOLS_SRC/scripts/getos`
-EXT=${ARCH}_${OS}
-ACTTOOL=../prs2net.$EXT 
+if [ ! -f $ACTTOOL ] 
+then
+	echo "the tool $ACTTOOL does not exist"
+	exit 1
+fi
 
 check_echo=0
 myecho()

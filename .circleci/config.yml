@@ -13,10 +13,8 @@ jobs:
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
-          ./configure $ACT_HOME
-          ./build 
-          make install
-          make runtest
+          ./build.sh
+          ./test.sh
 
    centos8:
      docker:
@@ -30,10 +28,8 @@ jobs:
           mkdir install
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
-          ./configure $ACT_HOME
-          ./build
-          make install
-          make runtest
+          ./build.sh
+          ./test.sh
           
 
 

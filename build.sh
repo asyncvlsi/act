@@ -12,10 +12,19 @@ else
         fi
 fi
 
-echo "Building common library/generators..." && \
-   make -C common install_inc && \
-   make -C common install && \
-   make -C pgen install && \
-   make -C miniscm install 
+if [ x$ACT_HOME = x ]
+then
+	echo "Environment variable ACT_HOME should point to the install directory"
+	exit 1
+fi
 
-make && echo && echo 'Run "make install" to install the binaries'
+if [ ! -d build ]; then
+	mkdir build
+	cd build
+	cmake ..
+else 
+	cd build
+fi
+
+cmake --build . -- -j 8
+cmake --install . --prefix $ACT_HOME

@@ -1,9 +1,12 @@
 #!/bin/sh
 
-ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
-OS=`$VLSI_TOOLS_SRC/scripts/getos`
-EXT=${ARCH}_${OS}
-ACT=../act-test.$EXT
+ACT="$VLSI_TOOLS_SRC/build/act/lang/test/act-test"
+
+if [ ! -f $ACT ] 
+then
+	echo "the tool $ACT does not exist"
+	exit 1
+fi
 
 check_echo=0
 myecho()

@@ -1,9 +1,13 @@
 #!/bin/sh
 
-ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
-OS=`$VLSI_TOOLS_SRC/scripts/getos`
-EXT=${ARCH}_${OS}
-ACTTOOL=../v2act.$EXT 
+ACTTOOL="$VLSI_TOOLS_SRC/build/act/transform/v2act/v2act"
+
+if [ ! -f $ACTTOOL ] 
+then
+	echo "the tool $ACTTOOL does not exist"
+	exit 1
+fi
+
 
 if [ $# -eq 0 ]
 then

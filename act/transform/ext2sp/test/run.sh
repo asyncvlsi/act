@@ -7,10 +7,14 @@ echo "************************************************************************"
 echo
 
 
-ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
-OS=`$VLSI_TOOLS_SRC/scripts/getos`
-EXT=${ARCH}_${OS}
-ACTTOOL=../ext2sp.$EXT
+ACTTOOL="$VLSI_TOOLS_SRC/build/act/transform/ext2sp/ext2sp"
+
+if [ ! -f $ACTTOOL ] 
+then
+	echo "the tool $ACTTOOL does not exist"
+	exit 1
+fi
+
 
 check_echo=0
 myecho()

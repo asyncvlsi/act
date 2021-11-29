@@ -1,0 +1,4 @@
+Parse error: Expecting bnf-item `id', got `\'
+	File `0.vp', line: 76, col: 12
+Exception: number=1, message -none-
+FATAL: Uncaught exception

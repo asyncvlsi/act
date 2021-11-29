@@ -1,9 +1,14 @@
 #!/bin/sh
 
-ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
-OS=`$VLSI_TOOLS_SRC/scripts/getos`
-EXT=${ARCH}_${OS}
-ACTTOOL=../test_inlinepass.$EXT 
+
+ACTTOOL="$VLSI_TOOLS_SRC/build/act/transform/testing/inline/test_inlinepass"
+
+if [ ! -f $ACTTOOL ] 
+then
+	echo "the tool $ACTTOOL does not exist"
+	exit 1
+fi
+
 
 if [ $# -eq 0 ]
 then

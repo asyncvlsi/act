@@ -1,5 +1,5 @@
-add_executable(test_inlinepass main.cc)
+add_executable(test_statepass main.cc)
 
-target_link_libraries(test_inlinepass ActCommon ActLang ActPasses)
+target_link_libraries(test_statepass ActCommon ActLang ActPasses)
 
-install (TARGETS test_inlinepass RUNTIME DESTINATION bin)
+install (TARGETS test_statepass RUNTIME DESTINATION bin)

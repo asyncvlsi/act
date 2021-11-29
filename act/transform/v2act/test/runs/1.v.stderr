@@ -1,0 +1,4 @@
+Parse error: Expecting token `[', got `\'
+	File `1.vp', line: 8, col: 11
+Exception: number=1, message -none-
+FATAL: Uncaught exception

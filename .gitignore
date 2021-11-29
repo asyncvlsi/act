@@ -1,4 +1,4 @@
-build_dir
+build
 **/*~
 
 .project
