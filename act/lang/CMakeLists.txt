@@ -1,5 +1,10 @@
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/act_walk.extra.h
                ${CMAKE_CURRENT_BINARY_DIR}/act_walk.extra.h COPYONLY)
+               
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/expr_.h
+               ${CMAKE_CURRENT_SOURCE_DIR}/expr.h COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/expr_.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/expr.c COPYONLY)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/act_parse_id.h
