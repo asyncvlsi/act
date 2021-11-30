@@ -105,7 +105,7 @@ void bitset_printw (bitset_t *f, int w)
 
 void bitset_set (bitset_t *f, unsigned int v)
 {
-  f->x[v >> 5] |= (1 << (v & 31));
+  f->x[v >> 5] |= (1UL << (v & 31));
 }
 
 void bitset_clr (bitset_t *f, unsigned int v)
@@ -115,7 +115,7 @@ void bitset_clr (bitset_t *f, unsigned int v)
 
 int bitset_tst (bitset_t *f, unsigned int v)
 {
-  return (f->x[v >> 5] & (1 << (v & 31)));
+  return (f->x[v >> 5] & (1UL << (v & 31)));
 }
 
 void bitset_or (bitset_t *l, bitset_t *r)

@@ -11,3 +11,7 @@ lib*_x86_64_*.a
 .act_history
 *.so
 *~
+.cproject
+.project
+.pydevproject
+
