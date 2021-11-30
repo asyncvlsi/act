@@ -140,6 +140,7 @@ public:
   std::string sPrint ();  //print in hex to string
   void hPrint (FILE *fp); //print in hex
   void hexPrint (FILE *fp);
+  void bitPrint (FILE *fp);
 
   UNIT_TYPE getVal(int n) { if (len >= 2) return u.v[n]; else return u.value; }
   void setVal (int n, UNIT_TYPE nv) {

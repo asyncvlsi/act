@@ -1538,3 +1538,24 @@ void BigInt::hexPrint (FILE *fp)
 #endif
   }
 }
+
+void BigInt::bitPrint (FILE *fp)
+{
+  int top_bits;
+  UNIT_TYPE u;
+  top_bits = width % (sizeof (UNIT_TYPE)*8);
+  if (top_bits == 0) {
+    top_bits = 8*sizeof (UNIT_TYPE);
+  }
+  u = getVal (len-1);
+  for (int j=top_bits-1; j >= 0; j--) {
+    fprintf (fp, "%c", ((u >> j) & 1) ? '1' : '0');
+  }
+  for (int i=len-2; i >= 0; i--) {
+    u = getVal (i);
+    top_bits = 8*sizeof (UNIT_TYPE);
+    for (int j=top_bits-1; j >= 0; j--) {
+      fprintf (fp, "%c", ((u >> j) & 1) ? '1' : '0');
+    }
+  }
+}
