@@ -1,0 +1,11 @@
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+* empty subckt
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+* end empty subckt
+*---- end of process: foo<> -----

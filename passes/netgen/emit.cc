@@ -81,27 +81,32 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   }
   int out = 0;
   if (p) {
-    fprintf (fp, ".subckt ");
-    /* special mangling for processes that only end in <> */
-    a->mfprintfproc (fp, p);
-    for (int k=0; k < A_LEN (n->bN->ports); k++) {
-      if (n->bN->ports[k].omit) continue;
-      ActId *id = n->bN->ports[k].c->toid();
-      char buf[10240];
-      id->sPrint (buf, 10240);
-      a->mfprintf (fp, " %s", buf);
-      delete id;
-      out = 1;
+    if (n->bN->isempty) {
+      fprintf (fp, "* empty subckt\n");
     }
+    else {
+      fprintf (fp, ".subckt ");
+      /* special mangling for processes that only end in <> */
+      a->mfprintfproc (fp, p);
+      for (int k=0; k < A_LEN (n->bN->ports); k++) {
+	if (n->bN->ports[k].omit) continue;
+	ActId *id = n->bN->ports[k].c->toid();
+	char buf[10240];
+	id->sPrint (buf, 10240);
+	a->mfprintf (fp, " %s", buf);
+	delete id;
+	out = 1;
+      }
 
-    if (n->weak_supply_vdd > 0) {
-      fprintf (fp, " #%d", n->nid_wvdd);
-    }
+      if (n->weak_supply_vdd > 0) {
+	fprintf (fp, " #%d", n->nid_wvdd);
+      }
 
-    if (n->weak_supply_gnd > 0) {
-      fprintf (fp, " #%d", n->nid_wgnd);
+      if (n->weak_supply_gnd > 0) {
+	fprintf (fp, " #%d", n->nid_wgnd);
+      }
+      fprintf (fp, "\n");
     }
-    fprintf (fp, "\n");
   }
 
   /* print pininfo */
@@ -452,8 +457,8 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     if (TypeFactory::isProcessType (vx->t)) {
       netlist_t *sub;
       Process *instproc = dynamic_cast<Process *>(vx->t->BaseType ());
-      int ports_exist;
       sub = getNL (instproc);
+      int ports_exist;
       
       ports_exist = 0;
       for (int i=0; i < A_LEN (sub->bN->ports); i++) {
@@ -468,6 +473,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  Arraystep *as = vx->t->arrayInfo()->stepper();
 	  while (!as->isend()) {
 	    char *str = as->string();
+	    if (sub->bN->isempty) {
+	      fprintf (fp, "* ");
+	    }
 	    a->mfprintf (fp, "x%s%s", vx->getName(), str);
 	    FREE (str);
 	    for (int i=0; i < A_LEN (sub->bN->ports); i++) {
@@ -501,6 +509,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  delete as;
 	}
 	else {
+	  if (sub->bN->isempty) {
+	    fprintf (fp, "* ");
+	  }
 	  a->mfprintf (fp, "x%s", vx->getName ());
 	  for (int i =0; i < A_LEN (sub->bN->ports); i++) {
 	    ActId *id;
@@ -534,8 +545,15 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   }
   Assert (iport == A_LEN (n->bN->instports), "Hmm...");
   Assert (iweak == A_LEN (n->instport_weak), "Hmm...");
-  
-  fprintf (fp, ".ends\n");
+
+  if (p) {
+    if (n->bN->isempty) {
+      fprintf (fp, "* end empty subckt\n");
+    }
+    else {
+      fprintf (fp, ".ends\n");
+    }
+  }
   fprintf (fp, "*---- end of process: %s -----\n", p ? p->getName() : "-none-");
 
   return n;

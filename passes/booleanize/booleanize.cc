@@ -1580,6 +1580,10 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     ---*/
   n = process_local_lang (a, p);
 
+  if (black_box_mode && p && p->isBlackBox()) {
+    n->isempty = 0;
+  }
+
 
   /*--
     Check that dynamic bits are valid
@@ -1636,9 +1640,13 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     if (TypeFactory::isProcessType (vx->t)) {
       Process *sub = dynamic_cast<Process *>(vx->t->BaseType());
       Assert (sub, "What?");
-      subinst = 1;
       if (p) {
 	update_used_flags (n, vx, p);
+      }
+      act_boolean_netlist_t *bnl = (act_boolean_netlist_t *) getMap (sub);
+      Assert (bnl, "What?");
+      if (!bnl->isempty) {
+	subinst = 1;
       }
     }
   }
