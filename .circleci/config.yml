@@ -15,6 +15,7 @@ jobs:
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./build.sh
+          echo "done build step"
           ./test.sh
 
    centos8:
@@ -22,7 +23,6 @@ jobs:
        - image: centos:8
      steps:
        - checkout
-       - status
        - run: |
           yum install -y 'dnf-command(config-manager)'
           yum config-manager --set-enabled powertools -y

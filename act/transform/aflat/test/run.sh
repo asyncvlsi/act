@@ -12,6 +12,8 @@ if [ ! -f $ACTTOOL ]
 then
 	echo "the tool $ACTTOOL does not exist"
 	exit 1
+else 
+	echo "The tool $ACTTOOL exists!"
 fi
 
 check_echo=0
@@ -77,6 +79,10 @@ do
 			myecho "** FAILED TEST $i:"
 		fi
 		myecho " stderr"
+		echo "actual"
+		cat runs/$i.t.stderr
+		echo "expected"
+		cat runs/$i.stderr
 		fail=`expr $fail + 1`
 		ok=0
 	fi

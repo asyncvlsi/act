@@ -21,10 +21,10 @@ fi
 if [ ! -d build ]; then
 	mkdir build
 	cd build
-	cmake ..
+	cmake .. -DCMAKE_INSTALL_PREFIX=$ACT_HOME
 else 
 	cd build
 fi
 
-cmake --build . -- -j 8
-cmake --install . --prefix $ACT_HOME
+VERBOSE=1 cmake --build . --target install 
+

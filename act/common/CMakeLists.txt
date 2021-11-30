@@ -58,6 +58,7 @@ simthread.h
 thread.h
 time.c)
 
+target_link_libraries(ActCommon INTERFACE -ldl)
 
 set_target_properties(
    ActCommon PROPERTIES PUBLIC_HEADER "agraph.h;array.h;atrace.h;avl.h;bitset.h;bool.h;channel.h;config.h;contexts.h;count.h;except.h;ext.h;file.h;hash.h;hconfig.h;heap.h;int.h;lex.h;list.h;log.h;lzw.h;machine.h;mem.h;misc.h;mstring.h;mutex.h;mytime.h;names.h;pp.h;qops.h;sim.h;simdes.h;simthread.h;thread.h"
