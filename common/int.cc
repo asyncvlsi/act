@@ -88,7 +88,7 @@ BigInt::BigInt (BigInt &&b)
 }
 
 
-BigInt& BigInt::operator=(BigInt &b)
+BigInt& BigInt::operator=(const BigInt &b)
 {
   if (&b == this) { return *this; }
   if (len >= 2) {
@@ -131,7 +131,7 @@ BigInt& BigInt::operator=(BigInt &&b)
   return *this;
 }
 
-BigInt& BigInt::operator=(UNIT_TYPE &b)
+BigInt& BigInt::operator=(const UNIT_TYPE &b)
 {
   if (len >= 2) {
     FREE (u.v);
@@ -362,7 +362,7 @@ BigInt BigInt::operator-()
  *
  *------------------------------------------------------------------------
  */
-int BigInt::isNegative ()
+int BigInt::isNegative () const
 {
   /* residual width */
   if (!issigned) {
@@ -459,12 +459,16 @@ void BigInt::toUnsigned()
  *
  *------------------------------------------------------------------------
  */
-int BigInt::operator==(BigInt &b)
+int BigInt::operator==(const BigInt &b) const
 {
-
   if (isSigned() != b.isSigned()) {
-    issigned = 0;
-    b.issigned = 0;
+    BigInt t1;
+    t1 = (*this);
+    BigInt t2;
+    t2 = b;
+    t1.toUnsigned();
+    t2.toUnsigned();
+    return (t1 == t2);
   }
 
   int za, zb;
@@ -539,7 +543,7 @@ int BigInt::operator==(unsigned long b)
 
 }
 
-int BigInt::operator==(long b)
+int BigInt::operator==(long b) const
 {
   unsigned long mask;
   mask = 0;
@@ -561,13 +565,13 @@ int BigInt::operator==(long b)
 }
 #endif
 
-int BigInt::operator!=(BigInt &b)
+int BigInt::operator!=(const BigInt &b) const
 {
   return !(*this == b);
 }
 
 #ifdef BIGINT_TEST
-int BigInt::operator!=(unsigned long b) 
+int BigInt::operator!=(unsigned long b)
 {
   return !(*this == b);
 }
@@ -578,12 +582,15 @@ int BigInt::operator!=(long b)
 }
 #endif
 
-int BigInt::operator<(BigInt &b)
+int BigInt::operator<(const BigInt &b) const
 {
-
   if (isSigned() != b.isSigned()) {
-    issigned = 0;
-    b.issigned = 0;
+    BigInt t1, t2;
+    t1 = (*this);
+    t2 = b;
+    t1.toUnsigned();
+    t2.toUnsigned();
+    return (t1 < t2);
   }
 
   int za, zb;
@@ -679,17 +686,17 @@ int BigInt::operator<(BigInt &b)
   return res == 0 ? 1 : 0;
 }
 
-int BigInt::operator>(BigInt &b)
+int BigInt::operator>(const BigInt &b) const
 {
   return (b < *this);
 }
 
-int BigInt::operator<=(BigInt &b)
+int BigInt::operator<=(const BigInt &b) const
 {
   return ((*this) < b) || ((*this) == b);
 }
 
-int BigInt::operator>=(BigInt &b)
+int BigInt::operator>=(const BigInt &b) const
 {
   return ((*this) > b) || ((*this) == b);
 }
@@ -1227,7 +1234,7 @@ unsigned int BigInt::nBit(unsigned long n)
  *
  *------------------------------------------------------------------------
  */
-int BigInt::isZero ()
+int BigInt::isZero () const
 {
   if (len >= 2) {
     for (auto i = 0; i < len; i++) {
@@ -1239,7 +1246,7 @@ int BigInt::isZero ()
   return 1;
 }
 
-int BigInt::isOne ()
+int BigInt::isOne () const
 {
   if (getVal (0) == 1) {
     for (auto i = 1; i < len; i++) {

@@ -84,18 +84,18 @@ public:
   BigInt (BigInt &);    // copy constructor
   BigInt (BigInt &&);   // move constructor
 
-  BigInt& operator=(BigInt &);            // copy assignment
+  BigInt& operator=(const BigInt &);            // copy assignment
   BigInt& operator=(BigInt &&);           // move assignment
-  BigInt& operator=(UNIT_TYPE &);     // assignment
+  BigInt& operator=(const UNIT_TYPE &);     // assignment
   BigInt& operator=(const std::string &); // assignment (must start with 0x)
   void SetV (int, UNIT_TYPE);
     
-  int operator<(BigInt &);  
-  int operator<=(BigInt &); 
-  int operator>(BigInt &);  
-  int operator>=(BigInt &); 
-  int operator==(BigInt &); 
-  int operator!=(BigInt &);
+  int operator<(const BigInt &) const;  
+  int operator<=(const BigInt &) const; 
+  int operator>(const BigInt &) const;  
+  int operator>=(const BigInt &) const; 
+  int operator==(const BigInt &) const; 
+  int operator!=(const BigInt &) const;
 
 #ifdef BIGINT_TEST
   int operator==(unsigned long);
@@ -123,9 +123,9 @@ public:
 
   unsigned int nBit(unsigned long n); //returns Nth bit
 
-  int isNegative(); //0 - Non-negative, 1 - Negative
+  int isNegative() const; //0 - Non-negative, 1 - Negative
 
-  int isSigned() { return issigned; }   //return sign flag
+  int isSigned() const { return issigned; }   //return sign flag
   void toSigned();  //set sign flag and sign extend
   void toUnsigned();//reset sign flag and clear sign extension
 
@@ -142,7 +142,7 @@ public:
   void hexPrint (FILE *fp);
   void bitPrint (FILE *fp);
 
-  UNIT_TYPE getVal(int n) { if (len >= 2) return u.v[n]; else return u.value; }
+  UNIT_TYPE getVal(int n) const { if (len >= 2) return u.v[n]; else return u.value; }
   void setVal (int n, UNIT_TYPE nv) {
     if (n > len) {
       expandSpace(sizeof(UNIT_TYPE));
@@ -154,7 +154,7 @@ public:
   }
   void adjlen(int l) { _adjlen(l); }
   
-  int isZero(); //number is all zeros
+  int isZero() const; //number is all zeros
   
 private:
   
@@ -204,7 +204,7 @@ private:
 
   void signExtend ();
 
-  int isOne();  //number is one
+  int isOne() const;  //number is one
 
   void expandSpace(int amt); // expand bitwidth b by # of bits
   void squeezeSpace(int amt); // reduce bitwidth by # of bits
