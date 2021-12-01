@@ -84,7 +84,7 @@ void mem_log (const char *s, ...);
 
 #endif /* MALLOC */
 
-#define Max(a,b) ( ((a) > (b)) ? (a) : (b) )
+#define MAX(a,b) ( ((a) > (b)) ? (a) : (b) )
 
 void fatal_error (const char *s, ...);
 void warning (const char *s, ...);

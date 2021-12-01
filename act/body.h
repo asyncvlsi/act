@@ -50,7 +50,7 @@ class ActBody {
 
   void Expandlist (ActNamespace *, Scope *);
 
-  virtual void Print (FILE *fp) { }
+  virtual void Print (FILE */*fp*/) { }
 
   void updateInstType (list_t *namelist, InstType *it);
 

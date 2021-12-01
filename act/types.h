@@ -40,7 +40,7 @@ struct act_attr;
 
 class PInt : public Type {
   const char *getName() { return "pint"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (Type *t) { return t == this ? 1 : 0; }
@@ -48,7 +48,7 @@ class PInt : public Type {
 
 class PInts : public Type {
   const char *getName() { return "pints"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (Type *t) { return t == this ? 1 : 0; }
@@ -56,7 +56,7 @@ class PInts : public Type {
 
 class PBool : public Type { 
   const char *getName() { return "pbool"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (Type *t) { return t == this ? 1 : 0; }
@@ -64,7 +64,7 @@ class PBool : public Type {
 
 class PReal : public Type {
   const char *getName() { return "preal"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (Type *t) { return t == this ? 1 : 0; }
@@ -91,7 +91,7 @@ private:
 
 class Bool : public Type {
   const char *getName() { return "bool"; }
-  Type *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (Type *t) { return t == this ? 1 : 0; }
@@ -311,7 +311,7 @@ class UserDef : public Type {
   /**
    * Print out user defined type 
    */
-  virtual void Print (FILE *fp) { }
+  virtual void Print (FILE */*fp*/) { }
   void PrintHeader (FILE *fp, const char *type);
 
   void setBody (ActBody *x) { b = x; } /**< Set the body of the
@@ -319,7 +319,7 @@ class UserDef : public Type {
   void AppendBody (ActBody *x);
   ActBody *getBody () { return b; }
   
-  UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u) {
+  UserDef *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     Assert (0, "Don't call this ever");
   }
   

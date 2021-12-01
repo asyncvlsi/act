@@ -34,8 +34,8 @@ int bang_exists (char *s)
 }
 
 
-#define Min(a,b) ((a) < (b) ? (a) : (b))
-/*#define Max(a,b) ((a) > (b) ? (a) : (b))*/
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+/*#define MAX(a,b) ((a) > (b) ? (a) : (b))*/
 
 
 static
@@ -169,11 +169,11 @@ void _flatten_ext_file (struct ext_file *ext, VAR_T *V, char *path, int mark)
     }
     else {
       nm = mystrdup (name);
-      for (i=Min(subcells->xlo,subcells->xhi); 
-	   i <= Max(subcells->xlo,subcells->xhi); 
+      for (i=MIN(subcells->xlo,subcells->xhi);
+	   i <= MAX(subcells->xlo,subcells->xhi);
 	   i++)
-	for (j=Min(subcells->ylo,subcells->yhi); 
-	     j <= Max(subcells->ylo,subcells->yhi); 
+	for (j=MIN(subcells->ylo,subcells->yhi);
+	     j <= MAX(subcells->ylo,subcells->yhi);
 	     j++) {
 	  if (subcells->xlo == subcells->xhi)
 	    sprintf (name, "%s[%d]", nm, j);
