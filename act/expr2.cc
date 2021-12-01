@@ -1123,13 +1123,13 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  BigInt *r = (BigInt *)ret->u.e.r->u.v_extra;
 
 	  if (e->type == E_AND) {
-	    *l = (*l) & (*r);
+	    *l &= (*r);
 	  }
 	  else if (e->type == E_OR) {
-	    *l = (*l) | (*r);
+	    *l |= (*r);
 	  }
 	  else {
-	    *l = (*l) ^ (*r);
+	    *l ^= (*r);
 	  }
 	  delete r;
 	  FREE (ret->u.e.r);
@@ -1293,10 +1293,10 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  BigInt *r = (BigInt *)ret->u.e.r->u.v_extra;
 
 	  if (e->type == E_PLUS) {
-	    *l = *l + *r;
+	    *l += *r;
 	  }
 	  else if (e->type == E_MINUS) {
-	    *l = *l - *r;
+	    *l -= *r;
 	  }
 	  else if (e->type == E_MULT) {
 	    *l = (*l) * (*r);
@@ -1308,14 +1308,14 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    *l = (*l) % (*r);
 	  }
 	  else if (e->type == E_LSL) {
-	    *l = (*l) << (*r);
+	    *l <<= (*r);
 	  }
 	  else if (e->type == E_LSR) {
-	    *l = (*l) >> (*r);
+	    *l >>= (*r);
 	  }
 	  else {  /* ASR */
 	    (*l).toSigned ();
-	    *l = (*l) >> (*r);
+	    *l >>= (*r);
 	    (*l).toUnsigned ();
 	  }
 	  delete r;
@@ -1883,7 +1883,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 
 	if (ret->u.e.l->u.v_extra) {
 	  BigInt *l = (BigInt *) ret->u.e.l->u.v_extra;
-	  *l = (*l) >> lov;
+	  *l >>= lov;
 	  FREE (ret->u.e.l);
 	  l->setWidth (hiv-lov+1);
 	  ret->u.v_extra = l;

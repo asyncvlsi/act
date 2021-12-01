@@ -304,13 +304,15 @@ void BigInt::squeezeSpace (int amt)
  *
  *------------------------------------------------------------------------
  */
-BigInt BigInt::operator-()
+BigInt BigInt::operator-() const
 {
   int i;
-  BigInt b(*this);
+  BigInt b;
   int c = 1;
   int sa = isSigned() && isNegative();
 
+  b = (*this);
+  
   if (len >= 2) {
     for (int i=0; i < len; i++) {
       b.u.v[i] = ~b.u.v[i];
@@ -708,11 +710,15 @@ int BigInt::operator>=(const BigInt &b) const
  *
  *------------------------------------------------------------------------
  */
-void BigInt::_add (BigInt &b, int cin)
+void BigInt::_add (const BigInt &b, int cin)
 {
   if (isSigned() != b.isSigned()) {
     issigned = 0;
-    b.issigned = 0;
+    BigInt tmp;
+    tmp = b;
+    tmp.toUnsigned ();
+    _add (tmp, cin);
+    return;
   }
 
   int i;
@@ -807,18 +813,22 @@ void BigInt::_add (BigInt &b, int cin)
 }
  
 
-BigInt &BigInt::operator+(BigInt &b)
+BigInt &BigInt::operator+=(const BigInt &b)
 {
   _add (b, 0);
   return *this;
 }
 
-BigInt &BigInt::operator-(BigInt &b)
+BigInt &BigInt::operator-=(const BigInt &b)
 {
 
   if (isSigned() != b.isSigned()) {
     issigned = 0;
-    b.issigned = 0;
+    BigInt tmp;
+    tmp = b;
+    tmp.toUnsigned();
+    (*this) -= b;
+    return (*this);
   }
 
   if (b.isZero() == 1) {
@@ -857,7 +867,7 @@ BigInt &BigInt::operator-(BigInt &b)
         b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
       }
     }
-    if (sb) {  b.signExtend(); }
+    if (sb) {  b_ext.signExtend(); }
     b_ext.width = width - b.width;
   }
 
@@ -1153,15 +1163,15 @@ void BigInt::_div(BigInt &b, int func)
   unsigned int shift = (res == 0) ? (BIGINT_BITS_ONE -1) : (res -1);
   
   for (auto k = width; k > 0; k--) {
-    tmp_q = tmp_q << 1;
-    tmp_r = tmp_r << 1;
+    tmp_q <<= 1;
+    tmp_r <<= 1;
 
     if (((y.getVal (word_num) >> shift) & 0x1) == 1) {
-      tmp_r = tmp_r + one;
+      tmp_r += one;
     }
     if (tmp_r >= x) {
-      tmp_r = tmp_r - x;
-      tmp_q = tmp_q + one;
+      tmp_r -= x;
+      tmp_q += one;
     }
 
     if (shift == 0) {
@@ -1260,7 +1270,7 @@ int BigInt::isOne () const
   }
 }
 
-int BigInt::isOneInt()
+int BigInt::isOneInt() const
 {
   if (len >= 2) {
     for (auto i = 1; i < len; i++) {
@@ -1268,7 +1278,7 @@ int BigInt::isOneInt()
         return 0;
       }
     }
-    squeezeSpace((len-1) * BIGINT_BITS_ONE);
+    //squeezeSpace((len-1) * BIGINT_BITS_ONE);
     return 1;
   } else {
     return 1;
@@ -1280,11 +1290,15 @@ int BigInt::isOneInt()
  *
  *------------------------------------------------------------------------
  */
-BigInt &BigInt::operator&(BigInt &b)
+BigInt &BigInt::operator&=(const BigInt &b)
 {
   if (isSigned() != b.isSigned()) {
     issigned = 0;
-    b.issigned = 0;
+    BigInt tmp;
+    tmp = b;
+    tmp.toUnsigned ();
+    (*this) &= tmp;
+    return (*this);
   }
 
   int mil = std::min(len, b.len); //min length
@@ -1302,11 +1316,15 @@ BigInt &BigInt::operator&(BigInt &b)
   return (*this);
 }
 
-BigInt &BigInt::operator|(BigInt &b)
+BigInt &BigInt::operator|=(const BigInt &b)
 {
   if (isSigned() != b.isSigned()) {
     issigned = 0;
-    b.issigned = 0;
+    BigInt tmp;
+    tmp = b;
+    tmp.toUnsigned ();
+    (*this) |= b;
+    return (*this);
   }
 
   int mil = std::min(len, b.len); //min length
@@ -1324,11 +1342,15 @@ BigInt &BigInt::operator|(BigInt &b)
   return (*this);
 }
 
-BigInt &BigInt::operator^(BigInt &b)
+BigInt &BigInt::operator^=(const BigInt &b)
 {
   if (isSigned() != b.isSigned()) {
     issigned = 0;
-    b.issigned = 0;
+    BigInt tmp;
+    tmp = b;
+    tmp.toUnsigned ();
+    (*this) ^= tmp;
+    return (*this);
   }
 
   int mil = std::min(len, b.len); //min length
@@ -1358,7 +1380,7 @@ BigInt &BigInt::operator~()
   return (*this);
 }
 
-BigInt &BigInt::operator<<(UNIT_TYPE x)
+BigInt &BigInt::operator<<=(UNIT_TYPE x)
 {
 
   if (x == 0) return *this;
@@ -1392,7 +1414,7 @@ BigInt &BigInt::operator<<(UNIT_TYPE x)
   return (*this);
 }
 
-BigInt &BigInt::operator>>(UNIT_TYPE x)
+BigInt &BigInt::operator>>=(UNIT_TYPE x)
 {
   if (x == 0) return *this;
 
@@ -1460,20 +1482,22 @@ BigInt &BigInt::operator>>(UNIT_TYPE x)
   return (*this);
 }
 
-BigInt &BigInt::operator<<(BigInt &b)
+BigInt &BigInt::operator<<=(const BigInt &b)
 {
   Assert (b.isOneInt(), "Shift amounts have to be small enough to fit into a single intger");
   Assert (!b.isNegative(), "Non-negative shift amounts only");
-  
-  return (*this) << b.getVal (0);
+
+  (*this) <<= b.getVal (0);
+  return (*this);
 }
 
-BigInt &BigInt::operator>>(BigInt &b)
+BigInt &BigInt::operator>>=(const BigInt &b)
 {
   Assert (b.isOneInt(), "Shift amounts have to be small enough to fit into a single intger");
   Assert (!b.isNegative(), "Non-negative shift amounts only");
 
-  return (*this) >> b.getVal (0);
+  (*this) >>= b.getVal (0);
+  return (*this);
 }
 
 /*------------------------------------------------------------------------
@@ -1484,7 +1508,7 @@ BigInt &BigInt::operator>>(BigInt &b)
  *
  *------------------------------------------------------------------------
  */
-std::string BigInt::sPrint()
+std::string BigInt::sPrint() const
 {
   char buf[64];
   std::string s = "";
@@ -1510,7 +1534,7 @@ std::string BigInt::sPrint()
   return s;
 }
 
-void BigInt::hPrint (FILE *fp)
+void BigInt::hPrint (FILE *fp) const
 {
   fprintf (fp, "{w=%d,bw=%d, dyn=%d,sgn=%d}0x", width, len, isdynamic, issigned);
   for (int i=len-1; i >= 0; i--) {
@@ -1526,7 +1550,7 @@ void BigInt::hPrint (FILE *fp)
   }
 }
 
-void BigInt::hexPrint (FILE *fp)
+void BigInt::hexPrint (FILE *fp) const
 {
   for (int i=len-1; i >= 0; i--) {
 #ifndef BIGINT_TEST
@@ -1546,7 +1570,7 @@ void BigInt::hexPrint (FILE *fp)
   }
 }
 
-void BigInt::bitPrint (FILE *fp)
+void BigInt::bitPrint (FILE *fp) const
 {
   int top_bits;
   UNIT_TYPE u;

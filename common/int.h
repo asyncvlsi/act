@@ -104,22 +104,22 @@ public:
   int operator!=(long);
 #endif
 
-  BigInt &operator+(BigInt &);  
-  BigInt &operator-(BigInt &);  
-  BigInt operator-();           
+  BigInt &operator+=(const BigInt &);  
+  BigInt &operator-=(const BigInt &);  
+  BigInt operator-() const;           
   BigInt operator*(BigInt &);   
   BigInt operator/(BigInt &);   
   BigInt operator%(BigInt &);   
 
-  BigInt &operator&(BigInt &);  
-  BigInt &operator|(BigInt &);  
-  BigInt &operator^(BigInt &);  
+  BigInt &operator&=(const BigInt &);  
+  BigInt &operator|=(const BigInt &);  
+  BigInt &operator^=(const BigInt &);  
   BigInt &operator~();          
 
-  BigInt &operator<<(UNIT_TYPE x);  
-  BigInt &operator>>(UNIT_TYPE x);  
-  BigInt &operator<<(BigInt &b);  
-  BigInt &operator>>(BigInt &b);  
+  BigInt &operator<<=(UNIT_TYPE x);  
+  BigInt &operator>>=(UNIT_TYPE x);  
+  BigInt &operator<<=(const BigInt &b);  
+  BigInt &operator>>=(const BigInt &b);  
 
   unsigned int nBit(unsigned long n); //returns Nth bit
 
@@ -129,18 +129,18 @@ public:
   void toSigned();  //set sign flag and sign extend
   void toUnsigned();//reset sign flag and clear sign extension
 
-  int isDynamic() { return isdynamic; } //return dynamic flag
+  int isDynamic() const { return isdynamic; } //return dynamic flag
   void toStatic() { isdynamic = 0; }    //set dynamic flag
   void toDynamic() { isdynamic = 1; } //reset dynamic flag
 
   void setWidth (unsigned int); //set bitwidth with zero/sign extension
-  unsigned int getWidth() { return width; };
-  unsigned int getLen() { return len; };
+  unsigned int getWidth() const { return width; };
+  unsigned int getLen() const { return len; };
   
-  std::string sPrint ();  //print in hex to string
-  void hPrint (FILE *fp); //print in hex
-  void hexPrint (FILE *fp);
-  void bitPrint (FILE *fp);
+  std::string sPrint () const;  //print in hex to string
+  void hPrint (FILE *fp) const; //print in hex + show all flags
+  void hexPrint (FILE *fp) const;
+  void bitPrint (FILE *fp) const;
 
   UNIT_TYPE getVal(int n) const { if (len >= 2) return u.v[n]; else return u.value; }
   void setVal (int n, UNIT_TYPE nv) {
@@ -169,7 +169,7 @@ private:
   } u;
   // rep. The number is sign-extended to the maximum width of the rep
 
-  int isOneInt();
+  int isOneInt() const;
 
   inline void _setVal (int n, UNIT_TYPE nv) {
     if (len >= 2) {
@@ -199,7 +199,7 @@ private:
     }
   }
 
-  void _add (BigInt &b, int cin);
+  void _add (const BigInt &b, int cin);
   void _div (BigInt &b, int func);  //0 - div, 1 - rem
 
   void signExtend ();
