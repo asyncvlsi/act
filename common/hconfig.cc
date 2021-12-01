@@ -131,7 +131,7 @@ void ReadConfigFile (const char *name)
 	nest++;
 	if (prefix_max < (signed)(strlen (lex_prev (l)) + strlen (prefix) + 2)) {
 	  /* prefix ++ "." ++ id = len of each + 1 (for the \0) */
-	  prefix_max = Max (2*prefix_max,
+	  prefix_max = MAX (2*prefix_max,
 			    (signed)(strlen (lex_prev (l)) + strlen (prefix) + 2));
 	  REALLOC (prefix, char, prefix_max);
 	}
@@ -158,7 +158,7 @@ void ReadConfigFile (const char *name)
 	else {
 	  /* name is given by prefix . previous token */
 	  if (prefix_max < (signed)(strlen (lex_prev (l)) + strlen (prefix) + 2)) {
-	    prefix_max = Max (2*prefix_max,
+	    prefix_max = MAX (2*prefix_max,
 			      (signed)(strlen (lex_prev (l)) + strlen (prefix) + 2));
 	    REALLOC (prefix, char, prefix_max);
 	  }

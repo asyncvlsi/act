@@ -550,16 +550,16 @@ void context_init (process_t *p, void (*f)(void))
   
 #elif defined(PC_OFFSET) && defined(SP_OFFSET)
 
-#define Max(a,b) ((a) > (b) ? (a) : (b))
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
 
 #define INIT_SP(p) (unsigned long)((unsigned long)(p)->c.stack + (p)->c.sz)
 #define CURR_SP(p) ((unsigned long*)&p->c.buf)[SP_OFFSET]
 
   ((unsigned long*)&p->c.buf)[PC_OFFSET] = (unsigned long)context_stub;
 #if !defined (STACK_DIR_UP)
-  ((unsigned long*)&p->c.buf)[SP_OFFSET] = (unsigned long)stack+n-Max(sizeof(long),sizeof(double));
+  ((unsigned long*)&p->c.buf)[SP_OFFSET] = (unsigned long)stack+n-MAX(sizeof(long),sizeof(double));
 #else
-  ((unsigned long*)&p->c.buf)[SP_OFFSET] = (unsigned long)stack+Max(sizeof(long),sizeof(double));
+  ((unsigned long*)&p->c.buf)[SP_OFFSET] = (unsigned long)stack+MAX(sizeof(long),sizeof(double));
 #endif
 
 #else
