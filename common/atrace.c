@@ -1465,6 +1465,18 @@ name_t *atrace_lookup (atrace *a, char *s)
   return NULL;
 }
 
+name_t *atrace_lookup_primary (atrace *a, char *s)
+{
+  name_t *n = atrace_lookup (a, s);
+  if (!n) {
+    return NULL;
+  }
+  while (n->up) {
+    n = n->up;
+  }
+  return n;
+}
+
 /* create a node */
 name_t *atrace_create_node (atrace *a, const char *s)
 {

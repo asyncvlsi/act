@@ -255,6 +255,7 @@ name_t *atrace_create_node (atrace *, const char *);
 #define atrace_mk_analog(n)  ((n)->type = 0)
 #define atrace_mk_channel(n)  ((n)->type = 2)
 
+name_t *atrace_lookup_primary (atrace *, char *);
 name_t *atrace_lookup (atrace *, char *);
   /* lookup a node, return NULL if not present */
 

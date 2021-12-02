@@ -45,11 +45,11 @@ int main (int argc, char **argv)
     fatal_error ("Could not open file `%s' for reading", argv[1]);
   }
 
-  n = atrace_lookup (a, argv[2]);
+  n = atrace_lookup_primary (a, argv[2]);
 
   if (!n) {
     atrace_close (a);
-    fatal_error ("Could not find node `%s' in trace file `%s'", argv[1], argv[2]);
+    fatal_error ("Could not find node `%s' in trace file `%s'", argv[2], argv[1]);
   }
   atrace_header (a, &ts, &Nnodes, &Nsteps, &fmt);
   atrace_init_time (a);
