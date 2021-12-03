@@ -32,7 +32,9 @@
 #include <act/iter.h>
 #include <act/passes/sizing.h>
 
+#ifndef MAX
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#endif
 
 /* for maximum acyclic path algorithm */
 typedef struct {
