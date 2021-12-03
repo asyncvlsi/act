@@ -564,13 +564,11 @@ void add_trace_wrap (PrsNode *n, void *v) {
   
   SPACE(n) = m;
 
-#if 1
   for (nn = (RawPrsNode *)n->alias_ring; nn != (RawPrsNode *)n; nn = nn->alias_ring) {
     o = atrace_create_node (tracing, prs_rawnodename (P, nn));
     atrace_mk_digital (o);
     atrace_alias (tracing, m, o);
   }
-#endif
 
 }
 

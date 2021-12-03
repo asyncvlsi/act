@@ -612,7 +612,7 @@ static void emit_header_aux (atrace *a)
 
 #define MAXBUFSZ 1024000
 /* open a trace file */
-atrace *atrace_open (char *s)
+atrace *atrace_open (const char *s)
 {
   atrace *a;
   FILE *nfp;
@@ -1451,30 +1451,35 @@ void atrace_advance_time (atrace *a, int nsteps)
 }
 
 
+static name_t *_union_find (name_t *n)
+{
+  name_t *tmp;
+  if (!n || !n->up) return n;
+
+  tmp = n;
+  while (tmp->up) {
+    tmp = tmp->up;
+  }
+
+  while (n->up) {
+    name_t *x = n->up;
+    n->up = tmp;
+    n = x;
+  }
+  return tmp;
+}
 
 /* lookup a node */
-name_t *atrace_lookup (atrace *a, char *s)
+name_t *atrace_lookup (atrace *a, const char *s)
 {
   name_t *n;
   hash_bucket_t *b;
 
   b = hash_lookup (a->H, s);
   if (b) {
-    return (name_t *) b->v;
+    return _union_find ((name_t *) b->v);
   }
   return NULL;
-}
-
-name_t *atrace_lookup_primary (atrace *a, char *s)
-{
-  name_t *n = atrace_lookup (a, s);
-  if (!n) {
-    return NULL;
-  }
-  while (n->up) {
-    n = n->up;
-  }
-  return n;
 }
 
 /* create a node */

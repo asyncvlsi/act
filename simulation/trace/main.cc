@@ -45,7 +45,7 @@ int main (int argc, char **argv)
     fatal_error ("Could not open file `%s' for reading", argv[1]);
   }
 
-  n = atrace_lookup_primary (a, argv[2]);
+  n = atrace_lookup (a, argv[2]);
 
   if (!n) {
     atrace_close (a);
