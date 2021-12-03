@@ -1335,7 +1335,9 @@ BigInt &BigInt::operator|=(const BigInt &b)
     if (i < mil) {
       setVal (i, getVal (i) | b.getVal (i));
     } else {
-      setVal (i, 0);
+      if (i < b.len) {
+	setVal (i, b.getVal (i));
+      }
     }
   }
 
@@ -1361,7 +1363,9 @@ BigInt &BigInt::operator^=(const BigInt &b)
     if (i < mil) {
       setVal (i, getVal (i) ^ b.getVal (i));
     } else {
-      setVal (i, 0);
+      if (i < b.len) {
+	setVal (i, b.getVal (i));
+      }
     }
   }
 
