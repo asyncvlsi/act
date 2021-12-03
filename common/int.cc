@@ -751,7 +751,7 @@ void BigInt::_add (const BigInt &b, int cin)
         b_ext._setVal (i-b.len, ~b_ext.getVal (i-b.len));
       }
     }
-    b_ext.width = width - b.width;
+    b_ext.width = width - b.len*BIGINT_BITS_ONE;
   }
 
   c = 0;
@@ -827,7 +827,7 @@ BigInt &BigInt::operator-=(const BigInt &b)
     BigInt tmp;
     tmp = b;
     tmp.toUnsigned();
-    (*this) -= b;
+    (*this) -= tmp;
     return (*this);
   }
 
@@ -868,7 +868,7 @@ BigInt &BigInt::operator-=(const BigInt &b)
       }
     }
     if (sb) {  b_ext.signExtend(); }
-    b_ext.width = width - b.width;
+    b_ext.width = width - b.len*BIGINT_BITS_ONE;
   }
 
   nb = (-b);
@@ -1145,11 +1145,11 @@ void BigInt::_div(BigInt &b, int func)
   for (int i = 0; i < len; i++) {
     tmp_q._setVal (i, 0);
     tmp_r._setVal (i, 0);
-    tmp_q.toUnsigned();
-    tmp_r.toUnsigned();
   }
-  
+  tmp_q.toUnsigned();
   tmp_q.toStatic();
+
+  tmp_r.toUnsigned();
   tmp_r.toStatic();
 
   BigInt one;
@@ -1323,7 +1323,7 @@ BigInt &BigInt::operator|=(const BigInt &b)
     BigInt tmp;
     tmp = b;
     tmp.toUnsigned ();
-    (*this) |= b;
+    (*this) |= tmp;
     return (*this);
   }
 
@@ -1589,4 +1589,36 @@ void BigInt::bitPrint (FILE *fp) const
       fprintf (fp, "%c", ((u >> j) & 1) ? '1' : '0');
     }
   }
+}
+
+void BigInt::decPrint (FILE *fp) const
+{
+ char *buf;
+ BigInt tmp;
+ int pos;
+ tmp = (*this);
+ if (tmp.isSigned()) {
+   tmp.toUnsigned();
+ }
+ if (tmp.isZero()) {
+   fprintf (fp, "0");
+   return;
+ }
+ MALLOC (buf, char, 2 + (int)((tmp.len*sizeof (UNIT_TYPE)*8+0.0)/3.32));
+ pos = 0;
+ BigInt ten = BigInt(4,0,1);
+ ten.setVal (0, 10);
+ while (!tmp.isZero()) {
+   BigInt rem = tmp;
+   rem = rem % ten;
+   tmp = tmp / ten;
+   Assert (0 <= rem.getVal (0) && rem.getVal (0) <= 9, "What?");
+   buf[pos++] = rem.getVal (0) + '0';
+ }
+ buf[pos] = '\0';
+ while (pos > 0) {
+   fputc (buf[pos-1], fp);
+   pos--;
+ }
+ FREE (buf);
 }
