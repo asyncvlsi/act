@@ -1,0 +1,16 @@
+deftype struct (int<4> a; int<8> b) { }
+
+defproc test()
+{
+  struct s[100];
+  int i;
+  
+  chp {
+    i:=0;
+   s[i].a := 0;
+   log ("got: ", s[i].a);
+   skip
+  }
+}
+
+test t; 

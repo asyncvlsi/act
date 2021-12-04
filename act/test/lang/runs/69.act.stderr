@@ -1,0 +1,4 @@
+In expanding test (69.act:3)
+In expanding ::<Global>
+Structure dynamic array assignment currently unsupported.
+	Variable: s[i].a

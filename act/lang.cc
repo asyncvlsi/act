@@ -1347,6 +1347,19 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
     {
       ActId *tmp = ret->u.assign.id->stripArray ();
+      /* 
+	 Check if this is a dynamic array; if it is, we just need the
+	 type and nothing else
+      */
+      if (tmp->isDynamicDeref()) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Structure dynamic array assignment currently unsupported.\n");
+	fprintf (stderr, "\tVariable: ");
+	ret->u.assign.id->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+	
       act_connection *d = tmp->Canonical (s);
       if (d->getDir() == Type::direction::IN) {
 	act_error_ctxt (stderr);
@@ -1367,6 +1380,15 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
     act_chp_macro_check (s, ret->u.comm.chan);
     {
+      if (ret->u.comm.chan->isDynamicDeref()) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Dynamic channel arrays are unsupported.\n");
+	fprintf (stderr, "\tVariable: ");
+	ret->u.comm.chan->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      
       act_connection *d = ret->u.comm.chan->Canonical (s);
 
       if ((c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN &&
@@ -1396,6 +1418,16 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       act_chp_macro_check (s, ret->u.comm.var);
       
       ActId *tmp = ret->u.comm.var->stripArray();
+
+      if (tmp->isDynamicDeref()) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Structure dynamic array access currently unsupported.\n");
+	fprintf (stderr, "\tVariable: ");
+	ret->u.comm.var->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      
       act_connection *d = tmp->Canonical (s);
       if (d->getDir() == Type::direction::IN) {
 	act_error_ctxt (stderr);
