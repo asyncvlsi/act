@@ -571,7 +571,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 #endif
 
   /* create a new userdef type */
-  ux = new UserDef (ns);
+  ux = new UserDef (_ns);
   ux->unexpanded = this;
   ux->file = file;
   ux->lineno = lineno;
@@ -898,7 +898,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   /* now we have the string for the type! */
   UserDef *uy;
 
-  uy = ns->findType (buf);
+  uy = _ns->findType (buf);
 
   if (uy) {
     if (uy->pending) {
@@ -914,7 +914,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   }
   *cache_hit = 0;
 
-  Assert (ns->CreateType (buf, ux), "Huh");
+  Assert (_ns->CreateType (buf, ux), "Huh");
   FREE (buf);
 
   if (parent) {
@@ -1023,7 +1023,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xd = new Data (ux);
   delete ux;
 
-  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
   xd->is_enum = is_enum;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
@@ -1050,7 +1050,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xc = new Channel (ux);
   delete ux;
 
-  Assert (ns->EditType (xc->name, xc) == 1, "What?");
+  Assert (_ns->EditType (xc->name, xc) == 1, "What?");
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
@@ -1079,7 +1079,7 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xd = new Function (ux);
   delete ux;
 
-  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
 
   xd->setRetType (ret_type->Expand (ns, xd->I));
   xd->chkInline();
@@ -1103,7 +1103,7 @@ Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xd = new Interface (ux);
   delete ux;
 
-  Assert (ns->EditType (xd->name, xd) == 1, "What?");
+  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
   return xd;
 }
 
