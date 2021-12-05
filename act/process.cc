@@ -61,6 +61,11 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   UserDef *ux;
   int cache_hit;
 
+  if (!ns->CurScope()->isExpanded()) {
+    ActNamespace::Global()->Expand ();
+  }
+  Assert (ns->CurScope()->isExpanded(), "Hmm...");
+
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit, 1);
 
   if (cache_hit) {

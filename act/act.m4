@@ -111,8 +111,8 @@ namespace_other[ActBody *]: instance
     $A($1);
     b = dynamic_cast <ActBody_Inst*>($1);
     $A(b);
-    if (TypeFactory::isProcessType (b->BaseType())) {
-      $E("Cannot instantiate processes within a namespace");
+    if (TypeFactory::isUserType (b->BaseType())) {
+      $E("Cannot instantiate user-defined type within a namespace");
     }
     return $1;
 }}
