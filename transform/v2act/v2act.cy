@@ -344,6 +344,10 @@ one_assign: "assign" id_deref "=" id_deref ";"
     list_free ($4);
     return NULL;
 }}
+| "assign" id_deref_range_list "=" id_deref_range_list ";"
+{{X:
+    return apply_X_one_assign_opt2 ($0, $2, $4);
+}}
 ;
 
 instances: one_instance instances | /* empty */ ;
