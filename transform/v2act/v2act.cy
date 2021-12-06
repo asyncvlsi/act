@@ -611,7 +611,25 @@ id_deref_or_range[list_t *]: id_deref_range
 {{X:
     list_t *l;
     l = list_new ();
-    list_append (l, $1);
+
+    if ($1->isderef || A_LEN ($1->id->a) == 0) {
+      list_append (l, $1);
+    }
+    else {
+      int hi, lo;
+
+      hi = $1->id->a[0].hi;
+      lo = $1->id->a[0].lo;
+      while (hi >= lo) {
+	id_deref_t *d;
+	NEW (d, id_deref_t);
+	d->id = $1->id;
+	d->isderef = 1;
+	d->deref = hi;
+	list_append (l, d);
+	hi--;
+      }
+    }
     return l;
 }}
 | INT "'b" STRING
