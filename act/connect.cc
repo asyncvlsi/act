@@ -348,7 +348,7 @@ static void dump_conn (act_connection *c)
 }
 
 
-static void dump_conn_rec (act_connection *c)
+static void dump_conn_rec (act_connection *c, int non_prim = 0)
 {
   static int level = 0;
 
@@ -356,10 +356,19 @@ static void dump_conn_rec (act_connection *c)
 
   if (level == 1) printf ("-- conn block --\n");
   dump_conn (c);
+
+  if (c->up != NULL) {
+    non_prim = 1;
+  }
+  
   if (c->hasSubconnections()) {
     for (int i=0; i < c->numSubconnections(); i++) {
       if (c->a[i]) {
-	dump_conn_rec (c->a[i]);
+	printf ("[%2d]", level);
+	if (non_prim && c->a[i]->up == NULL && c->a[i]->next != c->a[i]) {
+	  printf ("[ERR]");
+	}
+	dump_conn_rec (c->a[i], non_prim);
       }
     }
   }
@@ -540,6 +549,12 @@ static void mk_raw_skip_connection (UserDef *ux,
   return;
 }
 
+
+/*
+ * Recursively traverse the sub connection structure and ensure
+ * that in fact the primary connection pointer should be primary.;
+ * This is needed when sub-connection trees are merged.
+ */
 static void _verify_subconn_canonical (UserDef *ux, act_connection *c)
 {
   act_connection *d;
@@ -905,6 +920,69 @@ static void _fix_noncanonical_subconns (act_connection *c)
 }
 
 
+/*
+ * if a node in the connection tree is non-canonical, then
+ * all subtrees must be non-canonical. In particular, the sub-tree
+ * name should include the canonical name derived from the parent as
+ * an option.
+ */
+static void _fix_noncan_to_can2 (UserDef *ux, act_connection *orig, act_connection *can_ver)
+{
+  if (orig->hasSubconnections()) {
+#ifdef DEBUG_CONNECTIONS    
+    printf (" -- check subconn\n");
+#endif    
+    for (int i=0; i < orig->numSubconnections(); i++) {
+      if (orig->a[i]) {
+	act_connection *tmp = can_ver->getsubconn (i, can_ver->numTotSubconnections());
+	if (orig->a[i]->next != orig->a[i]) {
+	  if (tmp->primary() != orig->a[i]->primary()) {
+#ifdef DEBUG_CONNECTIONS	    
+	    printf ("*** need to merge: ");
+	    print_id (tmp->primary());
+	    printf (" AND ");
+	    print_id (orig->a[i]->primary());
+	    printf ("\n");
+#endif
+	    act_connection *x1 = tmp->primary();
+	    act_connection *x2 = orig->a[i]->primary();
+	    if (_raw_should_swap (ux, x1, x2)) {
+	      /* x2 is canonical */
+	      act_connection *x3 = x1;
+	      x1 = x2;
+	      x2 = x3;
+	    }
+	    _act_mk_raw_connection (x1, x2);
+	  }
+	}
+	_fix_noncan_to_can2 (ux, orig->a[i], tmp);
+      }
+    }
+  }
+}
+
+
+static void _fix_noncan_to_can_transition (UserDef *ux, act_connection *c)
+{
+  /* check this level */
+  if (c != c->primary()) {
+#ifdef DEBUG_CONNECTIONS    
+    printf ("check: "); print_id (c); printf (" vs "); print_id (c->primary()); printf ("\n");
+#endif    
+    _fix_noncan_to_can2 (ux, c, c->primary());
+  }
+  else {
+    if (c->hasSubconnections()) {
+      for (int i=0; i < c->numSubconnections(); i++) {
+	if (c->a[i]) {
+	  _fix_noncan_to_can_transition (ux, c->a[i]);
+	}
+      }
+    }
+  }
+}
+
+
 void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
 			const char *s2, act_connection *c2)
 {
@@ -1123,13 +1201,21 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   */
   _fix_noncanonical_subconns (c1);
 
+  _fix_noncan_to_can_transition (ux, c1);
+
 #ifdef DEBUG_CONNECTIONS
   printf ("after-connect: ");
   dump_conn_rec (c1);
 
-  printf ("after-connect-on-primary: ");
-  c1 = c1->primary();
-  dump_conn_rec (c1);
+  if (c1 != c1->primary()) {
+    printf ("after-connect-on-primary: ");
+    c1 = c1->primary();
+    dump_conn_rec (c1);
+  }
+
+  printf ("-- remaining --\n");
+  c2 = c2->primary();
+  dump_conn_rec (c2);
 #endif
 }
 
