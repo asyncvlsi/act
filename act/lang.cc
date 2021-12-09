@@ -978,12 +978,17 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
     break;
 
   case E_BUILTIN_BOOL:
-    NEW (t, Expr);
-    t->type = E_NOT;
-    t->u.e.l = e;
-    t->u.e.r = NULL;
-    e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
-    e = t;
+    if (invert) {
+      NEW (t, Expr);
+      t->type = E_NOT;
+      t->u.e.l = e;
+      t->u.e.r = NULL;
+      e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+      e = t;
+    }
+    else {
+      e->u.e.l = _chp_fix_nnf (e->u.e.l, 0);
+    }
     break;
 
   case E_TRUE:
