@@ -395,8 +395,29 @@ struct act_dataflow_order {
   list_t *rhs;
 };
 
+
 struct act_dataflow {
   list_t *dflow;
+
+  // This fields allows for hierarchical optimization without requiring full
+  // ACT program analysis.
+  //
+  // Suppose you have a dataflow channels c and d in process foo, and c and d
+  // are passed in to a sub-process bar, and internally in that sub-process d
+  // is computed from c.
+  //
+  // The optimizations in the dataflow body in foo need to know that d
+  // depends on c. Otherwise, it might re-structure the dataflow graph and
+  // create a synchronization point where d and c might have to be produced
+  // concurrently (or worse). If it did that, the sub-process path would
+  // result in deadlock.
+  //
+  // It is a list of act_dataflow_order elements, and each of which is a pair
+  // of lists. Each of those lists is a list of IDs. The directive looks like:
+  //
+  //       a1, a2, ..., aN < b1, b2, ..., bM
+  //
+  // which means there is a dependency from ai to bj for all pairs.
   list_t *order;
 };
 
