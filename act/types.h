@@ -981,14 +981,14 @@ const char *act_type_errmsg (void);
  *
  *------------------------------------------------------------------------
  */
-int expr_equal (Expr *a, Expr *b);
+int expr_equal (const Expr *a, const Expr *b);
 
-void print_expr (FILE *fp, Expr *e);
-void sprint_expr (char *buf, int sz, Expr *e);
+void print_expr (FILE *fp, const Expr *e);
+void sprint_expr (char *buf, int sz, const Expr *e);
 
 /* unsigned variations of the functions above */
-void print_uexpr (FILE *fp, Expr *e);
-void sprint_uexpr (char *buf, int sz, Expr *e);
+void print_uexpr (FILE *fp, const Expr *e);
+void sprint_uexpr (char *buf, int sz, const Expr *e);
 
 int expr_is_a_const (Expr *e);
 Expr *expr_dup_const (Expr *e);

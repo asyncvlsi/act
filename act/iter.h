@@ -29,6 +29,7 @@
 
 #define ACTSTDITER(name,rettype)		\
   name (const name & c);			\
+  name& operator=(const name & c) = default;			\
   name& operator++();				\
   name operator++(int);				\
   bool operator==(const name& rhs) const;	\

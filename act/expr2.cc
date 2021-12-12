@@ -61,7 +61,7 @@
    otherwise parenthesize it.
 
 */
-static void _print_expr (char *buf, int sz, Expr *e, int prec)
+static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 {
   int k = 0;
   int len;
@@ -481,13 +481,13 @@ static void _print_expr (char *buf, int sz, Expr *e, int prec)
  *  s/print_expr() is the top-level function
  *------------------------------------------------------------------------
  */
-void sprint_expr (char *buf, int sz, Expr *e)
+void sprint_expr (char *buf, int sz, const Expr *e)
 {
   if (sz <= 1) return;
   _print_expr (buf, sz, e, 1);
 }
   
-void print_expr (FILE *fp, Expr *e)
+void print_expr (FILE *fp, const Expr *e)
 {
   char *buf;
   int bufsz = 10240;
@@ -511,13 +511,13 @@ void print_expr (FILE *fp, Expr *e)
   }
 }
 
-void sprint_uexpr (char *buf, int sz, Expr *e)
+void sprint_uexpr (char *buf, int sz, const Expr *e)
 {
   if (sz <= 1) return;
   _print_expr (buf, sz, e, -1);
 }
   
-void print_uexpr (FILE *fp, Expr *e)
+void print_uexpr (FILE *fp, const Expr *e)
 {
   char *buf;
   int bufsz = 10240;
@@ -547,7 +547,7 @@ void print_uexpr (FILE *fp, Expr *e)
 */
 //#define _id_equal(a,b) ((a) == (b))
 //#define _id_equal ((ActId *)(a))->isEqual ((ActId *)(b))
-static int _id_equal (Expr *a, Expr *b)
+static int _id_equal (const Expr *a, const Expr *b)
 {
   ActId *ia, *ib;
   ia = (ActId *)a;
@@ -555,7 +555,7 @@ static int _id_equal (Expr *a, Expr *b)
   return ia->isEqual (ib);
 }
 
-static int expr_args_equal (Expr *a, Expr *b)
+static int expr_args_equal (const Expr *a, const Expr *b)
 {
   while (a && b) {
     if (!expr_equal (a->u.e.l, b->u.e.l)) {
@@ -577,7 +577,7 @@ static int expr_args_equal (Expr *a, Expr *b)
  *  \param b Second expression to be compared
  *  \return 1 if the two are structurally identical, 0 otherwise
  */
-int expr_equal (Expr *a, Expr *b)
+int expr_equal (const Expr *a, const Expr *b)
 {
   int ret;
   if (a == b) { 
