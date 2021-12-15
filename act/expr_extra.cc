@@ -464,7 +464,7 @@ static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
       file_pop_position (l);
       return NULL;
     }
-    if (!(e->u.e.r->u.e.r->u.e.r = act_parse_a_fexpr (l))) {
+    if (!(e->u.e.r->u.e.r->u.e.r = (struct expr*)act_parse_a_fexpr (l))) {
       expr_free (e);
       file_set_position (l);
       file_pop_position (l);
@@ -486,7 +486,7 @@ static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
     expr_inc_parens ();
     NEW (e, Expr);
     e->type = E_BUILTIN_BOOL;
-    e->u.e.l = act_parse_a_fexpr (l);
+    e->u.e.l = (struct expr*)act_parse_a_fexpr (l);
     e->u.e.r = NULL;
     if (!e->u.e.l) {
       expr_dec_parens ();

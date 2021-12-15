@@ -41,7 +41,6 @@
 class ActPass;
 class Log;
 
-
 /*
  *
  *  ACT can model a circuit at different levels of detail. The four

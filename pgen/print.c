@@ -158,9 +158,6 @@ void print_header_prolog (pp_t *pp)
     pp_printf (pp, "#include \"%s\"", buf); pp_forced (pp, 0);
     fclose (fp);
   }
-  pp_printf (pp, "#ifdef __cplusplus"); pp_forced (pp,0);
-  pp_printf (pp, "extern \"C\" {"); pp_forced (pp,0);
-  pp_printf (pp, "#endif"); pp_forced (pp, 0);
   pp_printf (pp, "%s %s_walk_%s (%s *, %s_Token *);", 
 	     user_ret_id (0), prefix, WNAME, WCOOKIE, prefix);
   pp_forced (pp, 0);

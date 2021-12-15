@@ -1050,13 +1050,9 @@ const char *act_error_top ();
 
 void typecheck_err (const char *s, ...);
 
-extern "C" {
-
 Expr *act_parse_expr_syn_loop_bool (LFILE *l);
 Expr *act_parse_expr_intexpr_base (LFILE *l);
 Expr *act_expr_any_basecase (LFILE *l);
 int act_expr_parse_newtokens (LFILE *l);
-  
-}
 
 #endif /* __ACT_TYPES_H__ */

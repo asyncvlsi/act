@@ -310,13 +310,13 @@ void expr_free (Expr *e) { efree (e); }
 /* base case */
 Expr *B (void)
 {
-  int not = 0;
+  int not_ = 0;
   Expr *e, *f;
   pId *v;
 
   PUSH (Tl);
   while (file_have (Tl, T[E_NOT]))
-    not = 1 - not;
+    not_ = 1 - not_;
   if (expr_parse_basecase_bool && ((e = (*expr_parse_basecase_bool)(Tl)))) {
     /* ok! */
     POP (Tl);
@@ -385,7 +385,7 @@ Expr *B (void)
       }
     }
   }
-  if (not) {
+  if (not_) {
     f = e;
     e = newexpr ();
     e->u.e.l = f;

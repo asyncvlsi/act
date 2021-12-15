@@ -24,10 +24,6 @@
 #ifndef __EXPR_H__
 #define __EXPR_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <common/file.h>
 #include <common/pp.h>
 #include "id.h"
@@ -232,8 +228,5 @@ extern void expr_print (pp_t *, Expr *);
 extern const char *expr_operator_name (int type);
 /* return string corresponding to the operator token */
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __EXPR_H__ */

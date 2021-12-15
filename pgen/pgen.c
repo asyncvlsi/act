@@ -1731,16 +1731,10 @@ void emit_parser (void)
   if (found_expr) {
     pp_printf_text (pp, "#include \"expr.h\"\n", prefix);
   }
-  pp_printf_text (pp, "#ifdef __cplusplus\n");
-  pp_printf_text (pp, "extern \"C\" {\n");
-  pp_printf_text (pp, "#endif\n");
   pp_printf_text (pp, "struct %s_DefToken;\n", prefix);
   pp_printf_text (pp, "typedef struct %s_DefToken %s_Token;\n", prefix, prefix);
   pp_printf_text (pp, "%s_Token *%s_parse (const char *);\n", prefix, prefix);
   pp_printf_text (pp, "void %s_parse_free (%s_Token *);\n", prefix, prefix);
-  pp_printf_text (pp, "#ifdef __cplusplus\n");
-  pp_printf_text (pp, "}\n");
-  pp_printf_text (pp, "#endif\n");
   pp_printf_text (pp, "#endif /* __PARSE_EXT_H__ */\n");
   std_close (pp);
 
@@ -1756,9 +1750,6 @@ void emit_parser (void)
   }
   pp_nl;
   pp_printf_text (pp, "#include \"%s_parse.h\"\n", prefix);
-  pp_printf_text (pp, "#ifdef __cplusplus\n");
-  pp_printf_text (pp, "extern \"C\" {\n");
-  pp_printf_text (pp, "#endif\n");
 
   /* declare a position */
   
@@ -1944,10 +1935,7 @@ void emit_parser (void)
   }
 
   pp_nl; pp_nl;
-  
-  pp_printf_text (pp, "#ifdef __cplusplus\n");
-  pp_printf_text (pp, "}\n");
-  pp_printf_text (pp, "#endif\n");
+
   pp_printf_text (pp, "#endif /* __PARSE_H__ */\n");
   std_close (pp);
 
@@ -2048,22 +2036,12 @@ void emit_parser (void)
     pp_printf_text (pp, "static Node_%s *parse_a_%s (LFILE *l, int *opt);\n", BNF[i].lhs, BNF[i].lhs);
     pp_printf_text (pp, "static void free_a_%s (Node_%s *);\n", BNF[i].lhs, BNF[i].lhs);
   }
-  if (A_LEN (EXTERN_P) > 0) {
-    pp_printf_text (pp, "#ifdef __cplusplus\n");
-    pp_printf_text (pp, "extern \"C\" {\n");
-    pp_printf_text (pp, "#endif\n");
-  }
   for (i=0; i < A_LEN (EXTERN_P); i++) {
     pp_printf_text (pp, "int %s_is_a_%s (LFILE *l);\n", prefix, EXTERN_P[i]);
     pp_printf_text (pp, "void *%s_parse_a_%s (LFILE *l);\n", prefix,
 		    EXTERN_P[i]);
     pp_printf_text (pp, "void %s_free_a_%s (void *);\n", prefix, EXTERN_P[i]);
     pp_printf_text (pp, "void %s_init_%s (LFILE *l);\n", prefix, EXTERN_P[i]);
-  }
-  if (A_LEN (EXTERN_P) > 0) {
-    pp_printf_text (pp, "#ifdef __cplusplus\n");
-    pp_printf_text (pp, "}\n");
-    pp_printf_text (pp, "#endif\n");
   }
   pp_nl;
   pp_nl;

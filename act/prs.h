@@ -29,19 +29,11 @@
 #include <common/file.h>
 #include "treetypes.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void act_init_prs_expr (LFILE *);
 int act_is_a_prs_expr (LFILE *);
 void act_free_a_prs_expr (void *);
 void act_free_a_prs_exexpr (void *);
 void *act_parse_a_prs_expr (LFILE *);
 void *act_walk_X_prs_expr (ActTree *, void *);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __PRS_H__ */

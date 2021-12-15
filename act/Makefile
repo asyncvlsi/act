@@ -31,22 +31,18 @@ TARGETINCSUBDIR=act
 
 TARGETCONF=global.conf prs2net.conf prs2net_opts.conf
 
-OBJS1=expr.o expr_extra.o
-OBJS2=path.o act_parse.o act_walk_X.o wrap.o prs.o scope.o \
-	act.o namespaces.o body.o lang.o id.o array.o expr2.o \
-	inst.o types.o process.o func.o typefactory.o check.o \
-	connect.o error.o iter.o \
-	mangle.o pass.o tech.o fexpr.o macros.o inline.o
-
-OBJS=$(OBJS1) $(OBJS2)
+OBJS=expr.o expr_extra.o path.o wrap.o prs.o scope.o namespaces.o body.o \
+     lang.o id.o array.o expr2.o inst.o types.o process.o func.o \
+     typefactory.o check.o connect.o error.o iter.o mangle.o pass.o \
+     tech.o fexpr.o macros.o inline.o act_parse.o act_walk_X.o act.o
 
 SHOBJS=$(OBJS:.o=.os)
 
-SRCS=$(OBJS1:.o=.c) $(OBJS2:.o=.cc)
+SRCS=$(OBJS:.o=.cc)
 
 GENERATED=act_parse.cc act_walk_X.cc
 
-CLEAN=act_parse.cc act_walk_X.cc expr.c expr.h act_parse.h \
+CLEAN=act_parse.cc act_walk_X.cc expr.cc expr.h act_parse.h \
 	act_walk_X.h act_parse_int.h act_parse.def act_parse.gram \
 	act.cy act_parse_id.h
 
@@ -65,7 +61,7 @@ docs:
 	doxygen
 	(cd doc; gen)
 
-act.cy: act.m4 defs.m4 expr.m4 lang.m4 namespaces.m4 types.m4 expr.c expr.h
+act.cy: act.m4 defs.m4 expr.m4 lang.m4 namespaces.m4 types.m4 expr.cc expr.h
 	m4 -s act.m4 > act.cy
 
 act_parse_id.h act_walk.h act_parse.h act_parse_int.h act_parse.cc act_walk_X.cc: act.cy
@@ -73,8 +69,8 @@ act_parse_id.h act_walk.h act_parse.h act_parse_int.h act_parse.cc act_walk_X.cc
 	-mv act_parse.c act_parse.cc
 	-mv act_walk_X.c act_walk_X.cc
 
-expr.c: $(INSTALLDIR)/lib/expr.c
-	cp $(INSTALLDIR)/lib/expr.c .
+expr.cc: $(INSTALLDIR)/lib/expr.cc
+	cp $(INSTALLDIR)/lib/expr.cc .
 
 expr.h: $(INSTALLDIR)/lib/expr.h
 	cat $(INSTALLDIR)/lib/expr.h | sed 's,\"id.h\",<act/act_parse_id.h>,' > expr.h

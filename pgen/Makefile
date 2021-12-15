@@ -26,7 +26,7 @@ TARGETS=$(EXE)
 SRCS=pgen.c genwalk.c print.c
 OBJS=$(SRCS:.c=.o)
 
-TARGETLIBS=expr.c expr.h
+TARGETLIBS=expr.cc expr.h
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 

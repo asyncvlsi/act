@@ -364,15 +364,9 @@ void emit_walker (void)
     print_walker_prolog (pp);
 
     /* emit wrapper function headers */
-    pp_printf (app, "#ifdef __cplusplus"); pp_forced (app, 0);
-    pp_printf (app, "}"); pp_forced (app, 0);
-    pp_printf (app, "#endif"); pp_forced (app, 0);
     for (i=0; i < A_LEN (BNF); i++) {
       emit_wrap_fn (app, &BNF[i]);
     }
-    pp_printf (app, "#ifdef __cplusplus"); pp_forced (app, 0);
-    pp_printf (app, "extern \"C\" {"); pp_forced (app, 0);
-    pp_printf (app, "#endif"); pp_forced (app, 0);
 
     /* top-level walk function */
     print_walker_main (pp);
@@ -386,9 +380,6 @@ void emit_walker (void)
 
     print_walker_local_apply_fns (pp);
 
-    pp_printf (app, "#ifdef __cplusplus"); pp_forced (app, 0);
-    pp_printf (app, "}"); pp_forced (app, 0);
-    pp_printf (app, "#endif"); pp_forced (app, 0);
     pp_printf (app, "#endif /* __WALK_%s_H__ */", WNAME); 
     pp_forced (app, 0);
 
