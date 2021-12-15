@@ -156,37 +156,37 @@ static void _path_init (void)
 char *path_open (char *name)
 {
   struct pathlist *p;
-  char *file, *try;
+  char *file, *try_;
   FILE *fp;
 
   _path_init ();
 
   p = hd;
-  try = expand(name);
-  if ((fp = fopen (try, "r"))) {
+  try_ = expand(name);
+  if ((fp = fopen (try_, "r"))) {
     fclose (fp);
-    return try;
+    return try_;
   }
-  FREE (try);
+  FREE (try_);
   while (p) {
     MALLOC (file, char, strlen (p->path)+strlen(name)+7);
     strcpy (file, p->path);
     strcat (file, "/");
     strcat (file, name);
-    try = expand (file);
+    try_ = expand (file);
     FREE (file);
-    fp = fopen (try, "r");
+    fp = fopen (try_, "r");
     if (fp) { 
       fclose (fp);
-      return try;
+      return try_;
     }
-    strcat (try, ".act");
-    fp = fopen (try, "r");
+    strcat (try_, ".act");
+    fp = fopen (try_, "r");
     if (fp) {
       fclose (fp);
-      return try;
+      return try_;
     }
-    FREE (try);
+    FREE (try_);
     p = p->next;
   }
   return Strdup (name);
@@ -205,7 +205,7 @@ char *path_open (char *name)
 char *path_open_skipcwd (const char *name)
 {
   struct pathlist *p;
-  char *file, *try;
+  char *file, *try_;
   FILE *fp;
 
   _path_init ();
@@ -219,20 +219,20 @@ char *path_open_skipcwd (const char *name)
     strcpy (file, p->path);
     strcat (file, "/");
     strcat (file, name);
-    try = expand (file);
+    try_ = expand (file);
     FREE (file);
-    fp = fopen (try, "r");
+    fp = fopen (try_, "r");
     if (fp) { 
       fclose (fp);
-      return try;
+      return try_;
     }
-    strcat (try, ".act");
-    fp = fopen (try, "r");
+    strcat (try_, ".act");
+    fp = fopen (try_, "r");
     if (fp) {
       fclose (fp);
-      return try;
+      return try_;
     }
-    FREE (try);
+    FREE (try_);
     p = p->next;
   }
   return NULL;

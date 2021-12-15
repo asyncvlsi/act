@@ -24,10 +24,6 @@
 #ifndef __MY_PATH_H__
 #define __MY_PATH_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  *
  *  Returns a string corresponding to the path name
@@ -88,9 +84,5 @@ void act_push_import (char *file);
  *  0 otherwise
  */
 int act_isimported (const char *file);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* __MY_PATH_H__ */
