@@ -14,4 +14,4 @@ lib*_x86_64_*.a
 .cproject
 .project
 .pydevproject
-
+.idea
