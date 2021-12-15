@@ -2781,6 +2781,7 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
       f->u.func.lhs = expr_expand (e->u.func.lhs, ns, s, 0);
       f->u.func.nbufs = NULL;
       f->u.func.init  = NULL;
+      f->u.func.istransparent = e->u.func.istransparent;
       if (e->u.func.nbufs) {
 	f->u.func.nbufs = expr_expand (e->u.func.nbufs, ns, s);
 	if (e->u.func.init) {
