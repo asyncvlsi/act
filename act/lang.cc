@@ -732,6 +732,529 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
   return hd;
 }
 
+
+struct single_err {
+  act_connection *c;
+  int count;
+};
+
+class rw_set_error {
+ public:
+  rw_set_error() {
+    A_INIT (errs_);
+  }
+  ~rw_set_error() {
+    A_FREE (errs_);
+  }
+
+  void addErr (act_connection *c) {
+    for (int i=0; i < A_LEN (errs_); i++) {
+      if (errs_[i].c == c) {
+	errs_[i].count++;
+	return;
+      }
+    }
+    A_NEW (errs_, struct single_err);
+    A_NEXT (errs_).c = c;
+    A_NEXT (errs_).count = 1;
+    A_INC (errs_);
+  }
+
+  bool isErr() {
+    return A_LEN (errs_) != 0 ? true : false;
+  }
+
+  void printErrs() {
+    warning ("potential write conflict in CHP description");
+    for (int i=0; i < A_LEN (errs_); i++) {
+      ActId *idtmp = errs_[i].c->toid();
+      fprintf (stderr, "   Variable: `");
+      idtmp->Print (stderr);
+      fprintf (stderr, "'");
+      if (errs_[i].count > 1) {
+	fprintf (stderr, " (count=%d)", errs_[i].count);
+      }
+      fprintf (stderr, "\n");
+      delete idtmp;
+    }
+  }
+
+ private:
+  A_DECL (struct single_err, errs_);
+};
+
+class rw_sets {
+ public:
+  rw_sets() {
+    A_INIT (reads);
+    A_INIT (writes);
+  }
+
+  ~rw_sets() {
+    A_FREE (reads);
+    A_FREE (writes);
+  }
+
+  void addRead (act_connection *c) {
+    for (int i=0; i < A_LEN (reads); i++) {
+      if (reads[i] == c)
+	return;
+    }
+    A_NEW (reads, act_connection *);
+    A_NEXT (reads) = c;
+    A_INC (reads);
+  }
+
+  bool isWrite (act_connection *c) {
+    for (int i=0; i < A_LEN (writes); i++) {
+      if (writes[i] == c) {
+	return true;
+      }
+    }
+    return false;
+  }
+
+  void addWrite (act_connection *c) {
+    if (isWrite (c)) {
+      return;
+    }
+    A_NEW (writes, act_connection *);
+    A_NEXT (writes) = c;
+    A_INC (writes);
+  }
+
+  act_connection *isConflict (rw_sets &r) {
+    for (int i=0; i < A_LEN (reads); i++) {
+      if (r.isWrite (reads[i])) {
+	return reads[i];
+      }
+    }
+    for (int i=0; i < A_LEN (writes); i++) {
+      if (r.isWrite (writes[i])) {
+	return writes[i];
+      }
+    }
+    return nullptr;
+  }
+
+private:
+
+  A_DECL (act_connection *, reads);
+  A_DECL (act_connection *, writes);
+};
+
+
+static void _add_dynamic_var (struct Hashtable **H, ActId *id)
+{
+  if (!id) return;
+  if (id->isDynamicDeref ()) {
+    if (!*H) {
+      *H = hash_new (4);
+    }
+    if (!hash_lookup (*H, id->getName())) {
+      hash_add (*H, id->getName());
+    }
+  }
+}
+
+static void _compute_dynamic_vars (struct Hashtable **H, Expr *e)
+{
+  if (!e) {
+    return;
+  }
+
+  switch (e->type) {
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    break;
+
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    _compute_dynamic_vars (H, e->u.e.l);
+    _compute_dynamic_vars (H, e->u.e.r);
+    break;
+
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    _compute_dynamic_vars (H, e->u.e.l);
+    break;
+
+  case E_QUERY:
+    _compute_dynamic_vars (H, e->u.e.l);
+    _compute_dynamic_vars (H, e->u.e.r->u.e.l);
+    _compute_dynamic_vars (H, e->u.e.r->u.e.r);
+    break;
+
+  case E_COLON:
+    break;
+
+  case E_BITFIELD:
+    _add_dynamic_var (H, (ActId *)e->u.e.l);
+    break;
+
+  case E_PROBE:
+    _add_dynamic_var (H, (ActId *)e->u.e.l);
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    _compute_dynamic_vars (H, e->u.e.l);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.fn.r;
+    while (e) {
+      _compute_dynamic_vars (H, e->u.e.l);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      _compute_dynamic_vars (H, e->u.e.l);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_VAR:
+    _add_dynamic_var (H, (ActId *)e->u.e.l);
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+    break;
+
+  default:
+    fatal_error ("Unknown expression type (%d)!", e->type);
+    break;
+  }
+}
+
+static void _compute_dynamic_vars (struct Hashtable **H,
+				   act_chp_lang_t *c)
+{
+  listitem_t *li;
+  act_chp_gc_t *gc;
+
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_SEMI:
+  case ACT_CHP_COMMA:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      _compute_dynamic_vars (H, (act_chp_lang_t *) list_value (li));
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (gc = c->u.gc; gc; gc = gc->next) {
+      _compute_dynamic_vars (H, gc->g);
+      _compute_dynamic_vars (H, gc->s);
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    _compute_dynamic_vars (H, c->u.assign.e);
+    _add_dynamic_var (H, c->u.assign.id);
+    break;
+
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    _add_dynamic_var (H, c->u.comm.chan);
+    _add_dynamic_var (H, c->u.comm.var);
+    _compute_dynamic_vars (H, c->u.comm.e);
+    break;
+
+  default:
+    fatal_error ("CHP type %d: after expansion!\n", c->type);
+    break;
+  }
+}
+
+static struct Hashtable *_localdynamic = NULL;
+
+static void _add_var (rw_sets &rw, ActId *id, ActNamespace *ns, Scope *s,
+		      int iswrite)
+{
+  act_connection *c;
+  if (!id) return;
+  if (_localdynamic && hash_lookup (_localdynamic, id->getName())) {
+    ActId *tmp = new ActId (id->getName());
+    c = tmp->Canonical (s);
+    delete tmp;
+  }
+  else {
+    c = id->Canonical (s);
+  }
+  if (iswrite) {
+    rw.addWrite (c);
+  }
+  else {
+    rw.addRead (c);
+  }
+}
+
+static void _compute_rw_sets (rw_sets &rw,
+			      Expr *e,
+			      ActNamespace *ns,
+			      Scope *s)
+{
+  if (!e) {
+    return;
+  }
+
+  switch (e->type) {
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+    break;
+
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    _compute_rw_sets (rw, e->u.e.l, ns, s);
+    _compute_rw_sets (rw, e->u.e.r, ns, s);
+    break;
+
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    _compute_rw_sets (rw, e->u.e.l, ns, s);
+    break;
+
+  case E_QUERY:
+    _compute_rw_sets (rw, e->u.e.l, ns, s);
+    _compute_rw_sets (rw, e->u.e.r->u.e.l, ns, s);
+    _compute_rw_sets (rw, e->u.e.r->u.e.r, ns, s);
+    break;
+
+  case E_COLON:
+    break;
+
+  case E_BITFIELD:
+    _add_var (rw, (ActId *)e->u.e.l, ns, s, 0);
+    break;
+
+  case E_PROBE:
+    _add_var (rw, (ActId *)e->u.e.l, ns, s, 0);
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    _compute_rw_sets (rw, e->u.e.l, ns, s);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.fn.r;
+    while (e) {
+      _compute_rw_sets (rw, e->u.e.l, ns, s);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      _compute_rw_sets (rw, e->u.e.l, ns, s);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_VAR:
+    _add_var (rw, (ActId *)e->u.e.l, ns, s, 0);
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+    break;
+
+  default:
+    fatal_error ("Unknown expression type (%d)!", e->type);
+    break;
+  }
+}
+
+static void _compute_rw_sets (rw_sets &rw,
+			      act_chp_lang_t *c,
+			      ActNamespace *ns,
+			      Scope *s)
+{
+  listitem_t *li;
+  act_chp_gc_t *gc;
+
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_SEMI:
+  case ACT_CHP_COMMA:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      _compute_rw_sets (rw, (act_chp_lang_t *) list_value (li), ns, s);
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (gc = c->u.gc; gc; gc = gc->next) {
+      _compute_rw_sets (rw, gc->g, ns, s);
+      _compute_rw_sets (rw, gc->s, ns, s);
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    _compute_rw_sets (rw, c->u.assign.e, ns, s);
+    _add_var (rw, c->u.assign.id, ns, s, 1);
+    break;
+
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    _add_var (rw, c->u.comm.chan, ns, s, 1);
+    _add_var (rw, c->u.comm.var, ns, s, 1);
+    _compute_rw_sets (rw, c->u.comm.e, ns, s);
+    break;
+
+  default:
+    fatal_error ("CHP type %d: after expansion!\n", c->type);
+    break;
+  }
+}
+
+
+static void _check_concurrent_conflicts (act_chp_lang_t *c,
+					 ActNamespace *ns,
+					 Scope *s)
+{
+  listitem_t *li;
+  act_chp_gc_t *gc;
+
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_SEMI:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      _check_concurrent_conflicts ((act_chp_lang_t *) list_value (li), ns, s);
+    }
+    break;
+
+  case ACT_CHP_COMMA:
+    {
+      int count = 0;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	count++;
+      }
+      if (count < 2) {
+	return;
+      }
+      rw_sets rw[count];
+      rw_set_error errs;
+      count = 0;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	_compute_rw_sets (rw[count], (act_chp_lang_t *)list_value (li), ns, s);
+	count++;
+      }
+      for (int i=0; i < count; i++) {
+	for (int j = i+1; j < count; j++) {
+	  act_connection *tmp;
+	  tmp = rw[i].isConflict (rw[j]);
+	  if (!tmp) {
+	    tmp = rw[j].isConflict (rw[i]);
+	  }
+	  if (tmp) {
+	    errs.addErr (tmp);
+	  }
+	}
+      }
+      if (errs.isErr()) {
+	act_error_ctxt (stderr);
+	errs.printErrs();
+      }
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (gc = c->u.gc; gc; gc = gc->next) {
+      _check_concurrent_conflicts (gc->s, ns, s);
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+  case ACT_CHP_FUNC:
+    break;
+
+  default:
+    fatal_error ("CHP type %d: after expansion!\n", c->type);
+    break;
+  }
+}
+
 act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
 {
   act_chp *ret;
@@ -746,6 +1269,24 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   _act_chp_is_synth_flag = 1;
   ret->c = chp_expand (c->c, ns, s);
   ret->is_synthesizable = _act_chp_is_synth_flag;
+
+  struct Hashtable *H = NULL;
+  _compute_dynamic_vars (&H, ret->c);
+  _localdynamic = H;
+
+  if (ret->c && ret->c->type == ACT_CHP_COMMA) {
+    listitem_t *li;
+    for (li = list_first (ret->c->u.semi_comma.cmd); li; li = list_next (li)) {
+      _check_concurrent_conflicts ((act_chp_lang_t *) list_value (li), ns, s);
+    }
+  }
+  else {
+    _check_concurrent_conflicts (ret->c, ns, s);
+  }
+  if (_localdynamic) {
+    hash_free (_localdynamic);
+    _localdynamic = NULL;
+  }
 
   return ret;
 }

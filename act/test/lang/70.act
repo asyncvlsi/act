@@ -1,0 +1,15 @@
+
+defproc test()
+{
+  int s[100];
+  int i;
+  
+  chp {
+    i:=0;
+   s[i] := 0, i := s[1] + 1;
+   log ("got: ", s[i]);
+   skip
+  }
+}
+
+test t; 

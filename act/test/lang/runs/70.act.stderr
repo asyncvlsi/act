@@ -1,0 +1,4 @@
+In expanding test (70.act:2)
+In expanding ::<Global>
+WARNING: potential write conflict in CHP description
+   Variable: `s'

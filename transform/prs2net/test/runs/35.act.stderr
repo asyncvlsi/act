@@ -1,4 +1,2 @@
-In expanding foo (35.act:3)
-In expanding ::<Global>
-In CHP, fragmented access `p.w[y]' to base identifier `p'
-FATAL: Cannot access channel/integer fragments in CHP!
+In examining ID: p.w[y]
+FATAL: Only simple (first-level) dynamic derefs are supported
