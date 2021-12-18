@@ -1215,9 +1215,10 @@ static void _check_concurrent_conflicts (act_chp_lang_t *c,
 	for (int j = i+1; j < count; j++) {
 	  act_connection *tmp;
 	  tmp = rw[i].isConflict (rw[j]);
-	  if (!tmp) {
-	    tmp = rw[j].isConflict (rw[i]);
+	  if (tmp) {
+	    errs.addErr (tmp);
 	  }
+	  tmp = rw[j].isConflict (rw[i]);
 	  if (tmp) {
 	    errs.addErr (tmp);
 	  }
