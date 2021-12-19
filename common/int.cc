@@ -796,7 +796,7 @@ void BigInt::_add (const BigInt &b, int cin)
       width++;
       sa = isSigned() && isNegative();
       if (!sa) {
-        u.v[len-1] = u.v[len-1] + 1;
+	_setVal (len-1, getVal (len-1)+1);
       }
     } else {
       if (~nx & getVal (len-1)) {
