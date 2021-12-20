@@ -36,16 +36,7 @@ extern "C" {
  *  @return string corresponded to the fully expanded path name
  *
  */
-char *path_open (char *name);
-
-  /**
-   * Returns a string corresponding to the path name, NULL if it
-   * couldn't be found. Skips the current working directory.
-   * 
-   * @param name is the raw name of the import file
-   * @return string corresponds to the fully expanded path name
-   */
-char *path_open_skipcwd (const char *name);
+char *act_path_open (char *name);
 
 /**
  *  Determines if we are importing the specified file at the moment.

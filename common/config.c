@@ -27,6 +27,7 @@
 #include "hash.h"
 #include "misc.h"
 #include "array.h"
+#include "path.h"
 
 /*
   Configuration file format:
@@ -73,10 +74,8 @@ typedef struct {
 
 static struct Hashtable *H = NULL;
 
-static struct search_path {
-  char *path;
-  struct search_path *next;
-} *Path = NULL;
+static path_info_t *Path = NULL;
+
 
 L_A_DECL (char *, files_read);
 L_A_DECL (char, global_prefix);
@@ -177,13 +176,13 @@ void config_set_state (struct Hashtable *h)
  */
 void config_append_path (const char *s)
 {
-  struct search_path *p;
-  if (!s) return;
-  
-  NEW (p, struct search_path);
-  p->next = Path;
-  p->path = Strdup (s);
-  Path = p;
+  if (!s) {
+    return;
+  }
+  if (!Path) {
+    Path = path_init ();
+  }
+  path_add (Path, s);
 }
 
 /*------------------------------------------------------------------------
@@ -196,14 +195,7 @@ void config_append_path (const char *s)
  */
 void config_flush_path (void)
 {
-  struct search_path *p, *pnext;
-  p = Path;
-  while (p) {
-    pnext = p->next;
-    FREE (p->path);
-    FREE (p);
-    p = pnext;
-  }
+  path_free (Path);
   Path = NULL;
 }
 
@@ -341,9 +333,9 @@ void config_read (const char *name)
   level++;
 
   if (!Path) {
-    config_append_path (".");
+    Path = path_init ();
+    path_add (Path, ".");
   }
-  p = Path;
 
   fp = NULL;
   if (*name == '/') {
@@ -351,11 +343,10 @@ void config_read (const char *name)
     fp = fopen (name, "r");
   }
   else {
-    while ((fp == NULL) && (p != NULL)) {
-      sprintf (buf, "%s/%s", p->path, name);
-      fp = fopen (buf, "r");
-      p = p->next;
-    }
+    char *tmpname;
+    tmpname = path_open (Path, name, NULL);
+    fp = fopen (tmpname, "r");
+    FREE (tmpname);
   }
   if (!fp) {
     fatal_error ("Could not open configuration file `%s' for reading.", name);
@@ -1102,15 +1093,14 @@ char *config_file_name (const char *name)
     return Strdup (name);
   }
   else {
-    p = Path;
-    while ((fp == NULL) && (p != NULL)) {
-      sprintf (buf, "%s/%s", p->path, name);
-      fp = fopen (buf, "r");
-      if (fp) {
-	fclose (fp);
-	return Strdup (buf);
-      }
-      p = p->next;
+    if (!Path) {
+      Path = path_init ();
+    }
+    char *tmp = path_open (Path, name, NULL);
+    fp = fopen (tmp, "r");
+    if (fp) {
+      fclose (fp);
+      return tmp;
     }
   }
   return NULL;

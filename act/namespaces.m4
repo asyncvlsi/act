@@ -40,7 +40,7 @@ import_item: "import" STRING ";"
     MALLOC (tmp, char, strlen ($2)-1);
     strncpy (tmp, $2+1, strlen($2)-2);
     tmp[strlen ($2)-2] = '\0';
-    s = path_open (tmp);
+    s = act_path_open (tmp);
     FREE (tmp);
     
     /* Check if this is a recursive call within another import of the
@@ -142,7 +142,7 @@ import_item: "import" STRING ";"
     MALLOC (tmp, char, strlen(s)+14);
     sprintf (tmp, "%s/_all_.act", s);
 
-    char *t = path_open (tmp);
+    char *t = act_path_open (tmp);
     FILE *tfp = fopen (t, "r");
     FREE (t);
     if (tfp) {
