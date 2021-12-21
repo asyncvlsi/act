@@ -1704,11 +1704,22 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
     }
     break;
 
+
   case E_BUILTIN_BOOL:
   case E_BUILTIN_INT:
     e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
     break;
 
+  case E_CONCAT:
+    {
+      Expr *tmp = e;
+      while (tmp) {
+	tmp->u.e.l = _chp_add_probes (tmp->u.e.l, ns, s, 0);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+    
   case E_TRUE:
   case E_FALSE:
   case E_INT:
