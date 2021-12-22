@@ -1970,7 +1970,14 @@ ActId::getNamespace ()
   
   ActNamespace *curns = ActNamespace::Global();
   char *tmpbuf = Strdup (getName());
-  int i = 0, j;
+  int i, j;
+
+  if (tmpbuf[0] == ':' && tmpbuf[1] == ':') {
+    i = 2;
+  }
+  else {
+    i = 0;
+  }
 
   while (1) {
     j = i;
