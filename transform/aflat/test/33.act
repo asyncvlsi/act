@@ -1,0 +1,16 @@
+bool a;
+bool w;
+
+a = w;
+
+namespace foo {
+
+bool b, c;
+
+b = c;
+
+b = a;
+
+}
+
+
