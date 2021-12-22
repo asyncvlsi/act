@@ -103,6 +103,12 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
 
   Assert (s, "Scope?");
   Assert (id, "Identifier?");
+
+  if (id->isNamespace()) {
+    s = id->getNamespace()->CurScope();
+    id = id->Rest();
+  }
+  
   it = s->Lookup (id->getName());
   if (!it) {
     it = s->FullLookup (id->getName());
@@ -184,10 +190,18 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
       return T_PROC|arr;
     }
     if (TypeFactory::isInterfaceType (t)) {
-      typecheck_err ("Identifier `%s' is an interface type", id->getName());
+      char *tmpbuf;
+      MALLOC (tmpbuf, char, 10240);
+      id->sPrint (tmpbuf, 10240);
+      typecheck_err ("Identifier `%s' is an interface type", tmpbuf);
+      FREE (tmpbuf);
     }
     else {
-      typecheck_err ("Identifier `%s' is not a data type", id->getName ());
+      char *tmpbuf;
+      MALLOC (tmpbuf, char, 10240);
+      id->sPrint (tmpbuf, 10240);
+      typecheck_err ("Identifier `%s' is not a data type", tmpbuf);
+      FREE (tmpbuf);
     }
     return T_ERR;
   }
@@ -215,7 +229,15 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
   it = _act_get_var_type (s, id, &id, &is_strict);
 
   if (!it->arrayInfo() && id->arrayInfo()) {
-    typecheck_err ("Identifier `%s' is not an array type", id->getName());
+    char *tmpbuf;
+    Array *tmpa;
+    tmpa = id->arrayInfo();
+    id->setArray (NULL);
+    MALLOC (tmpbuf, char, 10240);
+    id->sPrint (tmpbuf, 10240);
+    id->setArray (tmpa);
+    typecheck_err ("Identifier `%s' is not an array type", tmpbuf);
+    FREE (tmpbuf);
     return T_ERR;
   }
 
@@ -902,6 +924,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
 {
   InstType *it;
+
+  if (id->isNamespace()) {
+    s = id->getNamespace()->CurScope();
+    id = id->Rest();
+  }
 
   if (islocal) {
     *islocal = 1;

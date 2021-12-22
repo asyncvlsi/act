@@ -81,11 +81,14 @@ class ActApplyPass : public ActPass {
   void _flat_single_connection (ActId *one, Array *oa,
 				ActId *two, Array *ta,
 				const char *nm, Arraystep *na,
-				ActNamespace *isoneglobal);
+				ActNamespace *isoneglobal,
+				ActNamespace *istwoglobal);
 
   void _flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 			     Array *oa, Array *ta,
-			     ActNamespace *isoneglobal);
+			     ActNamespace *isoneglobal,
+			     ActNamespace *istwoglobal);
+  
   void _any_global_conns (act_connection *c);
   void _flat_scope (Scope *);
   void _flat_ns (ActNamespace *);

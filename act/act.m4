@@ -99,7 +99,11 @@ ns_body_item[ActBody *]
 }}
 | namespace_management
 {{X:
-    return NULL;
+    ActBody *tmp = new ActBody_Namespace ($1);
+    tmp->Append ($1->getBody());
+    $1->setBody (NULL);
+    tmp->Append (new ActBody_Namespace ($0->curns));
+    return tmp;
 }}
 | namespace_other
 {{X: return $1; }}
@@ -128,7 +132,13 @@ namespace_other[ActBody *]: instance
 
 body_item[ActBody *]
 : namespace_management
-{{X: return NULL; }}
+{{X:
+    ActBody *tmp = new ActBody_Namespace ($1);
+    tmp->Append ($1->getBody());
+    $1->setBody (NULL);
+    tmp->Append (new ActBody_Namespace ($0->curns));
+    return tmp;
+}}
 | base_item
 {{X: return $1; }}
 | definition

@@ -159,15 +159,30 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
   ActId *id;
   Expr *ret;
   Type *base;
+  int is_ns = isNamespace();
 
   NEW (ret, Expr);
 
-  do {
-    it = s->Lookup (getName ());
+  if (is_ns) {
+    ActNamespace *curns = getNamespace();
+    s = curns->CurScope();
+    it = s->Lookup (Rest()->getName());
     if (!it) {
-      s = s->Parent ();
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      this->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Could not find namespace global id");
     }
-  } while (!it && s);
+  }
+  else {
+    do {
+      it = s->Lookup (getName ());
+      if (!it) {
+	s = s->Parent ();
+      }
+    } while (!it && s);
+  }
   if (!s) {
     act_error_ctxt (stderr);
     fprintf (stderr, " id: ");
@@ -178,7 +193,13 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
   }
   Assert (it->isExpanded (), "Hmm...");
 
-  id = this;
+  if (is_ns) {
+    id = this->Rest();
+  }
+  else {
+    id = this;
+  }
+
   do {
 
 #if 0
@@ -538,11 +559,15 @@ void ActId::sPrint (char *buf, int sz, ActId *end, int style)
   ActId *start = this;
   int k = 0;
   int len;
+  int ns = isNamespace();
 
   while (start && start != end) {
     if (start != this) {
-      snprintf (buf+k, sz, ".");
-      PRINT_STEP;
+      if (!ns) {
+	snprintf (buf+k, sz, ".");
+	PRINT_STEP;
+      }
+      ns = 0;
     }
     snprintf (buf+k, sz, "%s", string_char(start->name));
     PRINT_STEP;
@@ -791,12 +816,24 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 {
   ValueIdx *vx;
   act_connection *cx;
+  const char *topname;
+  int is_ns;
   vx = NULL;
   
   Assert (s->isExpanded(), "ActId::FindCanonical called on unexpanded scope");
 
+  is_ns = isNamespace();
+  if (is_ns) {
+    ActNamespace *curns = getNamespace();
+    s = curns->CurScope();
+    topname = Rest()->getName();
+  }
+  else {
+    topname = getName();
+  }
+
   while (s && !vx) {
-    vx = s->LookupVal (getName());
+    vx = s->LookupVal (topname);
     s = s->Parent ();
   }
 
@@ -813,7 +850,7 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
     cx = new act_connection (NULL);
     vx->u.obj.c = cx;
     cx->vx = vx;
-    vx->u.obj.name = getName();
+    vx->u.obj.name = topname;
 
     /* now if vx is a user-defined type, check if it has any internal
        port connections. If so, add them here */
@@ -836,16 +873,24 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 act_connection *ActId::myConnection (Scope *s)
 {
   ValueIdx *vx = rawValueIdx (s);
+  ActId *me;
 
   if (!vx) {
     return NULL;
   }
-  if (Rest() && Rest()->Rest()) {
-    return NULL;
+
+  if (isNamespace()) {
+    me = Rest();
+  }
+  else {
+    me = this;
   }
 
-  if (!Rest()) {
-    if (arrayInfo()) {
+  if (me->Rest() && me->Rest()->Rest()) {
+    return NULL;
+  }
+  if (!me->Rest()) {
+    if (me->arrayInfo()) {
       return NULL;
     }
     else {
@@ -862,7 +907,7 @@ act_connection *ActId::myConnection (Scope *s)
     return NULL;
   }
 
-  int idx = u->FindPort (Rest()->getName());
+  int idx = u->FindPort (me->Rest()->getName());
   if (idx <= 0) {
     return NULL;
   }
@@ -871,14 +916,14 @@ act_connection *ActId::myConnection (Scope *s)
   act_connection *tmp;
   tmp = vx->u.obj.c->getsubconn (idx, idx+1 /* should not need this param! */);
 
-  if (!Rest()->arrayInfo()) {
+  if (!me->Rest()->arrayInfo()) {
     return tmp;
   }
   else {
     InstType *xt = u->getPortType (idx);
 
     if (!xt->arrayInfo()) return NULL;
-    idx = xt->arrayInfo()->Offset (Rest()->arrayInfo());
+    idx = xt->arrayInfo()->Offset (me->Rest()->arrayInfo());
     if (idx == -1) {
       return NULL;
     }
@@ -1082,9 +1127,14 @@ act_connection *ActId::Canonical (Scope *s)
 
             foo became q[5]
   */
-
-  id = this;
-  idrest = id->Rest();
+  if (isNamespace()) {
+    id = this->Rest();
+    idrest = id->Rest();
+  }
+  else {
+    id = this;
+    idrest = id->Rest();
+  }
 
   if (TypeFactory::isProcessType (vx->t) && vx->t->getIfaceType()) {
     UserDef *ux = dynamic_cast<UserDef *>(vx->t->BaseType());
@@ -1459,107 +1509,6 @@ ActId *ActId::Tail ()
   return ret;
 }
 
-#if 0
-static ActId *singleton_id (char *s)
-{
-  char *tmp;
-  if (!s) return NULL;
-  if (!*s) return NULL;
-  tmp = s;
-  while (*tmp && *tmp != '[') {
-    tmp++;
-  }
-  if (!*tmp) {
-    return new ActId (s);
-  }
-  else {
-    Array *a, *aret;
-    char *foo = tmp;
-    int idx;
-    aret = NULL;
-    *tmp = '\0';
-    do {
-      sscanf (tmp+1, "%d", &idx);
-      a = new Array (idx);
-      if (!aret) {
-	aret = a;
-      }
-      else {
-	aret->Concat (a);
-	delete a;
-      }
-      tmp++;
-      while (*tmp && isdigit (*tmp)) {
-	tmp++;
-      }
-      if (*tmp != ']') {
-	fatal_error ("singleton_id: bad string `%s'", s);
-      }
-      tmp++;
-    } while (*tmp == '[');
-    if (*tmp) {
-      fatal_error ("singleton_id: bad string `%s'", s);
-    }
-    ActId *ret = new ActId (s, aret);
-    *foo = '[';
-    return ret;
-  }
-}
-
-/*
- * Convert a constant string into an ActId
- */
-ActId *act_string_to_id (const char *s)
-{
-  char *t, *tmp, *pos;
-  ActId *ret, *cur;
-
-  if (!s) {
-    return NULL;
-  }
-  if (!*s) {
-    return NULL;
-  }
-  t = Strdup (s);
-  tmp = t;
-
-  ret = NULL;
-  cur = NULL;
-
-  while (*tmp) {
-    pos = tmp;
-    while (*tmp && *tmp != '.') {
-      tmp++;
-    }
-    if (*tmp) {
-      *tmp = '\0';
-      if (!cur) {
-	cur = singleton_id (pos);
-	ret = cur;
-      }
-      else {
-	cur->Append (singleton_id (pos));
-	cur = cur->Rest ();
-      }
-      *tmp = '.';
-      tmp++;
-    }
-    else {
-      if (!cur) {
-	cur = singleton_id (pos);
-	ret = cur;
-      }
-      else {
-	cur->Append (singleton_id (pos));
-	cur = cur->Rest ();
-      }
-    }
-  }
-  FREE (t);
-  return ret;
-}
-#endif
-
 int ActId::isDynamicDeref ()
 {
   int ret = 0;
@@ -1608,7 +1557,13 @@ UserDef *ActId::isFragmented (Scope *s)
   if (!Rest()) return 0;
 
   tmp = this;
-  it = s->FullLookup (getName());
+
+  if (isNamespace()) {
+    s = getNamespace()->CurScope();
+    tmp = Rest();
+  }
+  it = s->FullLookup (tmp->getName());
+  
   Assert (it, "What?");
   while (tmp->Rest()) {
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
@@ -1643,7 +1598,12 @@ ActId *ActId::unFragment (Scope *s)
   if (!Rest()) return NULL;
 
   tmp = this;
-  it = s->FullLookup (getName());
+
+  if (isNamespace()) {
+    s = getNamespace()->CurScope();
+    tmp = Rest();
+  }
+  it = s->FullLookup (tmp->getName());
   Assert (it, "What?");
   while (tmp->Rest()) {
     if (TypeFactory::isChanType (it)) {
@@ -1849,9 +1809,22 @@ ActId *ActId::nonProcSuffix (Process *p, Process **ret)
   ActId *itmp = this;
   ActId *prev = NULL;
   Process *prev_proc = NULL;
+  Scope *cursc;
+
+  if (p) {
+    cursc = p->CurScope();
+  }
+  else {
+    cursc = NULL;
+  }
+
+  if (isNamespace()) {
+    cursc = getNamespace()->CurScope();
+    itmp = itmp->Rest();
+  }
   
   while (itmp) {
-    it = p->CurScope()->FullLookup (itmp->getName());
+    it = cursc->FullLookup (itmp->getName());
     Assert (it, "pre-cursor function should have checked for this!");
     if (!TypeFactory::isProcessType (it)) {
       if (prev_proc == NULL) {
@@ -1864,6 +1837,7 @@ ActId *ActId::nonProcSuffix (Process *p, Process **ret)
     prev = itmp;
     p = dynamic_cast<Process *> (it->BaseType());
     Assert (p, "Hmm");
+    cursc = p->CurScope();
     itmp = itmp->Rest();
   }
   *ret = prev_proc;
@@ -1873,12 +1847,24 @@ ActId *ActId::nonProcSuffix (Process *p, Process **ret)
 
 int ActId::validateDeref (Scope *sc)
 {
-  ValueIdx *vx = sc->FullLookupVal (getName());
+  ValueIdx *vx;
+  int is_ns = isNamespace();
+
+  if (is_ns) {
+    vx = getNamespace()->CurScope()->FullLookupVal (Rest()->getName());
+  }
+  else {
+    vx = sc->FullLookupVal (getName());
+  }
+  
   if (!vx) return 0;
   
   /* -- check all the array indices! -- */
   ValueIdx *ux = vx;
   ActId *rid = this;
+  if (is_ns) {
+    rid = rid->Rest();
+  }
   while (ux) {
     int aoff;
     if (ux->t->arrayInfo()) {
@@ -1941,3 +1927,72 @@ ActId *ActId::stripArray ()
 }
 
   
+/*------------------------------------------------------------------------
+ *
+ *  ActId::isNamespace --
+ *
+ *   Returns 1 if this is a namespace prefix, 0 otherwise
+ *
+ *------------------------------------------------------------------------
+ */
+int
+ActId::isNamespace ()
+{
+  const char *s = getName();
+  int i = 0;
+
+  while (s[i] && s[i] != ':') {
+    i++;
+  }
+  if (s[i] == ':') {
+    Assert (Rest(), "Namespace prefix in ID must have an actual ID name");
+    Assert (!a, "Namespace prefix should not have an array");
+    return 1;
+  }
+  return 0;
+}
+
+
+/*------------------------------------------------------------------------
+ *
+ *  ActId::getNamespace --
+ *
+ *   Return the namespace for the namespace global ID
+ *
+ *------------------------------------------------------------------------
+ */
+ActNamespace *
+ActId::getNamespace ()
+{
+  if (!isNamespace()) {
+    return NULL;
+  }
+  
+  ActNamespace *curns = ActNamespace::Global();
+  char *tmpbuf = Strdup (getName());
+  int i = 0, j;
+
+  while (1) {
+    j = i;
+    while (tmpbuf[i] && tmpbuf[i] != ':') {
+      i++;
+    }
+    if (tmpbuf[i] == ':') {
+      Assert (tmpbuf[i+1] == ':', "What?");
+      tmpbuf[i] = '\0';
+      curns = curns->findNS (tmpbuf+j);
+      if (!curns) {
+	act_error_ctxt (stderr);
+	fatal_error ("ActId::getNamespace(): namespace `%s' not found (`%s'?",
+		     getName(), tmpbuf+j);
+      }
+      i += 2;
+    }
+    else {
+      FREE (tmpbuf);
+      return curns;
+    }
+  }
+  FREE (tmpbuf);
+  return NULL;
+}

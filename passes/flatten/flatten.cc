@@ -41,7 +41,7 @@ void ActApplyPass::printns (FILE *fp)
       return;
     }
   }
-}  
+}
 
 void ActApplyPass::push_namespace_name (const char *s)
 {
@@ -131,7 +131,7 @@ static void prefix_print ();
 static ActId *prefix_to_id (list_t *prefixes, list_t *prefix_array,
 			    ActId **tailp)
 {
-  listitem_t *li, *mi;
+  listitem_t *li, *mi, *id_start;
   Array *a;
   char *s;
   ActId *id, *tail;
@@ -139,8 +139,39 @@ static ActId *prefix_to_id (list_t *prefixes, list_t *prefix_array,
   id = NULL;
   tail = NULL;
   if (prefixes) {
+    char *ns_name;
+    int ns_len = 0;
+    for (li = list_first (prefixes); li; li = list_next (li)) {
+      char *s = (char *) list_value (li);
+      if (s[strlen(s)-1] != ':') {
+	break;
+      }
+      ns_len += strlen (s);
+    }
+    if (ns_len > 0) {
+      MALLOC (ns_name, char, ns_len + 1);
+      for (mi = list_first (prefixes); mi != li; mi = list_next (mi)) {
+	strcat (ns_name, (char *)list_value (mi));
+      }
+      id = new ActId (ns_name);
+      tail = id;
+      FREE (ns_name);
+      id_start = li;
+    }
+    else {
+      id_start = NULL;
+    }
+    
     mi = list_first (prefix_array);
     for (li = list_first (prefixes); li; li = list_next (li)) {
+      if (id_start != NULL && li != id_start) {
+	mi = list_next (mi);
+	continue;
+      }
+      else {
+	id_start = NULL;
+      }
+      
       a = (Array *) list_value (mi);
       s = (char *) list_value (li);
 
@@ -248,6 +279,22 @@ void ActApplyPass::_flat_connections_bool (ValueIdx *vx)
       id1 = c->toid();
       id2 = tmp->toid();
 
+      if (c->getvx()->global && c->getvx()->global != ActNamespace::Global()) {
+	char *buf = c->getvx()->global->Name (true);
+	ActId *tmp2 = new ActId (buf);
+	tmp2->Append (id1);
+	FREE (buf);
+	id1 = tmp2;
+      }
+
+      if (tmp->getvx()->global && tmp->getvx()->global != ActNamespace::Global()) {
+	char *buf = tmp->getvx()->global->Name (true);
+	ActId *tmp2 = new ActId (buf);
+	FREE (buf);
+	tmp2->Append (id2);
+	id2 = tmp2;
+      }
+
       tail1 = tailid (id1);
       tail2 = tailid (id2);
 
@@ -312,12 +359,28 @@ void ActApplyPass::_flat_connections_bool (ValueIdx *vx)
       }
       
       id1 = c->toid();
+      if (c->getvx()->global && c->getvx()->global != ActNamespace::Global()) {
+	char *buf = c->getvx()->global->Name (true);
+	ActId *tmp2 = new ActId (buf);
+	tmp2->Append (id1);
+	FREE (buf);
+	id1 = tmp2;
+      }
 
       if (head1) {
 	tail1->Append (id1);
       }
       
       id2 = tmp->toid();
+
+      if (tmp->getvx()->global && tmp->getvx()->global != ActNamespace::Global()) {
+	char *buf = tmp->getvx()->global->Name (true);
+	ActId *tmp2 = new ActId (buf);
+	FREE (buf);
+	tmp2->Append (id2);
+	id2 = tmp2;
+      }
+      
       if (head2) {
 	tail2->Append (id2);
       }
@@ -398,7 +461,8 @@ void ActApplyPass::_flat_connections_bool (ValueIdx *vx)
 void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
 					    ActId *two, Array *ta,
 					    const char *nm, Arraystep *na,
-					    ActNamespace *isoneglobal)
+					    ActNamespace *isoneglobal,
+					    ActNamespace *istwoglobal)
 {
   ActId *id1, *id2;
   ActId *tail1, *tail2;
@@ -416,10 +480,10 @@ void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
   /*-- ok, construct two ids here and call the apply function! --*/
   if (isoneglobal) {
     if (isoneglobal != ActNamespace::Global()) {
-      char buf[10240];
-      sprintf (buf, "%s::", isoneglobal->Name());
+      char *buf = isoneglobal->Name(true);
       id1 = new ActId (buf);
       tail1 = id1;
+      FREE (buf);
     }
     else {
       tail1 = NULL;
@@ -451,7 +515,20 @@ void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
     suf1 = tmp1;
   }
 
-  id2 = prefix_to_id (prefixes, prefix_array, &tail2);
+  if (istwoglobal) {
+    if (istwoglobal != ActNamespace::Global()) {
+      char *buf = istwoglobal->Name (true);
+      id2 = new ActId (buf);
+      tail2 = id2;
+      FREE (buf);
+    }
+    else {
+      tail2 = NULL;
+    }
+  }
+  else {
+    id2 = prefix_to_id (prefixes, prefix_array, &tail2);
+  }
   if (tail2) {
     tail2->Append (two);
   }
@@ -534,7 +611,8 @@ void ActApplyPass::_flat_single_connection (ActId *one, Array *oa,
 
 void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 					 Array *oa, Array *ta,
-					 ActNamespace *isoneglobal)
+					 ActNamespace *isoneglobal,
+					 ActNamespace *istwoglobal)
 {
   Assert (ux, "What");
   Assert (one, "What");
@@ -556,14 +634,14 @@ void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	Arraystep *p = vx->t->arrayInfo()->stepper ();
 	while (!p->isend()) {
 	  push_name_suffix (vx->getName (), p->toArray());
-	  _flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
+	  _flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal, istwoglobal);
 	  pop_name_suffix ();
 	  p->step();
 	}
       }
       else {
 	push_name_suffix (vx->getName());
-	_flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal);
+	_flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal, istwoglobal);
 	pop_name_suffix ();
       }
     }
@@ -573,13 +651,13 @@ void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	Arraystep *p = vx->t->arrayInfo()->stepper();
 	while (!p->isend()) {
 	  _flat_single_connection (one, oa, two, ta, vx->getName (), p,
-				   isoneglobal);
+				   isoneglobal, istwoglobal);
 	  p->step();
 	}
       }
       else {
 	_flat_single_connection (one, oa, two, ta, vx->getName(), NULL,
-				  isoneglobal);
+				 isoneglobal, istwoglobal);
       }
     }
   }
@@ -618,7 +696,8 @@ void ActApplyPass::_any_global_conns (act_connection *c)
 
 	  _flat_rec_bool_conns (one, two, rux,
 				 it->arrayInfo(), xit->arrayInfo(),
-				 root->getvx()->global);
+				root->getvx()->global, NULL);
+
 	  list_free (suffixes);
 	  list_free (suffix_array);
 	  suffixes = NULL;
@@ -628,7 +707,7 @@ void ActApplyPass::_any_global_conns (act_connection *c)
 	  _flat_single_connection (one, it->arrayInfo(),
 				    two, xit->arrayInfo(),
 				    NULL, NULL,
-				    root->getvx()->global);
+				   root->getvx()->global, NULL);
 	}
 	delete one;
 	delete two;
@@ -761,7 +840,9 @@ void ActApplyPass::_flat_scope (Scope *s)
 	    _flat_rec_bool_conns (one, two, rux, it->arrayInfo(),
 				  ((*ci)->vx ?
 				   (*ci)->vx->t->arrayInfo() : NULL),
-				  NULL);
+				  c->getvx()->global,
+				  (*ci)->getvx()->global);
+
 	    list_free (suffixes);
 	    list_free (suffix_array);
 	    suffixes = NULL;
@@ -812,16 +893,22 @@ void ActApplyPass::_flat_scope (Scope *s)
 		  
 		    two = (*ci)->toid();
 		    type2 = (*ci)->getctype();
+
+		    ActNamespace *g1, *g2;
+		    g1 = c->a[i]->getvx()->global;
+		    g2 = (*ci)->getvx()->global;
+
 		    if (TypeFactory::isUserType (xit)) {
 		      suffixes = list_new ();
 		      suffix_array = list_new ();
 		      if (type == 1 || type2 == 1) {
-			_flat_rec_bool_conns (one, two, rux, NULL, NULL, NULL);
+			_flat_rec_bool_conns (one, two, rux, NULL, NULL,
+					      g1, g2);
 		      }
 		      else {
 			_flat_rec_bool_conns (one, two, rux, xit->arrayInfo(),
 					      (*ci)->getvx()->t->arrayInfo(),
-					      NULL);
+					      g1, g2);
 		      }
 		      list_free (suffixes);
 		      list_free (suffix_array);
@@ -832,13 +919,13 @@ void ActApplyPass::_flat_scope (Scope *s)
 		      if (type == 1 || type2 == 1) {
 			_flat_single_connection (one, NULL,
 						 two, NULL,
-						 NULL, NULL, NULL);
+						 NULL, NULL, g1, g2);
 		      }
 		      else {
 			_flat_single_connection (one, xit->arrayInfo(),
 						 two,
 						 (*ci)->getvx()->t->arrayInfo(),
-						 NULL, NULL, NULL);
+						 NULL, NULL, g1, g2);
 		      }
 		    }
 		    delete two;

@@ -287,9 +287,9 @@ class ActNamespace {
 
   /**
    * Returns a freshly allocated string containing the full path to
-   * the namespace 
+   * the namespace; append "::" at the end if add_colon is true
    */
-  char *Name ();
+  char *Name (bool add_colon = false);
 
   /**
    * Unlink the namespace from its parent. This function is required
@@ -353,6 +353,7 @@ class ActNamespace {
 
   void setBody (ActBody *b) { B = b; }
   void AppendBody (ActBody *b);
+  ActBody *getBody () { return B; }
 
   act_prs *getprs ();
   act_spec *getspec ();

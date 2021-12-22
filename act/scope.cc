@@ -153,7 +153,13 @@ InstType *Scope::Lookup (ActId *id, int err)
   InstType *it;
   Scope *s;
 
-  s = this;
+  if (id->isNamespace()) {
+    s = id->getNamespace()->CurScope();
+    id = id->Rest();
+  }
+  else {
+    s = this;
+  }
   it = s->Lookup (id->getName ());
   if (!it) { 
     return NULL; 
@@ -715,6 +721,11 @@ void Scope::BindParam (ActId *id, InstType *tt)
     BindParam (id->getName(), tt);
   }
   else {
+    if (id->isNamespace()) {
+      Scope *sc = id->getNamespace()->CurScope();
+      sc->BindParam (id->Rest(), tt);
+      return;
+    }
     act_error_ctxt (stderr);
     fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
     fprintf (stderr," ID: ");
@@ -727,6 +738,11 @@ void Scope::BindParam (ActId *id, InstType *tt)
 void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
 {
   if (id->Rest() != NULL) {
+    if (id->isNamespace()) {
+      Scope *sc = id->getNamespace()->CurScope();
+      sc->BindParam (id->Rest(), aes, idx);
+      return;
+    }
     act_error_ctxt (stderr);
     fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
     fprintf (stderr," ID: ");
@@ -862,6 +878,10 @@ void Scope::BindParam (ActId *id, AExpr *ae)
   
   /* get the ValueIdx for the parameter */
   if (id->Rest() != NULL) {
+    if (id->isNamespace()) {
+      id->getNamespace()->CurScope()->BindParam (id->Rest(), ae);
+      return;
+    }
     act_error_ctxt (stderr);
     fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
     fprintf (stderr," ID: ");
@@ -1393,7 +1413,14 @@ InstType *Scope::FullLookup (ActId *id, Array **aref)
   
   if (!id) return NULL;
 
-  vx = FullLookupVal (id->getName());
+  if (id->isNamespace()) {
+    vx = id->getNamespace()->CurScope()->FullLookupVal (id->Rest()->getName());
+    id = id->Rest();
+  }
+  else {
+    vx = FullLookupVal (id->getName());
+  }
+  
   if (!vx) return NULL;
 
   it = vx->t;
@@ -1418,7 +1445,14 @@ InstType *Scope::localLookup (ActId *id, Array **aref)
   
   if (!id) return NULL;
 
-  vx = LookupVal (id->getName());
+  if (id->isNamespace()) {
+    vx = id->getNamespace()->CurScope()->LookupVal (id->Rest()->getName());
+    id = id->Rest();
+  }
+  else {
+    vx = LookupVal (id->getName());
+  }
+  
   if (!vx) return NULL;
 
   it = vx->t;

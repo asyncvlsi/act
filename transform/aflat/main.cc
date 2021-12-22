@@ -590,10 +590,8 @@ void aflat_conns (void *cookie, ActId *id1, ActId *id2)
   print_connect ();
 
   printf ("\"");
-  gpass->printns (stdout);
   id1->Print (stdout);
   printf ("\" \"");
-  gpass->printns (stdout);
   id2->Print (stdout);
   printf ("\"\n");
 }

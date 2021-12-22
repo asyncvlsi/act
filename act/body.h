@@ -323,6 +323,7 @@ public:
 
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone();
+  ActNamespace *getNS () { return ns; }
   
 private:
   ActNamespace *ns;

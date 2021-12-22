@@ -1,0 +1,21 @@
+bool a, b;
+
+a = b;
+
+namespace test2 {
+
+bool c, d;
+
+c = d;
+
+}
+
+defproc foo()
+{
+   bool w;
+   prs {
+     a -> w-
+   }
+}
+
+foo f; 

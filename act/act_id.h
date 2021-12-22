@@ -167,6 +167,17 @@ class ActId {
   */
   ActId *stripArray ();
 
+  /*
+    Return 1 if this is a namespace prefix, 0 otherwise.
+    This can only be true for the first part of an ActId
+  */
+  int isNamespace();
+
+  /*
+    Returns the ActNamespace pointer for a namespace global
+  */
+  ActNamespace *getNamespace();
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

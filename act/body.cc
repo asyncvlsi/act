@@ -726,18 +726,14 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  rcx = rid->Canonical (s);
 
 	  if (ridx == -1) {
-	    act_mk_connection (s->getUserDef(),
-			       id->getName(), lcx,
-			       rid->getName(), rcx);
+	    act_mk_connection (s->getUserDef(), id, lcx, rid, rcx);
 	  }
 	  else {
 	    //Assert (trhs->arrayInfo(), "What?");
 	    //Assert (rsize == trhs->arrayInfo()->size(), "What?");
 	    rcx = rcx->getsubconn (ridx, rsize)->primary();
 
-	    act_mk_connection (s->getUserDef(),
-			       id->getName(), lcx,
-			       rid->getName(), rcx);
+	    act_mk_connection (s->getUserDef(), id, lcx, rid, rcx);
 	  }
 	}
       }
@@ -768,9 +764,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	    rx = rx->getsubconn (ridx, rsize);
 	  }
 
-	  act_mk_connection (s->getUserDef(),
-			     lid->getName(), lx,
-			     rid->getName(), rx);
+	  act_mk_connection (s->getUserDef(), lid, lx, rid, rx);
 	  
 	  lhsstep->step();
 	  rhsstep->step();
@@ -914,8 +908,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	lx = lid->Canonical (s);
 	rx = rid->Canonical (s);
 
-	act_mk_connection (s->getUserDef(), lid->getName(), lx,
-			   rid->getName(), rx);
+	act_mk_connection (s->getUserDef(), lid, lx, rid, rx);
       }
       else {
 	while (!aes->isend()) {
@@ -932,9 +925,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	    rx = rx->getsubconn (ridx, rsize);
 	  }
 
-	  act_mk_connection (s->getUserDef(),
-			     lid->getName(), lx,
-			     rid->getName(), rx);
+	  act_mk_connection (s->getUserDef(), lid, lx, rid, rx);
 	  
 	  aes->step();
 	  bes->step();
@@ -1457,7 +1448,13 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
   ActBody *b;
 
   for (b = this; b; b = b->Next()) {
-    b->Expand (ns, s);
+    if (dynamic_cast<ActBody_Namespace *> (b)) {
+      ns = (dynamic_cast<ActBody_Namespace *>(b)->getNS());
+      s = ns->CurScope ();
+    }
+    else {
+      b->Expand (ns, s);
+    }
   }
 }
 

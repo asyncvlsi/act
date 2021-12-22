@@ -379,27 +379,30 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
 
   tmp = orig_c->toid();
 
-  ActId *tmpport;
+  ActId *tmpport, *tmpport2;
 
   tmpport = new ActId (bufnm);
   tmpport->Append (new ActId (buf->getPortName (iport)));
   act_connection *in_conn = tmpport->Canonical (CurScope());
-  delete tmpport;
 
-  tmpport = new ActId (bufnm);
-  tmpport->Append (new ActId (buf->getPortName (oport)));
-  act_connection *out_conn = tmpport->Canonical (CurScope());
-  delete tmpport;
+  tmpport2 = new ActId (bufnm);
+  tmpport2->Append (new ActId (buf->getPortName (oport)));
+  act_connection *out_conn = tmpport2->Canonical (CurScope());
 
   if (is_orig_input) {
-    act_mk_connection (this, bufnm, in_conn, tmp->getName(), orig_c);
-    act_mk_connection (this, bufnm, out_conn, name, c);
+    ActId *tmpc = c->toid();
+    act_mk_connection (this, tmpport, in_conn, tmp, orig_c);
+    act_mk_connection (this, tmpport2, out_conn, tmpc, c);
+    delete tmpc;
   }
   else {
-    act_mk_connection (this, bufnm, in_conn, name, c);
-    act_mk_connection (this, bufnm, out_conn, tmp->getName(), orig_c);
+    ActId *tmpc = c->toid();
+    act_mk_connection (this, tmpport, in_conn, tmpc, c);
+    act_mk_connection (this, tmpport2, out_conn, tmp, orig_c);
+    delete tmpc;
   }
-
+  delete tmpport;
+  delete tmpport2;
   delete tmp;
 
   vx = I->LookupVal (bufnm);

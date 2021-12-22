@@ -158,8 +158,8 @@ public:
   const char *getName() { return u.obj.name; }
 };
 
-void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
-		    const char *s2, act_connection *c2);
+void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
+			ActId *id2, act_connection *c2);
 
 void act_merge_attributes (struct act_attr **x, act_attr *a);
 void _act_mk_raw_connection (act_connection *c1, act_connection *c2);

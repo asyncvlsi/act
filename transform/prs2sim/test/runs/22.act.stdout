@@ -1,0 +1,11 @@
+| units: 3 tech: dummytech format: MIT
+p f/w Vdd f/n#4 2 5
+p GND Vdd f/n#5 4 4
+n a GND f/w 2 5
+n f/w GND f/n#4 2 5
+n f/n#4 GND f/w 2 4
+p f/n#4 f/n#5 f/w 2 4
+= ::test2::c ::test2::d
+= a b
+= Vdd Vdd!
+= GND GND!

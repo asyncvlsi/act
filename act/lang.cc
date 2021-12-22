@@ -2031,7 +2031,12 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_MACRO:
     {
       ActId *x = expand_var_read (c->u.macro.id, ns, s);
+      if (x->isNamespace()) {
+	act_error_ctxt (stderr);
+	fatal_error ("CHP macro and namespace globals don't mix");
+      }
       InstType *it = s->FullLookup (x->getName());
+	
       Assert (TypeFactory::isUserType (it), "This should have been caught earlier!");
       UserDef *u = dynamic_cast <UserDef *> (it->BaseType());
       Assert (u, "Hmm");

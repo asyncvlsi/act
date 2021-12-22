@@ -162,7 +162,7 @@ void ActNamespace::Link (ActNamespace *up, const char *name)
 /**
  * String name
  */
-char *ActNamespace::Name ()
+char *ActNamespace::Name (bool add_colon)
 {
   int sz = 1, len;
   ActNamespace *ns;
@@ -171,7 +171,12 @@ char *ActNamespace::Name ()
   ns = this;
 
   if (ns == global) {
-    return Strdup ("::");
+    if (add_colon) {
+      return Strdup ("::");
+    }
+    else {
+      return Strdup ("");
+    }
   }
   
   while (ns->parent) {
@@ -180,10 +185,22 @@ char *ActNamespace::Name ()
     ns = ns->parent;
   }
 
+  if (add_colon) {
+    sz += 2;
+  }
+
   MALLOC (ret, char, sz);
   ns = this;
   ret[sz-1] = '\0';
-  sz--;
+  if (add_colon) {
+    ret[sz-2] = ':';
+    ret[sz-3] = ':';
+    sz-=3;
+  }
+  else {
+    sz--;
+  }
+  
   while (ns->parent) {
     len = strlen (ns->self_bucket->key);
     strncpy (&ret[sz]-len, ns->self_bucket->key, len);

@@ -983,8 +983,8 @@ static void _fix_noncan_to_can_transition (UserDef *ux, act_connection *c)
 }
 
 
-void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
-			const char *s2, act_connection *c2)
+void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
+			ActId *id2, act_connection *c2)
 {
   act_connection *tmp;
   act_connection *d1, *d2;
@@ -992,8 +992,7 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
   int do_swap = 0;
 
 #ifdef DEBUG_CONNECTIONS
-  printf ("before-connect: %s and %s\n", s1, s2);
-  
+  printf ("before-connect:\n");
   dump_conn_rec (c1);
   dump_conn_rec (c2);
 #endif
@@ -1057,7 +1056,11 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     Type *t = it1->isRelated (it2);
     if ((t != it1->BaseType()) && (!t || !t->isEqual (it1->BaseType()))) {
       act_error_ctxt (stderr);
-      fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);
+      fprintf (stderr, "Connecting `");
+      id1->Print (stderr);
+      fprintf (stderr, "' and `");
+      id2->Print (stderr);
+      fprintf (stderr, "' failed.\n");
       fprintf (stderr, "\tType 1: ");
       it1->Print (stderr);
       fprintf (stderr, "\n\tType 2: ");
@@ -1081,7 +1084,11 @@ void act_mk_connection (UserDef *ux, const char *s1, act_connection *c1,
     if (d1 != d2 && (d1 != Type::NONE && d2 != Type::NONE)) {
       /* error */
       act_error_ctxt (stderr);
-      fprintf (stderr, "Connecting `%s' and `%s' failed.\n", s1, s2);
+      fprintf (stderr, "Connecting `");
+      id1->Print (stderr);
+      fprintf (stderr, "' and `");
+      id2->Print (stderr);
+      fprintf (stderr, "' failed.\n");
       fprintf (stderr, "\tType 1: ");
       it1->Print (stderr);
       fprintf (stderr, " [dir=%s]\n\tType 2: ", Type::dirstring (d1));

@@ -229,7 +229,7 @@ open_item: "open" qualified_ns "->" ID  ";"
  *
  *------------------------------------------------------------------------
  */
-namespace_management: [ "export" ] "namespace" ID 
+namespace_management[ActNamespace *]: [ "export" ] "namespace" ID 
 {{X:
     ActNamespace *ns;
     int new_ns;
@@ -263,6 +263,7 @@ namespace_management: [ "export" ] "namespace" ID
 }}
 "{" [ ns_body ] "}"
 {{X:
+    ActNamespace *ret = $0->curns;
     if (!OPT_EMPTY ($5)) {
       ActRet *r;
       r = OPT_VALUE ($5);
@@ -274,7 +275,7 @@ namespace_management: [ "export" ] "namespace" ID
     $A($0->curns);
     $0->scope = $0->curns->CurScope();
     OPT_FREE ($5);
-    return NULL;
+    return ret;
 }}
 ;
 
