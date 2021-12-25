@@ -8,7 +8,7 @@ defproc foo() {
 
   chp {
       z := x[y];
-      z := p.w[y]
+      z := int(p.w[y])
   }
 
 }

@@ -1617,6 +1617,67 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
 }
 
 
+/*------------------------------------------------------------------------
+ * 
+ * CHP assignmable typechecking rules
+ *
+ *------------------------------------------------------------------------
+ */
+int type_chp_check_assignable (InstType *lhs, InstType *rhs)
+{
+  Assert (lhs && rhs, "NULL argument to type_check_assignable()");
+
+  if (!TypeFactory::isDataType (lhs) && !TypeFactory::isStructure (lhs) &&
+      !TypeFactory::isPBoolType (lhs) && !TypeFactory::isPIntType (lhs)) {
+    typecheck_err ("Assignable variable requires data types!");
+    return 0;
+  }
+  if (TypeFactory::isPBoolType (lhs)) {
+    if (TypeFactory::isPBoolType (rhs)) {
+      return 1;
+    }
+    typecheck_err ("pbool assignment requires pbool expressions");
+    return 0;
+  }
+  else if (TypeFactory::isPIntType (lhs)) {
+    if (TypeFactory::isPIntType (rhs)) {
+      return 1;
+    }
+    typecheck_err ("pint assignment requires pint expressions");
+    return 0;
+  }
+  else if (TypeFactory::isBaseBoolType (lhs)) {
+    if (TypeFactory::isBaseBoolType (rhs) || TypeFactory::isPBoolType (rhs)) {
+      return 1;
+    }
+    typecheck_err ("Bool/non-bool assignment is not permitted");
+    return 0;
+  }
+  else if (TypeFactory::isBaseIntType (lhs)) {
+    if (TypeFactory::isBaseIntType (rhs) || TypeFactory::isPIntType (rhs)) {
+      return 1;
+    }
+    typecheck_err ("Int/non-int assignment is not permitted");
+    return 0;
+  }
+  else if (TypeFactory::isStructure (lhs)) {
+    if (TypeFactory::isStructure (rhs)) {
+      if (type_connectivity_check (lhs, rhs, 0)) {
+	return 1;
+      }
+      else {
+	typecheck_err ("Incompatible structures");
+	return 0;
+      }
+    }
+    typecheck_err ("Structure/non-structure types are incompatible");
+    return 0;
+  }
+  else {
+    Assert (0, "What case is this?");
+    return 0;
+  }
+}
 
 /*------------------------------------------------------------------------
  *

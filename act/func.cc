@@ -110,6 +110,7 @@ static void _run_function_fwd (act_inline_table *Hs, act_chp_lang_t *c)
   }
 }
 
+
 /*
  * This only applies to non-parameter functions, and simple functions
  */
@@ -154,8 +155,35 @@ Expr **Function::toInline (int nargs, Expr **args)
   for (int i=0; i < nargs; i++) {
     Expr **te;
     hash_bucket_t *b;
-    NEW (te, Expr *);
-    te[0] = args[i];
+
+    if (TypeFactory::isStructure (getPortType (i))) {
+      Data *d = dynamic_cast <Data *> (getPortType(i)->BaseType());
+      int nb, ni;
+      Assert (d, "What?");
+      d->getStructCount (&nb, &ni);
+      MALLOC (te, Expr *, nb + ni);
+      int *types;
+      ActId **fields = d->getStructFields (&types);
+      if (args[i]->type != E_VAR) {
+	fatal_error ("toInline(): handle more complex expr `%s'",
+		     args[i]->type);
+      }
+      for (int j=0; j < nb + ni; j++) {
+	ActId *tmp = ((ActId *)args[i]->u.e.l)->Clone ();
+	tmp->Tail()->Append (fields[j]);
+	NEW (te[j], Expr);
+	te[j]->type = E_VAR;
+	te[j]->u.e.l = (Expr *) tmp;
+	te[j]->u.e.r = NULL;
+      }
+      FREE (types);
+      FREE (fields);
+    }
+    else {
+      NEW (te, Expr *);
+      te[0] = args[i];
+    }
+    
     Assert (i < getNumPorts(), "Hmm...");
     
     ActId *tmp = new ActId (getPortName (i));

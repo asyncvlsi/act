@@ -974,6 +974,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
 int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);
 int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
+int type_chp_check_assignable (InstType *lhs, InstType *rhs);
 
 InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan);
 InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);

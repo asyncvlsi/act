@@ -689,8 +689,34 @@ w_expr_chp
     c->space = NULL;
     c->u.assign.id = $1;
     c->u.assign.e = $3;
-    /* XXX: typecheck w_expr here */
-    tl = act_type_var ($0->scope, $1, NULL);
+
+    InstType *lhs, *rhs;
+    tl = act_type_var ($0->scope, $1, &lhs);
+    rhs = act_expr_insttype ($0->scope, $3, NULL, 2);
+
+    Array *lhs_a, *rhs_a;
+
+    lhs_a = lhs->arrayInfo();
+    rhs_a = rhs->arrayInfo();
+
+    lhs->clrArray ();
+    rhs->clrArray ();
+
+    if (!type_chp_check_assignable (lhs, rhs)) {
+      $e("Typechecking failed on CHP assignment");
+      fprintf ($f, "  stmt: ");
+      $1->Print ($f, NULL);
+      fprintf ($f, " := ");
+      print_uexpr ($f, $3);
+      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+      exit (1);
+    }
+    lhs->MkArray (lhs_a);
+    rhs->MkArray (rhs_a);
+    if (rhs_a && !rhs_a->isDeref()) {
+      $e("Typechecking failed on CHP assignment: array/non-array assignment");
+      exit (1);
+    }
     return c;
 }}
 | bool_expr_id dir
