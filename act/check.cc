@@ -1646,36 +1646,41 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
     typecheck_err ("pint assignment requires pint expressions");
     return 0;
   }
-  else if (TypeFactory::isBaseBoolType (lhs)) {
-    if (TypeFactory::isBaseBoolType (rhs) || TypeFactory::isPBoolType (rhs)) {
-      return 1;
+  else {
+    if (TypeFactory::isChanType (rhs)) {
+      rhs = TypeFactory::getChanDataType (rhs);
     }
-    typecheck_err ("Bool/non-bool assignment is not permitted");
-    return 0;
-  }
-  else if (TypeFactory::isBaseIntType (lhs)) {
-    if (TypeFactory::isBaseIntType (rhs) || TypeFactory::isPIntType (rhs)) {
-      return 1;
-    }
-    typecheck_err ("Int/non-int assignment is not permitted");
-    return 0;
-  }
-  else if (TypeFactory::isStructure (lhs)) {
-    if (TypeFactory::isStructure (rhs)) {
-      if (type_connectivity_check (lhs, rhs, 0)) {
+    if (TypeFactory::isBaseBoolType (lhs)) {
+      if (TypeFactory::isBaseBoolType (rhs) || TypeFactory::isPBoolType (rhs)) {
 	return 1;
       }
-      else {
-	typecheck_err ("Incompatible structures");
-	return 0;
-      }
+      typecheck_err ("Bool/non-bool assignment is not permitted");
+      return 0;
     }
-    typecheck_err ("Structure/non-structure types are incompatible");
-    return 0;
-  }
-  else {
-    Assert (0, "What case is this?");
-    return 0;
+    else if (TypeFactory::isBaseIntType (lhs)) {
+      if (TypeFactory::isBaseIntType (rhs) || TypeFactory::isPIntType (rhs)) {
+	return 1;
+      }
+      typecheck_err ("Int/non-int assignment is not permitted");
+      return 0;
+    }
+    else if (TypeFactory::isStructure (lhs)) {
+      if (TypeFactory::isStructure (rhs)) {
+	if (type_connectivity_check (lhs, rhs, 0)) {
+	  return 1;
+	}
+	else {
+	  typecheck_err ("Incompatible structures");
+	  return 0;
+	}
+      }
+      typecheck_err ("Structure/non-structure types are incompatible");
+      return 0;
+    }
+    else {
+      Assert (0, "What case is this?");
+      return 0;
+    }
   }
 }
 
