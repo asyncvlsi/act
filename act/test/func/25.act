@@ -1,0 +1,19 @@
+deftype struct (int<4> a, b) { }
+
+function addup (struct s) : int<5>
+{
+  chp {
+    self := s.a + s.b
+  }
+}
+
+defproc testme()
+{
+  struct s;
+  int t;
+  chp {
+    t := addup(s)
+  }
+}
+
+testme t;

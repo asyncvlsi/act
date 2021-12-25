@@ -88,7 +88,7 @@ int act_inline_isbound (act_inline_table *tab, const char *name)
 }
 
 static Expr **_lookup_binding (act_inline_table *Hs,
-			       const char *name, int err = 1)
+			       const char *name, ActId *rest, int err = 1)
 {
   hash_bucket_t *b;
   while (Hs) {
@@ -97,8 +97,9 @@ static Expr **_lookup_binding (act_inline_table *Hs,
       int ni, nb;
       int sz = 1;
       InstType *it = Hs->sc->Lookup (name);
+      Data *d = NULL;
       if (TypeFactory::isStructure (it)) {
-	Data *d = dynamic_cast<Data *>(it->BaseType());
+	d = dynamic_cast<Data *>(it->BaseType());
 	d->getStructCount (&nb, &ni);
 	sz = nb + ni;
       }
@@ -107,6 +108,24 @@ static Expr **_lookup_binding (act_inline_table *Hs,
       MALLOC (ret, Expr *, sz);
       for (int i=0; i < sz; i++) {
 	ret[i] = ((Expr **)b->v)[i];
+      }
+      if (rest) {
+	if (!d) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Structure binding lookup without structure?");
+	}
+	int sz2;
+	int off = d->getStructOffset (rest, &sz2);
+	Assert (off >= 0 && off <= sz, "What?");
+	Assert (off + sz2 <= sz, "What?");
+	Assert (sz2 > 0, "Hmm");
+	Expr **newret;
+	MALLOC (newret, Expr *, sz2);
+	for (int i=0; i < sz2; i++) {
+	  newret[i] = ret[i+off];
+	}
+	FREE (ret);
+	ret = newret;
       }
       return ret;
     }
@@ -162,7 +181,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
   b = hash_lookup (Hs->state, id->getName());
   if (!b) {
     Expr **bind;
-    Expr **xtmp = _lookup_binding (Hs, id->getName(), 0);
+    Expr **xtmp = _lookup_binding (Hs, id->getName(), NULL, 0);
 
     if (xtmp) {
       bind = xtmp;
@@ -176,24 +195,14 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     b = hash_add (Hs->state, id->getName());
     b->v = bind;
   }
-  Expr **res = _lookup_binding (Hs, id->getName());
+  Expr **res = _lookup_binding (Hs, id->getName(), NULL);
 
   if (id->Rest()) {
     Assert (xd, "What?!");
-    int off = xd->getStructOffset (id->Rest());
+    int sz2;
+    int off = xd->getStructOffset (id->Rest(), &sz2);
     Assert (off >= 0 && off < sz, "What?");
-    int sz2 = 1;
-    int nb, ni;
-    int id_pos = xd->FindPort (id->Rest()->getName());
-    Assert (id_pos > 0, "What?!");
-    InstType *tmp = xd->getPortType (id_pos-1);
-    if (TypeFactory::isStructure (tmp)) {
-      Data *xd2 = dynamic_cast<Data *> (tmp->BaseType());
-      Assert (xd2, "What?!");
-      xd2->getStructCount (&nb, &ni);
-      sz2 = nb + ni;
-    }
-    Assert (off + sz2 <= sz, "Hmm");
+    Assert (off + sz2 <= sz, "What?");
     for (int i=0; i < sz2; i++) {
       res[off+i] = update[i];
 #if 0      
@@ -292,7 +301,8 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
     /* we can work with bitfield so long as it is a basic varaible
        only */
     {
-      Expr **res = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName());
+      Expr **res = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName(),
+				    ((ActId *)e->u.e.l)->Rest());
       Expr *r = res[0];
       FREE (res);
       if (r->type != E_VAR) {
@@ -462,13 +472,13 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
     break;
     
   case E_SELF:
-    rets = _lookup_binding (Hs, "self");
+    rets = _lookup_binding (Hs, "self", NULL);
     break;
     
   case E_VAR:
     {
       ActId *tid = (ActId *)e->u.e.l;
-      rets = _lookup_binding (Hs, tid->getName());
+      rets = _lookup_binding (Hs, tid->getName(), tid->Rest());
     }
     break;
 
@@ -528,7 +538,7 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
     Expr **inpval;
     int *types;
 
-    inpval = _lookup_binding (Tret, b->key, 0);
+    inpval = _lookup_binding (Tret, b->key, NULL, 0);
 
     InstType *et = sc->Lookup (b->key);
     Assert (et, "What?");
@@ -652,6 +662,6 @@ void act_inline_setval (act_inline_table *Hs, ActId *id, Expr **update)
 
 Expr **act_inline_getval (act_inline_table *Hs, const char *s)
 {
-  Expr **rets = _lookup_binding (Hs, s);
+  Expr **rets = _lookup_binding (Hs, s, NULL);
   return rets;
 }

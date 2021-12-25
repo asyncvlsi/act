@@ -565,6 +565,10 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
       $E("CHP send: type-checking failed.\n\t%s", act_type_errmsg());
     }
 
+    if (c->u.comm.flavor == 2 && (c->u.comm.var || c->u.comm.e)) {
+      $E("Second half of communication action cannot have data");
+    }
+
     return c;
 }}
 ;
@@ -651,6 +655,10 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
 
     if (!act_type_chan ($0->scope, ch2, 0, c->u.comm.e, c->u.comm.var)) {
       $E("CHP receive: type-checking failed.\n\t%s", act_type_errmsg());
+    }
+
+    if (c->u.comm.flavor == 2 && (c->u.comm.var || c->u.comm.e)) {
+      $E("Second half of communication action cannot have data");
     }
     
     return c;

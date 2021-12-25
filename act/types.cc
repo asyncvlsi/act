@@ -1962,7 +1962,7 @@ void Data::_get_struct_count (int *nb, int *ni)
   }
 }
 
-int Data::getStructOffset (ActId *field)
+int Data::getStructOffset (ActId *field, int *sz)
 {
   Assert (TypeFactory::isStructure (this), "What?");
   if (!field) return -1;
@@ -1970,6 +1970,21 @@ int Data::getStructOffset (ActId *field)
   for (int i=0; i < getNumPorts(); i++) {
     if (strcmp (field->getName(), getPortName (i)) == 0) {
       if (!field->Rest()) {
+	if (sz) {
+	  InstType *tmp = getPortType (i);
+	  if (TypeFactory::isStructure (tmp)) {
+	    Data *xd = dynamic_cast<Data *> (tmp->BaseType());
+	    int nb, ni;
+	    xd->getStructCount (&nb, &ni);
+	    *sz = nb + ni;
+	  }
+	  else {
+	    *sz = 1;
+	  }
+	  if (tmp->arrayInfo()) {
+	    *sz = *sz * tmp->arrayInfo()->size();
+	  }
+	}
 	return i;
       }
       else {
@@ -1979,7 +1994,7 @@ int Data::getStructOffset (ActId *field)
 	Assert (TypeFactory::isStructure (it), "What?");
 	Assert (it->arrayInfo() == NULL, "What?");
 	d = dynamic_cast <Data *> (it->BaseType());
-	x = d->getStructOffset (field->Rest());
+	x = d->getStructOffset (field->Rest(), sz);
 	if (x == -1) {
 	  return -1;
 	}

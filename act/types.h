@@ -539,8 +539,15 @@ class Data : public UserDef {
   
   void Print (FILE *fp);
 
+  /* returns # of booleans and # of ints needed to implement the
+     structure */
   void getStructCount (int *nbools, int *nints);
-  int getStructOffset (ActId *field);
+
+  /* returns offset of field within  the structure.
+     if sz is non-NULL, also returns the # of entries in case this is
+     a sub-structure
+  */
+  int getStructOffset (ActId *field, int *sz);
   ActId **getStructFields (int **types);
 
 private:
