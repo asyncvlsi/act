@@ -1476,7 +1476,15 @@ void Function::Print (FILE *fp)
 {
   PrintHeader (fp, "function");
   fprintf (fp, " : ");
-  ret_type->Print (fp);
+  if (expanded) {
+    if (TypeFactory::isUserType (getRetType())) {
+      UserDef *u = dynamic_cast<UserDef *> (getRetType()->BaseType());
+      ActNamespace::Act()->mfprintfproc (fp, u, 1);
+    }
+    else {
+      getRetType()->Print (fp);
+    }
+  }
   fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */

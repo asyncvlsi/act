@@ -338,37 +338,40 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	  int *types;
 	  int nb, ni;
 
-	  if (!vals) {
-	    fatal_error ("Work on complex function inlining [struct]");
-	  }
+	  if (vals) {
+	    /* simple inline */
 	  
-	  d = dynamic_cast <Data *>(it->BaseType());
-	  Assert (d, "Hmm");
-	  ActId **fields = d->getStructFields (&types);
-	  FREE (types);
-	  d->getStructCount (&nb, &ni);
-	  int sz = nb + ni;
-	  list_t *l = list_new ();
-	  for (int i=0; i < sz; i++) {
-	    act_chp_lang_t *tc;
+	    d = dynamic_cast <Data *>(it->BaseType());
+	    Assert (d, "Hmm");
+	    ActId **fields = d->getStructFields (&types);
+	    FREE (types);
+	    d->getStructCount (&nb, &ni);
+	    int sz = nb + ni;
+	    list_t *l = list_new ();
+	    for (int i=0; i < sz; i++) {
+	      act_chp_lang_t *tc;
 
-	    if (vals[i]) {
-	      NEW (tc, act_chp_lang_t);
-	      tc->type = ACT_CHP_ASSIGN;
-	      tc->label = NULL;
-	      tc->space = NULL;
-	      tc->u.assign.id = c->u.assign.id->Clone();
-	      tc->u.assign.id->Tail()->Append (fields[i]);
-	      tc->u.assign.e = vals[i];
-	      list_append (l, tc);
+	      if (vals[i]) {
+		NEW (tc, act_chp_lang_t);
+		tc->type = ACT_CHP_ASSIGN;
+		tc->label = NULL;
+		tc->space = NULL;
+		tc->u.assign.id = c->u.assign.id->Clone();
+		tc->u.assign.id->Tail()->Append (fields[i]);
+		tc->u.assign.e = vals[i];
+		list_append (l, tc);
+	      }
+	      else {
+		delete fields[i];
+	      }
 	    }
-	    else {
-	      delete fields[i];
-	    }
+	    FREE (fields);
+	    c->type = ACT_CHP_SEMI;
+	    c->u.semi_comma.cmd = l;
 	  }
-	  FREE (fields);
-	  c->type = ACT_CHP_SEMI;
-	  c->u.semi_comma.cmd = l;
+	  else {
+	    Assert (_inline_funcs_general (l, c->u.assign.e) == NULL, "What?");
+	  }
 	}
       }
       else {
@@ -750,7 +753,20 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
 	  Function *func = (Function *) c->u.assign.e->u.fn.s;
 	  if (!func->isExternal() && !func->isSimpleInline()) {
-	    fatal_error ("Fix this please (complex inline struct)!");
+	    list_t *l = list_new ();
+	    _collect_complex_inlines (l, c->u.assign.e);
+	    if (!list_isempty (l)) {
+	      act_chp_lang_t *ch = _do_inline (H, l);
+	      _apply_complex_inlines (l, c->u.assign.e);
+
+	      act_chp_lang_t *d;
+	      NEW (d, act_chp_lang_t);
+	      *d = *c;
+	      c->type = ACT_CHP_SEMI;
+	      c->u.semi_comma.cmd = list_new ();
+	      list_append (c->u.semi_comma.cmd, ch);
+	      list_append (c->u.semi_comma.cmd, d);
+	    }
 	  }
 	}
       }

@@ -509,7 +509,13 @@ void ActNamespace::Print (FILE *fp)
 	Function *f = dynamic_cast<Function *> (t);
 	u->PrintHeader (fp, "function");
 	fprintf (fp, " : ");
-	f->getRetType()->Print (fp);
+	if (TypeFactory::isUserType (f->getRetType())) {
+	  UserDef *tu = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
+	  ActNamespace::Act()->mfprintfproc (fp, tu, 1);
+	}
+	else {
+	  f->getRetType()->Print (fp);
+	}
       }
       else if (TypeFactory::isStructure (t)) {
 	u->PrintHeader (fp, "deftype");

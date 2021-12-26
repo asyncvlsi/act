@@ -7,12 +7,16 @@ defproc test ()
 {
 
 /* instances */
+struct fuse_0;
+struct farg_0;
+int<32> floc_0;
+struct fret_0;
 int<32> t;
 struct s;
 
 /* connections */
 chp {
-s.a:=0x5;s.b:=0xa;t:=s.a+s.b;s.a:=s.b;s.b:=s.a
+s.a:=0x5;s.b:=0xa;t:=s.a+s.b;farg_0:=s;floc_0:=0x5;*[floc_0>0x0 -> floc_0:=floc_0-0x1];fret_0.a:=farg_0.b;fret_0.b:=farg_0.a;fuse_0:=fret_0;s:=fuse_0
 }
 }
 
@@ -20,10 +24,11 @@ function newstruct (struct s) : struct
 {
 
 /* instances */
+int<32> i;
 
 /* connections */
 chp {
-self.a:=s.b;self.b:=s.a
+i:=0x5;*[i>0x0 -> i:=i-0x1];self.a:=s.b;self.b:=s.a
 }
 }
 
