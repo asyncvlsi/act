@@ -969,7 +969,8 @@ class TypeFactory {
 
 int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
 int act_type_var (Scope *, ActId *, InstType **xit);
-int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id);
+int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
+		   int override_id);
 
 int act_type_conn (Scope *, ActId *, AExpr *);
 int act_type_conn (Scope *, AExpr *, AExpr *);

@@ -174,6 +174,13 @@ typedef struct {
 
   /* userdef macro */
   UserMacro *um;
+
+  /* temp assignable is bool/int
+     -1 = nothing
+      0 = bool
+      1 = int
+   */
+  int is_assignable_override;
   
 } ActTree;
 

@@ -520,6 +520,8 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->ptype_name = NULL;
 
   tr->um = NULL;
+
+  tr->is_assignable_override = -1;
 }
 
 Act::Act (const char *s)

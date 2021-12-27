@@ -1,0 +1,3 @@
+ERROR: File `73.act', line 9, col 12
+	CHP receive: type-checking failed.
+	Integer/non-integer types are incompatible.

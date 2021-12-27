@@ -1690,10 +1690,15 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
  *
  *------------------------------------------------------------------------
  */
-int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
+int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
+		   int override_id)
 {
   int ret = 1;
+  int it1_override, it2_override;
   InstType *it1, *it2;
+
+  it1_override = -1;
+  it2_override = override_id;
 
   if (e) {
     it1 = act_expr_insttype (sc, e, NULL, 0);
@@ -1714,6 +1719,10 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
     InstType *tmp = it1;
     it1 = it2;
     it2 = tmp;
+
+    int xtmp = it1_override;
+    it1_override = it2_override;
+    it2_override = xtmp;
   }
     
   if (it1) {
@@ -1724,7 +1733,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
     }
     else {
       if (TypeFactory::isBoolType (ch->datatype())) {
-	if (TypeFactory::isBaseBoolType (it1) || TypeFactory::isPBoolType (it1)) {
+	if ((TypeFactory::isBaseBoolType (it1) || TypeFactory::isPBoolType (it1)) || (it1_override == 0 && TypeFactory::isBaseIntType (it1))) {
 	  ret = 1;
 	}
 	else {
@@ -1732,7 +1741,8 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
 	}
       }
       else if (TypeFactory::isIntType (ch->datatype())) {
-	if (TypeFactory::isBaseIntType (it1) || TypeFactory::isPIntType (it1)) {
+	if (TypeFactory::isBaseIntType (it1) || TypeFactory::isPIntType (it1)
+	    || (it1_override == 1 && TypeFactory::isBaseBoolType(it1))) {
 	  ret = 1;
 	}
 	else {
@@ -1767,7 +1777,8 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
     }
     else {
       if (TypeFactory::isBoolType (ch->acktype())) {
-	if (TypeFactory::isBaseBoolType (it2) || TypeFactory::isPBoolType (it2)) {
+	if (TypeFactory::isBaseBoolType (it2) || TypeFactory::isPBoolType (it2)
+	    || (it2_override == 0 && TypeFactory::isBaseIntType (it2))) {
 	  ret = 1;
 	}
 	else {
@@ -1775,7 +1786,8 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id)
 	}
       }
       else if (TypeFactory::isIntType (ch->acktype())) {
-	if (TypeFactory::isBaseIntType (it2) || TypeFactory::isPIntType (it2)) {
+	if (TypeFactory::isBaseIntType (it2) || TypeFactory::isPIntType (it2)
+	    || (it2_override == 1 && TypeFactory::isBaseBoolType (it2))) {
 	  ret = 1;
 	}
 	else {

@@ -490,7 +490,7 @@ chp_log_item[act_func_arguments_t *]: w_expr
 ;
 
 send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
-                                                  [ rcv_type assignable_expr_id ]
+                                                  [ rcv_type gen_assignable_id ]
 {{X:
     act_chp_lang_t *c;
     int t;
@@ -561,7 +561,8 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
     OPT_FREE ($4);
 
     /* now typecheck channel */
-    if (!act_type_chan ($0->scope, ch2, 1, c->u.comm.e, c->u.comm.var)) {
+    if (!act_type_chan ($0->scope, ch2, 1, c->u.comm.e, c->u.comm.var,
+			$0->is_assignable_override)) {
       $E("CHP send: type-checking failed.\n\t%s", act_type_errmsg());
     }
 
@@ -581,8 +582,24 @@ snd_type[int]: "!"
 {{X: return 2; }}
 ;
 
+gen_assignable_id[ActId *]: assignable_expr_id
+{{X:
+    $0->is_assignable_override = -1;
+    return $1;
+}}
+| "bool" "(" assignable_expr_id ")"
+{{X:
+    $0->is_assignable_override = 0;
+    return $3;
+}}
+| "int" "(" assignable_expr_id ")"
+{{X:
+    $0->is_assignable_override = 1;
+    return $3;
+}}
+;
 
-recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
+recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ gen_assignable_id ]
                                         [ snd_type w_expr ]
 {{X:
     act_chp_lang_t *c;
@@ -653,7 +670,8 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ assignable_expr_id ]
     OPT_FREE ($3);
     OPT_FREE ($4);
 
-    if (!act_type_chan ($0->scope, ch2, 0, c->u.comm.e, c->u.comm.var)) {
+    if (!act_type_chan ($0->scope, ch2, 0, c->u.comm.e, c->u.comm.var,
+			$0->is_assignable_override)) {
       $E("CHP receive: type-checking failed.\n\t%s", act_type_errmsg());
     }
 
