@@ -202,7 +202,8 @@ typedef struct act_chp_lang {
       ActId *chan;
       ActId *var;		/* variable for assignment */
       Expr *e;			/* expression to be sent */
-      int flavor;		/* up, down, blank */
+      unsigned int flavor:2;	/* 0 = blank, 1 = up, 2 = down */
+      unsigned int convert:2; /* 0 = nothing, 1 = bool(.), 2 = int(.) */
     } comm;
     struct {
       mstring_t *name;		/* function name */

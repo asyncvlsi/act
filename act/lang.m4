@@ -565,10 +565,13 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
 			$0->is_assignable_override)) {
       $E("CHP send: type-checking failed.\n\t%s", act_type_errmsg());
     }
+    c->u.comm.convert = ($0->is_assignable_override + 1);
 
     if (c->u.comm.flavor == 2 && (c->u.comm.var || c->u.comm.e)) {
       $E("Second half of communication action cannot have data");
     }
+
+    $0->is_assignable_override = -1;
 
     return c;
 }}
@@ -674,10 +677,13 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ gen_assignable_id ]
 			$0->is_assignable_override)) {
       $E("CHP receive: type-checking failed.\n\t%s", act_type_errmsg());
     }
+    c->u.comm.convert = ($0->is_assignable_override + 1);
 
     if (c->u.comm.flavor == 2 && (c->u.comm.var || c->u.comm.e)) {
       $E("Second half of communication action cannot have data");
     }
+
+    $0->is_assignable_override = -1;
     
     return c;
 }}

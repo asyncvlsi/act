@@ -1,0 +1,10 @@
+defproc testme (chan(int) X; chan(bool) Y) {
+  int<1> a;
+  bool b;
+  
+  chp {
+    X?+a; X?-; X?+int(b); Y?bool(a); Y?b
+  }
+}
+testme t;
+

@@ -1,0 +1,20 @@
+defproc testme (chan(int<32>) X; chan(bool) Y);
+
+defproc testme (chan(int<32>) X; chan(bool) Y)
+{
+
+/* instances */
+bool b;
+int<1> a;
+
+/* connections */
+chp {
+X?+a;X?-;X?+int(b);Y?bool(a);Y?b
+}
+}
+
+
+/* instances */
+testme t;
+
+/* connections */

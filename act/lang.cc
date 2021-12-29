@@ -1971,6 +1971,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       }
     }
     ret->u.comm.flavor = c->u.comm.flavor;
+    ret->u.comm.convert = c->u.comm.convert;
     if (c->u.comm.var) {
       ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);
       act_chp_macro_check (s, ret->u.comm.var);
@@ -2591,6 +2592,12 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   case ACT_CHP_SEND:
     c->u.comm.chan->Print (fp);
     fprintf (fp, "!");
+    if (c->u.comm.flavor == 1) {
+      fprintf (fp, "+");
+    }
+    else if (c->u.comm.flavor == 2) {
+      fprintf (fp, "-");
+    }
     {
       listitem_t *li;
       if (c->u.comm.e) {
@@ -2598,7 +2605,22 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
       }
       if (c->u.comm.var) {
 	fprintf (fp, "?");
+	if (c->u.comm.flavor == 1) {
+	  fprintf (fp, "+");
+	}
+	else if (c->u.comm.flavor == 2) {
+	  fprintf (fp, "-");
+	}
+	if (c->u.comm.convert == 1) {
+	  fprintf (fp, "bool(");
+	}
+	else if (c->u.comm.convert == 2) {
+	  fprintf (fp, "int(");
+	}
 	c->u.comm.var->Print (fp);
+	if (c->u.comm.convert != 0) {
+	  fprintf (fp, ")");
+	}
       }
     }
     break;
@@ -2606,12 +2628,33 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   case ACT_CHP_RECV:
     c->u.comm.chan->Print (fp);
     fprintf (fp, "?");
+    if (c->u.comm.flavor == 1) {
+      fprintf (fp, "+");
+    }
+    else if (c->u.comm.flavor == 2) {
+      fprintf (fp, "-");
+    }
     {
       if (c->u.comm.var) {
+	if (c->u.comm.convert == 1) {
+	  fprintf (fp, "bool(");
+	}
+	else if (c->u.comm.convert == 2) {
+	  fprintf (fp, "int(");
+	}
 	c->u.comm.var->Print (fp);
+	if (c->u.comm.convert != 0) {
+	  fprintf (fp, ")");
+	}
       }
       if (c->u.comm.e) {
 	fprintf (fp, "!");
+	if (c->u.comm.flavor == 1) {
+	  fprintf (fp, "+");
+	}
+	else if (c->u.comm.flavor == 2) {
+	  fprintf (fp, "-");
+	}
 	print_uexpr (fp, c->u.comm.e);
       }
     }
