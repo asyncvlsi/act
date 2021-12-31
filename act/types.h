@@ -324,6 +324,7 @@ class UserDef : public Type {
   }
   
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit, int is_process = 0);
+  /* is_process = 0 by default, 1 for process, 2 for functions */
 
   /* append in the case of multiple bodies! */
 

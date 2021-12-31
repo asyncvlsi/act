@@ -1,0 +1,14 @@
+defproc test(chan(int) ichan; chan(bool) bchan; bool x4)
+{
+  int a;
+  bool b;
+  chp {
+    *[ x4 ->  bchan?b;
+     ichan?a;
+     bchan?bool(a);
+     ichan?int(b)
+    ]
+  }
+}
+
+test t;

@@ -583,6 +583,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
   /* set its scope to "expanded" mode */
   ux->I->FlushExpand();
+  if (is_proc == 2) {
+    ux->I->mkFunction();
+  }
   /* set to pending */
   ux->pending = 1;
   ux->expanded = 1;
@@ -996,7 +999,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   /*-- expand macros --*/
   for (int i=0; i < A_LEN (um); i++) {
     A_NEW (ux->um, UserMacro *);
-    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I, is_proc);
+    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I, (is_proc == 1) ? 1 : 0);
     A_INC (ux->um);
   }
 
@@ -1070,7 +1073,8 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   int cache_hit;
   int i;
 
-  ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit, 2);
+  ux->CurScope()->mkFunction();
 
   if (cache_hit) {
     return dynamic_cast<Function *>(ux);

@@ -113,6 +113,8 @@ class Scope {
    * Associate scope with a user defined type 
    */
   void setUserDef (UserDef *_u) { u = _u; }
+  void mkFunction () { is_function = 1; }
+  int isFunction() { return is_function; }
   UserDef *getUserDef () { return u; }
 
   void setNamespace (ActNamespace *_ns) { ns = _ns; }
@@ -174,6 +176,8 @@ class Scope {
   UserDef *u;			/* if it is a user-defined type */
   unsigned int expanded:1;	/* if it is an expanded scope */
   ActNamespace *ns;		/* if it is a namespace scope */
+
+  int is_function;		/* 1 if this is a function scope */
 
   /* values that are per scope, rather than per instance */
   A_DECL (unsigned long, vpint);

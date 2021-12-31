@@ -45,6 +45,8 @@ Scope::Scope (Scope *parent, int is_expanded)
   vpreal_set = NULL;
   vptype_set = NULL;
   vpbool_set = NULL;
+
+  is_function = 0;
 }
 
 InstType *Scope::Lookup (const char *s)

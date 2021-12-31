@@ -1564,6 +1564,7 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
 
 static pHashtable *pmap = NULL;
 static int _expr_has_probes = 0;
+static int _expr_has_nonlocal_vars = 0;
 
 static Expr *_process_probes (Expr *e)
 {
@@ -1701,6 +1702,11 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 	  b->i = 0;		/* 0 = used as a variable */
 	}
       }
+      else {
+	if (((ActId *)e->u.e.l)->isNonLocal (s)) {
+	  _expr_has_nonlocal_vars = 1;
+	}
+      }
     }
     break;
 
@@ -1737,10 +1743,12 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
 {
   e = _chp_fix_nnf (e, 0);
 
+  _expr_has_nonlocal_vars = 0;
   pmap = phash_new (4);
   e = _chp_add_probes (e, ns, s, 1);
   if (pmap->n > 0) {
     _expr_has_probes = 1;
+    _expr_has_nonlocal_vars = 1;
   }
   phash_free (pmap);
   return e;
@@ -1752,7 +1760,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
   listitem_t *li;
   ValueIdx *vx;
-  int expr_has_else, expr_has_probes;
+  int expr_has_else, expr_has_probes, expr_has_nonlocal;
   
   if (!c) return NULL;
   NEW (ret, act_chp_lang_t);
@@ -1800,6 +1808,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     gctl = NULL;
     expr_has_probes = 0;
     expr_has_else = 0;
+    expr_has_nonlocal = 0;
     for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
       if (gctmp->id) {
 	int ilo, ihi;
@@ -1816,6 +1825,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	  expr_has_probes = _expr_has_probes || expr_has_probes;
+	  expr_has_nonlocal = expr_has_nonlocal || _expr_has_nonlocal_vars;
 	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
 	    FREE (tmp);
 	  }
@@ -1834,6 +1844,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	_expr_has_probes = 0;
 	tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	expr_has_probes = _expr_has_probes || expr_has_probes;
+	expr_has_nonlocal = expr_has_nonlocal || _expr_has_nonlocal_vars;
 	if (!tmp->g && gctmp != c->u.gc) {
 	  /*-- null guard in head is the loop shortcut --*/
 	  expr_has_else = 1;
@@ -1862,6 +1873,12 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     if (expr_has_else && expr_has_probes) {
       act_error_ctxt (stderr);
       fatal_error ("Cannot have an else clause when guards contain channels");
+    }
+    if (c->type == ACT_CHP_DOLOOP || c->type == ACT_CHP_LOOP) {
+      if (expr_has_nonlocal) {
+	act_error_ctxt (stderr);
+	fatal_error ("Cannot have non-local variables/probes in loop guards");
+      }
     }
     if (c->type != ACT_CHP_DOLOOP) {
       if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {

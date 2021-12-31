@@ -2003,3 +2003,27 @@ ActId::getNamespace ()
   FREE (tmpbuf);
   return NULL;
 }
+
+
+/*------------------------------------------------------------------------
+ *
+ *  Return 1 if there is a non-local aspect to this ID, 0 otherwise.
+ *
+ *------------------------------------------------------------------------
+ */
+int ActId::isNonLocal (Scope *s)
+{
+  if (isDynamicDeref ()) {
+    /* dynamic derefs are always local */
+    return 0;
+  }
+  act_connection *c = rootCanonical (s);
+  if (c->isglobal()) {
+    return 1;
+  }
+  UserDef *ux = s->getUserDef();
+  if (ux && !s->isFunction() && (ux->FindPort (c->getvx()->getName()) > 0)) {
+    return 1;
+  }
+  return 0;
+}

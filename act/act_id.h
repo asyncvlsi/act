@@ -135,6 +135,9 @@ class ActId {
 					   // canonical pointer for
 					   // this object
 
+  int isNonLocal (Scope *s);	// return 1 if this ID is a non-local
+				// identifier, 0 otherwise. Non-local
+				// = port or global 
 
   static ActId *parseId (char *s, const char delim1, const char arrayL,
 			 const char arrayR, const char delim2);
