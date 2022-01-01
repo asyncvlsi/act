@@ -217,7 +217,7 @@ InstType *TypeFactory::NewInt (Scope *s, Type::direction dir, int sig, Expr *w)
      For int<w>, we need to know the *context* of w.. is it the same w
      as another int<w>, or not.
   */
-  InstType *i = new InstType (s, (sig == 0 ? _iu : (sig == 1 ? _is : _ie)));
+  InstType *i = new InstType (s, (sig == 0 ? _iu : (sig == 1 ? _is : _ie)), 0);
   i->setNumParams (1);
   i->setParam (0, w);
   i->SetDir (dir);
