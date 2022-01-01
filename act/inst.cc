@@ -158,7 +158,9 @@ InstType::~InstType ()
     }
     FREE (u);
   }
-  delete a;
+  if (a) {
+    delete a;
+  }
 }
 
 
