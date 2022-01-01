@@ -524,6 +524,12 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->is_assignable_override = -1;
 }
 
+static void _free_tr (ActTree *tr)
+{
+  delete tr->os;
+  list_free (tr->sz_loop_stack);
+}
+
 Act::Act (const char *s)
 {
   act_Token *a;
@@ -698,6 +704,7 @@ Act::Act (const char *s)
       inst_levels[i] = config_get_table_string (buf);
     }
   }
+  _free_tr (&tr);
 }
 
 void Act::Merge (const char *s)
@@ -736,6 +743,7 @@ void Act::Merge (const char *s)
 #ifdef DEBUG_PERFORMANCE
   printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
 #endif
+  _free_tr (&tr);
 }
 
 

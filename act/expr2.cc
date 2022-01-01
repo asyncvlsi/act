@@ -2151,6 +2151,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_REAL:
     LVAL_ERROR;
     ret->u.f = e->u.f;
+    *width = 64;
     break;
 
   case E_TRUE:

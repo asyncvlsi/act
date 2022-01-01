@@ -1,0 +1,9 @@
+template<pint N; pint d[N]>
+defproc testme(bool a)
+{
+  prs {
+   a -> a-
+  }
+}
+
+testme<4,{0,1,2,3}> t;

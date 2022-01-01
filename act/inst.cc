@@ -893,6 +893,22 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 
   xt = t->Expand (c_ns, c_s, nt, xu);
 
+  if (nt > 0) {
+    for (i=0; i < nt; i++) {
+      if (xu[i].isatype) {
+	if (xu[i].u.tt) {
+	  delete xu[i].u.tt;
+	}
+      }
+      else {
+	if (xu[i].u.tp) {
+	  delete xu[i].u.tp;
+	}
+      }
+    }
+    FREE (xu);
+  }
+
 #if 0
   printf ("[%x] Name: %s\n", t, t->getName());
   printf ("[%x] Expanded: %s\n", xt, xt->getName());

@@ -640,6 +640,7 @@ void config_read (const char *name)
     }
     A_FREE (files_read);
   }
+  FREE (prefix);
 }
 
 

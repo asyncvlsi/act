@@ -776,6 +776,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     }
 
     if (e) { FREE (e); }
+    delete ex;
     delete tlhs;
     delete trhs;
     delete arhs;
@@ -843,7 +844,11 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	/* ptype assignment */
 	AExprstep *astep = arhs->stepper();
 
-	s->BindParam (alhs->toid(), astep->getPType());
+	ActId *tmpid = alhs->toid();
+
+	s->BindParam (tmpid, astep->getPType());
+
+	delete tmpid;
 	
 	astep->step();
 	Assert (astep->isend(), "What?");

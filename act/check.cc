@@ -1709,6 +1709,9 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
   if (id) {
     if (act_type_var (sc, id, &it2) == T_ERR) {
       typecheck_err ("Could not find variable type");
+      if (it1) {
+	delete it1;
+      }
       return 0;
     }
   }
@@ -1762,11 +1765,15 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
     }
   }
   if (!ret) {
+    if (it1) { delete it1; }
+    if (it2) { delete it2; }
     return 0;
   }
   
   if (it2) {
     if (!ch->acktype()) {
+      if (it1) { delete it1; }
+      if (it2) { delete it2; }
       return 0;
     }
     ret = 0;
@@ -1806,5 +1813,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
       }
     }
   }
+  if (it1) { delete it1; }
+  if (it2) { delete it2; }
   return ret;
 }  

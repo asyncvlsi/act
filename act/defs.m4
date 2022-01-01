@@ -328,6 +328,7 @@ proc_body:
 {{X:
     OPT_FREE ($1);
     OPT_FREE ($2);
+    OPT_FREE ($5);
     $0->u_p->MkDefined ();
     return NULL;
 }}

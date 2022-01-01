@@ -309,6 +309,10 @@ UserDef::~UserDef()
   if (inherited_param) {
     FREE (inherited_param);
   }
+
+  if (lang) {
+    delete lang;
+  }
 }
 
 void UserDef::MkCopy (UserDef *u)
@@ -677,10 +681,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	}
 
 	AExpr *rhsval = bind_param->u.tp;
-
-	if (!rhsval->isArrayExpr()) {
-	  rhsval = rhsval->Expand (ns, ux->I);
-	}
+        if (!rhsval->isArrayExpr()) {
+         rhsval = rhsval->Expand (ns, ux->I);
+        }
 	rhstype = rhsval->getInstType (ux->I, NULL, 1);
 	if (type_connectivity_check (x, rhstype) != 1) {
 	  act_error_ctxt (stderr);
@@ -698,7 +701,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 #endif	
 	ux->I->BindParam (pn[i], rhsval);
 	delete rhstype;
-	delete rhsval;
+        if (!rhsval->isArrayExpr()) {
+	   delete rhsval;
+        }
       }
     }
   }
@@ -1169,6 +1174,7 @@ Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (step->isend(), "Hmm?");
 
   delete step;
+  delete ae;
 
   return ix;
 }

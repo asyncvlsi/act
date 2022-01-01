@@ -87,7 +87,9 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" !endgt wpint_expr ">" !noendgt ]
       width = NULL; //const_expr (32);
     }
     OPT_FREE ($3);
-    return $0->tf->NewInt ($0->scope, d, $1, width);
+    InstType *it = $0->tf->NewInt ($0->scope, d, $1, width);
+    it->MkCached();
+    return it;
 }}
 | "bool" [ chan_dir ]
 {{X:
