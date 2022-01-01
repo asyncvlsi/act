@@ -551,7 +551,10 @@ static int do_command (char *s)
     }
   } while (t);
 
-  return LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
+  i = LispEvaluate (A_LEN (args), args, flist ? 1 : 0);
+  A_FREE (args);
+
+  return i;
 }
 
 

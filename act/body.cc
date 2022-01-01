@@ -843,13 +843,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
 	/* ptype assignment */
 	AExprstep *astep = arhs->stepper();
-
-	ActId *tmpid = alhs->toid();
-
-	s->BindParam (tmpid, astep->getPType());
-
-	delete tmpid;
-	
+	s->BindParam (alhs->toid(), astep->getPType());
 	astep->step();
 	Assert (astep->isend(), "What?");
 	delete astep;

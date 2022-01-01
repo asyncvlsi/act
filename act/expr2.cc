@@ -2277,6 +2277,17 @@ AExpr::~AExpr ()
     }
   }
   else {
+    Expr *e = (Expr *)l;
+    if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY || e->type == E_SELF) {
+      FREE (e);
+    }
+    else if (e->type == E_VAR) {
+      delete ((ActId *)e->u.e.l);
+      FREE (e);
+    }
+    else {
+      expr_ex_free (e);
+    } 
     /* YYY: hmm... expression memory management */
   }
 }
@@ -2479,7 +2490,13 @@ static void efree_ex (Expr *e)
     if (e->u.e.r) efree_ex (e->u.e.r);
     break;
   }
-  FREE (e);
+  if (e->type == E_TRUE || e->type == E_FALSE ||
+      (e->type == E_INT && !e->u.v_extra)) {
+    /* cached */
+  }
+  else {
+     FREE (e);
+  }
   return;
 }
 

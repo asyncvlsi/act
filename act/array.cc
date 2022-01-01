@@ -1191,7 +1191,9 @@ AExprstep::~AExprstep ()
   case 0:
     break;
   case 1:
+#if 0
     if (u.const_expr) { if (u.const_expr->type != E_INT && u.const_expr->type != E_TRUE && u.const_expr->type != E_FALSE) FREE (u.const_expr); }
+#endif
     break;
   case 2:
     if (u.id.a) {
@@ -1216,10 +1218,12 @@ void AExprstep::step()
     break;
   case 1:
     /* nothing to see here, need to continue traversing the AExpr */
+#if 0
     if (u.const_expr->type != E_INT && u.const_expr->type != E_TRUE &&
 	u.const_expr->type != E_FALSE) {
       FREE (u.const_expr);
     }
+#endif
     u.const_expr = NULL;
     break;
   case 2:
