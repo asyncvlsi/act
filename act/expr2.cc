@@ -2278,7 +2278,6 @@ AExpr::~AExpr ()
   }
   else {
     /* YYY: hmm... expression memory management */
-#if 0
     Expr *e = (Expr *)l;
     if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY || e->type == E_SELF || e->type == E_REAL) {
       FREE (e);
@@ -2290,7 +2289,6 @@ AExpr::~AExpr ()
     else {
       expr_ex_free (e);
     } 
-#endif
   }
 }
 
@@ -2431,7 +2429,7 @@ AExpr *AExpr::Clone()
       newl = l->Clone ();
     }
     else {
-      newl = l;
+      newl = (AExpr *)expr_dup ((Expr *)l);
     }
   }
   if (r) {

@@ -1104,7 +1104,7 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
 	Array *tmp;
 	if (ida->lo(i) == NULL) continue;
 
-	tmp = new Array (ida->lo(i), ida->hi(i));;
+	tmp = new Array (expr_dup (ida->lo(i)), expr_dup (ida->hi(i)));;
 	tmp->mkArray ();
 	if (!a) {
 	  a = tmp;
