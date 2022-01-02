@@ -1,0 +1,36 @@
+deftype t1 (int<8>a){}
+deftype t2 (int<8>b; int<8>c){}
+
+function tf(t1 t) : t2
+{
+  t2 tt;
+
+  int<4> tmp;
+
+  chp {
+    tt.b := {0b0000, t.a{3..0}};
+    tt.c := {0b0000, t.a{7..4}};
+    tmp := tt.b{9..3};
+    self := tt
+  }
+}
+
+function ttf(t2 tt) : int<4>
+{
+  chp {
+    self := tt.b{7..4}
+  }
+}
+
+defproc test () 
+{
+  t1 t;
+  t2 tt;
+  int<4> a;
+
+  chp { t.a := 0b10101010; tt := tf(t);
+        a := ttf(tt);
+        log(t.a, " ", tt.b, " ", tt.c, " ", a) }
+}
+
+test t;

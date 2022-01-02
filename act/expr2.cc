@@ -1828,6 +1828,17 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  *width = 1;
 	}
+	InstType *it = s->FullLookup ((ActId *)ret->u.e.l, NULL);
+	if (ret->u.e.r->u.e.r->u.v >= TypeFactory::bitWidth (it)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr, "\n");
+	  warning ("Bit-width (%d) is less than the width specifier {%d..%d}",
+		   TypeFactory::bitWidth (it), ret->u.e.r->u.e.r->u.v,
+		   ret->u.e.r->u.e.l ? ret->u.e.r->u.e.l->u.v :
+		   ret->u.e.r->u.e.r->u.v);
+	}
       }
       else {
 	unsigned long v;

@@ -1,0 +1,4 @@
+In expanding test (78.act:25)
+In expanding ::<Global>
+	expanding expr: tt.b{9..3}
+WARNING: Bit-width (8) is less than the width specifier {9..3}
