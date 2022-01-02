@@ -123,7 +123,9 @@ data_type[InstType *]: T_INT [ chan_dir ] [ "<" !endgt wpint_expr ">" !noendgt ]
       d = Type::NONE;
     }
     OPT_FREE ($2);
-    return $0->tf->NewEnum ($0->scope, d, $4);
+    InstType *it = $0->tf->NewEnum ($0->scope, d, $4);
+    it->MkCached ();
+    return it;
 }};
 
 chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical_inst_type ] ")" [ chan_dir ]
