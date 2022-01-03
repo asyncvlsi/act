@@ -234,22 +234,22 @@ InstType *TypeFactory::NewEnum (Scope *s, Type::direction dir, Expr *w)
 
 
 #define INSTMACRO(isfunc)			\
-int TypeFactory::isfunc (InstType *it)		\
+int TypeFactory::isfunc (const InstType *it)		\
 {						\
   return TypeFactory::isfunc (it->BaseType());	\
 }
 
 #define XINSTMACRO(isfunc)			\
-int TypeFactory::isfunc (InstType *it)		\
+int TypeFactory::isfunc (const InstType *it)		\
 {						\
  if (!it->isExpanded()) return -1;		\
  return TypeFactory::isfunc (it->BaseType());	\
 }
 
 
-int TypeFactory::isUserType (Type *t)
+int TypeFactory::isUserType (const Type *t)
 {
-  UserDef *tmp_u = dynamic_cast<UserDef *>(t);
+  const UserDef *tmp_u = dynamic_cast<const UserDef *>(t);
   if (tmp_u) {
     return 1;
   }
@@ -258,20 +258,20 @@ int TypeFactory::isUserType (Type *t)
 
 INSTMACRO(isUserType)
 
-int TypeFactory::isDataType (Type *t)
+int TypeFactory::isDataType (const Type *t)
 {
-  Data *tmp_d = dynamic_cast<Data *>(t);
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
   if (tmp_d) {
     if (TypeFactory::isStructure (t)) {
       return 0;
     }
     return 1;
   }
-  Int *tmp_i = dynamic_cast<Int *>(t);
+  const Int *tmp_i = dynamic_cast<const Int *>(t);
   if (tmp_i) {
     return 1;
   }
-  Bool *tmp_b = dynamic_cast<Bool *>(t);
+  const Bool *tmp_b = dynamic_cast<const Bool *>(t);
   if (tmp_b) {
     return 1;
   }
@@ -279,9 +279,9 @@ int TypeFactory::isDataType (Type *t)
 }
 INSTMACRO(isDataType)
 
-int TypeFactory::isStructure (Type *t)
+int TypeFactory::isStructure (const Type *t)
 {
-  Data *tmp_d = dynamic_cast<Data *>(t);
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
   if (!tmp_d) {
     return 0;
   }
@@ -296,9 +296,9 @@ int TypeFactory::isStructure (Type *t)
 INSTMACRO(isStructure)
 
 
-int TypeFactory::isIntType (Type *t)
+int TypeFactory::isIntType (const Type *t)
 {
-  Int *tmp_i = dynamic_cast<Int *>(t);
+  const Int *tmp_i = dynamic_cast<const Int *>(t);
   if (tmp_i) {
     return 1;
   }
@@ -306,7 +306,7 @@ int TypeFactory::isIntType (Type *t)
 }
 INSTMACRO(isIntType)
 
-int TypeFactory::isPIntType (Type *t)
+int TypeFactory::isPIntType (const Type *t)
 {
   if (t == TypeFactory::pint->BaseType ()) {
     return 1;
@@ -315,7 +315,7 @@ int TypeFactory::isPIntType (Type *t)
 }
 INSTMACRO(isPIntType)
 
-int TypeFactory::isPIntsType (Type *t)
+int TypeFactory::isPIntsType (const Type *t)
 {
   if (t == TypeFactory::pints->BaseType ()) {
     return 1;
@@ -324,9 +324,9 @@ int TypeFactory::isPIntsType (Type *t)
 }
 INSTMACRO(isPIntsType)
 
-int TypeFactory::isBoolType (Type *t)
+int TypeFactory::isBoolType (const Type *t)
 {
-  Bool *tmp_b = dynamic_cast<Bool *>(t);
+  const Bool *tmp_b = dynamic_cast<const Bool *>(t);
   if (tmp_b) {
     return 1;
   }
@@ -334,7 +334,7 @@ int TypeFactory::isBoolType (Type *t)
 }
 INSTMACRO(isBoolType)
 
-int TypeFactory::isPBoolType (Type *t)
+int TypeFactory::isPBoolType (const Type *t)
 {
   if (t == TypeFactory::pbool->BaseType ()) {
     return 1;
@@ -343,7 +343,7 @@ int TypeFactory::isPBoolType (Type *t)
 }
 INSTMACRO(isPBoolType)
 
-int TypeFactory::isPRealType (Type *t)
+int TypeFactory::isPRealType (const Type *t)
 {
   if (t == TypeFactory::preal->BaseType ()) {
     return 1;
@@ -352,13 +352,13 @@ int TypeFactory::isPRealType (Type *t)
 }
 INSTMACRO(isPRealType)
 
-int TypeFactory::isChanType (Type *t)
+int TypeFactory::isChanType (const Type *t)
 {
-  Chan *tmp_c = dynamic_cast<Chan *>(t);
+  const Chan *tmp_c = dynamic_cast<const Chan *>(t);
   if (tmp_c) {
     return 1;
   }
-  Channel *tmp_uc = dynamic_cast<Channel *>(t);
+  const Channel *tmp_uc = dynamic_cast<const Channel *>(t);
   if (tmp_uc) {
     return 1;
   }
@@ -366,9 +366,9 @@ int TypeFactory::isChanType (Type *t)
 }
 INSTMACRO(isChanType)
 
-int TypeFactory::isExactChanType (Type *t)
+int TypeFactory::isExactChanType (const Type *t)
 {
-  Chan *tmp_c = dynamic_cast<Chan *>(t);
+  const Chan *tmp_c = dynamic_cast<const Chan *>(t);
   if (tmp_c) {
     return 1;
   }
@@ -377,9 +377,9 @@ int TypeFactory::isExactChanType (Type *t)
 INSTMACRO(isExactChanType)
 
 
-int TypeFactory::isValidChannelDataType (Type *t)
+int TypeFactory::isValidChannelDataType (const Type *t)
 {
-  Data *x = dynamic_cast<Data *>(t);
+  const Data *x = dynamic_cast<const Data *>(t);
   if (!x) {
     /* is an int/enum/bool */
     return 1;
@@ -408,9 +408,9 @@ int TypeFactory::isValidChannelDataType (Type *t)
 INSTMACRO(isValidChannelDataType);
 
 
-int TypeFactory::isProcessType (Type *t)
+int TypeFactory::isProcessType (const Type *t)
 {
-  Process *tmp_p = dynamic_cast<Process *>(t);
+  const Process *tmp_p = dynamic_cast<const Process *>(t);
   if (tmp_p) {
     return 1;
   }
@@ -418,9 +418,9 @@ int TypeFactory::isProcessType (Type *t)
 }
 INSTMACRO(isProcessType)
 
-int TypeFactory::isFuncType (Type *t)
+int TypeFactory::isFuncType (const Type *t)
 {
-  Function *tmp_f = dynamic_cast<Function *>(t);
+  const Function *tmp_f = dynamic_cast<const Function *>(t);
   if (tmp_f) {
     return 1;
   }
@@ -428,9 +428,9 @@ int TypeFactory::isFuncType (Type *t)
 }
 INSTMACRO(isFuncType)
 
-int TypeFactory::isInterfaceType (Type *t)
+int TypeFactory::isInterfaceType (const Type *t)
 {
-  Interface *tmp_i = dynamic_cast<Interface *>(t);
+  const Interface *tmp_i = dynamic_cast<const Interface *>(t);
   if (tmp_i) {
     return 1;
   }
@@ -439,9 +439,9 @@ int TypeFactory::isInterfaceType (Type *t)
 INSTMACRO(isInterfaceType)
 
 
-int TypeFactory::isPTypeType (Type *t)
+int TypeFactory::isPTypeType (const Type *t)
 {
-  PType *tmp_t = dynamic_cast<PType *>(t);
+  const PType *tmp_t = dynamic_cast<const PType *>(t);
   if (tmp_t) {
     return 1;
   }
@@ -452,7 +452,7 @@ int TypeFactory::isPTypeType (Type *t)
 INSTMACRO(isPTypeType)
 
 
-int TypeFactory::isParamType (Type *t)
+int TypeFactory::isParamType (const Type *t)
 {
   if (isPTypeType (t) ||
       isPIntType (t) ||
@@ -882,11 +882,11 @@ static int _ceil_log2 (int w)
   return i + addone;
 }
 
-int TypeFactory::bitWidth (Type *t)
+int TypeFactory::bitWidth (const Type *t)
 {
   if (!t) return -1;
   {
-    Chan *tmp = dynamic_cast <Chan *>(t);
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
     if (tmp) {
       /* ok */
       InstType *x = tmp->datatype();
@@ -895,14 +895,14 @@ int TypeFactory::bitWidth (Type *t)
     }
   }
   {
-    Channel *tmp = dynamic_cast <Channel *> (t);
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
     if (tmp) {
       if (!tmp->isExpanded()) return -1;
       return TypeFactory::bitWidth (tmp->getParent());
     }
   }
   { 
-    Data *tmp = dynamic_cast<Data *>(t);
+    const Data *tmp = dynamic_cast<const Data *>(t);
     if (tmp) {
       if (!tmp->isExpanded()) return -1;
       if (tmp->getParent ()) {
@@ -915,7 +915,7 @@ int TypeFactory::bitWidth (Type *t)
     }
   }
   {
-    Int *tmp = dynamic_cast<Int *>(t);
+    const Int *tmp = dynamic_cast<const Int *>(t);
     if (tmp) {
       if (tmp->kind == 2) {
 	return _ceil_log2 (tmp->w);
@@ -926,7 +926,7 @@ int TypeFactory::bitWidth (Type *t)
     }
   }
   {
-    Bool *tmp = dynamic_cast<Bool *>(t);
+    const Bool *tmp = dynamic_cast<const Bool *>(t);
     if (tmp) {
       return 1;
     }
@@ -935,11 +935,11 @@ int TypeFactory::bitWidth (Type *t)
 }
 XINSTMACRO(bitWidth)
 
-int TypeFactory::boolType (Type *t)
+int TypeFactory::boolType (const Type *t)
 {
   if (!t) return -1;
   {
-    Chan *tmp = dynamic_cast <Chan *>(t);
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
     if (tmp) {
       /* ok */
       InstType *x = tmp->datatype();
@@ -948,14 +948,14 @@ int TypeFactory::boolType (Type *t)
     }
   }
   {
-    Channel *tmp = dynamic_cast <Channel *> (t);
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
       return TypeFactory::boolType (tmp->getParent());
     }
   }
   { 
-    Data *tmp = dynamic_cast<Data *>(t);
+    const Data *tmp = dynamic_cast<const Data *>(t);
 
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
@@ -968,13 +968,13 @@ int TypeFactory::boolType (Type *t)
     }
   }
   {
-    Int *tmp = dynamic_cast<Int *>(t);
+    const Int *tmp = dynamic_cast<const Int *>(t);
     if (tmp) {
       return 0;
     }
   }
   {
-    Bool *tmp = dynamic_cast<Bool *>(t);
+    const Bool *tmp = dynamic_cast<const Bool *>(t);
     if (tmp) {
       return 1;
     }
@@ -982,11 +982,11 @@ int TypeFactory::boolType (Type *t)
   return -1;
 }
 
-int TypeFactory::boolType (InstType *t)
+int TypeFactory::boolType (const InstType *t)
 {
   if (!t) return -1;
   {
-    Chan *tmp = dynamic_cast <Chan *>(t->BaseType());
+    const Chan *tmp = dynamic_cast <const Chan *>(t->BaseType());
     if (tmp) {
       /* ok */
       InstType *x = tmp->datatype();
@@ -995,14 +995,14 @@ int TypeFactory::boolType (InstType *t)
     }
   }
   {
-    Channel *tmp = dynamic_cast <Channel *> (t->BaseType());
+    const Channel *tmp = dynamic_cast <const Channel *> (t->BaseType());
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
       return TypeFactory::boolType (tmp->getParent());
     }
   }
   { 
-    Data *tmp = dynamic_cast<Data *>(t->BaseType());
+    const Data *tmp = dynamic_cast<const Data *>(t->BaseType());
 
     if (tmp) {
       //if (!tmp->isExpanded()) return -1;
@@ -1015,13 +1015,13 @@ int TypeFactory::boolType (InstType *t)
     }
   }
   {
-    Int *tmp = dynamic_cast<Int *>(t->BaseType());
+    const Int *tmp = dynamic_cast<const Int *>(t->BaseType());
     if (tmp) {
       return 0;
     }
   }
   {
-    Bool *tmp = dynamic_cast<Bool *>(t->BaseType());
+    const Bool *tmp = dynamic_cast<const Bool *>(t->BaseType());
     if (tmp) {
       return 1;
     }
@@ -1029,11 +1029,11 @@ int TypeFactory::boolType (InstType *t)
   return -1;
 }
 
-int TypeFactory::bitWidthTwo (Type *t)
+int TypeFactory::bitWidthTwo (const Type *t)
 {
   if (!t) return -1;
   {
-    Chan *tmp = dynamic_cast <Chan *>(t);
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
     if (tmp) {
       /* ok */
       InstType *x = tmp->acktype();
@@ -1043,7 +1043,7 @@ int TypeFactory::bitWidthTwo (Type *t)
     }
   }
   {
-    Channel *tmp = dynamic_cast <Channel *> (t);
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
     if (tmp) {
       if (!tmp->isExpanded()) return -1;
       return TypeFactory::bitWidthTwo (tmp->getParent());
@@ -1054,13 +1054,13 @@ int TypeFactory::bitWidthTwo (Type *t)
 XINSTMACRO(bitWidthTwo)
 
 
-int TypeFactory::isBaseBoolType (Type *t)
+int TypeFactory::isBaseBoolType (const Type *t)
 {
-  Bool *tmp_b = dynamic_cast<Bool *>(t);
+  const Bool *tmp_b = dynamic_cast<const Bool *>(t);
   if (tmp_b) {
     return 1;
   }
-  Data *tmp_d = dynamic_cast<Data *>(t);
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
   if (!tmp_d) {
     return 0;
   }
@@ -1074,13 +1074,13 @@ int TypeFactory::isBaseBoolType (Type *t)
 }
 INSTMACRO(isBaseBoolType)
   
-int TypeFactory::isBaseIntType (Type *t)
+int TypeFactory::isBaseIntType (const Type *t)
 {
-  Int *tmp_i = dynamic_cast<Int *>(t);
+  const Int *tmp_i = dynamic_cast<const Int *>(t);
   if (tmp_i) {
     return 1;
   }
-  Data *tmp_d = dynamic_cast<Data *>(t);
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
   if (!tmp_d) {
     return 0;
   }
@@ -1095,26 +1095,26 @@ int TypeFactory::isBaseIntType (Type *t)
 INSTMACRO(isBaseIntType)
   
 
-InstType *TypeFactory::getChanDataType (InstType *t)
+InstType *TypeFactory::getChanDataType (const InstType *t)
 {
   if (!t) return NULL;
   {
-    Chan *tmp = dynamic_cast <Chan *>(t->BaseType());
+    const Chan *tmp = dynamic_cast <const Chan *>(t->BaseType());
     if (tmp) {
       /* ok */
       return tmp->datatype();
     }
   }
   {
-    Channel *tmp = dynamic_cast <Channel *> (t->BaseType());
+    const Channel *tmp = dynamic_cast <const Channel *> (t->BaseType());
     if (tmp) {
       while (!TypeFactory::isExactChanType (tmp->getParent())) {
 	t = tmp->getParent ();
-	tmp = dynamic_cast <Channel *> (t->BaseType());
+	tmp = dynamic_cast <const Channel *> (t->BaseType());
 	Assert (tmp, "What?");
       }
       Assert (tmp->getParent(), "What?");
-      Chan *tmp2 = dynamic_cast <Chan *> (tmp->getParent()->BaseType());
+      const Chan *tmp2 = dynamic_cast <const Chan *> (tmp->getParent()->BaseType());
       Assert (tmp2, "What?");
       return tmp2->datatype();
     }

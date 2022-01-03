@@ -133,7 +133,7 @@ int UserDef::AddMetaParam (InstType *t, const char *id)
 
 
 
-const char *UserDef::getPortName (int pos)
+const char *UserDef::getPortName (int pos) const
 {
   if (pos < 0) {
     pos = -pos;
@@ -146,7 +146,7 @@ const char *UserDef::getPortName (int pos)
   }
 }
 
-InstType *UserDef::getPortType (int pos)
+InstType *UserDef::getPortType (int pos) const
 {
   if (pos < 0) {
     pos = -pos;
@@ -501,7 +501,7 @@ Channel::~Channel()
 /*------------------------------------------------------------------------
  *  Compare two user-defined types
  *------------------------------------------------------------------------*/
-int UserDef::isEqual (UserDef *u)
+int UserDef::isEqual (const UserDef *u) const
 {
   int i;
 
@@ -1358,7 +1358,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
  *
  *------------------------------------------------------------------------
  */
-InstType *UserDef::root ()
+InstType *UserDef::root () const
 {
   if (!parent) {
     return NULL;
@@ -1555,26 +1555,25 @@ act_spec *UserDef::getspec ()
   return lang->getspec();
 }
 
-int UserDef::isEqual (Type *t)
+int UserDef::isEqual (const Type *t) const
 {
-  UserDef *u;
-  u = dynamic_cast<UserDef *>(t);
+  const UserDef *u = dynamic_cast<const UserDef *>(t);
   if (!u) return 0;
   if (u == this) return 1;
   return 0;
 }
 
-int Int::isEqual (Type *t)
+int Int::isEqual (const Type *t) const
 {
-  Int *x = dynamic_cast<Int *>(t);
+  const Int *x = dynamic_cast<const Int *>(t);
   if (!x) return 0;
   if (x->kind == kind && x->w == w) return 1;
   return 0;
 }
   
-int Chan::isEqual (Type *t)
+int Chan::isEqual (const Type *t) const
 {
-  Chan *x = dynamic_cast<Chan *>(t);
+  const Chan *x = dynamic_cast<const Chan *>(t);
   if (!x) return 0;
   if (x == this) return 1;
   if (!p && !x->p) return 1;

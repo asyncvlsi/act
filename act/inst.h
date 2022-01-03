@@ -101,7 +101,7 @@ class InstType {
 
   void sPrint (char *buf, int sz, int nl_mode = 0); /**< snprintf */
 
-  Type *BaseType ()  { return t; } /**< Return root type */
+  Type *BaseType () const { return t; } /**< Return root type */
 
   void setNumParams (int n);  /**< Create template parameter values */
   
@@ -146,8 +146,8 @@ class InstType {
    */
   InstType *Expand (ActNamespace *ns, Scope *s);
 
-  int isExpanded();
-  int israwExpanded() { return expanded; }
+  int isExpanded() const;
+  int israwExpanded() const { return expanded; }
   void mkExpanded() { expanded = 1; }
 
   ActNamespace *getNamespace() { return s->getNamespace(); }

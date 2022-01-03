@@ -43,7 +43,7 @@ class PInt : public Type {
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
 class PInts : public Type {
@@ -51,7 +51,7 @@ class PInts : public Type {
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
 class PBool : public Type { 
@@ -59,7 +59,7 @@ class PBool : public Type {
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
 class PReal : public Type {
@@ -67,7 +67,7 @@ class PReal : public Type {
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
 class PType : public Type {
@@ -78,7 +78,7 @@ public:
   PType() { i = NULL; name = NULL; };
 
   /* wrong */
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 
   InstType *getType () { return i; }
 
@@ -94,14 +94,14 @@ class Bool : public Type {
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
-  int isEqual (Type *t) { return t == this ? 1 : 0; }
+  int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
 class Int : public Type {
   const char *getName();
   Int *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
-  int isEqual (Type *t);
+  int isEqual (const Type *t) const;
   
   unsigned int kind:2;		// 0 = unsigned, 1 = signed, 2 = enum
   int w;
@@ -117,7 +117,7 @@ class Chan : public Type {
   const char *getName ();
   Chan *Expand (ActNamespace *ns, Scope *s, int, inst_param *);
 
-  int isEqual (Type *t);
+  int isEqual (const Type *t) const;
   
   /* type info here */
   const char *name;
@@ -125,8 +125,8 @@ class Chan : public Type {
   InstType *ack;		// second data type for exchange channel
 
 public:
-  InstType *datatype() { return p; }
-  InstType *acktype() { return ack; }
+  InstType *datatype() const { return p; }
+  InstType *acktype() const { return ack; }
   int isBiDirectional() { return ack == NULL ? 0 : 1; }
 
   friend class TypeFactory;
@@ -181,7 +181,7 @@ class UserDef : public Type {
    */
   void MkExported () { exported = 1; }
 
-  int isExpanded() { return expanded; }
+  int isExpanded() const { return expanded; }
   
 
   /**
@@ -231,14 +231,14 @@ class UserDef : public Type {
    * indicate physical port parameters.
    * @return the name of the specified port
    */
-  const char *getPortName (int pos);
-  InstType *getPortType (int pos);
+  const char *getPortName (int pos) const;
+  InstType *getPortType (int pos) const;
   void refinePortType (int pos, InstType *u);
 
-  const char *getName (); /**< the name of the user-defined type */
+  const char *getName ();    /**< the name of the user-defined type */
   void printActName (FILE *fp);	/**< print the ACT name for the type */
 
-  int isEqual (Type *t);
+  int isEqual (const Type *t) const;
 
   /**
    * Set the name of the type
@@ -254,7 +254,7 @@ class UserDef : public Type {
   /**
    * Compare user-defined types to see if the port parameters match
    */
-  int isEqual (UserDef *u);
+  int isEqual (const UserDef *u) const;
 
   /**
    * Setup parent relationship
@@ -265,7 +265,7 @@ class UserDef : public Type {
    *
    */
   void SetParent (InstType *t);
-  InstType *getParent () { return parent; }
+  InstType *getParent () const { return parent; }
 
   /**
    * Specify if this type has been fully defined yet or not. It may
@@ -285,12 +285,12 @@ class UserDef : public Type {
   /**
    * Returns the number of template parameters
    */
-  int getNumParams () { return nt; }
+  int getNumParams () const { return nt; }
 
   /**
    * Returns the number of ports
    */
-  int getNumPorts () { return nports; }
+  int getNumPorts () const { return nports; }
 
   /**
    * Looks up an identifier within the scope of the body of the type
@@ -329,7 +329,7 @@ class UserDef : public Type {
   /* append in the case of multiple bodies! */
 
   ActNamespace *getns() { return _ns; }
-  InstType *root();
+  InstType *root() const;
 
   act_prs *getprs ();
   act_spec *getspec ();
@@ -618,9 +618,9 @@ public:
   int addPort (InstType *it, const char *name);
 
   const char *getName () { return _nm; }
-  int getNumPorts() { return nports; }
-  const char *getPortName (int i) { return port_n[i]; }
-  InstType *getPortType (int i) { return port_t[i]; }
+  int getNumPorts() const { return nports; }
+  const char *getPortName (int i) const { return port_n[i]; }
+  InstType *getPortType (int i) const { return port_t[i]; }
 
   void setBody (struct act_chp_lang *);
 
@@ -800,29 +800,29 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid data type, 0 otherwise
    */
-  static int isDataType (Type *t);
-  static int isDataType (InstType *t);
+  static int isDataType (const Type *t);
+  static int isDataType (const InstType *t);
 
-  static int isIntType (Type *t);
-  static int isIntType (InstType *t);
+  static int isIntType (const Type *t);
+  static int isIntType (const InstType *t);
 
-  static int isPIntType (Type *t);
-  static int isPIntType (InstType *t);
+  static int isPIntType (const Type *t);
+  static int isPIntType (const InstType *t);
 
-  static int isPIntsType (Type *t);
-  static int isPIntsType (InstType *t);
+  static int isPIntsType (const Type *t);
+  static int isPIntsType (const InstType *t);
 
-  static int isBoolType (Type *t);
-  static int isBoolType (InstType *it);
+  static int isBoolType (const Type *t);
+  static int isBoolType (const InstType *it);
   
-  static int isPBoolType (Type *t);
-  static int isPBoolType (InstType *it);
+  static int isPBoolType (const Type *t);
+  static int isPBoolType (const InstType *it);
 
-  static int isPRealType (Type *t);
-  static int isPRealType (InstType *it);
+  static int isPRealType (const Type *t);
+  static int isPRealType (const InstType *it);
 
-  static int isUserType (Type *t);
-  static int isUserType (InstType *it);
+  static int isUserType (const Type *t);
+  static int isUserType (const InstType *it);
 
   /**
    * Determines if the specified type is a channel type or not
@@ -830,18 +830,18 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid channel type, 0 otherwise
    */
-  static int isChanType (Type *t);
-  static int isChanType (InstType *it);
+  static int isChanType (const Type *t);
+  static int isChanType (const InstType *it);
 
   /* 1 only on ``chan(...)'', not on userdefined channels */
-  static int isExactChanType (Type *t);
-  static int isExactChanType (InstType *it);
+  static int isExactChanType (const Type *t);
+  static int isExactChanType (const InstType *it);
 
   /* 1 only for  valid data types within a chan(...) 
      Assumes that "t" is in fact a data type as a pre-condition.
    */
-  static int isValidChannelDataType (Type *t);
-  static int isValidChannelDataType (InstType *t);
+  static int isValidChannelDataType (const Type *t);
+  static int isValidChannelDataType (const InstType *t);
 
   /**
    * Determines if the specified type is a process type or not
@@ -849,8 +849,8 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
-  static int isProcessType (Type *t);
-  static int isProcessType (InstType *it);
+  static int isProcessType (const Type *t);
+  static int isProcessType (const InstType *it);
 
   /**
    * Determines if the specified type is a function type or not
@@ -858,8 +858,8 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid function, 0 otherwise
    */
-  static int isFuncType (Type *t);
-  static int isFuncType (InstType *it);
+  static int isFuncType (const Type *t);
+  static int isFuncType (const InstType *it);
 
 
   /**
@@ -868,8 +868,8 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
-  static int isInterfaceType (Type *t);
-  static int isInterfaceType (InstType *it);
+  static int isInterfaceType (const Type *t);
+  static int isInterfaceType (const InstType *it);
   
   /**
    * Determines if the specified type is a ptype or not
@@ -877,8 +877,8 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
-  static int isPTypeType (Type *t);
-  static int isPTypeType (InstType *it);
+  static int isPTypeType (const Type *t);
+  static int isPTypeType (const InstType *it);
 
 
   /**
@@ -887,41 +887,41 @@ class TypeFactory {
    * @param t is the type to be inspected
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
-  static int isParamType (Type *t);
-  static int isParamType (InstType *it);
+  static int isParamType (const Type *t);
+  static int isParamType (const InstType *it);
 
   /**
    * Determines the bit-width of the type
    * The type must be either a channel or a data type. If it isn't,
    * the function returns -1
    */
-  static int bitWidth (Type *t);
-  static int bitWidth (InstType *t);
+  static int bitWidth (const Type *t);
+  static int bitWidth (const InstType *t);
 
   /**
    * For bidirectional channels only. Returns 0 for normal channels,
    * -1 for non-channels
    */
-  static int bitWidthTwo (Type *t);
-  static int bitWidthTwo (InstType *t);
+  static int bitWidthTwo (const Type *t);
+  static int bitWidthTwo (const InstType *t);
   
-  static int boolType (Type *t); // 1 if a boolean within a channel or
-				 // a boolean type, -1 if NULL parent
-  static int boolType (InstType *t);
+  static int boolType (const Type *t); // 1 if a boolean within a channel or
+				// a boolean type, -1 if NULL parent
+  static int boolType (const InstType *t);
 
-  static int isStructure (Type *t);
-  static int isStructure (InstType *it);
+  static int isStructure (const Type *t);
+  static int isStructure (const InstType *it);
   
   /*-- a user type that is rooted in a bool or a bool --*/
-  static int isBaseBoolType (Type *t);
-  static int isBaseBoolType (InstType *t);
+  static int isBaseBoolType (const Type *t);
+  static int isBaseBoolType (const InstType *t);
 
   /*-- a user type that is rooted in an int or an int --*/
-  static int isBaseIntType (Type *t);
-  static int isBaseIntType (InstType *t);
+  static int isBaseIntType (const Type *t);
+  static int isBaseIntType (const InstType *t);
 
   /*-- extract data type field from a channel --*/
-  static InstType *getChanDataType (InstType *t);
+  static InstType *getChanDataType (const InstType *t);
   
 };
 

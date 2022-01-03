@@ -118,7 +118,7 @@ int InstType::isParamAType (int k)
   Return 1 if the type is expanded.
   simple param types (except ptypes) are always expanded
 */
-int InstType::isExpanded()
+int InstType::isExpanded() const
 {
   if (expanded) {
     return 1;

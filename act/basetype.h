@@ -50,7 +50,7 @@ class Type {
   /**
    * @return the result of comparing two types
    */
-  virtual int isEqual (Type *t) = 0;
+  virtual int isEqual (const Type *t) const = 0;
 
   /**
    * Initialize static members. This also calls the static functions
