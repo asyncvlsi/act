@@ -471,8 +471,9 @@ class ActOpen {
    *
    * @param cur is the current default namespace
    * @param s is the name of the namespace to be located
-   * @return namespace if found, NULL otherwise
+   * @return a list of namespaces, if found, NULL otherwise
    */
+  list_t *findAll (ActNamespace *cur, const char *s);
   ActNamespace *find (ActNamespace *cur, const char *s);
 
   /**

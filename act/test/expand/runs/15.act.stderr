@@ -1,0 +1,5 @@
+In expanding test2 (15.act:12)
+In expanding ::<Global>
+ Orig: chan(int<1>)
+  New: e1of2<2>
+FATAL: Illegal override; the new type doesn't implement the original.

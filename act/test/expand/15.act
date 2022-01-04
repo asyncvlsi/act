@@ -1,0 +1,23 @@
+template<pint M>
+defchan e1of2 <: chan(int<M>) (bool t, f, e) { }
+
+defproc test1 (chan(int<1>) A, B)
+{
+  chp {
+    A!0
+  }
+}
+
+
+defproc test2 <: test1()
++{
+   e1of2<2> A;
+ }
+{
+
+   prs {
+
+   }
+}
+
+test2 x;

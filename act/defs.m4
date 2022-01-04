@@ -405,14 +405,15 @@ override_one_spec: user_type bare_id_list ";"
       fprintf ($f, "\n");
       exit (1);
     }
-    
+
+    ActBody *override_asserts = NULL;
     for (li = list_first ($2); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
       if (!it) {
 	$E("Override specified for ``%s'': not found in type", s);
       }
-      /* XXX: now check if $1 can be a valid override for it */
+
       InstType *chk = $1;
       $A(chk->arrayInfo() == NULL);
       if (chk->isEqual (it, 1)) {
@@ -453,8 +454,14 @@ override_one_spec: user_type bare_id_list ";"
 	exit (1);
       }
       /* insert expansion-time assertion that $1 <: it */
+      if (!override_asserts) {
+	override_asserts = new ActBody_OverrideAssertion (it, $1);
+      }
+      else {
+	override_asserts->Append (new ActBody_OverrideAssertion (it, $1));
+      }
     }
-    /* XXX: here: now actually perform the override! */
+    /* Now actually perform the override! */
 
     /* 1. Walk through the body, replace the instances.
        2. Replace in scope table, port table if necessary.
@@ -475,7 +482,22 @@ override_one_spec: user_type bare_id_list ";"
     /* walk through the body, editing instances */
     if (b) {
       b->updateInstType ($2, $1);
+      if (override_asserts) {
+	b->Tail()->Append (override_asserts);
+      }
     }
+    else {
+      if ($0->u_p) {
+	$0->u_p->AppendBody (override_asserts);
+      }
+      else if ($0->u_d) {
+	$0->u_d->AppendBody (override_asserts);
+      }
+      else if ($0->u_c) {
+	$0->u_c->AppendBody (override_asserts);
+      }
+    }
+
     /* walk through the ports, editing instances */
     UserDef *px;
     if ($0->u_p) {

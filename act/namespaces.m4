@@ -285,8 +285,9 @@ namespace_management[ActNamespace *]: [ "export" ] "namespace" ID
 */
 qualified_ns[ActNamespace *]: [ "::" ] { ID "::" }*
 {{X:
-    listitem_t *li;
+    listitem_t *li, *ni;
     ActNamespace *ns, *tmp;
+    list_t *tmpns;
 
     if (OPT_EXISTS ($1)) {
       ns = $0->global;
@@ -294,23 +295,48 @@ qualified_ns[ActNamespace *]: [ "::" ] { ID "::" }*
     else {
       ns = $0->curns;
     }
-    OPT_FREE ($1);
     li = list_first ($2);
     $A(li);
+
     tmp = $0->os->find (ns, (char *)list_value (li));
     if (!tmp) {
       $E("Could not find namespace ``%s'' in ``%s''", 
 	 (char *) list_value (li), ns->Name());
     }
-    ns = tmp;
-    for (li = list_next (li); li; li = list_next (li)) {
-      if (!(tmp = ns->findNS ((char *)list_value (li)))) {
-	$E("Could not find namespace ``%s'' in ``%s''", (char *)list_value (li),
-	   ns->Name());
+    if (OPT_EXISTS ($1)) {
+      tmpns = list_new ();
+      list_append (tmpns, tmp);
+    }
+    else {
+      tmpns = $0->os->findAll (ns, (char *) list_value (li));
+      tmp = (ActNamespace *) list_value (list_first (tmpns));
+    }
+    $A(tmpns);
+    OPT_FREE ($1);
+
+    char *nmerr = NULL;
+    ActNamespace *nserr = NULL;
+    for (ni = list_first (tmpns); ni; ni = list_next (ni)) {
+      ns = (ActNamespace *) list_value (ni);
+      li = list_first ($2);
+      for (li = list_next (li); li; li = list_next (li)) {
+	if (!(tmp = ns->findNS ((char *)list_value (li)))) {
+	  nmerr = (char *) list_value (li);
+	  nserr = ns;
+	  break;
+	}
+	ns = tmp;
       }
-      ns = tmp;
+      if (!li) {
+	break;
+      }
+    }
+    if (!ni) {
+      $A(nmerr && nserr);
+      $E("Could not find namespace ``%s'' in ``%s''", nmerr, nserr->Name());
     }
     list_free ($2);
+    list_free (tmpns);
     return ns;
 }}
 ;

@@ -1668,3 +1668,50 @@ ActBody_Select_gc *ActBody_Select_gc::Clone ()
   }
   return ret;
 }
+
+ActBody_OverrideAssertion *ActBody_OverrideAssertion::Clone()
+{
+  ActBody_OverrideAssertion *ret =
+    new ActBody_OverrideAssertion (_orig_type, _new_type);
+  return ret;
+}
+
+
+void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
+{
+  Array *tmpa = _orig_type->arrayInfo();
+  _orig_type->clrArray();
+  InstType *orig = _orig_type->Expand (ns, s);
+  InstType *chk =  _new_type->Expand (ns, s);
+  InstType *ochk = chk;
+
+  if (chk->isEqual (orig)) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " Orig: "); orig->Print (stderr);
+    fprintf (stderr, "\n  New: "); chk->Print (stderr);
+    fprintf (stderr, "\n");
+    warning ("Override not required when the types are the same");
+    return;
+  }
+  while (chk) {
+    if (chk->isEqual (orig)) {
+      break;
+    }
+    UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
+    if (!ux) {
+      chk = NULL;
+    }
+    else {
+      chk = ux->getParent ();
+      Assert (chk->arrayInfo() == NULL, "What?");
+    }
+  }
+  if (!chk) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, " Orig: "); orig->Print (stderr);
+    fprintf (stderr, "\n  New: "); ochk->Print (stderr);
+    fprintf (stderr, "\n");
+    fatal_error ("Illegal override; the new type doesn't implement the original.");
+  }
+  _orig_type->MkArray (tmpa);
+}

@@ -257,6 +257,53 @@ int ActOpen::Open(ActNamespace *ns, const char *newname)
  * Find namespace in the current context, given the context of opens
  *
  */
+list_t *ActOpen::findAll (ActNamespace *cur, const char *s)
+{
+  listitem_t *li;
+  ActNamespace *ns;
+  list_t *ret = NULL;
+
+  /* Search in the current namespace */
+  if (cur) {
+    ns = cur->findNS (s);
+    if (ns) {
+      if (!ret) {
+	ret = list_new ();
+      }
+      list_append (ret, ns);
+    }
+  }
+
+  /* Search in the path */
+  Assert (search_path, "Constructor didn't get called?");
+  for (li = list_first (search_path); li; li = list_next (li)) {
+    ns = (ActNamespace *) list_value (li);
+    Assert (ns, "What?");
+    ns = ns->findNS (s);
+    if (ns) {
+      if (!ret) {
+	ret = list_new ();
+      }
+      list_append (ret, ns);
+    }
+  }
+
+  /* Look in the global namespace */
+  ns = ActNamespace::Global()->findNS (s);
+  if (ns) {
+    if (!ret) {
+      ret = list_new ();
+    }
+    list_append (ret, ns);
+  }
+
+  return ret;
+}
+
+/**
+ * Find namespace in the current context, given the context of opens
+ *
+ */
 ActNamespace *ActOpen::find (ActNamespace *cur, const char *s)
 {
   listitem_t *li;

@@ -300,6 +300,22 @@ private:
   int type;
 };
 
+
+class ActBody_OverrideAssertion : public ActBody {
+public:
+  ActBody_OverrideAssertion (InstType *it, InstType *chk) {
+    _orig_type = it;
+    _new_type = chk;
+  }
+  ~ActBody_OverrideAssertion () { }
+
+  void Expand (ActNamespace *, Scope *);
+  ActBody_OverrideAssertion *Clone();
+private:
+  InstType *_orig_type, *_new_type;
+};
+
+
 class ActBody_Print : public ActBody {
 public:
   ActBody_Print (list_t *_l) {

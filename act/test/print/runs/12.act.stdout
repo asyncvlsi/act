@@ -1,0 +1,19 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> w;
+
+/* connections */
+chp {
+w:={0x0,0x5,0x4};log("%x got:",w)
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

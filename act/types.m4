@@ -503,19 +503,14 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
     }
 
     if (list_length ($2) > 1) {
+      list_t *tmpns;
+      listitem_t *ni;
       /* okay, we have to search through the namespaces */
 
       li = list_first ($2);
       id = (char *)list_value (li);
     
       /* find first component of namespace in search path */
-      /* XXX: if there are multiple matches, we pick the first one. If
-	 namespace foo can be found in multiple ways but only one of
-	 them has bar as a sub-namespace, then:
-	     foo:bar::baz
-	 may fail even though there exists a way to match foo so that
-	 it wouldn't fail.
-      */
       ns = $0->os->find (g, id);
       if (!ns) {
 	$e("Could not find specified type: %s", gs);
@@ -523,17 +518,34 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
 	fprintf ($f, "\n");
 	exit (1);
       }
+      if (OPT_EXISTS ($1)) {
+	tmpns = list_new ();
+	list_append (tmpns, ns);
+      }
+      else {
+	/* -- look for all matches to the first namespace -- */
+	tmpns = $0->os->findAll (g, id);
+      }
+      $A(tmpns);
 
-      /* look for sub-namespaces */
-      li = list_next (li);
-      for (; list_next (li) != NULL; li = list_next (li)) {
-	ns = ns->findNS ((char *)list_value (li));
-	if (!ns) {
-	  break;
+      for (ni = list_first (tmpns); ni; ni = list_next (ni)) {
+	ns = (ActNamespace *) list_value (ni);
+	li = list_first ($2);
+	/* look for sub-namespaces */
+	li = list_next (li);
+	export_perms = 1;
+	for (; list_next (li) != NULL; li = list_next (li)) {
+	  ns = ns->findNS ((char *)list_value (li));
+	  if (!ns) {
+	    break;
+	  }
+	  export_perms = export_perms & (ns->isExported() ? 1 : 0);
+	  if (ns == $0->curns) {
+	    export_perms = 1;
+	  }
 	}
-	export_perms = export_perms & (ns->isExported() ? 1 : 0);
-	if (ns == $0->curns) {
-	  export_perms = 1;
+	if (ns) {
+	  break;
 	}
       }
       if (!ns || !export_perms) {

@@ -1,0 +1,12 @@
+pint X = 100;
+
+defproc test()
+{
+   int w;
+   chp {
+     w := {0, 5, int(X{3..0},4)};
+     log ("%x got:", w)
+   }
+}
+
+test t;
