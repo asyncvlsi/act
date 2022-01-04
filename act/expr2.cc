@@ -1984,12 +1984,13 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     else {
       ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
-      /* XXX: should we simplify this?! */
+
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+	BigInt *l;
 	int _width = ret->u.e.r->u.v;
 
 	if (ret->u.e.l->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
+	  l = (BigInt *)ret->u.e.l->u.v_extra;
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
 	  l->setWidth (_width);
@@ -2002,13 +2003,14 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  if (_width < 64) {
 	    x = x & ((1UL << _width)-1);
 	  }
+
+	  l = new BigInt;
+	  l->setWidth (_width);
+	  l->setVal (0, x);
 	  
 	  ret->type = E_INT;
 	  ret->u.v = x;
-	  ret->u.v_extra = NULL;
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret->u.v_extra = l;
 	}
 	*width = _width;
       }
