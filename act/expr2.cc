@@ -1790,8 +1790,18 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
-	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
-	act_chp_macro_check (s, (ActId *)ret->u.e.l);
+	ActId *xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+	ret->u.e.l = (Expr *) xid;
+	te = xid->EvalCHP (ns, s, 0);
+	if (!expr_is_a_const (te)) {
+	  if (te->type != E_VAR) {
+	    expr_ex_free (te);
+	  }
+	}
+	else {
+	  delete xid;
+	  ret->u.e.l = te;
+	}
       }
       else {
 	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
@@ -1889,16 +1899,24 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
 
 	v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
+
+	BigInt *ltmp;
+	if (ret->u.e.l->u.v_extra) {
+	  ltmp = (BigInt *) ret->u.e.l->u.v_extra;
+	}
+	else {
+	  ltmp = NULL;
+	}
+
 	ret->type = E_INT;
 	ret->u.v = v;
 
-	if (ret->u.e.l->u.v_extra) {
-	  BigInt *l = (BigInt *) ret->u.e.l->u.v_extra;
-	  *l >>= lov;
+	if (ltmp) {
+	  *ltmp >>= lov;
 	  FREE (ret->u.e.l);
-	  l->setWidth (hiv-lov+1);
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ltmp->setWidth (hiv-lov+1);
+	  ret->u.v_extra = ltmp;
+	  ret->u.v = ltmp->getVal (0);
 	}
 	else {
 	  ret->u.v_extra = NULL;

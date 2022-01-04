@@ -1,0 +1,24 @@
+pint  sp_reg  = 0b00010;
+pint  F3_ADD  = 0b000;
+pint  ARI_RI  = 0b00100;
+
+defproc test () 
+{
+
+  int<16> t;
+  int<32> tt;
+
+  chp {
+        t  := 0x715d;
+        tt := { t{12},  t{12}, t{12},
+               t{4..3},t{5},  t{2},
+               t{6}, 0b0000,
+               sp_reg{4..0},
+               F3_ADD{2..0},
+               sp_reg{4..0},
+               ARI_RI{4..0}, 0b11 };
+        log("%x ", t, "%x ", tt)
+      }
+}
+
+test t;
