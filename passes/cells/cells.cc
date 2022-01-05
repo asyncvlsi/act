@@ -2520,19 +2520,6 @@ void ActCellPass::prs_to_cells (Process *p)
     }
   }
 
-  /* walk instances */
-  ActInstiter i(sc);
-  
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-      if (x->isExpanded()) {
-	prs_to_cells (x);
-      }
-    }
-  }
-
   proc_inst_count = 0;
   A_INIT (pendingprs);
 
