@@ -197,6 +197,7 @@ class Scope {
   bitset_t *vpbool_set;
 
   friend class ActInstiter;
+  friend class ActUniqProcInstiter;
 };
 
 

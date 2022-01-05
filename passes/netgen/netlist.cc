@@ -2214,64 +2214,67 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
   }
 
   /* Create netlist for all sub-processes */
-  ActInstiter i(sc);
+  ActUniqProcInstiter i(sc);
 
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      int cnt = 1;
-      netlist_t *tn = (netlist_t *)
-	getMap (dynamic_cast<Process *>(vx->t->BaseType()));
-      Assert (tn, "What?");
+    int cnt = 1;
+    netlist_t *tn = (netlist_t *)
+      getMap (dynamic_cast<Process *>(vx->t->BaseType()));
+    Assert (tn, "What?");
 
-      /* count the # of shared weak drivers so far, and track the
-	 weakness of the weak supply */
+    /* count the # of shared weak drivers so far, and track the
+       weakness of the weak supply */
+
+    if (vx->t->arrayInfo()) {
+      cnt = vx->t->arrayInfo()->size();
+    }
+
+    while (cnt > 0) {
+      cnt--;
 
       if (vx->t->arrayInfo()) {
-	cnt = vx->t->arrayInfo()->size();
+	if (!vx->isPrimary (cnt))
+	  continue;
+      }
+      
+      sub_proc_vdd += tn->weak_supply_vdd;
+      if (tn->weak_supply_vdd > 0) {
+	vdd_len = MAX (vdd_len, tn->vdd_len);
+	if (!weak_vdd) {
+	  weak_vdd = node_alloc (n, NULL);
+	}
+	A_NEW (n->instport_weak, int);
+	A_NEXT (n->instport_weak) = weak_vdd->i;
+	A_INC (n->instport_weak);
+      }
+      sub_proc_gnd += tn->weak_supply_gnd;
+      if (tn->weak_supply_gnd > 0) {
+	gnd_len = MAX (gnd_len, tn->gnd_len);
+	if (!weak_gnd) {
+	  weak_gnd = node_alloc (n, NULL);
+	}
+	A_NEW (n->instport_weak, int);
+	A_NEXT (n->instport_weak) = weak_gnd->i;
+	A_INC (n->instport_weak);
       }
 
-      while (cnt > 0) {
-	cnt--;
-      
-	sub_proc_vdd += tn->weak_supply_vdd;
-	if (tn->weak_supply_vdd > 0) {
-	  vdd_len = MAX (vdd_len, tn->vdd_len);
-	  if (!weak_vdd) {
-	    weak_vdd = node_alloc (n, NULL);
-	  }
-	  A_NEW (n->instport_weak, int);
-	  A_NEXT (n->instport_weak) = weak_vdd->i;
-	  A_INC (n->instport_weak);
-	}
-	sub_proc_gnd += tn->weak_supply_gnd;
-	if (tn->weak_supply_gnd > 0) {
-	  gnd_len = MAX (gnd_len, tn->gnd_len);
-	  if (!weak_gnd) {
-	    weak_gnd = node_alloc (n, NULL);
-	  }
-	  A_NEW (n->instport_weak, int);
-	  A_NEXT (n->instport_weak) = weak_gnd->i;
-	  A_INC (n->instport_weak);
-	}
-
-	if (sub_proc_vdd > weak_share_max) {
-	  // emit a weak driver, and populate the port connections for
-	  // the instances!
-	  _alloc_weak_vdd (n, weak_vdd, min_w_in_lambda, vdd_len);
-	  sub_proc_vdd -= weak_share_max;
-	  vdd_len = tn->vdd_len;
-	  weak_vdd = NULL;
-	}
+      if (sub_proc_vdd > weak_share_max) {
+	// emit a weak driver, and populate the port connections for
+	// the instances!
+	_alloc_weak_vdd (n, weak_vdd, min_w_in_lambda, vdd_len);
+	sub_proc_vdd -= weak_share_max;
+	vdd_len = tn->vdd_len;
+	weak_vdd = NULL;
+      }
 	
-	if (sub_proc_gnd > weak_share_max) {
-	  // emit a weak driver, and populate the port connections for
-	  // the instances!
-	  _alloc_weak_gnd (n, weak_gnd, min_w_in_lambda, gnd_len);
-	  sub_proc_gnd -= weak_share_max;
-	  gnd_len = tn->gnd_len;
-	  weak_gnd = NULL;
-	}
+      if (sub_proc_gnd > weak_share_max) {
+	// emit a weak driver, and populate the port connections for
+	// the instances!
+	_alloc_weak_gnd (n, weak_gnd, min_w_in_lambda, gnd_len);
+	sub_proc_gnd -= weak_share_max;
+	gnd_len = tn->gnd_len;
+	weak_gnd = NULL;
       }
     }
   }

@@ -87,6 +87,20 @@ class ActTypeiter :
   ACTSTDITER(ActTypeiter, Type *);
 };
 
+class ActUniqProcInstiter :
+  public std::iterator<std::input_iterator_tag, ValueIdx *> {
+  
+  hash_bucket_t *b;
+  int i;
+  Scope *s;
+
+ public:
+  ActUniqProcInstiter (Scope *s);
+  ACTSTDITER(ActUniqProcInstiter, ValueIdx *);
+};
+
+
+
 #undef ACTSTDITER
 
 

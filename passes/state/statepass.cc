@@ -482,46 +482,51 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	  si->localbools, si->nportbools);
 #endif
 
-  ActInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
+  ActUniqProcInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
 
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-      if (x->isExpanded()) {
-	stateinfo_t *ti = (stateinfo_t *) getMap (x);
-	state_counts n_sub;
+    Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+    if (x->isExpanded()) {
+      stateinfo_t *ti = (stateinfo_t *) getMap (x);
+      state_counts n_sub;
 
-	if (ti) {
-	  n_sub = ti->all;
+      if (ti) {
+	n_sub = ti->all;
 
-	  if (_inst_offsets) {
-	    if (!si->inst) {
-	      si->inst = phash_new (4);
-	    }
-	    phash_bucket_t *b;
-	    b = phash_add (si->inst, vx);
-	    state_counts *sc = new state_counts;
-	    *sc = si->all;
-	    b->v = sc;
+	if (_inst_offsets) {
+	  if (!si->inst) {
+	    si->inst = phash_new (4);
+	  }
+	  phash_bucket_t *b;
+	  b = phash_add (si->inst, vx);
+	  state_counts *sc = new state_counts;
+	  *sc = si->all;
+	  b->v = sc;
+	}
+      }
+      else {
+	/* black box */
+	act_boolean_netlist_t *bn = bp->getBNL (x);
+	Assert (bn, "What?");
+	n_sub = zero;
+      }
+      int sz;
+      /* map valueidx pointer to the current bool offset */
+      if (vx->t->arrayInfo()) {
+	int count = 0;
+	sz = vx->t->arrayInfo()->size();
+	for (int k=0; k < sz; k++) {
+	  if (vx->isPrimary (k)) {
+	    count++;
 	  }
 	}
-	else {
-	  /* black box */
-	  act_boolean_netlist_t *bn = bp->getBNL (x);
-	  Assert (bn, "What?");
-	  n_sub = zero;
-	}
-	int sz;
-	/* map valueidx pointer to the current bool offset */
-	if (vx->t->arrayInfo()) {
-	  sz = vx->t->arrayInfo()->size();
-	}
-	else {
-	  sz = 1;
-	}
-	si->all.addVar (n_sub, sz);
+	sz = count;
       }
+      else {
+	sz = 1;
+      }
+      si->all.addVar (n_sub, sz);
     }
   }
 
@@ -539,171 +544,183 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   int chpinstcnt = 0;
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
-      if (x->isExpanded()) {
-	int ports_exist;
-	act_boolean_netlist_t *sub;
-	stateinfo_t *subsi;
+    Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+    if (x->isExpanded()) {
+      int ports_exist;
+      act_boolean_netlist_t *sub;
+      stateinfo_t *subsi;
 
-	sub = bp->getBNL (x);
-	subsi = getStateInfo (x);
-	ports_exist = 0;
-	for (int j=0; j < A_LEN (sub->ports); j++) {
-	  if (sub->ports[j].omit == 0) {
-	    ports_exist = 1;
-	    break;
+      sub = bp->getBNL (x);
+      subsi = getStateInfo (x);
+      ports_exist = 0;
+      for (int j=0; j < A_LEN (sub->ports); j++) {
+	if (sub->ports[j].omit == 0) {
+	  ports_exist = 1;
+	  break;
+	}
+      }
+
+      if (ports_exist) {
+	int sz;
+	if (vx->t->arrayInfo()) {
+	  int count = 0;
+	  sz = vx->t->arrayInfo()->size();
+	  for (int k=0; k < sz; k++) {
+	    if (vx->isPrimary (k)) {
+	      count++;
+	    }
+	  }
+	  sz = count;
+	}
+	else {
+	  sz = 1;
+	}
+	  
+	while (sz > 0) {
+	  sz--;
+	  for (int j=0; j < A_LEN (sub->ports); j++) {
+	    act_connection *c;
+	    phash_bucket_t *bi;
+	    int ocount;
+	    if (sub->ports[j].omit) continue;
+
+	    c = b->instports[instcnt];
+	    bi = phash_lookup (si->map, c);
+
+	    if (c->isglobal()) {
+	      /* ignore globals here */
+	      continue;
+	    }
+	      
+	    if (bi) {
+	      ocount = bi->i + si->ports.numBools();
+	    }
+	    else {
+	      ocount = 0;
+	      for (int k=0; k < A_LEN (b->ports); k++) {
+		if (b->ports[k].omit) continue;
+		if (c == b->ports[k].c) {
+		  break;
+		}
+		ocount++;
+	      }
+	      Assert (ocount < si->ports.numBools(), "What?");
+	    }
+	      
+	    if (!sub->ports[j].input) {
+	      if (bitset_tst (tmpbits, ocount)) {
+		/* found multi driver! */
+		bitset_set (si->multi, ocount);
+		if (subsi) {
+		  /* could be NULL, if it is a black box */
+		  subsi->ismulti = 1;
+		}
+#if 0
+		printf (" *multi-driver: ");
+		ActId *id = c->toid();
+		id->Print (stdout);
+		delete id;
+		printf ("\n");
+#endif		  
+	      }
+	      else {
+		bitset_set (tmpbits, ocount);
+	      }
+	    }
+	    else {
+	      bitset_set (inpbits, ocount);
+	    }
+	    instcnt++;
 	  }
 	}
+      }
 
-	if (ports_exist) {
-	  int sz;
-	  if (vx->t->arrayInfo()) {
-	    sz = vx->t->arrayInfo()->size();
+      ports_exist = 0;
+      for (int j=0; j < A_LEN (sub->chpports); j++) {
+	if (sub->chpports[j].omit == 0) {
+	  ports_exist = 1;
+	  break;
+	}
+      }
+
+      if (ports_exist) {
+	int sz;
+	if (vx->t->arrayInfo()) {
+	  int count = 0;
+	  sz = vx->t->arrayInfo()->size();
+	  for (int k=0; k < sz; k++) {
+	    if (vx->isPrimary (k)) {
+	      count++;
+	    }
 	  }
-	  else {
-	    sz = 1;
-	  }
+	  sz = count;
+	}
+	else {
+	  sz = 1;
+	}
 	  
-	  while (sz > 0) {
-	    sz--;
-	    for (int j=0; j < A_LEN (sub->ports); j++) {
-	      act_connection *c;
-	      phash_bucket_t *bi;
-	      int ocount;
-	      if (sub->ports[j].omit) continue;
+	while (sz > 0) {
+	  sz--;
+	  for (int j=0; j < A_LEN (sub->chpports); j++) {
+	    act_connection *c;
+	    phash_bucket_t *bi;
+	    int ocount;
+	    if (sub->chpports[j].omit) continue;
 
-	      c = b->instports[instcnt];
-	      bi = phash_lookup (si->map, c);
+	    c = b->instchpports[chpinstcnt];
 
-	      if (c->isglobal()) {
-		/* ignore globals here */
+	    /* -- ignore globals -- */
+	    if (c->isglobal()) continue;
+
+	    phash_bucket_t *xb = phash_lookup (b->cH, c);
+	    if (xb) {
+	      act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
+	      if (xv->used) {
+		/* handled in earlier pass */
 		continue;
 	      }
-	      
-	      if (bi) {
-		ocount = bi->i + si->ports.numBools();
-	      }
-	      else {
-		ocount = 0;
-		for (int k=0; k < A_LEN (b->ports); k++) {
-		  if (b->ports[k].omit) continue;
-		  if (c == b->ports[k].c) {
-		    break;
-		  }
-		  ocount++;
-		}
-		Assert (ocount < si->ports.numBools(), "What?");
-	      }
-	      
-	      if (!sub->ports[j].input) {
-		if (bitset_tst (tmpbits, ocount)) {
-		  /* found multi driver! */
-		  bitset_set (si->multi, ocount);
-		  if (subsi) {
-		    /* could be NULL, if it is a black box */
-		    subsi->ismulti = 1;
-		  }
-#if 0
-		  printf (" *multi-driver: ");
-		  ActId *id = c->toid();
-		  id->Print (stdout);
-		  delete id;
-		  printf ("\n");
-#endif		  
-		}
-		else {
-		  bitset_set (tmpbits, ocount);
-		}
-	      }
-	      else {
-		bitset_set (inpbits, ocount);
-	      }
-	      instcnt++;
 	    }
-	  }
-	}
-
-	ports_exist = 0;
-	for (int j=0; j < A_LEN (sub->chpports); j++) {
-	  if (sub->chpports[j].omit == 0) {
-	    ports_exist = 1;
-	    break;
-	  }
-	}
-
-	if (ports_exist) {
-	  int sz;
-	  if (vx->t->arrayInfo()) {
-	    sz = vx->t->arrayInfo()->size();
-	  }
-	  else {
-	    sz = 1;
-	  }
-	  
-	  while (sz > 0) {
-	    sz--;
-	    for (int j=0; j < A_LEN (sub->chpports); j++) {
-	      act_connection *c;
-	      phash_bucket_t *bi;
-	      int ocount;
-	      if (sub->chpports[j].omit) continue;
-
-	      c = b->instchpports[chpinstcnt];
-
-	      /* -- ignore globals -- */
-	      if (c->isglobal()) continue;
-
-	      phash_bucket_t *xb = phash_lookup (b->cH, c);
-	      if (xb) {
-		act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
-		if (xv->used) {
-		/* handled in earlier pass */
-		  continue;
-		}
-	      }
 		
-	      bi = phash_lookup (/*si->map*/ _cmap, c);
-	      if (bi) {
-		ocount = bi->i + nportchptot;
-	      }
-	      else {
-		ocount = 0;
-		for (int k=0; k < A_LEN (b->chpports); k++) {
-		  if (b->chpports[k].omit) continue;
-		  if (c == b->chpports[k].c) {
-		    break;
-		  }
-		  ocount++;
-		}
-		Assert (ocount < nportchptot, "What?");
-	      }
-	      
-	      if (!sub->chpports[j].input) {
-		if (bitset_tst (tmpchp, ocount)) {
-		  /* found multi driver! */
-		  bitset_set (chpmulti, ocount);
-		  if (subsi) {
-		    /* could be NULL, if it is a black box */
-		    subsi->chp_ismulti = 1;
-		  }
-#if 0
-		  printf (" *multi-driver: ");
-		  ActId *id = c->toid();
-		  id->Print (stdout);
-		  delete id;
-		  printf ("\n");
-#endif		  
-		}
-		else {
-		  bitset_set (tmpchp, ocount);
-		}
-	      }
-	      else {
-		bitset_set (inpchp, ocount);
-	      }
-	      chpinstcnt++;
+	    bi = phash_lookup (/*si->map*/ _cmap, c);
+	    if (bi) {
+	      ocount = bi->i + nportchptot;
 	    }
+	    else {
+	      ocount = 0;
+	      for (int k=0; k < A_LEN (b->chpports); k++) {
+		if (b->chpports[k].omit) continue;
+		if (c == b->chpports[k].c) {
+		  break;
+		}
+		ocount++;
+	      }
+	      Assert (ocount < nportchptot, "What?");
+	    }
+	      
+	    if (!sub->chpports[j].input) {
+	      if (bitset_tst (tmpchp, ocount)) {
+		/* found multi driver! */
+		bitset_set (chpmulti, ocount);
+		if (subsi) {
+		  /* could be NULL, if it is a black box */
+		  subsi->chp_ismulti = 1;
+		}
+#if 0
+		printf (" *multi-driver: ");
+		ActId *id = c->toid();
+		id->Print (stdout);
+		delete id;
+		printf ("\n");
+#endif		  
+	      }
+	      else {
+		bitset_set (tmpchp, ocount);
+	      }
+	    }
+	    else {
+	      bitset_set (inpchp, ocount);
+	    }
+	    chpinstcnt++;
 	  }
 	}
       }

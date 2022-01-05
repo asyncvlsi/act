@@ -23,6 +23,7 @@
  */
 #include <act/iter.h>
 #include <act/value.h>
+#include <act/types.h>
 
 ActNamespaceiter::ActNamespaceiter (ActNamespace *ns)
 {
@@ -338,3 +339,99 @@ ActTypeiter& ActTypeiter::operator++()
   return *this;
 }
 
+
+/*------------------------------------------------------------------------*/
+
+ActUniqProcInstiter::ActUniqProcInstiter (Scope *_s)
+{
+  i = 0;
+  b = NULL;
+  s = _s;
+  Assert (s->isExpanded(), "Only for expanded scopes");
+}
+
+
+ActUniqProcInstiter::ActUniqProcInstiter (const ActUniqProcInstiter &c)
+{
+  i = c.i;
+  b = c.b;
+  s = c.s;
+}
+  
+ActUniqProcInstiter ActUniqProcInstiter::operator++(int)
+{
+  ActUniqProcInstiter tmp(*this);
+  operator++();
+  return tmp;
+}
+
+bool ActUniqProcInstiter::operator==(const ActUniqProcInstiter& rhs) const
+{
+ return (rhs.s == s) && (rhs.i == i) && (rhs.b == b);
+}
+
+
+bool ActUniqProcInstiter::operator!=(const ActUniqProcInstiter& rhs) const
+{
+ return !operator==(rhs);
+}
+
+ValueIdx *ActUniqProcInstiter::operator*()
+{
+ if (b) {
+   return (ValueIdx *)b->v;
+ }
+ else {
+   return NULL;
+ }
+}
+
+ActUniqProcInstiter ActUniqProcInstiter::begin()
+{
+  ActUniqProcInstiter iter(*this);
+  iter.i = 0;
+  iter.b = NULL;
+  iter++;
+  return iter;
+}
+
+ActUniqProcInstiter ActUniqProcInstiter::end()
+{
+  ActUniqProcInstiter iter(*this);
+  iter.b = NULL;
+  iter.i = s->H->size;
+  return iter;
+}
+
+ActUniqProcInstiter& ActUniqProcInstiter::operator++()
+{
+  ValueIdx *vx;
+  int found = 0;
+  /* initial: i=0, b is NULL */
+  do {
+    if (b && b->next) {
+      b = b->next;
+    }
+    else {
+      if (b) {
+	i++;
+      }
+      b = NULL;
+      while (i < s->H->size && !s->H->head[i]) {
+	i++;
+      }
+      if (i != s->H->size) {
+	b = s->H->head[i];
+      }
+    }
+    if (b) {
+      vx = (ValueIdx *) b->v;
+      if (TypeFactory::isProcessType (vx->t)) {
+	if (vx->isPrimary()) {
+	  found = 1;
+	}
+      }
+    }
+  } while (!found && b && i != s->H->size);
+  return *this;
+}

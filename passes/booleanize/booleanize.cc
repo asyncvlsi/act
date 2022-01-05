@@ -1632,22 +1632,20 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     fatal_error ("Cannot proceed. Dynamic arrays used in unsupported ways.");
   }
 
-  ActInstiter i(sc);
+  ActUniqProcInstiter i(sc);
 
   /*-- mark ports to instances as used --*/
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
-    if (TypeFactory::isProcessType (vx->t)) {
-      Process *sub = dynamic_cast<Process *>(vx->t->BaseType());
-      Assert (sub, "What?");
-      if (p) {
-	update_used_flags (n, vx, p);
-      }
-      act_boolean_netlist_t *bnl = (act_boolean_netlist_t *) getMap (sub);
-      Assert (bnl, "What?");
-      if (!bnl->isempty) {
-	subinst = 1;
-      }
+    Process *sub = dynamic_cast<Process *>(vx->t->BaseType());
+    Assert (sub, "What?");
+    if (p) {
+      update_used_flags (n, vx, p);
+    }
+    act_boolean_netlist_t *bnl = (act_boolean_netlist_t *) getMap (sub);
+    Assert (bnl, "What?");
+    if (!bnl->isempty) {
+      subinst = 1;
     }
   }
 
@@ -2341,21 +2339,22 @@ void ActBooleanizePass::update_used_flags (act_boolean_netlist_t *n,
 
   if (!as || !as->isend()) {
     do {
-      Array *t;
-      if (as) {
-	t = as->toArray();
-      }
-      else {
-	t = NULL;
-      }
 
-      id->setArray (t);
-      count = 0;
-      count2 = 0;
-      rec_update_used_flags (n, subinst, id, sc,
-			     dynamic_cast<UserDef *>(vx->t->BaseType()),
-			     &count, &count2);
-      id->setArray (NULL);
+      Array *t = NULL;
+
+      if (!as || vx->isPrimary (as->index())) {
+	if (as) {
+	  t = as->toArray();
+	}
+
+	id->setArray (t);
+	count = 0;
+	count2 = 0;
+	rec_update_used_flags (n, subinst, id, sc,
+			       dynamic_cast<UserDef *>(vx->t->BaseType()),
+			       &count, &count2);
+	id->setArray (NULL);
+      }
 
       if (t) {
 	delete t;
@@ -2446,7 +2445,7 @@ void ActBooleanizePass::_createNets (Process *p)
   act_boolean_netlist_t *n = (act_boolean_netlist_t *) getMap (p);
   Assert (n, "What?");
 
-  ActInstiter i(p ? p->CurScope() : a->Global()->CurScope());
+  ActUniqProcInstiter i(p ? p->CurScope() : a->Global()->CurScope());
 
   if (n->nH) return;
   n->nH = phash_new (8);
@@ -2458,8 +2457,6 @@ void ActBooleanizePass::_createNets (Process *p)
     Process *instproc;
     Arraystep *as;
     
-    if (!TypeFactory::isProcessType (vx->t)) continue;
-
     instproc = dynamic_cast<Process *>(vx->t->BaseType());
     sub = (act_boolean_netlist_t *) getMap (instproc);
     Assert (sub, "What?");
@@ -2473,44 +2470,48 @@ void ActBooleanizePass::_createNets (Process *p)
     if (!as || !as->isend()) {
       do {
 	Array *tmpa;
-	tmpa = as ? as->toArray() : NULL;
 
-	for (int j=0; j < A_LEN (sub->ports); j++) {
-	  if (sub->ports[j].omit) continue;
+	if (!as || vx->isPrimary (as->index())) {
+	  tmpa = as ? as->toArray() : NULL;
 
-	  int netid = addNet (n, n->instports[iport]);
+	  for (int j=0; j < A_LEN (sub->ports); j++) {
+	    if (sub->ports[j].omit) continue;
 
-	  if (sub->ports[j].netid == -1) {
-	    /* there is nothing to be done here */
-	    addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
+	    int netid = addNet (n, n->instports[iport]);
+
+	    if (sub->ports[j].netid == -1) {
+	      /* there is nothing to be done here */
+	      addPin (n, netid, vx->getName(), tmpa, sub->ports[j].c);
+	    }
+	    else {
+	      importPins (n, netid, vx->getName(), tmpa,
+			  &sub->nets[sub->ports[j].netid]);
+	    }
+	    for (int k=0; k < A_LEN (n->ports); k++) {
+	      if (n->ports[k].c == n->instports[iport]) {
+		n->ports[k].netid = netid;
+		break;
+	      }
+	    }
+	    iport++;
 	  }
-	  else {
-	    importPins (n, netid, vx->getName(), tmpa,
-			&sub->nets[sub->ports[j].netid]);
-	  }
-	  for (int k=0; k < A_LEN (n->ports); k++) {
-	    if (n->ports[k].c == n->instports[iport]) {
-	      n->ports[k].netid = netid;
-	      break;
+
+	  /*-- global nets --*/
+	  for (int j=0; j < A_LEN (sub->nets); j++) {
+	    if (!sub->nets[j].net->isglobal()) continue;
+	    int k;
+	    for (k=0; k < A_LEN (sub->ports); k++) {
+	      if (sub->ports[k].c == sub->nets[j].net) break;
+	    }
+	    if (k == A_LEN (sub->ports)) {
+	      /* global net, not in port list */
+	      int netid = addNet (n, sub->nets[j].net);
+	      importPins (n, netid, vx->getName(), tmpa, &sub->nets[j]);
+	      sub->nets[j].skip = 1;
 	    }
 	  }
-	  iport++;
 	}
-
-	/*-- global nets --*/
-	for (int j=0; j < A_LEN (sub->nets); j++) {
-	  if (!sub->nets[j].net->isglobal()) continue;
-	  int k;
-	  for (k=0; k < A_LEN (sub->ports); k++) {
-	    if (sub->ports[k].c == sub->nets[j].net) break;
-	  }
-	  if (k == A_LEN (sub->ports)) {
-	    /* global net, not in port list */
-	    int netid = addNet (n, sub->nets[j].net);
-	    importPins (n, netid, vx->getName(), tmpa, &sub->nets[j]);
-	    sub->nets[j].skip = 1;
-	  }
-	}
+	
 	if (as) {
 	  as->step();
 	}
