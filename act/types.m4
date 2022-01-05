@@ -548,6 +548,7 @@ qualified_type[UserDef *]: [ "::" ] { ID "::" }*
 	  break;
 	}
       }
+      list_free (tmpns);
       if (!ns || !export_perms) {
 	if (!ns) {
 	  $e("Could not find specified type: %s", gs);

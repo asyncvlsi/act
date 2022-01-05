@@ -213,6 +213,7 @@ expr_id[ActId *]: { base_id "." }*
       if (strcmp (tmp, "true") == 0 || strcmp (tmp, "false") == 0 ||
 	  strcmp (tmp, "self") == 0) {
 	/* ok done */
+	list_free ($1);
 	return ret;
       }
     }
@@ -221,6 +222,7 @@ expr_id[ActId *]: { base_id "." }*
       const char *tmp = ret->getName();
       if (act_dev_string_to_value (tmp) != -1) {
 	$0->skip_id_check = 2;
+	list_free ($1);
 	return ret;
       }
     }

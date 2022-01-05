@@ -1666,6 +1666,7 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
       b = new ActBody_Assertion ($2, r->u.str);
       FREE (r);
     }
+    OPT_FREE ($3);
     return b;
 }}
 | "{" expr_id conn_op expr_id [ ":" STRING ] "}" ";"
@@ -2348,6 +2349,7 @@ guarded_cmds[ActBody *]: { gc_1 "[]" }*
 	$E("`else' clause can only be the last clause in a selection");
       }
     }
+    list_free ($1);
     return new ActBody_Select (ret);
 }}
 ;

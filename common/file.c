@@ -106,12 +106,20 @@ LFILE *file_open (const char *s)
 
 void file_close (LFILE *l)
 {
+  int i;
   if (l->l) {
     if (l->l->l) {
        lex_free (l->l->l);
     }
     FREE (l->l);
   }
+  if (l->ntoks > 0) {
+    for (i=0; i < l->ntoks; i++) {
+      FREE (l->toks[i]);
+    }
+    FREE (l->toks);
+  }
+  free_el (l->el);
   FREE (l);
 }
 

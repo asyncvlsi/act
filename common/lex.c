@@ -1042,6 +1042,9 @@ extern void lex_free (LEX_T *l)
   free (l->tokens);
   free (l->whitespace);
   free (l->token);
+  free (l->tokenvals);
+  free (l->saved);
+  free (l->tokprev);
   free (l);
 }
 
