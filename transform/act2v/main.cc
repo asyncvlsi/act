@@ -223,56 +223,45 @@ void emit_verilog (Act *a, Process *p)
     }
     /* if there are no ports, we can skip the instance */
     if (ports_exist || instproc->isBlackBox()) {
+      Arraystep *as;
       if (vx->t->arrayInfo()) {
-	Arraystep *as = vx->t->arrayInfo()->stepper();
-	while (!as->isend()) {
-
-	  if (vx->isPrimary (as->index())) {
-	    emit_verilog_moduletype (a, instproc);
-	    printf (" \\%s", vx->getName());
-	    as->Print (stdout);
-	    printf ("  (");
-
-	    int first = 1;
-	    for (i=0; i < A_LEN (sub->ports); i++) {
-	      if (sub->ports[i].omit) continue;
-	      if (!first) {
-		printf (", ");
-	      }
-	      first = 0;
-	      printf (".");
-	      emit_verilog_id (sub->ports[i].c);
-	      printf ("(");
-	      emit_verilog_id (n->instports[iport]);
-	      printf (")");
-	      iport++;
-	    }
-	    printf (");\n");
-	  }
-	  as->step();
-	}
-	delete as;
+	as = vx->t->arrayInfo()->stepper();
       }
       else {
-	int first = 1;
-	emit_verilog_moduletype (a, instproc);
-	a->mfprintf (stdout, " %s", vx->getName());
-	printf ("(");
-	for (i=0; i < A_LEN (sub->ports); i++) {
-	  if (sub->ports[i].omit) continue;
+	as = NULL;
+      }
 
-	  if (!first) {
-	    printf (", ");
+      do {
+	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
+	  emit_verilog_moduletype (a, instproc);
+	  printf (" \\%s", vx->getName());
+	  if (as) {
+	    as->Print (stdout);
 	  }
-	  first = 0;
-	  printf (".");
-	  emit_verilog_id (sub->ports[i].c);
-	  printf ("(");
-	  emit_verilog_id (n->instports[iport]);
-	  printf (")");
-	  iport++;
+	  printf ("  (");
+
+	  int first = 1;
+	  for (i=0; i < A_LEN (sub->ports); i++) {
+	    if (sub->ports[i].omit) continue;
+	    if (!first) {
+	      printf (", ");
+	    }
+	    first = 0;
+	    printf (".");
+	    emit_verilog_id (sub->ports[i].c);
+	    printf ("(");
+	    emit_verilog_id (n->instports[iport]);
+	    printf (")");
+	    iport++;
+	  }
+	  printf (");\n");
 	}
-	printf (");\n");
+	if (as) {
+	  as->step();
+	}
+      } while (as && !as->isend());
+      if (as) {
+	delete as;
       }
     }
   }

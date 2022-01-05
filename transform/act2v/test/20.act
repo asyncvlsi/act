@@ -1,0 +1,12 @@
+defproc foo(bool w)
+{
+ bool a, b;
+
+prs {
+  [keeper=0] a -> b-
+  true -> a-
+  a & false -> w-
+}
+}
+
+foo f;

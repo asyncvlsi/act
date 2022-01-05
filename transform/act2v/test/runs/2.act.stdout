@@ -1,0 +1,48 @@
+//
+// Verilog module for: foo<>
+//
+module foo(\a[0] , \a[1] , \a[2] , \a[3] , \a[5] , \a[6] , \a[7] , \a[8] , \a[9] , \b[0] , \b[1] , \b[2] , \b[3] , \b[4] , \b[5] , \b[6] , \b[7] , \b[8] , \b[9] );
+   input \a[0] ;
+   input \a[1] ;
+   input \a[2] ;
+   input \a[3] ;
+   input \a[5] ;
+   input \a[6] ;
+   input \a[7] ;
+   input \a[8] ;
+   input \a[9] ;
+   output \b[0] ;
+   output \b[1] ;
+   output \b[2] ;
+   output \b[3] ;
+   output \b[4] ;
+   output \b[5] ;
+   output \b[6] ;
+   output \b[7] ;
+   output \b[8] ;
+   output \b[9] ;
+
+// -- signals ---
+   wire \a[7] ;
+   wire \a[9] ;
+   wire \a[3] ;
+   wire \a[1] ;
+   reg \b[1] ;
+   wire \a[6] ;
+   reg \b[7] ;
+   reg \b[5] ;
+   reg \b[9] ;
+   reg \b[6] ;
+   reg \b[8] ;
+   wire \a[2] ;
+   wire \a[0] ;
+   wire \a[8] ;
+   wire \a[5] ;
+   reg \b[2] ;
+   reg \b[0] ;
+   reg \b[4] ;
+   reg \b[3] ;
+
+// --- instances
+endmodule
+

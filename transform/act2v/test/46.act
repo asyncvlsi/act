@@ -1,0 +1,8 @@
+defproc foo()
+{
+  prs {
+
+  }
+}
+
+foo t;

@@ -1,0 +1,13 @@
+defproc foo(bool a, b, c)
+{
+  prs {
+   a & b -> c-
+  ~a | ~b -> c+
+  }
+  sizing {
+     unit_n <- 10;
+     c {-2}
+  }
+}
+
+foo f;

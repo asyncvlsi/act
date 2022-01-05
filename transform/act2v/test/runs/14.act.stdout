@@ -1,0 +1,14 @@
+//
+// Verilog module for: foo<>
+//
+module foo();
+
+// -- signals ---
+   wire de;
+   reg _d0;
+   wire en;
+   wire a1;
+
+// --- instances
+endmodule
+

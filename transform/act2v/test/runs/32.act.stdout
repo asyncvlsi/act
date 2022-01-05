@@ -1,0 +1,86 @@
+//
+// Verilog module for: foo<>
+//
+module foo(\g.Vdd , \g.GND , \A[0].d[0] , \A[0].d[1] , \A[1].d[0] , \A[1].d[1] , \A[2].d[0] , \A[2].d[1] , \A[3].d[0] , \A[3].d[1] , \P[0].d[0] , \P[0].d[1] , \P[1].d[0] , \P[1].d[1] , \P[2].d[0] , \P[2].d[1] , \P[3].d[0] , \P[3].d[1] , \P[4].d[0] , \P[4].d[1] , \P[5].d[0] , \P[5].d[1] , \P[6].d[0] , \P[6].d[1] , \P[7].d[0] , \P[7].d[1] , \P[8].d[0] , \P[8].d[1] , \P[9].d[0] , \P[9].d[1] );
+   input \g.Vdd ;
+   input \g.GND ;
+   input \A[0].d[0] ;
+   input \A[0].d[1] ;
+   input \A[1].d[0] ;
+   input \A[1].d[1] ;
+   input \A[2].d[0] ;
+   input \A[2].d[1] ;
+   input \A[3].d[0] ;
+   input \A[3].d[1] ;
+   output \P[0].d[0] ;
+   output \P[0].d[1] ;
+   output \P[1].d[0] ;
+   output \P[1].d[1] ;
+   output \P[2].d[0] ;
+   output \P[2].d[1] ;
+   output \P[3].d[0] ;
+   output \P[3].d[1] ;
+   output \P[4].d[0] ;
+   output \P[4].d[1] ;
+   output \P[5].d[0] ;
+   output \P[5].d[1] ;
+   output \P[6].d[0] ;
+   output \P[6].d[1] ;
+   output \P[7].d[0] ;
+   output \P[7].d[1] ;
+   output \P[8].d[0] ;
+   output \P[8].d[1] ;
+   output \P[9].d[0] ;
+   output \P[9].d[1] ;
+
+// -- signals ---
+   reg \P[7].d[0] ;
+   wire \e0p.d[1] ;
+   wire \es0n.d[0] ;
+   wire \e0n.d[1] ;
+   reg \P[2].d[1] ;
+   reg \P[4].d[0] ;
+   wire \A[1].d[0] ;
+   wire \A[0].d[1] ;
+   reg \P[8].d[0] ;
+   wire \e0n.d[0] ;
+   wire \g.Vdd ;
+   reg \P[0].d[0] ;
+   reg \P[9].d[1] ;
+   wire \A[3].d[0] ;
+   wire \es1n.d[0] ;
+   wire \A[2].d[0] ;
+   reg \P[1].d[0] ;
+   wire \es1n.d[1] ;
+   reg \P[5].d[1] ;
+   wire \e1p.d[0] ;
+   wire \e0p.d[0] ;
+   wire \es0p.d[1] ;
+   reg \P[5].d[0] ;
+   wire \es0n.d[1] ;
+   wire \g.GND ;
+   reg \P[6].d[1] ;
+   wire \A[1].d[1] ;
+   wire \e1p.d[1] ;
+   wire \A[0].d[0] ;
+   wire \A[2].d[1] ;
+   reg \P[4].d[1] ;
+   reg \P[7].d[1] ;
+   reg \P[0].d[1] ;
+   reg \P[9].d[0] ;
+   reg \P[3].d[0] ;
+   wire \es0p.d[0] ;
+   reg \P[2].d[0] ;
+   reg \P[8].d[1] ;
+   wire \es1p.d[1] ;
+   wire \es1p.d[0] ;
+   reg \P[1].d[1] ;
+   wire \e1n.d[0] ;
+   reg \P[3].d[1] ;
+   reg \P[6].d[0] ;
+   wire \A[3].d[1] ;
+   wire \e1n.d[1] ;
+
+// --- instances
+endmodule
+

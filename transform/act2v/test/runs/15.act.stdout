@@ -1,0 +1,33 @@
+//
+// Verilog module for: nand2<>
+//
+module nand2(a, b, c);
+   output a;
+   output b;
+   output c;
+
+// -- signals ---
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(p, q, r);
+   output p;
+   output q;
+   output r;
+
+// -- signals ---
+   reg p;
+   reg \n.c ;
+   reg \n2.c ;
+   reg q;
+   reg r;
+
+// --- instances
+nand2 \n  (.a(p), .b(q), .c(\n.c ));
+nand2 \n2  (.a(q), .b(r), .c(\n2.c ));
+endmodule
+

@@ -1,0 +1,38 @@
+//
+// Verilog module for: bar<>
+//
+module bar(q, r, s);
+   input q;
+   input r;
+   output s;
+
+// -- signals ---
+   wire r;
+   wire q;
+   reg s;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(a, b);
+   input a;
+   output b;
+
+// -- signals ---
+   wire a;
+   wire \z.r ;
+   reg \zz.s ;
+   reg b;
+   wire \zz.q ;
+   wire \z.q ;
+   reg \z.s ;
+   wire \zz.r ;
+
+// --- instances
+bar \zz  (.q(\zz.q ), .r(\zz.r ), .s(\zz.s ));
+bar \z  (.q(\z.q ), .r(\z.r ), .s(\z.s ));
+endmodule
+

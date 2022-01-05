@@ -756,43 +756,40 @@ void ActApplyPass::_flat_scope (Scope *s)
     
     if (ux) {
       /* set scope here */
+      Arraystep *step;
+
       if (it->arrayInfo()) {
-	Arraystep *step = it->arrayInfo()->stepper();
-	int idx = 0;
-
-	while (!step->isend()) {
-	  if (vx->isPrimary(idx)) {
-	    push_name (vx->getName(), step->toArray());
-
-	    /*-- process me --*/
-	    if (apply_user_fn) {
-	      ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
-	      (*apply_user_fn) (cookie, proc_inst, ux);
-	      nullify_arrays (proc_inst);
-	      delete proc_inst;
-	    }
-	    
-	    _flat_scope (ux->CurScope());
-	    pop_name ();
-	  }
-	  idx++;
-	  step->step();
-	}
-	delete step;
+	step = it->arrayInfo()->stepper();
       }
       else {
-	push_name (vx->getName());
+	step = NULL;
+      }
 
-	/*-- process me --*/
-	if (apply_user_fn) {
-	  ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
-	  (*apply_user_fn) (cookie, proc_inst, ux);
-	  nullify_arrays (proc_inst);
-	  delete proc_inst;
+      do {
+	if (!step || (!step->isend() && vx->isPrimary (step->index()))) {
+	  if (step) {
+	    push_name (vx->getName(), step->toArray());
+	  }
+	  else {
+	    push_name (vx->getName());
+	  }
+
+	  /*-- process me --*/
+	  if (apply_user_fn) {
+	    ActId *proc_inst = prefix_to_id (prefixes, prefix_array, NULL);
+	    (*apply_user_fn) (cookie, proc_inst, ux);
+	    nullify_arrays (proc_inst);
+	    delete proc_inst;
+	  }
+	  _flat_scope (ux->CurScope());
+	  pop_name ();
 	}
-	
-	_flat_scope (ux->CurScope());
-	pop_name ();
+	if (step) {
+	  step->step();
+	}
+      } while (step && !step->isend());
+      if (step) {
+	delete step;
       }
     }
 

@@ -1,0 +1,51 @@
+//
+// Verilog module for: XOR<>
+//
+module XOR(a, b, c);
+   input a;
+   input b;
+   output c;
+
+// -- signals ---
+   wire b;
+   reg c;
+   wire a;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: AND<>
+//
+module AND(a, b, c);
+   input a;
+   input b;
+   output c;
+
+// -- signals ---
+   wire b;
+   reg c;
+   wire a;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(A, B, Z);
+   input A;
+   input B;
+   output Z;
+
+// -- signals ---
+   reg C;
+   wire B;
+   wire A;
+   reg Z;
+
+// --- instances
+XOR \a1  (.a(A), .b(C), .c(Z));
+AND \a0  (.a(A), .b(B), .c(C));
+endmodule
+

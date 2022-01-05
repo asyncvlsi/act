@@ -1,0 +1,15 @@
+defproc inv (bool? i;  bool! o)
+{
+  prs {
+    i => o-
+  }
+}
+
+
+defproc foo()
+{
+   inv x[3];
+   x[0]=x[1];
+}
+
+foo t;

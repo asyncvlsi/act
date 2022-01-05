@@ -1,0 +1,33 @@
+//
+// Verilog module for: bar<>
+//
+module bar(a, b, c);
+   input a;
+   output b;
+   output c;
+
+// -- signals ---
+   reg b;
+   wire a;
+   reg c;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(p, q, r);
+   input p;
+   output q;
+   output r;
+
+// -- signals ---
+   wire p;
+   reg r;
+   reg q;
+
+// --- instances
+bar \x  (.a(p), .b(q), .c(r));
+endmodule
+

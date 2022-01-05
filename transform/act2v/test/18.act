@@ -1,0 +1,17 @@
+defproc  bar (bool q, r, s)
+{
+  prs {
+    q & r -> s-
+  }
+}
+
+defproc foo (bool a, b)
+{
+  prs {
+    a -> b-
+  }
+  bar z;
+  bar zz;
+}
+
+foo f;

@@ -1,0 +1,10 @@
+defproc foo() 
+{
+  bool a, b, c;
+  prs {   
+   ~a -> @x+
+   @x & ~b -> c+
+  }
+}
+
+foo t;

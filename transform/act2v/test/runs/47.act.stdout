@@ -1,0 +1,27 @@
+//
+// Verilog module for: inv<>
+//
+module inv(i, o);
+   input i;
+   output o;
+
+// -- signals ---
+   reg o;
+   wire i;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo();
+
+// -- signals ---
+   wire \x0.i ;
+   reg \x0.o ;
+
+// --- instances
+inv \x0  (.i(\x0.i ), .o(\x0.o ));
+endmodule
+

@@ -468,79 +468,59 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     }
 
     if (ports_exist) {
+      Arraystep *as;
       if (vx->t->arrayInfo()) {
-	Arraystep *as = vx->t->arrayInfo()->stepper();
-	while (!as->isend()) {
-
-	  if (vx->isPrimary (as->index())) {
-	    char *str = as->string();
-	    if (sub->bN->isempty) {
-	      fprintf (fp, "* ");
-	    }
-	    a->mfprintf (fp, "x%s%s", vx->getName(), str);
-	    FREE (str);
-	    for (int i=0; i < A_LEN (sub->bN->ports); i++) {
-	      ActId *id;
-	      char buf[10240];
-	      if (sub->bN->ports[i].omit) continue;
-
-	      Assert (iport < A_LEN (n->bN->instports), "Hmm");
-	      id = n->bN->instports[iport]->toid();
-	      fprintf (fp, " ");
-	      id->sPrint (buf, 10240);
-	      a->mfprintf (fp, "%s", buf);
-	      delete id;
-	      iport++;
-	    }
-
-	    if (sub->weak_supply_vdd > 0) {
-	      Assert (iweak < A_LEN (n->instport_weak), "What?");
-	      fprintf (fp, " #%d", n->instport_weak[iweak++]);
-	    }
-	    if (sub->weak_supply_gnd > 0) {
-	      Assert (iweak < A_LEN (n->instport_weak), "What?");
-	      fprintf (fp, " #%d", n->instport_weak[iweak++]);
-	    }
-	    
-	    a->mfprintf (fp, " ");
-	    a->mfprintfproc (fp, instproc);
-	    a->mfprintf (fp, "\n");
-	  }
-	  as->step();
-	}
-	delete as;
+	as = vx->t->arrayInfo()->stepper();
       }
       else {
-	if (sub->bN->isempty) {
-	  fprintf (fp, "* ");
-	}
-	a->mfprintf (fp, "x%s", vx->getName ());
-	for (int i =0; i < A_LEN (sub->bN->ports); i++) {
-	  ActId *id;
-	  char buf[10240];
-	  if (sub->bN->ports[i].omit) continue;
-	  
-	  Assert (iport < A_LEN (n->bN->instports), "Hmm");
-	  id = n->bN->instports[iport]->toid();
-	  fprintf (fp, " ");
-	  id->sPrint (buf, 10240);
-	  a->mfprintf (fp, "%s", buf);
-	  delete id;
-	  iport++;
-	}
+	as = NULL;
+      }
+      do {
+	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
+	  char *str = NULL;
+	  if (as) {
+	    str = as->string();
+	  }
+	  if (sub->bN->isempty) {
+	    fprintf (fp, "* ");
+	  }
+	  a->mfprintf (fp, "x%s%s", vx->getName(), str ? str : "");
+	  if (str) {
+	    FREE (str);
+	  }
+	  for (int i=0; i < A_LEN (sub->bN->ports); i++) {
+	    ActId *id;
+	    char buf[10240];
+	    if (sub->bN->ports[i].omit) continue;
 
-	if (sub->weak_supply_vdd > 0) {
-	  Assert (iweak < A_LEN (n->instport_weak), "What?");
-	  fprintf (fp, " #%d", n->instport_weak[iweak++]);
-	}
-	if (sub->weak_supply_gnd > 0) {
-	  Assert (iweak < A_LEN (n->instport_weak), "What?");
-	  fprintf (fp, " #%d", n->instport_weak[iweak++]);
-	}
+	    Assert (iport < A_LEN (n->bN->instports), "Hmm");
+	    id = n->bN->instports[iport]->toid();
+	    fprintf (fp, " ");
+	    id->sPrint (buf, 10240);
+	    a->mfprintf (fp, "%s", buf);
+	    delete id;
+	    iport++;
+	  }
 
-	a->mfprintf (fp, " ");
-	a->mfprintfproc (fp, instproc);
-	a->mfprintf (fp, "\n");
+	  if (sub->weak_supply_vdd > 0) {
+	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	  }
+	  if (sub->weak_supply_gnd > 0) {
+	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	  }
+	    
+	  a->mfprintf (fp, " ");
+	  a->mfprintfproc (fp, instproc);
+	  a->mfprintf (fp, "\n");
+	}
+	if (as) {
+	  as->step ();
+	}
+      } while (as && !as->isend());
+      if (as) {
+	delete as;
       }
     }
   }

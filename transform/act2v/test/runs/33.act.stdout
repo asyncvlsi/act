@@ -1,0 +1,44 @@
+//
+// Verilog module for: myproc1<>
+//
+module myproc1(a, b);
+   input a;
+   output b;
+
+// -- signals ---
+   wire a;
+   reg b;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: myproc2<>
+//
+module myproc2(a, \A.c.d );
+   input a;
+   output \A.c.d ;
+
+// -- signals ---
+   reg \A.c.d ;
+   wire a;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(\A.d );
+   output \A.d ;
+
+// -- signals ---
+   wire \x.a ;
+   reg \A.d ;
+   reg \y.b ;
+
+// --- instances
+myproc1 \y  (.a(\A.d ), .b(\y.b ));
+myproc2 \x  (.a(\x.a ), .\A.c.d (\A.d ));
+endmodule
+

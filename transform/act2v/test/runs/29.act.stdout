@@ -1,0 +1,66 @@
+//
+// Verilog module for: wchb2<>
+//
+module wchb2(\g.Vdd , \g.GND , \L.b.d[0] , \L.b.d[1] , \R.b.d[0] , \R.b.d[1] );
+   input \g.Vdd ;
+   input \g.GND ;
+   input \L.b.d[0] ;
+   input \L.b.d[1] ;
+   output \R.b.d[0] ;
+   output \R.b.d[1] ;
+
+// -- signals ---
+   wire \g.Vdd ;
+   wire \g.GND ;
+   reg \R.b.d[1] ;
+   wire \L.b.d[1] ;
+   wire \_R.d[0] ;
+   wire \L.b.d[0] ;
+   wire \_R.d[1] ;
+   reg \R.b.d[0] ;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: wchb1<>
+//
+module wchb1(\g.Vdd , \g.GND , \L.b.d[0] , \R.b.d[0] );
+   input \g.Vdd ;
+   input \g.GND ;
+   input \L.b.d[0] ;
+   output \R.b.d[0] ;
+
+// -- signals ---
+   wire \L.b.d[0] ;
+   wire \g.Vdd ;
+   reg \R.b.d[0] ;
+   wire \_R.d[0] ;
+   wire \g.GND ;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo(\g.Vdd , \g.GND , \L.b.d[0] , \R.b.d[0] , \R.b.d[1] );
+   input \g.Vdd ;
+   input \g.GND ;
+   input \L.b.d[0] ;
+   output \R.b.d[0] ;
+   output \R.b.d[1] ;
+
+// -- signals ---
+   wire \g.GND ;
+   wire \g.Vdd ;
+   reg \R.b.d[1] ;
+   reg \R.b.d[0] ;
+   reg \M.b.d[0] ;
+   wire \L.b.d[0] ;
+
+// --- instances
+wchb2 \buf2  (.\g.Vdd (\g.Vdd ), .\g.GND (\g.GND ), .\L.b.d[0] (\M.b.d[0] ), .\L.b.d[1] (\g.GND ), .\R.b.d[0] (\R.b.d[0] ), .\R.b.d[1] (\R.b.d[1] ));
+wchb1 \buf1  (.\g.Vdd (\g.Vdd ), .\g.GND (\g.GND ), .\L.b.d[0] (\L.b.d[0] ), .\R.b.d[0] (\M.b.d[0] ));
+endmodule
+

@@ -1,0 +1,39 @@
+//
+// Verilog module for: sub2<>
+//
+module sub2(\a.x );
+   input \a.x ;
+
+// -- signals ---
+   reg b;
+   wire \a.x ;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: sub<>
+//
+module sub(\a.x );
+   output \a.x ;
+
+// -- signals ---
+   reg \a.x ;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo();
+
+// -- signals ---
+   reg \l.x ;
+
+// --- instances
+sub2 \u  (.\a.x (\l.x ));
+sub2 \t  (.\a.x (\l.x ));
+sub \s  (.\a.x (\l.x ));
+endmodule
+

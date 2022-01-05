@@ -1,0 +1,12 @@
+defproc foo() {
+
+  chan(int<32>) a;
+  
+
+  chp {
+      a!5, [#a -> a? ], a?
+  }
+
+}
+
+foo ct;

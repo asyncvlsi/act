@@ -1,0 +1,14 @@
+defproc foo() {
+
+  int<32> a;
+  int<16> b;
+  int<16> c;
+  
+
+  chp {
+      a := {b,c}
+  }
+
+}
+
+foo ct;
