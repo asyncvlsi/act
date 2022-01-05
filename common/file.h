@@ -53,6 +53,7 @@ extern "C" {
 typedef struct _file_ LFILE;
 
 LFILE *file_open (const char *);
+void file_close (LFILE *);
 void file_push (LFILE *, const char *);
 
 int file_addtoken (LFILE *, const char *);

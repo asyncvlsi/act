@@ -1976,7 +1976,7 @@ void emit_parser (void)
   pp_printf_text (pp, "#define EXC_LPF 2\n");
   pp_nl;
 
-  pp_printf_text (pp, "static char *errstring;\n\n");
+  pp_printf_text (pp, "static char *errstring = NULL;\n\n");
 
   pp_printf_text (pp, "#define TOKEN(a,b)  static int a;"); pp_nl;
   pp_printf_text (pp, "#include \"%s_parse.def\"", prefix); pp_nl; pp_nl;
@@ -2123,7 +2123,7 @@ void emit_parser (void)
   for (i=0; i < A_LEN (EXTERN_P); i++) {
     pp_printf_text (pp, "%s_init_%s (l);\n", prefix, EXTERN_P[i]);
   }
-  pp_printf_text (pp, "   errstring = (char *)malloc (4096*sizeof (char));");pp_nl;
+  pp_printf_text (pp, "   if (!errstring) errstring = (char *)malloc (4096*sizeof (char));");pp_nl;
   pp_printf_text (pp, "   if (!errstring) { fatal_error "); 
   pp_nl; pp_puts (pp, "(\"out of memory\"); }"); pp_nl;
   pp_printf_text (pp, "   errstring[0] = '\\0';"); pp_nl;
@@ -2165,6 +2165,7 @@ void emit_parser (void)
   END_INDENT;
   pp_puts (pp, "}"); pp_nl;
   pp_printf_text (pp, "  list_cleanup();\n");
+  pp_printf_text (pp, "  file_close (l);\n");
   pp_printf_text (pp, "  return t;\n");
   pp_endb (pp); pp_nl;
   pp_puts (pp, "}"); pp_nl; pp_nl;

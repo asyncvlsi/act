@@ -104,6 +104,17 @@ LFILE *file_open (const char *s)
   return l;
 }
 
+void file_close (LFILE *l)
+{
+  if (l->l) {
+    if (l->l->l) {
+       lex_free (l->l->l);
+    }
+    FREE (l->l);
+  }
+  FREE (l);
+}
+
 unsigned int file_flags (LFILE *l)
 {
   return lex_flags (l->l->l);

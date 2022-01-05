@@ -936,6 +936,9 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
     e = x->eval (ns, nargs, args);
     FREE (*ret);
     *ret = e;
+    if (nargs > 0) {
+      FREE (args);
+    }
   }
   act_error_pop ();
   return;

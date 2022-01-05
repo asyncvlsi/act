@@ -958,6 +958,7 @@ data_chan_body: ";"
     else {
       $A(0);
     }
+    OPT_FREE ($1);
 }}
 "{" base_body [ methods_body ] "}"
 {{X:
@@ -972,6 +973,7 @@ data_chan_body: ";"
     else {
       $A(0);
     }
+    OPT_FREE ($4);
     return NULL;
 }}
 ;
@@ -1091,6 +1093,7 @@ one_method: ID "{" hse_body "}"
       ActRet *r = OPT_VALUE ($7);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
+      FREE (r);
     }
     OPT_FREE ($7);
     $0->um = NULL;
