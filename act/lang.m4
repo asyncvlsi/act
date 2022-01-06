@@ -741,6 +741,8 @@ w_expr_chp
       $e("Typechecking failed on CHP assignment: array/non-array assignment");
       exit (1);
     }
+    delete lhs;
+    delete rhs;
     return c;
 }}
 | bool_expr_id dir

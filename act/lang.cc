@@ -46,7 +46,76 @@ static Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 
 void act_chp_free (act_chp_lang_t *c)
 {
-  /* XXX FIXME */
+  listitem_t *li;
+  act_chp_gc_t *tmpgc, *gc;
+  if (!c) {
+    return;
+  }
+  switch (c->type) {
+  case ACT_CHP_SEMI:
+  case ACT_CHP_COMMA:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      act_chp_free ((act_chp_lang_t *) list_value (li));
+    }
+    list_free (c->u.semi_comma.cmd);
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    act_chp_free (c->u.frag.body);
+    act_chp_free (c->u.frag.next);
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    gc = c->u.gc;
+    while (gc) {
+      act_chp_free (gc->s);
+      expr_ex_free (gc->g);
+      tmpgc = gc;
+      gc = gc->next;
+      FREE (tmpgc);
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+    for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *arg = (act_func_arguments_t *)list_value (li);
+      if (!arg->isstring) {
+	expr_ex_free (arg->u.e);
+      }
+      FREE (arg);
+    }
+    list_free (c->u.func.rhs);
+    break;
+     
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+    if (c->u.assign.id) {
+      delete c->u.assign.id;
+    }
+    expr_ex_free (c->u.assign.e);
+    break;
+
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    if (c->u.comm.chan) {
+      delete c->u.comm.chan;
+    }
+    if (c->u.comm.var) {
+      delete c->u.comm.var;
+    }
+    expr_ex_free (c->u.comm.e);
+    break;
+
+  default:
+    fatal_error ("CHP type %d: after expansion!\n", c->type);
+    break;
+  }
+  FREE (c);
 }
 
 act_prs_lang_t *prs_expand (act_prs_lang_t *, ActNamespace *, Scope *);
@@ -1934,7 +2003,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	fprintf (stderr, "\n");
 	exit (1);
       }
-	
+
       act_connection *d = tmp->Canonical (s);
       if (d->getDir() == Type::direction::IN) {
 	act_error_ctxt (stderr);
@@ -2054,6 +2123,9 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	fatal_error ("CHP macro and namespace globals don't mix");
       }
       InstType *it = s->FullLookup (x->getName());
+      delete x;
+      x = NULL;
+      
 	
       Assert (TypeFactory::isUserType (it), "This should have been caught earlier!");
       UserDef *u = dynamic_cast <UserDef *> (it->BaseType());
@@ -2111,7 +2183,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	  ActId *tmp = new ActId (um->getPortName (i));
 	  act_inline_setval (tab, tmp, etmp);
 	  delete tmp;
-
+	  FREE (etmp);
 	  li = list_next (li);
 	}
       }
@@ -2119,15 +2191,17 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       /* now bind parameters to symbols */
       FREE (ret);
       ret = um->substitute (c->u.macro.id, tab);
-      
+
       /*-- re-expand, do all the checks --*/
       {
 	int tmp = Act::double_expand;
+	act_chp_lang_t *oret = ret;
 	Act::double_expand = 0;
-	ret = chp_expand (ret, ns, s);
+	ret = chp_expand (oret, ns, s);
 	Act::double_expand = tmp;
+	act_chp_free (oret);
       }
-
+      
       delete tsc;
       act_inline_free (tab);
     }

@@ -1768,6 +1768,7 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
       AExpr *ae = new AExpr (e);
       s->BindParam (id, ae);
       delete ae;
+      delete id;
     }      
     break;
     

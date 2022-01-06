@@ -1754,10 +1754,14 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (ret->u.e.l->type == E_TRUE) {
 	  FREE (ret);
 	  ret = tmp->u.e.l;
+	  expr_ex_free (tmp->u.e.r);
+	  FREE (tmp);
 	}
 	else if (ret->u.e.l->type == E_FALSE) {
 	  FREE (ret);
 	  ret = tmp->u.e.r;
+	  expr_ex_free (tmp->u.e.l);
+	  FREE (tmp);
 	}
 	else {
 	  act_error_ctxt (stderr);
@@ -1799,6 +1803,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (!expr_is_a_const (te)) {
 	  if (te->type != E_VAR) {
 	    expr_ex_free (te);
+	  }
+	  else {
+	    FREE (te);
 	  }
 	}
 	else {
@@ -2056,9 +2063,11 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  MALLOC (inst, inst_param, count);
 	  w = e->u.fn.r->u.e.l;
 	  for (int i=0; i < count; i++) {
+	    AExpr *tae;
 	    inst[i].isatype = 0;
-	    inst[i].u.tp = new AExpr (w->u.e.l);
-	    inst[i].u.tp = inst[i].u.tp->Expand (ns, s, 0);
+	    tae = new AExpr (w->u.e.l);
+	    inst[i].u.tp = tae->Expand (ns, s, 0);
+	    delete tae;
 	    w = w->u.e.r;
 	  }
 	  f = f->Expand (ns, s, count, inst);
@@ -2116,6 +2125,7 @@ static Expr *_expr_expand (int *width, Expr *e,
        for parameterized types returns the value. */
     if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
       ret->u.e.l = (Expr *)((ActId *)e->u.e.l)->Clone ();
+      *width = -1;
     }
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
@@ -2211,6 +2221,7 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     FREE (ret);
     ret = te;
+    *width = 0;
     break;
 
   case E_CONCAT:

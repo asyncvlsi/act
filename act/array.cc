@@ -934,7 +934,7 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
       act_error_ctxt (stderr);
       warning ("Not sure why Array::ExpandCHP() was called");
     }
-    return this;
+    return Clone();
   }
 
   if (!deref) {

@@ -64,6 +64,14 @@ act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent)
 
 void act_inline_free (act_inline_table *T)
 {
+  hash_iter_t it;
+  hash_bucket_t *b;
+  hash_iter_init (T->state, &it);
+  while ((b = hash_iter_next (T->state, &it))) {
+    if (b->v) {
+      FREE (b->v);
+    }
+  }
   hash_free (T->state);
   FREE (T);
 }

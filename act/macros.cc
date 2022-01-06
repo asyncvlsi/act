@@ -217,13 +217,16 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
 	rtmp->Append (tmp->Clone());
 	e->u.e.l = (Expr *)rtmp;
       }
+      delete tmp;
     }
     break;
     
   case E_PROBE:
   case E_BITFIELD:
     if (e->u.e.l) {
-      e->u.e.l = (Expr *) _chp_id_subst (id, tab, (ActId *)e->u.e.l);
+      ActId *tmp = (ActId *)e->u.e.l;
+      e->u.e.l = (Expr *) _chp_id_subst (id, tab, tmp);
+      delete tmp;
     }
     break;
 
