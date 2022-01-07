@@ -1595,34 +1595,67 @@ void BigInt::bitPrint (FILE *fp) const
   }
 }
 
-void BigInt::decPrint (FILE *fp) const
+void BigInt::decPrint (FILE *fp, int w) const
 {
  char *buf;
  BigInt tmp;
  int pos;
+ int sign;
  tmp = (*this);
  if (tmp.isSigned()) {
    tmp.toUnsigned();
  }
  if (tmp.isZero()) {
-   fprintf (fp, "0");
-   return;
+   MALLOC (buf, char, 2);
+   buf[0] = '0';
+   buf[1] = '\0';
+   pos = 1;
  }
- MALLOC (buf, char, 2 + (int)((tmp.len*sizeof (UNIT_TYPE)*8+0.0)/3.32));
- pos = 0;
- BigInt ten = BigInt(4,0,1);
- ten.setVal (0, 10);
- while (!tmp.isZero()) {
-   BigInt rem = tmp;
-   rem = rem % ten;
-   tmp = tmp / ten;
-   Assert (0 <= rem.getVal (0) && rem.getVal (0) <= 9, "What?");
-   buf[pos++] = rem.getVal (0) + '0';
+ else {
+   MALLOC (buf, char, 2 + (int)((tmp.len*sizeof (UNIT_TYPE)*8+0.0)/3.32));
+   pos = 0;
+   BigInt ten = BigInt(4,0,1);
+   ten.setVal (0, 10);
+   while (!tmp.isZero()) {
+     BigInt rem = tmp;
+     rem = rem % ten;
+     tmp = tmp / ten;
+     Assert (0 <= rem.getVal (0) && rem.getVal (0) <= 9, "What?");
+     buf[pos++] = rem.getVal (0) + '0';
+   }
+   buf[pos] = '\0';
  }
- buf[pos] = '\0';
+ if (w < 0) {
+   sign = 1;
+   w = -w;
+ }
+ else {
+   sign = 0;
+ }
+
+ if (w != 0 && w < pos) {
+   w = 0;
+ }
+
+ if (w != 0 && sign == 0) {
+   while (w > pos) {
+     fputc (' ', fp);
+     w--;
+   }
+   w = 0;
+ }
+
  while (pos > 0) {
    fputc (buf[pos-1], fp);
    pos--;
  }
+
+ if (w != 0 && sign == 1) {
+   while (w > pos) {
+     fputc (' ', fp);
+     w--;
+   }
+ }
+
  FREE (buf);
 }

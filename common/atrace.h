@@ -43,7 +43,27 @@ extern "C" {
  *   Item 4: end_time [for any format other than 0, 1]
  *   Item 5: dt       [for any format other than 0, 1]
  *
- *   Values written out as floats
+ *   Values written out as follows:
+ *
+ *      - floats for analog signals and time
+ *
+ *      - digital/enum signals have a specified bit-width and are
+ *      written out in integer format described next.
+ *
+ *      - channel values have a specified bit-width, and the internal
+ *      width is one more than the data width (two more if the
+ *      original channel had zero bitwidth). The value 0 is used to
+ *      indicate a sender blocked, 1 for receiver blocked, and
+ *      successful communication records 2 + data sent/received on the
+ *      channel.
+ *
+ *   Integer format given a bit-width:
+ *      If the bit-width is <= 32, the integer is written out as an
+ *      int; if <= 64, it is written out as the lower 32 bits followed
+ *      by the upper 32 bits. For widths > 64, the representation is
+ *      multiple 64-bit values that are written out least-significant
+ *      64-bit chunk first.
+ *
  *
  *  FORMATS:
  *
@@ -87,18 +107,29 @@ extern "C" {
 
     /* less than 2GB. Must be a multiple of (sizeof(int)) */
 
+typedef union atrace_value {
+    float v;			/* value */
+    unsigned long val;		/* <= 63 bits for channels
+				   lsb is 0 for data
+				   lsb is 1 for other channel events
+				*/
+    unsigned long *valp;	/* > 63 bits */
+} atrace_val_t;
+
 typedef struct name_struct {
   struct name_struct *up;
   struct name_struct *next;
   hash_bucket_t *b;		/* name */
-  float v;			/* value */
+  union atrace_value vu;	/* value */
   int cause;			/* cause--read in for delta-cause fmt */
   int idx;			/* index */
   unsigned int chg:1;		/* changed? */
   unsigned int type:2;		/* 0 for analog, non-zero for other
 				   1 = digital
 				   2 = bit-channel
-				 */
+				   3 = enumeration (used for selects)
+				*/
+  unsigned int width;	        /* for digital/channel/sel: bitwidth */
 
   struct name_struct *chg_next;	/* change-list for reading */
 } name_t;
@@ -204,28 +235,37 @@ int atrace_header (atrace *, int *ts, int *Nnodes, int *Nsteps, int *fmt);
      not correspond to the number of steps in the trace file.
    */
 
-void atrace_readall (atrace *, float *M);
+
+  /* this function must be called for each slot based on the name
+     prior to passing the array to readall functions */
+void atrace_alloc_val_entry (name_t *n, atrace_val_t *v);
+
+  /* this must be called to release any storage allocated for a slot */
+void atrace_free_val_entry (name_t *n, atrace_val_t *v);
+
+void atrace_readall (atrace *, atrace_val_t *M);
   /* read all values into an array 
      node #i, step #j is at position M[Nsteps*i + j]
   */
+void atrace_readall_free (atrace *, atrace_val_t *M);
 
-void atrace_readall_xposed (atrace *, float *M);
+void atrace_readall_xposed (atrace *, atrace_val_t *M);
   /* read all values into an array 
      node #i, step #j is at position M[Nnodes*j + i]
   */
 
-void atrace_readall_block (atrace *, int start, int num, float *M);
+void atrace_readall_block (atrace *, int start, int num, atrace_val_t *M);
   /* read "num" values into an array, starting at node number "start"
      node #i, step #j is at position M[Nsteps*i + j]
      i starts from 0 (corresponding to "start")
   */
 
-void atrace_readall_nodenum (atrace *, int, float *M);
-void atrace_readall_node (atrace *, name_t *, float *M);
+void atrace_readall_nodenum (atrace *, int, atrace_val_t *M);
+void atrace_readall_node (atrace *, name_t *, atrace_val_t *M);
   /* read node value over all time into array */
 
-void atrace_readall_nodenum_c (atrace *, int, float *M, int *C);
-void atrace_readall_node_c (atrace *, name_t *, float *M, int *C);
+void atrace_readall_nodenum_c (atrace *, int, atrace_val_t *M, int *C);
+void atrace_readall_node_c (atrace *, name_t *, atrace_val_t *M, int *C);
   /* Same as above, except C = cause array */
 
 
@@ -237,23 +277,36 @@ void atrace_advance_time (atrace *, int nstep);
 
 #define ATRACE_NAME(a,n) ((a)->N[n])
 #define ATRACE_GET_NAME(a,n) ATRACE_NAME(a,n)->b->key
-#define ATRACE_GET_VAL(a,n)  ATRACE_NAME(a,n)->v
+#define ATRACE_GET_VAL(a,n)  ATRACE_NAME(a,n)->vu
 #define ATRACE_GET_STEPSIZE(a)  ((a)->vdt)
-#define ATRACE_NODE_VAL(a,n) (n)->v
+#define ATRACE_NODE_FLOATVAL(a,n) (n)->vu.v
+#define ATRACE_NODE_SMALLVAL(a,n) (n)->vu.val
+
+/*
+  Macros for channel values
+*/
+#define ATRACE_CHAN_SEND_BLOCKED 0
+#define ATRACE_CHAN_RECV_BLOCKED 1
+#define ATRACE_CHAN_VAL_TO_TRACE(v) (2+(v))
+#define ATRACE_CHAN_TRACE_TO_VAL(v) ((v)-2)
 
 void  atrace_signal_change_cause (atrace *, name_t *, float t, float v, name_t *);
-  /* Record a signal change, with a cause for the change as well */
+void  atrace_general_change_cause (atrace *, name_t *, float t, atrace_val_t *v, name_t *);
+  /* Record a signal change, with a cause for the change as well. We
+     require that the "t" argument calls for this function are non-decreasing.
+   */
 
-void  atrace_signal_change (atrace *, name_t *, float t, float v);
-  /* Record a signal change. We require that the "t" argument calls
-     for this function are non-decreasing.
-  */
+
+#define atrace_signal_change(a,n,t,v) atrace_signal_change_cause ((a), (n), (t), (v), ((a)->N ? (a)->N[0] : NULL))
+#define atrace_general_change(a,n,t,v) atrace_general_change_cause ((a), (n), (t), (v), ((a)->N ? (a)->N[0] : NULL))
 
 name_t *atrace_create_node (atrace *, const char *);
   /* create a node; if exists, return old value */
-#define atrace_mk_digital(n) ((n)->type = 1)
-#define atrace_mk_analog(n)  ((n)->type = 0)
-#define atrace_mk_channel(n)  ((n)->type = 2)
+void atrace_mk_digital (name_t *n);
+void atrace_mk_analog (name_t *n);
+void atrace_mk_channel (name_t *n);
+void atrace_mk_enum (name_t *n);
+void atrace_mk_width (name_t *n, int w);
 
 name_t *atrace_lookup (atrace *, const char *);
   /* lookup a node, return NULL if not present */

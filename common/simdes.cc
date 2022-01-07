@@ -20,6 +20,7 @@
  **************************************************************************
  */
 #include "simdes.h"
+#include "int.h"
 
 /* globals for sim object */
 int SimDES::initialized_sim = 0;
@@ -126,6 +127,28 @@ Event::~Event () { }
 unsigned long SimDES::CurTimeLo() 
 {
   return tm_offset[0] + curtime;
+}
+
+BigInt SimDES::CurTime()
+{
+  int i;
+  BigInt b;
+  for (i = SIM_TIME_SIZE-1; i > 0; i--) {
+    if (tm_offset[i] != 0) {
+      break;
+    }
+  }
+  b.setWidth (BIGINT_BITS_ONE*(i+1));
+  b.toUnsigned ();
+  for (i = SIM_TIME_SIZE-1; i > 0; i--) {
+    b.setVal (i, tm_offset[i]);
+  }
+  b.setVal (0, tm_offset[0]);
+  BigInt tmp;
+  tmp.setWidth (BIGINT_BITS_ONE);
+  tmp.setVal (0, curtime);
+  b += tmp;
+  return b;
 }
 
 #define IS_A_BREAKPOINT(ev)						\

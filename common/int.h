@@ -141,7 +141,7 @@ public:
   void hPrint (FILE *fp) const; //print in hex + show all flags
   void hexPrint (FILE *fp) const;
   void bitPrint (FILE *fp) const;
-  void decPrint (FILE *fp) const;
+  void decPrint (FILE *fp, int w = 0) const;
 
   UNIT_TYPE getVal(int n) const { if (len >= 2) return u.v[n]; else return u.value; }
   void setVal (int n, UNIT_TYPE nv) {

@@ -196,6 +196,36 @@ static int fread_int (atrace *a, int *x)
   return ret;
 }
 
+static int fread_ulong (atrace *a, unsigned long *v)
+{
+  int ret;
+  if (sizeof (unsigned long) == sizeof (int)) {
+    ret = fread_int (a, (int*)v);
+  }
+  else if (sizeof (unsigned long) == 2*sizeof (int)) {
+    unsigned int i0, i1;
+    ret = fread_int (a, (int*)&i0);
+    if (!ret) return ret;
+    ret = fread_int (a, (int*)&i1);
+    if (!ret) {
+      if (a->fpos >= sizeof (int)) {
+	a->fpos -= sizeof (int);
+	fseek (a->tr, a->fpos, SEEK_SET);
+	return ret;
+      }
+      else {
+	fprintf (stderr, "fread_ulong: failed and split across files; trace file corrupted.");
+	return 0;
+      }
+    }
+    *v = (((unsigned long)i1) << 8*sizeof (unsigned int)) | i0;
+    return ret;
+  }
+  else {
+    fatal_error ("FIXME");
+  }
+}
+
 static int fread_float (atrace *a, float *f)
 {
   int ret = safe_fread (a, f);
@@ -205,6 +235,79 @@ static int fread_float (atrace *a, float *f)
   return ret;
 }
 
+#define ONE_WIDTH (8*sizeof (unsigned long))
+
+static int fread_value (atrace *a, name_t *n, union atrace_value *v)
+{
+  int ret, i;
+  v->v = 0;
+  v->val = 0;
+  v->valp = NULL;
+  if (n->type == 0) {
+    ret = fread_float (a, &v->v);
+  }
+  else if (n->width <= ONE_WIDTH) {
+    if (n->width <= ONE_WIDTH/2) {
+      ret = fread_int (a, &i);
+      v->val = i;
+    }
+    else {
+      ret = fread_ulong (a, &v->val);
+    }
+  }
+  else {
+    int count = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
+    for (i=0; i < count; i++) {
+      ret = fread_ulong (a, &v->valp[count]);
+      if (ret == 0 && i == 0) {
+	return ret;
+      }
+      else if (ret == 0) {
+	if (a->fpos >= sizeof (unsigned long)*i) {
+	  a->fpos -= sizeof (unsigned long)*i;
+	  fseek (a->tr, a->fpos, SEEK_SET);
+	  return 0;
+	}
+	else {
+	  fprintf (stderr, "fread_value: failed and split across files; trace file corrupted\n");
+	  return 0;
+	}
+      }
+    }
+  }
+  return ret;
+}
+
+/*
+   ignoring time, amount of space needed for all the nodes
+   upto but not including nodeval
+*/
+static int _space_for_one_entry (name_t *n)
+{
+  if (n->type == 0) {
+    return sizeof (float);
+  }
+  else if (n->width <= ONE_WIDTH/2) {
+    return sizeof (int);
+  }
+  else if (n->width <= ONE_WIDTH) {
+    return sizeof (unsigned long);
+  }
+  else {
+    int count = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
+    return count * sizeof (unsigned long);
+  }
+}
+
+static int _space_for_nodes_upto (atrace *a, int nodeval)
+{
+  int i;
+  int space = 0;
+  for (i=0; i < nodeval; i++) {
+    space += _space_for_one_entry (a->N[i]);
+  }
+  return space;
+}
 
 static void seek_after_header (atrace *a, int offset)
 {
@@ -302,11 +405,17 @@ static void read_header (atrace *a)
     n = a->fend - offset;
 
     /* This is okay even if the file is truncated */
-    a->Nsteps = n / (a->Nnodes * sizeof (float));
+    a->Nsteps = n / _space_for_nodes_upto (a, a->Nnodes);
 
     /* get the stop-time from the file itself */
-    fseek (a->tr, 4 * sizeof (int) + 
-	   ((a->Nsteps-1)*(a->Nnodes))*sizeof (float), SEEK_SET);
+    if (ATRACE_FMT (a->fmt) == ATRACE_TIME_ORDER) {
+      fseek (a->tr, 4 * sizeof (int) +
+	     (a->Nsteps-1)*_space_for_nodes_upto (a, a->Nnodes), SEEK_SET);
+    }
+    else {
+      fseek (a->tr, 4 * sizeof (int) +
+	     (a->Nsteps-1)*_space_for_one_entry (a->N[0]), SEEK_SET);
+    }
     fread_float (a, &a->stop_time);
     a->dt = a->stop_time/(a->Nsteps-1);
 
@@ -447,8 +556,38 @@ static void safe_fwrite_float_buf (atrace *a, float f)
   safe_fwrite_buf (a, &f);
 }
 
+static void safe_fwrite_ulong_buf (atrace *a, unsigned long v)
+{
+  safe_fwrite_int_buf (a, (int)(v & 0xffffffff));
+  safe_fwrite_int_buf (a, (int) (v >> 32));
+}
+
+static void safe_fwrite_value_buf (atrace *a, name_t *n)
+{
+  if (n->type == 0) {
+    safe_fwrite_float_buf (a, n->vu.v);
+  }
+  else if (n->width <= ONE_WIDTH) {
+    if (n->width <= ONE_WIDTH/2) {
+      safe_fwrite_int_buf (a, (int)n->vu.val);
+    }
+    else {
+      safe_fwrite_ulong_buf (a, n->vu.val);
+    }
+  }
+  else {
+    int i;
+    int count = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
+    for (i=0; i < count; i++) {
+      safe_fwrite_ulong_buf (a, n->vu.valp[i]);
+    }
+  }
+}
+
 /*
   Helper function: write atrace header
+     done = 0 followed by done = 1 for most modes
+     done = 2 for delta mode
 */
 static void write_header (atrace *a, int done) 
 {
@@ -476,7 +615,7 @@ static void write_header (atrace *a, int done)
     }
     a->locked = 1;
   }
-  else {
+  else if (done == 1) {
     Assert ((a->read_mode == 0) && (a->locked == 1), "Sorry cannot update header");
     if (a->fnum != 0) {
       fclose (a->tr);
@@ -499,6 +638,25 @@ static void write_header (atrace *a, int done)
       safe_fwrite_float (a, a->stop_time);
       fseek (a->tr, sizeof (float), SEEK_CUR);
     }
+  }
+  else  {
+    /* done = 2 */
+    Assert (a->read_mode == 0 && a->locked == 0, "Sorry, cannot write header");
+    Assert (a->fnum == 0, "Must be at file 0");
+
+    Assert (a->fmt != ATRACE_NODE_ORDER && a->fmt != ATRACE_TIME_ORDER,
+	    "write_header: done=2 only for delta formats");
+
+    x = ENDIAN_SIGNATURE;
+    safe_fwrite_int (a, x);
+
+    safe_fwrite_int (a, a->fmt);
+    safe_fwrite_int (a, a->timestamp);
+    safe_fwrite_int (a, a->Nnodes);
+
+    safe_fwrite_float (a, a->stop_time);
+    safe_fwrite_float (a, a->dt);
+    a->locked = 1;
   }
 }
 
@@ -539,15 +697,18 @@ static void emit_header_aux (atrace *a)
   if (a->locked) return;
 
   /* Write header and lock a */
-  write_header (a, 0);
+  if (ATRACE_FMT (a->fmt) == ATRACE_TIME_ORDER ||
+      ATRACE_FMT (a->fmt) == ATRACE_NODE_ORDER) {
+    write_header (a, 0);
 
-  /* Allow early reads for some formats */
-  if (ATRACE_FMT(a->fmt) == ATRACE_TIME_ORDER) {
-    write_header (a, 1);
+    /* Allow early reads for some formats */
+    if (ATRACE_FMT(a->fmt) == ATRACE_TIME_ORDER) {
+      write_header (a, 1);
+    }
   }
-
-  if (ATRACE_FMT(a->fmt) == ATRACE_DELTA) {
-    /* can we update the stop time to time so far? */
+  else {
+    /* write the header out, not marked changing */
+    write_header (a, 2);
   }
 
   /* Create and emit names file */
@@ -572,10 +733,13 @@ static void emit_header_aux (atrace *a)
       m->idx = idx;
 
       if (m->type == 1) {
-	fprintf (nfp, "d:");
+	fprintf (nfp, "d%d:", m->width);
       }
       else if (m->type == 2) {
-	fprintf (nfp, "c:");
+	fprintf (nfp, "c%d:", m->width);
+      }
+      else if (m->type == 3) {
+	fprintf (nfp, "e%d:", m->width);
       }
       else {
 	fprintf (nfp, "a:");
@@ -624,6 +788,8 @@ atrace *atrace_open (const char *s)
   int idx;
   int count;
   int sigtype;
+  int width;
+  int found_type;
 
   NEW (a, atrace);
 
@@ -674,24 +840,59 @@ atrace *atrace_open (const char *s)
 
     n = NULL;
     m = NULL;
+    found_type = 0;
 
     if (l > 2 && buf[0] == 'a' && buf[1] == ':') {
+      width = 0;
       sigtype = 0; /* analog */
-      sbuf = buf+2;
-      l -= 2;
+      found_type = 1;
     }
     else if (l > 2 && buf[0] == 'd' && buf[1] == ':') {
+      width = 1;
       sigtype = 1; /* digital */
-      sbuf = buf+2;
-      l -= 2;
+      found_type = 1;
+    }
+    else if (l > 2 && buf[0] == 'd' && (sscanf (buf+1,"%d:", &width) == 1)) {
+      sigtype = 1;
+      found_type = 1;
     }
     else if (l > 2 && buf[0] == 'c' && buf[1] == ':') {
+      width = 1;
       sigtype = 2; /* channel */
-      sbuf = buf+2;
-      l -= 2;
+      found_type = 1;
+    }
+    else if (l > 2 && buf[0] == 'c' && (sscanf (buf+1,"%d:", &width) == 1)) {
+      sigtype = 2;
+      found_type = 1;
+    }
+    else if (l > 2 && buf[0] == 'e' && buf[1] == ':') {
+      width = 1;
+      sigtype = 3; /* enum */
+      found_type = 1;
+    }
+    else if (l > 2 && buf[0] == 'e' && (sscanf (buf+1,"%d:", &width) == 1)) {
+      sigtype = 3;
+      found_type = 1;
     }
     else {
+      width = 0;
       sigtype = 0; /* analog */
+      found_type = 0;
+    }
+
+    if (found_type) {
+      sbuf = buf+1;
+      l--;
+      while (*sbuf && *sbuf != ':') {
+	sbuf++;
+	l--;
+      }
+      if (*sbuf == ':') {
+	sbuf++;
+	l--;
+      }
+    }
+    else {
       sbuf = buf;
     }
 
@@ -716,6 +917,7 @@ atrace *atrace_open (const char *s)
     n = atrace_create_node (a, sbuf);
     n->type = sigtype;
     n->idx = idx;
+    n->width = width;
     if (m) {
       atrace_alias (a, n, m);
     }
@@ -783,13 +985,77 @@ int atrace_header (atrace *a, int *ts, int *Nnodes, int *Nsteps, int *fmt)
 #define ISTEP(a,tm)  ((int) (((tm) + (a)->dt*0.01)/(a)->dt))
 #define VSTEP(a,tm)((int) (((tm) + (a)->vdt*0.01)/(a)->vdt))
 
+static int atrace_node_equal (name_t *n, union atrace_value *v)
+{
+  if (n->type == 0) {
+    return (n->vu.v == v->v);
+  }
+  else if (n->width <= ONE_WIDTH) {
+    return (n->vu.val == v->val);
+  }
+  else {
+    int i, count;
+    count = (n->width + ONE_WIDTH-1)/ONE_WIDTH;
+    for (i=0; i < count; i++) {
+      if (n->vu.valp[i] != v->valp[i]) {
+	return 0;
+      }
+    }
+    return 1;
+  }
+}
+
+static void _value_alloc (name_t *n, union atrace_value *v)
+{
+  if (n->type == 0) return;
+  if (n->width > 64) {
+    int count = (n->width + ONE_WIDTH-1)/ONE_WIDTH;
+    MALLOC (v->valp, unsigned long, count);
+  }
+}
+
+void atrace_alloc_val_entry (name_t *n, atrace_val_t *v)
+{
+  _value_alloc (n, v);
+}
+
+static void _value_free (name_t *n, union atrace_value *v)
+{
+  if (n->type == 0) return;
+  if (n->width > 64) {
+    FREE (v->valp);
+  }
+}
+
+void atrace_free_val_entry (name_t *n, atrace_val_t *v)
+{
+  _value_free (n, v);
+}
+
+static void _value_assign (name_t *n, atrace_val_t *lhs, atrace_val_t *rhs)
+{
+  if (n->type == 0) {
+    lhs->v = rhs->v;
+  }
+  else if (n->width <= ONE_WIDTH) {
+    lhs->val = rhs->val;
+  }
+  else {
+    int i, count;
+    count = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
+    for (i=0; i < count; i++) {
+      lhs->valp[i] = rhs->valp[i];
+    }
+  }
+}
+
 /*
   Read record, and the next time "t"
 */
 static float _read_record (atrace *a, float t)
 {
   int idx;
-  float v;
+  union atrace_value v;
   int c;
   name_t *prev;
 
@@ -808,8 +1074,9 @@ static float _read_record (atrace *a, float t)
   prev = NULL;
   if (a->rec_type == -2) {
     for (idx = 1; idx < a->Nnodes; idx++) {
-      fread_float (a, &v);
-      if (a->N[idx]->v != v) {
+      _value_alloc (a->N[idx], &v);
+      fread_value (a, a->N[idx], &v);
+      if (!atrace_node_equal (a->N[idx], &v)) {
 	if (prev) {
 	  prev->chg_next = a->N[idx];
 	}
@@ -818,8 +1085,9 @@ static float _read_record (atrace *a, float t)
 	}
 	a->N[idx]->chg_next = NULL;
 	prev = a->N[idx];
-	a->N[idx]->v = v;
+	_value_assign (a->N[idx], &a->N[idx]->vu, &v);
       }
+      _value_free (a->N[idx], &v);
       if (a->fmt == ATRACE_DELTA_CAUSE) {
 	fread_int (a, &c);
 	if (c < 0 || c >= a->Nnodes) {
@@ -844,13 +1112,15 @@ static float _read_record (atrace *a, float t)
 	a->hd_chglist = a->N[idx];
       }
       a->N[idx]->chg_next = NULL;
-      fread_float (a, &v);
       if (idx < 0 || idx >= a->Nnodes) {
 	fprintf (stderr, "ERROR: invalid index in trace file (%d)\n", idx);
 	fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
 	exit (1);
       }
-      a->N[idx]->v = v;
+      _value_alloc (a->N[idx], &v);
+      fread_value (a, a->N[idx], &v);
+      _value_assign (a->N[idx], &a->N[idx]->vu, &v);
+      _value_free (a->N[idx], &v);
       if (a->fmt == ATRACE_DELTA_CAUSE) {
 	fread_int (a, &c);
 	if (c < 0 || c >= a->Nnodes) {
@@ -873,15 +1143,15 @@ static float _read_record (atrace *a, float t)
   else {
     a->rec_type = -2;
   }
-  fread_float (a, &v);
-  return v;
+  fread_float (a, &v.v);
+  return v.v;
 }
 
 
 /* read all values into an array 
    node #i, step #j is at position M[Nvsteps*i + j]
 */
-void atrace_readall (atrace *a, float *M)
+void atrace_readall (atrace *a, atrace_val_t *M)
 {
   int i, j;
   float t;
@@ -902,8 +1172,9 @@ void atrace_readall (atrace *a, float *M)
       else {
 	k = VSTEP (a, j*a->dt);
       }
-      for (i=0; i < a->Nnodes; i++)
-	fread_float (a, &M[a->Nvsteps*i + k]);
+      for (i=0; i < a->Nnodes; i++) {
+	fread_value (a, a->N[i], &M[a->Nvsteps*i + k]);
+      }
     }
     break;
 
@@ -916,7 +1187,7 @@ void atrace_readall (atrace *a, float *M)
 	else {
 	  k = VSTEP(a, j*a->dt);
 	}
-	fread_float (a, &M[a->Nvsteps*i + k]);
+	fread_value (a, a->N[i], &M[a->Nvsteps*i + k]);
       }
     break;
 
@@ -934,7 +1205,7 @@ void atrace_readall (atrace *a, float *M)
 	  step = -1;
 	}
       }
-      a->N[0]->v = j*a->dt;
+      a->N[0]->vu.v = j*a->dt;
       if (a->vdt == a->dt) {
 	k = j;
       }
@@ -942,7 +1213,7 @@ void atrace_readall (atrace *a, float *M)
 	k = VSTEP (a, j*a->dt);
       }
       for (i = 0; i < a->Nnodes; i++) {
-	M[a->Nvsteps*i + k] = a->N[i]->v;
+	_value_assign (a->N[i], &M[a->Nvsteps*i + k], &a->N[i]->vu);
       }
     }
     break;
@@ -955,7 +1226,7 @@ void atrace_readall (atrace *a, float *M)
 /* read all values into an array 
    node #i, step #j is at position M[Nnodes*j + i]
 */
-void atrace_readall_xposed (atrace *a, float *M)
+void atrace_readall_xposed (atrace *a, atrace_val_t *M)
 {
   int i, j;
   int step;
@@ -975,8 +1246,9 @@ void atrace_readall_xposed (atrace *a, float *M)
       else {
 	k = VSTEP (a, j*a->dt);
       }
-      for (i=0; i < a->Nnodes; i++)
-	fread_float (a, &M[a->Nnodes*k + i]);
+      for (i=0; i < a->Nnodes; i++) {
+	fread_value (a, a->N[i], &M[a->Nnodes*k + i]);
+      }
     }
     break;
 
@@ -989,7 +1261,7 @@ void atrace_readall_xposed (atrace *a, float *M)
 	else {
 	  k = VSTEP (a, j*a->dt);
 	}
-	fread_float (a, &M[a->Nnodes*k + i]);
+	fread_value (a, a->N[i], &M[a->Nnodes*k + i]);
       }
     break;
 
@@ -1007,7 +1279,7 @@ void atrace_readall_xposed (atrace *a, float *M)
 	  step = -1;
 	}
       }
-      a->N[0]->v = j*a->dt;
+      a->N[0]->vu.v = j*a->dt;
       if (a->vdt == a->dt) {
 	k = j;
       }
@@ -1015,7 +1287,7 @@ void atrace_readall_xposed (atrace *a, float *M)
 	k = VSTEP (a, j*a->dt);
       }
       for (i = 0; i < a->Nnodes; i++) {
-	M[a->Nnodes*k + i] = a->N[i]->v;
+	_value_assign (a->N[i], &M[a->Nnodes*k + i], &a->N[i]->vu);
       }
     }
     break;
@@ -1027,10 +1299,11 @@ void atrace_readall_xposed (atrace *a, float *M)
 }
 
 
+
 /* 
    read all node values into an array 
 */
-void atrace_readall_nodenum (atrace *a, int node, float *M)
+void atrace_readall_nodenum (atrace *a, int node, atrace_val_t *M)
 {
   int i;
   int step;
@@ -1042,8 +1315,8 @@ void atrace_readall_nodenum (atrace *a, int node, float *M)
 
   switch (ATRACE_FMT(a->fmt)) {
   case ATRACE_TIME_ORDER:
-    seek_after_header (a, node*sizeof (float));
-    step = (a->Nnodes-1)*sizeof (float);
+    seek_after_header (a, _space_for_nodes_upto (a, node));
+    step = _space_for_nodes_upto (a, a->Nnodes);
 
     for (i=0; i < a->Nsteps; i++) {
       if (a->vdt == a->dt) {
@@ -1052,13 +1325,13 @@ void atrace_readall_nodenum (atrace *a, int node, float *M)
       else {
 	k = VSTEP (a, i*a->dt);
       }
-      fread_float (a, &M[k]);
+      fread_value (a, a->N[node], &M[k]);
       fseek (a->tr, step, SEEK_CUR);
     }
     break;
 
   case ATRACE_NODE_ORDER:
-    seek_after_header (a, node*sizeof(float)*a->Nsteps);
+    seek_after_header (a, _space_for_nodes_upto (a, node)*a->Nsteps);
     for (i=0; i < a->Nsteps; i++) {
       if (a->vdt == a->dt) {
 	k = i;
@@ -1066,7 +1339,7 @@ void atrace_readall_nodenum (atrace *a, int node, float *M)
       else {
 	k = VSTEP (a, i*a->dt);
       }
-      fread_float (a, &M[k]);
+      fread_value (a, a->N[node], &M[k]);
     }
     break;
 
@@ -1083,7 +1356,7 @@ void atrace_readall_nodenum (atrace *a, int node, float *M)
 /* 
    read all node values into an array 
 */
-void atrace_readall_block (atrace *a, int node, int num, float *M)
+void atrace_readall_block (atrace *a, int node, int num, atrace_val_t *M)
 {
   int i;
   int step;
@@ -1098,8 +1371,10 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 
   switch (ATRACE_FMT(a->fmt)) {
   case ATRACE_TIME_ORDER:
-    seek_after_header (a, node*sizeof (float));
-    step = (a->Nnodes-num)*sizeof (float);
+    step = _space_for_nodes_upto (a, node);
+    seek_after_header (a, step);
+    step = _space_for_nodes_upto (a, a->Nnodes) -
+      _space_for_nodes_upto  (a, node+num) + step;
 
     for (i=0; i < a->Nsteps; i++) {
       if (a->vdt == a->dt) {
@@ -1110,7 +1385,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
       }
       for (j=0; j < num; j++) {
 	/* node # (node+j), step k */
-	fread_float (a, &M[j*a->Nvsteps+k]);
+	fread_value (a, a->N[node+j], &M[j*a->Nvsteps+k]);
       }
       fseek (a->tr, step, SEEK_CUR);
     }
@@ -1118,7 +1393,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 
   case ATRACE_NODE_ORDER:
     for (j=0; j < num; j++) {
-      seek_after_header (a, (j+node)*sizeof(float)*a->Nsteps);
+      seek_after_header (a, _space_for_nodes_upto (a, j+node)*a->Nsteps);
       for (i=0; i < a->Nsteps; i++) {
 	if (a->vdt == a->dt) {
 	  k = i;
@@ -1126,7 +1401,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 	else {
 	  k = VSTEP (a, i*a->dt);
 	}
-	fread_float (a, &M[j*a->Nvsteps+ k]);
+	fread_value (a, a->N[j], &M[j*a->Nvsteps+ k]);
       }
     }
     break;
@@ -1142,7 +1417,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 	else {
 	  k = VSTEP (a, j*a->dt);
 	}
-	M[k] = j*a->dt;
+	M[k].v = j*a->dt;
       }
       node = 1;
       num--;
@@ -1161,7 +1436,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 	  step = -1;
 	}
       }
-      a->N[0]->v = j*a->dt;
+      a->N[0]->vu.v = j*a->dt;
       if (a->vdt == a->dt) {
 	k = j;
       }
@@ -1169,7 +1444,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 	k = VSTEP (a, j*a->dt);
       }
       for (i=0; i < num; i++) {
-	M[a->Nvsteps*i + k] = a->N[i+node]->v;
+	_value_assign (a->N[i+node], &M[a->Nvsteps*i + k], &a->N[i+node]->vu);
       }
     }
     break;
@@ -1183,7 +1458,7 @@ void atrace_readall_block (atrace *a, int node, int num, float *M)
 /* 
    read all node values into an array 
 */
-void atrace_readall_node (atrace *a, name_t *n, float *M)
+void atrace_readall_node (atrace *a, name_t *n, atrace_val_t *M)
 {
   int i, j;
   int step;
@@ -1210,7 +1485,7 @@ void atrace_readall_node (atrace *a, name_t *n, float *M)
 	else {
 	  k = VSTEP (a, j*a->dt);
 	}
-	M[k] = j*a->dt;
+	M[k].v = j*a->dt;
       }
       return;
     }
@@ -1235,7 +1510,7 @@ void atrace_readall_node (atrace *a, name_t *n, float *M)
       else {
 	k = VSTEP(a, j*a->dt);
       }
-      M[k] = a->N[n->idx]->v;
+      _value_assign (a->N[n->idx], &M[k], &a->N[n->idx]->vu);
     }
     break;
   default:
@@ -1247,7 +1522,7 @@ void atrace_readall_node (atrace *a, name_t *n, float *M)
 /* 
    read all node values into an array 
 */
-void atrace_readall_nodenum_c (atrace *a, int node, float *M, int *C)
+void atrace_readall_nodenum_c (atrace *a, int node, atrace_val_t *M, int *C)
 {
   int i;
   int step;
@@ -1276,7 +1551,7 @@ void atrace_readall_nodenum_c (atrace *a, int node, float *M, int *C)
 /* 
    read all node values into an array 
 */
-void atrace_readall_node_c (atrace *a, name_t *n, float *M, int *C)
+void atrace_readall_node_c (atrace *a, name_t *n, atrace_val_t *M, int *C)
 {
   int i, j;
   int step;
@@ -1303,7 +1578,7 @@ void atrace_readall_node_c (atrace *a, name_t *n, float *M, int *C)
 	else {
 	  k = VSTEP (a, j*a->dt);
 	}
-	M[k] = j*a->dt;
+	M[k].v = j*a->dt;
 	C[k] = 0;
       }
       return;
@@ -1329,7 +1604,7 @@ void atrace_readall_node_c (atrace *a, name_t *n, float *M, int *C)
       else {
 	k = VSTEP(a, j*a->dt);
       }
-      M[k] = a->N[n->idx]->v;
+      _value_assign (a->N[n->idx], &M[k], &a->N[n->idx]->vu);
       C[k] = a->N[n->idx]->cause;
     }
     break;
@@ -1362,7 +1637,7 @@ void atrace_init_time (atrace *a)
   case ATRACE_TIME_ORDER:
     seek_after_header (a, 0);
     for (n=0; n < a->Nnodes; n++) {
-      fread_float (a, &a->N[n]->v);
+      fread_value (a, a->N[n], &a->N[n]->vu);
     }
     a->curt = 0;
     a->curstep = 0;
@@ -1370,7 +1645,7 @@ void atrace_init_time (atrace *a)
 
   case ATRACE_DELTA:
   case ATRACE_DELTA_CAUSE:
-    a->N[0]->v = 0;
+    a->N[0]->vu.v = 0;
     fread_float (a, &a->curt);
     a->nextt = _read_record (a, 0);
     a->curstep = 0;
@@ -1409,7 +1684,7 @@ void atrace_advance_time (atrace *a, int nsteps)
       if (k > nsteps + nv)
 	break;
       for (n=0; n < a->Nnodes; n++) {
-	fread_float (a, &a->N[n]->v);
+	fread_value (a, a->N[n], &a->N[n]->vu);
       }
     }
     a->curt = (i-1)*a->dt;
@@ -1418,7 +1693,7 @@ void atrace_advance_time (atrace *a, int nsteps)
   case ATRACE_DELTA:
   case ATRACE_DELTA_CAUSE:
     a->curstep += nsteps;
-    a->N[0]->v += nsteps*a->vdt;
+    a->N[0]->vu.v += nsteps*a->vdt;
     while (a->nextt >= 0 && a->curt >= 0 && (a->nextt < a->curstep*a->vdt)) {
       a->curt = a->nextt;
       //a->N[0]->v = a->curt;
@@ -1435,7 +1710,7 @@ void atrace_advance_time (atrace *a, int nsteps)
       }
       if (k > nsteps + nv) 
 	break;
-      a->N[0]->v = i*a->dt;
+      a->N[0]->vu.v = i*a->dt;
     }
     while ((a->curt >= 0 && a->nextt >= 0) && (a->curt < (nv+nsteps)*a->vdt)) {
       a->curt = a->nextt;
@@ -1497,7 +1772,7 @@ name_t *atrace_create_node (atrace *a, const char *s)
   b = hash_add (a->H, s);
 
   NEW (n, name_t);
-  n->v = 0.0;
+  n->vu.v = 0.0;
   n->up = NULL;
   n->next = n;
   n->b = b;
@@ -1505,6 +1780,7 @@ name_t *atrace_create_node (atrace *a, const char *s)
   n->chg = 0;
   n->type = 0;
   n->chg_next = NULL;
+  n->width = 1;
 
   b->v = (void *) n;
 
@@ -1556,7 +1832,7 @@ static void _emit_record (atrace *a)
 	n = (name_t *) b->v;
 	if (n->up) continue;
 	/*safe_fwrite_int_buf (a, n->idx);*/
-	safe_fwrite_float_buf (a, n->v);
+	safe_fwrite_value_buf (a, n);
 	if (a->fmt == ATRACE_DELTA_CAUSE) {
 	  safe_fwrite_int_buf (a, 0);
 	}
@@ -1581,7 +1857,7 @@ static void _emit_record (atrace *a)
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
 	    if (n->up) continue;
-	    safe_fwrite_float_buf (a, n->v);
+	    safe_fwrite_value_buf  (a, n);
 	    if (a->fmt == ATRACE_DELTA_CAUSE) {
 	      safe_fwrite_int_buf (a, n->cause);
 	    }
@@ -1596,7 +1872,7 @@ static void _emit_record (atrace *a)
 	    n = (name_t *) b->v;
 	    if (n->chg) {
 	      safe_fwrite_int_buf (a, n->idx);
-	      safe_fwrite_float_buf (a, n->v);
+	      safe_fwrite_value_buf (a, n);
 	      if (a->fmt == ATRACE_DELTA_CAUSE) {
 		safe_fwrite_int_buf (a, n->cause);
 	      }
@@ -1636,7 +1912,7 @@ static int large_change (atrace *a, float oldv, float newv)
   return 0;
 }
 
-static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
+static void _sig_change_delta (atrace *a, name_t *m, float t, atrace_val_t *v)
 {
   int step;
   int flag = 0;
@@ -1653,8 +1929,8 @@ static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
   Assert (step >= a->curtime, "Going backward in time?");
 
   if (step == a->curtime) {
-    if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
-      m->v = v;
+    if (DONT_FILTER_DELTAS(m->type) || large_change (a, m->vu.v, v->v)) {
+      _value_assign (m, &m->vu, v);
       m->chg = 1;
     }
     return;
@@ -1663,13 +1939,14 @@ static void _sig_change_delta (atrace *a, name_t *m, float t, float v)
   _emit_record (a);		/* emit record */
   
   a->curtime = step;
-  if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
-    m->v = v;
+  if (large_change (a, m->vu.v, v->v) || DONT_FILTER_DELTAS(m->type)) {
+    _value_assign (m, &m->vu, v);
     m->chg = 1;
   }
 }
 
-static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int idx)
+static void _sig_change_delta_cause (atrace *a, name_t *m, float t,
+				     atrace_val_t *v, int idx)
 {
   int step;
   int flag = 0;
@@ -1686,8 +1963,8 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int
   Assert (step >= a->curtime, "Going backward in time?");
 
   if (step == a->curtime) {
-    if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
-      m->v = v;
+    if (large_change (a, m->vu.v, v->v) || DONT_FILTER_DELTAS(m->type)) {
+      _value_assign (m, &m->vu, v);
       m->cause = idx;
       m->chg = 1;
     }
@@ -1697,8 +1974,8 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t, float v, int
   _emit_record (a);		/* emit record */
   
   a->curtime = step;
-  if (large_change (a, m->v, v) || DONT_FILTER_DELTAS(m->type)) {
-    m->v = v;
+  if (large_change (a, m->vu.v, v->v) || DONT_FILTER_DELTAS(m->type)) {
+    _value_assign (m, &m->vu, v);
     m->cause = idx;
     m->chg = 1;
   }
@@ -1716,7 +1993,7 @@ static void _sig_delta_end (atrace *a)
 }
 
 
-static void _sig_change_timeorder (atrace *a, name_t *n, float t, float v)
+static void _sig_change_timeorder (atrace *a, name_t *n, float t, atrace_val_t *v)
 {
   int step;
   int i;
@@ -1741,12 +2018,12 @@ static void _sig_change_timeorder (atrace *a, name_t *n, float t, float v)
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
 	if (n->up) continue;
-	safe_fwrite_float_buf (a, n->v);
+	safe_fwrite_value_buf (a, n);
       }
     a->curtime++;
   }
   Assert (a->curtime == step, "What?");
-  m->v = v;
+  _value_assign (m, &m->vu, v);
 }
 
 static void _sig_timeorder_end (atrace *a)
@@ -1761,13 +2038,14 @@ static void _sig_timeorder_end (atrace *a)
       for (b = a->H->head[i]; b; b = b->next) {
 	n = (name_t *) b->v;
 	if (n->up) continue;
-	safe_fwrite_float_buf (a, n->v);
+	safe_fwrite_value_buf (a, n);
       }
     a->curtime++;
   }
 }
 
-static void _sig_change_nodeorder (atrace *a, name_t *n, float t, float v)
+static void _sig_change_nodeorder (atrace *a, name_t *n, float t,
+				   atrace_val_t *v)
 {
   int step;
   int last_idx;
@@ -1797,23 +2075,23 @@ static void _sig_change_nodeorder (atrace *a, name_t *n, float t, float v)
     if (last_idx != 0) {
       /* finish writing out previous node */
       while (a->curtime < a->Nsteps) {
-	safe_fwrite_float_buf (a, a->nprev->v);
+	safe_fwrite_value_buf (a, a->nprev);
 	a->curtime++;
       }
     }
     a->nprev = n;
+    _value_assign (n, &n->vu, v);
     /* Ok, we're in good shape */
-    safe_fwrite_float_buf (a, v);
+    safe_fwrite_value_buf (a, n);
     a->curtime = 1; /* next expected at time 1 * dt */
-    n->v = v;
   }
   else {
     while (a->curtime < step) {
-      safe_fwrite_float_buf (a, n->v);
+      safe_fwrite_value_buf (a, n);
       a->curtime++;
     }
-    safe_fwrite_float_buf (a, v);
-    n->v = v;
+    _value_assign (n, &n->vu, v);
+    safe_fwrite_value_buf (a, n);
     a->curtime = step + 1;
   }
 }
@@ -1827,46 +2105,26 @@ static void _sig_nodeorder_end (atrace *a)
     
   /* finish writing out last node */
   while (a->curtime < a->Nsteps) {
-    safe_fwrite_float_buf (a, a->nprev->v);
+    safe_fwrite_value_buf (a, a->nprev);
     a->curtime++;
   }
 }
 
 
 /* signal change */
-void atrace_signal_change (atrace *a, name_t *n, float t, float v)
+void atrace_signal_change_cause (atrace *a, name_t *n, float t, float v, name_t *c)
 {
-  emit_header_aux (a);
-
-  while (n->up)
-    n = n->up;
-  
-  switch (ATRACE_FMT(a->fmt)) {
-  case ATRACE_NODE_ORDER:
-    _sig_change_nodeorder (a, n, t, v);
-    break;
-  case ATRACE_TIME_ORDER:
-    _sig_change_timeorder (a, n, t, v);
-    break;
-  case ATRACE_DELTA_CAUSE:
-    _sig_change_delta_cause (a, n, t, v, 0);
-    break;
-  case ATRACE_DELTA:
-    _sig_change_delta (a, n, t, v);
-    break;
-  default:
-    Assert (0, "unsupported format");
-    break;
-  }
+  atrace_val_t x;
+  x.v = v;
+  atrace_general_change_cause (a, n, t, &x, c);
 }
 
 /* signal change */
-void atrace_signal_change_cause (atrace *a, name_t *n, float t, float v, name_t *c)
+void atrace_general_change_cause (atrace *a, name_t *n, float t, atrace_val_t *v, name_t *c)
 {
   emit_header_aux (a);
 
-  while (n->up)
-    n = n->up;
+  n = _union_find (n);
   
   switch (ATRACE_FMT(a->fmt)) {
   case ATRACE_NODE_ORDER:
@@ -1876,7 +2134,7 @@ void atrace_signal_change_cause (atrace *a, name_t *n, float t, float v, name_t 
     _sig_change_timeorder (a, n, t, v);
     break;
   case ATRACE_DELTA_CAUSE:
-    _sig_change_delta_cause (a, n, t, v, c->idx);
+    _sig_change_delta_cause (a, n, t, v, c ? c->idx : 0);
     break;
   case ATRACE_DELTA:
     _sig_change_delta (a, n, t, v);
@@ -1886,6 +2144,7 @@ void atrace_signal_change_cause (atrace *a, name_t *n, float t, float v, name_t 
     break;
   }
 }
+
 
 /* signal change */
 static void atrace_signal_done (atrace *a)
@@ -1921,7 +2180,9 @@ void atrace_close (atrace *a)
   if (a->read_mode == 0) {
     emit_header_aux (a);
     atrace_signal_done (a);
-    write_header (a, 1);
+    if (ATRACE_FMT (a->fmt) == ATRACE_NODE_ORDER) {
+      write_header (a, 1);
+    }
   }
   fclose (a->tr);
   hash_free (a->H);
@@ -1932,4 +2193,45 @@ void atrace_close (atrace *a)
   if (a->buffer)
     FREE (a->buffer);
   FREE (a);
+}
+
+
+void atrace_mk_digital(name_t *n)
+{
+  _value_free (n, &n->vu);
+  n->type = 1;
+  _value_alloc (n, &n->vu);
+}
+
+void atrace_mk_analog(name_t *n)
+{
+  _value_free (n, &n->vu);
+  n->type = 0;
+}
+
+void atrace_mk_channel(name_t *n)
+{
+  _value_free (n, &n->vu);
+  n->type = 2;
+  _value_alloc (n, &n->vu);
+}
+
+void atrace_mk_enum(name_t *n)
+{
+  _value_free (n, &n->vu);
+  n->type = 3;
+  _value_alloc (n, &n->vu);
+}
+
+void atrace_mk_width(name_t *n, int w)
+{
+  _value_free (n, &n->vu);
+  n->width = w;
+  if (n->type == 2) {
+    n->width++;
+    if (n->width == 1) {
+      n->width++;
+    }
+  }
+  _value_alloc (n, &n->vu);
 }

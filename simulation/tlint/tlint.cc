@@ -1007,7 +1007,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 #define EARLIER 1
 
   for (i=0; i < Nnodes; i++) {
-    n[i].hist_val[PREV] = a->N[i]->v;
+    n[i].hist_val[PREV] = ATRACE_NODE_FLOATVAL (a, a->N[i]);
     n[i].hist_tm[PREV] = 0;
     n[i].hist_tm[EARLIER] = -1;
     n[i].hist_dig[PREV] = raw_analog2digital (n[i].hist_val[PREV]);
@@ -1088,7 +1088,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	if (n[j].skip) continue;
 	if (n[j].pn) {
 	  if (n[j].pn->val == PRS_VAL_X) {
-	    v = raw_analog2digital (a->N[j]->v);
+	    v = raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j]));
 	    if (v == 0) {
 	      prs_set_node (p, n[j].pn, PRS_VAL_F);
 	      prs_step_cause (p, NULL, NULL);
@@ -1098,13 +1098,13 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	      prs_step_cause (p, NULL, NULL);
 	    }
 	  }
-	  if (raw_analog2digital (a->N[j]->v) == 1) {
+	  if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j])) == 1) {
 	    if (n[j].pn->val != PRS_VAL_T) {
 	      printf (" *** initialization error: %s should be 1 (is %c)\n", 
 		      prs_nodename (p, n[j].pn), prs_nodechar (n[j].pn->val));
 	    }
 	  }
-	  else if (raw_analog2digital (a->N[j]->v) == 0) {
+	  else if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j])) == 0) {
 	    if (n[j].pn->val != PRS_VAL_F) {
 		printf (" *** initialization error: %s should be 0 (is %c)\n", 
 			prs_nodename (p, n[j].pn), prs_nodechar (n[j].pn->val));
@@ -1148,11 +1148,11 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	}
       */
 
-      if (n[j].hist_val[PREV] == nm->v) {
+      if (n[j].hist_val[PREV] == ATRACE_NODE_FLOATVAL (a, nm)) {
 	goto next;
       }
 
-      v = analog2digital (nm->v, n[j].hist_dig[PREV]);
+      v = analog2digital (ATRACE_NODE_FLOATVAL (a, nm), n[j].hist_dig[PREV]);
       
       if (v != n[j].hist_dig[PREV]) {
 	/* if v is X now, or if we don't have enough history, nothing
@@ -1186,7 +1186,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	    if ((v == 1 && n[j].hist_dig[PREV] == 0) ||
 		(v == 0 && n[j].hist_dig[PREV] == 1)) {
 	      /* transition so fast we didn't go through X */
-	      slew = (nm->v - n[j].hist_val[PREV])/((a->curt-n[j].hist_tm[PREV])*1e9);
+	      slew = (ATRACE_NODE_FLOATVAL (a, nm) - n[j].hist_val[PREV])/((a->curt-n[j].hist_tm[PREV])*1e9);
 
 	      if (!n[j].skip) {
 		add_err_log (FAST_TRANSITION, j, a->curt, slew);
@@ -1196,7 +1196,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	    else if (v == 0 || v == 1) {
 	      Assert (n[j].hist_dig[PREV] == -1, "Hmm...");
 	      Assert (n[j].hist_dig[EARLIER] != v, "Hmmmm.");
-	      slew = (nm->v - n[j].hist_val[PREV])/(1e9*(a->curt-n[j].hist_tm[PREV]));
+	      slew = (ATRACE_NODE_FLOATVAL (a, nm) - n[j].hist_val[PREV])/(1e9*(a->curt-n[j].hist_tm[PREV]));
 	      aslew = fabs (slew);
 	      if (aslew <= slewrate_slow_threshold) {
 		if (!n[j].skip) {
@@ -1234,7 +1234,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	n[j].hist_tm[EARLIER] = n[j].hist_tm[PREV];
 	n[j].hist_dig[EARLIER] = n[j].hist_dig[PREV];
 
-	n[j].hist_val[PREV] = nm->v;
+	n[j].hist_val[PREV] = ATRACE_NODE_FLOATVAL (a, nm);
 	n[j].hist_tm[PREV] = a->curt;
 	n[j].hist_dig[PREV] = v;
 
@@ -1266,10 +1266,10 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
       else {
 	/* same old, nothing to do */
 	if (v == -1) /* X */ {
-	  if (nm->v > n[j].max_val)
-	    n[j].max_val = nm->v;
-	  if (nm->v < n[j].min_val)
-	    n[j].min_val = nm->v;
+	  if (ATRACE_NODE_FLOATVAL (a, nm) > n[j].max_val)
+	    n[j].max_val = ATRACE_NODE_FLOATVAL (a, nm);
+	  if (ATRACE_NODE_FLOATVAL (a, nm) < n[j].min_val)
+	    n[j].min_val = ATRACE_NODE_FLOATVAL (a, nm);
 	}
       }
     next:

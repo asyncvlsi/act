@@ -54,7 +54,7 @@ int main (int argc, char **argv)
   atrace_header (a, &ts, &Nnodes, &Nsteps, &fmt);
   atrace_init_time (a);
   for (int i=0; i < Nsteps; i++) {
-    float v = ATRACE_NODE_VAL (a, n);
+    float v = ATRACE_NODE_FLOATVAL (a, n);
     printf ("%g %g\n", i*ATRACE_GET_STEPSIZE (a), v);
     atrace_advance_time (a, 1);
   }

@@ -55,6 +55,7 @@
 #include <common/list.h>
 #include <common/bitset.h>
 #include <common/sim.h>
+#include <common/int.h>
 
 class SimDES;
 
@@ -172,6 +173,7 @@ class SimDES {
       (tm_offset[]) + curtime
   */
   static unsigned long CurTimeLo (); // low order bits of the current time
+  static BigInt CurTime (); // full time
   static SimDES *CurObj () { return curobj; }
 
   static void interrupt () { _interrupt = 1; }

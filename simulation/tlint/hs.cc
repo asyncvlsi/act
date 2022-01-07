@@ -393,7 +393,7 @@ void convTable(atrace *A, FILE *f, const char *fileName,
     rawDataPos++;
     for(j = 0; j < numOfVectors-1; j++) {
       if (names[j]) {
-	if (i > 0 && (fabs(names[j]->v-*rawDataPos) >= 1e-6)) {
+	if (i > 0 && (fabs(ATRACE_NODE_FLOATVAL (A, names[j])-*rawDataPos) >= 1e-6)) {
 	  atrace_signal_change (A, names[j], tm, *rawDataPos);
 	}
       }
@@ -554,7 +554,7 @@ void csv_convert (FILE *fp, const char *output)
 	}
 	v = atof (tok);
 
-	if (first < 2 || (fabs(names[i]->v - v) >= 1e-6)) {
+	if (first < 2 || (fabs(ATRACE_NODE_FLOATVAL (A, names[i]) - v) >= 1e-6)) {
 	  atrace_signal_change (A, names[i], t, v);
 	}
 	tok = strtok (NULL, ",\n");
