@@ -125,7 +125,7 @@ $(SUBDIRS_DEPEND):
 	@$(MAKE) -C $(patsubst %_depend,%,$@) dependsub depend
 
 $(SUBDIRS_INSTALL):
-	@$(MAKE) -C $(patsubst %_install,%,$@) installsub install
+	@$(MAKE) -C $(patsubst %_install,%,$@) install_dirs installsub install
 
 $(SUBDIRS_RUNTEST):
 	@$(MAKE) -C $(patsubst %_runtest,%,$@) runtestsub runtest
@@ -247,6 +247,11 @@ install_inc: $(TARGETINCS)
                         fi; \
                 fi; \
                 done
+
+install_dirs:
+	@[ -d $(INSTALLACT) ] || mkdir $(INSTALLACT)
+	@[ "x$(TARGETACTSUBDIR)" = "x" ] || [ -d $(INSTALLACT)/$(TARGETACTSUBDIR) ] || mkdir $(INSTALLACT)/$(TARGETACTSUBDIR)
+
 
 runtest: runtestsub
 	@if [ -d test -a -x test/run.sh ]; \
