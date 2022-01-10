@@ -25,6 +25,8 @@
 #define __ATRACE_H__
 
 #include <common/hash.h>
+#include <sys/types.h>
+#include <netinet/in.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,7 +49,7 @@ extern "C" {
  *
  *      - floats for analog signals and time
  *
- *      - digital/enum signals have a specified bit-width and are
+ *      - digital/extra signals have a specified bit-width and are
  *      written out in integer format described next.
  *
  *      - channel values have a specified bit-width, and the internal
@@ -84,7 +86,7 @@ extern "C" {
  *
  *  If the end marker is -2, then that means the next record is a full
  *  dump:
- *     t 0 <val> <val> .... <val> -1 or -2
+ *     t <val> <val> .... <val> -1 or -2
  *
  *
  *  <file>.trace : contains the trace
@@ -107,6 +109,8 @@ extern "C" {
 
     /* less than 2GB. Must be a multiple of (sizeof(int)) */
 
+#define ATRACE_SHORT_WIDTH (8*sizeof (unsigned long))
+
 typedef union atrace_value {
     float v;			/* value */
     unsigned long val;		/* <= 63 bits for channels
@@ -120,14 +124,17 @@ typedef struct name_struct {
   struct name_struct *up;
   struct name_struct *next;
   hash_bucket_t *b;		/* name */
+
+  struct name_struct *up_set;   /* union find tree for set membership */
+
+  int idx;			/* index */
   union atrace_value vu;	/* value */
   int cause;			/* cause--read in for delta-cause fmt */
-  int idx;			/* index */
   unsigned int chg:1;		/* changed? */
   unsigned int type:2;		/* 0 for analog, non-zero for other
 				   1 = digital
 				   2 = bit-channel
-				   3 = enumeration (used for selects)
+				   3 = extra (used for selects, other aux info)
 				*/
   unsigned int width;	        /* for digital/channel/sel: bitwidth */
 
@@ -145,8 +152,13 @@ typedef struct atrace_struct {
   int endianness;		/* 1 if you have to swap endianness on
 				   reads */
 
-  unsigned int locked:1;	/* if locked, can't add nodes/aliases! */
+  unsigned int locked:1;	/* if locked, can't add nodes/aliases!
+				   */
+  unsigned int set_members:1;	/* if 1, can't add any more nodes/aliases */
+
   unsigned int read_mode:1;	/* 1 = read, 0 = write */
+  
+  unsigned int used:1;		/* used fpos/etc. ever? */
 
   int fmt;			/* format of trace */
 
@@ -197,7 +209,6 @@ typedef struct atrace_struct {
 				   Position is really (fnum,fpos)
 				*/
 
-  unsigned int used:1;		/* used this ever? */
 
   int bufsz;			/* size */
   int bufpos;			/* current utilization */
@@ -206,6 +217,12 @@ typedef struct atrace_struct {
 
   /* for reading incremental files */
   name_t *hd_chglist;
+
+  /* in case this is remote */
+  struct sockaddr_in addr;
+  int fd;			/* -1 indicates not a stream */
+  int port;
+  int sock;
 
 } atrace;
 
@@ -217,6 +234,12 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt);
      dt = time resolution
   */
 
+atrace *atrace_create_stream (const char *host, int port, int fmt, float stop_time, float dt);
+  /* open a connection to a remote listener where the trace file can
+     be streamed.
+     NOTE: This MUST use the DELTA_ formats.
+  */
+
 void atrace_filter (atrace *, float adv, float rdv);
   /* include a trace file filter. only works in create mode for DELTA format.
      adv = absolute delta v before a change is recorded
@@ -225,6 +248,11 @@ void atrace_filter (atrace *, float adv, float rdv);
 
 atrace *atrace_open (const char *s);
   /* open a trace file for reading */
+
+atrace *atrace_listen (int port);
+  /* waits for an external connection on this port and returns an
+     atrace pointer when it is ready
+  */
 
 void atrace_rescale (atrace *, float vdt);
   /* rescale trace file with a new virtual time */
@@ -275,20 +303,23 @@ void atrace_readall_node_c (atrace *, name_t *, atrace_val_t *M, int *C);
 void atrace_init_time (atrace *);
 void atrace_advance_time (atrace *, int nstep);
 
-#define ATRACE_NAME(a,n) ((a)->N[n])
-#define ATRACE_GET_NAME(a,n) ATRACE_NAME(a,n)->b->key
-#define ATRACE_GET_VAL(a,n)  ATRACE_NAME(a,n)->vu
+#define ATRACE_NODE_IDX(a,idx) ((a)->N[idx])
+#define ATRACE_GET_NAME(n) (n)->b->key
+#define ATRACE_GET_VAL(n)  (n)->vu
 #define ATRACE_GET_STEPSIZE(a)  ((a)->vdt)
-#define ATRACE_NODE_FLOATVAL(a,n) (n)->vu.v
-#define ATRACE_NODE_SMALLVAL(a,n) (n)->vu.val
+#define ATRACE_FLOATVAL(x) (x)->v
+#define ATRACE_SMALLVAL(v) (v)->val
+#define ATRACE_BIGVAL(v)   (v)->valp
+#define ATRACE_NODE_FLOATVAL(n) (n)->vu.v
+#define ATRACE_NODE_SMALLVAL(n) (n)->vu.val
+#define ATRACE_NODE_BIGVAL(n)   (n)->vu.valp
 
 /*
   Macros for channel values
 */
 #define ATRACE_CHAN_SEND_BLOCKED 0
 #define ATRACE_CHAN_RECV_BLOCKED 1
-#define ATRACE_CHAN_VAL_TO_TRACE(v) (2+(v))
-#define ATRACE_CHAN_TRACE_TO_VAL(v) ((v)-2)
+#define ATRACE_CHAN_VAL_OFFSET 2
 
 void  atrace_signal_change_cause (atrace *, name_t *, float t, float v, name_t *);
 void  atrace_general_change_cause (atrace *, name_t *, float t, atrace_val_t *v, name_t *);
@@ -305,16 +336,47 @@ name_t *atrace_create_node (atrace *, const char *);
 void atrace_mk_digital (name_t *n);
 void atrace_mk_analog (name_t *n);
 void atrace_mk_channel (name_t *n);
-void atrace_mk_enum (name_t *n);
+void atrace_mk_extra (name_t *n);
 void atrace_mk_width (name_t *n, int w);
+
+#define atrace_is_analog(n) ((n)->type == 0)
+#define atrace_is_digital(n) ((n)->type == 1)
+#define atrace_is_channel(n) ((n)->type == 2)
+#define atrace_is_extra(n)   ((n)->type == 3)
+#define atrace_bitwidth(n) ((n)->width - (atrace_is_channel(n) ? 1 : 0))
+
+void atrace_alias (atrace *, name_t *primary, name_t *other);
+  /* alias two nodes: primary becomes the primary name.
+     If "other" is the same as "primary", this does nothing.
+     If "other" and "primary" are distinct names, then the
+     storage for "other" is released---so the pointer should
+     no longer be used.
+  */
+
+void atrace_set_addname (atrace *,  name_t *set_name, name_t *elem);
+  /*
+     Names can be grouped with other names. This information is also
+     saved in a separate table
+  */
+
+name_t *atrace_get_setname (name_t *);
+  /*
+     Returns set name, if any, that the specified name belongs to.
+  */
+
+
+/*
+  Returns -1 if not blocked
+           0 if sender blocked
+	   1 if receiver blocked
+*/
+int atrace_is_channel_blocked (name_t *n, atrace_val_t *v);
 
 name_t *atrace_lookup (atrace *, const char *);
   /* lookup a node, return NULL if not present */
 
-void atrace_alias (atrace *, name_t *, name_t *);
-  /* alias two nodes */
-
 void atrace_flush (atrace *);
+  /* flush I/O buffer */
 
 void atrace_close (atrace *);
 

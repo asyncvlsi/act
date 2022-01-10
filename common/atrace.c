@@ -27,6 +27,11 @@
 #include <math.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <errno.h>
 #include "atrace.h"
 #include "misc.h"
 
@@ -35,6 +40,48 @@
 
 /* only filter for analog signals */
 #define DONT_FILTER_DELTAS(t)  (!((t) == 0))
+
+#define ATRACE_IS_STREAM(a) ((a)->fd >= 0)
+
+
+static atrace *_atrace_alloc (int read_mode)
+{
+  atrace *a;
+  
+  NEW (a, atrace);
+
+  a->H = hash_new (32);
+  a->N = NULL;
+  a->file = NULL;
+  a->tfile = NULL;
+  a->tr = NULL;
+  a->endianness = 0;
+  a->fmt = 0;
+  a->Nnodes = 0;
+  a->Nsteps = 0;
+  a->timestamp = 0;
+  a->stop_time = 0;
+  a->dt = -1;
+  a->adv = 0;
+  a->rdv = 0;
+  a->Nvsteps = 0;
+  a->vdt = -1;
+  a->fnum = 0;
+  a->fpos = 0;
+  a->hd_chglist = NULL;
+  a->set_members = 0;
+  a->read_mode = read_mode;
+  a->locked = 0;
+  a->used = 0;
+  a->fd = -1;
+  a->bufsz = 0;
+  a->bufpos = 0;
+  a->buffer = NULL;
+  a->fd = -1;
+  a->sock = -1;
+
+  return a;
+}
 
 /* open an empty trace file */
 atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
@@ -45,11 +92,8 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
   if (stop_time < 0 || fmt < ATRACE_FMT_MIN || ATRACE_FMT(fmt) > ATRACE_FMT_MAX) {
     return NULL;
   }
-  NEW (a, atrace);
 
-  a->H = hash_new (32);
-  a->N = NULL;
-  a->hd_chglist = NULL;
+  a = _atrace_alloc (0 /* read mode = 0 */);
 
   l = strlen (s);
   MALLOC (a->file, char, l+1);
@@ -70,12 +114,10 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
 
   a->Nnodes = 1; /* time */
   a->dt = dt;
-  a->read_mode = 0;
   a->fmt = fmt;
   a->stop_time = stop_time;
   a->Nsteps = 1 + (int)(stop_time / dt + 0.1);
   a->timestamp = time (NULL);
-  a->locked = 0;
   a->curt = -1;
 
   /* used for signal recording in write mode */
@@ -92,6 +134,69 @@ atrace *atrace_create (const char *s, int fmt, float stop_time, float dt)
 
   a->adv = -1;
   a->rdv = -1;
+  
+  return a;
+}
+
+/* open an empty trace file */
+atrace *atrace_create_stream (const char *host, int port,
+			      int fmt, float stop_time, float dt)
+{
+  struct hostent *hp;
+  atrace *a;
+
+  if (stop_time < 0 || (fmt < ATRACE_FMT_MIN || ATRACE_FMT(fmt) > ATRACE_FMT_MAX || ATRACE_FMT(fmt) < ATRACE_DELTA)) {
+    return NULL;
+  }
+
+  if ((hp = gethostbyname (host)) == NULL) {
+    return NULL;
+  }
+
+  a = _atrace_alloc (0 /* read mode = 0 */);
+
+  a->Nnodes = 1; /* time */
+  a->dt = dt;
+  a->fmt = fmt;
+  a->stop_time = stop_time;
+  a->Nsteps = 1 + (int)(stop_time / dt + 0.1);
+  a->timestamp = time (NULL);
+  a->curt = -1;
+
+  /* used for signal recording in write mode */
+  a->curtime = 0;
+  a->nprev = NULL;
+
+  a->bufsz = 10240;
+  a->bufpos = 0;
+  MALLOC (a->buffer, int, a->bufsz);
+  a->fpos = 0;
+  a->fnum = 0;
+  a->used = 0;
+  a->endianness = 0;
+
+  a->adv = -1;
+  a->rdv = -1;
+
+  if ((a->fd = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
+    perror ("socket");
+    hash_free (a->H);
+    FREE (a->buffer);
+    FREE (a);
+    return NULL;
+  }
+  a->addr.sin_family = AF_INET;
+  bcopy (hp->h_addr, &a->addr.sin_addr, sizeof (a->addr.sin_addr));
+  a->addr.sin_port = htons (port);
+  if (connect (a->fd, (struct sockaddr *)&a->addr, sizeof (a->addr)) < 0) {
+    perror ("connect failed");
+    close (a->fd);
+    hash_free (a->H);
+    FREE (a->buffer);
+    FREE (a);
+    return NULL;
+  }
+  a->tr = fdopen (a->fd, "w");
   
   return a;
 }
@@ -115,10 +220,11 @@ static int safe_fread (atrace *a, void *x)
   long old;
 
  retry:
-  if (a->fpos < a->fend) {
+  if (ATRACE_IS_STREAM (a) || a->fpos < a->fend) {
     a->fpos += sizeof (int);
     return fread (x, sizeof (int), 1, a->tr);
   }
+  Assert (!ATRACE_IS_STREAM (a), "What?");
 
   if (a->fend == ATRACE_MAX_FILE_SIZE) {
     char buf[10240];
@@ -235,7 +341,7 @@ static int fread_float (atrace *a, float *f)
   return ret;
 }
 
-#define ONE_WIDTH (8*sizeof (unsigned long))
+#define ONE_WIDTH ATRACE_SHORT_WIDTH
 
 static int fread_value (atrace *a, name_t *n, union atrace_value *v)
 {
@@ -262,7 +368,7 @@ static int fread_value (atrace *a, name_t *n, union atrace_value *v)
       if (ret == 0 && i == 0) {
 	return ret;
       }
-      else if (ret == 0) {
+      else if (ret == 0 && !ATRACE_IS_STREAM (a)) {
 	if (a->fpos >= sizeof (unsigned long)*i) {
 	  a->fpos -= sizeof (unsigned long)*i;
 	  fseek (a->tr, a->fpos, SEEK_SET);
@@ -311,6 +417,11 @@ static int _space_for_nodes_upto (atrace *a, int nodeval)
 
 static void seek_after_header (atrace *a, int offset)
 {
+  if (ATRACE_IS_STREAM (a)) {
+    /* no seek operation for streams */
+    return;
+  }
+  
   switch (ATRACE_FMT (a->fmt)) {
   case ATRACE_TIME_ORDER:
   case ATRACE_NODE_ORDER:
@@ -352,14 +463,18 @@ static void read_header (atrace *a)
 
   Assert (a->fnum == 0, "read_header: called on non-initial file");
 
-  fseek (a->tr, 0, SEEK_END);
-  a->fend = ftell (a->tr);
-  a->fpos = 0;
-  a->endianness = 0;
+  if (!ATRACE_IS_STREAM (a)) {
+    fseek (a->tr, 0, SEEK_END);
+    a->fend = ftell (a->tr);
+    a->fpos = 0;
+    a->endianness = 0;
+  }
 
  retry:
-  fseek (a->tr, 0, SEEK_SET);
-  a->endianness = 0;
+  if (!ATRACE_IS_STREAM (a)) {
+    fseek (a->tr, 0, SEEK_SET);
+    a->endianness = 0;
+  }
   if (fread_int (a, &x) != 1) {
     sleep (5);
     goto retry;
@@ -443,7 +558,9 @@ static void read_header (atrace *a)
     }
     offset += sizeof (float) * 2;
   }
-  fseek (a->tr, offset, SEEK_SET);
+  if (!ATRACE_IS_STREAM (a)) {
+    fseek (a->tr, offset, SEEK_SET);
+  }
   a->fpos = offset;
 }
 
@@ -451,6 +568,13 @@ static void read_header (atrace *a)
 static void safe_fwrite (atrace *a, void *x)
 {
   unsigned long old;
+
+  if (ATRACE_IS_STREAM (a)) {
+    if (fwrite (x, sizeof (int), 1, a->tr) != 1) {
+      fprintf (stderr, "Write failed to stream...\n");
+    }
+    return;
+  }
 
   /* speed this up! */
   old = ftell (a->tr);
@@ -487,6 +611,26 @@ static void safe_fwrite_float (atrace *a, float f)
   safe_fwrite (a, &f);
 }
 
+static void _write_out_buf (atrace *a)
+{
+  if (ATRACE_IS_STREAM (a)) {
+    int amt = 0;
+    int count = 0;
+    while ((count = fwrite (a->buffer + amt, sizeof (int), a->bufpos - amt,
+			    a->tr)) != (a->bufpos - amt)) {
+      amt += count;
+      sleep (1);
+    }
+  }
+  else {
+    while (fwrite (a->buffer, sizeof (int), a->bufpos, a->tr) != a->bufpos) {
+      fprintf (stderr, "fwrite failed, retrying..\n");
+      sleep (60);
+      fseek (a->tr, a->fpos, SEEK_SET);
+    }
+  }
+}
+
 static void safe_fwrite_buf (atrace *a, void *x)
 {
   if (!a->used) {
@@ -494,28 +638,26 @@ static void safe_fwrite_buf (atrace *a, void *x)
     a->fpos = ftell (a->tr);
   }
 
-
   if (a->bufpos == a->bufsz || 
       (((a->bufpos*sizeof(int)) + a->fpos) == ATRACE_MAX_FILE_SIZE)) {
     Assert (a->fpos == ftell (a->tr), "Invariant violated");
-    while (fwrite (a->buffer, sizeof (int), a->bufpos, a->tr) != a->bufpos) {
-      fprintf (stderr, "fwrite failed, retrying..\n");
-      sleep (60);
-      fseek (a->tr, a->fpos, SEEK_SET);
-    }
-    a->fpos += sizeof (int) * a->bufpos;
-
-    if (a->fpos == ATRACE_MAX_FILE_SIZE) {
-      char buf[10240];
-      fclose (a->tr);
-      sprintf (buf, "%s_%d.trace", a->file, ++a->fnum);
-      a->tr = fopen (buf, "w");
-      if (!a->tr) {
-	fatal_error ("Could not open continuation trace file `%s'", buf);
-      }
-      a->fpos = 0;
-    }
+    _write_out_buf (a);
     a->bufpos = 0;
+    
+    if (!ATRACE_IS_STREAM (a)) {
+      a->fpos += sizeof (int) * a->bufpos;
+
+      if (a->fpos == ATRACE_MAX_FILE_SIZE) {
+	char buf[10240];
+	fclose (a->tr);
+	sprintf (buf, "%s_%d.trace", a->file, ++a->fnum);
+	a->tr = fopen (buf, "w");
+	if (!a->tr) {
+	  fatal_error ("Could not open continuation trace file `%s'", buf);
+	}
+	a->fpos = 0;
+      }
+    }
   }
   a->buffer[a->bufpos++] = * ((int*) x);
 }
@@ -525,14 +667,14 @@ static void safe_fwrite_bufdone (atrace *a)
   if (!a->used) return;
 
   if (a->bufpos > 0) {
-    Assert (a->fpos == ftell (a->tr), "Invariant violated");
-    while (fwrite (a->buffer, sizeof (int), a->bufpos, a->tr) != a->bufpos) {
-      fprintf (stderr, "fwrite failed, retrying...\n");
-      sleep (60);
-      fseek (a->tr, a->fpos, SEEK_SET);
+    if (!ATRACE_IS_STREAM (a)) {
+      Assert (a->fpos == ftell (a->tr), "Invariant violated");
     }
-    a->fpos += sizeof (int) * a->bufpos;
-    a->bufpos = 0;     
+    _write_out_buf (a);
+    a->bufpos = 0;
+    if (!ATRACE_IS_STREAM (a)) {
+      a->fpos += sizeof (int) * a->bufpos;
+    }
   }
   fflush (a->tr);
 }
@@ -711,12 +853,17 @@ static void emit_header_aux (atrace *a)
     write_header (a, 2);
   }
 
-  /* Create and emit names file */
-  MALLOC (t, char, strlen (a->file) + 7);
-  sprintf (t, "%s.names", a->file);
+  if (ATRACE_IS_STREAM (a)) {
+    nfp = a->tr;
+  }
+  else {
+    /* Create and emit names file */
+    MALLOC (t, char, strlen (a->file) + 7);
+    sprintf (t, "%s.names", a->file);
 
-  Assert (nfp = fopen (t, "w"), "Could not create names file!");
-  FREE (t);
+    Assert (nfp = fopen (t, "w"), "Could not create names file!");
+    FREE (t);
+  }
 
   /* a: = analog signal
      d: = digital signal
@@ -749,88 +896,55 @@ static void emit_header_aux (atrace *a)
       /* ok, here we go */
       while (m->next != n) {
 	m = m->next;
-	m->idx = idx;
 	fprintf (nfp, "=%s", m->b->key);
       }
       fprintf (nfp, "\n");
       idx++;
     }
-  fclose (nfp);
 
-  /* Canonicalize table */
   for (i=0; i < a->H->size; i++) 
     for (b = a->H->head[i]; b; b = b->next) {
+      name_t *set_root;
       n = (name_t *) b->v;
-      if (n->up && n->up->up) {
-	m = n->up;
-	while (m->up)
-	  m = m->up;
-	/* m is now the root */
-	n->up = m;
+      if (n->up) continue;
+      if (!n->up_set) continue;
+      set_root = n->up_set;
+      while (set_root->up_set) {
+	set_root = set_root->up_set;
       }
+      fprintf (nfp, "s:%d %d\n", set_root->idx, n->idx);
     }
 
+  if (nfp != a->tr) {
+    /* names file: close it */
+    fclose (nfp);
+  }
+  else {
+    fprintf (nfp, "eof\n");
+    fflush (nfp);
+  }
   gen_index_table (a);
 }
 
+#define MAXBUFSZ 102400
 
-#define MAXBUFSZ 1024000
-/* open a trace file */
-atrace *atrace_open (const char *s)
+static void _atrace_open_helper_names (atrace *a, FILE *fp)
 {
-  atrace *a;
-  FILE *nfp;
-  int l;
-  char buf[MAXBUFSZ];
-  char *sbuf;
-  char *t;
-  name_t *n, *m;
+  int  count;
   int idx;
-  int count;
+  char buf[MAXBUFSZ];
+  int l;
+  char *sbuf;
+  name_t *n, *m;
   int sigtype;
   int width;
   int found_type;
-
-  NEW (a, atrace);
-
-  a->H = hash_new (32);
-  a->N = NULL;
-  a->fnum = 0;
-  a->fpos = 0;
-  a->hd_chglist = NULL;
-
-  l = strlen (s);
-  MALLOC (a->file, char, l+1);
-  strcpy (a->file, s);
   
-  MALLOC (a->tfile, char, l + 7);
-  sprintf (a->tfile, "%s.trace", a->file);
-
-  a->tr = fopen (a->tfile, "rb");
-  if (!a->tr) {
-    fprintf (stderr, "ERROR: Could not open trace file `%s.trace'\n", a->file);
-    FREE (a->file);
-    FREE (a->tfile);
-    FREE (a);
-    return NULL;
-  }
-
-  a->read_mode = 1;
-  a->locked = 0;
-  a->vdt = -1;
-  read_header (a);
-
-  /* read in names */
-  MALLOC (t, char, l + 7);
-  sprintf (t, "%s.names", a->file);
-  Assert (nfp = fopen (t, "r"), "Could not open names file for reading");
-  FREE (t);
-
   count = a->Nnodes;
   idx = 0;
   a->Nnodes = 0;
   buf[MAXBUFSZ-1] = '\0';
-  while (fgets (buf, MAXBUFSZ, nfp)) {
+  while (fgets (buf, MAXBUFSZ, fp)) {
     Assert (buf[MAXBUFSZ-1] == '\0', "Line too long");
 
     l = strlen (buf);
@@ -867,12 +981,34 @@ atrace *atrace_open (const char *s)
     }
     else if (l > 2 && buf[0] == 'e' && buf[1] == ':') {
       width = 1;
-      sigtype = 3; /* enum */
+      sigtype = 3; /* extra */
       found_type = 1;
     }
     else if (l > 2 && buf[0] == 'e' && (sscanf (buf+1,"%d:", &width) == 1)) {
       sigtype = 3;
       found_type = 1;
+    }
+    else if (l > 2 && buf[0] == 's' && buf[1] == ':') {
+      int set_root, my_idx;
+      a->set_members = 1;
+      gen_index_table (a);
+      if (sscanf (buf+2, "%d %d", &set_root, &my_idx) != 2) {
+	warning ("Corrupted set entry: %s\n", buf);
+      }
+      else {
+	if (set_root >= a->Nnodes || set_root < 0 ||
+	    my_idx >= a->Nnodes || my_idx < 0) {
+	  warning ("Illegal set entry %d %d", set_root, my_idx);
+	}
+	else {
+	  atrace_set_addname (a, a->N[set_root], a->N[my_idx]);
+	}
+      }
+      found_type = 2;
+    }
+    else if (buf[0] == 'e' && buf[1] == 'o' && buf[2] == 'f') {
+      /* -- eof -- */
+      break;
     }
     else {
       width = 0;
@@ -880,7 +1016,7 @@ atrace *atrace_open (const char *s)
       found_type = 0;
     }
 
-    if (found_type) {
+    if (found_type == 1) {
       sbuf = buf+1;
       l--;
       while (*sbuf && *sbuf != ':') {
@@ -896,52 +1032,139 @@ atrace *atrace_open (const char *s)
       sbuf = buf;
     }
 
-    while (l > 0) {
-      while (l > 0 && sbuf[l] != '=') {
-	l--;
-      }
-      /* l == 0 || buf[l] == '=' */
-      if (sbuf[l] == '=') {
-	n = atrace_create_node (a, sbuf+l+1);
-	n->type = sigtype;
-	n->idx = idx;
-	if (m) {
-	  atrace_alias (a, n, m);
+    if (found_type != 2) {
+
+      while (l > 0) {
+	while (l > 0 && sbuf[l] != '=') {
+	  l--;
 	}
-	m = n;
+	/* l == 0 || buf[l] == '=' */
+	if (sbuf[l] == '=') {
+	  n = atrace_create_node (a, sbuf+l+1);
+	  n->type = sigtype;
+	  n->idx = idx;
+	  if (m) {
+	    atrace_alias (a, n, m);
+	  }
+	  m = n;
 	
-	sbuf[l] = '\0';
-	l--;
+	  sbuf[l] = '\0';
+	  l--;
+	}
       }
+      n = atrace_create_node (a, sbuf);
+      n->type = sigtype;
+      n->idx = idx;
+      n->width = width;
+      if (m) {
+	atrace_alias (a, n, m);
+      }
+      idx++;
     }
-    n = atrace_create_node (a, sbuf);
-    n->type = sigtype;
-    n->idx = idx;
-    n->width = width;
-    if (m) {
-      atrace_alias (a, n, m);
-    }
-    idx++;
   }
-  fclose (nfp);
   a->locked = 1;
-
   Assert (count == a->Nnodes, "Error: # of nodes in names file doesn't match trace file");
+  if (a->set_members == 0) {
+    gen_index_table (a);
+    a->set_members = 1;
+  }
+}
 
-  gen_index_table (a);
+
+/* open a trace file */
+atrace *atrace_open (const char *s)
+{
+  atrace *a;
+  FILE *nfp;
+  char *t;
+  int len;
+
+  a = _atrace_alloc (1 /* read mode */);
+
+  len = strlen (s);
+  MALLOC (a->file, char, len + 1);
+  strcpy (a->file, s);
+  
+  MALLOC (a->tfile, char, len + 7);
+  sprintf (a->tfile, "%s.trace", a->file);
+
+  a->tr = fopen (a->tfile, "rb");
+  if (!a->tr) {
+    fprintf (stderr, "ERROR: Could not open trace file `%s.trace'\n", a->file);
+    FREE (a->file);
+    FREE (a->tfile);
+    FREE (a);
+    return NULL;
+  }
+
+  read_header (a);
+
+  /* read in names */
+  MALLOC (t, char, len + 7);
+  sprintf (t, "%s.names", a->file);
+  Assert (nfp = fopen (t, "r"), "Could not open names file for reading");
+  FREE (t);
+
+  _atrace_open_helper_names (a, nfp);
+  fclose (nfp);
 
   /* buffer isn't used for reading */
-  a->bufsz = 0;
-  a->bufpos = 0;
-  a->buffer = NULL;
-  a->fpos = 0;
-  a->fnum = 0;
-  a->used = 0;
   a->curt = -1;
   a->rec_type = -2;
 
   return a;
 }
+
+/* open a trace file */
+atrace *atrace_listen_wait (int port)
+{
+  atrace *a;
+
+  a = _atrace_alloc (1 /* read mode */);
+
+  if ((a->sock = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
+    perror ("socket");
+    return NULL;
+  }
+  a->addr.sin_family = AF_INET;
+  a->addr.sin_port = htons (port);
+  a->addr.sin_addr.s_addr = htons (INADDR_ANY);
+
+  if (bind (a->sock, (struct sockaddr *)&a->addr, sizeof (a->addr)) < 0) {
+    perror ("bind failed");
+    close (a->sock);
+    hash_free (a->H);
+    FREE (a);
+    return NULL;
+  }
+
+  if (listen (a->sock, 1) < 0) {
+    perror ("listen failed");
+    close (a->sock);
+    hash_free (a->H);
+    FREE (a);
+    return NULL;
+  }
+
+  if ((a->fd = accept (htons (port), NULL, NULL)) < 0) {
+    perror ("accept failed");
+    close (a->sock);
+    hash_free (a->H);
+    FREE (a);
+    return NULL;
+  }
+
+  a->tr = fdopen (a->fd, "rb");
+  read_header (a);
+  _atrace_open_helper_names (a, a->tr);
+
+  /* buffer isn't used for reading */
+  a->curt = -1;
+  a->rec_type = -2;
+
+  return a;
+}
+
 
 /*
   Rescale trace file
@@ -971,7 +1194,9 @@ int atrace_header (atrace *a, int *ts, int *Nnodes, int *Nsteps, int *fmt)
   Assert (a->locked, "atrace_header called, locked not set!");
 
   if (a->fnum == 0) {
-    read_header (a);
+    if (!ATRACE_IS_STREAM (a)) {
+      read_header (a);
+    }
   }
 
   *ts = a->timestamp;
@@ -1117,10 +1342,7 @@ static float _read_record (atrace *a, float t)
 	fprintf (stderr, "OFFSET: %d\n", (int)  ftell (a->tr));
 	exit (1);
       }
-      _value_alloc (a->N[idx], &v);
-      fread_value (a, a->N[idx], &v);
-      _value_assign (a->N[idx], &a->N[idx]->vu, &v);
-      _value_free (a->N[idx], &v);
+      fread_value (a, a->N[idx], &a->N[idx]->vu);
       if (a->fmt == ATRACE_DELTA_CAUSE) {
 	fread_int (a, &c);
 	if (c < 0 || c >= a->Nnodes) {
@@ -1764,16 +1986,18 @@ name_t *atrace_create_node (atrace *a, const char *s)
   hash_bucket_t *b;
 
   Assert (!a->locked, "atrace_create_node: Trace file locked!");
+  Assert (!a->set_members, "atrace_create_node: Sets being created; no more nodes/aliases!");
 
   b = hash_lookup (a->H, s);
   if (b) {
-    return (name_t *) b->v;
+    return _union_find ((name_t *) b->v);
   }
   b = hash_add (a->H, s);
 
   NEW (n, name_t);
   n->vu.v = 0.0;
   n->up = NULL;
+  n->up_set = NULL;
   n->next = n;
   n->b = b;
   n->idx = -1;
@@ -1789,32 +2013,103 @@ name_t *atrace_create_node (atrace *a, const char *s)
   return n;
 }
 
-/* alias two nodes */
-static void swap (name_t **x, name_t **y)
-{
-  name_t *t;
-  t = *x;  *x = *y;  *y = t;
-}
+struct raw_name_struct {
+  struct name_struct *up;
+  struct name_struct *next;
+  hash_bucket_t *b;		/* name */
+};
 
 void atrace_alias (atrace *a, name_t *n, name_t *m)
 {
+  struct raw_name_struct *r = NULL;
+  name_t *stmp;
+  struct raw_name_struct *tmp;
   Assert (!a->locked, "atrace_alias: Trace file locked!");
+  Assert (!a->set_members, "atrace_alias: Sets being created; no more nodes/aliases!");
 
   /* ok, set m to n */
-  while (m->up) {
-    m = m->up;
-  }
-  while (n->up) {
-    n = n->up;
-  }
-  if (m == n) 
+  m = _union_find (m);
+  n = _union_find (n);
+  if (m == n) {
     return;
+  }
 
-  m->up = n;
-  swap (&m->next, &n->next);
+  NEW (r, struct raw_name_struct);
+  tmp = (struct raw_name_struct *) m;
+
+  while (1) {
+    if (tmp->up == m) {
+      tmp->up = (name_t *)r;
+    }
+    if (tmp->next == m) {
+      break;
+    }
+    tmp = (struct raw_name_struct *) tmp->next;
+  }
+  if (tmp == (struct raw_name_struct *)m) {
+    /* nothing in the ring */
+    r->next = (name_t *)r;
+  }
+  else {
+    tmp->next = (name_t *)r;
+    r->next = m->next;
+  }
+  r->up = n;
+  r->b = m->b;
+  r->b->v = r;
+  FREE (m);
+
+  stmp = n->next;
+  n->next = r->next;
+  r->next = stmp;
 
   a->Nnodes--;
 }
+
+
+void atrace_set_addname (atrace *a, name_t *n, name_t *m)
+{
+  a->set_members = 1;
+
+  /* ok, set m to n */
+  m = _union_find (m);
+  n = _union_find (n);
+  if (m == n) {
+    return;
+  }
+
+  while (n->up_set) {
+    n = n->up_set;
+  }
+  
+  while (m->up_set) {
+    m = m->up_set;
+  }
+
+  if (m == n) {
+    return;
+  }
+ 
+  m->up_set = n;
+}
+
+name_t *atrace_get_setname (name_t *n)
+{
+  name_t *m, *tmp;
+  n = _union_find (n);
+
+  m = n;
+  while (m->up_set) {
+    m = m->up_set;
+  }
+  while (n->up_set) {
+    tmp = n->up_set;
+    n->up_set = m;
+    n = tmp;
+  }
+  return m;
+}
+
 
 static void _emit_record (atrace *a)
 {
@@ -1852,7 +2147,7 @@ static void _emit_record (atrace *a)
       if (count > a->Nnodes/2) {
 	safe_fwrite_int_buf (a, -2); /* for prev record */
 	safe_fwrite_float_buf (a, a->curtime*a->dt);
-	safe_fwrite_int_buf (a, 0);
+	//safe_fwrite_int_buf (a, 0);
 	for (i=0; i < a->H->size; i++)
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
@@ -1870,6 +2165,7 @@ static void _emit_record (atrace *a)
 	for (i=0; i < a->H->size; i++) 
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
+	    if (n->up) continue;
 	    if (n->chg) {
 	      safe_fwrite_int_buf (a, n->idx);
 	      safe_fwrite_value_buf (a, n);
@@ -2116,6 +2412,10 @@ void atrace_signal_change_cause (atrace *a, name_t *n, float t, float v, name_t 
 {
   atrace_val_t x;
   x.v = v;
+
+  if (n->type != 0) {
+    warning ("atrace_signal_change: %s is not an analog node!", ATRACE_GET_NAME (n));
+  }
   atrace_general_change_cause (a, n, t, &x, c);
 }
 
@@ -2176,6 +2476,9 @@ void atrace_flush (atrace *a)
 /* close file */
 void atrace_close (atrace *a)
 {
+  hash_iter_t it;
+  hash_bucket_t *b;
+
   /* free stuff; emit offset table if required */
   if (a->read_mode == 0) {
     emit_header_aux (a);
@@ -2185,6 +2488,15 @@ void atrace_close (atrace *a)
     }
   }
   fclose (a->tr);
+
+  hash_iter_init (a->H, &it);
+  while ((b = hash_iter_next (a->H, &it))) {
+    name_t *n = (name_t *) b->v;
+    if (!n->up) {
+      _value_free (n, &n->vu);
+    }
+    FREE (n);
+  }
   hash_free (a->H);
   FREE (a->file);
   FREE (a->tfile);
@@ -2216,7 +2528,7 @@ void atrace_mk_channel(name_t *n)
   _value_alloc (n, &n->vu);
 }
 
-void atrace_mk_enum(name_t *n)
+void atrace_mk_extra(name_t *n)
 {
   _value_free (n, &n->vu);
   n->type = 3;
@@ -2234,4 +2546,29 @@ void atrace_mk_width(name_t *n, int w)
     }
   }
   _value_alloc (n, &n->vu);
+}
+
+int atrace_is_channel_blocked (name_t *n, atrace_val_t *v)
+{
+  int i, c;
+  if (n->width <= ATRACE_SHORT_WIDTH) {
+    if (v->val < 2) {
+      return v->val;
+    }
+    else {
+      return -1;
+    }
+  }
+  c = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
+  if (v->valp[0] < 2) {
+    for (i=1; i < c; i++) {
+      if (v->valp[i] != 0) {
+	return -1;
+      }
+    }
+    return v->valp[0];
+  }
+  else {
+    return -1;
+  }
 }

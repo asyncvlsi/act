@@ -176,22 +176,22 @@ static void emit_err_log (atrace *a, int t, struct err_log *x)
   switch (t) {
   case CHG_SHARING:
     printf ("  `%s', %g ns: charge-sharing bump of %.3g V\n", 
-	    ATRACE_GET_NAME(a,x->num), x->tm*1e9, x->val);
+	    ATRACE_GET_NAME(ATRACE_NODE_IDX(a,x->num)), x->tm*1e9, x->val);
     break;
 
   case FAST_TRANSITION:
     printf ("  `%s', %g ns: fast transition, slew rate %.3g V/ns\n",
-	    ATRACE_GET_NAME (a, x->num), x->tm*1e9, x->val);
+	    ATRACE_GET_NAME (ATRACE_NODE_IDX(a, x->num)), x->tm*1e9, x->val);
     break;
     
   case SLOW_TRANSITION:
     printf ("  `%s', %g ns: slow transition, slew rate %.3g V/ns\n",
-	    ATRACE_GET_NAME (a,x->num), x->tm*1e9, x->val);
+	    ATRACE_GET_NAME (ATRACE_NODE_IDX(a,x->num)), x->tm*1e9, x->val);
     break;
 
   case INCOMPLETE_TRANSITION:
     printf ("  `%s', %g ns: incomplete transition, swing %.3g V\n", 
-	    ATRACE_GET_NAME (a,x->num), x->tm*1e9, x->val);
+	    ATRACE_GET_NAME (ATRACE_NODE_IDX(a,x->num)), x->tm*1e9, x->val);
     break;
 
   default:
@@ -404,7 +404,7 @@ int main (int argc, char **argv)
     else {
       printf ("Cycle time: %g ns (signal `%s')\n", 
 	      round_double(min_cycle_time*1e9),
-	      ATRACE_GET_NAME (a,min_cycle_node));
+	      ATRACE_GET_NAME (ATRACE_NODE_IDX(a,min_cycle_node)));
       printf ("Frequency: %g MHz\n", round_double(1e-6/min_cycle_time));
     }
   }
@@ -808,11 +808,18 @@ static void process_signal_change (atrace *aout, Prs *p, node_info_t *ni, float 
     }
   }
   if (aout && ni->digital_link) {
-    if (cause && cause->space) {
-      atrace_signal_change_cause (aout, ni->digital_link, tm, v, ((name_t *)cause->space));
+    atrace_val_t val;
+    if (v == -1) {
+      val.val = 2;
     }
     else {
-      atrace_signal_change (aout, ni->digital_link, tm, v);
+      val.val = v;
+    }
+    if (cause && cause->space) {
+      atrace_general_change_cause (aout, ni->digital_link, tm, &val, ((name_t *)cause->space));
+    }
+    else {
+      atrace_general_change (aout, ni->digital_link, tm, &val);
     }
   }
 }
@@ -954,15 +961,15 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
     }
     /* i=0 is the special "time" node */
     for (i=1; i < Nnodes; i++) {
-      if (is_internal_node (ATRACE_GET_NAME (a,i)))
+      if (is_internal_node (ATRACE_GET_NAME (ATRACE_NODE_IDX(a,i))))
 	continue;
 
-      if (ATRACE_GET_NAME (a,i)[0] == 'x') {
-	spice_to_act_name (ATRACE_GET_NAME (a, i), buf, 10240, 1);
+      if (ATRACE_GET_NAME (ATRACE_NODE_IDX(a,i))[0] == 'x') {
+	spice_to_act_name (ATRACE_GET_NAME (ATRACE_NODE_IDX(a, i)), buf, 10240, 1);
       }
       else {
 	buf[10239] = '\0';
-	snprintf (buf, 10239, "%s", ATRACE_GET_NAME (a,i));
+	snprintf (buf, 10239, "%s", ATRACE_GET_NAME (ATRACE_NODE_IDX(a,i)));
       }
       n[i].digital_link = atrace_create_node (new_a, buf);
       atrace_mk_digital (n[i].digital_link);
@@ -989,13 +996,13 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	  n[i].pn->space = n[i].digital_link;
 
 	  if (verbose > 2) {
-	    printf ("MAP %s  to PRS %s\n", ATRACE_GET_NAME (a,i), prs_nodename (p, n[i].pn));
+	    printf ("MAP %s  to PRS %s\n", ATRACE_GET_NAME (ATRACE_NODE_IDX(a,i)), prs_nodename (p, n[i].pn));
 	  }
 	}
 	else {
 	  if (verbose > 1) { 
 	    printf ("WARNING: found no corresponding node: %s -> %s\n",
-		    ATRACE_GET_NAME(a,i), buf);
+		    ATRACE_GET_NAME(ATRACE_NODE_IDX(a,i)), buf);
 	  }
 	}
       }
@@ -1007,15 +1014,15 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 #define EARLIER 1
 
   for (i=0; i < Nnodes; i++) {
-    n[i].hist_val[PREV] = ATRACE_NODE_FLOATVAL (a, a->N[i]);
+    n[i].hist_val[PREV] = ATRACE_NODE_FLOATVAL (a->N[i]);
     n[i].hist_tm[PREV] = 0;
     n[i].hist_tm[EARLIER] = -1;
     n[i].hist_dig[PREV] = raw_analog2digital (n[i].hist_val[PREV]);
     n[i].hist_dig[EARLIER] = -2;
     n[i].max_val = n[i].hist_val[PREV];
     n[i].min_val = n[i].hist_val[PREV];
-    n[i].skip = (is_internal_node (ATRACE_GET_NAME(a,i)) ||
-		 ignore_node (ATRACE_GET_NAME(a,i)) ||
+    n[i].skip = (is_internal_node (ATRACE_GET_NAME(ATRACE_NODE_IDX(a,i))) ||
+		 ignore_node (ATRACE_GET_NAME(ATRACE_NODE_IDX(a,i))) ||
 		 is_digital_node (a,i)) ? 1 : 0;
     n[i].tm_first_nonX = -2;
 
@@ -1088,7 +1095,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	if (n[j].skip) continue;
 	if (n[j].pn) {
 	  if (n[j].pn->val == PRS_VAL_X) {
-	    v = raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j]));
+	    v = raw_analog2digital (ATRACE_NODE_FLOATVAL (a->N[j]));
 	    if (v == 0) {
 	      prs_set_node (p, n[j].pn, PRS_VAL_F);
 	      prs_step_cause (p, NULL, NULL);
@@ -1098,13 +1105,13 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	      prs_step_cause (p, NULL, NULL);
 	    }
 	  }
-	  if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j])) == 1) {
+	  if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a->N[j])) == 1) {
 	    if (n[j].pn->val != PRS_VAL_T) {
 	      printf (" *** initialization error: %s should be 1 (is %c)\n", 
 		      prs_nodename (p, n[j].pn), prs_nodechar (n[j].pn->val));
 	    }
 	  }
-	  else if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a, a->N[j])) == 0) {
+	  else if (raw_analog2digital (ATRACE_NODE_FLOATVAL (a->N[j])) == 0) {
 	    if (n[j].pn->val != PRS_VAL_F) {
 		printf (" *** initialization error: %s should be 0 (is %c)\n", 
 			prs_nodename (p, n[j].pn), prs_nodechar (n[j].pn->val));
@@ -1148,11 +1155,11 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	}
       */
 
-      if (n[j].hist_val[PREV] == ATRACE_NODE_FLOATVAL (a, nm)) {
+      if (n[j].hist_val[PREV] == ATRACE_NODE_FLOATVAL (nm)) {
 	goto next;
       }
 
-      v = analog2digital (ATRACE_NODE_FLOATVAL (a, nm), n[j].hist_dig[PREV]);
+      v = analog2digital (ATRACE_NODE_FLOATVAL (nm), n[j].hist_dig[PREV]);
       
       if (v != n[j].hist_dig[PREV]) {
 	/* if v is X now, or if we don't have enough history, nothing
@@ -1186,7 +1193,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	    if ((v == 1 && n[j].hist_dig[PREV] == 0) ||
 		(v == 0 && n[j].hist_dig[PREV] == 1)) {
 	      /* transition so fast we didn't go through X */
-	      slew = (ATRACE_NODE_FLOATVAL (a, nm) - n[j].hist_val[PREV])/((a->curt-n[j].hist_tm[PREV])*1e9);
+	      slew = (ATRACE_NODE_FLOATVAL (nm) - n[j].hist_val[PREV])/((a->curt-n[j].hist_tm[PREV])*1e9);
 
 	      if (!n[j].skip) {
 		add_err_log (FAST_TRANSITION, j, a->curt, slew);
@@ -1196,7 +1203,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	    else if (v == 0 || v == 1) {
 	      Assert (n[j].hist_dig[PREV] == -1, "Hmm...");
 	      Assert (n[j].hist_dig[EARLIER] != v, "Hmmmm.");
-	      slew = (ATRACE_NODE_FLOATVAL (a, nm) - n[j].hist_val[PREV])/(1e9*(a->curt-n[j].hist_tm[PREV]));
+	      slew = (ATRACE_NODE_FLOATVAL (nm) - n[j].hist_val[PREV])/(1e9*(a->curt-n[j].hist_tm[PREV]));
 	      aslew = fabs (slew);
 	      if (aslew <= slewrate_slow_threshold) {
 		if (!n[j].skip) {
@@ -1215,14 +1222,14 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	if (n[j].hist_dig[PREV] != v) {
 	  if (n[j].hist_dig[PREV] == 0 && v == -1) {
 	    if (verbose > 2) {
-	      printf ("[%.4g] change from 0, signal %s\n", i*a->dt*1e9, ATRACE_GET_NAME(a, j));
+	      printf ("[%.4g] change from 0, signal %s\n", i*a->dt*1e9, ATRACE_GET_NAME(ATRACE_NODE_IDX(a, j)));
 	    }
 	    /* 0 -> X */
 	    process_signal_change (new_a, p, &n[j], i*a->dt, 1);
 	  }
 	  else if (n[j].hist_dig[PREV] == 1 && v == -1) {
 	    if (verbose > 2) {
-	      printf ("[%.4g] change from 1, signal %s\n", i*a->dt*1e9, ATRACE_GET_NAME(a, j));
+	      printf ("[%.4g] change from 1, signal %s\n", i*a->dt*1e9, ATRACE_GET_NAME(ATRACE_NODE_IDX(a, j)));
 	    }
 	    /* 1 -> X */
 	    process_signal_change (new_a, p, &n[j], i*a->dt, 0);
@@ -1234,7 +1241,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
 	n[j].hist_tm[EARLIER] = n[j].hist_tm[PREV];
 	n[j].hist_dig[EARLIER] = n[j].hist_dig[PREV];
 
-	n[j].hist_val[PREV] = ATRACE_NODE_FLOATVAL (a, nm);
+	n[j].hist_val[PREV] = ATRACE_NODE_FLOATVAL (nm);
 	n[j].hist_tm[PREV] = a->curt;
 	n[j].hist_dig[PREV] = v;
 
@@ -1266,10 +1273,10 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
       else {
 	/* same old, nothing to do */
 	if (v == -1) /* X */ {
-	  if (ATRACE_NODE_FLOATVAL (a, nm) > n[j].max_val)
-	    n[j].max_val = ATRACE_NODE_FLOATVAL (a, nm);
-	  if (ATRACE_NODE_FLOATVAL (a, nm) < n[j].min_val)
-	    n[j].min_val = ATRACE_NODE_FLOATVAL (a, nm);
+	  if (ATRACE_NODE_FLOATVAL (nm) > n[j].max_val)
+	    n[j].max_val = ATRACE_NODE_FLOATVAL (nm);
+	  if (ATRACE_NODE_FLOATVAL (nm) < n[j].min_val)
+	    n[j].min_val = ATRACE_NODE_FLOATVAL (nm);
 	}
       }
     next:

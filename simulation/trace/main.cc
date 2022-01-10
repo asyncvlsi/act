@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <common/atrace.h>
 #include <common/misc.h>
+#include <common/int.h>
 
 static void usage (const char *name)
 {
@@ -54,8 +55,37 @@ int main (int argc, char **argv)
   atrace_header (a, &ts, &Nnodes, &Nsteps, &fmt);
   atrace_init_time (a);
   for (int i=0; i < Nsteps; i++) {
-    float v = ATRACE_NODE_FLOATVAL (a, n);
-    printf ("%g %g\n", i*ATRACE_GET_STEPSIZE (a), v);
+    atrace_val_t v = ATRACE_GET_VAL (n);
+    printf ("%g ", i*ATRACE_GET_STEPSIZE (a));
+    if (atrace_is_analog (n)) {
+      printf ("%g\n", ATRACE_FLOATVAL (&v));
+    }
+    else {
+      int blk;
+      if (atrace_is_channel (n)) {
+	blk = atrace_is_channel_blocked (n, &v);
+	if (blk != -1) {
+	  printf ("%s-block\n", blk == ATRACE_CHAN_SEND_BLOCKED ? "send" : "recv");
+	}
+      }
+      else {
+	blk = -1;
+      }
+      if (blk == -1) {
+	if (atrace_bitwidth (n) <= ATRACE_SHORT_WIDTH) {
+	  printf ("%lu\n", ATRACE_SMALLVAL (&v));
+	}
+	else {
+	  BigInt b;
+	  b.setWidth (atrace_bitwidth (n));
+	  for (int i=0; i < b.getLen(); i++) {
+	    b.setVal (i, ATRACE_BIGVAL(&v)[i]);
+	  }
+	  b.decPrint (stdout);
+	  printf ("\n");
+	}
+      }
+    }
     atrace_advance_time (a, 1);
   }
   atrace_close (a);

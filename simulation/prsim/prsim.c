@@ -265,7 +265,8 @@ static char *read_line (char *prompt)
 /* --- end editline --- */
 
 
-static float prs_nodeanalogval[] = { 1.0, 0.0, 0.5 };
+//static float prs_nodeanalogval[] = { 1.0, 0.0, 0.5 };
+static int prs_nodeanalogval[] = { 1, 0, 2 }; /* 2 = X */
 
 static Prs *P;				/* global prs stuff */
 void handle_user_input (FILE *fp);
@@ -561,12 +562,14 @@ void add_trace_wrap (PrsNode *n, void *v) {
   
   m = atrace_create_node (tracing, prs_nodename (P,n));
   atrace_mk_digital (m);
+  atrace_mk_width (m, 2);
   
   SPACE(n) = m;
 
   for (nn = (RawPrsNode *)n->alias_ring; nn != (RawPrsNode *)n; nn = nn->alias_ring) {
     o = atrace_create_node (tracing, prs_rawnodename (P, nn));
     atrace_mk_digital (o);
+    atrace_mk_width (o, 2);
     atrace_alias (tracing, m, o);
   }
 
@@ -1192,18 +1195,20 @@ static void check_trace_stop (void)
 
 static void add_transition (PrsNode *n, PrsNode *m)
 {
+  atrace_val_t v;
+  v.val = prs_nodeanalogval[prs_nodeval(n)];
   if (m) {
-    atrace_signal_change_cause (tracing,
-				(name_t *)SPACE(n),
-				(P->time - tracing_start_time)*prs_timescale,
-				prs_nodeanalogval[prs_nodeval (n)],
-				(name_t *)SPACE(m));
+    atrace_general_change_cause (tracing,
+				 (name_t *)SPACE(n),
+				 (P->time - tracing_start_time)*prs_timescale,
+				 &v,
+				 (name_t *)SPACE(m));
   }
   else {
-    atrace_signal_change (tracing,
+    atrace_general_change (tracing,
 			  (name_t *)SPACE(n),
 			  (P->time - tracing_start_time)*prs_timescale,
-			  prs_nodeanalogval[prs_nodeval (n)]);
+			  &v);
   }
 }
 

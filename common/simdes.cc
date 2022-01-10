@@ -78,7 +78,7 @@ SimDES::~SimDES ()
 /*
  * Create a new event, insert into the queue
  */
-Event::Event (SimDES *s, int event_type, int delay)
+Event::Event (SimDES *s, int event_type, int delay, void *_cause)
 {
   /* check to see if the delay would cause "curtime" to roll over */
   while (((unsigned long)~0UL - SimDES::curtime) < (unsigned)delay) {
@@ -114,6 +114,7 @@ Event::Event (SimDES *s, int event_type, int delay)
   }
 
   obj = s;
+  cause = _cause;
   ev_type = event_type;
   kill = 0;
   heap_insert (SimDES::all, SimDES::curtime + delay, this);
@@ -178,7 +179,7 @@ Event *SimDES::Run ()
 	break;
       }
       curobj = ev->obj;
-      if (!ev->obj->Step (ev->ev_type)) {
+      if (!ev->obj->Step (ev)) {
 	delete ev;
 	return NULL;
       }
@@ -214,7 +215,7 @@ Event *SimDES::Advance (long n)
 	break;
       }
       curobj = ev->obj;
-      if (!ev->obj->Step (ev->ev_type)) {
+      if (!ev->obj->Step (ev)) {
 	delete ev;
 	return NULL;
       }
@@ -266,7 +267,7 @@ Event *SimDES::AdvanceTime (long delay)
 	break;
       }
       curobj = ev->obj;
-      if (!ev->obj->Step (ev->ev_type)) {
+      if (!ev->obj->Step (ev)) {
 	delete ev;
 	return NULL;
       }
@@ -434,18 +435,18 @@ void *Event::operator new (size_t sz)
     if (!Event::ev_queue) {
       fatal_error ("Out of memory!");
     }
-    Event::ev_queue->next = NULL;
+    Event::ev_queue->cause = NULL;
   }
   x = Event::ev_queue;
-  Event::ev_queue = Event::ev_queue->next;
+  Event::ev_queue = (Event *)Event::ev_queue->cause;
   return x;
 }
 
 void Event::operator delete (void *v)
 {
   Event *e = (Event *)v;
-  e->next = Event::ev_queue;
-  Event::ev_queue = e;
+  e->cause = Event::ev_queue;
+  Event::ev_queue = (Event *)e;
 }
 
 

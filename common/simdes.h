@@ -41,7 +41,7 @@
  *           execution. It should return the time of the first event
  *           for this object, or -1 if there isn't any.
  *
- *        int Step (int)
+ *        int Step (Event *)
  *
  *           Invoked whenever the object operations are to be
  *           processed. Returns 1 on success, 0 if the simulation
@@ -87,7 +87,7 @@ class SimDES;
 
 class Event {
 public:
-  Event (SimDES *s, int event_type, int delay);
+  Event (SimDES *s, int event_type, int delay, void *cause = NULL);
   ~Event ();
 
   /*
@@ -101,18 +101,22 @@ public:
 
   SimDES *getObj () { return obj; }
 
+  int getType () { return ev_type; }
+  void *getCause() { return cause; }
+
 private:
   unsigned int kill:1;		// set to 1 to make this an event that
 				// is discarded
   
   unsigned int ev_type:15;	// event type
 
-  SimDES *obj;		// information about the event (see above)
+  SimDES *obj;		    // information about the event (see above)
+
+  void *cause;			// information about event causality
+  
 
   /* allocated event queue */
   static Event *ev_queue;
-  Event *next;               // queue of events
-
   friend class SimDES;
 };
 
@@ -134,7 +138,7 @@ class SimDES {
    *  The main function for the simulation. Step() is used to make
    *  forward progress. See above. All state changes should happen in Step().
    */
-  virtual int Step (int ev_type) = 0;
+  virtual int Step (Event *ev_ptr) = 0;
 
   void Pause (int delay); 	// pause yourself by the specified
 				// delay---after executing this
@@ -284,7 +288,7 @@ private:
 #define STANDARD_SIM_TEMPLATE			\
    void Print (FILE *fp) { }			\
    int Init ();					\
-   int Step (int);				\
+   int Step (Event *);				\
    void DumpStats (void) { }
 
 
