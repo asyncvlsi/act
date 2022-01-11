@@ -1671,6 +1671,23 @@ RET_TYPE process_dumptc (ARG_LIST)
   RETURN (LISP_RET_TRUE);
 }
 
+RET_TYPE process_echo (ARG_LIST)
+{
+  int nl = 1;
+  if (argc > 1 && strcmp (argv[1], "-n") == 0) {
+      nl = 0;
+  }
+  for (int i=2-nl; i < argc; i++) {
+    printf ("%s", argv[i]);
+    if (i != argc-1) {
+      printf (" ");
+    }
+  }
+  if (nl) {
+    printf ("\n");
+  }
+  RETURN (LISP_RET_TRUE);
+}
 
 
 struct file_stack {
@@ -2149,6 +2166,7 @@ struct LispCliCommand Cmds[] = {
   { "after", "<n> <minu> <maxu> <mind> <maxd> - node set to random times within range", process_after },
   { "dumptc", "<file> - dump transition counts for nodes to <file>", process_dumptc },
   { "pairtc", "- turns on <input/output> pair transition counts", process_pairtc },
+  { "echo", "[-n] items... - print items; -n omits newline", process_echo },
 
   { NULL, "Running Simulation", NULL },
 
