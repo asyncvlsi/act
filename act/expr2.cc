@@ -1403,7 +1403,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
     }
     else if ((e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
-	      || e->type == E_DIV || e->type == E_MOD) &&
+	      || e->type == E_DIV || e->type == E_MOD) && pc &&
 	     (expr_is_a_const (ret->u.e.l) || expr_is_a_const (ret->u.e.r))) {
       Expr *ce, *re;
       if (expr_is_a_const (ret->u.e.l)) {
@@ -1735,21 +1735,18 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    (tmp->u.e.l->type == E_FALSE && tmp->u.e.r->type == E_FALSE) ||
 	    (VAL(tmp->u.e.l) == VAL(tmp->u.e.r))) {
 	  /* XXX need to free ret->u.e.l */
-	  if (pc) {
-	    FREE (ret);
-	    FREE (tmp);
-	    ret = ce;
-	    if (ce->type == E_INT && ce->u.v_extra) {
-	      ((BigInt *)ce->u.v_extra)->setWidth (*width);
-	    }
+	  FREE (ret);
+	  FREE (tmp);
+	  ret = ce;
+	  if (ce->type == E_INT && ce->u.v_extra) {
+	    ((BigInt *)ce->u.v_extra)->setWidth (*width);
 	  }
 	}
       }
     }
     else {
       Expr *tmp = ret->u.e.r;
-      if (pc ||
-	  (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r))) {
+      if (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r)) {
 	//FREE (ret->u.e.l);
 	if (ret->u.e.l->type == E_TRUE) {
 	  FREE (ret);

@@ -1,0 +1,11 @@
+defproc test()
+{
+  int<1> a, b;
+  chp {
+   a := 0 - b; 
+   a := 0*b;
+   a := 1*b
+  }
+}
+
+test t;

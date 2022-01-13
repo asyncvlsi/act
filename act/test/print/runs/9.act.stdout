@@ -9,5 +9,5 @@ chan(int<32>) c;
 
 /* connections */
 dataflow {
-a=0 ? b=0 ? a : b : c -> e
+a=0x0 ? b=0x0 ? a : b : c -> e
 }

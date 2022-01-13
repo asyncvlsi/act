@@ -10,7 +10,7 @@ int<256> inp;
 
 /* connections */
 chp {
-L?inp;a:=inp;L?inp;b:=inp;L!0x7
+L?inp;a:=inp;L?inp;b:=inp;L!~((a+b)*0x0)
 }
 }
 

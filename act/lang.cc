@@ -40,8 +40,7 @@
  */
 static Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 {
-  return expr_expand (e, ns, s,
-		      ACT_EXPR_EXFLAG_PARTIAL|ACT_EXPR_EXFLAG_CHPEX);
+  return expr_expand (e, ns, s, ACT_EXPR_EXFLAG_CHPEX);
 }
 
 void act_chp_free (act_chp_lang_t *c)
@@ -3470,7 +3469,7 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
     switch (e->t) {
     case ACT_DFLOW_FUNC:
       //f->u.func.lhs = expr_expand (e->u.func.lhs, ns, s, 0, 0);
-      f->u.func.lhs = expr_expand (e->u.func.lhs, ns, s, 0);
+      f->u.func.lhs = chp_expr_expand (e->u.func.lhs, ns, s);
       f->u.func.nbufs = NULL;
       f->u.func.init  = NULL;
       f->u.func.istransparent = e->u.func.istransparent;

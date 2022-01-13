@@ -1,0 +1,20 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<1> b;
+int<1> a;
+
+/* connections */
+chp {
+a:=0x0-b;a:=0x0*b;a:=0x1*b
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
