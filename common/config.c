@@ -40,6 +40,10 @@
   real_table <var> values
   string_table <var> values
 
+  int_tablex <var> <values>   -- extends the table
+  real_tablex ...
+  string_tablex ... 
+
   begin name -- appends "name." as a prefix
   end  -- drops last prefix
   
@@ -506,6 +510,10 @@ void config_read (const char *name)
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
+	c = (config_t *)b->v;
+	if (c->u.t.sz > 0) {
+	  FREE (c->u.t.u.i);
+	}
 	FREE (b->v);
       }
       c = newconfig ();
@@ -528,6 +536,53 @@ void config_read (const char *name)
 	c->u.t.u.i = x;
       }
     }
+    else if (strcmp (s, "int_tablex") == 0) {
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
+	b->v = NULL;
+      }
+      else {
+	Assert (((config_t*)b->v)->type == CONFIG_TABLE_INT, "Switching types!?");
+      }
+      if (b->v) {
+	c = (config_t *) b->v;
+      }
+      else {
+	c = newconfig ();
+	b->v = c;
+	c->type = CONFIG_TABLE_INT;
+	c->u.t.sz = 0;
+	c->u.t.u.i = NULL;
+      }
+      {
+	A_DECL (int, x);
+	A_INIT (x);
+	if (c->u.t.sz > 0) {
+	  int i;
+	  A_NEWP (x, int, c->u.t.sz);
+	  for (i=0; i < c->u.t.sz; i++) {
+	    A_NEWM (x, int);
+	    A_NEXT (x) = c->u.t.u.i[i];
+	    A_INC (x);
+	  }
+	}
+	/* read in a space-separated list of integers */
+	s = strtok (NULL, " \t");
+	while (s && s[0] != '#') {
+	  /* accumulate s in the table */
+	  A_NEWM (x,int);
+	  sscanf (s, "%d", &A_NEXT (x));
+	  A_INC (x);
+	  s = strtok (NULL, " \t");
+	}
+	if (c->u.t.sz > 0) {
+	  FREE (c->u.t.u.i);
+	}
+	c->u.t.sz = A_LEN (x);
+	c->u.t.u.i = x;
+      }
+    }
     else if (strcmp (s, "real_table") == 0) {
       GET_NAME;
       if (!(b = hash_lookup (H, buf3))) {
@@ -535,6 +590,10 @@ void config_read (const char *name)
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_REAL, "Switching types!?");
+	c = (config_t *)b->v;
+	if (c->u.t.sz > 0) {
+	  FREE (c->u.t.u.r);
+	}
 	FREE (b->v);
       }
       c = newconfig ();
@@ -557,6 +616,53 @@ void config_read (const char *name)
 	c->u.t.u.r = x;
       }
     }
+    else if (strcmp (s, "real_tablex") == 0) {
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
+	b->v = NULL;
+      }
+      else {
+	Assert (((config_t*)b->v)->type == CONFIG_TABLE_REAL, "Switching types!?");
+      }
+      if (b->v) {
+	c = (config_t *)b->v;
+      }
+      else {
+	c = newconfig ();
+	b->v = c;
+	c->type = CONFIG_TABLE_REAL;
+	c->u.t.sz = 0;
+	c->u.t.u.r = NULL;
+      }
+      {
+	A_DECL (double, x);
+	A_INIT (x);
+	if (c->u.t.sz > 0) {
+	  int i;
+	  A_NEWP (x, double, c->u.t.sz);
+	  for (i=0; i < c->u.t.sz; i++) {
+	    A_NEWM (x, double);
+	    A_NEXT (x) = c->u.t.u.r[i];
+	    A_INC (x);
+	  }
+	}
+	/* read in a space-separated list of integers */
+	s = strtok (NULL, " \t");
+	while (s && s[0] != '#') {
+	  /* accumulate s in the table */
+	  A_NEWM (x,double);
+	  sscanf (s, "%lg", &A_NEXT (x));
+	  A_INC (x);
+	  s = strtok (NULL, " \t");
+	}
+	if (c->u.t.sz > 0) {
+	  FREE (c->u.t.u.r);
+	}
+	c->u.t.sz = A_LEN (x);
+	c->u.t.u.r = x;
+      }
+    }
     else if (strcmp (s, "string_table") == 0) {
       GET_NAME;
       if (!(b = hash_lookup (H, buf3))) {
@@ -564,6 +670,14 @@ void config_read (const char *name)
       }
       else {
 	Assert (((config_t*)b->v)->type == CONFIG_TABLE_STR, "Switching types!?");
+	c = (config_t *)b->v;
+	if (c->u.t.sz > 0) {
+	  int i;
+	  for (i=0; i < c->u.t.sz; i++) {
+	    FREE (c->u.t.u.s[i]);
+	  }
+	  FREE (c->u.t.u.s);
+	}
 	FREE (b->v);
       }
       c = newconfig ();
@@ -604,6 +718,75 @@ void config_read (const char *name)
 
 	} while (s);
 
+	c->u.t.sz = A_LEN (x);
+	c->u.t.u.s = x;
+      }
+    }
+    else if (strcmp (s, "string_tablex") == 0) {
+      GET_NAME;
+      if (!(b = hash_lookup (H, buf3))) {
+	b = hash_add (H, buf3);
+	b->v = NULL;
+      }
+      else {
+	Assert (((config_t*)b->v)->type == CONFIG_TABLE_STR, "Switching types!?");
+      }
+      if (b->v) {
+	c = (config_t *)b->v;
+      }
+      else {
+	c = newconfig ();
+	b->v = c;
+	c->type = CONFIG_TABLE_STR;
+	c->u.t.sz = 0;
+	c->u.t.u.s = NULL;
+      }
+      {
+	A_DECL (char *, x);
+	A_INIT (x);
+
+	if (c->u.t.sz > 0) {
+	  int i;
+	  A_NEWP (x, char *, c->u.t.sz);
+	  for (i=0; i < c->u.t.sz; i++) {
+	    A_NEWM (x, char *);
+	    A_NEXT (x) = c->u.t.u.s[i];
+	    A_INC (x);
+	  }
+	}
+	/* read in a space-separated list of integers */
+	s = strtok (NULL, " \t");
+	if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
+
+	do {
+	  if (s[0] != '"') {
+	    fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
+	  }
+	  strcpy (buf2, s);
+
+	  while (s && buf2[strlen(buf2)-1] != '"') {
+	    s = strtok (NULL, " \t");
+	    if (s) {
+	      strcat (buf2, " ");
+	      strcat (buf2, s);
+	    }
+	  }
+	  if (!s) {
+	    fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
+	  }
+
+	  buf2[strlen(buf2)-1] = '\0';
+
+	  A_APPEND (x, char *, create_string (buf2+1));
+
+	  s = strtok (NULL, " \t");
+
+	  if (s && s[0] == '#') break;  /* comment */
+
+	} while (s);
+	if (c->u.t.sz > 0) {
+	  FREE (c->u.t.u.s);
+	}
 	c->u.t.sz = A_LEN (x);
 	c->u.t.u.s = x;
       }
