@@ -1327,6 +1327,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->type = E_INT;
 	  ret->u.v_extra = l;
 	  ret->u.v = l->getVal (0);
+	  l->setWidth (*width);
 	}
 	else {
 	  signed long v;
@@ -2175,6 +2176,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	BigInt *btmp = new BigInt();
 	*btmp = *((BigInt *)e->u.v_extra);
 	ret->u.v_extra = btmp;
+	*width = btmp->getWidth ();
       }
       else {
 	BigInt *btmp = new BigInt (*width, 0, 1);
@@ -2247,7 +2249,10 @@ static Expr *_expr_expand (int *width, Expr *e,
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;
   }
-  
+  if (ret->type == E_INT && ret->u.v_extra) {
+    BigInt *tmp = (BigInt *) ret->u.v_extra;
+    Assert (tmp->getWidth () == *width, "What?");
+  }
   return ret;
 }
 

@@ -1,0 +1,9 @@
+defproc test()
+{
+  int<1> a, b;
+  chp {
+   a := ~(int(0, 6) + int(0, 9))
+  }
+}
+
+test t;
