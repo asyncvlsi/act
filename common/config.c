@@ -91,7 +91,7 @@ static char *create_string (const char *s)
 
   ret = Strdup (s);
 
-  len = strlen (s) + 1;
+  len = strlen (s);
 
   pos = 0;
 
@@ -113,17 +113,19 @@ static char *create_string (const char *s)
       *tmp = '\0';
       char *env = getenv (var);
       if (env) {
-        int i;
-	int delta = strlen (env) - (strlen (var) + 3);
+        int i, lv, delta;
+
+	lv = strlen (var);
+	delta = strlen (env) - (lv + 3);
 	if (delta > 0) {
 	  int mv_pos;
-	  REALLOC (ret, char,  len + delta);
-
-	  mv_pos = pos + 3 + strlen (var);
+	  REALLOC (ret, char,  len + delta + 1);
+	  mv_pos = pos + 3 + lv;
 	  /* shift all characters */
 	  for (i=len; i >= mv_pos; i--) {
 	    ret[i+delta] = ret[i];
 	  }
+	  len += delta;
 	}
 	for (i=0; i < strlen (env); i++) {
 	  ret[pos] = env[i];
@@ -132,7 +134,7 @@ static char *create_string (const char *s)
 	if (delta < 0) {
 	  /* shift string back */
 	  len += delta;
-	  for (i=pos; i < len; i++) {
+	  for (i=pos; i <= len; i++) {
 	    ret[i] = ret[i-delta];
 	  }
 	}
