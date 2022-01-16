@@ -66,6 +66,7 @@ int AGraph::addVertex (AGinfo *info)
   v->info = info;
   v->vid = A_LEN (vertices)-1;
   v->isio = 0;
+  v->visited = 0;
 
   return v->vid;
 }
@@ -693,4 +694,131 @@ void AGraph::restore (FILE *fp)
       }
     }
   }
+}
+
+void AGraph::_mark_reverse (int idx, AGSCCInfo *scc)
+{
+ if (scc->scc_idx[idx] != -1) return;
+ scc->scc_idx[idx] = scc->scc_num;
+
+ AGvertexBwdIter bw(this, idx);
+ for (bw = bw.begin(); bw != bw.end(); bw++) {
+   AGedge *e = (*bw);
+   _mark_reverse (e->src, scc);
+ }
+}
+
+
+void AGraph::_compute_scc_helper (list_t *l, int idx)
+{
+ AGvertexFwdIter fw(this, idx);
+ 
+ getVertex(idx)->visited = 1;
+ 
+ for (fw = fw.begin(); fw != fw.end(); fw++) {
+   AGedge *e = (*fw);
+   if (!getVertex (e->dst)->visited) {
+     _compute_scc_helper (l, e->dst);
+   }
+ }
+ list_iappend_head (l, idx);
+}
+
+AGraph *AGraph::computeSCC()
+{
+ AGSCCInfo *info = new AGSCCInfo ();
+ AGraph *ret = new AGraph (info);
+
+ info->n = A_LEN (vertices);
+ if (info->n == 0) {
+   return ret;
+ }
+ MALLOC (info->scc_idx, int, info->n);
+ for (int i=0; i < info->n; i++) {
+   info->scc_idx[i] = -1;
+   vertices[i].visited = 0;
+ }
+
+ list_t *l = list_new ();
+ for (int i=0; i < A_LEN (vertices); i++) {
+   if (vertices[i].visited == 0) {
+     _compute_scc_helper (l, i);
+   }
+ }
+ for (int i=0; i < A_LEN (vertices); i++) {
+   vertices[i].visited = 0;
+ }
+
+ while (!list_isempty (l)) {
+   int v = list_delete_ihead (l);
+   if (info->scc_idx[v] != -1) {
+     continue;
+   }
+   _mark_reverse (v, info);
+   info->scc_num++;
+ }
+ list_free (l);
+
+ for (int i=0; i < info->scc_num; i++) {
+   ret->addVertex (NULL);
+ }
+
+ for (int i=0; i < A_LEN (vertices); i++) {
+   AGvertexFwdIter fw(this, i);
+   for (fw = fw.begin(); fw != fw.end(); fw++) {
+     AGedge *e = (*fw);
+     if (info->scc_idx[e->src] != info->scc_idx[e->dst]) {
+       AGvertexFwdIter fw2(ret, info->scc_idx[e->src]);
+       for (fw2 = fw2.begin(); fw2 != fw2.end(); fw2++) {
+	 AGedge *e2 = (*fw2);
+	 if (e2->dst == info->scc_idx[e->dst])
+	   break;
+       }
+       if (fw2 == fw2.end()) {
+	 ret->addEdge (info->scc_idx[e->src], info->scc_idx[e->dst]);
+       }
+     }
+   }
+ }
+ return ret;
+}
+
+void AGSCCInfo::save (FILE *fp)
+{
+ fprintf (fp, "%d %d\n", n, scc_num);
+ for (int i=0; i < n; i++) {
+   fprintf (fp, "%d ", scc_idx[i]);
+   if (((i + 1) & 0xf) == 0) {
+     fprintf (fp, "\n");
+   }
+ }
+ fprintf (fp, "\n");
+}
+
+AGinfo *AGSCCInfo::restore (FILE *fp)
+{
+ AGSCCInfo *ret = new AGSCCInfo ();
+ if (fscanf (fp, "%d %d", &ret->n, &ret->scc_num) != 2) {
+   fprintf (stderr, "Error restoring SCCInfo\n");
+   ret->n = 0;
+   ret->scc_num = 0;
+   return ret;
+ }
+ if (ret->n < 0) {
+   fprintf (stderr, "Error restoring SCCInfo\n");
+   ret->n = 0;
+   ret->scc_num = 0;
+   return ret;
+ }
+ if (ret->n == 0) {
+   return ret;
+ }
+ MALLOC (ret->scc_idx, int, ret->n);
+ for (int i=0; i < ret->n; i++) {
+   if (fscanf (fp, "%d", &ret->scc_idx[i]) != 1) {
+     fprintf (stderr, "Error restoring SCCInfo\n");
+     return ret;
+   }
+ }
+ return ret;
 }
