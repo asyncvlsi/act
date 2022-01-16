@@ -29,6 +29,8 @@ AGraph::AGraph(AGinfo *_info)
   A_INIT (inp);
   A_INIT (outp);
   info = _info;
+  _vtx_info = NULL;
+  _edge_info = NULL;
 }
 
 AGraph::~AGraph()
@@ -565,4 +567,130 @@ void AGraph::printDot (FILE *fp, const char *name)
    fprintf (fp, " v%d -> v%d [label=\"%s\"];\n", e->src, e->dst, t);
  }
  fprintf (fp, "}\n");
+}
+
+
+void AGraph::save (FILE *fp)
+{
+ if (info) {
+   fprintf (fp, "+ ");
+   info->save (fp);
+ }
+ else {
+   fprintf (fp, "* ");
+ }
+ fprintf (fp, "\n%d %d\n", A_LEN (vertices), A_LEN (edges));
+ for (int i=0; i < A_LEN (vertices); i++) {
+   fprintf (fp, "%d ", vertices[i].isio);
+   if (vertices[i].getInfo()) {
+     fprintf (fp, "+ ");
+     vertices[i].getInfo()->save (fp);
+   }
+   else {
+     fprintf (fp, "* ");
+   }
+   fprintf (fp, "\n");
+ }
+ for (int i=0; i < A_LEN (edges); i++) {
+   fprintf (fp, "%d %d ", edges[i].src, edges[i].dst);
+   if (edges[i].getInfo()) {
+     fprintf (fp, "+ ");
+     edges[i].getInfo()->save (fp);
+   }
+   else {
+     fprintf (fp, "* ");
+   }
+   fprintf (fp, "\n");
+ }
+}
+
+#define RESTORE_ERR					\
+  do {							\
+    fprintf (stderr, "Error restoring graph\n");	\
+    return ;						\
+  } while (0)
+
+void AGraph::restore (FILE *fp)
+{
+  char buf[128];
+  if (A_LEN (vertices) != 0) {
+    fprintf (stderr, "Can only restore an empty graph\n");
+    return;
+  }
+  if (fscanf (fp, " %1s", buf) != 1) {
+    RESTORE_ERR;
+  }
+  if (buf[0] == '+') {
+    if (!info) {
+      RESTORE_ERR;
+    }
+    info->restore (fp);
+  }
+  else if (buf[0] != '*') {
+    RESTORE_ERR;
+  }
+  int vl, el;
+  if (fscanf (fp, "%d %d", &vl, &el) != 2) {
+    RESTORE_ERR;
+  }
+  if (vl < 0 || el < 0) {
+    RESTORE_ERR;
+  }
+  if (vl == 0) {
+    return;
+  }
+  A_NEWP (vertices, AGvertex, vl);
+  for (int i=0; i < vl; i++) {
+    int flag;
+    if (fscanf (fp, "%d", &flag) != 1) {
+      RESTORE_ERR;
+    }
+    int tmp = addVertex (NULL);
+    if (tmp != i) {
+      RESTORE_ERR;
+    }
+    if (flag == 1) {
+      mkInput (i);
+    }
+    else if (flag == 2) {
+      mkOutput (i);
+    }
+    if (fscanf (fp, " %1s", buf) != 1) {
+      RESTORE_ERR;
+    }
+    if (buf[0] == '+') {
+      if (!_vtx_info) {
+	RESTORE_ERR;
+      }
+      vertices[i].setInfo (_vtx_info->restore (fp));
+    }
+    else if (buf[0] != '*') {
+      RESTORE_ERR;
+    }
+  }
+  if (el > 0) {
+    A_NEWP (edges, AGedge, el);
+    for (int i=0; i < el; i++) {
+      int  src, dst;
+      if (fscanf (fp, "%d %d", &src, &dst) != 2) {
+	RESTORE_ERR;
+      }
+      int idx = addEdge (src, dst);
+      if (idx != i) {
+	RESTORE_ERR;
+      }
+      if (fscanf (fp, " %1s", buf) != 1) {
+	RESTORE_ERR;
+      }
+      if (buf[0] == '+') {
+	if (!_edge_info) {
+	  RESTORE_ERR;
+	}
+	edges[i].setInfo (_edge_info->restore (fp));
+      }
+      else if (buf[0] != '*') {
+	RESTORE_ERR;
+      }
+    }
+  }
 }

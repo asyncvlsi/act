@@ -28,6 +28,8 @@
 class AGinfo {
 public:
   virtual const char *info() { return ""; }
+  virtual void save(FILE *fp) { }
+  virtual AGinfo *restore(FILE *fp) { return new AGinfo(); }
 };
 
 struct AGedge {
@@ -78,12 +80,21 @@ class AGraph {
 
   void printDot (FILE *fp, const char *name);
 
+  void save (FILE *fp);
+  void restore (FILE *fp);
+
+  void setVtxInfo (AGinfo *i) { _vtx_info = i; }
+  void setEdgeInfo (AGinfo *i) { _edge_info = i; }
+
  private:
   AGinfo *info;
   A_DECL (AGedge, edges);
   A_DECL (AGvertex, vertices);
   A_DECL (int, inp);		// input vertices (index)
   A_DECL (int, outp);		// output vertices (index)
+
+  AGinfo *_vtx_info;		// dummy fields
+  AGinfo *_edge_info;		// dummy fields
 };
 
 
