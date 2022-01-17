@@ -125,6 +125,8 @@ class library_vertex_info : public AGinfo {
   int portid;			/* which port id it corresponds to */
   int port_offset;		/* port offset, if an array */
   int clk_port;			/* vertex number port for clock, if any */
+
+  ~library_vertex_info() { }
 };
 
 /* XXX: assumption: an array port has all its elements in the same
@@ -137,6 +139,7 @@ class  library_edge_info : public AGinfo {
                                     vertex id in the instance */
   int genclk:1;		 	/* set to 1 if this edge corresponds
 				   to a generated clock */
+  ~library_edge_info () { }
 };
 
 static library_edge_info *newedge ()
@@ -154,6 +157,7 @@ class inst_vertex_info : public AGinfo {
  public:
   id_info_t *id;
   AGraph *g;
+ ~inst_vertex_info() { }
 };
 
 static void dump_li_info (library_vertex_info *li)
@@ -189,6 +193,7 @@ class AGprocinfo : public AGinfo {
  public:
   Process *p;
   AGprocinfo (Process *_p) { p = _p; }
+  ~AGprocinfo() { }
 };
 
 
@@ -196,6 +201,7 @@ class AGmoduleinfo : public AGinfo {
  public:
   module_t *m;
   AGmoduleinfo (module_t *_m) { m = _m; }
+  ~AGmoduleinfo() { }
 };
 
 

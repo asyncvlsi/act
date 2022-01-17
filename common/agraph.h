@@ -28,6 +28,7 @@
 
 class AGinfo {
 public:
+  virtual ~AGinfo() { }
   virtual const char *info() { return ""; }
   virtual void save(FILE *fp) { }
   virtual AGinfo *restore(FILE *fp) { return new AGinfo(); }
@@ -36,6 +37,7 @@ public:
 class AGSCCInfo : public AGinfo {
 public:
   AGSCCInfo() { n = 0; scc_idx = NULL; scc_num = 0; }
+  ~AGSCCInfo() { if (n > 0) { FREE (scc_idx); } }
   void save(FILE *fp);
   AGinfo *restore(FILE *fp);
 

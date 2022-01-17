@@ -35,10 +35,31 @@ AGraph::AGraph(AGinfo *_info)
 
 AGraph::~AGraph()
 {
+  for (int i=0; i < A_LEN (edges); i++) {
+    if (edges[i].info) {
+      delete edges[i].info;
+    }
+  }
   A_FREE (edges);
+
+  for (int i=0; i < A_LEN (vertices); i++) {
+    if (vertices[i].info) {
+      delete vertices[i].info;
+    }
+  }
+
   A_FREE (vertices);
   A_FREE (inp);
   A_FREE (outp);
+  if (info) {
+    delete info;
+  }
+  if (_vtx_info) {
+    delete _vtx_info;
+  }
+  if (_edge_info) {
+    delete _edge_info;
+  }
   info = NULL;
 }
 
