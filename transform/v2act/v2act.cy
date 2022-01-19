@@ -636,6 +636,7 @@ id_deref_or_range[list_t *]: id_deref_range
 {{X:
     list_t *l;
     int pos = 1;
+    int warn = 0;
 
     l = list_new ();
     for (int i=0; i < $1; i++) {
@@ -645,7 +646,10 @@ id_deref_or_range[list_t *]: id_deref_range
 	digit = 0;
       }
       else {
-	digit = $3[pos] == '0' ? 0 : 1;
+	digit = $3[pos] == '1' ? 1 : 0;
+        if ($3[pos] != '1' && $3[pos] != '0') { 
+           warn = 1;
+        }
 	pos++;
       }
 
@@ -666,6 +670,9 @@ id_deref_or_range[list_t *]: id_deref_range
 	d->id->isport = 1;
       }
       list_append (l, d);
+    }
+    if (warn) {
+       $W("Binary constant %s has non-0/non-1 entries that were treated as zero", $3);
     }
     return l;
 }}
