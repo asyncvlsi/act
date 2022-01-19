@@ -743,6 +743,11 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
   d->deref = 0;
   return d;
 }}
+| "1'bx"
+{{X:
+  $W("Binary constant \"x\" has non-0/non-1 entries that were treated as zero");
+  return apply_X_id_deref_opt1 ($0);
+}}
 ;
 
 id_or_const[conn_rhs_t *]: id_deref [ "[" INT ":" INT "]" ]
