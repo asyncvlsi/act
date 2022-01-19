@@ -1993,8 +1993,9 @@ void ActCellPass::dump_celldb (FILE *fp)
   while ((b = chash_iter_next (cell_table, &iter))) {
     pi = (struct act_prsinfo *)b->v;
     if (pi->cell) {
-      sscanf (pi->cell->getName()+1, "%dx%d", &id, &version);
-      cellmax = (cellmax > id) ? cellmax : id;
+      if (sscanf (pi->cell->getName()+1, "%dx%d", &id, &version) == 2) {
+	cellmax = (cellmax > id) ? cellmax : id;
+      }
     }
   }
   cellmax++;
@@ -2683,8 +2684,10 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       out_t = p->getPortType (1);
 
       int id, version;
-      sscanf (p->getName()+1, "%dx%d", &id, &version);
-      cellmax = (cellmax > id) ? cellmax : id;
+      if (sscanf (p->getName()+1, "%dx%d", &id, &version) == 2) {
+	/* for cells numbered g <num> x <num>, we track cellmax */
+	cellmax = (cellmax > id) ? cellmax : id;
+      }
       
       /* in_t must be a bool array or bool
 	 out_t must be a bool array or bool
@@ -2744,7 +2747,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 #if 0
       printf ("CELL: %s\n", p->getName());
       _dump_prsinfo (pi);
-#endif      
+#endif
 
       {
 	char buf[100];

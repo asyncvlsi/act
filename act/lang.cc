@@ -2931,6 +2931,39 @@ void refine_print (FILE *fp, act_refine *r)
   fprintf (fp, "}\n");
 }
 
+static void sizing_print_directive (FILE *fp, act_sizing_directive *d)
+{
+  d->id->Print (fp);
+  fprintf (fp, " { ");
+  if (d->eup) {
+    fprintf (fp, "+ ");
+    print_expr (fp, d->eup);
+    if (d->flav_up != 0) {
+      fprintf (fp, ",%s", act_dev_value_to_string (d->flav_up));
+    }
+    if (d->upfolds) {
+      fprintf (fp, ";");
+      print_expr (fp, d->upfolds);
+    }
+  }
+  if (d->edn) {
+    if (d->eup) {
+      fprintf (fp, ", ");
+    }
+    fprintf (fp, "- ");
+    print_expr (fp, d->edn);
+    if (d->flav_dn != 0) {
+      fprintf (fp, ",%s", act_dev_value_to_string (d->flav_dn));
+    }
+    if (d->dnfolds) {
+      fprintf (fp, ";");
+      print_expr (fp, d->dnfolds);
+    }
+  }
+  fprintf (fp, "}");
+}
+
+
 void sizing_print (FILE *fp, act_sizing *s)
 {
   int prev;
@@ -2967,34 +3000,24 @@ void sizing_print (FILE *fp, act_sizing *s)
     for (int i=0; i < A_LEN (s->d); i++) {
       SEMI_NEWLINE;
       fprintf (fp, "   ");
-      s->d[i].id->Print (fp);
-      fprintf (fp, " { ");
-      if (s->d[i].eup) {
-	fprintf (fp, "+ ");
-	print_expr (fp, s->d[i].eup);
-	if (s->d[i].flav_up != 0) {
-	  fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_up));
+      if (s->d[i].loop_id) {
+	fprintf (fp, "(;%s:", s->d[i].loop_id);
+	print_expr (fp, s->d[i].lo);
+	if (s->d[i].hi) {
+	  fprintf (fp, "..");
+	  print_expr (fp, s->d[i].hi);
 	}
-	if (s->d[i].upfolds) {
-	  fprintf (fp, ";");
-	  print_expr (fp, s->d[i].upfolds);
-	}
-      }
-      if (s->d[i].edn) {
-	if (s->d[i].eup) {
-	  fprintf (fp, ", ");
-	}
-	fprintf (fp, "- ");
-	print_expr (fp, s->d[i].edn);
-	if (s->d[i].flav_dn != 0) {
-	  fprintf (fp, ",%s", act_dev_value_to_string (s->d[i].flav_dn));
-	}
-	if (s->d[i].dnfolds) {
-	  fprintf (fp, ";");
-	  print_expr (fp, s->d[i].dnfolds);
+	fprintf (fp, ":");
+	for (int j=0; j < A_LEN (s->d[i].d); j++) {
+	  sizing_print_directive (fp, &(s->d[i].d[j]));
+	  if (j != A_LEN (s->d[i].d)-1) {
+	    fprintf (fp, "; ");
+	  }
 	}
       }
-      fprintf (fp, "}");
+      else {
+	sizing_print_directive (fp, &s->d[i]);
+      }
     }
     fprintf (fp, "\n}\n");
     s = s->next;
@@ -3010,7 +3033,6 @@ static void _fill_sizing_directive (ActNamespace *ns, Scope *s,
 
     act_syn_loop_setup (ns, s, d->loop_id, d->lo, d->hi,
 			&vx, &ilo, &ihi);
-
     for (int iter=ilo; iter <= ihi; iter++) {
       s->setPInt (vx->u.idx, iter);
       for (int i=0; i < A_LEN (d->d); i++) {
@@ -3018,7 +3040,6 @@ static void _fill_sizing_directive (ActNamespace *ns, Scope *s,
       }
     }
     act_syn_loop_teardown (ns, s, d->loop_id, vx);
-	
   }
   else {
     A_NEW (ret->d, act_sizing_directive);
@@ -3091,6 +3112,9 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     for (int i=0; i < A_LEN (sz->d); i++) {
       _fill_sizing_directive (ns, s, ret, &sz->d[i]);
     }
+  }
+  if (sz->next) {
+    ret->next = sizing_expand (sz->next, ns, s);
   }
   return ret;
 }

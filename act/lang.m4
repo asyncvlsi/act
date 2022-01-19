@@ -1978,7 +1978,15 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wpint_expr]  [
       FREE (r4);
     }
     OPT_FREE ($7);
-    A_INC ($0->sizing_info->d);
+
+    if (!list_isempty ($0->sz_loop_stack)) {
+      act_sizing_directive *parent;
+      parent = (act_sizing_directive *) stack_peek ($0->sz_loop_stack);
+      A_INC (parent->d);
+    }
+    else {
+      A_INC ($0->sizing_info->d);
+    }
     return NULL;
 }}
 | "(" ";" ID ":" !noreal wpint_expr [ ".." wpint_expr ]
@@ -2023,6 +2031,15 @@ size_directive: bool_expr_id "{" dir wnumber_expr ["," ID ] [ "," wpint_expr]  [
 {{X:
     $0->scope->Del ($3);
     stack_pop ($0->sz_loop_stack);
+
+    if (!list_isempty ($0->sz_loop_stack)) {
+      act_sizing_directive *parent;
+      parent = (act_sizing_directive *) stack_peek ($0->sz_loop_stack);
+      A_INC (parent->d);
+    }
+    else {
+      A_INC ($0->sizing_info->d);
+    }
     return NULL;
 }}
 ;
