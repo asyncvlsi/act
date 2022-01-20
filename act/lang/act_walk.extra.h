@@ -26,17 +26,17 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <common/list.h>
-#include <common/except.h>
-#include <common/qops.h>
-#include <common/misc.h>
-#include <common/config.h>
-#include <act/lang.h>
-#include <act/path.h>
-#include <act/namespaces.h>
-#include <act/types.h>
-#include <act/inst.h>
-#include <act/body.h>
+#include "act/common/list.h"
+#include "act/common/except.h"
+#include "act/common/qops.h"
+#include "act/common/misc.h"
+#include "act/common/config.h"
+#include "act/lang/lang.h"
+#include "act/lang/path.h"
+#include "act/lang/namespaces.h"
+#include "act/lang/types.h"
+#include "act/lang/inst.h"
+#include "act/lang/body.h"
 #include "treetypes.h"
 
 #define OPT_EXISTS(x)    !list_isempty (x)

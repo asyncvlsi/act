@@ -24,8 +24,8 @@
 #ifndef __THREAD_H__
 #define __THREAD_H__
 
-#include <common/contexts.h>
-#include <common/mytime.h>
+#include "act/common/contexts.h"
+#include "act/common/mytime.h"
 
 #ifdef __cplusplus
 extern "C" {

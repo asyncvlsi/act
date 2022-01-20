@@ -23,8 +23,8 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <act/passes/aflat.h>
-#include <act/passes/cells.h>
+#include "act/passes/aflat.h"
+#include "act/passes/cells.h"
 
 static enum output_formats {
   PRSIM_FMT,

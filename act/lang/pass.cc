@@ -19,12 +19,12 @@
  *
  **************************************************************************
  */
-#include <act/act.h>
-#include <act/iter.h>
-#include <act/tech.h>
+#include "act/lang/act.h"
+#include "act/lang/iter.h"
+#include "act/lang/tech.h"
 #include <string.h>
 #include <dlfcn.h>
-#include <common/config.h>
+#include "act/common/config.h"
 
 class InternalDummyPass : public ActPass
 {

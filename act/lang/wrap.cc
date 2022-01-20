@@ -24,8 +24,8 @@
 #include <stdio.h>
 #include "act_walk_X.h"
 #include "act_parse_int.h"
-#include <act/lang.h>
-#include <common/config.h>
+#include "act/lang/lang.h"
+#include "act/common/config.h"
 
 static char **dev_flavors = NULL;
 static int num_devs = -1;

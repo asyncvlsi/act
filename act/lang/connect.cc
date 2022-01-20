@@ -21,9 +21,9 @@
  *
  **************************************************************************
  */
-#include <act/act.h>
+#include "act/lang/act.h"
 #include <string.h>
-#include <common/config.h>
+#include "act/common/config.h"
 
 static int set_suboffset_limit = -1;
 

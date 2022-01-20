@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include "lvs.h"
 #include "parse.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 #include "hier.h"
 
 static int missing_layout_connects;

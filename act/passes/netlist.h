@@ -25,12 +25,12 @@
 #define __NETLIST_H__
 
 #include <stdio.h>
-#include <act/act.h>
-#include <act/passes/booleanize.h>
-#include <common/bool.h>
-#include <common/list.h>
-#include <common/bitset.h>
-#include <common/array.h>
+#include "act/lang/act.h"
+#include "act/passes/booleanize.h"
+#include "act/common/bool.h"
+#include "act/common/list.h"
+#include "act/common/bitset.h"
+#include "act/common/array.h"
 
 #define EDGE_NFET 0
 #define EDGE_PFET 1

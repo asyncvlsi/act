@@ -19,9 +19,9 @@
  *
  **************************************************************************
  */
-#include <act/expr.h>
-#include <common/file.h>
-#include <common/misc.h>
+#include "act/lang/expr.h"
+#include "act/common/file.h"
+#include "act/common/misc.h"
 #include <string.h>
 
 void *act_parse_a_fexpr (LFILE *);

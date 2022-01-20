@@ -24,7 +24,7 @@
 #ifndef __ITER_H__
 #define __ITER_H__
 
-#include <act/namespaces.h>
+#include "act/lang/namespaces.h"
 #include <iterator>
 
 #define ACTSTDITER(name,rettype)		\

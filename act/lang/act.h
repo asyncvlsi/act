@@ -24,11 +24,11 @@
 #ifndef __ACT_H__
 #define __ACT_H__
 
-#include <act/types.h>
-#include <act/lang.h>
-#include <act/body.h>
-#include <act/value.h>
-#include <common/config.h>
+#include "act/lang/types.h"
+#include "act/lang/lang.h"
+#include "act/lang/body.h"
+#include "act/lang/value.h"
+#include "act/common/config.h"
 #include <map>
 #include <unordered_set>
 

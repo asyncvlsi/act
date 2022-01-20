@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <act/act.h>
-#include <act/passes/netlist.h>
-#include <act/passes/cells.h>
-#include <common/config.h>
+#include "act/lang/act.h"
+#include "act/passes/netlist.h"
+#include "act/passes/cells.h"
+#include "act/common/config.h"
 
 /*
   Check for trailing .extension

@@ -23,11 +23,11 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <common/config.h>
-#include <common/misc.h>
-#include <common/array.h>
-#include <act/act.h>
-#include <act/lang.h>
+#include "act/common/config.h"
+#include "act/common/misc.h"
+#include "act/common/array.h"
+#include "act/lang/act.h"
+#include "act/lang/lang.h"
 #include "tech.h"
 
 #define BUF_SZ 10240

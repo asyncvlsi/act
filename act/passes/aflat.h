@@ -24,7 +24,7 @@
 #ifndef __AFLAT_H__
 #define __AFLAT_H__
 
-#include <act/act.h>
+#include "act/lang/act.h"
 
 class ActApplyPass : public ActPass {
  public:

@@ -12,9 +12,9 @@
 
 #include <stdio.h>
 #include "lvs.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 #include "cap.h"
-#include <common/config.h>
+#include "act/common/config.h"
 
 /*
  *

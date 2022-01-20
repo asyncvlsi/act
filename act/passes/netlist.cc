@@ -25,12 +25,12 @@
 #include <math.h>
 #include <string.h>
 #include "netlist.h"
-#include <common/hash.h>
-#include <common/qops.h>
-#include <common/bitset.h>
-#include <common/config.h>
-#include <act/iter.h>
-#include <act/passes/sizing.h>
+#include "act/common/hash.h"
+#include "act/common/qops.h"
+#include "act/common/bitset.h"
+#include "act/common/config.h"
+#include "act/lang/iter.h"
+#include "act/passes/sizing.h"
 
 #ifndef MAX
 #define MAX(a,b) ((a) > (b) ? (a) : (b))

@@ -26,11 +26,11 @@
 
 #include <set>
 #include <map>
-#include <act/act.h>
-#include <act/iter.h>
-#include <common/hash.h>
-#include <common/bitset.h>
-#include <common/array.h>
+#include "act/lang/act.h"
+#include "act/lang/iter.h"
+#include "act/common/hash.h"
+#include "act/common/bitset.h"
+#include "act/common/array.h"
 
 struct act_prsinfo;
 

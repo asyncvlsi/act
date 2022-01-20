@@ -24,9 +24,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <act/act.h>
-#include <act/passes.h>
-#include <common/config.h>
+#include "act/lang/act.h"
+#include "act/lang/passes.h"
+#include "act/common/config.h"
 
 
 static void usage (char *name)

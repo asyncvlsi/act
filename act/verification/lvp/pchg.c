@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include "lvs.h"
 #include "var.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 static
 edgelist_t **Edges;

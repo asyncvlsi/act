@@ -40,9 +40,9 @@
 #include "lispInt.h"
 #include "lispargs.h"
 #include "lispCli.h"
-#include <common/array.h>
-#include <common/hash.h>
-#include <common/list.h>
+#include "act/common/array.h"
+#include "act/common/hash.h"
+#include "act/common/list.h"
 
 
 #define DEFAULT_PROMPT "cli> "

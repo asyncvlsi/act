@@ -22,9 +22,9 @@
 
 #include <stdio.h>
 #include "parse.h"
-#include <common/pp.h>
-#include <common/misc.h>
-#include <common/bool.h>
+#include "act/common/pp.h"
+#include "act/common/misc.h"
+#include "act/common/bool.h"
 #include "lvs.h"
 
 #undef TOKEN

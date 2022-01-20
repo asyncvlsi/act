@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 #include <ctype.h>
-#include <common/mstring.h>
+#include "act/common/mstring.h"
 
 #include "lisp.h"
 #include "lispInt.h"

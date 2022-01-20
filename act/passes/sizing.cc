@@ -25,10 +25,10 @@
 #include <string.h>
 #include <map>
 #include <utility>
-#include <common/config.h>
+#include "act/common/config.h"
 #include <math.h>
-#include <act/passes/statepass.h>
-#include <act/passes/sizing.h>
+#include "act/passes/statepass.h"
+#include "act/passes/sizing.h"
 
 static int getconst_int (Expr *e, int *val)
 {

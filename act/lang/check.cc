@@ -23,10 +23,10 @@
  */
 #include <stdio.h>
 #include <stdarg.h>
-#include <act/types.h>
-#include <act/inst.h>
-#include <act/value.h>
-#include <common/int.h>
+#include "act/lang/types.h"
+#include "act/lang/inst.h"
+#include "act/lang/value.h"
+#include "act/common/int.h"
 #include "act_parse_int.h"
 #include "act_walk.extra.h"
 

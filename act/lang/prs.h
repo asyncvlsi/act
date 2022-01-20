@@ -25,8 +25,8 @@
 #define __PRS_H__
 
 #include <stdio.h>
-#include <act/lang.h>
-#include <common/file.h>
+#include "act/lang/lang.h"
+#include "act/common/file.h"
 #include "treetypes.h"
 
 #ifdef __cplusplus

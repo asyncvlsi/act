@@ -23,7 +23,7 @@
  */
 #include <stdio.h>
 #include "finline.h"
-#include <act/iter.h>
+#include "act/lang/iter.h"
 #include <string.h>
 
 

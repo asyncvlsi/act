@@ -7,9 +7,9 @@
 #define __PARSE_H__
 
 #include <stdio.h>
-#include <common/lex.h>
-#include <common/pp.h>
-#include <common/bool.h>
+#include "act/common/lex.h"
+#include "act/common/pp.h"
+#include "act/common/bool.h"
 #include "var.h"
 
 enum {

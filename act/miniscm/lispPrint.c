@@ -33,7 +33,7 @@
 #include "lisp.h"
 #include "lispInt.h"
 #include "lispargs.h"
-#include <common/hash.h>
+#include "act/common/hash.h"
 
 #define IsSpace(c)        ((c) == ' ')
 

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "lvs.h"
 #include "parse.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 extern var_t *ResetVar, *_ResetVar;
 static var_t *vdd, *gnd;

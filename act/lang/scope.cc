@@ -21,8 +21,8 @@
  *
  **************************************************************************
  */
-#include <act/act.h>
-#include <act/iter.h>
+#include "act/lang/act.h"
+#include "act/lang/iter.h"
 #include <string.h>
 
 

@@ -52,10 +52,10 @@
  *
  */
 #include <stdio.h>
-#include <common/misc.h>
-#include <common/mytime.h>
-#include <common/hconfig.h>
-#include <common/machine.h>
+#include "act/common/misc.h"
+#include "act/common/mytime.h"
+#include "act/common/hconfig.h"
+#include "act/common/machine.h"
 
 class Sim {
  public:

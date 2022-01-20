@@ -11,11 +11,11 @@
  */
 
 #include <stdio.h>
-#include <common/lex.h>
-#include <common/ext.h>
-#include <common/pp.h>
-#include <common/misc.h>
-#include <common/bool.h>
+#include "act/common/lex.h"
+#include "act/common/ext.h"
+#include "act/common/pp.h"
+#include "act/common/misc.h"
+#include "act/common/bool.h"
 #include "parse.h"
 #include "lvs.h"
 #include "dots.h"

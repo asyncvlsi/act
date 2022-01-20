@@ -24,7 +24,7 @@
 #ifndef __ARRAY_H__
 #define __ARRAY_H__
 
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 /*
  *

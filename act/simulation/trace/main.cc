@@ -20,9 +20,9 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include <common/atrace.h>
-#include <common/misc.h>
-#include <common/int.h>
+#include "act/common/atrace.h"
+#include "act/common/misc.h"
+#include "act/common/int.h"
 
 static void usage (const char *name)
 {

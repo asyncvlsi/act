@@ -50,12 +50,12 @@
  *
  */
 #include <stdio.h>
-#include <common/misc.h>
-#include <common/heap.h>
-#include <common/list.h>
-#include <common/bitset.h>
-#include <common/sim.h>
-#include <common/int.h>
+#include "act/common/misc.h"
+#include "act/common/heap.h"
+#include "act/common/list.h"
+#include "act/common/bitset.h"
+#include "act/common/sim.h"
+#include "act/common/int.h"
 
 class SimDES;
 

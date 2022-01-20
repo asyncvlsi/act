@@ -23,12 +23,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <common/ext.h>
-#include <common/hash.h>
-#include <common/array.h>
-#include <common/config.h>
-#include <common/misc.h>
-#include <act/act.h>
+#include "act/common/ext.h"
+#include "act/common/hash.h"
+#include "act/common/array.h"
+#include "act/common/config.h"
+#include "act/common/misc.h"
+#include "act/lang/act.h"
 
 static double mincap = 0.1e-15;
 static double scale = 1.0;

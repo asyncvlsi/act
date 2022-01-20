@@ -1,4 +1,4 @@
-#include <act/act.h>
+#include "act/lang/act.h"
 
 extern "C" void initialize (int *argc, char ***argv)
 {

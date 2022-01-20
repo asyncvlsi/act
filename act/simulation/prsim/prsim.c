@@ -27,11 +27,11 @@
 #include <string.h>
 #include <unistd.h>
 #include "prs.h"
-#include <common/misc.h>
-#include <common/array.h>
-#include <common/atrace.h>
+#include "act/common/misc.h"
+#include "act/common/array.h"
+#include "act/common/atrace.h"
 #include "channel.h"
-#include <common/mytime.h>
+#include "act/common/mytime.h"
 
 #include <histedit.h>
 

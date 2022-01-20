@@ -29,7 +29,7 @@ class InstType;
 class ValueIdx;
 struct act_attr;
 
-#include <act/basetype.h>
+#include "act/lang/basetype.h"
 
 /*
   Connections

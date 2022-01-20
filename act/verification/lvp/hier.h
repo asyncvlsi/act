@@ -6,7 +6,7 @@
 #ifndef __HIER_H__
 #define __HIER_H__
 
-#include <common/ext.h>
+#include "act/common/ext.h"
 #include "var.h"
 
 /*

@@ -21,16 +21,16 @@
  *
  **************************************************************************
  */
-#include <act/act.h>
-#include <act/types.h>
-#include <act/lang.h>
-#include <act/inst.h>
-#include <act/body.h>
-#include <act/value.h>
-#include <act/inline.h>
+#include "act/lang/act.h"
+#include "act/lang/types.h"
+#include "act/lang/lang.h"
+#include "act/lang/inst.h"
+#include "act/lang/body.h"
+#include "act/lang/value.h"
+#include "act/lang/inline.h"
 #include "prs.h"
-#include <common/qops.h>
-#include <common/config.h>
+#include "act/common/qops.h"
+#include "act/common/config.h"
 #include <string.h>
 
 /*--- 

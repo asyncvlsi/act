@@ -23,7 +23,7 @@
 #define __ACT_BOOLEANIZE_H__
 
 #include <map>
-#include <act/act.h>
+#include "act/lang/act.h"
 
 struct netlist_bool_port {
   act_connection *c;		/* port bool */

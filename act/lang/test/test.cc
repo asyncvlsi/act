@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include <act/act.h>
+#include "act/lang/act.h"
 #include <string.h>
 
 int main (int argc, char **argv)

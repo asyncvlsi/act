@@ -23,7 +23,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <act/act.h>
+#include "act/lang/act.h"
 
 void usage (char *s)
 {

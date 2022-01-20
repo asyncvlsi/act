@@ -19,10 +19,10 @@
  *
  **************************************************************************
  */
-#include <act/types.h>
-#include <act/body.h>
-#include <act/lang.h>
-#include <act/value.h>
+#include "act/lang/types.h"
+#include "act/lang/body.h"
+#include "act/lang/lang.h"
+#include "act/lang/value.h"
 #include <string.h>
 
 

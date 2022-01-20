@@ -23,8 +23,8 @@
 #define __ACT_ID_H__
 
 #include <stdio.h>
-#include <common/mstring.h>
-#include <act/expr.h>
+#include "act/common/mstring.h"
+#include "act/lang/expr.h"
 
 class Array;
 class Scope;

@@ -24,8 +24,8 @@
 #ifndef __INST_H__
 #define __INST_H__
 
-#include <act/expr.h>
-#include <act/basetype.h>
+#include "act/lang/expr.h"
+#include "act/lang/basetype.h"
 
 class Scope;
 class Type;

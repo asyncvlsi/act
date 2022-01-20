@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <common/config.h>
+#include "act/common/config.h"
 #include "vnet.h"
-#include <common/misc.h>
-#include <common/agraph.h>
+#include "act/common/misc.h"
+#include "act/common/agraph.h"
 
 static char *find_exepath (const char *s)
 {

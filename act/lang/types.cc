@@ -22,12 +22,12 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include <act/act.h>
-#include <act/types.h>
-#include <act/iter.h>
+#include "act/lang/act.h"
+#include "act/lang/types.h"
+#include "act/lang/iter.h"
 #include <string.h>
-#include <common/misc.h>
-#include <common/hash.h>
+#include "act/common/misc.h"
+#include "act/common/hash.h"
 
 const char *act_builtin_method_name[ACT_NUM_STD_METHODS] =
   { "set", "get", "send_rest", "recv_rest", "send_up", "recv_up",

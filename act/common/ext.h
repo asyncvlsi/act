@@ -25,7 +25,7 @@
 #define __EXT_FILE_H__
 
 #include <stdio.h>
-#include <common/hash.h>
+#include "act/common/hash.h"
 
 #ifdef __cplusplus
 extern "C" {

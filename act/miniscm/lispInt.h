@@ -32,7 +32,7 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 #define LISP_MAXARGS 100
 #define LISP_MAX_CMDLEN 10240

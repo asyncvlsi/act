@@ -24,9 +24,9 @@
 #ifndef __STD_TREE_TYPES_H__
 #define __STD_TREE_TYPES_H__
 
-#include <act/namespaces.h>
-#include <act/types.h>
-#include <act/expr.h>
+#include "act/lang/namespaces.h"
+#include "act/lang/types.h"
+#include "act/lang/expr.h"
 
 /**
  * This type is used to store "wrapped" return values for the

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "v2act.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 char *channame;
 

@@ -21,9 +21,9 @@
  *
  **************************************************************************
  */
-#include <act/iter.h>
-#include <act/value.h>
-#include <act/types.h>
+#include "act/lang/iter.h"
+#include "act/lang/value.h"
+#include "act/lang/types.h"
 
 ActNamespaceiter::ActNamespaceiter (ActNamespace *ns)
 {

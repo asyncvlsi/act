@@ -25,20 +25,20 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
-#include <act/act.h>
-#include <act/tech.h>
+#include "act/lang/act.h"
+#include "act/lang/tech.h"
 #include "act_parse.h"
 #include "act_walk_X.h"
-#include <common/config.h>
-#include <common/array.h>
-#include <act/path.h>
+#include "act/common/config.h"
+#include "act/common/array.h"
+#include "act/lang/path.h"
 #include "fexpr.h"
 
 #ifdef DEBUG_PERFORMANCE
-#include <common/mytime.h>
+#include "act/common/mytime.h"
 #endif
 
-#include <common/log.h>
+#include "act/common/log.h"
 
 struct command_line_defs {
   char *varname;

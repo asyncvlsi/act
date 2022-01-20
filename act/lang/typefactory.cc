@@ -19,9 +19,9 @@
  *
  **************************************************************************
  */
-#include <act/act.h>
-#include <act/types.h>
-#include <common/int.h>
+#include "act/lang/act.h"
+#include "act/lang/types.h"
+#include "act/common/int.h"
 
 /**
  * Create all the static members

@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <common/machine.h>
+#include "act/common/machine.h"
 
 /*
  * Physical memory: Assumes big-endian format!

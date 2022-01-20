@@ -5,6 +5,7 @@ enable_language(CXX)
 enable_language(C)
 enable_testing()
 
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include_directories(.)

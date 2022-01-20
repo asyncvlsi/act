@@ -26,10 +26,10 @@
 
 #include <stdio.h>
 
-#include <common/array.h>
-#include <common/pp.h>
-#include <common/bitset.h>
-#include <common/misc.h>
+#include "act/common/array.h"
+#include "act/common/pp.h"
+#include "act/common/bitset.h"
+#include "act/common/misc.h"
 
 extern char *prefix;
 

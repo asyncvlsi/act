@@ -22,13 +22,13 @@
 #ifndef __ACT_VNET_H__
 #define __ACT_VNET_H__
 
-#include <act/act.h>
-#include <common/agraph.h>
-#include <common/misc.h>
-#include <common/array.h>
-#include <common/hash.h>
-#include <common/list.h>
-#include <common/qops.h>
+#include "act/lang/act.h"
+#include "act/common/agraph.h"
+#include "act/common/misc.h"
+#include "act/common/array.h"
+#include "act/common/hash.h"
+#include "act/common/list.h"
+#include "act/common/qops.h"
 
 struct array_idx {
   int lo, hi;

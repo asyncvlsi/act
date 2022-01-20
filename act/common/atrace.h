@@ -24,7 +24,7 @@
 #ifndef __ATRACE_H__
 #define __ATRACE_H__
 
-#include <common/hash.h>
+#include "act/common/hash.h"
 #include <sys/types.h>
 #include <netinet/in.h>
 

@@ -24,7 +24,7 @@
 #ifndef __ACT_PASS_FINLINE_H__
 #define __ACT_PASS_FINLINE_H__
 
-#include <act/act.h>
+#include "act/lang/act.h"
 
 class ActCHPFuncInline : public ActPass {
 public:

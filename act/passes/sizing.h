@@ -25,11 +25,11 @@
 #define __ACT_PASS_SIZING_H__
 
 #include <map>
-#include <act/act.h>
-#include <act/iter.h>
-#include <act/passes/booleanize.h>
-#include <common/hash.h>
-#include <common/array.h>
+#include "act/lang/act.h"
+#include "act/lang/iter.h"
+#include "act/passes/booleanize.h"
+#include "act/common/hash.h"
+#include "act/common/array.h"
 
 class ActSizingPass : public ActPass {
 public:

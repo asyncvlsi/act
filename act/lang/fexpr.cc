@@ -23,9 +23,9 @@
  */
 #include <string.h>
 #include "fexpr.h"
-#include <common/file.h>
-#include <common/misc.h>
-#include <common/list.h>
+#include "act/common/file.h"
+#include "act/common/misc.h"
+#include "act/common/list.h"
 #include "act_parse_int.h"
 #include "act_walk.extra.h"
 

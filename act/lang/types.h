@@ -24,12 +24,12 @@
 #ifndef __ACT_TYPES_H__
 #define __ACT_TYPES_H__
 
-#include <act/basetype.h>
-#include <act/namespaces.h>
+#include "act/lang/basetype.h"
+#include "act/lang/namespaces.h"
 #include <act/act_array.h>
-#include <act/expr.h>
-#include <common/mstring.h>
-#include <act/inst.h>
+#include "act/lang/expr.h"
+#include "act/common/mstring.h"
+#include "act/lang/inst.h"
 
 class ActBody;
 struct act_chp_lang;

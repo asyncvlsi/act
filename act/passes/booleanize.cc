@@ -23,10 +23,10 @@
 #include "booleanize.h"
 #include <map>
 #include <string.h>
-#include <common/hash.h>
-#include <common/qops.h>
-#include <common/config.h>
-#include <act/iter.h>
+#include "act/common/hash.h"
+#include "act/common/qops.h"
+#include "act/common/config.h"
+#include "act/lang/iter.h"
 
 /*-- variables --*/
 

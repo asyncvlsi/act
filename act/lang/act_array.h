@@ -24,8 +24,8 @@
 #ifndef __ACT_ARRAY_H__
 #define __ACT_ARRAY_H__
 
-#include <act/expr.h>
-#include <common/list.h>
+#include "act/lang/expr.h"
+#include "act/common/list.h"
 
 class ActNamespace;
 class Scope;

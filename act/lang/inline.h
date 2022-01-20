@@ -22,7 +22,7 @@
 #ifndef __ACT_INLINE_H__
 #define __ACT_INLINE_H__
 
-#include <act/expr.h>
+#include "act/lang/expr.h"
 #include <act/act_id.h>
 
 struct act_inline_table;

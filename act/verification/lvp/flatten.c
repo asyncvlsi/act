@@ -5,10 +5,10 @@
  *************************************************************************/
 
 #include <stdio.h>
-#include <common/ext.h>
+#include "act/common/ext.h"
 #include "lvs.h"
 #include "var.h"
-#include <common/misc.h>
+#include "act/common/misc.h"
 #include "hier.h"
 
 static int flatten_errors = 0;

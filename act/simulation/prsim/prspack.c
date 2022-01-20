@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <common/names.h>
-#include <common/hash.h>
-#include <common/lex.h>
-#include <common/misc.h>
+#include "act/common/names.h"
+#include "act/common/hash.h"
+#include "act/common/lex.h"
+#include "act/common/misc.h"
 
 static int syms[32];
 

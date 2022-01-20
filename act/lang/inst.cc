@@ -23,9 +23,9 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <act/act.h>
-#include <act/types.h>
-#include <act/inst.h>
+#include "act/lang/act.h"
+#include "act/lang/types.h"
+#include "act/lang/inst.h"
 
 InstType::InstType (Scope *_s, Type *_t, int is_temp)
 {

@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <common/misc.h>
+#include "act/common/misc.h"
 
 #define MAXLINE 1024
 

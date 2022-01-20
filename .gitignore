@@ -16,3 +16,4 @@ lib*_x86_64_*.a
 .pydevproject
 .idea
 build
+cmake-build-debug

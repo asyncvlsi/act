@@ -21,8 +21,8 @@
  */
 // Functions that are useful for channels in prsim
 #include "prs.h"
-#include <common/misc.h>
-#include <common/array.h>
+#include "act/common/misc.h"
+#include "act/common/array.h"
 #include "channel.h"
 #include <assert.h>
 #include "math.h"

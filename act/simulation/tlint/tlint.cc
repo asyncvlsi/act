@@ -32,14 +32,14 @@
 #include <sys/types.h>
 #include <regex.h>
 
-#include <common/misc.h>
-#include <common/config.h>
-#include <common/atrace.h>
-#include <common/array.h>
+#include "act/common/misc.h"
+#include "act/common/config.h"
+#include "act/common/atrace.h"
+#include "act/common/array.h"
 
-#include <act/act.h>
+#include "act/lang/act.h"
 #include "../prsim/prs.h"
-#include <common/heap.h>
+#include "act/common/heap.h"
 
 int verbose;			/* debugging info */
 

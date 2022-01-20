@@ -26,11 +26,11 @@
 #include <set>
 #include <map>
 #include <utility>
-#include <act/passes/cells.h>
-#include <act/passes/sizing.h>
-#include <act/passes/booleanize.h>
-#include <act/passes/netlist.h>
-#include <common/config.h>
+#include "act/passes/cells.h"
+#include "act/passes/sizing.h"
+#include "act/passes/booleanize.h"
+#include "act/passes/netlist.h"
+#include "act/common/config.h"
 
 struct act_varinfo {
   int nup, ndn;			// # of times in up and down guards

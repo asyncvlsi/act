@@ -22,15 +22,15 @@
  **************************************************************************
  */
 #include <iostream>
-#include <act/namespaces.h>
-#include <act/types.h>
-#include <act/inst.h>
-#include <act/iter.h>
-#include <act/act.h>
-#include <act/body.h>
+#include "act/lang/namespaces.h"
+#include "act/lang/types.h"
+#include "act/lang/inst.h"
+#include "act/lang/iter.h"
+#include "act/lang/act.h"
+#include "act/lang/body.h"
 #include <string.h>
-#include <common/misc.h>
-#include <common/array.h>
+#include "act/common/misc.h"
+#include "act/common/array.h"
 
 ActNamespace *ActNamespace::global = NULL;
 int ActNamespace::creating_global = 0;

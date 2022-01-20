@@ -23,8 +23,8 @@
 #define __ACT_GRAPH_H__
 
 #include <iterator>
-#include <common/array.h>
-#include <common/list.h>
+#include "act/common/array.h"
+#include "act/common/list.h"
 
 class AGinfo {
 public:

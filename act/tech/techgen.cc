@@ -24,11 +24,11 @@
 #include <math.h>
 #include <string.h>
 #include <map>
-#include <common/config.h>
+#include "act/common/config.h"
 
-#include <act/act.h>
-#include <act/tech.h>
-#include <common/pp.h>
+#include "act/lang/act.h"
+#include "act/lang/tech.h"
+#include "act/common/pp.h"
 
 #define pp_nl pp_forced (pp, 0)
 #define pp_nltab pp_forced (pp, 3)

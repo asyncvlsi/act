@@ -24,8 +24,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "aflat.h"
-#include <common/config.h>
-#include <act/iter.h>
+#include "act/common/config.h"
+#include "act/lang/iter.h"
 
 /*-- a pass to walk through all connection pairs --*/
 

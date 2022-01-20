@@ -22,13 +22,13 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include <common/misc.h>
-#include <common/file.h>
+#include "act/common/misc.h"
+#include "act/common/file.h"
 #include "expr.h"
 #include "types.h"
 #include "prs.h"
 #include "act_parse_int.h"
-#include <act/types.h>
+#include "act/lang/types.h"
 #include "act_walk.extra.h"
 
 /*

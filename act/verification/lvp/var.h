@@ -6,9 +6,9 @@
 #ifndef __VAR_H__
 #define __VAR_H__
 
-#include <common/hash.h>
-#include <common/bool.h>
-#include <common/ext.h>
+#include "act/common/hash.h"
+#include "act/common/bool.h"
+#include "act/common/ext.h"
 #include "dots.h"
 
 #define VAR_INIT_SIZE 128

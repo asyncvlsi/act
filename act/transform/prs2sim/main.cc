@@ -23,11 +23,11 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <act/passes.h>
-#include <act/passes/netlist.h>
-#include <act/passes/aflat.h>
+#include "act/lang/passes.h"
+#include "act/passes/netlist.h"
+#include "act/passes/aflat.h"
 #include <map>
-#include <common/config.h>
+#include "act/common/config.h"
 
 void usage (char *s)
 {

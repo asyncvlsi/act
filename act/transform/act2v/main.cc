@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <act/act.h>
-#include <act/passes/booleanize.h>
-#include <act/iter.h>
-#include <common/config.h>
+#include "act/lang/act.h"
+#include "act/passes/booleanize.h"
+#include "act/lang/iter.h"
+#include "act/common/config.h"
 #include <map>
 
 
