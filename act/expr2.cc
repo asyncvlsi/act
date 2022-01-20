@@ -879,7 +879,8 @@ int expr_equal (const Expr *a, const Expr *b)
 
 int _act_chp_is_synth_flag = 0;
 
-static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
+static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret,
+			    int flags)
 {
   Function *x = dynamic_cast<Function *>((UserDef *)fn->u.fn.s);
   Expr *e, *f;
@@ -895,7 +896,7 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
     e = fn->u.fn.r;
     f = NULL;
     while (e) {
-      Expr *x = expr_expand (e->u.e.l, ns, s, 0);
+      Expr *x = expr_expand (e->u.e.l, ns, s, flags);
       if (f == NULL) {
 	NEW (f, Expr);
 	(*ret)->u.fn.r = f;
@@ -926,7 +927,7 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret)
       MALLOC (args, Expr *, nargs);
       e = fn->u.e.r;
       for (int i=0; i < nargs; i++) {
-	args[i] = expr_expand (e->u.e.l, ns, s, 0);
+	args[i] = expr_expand (e->u.e.l, ns, s, flags);
 	e = e->u.e.r;
       }
     }
@@ -2035,7 +2036,30 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_FUNCTION:
     LVAL_ERROR;
     if (!(flags & ACT_EXPR_EXFLAG_CHPEX)) {
-      _eval_function (ns, s, e, &ret);
+      if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+	Expr *tmp, *prev;
+	Expr *w = e->u.fn.r;
+	ret->u.fn.s = e->u.fn.s;
+	ret->u.fn.r = NULL;
+	prev = NULL;
+	while (w) {
+	  int dummy;
+	  NEW (tmp, Expr);
+	  tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	  tmp->u.e.r = NULL;
+	  if (!prev) {
+	    ret->u.fn.r = tmp;
+	  }
+	  else {
+	    prev->u.e.r = tmp;
+	  }
+	  prev = tmp;
+	  w = w->u.e.r;
+	}
+      }
+      else {
+	_eval_function (ns, s, e, &ret, flags);
+      }
       *width = -1;
     }
     else {
