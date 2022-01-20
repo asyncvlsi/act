@@ -1,0 +1,21 @@
+#
+# Targets
+pgen.*
+
+!pgen.c
+!pgen.def
+!pgen.h
+
+Makefile.deps
+
+# working directories
+i386_*
+
+# emacs
+*~
+
+test
+FIXME
+
+# build dirs
+x86_64*

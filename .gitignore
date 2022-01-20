@@ -15,4 +15,4 @@ lib*_x86_64_*.a
 .project
 .pydevproject
 .idea
-
+build

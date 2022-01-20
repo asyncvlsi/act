@@ -1,0 +1,14 @@
+*~
+i386_*
+x86_64_linux5_14_12
+Makefile.deps
+v2act.i386*
+v2act.x86*
+sv2act.i386*
+sv2act.x86*
+libverilog_i386*
+libverilog_x86*
+v_parse*
+v_walk_X*
+v_parse_id.h
+

@@ -1,0 +1,6 @@
+*~
+i386_*
+x86_64_linux5_14_12
+Makefile.deps
+act2v.i386*
+act2v.x86*
