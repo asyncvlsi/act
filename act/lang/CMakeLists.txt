@@ -161,7 +161,7 @@ set(ACT_LANG_LIB_SOURCES
 add_library(ActLangLib STATIC ${ACT_LANG_LIB_SOURCES})
 add_dependencies(ActLangLib ActLangAutogen)
 set_target_properties(ActLangLib PROPERTIES OUTPUT_NAME act)
-target_link_libraries(ActLangLib ActCommonLib)
+target_link_libraries(ActLangLib ActCommonLib ${CMAKE_DL_LIBS})
 
 add_library(ActLangLibSh SHARED ${ACT_LANG_LIB_SOURCES})
 add_dependencies(ActLangLibSh ActLangAutogen)

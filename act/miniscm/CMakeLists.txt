@@ -38,6 +38,7 @@ add_library(
   lispTrace.c
   lispPath.c)
 set_target_properties(ActMiniscmLib PROPERTIES OUTPUT_NAME actscm)
+target_link_libraries(ActMiniscmLib ${CMAKE_DL_LIBS})
 
 add_library(ActMiniscmCliLib STATIC lispCli.h lispCli.c)
 set_target_properties(ActMiniscmCliLib PROPERTIES OUTPUT_NAME actscmcli)

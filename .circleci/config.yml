@@ -9,14 +9,20 @@ jobs:
        - checkout
        - run: |
           apt-get -q update -y
-          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential
-          mkdir install
+          apt-get -q install -y libedit-dev zlib1g-dev m4 build-essential wget
+          wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.tar.gz
+          tar -xf cmake-3.22.1-linux-x86_64.tar.gz
+          export PATH="`pwd`/cmake-3.22.1-linux-x86_64/bin:$PATH"
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
+          export LD_LIBRARY_PATH="$ACT_HOME/lib:$LD_LIBRARY_PATH"
+          mkdir $ACT_HOME
+          cp act/lang/HACK_expr.h act/lang/expr.h
+          cp act/lang/HACK_expr.c act/lang/expr.c
           ./configure $ACT_HOME
           ./build.sh 
           cmake --install build
-          ./test.py
+          ./test.sh
 
    centos8:
      docker:
@@ -26,14 +32,20 @@ jobs:
        - run: |
           yum install -y 'dnf-command(config-manager)'
           yum config-manager --set-enabled powertools -y
-          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
-          mkdir install
+          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4 wget
+          wget https://github.com/Kitware/CMake/releases/download/v3.22.1/cmake-3.22.1-linux-x86_64.tar.gz
+          tar -xf cmake-3.22.1-linux-x86_64.tar.gz
+          export PATH="`pwd`/cmake-3.22.1-linux-x86_64/bin:$PATH"
           export VLSI_TOOLS_SRC=`pwd`
           export ACT_HOME=$VLSI_TOOLS_SRC/install
+          export LD_LIBRARY_PATH="$ACT_HOME/lib:$LD_LIBRARY_PATH"
+          mkdir $ACT_HOME
+          cp act/lang/HACK_expr.h act/lang/expr.h
+          cp act/lang/HACK_expr.c act/lang/expr.c
           ./configure $ACT_HOME
           ./build.sh
           cmake --install build
-          ./test.py
+          ./test.sh
           
 
 

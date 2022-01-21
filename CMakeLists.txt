@@ -24,7 +24,6 @@ endif()
 include_directories(.)
 
 add_compile_options(-g -ubsanitizer=undefined -O2)
-add_link_options(-ldl)
 
 add_subdirectory(act)
 add_subdirectory(scripts)
