@@ -199,7 +199,7 @@ void print_walker_prolog (pp_t *pp)
 
   pp_printf (pp, "#include <stdio.h>"); pp_nl;
   pp_printf (pp, "#include <stdlib.h>"); pp_nl;
-  pp_printf (pp, "#include "act/common/except.h""); pp_nl;
+  pp_printf (pp, "#include \"act/common/except.h\""); pp_nl;
   pp_printf (pp, "#include \"%s_parse.h\"", prefix); pp_nl;
   pp_printf (pp, "#include \"%s_parse_int.h\"", prefix); pp_nl;
   pp_printf (pp, "#include \"%s_walk_%s.h\"", prefix, WNAME); pp_nl;

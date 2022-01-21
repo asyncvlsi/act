@@ -26,7 +26,7 @@
 
 #include "act/lang/basetype.h"
 #include "act/lang/namespaces.h"
-#include <act/act_array.h>
+#include "act/lang/act_array.h"
 #include "act/lang/expr.h"
 #include "act/common/mstring.h"
 #include "act/lang/inst.h"

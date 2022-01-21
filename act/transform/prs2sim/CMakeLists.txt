@@ -1,0 +1,28 @@
+# -------------------------------------------------------------------------
+#
+# Copyright (c) 2022 Henry Heffan
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; either version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, write to the Free Software Foundation, Inc., 51 Franklin
+# Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# -------------------------------------------------------------------------
+
+add_executable(ActPrs2simExe main.cc)
+target_link_libraries(ActPrs2simExe ActCommonLib ActLangLib ActPassesLib)
+set_target_properties(ActPrs2simExe PROPERTIES OUTPUT_NAME prs2sim)
+install(TARGETS ActPrs2simExe DESTINATION $ENV{ACT_HOME}/bin/)
+install(
+  TARGETS ActPrs2simExe
+  DESTINATION $ENV{ACT_HOME}/bin/
+  RENAME prs2sim.mark)

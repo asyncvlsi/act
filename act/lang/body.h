@@ -24,7 +24,7 @@
 #ifndef __ACT_BODY_H__
 #define __ACT_BODY_H__
 
-#include <act/act_id.h>
+#include "act/lang/act_id.h"
 
 /*------------------------------------------------------------------------
  *

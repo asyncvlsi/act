@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "act/lang/act.h"
-#include "act/lang/passes.h"
+#include "act/passes/statepass.h"
 #include "act/common/config.h"
 
 

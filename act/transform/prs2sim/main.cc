@@ -23,7 +23,6 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "act/lang/passes.h"
 #include "act/passes/netlist.h"
 #include "act/passes/aflat.h"
 #include <map>

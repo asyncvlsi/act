@@ -35,8 +35,8 @@
 
 #include <histedit.h>
 
-#include <lisp.h>
-#include <lispCli.h>
+#include <act/miniscm/lisp.h>
+#include <act/miniscm/lispCli.h>
 
 #if !defined(LIBEDIT_MAJOR) && !defined(H_SETSIZE)
 #define OLD_LIBEDIT

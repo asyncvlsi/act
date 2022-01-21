@@ -30,7 +30,7 @@ extern "C" {
 
 #include "act/common/file.h"
 #include "act/common/pp.h"
-#include "id.h"
+#include "act/lang/act_parse_id.h"
 
 #define  E_AND 	 0
 #define  E_OR 	 1

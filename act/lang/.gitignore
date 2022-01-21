@@ -6,8 +6,6 @@ i386_*
 act_parse*
 act.cy
 act_walk_X*
-expr.c
-expr.h
 act_parse_id.h
 Makefile.deps
 NOTES

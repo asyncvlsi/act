@@ -9,3 +9,8 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(.)
+
+add_link_options(-ldl)
+
+add_subdirectory(act)
+add_subdirectory(scripts)
