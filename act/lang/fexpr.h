@@ -1,0 +1,27 @@
+#ifndef __ACT_FEXPR_H__
+#define __ACT_FEXPR_H__
+
+#include <stdio.h>
+#include "act/lang/lang.h"
+#include "act/common/file.h"
+#include "treetypes.h"
+#include "expr.h"
+
+extern Expr *(*expr_parse_basecase_extra)(LFILE *l);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void act_init_fexpr (LFILE *);
+int act_is_a_fexpr (LFILE *);
+void act_free_a_fexpr (void *);
+void *act_parse_a_fexpr (LFILE *);
+void *act_walk_X_fexpr (ActTree *, void *);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* __ACT_FEXPR_H__ */
