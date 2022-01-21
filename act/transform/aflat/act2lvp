@@ -1,9 +1,9 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import sys, os
 
 if len(sys.argv) != 3:
-   print 'Usage:', sys.argv[0], ' <actfile> <processname>'
+   print ('Usage:', sys.argv[0], ' <actfile> <processname>')
    sys.exit (1)
 
 f = open("__tmp.act", "w")

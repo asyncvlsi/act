@@ -1,3 +1,0 @@
-*.o
-techgen.*
-!techgen.cc

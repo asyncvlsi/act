@@ -74,13 +74,13 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/act_walk_X.h
     ${CMAKE_CURRENT_SOURCE_DIR}/act_walk_X.h
   DEPENDS ActPGenExe
-          act.m4
-          namespaces.m4
-          types.m4
-          defs.m4
-          lang.m4
-          expr.m4
-          act_walk.extra.h)
+        ${CMAKE_CURRENT_SOURCE_DIR}/act.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/namespaces.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/types.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/defs.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/lang.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/expr.m4
+        ${CMAKE_CURRENT_SOURCE_DIR}/act_walk.extra.h)
 
 add_custom_target(
   ActLangAutogen

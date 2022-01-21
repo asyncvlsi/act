@@ -64,7 +64,7 @@ add_custom_command(
     ${CMAKE_CURRENT_SOURCE_DIR}/v_walk_X.cc && mv
     ${CMAKE_CURRENT_BINARY_DIR}/v_walk_X.h
     ${CMAKE_CURRENT_SOURCE_DIR}/v_walk_X.h
-  DEPENDS ActPGenExe v2act.cy v_walk.extra.h)
+  DEPENDS ActPGenExe ${CMAKE_CURRENT_SOURCE_DIR}/v2act.cy ${CMAKE_CURRENT_SOURCE_DIR}/v_walk.extra.h)
 
 add_custom_target(
   ActV2actAutogen

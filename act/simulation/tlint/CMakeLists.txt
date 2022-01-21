@@ -26,8 +26,8 @@ add_executable(ActTr2ALintExe hs.cc)
 set_target_properties(ActTr2ALintExe PROPERTIES OUTPUT_NAME tr2alint)
 target_link_libraries(ActTr2ALintExe ActLangLib z)
 
-add_compile_options(ActTLintExe -DHAVE_ZLIB)
-add_compile_options(ActTr2ALintExe -DHAVE_ZLIB)
+target_compile_definitions(ActTLintExe PUBLIC HAVE_ZLIB)
+target_compile_definitions(ActTr2ALintExe PUBLIC HAVE_ZLIB)
 
 install(TARGETS ActTLintExe ActTr2ALintExe DESTINATION $ENV{ACT_HOME}/bin)
 install(
