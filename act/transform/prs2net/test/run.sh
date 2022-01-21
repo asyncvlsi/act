@@ -10,7 +10,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../prs2net.$EXT 
+ACTTOOL=../../../../build/act/transform/prs2net/prs2net
 
 check_echo=0
 myecho()

@@ -10,7 +10,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../test_inlinepass.$EXT 
+ACTTOOL=../../../../../build/act/transform/testing/inline/test_inlinepass
 
 check_echo=0
 myecho()

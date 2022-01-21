@@ -3,7 +3,7 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../v2act.$EXT 
+ACTTOOL=../../../../build/act/transform/v2act/v2act
 
 if [ $# -eq 0 ]
 then

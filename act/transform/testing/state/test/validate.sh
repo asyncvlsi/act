@@ -3,7 +3,7 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../test_statepass.$EXT 
+ACTTOOL=../../../../../build/act/transform/testing/state/test_statepass
 
 if [ $# -eq 0 ]
 then

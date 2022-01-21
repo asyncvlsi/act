@@ -108,10 +108,10 @@ install(
   DESTINATION $ENV{ACT_HOME}/bin
   RENAME sv2act.mark)
 
-install(FILES v2act_quote.sed DESTINATION $ENV{ACT_HOME}/lib)
+install(FILES v2act_quote.sed DESTINATION $ENV{ACT_HOME}/bin)
 install(
   FILES v2act_quote.sed
-  DESTINATION $ENV{ACT_HOME}/lib
+  DESTINATION $ENV{ACT_HOME}/bin
   RENAME v2act_quote.sed.mark)
 
 install(FILES s2a.conf DESTINATION $ENV{ACT_HOME}/conf/generic)

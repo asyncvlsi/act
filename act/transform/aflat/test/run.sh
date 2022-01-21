@@ -9,7 +9,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../aflat.$EXT
+ACTTOOL=../../../../build/act/transform/aflat/aflat
 
 check_echo=0
 myecho()

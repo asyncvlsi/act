@@ -15,8 +15,8 @@ jobs:
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./configure $ACT_HOME
           ./build.sh 
-          make install
-          make runtest
+          cmake --install build
+          ./test.py
 
    centos8:
      docker:
@@ -32,8 +32,8 @@ jobs:
           export ACT_HOME=$VLSI_TOOLS_SRC/install
           ./configure $ACT_HOME
           ./build.sh
-          make install
-          make runtest
+          cmake --install build
+          ./test.py
           
 
 

@@ -3,7 +3,7 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../prs2sim.$EXT 
+ACTTOOL=../../../../build/act/transform/prs2sim/prs2sim
 
 if [ $# -eq 0 ]
 then
