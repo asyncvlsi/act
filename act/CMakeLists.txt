@@ -34,8 +34,6 @@ function(install_shim folder old_path old_file new_path new_file)
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${old_file}.shim
     DESTINATION $ENV{ACT_HOME}/include/${old_path}
     RENAME ${old_file})
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${old_file}.shim
-          DESTINATION $ENV{ACT_HOME}/include/${old_path})
 endfunction()
 
 add_subdirectory(common)

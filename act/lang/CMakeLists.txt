@@ -74,13 +74,13 @@ add_custom_command(
     ${CMAKE_CURRENT_BINARY_DIR}/act_walk_X.h
     ${CMAKE_CURRENT_SOURCE_DIR}/act_walk_X.h
   DEPENDS ActPGenExe
-        ${CMAKE_CURRENT_SOURCE_DIR}/act.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/namespaces.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/types.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/defs.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/lang.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/expr.m4
-        ${CMAKE_CURRENT_SOURCE_DIR}/act_walk.extra.h)
+          ${CMAKE_CURRENT_SOURCE_DIR}/act.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/namespaces.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/types.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/defs.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/lang.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/expr.m4
+          ${CMAKE_CURRENT_SOURCE_DIR}/act_walk.extra.h)
 
 add_custom_target(
   ActLangAutogen
@@ -191,18 +191,6 @@ install(FILES ${ACT_LANG_LIB_HEADERS}
 
 install(FILES global.conf prs2net.conf prs2net_opts.conf
         DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES global.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME global.conf.mark)
-install(
-  FILES prs2net.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME prs2net.conf.mark)
-install(
-  FILES prs2net_opts.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME prs2net_opts.conf.mark)
 
 install(TARGETS ActLangLib ActLangLibSh DESTINATION $ENV{ACT_HOME}/lib/)
 

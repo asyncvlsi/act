@@ -22,7 +22,3 @@ add_executable(ActTraceExe main.cc)
 target_link_libraries(ActTraceExe ActLangLib)
 set_target_properties(ActTraceExe PROPERTIES OUTPUT_NAME atrace)
 install(TARGETS ActTraceExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActTraceExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME atrace.mark)

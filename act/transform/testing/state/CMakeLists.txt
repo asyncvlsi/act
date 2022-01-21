@@ -22,7 +22,3 @@ add_executable(ActTestStatePassExe main.cc)
 target_link_libraries(ActTestStatePassExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActTestStatePassExe PROPERTIES OUTPUT_NAME test_statepass)
 install(TARGETS ActTestStatePassExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActTestStatePassExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME test_statepass.mark)

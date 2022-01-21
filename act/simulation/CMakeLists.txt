@@ -18,12 +18,6 @@
 #
 # -------------------------------------------------------------------------
 
-# add_executable(ActAdependExe main.cc) target_link_libraries(ActAdependExe
-# ActCommonLib ActLangLib ActPassesLib) set_target_properties(ActAdependExe
-# PROPERTIES OUTPUT_NAME adepend) install(TARGETS ActAdependExe DESTINATION
-# $ENV{ACT_HOME}/bin/) install(TARGETS ActAdependExe DESTINATION
-# $ENV{ACT_HOME}/bin/ RENAME adepend.mark)
-
 add_subdirectory(tlint)
 add_subdirectory(prsim)
 add_subdirectory(trace)

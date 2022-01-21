@@ -22,13 +22,5 @@ add_executable(ActExt2spExe main.cc)
 target_link_libraries(ActExt2spExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActExt2spExe PROPERTIES OUTPUT_NAME ext2sp)
 install(TARGETS ActExt2spExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActExt2spExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME ext2sp.mark)
 
 install(FILES extract.conf DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES extract.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME extract.conf.mark)

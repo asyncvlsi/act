@@ -18,12 +18,6 @@
 #
 # -------------------------------------------------------------------------
 
-# add_executable(ActAdependExe main.cc) target_link_libraries(ActAdependExe
-# ActCommonLib ActLangLib ActPassesLib) set_target_properties(ActAdependExe
-# PROPERTIES OUTPUT_NAME adepend) install(TARGETS ActAdependExe DESTINATION
-# $ENV{ACT_HOME}/bin/) install(TARGETS ActAdependExe DESTINATION
-# $ENV{ACT_HOME}/bin/ RENAME adepend.mark)
-
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/v_parse.cc
          ${CMAKE_CURRENT_SOURCE_DIR}/v_parse.def
@@ -64,7 +58,8 @@ add_custom_command(
     ${CMAKE_CURRENT_SOURCE_DIR}/v_walk_X.cc && mv
     ${CMAKE_CURRENT_BINARY_DIR}/v_walk_X.h
     ${CMAKE_CURRENT_SOURCE_DIR}/v_walk_X.h
-  DEPENDS ActPGenExe ${CMAKE_CURRENT_SOURCE_DIR}/v2act.cy ${CMAKE_CURRENT_SOURCE_DIR}/v_walk.extra.h)
+  DEPENDS ActPGenExe ${CMAKE_CURRENT_SOURCE_DIR}/v2act.cy
+          ${CMAKE_CURRENT_SOURCE_DIR}/v_walk.extra.h)
 
 add_custom_target(
   ActV2actAutogen
@@ -99,26 +94,8 @@ set_target_properties(ActV2actExe2 PROPERTIES OUTPUT_NAME sv2act)
 target_link_libraries(ActV2actExe2 ActCommonLib ActPassesLib ActV2actLocalLib)
 
 install(TARGETS ActV2actExe1 ActV2actExe2 DESTINATION $ENV{ACT_HOME}/bin)
-install(
-  TARGETS ActV2actExe1
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME v2act.mark)
-install(
-  TARGETS ActV2actExe2
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME sv2act.mark)
-
 install(FILES v2act_quote.sed DESTINATION $ENV{ACT_HOME}/bin)
-install(
-  FILES v2act_quote.sed
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME v2act_quote.sed.mark)
-
 install(FILES s2a.conf DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES s2a.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME s2a.conf.mark)
 
 install_shim(V2act_Lib "" v_parse_id.h act/v2act v_parse_id.h)
 install(FILES v_parse_id.h DESTINATION $ENV{ACT_HOME}/include/act/v2act)

@@ -19,10 +19,7 @@
 # -------------------------------------------------------------------------
 
 add_executable(ActAflatExe main.cc)
-target_link_libraries(ActAflatExe ActCommonLib ActLangLib ActPassesLib ${CMAKE_DL_LIBS})
+target_link_libraries(ActAflatExe ActCommonLib ActLangLib ActPassesLib
+                      ${CMAKE_DL_LIBS})
 set_target_properties(ActAflatExe PROPERTIES OUTPUT_NAME aflat)
 install(TARGETS ActAflatExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActAflatExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME aflat.mark)

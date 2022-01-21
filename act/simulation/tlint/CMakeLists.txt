@@ -30,22 +30,5 @@ target_compile_definitions(ActTLintExe PUBLIC HAVE_ZLIB)
 target_compile_definitions(ActTr2ALintExe PUBLIC HAVE_ZLIB)
 
 install(TARGETS ActTLintExe ActTr2ALintExe DESTINATION $ENV{ACT_HOME}/bin)
-install(
-  TARGETS ActTLintExe
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME tlint.mark)
-install(
-  TARGETS ActTr2ALintExe
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME tr2alint.mark)
-
 install(FILES lint.conf DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES lint.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME lint.conf.mark)
 install(FILES lint_opts.conf DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES lint_opts.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME lint_opts.conf.mark)

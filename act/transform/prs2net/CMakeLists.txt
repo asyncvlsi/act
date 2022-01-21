@@ -22,7 +22,3 @@ add_executable(ActPrs2netExe main.cc)
 target_link_libraries(ActPrs2netExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActPrs2netExe PROPERTIES OUTPUT_NAME prs2net)
 install(TARGETS ActPrs2netExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActPrs2netExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME prs2net.mark)

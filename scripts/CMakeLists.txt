@@ -18,9 +18,8 @@
 #
 # -------------------------------------------------------------------------
 
-foreach(
-  X IN
-  ITEMS install
+install(
+  FILES install
         config
         Makefile.std
         getarch
@@ -31,13 +30,5 @@ foreach(
         mymakedepend
         linkso
         findpkg
-        tconfig)
-  install(FILES ${X} DESTINATION $ENV{ACT_HOME}/scripts)
-  install(
-    FILES ${X}
-    DESTINATION $ENV{ACT_HOME}/scripts
-    RENAME ${X}.mark)
-endforeach()
-
-# foreach(X IN ITEMS install getarch getos getbaseos move-in move-out
-# mymakedepend linkso findpkg tconfig)
+        tconfig
+  DESTINATION $ENV{ACT_HOME}/scripts)

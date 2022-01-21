@@ -23,7 +23,3 @@ target_link_libraries(ActTestInlinePassExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActTestInlinePassExe PROPERTIES OUTPUT_NAME
                                                       test_inlinepass)
 install(TARGETS ActTestInlinePassExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActTestInlinePassExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME test_inlinepass.mark)

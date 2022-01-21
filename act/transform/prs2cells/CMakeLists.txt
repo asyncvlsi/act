@@ -22,7 +22,3 @@ add_executable(ActPrs2cellsExe main.cc)
 target_link_libraries(ActPrs2cellsExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActPrs2cellsExe PROPERTIES OUTPUT_NAME prs2cells)
 install(TARGETS ActPrs2cellsExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActPrs2cellsExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME prs2cells.mark)

@@ -22,7 +22,3 @@ add_executable(ActAct2vExe main.cc)
 target_link_libraries(ActAct2vExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActAct2vExe PROPERTIES OUTPUT_NAME act2v)
 install(TARGETS ActAct2vExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActAct2vExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME act2v.mark)

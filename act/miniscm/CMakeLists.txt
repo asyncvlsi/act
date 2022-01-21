@@ -50,10 +50,6 @@ install(FILES ${ACT_MINISCM_LIB_HEADERS}
 install(TARGETS ActMiniscmLib ActMiniscmCliLib DESTINATION $ENV{ACT_HOME}/lib/)
 
 install(FILES default.scm DESTINATION $ENV{ACT_HOME}/lib/scm)
-install(
-  FILES default.scm
-  DESTINATION $ENV{ACT_HOME}/lib/scm
-  RENAME defauolt.scm.mark)
 
 # create and install shims
 foreach(X IN ITEMS ${ACT_MINISCM_LIB_HEADERS})

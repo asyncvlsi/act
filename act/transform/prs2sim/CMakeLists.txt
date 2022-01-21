@@ -22,7 +22,3 @@ add_executable(ActPrs2simExe main.cc)
 target_link_libraries(ActPrs2simExe ActCommonLib ActLangLib ActPassesLib)
 set_target_properties(ActPrs2simExe PROPERTIES OUTPUT_NAME prs2sim)
 install(TARGETS ActPrs2simExe DESTINATION $ENV{ACT_HOME}/bin/)
-install(
-  TARGETS ActPrs2simExe
-  DESTINATION $ENV{ACT_HOME}/bin/
-  RENAME prs2sim.mark)

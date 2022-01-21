@@ -31,11 +31,3 @@ set_target_properties(ActPrsPackExe PROPERTIES OUTPUT_NAME prspack)
 target_link_libraries(ActPrsPackExe ActCommonLib)
 
 install(TARGETS ActPrsimExe ActPrsPackExe DESTINATION $ENV{ACT_HOME}/bin)
-install(
-  TARGETS ActPrsimExe
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME prsim.mark)
-install(
-  TARGETS ActPrsPackExe
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME prspack.mark)

@@ -23,13 +23,5 @@ set_target_properties(ActTechgenExe PROPERTIES OUTPUT_NAME techgen)
 target_link_libraries(ActTechgenExe ActLangLib)
 
 install(TARGETS ActTechgenExe DESTINATION $ENV{ACT_HOME}/bin)
-install(
-  TARGETS ActTechgenExe
-  DESTINATION $ENV{ACT_HOME}/bin
-  RENAME techgen.mark)
 
 install(FILES layout.conf DESTINATION $ENV{ACT_HOME}/conf/generic)
-install(
-  FILES layout.conf
-  DESTINATION $ENV{ACT_HOME}/conf/generic
-  RENAME layout.conf.mark)
