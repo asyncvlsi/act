@@ -1864,6 +1864,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     A_NEWM (n->ports, struct netlist_bool_port);
     A_NEXT (n->ports).c = c;
     A_NEXT (n->ports).omit = 0;
+    A_NEXT (n->ports).used = 0;
     A_NEXT (n->ports).input = 0;
     if (dir == Type::IN) {
       A_NEXT (n->ports).input = 1;
@@ -1879,6 +1880,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     A_NEWM (n->chpports, struct netlist_bool_port);
     A_NEXT (n->chpports).c = c;
     A_NEXT (n->chpports).omit = 0;
+    A_NEXT (n->chpports).used = 0;
     A_NEXT (n->chpports).input = 0;
     if (dir == Type::IN) {
       A_NEXT (n->chpports).input = 1;

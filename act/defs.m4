@@ -1623,8 +1623,12 @@ base_item[ActBody *]: instance
       ActBody_Lang *l = dynamic_cast<ActBody_Lang *>($1);
       $A(l);
       if (l->gettype() == ActBody_Lang::LANG_REFINE) {
-	$A($0->u_p);
-	$0->u_p->mkRefined();
+	if ($0->u_p) {
+	  $0->u_p->mkRefined();
+	}
+	else {
+	  $E("refine { ... } blocks can only be used in processes.");
+	}
       }
     }
     return $1;

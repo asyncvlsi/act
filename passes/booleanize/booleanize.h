@@ -29,6 +29,10 @@ struct netlist_bool_port {
   act_connection *c;		/* port bool */
   unsigned int omit:1;		/* skipped due to aliasing */
   unsigned int input:1;		/* 1 if input, otherwise output */
+  unsigned int used:1;		/* placeholder, not set by standard passes.
+                                   used when checking what is actually used
+                                   after user-specified languages are  selected
+                                */
   unsigned int netid;		/* if set, points to net; -1 if not set */
 };
 
