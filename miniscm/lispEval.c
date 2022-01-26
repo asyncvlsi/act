@@ -343,6 +343,10 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
   argc = 1;
   argv[0] = name;
   while (s) {
+    if (argc == LISP_MAXARGS) {
+       warning ("Exceeded max argument count to built-in function %s (%d)", argv[0], LISP_MAXARGS);
+       break;
+    }
     l = CAR(s);
     if (LTYPE(CDR(s)) != S_LIST) {
       fprintf (stderr, "%s: invalid argument!\n",name);
