@@ -2575,3 +2575,91 @@ void expr_ex_free (Expr *e)
 {
   efree_ex (e);
 }
+
+
+const char *expr_op_name (int t)
+{
+  switch (t) {
+  case E_AND:
+    return "&";
+    break;
+  case E_OR:
+    return "|";
+    break;
+  case E_NOT:
+    return "~";
+    break;
+  case E_PLUS:
+    return "+";
+    break;
+  case E_MINUS:
+    return "-";
+    break;
+  case E_MULT:
+    return "*";
+    break;
+  case E_DIV:
+    return "/";
+    break;
+  case E_MOD:
+    return "%";
+    break;
+  case E_LSL:
+    return "<<";
+    break;
+  case E_LSR:
+    return ">>";
+    break;
+  case E_ASR:
+    return ">>>";
+    break;
+  case E_UMINUS:
+    return "-";
+    break;
+  case E_QUERY:
+    return "?";
+    break;
+  case E_XOR:
+    return "^";
+    break;
+  case E_LT:
+    return "<";
+    break;
+  case E_GT:
+    return ">";
+    break;
+  case E_LE:
+    return "<=";
+    break;
+  case E_GE:
+    return ">=";
+    break;
+  case E_EQ:
+    return "=";
+    break;
+  case E_NE:
+    return "!=";
+    break;
+  case E_COLON:
+    return ":";
+    break;
+  case E_PROBE:
+    return "#";
+    break;
+  case E_COMMA:
+    return ",";
+    break;
+  case E_CONCAT:
+    return "{.,.}";
+    break;
+  case E_BITFIELD:
+    return "{}";
+    break;
+  case E_COMPLEMENT:
+    return "~";
+    break;
+  default:
+    return "????";
+    break;
+  }
+}

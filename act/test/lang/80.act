@@ -1,0 +1,28 @@
+deftype foo (chan?!(int<2>) rd;
+	      /* control: 0 = write, 1 = read, 2 = read+write */
+	      chan?!(int<2>) addr;
+	      chan?!(int<2>) din;
+	      chan!?(int<2>) dout)
+{
+  methods {
+    macro write(int<2> a; int<2> v) {addr!a,din!v}
+  }
+}
+
+defproc chp_test (foo tmp)
+{
+
+  int <1> x;
+  int<2> a,b;
+
+  chp {
+    x := 0;
+    a := 1, b := 1;
+    *[
+      [ tmp = 0 -> tmp.write(a{1..0},b) ]
+    ]
+  }
+}
+
+chp_test ct;
+

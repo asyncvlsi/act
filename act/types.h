@@ -1003,6 +1003,11 @@ void sprint_uexpr (char *buf, int sz, const Expr *e);
 int expr_is_a_const (Expr *e);
 Expr *expr_dup_const (Expr *e);
 
+/* 
+   returns a string constant for the expression operator 
+*/
+const char *expr_op_name (int);
+
 /* unified expression expansion code, with flags to control
    different variations */
 #define ACT_EXPR_EXFLAG_ISLVAL   0x1

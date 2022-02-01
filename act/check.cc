@@ -270,7 +270,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   if (!e) return T_ERR;
 
   /*  
-  printf ("check: %s\n", expr_operator_name (e->type));
+  printf ("check: %s\n", expr_op_name (e->type));
   printf (" lt: %x  rt: %x\n", lt, rt);      
   */
 #include "expr_width.h"  
@@ -283,7 +283,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
     if (rt == T_ERR) return T_ERR;					\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
-      typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
+      typecheck_err ("`%s': operator applied to array argument", expr_op_name (e->type)); \
       return T_ERR;							\
     }									\
     flgs = lt & rt & (T_PARAM|T_STRICT);				\
@@ -312,7 +312,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     rt = act_type_expr (s, e->u.e.r, &rw, only_chan);			\
     if (rt == T_ERR) return T_ERR;					\
     if ((lt & T_ARRAYOF) || (rt & T_ARRAYOF)) {				\
-      typecheck_err ("`%s': operator applied to array argument", expr_operator_name (e->type)); \
+      typecheck_err ("`%s': operator applied to array argument", expr_op_name (e->type)); \
       return T_ERR;							\
     }									\
     flgs = lt & rt & (T_PARAM|T_STRICT);				\
@@ -332,7 +332,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_AND:
   case E_OR:
     EQUAL_LT_RT(T_BOOL|T_INT|T_DATA_BOOL|T_DATA_INT, WIDTH_MAX);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs bool/bool or int/int", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs bool/bool or int/int", expr_op_name (e->type));
     return T_ERR;
     break;
 
@@ -379,26 +379,26 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_PLUS:
   case E_MINUS:
     INT_OR_REAL(WIDTH_MAX1);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for add/sub; needs int/real for both", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for add/sub; needs int/real for both", expr_op_name (e->type));
     return T_ERR;
     break;
 
   case E_MULT:
     INT_OR_REAL(WIDTH_SUM);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mult; needs int/real for both", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mult; needs int/real for both", expr_op_name (e->type));
     return T_ERR;
     break;
     
   case E_DIV:
     INT_OR_REAL(WIDTH_LEFT);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for div; needs int/real for both", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for div; needs int/real for both", expr_op_name (e->type));
     return T_ERR;
     break;
 
     
   case E_MOD:
     INT_OR_REAL(WIDTH_RIGHT);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mod; needs int/real for both", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments for mod; needs int/real for both", expr_op_name (e->type));
     return T_ERR;
     break;
 
@@ -407,7 +407,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_LE:
   case E_GE:
     EQUAL_LT_RT2(T_REAL,T_BOOL, WIDTH_BOOL);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int or real/real", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int or real/real", expr_op_name (e->type));
     return T_ERR;
 
     /* Unary, real or integer */
@@ -434,16 +434,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     /* Binary, integer only */
   case E_LSL:
     EQUAL_LT_RT(T_INT|T_DATA_INT, WIDTH_LSHIFT);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_op_name (e->type));
 
   case E_LSR:
   case E_ASR:
     EQUAL_LT_RT(T_INT|T_DATA_INT, WIDTH_LEFT);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_op_name (e->type));
 
   case E_XOR:
     EQUAL_LT_RT(T_INT, WIDTH_MAX);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs int/int", expr_op_name (e->type));
     return T_ERR;
 
   case E_QUERY:
@@ -473,7 +473,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_EQ:
   case E_NE:
     EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL, WIDTH_BOOL);
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_operator_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_op_name (e->type));
     return T_ERR;
     break;
 

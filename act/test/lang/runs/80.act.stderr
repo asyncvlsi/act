@@ -1,0 +1,3 @@
+ERROR: File `80.act', line 22, col 13
+	Typechecking failed on expression!
+	`=': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool
