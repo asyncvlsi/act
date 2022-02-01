@@ -1452,6 +1452,14 @@ bool_expr_id[ActId *]: expr_id
       fprintf ($f, "'' is not of type bool\n");
       exit (1);
     }
+    else if (t & T_PARAM) {
+      if (strcmp ($1->getName(), "self") != 0 && !$0->u_f) {
+	$e("Identifier ``");
+	$1->Print ($f, NULL);
+	fprintf ($f, "'' is a parameter\n");
+	exit (1);
+      }
+    }
     return $1;
 }}
 ;
@@ -1465,6 +1473,14 @@ bool_expr_id_or_array[ActId *]: expr_id
       $1->Print ($f, NULL);
       fprintf ($f, "'' is not of type bool or bool[]\n");
       exit (1);
+    }
+    else if (t & T_PARAM) {
+      if (strcmp ($1->getName(), "self") != 0 && !$0->u_f) {
+	$e("Identifier ``");
+	$1->Print ($f, NULL);
+	fprintf ($f, "'' is a parameter\n");
+	exit (1);
+      }
     }
     return $1;
 }}
@@ -1512,6 +1528,14 @@ assignable_expr_id[ActId *]: expr_id
       $1->Print ($f, NULL);
       fprintf ($f, "'' is not of type bool/int/structure\n");
       exit (1);
+    }
+    if (t & T_PARAM) {
+      if (strcmp ($1->getName(), "self") != 0 && !$0->u_f) {
+	$e("Identifier ``");
+	$1->Print ($f, NULL);
+	fprintf ($f, "'' is a parameter\n");
+	exit (1);
+      }
     }
     return $1;
 }}

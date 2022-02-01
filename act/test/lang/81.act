@@ -1,0 +1,20 @@
+defproc chp_test(chan?(int<4>) in[4];
+         chan!(int<4>) out;
+         chan!(int<2>) c)
+{
+  pint M = 2;
+
+  int<4> x;
+  int<M> y;
+
+  pint X[4];
+  (i:4: X[i] = i;)
+
+  chp {
+   *[
+      [| ([]i:4: true -> skip; X[i] := i) |]
+    ]
+  } 
+}
+                                                                                          
+chp_test ct;

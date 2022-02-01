@@ -1,0 +1,2 @@
+ERROR: File `81.act', line 15, col 36
+	Identifier `X[i]' is a parameter
