@@ -233,9 +233,11 @@ ValueIdx *act_connection::getvx()
     return vx;
   }
   else if (parent->vx) {
+    /* a.y or a[i] */
     return parent->vx;
   }
   else if (parent->parent->vx) {
+    /* a[i].x */
     return parent->parent->vx;
   }
   Assert (0, "What");
@@ -1352,7 +1354,7 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	}
 	t = a;
 	a = a->next;
-	FREE (t->e);
+	expr_ex_free (t->e);
 	FREE (t);
       }
     }
@@ -1549,4 +1551,16 @@ bool act_connection::disconnect (void)
     fatal_error ("Not sure what happened!");
   }
   return true;
+}
+
+
+int ValueIdx::numAttrIdx()
+{
+  if (!t->isExpanded()) {
+    return -1;
+  }
+  if (!t->arrayInfo()) {
+    return 0;
+  }
+  return t->arrayInfo()->size();
 }

@@ -2296,6 +2296,11 @@ static void _print_attr (FILE *fp, act_attr_t *a)
   fprintf (fp, "]");
 }
 
+void act_print_attributes (FILE *fp, act_attr_t *a)
+{
+  _print_attr (fp, a);
+}
+
 static void _print_size (FILE *fp, act_size_spec_t *sz)
 {
   if (sz) {

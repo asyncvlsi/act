@@ -1,0 +1,12 @@
+defproc test()
+{
+  int x @ [iscomb=0];
+  int w[4];
+
+  x @ [iscomb=0];
+
+  w[2] @ [iscomb=1];
+}
+
+
+test t;

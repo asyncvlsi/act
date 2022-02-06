@@ -156,6 +156,11 @@ public:
   bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->isPrimary()); }
   act_connection *connection() { return init ? u.obj.c : NULL; }
   const char *getName() { return u.obj.name; }
+
+  act_attr *getAttr() { return a; }
+  act_attr *getAttrIdx(int i) { return array_spec ? array_spec[i] : NULL; }
+  bool haveAttrIdx() { return array_spec ? true : false; }
+  int numAttrIdx();
 };
 
 void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
@@ -163,6 +168,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 
 void act_merge_attributes (struct act_attr **x, act_attr *a);
 void _act_mk_raw_connection (act_connection *c1, act_connection *c2);
+void act_print_attributes (FILE *fp, act_attr *a);
 
 #endif /* __ACT_VALUE_H__ */
 

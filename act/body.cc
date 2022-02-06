@@ -186,6 +186,14 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
     fprintf (stderr, "\n");
 #endif
     
+    if (vx->haveAttrIdx()) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Array being extended after attributes specified on elements.\n");
+      fprintf (stderr, "\tType: ");
+      vx->t->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
     if (vx->init) {
       /* it's been allocated; needs reallocation! */
       if (TypeFactory::isParamType (vx->t)) {
@@ -1417,7 +1425,7 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
 
   _a = inst_attr_expand (a, _ns, s);
   if (arr) {
-    _arr = arr->Expand (_ns, s);
+    _arr = arr->Expand (_ns, s, 1);
   }
   else {
     _arr = NULL;
@@ -1438,6 +1446,9 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
     }
     int i = vx->t->arrayInfo()->Offset (_arr);
     act_merge_attributes (&vx->array_spec[i], _a);
+  }
+  if (_arr) {
+     delete _arr;
   }
 }
 
@@ -1531,12 +1542,39 @@ ActBody *ActBody_Genloop::Clone ()
   return ret;
 }
 
+act_attr *_clone_attrib (act_attr *a)
+{
+  act_attr *ret, *cur;
+  ret = NULL;
+  while (a) {
+    if (!ret) {
+      NEW (ret, act_attr);
+      cur = ret;
+    }
+    else {
+      NEW (cur->next, act_attr);
+      cur = cur->next;
+    }
+    cur->next = NULL;
+    cur->attr = a->attr;
+    cur->e = expr_dup (a->e);
+    a = a->next;
+  }
+  return ret;
+}
 
 
 ActBody *ActBody_Attribute::Clone()
 {
   ActBody_Attribute *ret;
-  ret = new ActBody_Attribute (inst, a, arr);
+  Array *narr;
+  if (arr) {
+    narr = arr->Clone();
+  }
+  else {
+    narr = arr;
+  }
+  ret = new ActBody_Attribute (inst, _clone_attrib (a), narr);
   if (Next()) {
     ret->Append (Next()->Clone());
   }

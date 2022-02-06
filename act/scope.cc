@@ -1261,6 +1261,7 @@ void Scope::Print (FILE *fp)
       if (!u || (u->FindPort (vx->getName()) == 0)) {
 	Array *ta;
 	char *ns_name;
+	struct act_attr *aa;
 
 	ns_name = NULL;
 
@@ -1269,6 +1270,8 @@ void Scope::Print (FILE *fp)
 	  vx->t->clrArray();
 	}
 	ta = a;
+
+	aa = vx->getAttr();
 
 	if (TypeFactory::isUserType (vx->t)) {
 	  UserDef *u = dynamic_cast<UserDef *> (vx->t->BaseType());
@@ -1307,9 +1310,17 @@ void Scope::Print (FILE *fp)
 	    ta = ta->Next();
 	  }
 	  if (ta) {
+	    if (aa) {
+	      fprintf (fp, " @ ");
+	      act_print_attributes (fp, aa);
+	    }
 	    fprintf (fp, ";\n");
 	  }
 	} while (ta);
+	if (aa) {
+	  fprintf (fp, " @ ");
+	  act_print_attributes (fp, aa);
+	}
 	fprintf (fp, ";\n");
 	if (a) {
 	  vx->t->MkArray (a);
@@ -1317,6 +1328,23 @@ void Scope::Print (FILE *fp)
 
 	if (ns_name) {
 	  FREE (ns_name);
+	}
+
+	if (vx->haveAttrIdx()) {
+	  for (int i=0; i < vx->numAttrIdx(); i++) {
+	    aa = vx->getAttrIdx (i);
+	    if (aa) {
+	      Array *tmp;
+	      Assert (a, "Hmm");
+	      fprintf (fp, " %s", vx->getName());
+	      tmp = a->unOffset (i);
+	      tmp->Print (fp);
+	      delete tmp;
+	      fprintf (fp, " @ ");
+	      act_print_attributes (fp, aa);
+	      fprintf (fp, ";\n");
+	    }
+	  }
 	}
       }
     }
