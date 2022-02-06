@@ -166,7 +166,8 @@ public:
 void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 			ActId *id2, act_connection *c2);
 
-void act_merge_attributes (struct act_attr **x, act_attr *a);
+void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
+			   struct act_attr **x, act_attr *a);
 void _act_mk_raw_connection (act_connection *c1, act_connection *c2);
 void act_print_attributes (FILE *fp, act_attr *a);
 

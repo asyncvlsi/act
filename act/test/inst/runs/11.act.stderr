@@ -1,0 +1,4 @@
+In expanding test (11.act:1)
+In expanding ::<Global>
+In adding attributes to: x
+FATAL: Attribute `iscomb': inconsistent values

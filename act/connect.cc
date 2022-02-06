@@ -1110,7 +1110,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
       if (vx1 == c1->vx) {
 	if (!c1->parent) {
 	  /* c1 is a raw identifier */
-	  act_merge_attributes (&vx1->a, vx2->a);
+	  act_merge_attributes (vx1, vx2, &vx1->a, vx2->a);
 	  vx2->a = NULL;
 	  if (vx2->array_spec) {
 	    if (!vx1->array_spec) {
@@ -1120,7 +1120,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 	    else {
 	      Assert (vx1->t->arrayInfo(), "Hmm");
 	      for (int i=0; i < vx1->t->arrayInfo()->size(); i++) {
-		act_merge_attributes (&vx1->array_spec[i], vx2->array_spec[i]);
+		act_merge_attributes (vx1, vx2, &vx1->array_spec[i], vx2->array_spec[i]);
 		vx2->array_spec[i] = NULL;
 	      }
 	      FREE (vx2->array_spec);
@@ -1146,7 +1146,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 	    }
 	  }
 	  if (vx2->a) {
-	    act_merge_attributes (&vx1->array_spec[i], vx2->a);
+	    act_merge_attributes (vx1, vx2, &vx1->array_spec[i], vx2->a);
 	    vx2->a = NULL;
 	  }
 	}
@@ -1169,7 +1169,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
       if (!c1->parent) {
 	/* look at the attributes on vx2 */
 	if (vx2->array_spec && vx2->array_spec[i]) {
-	  act_merge_attributes (&vx1->a, vx2->array_spec[i]);
+	  act_merge_attributes (vx1, vx2, &vx1->a, vx2->array_spec[i]);
 	  vx2->array_spec[i] = NULL;
 	}
       }
@@ -1189,7 +1189,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 		      vx1->array_spec[sz-1] = NULL;
 	      }
 	    }
-	    act_merge_attributes (&vx1->array_spec[j], vx2->array_spec[i]);
+	    act_merge_attributes (vx1, vx2, &vx1->array_spec[j], vx2->array_spec[i]);
 	    vx2->array_spec[i] = NULL;
 	  }
 	}
@@ -1228,7 +1228,8 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 #endif
 }
 
-void act_merge_attributes (act_attr_t **x, act_attr *a)
+void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
+			   act_attr_t **x, act_attr *a)
 {
   act_attr_t *t, *prev;
   
@@ -1250,6 +1251,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    /* strict! */
 	    if (!expr_equal (t->e, a->e)) {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': inconsistent values",
 			   t->attr);
 	    }
@@ -1264,6 +1273,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	    else {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': merge rule SUM only for reals and ints", t->attr);
 	    }
 	  }
@@ -1282,6 +1299,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	    else {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': merge rule MAX only for reals and ints", t->attr);
 	    }
 	  }
@@ -1300,6 +1325,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	    else {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': merge rule MIN only for reals and ints", t->attr);
 	    }
 	  }
@@ -1310,6 +1343,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	    else {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': merge rule OR only for ints", t->attr);
 	    }
 	  }
@@ -1321,6 +1362,14 @@ void act_merge_attributes (act_attr_t **x, act_attr *a)
 	    }
 	    else {
 	      act_error_ctxt (stderr);
+	      if (vx1 == vx2) {
+		fprintf (stderr, "In adding attributes to: %s\n",
+			 vx1->getName());
+	      }
+	      else {
+		fprintf (stderr, "In merging attributes for %s and %s\n",
+			 vx1->getName(), vx2->getName());
+	      }
 	      fatal_error ("Attribute `%s': merge rule AND only for ints", t->attr);
 	    }
 	  }

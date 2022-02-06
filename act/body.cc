@@ -1432,7 +1432,7 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
   }
 
   if (!_arr) {
-    act_merge_attributes (&vx->a, _a);
+    act_merge_attributes (vx, vx, &vx->a, _a);
   }
   else {
     /* attribute on an element of an array */
@@ -1445,7 +1445,7 @@ void ActBody_Attribute::Expand (ActNamespace *_ns, Scope *s)
       }
     }
     int i = vx->t->arrayInfo()->Offset (_arr);
-    act_merge_attributes (&vx->array_spec[i], _a);
+    act_merge_attributes (vx, vx, &vx->array_spec[i], _a);
   }
   if (_arr) {
      delete _arr;
