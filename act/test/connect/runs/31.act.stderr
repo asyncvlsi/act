@@ -1,5 +1,6 @@
 In expanding foo (31.act:1)
 In expanding ::<Global>
+Error on or near line number 3.
 Connecting `y' and `z' failed.
 	Type 1: bool! [dir=!]
 	Type 2: bool?! [dir=?!]

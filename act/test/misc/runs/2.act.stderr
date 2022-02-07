@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 7.
 Connection: x = y
   LHS: bool[ [7]+[9..11] ]
   RHS: bool[ [1..8]+[10..11] ]

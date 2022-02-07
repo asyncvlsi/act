@@ -1,4 +1,5 @@
 In expanding test (70.act:2)
 In expanding ::<Global>
+Error on or near line number 7.
 WARNING: potential write conflict in CHP description
    Variable: `s'

@@ -1,5 +1,6 @@
 In expanding riscv (52.act:5)
 In expanding vecsys (52.act:18)
 In expanding ::<Global>
+Error on or near line number 8.
 Receive operation on an output channel.
 	Channel: port.cmd

@@ -1,5 +1,6 @@
 In expanding pow (16.act:2)
 In expanding bool
 In expanding ::<Global>
+Error on or near line number 4.
 Typechecking failed, int<32>  v/s pint
 	Types `int<32>' and `pint' are not compatible

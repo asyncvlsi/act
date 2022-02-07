@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 4.
 Connecting `x' and `y' failed.
 	Type 1: bool! [dir=!]
 	Type 2: bool? [dir=?]

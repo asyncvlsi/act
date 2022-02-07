@@ -1,3 +1,4 @@
 In expanding ::<Global>
+Error on or near line number 9.
 Array being extended after it has participated in a connection.
 	Type: bool[ [8]+[10..11]+[15..15] ]

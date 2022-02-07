@@ -1,6 +1,7 @@
 In expanding foo<3,4> (3.act:1)
 In expanding bar<4> (3.act:4)
 In expanding ::<Global>
+Error on or near line number 2.
 Connection: x = y
   LHS: bool[3]
   RHS: bool[4]

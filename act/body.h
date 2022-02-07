@@ -37,7 +37,7 @@
 
 class ActBody {
  public:
-  ActBody ();
+  ActBody (int line);
   virtual ~ActBody();
   
   void Append (ActBody *b);
@@ -54,7 +54,12 @@ class ActBody {
 
   void updateInstType (list_t *namelist, InstType *it);
 
- private:
+  int getLine () { return _line; }
+
+protected:
+  int _line;
+
+private:
   ActBody *next;
 };
 
@@ -64,7 +69,7 @@ class ActBody {
  */
 class ActBody_Inst : public ActBody {
  public:
-  ActBody_Inst(InstType *, const char *);
+  ActBody_Inst(int line, InstType *, const char *);
   
   void Expand (ActNamespace *, Scope *);
   Type *BaseType ();
@@ -83,7 +88,10 @@ class ActBody_Inst : public ActBody {
 
 class ActBody_Attribute : public ActBody {
 public:
-  ActBody_Attribute(const char *_inst, act_attr *_a, Array *_arr = NULL) {
+  ActBody_Attribute(int line,
+		    const char *_inst, act_attr *_a, Array *_arr = NULL)
+    : ActBody (line)
+  {
     inst = _inst; a = _a; arr = _arr;
   }
   void Expand (ActNamespace *, Scope *);
@@ -100,13 +108,13 @@ private:
 
 class ActBody_Conn : public ActBody {
  public:
-  ActBody_Conn(ActId *id1, AExpr *ae) {
+  ActBody_Conn(int line, ActId *id1, AExpr *ae) : ActBody (line) {
     type = 0;
     u.basic.lhs = id1;
     u.basic.rhs = ae;
   }
 
-  ActBody_Conn(AExpr *id1, AExpr *id2) {
+  ActBody_Conn(int line, AExpr *id1, AExpr *id2) : ActBody (line) {
     type = 1;
     u.general.lhs = id1;
     u.general.rhs = id2;
@@ -141,11 +149,11 @@ class ActBody_Loop : public ActBody {
     BAR				// unused
   };
     
-  ActBody_Loop (ActBody_Loop::type _t, 
+  ActBody_Loop (int line, ActBody_Loop::type _t, 
 		const char *_id, 
 		Expr *_lo, /* NULL if this is a 0..hi-1 loop */
 		Expr *_hi,
-		ActBody *_b) {
+		ActBody *_b) : ActBody (line) {
     t = _t;
     id = _id;
     lo = _lo;
@@ -218,7 +226,7 @@ private:
 
 class ActBody_Select : public ActBody {
  public:
-  ActBody_Select (ActBody_Select_gc *_gc) {
+  ActBody_Select (int line, ActBody_Select_gc *_gc) : ActBody (line) {
     gc = _gc;
   }
 #if 0
@@ -241,7 +249,7 @@ private:
 
 class ActBody_Genloop : public ActBody {
  public:
-  ActBody_Genloop (ActBody_Select_gc *_gc) {
+  ActBody_Genloop (int line, ActBody_Select_gc *_gc) : ActBody (line) {
     gc = _gc;
   }
   void Expand (ActNamespace *, Scope *);
@@ -255,20 +263,21 @@ private:
 
 class ActBody_Assertion : public ActBody {
 public:
-  ActBody_Assertion (Expr *_e, const char *_msg = NULL) {
+  ActBody_Assertion (int line, Expr *_e, const char *_msg = NULL)
+    : ActBody (line) {
     type = 0;
     u.t0.e = _e;
     u.t0.msg = _msg;
   }
-  ActBody_Assertion (ActId *_id1, ActId *_id2, int op,
-		     const char *_msg = NULL) {
+  ActBody_Assertion (int line, ActId *_id1, ActId *_id2, int op,
+		     const char *_msg = NULL) : ActBody (line) {
     type = 2;
     u.t2.id1 = _id1;
     u.t2.id2 = _id2;
     u.t2.msg = _msg;
     u.t2.op = op;
   }
-  ActBody_Assertion (InstType *nu, InstType *old) {
+  ActBody_Assertion (int line, InstType *nu, InstType *old) : ActBody (line) {
     type = 1;
     u.t1.nu = nu;
     u.t1.old = old;
@@ -303,7 +312,8 @@ private:
 
 class ActBody_OverrideAssertion : public ActBody {
 public:
-  ActBody_OverrideAssertion (InstType *it, InstType *chk) {
+  ActBody_OverrideAssertion (int line, InstType *it, InstType *chk)
+    : ActBody (line) {
     _orig_type = it;
     _new_type = chk;
   }
@@ -318,7 +328,7 @@ private:
 
 class ActBody_Print : public ActBody {
 public:
-  ActBody_Print (list_t *_l) {
+  ActBody_Print (int line, list_t *_l) : ActBody (line) {
     l = _l;
   }
   ~ActBody_Print () {
@@ -333,7 +343,7 @@ private:
 
 class ActBody_Namespace : public ActBody {
 public:
-  ActBody_Namespace (ActNamespace *_ns) {
+  ActBody_Namespace (ActNamespace *_ns) : ActBody (-1) {
     ns = _ns;
   }
 
@@ -371,11 +381,11 @@ class ActBody_Lang : public ActBody {
     LANG_DFLOW
   };
 
-  ActBody_Lang (act_prs *p) {
+  ActBody_Lang (int line, act_prs *p) : ActBody (line) {
     t = LANG_PRS;
     lang = p;
   }
-  ActBody_Lang (act_chp *c, int ishse = 0) {
+  ActBody_Lang (int line, act_chp *c, int ishse = 0) : ActBody (line) {
     if (ishse) {
       t = LANG_HSE;
     }
@@ -385,32 +395,32 @@ class ActBody_Lang : public ActBody {
     lang = c;
   }
 
-  ActBody_Lang (act_spec *s) {
+  ActBody_Lang (int line, act_spec *s) : ActBody (line) {
     t = LANG_SPEC;
     lang = s;
   }
   
-  ActBody_Lang (enum langtype _t, void *l) {
+  ActBody_Lang (int line, enum langtype _t, void *l) : ActBody (line) {
     t = _t;
     lang = l;
   }
 
-  ActBody_Lang (act_refine *r) {
+  ActBody_Lang (int line, act_refine *r) : ActBody (line) {
     t = LANG_REFINE;
     lang = r;
   }
 
-  ActBody_Lang (act_sizing *s) {
+  ActBody_Lang (int line, act_sizing *s) : ActBody (line) {
     t = LANG_SIZE;
     lang = s;
   }
 
-  ActBody_Lang (act_initialize *init) {
+  ActBody_Lang (int line, act_initialize *init) : ActBody (line) {
     t = LANG_INIT;
     lang = init;
   }
 
-  ActBody_Lang (act_dataflow *dflow) {
+  ActBody_Lang (int line, act_dataflow *dflow) : ActBody (line) {
     t = LANG_DFLOW;
     lang = dflow;
   }

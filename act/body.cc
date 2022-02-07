@@ -33,8 +33,9 @@
 #include <common/config.h>
 #include <common/log.h>
 
-ActBody::ActBody()
+ActBody::ActBody(int line)
 {
+  _line = line;
   next = NULL;
 }
 
@@ -73,7 +74,8 @@ ActBody *ActBody::Tail ()
   return b;
 }
 
-ActBody_Inst::ActBody_Inst (InstType *it, const char *_id)
+ActBody_Inst::ActBody_Inst (int line, InstType *it, const char *_id)
+: ActBody (line)
 {
   id = _id;
   t = it;
@@ -128,7 +130,8 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
   */
 
   it = t->Expand (ns, s);
-
+  act_error_setline (getLine());
+  
   if (it->arrayInfo() && it->arrayInfo()->size() == 0) {
     act_error_ctxt (stderr);
     fatal_error ("Instance `%s': zero-length array creation not permitted", id);
@@ -1089,6 +1092,7 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
       return;
     }
 
+    act_error_setline (getLine());
     ilo = 0; ihi = 0;
     if (igc->id) {
       Assert (s->Add (igc->id,
@@ -1097,7 +1101,6 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
       vx = s->LookupVal (igc->id);
       vx->init = 1;
       vx->u.idx = s->AllocPInt();
-      
       Expr *e = expr_expand (igc->lo, ns, s);
       if (!expr_is_a_const (e)) {
 	act_error_ctxt (stderr);
@@ -1128,6 +1131,7 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
       if (igc->id) {
 	s->setPInt (vx->u.idx, iter);
       }
+      act_error_setline (getLine());
       guard = expr_expand (igc->g, ns, s);
       if (!expr_is_a_const (guard)) {
 	act_error_ctxt (stderr);
@@ -1177,6 +1181,7 @@ void ActBody_Genloop::Expand (ActNamespace *ns, Scope *s)
       if (!igc->g) {
 	fatal_error ("Should not be here!");
       }
+      act_error_setline (getLine());
       guard = expr_expand (igc->g, ns, s);
       if (!expr_is_a_const (guard)) {
 	act_error_ctxt (stderr);
@@ -1463,9 +1468,11 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
       s = ns->CurScope ();
     }
     else {
+      act_error_setline (b->getLine());
       b->Expand (ns, s);
     }
   }
+  act_error_setline (-1);
 }
 
 
@@ -1474,10 +1481,10 @@ ActBody *ActBody_Conn::Clone ()
   ActBody_Conn *ret;
 
   if (type == 0) {
-    ret = new ActBody_Conn (u.basic.lhs, u.basic.rhs);
+    ret = new ActBody_Conn (_line, u.basic.lhs, u.basic.rhs);
   }
   else {
-    ret = new ActBody_Conn (u.general.lhs, u.general.rhs);
+    ret = new ActBody_Conn (_line, u.general.lhs, u.general.rhs);
   }
   if (Next()) {
     ret->Append (Next()->Clone());
@@ -1487,7 +1494,7 @@ ActBody *ActBody_Conn::Clone ()
 
 ActBody *ActBody_Inst::Clone ()
 {
-  ActBody_Inst *ret = new ActBody_Inst(t,id);
+  ActBody_Inst *ret = new ActBody_Inst(_line, t,id);
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1498,7 +1505,7 @@ ActBody *ActBody_Lang::Clone ()
 {
   ActBody_Lang *ret;
 
-  ret = new ActBody_Lang (t, lang);
+  ret = new ActBody_Lang (_line, t, lang);
 
   if (Next()) {
     ret->Append (Next()->Clone());
@@ -1510,7 +1517,7 @@ ActBody *ActBody_Loop::Clone ()
 {
   ActBody_Loop *ret;
 
-  ret = new ActBody_Loop (t, id, lo, hi, b->Clone());
+  ret = new ActBody_Loop (_line, t, id, lo, hi, b->Clone());
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1522,7 +1529,7 @@ ActBody *ActBody_Select::Clone ()
 {
   ActBody_Select *ret;
 
-  ret = new ActBody_Select (gc->Clone());
+  ret = new ActBody_Select (_line, gc->Clone());
 
   if (Next()) {
     ret->Append (Next()->Clone());
@@ -1534,7 +1541,7 @@ ActBody *ActBody_Genloop::Clone ()
 {
   ActBody_Genloop *ret;
 
-  ret = new ActBody_Genloop (gc->Clone());
+  ret = new ActBody_Genloop (_line, gc->Clone());
 
   if (Next()) {
     ret->Append (Next()->Clone());
@@ -1574,7 +1581,7 @@ ActBody *ActBody_Attribute::Clone()
   else {
     narr = arr;
   }
-  ret = new ActBody_Attribute (inst, _clone_attrib (a), narr);
+  ret = new ActBody_Attribute (_line, inst, _clone_attrib (a), narr);
   if (Next()) {
     ret->Append (Next()->Clone());
   }
@@ -1598,10 +1605,10 @@ ActBody *ActBody_Assertion::Clone()
   ActBody_Assertion *ret;
 
   if (type == 0) {
-    ret = new ActBody_Assertion (u.t0.e, u.t0.msg);
+    ret = new ActBody_Assertion (_line, u.t0.e, u.t0.msg);
   }
   else {
-    ret = new ActBody_Assertion (u.t1.nu, u.t1.old);
+    ret = new ActBody_Assertion (_line, u.t1.nu, u.t1.old);
   }
   if (Next()) {
     ret->Append (Next()->Clone());
@@ -1648,7 +1655,7 @@ void ActBody_Print::Expand (ActNamespace *ns, Scope *s)
 
 ActBody *ActBody_Print::Clone()
 {
-  return new ActBody_Print(l);
+  return new ActBody_Print(_line, l);
 }
 
 
@@ -1710,7 +1717,7 @@ ActBody_Select_gc *ActBody_Select_gc::Clone ()
 ActBody_OverrideAssertion *ActBody_OverrideAssertion::Clone()
 {
   ActBody_OverrideAssertion *ret =
-    new ActBody_OverrideAssertion (_orig_type, _new_type);
+    new ActBody_OverrideAssertion (_line, _orig_type, _new_type);
   return ret;
 }
 

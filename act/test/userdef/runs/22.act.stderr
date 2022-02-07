@@ -1,4 +1,5 @@
 In expanding test (22.act:3)
 In expanding ::<Global>
+Error on or near line number 5.
 	c.y has a directional type that is not writable.
 FATAL: A `bool?' cannot be on the RHS of a production rule.

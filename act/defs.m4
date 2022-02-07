@@ -455,10 +455,10 @@ override_one_spec: user_type bare_id_list ";"
       }
       /* insert expansion-time assertion that $1 <: it */
       if (!override_asserts) {
-	override_asserts = new ActBody_OverrideAssertion (it, $1);
+	override_asserts = new ActBody_OverrideAssertion ($l, it, $1);
       }
       else {
-	override_asserts->Append (new ActBody_OverrideAssertion (it, $1));
+	override_asserts->Append (new ActBody_OverrideAssertion ($l, it, $1));
       }
     }
     /* Now actually perform the override! */
@@ -1645,7 +1645,7 @@ base_item[ActBody *]: instance
 
 debug_output[ActBody *]: "${" { chp_log_item "," }* "}" ";"
 {{X:
-    return new ActBody_Print ($2);
+    return new ActBody_Print ($l, $2);
 }}
 ;
 
@@ -1661,13 +1661,13 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
     delete it;
     
     if (OPT_EMPTY ($3)) {
-      b = new ActBody_Assertion ($2);
+      b = new ActBody_Assertion ($l, $2);
     }
     else {
       ActRet *r;
       r = OPT_VALUE ($3);
       $A(r->type == R_STRING);
-      b = new ActBody_Assertion ($2, r->u.str);
+      b = new ActBody_Assertion ($l, $2, r->u.str);
       FREE (r);
     }
     OPT_FREE ($3);
@@ -1691,13 +1691,13 @@ assertion[ActBody *]: "{" wbool_expr [ ":" STRING ] "}" ";"
     }
     
     if (OPT_EMPTY ($5)) {
-      b = new ActBody_Assertion ($2, $4, $3);
+      b = new ActBody_Assertion ($l, $2, $4, $3);
     }
     else {
       ActRet *r;
       r = OPT_VALUE ($5);
       $A(r->type == R_STRING);
-      b = new ActBody_Assertion ($2, $4, $3, r->u.str);
+      b = new ActBody_Assertion ($l, $2, $4, $3, r->u.str);
       FREE (r);
     }
     return b;
@@ -1789,10 +1789,10 @@ special_connection_id[ActBody *]: ID [ dense_range ]
       r = OPT_VALUE ($6);
       $A(r->type == R_ATTR);
       if ($0->a_id) {
-	b = new ActBody_Attribute ($1, r->u.attr, $0->a_id->arrayInfo());
+	b = new ActBody_Attribute ($l, $1, r->u.attr, $0->a_id->arrayInfo());
       }
       else {
-	b = new ActBody_Attribute ($1, r->u.attr);
+	b = new ActBody_Attribute ($l, $1, r->u.attr);
       }
       FREE (r);
     }
@@ -1820,7 +1820,7 @@ special_connection_id[ActBody *]: ID [ dense_range ]
     }
     OPT_FREE ($2);
     
-    return new ActBody_Attribute ($1, $4, a);
+    return new ActBody_Attribute ($l, $1, $4, a);
 }}
 ;
 
@@ -1921,7 +1921,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
       it = $0->tf->NewUserDef ($0->scope, it);
       $A($0->scope->Add ($1, it));
     }
-    $0->t_inst = new ActBody_Inst (it, $1);
+    $0->t_inst = new ActBody_Inst ($l, it, $1);
 }}
 [ "(" port_conn_spec ")" ] [ "@" attr_list ] opt_extra_conn 
 {{X:
@@ -1943,7 +1943,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
       r = OPT_VALUE ($4);
       $A(r->type == R_ATTR);
 
-      btmp = new ActBody_Attribute ($1, r->u.attr);
+      btmp = new ActBody_Attribute ($l, $1, r->u.attr);
 
       if (b) {
 	b->Tail()->Append (btmp);
@@ -2003,10 +2003,10 @@ instance_id[ActBody *]: ID [ sparse_range ]
 	}
 
 	if (!tmp) {
-	  tmp = new ActBody_Conn (a, ae);
+	  tmp = new ActBody_Conn ($l, a, ae);
 	}
 	else {
-	  tmp->Tail()->Append (new ActBody_Conn (a, ae));
+	  tmp->Tail()->Append (new ActBody_Conn ($l, a, ae));
 	  tmp = tmp->Tail ();
 	}
       }
@@ -2115,7 +2115,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 	fprintf ($f, "\n\t%s\n", act_type_errmsg ());
 	exit (1);
       }
-      tmp = new ActBody_Conn (id, ae);
+      tmp = new ActBody_Conn ($l, id, ae);
       if (!b) {
 	b = tmp;
 	ret = b;
@@ -2193,7 +2193,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
 	  fprintf ($f, "\n\t%s\n", act_type_errmsg ());
 	  exit (1);
 	}
-	tmp = new ActBody_Conn (id, ae);
+	tmp = new ActBody_Conn ($l, id, ae);
 	if (!b) {
 	  b = tmp;
 	  ret = b;
@@ -2241,7 +2241,7 @@ alias[ActBody *]: lhs_array_expr "=" array_expr ";"
 	exit (1);
       }
       //if (li == list_first ($3)) {
-	tmp = new ActBody_Conn ($1, ae);
+      tmp = new ActBody_Conn ($l, $1, ae);
 	//}
 	//else {
 	//tmp = new ActBody_Conn ($1->Clone(), ae);
@@ -2279,7 +2279,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
     $0->in_cond--;
     if (OPT_EMPTY ($6)) {
       OPT_FREE ($6);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, NULL, $8);
+      return new ActBody_Loop ($l, ActBody_Loop::SEMI, $3, $5, NULL, $8);
     }
     else {
       ActRet *r;
@@ -2289,7 +2289,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
       tmp = r->u.exp;
       FREE (r);
       OPT_FREE ($6);
-      return new ActBody_Loop (ActBody_Loop::SEMI, $3, $5, tmp, $8);
+      return new ActBody_Loop ($l, ActBody_Loop::SEMI, $3, $5, tmp, $8);
     }
 }}
 | "*["
@@ -2317,7 +2317,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
       }
     }
     $0->in_cond--;
-    return new ActBody_Genloop (ret);
+    return new ActBody_Genloop ($l, ret);
 }}
 ;
 
@@ -2354,7 +2354,7 @@ guarded_cmds[ActBody *]: { gc_1 "[]" }*
       }
     }
     list_free ($1);
-    return new ActBody_Select (ret);
+    return new ActBody_Select ($l, ret);
 }}
 ;
 

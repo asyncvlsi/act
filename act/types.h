@@ -1062,6 +1062,7 @@ void act_error_update (const char *file, int line); // set file to
 void act_error_pop ();
 void act_error_ctxt (FILE *);
 const char *act_error_top ();
+void act_error_setline (int line);
 
 void typecheck_err (const char *s, ...);
 

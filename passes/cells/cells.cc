@@ -1113,7 +1113,7 @@ void ActCellPass::add_passgates ()
       rules->u.p.sz = sz;
     }
     prs_body->p = rules;
-    proc->AppendBody (new ActBody_Lang  (prs_body));
+    proc->AppendBody (new ActBody_Lang  (-1, prs_body));
     proc->MkDefined ();
   }
 }
@@ -1316,7 +1316,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 
   
   prs_body->p = rules;
-  proc->AppendBody (new ActBody_Lang  (prs_body));
+  proc->AppendBody (new ActBody_Lang  (-1, prs_body));
   proc->MkDefined ();
   pi->cell = proc;
   //proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
@@ -2095,14 +2095,14 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   instname = new ActId (name);
   instname->Append (new ActId ("in"));
   
-  ActBody_Conn *ac = new ActBody_Conn (instname, ret);
+  ActBody_Conn *ac = new ActBody_Conn (-1, instname, ret);
 
   instname = new ActId (name);
   instname->Append (new ActId ("out"));
 
   idexpr = _idexpr (0, pi);
   if (pi->nout == 1) {
-    ac->Append (new ActBody_Conn (instname, new AExpr (idexpr)));
+    ac->Append (new ActBody_Conn (-1, instname, new AExpr (idexpr)));
   }
   else {
     ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
@@ -2114,7 +2114,7 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 			      new AExpr (idexpr), NULL));
       a = a->GetRight ();
     }
-    ac->Append (new ActBody_Conn (instname, ret));
+    ac->Append (new ActBody_Conn (-1, instname, ret));
   }
   return ac;
 }
@@ -2155,12 +2155,12 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   instname = new ActId (name);
   instname->Append (new ActId ("in"));
   
-  ActBody_Conn *ac = new ActBody_Conn (instname, ret);
+  ActBody_Conn *ac = new ActBody_Conn (-1, instname, ret);
 
   instname = new ActId (name);
   instname->Append (new ActId ("out"));
 
-  ac->Append (new ActBody_Conn (instname, new AExpr (_id_to_expr (gate->u.p.d))));
+  ac->Append (new ActBody_Conn (-1, instname, new AExpr (_id_to_expr (gate->u.p.d))));
 
   return ac;
 }

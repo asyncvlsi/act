@@ -1,4 +1,5 @@
 In expanding test (11.act:1)
 In expanding ::<Global>
+Error on or near line number 6.
 In adding attributes to: x
 FATAL: Attribute `iscomb': inconsistent values

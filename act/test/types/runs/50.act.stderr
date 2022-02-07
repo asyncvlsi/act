@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 5.
 Connection: x = y
   LHS: chan(int<32>)
   RHS: chan(int<4>)

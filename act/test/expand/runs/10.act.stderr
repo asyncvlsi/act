@@ -3,4 +3,5 @@ In expanding foo<1> (10.act:3)
 In expanding foo<2> (10.act:3)
 In expanding foo<3> (10.act:3)
 In expanding ::<Global>
+Error on or near line number 9.
 FATAL: Port `x': zero-length array creation not permitted

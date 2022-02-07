@@ -608,7 +608,7 @@ Act::Act (const char *s)
       fatal_error ("Name `%s' defined through -D is a duplicate!", vars[i].varname);
     }
     tr.global->CurScope()->Add (vars[i].varname, it);
-    b = new ActBody_Inst (it, vars[i].varname);
+    b = new ActBody_Inst (0, it, vars[i].varname);
     NEW (e, Expr);
 
     if (vars[i].isint == 0) {
@@ -629,7 +629,7 @@ Act::Act (const char *s)
     FREE (e);
     e = tmp;
 
-    bc = new ActBody_Conn (new ActId (vars[i].varname),
+    bc = new ActBody_Conn (0, new ActId (vars[i].varname),
 			   new AExpr (e));
     b->Append (bc);
     if (!bhead) {

@@ -1,3 +1,4 @@
 In expanding foo<4> (32.act:4)
 In expanding ::<Global>
+Error on or near line number 8.
 FATAL: Ptype `p' used to instantiate `y' is not set

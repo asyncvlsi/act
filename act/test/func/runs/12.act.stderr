@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 15.
 Connection: x = y
   LHS: bool[2]
   RHS: bool[16]

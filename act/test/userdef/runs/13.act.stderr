@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 18.
 Connection: f = b
   LHS: foo<10>
   RHS: bar<>

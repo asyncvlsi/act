@@ -1,5 +1,6 @@
 In expanding bar_type<W> (3.act:1)
 In expanding foo_type<2,2> (3.act:4)
 In expanding ::<Global>
+Error on or near line number 7.
  id: W
 FATAL: Uninitialized identifier

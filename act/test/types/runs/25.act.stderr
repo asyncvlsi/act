@@ -1,3 +1,4 @@
 In expanding foo<4> (25.act:1)
 In expanding ::<Global>
+Error on or near line number 5.
 FATAL: Instance `w' being created multiple times!

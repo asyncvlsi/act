@@ -1,4 +1,5 @@
 In expanding test (24.act:18)
 In expanding ::<Global>
+Error on or near line number 21.
 Typechecking failed in macro (pushmacro) argument #0
 		int/bool mismatch

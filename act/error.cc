@@ -35,6 +35,8 @@ struct err_ctxt {
 
 static struct err_ctxt *hd = NULL;
 
+static int _curline = -1;
+
 void act_error_push (const char *s, const char *file, int line)
 {
   struct err_ctxt *ec;
@@ -88,6 +90,9 @@ void act_error_ctxt (FILE *fp)
     }
     fprintf (fp, "\n");
   }
+  if (_curline != -1) {
+    fprintf (fp, "Error on or near line number %d.\n", _curline);
+  }
 }
 
 const char *act_error_top ()
@@ -98,4 +103,9 @@ const char *act_error_top ()
   else {
     return NULL;
   }
+}
+
+void act_error_setline (int line)
+{
+  _curline = line;
 }

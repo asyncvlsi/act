@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 5.
 Identifiers `a' and `b' are connected.
    message: Connected?
 FATAL: Aborted execution on failed assertion

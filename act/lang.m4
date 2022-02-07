@@ -126,7 +126,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
     OPT_FREE ($4);
     
     if (chp) {
-      b = new ActBody_Lang (chp);
+      b = new ActBody_Lang ($l, chp);
     }
       
     $0->supply.vdd = NULL;
@@ -163,7 +163,7 @@ lang_hse[ActBody *]: "hse" [ supply_spec ] "{" [ hse_bodies ] "}"
     }
     
     if (chp) {
-      b = new ActBody_Lang (chp, 1);
+      b = new ActBody_Lang ($l, chp, 1);
     }
       
     $0->supply.vdd = NULL;
@@ -209,7 +209,7 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] [ "*" ] "{"
       p->p = r->u.prs;
       FREE (r);
     }
-    b = new ActBody_Lang (p);
+    b = new ActBody_Lang ($l, p);
     $0->supply.vdd = NULL;
     $0->supply.gnd = NULL;
     $0->supply.psc = NULL;
@@ -232,7 +232,7 @@ lang_spec[ActBody *]: "spec" "{" spec_body "}"
       b = NULL;
     }
     else {
-      b = new ActBody_Lang ($3);
+      b = new ActBody_Lang ($l, $3);
     }
     return b;
 }}    
@@ -1873,7 +1873,7 @@ lang_size[ActBody *]: "sizing" "{"
     OPT_FREE ($3);
     sz = $0->sizing_info;
     $0->sizing_info = NULL;
-    return new ActBody_Lang (sz);
+    return new ActBody_Lang ($l, sz);
 }}
 ;
 
@@ -2110,7 +2110,7 @@ lang_refine[ActBody *]: "refine" "{" base_item_list "}"
     NEW (r, act_refine);
     r->b = $3;
 
-    b = new ActBody_Lang (r);
+    b = new ActBody_Lang ($l, r);
     return b;
 }}
 ;
@@ -2121,7 +2121,7 @@ lang_initialize[ActBody *]: "Initialize" "{" { action_items ";" }* "}"
     NEW (init, act_initialize);
     init->actions = $3;
     init->next = NULL;
-    return new ActBody_Lang (init);
+    return new ActBody_Lang ($l, init);
 }}
 ;
 
@@ -2157,7 +2157,7 @@ lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ]
     }
     OPT_FREE ($3);
 
-    return new ActBody_Lang (dflow);
+    return new ActBody_Lang ($l, dflow);
 }}
 ;
 

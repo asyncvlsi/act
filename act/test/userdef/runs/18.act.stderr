@@ -1,5 +1,6 @@
 In expanding testme (18.act:21)
 In expanding ::<Global>
+Error on or near line number 27.
 Connecting `f' and `bb' failed.
 	Type 1: baz<>
 	Type 2: bar<>

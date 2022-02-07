@@ -1,3 +1,4 @@
 In expanding testme (38.act:1)
 In expanding ::<Global>
+Error on or near line number 7.
 FATAL: Cannot have an else clause when guards contain channels

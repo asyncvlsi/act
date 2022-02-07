@@ -1,9 +1,11 @@
 In expanding test (71.act:2)
 In expanding ::<Global>
+Error on or near line number 8.
 WARNING: potential write conflict in CHP description
    Variable: `s'
 In expanding test (71.act:2)
 In expanding ::<Global>
+Error on or near line number 8.
 WARNING: potential write conflict in CHP description
    Variable: `i'
    Variable: `j'

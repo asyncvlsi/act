@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 12.
 Sparse array type error on f
 	Orig type: foo<4>
 	New type: foo<3>

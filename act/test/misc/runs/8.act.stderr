@@ -1,4 +1,5 @@
 In expanding ::<Global>
+Error on or near line number 9.
 *** Assertion failed ***
  assertion: i=k
    message: check hex/bin

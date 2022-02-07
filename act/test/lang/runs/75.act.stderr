@@ -1,3 +1,4 @@
 In expanding test (75.act:1)
 In expanding ::<Global>
+Error on or near line number 5.
 FATAL: Cannot have non-local variables/probes in loop guards
