@@ -86,7 +86,7 @@ extern "C" {
  *
  *  If the end marker is -2, then that means the next record is a full
  *  dump:
- *     t <val> <val> .... <val> -1 or -2
+ *     t 0 <val> <val> .... <val> -1 or -2
  *
  *
  *  <file>.trace : contains the trace

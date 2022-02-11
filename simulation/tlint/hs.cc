@@ -798,7 +798,7 @@ void zcsv_convert (const char *input, const char *output)
 	}
 	v = atof (tok);
 
-	if (first < 2 || (fabs(names[i]->v - v) >= 1e-6)) {
+	if (first < 2 || (fabs(ATRACE_NODE_FLOATVAL (names[i]) - v) >= 1e-6)) {
 	  atrace_signal_change (A, names[i], t, v);
 	}
 	tok = strtok (NULL, ",\n");

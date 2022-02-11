@@ -2147,7 +2147,7 @@ static void _emit_record (atrace *a)
       if (count > a->Nnodes/2) {
 	safe_fwrite_int_buf (a, -2); /* for prev record */
 	safe_fwrite_float_buf (a, a->curtime*a->dt);
-	//safe_fwrite_int_buf (a, 0);
+	safe_fwrite_int_buf (a, 0);
 	for (i=0; i < a->H->size; i++)
 	  for (b = a->H->head[i]; b; b = b->next) {
 	    n = (name_t *) b->v;
