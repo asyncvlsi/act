@@ -136,6 +136,8 @@ typedef struct name_struct {
 				   2 = bit-channel
 				   3 = extra (used for selects, other aux info)
 				*/
+  unsigned int wadj:2;	       /* bitwidth adjust */
+  unsigned int set_flags:3;    /* set membership flags */
   unsigned int width;	        /* for digital/channel/sel: bitwidth */
 
   struct name_struct *chg_next;	/* change-list for reading */
@@ -224,6 +226,9 @@ typedef struct atrace_struct {
   int port;
   int sock;
 
+  /* memoized */
+  int _last_ret_ts;
+
 } atrace;
 
 
@@ -302,6 +307,7 @@ void atrace_readall_node_c (atrace *, name_t *, atrace_val_t *M, int *C);
 */
 void atrace_init_time (atrace *);
 void atrace_advance_time (atrace *, int nstep);
+void atrace_advance_time_to (atrace *, int nstep);
 
 #define ATRACE_NODE_IDX(a,idx) ((a)->N[idx])
 #define ATRACE_GET_NAME(n) (n)->b->key
@@ -319,7 +325,8 @@ void atrace_advance_time (atrace *, int nstep);
 */
 #define ATRACE_CHAN_SEND_BLOCKED 0
 #define ATRACE_CHAN_RECV_BLOCKED 1
-#define ATRACE_CHAN_VAL_OFFSET 2
+#define ATRACE_CHAN_IDLE 2
+#define ATRACE_CHAN_VAL_OFFSET 3
 
 void  atrace_signal_change_cause (atrace *, name_t *, float t, float v, name_t *);
 void  atrace_general_change_cause (atrace *, name_t *, float t, atrace_val_t *v, name_t *);
@@ -343,7 +350,7 @@ void atrace_mk_width (name_t *n, int w);
 #define atrace_is_digital(n) ((n)->type == 1)
 #define atrace_is_channel(n) ((n)->type == 2)
 #define atrace_is_extra(n)   ((n)->type == 3)
-#define atrace_bitwidth(n) ((n)->width - (atrace_is_channel(n) ? 1 : 0))
+#define atrace_bitwidth(n) ((n)->width - (n)->wadj)
 
 void atrace_alias (atrace *, name_t *primary, name_t *other);
   /* alias two nodes: primary becomes the primary name.
@@ -353,7 +360,7 @@ void atrace_alias (atrace *, name_t *primary, name_t *other);
      no longer be used.
   */
 
-void atrace_set_addname (atrace *,  name_t *set_name, name_t *elem);
+void atrace_set_addname (atrace *,  name_t *set_name, name_t *elem, int flags);
   /*
      Names can be grouped with other names. This information is also
      saved in a separate table
@@ -363,14 +370,15 @@ name_t *atrace_get_setname (name_t *);
   /*
      Returns set name, if any, that the specified name belongs to.
   */
-
+int atrace_get_setflags (name_t *n);
 
 /*
-  Returns -1 if not blocked
+  Returns -1 if data
            0 if sender blocked
 	   1 if receiver blocked
+	   2 if idle
 */
-int atrace_is_channel_blocked (name_t *n, atrace_val_t *v);
+int atrace_channel_state (name_t *n, atrace_val_t *v);
 
 name_t *atrace_lookup (atrace *, const char *);
   /* lookup a node, return NULL if not present */
@@ -379,6 +387,13 @@ void atrace_flush (atrace *);
   /* flush I/O buffer */
 
 void atrace_close (atrace *);
+
+int atrace_more_data (atrace *a);
+  /* returns 1 if there is more data to be read, 0 otherwise.
+     Only for read mode and for time-ordered traces */
+int atrace_next_timestep (atrace *a);
+  /* assuming more data, returns the next stepID. Only for read mode
+     and time-ordered formats */
 
 #ifdef __cplusplus
 }

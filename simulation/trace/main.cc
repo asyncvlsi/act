@@ -54,7 +54,8 @@ int main (int argc, char **argv)
   }
   atrace_header (a, &ts, &Nnodes, &Nsteps, &fmt);
   atrace_init_time (a);
-  for (int i=0; i < Nsteps; i++) {
+  int i = 0;
+  while (atrace_more_data (a)) {
     atrace_val_t v = ATRACE_GET_VAL (n);
     printf ("%g ", i*ATRACE_GET_STEPSIZE (a));
     if (atrace_is_analog (n)) {
@@ -63,9 +64,17 @@ int main (int argc, char **argv)
     else {
       int blk;
       if (atrace_is_channel (n)) {
-	blk = atrace_is_channel_blocked (n, &v);
+	blk = atrace_channel_state (n, &v);
 	if (blk != -1) {
-	  printf ("%s-block\n", blk == ATRACE_CHAN_SEND_BLOCKED ? "send" : "recv");
+          if (blk == ATRACE_CHAN_SEND_BLOCKED) {
+	     printf ("send-block\n");
+          }
+          else if (blk == ATRACE_CHAN_RECV_BLOCKED) {
+	     printf ("recv-block\n");
+          }
+          else {
+	     printf ("idle\n");
+          }
 	}
       }
       else {
@@ -86,7 +95,8 @@ int main (int argc, char **argv)
 	}
       }
     }
-    atrace_advance_time (a, 1);
+    i = atrace_next_timestep (a);
+    atrace_advance_time_to (a, i);
   }
   atrace_close (a);
   return 0;

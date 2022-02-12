@@ -73,12 +73,13 @@ static atrace *_atrace_alloc (int read_mode)
   a->read_mode = read_mode;
   a->locked = 0;
   a->used = 0;
-  a->fd = -1;
   a->bufsz = 0;
   a->bufpos = 0;
   a->buffer = NULL;
   a->fd = -1;
   a->sock = -1;
+  a->nextt = -2;
+  a->_last_ret_ts = 0;
 
   return a;
 }
@@ -912,7 +913,7 @@ static void emit_header_aux (atrace *a)
       while (set_root->up_set) {
 	set_root = set_root->up_set;
       }
-      fprintf (nfp, "s:%d %d\n", set_root->idx, n->idx);
+      fprintf (nfp, "s:%d %d %d\n", set_root->idx, n->idx, n->set_flags);
     }
 
   if (nfp != a->tr) {
@@ -989,10 +990,10 @@ static void _atrace_open_helper_names (atrace *a, FILE *fp)
       found_type = 1;
     }
     else if (l > 2 && buf[0] == 's' && buf[1] == ':') {
-      int set_root, my_idx;
+      int set_root, my_idx, my_flags;
       a->set_members = 1;
       gen_index_table (a);
-      if (sscanf (buf+2, "%d %d", &set_root, &my_idx) != 2) {
+      if (sscanf (buf+2, "%d %d %d", &set_root, &my_idx, &my_flags) != 3) {
 	warning ("Corrupted set entry: %s\n", buf);
       }
       else {
@@ -1001,7 +1002,7 @@ static void _atrace_open_helper_names (atrace *a, FILE *fp)
 	  warning ("Illegal set entry %d %d", set_root, my_idx);
 	}
 	else {
-	  atrace_set_addname (a, a->N[set_root], a->N[my_idx]);
+	  atrace_set_addname (a, a->N[set_root], a->N[my_idx], my_flags);
 	}
       }
       found_type = 2;
@@ -1236,6 +1237,10 @@ static void _value_alloc (name_t *n, union atrace_value *v)
   if (n->width > 64) {
     int count = (n->width + ONE_WIDTH-1)/ONE_WIDTH;
     MALLOC (v->valp, unsigned long, count);
+    v->valp[0] = 0;
+  }
+  else {
+    v->val = 0;
   }
 }
 
@@ -1947,6 +1952,35 @@ void atrace_advance_time (atrace *a, int nsteps)
   }
 }
 
+void atrace_advance_time_to (atrace *a, int nsteps)
+{
+  int n;
+  int i, k;
+  int nv;
+
+  Assert (a->curt >= 0, "Missing init_time()");
+  Assert (a->read_mode, "atrace_advance_time called in write mode");
+  if (nsteps <= 0) return;
+
+  switch (ATRACE_FMT(a->fmt)) {
+  case ATRACE_NODE_ORDER:
+    fatal_error ("New atrace API does not work with node order format");
+    break;
+
+  case ATRACE_TIME_ORDER:
+    nv = VSTEP(a,a->curt);
+    atrace_advance_time (a, nsteps - nv);
+    break;
+  case ATRACE_DELTA:
+  case ATRACE_DELTA_CAUSE:
+    atrace_advance_time (a, nsteps - a->curstep);
+    break;
+  default:
+    Assert (0, "Unimplemented format");
+    break;
+  }
+}
+
 
 static name_t *_union_find (name_t *n)
 {
@@ -1998,6 +2032,7 @@ name_t *atrace_create_node (atrace *a, const char *s)
   n->vu.v = 0.0;
   n->up = NULL;
   n->up_set = NULL;
+  n->set_flags = 0;
   n->next = n;
   n->b = b;
   n->idx = -1;
@@ -2005,6 +2040,7 @@ name_t *atrace_create_node (atrace *a, const char *s)
   n->type = 0;
   n->chg_next = NULL;
   n->width = 1;
+  n->wadj = 0;
 
   b->v = (void *) n;
 
@@ -2067,7 +2103,7 @@ void atrace_alias (atrace *a, name_t *n, name_t *m)
 }
 
 
-void atrace_set_addname (atrace *a, name_t *n, name_t *m)
+void atrace_set_addname (atrace *a, name_t *n, name_t *m, int flags)
 {
   a->set_members = 1;
 
@@ -2077,6 +2113,8 @@ void atrace_set_addname (atrace *a, name_t *n, name_t *m)
   if (m == n) {
     return;
   }
+
+  m->set_flags = flags;
 
   while (n->up_set) {
     n = n->up_set;
@@ -2110,6 +2148,11 @@ name_t *atrace_get_setname (name_t *n)
   return m;
 }
 
+int atrace_get_setflags (name_t *n)
+{
+  n = _union_find (n);
+  return n->set_flags;
+}
 
 static void _emit_record (atrace *a)
 {
@@ -2539,20 +2582,33 @@ void atrace_mk_width(name_t *n, int w)
 {
   _value_free (n, &n->vu);
   n->width = w;
+  n->wadj = 0;
   if (n->type == 2) {
-    n->width++;
-    if (n->width == 1) {
+    /* channel
+       need (2^w + 3) states
+       w = 0 => 2 bits
+       w = 1 => 3 bits
+       w = 2 => 3 bits
+
+       So w + 1 for w >= 2, w + 2 otherwise
+    */
+    if (n->width < 2) {
       n->width++;
+      n->wadj++;
     }
+    n->width++;
+    n->wadj++;
   }
   _value_alloc (n, &n->vu);
 }
 
-int atrace_is_channel_blocked (name_t *n, atrace_val_t *v)
+int atrace_channel_state (name_t *n, atrace_val_t *v)
 {
   int i, c;
   if (n->width <= ATRACE_SHORT_WIDTH) {
-    if (v->val < 2) {
+    if (v->val == ATRACE_CHAN_SEND_BLOCKED ||
+	v->val == ATRACE_CHAN_RECV_BLOCKED ||
+	v->val == ATRACE_CHAN_IDLE) {
       return v->val;
     }
     else {
@@ -2560,13 +2616,58 @@ int atrace_is_channel_blocked (name_t *n, atrace_val_t *v)
     }
   }
   c = (n->width + ONE_WIDTH - 1)/ONE_WIDTH;
-  if (v->valp[0] < 2) {
+  if (v->valp[0] == ATRACE_CHAN_SEND_BLOCKED ||
+      v->valp[0] == ATRACE_CHAN_RECV_BLOCKED ||
+      v->valp[0] == ATRACE_CHAN_IDLE) {
     for (i=1; i < c; i++) {
       if (v->valp[i] != 0) {
 	return -1;
       }
     }
     return v->valp[0];
+  }
+  else {
+    return -1;
+  }
+}
+
+
+int atrace_more_data (atrace *a)
+{
+  if (a->read_mode == 0) {
+    return 0;
+  }
+  if (ATRACE_FMT (a->fmt) == ATRACE_NODE_ORDER ||
+      ATRACE_FMT (a->fmt) == ATRACE_CHANGING) {
+    return 0;
+  }
+  if ((a->tr == NULL) || feof (a->tr) || (a->nextt == -1)) {
+    return 0;
+  }
+  return 1;
+}
+
+int atrace_next_timestep (atrace *a)
+{
+  if (a->read_mode == 0) {
+    return -1;
+  }
+  if (ATRACE_FMT (a->fmt) == ATRACE_TIME_ORDER) {
+    return VSTEP (a, a->curt) + 1;
+  }
+  else if (ATRACE_FMT (a->fmt) == ATRACE_DELTA_CAUSE ||
+	   ATRACE_FMT (a->fmt) == ATRACE_DELTA) {
+    if (a->nextt == -1) {
+      return -1;
+    }
+    else {
+      int rval = VSTEP (a, a->nextt);
+      if (rval == a->_last_ret_ts) {
+	rval++;
+      }
+      a->_last_ret_ts = rval;
+      return rval;
+    }
   }
   else {
     return -1;
