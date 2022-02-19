@@ -66,9 +66,9 @@ int main (void)
 
 EOM
 
-
+# the $C_COMPILER_FLAGS enable to load so files form a custom path
 echo "  ... looking for editline"
-if ! $C_COMPILER_NAME -c __tst1.c  >/dev/null 2>&1
+if ! $C_COMPILER_NAME $C_COMPILER_FLAGS -c __tst1.c  >/dev/null 2>&1
 then
 	rm -f __tst1.c
 	echo "Did not find libeditline on the system"
@@ -76,7 +76,7 @@ then
 fi
 
 echo "  ... looking for zlib"
-if ! $C_COMPILER_NAME __tst1.o -lz >/dev/null 2>&1
+if ! $C_COMPILER_NAME $C_COMPILER_FLAGS __tst1.o -lz >/dev/null 2>&1
 then
 	rm -f __tst1.c
 	echo "Did not find zlib on the system"
