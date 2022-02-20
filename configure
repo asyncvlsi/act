@@ -113,10 +113,10 @@ then
     sh_exe_options=
 else
     sh_build="\"-shared -DPIC -fPIC\""
-    # the RUNPATH so object search parameter are relative to $ACT_HOME during runtime, and as backup the $ORIGIN of the executable
+    # the RUNPATH shared object search parameter are relative the location of the binary during runtime, and as backup the compile time $ACT_HOME path is used
     # libraries and executables are parsed differently by the build system hand have therefor different escape patterns
-    sh_link="\"-shared -Wl,-x,-rpath=\\\$ACT_HOME/lib,-rpath=\\\$ORIGIN/../lib\""
-    sh_exe_options="\"-Wl,-rpath=\\\$\$ACT_HOME/lib,-rpath=\\$\$ORIGIN/../lib\""
+    sh_link="\"-shared -Wl,-x,-rpath=\\\$ORIGIN/../lib,-rpath=$ACT_HOME/lib\""
+    sh_exe_options="\"-Wl,-rpath=\\$\$ORIGIN/../lib,-rpath=$ACT_HOME/lib\""
 fi    
 
 
