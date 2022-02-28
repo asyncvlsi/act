@@ -32,7 +32,7 @@ baseos=`$full_pathname/scripts/getbaseos`;
 
 installdir=/usr/local/cad
 
-if [ $# -eq 1 ]
+if [ $# -gt 0 ]
 then
       installdir=$1
 fi
@@ -92,6 +92,16 @@ then
     mkdir $installdir/act
 fi
 
+# get additional CFLAGS and pass them through
+if [ $# -gt 1 ]
+then
+    case $2 in
+    "CFLAGS="*) addon_cflags=${2#CFLAGS=}
+     addon_cflags=${addon_cflags#\"}
+     addon_cflags=${addon_cflags#\'}
+     echo "CFLAGS: $addon_cflags"
+    esac
+fi
 
 #
 # shared linking on macos
@@ -101,6 +111,13 @@ then
     sh_build=-fPIC 
     sh_link=-dynamiclib
     sh_exe_options=
+elif [ "x$baseos" = "xlinux" ] || [ "x$baseos" = "xsolaris" ]
+then
+    sh_build="\"-shared -DPIC -fPIC\""
+    # the RUNPATH shared object search parameter are relative the location of the binary during runtime, and as backup the compile time $ACT_HOME path is used
+    # libraries and executables are parsed differently by the build system hand have therefor different escape patterns
+    sh_link="\"-shared -Wl,-x,-rpath=\\\$ORIGIN/../lib,-rpath=$ACT_HOME/lib\""
+    sh_exe_options="\"-Wl,-rpath=\\$\$ORIGIN/../lib,-rpath=$ACT_HOME/lib\""
 else
     sh_build="\"-shared -DPIC -fPIC\""
     sh_link="\"-shared -Wl,-x,-rpath=$ACT_HOME/lib\""
@@ -110,7 +127,8 @@ fi
 
 c_compiler_name=gcc
 cxx_compiler_name=g++
-c_compiler_flags=-O2
+# the double parentesis are needed beause of double parcing in the check script and are removed in the makefile to have the intended behaviour
+c_compiler_flags="\"-O2 ${addon_cflags}\""
 make_program=gmake
 myranlib=ranlib
 

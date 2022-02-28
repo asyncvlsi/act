@@ -32,7 +32,7 @@ SRCS=$(OBJS:.o=.c)
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(BIN1): $(LIB) $(OBJS1) $(LIBDEPEND) $(SCMCLIDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCMCLI) -ledit -ldl
+	$(CXX) $(CFLAGS) $(OBJS1) -o $(BIN1) $(LIBCOMMON) $(LIBACTSCMCLI) -ledit $(SH_EXE_OPTIONS) -ldl
 
 $(BIN2): $(LIB) $(OBJS2) $(LIBDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS2) -o $(BIN2) $(LIBCOMMON)
