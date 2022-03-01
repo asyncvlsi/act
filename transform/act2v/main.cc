@@ -26,6 +26,7 @@
 #include <string.h>
 #include <act/act.h>
 #include <act/passes/booleanize.h>
+#include <act/passes/cells.h>
 #include <act/iter.h>
 #include <common/config.h>
 #include <map>
@@ -45,17 +46,18 @@ static void usage (char *name)
   Initialize globals from the configuration file.
   Returns process name
 */
-static char *initialize_parameters (int *argc, char ***argv)
+static char *initialize_parameters (int *argc, char ***argv, char **cells)
 {
   char *proc_name;
   int ch;
   int black_box = 0;
   
   proc_name = NULL;
+  *cells = NULL;
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "Bp:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "Bc:p:")) != -1) {
     switch (ch) {
     case 'B':
       black_box = 1;
@@ -65,6 +67,12 @@ static char *initialize_parameters (int *argc, char ***argv)
 	FREE (proc_name);
       }
       proc_name = Strdup (optarg);
+      break;
+    case 'c':
+      if (*cells) {
+        FREE (*cells);
+      }
+      *cells = Strdup (optarg);
       break;
     case '?':
       fprintf (stderr, "Unknown option.\n");
@@ -289,8 +297,9 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *proc;
+  char *cells;
 
-  proc = initialize_parameters (&argc, &argv);
+  proc = initialize_parameters (&argc, &argv, &cells);
 
   if (argc != 2) {
     fatal_error ("Something strange happened!");
@@ -300,7 +309,15 @@ int main (int argc, char **argv)
   }
   
   a = new Act (argv[1]);
+  if (cells) {
+    a->Merge (cells);
+  }
   a->Expand ();
+
+  if (cells) {
+    ActCellPass *cp = new ActCellPass (a);
+    cp->run ();
+  }
 
   Process *p = a->findProcess (proc);
 
