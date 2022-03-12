@@ -265,7 +265,8 @@ struct act_chp {
  *------------------------------------------------------------------------
  */
 
-#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2)
+#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2 || (x)->type == -3)
+#define ACT_SPEC_ISTIMINGFORK(x)  ((x)->type == -1 || (x)->type == -2)
 
 struct act_spec {
   int isrequires;		/* 1 if this is a requires clause */

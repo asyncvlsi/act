@@ -1776,6 +1776,9 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       }
       OPT_FREE (r->u.l);
       FREE (r);
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
     }
     else {
       s->extra[i] = 0;
@@ -1791,17 +1794,26 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       FREE (r);
     }
     else {
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
       s->extra[i] = 0;
     }
     OPT_FREE ($6);
     if (!OPT_EMPTY ($3)) {
       s->extra[i] |= 0x4;
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
     }
     OPT_FREE ($3);
 
     // $5
     if (!OPT_EMPTY ($5)) {
       s->extra[i] |= 0x8;
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
     }
     OPT_FREE ($5);
     
@@ -1814,6 +1826,9 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       FREE (r);
     }
     else {
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
       s->extra[i] = 0;
     }
     OPT_FREE ($11);
@@ -1822,6 +1837,9 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 
     if (!OPT_EMPTY ($10)) {
       s->extra[i] |= 0x8;
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
     }
     OPT_FREE ($10);
     
@@ -1837,6 +1855,9 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       $A(r->type == R_EXPR);
       s->ids[i] = (ActId *) r->u.exp;
       FREE (r);
+      if (s->type == -3) {
+	$E("Timing directive ``->'' spec error");
+      }
     }
     OPT_FREE ($8);
 
@@ -1851,6 +1872,10 @@ timing_type[int]: "<"
 | "<<"
 {{X:
     return -2;
+}}
+| "->"
+{{X:
+    return -3;
 }}
 ;
 

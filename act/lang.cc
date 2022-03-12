@@ -2870,8 +2870,11 @@ void spec_print (FILE *fp, act_spec *spec)
       if (spec->type == -1) {
 	fprintf (fp, " < ");
       }
-      else {
+      else if (spec->type == -2) {
 	fprintf (fp, " << ");
+      }
+      else {
+	fprintf (fp, " -> ");
       }
       if (spec->ids[3]) {
 	fprintf (fp, "[");

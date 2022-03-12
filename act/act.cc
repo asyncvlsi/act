@@ -724,6 +724,7 @@ void Act::Merge (const char *s)
 
   expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
   expr_parse_basecase_num = act_parse_expr_intexpr_base;
+  expr_parse_basecase_extra = act_expr_any_basecase;
   expr_parse_newtokens = act_expr_parse_newtokens;
 
   if (act_isimported (s)) {
