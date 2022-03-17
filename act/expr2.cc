@@ -2863,6 +2863,12 @@ static void _expr_to_string (char **buf, int *len, int *sz,
       _expr_to_string (buf, len, sz, ids, e->u.e.r, &iszero);
     }
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    if (e->u.e.r) {
+      _expr_append_char (buf, len, sz, '1');
+    }
+    else {
+      _expr_append_char (buf, len, sz, '0');
+    }
     break;
 
   case E_FUNCTION:
@@ -2974,10 +2980,6 @@ static void _prs_expr_to_string (char **buf, int *len, int *sz,
     break;
   }
 }
-
-
-				 
-
 
 char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e)
 {
