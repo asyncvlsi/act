@@ -77,6 +77,81 @@ struct act_prsinfo {
 };
 
 
+static char *_remap_cell_names (char *s)
+{
+  static char **user_name_map;
+  static int name_count = -1;
+
+  if (name_count == -1) {
+    if (config_exists ("net.cell_namemap")) {
+      name_count = config_get_table_size ("net.cell_namemap");
+      if (name_count % 2) {
+	warning ("net.cell_namemap should be even!");
+	name_count = 0;
+      }
+      else {
+	user_name_map = config_get_table_string ("net.cell_namemap");
+      }
+    }
+    else {
+      name_count = 0;
+    }
+  }
+
+  for (int i=0; i < name_count/2; i++) {
+    if (strcmp (user_name_map[2*i], s) == 0) {
+      FREE (s);
+      return Strdup (user_name_map[2*i+1]);
+    }
+  }
+  return s;
+}
+
+static char *_get_basename (struct act_prsinfo *pi)
+{
+  if (pi->nout != 1 && pi->nat != 0) {
+    return Strdup ("");
+  }
+  list_t *l;
+  l = list_new ();
+  for (int i=0; i < pi->nvars - 1; i++) {
+    list_append (l, (void *)(unsigned long)(i+1));
+  }
+  char *up, *dn;
+  
+  if (pi->up[0]) {
+    up = act_prs_expr_to_string (l, pi->up[0]);
+  }
+  else {
+    up = NULL;
+  }
+  if (pi->dn[0]) {
+    dn = act_prs_expr_to_string (l, pi->dn[0]);
+  }
+  else {
+    dn = NULL;
+  }
+
+  char *ret;
+  MALLOC (ret, char, (up ? strlen (up) : 0) +
+	  (dn ? strlen (dn) : 0) + 2);
+
+  strcpy (ret, up ? up : "");
+  strcat (ret, "_");
+  if (dn) {
+    strcat (ret, dn);
+  }
+  list_free (l);
+  if (up) {
+    FREE (up);
+  }
+  if (dn) {
+    FREE (dn);
+  }
+  return _remap_cell_names (ret);
+}
+
+
 static void _add_new_outslot (struct act_prsinfo *pi)
 {
   A_NEW (pi->up, act_prs_expr_t *);
@@ -1118,38 +1193,11 @@ void ActCellPass::add_passgates ()
   }
 }
 
-Process *ActCellPass::getCell (int x)
-{
-  char buf[100];
-  UserDef *u;
-  Process *proc;
-  
-  snprintf (buf, 100, "g%dx0<>", x);
-  Assert (cell_ns, "What?");
-  u = cell_ns->findType (buf);
-  if (!u) {
-    snprintf (buf, 100, "g%dx0", x);
-    u = cell_ns->findType (buf);
-    if (!u) {
-      return NULL;
-    }
-    proc = dynamic_cast <Process *>(u);
-    Assert (proc, "What?");
-    proc = proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
-  }
-  else {
-    proc = dynamic_cast <Process *>(u);
-    Assert (proc, "Cell name used for a different type");
-  }
-  return proc;
-}
 
 void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 {
   int i;
   
-  char buf[100];
-  snprintf (buf, 100, "g%dx0", cell_count++);
   Assert (!pi->cell, "Hmm...");
 
   /* add the unexpanded process to the cell namespace, and then
@@ -1163,9 +1211,6 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   delete u;
   proc->MkCell ();
   proc->MkExported ();
-
-  Assert (cell_ns->findName (buf) == 0, "Name conflict?");
-  cell_ns->CreateType (buf, proc);
 
   /*-- add ports --*/
   InstType *it = TypeFactory::Factory()->NewBool (Type::IN);
@@ -1320,6 +1365,38 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   proc->MkDefined ();
   pi->cell = proc;
   //proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
+
+
+  char *base_name = _get_basename (pi);
+  char *buf;
+  int idx = 0;
+  MALLOC (buf, char, strlen (base_name) + 50);
+  do {
+    snprintf (buf, strlen (base_name) + 50, "g%sx%d", base_name, idx++);
+  } while (cell_ns->findName (buf) != 0);
+  cell_ns->CreateType (buf, proc);
+  FREE (base_name);
+  FREE (buf);
+#if 0
+  /* now check the actual name */
+  list_t *l = list_new ();
+  for (int i=0; i < pi->nvars - pi->nout - pi->nat; i++) {
+    ActId *tmp;
+    Expr *arr = const_expr (i);
+    tmp = new ActId ("in", new Array (arr));
+    list_append (l, tmp);
+  }
+  while (rules) {
+    if (rules->type == ACT_PRS_RULE) {
+      printf ("Rule: ");
+      act_print_one_prs (stdout, rules);
+      char *nm = act_prs_expr_to_string (l, rules->u.one.e);
+      printf ("  > %s\n", nm);
+      FREE (nm);
+    }
+    rules = rules->next;
+  }
+#endif  
 }
 
 
@@ -1982,23 +2059,11 @@ void ActCellPass::dump_celldb (FILE *fp)
   chash_bucket_t *b;
   chash_iter_t iter;
   struct act_prsinfo *pi;
-  int cellmax = 0;
-  int id, version;
+
   A_DECL (struct cell_name *, cells);
   A_INIT (cells);
 
   if (!cell_table) return;
-
-  chash_iter_init (cell_table, &iter);
-  while ((b = chash_iter_next (cell_table, &iter))) {
-    pi = (struct act_prsinfo *)b->v;
-    if (pi->cell) {
-      if (sscanf (pi->cell->getName()+1, "%dx%d", &id, &version) == 2) {
-	cellmax = (cellmax > id) ? cellmax : id;
-      }
-    }
-  }
-  cellmax++;
 
   chash_iter_init (cell_table, &iter);
   while ((b = chash_iter_next (cell_table, &iter))) {
@@ -2010,9 +2075,7 @@ void ActCellPass::dump_celldb (FILE *fp)
       A_NEXT (cells)->name = pi->cell->getName();
     }
     else {
-      char buf[100];
-      snprintf (buf, 100, "g%dx0", cellmax++);
-      A_NEXT (cells)->name = Strdup (buf);
+      A_NEXT (cells)->name = _get_basename (pi);
     }
     A_INC (cells);
   }
@@ -2597,7 +2660,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
   ActTypeiter it(cell_ns);
   chash_bucket_t *b;
   struct act_prsinfo *pi;
-  int cellmax = -1;
+  int num_cells = 0;
 
   /*
     If cells are not expanded, then expand them!
@@ -2683,11 +2746,14 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       in_t = p->getPortType (0);
       out_t = p->getPortType (1);
 
+#if 0      
       int id, version;
       if (sscanf (p->getName()+1, "%dx%d", &id, &version) == 2) {
 	/* for cells numbered g <num> x <num>, we track cellmax */
 	cellmax = (cellmax > id) ? cellmax : id;
       }
+#endif
+      num_cells++;
       
       /* in_t must be a bool array or bool
 	 out_t must be a bool array or bool
@@ -2815,7 +2881,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
     }
   }
-  return cellmax;
+  return num_cells;
 }
 
 
@@ -2888,7 +2954,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
     cell_count = 0;
   }
   else {
-    cell_count =  _collect_cells (cell_ns) + 1;
+    cell_count =  _collect_cells (cell_ns);
   }    
   add_passgates ();
 }

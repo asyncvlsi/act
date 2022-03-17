@@ -1,10 +1,10 @@
 namespace cell {
 export defcell g0x1 (bool in[2]; bool out);
-export defcell g5x0 (bool? in[1]; bool! out);
+export defcell ginvx1 (bool? in[1]; bool! out);
 export defcell g0x0 (bool in[2]; bool out);
-export defcell g6x0 (bool? in[1]; bool! out);
 export defcell g2x0 (bool in[2]; bool out);
 export defcell g4x0 (bool in[2]; bool out);
+export defcell ginvx0 (bool? in[1]; bool! out);
 export defcell g3x0 (bool in[3]; bool out);
 export defcell t1 (bool? in[3]; bool! out);
 export defcell g1x0 (bool in[2]; bool out);
@@ -20,14 +20,14 @@ in[0]<10>&in[1] => out-
 }
 }
 
-export defcell g5x0 (bool? in[1]; bool! out)
+export defcell ginvx1 (bool? in[1]; bool! out)
 {
 
 /* instances */
 
 /* connections */
 prs {
-in[0] -> out-
+in[0]<5> -> out-
 ~in[0] -> out+
 }
 }
@@ -40,18 +40,6 @@ export defcell g0x0 (bool in[2]; bool out)
 /* connections */
 prs {
 in[0]&in[1] => out-
-}
-}
-
-export defcell g6x0 (bool? in[1]; bool! out)
-{
-
-/* instances */
-
-/* connections */
-prs {
-in[0]<5> -> out-
-~in[0] -> out+
 }
 }
 
@@ -75,6 +63,18 @@ export defcell g4x0 (bool in[2]; bool out)
 prs {
 in[0] -> out-
 ~in[0]&~in[1] -> out+
+}
+}
+
+export defcell ginvx0 (bool? in[1]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0] -> out+
 }
 }
 
@@ -123,7 +123,7 @@ defproc foo (bool a; bool b)
 {
 
 /* instances */
-::cell::g5x0 cx0;
+::cell::ginvx0 cx0;
 bool y;
 bool x;
 ::cell::t1 cx1;
@@ -144,7 +144,7 @@ bool y;
 bool x;
 bool w;
 bool q;
-::cell::g6x0 cx1;
+::cell::ginvx1 cx1;
 
 /* connections */
 y=cx0.in[1];

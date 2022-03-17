@@ -528,7 +528,7 @@ void act_print_size (FILE *fp, act_size_spec_t *sz);
 
 act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e);
 act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
-
+void act_print_one_prs (FILE *fp, act_prs_lang_t *p);
 
 typedef void *(*ACT_VAR_CONV) (void *, void *);
 
@@ -543,6 +543,8 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 				  act_prs_expr_t *e,
 				  ACT_VAR_CONV conv_var);
 
+char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e);
+
 void act_prs_expr_free (act_prs_expr_t *e);
 void act_chp_free (act_chp_lang_t *);
 void act_chp_macro_check (Scope *s, ActId *id);
@@ -550,6 +552,7 @@ void act_chp_macro_check (Scope *s, ActId *id);
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 
 int act_hse_direction (act_chp_lang_t *, ActId *);
+
 
 
 #endif /* __LANG_H__ */

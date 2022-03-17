@@ -48,7 +48,7 @@ export defcell g4x0 (bool? in[2]; bool! out)
    }
 }
 
-export defcell g5x0 (bool? in[1]; bool! out)
+export defcell ginvx0 (bool? in[1]; bool! out)
 {
    prs {
    in[0] -> out-
@@ -56,7 +56,7 @@ export defcell g5x0 (bool? in[1]; bool! out)
    }
 }
 
-export defcell g6x0 (bool? in[1]; bool! out)
+export defcell ginvx1 (bool? in[1]; bool! out)
 {
    prs {
    in[0]<5> -> out-

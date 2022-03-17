@@ -2663,3 +2663,339 @@ const char *expr_op_name (int t)
     break;
   }
 }
+
+static char _expr_type_char (int type)
+{
+  switch (type) {
+  case E_AND: return 'a'; break;
+  case E_OR: return 'o'; break;
+  case E_NOT: return 'n'; break;
+  case E_PLUS: return 'p'; break;
+  case E_MINUS: return 'm'; break;
+  case E_MULT: return 's'; break;
+  case E_DIV: return 'd'; break;
+  case E_MOD: return 'r'; break;
+  case E_LSL: return 'f'; break;
+  case E_LSR: return 'h'; break;
+  case E_ASR: return 'j'; break;
+  case E_UMINUS: return 'u'; break;
+  case E_QUERY: return 'q'; break;
+  case E_XOR: return 'x'; break;
+  case E_LT: return 'l'; break;
+  case E_GT: return 'g'; break;
+  case E_LE: return 'k'; break;
+  case E_GE: return 'z'; break;
+  case E_EQ: return 'e'; break;
+  case E_NE: return 'y'; break;
+  case E_COLON: return 'i'; break;
+  case E_PROBE: return '#'; break;
+  case E_COMMA: return ','; break;
+  case E_CONCAT: return 'c'; break;
+  case E_BITFIELD: return 'b'; break;
+  case E_COMPLEMENT: return 't'; break;
+
+  case E_BUILTIN_BOOL: return 'B'; break;
+  case E_BUILTIN_INT: return 'I'; break;
+    
+  default: return '?'; break;
+  }
+}
+
+static void _expr_expand_sz (char **buf, int *len, int *sz, int amt)
+{
+  if (*len >= (*sz-amt)) {
+    REALLOC (*buf, char, 50 + amt + *sz);
+    *sz += 50 + amt;
+  }
+}
+
+static void _expr_append_char (char **buf, int *len, int *sz, char c)
+{
+  _expr_expand_sz (buf, len, sz, 1);
+  (*buf)[*len] = c;
+  *len = *len + 1;
+  (*buf)[*len] = '\0';
+}
+
+static void _expr_to_var (char **buf, int *len, int *sz,
+			  list_t *ids, ActId *v)
+{
+  int x = 0;
+  listitem_t *li;
+
+  for (li = list_first (ids); li; li = list_next (li)) {
+    if (v == (ActId *) list_value (li)) {
+      break;
+    }
+    x++;
+  }
+  if (!li) {
+    x = 0;
+    for (li = list_first (ids); li; li = list_next (li)) {
+      if (v->isEqual ((ActId *) list_value (li))) {
+	break;
+      }
+      x++;
+    }
+  }
+  if (*len >= (*sz-5)) {
+    REALLOC ((*buf), char, (50 + *sz));
+    *sz += 50;
+  }
+  (*buf)[*len] = 'v';
+  *len = *len + 1;
+  snprintf (*buf + *len, *sz - *len, "%d", x);
+  *len += strlen (*buf + *len);
+}
+
+static void _expr_to_string (char **buf, int *len, int *sz,
+			     list_t *ids, Expr *e, int *isassoc)
+{
+  char c;
+  int iszero = 0;
+  int tmp;
+  switch (e->type) {
+  case E_PLUS:
+  case E_MULT:
+  case E_AND:  case E_OR:  case E_XOR:
+    if (*isassoc == 0) {
+      iszero = 1;
+    }
+    if (e->u.e.l->type == e->type) {
+      (*isassoc) = (*isassoc) + 1;
+      _expr_to_string (buf, len, sz, ids, e->u.e.l, isassoc);
+    }
+    else {
+      tmp = 0;
+      _expr_to_string (buf, len, sz, ids, e->u.e.l, &tmp);
+    }
+    tmp = 0;
+    _expr_to_string (buf, len, sz, ids, e->u.e.r, &tmp);
+    if (iszero) {
+      _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+      while (*isassoc) {
+	_expr_append_char (buf, len, sz, _expr_type_char (e->type));
+	(*isassoc) = (*isassoc) - 1;
+      }
+    }
+    break;
+    
+  case E_MINUS:
+  case E_DIV:  case E_MOD:
+  case E_LSL:  case E_LSR:  case E_ASR:
+  case E_LT:  case E_GT:
+  case E_LE:  case E_GE:
+  case E_EQ:  case E_NE:
+    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, ids, e->u.e.r, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+    
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+
+  case E_QUERY:
+    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.r, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+
+  case E_INT:
+    _expr_expand_sz (buf, len, sz, 32);
+    (*buf)[*len] = 'i';
+    *len = *len + 1;
+    snprintf (*buf + *len, *sz - *len, "%lu", e->u.v);
+    *len += strlen (*buf + *len);
+    break;
+    
+  case E_TRUE:
+  case E_FALSE:
+    if (*len >= (*sz-2)) {
+      REALLOC (*buf, char, 50 + *sz);
+      *sz += 50;
+    }
+    (*buf)[*len] = 'i';
+    (*buf)[*len+1] = (e->type == E_TRUE ? '1' : '0');
+    (*buf)[*len+2] = '\0';
+    *len = *len + 2;
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    _expr_to_var (buf, len, sz, ids, (ActId *)e->u.e.l);
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *f = e;
+      while (f) {
+	_expr_to_string (buf, len, sz, ids, f->u.e.l, &iszero);
+	f = f->u.e.r;
+      }
+      _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    }
+    break;
+    
+  case E_BITFIELD:
+    /* var */
+    _expr_to_var (buf, len, sz, ids, (ActId *)e->u.e.l);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    if (e->u.e.r->u.e.l) {
+      _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.l, &iszero);
+    }
+    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.r, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+
+  case E_BUILTIN_BOOL:
+    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+    
+  case E_BUILTIN_INT:
+    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    if (e->u.e.r) {
+      _expr_to_string (buf, len, sz, ids, e->u.e.r, &iszero);
+    }
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+
+  case E_FUNCTION:
+  case E_COMMA:
+  case E_COLON:
+  default:
+    fatal_error ("What? %d\n", e->type);
+    break;
+  }
+}
+
+
+char *expr_to_string (list_t *id_list, Expr *e)
+{
+  char *buf;
+  int len, sz;
+  int iszero = 0;
+  if (!e) {
+    return Strdup ("");
+  }
+  sz = 1024;
+  MALLOC (buf, char, sz);
+  buf[0] = '\0';
+  len = 0;
+
+  _expr_to_string (&buf, &len, &sz, id_list, e, &iszero);
+
+  char *ret = Strdup (buf);
+  FREE (buf);
+  return ret;
+}
+
+
+static void _prs_expr_to_string (char **buf, int *len, int *sz,
+				 list_t *ids,
+				 act_prs_expr_t *e, int isinvert,
+				 int *isassoc)
+{
+  char c;
+  int iszero = 0;
+  int tmp = 0;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    if (*isassoc == 0) {
+      iszero = 1;
+    }
+    if (e->u.e.l->type == e->type) {
+      (*isassoc) = (*isassoc) + 1;
+      _prs_expr_to_string (buf, len, sz, ids, e->u.e.l, isinvert, isassoc);
+    }
+    else {
+      tmp = 0;
+      _prs_expr_to_string (buf, len, sz, ids, e->u.e.l, isinvert, &tmp);
+    }
+    tmp = 0;
+    _prs_expr_to_string (buf, len, sz, ids, e->u.e.r, isinvert, &tmp);
+    if (isinvert) {
+      c = _expr_type_char (e->type == ACT_PRS_EXPR_AND ? E_OR : E_AND);
+    }
+    else {
+      c = _expr_type_char (e->type == ACT_PRS_EXPR_AND ? E_AND : E_OR);
+    }
+    if (iszero) {
+      _expr_append_char (buf, len, sz, c);
+      while (*isassoc) {
+	_expr_append_char (buf, len, sz, c);
+	(*isassoc) = (*isassoc) - 1;
+      }
+    }
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    _prs_expr_to_string (buf, len, sz, ids, e->u.e.l, 1 - isinvert, isassoc);
+#if 0    
+    c = _expr_type_char (E_NOT);
+    _expr_append_char (buf, len, sz, c);
+#endif    
+    break;
+    
+  case ACT_PRS_EXPR_VAR:
+    _expr_to_var (buf, len, sz, ids, e->u.v.id);
+    if (isinvert) {
+      c = _expr_type_char (E_NOT);
+      _expr_append_char (buf, len, sz, c);
+    }
+    //ret->u.v.sz = act_expand_size (p->u.v.sz, ns, s);
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    if (*len >= (*sz-2)) {
+      REALLOC (*buf, char, 50 + *sz);
+      *sz += 50;
+    }
+    (*buf)[*len] = 'i';
+    if (isinvert) {
+      (*buf)[*len+1] = (e->type == ACT_PRS_EXPR_TRUE ? '0' : '1');
+    }
+    else {
+      (*buf)[*len+1] = (e->type == ACT_PRS_EXPR_TRUE ? '1' : '0');
+    }
+    (*buf)[*len+2] = '\0';
+    *len = *len + 2;
+    break;
+
+  default:
+    fatal_error ("What? %d\n", e->type);
+    break;
+  }
+}
+
+
+				 
+
+
+char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e)
+{
+  char *buf;
+  int len, sz;
+  int iszero = 0;
+  if (!e) {
+    return Strdup ("");
+  }
+  sz = 1024;
+  MALLOC (buf, char, sz);
+  buf[0] = '\0';
+  len = 0;
+
+  _prs_expr_to_string (&buf, &len, &sz, id_list, e, 0, &iszero);
+
+  char *ret = Strdup (buf);
+  FREE (buf);
+  return ret;
+}
+

@@ -48,19 +48,19 @@ export defcell g4x0 (bool? in[2]; bool! out)
    }
 }
 
-export defcell g5x0 (bool? in[6]; bool! out)
-{
-   prs {
-   in[0] & in[1] & in[2] | in[3] & in[4] & in[5] -> out-
-   (~in[5] | ~in[4] | ~in[3]) & (~in[2] | ~in[1] | ~in[0]) -> out+
-   }
-}
-
-export defcell g6x0 (bool? in[6]; bool! out)
+export defcell gv0nv1nv2noov3nv4nv5nooa_v0v1v2aav3v4v5aaox0 (bool? in[6]; bool! out)
 {
    prs {
    in[0] & in[1] & in[2] | in[3] & in[4] & in[5] -> out-
    (~in[0] | ~in[1] | ~in[2]) & (~in[3] | ~in[4] | ~in[5]) -> out+
+   }
+}
+
+export defcell gv5nv4nv3noov2nv1nv0nooa_v0v1v2aav3v4v5aaox0 (bool? in[6]; bool! out)
+{
+   prs {
+   in[0] & in[1] & in[2] | in[3] & in[4] & in[5] -> out-
+   (~in[5] | ~in[4] | ~in[3]) & (~in[2] | ~in[1] | ~in[0]) -> out+
    }
 }
 

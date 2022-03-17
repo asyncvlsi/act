@@ -2526,6 +2526,11 @@ static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
   }
 }
 
+void act_print_one_prs (FILE *fp, act_prs_lang_t *p)
+{
+  _print_one_prs (fp, p);
+}  
+			
 void prs_print (FILE *fp, act_prs *prs)
 {
   while (prs) {

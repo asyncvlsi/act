@@ -39,66 +39,101 @@
   name end()
     
 
-class ActNamespaceiter : public
-      std::iterator<std::input_iterator_tag, ActNamespace *> {
-  
+class ActNamespaceiter 
+#if __cplusplus < 201703L
+/* deprecated in C++17 onward */
+  : public std::iterator<std::input_iterator_tag, ActNamespace *>
+#endif
+{
   hash_bucket_t *b;
   int i;
   ActNamespace *top;
 
  public:
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using value_type = ActNamespace *;
+#endif  
+
   ActNamespaceiter (ActNamespace *ns);
   ACTSTDITER(ActNamespaceiter, ActNamespace *);
 };
 
 
-class ActInstiter :
-  public std::iterator<std::input_iterator_tag, ValueIdx *> {
-  
+class ActInstiter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, ValueIdx *>
+#endif
+{
   hash_bucket_t *b;
   int i;
   Scope *s;
 
  public:
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using value_type = ValueIdx *;
+#endif  
+  
   ActInstiter (Scope *s);
   ACTSTDITER(ActInstiter, ValueIdx *);
 };
 
-class ActConniter :
-  public std::iterator<std::input_iterator_tag, act_connection *> {
-  
+class ActConniter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, act_connection *>
+#endif
+{
   act_connection *start;
   act_connection *cur;
 
  public:
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using value_type = act_connection *;
+#endif  
+  
   ActConniter (act_connection *s);
   ACTSTDITER(ActConniter, act_connection *);
 };
 
-class ActTypeiter :
-  public std::iterator<std::input_iterator_tag, Type *> {
-  
+class ActTypeiter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, Type *>
+#endif
+{
   hash_bucket_t *b;
   int i;
   ActNamespace *top;
 
  public:
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using value_type = Type *;
+#endif  
+ 
   ActTypeiter (ActNamespace *s);
   ACTSTDITER(ActTypeiter, Type *);
 };
 
-class ActUniqProcInstiter :
-  public std::iterator<std::input_iterator_tag, ValueIdx *> {
-  
+class ActUniqProcInstiter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, ValueIdx *>
+#endif
+{
   hash_bucket_t *b;
   int i;
   Scope *s;
 
  public:
+#if __cplusplus >= 201703L
+  using iterator_category = std::input_iterator_tag;
+  using value_type = ValueIdx *;
+#endif  
+
   ActUniqProcInstiter (Scope *s);
   ACTSTDITER(ActUniqProcInstiter, ValueIdx *);
 };
-
 
 
 #undef ACTSTDITER

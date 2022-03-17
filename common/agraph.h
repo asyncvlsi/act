@@ -144,13 +144,21 @@ class AGraph {
 
 /*-- iterators --*/
 
-class AGraphVertexIter : public
-      std::iterator<std::input_iterator_tag, AGvertex *> {
-
+class AGraphVertexIter
+#if __cplusplus < 201703L
+/* deprecated in C++17 onward */
+  : public std::iterator<std::input_iterator_tag, AGvertex *>
+#endif
+{
   AGraph *g;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGvertex *;
+#endif  
+  
   AGraphVertexIter (AGraph *);
   AGraphVertexIter (const AGraphVertexIter & c);
   AGraphVertexIter& operator++();
@@ -163,13 +171,20 @@ class AGraphVertexIter : public
   int pos() { return i; }
 };
 
-class AGraphEdgeIter : public
-      std::iterator<std::input_iterator_tag, AGedge *> {
-
+class AGraphEdgeIter 
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, AGedge *>
+#endif
+{
   AGraph *g;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGedge *;
+#endif  
+  
   AGraphEdgeIter (AGraph *);
   AGraphEdgeIter (const AGraphEdgeIter & c);
   AGraphEdgeIter& operator++();
@@ -182,14 +197,21 @@ class AGraphEdgeIter : public
   int pos() { return i; }
 };
 
-class AGvertexFwdIter : public
-      std::iterator<std::input_iterator_tag, AGedge *> {
-
+class AGvertexFwdIter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, AGedge *>
+#endif
+{
   AGraph *g;
   int vid;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGedge *;
+#endif  
+  
   AGvertexFwdIter (AGraph *, int);
   AGvertexFwdIter (AGraph *, AGvertex *);
   AGvertexFwdIter (const AGvertexFwdIter & c);
@@ -203,14 +225,21 @@ class AGvertexFwdIter : public
   int pos() { return i; }
 };
 
-class AGvertexBwdIter : public
-      std::iterator<std::input_iterator_tag, AGedge *> {
-
+class AGvertexBwdIter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, AGedge *>
+#endif
+{
   AGraph *g;
   int vid;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGedge *;
+#endif  
+  
   AGvertexBwdIter (AGraph *, int);
   AGvertexBwdIter (const AGvertexBwdIter & c);
   AGvertexBwdIter& operator++();
@@ -224,13 +253,20 @@ class AGvertexBwdIter : public
 };
 
 
-class AGraphInpVertexIter : public
-      std::iterator<std::input_iterator_tag, AGvertex *> {
-
+class AGraphInpVertexIter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, AGvertex *>
+#endif
+{
   AGraph *g;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGvertex *;
+#endif  
+  
   AGraphInpVertexIter (AGraph *);
   AGraphInpVertexIter (const AGraphInpVertexIter & c);
   AGraphInpVertexIter& operator++();
@@ -243,13 +279,20 @@ class AGraphInpVertexIter : public
   int pos() { return i; }
 };
 
-class AGraphOutVertexIter : public
-      std::iterator<std::input_iterator_tag, AGvertex *> {
-
+class AGraphOutVertexIter
+#if __cplusplus < 201703L
+  : public std::iterator<std::input_iterator_tag, AGvertex *>
+#endif
+{
   AGraph *g;
   int i;
 
  public:
+#if __cplusplus >= 201703L  
+  using iterator_category = std::input_iterator_tag;
+  using value_type = AGvertex *;
+#endif  
+  
   AGraphOutVertexIter (AGraph *);
   AGraphOutVertexIter (const AGraphOutVertexIter & c);
   AGraphOutVertexIter& operator++();

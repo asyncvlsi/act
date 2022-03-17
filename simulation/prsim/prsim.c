@@ -1674,10 +1674,11 @@ RET_TYPE process_dumptc (ARG_LIST)
 RET_TYPE process_echo (ARG_LIST)
 {
   int nl = 1;
+  int i;
   if (argc > 1 && strcmp (argv[1], "-n") == 0) {
       nl = 0;
   }
-  for (int i=2-nl; i < argc; i++) {
+  for (i=2-nl; i < argc; i++) {
     printf ("%s", argv[i]);
     if (i != argc-1) {
       printf (" ");
