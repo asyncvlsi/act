@@ -2083,7 +2083,7 @@ void ActCellPass::dump_celldb (FILE *fp)
   /* lets sort the cell names */
   mymergesort ((const void **)cells, A_LEN (cells), _cmp_cells);
 
-  fprintf (fp, "namespace cell {\n\n");
+  fprintf (fp, "namespace %s {\n\n", config_get_string ("net.cell_namespace"));
   
   /* print */
   for (i=0; i < A_LEN (cells); i++) {
@@ -2380,31 +2380,30 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   Assert (sc->isExpanded(), "Hmm");
 
   Process *cell;
-  ActNamespace *cellns = ActNamespace::Global()->findNS ("cell");
-  Assert (cellns, "No cell namespace!");
+  Assert (cell_ns, "No cell namespace!");
 
   if (prs->u.p.g && prs->u.p._g) {
     if (prs->u.p.sz) {
-      cell = dynamic_cast<Process *>(cellns->findType ("t0"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("t0"));
     }
     else {
-      cell = dynamic_cast<Process *>(cellns->findType ("t1"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("t1"));
     }
   }
   else if (prs->u.p.g) {
     if (prs->u.p.sz) {
-      cell = dynamic_cast<Process *>(cellns->findType ("n0"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("n0"));
     }
     else {
-      cell = dynamic_cast<Process *>(cellns->findType ("n1"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("n1"));
     }
   }
   else {
     if (prs->u.p.sz) {
-      cell = dynamic_cast<Process *>(cellns->findType ("p0"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("p0"));
     }
     else {
-      cell = dynamic_cast<Process *>(cellns->findType ("p1"));
+      cell = dynamic_cast<Process *>(cell_ns->findType ("p1"));
     }
   }
 
@@ -2945,11 +2944,14 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   A_INIT (current_idmap.ids);
   current_idmap.nout = 0;
   current_idmap.nat = 0;
+
+  config_set_default_string ("net.cell_namespace", "cell");
     
-  cell_ns = a->findNamespace ("cell");
+  cell_ns = a->findNamespace (config_get_string ("net.cell_namespace"));
   
   if (!cell_ns) {
-    cell_ns = new ActNamespace (ActNamespace::Global(), "cell");
+    cell_ns = new ActNamespace (ActNamespace::Global(),
+				config_get_string ("net.cell_namespace"));
     cell_ns->Expand ();
     cell_count = 0;
   }
