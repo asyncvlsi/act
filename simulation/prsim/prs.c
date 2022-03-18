@@ -130,6 +130,19 @@ static int lex_have_rand_init (Prs *p, LEX_T *l)
   }
 }
 
+static int lex_have_hazard (Prs *p, LEX_T *l)
+{
+  if (!p->N) {
+    return lex_have_keyw (l, "hazard");
+  }
+  else {
+    if (lex_sym (l) == l_err && l->token[0] == 0x8) {
+      lex_getsym (l);
+      return 1;
+    }
+    return 0;
+  }
+}
 
 static int lex_have_timing (Prs *p, LEX_T *l)
 {
@@ -2428,6 +2441,7 @@ static void parse_prs (Prs *p, LEX_T *l);
 static void parse_connection (Prs *p, LEX_T *l);
 static void parse_excl (LEX_T *l, int ishi, Prs *p);
 static void parse_rand_init (LEX_T *l, Prs *p);
+static void parse_hazard (LEX_T *l, Prs *p);
 static void parse_timing (Prs *p, LEX_T *l);
 
 
@@ -2482,6 +2496,9 @@ static void parse_file (LEX_T *l, Prs *p)
     }
     else if (lex_have_rand_init (p,l)) {
       parse_rand_init (l, p);
+    }
+    else if (lex_have_hazard (p, l)) {
+      parse_hazard (l, p);
     }
     else {
       parse_prs (p,l);
@@ -3038,6 +3055,20 @@ static void parse_rand_init (LEX_T *l, Prs *p)
   lex_mustbe (l, TOK_RPAR);
 }
 
+static void parse_hazard (LEX_T *l, Prs *p)
+{
+  PrsNode *n;
+
+  lex_mustbe (l, TOK_LPAR);
+  do {
+    n = lookup (lex_mustbe_id (p,l), p->H);
+    n->unstab = 1;
+  } while (lex_have (l, TOK_COMMA));
+
+  lex_mustbe (l, TOK_RPAR);
+}
+
+
 /*
  * Parse timing directives
  */
@@ -3322,6 +3353,8 @@ static int lex_have_unstab (Prs *p, LEX_T *l)
     return 0;
   }
 }
+
+
 
 
 /*

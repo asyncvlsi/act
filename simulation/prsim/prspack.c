@@ -118,7 +118,8 @@ int main (int argc, char **argv)
     else if (lex_have_keyw (l, "mk_exclhi") ||
 	     lex_have_keyw (l, "mk_excllo") ||
 	     lex_have_keyw (l, "mk_excl") ||
-	     lex_have_keyw (l, "rand_init")) {
+	     lex_have_keyw (l, "rand_init") ||
+	     lex_have_keyw (l, "hazard")) {
       int type = 0;
       if (strcmp (lex_prev (l), "mk_excllo") == 0) {
 	putchar ('\04');
@@ -129,9 +130,13 @@ int main (int argc, char **argv)
 	putchar ('\05');
 	type = '\05';
       }
-      else {
+      else if (strcmp (lex_prev (l), "rand_init") == 0) {
 	putchar ('\07');
 	type = '\07';
+      }
+      else {
+	putchar ('\08');
+	type = '\08';
       }
       lex_mustbe (l, syms[LPAR]);
       putchar ('(');
