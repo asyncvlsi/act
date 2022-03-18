@@ -2722,8 +2722,10 @@ static void _expr_to_var (char **buf, int *len, int *sz,
 {
   int x = 0;
   listitem_t *li;
+  int count = 0;
 
   for (li = list_first (ids); li; li = list_next (li)) {
+    count++;
     if (v == (ActId *) list_value (li)) {
       break;
     }
@@ -2738,14 +2740,28 @@ static void _expr_to_var (char **buf, int *len, int *sz,
       x++;
     }
   }
+  else {
+    count--;
+    while (li) { 
+       count++;
+       li = list_next (li);
+    }
+  }
   if (*len >= (*sz-5)) {
     REALLOC ((*buf), char, (50 + *sz));
     *sz += 50;
   }
+  if (count > 10) {
   (*buf)[*len] = 'v';
   *len = *len + 1;
   snprintf (*buf + *len, *sz - *len, "%d", x);
   *len += strlen (*buf + *len);
+  }
+  else {
+    (*buf)[*len] = '0' + x;
+    *len = *len + 1;
+    (*buf)[*len] = '\0';
+  }
 }
 
 static void _expr_to_string (char **buf, int *len, int *sz,
