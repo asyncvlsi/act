@@ -5,16 +5,22 @@ export defproc mem_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>
 {
 
 /* instances */
-int<4> i;
 int<4> a;
 int<2> b;
 int<32> m[16];
 
 /* connections */
 chp {
-a:=0x0;*[ m[a]:=0x0;a:=a+0x1 <- a!=0x0&a<16];*[true -> rd?b;[b=0x0 -> addr?a;din?m[a] [] b=0x1 -> addr?a;dout!m[a] [] b=0x2 -> addr?a;dout!m[a];din?m[a]]]
+*[true -> addr?a,rd?b;[b=0x0 -> din?m[a] [] b=0x1 -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
 }
 }
+
+
+/* instances */
+
+/* connections */
+}
+namespace std {
 
 
 /* instances */

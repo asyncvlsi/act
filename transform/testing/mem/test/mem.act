@@ -12,6 +12,9 @@
  *
  *------------------------------------------------------------------------
  */
+namespace std {
+
+}
 
 namespace mem {
 
@@ -36,17 +39,14 @@ defproc mem (chan?(int<2>) rd; chan?(int<ceil_log2(N)>) addr;
 {
   pint bits = ceil_log2(N);
   int<W> m[N];
-  int<bits> a, i;
+  int<bits> a;
   int<2> b;
 
   chp {
-        a := 0;
-      *[ m[a] := 0; a := a + 1 <- a != 0 & a < N ];
-    
-      *[ rd?b;
-	 [ b=0 -> addr?a; din?m[a]
-	[] b=1 -> addr?a; dout!m[a]
-        [] b=2 -> addr?a; dout!m[a]; din?m[a]
+      *[ addr?a,rd?b;
+	 [ b=0 -> din?m[a]
+	[] b=1 -> dout!m[a]
+        [] b=2 -> dout!m[a]; din?m[a]
          ]
        ]
     }
