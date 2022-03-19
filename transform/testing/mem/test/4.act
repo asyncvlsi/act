@@ -1,0 +1,14 @@
+import mem;
+
+defproc test()
+{
+  int x, y;
+  int mem[16];
+  
+  chp {
+   x := 0;
+   mem[y] := mem[mem[x+5]*3]
+  }
+}
+
+test t;

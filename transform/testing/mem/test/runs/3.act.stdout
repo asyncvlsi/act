@@ -1,0 +1,46 @@
+namespace mem {
+export defproc mem_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
+
+export defproc mem_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
+{
+
+/* instances */
+int<4> i;
+int<4> a;
+int<2> b;
+int<32> m[16];
+
+/* connections */
+chp {
+a:=0x0;*[ m[a]:=0x0;a:=a+0x1 <- a!=0x0&a<16];*[true -> rd?b;[b=0x0 -> addr?a;din?m[a] [] b=0x1 -> addr?a;dout!m[a] [] b=0x2 -> addr?a;dout!m[a];din?m[a]]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+int<32> x;
+::mem::mem_316_732_4 mem;
+int<32> _memdatv2;
+int<32> _memdatv1;
+
+/* connections */
+chp {
+x:=0x0;mem.addr!x,mem.rd!1,mem.dout?_memdatv1;mem.addr!_memdatv1,mem.rd!1,mem.dout?_memdatv2;y:=_memdatv2
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

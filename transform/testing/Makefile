@@ -21,6 +21,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=state inline
+SUBDIRS=state inline mem
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

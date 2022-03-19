@@ -168,16 +168,17 @@ int ActCHPMemory::run (Process *p)
   int ret = ActPass::run (p);
 
   /* the netlist has changed; we need to run all passes again */
-  //ActPass::refreshAll (a, p);
+  ActPass::refreshAll (a, p);
   
   return ret;
 }
 
-static void _append_mem_read (list_t *l, ActId *access, int idx)
+static void _append_mem_read (list_t *top, ActId *access, int idx)
 {
   act_chp_lang_t *c;
   ActId *tmp;
   Array *a;
+  list_t *l = list_new ();
   tmp = new ActId (access->getName());
   tmp->Append (new ActId ("addr"));
 
@@ -231,15 +232,23 @@ static void _append_mem_read (list_t *l, ActId *access, int idx)
 
   /* mem.dout?v */
   list_append (l, c);
-
   delete access;
+
+  NEW (c, act_chp_lang_t);
+  c->space = NULL;
+  c->label = NULL;
+  c->type = ACT_CHP_COMMA;
+  c->u.semi_comma.cmd = l;
+
+  list_append (top, c);
 }
 
-static void _append_mem_write (list_t *l, ActId *access, Expr *e)
+static void _append_mem_write (list_t *top, ActId *access, Expr *e)
 {
   act_chp_lang_t *c;
   ActId *tmp;
   Array *a;
+  list_t *l = list_new ();
   
   tmp = new ActId (access->getName());
   tmp->Append (new ActId ("addr"));
@@ -294,6 +303,14 @@ static void _append_mem_write (list_t *l, ActId *access, Expr *e)
   list_append (l, c);
 
   delete access;
+
+  NEW (c, act_chp_lang_t);
+  c->space = NULL;
+  c->label = NULL;
+  c->type = ACT_CHP_COMMA;
+  c->u.semi_comma.cmd = l;
+
+  list_append (top, c);
 }
 
 void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
@@ -335,6 +352,20 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
     {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, (ActId *)e->u.e.l);
       if (v) {
+	/* check index to see if it has a dynamic var as well! */
+	{
+	  ActId *tmp = (ActId *)e->u.e.l;
+	  Array *tmpa = tmp->arrayInfo();
+	  Assert (tmpa, "Hmm?!");
+	  if (tmpa->nDims() > 1) {
+	    warning ("Add support for multi-dim arrays");
+	  }
+	  list_t *tmpl = list_new ();
+	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
+	  list_concat (l, tmpl);
+	  list_free (tmpl);
+	}
+	
 	/* we need to re-write this! */
 	if (v->isstruct) {
 	  warning ("Ignoring structure memory");
@@ -415,7 +446,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       NEW (x, act_chp_lang_t);
       x->label = NULL;
       x->space = NULL;
-      x->type = ACT_CHP_COMMA;
+      x->type = ACT_CHP_SEMI;
       x->u.semi_comma.cmd = list_new ();
 
       /* 
@@ -445,6 +476,46 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 						c->type == ACT_CHP_ASSIGN ?
 						c->u.assign.id : c->u.comm.var);
       if (v) {
+	{
+	  ActId *tmp = (c->type == ACT_CHP_ASSIGN ?
+			c->u.assign.id : c->u.comm.var);
+	  Array *tmpa = tmp->arrayInfo();
+	  Assert (tmpa, "Hmm?!");
+	  if (tmpa->nDims() > 1) {
+	    warning ("Add support for multi-dim arrays");
+	  }
+	  list_t *tmpl = list_new ();
+	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
+	  if (list_isempty (tmpl)) {
+	    list_free (tmpl);
+	  }
+	  else {
+	    list_t *newcmds = list_new ();
+	    /* 
+	       these are all reads:
+	       mem.addr!address,mem.rd!1,mem.dout?v
+	    */
+	    for (listitem_t *li = list_first (tmpl); li; li = list_next (li)) {
+	      int idx = list_ivalue (li);
+	      li = list_next (li);
+	      ActId *mem = (ActId *) list_value (li);
+	      _append_mem_read (newcmds, mem, idx);
+	      _fresh_release (idx);
+	    }
+	    list_free (tmpl);
+	    if (x) {
+	      list_append (x->u.semi_comma.cmd, newcmds);
+	    }
+	    else {
+	      NEW (x, act_chp_lang_t);
+	      x->label = NULL;
+	      x->space = NULL;
+	      x->type = ACT_CHP_SEMI;
+	      x->u.semi_comma.cmd = newcmds;
+	    }
+	  }
+	}
+	
 	/* write */
 	if (v->isstruct) {
 	  warning ("Structure memory, problem!");
@@ -473,30 +544,28 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
     }
 
     if (x || post) {
-      list_t *l = list_new ();
+      list_t *l;
 
       if (x) {
-	list_append (l, x);
+	l = x->u.semi_comma.cmd;
+      }
+      else {
+	l = list_new ();
+	NEW (x, act_chp_lang_t);
       }
 
-      NEW (d, act_chp_lang_t);
-      *d = *c;
-
-      d->label = NULL;
-      d->space = NULL;
-      list_append (l, d);
-
-      if (post) {
-	NEW (d, act_chp_lang_t);
-	d->label = NULL;
-	d->space = NULL;
-	d->type = ACT_CHP_COMMA;
-	d->u.semi_comma.cmd = post;
-	list_append (l, d);
-      }
-
+      /* save the command */
+      *x = *c;
+      x->space = NULL;
+      x->label = NULL;
       c->type = ACT_CHP_SEMI;
       c->u.semi_comma.cmd = l;
+      list_append (l, x);
+
+      if (post) {
+	list_concat (l, post);
+	list_free (post);
+      }
     }
     break;
 
