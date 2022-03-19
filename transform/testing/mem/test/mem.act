@@ -1,0 +1,55 @@
+/*************************************************************************
+ *
+ *  Copyright (c) 2021 Rajit Manohar
+ *  All Rights Reserved
+ *
+ **************************************************************************
+ */
+
+/*------------------------------------------------------------------------
+ *
+ *   Generic memory, implemented using AMC
+ *
+ *------------------------------------------------------------------------
+ */
+
+namespace mem {
+
+
+export function ceil_log2 (pint a) : pint
+{
+  pint i;
+  pint M;
+  chp {
+     i := 0;
+     M := a;
+    *[ M > 1 -> i := i + 1; M := (M+1)/2 ];
+     self := i
+  }
+}
+
+export
+template<pint N, W>
+defproc mem (chan?(int<2>) rd; chan?(int<ceil_log2(N)>) addr;
+             chan?(int<W>) din;
+             chan!(int<W>) dout)
+{
+  pint bits = ceil_log2(N);
+  int<W> m[N];
+  int<bits> a, i;
+  int<2> b;
+
+  chp {
+        a := 0;
+      *[ m[a] := 0; a := a + 1 <- a != 0 & a < N ];
+    
+      *[ rd?b;
+	 [ b=0 -> addr?a; din?m[a]
+	[] b=1 -> addr?a; dout!m[a]
+        [] b=2 -> addr?a; dout!m[a]; din?m[a]
+         ]
+       ]
+    }
+}
+
+}

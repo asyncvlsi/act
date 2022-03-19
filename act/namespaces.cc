@@ -545,33 +545,39 @@ void ActNamespace::Print (FILE *fp)
 	else {
 	  u->PrintHeader (fp, "defproc");
 	}
+	fprintf (fp, ";\n");
       }
       else if (TypeFactory::isDataType (t)) {
 	u->PrintHeader (fp, "deftype");
+	fprintf (fp, ";\n");
       }
       else if (TypeFactory::isChanType (t)) {
 	u->PrintHeader (fp, "defchan");
+	fprintf (fp, ";\n");
       }
       else if (TypeFactory::isFuncType (t)) {
 	Function *f = dynamic_cast<Function *> (t);
-	u->PrintHeader (fp, "function");
-	fprintf (fp, " : ");
-	if (TypeFactory::isUserType (f->getRetType())) {
-	  UserDef *tu = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
-	  ActNamespace::Act()->mfprintfproc (fp, tu, 1);
-	}
-	else {
-	  f->getRetType()->Print (fp);
+	if (!u->isExpanded()  || !TypeFactory::isParamType (f->getRetType())) {
+	  u->PrintHeader (fp, "function");
+	  fprintf (fp, " : ");
+	  if (TypeFactory::isUserType (f->getRetType())) {
+	    UserDef *tu = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
+	    ActNamespace::Act()->mfprintfproc (fp, tu, 1);
+	  }
+	  else {
+	    f->getRetType()->Print (fp);
+	  }
+	  fprintf (fp, ";\n");
 	}
       }
       else if (TypeFactory::isStructure (t)) {
 	u->PrintHeader (fp, "deftype");
+	fprintf (fp, ";\n");
       }
       else {
 	fprintf (stderr, "Got: %s\n", t->getName());
 	fatal_error ("Unhandled case...");
       }
-      fprintf (fp, ";\n");
     }
   }
   fprintf (fp, "\n");
@@ -582,7 +588,10 @@ void ActNamespace::Print (FILE *fp)
     Assert (u, "Hmm...");
     /* print type! */
     if (CurScope()->isExpanded() == u->isExpanded()) {
-      u->Print (fp);
+      Function *f = dynamic_cast<Function *> (t);
+      if (!f || !u->isExpanded() || !TypeFactory::isParamType (f->getRetType())) {
+	u->Print (fp);
+      }
     }
   }
   

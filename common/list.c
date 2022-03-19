@@ -390,6 +390,28 @@ void list_concat (list_t *l, list_t *x)
   x->hd = NULL;
   x->tl = NULL;
 }
+
+void list_splice (list_t *main, listitem_t *li, list_t *x)
+{
+  if (!li) {
+    list_concat (x, main);
+    *main = *x;
+    x->hd = NULL;
+    x->tl = NULL;
+    return;
+  }
+  if (li->next == NULL) {
+    list_concat (main, x);
+  }
+  else if (x->hd) {
+    listitem_t *tmp = li->next;
+    li->next = x->hd;
+    x->tl->next = tmp;
+    x->hd = NULL;
+    x->tl = NULL;
+  }
+}
+
   
 
 list_t *list_dup (list_t *l)

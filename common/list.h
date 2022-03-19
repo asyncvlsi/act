@@ -52,6 +52,7 @@ int list_length (list_t *);
 const void *list_delete_tail (list_t *);
 void list_delete_next (list_t *l, listitem_t *li);
 void list_concat (list_t *main, list_t *x);
+void list_splice (list_t *main, listitem_t *li, list_t *x);
 list_t *list_dup (list_t *);
 
 
