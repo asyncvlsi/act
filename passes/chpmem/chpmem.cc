@@ -593,16 +593,12 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       }
     }
 
-    if (list_isempty (pre)) {
-      list_free (pre);
-      pre = NULL;
-    }
-    if (pre) {
+    if (!list_isempty (pre)) {
       /* idx (ActId *) sequence */
       NEW (x, act_chp_lang_t);
       x->label = NULL;
       x->space = NULL;
-      x->type = ACT_CHP_COMMA;
+      x->type = ACT_CHP_SEMI;
       x->u.semi_comma.cmd = list_new ();
 
       /* 
@@ -625,27 +621,21 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
     */
 
     if (x) {
-      list_t *l = list_new ();
+      list_t *l = x->u.semi_comma.cmd;
 
-      if (x) {
-	list_append (l, x);
-      }
+      *x = *c;
+      x->label = NULL;
+      x->space = NULL;
 
-      NEW (d, act_chp_lang_t);
-      *d = *c;
+      list_append (l, x);
+      c->type = ACT_CHP_SEMI;
+      c->u.semi_comma.cmd = l;
 
-      d->label = NULL;
-      d->space = NULL;
-      list_append (l, d);
-
-      for (act_chp_gc_t *gc = d->u.gc; gc; gc = gc->next) {
+      for (act_chp_gc_t *gc = x->u.gc; gc; gc = gc->next) {
 	if (gc->s) {
 	  _extract_memory (gc->s);
 	}
       }
-
-      c->type = ACT_CHP_SEMI;
-      c->u.semi_comma.cmd = l;
     }
     else {
       for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {

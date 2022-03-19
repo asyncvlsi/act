@@ -1,0 +1,14 @@
+import mem;
+
+defproc test()
+{
+  int x, y;
+  int mem[16];
+  
+  chp {
+   x := 0;
+  [ mem[x] > 0 ->  mem[y] := mem[x] + mem[4] + mem[5] ]
+  }
+}
+
+test t;
