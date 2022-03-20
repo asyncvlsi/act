@@ -2,7 +2,7 @@
  *
  *  This file is part of the ACT library
  *
- *  Copyright (c) 2020 Manohar
+ *  Copyright (c) 2020 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
