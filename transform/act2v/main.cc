@@ -36,7 +36,7 @@ static ActBooleanizePass *BOOL = NULL;
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] [-p <proc>] <act>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-B] [-c <cells>] [-p <proc>] <act>\n", name);
   fprintf (stderr, " -p <proc> : Emit process <proc>\n");
   exit (1);
 }
@@ -154,6 +154,25 @@ void emit_verilog (Act *a, Process *p)
 
   if (n->visited) return;
   n->visited = 1;
+
+  if (p->isBlackBox() || p->isLowLevelBlackBox()) {
+    if (n->macro && n->macro->isValid()) {
+      const char *nm = n->macro->getVerilogFile();
+      if (nm) {
+	FILE *xfp = fopen (nm, "r");
+	if (xfp) {
+	  int sz;
+	  char buf[1024];
+	  while ((sz = fread (buf, 1, 1024, xfp)) > 0) {
+	    fwrite (buf, 1, sz, stdout);
+	  }
+	  fclose (xfp);
+	}
+	return;
+      }
+    }
+  }
+  
 
   ActUniqProcInstiter inst(p->CurScope());
   for (inst = inst.begin(); inst != inst.end(); inst++) {

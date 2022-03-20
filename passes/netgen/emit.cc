@@ -56,7 +56,32 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     fatal_error ("Internal inconsistency or error in pass ordering!");
   }
 
-  if (n->bN->p && n->bN->p->isBlackBox() && black_box_mode) return n;
+  if (n->bN->p && black_box_mode &&
+      (n->bN->p->isBlackBox() || n->bN->p->isLowLevelBlackBox())) {
+    if (n->bN->macro && n->bN->macro->isValid()) {
+      const char *tmp = n->bN->macro->getSPICEFile();
+      if (tmp) {
+	FILE *sfp = fopen (tmp, "r");
+	if (!sfp) {
+	  warning ("Black box %s: could not open spice file `%s'",
+		   p->getName(), tmp);
+	}
+	else {
+	  char buf[1024];
+	  int sz;
+	  while ((sz = fread (buf, 1, 1024, sfp)) > 0) {
+	    fwrite (buf, 1, sz, fp);
+	  }
+	  fclose (sfp);
+	}
+      }
+      else {
+	fprintf (fp, "* black box: %s; missing SPICE file path\n", p->getName());
+      }
+    }
+    return n;
+  }
+  
   if (top_level_only && p != _root) return n;
 
   fprintf (fp, "*\n");

@@ -1,7 +1,39 @@
 //
 // Verilog module for: foo<>
 //
-module foo();
+module foo(\q.w[0] , \q.w[1] , \q.w[2] , \q.w[3] , \q.w[4] , \q.w[5] , \q.w[6] , \q.w[7] , \q.w[8] , \q.w[9] , \q.w[10] , \q.w[11] , \q.w[12] , \q.w[13] , \q.w[14] , \q.w[15] , \q.w[16] , \q.w[17] , \q.w[18] , \q.w[19] , \q.w[20] , \q.w[21] , \q.w[22] , \q.w[23] , \q.w[24] , \q.w[25] , \q.w[26] , \q.w[27] , \q.w[28] , \q.w[29] , \q.w[30] , \q.w[31] );
+   output \q.w[0] ;
+   output \q.w[1] ;
+   output \q.w[2] ;
+   output \q.w[3] ;
+   output \q.w[4] ;
+   output \q.w[5] ;
+   output \q.w[6] ;
+   output \q.w[7] ;
+   output \q.w[8] ;
+   output \q.w[9] ;
+   output \q.w[10] ;
+   output \q.w[11] ;
+   output \q.w[12] ;
+   output \q.w[13] ;
+   output \q.w[14] ;
+   output \q.w[15] ;
+   output \q.w[16] ;
+   output \q.w[17] ;
+   output \q.w[18] ;
+   output \q.w[19] ;
+   output \q.w[20] ;
+   output \q.w[21] ;
+   output \q.w[22] ;
+   output \q.w[23] ;
+   output \q.w[24] ;
+   output \q.w[25] ;
+   output \q.w[26] ;
+   output \q.w[27] ;
+   output \q.w[28] ;
+   output \q.w[29] ;
+   output \q.w[30] ;
+   output \q.w[31] ;
 
 // -- signals ---
 

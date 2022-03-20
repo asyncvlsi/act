@@ -495,6 +495,16 @@ public:
     return 0;
   }
 
+  /*
+    Return 1 if the language is at a level of detail sufficient to
+    generate a netlist
+  */
+  int hasNetlistLang () {
+    if (prs) return 1;
+    return 0;
+  }
+  
+
  private:
   act_chp *chp, *hse;
   act_prs *prs;

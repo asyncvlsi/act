@@ -422,7 +422,12 @@ class Process : public UserDef {
 
   void Print (FILE *fp);
 
-  int isBlackBox();
+  int isBlackBox();		// black box declaration
+  
+  int isLowLevelBlackBox ();	// low level blackbox: might have CHP,
+				// HSE, or dataflow models, but does
+				// not have any circuits and is a leaf
+				// cell
 
   /* add an interface with an id mapping */
   void addIface (InstType *iface, list_t *imap);
@@ -455,7 +460,10 @@ class Process : public UserDef {
    */
   const char *addBuffer (char *name, ActId *port, Process *buf);
   
-  
+
+  /* returns the unexpanded type from which this one was generated */
+  Process *getUnexpanded();
+    
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */

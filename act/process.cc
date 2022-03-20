@@ -107,6 +107,25 @@ int Process::isBlackBox ()
   }
 }
 
+int Process::isLowLevelBlackBox ()
+{
+  if (isBlackBox()) {
+    return 1;
+  }
+  if (!isLeaf()) {
+    return 0;
+  }
+  if (getlang() && getlang()->hasCktLang() && !getlang()->hasNetlistLang()) {
+    return 1;
+  }
+  return 0;
+}
+
+Process *Process::getUnexpanded()
+{
+  return dynamic_cast<Process *>(unexpanded);
+}
+
 void Process::Print (FILE *fp)
 {
   if (isCell()) {

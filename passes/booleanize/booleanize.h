@@ -24,6 +24,7 @@
 
 #include <map>
 #include <act/act.h>
+#include <act/extmacro.h>
 
 struct netlist_bool_port {
   act_connection *c;		/* port bool */
@@ -135,6 +136,8 @@ typedef struct {
 
   A_DECL (act_local_net_t, nets); // nets
   struct pHashtable *nH;	  // hash to map c to net index
+
+  ExternMacro *macro;		// external macro for black boxes, if any
 
 } act_boolean_netlist_t;
 

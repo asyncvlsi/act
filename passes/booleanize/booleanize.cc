@@ -1520,6 +1520,7 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
 
   NEW (N, act_boolean_netlist_t);
 
+  N->macro = NULL;
   A_INIT (N->ports);
   A_INIT (N->chpports);
   A_INIT (N->instports);
@@ -1544,6 +1545,7 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
     process_chp_lang (N, lang->getchp());
     process_dflow_lang (N, lang->getdflow());
   }
+  
   return N;
 }
 
@@ -1580,10 +1582,10 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     ---*/
   n = process_local_lang (a, p);
 
-  if (black_box_mode && p && p->isBlackBox()) {
+  if (black_box_mode && p && (p->isBlackBox() || p->isLowLevelBlackBox())) {
+    n->macro = new ExternMacro (p);
     n->isempty = 0;
   }
-
 
   /*--
     Check that dynamic bits are valid
@@ -1729,7 +1731,7 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 
 #if 0
   /* DEBUG */
-  printf ("---- %s ----\n", p->getName());
+  printf ("---- %s ---- [mode=%d]\n", p->getName(), black_box_mode);
   printf ("B:");
   for (int i=0; i < A_LEN (n->ports); i++) {
     printf (" ");
@@ -1903,7 +1905,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     return;
   }
 
-  if (black_box_mode && n->p->isBlackBox()) {
+  if (black_box_mode && (n->p->isBlackBox() || n->p->isLowLevelBlackBox())) {
     /* assume this is needed! */
     return;
   }
