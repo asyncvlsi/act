@@ -32,6 +32,7 @@ ExternMacro::ExternMacro (Process *p)
 
   ActNamespace::Act()->msnprintfproc (buf, 10240, p);
 
+  _p = p;
   _name = Strdup (buf);
   _lef = NULL;
   _spice = NULL;
@@ -77,7 +78,19 @@ ExternMacro::ExternMacro (Process *p)
 	len += strlen (buf+len);
       }
       /* -- running generator -- */
-      system (buf);
+      if (system (buf) != 0) {
+	warning ("Error running macro generation command:\n %s", buf);
+	return;
+      }
+
+      FILE *fp;
+      fp = fopen ("_tmp_.conf", "r");
+      if (!fp) {
+	warning ("Configuration file not created by macro command:\n %s", buf);
+	return;
+      }
+      fclose (fp);
+	  
       config_read ("_tmp_.conf");
       unlink ("_tmp_.conf");
 
@@ -92,6 +105,33 @@ ExternMacro::ExternMacro (Process *p)
     else {
       return;
     }
+  }
+  
+  snprintf (buf, 10240, "macros.%s.spice", _name);
+  if (config_exists (buf)) {
+    _spice = config_get_string (buf);
+  }
+
+  snprintf (buf, 10240, "macros.%s.verilog", _name);
+  if (config_exists (buf)) {
+    _verilog = config_get_string (buf);
+  }
+  
+  snprintf (buf, 10240, "macros.%s.llx", _name);
+  if (config_exists (buf)) {
+    llx = config_get_int (buf);
+  }
+  snprintf (buf, 10240, "macros.%s.lly", _name);
+  if (config_exists (buf)) {
+    lly = config_get_int (buf);
+  }
+  snprintf (buf, 10240, "macros.%s.urx", _name);
+  if (config_exists (buf)) {
+    urx = config_get_int (buf);
+  }
+  snprintf (buf, 10240, "macros.%s.ury", _name);
+  if (config_exists (buf)) {
+    ury = config_get_int (buf);
   }
 }
 

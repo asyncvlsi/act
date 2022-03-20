@@ -1,0 +1,3 @@
+*---
+* inverter spice file
+*---

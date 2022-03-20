@@ -22,6 +22,7 @@
  **************************************************************************
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
@@ -203,6 +204,7 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
     }
     else {
       config_stdtech_path (argvp+2);
+      setenv ("ACT_TECH", Strdup (argvp+2), 1);
     }
     *tech_specified = 1;
   }
@@ -390,7 +392,13 @@ void Act::Init (int *iargc, char ***iargv)
   A_FREE (args_remain);
 
   if (!tech_specified) {
-    config_stdtech_path ("generic");
+    if (getenv ("ACT_TECH")) {
+      config_stdtech_path (getenv ("ACT_TECH"));
+    }
+    else {
+      config_stdtech_path ("generic");
+      setenv ("ACT_TECH", Strdup ("generic"), 1);
+    }
   }
 
   Act::config_info ("global.conf");

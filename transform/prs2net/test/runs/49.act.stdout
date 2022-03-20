@@ -1,0 +1,16 @@
+*---
+* inverter spice file
+*---
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xx_20_3 x_20_3_4i x_20_3_4o inv
+xx_22_3 x_22_3_4i x_22_3_4o inv
+.ends
+*---- end of process: foo<> -----
