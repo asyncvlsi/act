@@ -23,6 +23,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <act/passes.h>
 #include <act/passes/netlist.h>
 #include <act/passes/aflat.h>
@@ -31,7 +32,7 @@
 
 void usage (char *s)
 {
-  fprintf (stderr, "Usage: %s [act-options] <file.act> <simfile>\n", s);
+  fprintf (stderr, "Usage: %s [act-options] [-o <simfile>] <file.act> [<simfile>]\n", s);
   exit (1);
 }
 
@@ -156,14 +157,37 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *file;
+  int ch;
+  char *simname;
 
   Act::Init (&argc, &argv);
 
-  if (argc != 3) {
+  simname = NULL;
+  while ((ch = getopt (argc, argv, "o:")) != -1) {
+    switch (ch)  {
+    case 'o':
+      if (simname) {
+	FREE (simname);
+      }
+      simname = Strdup (optarg);
+      break;
+    default:
+    case '?':
+      usage (argv[0]);
+      break;
+    }
+  }
+  if (optind == argc-1 && simname) {
+    a = new Act (argv[optind]);
+  }
+  else if (optind == argc-2 && !simname) {
+    a = new Act (argv[optind]);
+    simname = Strdup (argv[optind+1]);
+  }
+  else {
     usage (argv[0]);
   }
   
-  a = new Act (argv[1]);
   a->Expand ();
 
   /* generate netlist */
@@ -173,12 +197,12 @@ int main (int argc, char **argv)
   FILE *fps, *fpal;
   char buf[10240];
 
-  sprintf (buf, "%s.sim", argv[2]);
+  sprintf (buf, "%s.sim", simname);
   fps = fopen (buf, "w");
   if (!fps) {
     fatal_error ("Could not open file `%s' for writing", buf);
   }
-  sprintf (buf, "%s.al", argv[2]);
+  sprintf (buf, "%s.al", simname);
   fpal = fopen (buf, "w");
   if (!fpal) {
     fatal_error ("Could not open file `%s' for writing", buf);
