@@ -121,13 +121,17 @@ Expr **Function::toInline (int nargs, Expr **args)
   Assert (nargs == getNumPorts(), "Function for parameters used in CHP!");
 
   Assert (isSimpleInline() && !isExternal(), "Function::toInline() called for complex inlining scenario");
+
+  act_error_push (getName(), getFile(), getLine());
   
   ActInstiter it(CurScope());
   for (it = it.begin(); it != it.end(); it++) {
     ValueIdx *vx = (*it);
     if (TypeFactory::isParamType (vx->t)) continue;
     if (vx->t->arrayInfo()) {
+      act_error_ctxt (stderr);
       warning ("Inlining failed; array declarations!");
+      act_error_pop ();
       return NULL;
     }
   }
@@ -138,6 +142,7 @@ Expr **Function::toInline (int nargs, Expr **args)
      and walk backward through the function!
   */
   if (pending) {
+    act_error_ctxt (stderr);
     fatal_error ("Sorry, recursive functions (`%s') not supported.",
 		 getName());
   }
@@ -147,6 +152,7 @@ Expr **Function::toInline (int nargs, Expr **args)
   act_inline_table *Hs = act_inline_new (CurScope(), NULL);
 
   if (!getlang() || !getlang()->getchp()) {
+    act_error_ctxt (stderr);
     fatal_error ("Inlining function, but no CHP?");
   }
 
@@ -165,6 +171,7 @@ Expr **Function::toInline (int nargs, Expr **args)
       int *types;
       ActId **fields = d->getStructFields (&types);
       if (args[i]->type != E_VAR) {
+	act_error_ctxt (stderr);
 	fatal_error ("toInline(): handle more complex expr `%s'",
 		     args[i]->type);
       }
@@ -198,12 +205,16 @@ Expr **Function::toInline (int nargs, Expr **args)
   act_inline_free (Hs);
   
   if (!xret) {
+    act_error_ctxt (stderr);
     warning ("%s: Function inlining failed; self was not assigned!",
 	     getName());
+    act_error_pop ();
     return NULL;
   }
 
   pending = 0;
+  
+  act_error_pop ();
   
   return xret;
 }
