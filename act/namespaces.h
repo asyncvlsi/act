@@ -283,6 +283,7 @@ class ActNamespace {
    * Set this to be an exported namespace
    */
   void MkExported () { exported = 1; }
+  void clrExported () { exported = 0; }
 
   /**
    * Provides parent namespace

@@ -240,6 +240,8 @@ int ActOpen::Open(ActNamespace *ns, const char *newname)
     }
     ns->Unlink ();
     ns->Link (ActNamespace::Global(), newname);
+    // top level namespace, no export flag required
+    ns->clrExported ();
   }
   else {
     /* add to the search path */
