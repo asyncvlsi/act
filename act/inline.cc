@@ -133,7 +133,10 @@ static Expr **_lookup_binding (act_inline_table *Hs,
 	  newret[i] = ret[i+off];
 	  if (err && (newret[i] == NULL)) {
 	    act_error_ctxt (stderr);
-	    fatal_error ("Found NULL binding for `%s': certain fields are undefined.", name);
+	    fprintf (stderr, "Access to: `%s.", name);
+	    rest->Print (stderr);
+	    fprintf (stderr, "' has a NULL binding.\n");
+	    fatal_error ("Uninitialized fields for `%s'.", name);
 	  }
 	}
 	FREE (ret);
