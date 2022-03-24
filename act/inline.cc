@@ -131,9 +131,23 @@ static Expr **_lookup_binding (act_inline_table *Hs,
 	MALLOC (newret, Expr *, sz2);
 	for (int i=0; i < sz2; i++) {
 	  newret[i] = ret[i+off];
+	  if (err && (newret[i] == NULL)) {
+	    act_error_ctxt (stderr);
+	    fatal_error ("Found NULL binding for `%s': certain fields are undefined.", name);
+	  }
 	}
 	FREE (ret);
 	ret = newret;
+      }
+      else {
+	if (err) {
+	  for (int i=0; i < sz; i++) {
+	    if (ret[i] == NULL) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Found NULL binding for `%s': certain fields are undefined.", name);
+	    }
+	  }
+	}
       }
       return ret;
     }
@@ -203,7 +217,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     b = hash_add (Hs->state, id->getName());
     b->v = bind;
   }
-  Expr **res = _lookup_binding (Hs, id->getName(), NULL);
+  Expr **res = _lookup_binding (Hs, id->getName(), NULL, 0);
 
   if (id->Rest()) {
     Assert (xd, "What?!");
