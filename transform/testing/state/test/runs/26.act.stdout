@@ -1,0 +1,15 @@
+--- Process: bar<> ---
+   loc-nbools = 0, loc-nvars = 1
+   port-nbools = 0, port-chpvars = 2
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 1
+--- End Process: bar<> ---
+--- Process: foo<> ---
+   loc-nbools = 0, loc-nvars = 20
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 30
+--- End Process: foo<> ---
+Globals: 0 bools

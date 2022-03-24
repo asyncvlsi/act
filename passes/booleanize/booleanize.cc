@@ -121,7 +121,8 @@ static act_booleanized_var_t *var_lookup (act_boolean_netlist_t *n,
   return _var_lookup (n, c);
 }
 
-static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput);
+static void visit_chp_var (act_boolean_netlist_t *N, ActId *id, int isinput,
+			   int is_dataflow);
 
 static void visit_var (act_boolean_netlist_t *N, ActId *id, int isinput)
 {
@@ -205,7 +206,7 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
 	  Array *a = s->toArray ();
 
 	  tl->setArray (a);
-	  visit_chp_var (N, id, isinput);
+	  visit_chp_var (N, id, isinput, 0);
 	  tl->setArray (NULL);
 
 	  delete a;
@@ -215,7 +216,7 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
 	delete s;
       }
       else {
-	visit_chp_var (N, id, isinput);
+	visit_chp_var (N, id, isinput, 0);
       }
     }
     else if (TypeFactory::isUserType (it)) {
@@ -286,7 +287,7 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	while (!s->isend()) {
 	  Array *a = s->toArray ();
 	  tl->setArray (a);
-	  visit_chp_var (N, id, dir);
+	  visit_chp_var (N, id, dir, 0);
 	  tl->setArray (NULL);
 	  delete a;
 	  s->step();
@@ -294,7 +295,7 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
 	delete s;
       }
       else {
-	visit_chp_var (N, id, dir);
+	visit_chp_var (N, id, dir, 0);
       }
     }
     else if (TypeFactory::isUserType (it)) {
@@ -323,9 +324,10 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
   }
 }
 
+static int _dv_count = 0;
 
 static void visit_chp_var (act_boolean_netlist_t *N,
-			   ActId *id, int isinput)
+			   ActId *id, int isinput, int is_dataflow)
 {
   act_booleanized_var_t *v;
 
@@ -351,7 +353,7 @@ static void visit_chp_var (act_boolean_netlist_t *N,
 	while (!as->isend()) {
 	  Array *a = as->toArray ();
 	  piece->setArray (a);
-	  visit_chp_var (N, id, isinput);
+	  visit_chp_var (N, id, isinput, is_dataflow);
 	  piece->setArray (NULL);
 	  delete a;
 	  as->step();
@@ -359,7 +361,7 @@ static void visit_chp_var (act_boolean_netlist_t *N,
 	delete as;
       }
       else {
-	visit_chp_var (N, id, isinput);
+	visit_chp_var (N, id, isinput, is_dataflow);
       }
       tail->prune();
       delete piece;
@@ -368,6 +370,26 @@ static void visit_chp_var (act_boolean_netlist_t *N,
   }
 
   v = var_lookup (N, id);
+  
+  if (is_dataflow && !v->usedchp && TypeFactory::isChanType (it)) {
+    InstType *it2 = TypeFactory::getChanDataType (it);
+    if (it2) {
+      char buf[100];
+      do {
+	snprintf (buf, 100, "_df%d", _dv_count++);
+      } while (N->cur->Lookup (buf));
+
+      N->cur->Add (buf, it2);
+
+      act_booleanized_var_t *idv;
+      ActId *tid = new ActId (buf);
+      idv = var_lookup (N, tid);
+      delete tid;
+      idv->usedchp = 1;		/* used in the chp */
+      idv->output = 1;		/* this is written */
+    }
+  }
+
   v->usedchp = 1;
 
   if (isinput == 1) {
@@ -638,7 +660,8 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 
 
 
-static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
+static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
+				int is_dataflow)
 {
   if (!e) return;
   
@@ -660,8 +683,8 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_GE:
   case E_NE:
   case E_EQ:
-    generate_expr_vars (N, e->u.e.l, ischp);
-    generate_expr_vars (N, e->u.e.r, ischp);
+    generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
+    generate_expr_vars (N, e->u.e.r, ischp, is_dataflow);
     break;
 
   case E_NOT:
@@ -669,7 +692,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    generate_expr_vars (N, e->u.e.l, ischp);
+    generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
     break;
 
   case E_BITFIELD:
@@ -678,7 +701,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
 
       if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
 	if (ischp) {
-	  visit_chp_var (N, (ActId *)e->u.e.l, 1);
+	  visit_chp_var (N, (ActId *)e->u.e.l, 1, is_dataflow);
 	  v = var_lookup (N, (ActId *)e->u.e.l);
 	  v->isint = 1;
 	}
@@ -700,16 +723,16 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
     break;
 
   case E_QUERY:
-    generate_expr_vars (N, e->u.e.l, ischp);
+    generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
     Assert (e->u.e.r && e->u.e.r->u.e.l, "What?");
     Assert (e->u.e.r && e->u.e.r->u.e.r, "What?");
-    generate_expr_vars (N, e->u.e.r->u.e.l, ischp);
-    generate_expr_vars (N, e->u.e.r->u.e.r, ischp);
+    generate_expr_vars (N, e->u.e.r->u.e.l, ischp, is_dataflow);
+    generate_expr_vars (N, e->u.e.r->u.e.r, ischp, is_dataflow);
     break;
 
   case E_CONCAT:
     do {
-      generate_expr_vars (N, e->u.e.l, ischp);
+      generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
       e = e->u.e.r;
     } while (e);
     break;
@@ -717,7 +740,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
   case E_FUNCTION:
     e = e->u.e.r;
     while (e) {
-      generate_expr_vars (N, e->u.e.l, ischp);
+      generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
       e = e->u.e.r;
     }
     break;
@@ -740,10 +763,10 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp)
       if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
 	if (ischp) {
 	  if (e->type == E_VAR) {
-	    visit_chp_var (N, (ActId *)e->u.e.l, 1);
+	    visit_chp_var (N, (ActId *)e->u.e.l, 1, is_dataflow);
 	  }
 	  else {
-	    visit_chp_var (N, (ActId *)e->u.e.l, -1);
+	    visit_chp_var (N, (ActId *)e->u.e.l, -1, is_dataflow);
 	  }
 	}
 	else {
@@ -945,14 +968,14 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   return;
 }
 
-static void generate_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
+static void generate_chp_expr_vars (act_boolean_netlist_t *N, Expr *e, int is_dataflow)
 {
-  generate_expr_vars (N, e, 1);
+  generate_expr_vars (N, e, 1, is_dataflow);
 }
 
 static void generate_hse_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
-  generate_expr_vars (N, e, 0);
+  generate_expr_vars (N, e, 0, 0);
 }
   
 static void generate_hse_vars (act_boolean_netlist_t *N,
@@ -1132,7 +1155,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	generate_chp_expr_vars (N, gc->g);
+	generate_chp_expr_vars (N, gc->g, 0);
 	generate_chp_vars (N, gc->s);
       }
     }
@@ -1152,9 +1175,9 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	_add_dynamic_id (N, c->u.assign.id);
       }
       else {
-	visit_chp_var (N, c->u.assign.id, 0);
+	visit_chp_var (N, c->u.assign.id, 0, 0);
       }
-      generate_chp_expr_vars (N, c->u.assign.e);
+      generate_chp_expr_vars (N, c->u.assign.e, 0);
     }
     break;
 
@@ -1163,7 +1186,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       act_booleanized_var_t *v;
       listitem_t *li;
 
-      visit_chp_var (N, c->u.comm.chan, 0);
+      visit_chp_var (N, c->u.comm.chan, 0, 0);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
 
@@ -1186,14 +1209,14 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
 	fatal_error ("Send action in multiple concurrent blocks!");
       }
       if (c->u.comm.e) {
-	generate_chp_expr_vars (N, c->u.comm.e);
+	generate_chp_expr_vars (N, c->u.comm.e, 0);
       }
       if (c->u.comm.var) {
 	if (c->u.comm.var->isDynamicDeref()) {
 	  _add_dynamic_id (N, c->u.comm.var);
 	}
 	else {
-	  visit_chp_var (N, c->u.comm.var, 0);
+	  visit_chp_var (N, c->u.comm.var, 0, 0);
 	}
       }		   
     }
@@ -1203,7 +1226,7 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
     {
       act_booleanized_var_t *v;
       listitem_t *li;
-      visit_chp_var (N, c->u.comm.chan, 1);
+      visit_chp_var (N, c->u.comm.chan, 1, 0);
       v = var_lookup (N, c->u.comm.chan);
       Assert (v, "What?");
 
@@ -1227,14 +1250,14 @@ static void generate_chp_vars (act_boolean_netlist_t *N,
       }
 
       if (c->u.comm.e) {
-	generate_chp_expr_vars (N, c->u.comm.e);
+	generate_chp_expr_vars (N, c->u.comm.e, 0);
       }
       if (c->u.comm.var) {
 	if (c->u.comm.var->isDynamicDeref()) {
 	  _add_dynamic_id (N, c->u.comm.var);
 	}
 	else {
-	  visit_chp_var (N, c->u.comm.var, 0);
+	  visit_chp_var (N, c->u.comm.var, 0, 0);
 	}
       }		   
     }
@@ -1341,8 +1364,8 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 
   switch (e->t) {
   case ACT_DFLOW_FUNC:
-    generate_chp_expr_vars (N, e->u.func.lhs);
-    visit_chp_var (N, e->u.func.rhs, 0);
+    generate_chp_expr_vars (N, e->u.func.lhs, 1);
+    visit_chp_var (N, e->u.func.rhs, 0, 0);
     break;
 
   case ACT_DFLOW_SPLIT:
@@ -1350,22 +1373,22 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
   case ACT_DFLOW_MIXER:
   case ACT_DFLOW_ARBITER:
     if (e->u.splitmerge.guard) {
-      visit_chp_var (N, e->u.splitmerge.guard, 1);
+      visit_chp_var (N, e->u.splitmerge.guard, 1, 1);
     }
 
     if (e->t == ACT_DFLOW_SPLIT) {
-      visit_chp_var (N, e->u.splitmerge.single, 1);
+      visit_chp_var (N, e->u.splitmerge.single, 1, 1);
     }
     else {
-      visit_chp_var (N, e->u.splitmerge.single, 0);
+      visit_chp_var (N, e->u.splitmerge.single, 0, 0);
     }
     
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
       if (e->t == ACT_DFLOW_SPLIT) {
-	visit_chp_var (N, e->u.splitmerge.multi[i], 0);
+	visit_chp_var (N, e->u.splitmerge.multi[i], 0, 0);
       }
       else {
-	visit_chp_var (N, e->u.splitmerge.multi[i], 1);
+	visit_chp_var (N, e->u.splitmerge.multi[i], 1, 1);
       }
     }
     break;
@@ -1380,7 +1403,7 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
     break;
 
   case ACT_DFLOW_SINK:
-    visit_chp_var (N, e->u.sink.chan, 1);
+    visit_chp_var (N, e->u.sink.chan, 1, 1);
     break;
     
   default:
@@ -1537,6 +1560,7 @@ static act_boolean_netlist_t *process_local_lang (Act *a, Process *proc)
 
   N->nH = NULL;
 
+  _dv_count = 0;
   
   /*-- process all local variables that are used --*/
   if (lang) {
@@ -1739,6 +1763,15 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     if (n->ports[i].omit) {
       printf ("*");
     }
+    if (n->ports[i].input) {
+      printf ("I");
+    }
+    else {
+      printf ("O");
+    }
+    if (n->ports[i].bidir) {
+      printf("B");
+    }
   }
   printf ("\n");
   printf ("C:");
@@ -1747,6 +1780,15 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     n->chpports[i].c->toid()->Print (stdout);
     if (n->chpports[i].omit) {
       printf ("*");
+    }
+    if (n->chpports[i].input) {
+      printf ("I");
+    }
+    else {
+      printf ("O");
+    }
+    if (n->chpports[i].bidir) {
+      printf("B");
     }
   }
   printf ("\n");
@@ -1868,6 +1910,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     A_NEXT (n->ports).omit = 0;
     A_NEXT (n->ports).used = 0;
     A_NEXT (n->ports).input = 0;
+    A_NEXT (n->ports).bidir = 0;
     if (dir == Type::IN) {
       A_NEXT (n->ports).input = 1;
     }
@@ -1884,6 +1927,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     A_NEXT (n->chpports).omit = 0;
     A_NEXT (n->chpports).used = 0;
     A_NEXT (n->chpports).input = 0;
+    A_NEXT (n->chpports).bidir = 0;
     if (dir == Type::IN) {
       A_NEXT (n->chpports).input = 1;
     }
@@ -1905,7 +1949,9 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     return;
   }
 
-  if (black_box_mode && (n->p->isBlackBox() || n->p->isLowLevelBlackBox())) {
+  if (black_box_mode &&
+      (n->p->isBlackBox() ||
+       (n->p->isLowLevelBlackBox()) && n->macro && n->macro->isValid())) {
     /* assume this is needed! */
     return;
   }
@@ -1933,12 +1979,18 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       //v->used = 1;
       v->isport = 1;
       A_LAST (n->ports).input = (v->input && !v->output) ? 1 : 0;
+      if (v->input && v->output) {
+	A_LAST (n->ports).bidir = 1;
+      }
     }
     if (mode != 1 && !chp_done) {
       /* XXX: why should we set the used flag here? */
       //v->usedchp = 1;
       v->ischpport = 1;
       A_LAST (n->chpports).input = (v->input && !v->output) ? 1 : 0;
+      if (v->input && v->output) {
+	A_LAST (n->chpports).bidir = 1;
+      }
 
       Assert (!TypeFactory::isStructure (t), "What?");
 	

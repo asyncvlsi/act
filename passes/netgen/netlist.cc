@@ -579,25 +579,26 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	  n->v->dn == bool_var (N->B, bool_topvar (n->v->up))) {
 	/*- this is an inverter -*/
 
-	Assert (n->v->e_up && n->v->e_dn, "What?");
-	if (n->v->e_up->type == ACT_PRS_EXPR_VAR) {
-	  act_booleanized_var_t *inv = var_lookup (N, n->v->e_up->u.v.id);
-	  if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
-	    VINF(inv)->inv = n;
+	if (n->v->e_up && n->v->e_dn) {
+	  if (n->v->e_up->type == ACT_PRS_EXPR_VAR) {
+	    act_booleanized_var_t *inv = var_lookup (N, n->v->e_up->u.v.id);
+	    if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
+	      VINF(inv)->inv = n;
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Complex inverter?");
+	    }
 	  }
-	  else {
-	    act_error_ctxt (stderr);
-	    fatal_error ("Complex inverter?");
-	  }
-	}
-	else if (n->v->e_dn->type == ACT_PRS_EXPR_VAR) {
-	  act_booleanized_var_t *inv = var_lookup (N, n->v->e_dn->u.v.id);
-	  if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
-	    VINF(inv)->inv = n;
-	  }
-	  else {
-	    act_error_ctxt (stderr);
-	    fatal_error ("Complex inverter?");
+	  else if (n->v->e_dn->type == ACT_PRS_EXPR_VAR) {
+	    act_booleanized_var_t *inv = var_lookup (N, n->v->e_dn->u.v.id);
+	    if (bool_var (N->B, bool_topvar (n->v->up)) == VINF(inv)->b) {
+	      VINF(inv)->inv = n;
+	    }
+	    else {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Complex inverter?");
+	    }
 	  }
 	}
       }

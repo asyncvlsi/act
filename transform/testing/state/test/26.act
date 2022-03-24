@@ -1,0 +1,14 @@
+defproc bar (chan(int<4>) a, b)
+{ 
+  dataflow {
+    a -> b
+  }
+}
+
+defproc foo() 
+{
+int i;
+bar x[10];
+}
+
+foo f;
