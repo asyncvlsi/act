@@ -567,6 +567,10 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 
     InstType *et = sc->Lookup (b->key);
     Assert (et, "What?");
+
+    ActId **fields;
+    fields = NULL;
+    
     if (TypeFactory::isIntType (et)) {
       MALLOC (types, int, 1);
       types[0] = 1;
@@ -579,14 +583,9 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
       Assert (TypeFactory::isStructure (et), "What?");
       Data *d = dynamic_cast <Data *> (et->BaseType());
       int nb, ni;
-      ActId **fields;
       d->getStructCount (&nb, &ni);
       sz = nb + ni;
       fields = d->getStructFields (&types);
-      for (int i=0; i < sz; i++) {
-	delete fields[i];
-      }
-      FREE (fields);
     }
     
     Expr *update;
@@ -644,6 +643,18 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 	    }
 	  }
 	}
+
+	if (curval == NULL) {
+	  act_error_ctxt (stderr);
+	  if (fields) {
+	    fprintf (stderr, "Field: ");
+	    fields[idx]->Print (stderr);
+	    fprintf (stderr, "\n");
+	  }
+	  fatal_error ("Updating binding for `%s' (field #%d): uninitialized field.",
+			 b->key, idx);
+	}
+	
 	if (i == nT-1 && !cond[i]) {
 	  update->u.e.r = curval;
 	}
@@ -669,6 +680,15 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 	}
       }
     }
+
+    if (fields) {
+      for (int i=0; i < sz; i++) {
+	delete fields[i];
+      }
+      FREE (fields);
+      fields = NULL;
+    }
+    
     FREE (types);
     ActId *tmpid = new ActId (b->key);
     _update_binding (Tret, tmpid, newval);

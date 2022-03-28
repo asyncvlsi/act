@@ -1949,11 +1949,12 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     return;
   }
 
+  int is_bb = 0;
   if (black_box_mode &&
       (n->p->isBlackBox() ||
        (n->p->isLowLevelBlackBox()) && n->macro && n->macro->isValid())) {
     /* assume this is needed! */
-    return;
+    is_bb = 1;
   }
 
   int bool_done = 0;
@@ -1962,13 +1963,13 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   b = phash_lookup (n->cH, c);
   if (b) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
-    if (!v->used) {
+    if (!is_bb && !v->used) {
       if (mode != 2) {
 	A_LAST (n->ports).omit = 1;
 	bool_done = 1;
       }
     }
-    if (!v->usedchp) {
+    if (!is_bb && !v->usedchp) {
       if (mode != 1) {
 	A_LAST (n->chpports).omit = 1;
 	chp_done = 1;
@@ -2006,7 +2007,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
       }
     }
   }
-  else {
+  else if (!is_bb) {
     /* connection pointers that were not found were also not used! */
     if (mode != 2) {
       A_LAST (n->ports).omit = 1;
