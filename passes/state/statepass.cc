@@ -1461,6 +1461,7 @@ int ActStatePass::globalBoolOffset (ActId *id)
     ib = phash_lookup (si->map, conn);
     Assert (ib, "Hmm");
     loc = top_level;
+    return ib->i;
   }
   else {
     /* is it a port? */
@@ -1573,7 +1574,7 @@ int ActStatePass::globalBoolOffset (ActId *id)
 int ActStatePass::checkIdExists (ActId *id)
 {
   Process *top_level = _root_si->bnl->p;
-  
+
   /* -- partition processes -- */
   Process *loc;
   ActId *rest = id->nonProcSuffix (top_level, &loc);
@@ -1592,7 +1593,7 @@ int ActStatePass::checkIdExists (ActId *id)
   if (!conn) return 0;
   
   Assert (conn, "Hmm");
-  
+
   if (conn->isglobal()) {
     /* global ID: done! */
     si = _root_si;
@@ -1601,6 +1602,7 @@ int ActStatePass::checkIdExists (ActId *id)
     if (!ib) return 0;
     Assert (ib, "Hmm");
     loc = top_level;
+    return 1;
   }
   else {
     /* is it a port? */
@@ -1645,7 +1647,6 @@ int ActStatePass::checkIdExists (ActId *id)
     }
   }
 
-  
   if (!((ib->i >= 0) || ((top_level == loc) && rest == id))) {
     return 0;
   }
@@ -1664,7 +1665,6 @@ int ActStatePass::checkIdExists (ActId *id)
   /* -- check all the array indices! -- */
   ValueIdx *ux = vx;
   ActId *rid = id;
-  
   
   ux = vx;
   rid = id;
