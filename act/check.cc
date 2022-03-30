@@ -1729,6 +1729,9 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
   }
     
   if (it1) {
+    if (TypeFactory::isChanType (it1)) {
+      it1 = TypeFactory::getChanDataType (it1);
+    }
     ret = 0;
     if (!TypeFactory::isDataType (it1) && !TypeFactory::isStructure (it1) &&
 	!TypeFactory::isPIntType (it1) && !TypeFactory::isPBoolType (it1)) {
@@ -1775,6 +1778,9 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
       if (it1) { delete it1; }
       if (it2) { delete it2; }
       return 0;
+    }
+    if (TypeFactory::isChanType (it2)) {
+      it2 = TypeFactory::getChanDataType (it2);
     }
     ret = 0;
     if (!TypeFactory::isDataType (it2) && !TypeFactory::isStructure (it2) &&
