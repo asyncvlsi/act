@@ -1,0 +1,20 @@
+namespace xfoo {
+
+bool VddN;
+
+export defproc test()
+{
+  bool a, b;
+  prs  {
+    a => b-
+  }
+}
+
+}
+
+defproc foo()
+{
+xfoo::test t;
+}
+
+foo f;

@@ -1394,7 +1394,16 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 	    delete id;
 	  }
 	  else {
-	    snprintf (buf, sz, "%s", vx->getName());
+	    char *tmp = NULL;
+	    if (vx->global) {
+	      if (vx->global != ActNamespace::Global()) {
+		tmp = vx->global->Name (true);
+	      }
+	    }
+	    snprintf (buf, sz, "%s%s", tmp ? tmp : "", vx->getName());
+	    if (tmp) {
+	      FREE (tmp);
+	    }
 	  }
 	}
 	else {
