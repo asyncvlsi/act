@@ -1,0 +1,10 @@
+
+defproc test(bool x[2][4])
+{
+
+}
+
+
+bool w[4][4];
+
+test t(w[0..1]);

@@ -240,6 +240,20 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
     FREE (tmpbuf);
     return T_ERR;
   }
+  if (it->arrayInfo() && id->arrayInfo()) {
+    if (it->arrayInfo()->nDims() != id->arrayInfo()->nDims()) {
+      char *tmpbuf;
+      Array *tmpa;
+      tmpa = id->arrayInfo();
+      id->setArray (NULL);
+      MALLOC (tmpbuf, char, 10240);
+      id->sPrint (tmpbuf, 10240);
+      id->setArray (tmpa);
+      typecheck_err ("Identifier `%s' has an invalid number of array dimensions (expected %d v/s %d)", tmpbuf, it->arrayInfo()->nDims(), id->arrayInfo()->nDims());
+      FREE (tmpbuf);
+      return T_ERR;
+    }
+  }
 
   if (xit) {
     *xit = it;
