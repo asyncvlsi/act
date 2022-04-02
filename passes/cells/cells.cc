@@ -821,7 +821,7 @@ void ActCellPass::flush_pending (Scope *sc)
 	    for (int k=0; k < at_len; k++) {
 	      if (at_idx[k] == j) {
 		grouped[j] = 1;
-		bitset_set (at_group, j);
+		bitset_set (at_group, k);
 		bitset_or (at_group, at_use[j]);
 		break;
 	      }
