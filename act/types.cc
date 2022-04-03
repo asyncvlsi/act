@@ -1791,6 +1791,10 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
   }
 }
 
+typedef long (*EXT_ACT_FUNC)(int nargs, long *args);
+
+static struct ExtLibs *_act_ext_libs = NULL;
+
 Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
 {
   Assert (nargs == getNumParams(), "What?");
@@ -1883,41 +1887,101 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
       }
     }
   }
-  
-  /* run the chp */
-  Assert (c, "Isn't this required?!");
-  _run_chp (I, c->c);
+
+  int ext_found = 0;
+  if (!c) {
+    EXT_ACT_FUNC fext;
+    /* no chp body! could be an external function */
+    if (!_act_ext_libs) {
+      _act_ext_libs = act_read_extern_table ("act.extern");
+    }
+    char buf[2040];
+    snprintf (buf, 2040, "%s<>", getName());
+    fext = (EXT_ACT_FUNC) act_find_dl_func (_act_ext_libs, ns, buf);
+    if (!fext) {
+      act_error_ctxt (stderr);
+      fatal_error ("Function `%s': no chp body, and no external definition",
+		   getName());
+    }
+    long *eargs;
+    if (nargs != 0) {
+      MALLOC (eargs, long, nargs);
+      for (int i=0; i < nargs; i++) {
+	if (args[i]->type == E_TRUE) {
+	  eargs[i] = 1;
+	}
+	else if (args[i]->type == E_FALSE) {
+	  eargs[i] = 0;
+	}
+	else if (args[i]->type == E_REAL) {
+	  eargs[i] = args[i]->u.f;
+	}
+	else if (args[i]->type == E_INT) {
+	  eargs[i] = args[i]->u.v;
+	}
+	else {
+	  Assert (0, "What?!");
+	}
+      }
+    }
+
+    nargs = (*fext) (nargs, eargs);
+    if (nargs != 0) {
+      FREE (eargs);
+    }
+    ext_found = 1;
+  }
+  else {
+    /* run the chp */
+    Assert (c, "Isn't this required?!");
+    _run_chp (I, c->c);
+  }
 
   pending = 0;
 
   Expr *ret;
 
   if (TypeFactory::isPIntType (getRetType())) {
-    if (I->issetPInt (vx->u.idx)) {
-      ret = const_expr (I->getPInt (vx->u.idx));
+    if (ext_found) {
+      ret = const_expr (nargs);
     }
     else {
-      act_error_ctxt (stderr);
-      fatal_error ("self is not assigned!");
+      if (I->issetPInt (vx->u.idx)) {
+	ret = const_expr (I->getPInt (vx->u.idx));
+      }
+      else {
+	act_error_ctxt (stderr);
+	fatal_error ("self is not assigned!");
+      }
     }
   }
   else if (TypeFactory::isPBoolType (getRetType())) {
-    if (I->issetPBool (vx->u.idx)) {
-      ret = const_expr_bool (I->getPBool (vx->u.idx));
+    if (ext_found) {
+      ret = const_expr_bool (nargs == 0 ? 0 : 1);
     }
     else {
-      act_error_ctxt (stderr);
-      fatal_error ("self is not assigned!");
+      if (I->issetPBool (vx->u.idx)) {
+	ret = const_expr_bool (I->getPBool (vx->u.idx));
+      }
+      else {
+	act_error_ctxt (stderr);
+	fatal_error ("self is not assigned!");
+      }
     }
   }
   else if (TypeFactory::isPRealType (getRetType())) {
-    if (I->issetPReal (vx->u.idx)) {
-      ret = const_expr_real (I->getPReal (vx->u.idx));
+    if (ext_found) {
+      ret = const_expr_real (nargs);
     }
     else {
-      act_error_ctxt (stderr);
-      fatal_error ("self is not assigned!");
-      ret = NULL;
+      if (I->issetPReal (vx->u.idx)) {
+	ret = const_expr_real (I->getPReal (vx->u.idx));
+      }
+      else {
+	act_error_ctxt (stderr);
+	fatal_error ("self is not assigned!");
+	ret = NULL;
+      }
     }
   }
   else {

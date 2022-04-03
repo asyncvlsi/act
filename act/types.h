@@ -1072,6 +1072,18 @@ void act_error_ctxt (FILE *);
 const char *act_error_top ();
 void act_error_setline (int line);
 
+/*
+  External functions for core act library must 
+  be of the form
+
+  long function_name (int nargs, long *args);
+*/
+
+struct ExtLibs;
+void *act_find_dl_func (struct ExtLibs *el, ActNamespace *ns, const char *f);
+struct ExtLibs *act_read_extern_table (const char *prefix);
+
+
 void typecheck_err (const char *s, ...);
 
 extern "C" {

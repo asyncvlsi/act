@@ -35,7 +35,7 @@ OBJS1=expr.o path.o expr_extra.o
 OBJS2=act_parse.o act_walk_X.o wrap.o prs.o scope.o \
 	act.o namespaces.o body.o lang.o id.o array.o expr2.o \
 	inst.o types.o process.o func.o typefactory.o check.o \
-	connect.o error.o iter.o \
+	connect.o error.o iter.o extern.o \
 	mangle.o pass.o tech.o fexpr.o macros.o inline.o extmacro.o
 
 OBJS=$(OBJS1) $(OBJS2)
