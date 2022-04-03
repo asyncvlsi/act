@@ -710,6 +710,16 @@ static void _mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
   return;
 }
 
+static int _at_inv_lookup (int idx, int *at_idx, int len)
+{
+  for (int i=0; i < len; i++) {
+    if (at_idx[i] == idx) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 void ActCellPass::flush_pending (Scope *sc)
 {
   int pending_count = 0;
@@ -798,14 +808,10 @@ void ActCellPass::flush_pending (Scope *sc)
       grouped[i] = 1;
       bitset_or (at_group, at_use[i]);
       if (pendingprs[i]->u.one.label) {
-	int k;
-	for (k=0; k < at_len; k++) {
-	  if (at_idx[k] == i) {
-	    bitset_set (at_group, i);
-	    break;
-	  }
-	}
-	Assert (k != at_len, "What?");
+	/* find the index of the at-variable for this label */
+	int k = _at_inv_lookup (i, at_idx, at_len);
+	Assert (k != -1, "What?");
+	bitset_set (at_group, k);
       }
 
       do {
@@ -818,16 +824,16 @@ void ActCellPass::flush_pending (Scope *sc)
 	    grouped[j] = 1;
 	  }
 	  if (pendingprs[j]->u.one.label) {
-	    for (int k=0; k < at_len; k++) {
-	      if (at_idx[k] == j) {
-		grouped[j] = 1;
-		bitset_set (at_group, k);
-		bitset_or (at_group, at_use[j]);
-		break;
-	      }
+	    /* check if this label is already in the at group */
+	    int k = _at_inv_lookup (j, at_idx, at_len);
+	    Assert (k != -1, "What?");
+	    if (bitset_tst (at_group, k)) {
+	      grouped[j] = 1;
+	      bitset_or (at_group, at_use[j]);
 	    }
 	  }
 	}
+	/* repeat while the at group changed */
       } while (!bitset_equal (at_tmp, at_group));
 
       // now we have all the @s we need, and they are flagged with the
