@@ -35,6 +35,8 @@ fi
 
 make  > make.log 2>&1
 
+export LD_LIBRARY_PATH=.
+
 myecho " "
 num=0
 count=0
