@@ -1,0 +1,6 @@
+function test (pint x) : pint;
+
+bool x[test(4)];
+bool y[test(4)];
+
+x = y;

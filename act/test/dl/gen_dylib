@@ -1,0 +1,22 @@
+#!/bin/sh
+
+BASE=`$VLSI_TOOLS_SRC/scripts/getbaseos`
+
+FILE=ext
+
+if [ x$BASE = "xdarwin" ]
+then
+#
+# For MacOS
+#
+	gcc -fPIC -c ${FILE}.c
+	gcc -dynamiclib -o ext.lib ${FILE}.o
+else 
+#
+# For Linux
+#
+	gcc -shared -DPIC -fPIC -c ${FILE}.c
+	gcc -shared -Wl,-x -o ext.lib ${FILE}.o
+fi
+
+rm ${FILE}.o
