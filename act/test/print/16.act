@@ -1,0 +1,12 @@
+defproc test()
+{
+   chan(int) A, B, C;
+   bool a, b, c;
+ 
+   chp {
+     *[[a & #A & (int(b) + int(c) > 1) & #B | c & #C -> b-
+      ]]
+   }
+}
+
+test t;

@@ -1,0 +1,24 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+bool b;
+bool a;
+chan(int<32>) C;
+chan(int<32>) B;
+chan(int<32>) A;
+bool c;
+
+/* connections */
+chp {
+*[true -> [#A&#B&a&(int(b)+int(c)>0x1|#C)|#C&c -> b:=false]]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

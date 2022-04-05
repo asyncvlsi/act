@@ -530,6 +530,7 @@ const char *act_dev_value_to_string (int);
 int act_dev_string_to_value (const char *s);
 
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
+act_attr_t *prs_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 
 void chp_expand_macromode (int mode);
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
@@ -563,6 +564,10 @@ ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 
 int act_hse_direction (act_chp_lang_t *, ActId *);
 
+act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
+
+/* only use this on guard expressions */
+int act_expr_has_neg_probes (Expr *e);
 
 
 #endif /* __LANG_H__ */
