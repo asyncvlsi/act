@@ -555,6 +555,7 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 				  ACT_VAR_CONV conv_var);
 
 char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e);
+char *act_expr_to_string (list_t *id_list, Expr *e);
 
 void act_prs_expr_free (act_prs_expr_t *e);
 void act_chp_free (act_chp_lang_t *);

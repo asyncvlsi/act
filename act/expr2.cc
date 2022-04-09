@@ -932,7 +932,16 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret,
       }
     }
     for (int i=0; i < nargs; i++) {
-      Assert (expr_is_a_const (args[i]), "Argument is not a constant?");
+      if (!expr_is_a_const (args[i])) {
+	if (args[i]->type == E_ARRAY) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Arrays are not supported as function arguments.");
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  Assert (expr_is_a_const (args[i]), "Argument is not a constant?");
+	}
+      }
     }
     e = x->eval (ns, nargs, args);
     FREE (*ret);
@@ -2897,7 +2906,7 @@ static void _expr_to_string (char **buf, int *len, int *sz,
 }
 
 
-char *expr_to_string (list_t *id_list, Expr *e)
+char *act_expr_to_string (list_t *id_list, Expr *e)
 {
   char *buf;
   int len, sz;
