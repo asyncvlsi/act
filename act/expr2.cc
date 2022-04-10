@@ -3026,3 +3026,97 @@ char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e)
   return ret;
 }
 
+static void _add_id (list_t *ids, ActId *id)
+{
+  listitem_t *li;
+  for (li = list_first (ids); li; li = list_next (li)) {
+    if (id == (ActId *) list_value (li)) {
+      return;
+    }
+    if (id->isEqual ((ActId *)list_value (li))) {
+      return;
+    }
+  }
+  list_append (ids, id);
+}
+
+static void _collect_ids_from_expr (list_t *ids, Expr *e)
+{
+  if (!e) return;
+  
+  switch (e->type) {
+  case E_PLUS:
+  case E_MULT:
+  case E_AND:  case E_OR:  case E_XOR:
+  case E_MINUS:
+  case E_DIV:  case E_MOD:
+  case E_LSL:  case E_LSR:  case E_ASR:
+  case E_LT:  case E_GT:
+  case E_LE:  case E_GE:
+  case E_EQ:  case E_NE:
+    _collect_ids_from_expr (ids, e->u.e.l);
+    _collect_ids_from_expr (ids, e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    _collect_ids_from_expr (ids, e->u.e.l);
+    break;
+
+  case E_QUERY:
+    _collect_ids_from_expr (ids, e->u.e.l);
+    _collect_ids_from_expr (ids, e->u.e.r->u.e.l);
+    _collect_ids_from_expr (ids, e->u.e.r->u.e.r);
+    break;
+
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    _add_id (ids, (ActId *)e->u.e.l);
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *f = e;
+      while (f) {
+	_collect_ids_from_expr (ids, f->u.e.l);
+	f = f->u.e.r;
+      }
+    }
+    break;
+    
+  case E_BITFIELD:
+    /* var */
+    _add_id (ids, (ActId *)e->u.e.l);
+    break;
+
+  case E_BUILTIN_BOOL:
+    _collect_ids_from_expr (ids, e->u.e.l);
+    break;
+    
+  case E_BUILTIN_INT:
+    _collect_ids_from_expr (ids, e->u.e.l);
+    break;
+
+  case E_FUNCTION:
+  case E_COMMA:
+  case E_COLON:
+  default:
+    fatal_error ("What? %d (functions are not supported; inline them first)\n", e->type);
+    break;
+  }
+}
+
+void act_expr_collect_ids (list_t *l, Expr *e)
+{
+  if (!l) {
+    warning ("act_expr_collect_ids: list was NULL");
+    return;
+  }
+  return _collect_ids_from_expr (l, e);
+}

@@ -557,6 +557,15 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e);
 char *act_expr_to_string (list_t *id_list, Expr *e);
 
+/* 
+   Pass in a non-NULL list of ActId *'s.
+
+   Collects any new ids and adds them to the list l
+   This list is suitable for use in act_expr_to_strnig and
+   act_prs_expr_to_string
+*/
+void act_expr_collect_ids (list_t *l, Expr *e);
+
 void act_prs_expr_free (act_prs_expr_t *e);
 void act_chp_free (act_chp_lang_t *);
 void act_chp_macro_check (Scope *s, ActId *id);
