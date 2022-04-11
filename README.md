@@ -36,10 +36,10 @@ installing it as part of your ACT install, as some of the other tools might assu
 ## More information:
 
 More detailed documentation is available here:
-    http://avlsi.csl.yale.edu/act/
+    https://avlsi.csl.yale.edu/act/
     
 A first ACT tutorial:
-    http://avlsi.csl.yale.edu/act/doku.php?id=tutorial:basicprs
+    https://avlsi.csl.yale.edu/act/doku.php?id=tutorial:basicprs
 
 Some more installation instructions are available here:
-    http://avlsi.csl.yale.edu/act/doku.php?id=install
+    https://avlsi.csl.yale.edu/act/doku.php?id=install
