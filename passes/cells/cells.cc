@@ -2821,15 +2821,16 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 #endif
 
       {
-	char buf[100];
+	char *buf;
 	int cut;
-	snprintf (buf, 100, "%s", p->getName());
+        buf = Strdup (p->getName());
 	cut = strlen (buf) - 2;
 	buf[cut] = '\0';
 	UserDef *u = cells->findType (buf);
 	Assert (u, "Hmm");
 	pi->cell = dynamic_cast<Process *>(u);
 	Assert (pi->cell, "Hmm...");
+        FREE (buf);
       }
       
       if (out_t->arrayInfo()) {
