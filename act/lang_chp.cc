@@ -411,6 +411,7 @@ static void _compute_dynamic_vars (struct Hashtable **H, Expr *e)
   case E_ARRAY:
   case E_SUBRANGE:
   case E_SELF:
+  case E_SELF_ACK:
     break;
 
   default:
@@ -584,6 +585,7 @@ static void _compute_rw_sets (rw_sets &rw,
   case E_ARRAY:
   case E_SUBRANGE:
   case E_SELF:
+  case E_SELF_ACK:
     break;
 
   default:

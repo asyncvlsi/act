@@ -323,6 +323,11 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       delete id;
       ret->type = E_SELF;
     }
+    else if (strcmp (id->getName(), "selfack") == 0 && id->arrayInfo() == NULL
+	     && id->Rest() == NULL) {
+      delete id;
+      ret->type = E_SELF_ACK;
+    }
     break;
 
   case E_TRUE: break;

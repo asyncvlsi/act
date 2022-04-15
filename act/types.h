@@ -1048,6 +1048,7 @@ void expr_ex_free (Expr *);
 				*/
 
 #define E_SELF (E_END + 20)
+#define E_SELF_ACK (E_END + 19)
 
 /* 
    For loops:

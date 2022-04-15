@@ -603,6 +603,7 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
     break;
 
   case E_PROBE:
@@ -750,6 +751,7 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
     break;
 
   case E_PROBE:
@@ -943,6 +945,7 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
     break;
 
   case E_PROBE:

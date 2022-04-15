@@ -301,6 +301,12 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
     return;
     break;
 
+  case E_SELF_ACK:
+    snprintf (buf+k, sz, "selfack");
+    PRINT_STEP;
+    return;
+    break;
+
   case E_TYPE:
     {
       InstType *it = (InstType *)e->u.e.l;
@@ -2256,6 +2262,17 @@ static Expr *_expr_expand (int *width, Expr *e,
     *width = 0;
     break;
 
+  case E_SELF_ACK:
+    xid = new ActId ("selfack");
+    te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
+    if (te->type != E_VAR) {
+      delete xid;
+    }
+    FREE (ret);
+    ret = te;
+    *width = 0;
+    break;
+
   case E_CONCAT:
     {
       Expr *f = ret;
@@ -2359,7 +2376,8 @@ AExpr::~AExpr ()
   else {
     /* YYY: hmm... expression memory management */
     Expr *e = (Expr *)l;
-    if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY || e->type == E_SELF || e->type == E_REAL) {
+    if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY
+	|| e->type == E_SELF || e->type == E_REAL || e->type == E_SELF_ACK) {
       FREE (e);
     }
     else if (e->type == E_VAR) {

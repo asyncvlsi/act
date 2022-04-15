@@ -974,6 +974,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
     Assert (ch, "Hmm?!");
     Assert (ch->datatype(), "What?");
     ux->CurScope()->Add ("self", ch->datatype());
+
+    if (ch->acktype()) {
+      ux->CurScope()->Add ("selfack", ch->acktype());
+    }
   }
   else if (dynamic_cast<Data *>(this)) {
     InstType *x;

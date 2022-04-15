@@ -199,6 +199,7 @@ Expr *ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
   case E_PROBE:
   case E_VAR:
     break;
@@ -956,6 +957,7 @@ void ActCHPFuncInline::_collect_complex_inlines (list_t *l, Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
   case E_PROBE:
   case E_VAR:
     break;
@@ -1042,6 +1044,7 @@ void ActCHPFuncInline::_apply_complex_inlines (list_t *l, Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_SELF:
+  case E_SELF_ACK:
   case E_PROBE:
   case E_VAR:
     break;
@@ -1182,7 +1185,7 @@ static Expr *_expr_clone_subst (struct fn_inline_args *fn, Expr *e)
     FREE (ret);
     ret = e;
     break;
-    
+
   default:
     fatal_error ("Unknown expression type (%d)\n", e->type);
     break;

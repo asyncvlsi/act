@@ -873,8 +873,15 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     break;
 
   case E_SELF:
+  case E_SELF_ACK:
     {
-      ActId *tmpid = new ActId ("self");
+      ActId *tmpid;
+      if (e->type == E_SELF) {
+	tmpid = new ActId ("self");
+      }
+      else {
+	tmpid = new ActId ("selfack");
+      }
       InstType *xit;
       lt = act_type_var (s, tmpid, &xit);
       delete tmpid;

@@ -499,6 +499,10 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_SELF:
     rets = _lookup_binding (Hs, "self", NULL);
     break;
+
+  case E_SELF_ACK:
+    Assert (0, "selfack in this context?!");
+    break;
     
   case E_VAR:
     {
