@@ -50,6 +50,9 @@ public:
 
   void Print (FILE *fp);
 
+  list_t *getNewCells () { return _new_cells; }
+  list_t *getUsedCells() { return _used_cells; }
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
@@ -61,6 +64,9 @@ private:
   int cell_count;
   struct idmap current_idmap;
   int _leak_flag;
+
+  list_t *_new_cells;
+  list_t *_used_cells;
 
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);

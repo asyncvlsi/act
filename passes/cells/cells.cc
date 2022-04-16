@@ -171,6 +171,16 @@ static void _add_new_outslot (struct act_prsinfo *pi)
   A_INC (pi->attrib);
 }
 
+static void _add_used_cell (list_t *l, Process *p)
+{
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    if (p == (Process *) list_value (li)) {
+      return;
+    }
+  }
+  list_append (l, p);
+}
+
 
 static void _dump_prsinfo (struct act_prsinfo *p);
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
@@ -905,6 +915,8 @@ void ActCellPass::flush_pending (Scope *sc)
 
       Assert (sc->isExpanded(), "Hmm");
 
+      _add_used_cell (_used_cells, pi->cell);
+
       InstType *it = new InstType (sc, pi->cell, 0);
       it = it->Expand (NULL, sc);
 
@@ -1371,7 +1383,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   proc->MkDefined ();
   pi->cell = proc;
   //proc->Expand (cell_ns, cell_ns->CurScope(), 0, NULL);
-
+  list_append (_new_cells, proc);
+  _add_used_cell (_used_cells, proc);
 
   char *base_name = _get_basename (pi);
   char *buf;
@@ -2340,6 +2353,8 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
 
     Assert (sc->isExpanded(), "Hmm");
 
+    _add_used_cell (_used_cells, pi->cell);
+    
     InstType *it = new InstType (sc, pi->cell, 0);
     it = it->Expand (NULL, sc);
 
@@ -2414,7 +2429,7 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   }
 
   Assert (cell, "No transmission gates?");
-    
+
   InstType *it = new InstType (sc, cell, 0);
   int w, l;
   if (prs->u.p.sz) {
@@ -2934,6 +2949,9 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   cell_ns = NULL;
   proc_inst_count = 0;
   cell_count = 0;
+  _new_cells = list_new ();
+  _used_cells = list_new ();
+  
   disableUpdate ();
 
   if (!a->pass_find ("sizing")) {
@@ -2973,4 +2991,6 @@ ActCellPass::~ActCellPass ()
   if (cell_table) {
     chash_free (cell_table);
   }
+  list_free (_new_cells);
+  list_free (_used_cells);
 }
