@@ -2599,6 +2599,7 @@ void ActCellPass::prs_to_cells (Process *p)
   sc = p ? p->CurScope() : ActNamespace::Global()->CurScope();
   if (p) {
     if (p->isCell() && p->isLeaf()) {
+      _add_used_cell (_used_cells, p);
       /* nothing to do here */
       return;
     }
