@@ -2160,9 +2160,9 @@ struct LispCliCommand Cmds[] = {
   { "random", "[min max] - random timings", process_random },
   { "random_seed", "seed - set random number seed", process_random_seed },
   { "norandom", "- deterministic timings", process_norandom },
-  { "random_excl", "random_excl on|off - turn on/off random exclhi/lo firings", process_random_excl },
+  { "random_excl", "on|off - turn on/off random exclhi/lo firings", process_random_excl },
 
-  { "rand_init", "rand_init - randomly set signals that are X that have rand_init directives", process_rand_init },
+  { "rand_init", "- randomly set signals that are X that have rand_init directives", process_rand_init },
   
   { "after", "<n> <minu> <maxu> <mind> <maxd> - node set to random times within range", process_after },
   { "dumptc", "<file> - dump transition counts for nodes to <file>", process_dumptc },
