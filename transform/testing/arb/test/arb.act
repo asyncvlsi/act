@@ -1,0 +1,14 @@
+namespace std {
+
+export template<pint N, M>
+defproc arbiter(chan(int<N>) A; chan(int<M>) B; chan(int<N>) Ap;
+		chan(int<M>) Bp)
+{
+  chp {
+    *[[| #A -> Ap!A;A?
+     []  #B -> Bp!B;B?
+     |]]
+  }
+}
+
+}

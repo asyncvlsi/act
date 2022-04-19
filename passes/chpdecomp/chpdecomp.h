@@ -21,8 +21,8 @@
  *
  **************************************************************************
  */
-#ifndef __ACT_PASS_CHPMEM_H__
-#define __ACT_PASS_CHPMEM_H__
+#ifndef __ACT_PASS_CHPDECOMP_H__
+#define __ACT_PASS_CHPDECOMP_H__
 
 #include <act/act.h>
 #include <act/passes/booleanize.h>
@@ -59,4 +59,23 @@ private:
   act_boolean_netlist_t *_curbnl;
 };
 
-#endif /* __ACT_PASS_CHPMEM_H__ */
+
+class ActCHPArbiter : public ActPass {
+public:
+  ActCHPArbiter (Act *a);
+  int run (Process *p = NULL);
+
+private:
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *);
+
+  void _find_potential_arbiters (list_t *l, act_chp_lang_t *c);
+  int _fresh_channel (Scope *sc, int bw);
+  void _substitute (act_chp_lang_t *c, list_t *l1, list_t *l2);
+
+  ActBooleanizePass *_bp;
+  act_boolean_netlist_t *_curbnl;
+};
+
+
+#endif /* __ACT_PASS_CHPDECOMP_H__ */

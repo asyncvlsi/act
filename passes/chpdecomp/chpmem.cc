@@ -22,7 +22,7 @@
  **************************************************************************
  */
 #include <stdio.h>
-#include "chpmem.h"
+#include "chpdecomp.h"
 #include <act/iter.h>
 #include <string.h>
 

@@ -20,7 +20,7 @@
 #-------------------------------------------------------------------------
 TARGETINCS=passes.h
 TARGETINCSUBDIR=act
-SUBDIRS=flatten netgen cells booleanize state sizing finline chpmem
+SUBDIRS=flatten netgen cells booleanize state sizing finline chpdecomp
 
 LIB1=libactpass_$(EXT).a
 LIB2=libactpass_sh_$(EXT).so
@@ -35,7 +35,8 @@ USEOBJS=booleanize/$(EXT)/booleanize.o \
 	state/$(EXT)/statepass.o \
 	sizing/$(EXT)/sizing.o  \
 	finline/$(EXT)/finline.o \
-	chpmem/$(EXT)/chpmem.o
+	chpdecomp/$(EXT)/chpmem.o \
+	chpdecomp/$(EXT)/chparb.o
 
 SHOBJS=$(USEOBJS:.o=.os)
 

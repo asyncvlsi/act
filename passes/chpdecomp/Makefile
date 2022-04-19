@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2011-2019 Rajit Manohar
+#  Copyright (c) 2021 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,9 +18,13 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-#
-# Make everything, in the right order
-# 
-SUBDIRS=state inline mem arb
+EXTRA=chpmem.o chpmem.os chparb.o chparb.os
+TARGETINCS=chpdecomp.h
+TARGETINCSUBDIR=act/passes
+
+SRCS=chpmem.cc
+OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+-include Makefile.deps

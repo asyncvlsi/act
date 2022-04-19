@@ -1,0 +1,19 @@
+import "arb.act";
+
+
+defproc foo(chan?(int) A, B; chan!(int) C)
+{
+   int x;
+   chp {
+     *[[| #A -> A?x [] #B -> B?x |];
+       C!x
+      ]
+   }
+}
+
+defproc test()
+{
+  foo f;
+}
+
+test t;

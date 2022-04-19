@@ -2355,6 +2355,18 @@ AExpr::AExpr (Expr *e)
   t = AExpr::EXPR;
 }
 
+AExpr::AExpr (ActId *id)
+{
+  Expr *e;
+  NEW (e, Expr);
+  e->type = E_VAR;
+  e->u.e.l = (Expr *)id;
+  e->u.e.r = NULL;
+
+  r = NULL;
+  l = (AExpr *)e;
+  t = AExpr::EXPR;
+}
 
 AExpr::AExpr (AExpr::type typ, AExpr *inl, AExpr *inr)
 {

@@ -1,0 +1,55 @@
+namespace std {
+export defproc arbiter_332_732_4 (chan(int<32>) A; chan(int<32>) B; chan(int<32>) Ap; chan(int<32>) Bp);
+
+export defproc arbiter_332_732_4 (chan(int<32>) A; chan(int<32>) B; chan(int<32>) Ap; chan(int<32>) Bp)
+{
+
+/* instances */
+
+/* connections */
+chp {
+*[true -> [|#A -> Ap!A;A? [] #B -> Bp!B;B?|]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc foo (chan(int<32>)? A; chan(int<32>)? B; chan(int<32>)! C);
+defproc test ();
+
+defproc foo (chan(int<32>)? A; chan(int<32>)? B; chan(int<32>)! C)
+{
+
+/* instances */
+::std::arbiter_332_732_4 _arbx0;
+chan(int<32>) _chpx2;
+chan(int<32>) _chpx1;
+int<32> x;
+
+/* connections */
+_arbx0.Ap=_chpx1;
+_arbx0.Bp=_chpx2;
+B=_arbx0.B;
+A=_arbx0.A;
+chp {
+*[true -> [#_chpx1 -> _chpx1?x [] #_chpx2 -> _chpx2?x];C!x]
+}
+}
+
+defproc test ()
+{
+
+/* instances */
+foo f;
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

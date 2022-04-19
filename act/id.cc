@@ -276,7 +276,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     if (id->Rest()) {
       UserDef *u;
 
-#if 0      
+#if 0
       printf ("Type:  [it=");
       it->Print (stdout);
       printf ("]\n");

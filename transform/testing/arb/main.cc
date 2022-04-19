@@ -2,7 +2,7 @@
  *
  *  This file is part of the ACT library
  *
- *  Copyright (c) 2018-2019 Rajit Manohar
+ *  Copyright (c) 2022 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -21,18 +21,55 @@
  *
  **************************************************************************
  */
-#ifndef __ACT_PASSES_H__
-#define __ACT_PASSES_H__
-
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <act/act.h>
-#include <act/passes/aflat.h>
-#include <act/passes/booleanize.h>
-#include <act/passes/netlist.h>
-#include <act/passes/cells.h>
-#include <act/passes/statepass.h>
-#include <act/passes/sizing.h>
-#include <act/passes/finline.h>
-#include <act/passes/chpdecomp.h>
+#include <act/passes.h>
+#include <common/config.h>
+
+static void usage (char *name)
+{
+  fprintf (stderr, "Usage: %s [act-options] <actfile> <process>\n", name);
+  exit (1);
+}
 
 
-#endif /* __ACT_PASSES_H__ */
+int main (int argc, char **argv)
+{
+  Act *a;
+  char *proc;
+
+  /* initialize ACT library */
+  Act::Init (&argc, &argv);
+
+  /* some usage check */
+  if (argc != 3) {
+    usage (argv[0]);
+  }
+
+  /* read in the ACT file */
+  a = new Act (argv[1]);
+
+  /* expand it */
+  a->Expand ();
+ 
+  /* find the process specified on the command line */
+  Process *p = a->findProcess (argv[2]);
+
+  if (!p) {
+    fatal_error ("Could not find process `%s' in file `%s'", argv[2], argv[1]);
+  }
+
+  if (!p->isExpanded()) {
+    fatal_error ("Process `%s' is not expanded.", argv[2]);
+  }
+
+  /* do stuff here */
+  ActCHPArbiter *arb = new ActCHPArbiter (a);
+  arb->run (p);
+
+  a->Print (stdout);
+
+  return 0;
+}
