@@ -42,7 +42,7 @@ ActCHPArbiter::ActCHPArbiter (Act *a) : ActPass (a, "chparb")
   AddDependency ("booleanize");
   disableUpdate ();
 
-  config_set_default_string ("arb.decomp.arbiter", "std::arbiter");
+  config_set_default_string ("act.decomp.arbiter", "std::arbiter");
 }
 
 static int _found_pair (list_t *l, act_chp_gc_t *gc)
@@ -213,7 +213,7 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
       int aid = 0;
 
       Process *arb_p;
-      const char *arb_procname = config_get_string ("arb.decomp.arbiter");
+      const char *arb_procname = config_get_string ("act.decomp.arbiter");
       arb_p = a->findProcess (arb_procname);
       if (!arb_p) {
 	fatal_error ("Could not find process `%s'", arb_procname);

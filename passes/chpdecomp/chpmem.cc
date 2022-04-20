@@ -46,7 +46,7 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   _memdata_var = NULL;
   _curbnl = NULL;
 
-  config_set_default_string ("arb.decomp.mem", "mem::mem");
+  config_set_default_string ("act.decomp.mem", "mem::mem");
 }
 
 static const char *MEMVAR_STRING = "_memdatv";
@@ -127,7 +127,7 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     _curbnl->cur->Del (v->aid->getName());
 
     /*-- replace with instance! --*/
-    const char *mem_procname = config_get_string ("arb.decomp.mem");
+    const char *mem_procname = config_get_string ("act.decomp.mem");
     Process *p = a->findProcess (mem_procname);
     if (!p) {
       fatal_error ("Could not find process `%s'", mem_procname);
