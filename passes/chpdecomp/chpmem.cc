@@ -45,6 +45,8 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   _memdata_len = 0;
   _memdata_var = NULL;
   _curbnl = NULL;
+
+  config_set_default_string ("arb.decomp.mem", "mem::mem");
 }
 
 static const char *MEMVAR_STRING = "_memdatv";
@@ -125,17 +127,10 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     _curbnl->cur->Del (v->aid->getName());
 
     /*-- replace with instance! --*/
-    ActNamespace *mem_ns = a->findNamespace ("mem");
-    if (!mem_ns) {
-      fatal_error ("No memory namespace?");
-    }
-    UserDef *u = mem_ns->findType ("mem");
-    if (!u) {
-      fatal_error ("mem::mem not found!");
-    }
-    Process *p = dynamic_cast<Process *> (u);
+    const char *mem_procname = config_get_string ("arb.decomp.mem");
+    Process *p = a->findProcess (mem_procname);
     if (!p) {
-      fatal_error ("mem::mem is not a process!");
+      fatal_error ("Could not find process `%s'", mem_procname);
     }
 
     InstType *it = new InstType (_curbnl->cur, p, 0);

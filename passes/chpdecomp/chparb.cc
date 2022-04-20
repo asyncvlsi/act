@@ -41,6 +41,8 @@ ActCHPArbiter::ActCHPArbiter (Act *a) : ActPass (a, "chparb")
   }
   AddDependency ("booleanize");
   disableUpdate ();
+
+  config_set_default_string ("arb.decomp.arbiter", "std::arbiter");
 }
 
 static int _found_pair (list_t *l, act_chp_gc_t *gc)
@@ -210,16 +212,13 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
       char buf[100];
       int aid = 0;
 
-      ActNamespace *std_ns = a->findNamespace ("std");
-      if (!std_ns) {
-	fatal_error ("Could not find the std namespace!");
-      }
-      UserDef *arb_p = std_ns->findType ("arbiter");
+      Process *arb_p;
+      const char *arb_procname = config_get_string ("arb.decomp.arbiter");
+      arb_p = a->findProcess (arb_procname);
       if (!arb_p) {
-	fatal_error ("Could not find process std::arbiter!");
+	fatal_error ("Could not find process `%s'", arb_procname);
       }
 
-      
       for (li1 = list_first (probe_proxy), li2 = list_first (probe_pairs);
 	   li1 && li2; li1 = list_next (li1), li2 = list_next (li2)) {
 
