@@ -1,0 +1,37 @@
+template<pint N>
+defproc foo (bool x[N])
+{
+
+}
+
+
+/*
+template<pint M, P>
+defproc bar <: foo<P> ()
+{
+  
+
+}
+*/
+
+template<pint M>
+defproc bar <: foo ()
+{
+  
+
+}
+
+defproc blah ()
+{
+   foo<8> f;
+}
+
+defproc baz <: blah()
++{
+   bar<4,8> f;
+}
+{
+
+}
+
+baz x;

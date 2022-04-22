@@ -428,10 +428,21 @@ override_one_spec: user_type bare_id_list ";"
       Array *tmpa;
       tmpa = it->arrayInfo();
       it->clrArray();
+
+      int num_params = $1->getNumParams();
+      int start_pos = 0;
+
       while (chk) {
+	//printf("CHECK [%d]: ", num_params);
+	//chk->Print (stdout);
+	//printf ("  v/s ");
+	//it->Print (stdout);
+	//printf ("\n");
+
 	if (chk->isEqual (it, 1)) {
 	  break;
 	}
+
 	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
 	if (!ux) {
 	  chk = NULL;
@@ -440,7 +451,30 @@ override_one_spec: user_type bare_id_list ";"
 	  chk = ux->getParent();
 	}
 	if (chk) {
+	  UserDef *tmpu;
 	  $A(chk->arrayInfo() == NULL);
+
+	  tmpu = dynamic_cast<UserDef *> (chk->BaseType());
+
+	  //printf ("num-params: %d\n", num_params);
+	  //printf ("base params: %d\n", ux->getNumParams());
+	  if (tmpu) {
+	    //printf ("base parent params: %d\n", tmpu->getNumParams());
+	    start_pos += (ux->getNumParams() - tmpu->getNumParams());
+	    num_params -= (ux->getNumParams() - tmpu->getNumParams());
+	  }
+	  else {
+	    start_pos += ux->getNumParams();
+	    num_params-= ux->getNumParams();
+	  }
+
+	  //printf ("residual params: %d\n", num_params);
+	  if (num_params > 0) {
+	    chk = new InstType (chk);
+	    inst_param *ap;
+	    ap = $1->allParams ();
+	    chk->appendParams (num_params, ap + start_pos);
+	  }
 	}
       }
       it->MkArray (tmpa);
@@ -1977,8 +2011,6 @@ instance_id[ActBody *]: ID [ sparse_range ]
 	ActId *a = new ActId ($1);
 	AExpr *ae;
 	ActRet *ar;
-
-	/*printf ("chk: "); a->Print (stdout); printf ("\n"); fflush (stdout);*/
 
 	ar = (ActRet *)list_value (li);
 	$A(ar);
