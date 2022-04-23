@@ -61,6 +61,51 @@ char *find_library (const char *s)
 }
 
 
+static void _walk_io_flags (VNet *w)
+{
+  module_t *m;
+  for (m = w->hd; m; m = m->next) {
+    for (int i=0; i < A_LEN (m->conn); i++) {
+      if (m->conn[i]->prefix) {
+	/* not a direct I/O connection */
+	continue;
+      }
+      int lhs_ioflag = -1;
+      if (m->conn[i]->id.id->isport) {
+	lhs_ioflag = m->conn[i]->id.id->isoutput ? 1 : 0;
+      }
+      if (m->conn[i]->r) {
+	if (m->conn[i]->r->id.id->isport) {
+	  if (m->conn[i]->r->id.id->isoutput && lhs_ioflag == 0) {
+	    /* clear I/O flag */
+	    m->conn[i]->r->id.id->isoutput = 0;
+	    m->conn[i]->r->id.id->isinput = 0;
+	  }
+	  else if (lhs_ioflag == 1 && m->conn[i]->r->id.id->isinput) {
+	    m->conn[i]->id.id->isinput = 0;
+	    m->conn[i]->id.id->isoutput = 0;
+	  }
+	}
+      }
+      else {
+	listitem_t *li = list_first (m->conn[i]->l);
+	for (; li; li = list_next (li)) {
+	  conn_rhs_t *rhs = (conn_rhs_t *) list_value (li);
+	  if (rhs->id.id->isoutput && lhs_ioflag == 0) {
+	    rhs->id.id->isoutput = 0;
+	    rhs->id.id->isinput = 0;
+	  }
+	  else if (lhs_ioflag == 1 && rhs->id.id->isinput) {
+	    m->conn[i]->id.id->isinput = 0;
+	    m->conn[i]->id.id->isoutput = 0;
+	  }
+	}
+      }
+    }
+  }
+}
+
+
 VNet *verilog_read (const char *netlist, const char *actlib)
 {
   char *s;
@@ -102,6 +147,8 @@ VNet *verilog_read (const char *netlist, const char *actlib)
     }
     exit (1);
   }
+
+  _walk_io_flags (w);
   
   return w;
 }

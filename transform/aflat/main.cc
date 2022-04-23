@@ -460,36 +460,50 @@ static void aflat_print_spec (Scope *s, act_spec *spec)
 	printf (")\n");
       }
       if (spec->count == -1) {
+	const char *specname = tmp;
 	ActInstiter it(s);
 	for (it = it.begin(); it != it.end(); it++) {
 	  ValueIdx *vx = *it;
+	  if (!vx->isPrimary()) {
+	    continue;
+	  }
 	  if (TypeFactory::isBoolType (vx->t) &&
 	      (vx->t->getDir() != Type::IN)) {
+	    int comma = 0;
 	    ActId *base;
-	    printf ("%s(", tmp);
 	    base = new ActId (vx->getName());
 	    if (vx->t->arrayInfo()) {
 	      Array *aref;
-	      int comma = 0;
 	      Arraystep *astep = vx->t->arrayInfo()->stepper ();
+	      int cnt = 0;
 	      
 	      while (!astep->isend()) {
-		char *tmp = astep->string();
-		if (comma != 0) {
-		  printf (",");
+		if (vx->isPrimary (cnt)) {
+		  char *tmp = astep->string();
+		  if (comma != 0) {
+		    printf (",");
+		  }
+		  else {
+		    printf ("%s(", specname);
+		  }
+		  prefix_id_print (s, base, tmp);
+		  comma = 1;
+		  FREE (tmp);
 		}
-		prefix_id_print (s, base, tmp);
-		comma = 1;
-		FREE (tmp);
+		cnt++;
 		astep->step();
 	      }
 	      delete astep;
 	    }
 	    else {
+	      printf ("%s(", specname);
 	      prefix_id_print (s, base);
+	      comma = 1;
 	    }
 	    delete base;
-	    printf (")\n");
+	    if (comma) {
+	      printf (")\n");
+	    }
 	  }
 	}	  
       }
