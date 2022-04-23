@@ -186,7 +186,7 @@ void emit_module_header (FILE *fp, module_t *m)
   int  first;
   struct idinfo *id;
   
-  fprintf (fp, "defproc %s (", m->b->key);
+  fprintf (fp, "export defproc %s (", m->b->key);
   first = 1;
 
   for (int i=0; i < A_LEN (m->port_list); i++) {
