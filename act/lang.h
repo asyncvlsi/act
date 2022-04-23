@@ -277,7 +277,7 @@ struct act_spec {
 		  (b) ids[0] = lhs, ids[1] = first, ids[2] = second
 		  (c) ids[3] = NULL or an Expr * for the timing margin
 		*/
-  int count;
+  int count;   /* -1 = all nodes */
   ActId **ids;
   int *extra;  /*  Flags
 

@@ -1863,6 +1863,35 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 
     return s;
 }}
+| ID "(" "*" ")"
+{{X:
+    int count = config_get_table_size ("act.spec_types");
+    char **specs = config_get_table_string ("act.spec_types");
+    int i;
+
+    for (i=0; i < count; i++) {
+      if (strcmp ($1, specs[i]) == 0)
+	break;
+    }
+    if (i == count) {
+      $e("Unknown spec body directive ``%s''\n", $1);
+      fprintf ($f, "Valid:");
+      for (i=0; i < count; i++) {
+	fprintf ($f, " %s", specs[i]);
+      }
+      fprintf ($f, "\n");
+      exit (1);
+    }
+
+    act_spec *s;
+    NEW (s, act_spec);
+    s->count = -1;
+    s->type = i;
+    s->ids = NULL;
+    s->extra = NULL;
+    s->next = NULL;
+    return s;
+}}
 ;
 
 timing_type[int]: "<"

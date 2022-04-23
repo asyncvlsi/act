@@ -1,0 +1,9 @@
+
+defproc logic (bool in; bool a[2])
+{
+  spec {
+    hazard(*)
+  }
+}
+
+logic l;

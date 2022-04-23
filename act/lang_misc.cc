@@ -149,22 +149,27 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
     tmp->type = s->type;
     tmp->count = s->count;
     tmp->isrequires = s->isrequires;
-    MALLOC (tmp->ids, ActId *, tmp->count);
-    for (int i=0; i < tmp->count-1; i++) {
-      if (s->ids[i]) {
-	tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+    if (tmp->count > 0) {
+      MALLOC (tmp->ids, ActId *, tmp->count);
+      for (int i=0; i < tmp->count-1; i++) {
+	if (s->ids[i]) {
+	  tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+	}
+	else {
+	  tmp->ids[i] = NULL;
+	}
+      }
+      if (!ACT_SPEC_ISTIMING (tmp)) {
+	tmp->ids[tmp->count-1] = s->ids[tmp->count-1]->Expand (ns, sc);
       }
       else {
-	tmp->ids[i] = NULL;
-      }
-    }
-    if (!ACT_SPEC_ISTIMING (tmp)) {
-      tmp->ids[tmp->count-1] = s->ids[tmp->count-1]->Expand (ns, sc);
-    }
-    else {
-      tmp->ids[tmp->count-1] = (ActId *) (s->ids[tmp->count-1] ?
+	tmp->ids[tmp->count-1] = (ActId *) (s->ids[tmp->count-1] ?
 				expr_expand ((Expr *)s->ids[tmp->count-1],
 					     ns, sc) : NULL);
+      }
+    }
+    else {
+      tmp->ids = NULL;
     }
     tmp->extra = s->extra;
     tmp->next = NULL;
@@ -259,6 +264,9 @@ void spec_print (FILE *fp, act_spec *spec)
 	  fprintf (fp, ", ");
 	}
 	spec->ids[i]->Print (fp);
+      }
+      if (spec->count == -1) {
+	fprintf (fp, "*");
       }
       fprintf (fp, ")\n");
     }
