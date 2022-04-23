@@ -1,7 +1,7 @@
 /* -- declarations -- */
-defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; bool? clock);
+export defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; bool? clock);
 
-defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; bool? clock)
+export defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; bool? clock)
 {
   spec { hazard(*) }
 

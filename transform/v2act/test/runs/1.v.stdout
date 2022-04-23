@@ -1,25 +1,25 @@
 /* -- declarations -- */
-defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM[31]; bool! CO);
-defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO);
-defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO);
-defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO);
-defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO);
-defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
-defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
-defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
-defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
-defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
-defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
-defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
-defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
-defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT; bool! EQ; bool! LE; bool! GE; bool! NE);
-defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bool! SUM[32]; bool! CO);
-defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT_LE; bool! GE_GT);
-defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO);
-defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO);
-defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! datao[32]; bool! rd; bool! wr);
+export defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM[31]; bool! CO);
+export defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO);
+export defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO);
+export defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO);
+export defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO);
+export defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
+export defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
+export defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
+export defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
+export defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
+export defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
+export defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO);
+export defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO);
+export defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT; bool! EQ; bool! LE; bool! GE; bool! NE);
+export defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bool! SUM[32]; bool! CO);
+export defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT_LE; bool! GE_GT);
+export defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO);
+export defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO);
+export defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! datao[32]; bool! rd; bool! wr);
 
-defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM[31]; bool! CO)
+export defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM[31]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -164,7 +164,7 @@ defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM
    U51(.A=carry_54_6, .Y=SUM[3]);
 }
 
-defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
+export defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -423,7 +423,7 @@ defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool
    U93(.A=B[10], .Y=B__not_510_6);
 }
 
-defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
+export defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -682,7 +682,7 @@ defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool
    U93(.A=B[10], .Y=B__not_510_6);
 }
 
-defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
+export defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -751,7 +751,7 @@ defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
+export defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -820,7 +820,7 @@ defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
+export defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -919,7 +919,7 @@ defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
+export defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1018,7 +1018,7 @@ defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
+export defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1210,7 +1210,7 @@ defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
    U33(.A=B[0], .Y=B__not_50_6);
 }
 
-defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
+export defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1402,7 +1402,7 @@ defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
    U33(.A=B[0], .Y=B__not_50_6);
 }
 
-defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
+export defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1501,7 +1501,7 @@ defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
+export defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1693,7 +1693,7 @@ defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
    U33(.A=B[0], .Y=B__not_50_6);
 }
 
-defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
+export defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1792,7 +1792,7 @@ defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
    U2(.A=B[0], .B=A[0], .Y=SUM[0]);
 }
 
-defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
+export defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -1984,7 +1984,7 @@ defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
    U33(.A=B[0], .Y=B__not_50_6);
 }
 
-defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT; bool! EQ; bool! LE; bool! GE; bool! NE)
+export defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT; bool! EQ; bool! LE; bool! GE; bool! NE)
 {
   spec { hazard(*) }
 
@@ -2659,7 +2659,7 @@ defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT;
    U223(.A=A[30], .Y=n7);
 }
 
-defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bool! SUM[32]; bool! CO)
+export defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bool! SUM[32]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -2827,7 +2827,7 @@ defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bo
    U21(.A=B[0], .B=carry_50_6, .Y=B__AS_50_6);
 }
 
-defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT_LE; bool! GE_GT)
+export defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT_LE; bool! GE_GT)
 {
   spec { hazard(*) }
 
@@ -3218,7 +3218,7 @@ defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT
    U128(.A=A[31], .Y=n4);
 }
 
-defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
+export defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -3401,7 +3401,7 @@ defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bo
    U29(.A=B[0], .B=carry_50_6, .Y=B__AS_50_6);
 }
 
-defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
+export defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
 {
   spec { hazard(*) }
 
@@ -3584,7 +3584,7 @@ defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bo
    U29(.A=B[0], .B=carry_50_6, .Y=B__AS_50_6);
 }
 
-defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! datao[32]; bool! rd; bool! wr)
+export defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! datao[32]; bool! rd; bool! wr)
 {
   spec { hazard(*) }
 

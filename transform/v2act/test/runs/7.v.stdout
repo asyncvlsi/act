@@ -1,7 +1,7 @@
 /* -- declarations -- */
-defproc blk1 (bool? a[2]; bool? b; bool out[3]);
+export defproc blk1 (bool? a[2]; bool? b; bool out[3]);
 
-defproc blk1 (bool? a[2]; bool? b; bool out[3])
+export defproc blk1 (bool? a[2]; bool? b; bool out[3])
 {
   spec { hazard(*) }
 
