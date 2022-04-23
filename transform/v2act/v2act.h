@@ -38,6 +38,7 @@ enum V2ACT_mode {
 
 extern int mode;		/* mode */
 extern char *lib_namespace;
+extern int emit_hazards;
 
 void label_clocks (VNet *w, const char *clk);
 

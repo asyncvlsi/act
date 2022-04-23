@@ -3,6 +3,8 @@ defproc blk1 (bool? a[2]; bool? b; bool! out[3]);
 
 defproc blk1 (bool? a[2]; bool? b; bool! out[3])
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    /*--- connections ---*/
    out[2]=a[1];

@@ -57,6 +57,7 @@ static void usage (char *s)
 {
   fprintf (stderr, "Usage: %s [act-options] [-a] [-n lib_namespace] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
   fprintf (stderr, "  -a : async output\n");
+  fprintf (stderr, "  -g : toggle hazard generation\n");
   fprintf (stderr, "  -C <chan>: change default channel name to <chan>\n");
   fprintf (stderr, "  -c <clkname>: specifies the clock port name [default: clock]\n");
   fprintf (stderr, "  -o <file> : specify output file name [default: stdout]\n");
@@ -67,6 +68,7 @@ static void usage (char *s)
 
 int mode;			/* sync or async mode */
 char *lib_namespace;
+int emit_hazards;
 
 int main (int argc, char **argv)
 {
@@ -78,6 +80,7 @@ int main (int argc, char **argv)
   char *fname;
   char *libname;
   int i, j;
+  int toggle_haz;
 
   Act::Init (&argc, &argv);
 
@@ -90,12 +93,15 @@ int main (int argc, char **argv)
   }
 
   mode = V_SYNC;
+  emit_hazards = 1;
   clkname = NULL;
   fname = NULL;
   libname = NULL;
   lib_namespace = Strdup ("sync");
 
-  while ((ch = getopt (argc, argv, "C:c:ao:l:n:")) != -1) {
+  toggle_haz = 0;
+
+  while ((ch = getopt (argc, argv, "gC:c:ao:l:n:")) != -1) {
     switch (ch) {
     case 'n':
       if (lib_namespace) {
@@ -109,6 +115,10 @@ int main (int argc, char **argv)
 	FREE (channame);
       }
       channame = Strdup (optarg);
+      break;
+
+    case 'g':
+      toggle_haz = 1;
       break;
 
     case 'c':
@@ -127,6 +137,7 @@ int main (int argc, char **argv)
 
     case 'a':
       mode = V_ASYNC;
+      emit_hazards = 0;
       break;
 
     case 'l':
@@ -156,6 +167,10 @@ int main (int argc, char **argv)
 
   if (!channame) {
     channame = Strdup ("e1of2");
+  }
+
+  if (toggle_haz) {
+    emit_hazards = 1 - emit_hazards;
   }
 
   char *script = find_exepath ("v2act_quote.sed");

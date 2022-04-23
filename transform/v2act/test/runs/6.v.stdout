@@ -3,6 +3,8 @@ defproc blk0 (bool? e0[13]; bool! out[13]);
 
 defproc blk0 (bool? e0[13]; bool! out[13])
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool f;
    /*--- connections ---*/

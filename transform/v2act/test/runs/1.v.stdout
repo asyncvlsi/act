@@ -21,6 +21,8 @@ defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! da
 
 defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM[31]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::and2a3 U29;
    bool carry_524_6;
@@ -164,6 +166,8 @@ defproc b14_DW01_add_7 (bool? A[30] /* port */; bool? B[31]; bool? CI; bool! SUM
 
 defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::and2a3 U60;
@@ -421,6 +425,8 @@ defproc b14_DW01_sub_5 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool
 
 defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::and2a3 U60;
@@ -678,6 +684,8 @@ defproc b14_DW01_sub_4 (bool? A[32]; bool? B[32]; bool? CI; bool! DIFF[32]; bool
 
 defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_511_6;
@@ -745,6 +753,8 @@ defproc b14_DW01_add_5 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool!
 
 defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_511_6;
@@ -812,6 +822,8 @@ defproc b14_DW01_add_4 (bool? A[20]; bool? B[20]; bool? CI; bool! SUM[20]; bool!
 
 defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_524_6;
@@ -909,6 +921,8 @@ defproc b14_DW01_add_3 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
 
 defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_524_6;
@@ -1006,6 +1020,8 @@ defproc b14_DW01_add_2 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
 
 defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::inv1a1 U29;
@@ -1196,6 +1212,8 @@ defproc b14_DW01_sub_3 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
 
 defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::inv1a1 U29;
@@ -1386,6 +1404,8 @@ defproc b14_DW01_sub_2 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
 
 defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_524_6;
@@ -1483,6 +1503,8 @@ defproc b14_DW01_add_1 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
 
 defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::inv1a1 U29;
@@ -1673,6 +1695,8 @@ defproc b14_DW01_sub_1 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
 
 defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_524_6;
@@ -1770,6 +1794,8 @@ defproc b14_DW01_add_0 (bool? A[30]; bool? B[30]; bool? CI; bool! SUM[30]; bool!
 
 defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool B__not_51_6;
    benchlib::inv1a1 U29;
@@ -1960,6 +1986,8 @@ defproc b14_DW01_sub_0 (bool? A[30]; bool? B[30]; bool? CI; bool! DIFF[30]; bool
 
 defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT; bool! EQ; bool! LE; bool! GE; bool! NE)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::inv1a1 U214;
    benchlib::inv1a1 U60;
@@ -2633,6 +2661,8 @@ defproc b14_DW01_cmp6_0 (bool? A[32]; bool? B[32]; bool? TC; bool! LT; bool! GT;
 
 defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bool! SUM[32]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::fa1a1 U1_16;
    bool carry_524_6;
@@ -2799,6 +2829,8 @@ defproc b14_DW01_addsub_2 (bool? A[32]; bool? B[32]; bool? CI; bool? ADD_SUB; bo
 
 defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT_LE; bool! GE_GT)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::and2a3 U60;
    benchlib::or2a1 U29;
@@ -3188,6 +3220,8 @@ defproc b14_DW01_cmp2_0 (bool? A[32]; bool? B[32]; bool? LEQ; bool? TC; bool! LT
 
 defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::xor2a1 U29;
    benchlib::fa1a1 U1_16;
@@ -3369,6 +3403,8 @@ defproc b14_DW01_addsub_1 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bo
 
 defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bool! SUM[29]; bool! CO)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::xor2a1 U29;
    benchlib::fa1a1 U1_16;
@@ -3550,6 +3586,8 @@ defproc b14_DW01_addsub_0 (bool? A[29]; bool? B[29]; bool? CI; bool? ADD_SUB; bo
 
 defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; bool! datao[32]; bool! rd; bool! wr)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    benchlib::buf1a3 U2439;
    bool n2920;

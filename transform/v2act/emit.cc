@@ -243,6 +243,10 @@ void emit_types (VNet *v)
     emit_module_header (v->out, m);
     fprintf (v->out, "\n{\n");
 
+    if (emit_hazards) {
+      fprintf (v->out, "  spec { hazard(*) }\n\n");
+    }
+
     fprintf (v->out, "   /*--- types ---*/\n");
     /* now print all the other types out */
     for (i=0; i < m->H->size; i++) 

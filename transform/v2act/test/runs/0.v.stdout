@@ -3,6 +3,8 @@ defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; b
 
 defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! overflw; bool? clock)
 {
+  spec { hazard(*) }
+
    /*--- types ---*/
    bool N65;
    benchlib::inv1a1 U29;
