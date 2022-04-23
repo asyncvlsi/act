@@ -674,6 +674,27 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 
   PRINT_STEP;
   
+  switch (dir) {
+  case Type::NONE:
+    break;
+  case Type::IN:
+    snprintf (buf+k, sz, "?");
+    PRINT_STEP;
+    break;
+  case Type::OUT:
+    snprintf (buf+k, sz, "!");
+    PRINT_STEP;
+    break;
+  case Type::INOUT:
+    snprintf (buf+k, sz, "?!");
+    PRINT_STEP;
+    break;
+  case Type::OUTIN:
+    snprintf (buf+k, sz, "!?");
+    PRINT_STEP;
+    break;
+  }
+
   if (nt > 0 && !ischan) {
     /* templates are used for int, chan, ptype, and userdef */
     snprintf (buf+k, sz, "<");
@@ -699,26 +720,6 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
     }
     snprintf (buf+k, sz, ">");
     PRINT_STEP;
-  }
-  switch (dir) {
-  case Type::NONE:
-    break;
-  case Type::IN:
-    snprintf (buf+k, sz, "?");
-    PRINT_STEP;
-    break;
-  case Type::OUT:
-    snprintf (buf+k, sz, "!");
-    PRINT_STEP;
-    break;
-  case Type::INOUT:
-    snprintf (buf+k, sz, "?!");
-    PRINT_STEP;
-    break;
-  case Type::OUTIN:
-    snprintf (buf+k, sz, "!?");
-    PRINT_STEP;
-    break;
   }
   if (a) {
     a->sPrint (buf+k, sz);

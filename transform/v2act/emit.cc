@@ -97,16 +97,29 @@ static void _emit_one_type_rhs (FILE *fp, struct idinfo *id)
 
 static void _emit_one_type (FILE *fp, struct idinfo *id)
 {
+  int dir = 0;
   if (mode == V_SYNC) {
     fprintf (fp, "bool");
   }
   else {
-    fprintf (fp, "%s", channame);
+    int i = 0;
+    for (int i=0; channame[i]; i++) {
+      if (channame[i] == '<') {
+	if (id->isinput) {
+	  fputc ('?', fp);
+	}
+	else if (id->isoutput) {
+	  fputc ('!', fp);
+	}
+	dir = 1;
+      }
+      fputc (channame[i], fp);
+    }
   }
-  if (id->isinput) {
+  if (dir == 0 && id->isinput) {
     fprintf (fp, "? ");
   }
-  else if (id->isoutput) {
+  else if (dir == 0 && id->isoutput) {
     fprintf (fp, "! ");
   }
   else {
