@@ -247,6 +247,12 @@ class Act {
   */
   list_t *getDecomp (Process *p);
 
+  /*
+    Return a list of Process pointers that were generated during
+    decomposition, if any
+  */
+  list_t *getDecompTypes ();
+
   /* 
     To mess with types after parsing
   */
@@ -308,6 +314,8 @@ protected:
   int _update_propagate;
   int _root_dirty;
   Process *_root;
+  void *_global_info;
+  
   
   virtual void _actual_update (Process *p);
 
@@ -337,6 +345,7 @@ public:
   int completed()  { return (_finished == 2) ? 1 : 0; }
   int pending()  { return (_finished == 1) ? 1 : 0; }
   void *getMap (Process *p);
+  void *getGlobalInfo () { return _global_info; }
   Act *getAct () { return a; }
   ActPass *getPass (const char *name) { return a->pass_find (name); }
 

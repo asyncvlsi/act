@@ -249,6 +249,11 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
 
 	_curbnl->cur->Add (buf, it);
 
+	if (!_global_info) {
+	  _global_info = list_new ();
+	}
+	list_append ((list_t *) _global_info, it->BaseType());
+
 	list_append (ret, _curbnl->cur->LookupVal (buf));
 
 	/* XXX: now we add connections! */

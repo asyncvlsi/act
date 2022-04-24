@@ -143,6 +143,11 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     /*-- delete dynamic variable! --*/
     _curbnl->cur->Add (v->aid->getName(), it);
 
+    if (!_global_info) {
+      _global_info = list_new ();
+    }
+    list_append ((list_t *) _global_info, it->BaseType());
+
     if (!ret) {
       ret = list_new ();
     }
@@ -166,7 +171,10 @@ void *ActCHPMemory::local_op (Process *p, int mode)
 
 void ActCHPMemory::free_local (void *v)
 {
-  
+  list_t *l = (list_t *)v;
+  if (l) {
+    list_free (l);
+  }
 }
 
 int ActCHPMemory::run (Process *p)

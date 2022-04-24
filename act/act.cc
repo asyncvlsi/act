@@ -1108,3 +1108,43 @@ list_t *Act::getDecomp (Process *p)
   }
   return NULL;
 }
+
+
+list_t *Act::getDecompTypes ()
+{
+  static ActPass *_mp = NULL;
+  static ActPass *_ap = NULL;
+
+  if (!_mp) {
+    _mp = pass_find ("chpmem");
+  }
+  if (!_ap) {
+    _ap = pass_find ("chparb");
+  }
+
+  list_t *l1, *l2;
+  l1 = NULL;
+  l2 = NULL;
+
+  if (_mp && _mp->completed()) {
+    l1 = (list_t *) _mp->getGlobalInfo ();
+  }
+  if (_ap && _ap->completed()) {
+    l2 = (list_t *) _ap->getGlobalInfo ();
+  }
+
+  list_t *ret = NULL;
+
+  if (l1) {
+    ret = list_dup (l1);
+  }
+  if (l2) {
+    if (!ret) {
+      ret = list_dup (l2);
+    }
+    else {
+      list_concat (ret, list_dup (l2));
+    }
+  }
+  return ret;
+}
