@@ -241,6 +241,12 @@ class Act {
   void pass_unregister (const char *name);
   const char *pass_name (const char *name);
 
+  /*
+     Get a list of list of ValueIdx pointers that
+     were generated during decomposition, if any
+  */
+  list_t *getDecomp (Process *p);
+
   /* 
     To mess with types after parsing
   */

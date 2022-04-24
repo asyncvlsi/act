@@ -104,6 +104,7 @@ void ActCHPMemory::_fresh_release (int idx)
 void *ActCHPMemory::local_op (Process *p, int mode)
 {
   Scope *sc;
+  list_t *ret = NULL;
   
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
@@ -141,16 +142,26 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     
     /*-- delete dynamic variable! --*/
     _curbnl->cur->Add (v->aid->getName(), it);
+
+    if (!ret) {
+      ret = list_new ();
+    }
+    list_append (ret, _curbnl->cur->LookupVal (v->aid->getName()));
   }
   
   if (_memdata_len > 0) {
+    char buf[100];
+    for (int i=0; i < _memdata_len; i++) {
+      snprintf (buf, 100, "%s%d", MEMVAR_STRING, _memdata_var[i].idx);
+      list_append (ret, _curbnl->cur->LookupVal (buf));
+    }
     FREE (_memdata_var);
   }
   _memdata_len = 0;
   _memdata_var = NULL;
   _curbnl = NULL;
 
-  return NULL;
+  return ret;
 }
 
 void ActCHPMemory::free_local (void *v)

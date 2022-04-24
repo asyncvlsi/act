@@ -167,6 +167,9 @@ class Scope {
 				 on what is in the body */
 
   const char *getName();
+
+
+  static void printConnections (FILE *fp, act_connection *cx, bool force = false);
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

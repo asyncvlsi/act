@@ -1177,7 +1177,7 @@ void Scope::BindParam (const char *s, AExpr *ae)
 }
 
 
-static void _print_connections (FILE *fp, act_connection *cx)
+void Scope::printConnections (FILE *fp, act_connection *cx, bool force)
 {
   ActConniter ci(cx);
   ActId *id;
@@ -1185,7 +1185,7 @@ static void _print_connections (FILE *fp, act_connection *cx)
   int global;
 
   global = cx->isglobal();
-  if (cx->isPrimary()) {
+  if (cx->isPrimary() || force) {
     if (ci.begin() != ci.end() && (++ci.begin() != ci.end())) {
       ActId *idfirst = NULL;
       for (ci = ci.begin(); ci != ci.end(); ci++) {
@@ -1234,7 +1234,7 @@ static void _print_connections (FILE *fp, act_connection *cx)
   if (cx->hasSubconnections()) {
     for (int i=0; i < cx->numSubconnections(); i++) {
       if (cx->hasSubconnections(i)) {
-	_print_connections (fp, cx->getsubconn (i, cx->numSubconnections()));
+	printConnections (fp, cx->getsubconn (i, cx->numSubconnections()), force);
       }
     }
   }
@@ -1364,7 +1364,7 @@ void Scope::Print (FILE *fp)
      * subconnections should be reported 
      */
     if (!TypeFactory::isParamType (vx->t) && vx->hasConnection()) {
-      _print_connections (fp, vx->connection());
+      Scope::printConnections (fp, vx->connection());
     }
   }
 

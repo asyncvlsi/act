@@ -134,6 +134,7 @@ static int _find_channel (list_t *l1, list_t *l2, ActId *id)
 void *ActCHPArbiter::local_op (Process *p, int mode)
 {
   Scope *sc;
+  list_t *ret = NULL;
   
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
@@ -219,6 +220,8 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
 	fatal_error ("Could not find process `%s'", arb_procname);
       }
 
+      ret = list_new ();
+
       for (li1 = list_first (probe_proxy), li2 = list_first (probe_pairs);
 	   li1 && li2; li1 = list_next (li1), li2 = list_next (li2)) {
 
@@ -246,6 +249,8 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
 
 	_curbnl->cur->Add (buf, it);
 
+	list_append (ret, _curbnl->cur->LookupVal (buf));
+
 	/* XXX: now we add connections! */
 
 	ActId *inst;
@@ -265,12 +270,16 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
 	inst = new ActId (buf);
 	inst->Append (new ActId ("Ap"));
 	rhs = new AExpr (new ActId (_gen_name (idx1)));
-
+	
+	list_append (ret, _curbnl->cur->LookupVal (_gen_name (idx1)));
+	
 	ActBody_Conn *ac3 = new ActBody_Conn (-1, inst, rhs);
 	
 	inst = new ActId (buf);
 	inst->Append (new ActId ("Bp"));
 	rhs = new AExpr (new ActId (_gen_name (idx2)));
+
+	list_append (ret, _curbnl->cur->LookupVal (_gen_name (idx2)));
 
 	ac3->Append (new ActBody_Conn (-1, inst, rhs));
 	ac2->Append (ac3);
@@ -293,12 +302,15 @@ void *ActCHPArbiter::local_op (Process *p, int mode)
   }
   list_free (l);
 
-  return NULL;
+  return ret;
 }
 
 void ActCHPArbiter::free_local (void *v)
 {
-  
+  list_t *l = (list_t *) v;
+  if (l) {
+    list_free (l);
+  }
 }
 
 int ActCHPArbiter::run (Process *p)

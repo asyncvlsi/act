@@ -1071,3 +1071,40 @@ void act_add_global_pbool (const char *name, int val)
   A_NEXT (vars).isint = 0;
   A_INC (vars);
 }
+
+
+list_t *Act::getDecomp (Process *p)
+{
+  static ActPass *_mp = NULL;
+  static ActPass *_ap = NULL;
+
+  if (!_mp) {
+    _mp = pass_find ("chpmem");
+  }
+  if (!_ap) {
+    _ap = pass_find ("chparb");
+  }
+
+  void *l1, *l2;
+  l1 = NULL;
+  l2 = NULL;
+
+  if (_mp && _mp->completed()) {
+    l1 = _mp->getMap (p);
+  }
+  if (_ap && _ap->completed()) {
+    l2 = _ap->getMap (p);
+  }
+
+  if (l1 || l2) {
+    list_t *ret = list_new ();
+    if (l1) {
+      list_append (ret, l1);
+    }
+    if (l2) {
+      list_append (ret, l2);
+    }
+    return ret;
+  }
+  return NULL;
+}
