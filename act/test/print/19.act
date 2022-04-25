@@ -1,0 +1,6 @@
+bool a, b;
+
+spec {
+  hazard (*)
+}
+

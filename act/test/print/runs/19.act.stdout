@@ -1,0 +1,10 @@
+
+
+/* instances */
+bool b;
+bool a;
+
+/* connections */
+spec {
+   hazard(*)
+}
