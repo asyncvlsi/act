@@ -416,6 +416,7 @@ void config_read (const char *name)
     if (!s || !*s || s[0] == '#') continue;
 
     if (strcmp (s, "include") == 0) {
+      char *tmps;
       if (!initial_phase) {
 	fatal_error ("`include' directive is only permitted at the start of the file, before any definitions");
       }
@@ -424,7 +425,9 @@ void config_read (const char *name)
 	fatal_error ("String on [%s:%d] needs to be of the form \"...\"", name, line);
       }
       s[strlen(s)-1] = '\0';
-      config_read (s+1);
+      tmps = create_string (s+1);
+      config_read (tmps);
+      FREE (tmps);
     }
     else if (strcmp (s, "int") == 0) {
       GET_NAME;

@@ -635,7 +635,6 @@ struct ext_file *ext_read (const char *name)
     fp = fopen (name, "r");
 
     if (!device_names) {
-      config_read ("extract.conf");
       if (config_exists ("net.ext_devs")) {
 	num_devices = config_get_table_size ("net.ext_devs");
 	device_names = config_get_table_string ("net.ext_devs");

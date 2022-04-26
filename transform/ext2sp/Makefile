@@ -22,8 +22,6 @@ BINARY=ext2sp.$(EXT)
 
 TARGETS=$(BINARY)
 
-TARGETCONF=extract.conf
-
 OBJS=main.o 
 
 SRCS=$(OBJS:.o=.cc)
