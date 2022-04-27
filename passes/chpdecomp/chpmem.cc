@@ -46,7 +46,7 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   _memdata_var = NULL;
   _curbnl = NULL;
 
-  config_set_default_string ("act.decomp.mem", "mem::mem");
+  config_set_default_string ("act.decomp.mem", "std::ram");
 }
 
 static const char *MEMVAR_STRING = "_memdatv";

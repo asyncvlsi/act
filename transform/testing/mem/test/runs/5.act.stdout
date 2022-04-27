@@ -1,7 +1,7 @@
-namespace mem {
-export defproc mem_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
+namespace std {
+export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
 
-export defproc mem_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
+export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
 {
 
 /* instances */
@@ -20,13 +20,6 @@ chp {
 
 /* connections */
 }
-namespace std {
-
-
-/* instances */
-
-/* connections */
-}
 defproc test ();
 
 defproc test ()
@@ -36,7 +29,7 @@ defproc test ()
 int<32> _memdatv3;
 int<32> y;
 int<32> x;
-::mem::mem_316_732_4 mem;
+::std::ram_316_732_4 mem;
 int<32> _memdatv2;
 int<32> _memdatv1;
 

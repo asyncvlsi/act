@@ -14,11 +14,6 @@
  */
 namespace std {
 
-}
-
-namespace mem {
-
-
 export function ceil_log2 (pint a) : pint
 {
   pint i;
@@ -33,7 +28,7 @@ export function ceil_log2 (pint a) : pint
 
 export
 template<pint N, W>
-defproc mem (chan?(int<2>) rd; chan?(int<ceil_log2(N)>) addr;
+defproc ram (chan?(int<2>) rd; chan?(int<ceil_log2(N)>) addr;
              chan?(int<W>) din;
              chan!(int<W>) dout)
 {

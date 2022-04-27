@@ -1,4 +1,4 @@
-import mem;
+import "mem.act";
 
 defproc test()
 {
