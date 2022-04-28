@@ -77,13 +77,11 @@ static void _walk_io_flags (VNet *w)
       if (m->conn[i]->r) {
 	if (m->conn[i]->r->id.id->isport) {
 	  if (m->conn[i]->r->id.id->isoutput && lhs_ioflag == 0) {
-	    /* clear I/O flag */
-	    m->conn[i]->r->id.id->isoutput = 0;
-	    m->conn[i]->r->id.id->isinput = 0;
+	    /* mark it as a pass-through */
+	    m->conn[i]->r->id.id->ispassthru = 1;
 	  }
 	  else if (lhs_ioflag == 1 && m->conn[i]->r->id.id->isinput) {
-	    m->conn[i]->id.id->isinput = 0;
-	    m->conn[i]->id.id->isoutput = 0;
+	    m->conn[i]->id.id->ispassthru = 1;
 	  }
 	}
       }
@@ -92,12 +90,10 @@ static void _walk_io_flags (VNet *w)
 	for (; li; li = list_next (li)) {
 	  conn_rhs_t *rhs = (conn_rhs_t *) list_value (li);
 	  if (rhs->id.id->isoutput && lhs_ioflag == 0) {
-	    rhs->id.id->isoutput = 0;
-	    rhs->id.id->isinput = 0;
+	    rhs->id.id->ispassthru = 1;
 	  }
 	  else if (lhs_ioflag == 1 && rhs->id.id->isinput) {
-	    m->conn[i]->id.id->isinput = 0;
-	    m->conn[i]->id.id->isoutput = 0;
+	    m->conn[i]->id.id->ispassthru = 1;
 	  }
 	}
       }

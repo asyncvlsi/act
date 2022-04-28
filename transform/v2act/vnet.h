@@ -52,6 +52,7 @@ struct idinfo {
   unsigned int isinput:1;	/* input? */
   unsigned int isoutput:1;	/* output? */
   unsigned int isport:1;	/* is this a port? */
+  unsigned int ispassthru:1;	/* is this a pass-through? */
 
   unsigned int isclk:1;		/* is a clock? */
 

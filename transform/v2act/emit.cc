@@ -105,21 +105,23 @@ static void _emit_one_type (FILE *fp, struct idinfo *id)
     int i = 0;
     for (int i=0; channame[i]; i++) {
       if (channame[i] == '<') {
-	if (id->isinput) {
-	  fputc ('?', fp);
-	}
-	else if (id->isoutput) {
-	  fputc ('!', fp);
+	if (!id->ispassthru) {
+	  if (id->isinput) {
+	    fputc ('?', fp);
+	  }
+	  else if (id->isoutput) {
+	    fputc ('!', fp);
+	  }
 	}
 	dir = 1;
       }
       fputc (channame[i], fp);
     }
   }
-  if (dir == 0 && id->isinput) {
+  if (dir == 0 && id->isinput && !id->ispassthru) {
     fprintf (fp, "? ");
   }
-  else if (dir == 0 && id->isoutput) {
+  else if (dir == 0 && id->isoutput && !id->ispassthru) {
     fprintf (fp, "! ");
   }
   else {

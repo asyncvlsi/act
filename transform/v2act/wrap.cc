@@ -85,6 +85,7 @@ id_info_t *verilog_alloc_id (char *name)
   id->isinput = 0;
   id->isoutput = 0;
   id->isport = 0;
+  id->ispassthru = 0;
   id->isinst = 0;
   id->ismodname = 0;
   id->isclk = 0;
