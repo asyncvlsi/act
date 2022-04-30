@@ -1238,7 +1238,7 @@ defchan: [ template_spec ]
 }}
 "<:" physical_inst_type
 {{X:
-    InstType *ir;
+    InstType *ir, *ir2;
 
     if ($5->hasinstGlobal()) {
       $E("Type specifier in implementation relation cannot use globals");
@@ -1255,6 +1255,7 @@ defchan: [ template_spec ]
     }
     
     ir = $5;
+    ir2 = NULL;
 
     if (ir->getDir() != Type::NONE) {
       $E("Direction flags not permitted on parent type");
@@ -1307,17 +1308,22 @@ defchan: [ template_spec ]
       $A(rootchan);
       //ir = chparent->getTypeParam (0);
       ir = rootchan->datatype();
+      ir2 = rootchan->acktype();
     }
     else {
       //ir = $5->getTypeParam (0);
       Chan *ch = dynamic_cast<Chan *>($5->BaseType());
       $A(ch);
       ir = ch->datatype();
+      ir2 = ch->acktype();
     }
     if (!ir) {
       $E("Cannot find root built-in type");
     }
     $0->scope->Add ("self", ir);
+    if (ir2) {
+      $0->scope->Add ("selfack", ir2);
+    }
     $0->u_c->SetParent ($5);
 }}
  "(" [ port_formal_list ] ")" 
