@@ -187,7 +187,29 @@ int ActCHPMemory::run (Process *p)
   return ret;
 }
 
-static void _append_mem_read (list_t *top, ActId *access, int idx)
+static Expr *_gen_address (InstType *it, Array *a)
+{
+  Expr *tmp = NULL;
+  for (int i=a->nDims()-1; i >=0; i--) {
+    if (!tmp) {
+      tmp = expr_dup ((Expr *)a->getDeref (i));
+    }
+    else {
+      Expr *x;
+      NEW (x, Expr);
+      x->type = E_PLUS;
+      NEW (x->u.e.r, Expr);
+      x->u.e.r->type = E_MULT;
+      x->u.e.r->u.e.r = tmp;
+      x->u.e.r->u.e.l = const_expr (it->arrayInfo()->range_size (i));
+      x->u.e.l = a->getDeref (i);
+      tmp = x;
+    }
+  }
+  return tmp;
+}
+
+static void _append_mem_read (list_t *top, ActId *access, int idx, Scope *sc)
 {
   act_chp_lang_t *c;
   ActId *tmp;
@@ -204,11 +226,9 @@ static void _append_mem_read (list_t *top, ActId *access, int idx)
   c->u.comm.convert = 0;
   c->u.comm.var = NULL;
   c->u.comm.chan = tmp;
+
   a = access->arrayInfo();
-  if (a->nDims() > 1) {
-    fatal_error ("Support multi-dim arrays");
-  }
-  c->u.comm.e = a->getDeref (0);
+  c->u.comm.e = _gen_address (sc->Lookup (access->getName()), a);
   delete a;
 
   access->setArray (NULL);
@@ -257,7 +277,7 @@ static void _append_mem_read (list_t *top, ActId *access, int idx)
   list_append (top, c);
 }
 
-static void _append_mem_write (list_t *top, ActId *access, Expr *e)
+static void _append_mem_write (list_t *top, ActId *access, Expr *e, Scope *sc)
 {
   act_chp_lang_t *c;
   ActId *tmp;
@@ -277,10 +297,7 @@ static void _append_mem_write (list_t *top, ActId *access, Expr *e)
   c->u.comm.chan = tmp;
 
   a = access->arrayInfo();
-  if (a->nDims() > 1) {
-    fatal_error ("Support multi-dim arrays");
-  }
-  c->u.comm.e = a->getDeref (0);
+  c->u.comm.e = _gen_address (sc->Lookup (access->getName()), a);
   delete a;
 
   access->setArray (NULL);
@@ -371,9 +388,6 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 	  ActId *tmp = (ActId *)e->u.e.l;
 	  Array *tmpa = tmp->arrayInfo();
 	  Assert (tmpa, "Hmm?!");
-	  if (tmpa->nDims() > 1) {
-	    warning ("Add support for multi-dim arrays");
-	  }
 	  list_t *tmpl = list_new ();
 	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
 	  list_concat (l, tmpl);
@@ -471,7 +485,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	int idx = list_ivalue (li);
 	li = list_next (li);
 	ActId *mem = (ActId *) list_value (li);
-	_append_mem_read (x->u.semi_comma.cmd, mem, idx);
+	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
 	_fresh_release (idx);
       }
     }
@@ -495,9 +509,6 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 			c->u.assign.id : c->u.comm.var);
 	  Array *tmpa = tmp->arrayInfo();
 	  Assert (tmpa, "Hmm?!");
-	  if (tmpa->nDims() > 1) {
-	    warning ("Add support for multi-dim arrays");
-	  }
 	  list_t *tmpl = list_new ();
 	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
 	  if (list_isempty (tmpl)) {
@@ -513,7 +524,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	      int idx = list_ivalue (li);
 	      li = list_next (li);
 	      ActId *mem = (ActId *) list_value (li);
-	      _append_mem_read (newcmds, mem, idx);
+	      _append_mem_read (newcmds, mem, idx, _curbnl->cur);
 	      _fresh_release (idx);
 	    }
 	    list_free (tmpl);
@@ -546,11 +557,11 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	e->type = E_VAR;
 	e->u.e.l = (Expr *) new ActId (buf);
 	if (c->type == ACT_CHP_ASSIGN) {
-	  _append_mem_write (post, c->u.assign.id, e);
+	  _append_mem_write (post, c->u.assign.id, e, _curbnl->cur);
 	  c->u.assign.id = new ActId (buf);
 	}
 	else {
-	  _append_mem_write (post, c->u.comm.var, e);
+	  _append_mem_write (post, c->u.comm.var, e, _curbnl->cur);
 	  c->u.comm.var = new ActId (buf);
 	}
 	_fresh_release (idx);
@@ -623,7 +634,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	int idx = list_ivalue (li);
 	li = list_next (li);
 	ActId *mem = (ActId *) list_value (li);
-	_append_mem_read (x->u.semi_comma.cmd, mem, idx);
+	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
 	_fresh_release (idx);
       }
     }

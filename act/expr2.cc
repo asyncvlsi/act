@@ -2224,9 +2224,17 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
     }
     else {
-      tmp = TypeFactory::NewExpr (ret);
-      FREE (ret);
-      ret = tmp;
+      if (e->u.v_extra) {
+	BigInt *btmp = new BigInt();
+	*btmp = *((BigInt *)e->u.v_extra);
+	ret->u.v_extra = btmp;
+	*width = btmp->getWidth();
+      }
+      else {
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
+      }
     }
     break;
 

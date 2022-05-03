@@ -10,7 +10,7 @@ chan(int<32>) x;
 
 /* connections */
 dataflow {
-(y+1>>0x2&7)+0x1 -> x
+(y+0x1>>0x2&7)+0x1 -> x
 }
 }
 

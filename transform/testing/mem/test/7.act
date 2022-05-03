@@ -1,0 +1,14 @@
+import "mem.act";
+
+defproc test()
+{
+  int x, y;
+  int mem[12][10];
+  
+  chp {
+   x := 0;
+   y := mem[x][x+1]
+  }
+}
+
+test t;
