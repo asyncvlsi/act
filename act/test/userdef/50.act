@@ -1,0 +1,19 @@
+pint MXLEN = 32;
+deftype misa_csr(int<2> mxl; int<MXLEN-28> zero; int<26> ext)
+{
+  methods {
+    macro write (int<MXLEN> val) { mxl := (val >> (MXLEN-2)) & 0x3, zero := 0, ext := val & 0x3ffffff }
+  }
+}
+
+defproc test () 
+{
+
+  misa_csr misa_csr;
+
+  chp {
+    misa_csr.write(0x40101104)
+  }
+}
+
+test t;

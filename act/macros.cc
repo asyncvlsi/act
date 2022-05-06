@@ -28,6 +28,7 @@
 #include <common/misc.h>
 #include <common/hash.h>
 #include <common/qops.h>
+#include <common/int.h>
 
 /*------------------------------------------------------------------------
  *
@@ -171,7 +172,7 @@ static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
     }
     else {
       act_error_ctxt (stderr);
-      fatal_error ("Expanding macro: identifier `%s' substituted by expression!", inp->getName());
+      fatal_error ("Expanding macro: `%s' substituted by expression in a context where an identifier is needed.", inp->getName());
       exit (1);
     }
   }
@@ -205,7 +206,10 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
       ActId *tmp = (ActId *)e->u.e.l;
       if (act_inline_isbound (tab, tmp->getName())) {
 	Expr **res = act_inline_getval (tab, tmp->getName());
-	*e = *res[0];
+	*e = *(res[0]);
+	if (e->type == E_INT && e->u.v_extra) {
+	  e->u.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.v_extra));
+	}
 	FREE (res);
       }
       else {

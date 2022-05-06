@@ -1,0 +1,4 @@
+In expanding test (51.act:9)
+In expanding ::<Global>
+Error on or near line number 14.
+FATAL: Expanding macro: `val' substituted by expression in a context where an identifier is needed.
