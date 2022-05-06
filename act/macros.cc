@@ -168,7 +168,7 @@ static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
     Expr *tmp = e[0];
     FREE (e);
     if (tmp->type == E_VAR) {
-      return (ActId *)tmp->u.e.l;
+      return ((ActId *)tmp->u.e.l)->Clone();
     }
     else {
       act_error_ctxt (stderr);
