@@ -34,9 +34,13 @@
 
 static ActBooleanizePass *BOOL = NULL;
 
+static int name_mangle = 0;
+static int fuse_signal_directives = 0;
+static const char *global_signal_prefix = NULL;
+
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] [-B] [-c <cells>] [-p <proc>] <act>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-Bmf] [-c <cells>] [-p <proc>] <act>\n", name);
   fprintf (stderr, " -p <proc> : Emit process <proc>\n");
   exit (1);
 }
@@ -51,14 +55,23 @@ static char *initialize_parameters (int *argc, char ***argv, char **cells)
   char *proc_name;
   int ch;
   int black_box = 0;
-  
+
+  name_mangle = 0;
+  fuse_signal_directives = 0;
   proc_name = NULL;
   *cells = NULL;
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "Bc:p:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "mfBc:p:")) != -1) {
     switch (ch) {
+    case 'f':
+      fuse_signal_directives = 1;
+      break;
+      
+    case 'm':
+      name_mangle = 1;
+      break;
     case 'B':
       black_box = 1;
       break;
@@ -115,15 +128,22 @@ static void emit_verilog_id (act_connection *c)
 
   if (c->isglobal()) {
     /* XXX: this only works in simulation land */
-    printf ("top.");
+    printf ("%s", global_signal_prefix);
   }
 
-  if (id->arrayInfo() || id->Rest()) {
-    printf ("\\");
+  if (name_mangle) {
+    char buf[10240];
+    id->sPrint (buf, 10240);
+    ActNamespace::Act()->mfprintf (stdout, "%s", buf);
   }
-  id->Print (stdout);
-  if (id->arrayInfo() || id->Rest()) {
-    printf (" ");
+  else {
+    if (id->arrayInfo() || id->Rest()) {
+      printf ("\\");
+    }
+    id->Print (stdout);
+    if (id->arrayInfo() || id->Rest()) {
+      printf (" ");
+    }
   }
   delete id;
 }
@@ -199,16 +219,18 @@ void emit_verilog (Act *a, Process *p)
   }
   printf (");\n");
 
-  for (int i=0; i < A_LEN (n->ports); i++) {
-    if (n->ports[i].omit) continue;
-    if (n->ports[i].input) {
-      printf ("   input ");
+  if (!fuse_signal_directives) {
+    for (int i=0; i < A_LEN (n->ports); i++) {
+      if (n->ports[i].omit) continue;
+      if (n->ports[i].input) {
+	printf ("   input ");
+      }
+      else {
+	printf ("   output ");
+      }
+      emit_verilog_id (n->ports[i].c);
+      printf (";\n");
     }
-    else {
-      printf ("   output ");
-    }
-    emit_verilog_id (n->ports[i].c);
-    printf (";\n");
   }
 
   printf ("\n// -- signals ---\n");
@@ -219,6 +241,21 @@ void emit_verilog (Act *a, Process *p)
       act_booleanized_var_t *v = (act_booleanized_var_t *)b->v;
       if (!v->used) continue;
       if (v->id->isglobal()) continue;
+
+      if (fuse_signal_directives) {
+	for (int k=0; k < A_LEN (n->ports); k++) {
+	  if (n->ports[k].omit) continue;
+	  if (n->ports[k].c == v->id) {
+	    if (n->ports[k].input) {
+	      printf ("   input ");
+	    }
+	    else {
+	      printf ("   output ");
+	    }
+	    break;
+	  }
+	}
+      }
 
       if (v->input && !v->output) {
 	printf ("   wire ");
@@ -319,6 +356,7 @@ int main (int argc, char **argv)
   char *cells;
 
   proc = initialize_parameters (&argc, &argv, &cells);
+  config_set_default_string ("act.global_signal_prefix", "top.");
 
   if (argc != 2) {
     fatal_error ("Something strange happened!");
@@ -350,6 +388,9 @@ int main (int argc, char **argv)
 
   BOOL = new ActBooleanizePass (a);
   Assert (BOOL->run (p), "booleanize pass failed?");
+
+  global_signal_prefix = config_get_string ("act.global_signal_prefix");
+  
   emit_verilog (a, p);
   return 0;
 }
