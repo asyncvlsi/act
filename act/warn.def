@@ -5,7 +5,7 @@ WARNING_FLAG(empty_select, 0)
 WARNING_FLAG(double_expand, 1)
 
 /* warn if a local signal has no driver */
-WARNING_FLAG(no_local_driver, 1)
+WARNING_FLAG(no_local_driver, 0)
 
 /* warn if a duplicate pass is being added */
 WARNING_FLAG(dup_pass, 1)

@@ -10,7 +10,7 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../test_statepass.$EXT 
+ACTTOOL=../test_statepass.$EXT
 
 check_echo=0
 myecho()
@@ -56,7 +56,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL $i 'foo<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -Wno_local_driver:on $i 'foo<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.t.stderr
 	rm runs/$i.tmp.stderr
 	ok=1

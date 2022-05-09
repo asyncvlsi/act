@@ -19,7 +19,7 @@ fi
 
 for i in $list
 do
-	$ACTTOOL $i 'foo<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -Wno_local_driver:on $i 'foo<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.stderr
 	rm runs/$i.tmp.stderr
 done
