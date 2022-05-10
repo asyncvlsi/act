@@ -273,7 +273,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
 	      NEW (newrule, act_prs_lang_t);
 	      newrule->type = ACT_PRS_RULE;
 	      newrule->u.one.id = tmp->u.one.id;
-	      newrule->u.one.attr = NULL;
+	      newrule->u.one.attr = tmp->u.one.attr;
 	      newrule->u.one.arrow_type = 0;
 	      newrule->u.one.dir = 1 - tmp->u.one.dir;
 	      newrule->u.one.label = 0;
