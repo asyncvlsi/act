@@ -154,6 +154,16 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
       for (int i=0; i < tmp->count-1; i++) {
 	if (s->ids[i]) {
 	  tmp->ids[i] = s->ids[i]->Expand (ns, sc);
+	  if (tmp->ids[i]->Tail()->arrayInfo() &&
+	      tmp->ids[i]->Tail()->arrayInfo()->isDeref()) {
+	    if (!tmp->ids[i]->validateDeref (sc)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "ID: ");
+	      tmp->ids[i]->Print (stderr);
+	      fprintf (stderr, "\n");
+	      fatal_error ("Dereference out of range!");
+	    }
+	  }
 	}
 	else {
 	  tmp->ids[i] = NULL;
@@ -161,6 +171,16 @@ act_spec *spec_expand (act_spec *s, ActNamespace *ns, Scope *sc)
       }
       if (!ACT_SPEC_ISTIMING (tmp)) {
 	tmp->ids[tmp->count-1] = s->ids[tmp->count-1]->Expand (ns, sc);
+	if (tmp->ids[tmp->count-1]->Tail()->arrayInfo() &&
+	    tmp->ids[tmp->count-1]->Tail()->arrayInfo()->isDeref()) {
+	  if (!tmp->ids[tmp->count-1]->validateDeref (sc)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "ID: ");
+	    tmp->ids[tmp->count-1]->Print (stderr);
+	    fprintf (stderr, "\n");
+	    fatal_error ("Dereference out of range!");
+	  }
+	}
       }
       else {
 	tmp->ids[tmp->count-1] = (ActId *) (s->ids[tmp->count-1] ?
