@@ -298,10 +298,20 @@ void emit_verilog (Act *a, Process *p)
       do {
 	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
 	  emit_verilog_moduletype (a, instproc);
-	  printf (" \\%s", vx->getName());
-	  if (as) {
-	    as->Print (stdout);
-	  }
+          if (name_mangle) {
+	    ActNamespace::Act()->mfprintf (stdout, " %s", vx->getName());
+	    if (as) {
+	      char *s = as->string();
+	      ActNamespace::Act()->mfprintf (stdout, "%s", s);
+	      FREE (s);
+	    }
+          }
+          else {
+	    printf (" \\%s", vx->getName());
+	    if (as) {
+	      as->Print (stdout);
+	    }
+          }
 	  printf ("  (");
 
 	  int first = 1;
