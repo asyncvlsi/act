@@ -214,6 +214,8 @@ class ActNetlistPass : public ActPass {
   int min_w_in_lambda;
   int min_l_in_lambda;
   double leak_adjust;
+  int _fin_width;		// for FinFETs, snaps all widths to
+				// integer fin width
 
   /* maximum transistor size */
   int max_n_w_in_lambda;

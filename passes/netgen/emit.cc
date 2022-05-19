@@ -385,6 +385,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 			  *output_scale_factor);
 	  }
 
+	  if (_fin_width > 0) {
+	    Assert ((w % _fin_width) == 0, "Internal inconsistency in fin width value");
+	    fprintf (fp, " NFIN=%d", w/_fin_width);
+	  }
+
 	  /* print extra fet string */
 	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
 	    fprintf (fp, " %s\n", extra_fet_string);

@@ -90,7 +90,7 @@ void fatal_error (const char *s, ...);
 void warning (const char *s, ...);
 char *Strdup (const char *);
 
-#define Assert(a,b) do { if (!(a)) { fprintf (stderr, "Assertion failed, file %s, line %d\n", __FILE__, __LINE__); fprintf (stderr, "Assertion: " #a "\n"); fprintf (stderr, "ERR: " b "\n"); exit (4); } } while (0)
+#define Assert(a,b) do { if (!(a)) { fprintf (stderr, "Assertion failed, file %s, line %d\n", __FILE__, __LINE__); fprintf (stderr, "Assertion: %s\n", #a); fprintf (stderr, "ERR: %s\n", b); exit (4); } } while (0)
 
 #define MEMCHK(x)  Assert (x, "out of memory")
 

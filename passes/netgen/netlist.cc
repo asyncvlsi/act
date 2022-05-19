@@ -972,6 +972,11 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
   if (f->w/f->nfolds < min_w_in_lambda*getGridsPerLambda()) {
     f->nfolds = f->w/(min_w_in_lambda*getGridsPerLambda());
   }
+
+  if (_fin_width > 0) {
+    f->w = (f->w + _fin_width - 1)/_fin_width;
+    f->w *= _fin_width;
+  }
 }
 
 /*
@@ -2414,6 +2419,13 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
     leak_adjust = 0;
   }
 
+  if (config_exists ("net.fin_width")) {
+    _fin_width = config_get_int ("net.fin_width");
+  }
+  else {
+    _fin_width = -1;
+  }
+
   local_vdd = config_get_string ("net.local_vdd");
   local_gnd = config_get_string ("net.local_gnd");
 
@@ -2457,6 +2469,8 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   if (fabs (grids_per_lambda*manufacturing_grid - lambda) > 1e-6) {
     fatal_error ("lambda (%g) must be an integer multiple of the manufacturing grid (%g)\n", lambda, manufacturing_grid);
   }
+
+  _fin_width *= grids_per_lambda;
 
   ignore_loadcap = config_get_int ("net.ignore_loadcap");
   emit_parasitics = config_get_int ("net.emit_parasitics");
