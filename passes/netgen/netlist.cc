@@ -2421,10 +2421,32 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 
   if (config_exists ("net.fin_width")) {
     _fin_width = config_get_int ("net.fin_width");
+    if (_fin_width <= 0) {
+      _fin_width = -1;
+    }
   }
   else {
     _fin_width = -1;
   }
+  if (_fin_width > 0) {
+    /* sanity checking of min and standard w parameters */
+    if ((min_w_in_lambda % _fin_width) != 0) {
+      warning ("Minimum width (%d) is not a multiple of a fin (%d)?", min_w_in_lambda, _fin_width);
+    }
+    if ((config_get_int ("net.std_n_width") % _fin_width) != 0) {
+      warning ("Standard n-transistor width (%d) is not a multiple of a fin (%d)?", config_get_int ("net.std_n_width"), _fin_width);
+    }      
+    if ((config_get_int ("net.std_p_width") % _fin_width) != 0) {
+      warning ("Standard p-transistor width (%d) is not a multiple of a fin (%d)?", config_get_int ("net.std_p_width"), _fin_width);
+    }      
+    if ((config_get_int ("net.stat_n_width") % _fin_width) != 0) {
+      warning ("Staticizer n-transistor width (%d) is not a multiple of a fin (%d)?", config_get_int ("net.stat_n_width"), _fin_width);
+    }      
+    if ((config_get_int ("net.stat_p_width") % _fin_width) != 0) {
+      warning ("Staticizer p-transistor width (%d) is not a multiple of a fin (%d)?", config_get_int ("net.stat_p_width"), _fin_width);
+    }      
+  }
+  
 
   local_vdd = config_get_string ("net.local_vdd");
   local_gnd = config_get_string ("net.local_gnd");
