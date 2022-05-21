@@ -214,7 +214,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       out = 1;
     }
     a->mfprintf (fp, "* %s ", buf);
-    if (x->v->stateholding) {
+    if (x->v->stateholding && !x->v->unstaticized) {
       fprintf (fp, "(state-holding): pup_reff=%g; pdn_reff=%g\n",
 	       x->reff[EDGE_PFET], x->reff[EDGE_NFET]);
     }

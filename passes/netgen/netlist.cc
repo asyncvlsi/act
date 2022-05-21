@@ -568,7 +568,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
       continue;
     }
 
-    if (n->v->unstaticized) {
+    if (n->v->unstaticized == 2) {
       continue;
     }
 
@@ -618,7 +618,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 
   for (n = N->hd; n; n = n->next) {
     if (!n->v) continue;
-    if (n->v->stateholding) {
+    if (n->v->stateholding && !n->v->unstaticized) {
       /* state-holding node */
       if (!n->v->inv) {
 	node_t *iout; /* inverter output */
@@ -1776,7 +1776,12 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	*/
 	if (strcmp (attr->attr, "keeper") == 0) {
 	  if (attr->e->u.v == 0) {
+	    /* don't generate a keeper */
 	    VINF(v)->unstaticized = 1;
+	  }
+	  else if (attr->e->u.v == 2) {
+	    /* don't generate a keeper, but it isn't state-holding */
+	    VINF(v)->unstaticized = 2;
 	  }
 	  else {
 	    VINF(v)->unstaticized = 0;
