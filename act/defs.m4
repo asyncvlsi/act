@@ -2333,11 +2333,13 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
 | "*["
 {{X: $0->in_cond++; }}
 
-    { gc_1 "[]" }* "]"
+    { gc_1 "[]" }* "]" [";"]
     
 {{X:
     listitem_t *li;
     ActBody_Select_gc *ret, *prev, *stmp;
+
+    OPT_FREE ($4);
 
     ret = NULL;
     for (li = list_first ($2); li; li = list_next (li)) {
@@ -2363,10 +2365,11 @@ conditional[ActBody *]: "["
 
 {{X: $0->in_cond++; }}
 
-                    guarded_cmds "]"
+                    guarded_cmds "]" [";"]
 
 {{X:
     $0->in_cond--;
+    OPT_FREE ($4);
     return $2; 
 }}
 ;
@@ -2432,17 +2435,18 @@ loop_base[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] 
 {{X:
     lapply_X_loop_0_6 ($0, $2, $3, $5, $6);
 }}
-   base_body ")"
+   base_body ")" [";"]
 {{X:
+    OPT_FREE ($10);
     return apply_X_loop_opt0 ($0, $2, $3, $5, $6, $8);
 }}
 | "*["
 {{X:
     lapply_X_loop_1_0 ($0);
 }}
-  { gc_1_base "[]" }* "]"
+  { gc_1_base "[]" }* "]" [";"]
 {{X:
-    return apply_X_loop_opt1 ($0, $2);
+    return apply_X_loop_opt1 ($0, $2, $4);
 }}
 ;
 
@@ -2450,9 +2454,9 @@ conditional_base[ActBody *]: "["
 {{X:
     lapply_X_conditional_0_0 ($0);
 }}
-guarded_cmds_base "]"
+guarded_cmds_base "]" [";"]
 {{X:
-    return apply_X_conditional_opt0 ($0, $2);
+    return apply_X_conditional_opt0 ($0, $2, $4);
 }}
 ;
 
