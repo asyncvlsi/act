@@ -204,7 +204,7 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
     }
     else {
       config_stdtech_path (argvp+2);
-      setenv ("ACT_TECH", Strdup (argvp+2), 1);
+      mysetenv ("ACT_TECH", Strdup (argvp+2));
     }
     *tech_specified = 1;
   }
@@ -397,7 +397,7 @@ void Act::Init (int *iargc, char ***iargv)
     }
     else {
       config_stdtech_path ("generic");
-      setenv ("ACT_TECH", Strdup ("generic"), 1);
+      mysetenv ("ACT_TECH", Strdup ("generic"));
     }
   }
 

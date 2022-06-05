@@ -473,3 +473,13 @@ int my_strequalcase (const char *a, const char *b)
   }
   return 1;
 }
+
+/* setenv() doesn't always exist... */
+void mysetenv (const char *a, const char *b)
+{
+  char *buf;
+  int len = strlen (a) + strlen (b) + 2;
+  MALLOC (buf, char, len);
+  snprintf (buf, len, "%s=%s", a, b);
+  putenv (buf);
+}

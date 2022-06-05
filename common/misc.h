@@ -90,6 +90,7 @@ void fatal_error (const char *s, ...);
 void warning (const char *s, ...);
 char *Strdup (const char *);
 int my_strequalcase (const char *a, const char *b);
+void mysetenv (const char *a, const char *b);
 
 #define Assert(a,b) do { if (!(a)) { fprintf (stderr, "Assertion failed, file %s, line %d\n", __FILE__, __LINE__); fprintf (stderr, "Assertion: %s\n", #a); fprintf (stderr, "ERR: %s\n", b); exit (4); } } while (0)
 
