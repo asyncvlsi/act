@@ -309,7 +309,7 @@ int ParamGetBool (const char *name)
 
   h = gethelem (name);
   if (h->s) {
-     if (!strcasecmp(h->s, PARAM_YES))
+     if (my_strequalcase (h->s, PARAM_YES))
 	return 1;
      else
 	return 0;

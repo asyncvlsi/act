@@ -641,7 +641,7 @@ void raw_convert (FILE *fp, const char *output)
     tok = strtok (NULL, " \t");
 
     if (i == 0) {
-      if (strcasecmp (tok, "time") != 0) {
+      if (!my_strequalcase (tok, "time")) {
 	fatal_error ("Variable 0 should be time!\n");
       }
       A_NEW (skipvars, int);

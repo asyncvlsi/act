@@ -838,7 +838,7 @@ static PrsNode *find_prs_node (Prs *p, char *buf)
   for (i=0; i < p->H->size; i++) 
     for (b = p->H->head[i]; b; b = b->next) {
       n = (PrsNode *)b->v;
-      if (strcasecmp (buf, b->key) == 0) {
+      if (my_strequalcase (buf, b->key)) {
 	return n;
       }
     }

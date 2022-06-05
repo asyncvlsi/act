@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <ctype.h>
 #include "misc.h"
 
 
@@ -450,4 +451,25 @@ int mypermutation (int *p, int *aux, int sz)
   }
   aux[0] = -1;
   return 0;
+}
+
+
+/* strcasecmp missing from some systems in string.h; we use this
+   instead  for case insensitive equality testing */
+int my_strequalcase (const char *a, const char *b)
+{
+  if (a == b) return 1;
+  if (!a || !b) return 0;
+
+  while (*a && *b) {
+    if (tolower (*a) != tolower(*b)) {
+      return 0;
+    }
+    a++;
+    b++;
+  }
+  if (*a || *b) {
+    return 0;
+  }
+  return 1;
 }
