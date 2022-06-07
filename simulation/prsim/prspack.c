@@ -135,8 +135,8 @@ int main (int argc, char **argv)
 	type = '\07';
       }
       else {
-	putchar ('\08');
-	type = '\08';
+	putchar ('\010');
+	type = '\010';
       }
       lex_mustbe (l, syms[LPAR]);
       putchar ('(');
