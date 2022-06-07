@@ -1796,7 +1796,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	act_error_ctxt (stderr);
 	fatal_error ("CHP macro and namespace globals don't mix");
       }
-      InstType *it = s->FullLookup (x->getName());
+      InstType *it = s->FullLookup (x, NULL);
       delete x;
       x = NULL;
       
@@ -1806,9 +1806,11 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       Assert (u, "Hmm");
       UserMacro *um = u->getMacro (string_char (c->u.macro.name));
       if (!um) {
+	char buf[1024];
+	c->u.macro.id->sPrint (buf, 1024);
 	act_error_ctxt (stderr);
 	fprintf (stderr, "Macro name `%s' not found for instance `%s' (type `%s')\n",
-		 string_char (c->u.macro.name), x->getName(), u->getName());
+		 string_char (c->u.macro.name), buf, u->getName());
 	exit (1);
       }
 

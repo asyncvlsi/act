@@ -1,0 +1,2 @@
+ERROR: File `84.act', line 19, col 34
+	Macro `writex' not found for `misa_csr.misa' (type `misa_csr')

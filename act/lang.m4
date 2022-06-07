@@ -402,53 +402,137 @@ base_stmt[act_chp_lang_t *]: send_stmt
     c->u.func.rhs = $3;
     return c;
 }}
-| base_id "." ID "(" [ { w_expr "," }** ] ")"
+| { base_id "." }* "(" [ { w_expr "," }** ] ")"
 {{X:
     act_chp_lang_t *c;
     int tc;
+    ActId *id1;
+    const char *methname;
+    listitem_t *li;
+    
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_MACRO;
     c->label = NULL;
     c->space = NULL;
-    c->u.macro.id = $1;
 
-    $A($1->Rest() == NULL);
+    id1 = (ActId *) list_value (list_first ($1));
+    if (list_length ($1) < 2) {
+      $E("This looks like a method call for ``%s'', but is missing a method name.", id1->getName());
+    }
 
-    InstType *it = $0->scope->FullLookup ($1->getName());
+    /* method name is the last value */
+    ActId *id2 = (ActId *) list_value (list_tail ($1));
+    methname = id2->getName();
+    if (id2->arrayInfo()) {
+      $E("Method name cannot have square brackets!");
+    }
+    delete id2;
+
+    c->u.macro.id = id1;
+    ActId *cur = id1;
+
+    InstType *it = $0->scope->FullLookup (id1->getName());
     if (!it) {
       $E("The identifier ``%s'' does not exist in the current scope.",
-	 $1->getName());
+	 id1->getName());
     }
-
-    if ($1->isRange()) {
-      $E("Macro calls cannot use an array range specification (``%s'')",
-	 $1->getName());
+    if (cur->isRange()) {
+      $e("Invalid use of array sub-range specifier: ");
+      id1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
     }
+    if (cur->isDeref()) {
+      if (!it->arrayInfo() || (cur->arrayInfo()->nDims () != it->arrayInfo()->nDims ())) {
+	if (it->arrayInfo ()) {
+	  $e("Mismatch in array dimensions (%d v/s %d): ",
+	     cur->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
+	}
+	else {
+	  $e("Array reference (%d dims) for a non-arrayed identifier: ",
+	     cur->arrayInfo()->nDims ());
+	}
+	id1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+    }
+    UserDef *ud = NULL;
+    
+    for (li = list_next (list_first ($1)); li != list_tail ($1);
+	 li = list_next (li)) {
+      ud = dynamic_cast<UserDef *> (it->BaseType());
+      if (!ud) {
+	$e("Invalid use of ``.'' for an identifier that is not a user-defined type: ");
+	id1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
 
-    if ($1->isDeref() && (it->arrayInfo() == NULL)) {
-      $E("Array de-reference to a non-arrayed value ``%s''", $1->getName());
+      if (cur->isRange()) {
+	$e("Invalid use of array sub-range specifier: ");
+	id1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      if (cur->isDeref()) {
+	if (!it->arrayInfo() || (cur->arrayInfo()->nDims () != it->arrayInfo()->nDims ())) {
+	  if (it->arrayInfo ()) {
+	    $e("Mismatch in array dimensions (%d v/s %d): ",
+	       cur->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
+	  }
+	  else {
+	    $e("Array reference (%d dims) for a non-arrayed identifier: ",
+	       cur->arrayInfo()->nDims ());
+	  }
+	  id1->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+      }
+
+      it = ud->Lookup ((ActId *) list_value (li));
+      if (!it) {
+	$e("Port name ``%s'' does not exist for the identifier: ", 
+	   ((ActId *)list_value (li))->getName());
+	id1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      else {
+	if (!ud->isPort (((ActId *)list_value (li))->getName())) {
+	  $E("``%s'' is not a port for ``%s''", ((ActId *)list_value (li))->getName(),
+	     ud->getName());
+	}
+      }
+      cur->Append ((ActId *)list_value (li));
+      cur = (ActId *) list_value (li);
     }
 
     if (!TypeFactory::isUserType (it)) {
-      $E("``%s'': macro calls can only be made to a user-defined type.",
-	 $1->getName());
+      $e("''");
+      id1->Print ($f);
+      fprintf ($f, "'': macro calls can only be made to a user-defined type.\n");
+      exit (1);
     }
 
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
     $A(u);
 
-    if (u->isDefined() && !u->getMacro ($3)) {
-      $E("Macro ``%s'' not found for ``%s'' (type ``%s'')",
-	 $3, $1->getName(), u->getName());
+    if (u->isDefined() && !u->getMacro (methname)) {
+      $e("Macro ``%s'' not found for ``", methname);
+      id1->Print ($f);
+      fprintf ($f, "'' (type ``%s'')\n", u->getName());
+      exit (1);
     }
 
-    c->u.macro.name = string_create ($3);
+    c->u.macro.name = string_create (methname);
     
-    if (OPT_EMPTY ($5)) {
+    if (OPT_EMPTY ($3)) {
       c->u.macro.rhs = NULL;
     }
     else {
-      ActRet *r = OPT_VALUE ($5);
+      ActRet *r = OPT_VALUE ($3);
       $A(r->type == R_LIST);
       c->u.macro.rhs = list_new ();
       for (listitem_t *li = list_first (r->u.l); li; li = list_next (li)) {
@@ -460,7 +544,8 @@ base_stmt[act_chp_lang_t *]: send_stmt
       list_free (r->u.l);
       FREE (r);
     }
-    OPT_FREE ($5);
+    OPT_FREE ($3);
+    list_free ($1);
     return c;
 }}
 ;
