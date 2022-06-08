@@ -39,7 +39,7 @@ More detailed documentation is available here:
     https://avlsi.csl.yale.edu/act/
     
 A first ACT tutorial:
-    https://avlsi.csl.yale.edu/act/doku.php?id=tutorial:basicprs
+    https://avlsi.csl.yale.edu/act/doku.php?id=intro_example:start
 
 Some more installation instructions are available here:
     https://avlsi.csl.yale.edu/act/doku.php?id=install
