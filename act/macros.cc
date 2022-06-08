@@ -178,11 +178,7 @@ static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
   }
   else {
     ActId *ret = id->Clone ();
-    ActId *tmp = ret;
-    while (tmp->Rest()) {
-      tmp = tmp->Rest();
-    }
-    tmp->Append (inp->Clone());
+    ret->Tail()->Append (inp->Clone());
     return ret;
   }
 }
@@ -214,12 +210,8 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
       }
       else {
 	ActId *ret = id->Clone ();
-	ActId *rtmp = ret;
-	while (rtmp->Rest()) {
-	  rtmp = rtmp->Rest();
-	}
-	rtmp->Append (tmp->Clone());
-	e->u.e.l = (Expr *)rtmp;
+	ret->Tail()->Append (tmp->Clone());
+	e->u.e.l = (Expr *)ret;
       }
       delete tmp;
     }
