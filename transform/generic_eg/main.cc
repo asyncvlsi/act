@@ -63,7 +63,7 @@ int main (int argc, char **argv)
   }
 
   if (!p->isExpanded()) {
-    fatal_error ("Process `%s' is not expanded.", argv[2]);
+    p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
   }
 
   /* do stuff here */

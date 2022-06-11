@@ -393,7 +393,7 @@ int main (int argc, char **argv)
   }
 
   if (!p->isExpanded()) {
-    fatal_error ("Process `%s' is not expanded.", proc);
+    p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
   }
 
   BOOL = new ActBooleanizePass (a);
