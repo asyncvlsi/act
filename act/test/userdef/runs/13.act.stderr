@@ -2,6 +2,6 @@ In expanding ::<Global>
 Error on or near line number 18.
 Connection: f = b
   LHS: foo<10>
-  RHS: bar<>
+  RHS: bar
 FATAL: Type-checking failed on connection
-	Types `foo<10>' and `bar<>' are not compatible
+	Types `foo<10>' and `bar' are not compatible

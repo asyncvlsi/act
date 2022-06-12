@@ -655,21 +655,17 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 	PRINT_STEP;
 	FREE (s);
       }
-      int l;
-      char *s = Strdup (t->getName());
-      l = strlen (s);
-      if (l > 2 && s[l-1] == '>' && s[l-2] == '<') {
-	s[l-2] = '\0';
-      }
-      snprintf (buf+k, sz, "%s", s);
-      FREE (s);
-    }
-    else {
-      snprintf (buf+k, sz, "%s", t->getName());
     }
   }
-  else {
-    snprintf (buf+k, sz, "%s", t->getName());
+  {
+    int l;
+    char *s = Strdup (t->getName());
+    l = strlen (s);
+    if (l > 2 && s[l-1] == '>' && s[l-2] == '<') {
+      s[l-2] = '\0';
+    }
+    snprintf (buf+k, sz, "%s", s);
+    FREE (s);
   }
 
   PRINT_STEP;
@@ -697,29 +693,34 @@ void InstType::sPrint (char *buf, int sz, int nl_mode)
 
   if (nt > 0 && !ischan) {
     /* templates are used for int, chan, ptype, and userdef */
-    snprintf (buf+k, sz, "<");
-    PRINT_STEP;
-    
-    for (int i=0; i < nt; i++) {
-      if (u[i].isatype) {
-	if (u[i].u.tt) {
-	  u[i].u.tt->sPrint (buf+k, sz);
-	}
-	PRINT_STEP;
-      }
-      else {
-	if (u[i].u.tp) {
-	  u[i].u.tp->sPrint (buf+k, sz);
-	}
-	PRINT_STEP;
-      }
-      if (i < nt-1) {
-	snprintf (buf+k, sz, ",");
-	PRINT_STEP;
-      }
+    if (nt == 1 && !u[0].isatype && u[0].u.tp == NULL) {
+      /* dummy */
     }
-    snprintf (buf+k, sz, ">");
-    PRINT_STEP;
+    else {
+      snprintf (buf+k, sz, "<");
+      PRINT_STEP;
+    
+      for (int i=0; i < nt; i++) {
+	if (u[i].isatype) {
+	  if (u[i].u.tt) {
+	    u[i].u.tt->sPrint (buf+k, sz);
+	  }
+	  PRINT_STEP;
+	}
+	else {
+	  if (u[i].u.tp) {
+	    u[i].u.tp->sPrint (buf+k, sz);
+	  }
+	  PRINT_STEP;
+	}
+	if (i < nt-1) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+      }
+      snprintf (buf+k, sz, ">");
+      PRINT_STEP;
+    }
   }
   if (a) {
     a->sPrint (buf+k, sz);
