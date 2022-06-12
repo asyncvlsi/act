@@ -514,45 +514,109 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       long lo, hi;
       lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
       if (lt == T_ERR) return T_ERR;
-      if (T_BASETYPE_INT (lt)) {
-	if (xit->isExpanded()) {
-	  Assert (e->u.e.r, "What?");
-	  Assert (e->u.e.r->u.e.r, "What?");
-	  if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
-				  e->u.e.r->u.e.l->type != E_INT)) {
-	    typecheck_err ("Bitfield can only use const integer arguments");
-	    return T_ERR;
-	  }
-	  if (!expr_is_a_const (e->u.e.r->u.e.r) ||
-	      e->u.e.r->u.e.r->type != E_INT) {
-	    typecheck_err ("Bitfield can only use const integer arguments");
-	    return T_ERR;
-	  }
-	  hi = e->u.e.r->u.e.r->u.v;
-	  if (e->u.e.r->u.e.l) {
-	    lo = e->u.e.r->u.e.l->u.v;
+      if (only_chan == 1 || (only_chan == 2 && !(T_BASETYPE_INT (lt)))) {
+	if (TypeFactory::isChanType (xit)) {
+	  if (xit->isExpanded()) {
+
+	    if (xit->getDir() == Type::OUT) {
+	      typecheck_err ("Channel expression requires an input port");
+	      return T_ERR;
+	    }
+	    
+	    if (!xit->arrayInfo() && ((ActId *)e->u.e.l)->Tail()->arrayInfo()) {
+	      typecheck_err ("Identifier is not an array type");
+	      return T_ERR;
+	    }
+	    if (xit->arrayInfo() && !((ActId *)e->u.e.l)->isDeref()) {
+	      typecheck_err ("Array specifier not permitted in channel expression");
+	      return T_ERR;
+	    }
+	    if (!TypeFactory::isBaseIntType (TypeFactory::getChanDataType (xit))) {
+	      typecheck_err ("Bitfields permitted only on integer data values");
+	      return T_ERR;
+	    }
+	    Assert (e->u.e.r, "What?");
+	    Assert (e->u.e.r->u.e.r, "What?");
+	    if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
+				    e->u.e.r->u.e.l->type != E_INT)) {
+	      typecheck_err ("Bitfield can only use const integer arguments");
+	      return T_ERR;
+	    }
+	    if (!expr_is_a_const (e->u.e.r->u.e.r) ||
+		e->u.e.r->u.e.r->type != E_INT) {
+	      typecheck_err ("Bitfield can only use const integer arguments");
+	      return T_ERR;
+	    }
+	    hi = e->u.e.r->u.e.r->u.v;
+	    if (e->u.e.r->u.e.l) {
+	      lo = e->u.e.r->u.e.l->u.v;
+	    }
+	    else {
+	      lo = hi;
+	    }
+	    if (hi < lo) {
+	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
+	      return T_ERR;
+	    }
+	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
+	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
+			     hi, lo, TypeFactory::bitWidth (xit));
+	      return T_ERR;
+	    }
+	    if (width) {
+	      *width = hi - lo + 1;
+	    }
 	  }
 	  else {
-	    lo = hi;
+	    if (width) {
+	      *width = 32;
+	    }
 	  }
-	  if (hi < lo) {
-	    typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
-	    return T_ERR;
-	  }
-	  if (hi+1 > TypeFactory::bitWidth (xit) || lo < 0) {
-	    typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
-			   hi, lo, TypeFactory::bitWidth (xit));
-	  }
-	  if (width) {
-	    *width = hi - lo + 1;
-	  }
+	  return lt;
 	}
-	else {
-	  if (width) {
-	    *width = 32;
+      }
+      else {
+	if (T_BASETYPE_INT (lt)) {
+	  if (xit->isExpanded()) {
+	    Assert (e->u.e.r, "What?");
+	    Assert (e->u.e.r->u.e.r, "What?");
+	    if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
+				    e->u.e.r->u.e.l->type != E_INT)) {
+	      typecheck_err ("Bitfield can only use const integer arguments");
+	      return T_ERR;
+	    }
+	    if (!expr_is_a_const (e->u.e.r->u.e.r) ||
+		e->u.e.r->u.e.r->type != E_INT) {
+	      typecheck_err ("Bitfield can only use const integer arguments");
+	      return T_ERR;
+	    }
+	    hi = e->u.e.r->u.e.r->u.v;
+	    if (e->u.e.r->u.e.l) {
+	      lo = e->u.e.r->u.e.l->u.v;
+	    }
+	    else {
+	      lo = hi;
+	    }
+	    if (hi < lo) {
+	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
+	      return T_ERR;
+	    }
+	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
+	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
+			     hi, lo, TypeFactory::bitWidth (xit));
+	      return T_ERR;
+	    }
+	    if (width) {
+	      *width = hi - lo + 1;
+	    }
 	  }
+	  else {
+	    if (width) {
+	      *width = 32;
+	    }
+	  }
+	  return lt;
 	}
-	return lt;
       }
     }
     typecheck_err ("Bitfield used with non-integer variable.");
@@ -769,6 +833,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	if (lt == T_CHAN) {
 	  ActId *tmp;
 	  InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+
+	  if (it->getDir() == Type::OUT) {
+	    typecheck_err ("Channel expression requires an input port");
+	    return T_ERR;
+	  }
 
 	  if (!it->arrayInfo() && tmp->arrayInfo()) {
 	    typecheck_err ("Identifier `%s' is not an array type", tmp->getName());

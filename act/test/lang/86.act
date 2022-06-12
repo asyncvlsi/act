@@ -1,0 +1,10 @@
+defproc testme (chan?(int) a; chan!(int) b)
+{
+  chan(int) w;
+  dataflow { 
+    a{2..0} -> b;
+    b -> w
+  }
+}
+
+testme t;
