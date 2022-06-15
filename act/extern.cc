@@ -113,6 +113,12 @@ void *act_find_dl_func (struct ExtLibs *el, ActNamespace *ns, const char *f)
 	  }
 	  fatal_error ("Could not open dynamic library `%s'", el->files[i].path);
 	}
+	{
+	  void *tmpf = dlsym (el->files[i].dl, "_builtin_update_config");
+	  if (tmpf) {
+	    ((void(*)(void *))tmpf) (config_get_state());
+	  }
+	}
       }
       fret = dlsym (el->files[i].dl, config_get_string (buf));
       if (!f) {
