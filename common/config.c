@@ -315,7 +315,6 @@ void config_read (const char *name)
   hash_bucket_t *b;
   config_t *c;
   int line = 0;
-  struct search_path *p;
   static int level = 0;
   int i;
   char *prefix = NULL;
@@ -561,6 +560,7 @@ void config_read (const char *name)
       {
 	A_DECL (int, x);
 	A_INIT (x);
+	x = NULL;
 	if (c->u.t.sz > 0) {
 	  int i;
 	  A_NEWP (x, int, c->u.t.sz);
@@ -641,6 +641,8 @@ void config_read (const char *name)
       {
 	A_DECL (double, x);
 	A_INIT (x);
+	x = NULL;
+	
 	if (c->u.t.sz > 0) {
 	  int i;
 	  A_NEWP (x, double, c->u.t.sz);
@@ -747,6 +749,7 @@ void config_read (const char *name)
       {
 	A_DECL (char *, x);
 	A_INIT (x);
+	x = NULL;
 
 	if (c->u.t.sz > 0) {
 	  int i;
@@ -875,6 +878,7 @@ int config_get_int (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : int, not in configuration file", s);
+    return 0;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_INT)
@@ -897,6 +901,7 @@ double config_get_real (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : real, not in configuration file", s);
+    return 0;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_REAL)
@@ -911,6 +916,7 @@ char *config_get_string (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : string, not in configuration file", s);
+    return NULL;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_STR)
@@ -933,6 +939,7 @@ int *config_get_table_int (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : int_table, not in configuration file", s);
+    return NULL;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_TABLE_INT)
@@ -956,6 +963,7 @@ double *config_get_table_real (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : real_table, not in configuration file", s);
+    return NULL;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_TABLE_REAL)
@@ -978,6 +986,7 @@ char **config_get_table_string (const char *s)
   
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s: string_table, not in configuration file", s);
+    return NULL;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_TABLE_STR) 
@@ -1000,6 +1009,7 @@ int config_get_table_size (const char *s)
 
   if (!H || !(b = hash_lookup (H, s))) {
     fatal_error ("%s : table not in configuration file", s);
+    return 0;
   }
   c = (config_t *)b->v;
   if (c->type != CONFIG_TABLE_INT && c->type != CONFIG_TABLE_REAL &&
@@ -1273,8 +1283,6 @@ void config_dump (FILE *fp)
 char *config_file_name (const char *name)
 {
   FILE *fp;
-  struct search_path *p;
-  char buf[10240];
   
   fp = NULL;
   if (*name == '/') {

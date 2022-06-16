@@ -76,7 +76,7 @@ static int hash (struct strHashtable *h, const char *k)
     }
   } else if (size <= (1<<16)) {
     unsigned int sum1;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1+*k)];
     for (s=k+1; (c=*s++); ) {
       sum = T[sum^c];
@@ -85,7 +85,7 @@ static int hash (struct strHashtable *h, const char *k)
     sum |= sum1 << 8;
   } else if (size <= (1<<24)) {
     unsigned int sum1, sum2;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     for (s=k+1; (c=*s++); ) {
@@ -96,7 +96,7 @@ static int hash (struct strHashtable *h, const char *k)
     sum |= (sum1 << 8) | (sum2 << 16);
   } else {
     unsigned int sum1, sum2, sum3;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     sum3 = T[0xff & (3 + *k)];
@@ -112,6 +112,7 @@ static int hash (struct strHashtable *h, const char *k)
   return sum & (size-1);
 }
 
+#if 0
 static void check_table (struct strHashtable *H)
 {
   int i;
@@ -127,6 +128,7 @@ static void check_table (struct strHashtable *H)
     }
   }
 }
+#endif
 
 
 static void resize_table (struct strHashtable *H)

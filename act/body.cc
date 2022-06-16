@@ -474,6 +474,7 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
   }
 }
 
+#if 0
 static void print_id (act_connection *c)
 {
   if (!c) return;
@@ -483,6 +484,7 @@ static void print_id (act_connection *c)
   id->Print (stdout);
   delete id;
 }
+#endif
 
 #if 0
 static void print_id (act_connection *c)
@@ -611,6 +613,7 @@ static void print_id (act_connection *c)
 }
 #endif
 
+#if 0
 static void dump_conn (act_connection *c)
 {
   act_connection *tmp, *root;
@@ -631,6 +634,7 @@ static void dump_conn (act_connection *c)
   } while (tmp != c);
   printf("\n");
 }
+#endif
 
 void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 {

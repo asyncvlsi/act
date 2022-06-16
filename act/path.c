@@ -37,7 +37,6 @@ static path_info_t *act_path = NULL;
  */
 static void _path_init (void)
 {
-  char buf[2];
   char *env;
   char *file;
 

@@ -270,6 +270,7 @@ static void efree (Expr *e)
   return;
 }
 
+#if 0
 static int const_intexpr (Expr *e, unsigned long *v)
 {
   unsigned long l, r;
@@ -304,6 +305,7 @@ static int const_intexpr (Expr *e, unsigned long *v)
     return 0;
   }
 }
+#endif
 
 void expr_free (Expr *e) { efree (e); }
 

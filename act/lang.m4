@@ -405,7 +405,6 @@ base_stmt[act_chp_lang_t *]: send_stmt
 | { base_id "." }* "(" [ { w_expr "," }** ] ")"
 {{X:
     act_chp_lang_t *c;
-    int tc;
     ActId *id1;
     const char *methname;
     listitem_t *li;
@@ -578,12 +577,11 @@ send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr ]
                                                   [ rcv_type gen_assignable_id ]
 {{X:
     act_chp_lang_t *c;
-    int t;
     InstType *it;
     Channel *ch1;
     Chan *ch2;
     
-    t = act_type_var ($0->scope, $1, &it);
+    /*t = */(void)(act_type_var ($0->scope, $1, &it));
 
     if (!TypeFactory::isChanType (it)) {
       $E("Send action requires a channel identifier ``%s''", $1->getName());
@@ -694,9 +692,8 @@ recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ gen_assignable_id ]
     Channel *ch1;
     Chan *ch2;
     InstType *it;
-    int t;
     
-    t = act_type_var ($0->scope, $1, &it);
+    /*t = */(void)(act_type_var ($0->scope, $1, &it));
 
     if (!TypeFactory::isChanType (it)) {
       $E("Receive action requires a channel identifier ``%s''", $1->getName());
@@ -791,7 +788,7 @@ assign_stmt[act_chp_lang_t *]: assignable_expr_id ":="
 w_expr_chp
 {{X:
     act_chp_lang_t *c;
-    int tl, tr;
+
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
     c->label = NULL;
@@ -800,7 +797,7 @@ w_expr_chp
     c->u.assign.e = $3;
 
     InstType *lhs, *rhs;
-    tl = act_type_var ($0->scope, $1, &lhs);
+    /*tl = */(void)(act_type_var ($0->scope, $1, &lhs));
     rhs = act_expr_insttype ($0->scope, $3, NULL, 2);
 
     Array *lhs_a, *rhs_a;

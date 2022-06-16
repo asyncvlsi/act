@@ -292,11 +292,13 @@ static void hash_delete (pairhash_t *p, bool_t *b0)
   p->nelements--;
 }
 
+#if 0
 static void hash_free (pairhash_t *p)
 {
   FREE (p->bucket);
   FREE (p);
 }
+#endif
 
 static void thash_free (BOOL_T *B, triplehash_t *t)
 {

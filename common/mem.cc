@@ -264,7 +264,7 @@ inline int Mem::_binsearchw (LL addr)
 LL 
 Mem::Read (LL addr)
 {
-  int i, w;
+  int w;
 
   addr >>= MEM_ALIGN;
   w = _binsearch (addr);
@@ -328,7 +328,7 @@ Mem::Write (LL addr, LL val)
 {
   int i, j, w;
   int ch, ret;
-  LL len, sz;
+  LL len;
   LL *data;
 
   addr >>= MEM_ALIGN;
@@ -595,7 +595,7 @@ Mem::MergeImage (FILE *fp)
 void 
 Mem::DumpImage (FILE *fp)
 {
-  int i, j, k;
+  int i, j;
   LL addr, data;
   unsigned long len;
 

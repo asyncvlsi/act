@@ -61,7 +61,7 @@ int hash_function (int size, const char *k)
   }
   if (size <= (1<<8)) {
     /* byte index */
-    sum = T[*k];
+    sum = T[0xff & *k];
     for (s=k+1; *s; s++) {
       c = *s;
       sum = T[sum^c];
@@ -69,7 +69,7 @@ int hash_function (int size, const char *k)
   } 
   else if (size <= (1<<16)) {
     unsigned int sum1;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1+*k)];
     for (s=k+1; *s; s++) {
       c = *s;
@@ -79,7 +79,7 @@ int hash_function (int size, const char *k)
     sum |= sum1 << 8;
   } else if (size <= (1<<24)) {
     unsigned int sum1, sum2;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     for (s=k+1; *s; s++) {
@@ -91,7 +91,7 @@ int hash_function (int size, const char *k)
     sum |= (sum1 << 8) | (sum2 << 16);
   } else {
     unsigned int sum1, sum2, sum3;
-    sum = T[*k];
+    sum = T[0xff & *k];
     sum1 = T[0xff & (1 + *k)];
     sum2 = T[0xff & (2 + *k)];
     sum3 = T[0xff & (3 + *k)];
@@ -262,7 +262,7 @@ static int ihash (struct iHashtable *h, long k)
 #undef DO_HASH
 }
 
-
+#if 0
 static void check_table (struct Hashtable *H)
 {
   int i;
@@ -295,7 +295,6 @@ static void icheck_table (struct iHashtable *H)
   }
 }
 
-#if 0
 static void ccheck_table (struct cHashtable *H)
 {
   int i;

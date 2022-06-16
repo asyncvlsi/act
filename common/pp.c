@@ -131,7 +131,7 @@ void stuff_into_buffer (pp_t *pp, const char *s, int flag)
  */
 void pp_puts_generic (pp_t *pp, const char *s, int flag)
 {
-  int i, j, k;
+  int i, j;
   int tmp;
   int nlev;
   int offset;

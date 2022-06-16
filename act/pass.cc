@@ -689,6 +689,8 @@ void ActPass::update (Process *p)
   A_DECL (pass_edges, e);
   A_DECL (ActPass *, x);
   A_DECL (int, xfi);
+  xfi = NULL; /* for compiler warnings; const prop should have fixed it */
+  x = NULL;   /* ditto */
   
   A_INIT (x);
   A_INIT (e);

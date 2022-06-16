@@ -258,6 +258,7 @@ unsigned int act_connection::getctype()
   return 3;
 }
 
+#if 0
 /* debugging */
 static void print_id (act_connection *c)
 {
@@ -377,6 +378,8 @@ static void dump_conn_rec (act_connection *c, int non_prim = 0)
   level--;
   if (level == 0) printf ("^^^^^^^^^^^^^^^^\n");
 }
+#endif
+
 
 /*
   Return a list of parent connection pointers. used to check for

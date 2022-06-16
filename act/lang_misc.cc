@@ -697,9 +697,6 @@ static void dflow_order_print (FILE *fp, list_t *l)
 
 void dflow_print (FILE *fp, act_dataflow *d)
 {
-  listitem_t *li;
-  act_dataflow_element *e;
-
   if (!d) return;
   fprintf (fp, "dataflow {\n");
   dflow_order_print (fp, d->order);

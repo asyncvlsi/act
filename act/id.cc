@@ -28,7 +28,9 @@
 #include <string.h>
 #include <ctype.h>
 
+#if 0
 static void print_id (act_connection *c);
+#endif
 
 /*------------------------------------------------------------------------
  *
@@ -659,6 +661,7 @@ static act_connection *_find_corresponding_slot (UserDef *ux,
   return pcx;
 }
 
+#if 0
 static void dump_conn (act_connection *c)
 {
   act_connection *tmp, *root;
@@ -679,6 +682,7 @@ static void dump_conn (act_connection *c)
   } while (tmp != c);
   printf("\n");
 }
+#endif
 
 
 /*
@@ -931,6 +935,7 @@ act_connection *ActId::myConnection (Scope *s)
   }
 }
 
+#if 0
 static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();
@@ -1054,6 +1059,7 @@ static void print_id (act_connection *c)
   printf (">");
 #endif  
 }
+#endif
 
     
 /*
@@ -1553,7 +1559,6 @@ UserDef *ActId::isFragmented (Scope *s)
 {
   InstType *it;
   ActId *tmp;
-  UserDef *u;
   if (!Rest()) return 0;
 
   tmp = this;

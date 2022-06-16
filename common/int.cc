@@ -306,7 +306,6 @@ void BigInt::squeezeSpace (int amt)
  */
 BigInt BigInt::operator-() const
 {
-  int i;
   BigInt b;
   int c = 1;
   int sa = isSigned() && isNegative();
@@ -777,7 +776,7 @@ void BigInt::_add (const BigInt &b, int cin)
   }
 
   int dif;
-  UNIT_TYPE x, nx;
+  UNIT_TYPE nx;
   if (width == len * BIGINT_BITS_ONE) {
     dif = 0;
   } else {
@@ -791,7 +790,6 @@ void BigInt::_add (const BigInt &b, int cin)
   
   if (isDynamic()) {
     if (nc) {
-      UNIT_TYPE one = 1;
       expandSpace(1);
       width++;
       sa = isSigned() && isNegative();
@@ -973,7 +971,7 @@ BigInt BigInt::operator*(BigInt &b)
 
   UNIT_TYPE mid = 0;
 
-  UNIT_TYPE par_prod1, par_prod2, par_prod3, par_prod4;
+  UNIT_TYPE par_prod1, par_prod2, par_prod3;
   UNIT_TYPE a1, a2;
   UNIT_TYPE b1, b2;
 

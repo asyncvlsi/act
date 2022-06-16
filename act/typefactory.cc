@@ -466,6 +466,7 @@ int TypeFactory::isParamType (const Type *t)
 INSTMACRO(isParamType)
 
 
+#if 0
 /**
  * Compute a hash for the expression, using "prev" as the starting
  * value (previous hash)
@@ -589,7 +590,7 @@ static int expr_hash (int sz, Expr *w, int prev)
   }
   return prev;
 }
-
+#endif
 
 int TypeFactory::inthashfn (int sz, void *key)
 {

@@ -402,12 +402,14 @@ static void _release (list_t *opstk, list_t *resstk)
   list_free (resstk);
 }
 
+#if 0
 static int _exactly_one (list_t *l)
 {
   if (list_isempty (l)) return 0;
   if (list_next (list_first (l)) == NULL) return 1;
   return 0;
 }
+#endif
 
 static int _unary_op (int tok)
 {
@@ -468,19 +470,23 @@ static int _stack_top_op (list_t *stk)
 
 //#define EXPR_VERBOSE
 
+#ifdef EXPR_VERBOSE
 static void _print_tok (int tok)
 {
   printf ("%d (%s) prec: %d",
 	  tok, tok == -1 ? "x" : file_tokenname (Tl, T[tok]),
 	  tok == -1 ? -2 : _prec_table[tok]);
 }
+#endif
 
 static Expr *expr_parse (void)
 {
   list_t *stk_op, *stk_res;
   Expr *e;
   int top_op;
+#ifdef EXPR_VERBOSE
   static int depth = 0;
+#endif  
   int query_op = 0;
   int last_was_tok = 1;
 
@@ -727,6 +733,7 @@ static Expr *expr_parse (void)
   return e;
 }
 
+#ifdef EXPR_VERBOSE
 static void expr_print (Expr *e)
 {
   if (!e) return;
@@ -806,6 +813,7 @@ static void expr_print (Expr *e)
     break;
   }
 }
+#endif
 
   
 void *act_parse_a_fexpr (LFILE *l)

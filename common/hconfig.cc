@@ -302,7 +302,6 @@ float ParamGetFloat (const char *name)
  */
 int ParamGetBool (const char *name)
 {
-  char *str;
   struct helem *h;
 
   Init ();
@@ -325,7 +324,6 @@ int ParamGetBool (const char *name)
  */
 LL ParamGetLL (const char *name)
 { 
-  char *str, *ptr;
   struct helem *h;
   LL l;
 

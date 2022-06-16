@@ -460,7 +460,6 @@ int ActNamespace::findName (const char *s)
  */
 void ActNamespace::Expand ()
 {
-  int i;
   ActNamespace *ns;
   hash_bucket_t *bkt;
   hash_iter_t iter;

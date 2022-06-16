@@ -139,7 +139,6 @@ void *heap_remove_min (Heap *h)
   void *retval, *v;
   heap_key_t key;
   int i, j, k;
-  int res1, res2;
 
   if (h->sz == 0) return NULL;
 
@@ -182,7 +181,6 @@ void *heap_remove_min_key (Heap *h, heap_key_t *keyp)
   void *retval, *v;
   heap_key_t key;
   int i, j, k;
-  int res1, res2;
 
   if (h->sz == 0) return NULL;
 

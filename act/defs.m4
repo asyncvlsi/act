@@ -1584,8 +1584,7 @@ func_body[ActBody *]: ";"
 
 func_body_items[ActBody *]: alias_or_inst_list lang_chp
 {{X:
-    listitem_t *li;
-    ActBody *b, *tmp, *tl;
+    ActBody *b;
 
     b = $1;
     if (b) {
@@ -2096,7 +2095,7 @@ port_conn_spec:  { "." ID "=" array_expr "," }**
     ud = dynamic_cast<UserDef *>($0->i_t->BaseType());
 
     if (!ud) {
-      $E("Connection specifier used for instance ``%s'' whose root type is ``%s''\n\tnot a user-defined type", $0->i_id, ud->getName());
+      $E("Connection specifier used for instance ``%s'' whose root type is ``%s''\n\tnot a user-defined type", $0->i_id, $0->i_t->BaseType()->getName());
     }
 
     if ($0->i_t->arrayInfo()) {
@@ -2263,7 +2262,6 @@ alias[ActBody *]: lhs_array_expr "=" array_expr ";"
 //{ array_expr "=" }* ";"
 {{X:
     ActBody *b, *tmp, *ret;
-    listitem_t *li;
     AExpr *ae;
 
     b = NULL;

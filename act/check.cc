@@ -67,6 +67,7 @@ const char *act_type_errmsg (void)
   return typecheck_errmsg;
 }
 
+#if 0
 static void dumpflags(int f)
 {
   if (f == T_ERR) { printf ("[t-ERR]"); return; }
@@ -93,6 +94,7 @@ static void dumpflags(int f)
     printf ("[t-array]");
   }
 }
+#endif
 
 static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
 				    int *strict)

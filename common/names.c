@@ -107,8 +107,6 @@ static NAMES_T *names_init (char *file)
 {
   NAMES_T *N;
   char buf[10240];
-  unsigned long sz;
-  int i;
 
   NEW (N, NAMES_T);
 
@@ -154,7 +152,6 @@ NAMES_T *names_create (char *file, IDX_TYPE max_names)
   NAMES_T *N;
   IDX_TYPE endian;
   unsigned long sz;
-  int i;
 
   N = names_init (file);
   N->mode = NAMES_WRITE;
@@ -204,9 +201,7 @@ NAMES_T *names_create (char *file, IDX_TYPE max_names)
  */
 IDX_TYPE names_newname (NAMES_T *N, char *str)
 {
-  int move = 0;
   IDX_TYPE idx;
-  IDX_TYPE n;
 
   if (N->mode != NAMES_WRITE) {
     warning ("names_newname: ignored, since not in write mode");
@@ -363,7 +358,7 @@ void names_close (NAMES_T *N)
 
 #ifdef LAZY_WRITE
   if (N->mode == NAMES_WRITE) {
-    IDX_TYPE idx, idx2;
+    IDX_TYPE idx;
     IDX_TYPE *idx_tmp;
     unsigned long i;
     char buf[102400];
@@ -440,8 +435,6 @@ NAMES_T *names_open (char *file)
 {
   NAMES_T *N;
   IDX_TYPE endian;
-  unsigned long sz;
-  int i;
 
   N = names_init (file);
   N->mode = NAMES_READ;

@@ -125,7 +125,6 @@ Scope::~Scope ()
   /* free items from the hash table */
   hash_bucket_t *b;
   hash_iter_t iter;
-  int i;
 
   if (expanded) {
     hash_iter_init (H, &iter);
@@ -265,7 +264,6 @@ void Scope::Del (const char *s)
 void Scope::FlushExpand ()
 {
   if (expanded) {
-    int i;
     hash_bucket_t *b;
     hash_iter_t iter;
     ValueIdx *v;
@@ -321,7 +319,6 @@ void Scope::Merge (Scope *s)
     fatal_error ("Scope::Merge(): can't merge unexpanded scope into expanded one");
   }
   
-  int i;
   hash_bucket_t *b, *tmp;
   hash_iter_t iter;
 

@@ -342,6 +342,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  /* XXX bitwidth */
 	  if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v > 64) {
 	    warning ("Bitwidth limit exceeded?");
+	    mask_amt = 0xffffffffffffffff;
 	  }
 	  else if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v == 64) {
 	    mask_amt = 0xffffffffffffffff;

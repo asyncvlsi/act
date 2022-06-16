@@ -980,6 +980,7 @@ static int _int_width (unsigned long v)
   return w;
 }
 
+#if 0
 static BigInt *_int_const (unsigned long v)
 {
   BigInt *btmp;
@@ -993,6 +994,7 @@ static BigInt *_int_const (unsigned long v)
 
   return btmp;
 }
+#endif
 
 static Expr *_expr_expand (int *width, Expr *e,
 			   ActNamespace *ns, Scope *s, unsigned int flags)
@@ -1041,7 +1043,6 @@ static Expr *_expr_expand (int *width, Expr *e,
 			  &vx, &ilo, &ihi);
 
       int is_const = 1;
-      int eval;
       int count = 0;
       int i;
 
@@ -2814,7 +2815,6 @@ static void _expr_to_var (char **buf, int *len, int *sz,
 static void _expr_to_string (char **buf, int *len, int *sz,
 			     list_t *ids, Expr *e, int *isassoc)
 {
-  char c;
   int iszero = 0;
   int tmp;
   switch (e->type) {

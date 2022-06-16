@@ -633,14 +633,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	  - the next inherited parameter, if it exists 
       */
       inst_param *bind_param = NULL;
-      int bind_src = 0;
       if (inherited_templ > 0 && inherited_param[i]) {
 	bind_param = inherited_param[i];
-	bind_src = 0;
       }
       else if (ii < spec_nt) {
 	bind_param = &u[ii];
-	bind_src = 1;
 	ii++;
       }
       else {
@@ -1080,7 +1077,6 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Function *xd;
   UserDef *ux;
   int cache_hit;
-  int i;
 
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit, 2);
   ux->CurScope()->mkFunction();
@@ -1105,7 +1101,6 @@ Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Interface *xd;
   UserDef *ux;
   int cache_hit;
-  int i;
 
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
 
@@ -1907,7 +1902,7 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
       fatal_error ("Function `%s': no chp body, and no external definition",
 		   getName());
     }
-    long *eargs;
+    long *eargs = NULL;
     if (nargs != 0) {
       MALLOC (eargs, long, nargs);
       for (int i=0; i < nargs; i++) {
@@ -1943,7 +1938,7 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
 
   pending = 0;
 
-  Expr *ret;
+  Expr *ret = NULL;
 
   if (TypeFactory::isPIntType (getRetType())) {
     if (ext_found) {
@@ -1984,13 +1979,11 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
       else {
 	act_error_ctxt (stderr);
 	fatal_error ("self is not assigned!");
-	ret = NULL;
       }
     }
   }
   else {
     fatal_error ("Invalid return type in function signature");
-    ret = NULL;
   }
   return ret;
 }
@@ -2117,7 +2110,18 @@ void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
   for (int i=0; i < getNumPorts(); i++) {
     if (TypeFactory::isStructure (getPortType (i))) {
       Data *d = dynamic_cast<Data *> (getPortType(i)->BaseType());
-      _get_struct_fields (a, pos, types, prefix);
+      ActId *tmp = new ActId (getPortName (i));
+      if (prefix) {
+	ActId *tl;
+	tl = prefix->Tail();
+	tl->Append (tmp);
+	d->_get_struct_fields (a, pos, types, prefix);
+	tl->prune();
+      }
+      else {
+	d->_get_struct_fields (a, pos, types, tmp);
+      }
+      delete tmp;
     }
     else {
       ActId *tmp = new ActId (getPortName (i));

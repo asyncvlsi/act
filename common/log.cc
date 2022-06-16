@@ -128,7 +128,7 @@ void Log::UpdateLogLevel (const char *s)
     log_level[(int)*s]++;
     s++;
   }
-  if (log_level['*']) {
+  if (log_level[0xff & '*']) {
     for (i=0; i < 256; i++)
       log_level[i]++;
   }
@@ -160,7 +160,7 @@ void Log::Prefix (void)
 }
 
 #define no_logging(tipe,num) \
-                ((tipe != '*' && (Log::log_level[tipe] < num)) || !Log::fp)
+                ((tipe != '*' && (Log::log_level[0xff & tipe] < num)) || !Log::fp)
 
 void Log::NormalUpdate (void)
 {

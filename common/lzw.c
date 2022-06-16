@@ -131,7 +131,7 @@ static int new_slot (void)
 static void initialize_func (void)
 {
   static int init = 0;
-  int i, j;
+  int i;
   if (init) return;
   if (!init) {
     init = 1;
@@ -389,7 +389,7 @@ int c_fwrite (char *buf, int sz, int n, FILE *fp)
 /*------------------------------------------------------------------------*/
 int c_fread (char *buf, int sz, int n, FILE *fp)
 {
-  int i, st;
+  int st;
   int bufpos;
   int count;
   Table *t;

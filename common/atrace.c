@@ -1382,7 +1382,7 @@ void atrace_readall (atrace *a, atrace_val_t *M)
 {
   int i, j;
   float t;
-  int step, idx;
+  int step;
   int k;
 
   Assert (a->read_mode, "atrace_readall called in write mode");
@@ -1534,7 +1534,6 @@ void atrace_readall_nodenum (atrace *a, int node, atrace_val_t *M)
 {
   int i;
   int step;
-  name_t *m;
   int k;
 
   Assert (a->read_mode, "atrace_readall_node called in write mode");
@@ -1587,7 +1586,6 @@ void atrace_readall_block (atrace *a, int node, int num, atrace_val_t *M)
 {
   int i;
   int step;
-  name_t *m;
   int k;
   int j;
   float t;
@@ -1687,7 +1685,7 @@ void atrace_readall_block (atrace *a, int node, int num, atrace_val_t *M)
 */
 void atrace_readall_node (atrace *a, name_t *n, atrace_val_t *M)
 {
-  int i, j;
+  int j;
   int step;
   float t;
   int k;
@@ -1751,11 +1749,6 @@ void atrace_readall_node (atrace *a, name_t *n, atrace_val_t *M)
 */
 void atrace_readall_nodenum_c (atrace *a, int node, atrace_val_t *M, int *C)
 {
-  int i;
-  int step;
-  name_t *m;
-  int k;
-
   Assert (a->read_mode, "atrace_readall_nodenum_c called in write mode");
   Assert (node >= 0 && node < a->Nnodes, "atrace_readall_nodenum_c: bad node");
 
@@ -1780,7 +1773,7 @@ void atrace_readall_nodenum_c (atrace *a, int node, atrace_val_t *M, int *C)
 */
 void atrace_readall_node_c (atrace *a, name_t *n, atrace_val_t *M, int *C)
 {
-  int i, j;
+  int j;
   int step;
   float t;
   int k;
@@ -1954,8 +1947,6 @@ void atrace_advance_time (atrace *a, int nsteps)
 
 void atrace_advance_time_to (atrace *a, int nsteps)
 {
-  int n;
-  int i, k;
   int nv;
 
   Assert (a->curt >= 0, "Missing init_time()");
@@ -2003,7 +1994,6 @@ static name_t *_union_find (name_t *n)
 /* lookup a node */
 name_t *atrace_lookup (atrace *a, const char *s)
 {
-  name_t *n;
   hash_bucket_t *b;
 
   b = hash_lookup (a->H, s);
@@ -2157,7 +2147,6 @@ int atrace_get_setflags (name_t *n)
 static void _emit_record (atrace *a)
 {
   int i;
-  int flag;
   hash_bucket_t *b;
   name_t *n;
 
@@ -2254,7 +2243,6 @@ static int large_change (atrace *a, float oldv, float newv)
 static void _sig_change_delta (atrace *a, name_t *m, float t, atrace_val_t *v)
 {
   int step;
-  int flag = 0;
 
   step = ISTEP (a, t);
 
@@ -2288,7 +2276,6 @@ static void _sig_change_delta_cause (atrace *a, name_t *m, float t,
 				     atrace_val_t *v, int idx)
 {
   int step;
-  int flag = 0;
 
   step = ISTEP (a, t);
 
@@ -2437,9 +2424,6 @@ static void _sig_change_nodeorder (atrace *a, name_t *n, float t,
 
 static void _sig_nodeorder_end (atrace *a)
 {
-  int step;
-  int last_idx;
-
   Assert (a->nprev != NULL && a->nprev->idx == a->Nnodes-1, "What on earth?");
     
   /* finish writing out last node */

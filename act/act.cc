@@ -336,6 +336,7 @@ void Act::Init (int *iargc, char ***iargv)
 
   A_DECL (int, args_remain);
   A_INIT (args_remain);
+  args_remain = NULL;
 
   A_NEW (args_remain, int);
   A_NEXT (args_remain) = 0;
@@ -449,7 +450,7 @@ int Act::getOptions (int *iargc, char ***iargv)
       warning ("Option `%c' is already a core ACT option", _getopt_string[i]);
     }
     if (_getopt_string[i+1] && (_getopt_string[i+1] == ':')) {
-      opt_arg[_getopt_string[i]] = 1;
+      opt_arg[0xff & _getopt_string[i]] = 1;
       i++;
     }
   }

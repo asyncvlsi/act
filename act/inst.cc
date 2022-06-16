@@ -620,8 +620,6 @@ void InstType::Print (FILE *fp, int nl_mode)
 
 void InstType::sPrint (char *buf, int sz, int nl_mode)
 {
-  UserDef *ud;
-  InstType *x;
   int k = 0;
   int l;
   int ischan = 0;
@@ -744,8 +742,6 @@ static void sPrintTypeName (char *buf, int sz, Type *t,
 			    int nt, inst_param *u,
 			    Type::direction dir)
 {
-  UserDef *ud;
-  InstType *x;
   int k = 0;
   int l;
 

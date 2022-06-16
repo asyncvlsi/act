@@ -2756,12 +2756,13 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 		     p->getName());
       }
       if (p->getNumPorts() != 2) {
-	fatal_error ("Cell `cell::%s': More than two ports");
+	fatal_error ("Cell `%s::%s': More than two ports",
+		     cell_ns->getName(), p->getName());
       }
       if ((strcmp (p->getPortName (0), "in") != 0) ||
 	  (strcmp (p->getPortName (1), "out") != 0)) {
-	fatal_error ("Cell `cell::%s': Ports should be in/out",
-		     p->getName());
+	fatal_error ("Cell `%s::%s': Ports should be in/out",
+		     cell_ns->getName(), p->getName());
       }
       InstType *in_t, *out_t;
       in_t = p->getPortType (0);
@@ -2780,15 +2781,15 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	 out_t must be a bool array or bool
       */
       if (!TypeFactory::isBoolType (in_t) || !TypeFactory::isBoolType (out_t)) {
-	fatal_error ("Cell `cell::%s': Port base types must `bool'",
-		     p->getName());
+	fatal_error ("Cell `%s::%s': Port base types must `bool'",
+		     cell_ns->getName(), p->getName());
       }
 
       /* sanity check prs */
       act_prs *prs = p->getprs();
       if (prs && prs->next) {
-	fatal_error ("Cell `cell::%s': More than one prs body",
-		     p->getName());
+	fatal_error ("Cell `%s::%s': More than one prs body",
+		     cell_ns->getName(), p->getName());
       }
       act_prs_lang_t *l;
       Expr *treeval;
@@ -2800,8 +2801,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	l = prs->p;
 	if (l && l->type == ACT_PRS_TREE) {
 	  if (l->next) {
-	    fatal_error ("Cell `cell::%s': only one tree permitted",
-			 p->getName());
+	    fatal_error ("Cell `%s::%s': only one tree permitted",
+			 cell_ns->getName(), p->getName());
 	  }
 	  l = l->u.l.p;
 	}
@@ -2809,8 +2810,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	  Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
 	  if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
 	      l->type == ACT_PRS_TREE) {
-	    fatal_error ("Cell `cell::%s': no fets/subckts/dup trees allowed",
-			 p->getName());
+	    fatal_error ("Cell `%s::%s': no fets/subckts/dup trees allowed",
+			 cell_ns->getName(), p->getName());
 	  }
 	  else if ((l->type == ACT_PRS_RULE) && l->u.one.label) {
 	    mgn = 1;
@@ -2851,14 +2852,14 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       
       if (out_t->arrayInfo()) {
          if (out_t->arrayInfo()->size() != pi->nout) {
-            fatal_error ("Cell `cell::%s': inconsistent outputs",
-                      p->getName());
+            fatal_error ("Cell `%s::%s': inconsistent outputs",
+			 cell_ns->getName(), p->getName());
          }
       }
       else {
          if (pi->nout != 1) {
-            fatal_error ("Cell `cell::%s': inconsistent outputs",
-                      p->getName());
+            fatal_error ("Cell `%s::%s': inconsistent outputs",
+			 cell_ns->getName(), p->getName());
          }
       }
 
@@ -2983,7 +2984,8 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   }
   else {
     cell_count =  _collect_cells (cell_ns);
-  }    
+  }
+  
   add_passgates ();
 }
 

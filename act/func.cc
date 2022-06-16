@@ -116,8 +116,6 @@ static void _run_function_fwd (act_inline_table *Hs, act_chp_lang_t *c)
  */
 Expr **Function::toInline (int nargs, Expr **args)
 {
-  int nbools, nints;
-  Expr **ret;
   Assert (nargs == getNumPorts(), "Function for parameters used in CHP!");
 
   Assert (isSimpleInline() && !isExternal(), "Function::toInline() called for complex inlining scenario");
@@ -160,7 +158,6 @@ Expr **Function::toInline (int nargs, Expr **args)
 
   for (int i=0; i < nargs; i++) {
     Expr **te;
-    hash_bucket_t *b;
 
     if (TypeFactory::isStructure (getPortType (i))) {
       Data *d = dynamic_cast <Data *> (getPortType(i)->BaseType());

@@ -621,7 +621,7 @@ struct ext_file *ext_read (const char *name)
   char *s, *t;
   int line = 0;
   unsigned long timestamp;
-  double cscale, rscale;
+  double cscale; /*, rscale;*/
   double lscale;
   double x;
   static int depth = 0;
@@ -758,7 +758,7 @@ struct ext_file *ext_read (const char *name)
   /* dump file is closed */
 readext:
   cscale = 1;
-  rscale = 1;
+  /*rscale = 1;*/
   lscale = 1e-8;		/* 1 centimicron */
   while (fgets (buf, MAXLINE, fp)) {
     line++;
@@ -767,7 +767,7 @@ readext:
     l = lex_restring (l, buf);
     lex_getsym (l);
     if (lex_have_keyw (l, "scale")) {
-      rscale = lex_mustbe_number (l);
+      /*rscale = */(void)(lex_mustbe_number (l));
       cscale = lex_mustbe_number (l);
       lscale = lex_mustbe_number (l)*1e-8;
     }
@@ -868,10 +868,10 @@ readext:
 	lex_mustbe_number (l); lex_mustbe_number (l); lex_mustbe_number (l);
 	lex_mustbe_number (l);
 
-	double dim1, dim2;
+	/*double dim1, dim2;*/
 
-	dim1 = lex_mustbe_number (l)*lscale;
-	dim2 = lex_mustbe_number (l)*lscale;
+	/*dim1 = */(void)(lex_mustbe_number (l)*lscale);
+	/*dim2 = */(void)(lex_mustbe_number (l)*lscale);
 
 	/* substrate */
 	fet->sub = Strdup (lex_mustbe_string_id (l, name, line));
@@ -1048,7 +1048,8 @@ readext:
     else if (lex_have_keyw (l, "attr")) {
       s = Strdup (lex_mustbe_string_id (l, name, line));
       while (lex_whitespace (l)[0] == '\0' && !lex_eof (l)) {
-	REALLOC (s, char, strlen(s)+strlen(lex_tokenstring(l))+1);
+        int nlen = strlen(s)+strlen(lex_tokenstring(l))+1;
+	REALLOC (s, char, nlen);
 	strcat (s, lex_tokenstring (l));
 	lex_getsym (l);
       }

@@ -64,7 +64,6 @@ static void do_init (LFILE *l)
 static Expr *_parse_expr_func (LFILE *l)
 {
   Expr *e, *f;
-  int etype;
   Expr *templ = NULL;
   
   do_init(l);

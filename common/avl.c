@@ -130,7 +130,7 @@ static int do_insert (avl_t *a, int val, void *I)
       /* tag is now +1. 
 	 Rotate. 
 	 */
-      avl_t *x, *y, *z, *b;
+      avl_t *x, *y, *z;
       void *info;
       int ival;
 
@@ -272,7 +272,7 @@ static int do_insert (avl_t *a, int val, void *I)
       /* tag is now -1. 
 	 Rotate. 
 	 */
-      avl_t *x, *y, *z, *b;
+      avl_t *x, *y, *z;
       void *info;
       int ival;
 

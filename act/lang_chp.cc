@@ -1064,7 +1064,6 @@ static Expr *_process_probes (Expr *e)
 
 static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 {
-  Expr *t;
   phash_bucket_t *b;
   act_connection *c;
 
@@ -1364,7 +1363,6 @@ int act_expr_has_neg_probes (Expr *e)
 
 static Expr *_prepend_probes (list_t *l, Expr *e)
 {
-  listitem_t *li;
   Expr *ret, *cur, *pexpr, *prev;
   if (list_isempty (l)) {
     return e;
@@ -2032,7 +2030,6 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
       fprintf (fp, "-");
     }
     {
-      listitem_t *li;
       if (c->u.comm.e) {
 	print_uexpr (fp, c->u.comm.e);
       }
