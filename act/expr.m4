@@ -233,6 +233,7 @@ expr_id[ActId *]: { base_id "." }*
     if (!it) {
       $E("The identifier ``%s'' does not exist in the current scope", cur->getName());
     }
+
     ud = NULL;
     for (li = list_next (li); li; li = list_next (li)) {
       /* it = the inst type of where we are so far; li has the next
@@ -308,6 +309,10 @@ expr_id[ActId *]: { base_id "." }*
 	fprintf ($f, "\n");
 	exit (1);
       }
+    }
+
+    if ($0->u_p && s->isGlobal (ret->getName())) {
+      $0->u_p->recordGlobal (ret);
     }
 
     list_free ($1);

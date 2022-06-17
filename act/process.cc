@@ -41,6 +41,7 @@ Process::Process (UserDef *u) : UserDef (u)
   ifaces = NULL;
   changelist = NULL;
   bufcnt = 0;
+  used_globals = NULL;
 }
 
 Process::~Process ()
@@ -427,4 +428,46 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
   vx = I->LookupVal (bufnm);
   Assert (vx, "What?");
   return vx->u.obj.name;
+}
+
+
+
+int Process::findGlobal (ActId *id)
+{
+  listitem_t *li;
+  if (!used_globals) {
+    return 0;
+  }
+  for (li = list_first (used_globals); li; li = list_next (li)) {
+    ActId *tmp = (ActId *)list_value (li);
+    if (tmp->isEqual (id)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+int Process::findGlobal (const char *s)
+{
+  listitem_t *li;
+  if (!used_globals) {
+    return 0;
+  }
+  for (li = list_first (used_globals); li; li = list_next (li)) {
+    ActId *tmp = (ActId *)list_value (li);
+    if (strcmp (s, tmp->getName()) == 0) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+
+void Process::recordGlobal (ActId *id)
+{
+  if (!used_globals) {
+    used_globals = list_new ();
+  }
+  if (findGlobal (id)) return;
+  list_append (used_globals, id->Clone());
 }

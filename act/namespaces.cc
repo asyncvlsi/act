@@ -689,3 +689,222 @@ list_t *ActNamespace::getChanList ()
   }
   return tmp;
 }
+
+
+void ActNamespace::_subst_globals (list_t *defs, InstType *it, const char *s)
+{
+  ActNamespace *ns;
+  hash_bucket_t *bkt;
+  hash_iter_t iter;
+
+  Assert (I, "No scope?");
+  Assert (!I->isExpanded(), "What?!");
+
+  /* substitute in any sub-namespaces */
+  hash_iter_init (N, &iter);
+  while ((bkt = hash_iter_next (N, &iter))) {
+    ns = (ActNamespace *)bkt->v;
+    ns->_subst_globals (defs, it, s);
+  }
+
+  /* For each process, apply this substitution.
+
+     Phase 1: if the signal is used, add it to the port list
+  */
+  hash_iter_init (T, &iter);
+  while ((bkt = hash_iter_next (T, &iter))) {
+    UserDef *u = (UserDef *) bkt->v;
+    if (TypeFactory::isProcessType (u)) {
+      Process *up = dynamic_cast<Process *> (u);
+      Assert (up->isExpanded() == 0, "What!");
+      if (up->findGlobal (s)) {
+	/* XXX FIXME */
+	up->AddPort (it, s);
+	list_append (defs, up);
+      }
+    }
+  }
+}
+
+
+static void _process_body_conn (Process *proc, InstType *it, const char *s,
+				list_t *deflist, listitem_t *start, ActBody *b)
+{
+  while (b) {
+    ActBody_Inst *inst = dynamic_cast<ActBody_Inst*> (b);
+    ActBody_Loop *l = dynamic_cast<ActBody_Loop *> (b);
+    ActBody_Select *sel = dynamic_cast<ActBody_Select *> (b);
+    ActBody_Genloop *gl = dynamic_cast<ActBody_Genloop *> (b);
+    if (inst) {
+      InstType *inst_it = inst->getType ();
+      if (TypeFactory::isProcessType (inst_it)) {
+	listitem_t *li;
+	int found = 0;
+	Process *myp = dynamic_cast<Process *> (inst->BaseType ());
+	Assert (myp, "What?");
+	for (li = start; li; li = list_next (li)) {
+	  Process *p = (Process *) list_value (li);
+	  if (p == myp) {
+	    found = 1;
+	    break;
+	  }
+	}
+	if (found) {
+	  /* check if I am in the def list */
+	  listitem_t *ti = NULL;
+	  for (ti = list_first (deflist); ti; ti = list_next (ti)) {
+	    if (proc == (Process *) list_value (ti)) {
+	      break;
+	    }
+	  }
+	  if (ti == NULL) {
+	    /* XXX: add port! */
+	    proc->AddPort (it, s);
+	    list_append (deflist, proc);
+	  }
+	  
+	  /* add connection */
+	  if (inst_it->arrayInfo()) {
+	    int dims = inst_it->arrayInfo()->nDims();
+	    int idxnum = 0;
+	    char buf[100];
+	    char **idxnames;
+
+	    Assert (dims > 0, "What?");
+	    MALLOC (idxnames, char *, dims);
+	    for (int i=0; i < dims; i++) {
+	      do {
+		snprintf (buf, 100, "_idx%d", idxnum++);
+	      } while (proc->Lookup (buf));
+	      idxnames[i] = Strdup (buf);
+	    }
+
+	    ActBody_Conn *ac;
+	    ActId *tid = new ActId (s);
+	    
+	    Array *a = NULL;
+
+	    for (int i=0; i < dims; i++) {
+	      Expr *ex;
+	      NEW (ex, Expr);
+	      ex->type = E_VAR;
+	      ex->u.e.l = (Expr *) new ActId (idxnames[i]);
+	      ex->u.e.r = NULL;
+	      if (!a) {
+		a = new Array (ex);
+	      }
+	      else {
+		a->Concat (new Array (ex));
+	      }
+	    }
+	      
+	    ActId *lhs = new ActId (inst->getName(), a);
+	    lhs->Append (new ActId (s));
+	    ac = new ActBody_Conn (b->getLine(), lhs, new AExpr (tid));
+
+	    ActBody_Loop *prev = NULL;
+	    for (int i=0; i < dims; i++) {
+	      ActBody_Loop *tmp;
+	      Expr *lo, *hi;
+	      if (inst_it->arrayInfo()->lo(i)) {
+		lo = inst_it->arrayInfo()->lo(i);
+		hi = inst_it->arrayInfo()->hi(i);
+	      }
+	      else {
+		lo = inst_it->arrayInfo()->hi(i);
+		hi = NULL;
+	      }
+	      tmp = new ActBody_Loop (b->getLine(),
+				      ActBody_Loop::SEMI,
+				      string_cache (idxnames[i]),
+				      lo, hi, prev ? (ActBody *)prev :
+				      (ActBody *)ac);
+	      prev = tmp;
+	    }
+	    b->Append (prev);
+
+	    for (int i=0; i < dims; i++) {
+	      FREE (idxnames[i]);
+	    }
+	    FREE (idxnames);
+	  }
+	  else {
+	    ActBody_Conn *ac;
+	    ActId *tid = new ActId (s);
+	    ActId *lhs = new ActId (inst->getName());
+	    lhs->Append (new ActId (s));
+	    ac = new ActBody_Conn (b->getLine(), lhs, new AExpr (tid));
+	    b->Append (ac);
+	  }
+	}
+      }
+    }
+    else if (l) {
+      _process_body_conn (proc, it, s, deflist, start, l->getBody());
+    }
+    else if (sel || gl) {
+      ActBody_Select_gc *gc;
+      if (sel) {
+	gc = sel->getGC ();
+      }
+      else {
+	gc = gl->getGC ();
+      }
+      Assert (gc, "What?");
+      while (gc) {
+	_process_body_conn (proc, it, s, deflist, start, gc->getBody ());
+	gc = gc->getNext ();
+      }
+    }
+    b = b->Next();
+  }
+}
+
+
+
+void ActNamespace::_subst_globals_addconn (list_t *defs, listitem_t *start,
+					   InstType *it, const char *s)
+{
+  ActNamespace *ns;
+  hash_bucket_t *bkt;
+  hash_iter_t iter;
+
+  Assert (I, "No scope?");
+  Assert (!I->isExpanded(), "What?!");
+
+  /* substitute in any sub-namespaces */
+  hash_iter_init (N, &iter);
+  while ((bkt = hash_iter_next (N, &iter))) {
+    ns = (ActNamespace *)bkt->v;
+    ns->_subst_globals_addconn (defs, start, it, s);
+  }
+
+  /* For each process, apply this substitution.
+     Phase 2:
+       * whenever an instance of a type in the defs subst list is
+         found starting from "start", we add a connection. 
+	 If it is an array instance, we need to add
+	 an ActBody_Loop that contains the connection; and a nested set
+	 for multi-dimensional arrays.
+       
+       * when we do this update, we must CHECK to see if the current
+       process is in the full def list; if it is, nothing has to be done
+
+       * if the process is NOT in the defs list, then
+          - if it has a port with the same name as the global, we need
+	    to pick a fresh name; try "globalN"
+	  - add the fresh port
+	  - add the process to the defs list
+	  - add to fresh defs list
+  */
+  hash_iter_init (T, &iter);
+  while ((bkt = hash_iter_next (T, &iter))) {
+    UserDef *u = (UserDef *) bkt->v;
+    if (TypeFactory::isProcessType (u)) {
+      Process *up = dynamic_cast<Process *> (u);
+      Assert (up->isExpanded() == 0, "What!");
+      /* walk through the body of this process */
+      _process_body_conn (up, it, s, defs, start, up->getBody ());
+    }
+  }
+}

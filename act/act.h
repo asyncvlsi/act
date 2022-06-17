@@ -130,6 +130,15 @@ class Act {
 
 
   /**
+   * Change global signal to use the port list
+   *
+   * @param s is the name of the global signal
+   *    
+   * @return true on success, false on error
+   */
+  bool LocalizeGlobal (const char *s);
+
+  /**
    * Expand types
    */
   void Expand ();

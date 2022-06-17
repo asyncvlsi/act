@@ -463,10 +463,18 @@ class Process : public UserDef {
 
   /* returns the unexpanded type from which this one was generated */
   Process *getUnexpanded();
+
+
+  /* record the usage of a global signal */
+  void recordGlobal (ActId *id);
+  int findGlobal (ActId *id);
+  int findGlobal (const char *s);
     
  private:
   unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
   list_t *ifaces;		/**< list of interfaces, map pairs */
+
+  list_t *used_globals;		// list of used globals
 
   int bufcnt;
   list_t *changelist;

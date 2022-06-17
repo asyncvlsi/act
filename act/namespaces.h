@@ -65,6 +65,9 @@ class Scope {
   InstType *FullLookup (const char *s); /**< return full lookup,
 					   including in parent scopes */
 
+  int isGlobal (const char *s); /**< 1 if the lookup succeeded in a
+				   namespace */
+
   InstType *FullLookup (ActId *id, Array **aref);
   /**< return actual type of ID,  after full lookup including
      parent scopes. aref is used to store final array reference in
@@ -346,6 +349,11 @@ class ActNamespace {
    */
   void Print (FILE *fp);
 
+  /**
+   * Returns 1 if it is expanded
+   */
+  int isExpanded() { return I->isExpanded(); }
+
 
   /**
    * Initialize the namespace module.
@@ -433,6 +441,18 @@ class ActNamespace {
    */
   void _init (ActNamespace *parent, const char *s);
 
+
+  /**
+   * Substitute globals within the namespace
+   *
+   * @param it is the type of the global
+   * @param s is the name of the global
+   */
+  void _subst_globals (list_t *subst, InstType *it, const char *s);
+
+  /* second phase */
+  void _subst_globals_addconn (list_t *subst, listitem_t *start,
+			       InstType *it, const char *s);
 
   friend class Act;
   friend class ActNamespaceiter;

@@ -5,7 +5,7 @@
 int main (int argc, char **argv)
 {
   Act *a;
-  int exp, pr;
+  int exp, pr, glob;
 
   Act::Init (&argc, &argv);
 
@@ -13,8 +13,9 @@ int main (int argc, char **argv)
       (argc == 3 
        && (strcmp (argv[1], "-e") != 0)
        && (strcmp (argv[1], "-p") != 0)
-       && (strcmp (argv[1], "-ep") != 0))) {
-    fatal_error ("Usage: %s [-ep] <file.act>\n", argv[0]);
+       && (strcmp (argv[1], "-ep") != 0)
+       && (strcmp (argv[1], "-epg") != 0))) {
+    fatal_error ("Usage: %s [-epg] <file.act>\n", argv[0]);
   }
   if (argc == 3) {
     if (strcmp (argv[1], "-p") != 0) {
@@ -27,11 +28,16 @@ int main (int argc, char **argv)
   else {
     exp = 0;
   }
-  if (strcmp (argv[1], "-ep") == 0) {
+  glob = 0;
+  if (argc == 3 && strcmp (argv[1], "-ep") == 0) {
     pr = 1;
   }
+  else if (argc == 3 && strcmp (argv[1], "-epg") == 0) {
+    pr = 1;
+    glob = 1;
+  }
   else {
-    if (strcmp (argv[1], "-p") == 0) {
+    if (argc == 3 && strcmp (argv[1], "-p") == 0) {
       pr = 1;
     }
     else {
@@ -40,6 +46,10 @@ int main (int argc, char **argv)
   }
 
   a = new Act (argv[argc-1]);
+
+  if (glob) {
+     a->LocalizeGlobal ("Reset");
+  }
 
   if (exp) {
     if (a) {

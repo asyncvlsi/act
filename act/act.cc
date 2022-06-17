@@ -1149,3 +1149,72 @@ list_t *Act::getDecompTypes ()
   }
   return ret;
 }
+
+
+
+bool Act::LocalizeGlobal (const char *s)
+{
+  if (gns->isExpanded()) {
+    warning ("Act::LocalizeGlobal() called on an expanded design.");
+    return false;
+  }
+
+  /* 
+     Step 1: Check that "s" is in fact a global signal
+  */
+  InstType *it;
+  if (!(it = gns->findInstance (s))) {
+    warning ("Act::LocalizeGlobal(): `%s' is not a global.", s);
+    return false;
+  }
+
+  /* apply first phase substitutions */
+  list_t *defs_subst = list_new ();
+  gns->_subst_globals (defs_subst, it, s);
+
+  if (!list_isempty (defs_subst)) {
+    /* We have a list of process definitions where we have 
+       substituted the global signal "s".
+       
+       Proceed via an iterative algorithm across *ALL* process
+       definitions in all namespaces:
+       
+       * whenever an instance of a type in the defs subst list is found,
+       we add a connection. If it is an array instance, we need to add
+       an ActBody_Loop that contains the connection; and a nested set
+       for multi-dimensional arrays.
+       
+       * when we do this update, we must CHECK to see if the current
+       process is in the def list; if it is, nothing has to be done
+
+       * if the process is NOT in the defs list, then
+          - if it has a port with the same name as the global, we need
+	    to pick a fresh name; try "globalN"
+	  - add the fresh port
+	  - add the process to the defs list
+	  - add to fresh defs list
+       
+       * we may have a bunch of new defs we need to handle.
+         - walk through 
+    */
+    listitem_t *li = list_first (defs_subst);
+    do {
+      listitem_t *tl = list_tail (defs_subst);
+      /* In this round, we analyze li .. tl */
+      
+      gns->_subst_globals_addconn (defs_subst /* all the defs with
+						 extra ports */,
+				   li, /* the ones processed in this
+					  round */
+				   it, s);
+
+      /* set li to the next item after the tail */
+      li = list_next (tl);
+    } while (li);
+    
+
+
+
+  }
+  return true;
+}

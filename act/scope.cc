@@ -98,6 +98,24 @@ ValueIdx *Scope::FullLookupVal (const char *s)
   }
 }
 
+int Scope::isGlobal (const char *s)
+{
+  hash_bucket_t *b;
+  Scope *cur = this;
+
+  do {
+    b = hash_lookup (cur->H, s);
+    if (b) {
+      if (cur->getUserDef()) {
+	return 0;
+      }
+      return 1;
+    }
+    cur = cur->up;
+  } while (cur);
+  return 0;
+}
+
 InstType *Scope::FullLookup (const char *s)
 {
   hash_bucket_t *b;
