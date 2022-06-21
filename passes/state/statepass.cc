@@ -532,10 +532,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
 #if 0
   printf ("%s: fullstats\n", p->getName());
-  printf ("  %d allbools\n", si->allbools);
-  printf ("  %d chp_allbool\n", si->chp_all.bools);
-  printf ("  %d chp_allchan\n", si->chp_all.chans);
-  printf ("  %d chp_allint\n", si->chp_all.ints);
+  printf ("  %d allbools\n", si->all.numBools());
+  printf ("  %d chp_allbool\n", si->all.numCHPBools());
+  printf ("  %d chp_allchan\n", si->all.numChans());
+  printf ("  %d chp_allint\n", si->all.numInts());
 #endif
   
 
@@ -682,10 +682,22 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    }
 		
 	    bi = phash_lookup (/*si->map*/ _cmap, c);
-	    if (bi) {
+	    ocount = -1;
+	    if (!bi) {
+	      if (c->getctype() == 1) {
+		/* dynamic array is only x[i], no ".", etc allowed */
+		act_connection *parent = c->parent;
+		Assert (parent, "What?");
+		bi = phash_lookup (_cmap, parent);
+		if (bi) {
+		  ocount = bi->i + c->myoffset();
+		}
+	      }
+	    }
+	    if (ocount == -1 && bi) {
 	      ocount = bi->i + nportchptot;
 	    }
-	    else {
+	    else if (ocount == -1) {
 	      ocount = 0;
 	      for (int k=0; k < A_LEN (b->chpports); k++) {
 		if (b->chpports[k].omit) continue;
