@@ -298,7 +298,7 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
 
   
 
-void Act::Init (int *iargc, char ***iargv)
+void Act::Init (int *iargc, char ***iargv, const char *optional_conf)
 {
   static int initialize = 0;
   int argc = *iargc;
@@ -406,6 +406,12 @@ void Act::Init (int *iargc, char ***iargv)
   config_read ("global.conf");
   Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
+  
+  if (optional_conf) {
+    Act::config_info (optional_conf);
+    config_read (optional_conf);
+  }
+  
   if (conf_file) {
     config_read (conf_file);
     Act::config_info (conf_file);
