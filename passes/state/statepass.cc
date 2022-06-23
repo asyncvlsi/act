@@ -1138,6 +1138,37 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
   /*-- check if this is a dynamic array --*/
   b = phash_lookup (si->bnl->cdH, c);
 
+  if (!b && c->getctype() == 1) {
+    act_connection *parent = c->parent;
+    b = phash_lookup (si->bnl->cdH, parent);
+    if (b) {
+      act_dynamic_var_t *dv;
+      dv = (act_dynamic_var_t *) b->v;
+      b = phash_lookup (si->map, parent);
+      Assert (b, "What?");
+      Assert (dv, "Hmm");
+      if (dv->isint) {
+	if (type) {
+	  *type = 1;
+	}
+	if (width) {
+	  *width = dv->width;
+	}
+      }
+      else {
+	if (type) {
+	  *type = 0;
+	}
+	if (width) {
+	  *width = 1;
+	}
+      }
+      Assert (b, "What?");
+      *offset = b->i + c->myoffset();
+      return 1;
+    }
+  }
+
   if (!b && c->isglobal() && _root_si) {
     b = phash_lookup (_root_si->bnl->cdH, c);
   }
