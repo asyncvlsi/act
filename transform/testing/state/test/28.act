@@ -1,0 +1,23 @@
+defproc testme (int x)
+{
+  chp {
+    x := x - 1
+  }
+}
+
+
+defproc foo()
+{
+   int w[4];
+   int x;
+
+   chp {
+     w[x] := 0
+   }
+
+   testme t;
+
+   t(w[1]);
+}
+
+foo f;

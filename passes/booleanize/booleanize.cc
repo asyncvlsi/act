@@ -1585,6 +1585,14 @@ static int _check_all_subconns (act_connection *c)
 	if (c->a[i] != c->a[i]->primary()) {
 	  return 1;
 	}
+	/* check if a dynamic array component is being accessed in
+	   another array or in another sub-connection */
+	for (act_connection *tmp = c->a[i]->next; tmp != c->a[i];
+	     tmp = tmp->next) {
+	  if (tmp->parent) {
+	    return 1;
+	  }
+	}
 	if (_check_all_subconns (c->a[i])) {
 	  return 1;
 	}
