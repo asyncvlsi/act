@@ -217,9 +217,11 @@ class Act {
   /**
    * Find a process given a name
    * @param s is the name of the process
+   * @param allow_expand if set to true, then if the process has angle
+   * brackets then findProcess is allowed to expand the process
    * @return process pointer, or NULL if not found
    */
-  Process *findProcess (const char *s);
+  Process *findProcess (const char *s, bool allow_expand = false);
 
   /**
    * Find a process within a namespace
@@ -227,7 +229,7 @@ class Act {
    * @param ns is the ACT namespace
    * @return the process pointer if found, NULL otherwise
    */
-  Process *findProcess (ActNamespace *ns, const char *s);
+  Process *findProcess (ActNamespace *ns, const char *s, bool allow_expand = false);
 
   /**
    * Find a user-defined type

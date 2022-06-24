@@ -813,7 +813,7 @@ UserDef *Act::findUserdef (const char *s)
 
 
 
-Process *Act::findProcess (const char *s)
+Process *Act::findProcess (const char *s, bool allow_expand)
 {
   if (!s) return NULL;
   
@@ -848,20 +848,112 @@ Process *Act::findProcess (const char *s)
     }
   }
 
-  Process *p = findProcess (ns, tmp);
+  Process *p = findProcess (ns, tmp, allow_expand);
   FREE (f);
   return p;
 }
 
-Process *Act::findProcess (ActNamespace *n, const char *s)
+Process *Act::findProcess (ActNamespace *n, const char *s, bool allow_expand)
 {
   UserDef *u;
 
   if (!s || !n) return NULL;
 
   u = n->findType (s);
-  if (!u) return NULL;
-  return dynamic_cast<Process *>(u);
+
+  if (!u) {
+    int offset = 0;
+    while (s[offset]) {
+      if (s[offset] == '<') {
+	/*-- ok there are remplate arguments; abandon the outer loop --*/
+	int idx = 0;
+	int cnt = 1;
+	offset++;
+
+	/* parse the template arguments */
+	while (s[offset+idx]) {
+	  if (s[offset+idx] == ',') {
+	    /* count args */
+	    cnt++;
+	  }
+	  else if (s[offset+idx] == '>') {
+	    /* end of template */
+	    if (idx == 1) {
+	      /* empty template */
+	      cnt = 0;
+	    }
+	    if (s[offset+idx+1] != '\0') {
+	      /* but there's more after it?! */
+	      return NULL;
+	    }
+	    else {
+	      /* ok, looks like a well-formed template string */
+	      char *tmp = Strdup (s);
+	      tmp[offset-1] = '\0';
+	      u = n->findType (tmp);
+	      FREE (tmp);
+	      if (!u) {
+		return NULL;
+	      }
+	      if (u->getNumParams() < cnt) {
+		return NULL;
+	      }
+	      if (!TypeFactory::isProcessType (u)) {
+		return NULL;
+	      }
+	      if (cnt == 0) {
+		u = u->Expand (n, u->CurScope(), 0, NULL);
+		return dynamic_cast<Process *>(u);
+	      }
+	      inst_param *ip;
+	      MALLOC (ip, inst_param, cnt);
+	      for (int i=0; i < cnt; i++) {
+		ip[i].isatype = 0;
+		if (s[offset] == 't' || s[offset] == 'f') {
+		  ip[i].u.tp = new AExpr (const_expr_bool (s[offset] == 't' ? 1 : 0));
+		  offset++;
+		  if (s[offset] != ',' && s[offset] != '>') {
+		    for (int k=0; k <= i; k++) {
+		      delete ip[i].u.tp;
+		    }
+		    FREE (ip);
+		    return NULL;
+		  }
+		}
+		else {
+		  ip[i].u.tp = new AExpr (const_expr ((long)atoi (s+offset)));
+		  while (s[offset] && isdigit (s[offset])) {
+		    offset++;
+		  }
+		  if (s[offset] != ',' && s[offset] != '>') {
+		    for (int k=0; k <= i; k++) {
+		      delete ip[i].u.tp;
+		    }
+		    FREE (ip);
+		    return NULL;
+		  }
+		}
+		offset++;
+	      }
+	      u = u->Expand (n, n->CurScope(), cnt, ip);
+	      for (int i=0; i < cnt; i++) {
+		delete ip[i].u.tp;
+	      }
+	      FREE (ip);
+	      return dynamic_cast<Process *>(u);
+	    }
+	  }
+	  idx++;
+	}
+      }
+      offset++;
+    }
+    /* no template args, return NULL */
+    return NULL;
+  }
+  else {
+    return dynamic_cast<Process *>(u);
+  }
 }
 
 
