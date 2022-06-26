@@ -239,9 +239,7 @@ int main (int argc, char **argv)
   int tmp_optind;
   char *conf_mangle_string;
 
-  Act::Init (&argc, &argv);
-  Act::config_info ("lint.conf");
-  config_read ("lint.conf");
+  Act::Init (&argc, &argv, "lint.conf");
 
   for (i=0; i < NUM_ERR_TYPES; i++) {
     signal_errs[i] = NULL;

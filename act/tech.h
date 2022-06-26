@@ -342,7 +342,7 @@ protected:
 class Technology {
  public:
   static Technology *T;
-  static void Init (const char *techfilename);
+  static void Init ();		// make sure that layout.conf has been loaded!
   
   const char *name;		/* name and date */
   const char *date;		/* string */

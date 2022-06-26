@@ -1205,8 +1205,8 @@ int main (int argc, char **argv)
 {
   pp_t *pp;
   
-  Act::Init (&argc, &argv);
-  Technology::Init("layout.conf");
+  Act::Init (&argc, &argv, "layout:layout.conf");
+  Technology::Init();
   
   if (Technology::T->nmetals < 2) {
     fatal_error ("Can't handle a process with fewer than two metal layers!");

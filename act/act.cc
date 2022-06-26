@@ -408,8 +408,24 @@ void Act::Init (int *iargc, char ***iargv, const char *optional_conf)
   config_read ("prs2net.conf");
   
   if (optional_conf) {
-    Act::config_info (optional_conf);
-    config_read (optional_conf);
+    int colon = 0;
+    for (int i=0; optional_conf[i]; i++) {
+      if (optional_conf[i] == ':') {
+	colon = i+1;
+	break;
+      }
+    }
+    if (colon != 0) {
+      char *tmp = Strdup (optional_conf);
+      tmp[colon-1] = '\0';
+      config_push_prefix (tmp);
+      FREE (tmp);
+    }
+    Act::config_info (optional_conf+colon);
+    config_read (optional_conf+colon);
+    if (colon != 0) {
+      config_pop_prefix ();
+    }
   }
   
   if (conf_file) {

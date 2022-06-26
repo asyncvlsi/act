@@ -80,7 +80,7 @@ static void verify_range_table (const char *nm)
  *
  *------------------------------------------------------------------------
  */
-void Technology::Init (const char *s)
+void Technology::Init ()
 {
   int i, j, k, sz;
   const char *tables[] = { "diff.ntype", "diff.ptype", "diff.nfet", "diff.pfet",
@@ -101,16 +101,6 @@ void Technology::Init (const char *s)
 
   A_DECL (char *, contacts);
   A_INIT (contacts);
-
-  if (prefix) {
-    config_push_prefix (prefix);
-  }
-
-  Act::config_info (s);
-  config_read (s);
-  if (prefix) {
-    config_pop_prefix ();
-  }
 
   tech_strname (prefix, "info.name");
   /* run sanity checks */

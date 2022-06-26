@@ -261,6 +261,7 @@ void config_push_prefix (const char *s)
     A_APPEND (global_prefix, char, *s);
     s++;
   }
+  A_NEW (global_prefix, char);
   A_NEXT (global_prefix) = '\0';
 }
 
