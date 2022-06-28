@@ -76,7 +76,8 @@ class Act {
    *  @return *argc and *argv are modified to reflect the command-line
    *  options left after ACT has extracted the ones it understands
    */
-  static void Init (int *argc, char ***argv, const char *optional_conf = NULL);
+  static void Init (int *argc, char ***argv, const char *optional_conf);
+  static void Init (int *argc, char ***argv, list_t *multi_conf = NULL);
   static int getOptions (int *argc, char ***argv);
   static void setOptionString (char *str);
 

@@ -296,9 +296,20 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
   return 1;
 }
 
-  
-
 void Act::Init (int *iargc, char ***iargv, const char *optional_conf)
+{
+  if (optional_conf) {
+    list_t *l = list_new ();
+    list_append (l, optional_conf);
+    Act::Init (iargc, iargv, l);
+    list_free (l);
+  }
+  else {
+    Act::Init (iargc, iargv, (list_t *)NULL);
+  }
+}
+
+void Act::Init (int *iargc, char ***iargv, list_t *multi_conf)
 {
   static int initialize = 0;
   int argc = *iargc;
@@ -407,24 +418,27 @@ void Act::Init (int *iargc, char ***iargv, const char *optional_conf)
   Act::config_info ("prs2net.conf");
   config_read ("prs2net.conf");
   
-  if (optional_conf) {
-    int colon = 0;
-    for (int i=0; optional_conf[i]; i++) {
-      if (optional_conf[i] == ':') {
-	colon = i+1;
-	break;
+  if (multi_conf) {
+    for (listitem_t *li = list_first (multi_conf); li; li = list_next (li)) {
+      char *optional_conf = (char *) list_value (li);
+      int colon = 0;
+      for (int i=0; optional_conf[i]; i++) {
+	if (optional_conf[i] == ':') {
+	  colon = i+1;
+	  break;
+	}
       }
-    }
-    if (colon != 0) {
-      char *tmp = Strdup (optional_conf);
-      tmp[colon-1] = '\0';
-      config_push_prefix (tmp);
-      FREE (tmp);
-    }
-    Act::config_info (optional_conf+colon);
-    config_read (optional_conf+colon);
-    if (colon != 0) {
-      config_pop_prefix ();
+      if (colon != 0) {
+	char *tmp = Strdup (optional_conf);
+	tmp[colon-1] = '\0';
+	config_push_prefix (tmp);
+	FREE (tmp);
+      }
+      Act::config_info (optional_conf+colon);
+      config_read (optional_conf+colon);
+      if (colon != 0) {
+	config_pop_prefix ();
+      }
     }
   }
   
