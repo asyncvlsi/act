@@ -136,7 +136,7 @@ void act_print_import_stack (FILE *fp)
   struct import_list *t;
 
   fprintf (fp, "Import history:\t");
-  for (t = il; t != pending; t = t->next) {
+  for (t = il; t && t != pending; t = t->next) {
     if (t != il) {
       fprintf (fp, "\n\t<- ");
     }
