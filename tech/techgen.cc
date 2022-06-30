@@ -768,7 +768,9 @@ void emit_drc (pp_t *pp)
       }
       emit_width_spacing (pp, Technology::T->welldiff[j][i], buf);
       emit_width_spacing (pp, Technology::T->well[j][i]);
-      emit_width_spacing_c (pp, Technology::T->welldiff[j][i]->getUpC());
+      if (Technology::T->welldiff[j][i]) {
+	emit_width_spacing_c (pp, Technology::T->welldiff[j][i]->getUpC());
+      }
 
       if (Technology::T->fet[j][i] && Technology::T->diff[j][i]) {
 	int spc;
