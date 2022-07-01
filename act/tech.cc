@@ -724,6 +724,12 @@ void Technology::Init ()
     mat = new RoutingMat (Strdup (buf+k));
     T->metal[i-1] = mat;
 
+    snprintf (buf+k, BUF_SZ-k-1, "m%d_lefname", i);
+    if (config_exists (buf)) {
+      mat->setLEFName (config_get_string (buf));
+    }
+    snprintf (buf+k, BUF_SZ-k-1, "m%d", i);
+
     if (i != T->nmetals) {
       A_NEW (contacts, char *);
       A_NEXT (contacts) = Strdup (buf+k);

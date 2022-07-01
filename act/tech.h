@@ -105,7 +105,7 @@ class Material {
     gds_bloat = NULL;
   }
 
-  const char *getName() { return name; }
+  virtual const char *getName() { return name; }
 
   void addGDS (char **table, int sz);
   void addGDSBloat (int *table, int sz);
@@ -150,6 +150,8 @@ struct RoutingRules {
   int pitch;
   int lef_width;
 
+  const char *lef_name;		// lef/def name
+
   unsigned int routex:1;	/* can be used for x routing */
   unsigned int routey:1;	/* can be used for y routing */
 
@@ -159,9 +161,14 @@ struct RoutingRules {
 
 class RoutingMat : public Material {
 public:
-  RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; r.pitch = 0; r.lef_width = 0; }
+  RoutingMat (char *s) { name = s; r.influence = NULL; r.inf_sz = 0; r.pitch = 0; r.lef_width = 0; r.lef_name = NULL; }
+  void setLEFName (char *s) { r.lef_name = Strdup (s); }
   int getPitch() { return r.pitch; }
   int getLEFWidth() { return r.lef_width; }
+  const char *getLEFName() {
+    if (r.lef_name) { return r.lef_name; }
+    return getName();
+  }
   Contact *getUpC() { return viaup; }
   int getSpacing(int w) { return (*spacing_w)[w]; }
   int isComplexSpacing() {
