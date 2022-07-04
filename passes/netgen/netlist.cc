@@ -938,7 +938,11 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
     f->flavor = 0;		/* standard fet */
   }
   else {
-    /* min size, overridden by sz directive */
+    /*
+       This case is used for internal precharges; so don't override
+       any default sizing. The size selected is the min size,
+       overridden by sz directive if it exists.
+    */
     if (sz) {
       f->flavor = sz->flavor;
 

@@ -650,6 +650,20 @@ void *ActDynamicPass::getPtrParam (const char *name)
   return b->v;
 }
 
+bool ActDynamicPass::hasParam (const char *name)
+{
+  hash_bucket_t *b;
+  if (!_params) { return false; }
+  b = hash_lookup (_params, name);
+  if (b) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}      
+
+
 void ActPass::_actual_update (Process *p)
 {
   if (_root_dirty) {

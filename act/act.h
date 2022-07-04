@@ -434,6 +434,7 @@ public:
   int getIntParam (const char *name);
   void *getPtrParam (const char *name);
   double getRealParam (const char *name);
+  bool hasParam (const char *name);
 
   int runcmd (const char *name);
 
