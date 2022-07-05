@@ -908,7 +908,7 @@ Process *Act::findProcess (ActNamespace *n, const char *s, bool allow_expand)
 	  }
 	  else if (s[offset+idx] == '>') {
 	    /* end of template */
-	    if (idx == 1) {
+	    if (idx == 0) {
 	      /* empty template */
 	      cnt = 0;
 	    }

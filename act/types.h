@@ -288,6 +288,11 @@ class UserDef : public Type {
   int getNumParams () const { return nt; }
 
   /**
+   * Returus the number of remaining template parameters
+   */
+  int getRemainingParams() const { return nt - inherited_templ; }
+
+  /**
    * Returns the number of ports
    */
   int getNumPorts () const { return nports; }
