@@ -1,0 +1,10 @@
+defproc foo (bool a, b)
+{
+  prs {
+    a => b-
+    cap(a,b)
+    cap<10> (b,a)
+  }
+}
+
+foo f;

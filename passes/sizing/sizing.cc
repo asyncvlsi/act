@@ -313,6 +313,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
       }
       break;
     case ACT_PRS_GATE:
+    case ACT_PRS_CAP:
       /* no tgate sizing here */
       break;
     case ACT_PRS_SUBCKT:

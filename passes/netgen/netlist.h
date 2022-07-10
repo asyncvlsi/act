@@ -142,11 +142,17 @@ struct edge {
 				   edge is folded */
 };
 
+struct netlist_capacitor {
+  node_t *n1, *n2;
+  double val;
+};
+
 typedef struct {
   act_boolean_netlist_t *bN;
 
   BOOL_T *B;
   node_t *hd, *tl;
+  list_t *caps;			// list of capacitors
   int idnum;			/* used to number the nodes */
 
   struct Hashtable *atH[2];	/* hash table for @-labels to node mapping */
@@ -266,6 +272,10 @@ class ActNetlistPass : public ActPass {
   /* series gate warnings */
   int series_n_warning;
   int series_p_warning;
+
+  /* unit capacitance */
+  double unit_cap;
+  
   
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,

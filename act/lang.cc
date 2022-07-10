@@ -396,6 +396,26 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       }
       tmp->u.p.sz = act_expand_size (p->u.p.sz, ns, s);
       break;
+
+    case ACT_PRS_CAP:
+      tmp->u.p.attr = prs_attr_expand (p->u.p.attr, ns, s);
+      idtmp = p->u.p.s->Expand (ns, s);
+      etmp = idtmp->Eval (ns, s);
+      Assert (etmp->type == E_VAR, "Hm");
+      tmp->u.p.s = (ActId *)etmp->u.e.l;
+      FREE (etmp);
+
+      idtmp = p->u.p.d->Expand (ns, s);
+      etmp = idtmp->Eval (ns, s);
+      Assert (etmp->type == E_VAR, "Hm");
+      tmp->u.p.d = (ActId *)etmp->u.e.l;
+      FREE (etmp);
+
+      tmp->u.p.g = NULL;
+      tmp->u.p._g = NULL;
+      tmp->u.p.sz = act_expand_size (p->u.p.sz, ns, s);
+      break;
+      
       
     case ACT_PRS_LOOP:
       Assert (s->Add (p->u.l.id, TypeFactory::Factory()->NewPInt()),
@@ -745,6 +765,20 @@ static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
       prs->u.p._g->Print (fp);
       fprintf (fp, ",");
     }
+    prs->u.p.s->Print (fp);
+    fprintf (fp, ",");
+    prs->u.p.d->Print (fp);
+    fprintf (fp, ")\n");
+    break;
+  case ACT_PRS_CAP:
+    if (prs->u.p.attr) {
+      act_print_attributes (fp, prs->u.p.attr);
+    }
+    fprintf (fp, "cap");
+    if (prs->u.p.sz) {
+      _print_size (fp, prs->u.p.sz);
+    }
+    fprintf (fp, "(");
     prs->u.p.s->Print (fp);
     fprintf (fp, ",");
     prs->u.p.d->Print (fp);

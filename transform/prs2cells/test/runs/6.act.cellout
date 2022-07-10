@@ -56,14 +56,6 @@ export defcell ginvx0 (bool? in[1]; bool! out)
    }
 }
 
-export defcell ginvx1 (bool? in[1]; bool! out)
-{
-   prs {
-   in[0]<5> -> out-
-   ~in[0] -> out+
-   }
-}
-
 export template<pint w,l> defcell p0(bool? in[2]; bool! out) {
   prs { passp<w,l> (in[0],in[1],out) }
 }

@@ -1885,6 +1885,31 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     }
     break;
 
+  case ACT_PRS_CAP:
+    {
+      netlist_capacitor *c;
+      NEW (c, netlist_capacitor);
+      c->n1 = VINF(var_lookup (N, p->u.p.s))->n;
+      c->n2 = VINF(var_lookup (N, p->u.p.d))->n;
+      /* XXX: 1e-15 scaling; need to fix this */
+      if (p->u.p.sz) {
+	c->val = unit_cap*(p->u.p.sz->w->type == E_INT ?
+			   p->u.p.sz->w->u.v : p->u.p.sz->w->u.f);
+	if (p->u.p.sz->l) {
+	  c->val *= (p->u.p.sz->l->type == E_INT ?
+		     p->u.p.sz->l->u.v : p->u.p.sz->l->u.f);
+	}
+      }
+      else {
+	c->val = unit_cap;
+      }
+      if (!N->caps) {
+	N->caps = list_new ();
+      }
+      list_append (N->caps, c);
+    }
+    break;
+
   case ACT_PRS_GATE:
     /*-- reset default sizes per gate --*/
     N->sz[EDGE_NFET].w = config_get_int ("net.std_n_width")*getGridsPerLambda();
@@ -2089,6 +2114,7 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
 
   N->hd = NULL;
   N->tl = NULL;
+  N->caps = NULL;
   N->idnum = 0;
   
   N->atH[EDGE_NFET] = hash_new (2);
@@ -2543,6 +2569,13 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   }
   else {
     series_p_warning = 0;
+  }
+
+  if (config_exists ("net.unit_cap")) {
+    unit_cap = config_get_real ("net.unit_cap");
+  }
+  else {
+    unit_cap = 1e-15;
   }
 }
 

@@ -98,7 +98,8 @@ enum act_prs_lang_type {
   ACT_PRS_GATE = 1,
   ACT_PRS_LOOP = 2,
   ACT_PRS_TREE = 3,
-  ACT_PRS_SUBCKT = 4
+  ACT_PRS_SUBCKT = 4,
+  ACT_PRS_CAP = 5
 };
 
 typedef struct act_prs_lang {

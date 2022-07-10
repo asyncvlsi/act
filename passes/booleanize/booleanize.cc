@@ -469,6 +469,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
     break;
 
   case ACT_PRS_GATE:
+  case ACT_PRS_CAP:
     visit_var (N, p->u.p.s, 1);
     visit_var (N, p->u.p.d, 1);
     if (p->u.p.g) {

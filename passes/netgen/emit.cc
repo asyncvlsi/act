@@ -468,6 +468,19 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     }
   }
 
+  if (n->caps) {
+    int ncap = 0;
+    for (listitem_t *li = list_first (n->caps); li; li = list_next (li)) {
+      netlist_capacitor *c = (netlist_capacitor *) list_value (li);
+      fprintf (fp, "C%d_%d ", fets++, ncap++);
+      emit_node (n, fp, c->n1, 1);
+      fprintf (fp, " ");
+      emit_node (n, fp, c->n2, 1);
+      fprintf (fp, " ");
+      fprintf (fp, "%g\n", c->val);
+    }
+  }
+
   /* clear visited flag */
   for (x = n->hd; x; x = x->next) {
     listitem_t *li;

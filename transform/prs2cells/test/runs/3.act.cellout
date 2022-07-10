@@ -88,6 +88,14 @@ export defcell t1(bool? in[3]; bool! out) {
   prs { transgate (in[0],in[1],in[2],out) }
 }
 
+export template<pint w,l> defcell c0(bool in; bool out) {
+  prs { cap<w,l> (in,out) }
+}
+
+export defcell c1(bool in; bool out) {
+  prs { cap (in,out) }
+}
+
 
 
 }

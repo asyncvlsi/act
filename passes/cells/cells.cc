@@ -1098,10 +1098,10 @@ static int _collect_depths (struct act_prsinfo *info,
   return v;
 }
 
-void ActCellPass::add_passgates ()
+void ActCellPass::add_passgates_cap ()
 {
   int i;
-  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1" };
+  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1", "c0", "c1" };
 
   Assert (cell_ns, "What?");
 
@@ -1109,7 +1109,7 @@ void ActCellPass::add_passgates ()
     return;
   }
 
-  for (i=0; i < 6; i++) {
+  for (i=0; i < 8; i++) {
     /* add the unexpanded process to the cell namespace, and then
        expand it! */
     Process *proc;
@@ -1133,24 +1133,31 @@ void ActCellPass::add_passgates ()
     cell_ns->CreateType (g[i], proc);
 
     /*-- add ports --*/
-    InstType *it = TypeFactory::Factory()->NewBool (Type::IN);
+    InstType *it = TypeFactory::Factory()->NewBool (g[i][0] == 'c' ?
+						    Type::NONE : Type::IN);
 
     Expr *arr;
     if (g[i][0] == 't') {
       arr = const_expr (3);
     }
-    else {
+    else if (g[i][0] == 'p' || g[i][0] == 'n') {
       arr = const_expr (2);
     }
-    Array *ta;
-    it = new InstType (it);
-    ta = new Array (arr);
-    ta->mkArray ();
-    it->MkArray (ta);
+    else {
+      arr = NULL;
+    }
+    if (arr) {
+      Array *ta;
+      it = new InstType (it);
+      ta = new Array (arr);
+      ta->mkArray ();
+      it->MkArray (ta);
+    }
 
     Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
 
-    it = TypeFactory::Factory()->NewBool (Type::OUT);
+    it = TypeFactory::Factory()->NewBool (g[i][0] == 'c' ? Type::NONE :
+					  Type::OUT);
     Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
 
     /*-- prs body --*/
@@ -1167,7 +1174,12 @@ void ActCellPass::add_passgates ()
 
     NEW (rules, act_prs_lang_t);
     rules->next = NULL;
-    rules->type = ACT_PRS_GATE;
+    if (g[i][0] != 'c') {
+      rules->type = ACT_PRS_GATE;
+    }
+    else {
+      rules->type = ACT_PRS_CAP;
+    }
 
     rules->u.p.sz = NULL;
     rules->u.p.g = NULL;
@@ -1178,22 +1190,33 @@ void ActCellPass::add_passgates ()
 
     int j = 0;
 
-    if (g[i][0] != 'p') {
-      rules->u.p.g = new ActId ("in", new Array (const_expr (j)));
-      j++;
-    }
-    else {
-      rules->u.p.g = NULL;
-    }
-    if (g[i][0] != 'n') {
-      rules->u.p._g = new ActId ("in", new Array (const_expr (j)));
-      j++;
+    if (g[i][0] != 'c') {
+      if (g[i][0] != 'p') {
+	rules->u.p.g = new ActId ("in", new Array (const_expr (j)));
+	j++;
+      }
+      else {
+	rules->u.p.g = NULL;
+      }
+      if (g[i][0] != 'n') {
+	rules->u.p._g = new ActId ("in", new Array (const_expr (j)));
+	j++;
+      }
+      else {
+	rules->u.p._g = NULL;
+      }
     }
     else {
       rules->u.p._g = NULL;
+      rules->u.p.g = NULL;
     }
-    rules->u.p.s = new ActId ("in", new Array (const_expr (j)));
-    j++;
+    if (g[i][0] != 'c') {
+      rules->u.p.s = new ActId ("in", new Array (const_expr (j)));
+      j++;
+    }
+    else {
+      rules->u.p.s = new ActId ("in");
+    }
     rules->u.p.d = new ActId ("out");
 
     if (g[i][1] == '0') {
@@ -2133,6 +2156,12 @@ void ActCellPass::dump_celldb (FILE *fp)
   fprintf (fp, "export defcell t1(bool? in[3]; bool! out) {\n");
   fprintf (fp, "  prs { transgate (in[0],in[1],in[2],out) }\n}\n\n");
 
+  fprintf (fp, "export template<pint w,l> defcell c0(bool in; bool out) {\n");
+  fprintf (fp, "  prs { cap<w,l> (in,out) }\n}\n\n");
+  
+  fprintf (fp, "export defcell c1(bool in; bool out) {\n");
+  fprintf (fp, "  prs { cap (in,out) }\n}\n\n");
+  
   fprintf (fp, "\n\n}\n");
 }
 
@@ -2212,6 +2241,7 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   AExpr *a, *ret;
   Expr *idexpr;
 
+  ret = NULL;
   if (gate->u.p.g && gate->u.p._g) {
     ret = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr(gate->u.p.g)), NULL);
     a = ret;
@@ -2227,11 +2257,15 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
     a->SetRight (new AExpr (AExpr::COMMA,
 			    new AExpr (_id_to_expr (gate->u.p.s)), NULL));
   }
-  else {
+  else if (gate->u.p._g) {
     ret = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr (gate->u.p._g)), NULL);
     a = ret;
     a->SetRight (new AExpr (AExpr::COMMA,
 			    new AExpr (_id_to_expr (gate->u.p.s)), NULL));
+  }
+  else {
+    /* cap */
+    ret = new AExpr (_id_to_expr (gate->u.p.s));
   }
 
   instname = new ActId (name);
@@ -2434,13 +2468,23 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   int w, l;
   if (prs->u.p.sz) {
     if (prs->u.p.sz->w) {
-      w = prs->u.p.sz->w->u.v;
+      if (prs->u.p.sz->w->type == E_INT) {
+	w = prs->u.p.sz->w->u.v;
+      }
+      else {
+	w = prs->u.p.sz->w->u.f;
+      }
     }
     else {
       w = config_get_int ("net.std_p_width");
     }
     if (prs->u.p.sz->l) {
-      l = prs->u.p.sz->l->u.v;
+      if (prs->u.p.sz->l->type == E_INT) {
+	l = prs->u.p.sz->l->u.v;
+      }
+      else {
+	l = prs->u.p.sz->l->u.f;
+      }
     }
     else {
       l = config_get_int ("net.std_p_length");
@@ -2474,6 +2518,87 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   Act::double_expand = oval;
 }
 
+void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
+{
+  int i;
+  
+  // add this prs to the list, if it is paired then we can find a gate
+  Assert (prs->type == ACT_PRS_CAP, "Hmm.");
+
+  /* XXX: ignoring attributes! */
+
+  char buf[100];
+  do {
+    snprintf (buf, 100, "cx%d", proc_inst_count++);
+  } while (sc->Lookup (buf));
+
+  Assert (sc->isExpanded(), "Hmm");
+
+  Process *cell;
+  Assert (cell_ns, "No cell namespace!");
+
+  if (prs->u.p.sz) {
+    cell = dynamic_cast<Process *>(cell_ns->findType ("c0"));
+  }
+  else {
+    cell = dynamic_cast<Process *>(cell_ns->findType ("c1"));
+  }
+
+  Assert (cell, "No caps?");
+
+  InstType *it = new InstType (sc, cell, 0);
+  int w, l;
+  if (prs->u.p.sz) {
+    if (prs->u.p.sz->w) {
+      if (prs->u.p.sz->w->type == E_INT) {
+	w = prs->u.p.sz->w->u.v;
+      }
+      else {
+	w = prs->u.p.sz->w->u.f;
+      }
+    }
+    else {
+      w = 1;
+    }
+    if (prs->u.p.sz->l) {
+      if (prs->u.p.sz->l->type == E_INT) {
+	l = prs->u.p.sz->l->u.v;
+      }
+      else {
+	l = prs->u.p.sz->l->u.f;
+      }
+    }
+    else {
+      l = 1;
+    }
+    it->setNumParams (2);
+    it->setParam (0, new AExpr (const_expr (w)));
+    it->setParam (1, new AExpr (const_expr (l)));
+  }
+  else {
+    /* nothing to do */
+  }
+  it = it->Expand (NULL, sc);
+
+  Assert (it->isExpanded(), "Hmm");
+  
+  Assert (sc->Add (buf, it), "What?");
+    /*--- now make connections --*/
+    
+  ActBody_Conn *ac;
+
+    //printf (" --- [%s] \n", p->getName());
+  ac = _build_connections (buf, prs);
+    //ac->Print (stdout);
+    //ac->Next()->Print (stdout);
+    //printf (" --- \n");
+
+
+  int oval = Act::double_expand;
+  Act::double_expand = 0;
+  ac->Expandlist (NULL, sc);
+  Act::double_expand = oval;
+}
 
 
 
@@ -2545,6 +2670,23 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       prev = prs;
 #endif      
       break;
+
+    case ACT_PRS_CAP:
+#if 1
+      if (prev) {
+	prev->next = prs->next;
+      }
+      _collect_one_cap (sc, prs);
+#else
+      /* preserve caps */
+      if (!prev) {
+	*pprs = prs;
+      }
+      prev = prs;
+#endif      
+      break;
+
+      
     case ACT_PRS_TREE:
 #if 1
       if (prev) {
@@ -2809,8 +2951,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	while (l) {
 	  Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
 	  if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
-	      l->type == ACT_PRS_TREE) {
-	    fatal_error ("Cell `%s::%s': no fets/subckts/dup trees allowed",
+	      l->type == ACT_PRS_TREE || l->type == ACT_PRS_CAP) {
+	    fatal_error ("Cell `%s::%s': no fets/caps/subckts/dup trees allowed",
 			 cell_ns->getName(), p->getName());
 	  }
 	  else if ((l->type == ACT_PRS_RULE) && l->u.one.label) {
@@ -2986,7 +3128,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
     cell_count =  _collect_cells (cell_ns);
   }
   
-  add_passgates ();
+  add_passgates_cap ();
 }
 
 ActCellPass::~ActCellPass ()

@@ -1272,7 +1272,9 @@ list_t *Act::getDecompTypes ()
       ret = list_dup (l2);
     }
     else {
-      list_concat (ret, list_dup (l2));
+      list_t *tmp = list_dup (l2);
+      list_concat (ret, tmp);
+      list_free (tmp);
     }
   }
   return ret;

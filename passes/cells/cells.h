@@ -70,7 +70,7 @@ private:
 
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
-  void add_passgates ();
+  void add_passgates_cap ();
   struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs, int ninp = -1,
 					   int noutp = -1);
   void dump_celldb (FILE *);
@@ -82,6 +82,7 @@ private:
   
   void _collect_one_prs (Scope *sc, act_prs_lang_t *prs);
   void _collect_one_passgate (Scope *sc, act_prs_lang_t *prs);
+  void _collect_one_cap (Scope *sc, act_prs_lang_t *prs);
   void collect_gates (Scope *sc, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);

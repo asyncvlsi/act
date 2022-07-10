@@ -1,0 +1,137 @@
+namespace cell {
+export defcell g0x1 (bool in[2]; bool out);
+export defcell g0x0 (bool in[2]; bool out);
+export defcell g2x0 (bool in[2]; bool out);
+export defcell g4x0 (bool in[2]; bool out);
+export defcell c0_310_71_4 (bool in; bool out);
+export defcell ginvx0 (bool? in[1]; bool! out);
+export defcell g3x0 (bool in[3]; bool out);
+export defcell c1 (bool in; bool out);
+export defcell g1x0 (bool in[2]; bool out);
+
+export defcell g0x1 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]<10>&in[1] => out-
+}
+}
+
+export defcell g0x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] => out-
+}
+}
+
+export defcell g2x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] #> out-
+}
+}
+
+export defcell g4x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0]&~in[1] -> out+
+}
+}
+
+export defcell c0_310_71_4 (bool in; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+cap<10,1>(in,out)
+}
+}
+
+export defcell ginvx0 (bool? in[1]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0] -> out+
+}
+}
+
+export defcell g3x0 (bool in[3]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2] #> out-
+}
+}
+
+export defcell c1 (bool in; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+cap(in,out)
+}
+}
+
+export defcell g1x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]|in[1] => out-
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc foo (bool a; bool b);
+
+defproc foo (bool a; bool b)
+{
+
+/* instances */
+::cell::c0_310_71_4 cx2;
+::cell::ginvx0 cx0;
+::cell::c1 cx1;
+
+/* connections */
+b=cx2.in=cx1.out=cx0.out;
+a=cx2.out=cx1.in=cx0.in[0];
+}
+
+
+/* instances */
+foo f;
+
+/* connections */

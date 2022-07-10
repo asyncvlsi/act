@@ -1488,6 +1488,26 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
 
     return p;
 }}
+| ID size_spec "(" bool_expr_id "," bool_expr_id ")"
+{{X:
+    act_prs_lang_t *p;
+
+    if (strcmp ($1, "cap") != 0) {
+      $E("Capacitor specification needs cap keyword");
+    }
+
+    NEW (p, act_prs_lang_t);
+    p->type = ACT_PRS_CAP;
+    p->next = NULL;
+    p->u.p.sz = $2;
+    p->u.p.g = NULL;
+    p->u.p._g = NULL;
+    p->u.p.s = $4;
+    p->u.p.d = $6;
+    p->u.p.attr = NULL;
+    
+    return p;
+}}
 ;
 
 arrow[int]: "->" {{X: return 0; }}
