@@ -442,10 +442,10 @@ void list_delete_next (list_t *l, listitem_t *li)
   else {
     listitem_t *tmp = li->next;
     Assert (tmp, "What?");
-    li->next = tmp->next;
     if (li->next == l->tl) {
       l->tl = li;
     }
+    li->next = tmp->next;
     freeitem (tmp);
   }
 }
