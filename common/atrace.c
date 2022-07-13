@@ -643,10 +643,9 @@ static void safe_fwrite_buf (atrace *a, void *x)
       (((a->bufpos*sizeof(int)) + a->fpos) == ATRACE_MAX_FILE_SIZE)) {
     Assert (a->fpos == ftell (a->tr), "Invariant violated");
     _write_out_buf (a);
-    a->bufpos = 0;
-    
     if (!ATRACE_IS_STREAM (a)) {
       a->fpos += sizeof (int) * a->bufpos;
+      a->bufpos = 0;
 
       if (a->fpos == ATRACE_MAX_FILE_SIZE) {
 	char buf[10240];
@@ -658,6 +657,9 @@ static void safe_fwrite_buf (atrace *a, void *x)
 	}
 	a->fpos = 0;
       }
+    }
+    else {
+      a->bufpos = 0;
     }
   }
   a->buffer[a->bufpos++] = * ((int*) x);
