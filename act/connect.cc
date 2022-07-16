@@ -1574,14 +1574,23 @@ bool act_connection::hasAnyConnection (void)
  *
  *------------------------------------------------------------------------
  */
-bool act_connection::disconnect (void)
+bool act_connection::disconnectable ()
 {
-  act_connection *prim;
   if (isPrimary()) {
+    /* primary name cannot be disconnected */
     return false;
   }
   if (a) {
     /*-- also no subconnections! --*/
+    return false;
+  }
+  return true;
+}
+
+bool act_connection::disconnect ()
+{
+  act_connection *prim;
+  if (!disconnectable()) {
     return false;
   }
 

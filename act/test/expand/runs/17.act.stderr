@@ -1,0 +1,5 @@
+In expanding test1 (17.act:2)
+In expanding ::<Global>
+Error on or near line number 9.
+ id: x[w]; deref: [w]
+FATAL: Dynamic de-reference of parameter arrays not permitted

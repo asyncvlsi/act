@@ -1,0 +1,16 @@
+
+defproc test1 (chan(int<1>) A, B)
+{
+  int w;
+  pint x[3];
+  x[0] = 0;
+  x[1] = 3;
+  x[2] = 5;
+  chp {
+    B?w;
+    A!x[w]
+  }
+}
+
+
+test1 x;

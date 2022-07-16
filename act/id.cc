@@ -250,6 +250,15 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       if (id->arrayInfo()->isDeref() &&
 	  id->arrayInfo()->isDynamicDeref()) {
 	if (is_chp) {
+	  if (TypeFactory::isParamType (it)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " id: ");
+	    this->Print (stderr);
+	    fprintf (stderr, "; deref: ");
+	    id->arrayInfo()->Print (stderr);
+	    fprintf (stderr, "\n");
+	    fatal_error ("Dynamic de-reference of parameter arrays not permitted");
+	  }
 	  /* ok */
 	}
 	else {

@@ -110,6 +110,7 @@ public:
   /* -- disconnect: only works for non-primary connections.
      Returns true on success, false otherwise -- */
   bool disconnect ();
+  bool disconnectable ();
 };
 
 
