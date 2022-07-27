@@ -1,0 +1,2 @@
+ERROR: File `88.act', line 11, col 9
+	Timing directive *: LHS and RHS transitions must match!

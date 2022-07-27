@@ -1,0 +1,2 @@
+ERROR: File `87.act', line 11, col 9
+	Timing directive *: LHS and RHS IDs must match!

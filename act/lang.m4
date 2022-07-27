@@ -1853,6 +1853,7 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     /* a timing fork */
     act_spec *s;
     int i;
+    int intick = 0;
     
     NEW (s, act_spec);
     s->type = $7;
@@ -1906,9 +1907,11 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     OPT_FREE ($6);
     if (!OPT_EMPTY ($3)) {
       s->extra[i] |= 0x4;
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
-      }
+      //if (s->type == -3) {
+      //$E("Timing directive ``->'' spec error");
+      //}
+      // we use this to say all incoming edges are ticked
+      intick = 1;
     }
     OPT_FREE ($3);
 
@@ -1964,6 +1967,15 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       }
     }
     OPT_FREE ($8);
+
+    if (intick && s->type == -3) {
+      if (!s->ids[1]->isEqual (s->ids[2])) {
+	$E("Timing directive *: LHS and RHS IDs must match!");
+      }
+      if ((s->extra[1] & 0x3) != (s->extra[2] & 0x3)) {
+	$E("Timing directive *: LHS and RHS transitions must match!");
+      }
+    }
 
     return s;
 }}

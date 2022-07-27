@@ -431,6 +431,209 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
 }
 
 
+const char *Process::addBuffer (Process *buf, list_t *inst_ports)
+{
+  if (!inst_ports || list_isempty (inst_ports) ||(list_length (inst_ports) % 2)
+      ||  !buf || !buf->isExpanded ()) {
+    return NULL;
+  }
+
+  if (buf->getNumPorts() != 2) {
+    return NULL;
+  }
+
+  if (!buf->isCell()) {
+    return NULL;
+  }
+
+  InstType *x[2];
+  x[0] = buf->getPortType (0);
+  x[1] = buf->getPortType (1);
+
+  int iport, oport;
+
+  if (!TypeFactory::isBoolType (x[0]) ||
+      !TypeFactory::isBoolType (x[1])) {
+    return NULL;
+  }
+  if (x[0]->arrayInfo() || x[1]->arrayInfo()) {
+    return NULL;
+  }
+
+  if (x[0]->getDir() == Type::IN) {
+    iport = 0;
+    oport = 1;
+  }
+  else {
+    iport = 1;
+    iport = 0;
+  }
+
+  if (x[iport]->getDir () != Type::IN ||
+      x[oport]->getDir () != Type::OUT) {
+    return NULL;
+  }
+
+  /* check ports */
+  listitem_t *li;
+  li = list_first (inst_ports);
+  while (li) {
+    ActId *port;
+    char *name;
+
+    name = (char *) list_value (li);
+
+    li = list_next (li);
+    port = (ActId *) list_value (li);
+    if (port->Rest()) {
+      return NULL;
+    }
+
+    ValueIdx *vx = I->LookupVal (name);
+    if (!vx) {
+      return NULL;
+    }
+    if (vx->t->arrayInfo()) {
+      return NULL;
+    }
+    if (!TypeFactory::isProcessType (vx->t)) {
+      return NULL;
+    }
+    Process *orig = dynamic_cast<Process *> (vx->t->BaseType());
+    Assert (orig, "How did we get here?");
+
+    int pos = orig->FindPort (port->getName());
+    if (pos <= 0) {
+      return NULL;
+    }
+    pos--;
+
+    InstType *it = orig->getPortType (pos);
+    if (!TypeFactory::isBoolType (it)) {
+      return NULL;
+    }
+
+    if (it->getDir() == Type::IN) {
+      /* okay! */
+    }
+    else {
+      return NULL;
+    }
+
+    int array_idx = -1;
+
+    if (it->arrayInfo() && port->arrayInfo()) {
+      if (!port->arrayInfo()->isDeref()) {
+	return NULL;
+      }
+      array_idx = it->arrayInfo()->Offset (port->arrayInfo());
+      if (array_idx == -1) {
+	return NULL;
+      }
+    }
+    else if (it->arrayInfo() || port->arrayInfo()) {
+      return NULL;
+    }
+    li = list_next (li);
+  }
+
+  li = list_first (inst_ports);
+  act_connection *xp = NULL;
+  while (li) {
+    ActId *port;
+    char *name;
+
+    name = (char *) list_value (li);
+    li = list_next (li);
+    port = (ActId *) list_value (li);
+    li  = list_next (li);
+
+    /*
+      Step 1: Disconnect name.pos
+    */
+    ActId *tmp = new ActId (name);
+    tmp->Append (port);
+    act_connection *orig_c = tmp->Canonical (CurScope());
+    act_connection *c = tmp->myConnection (CurScope());
+    tmp->prune();
+    delete tmp;
+    if (!c->disconnectable()) {
+      return NULL;
+    }
+    if (xp) {
+      if (orig_c != xp) {
+	return NULL;
+      }
+    }
+    else {
+      xp = orig_c;
+    }
+  }
+  Assert (xp, "What?");
+
+  /*
+     Step 2: add instance
+  */
+  char bufnm[100];
+  do {
+    snprintf (bufnm, 100, "cxb%d", bufcnt++);
+  } while (I->Lookup (bufnm));
+  InstType *nit = new InstType (CurScope(), buf, 0);
+  nit = nit->Expand (NULL, CurScope());
+
+  Assert (CurScope()->Add (bufnm, nit), "What?");
+
+  /*
+    Step 3: wire it up
+  */
+
+  ActId *tmp = xp->toid();
+
+  ActId *tmpport, *tmpport2;
+
+  tmpport = new ActId (bufnm);
+  tmpport->Append (new ActId (buf->getPortName (iport)));
+  act_connection *in_conn = tmpport->Canonical (CurScope());
+
+  tmpport2 = new ActId (bufnm);
+  tmpport2->Append (new ActId (buf->getPortName (oport)));
+  act_connection *out_conn = tmpport2->Canonical (CurScope());
+
+  /* connect the input of the buffer */
+  act_mk_connection (this, tmpport, in_conn, tmp, xp);
+  delete tmp;
+  delete tmpport;
+
+  /* disconnect all the parts, and connect them to the output */
+  li = list_first (inst_ports);
+  while (li) {
+    ActId *port;
+    char *name;
+
+    name = (char *) list_value (li);
+    li = list_next (li);
+    port = (ActId *) list_value (li);
+    li  = list_next (li);
+
+    /*
+      Disconnect name.pos and connect it to the buffer output
+    */
+    ActId *ltmp = new ActId (name);
+    ltmp->Append (port);
+    act_connection *c = ltmp->myConnection (CurScope());
+
+    c->disconnect ();
+    act_mk_connection (this, tmpport2, out_conn, ltmp, c);
+    delete ltmp;
+  }
+  delete tmpport2;
+
+  ValueIdx *vx = I->LookupVal (bufnm);
+  Assert (vx, "What?");
+  return vx->u.obj.name;
+}
+
+
 
 int Process::findGlobal (ActId *id)
 {

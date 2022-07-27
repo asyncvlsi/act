@@ -464,7 +464,14 @@ class Process : public UserDef {
    *    port has to be either a simple id or id[num]
    */
   const char *addBuffer (char *name, ActId *port, Process *buf);
-  
+
+  /*
+   * Similar to the single buffer addition, except that a list of
+   * end-points are disconnected. Each of them must be connected to
+   * the same primary name, must be disconnectable, and must all be
+   * input pins
+   */
+  const char *addBuffer (Process *buf, list_t *inst_ports);
 
   /* returns the unexpanded type from which this one was generated */
   Process *getUnexpanded();
