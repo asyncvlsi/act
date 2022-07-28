@@ -1,0 +1,18 @@
+defproc testme (chan(int) l, r)
+{
+  int x;
+
+  chp-txt {
+    while  {
+   case true:
+    select {
+     case x > 0 :  l?x; , r!x;
+     case x < 0 :  r!x;
+     else : x := x + 1;
+     }
+     wait-for (x > 0);
+    }
+  }
+}
+
+testme t;

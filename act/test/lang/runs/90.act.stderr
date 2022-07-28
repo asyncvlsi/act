@@ -1,0 +1,5 @@
+In expanding testme (90.act:1)
+In expanding ::<Global>
+Error on or near line number 5.
+WARNING: potential write conflict in CHP description
+   Variable: `x'

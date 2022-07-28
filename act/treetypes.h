@@ -181,6 +181,13 @@ typedef struct {
       1 = int
    */
   int is_assignable_override;
+
+  /*
+    0 = guarded command list
+    1 = guarded command list + default clause
+    2 = normal list
+  */
+  int txtchp_type;
   
 } ActTree;
 
