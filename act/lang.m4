@@ -262,26 +262,11 @@ chp_body[act_chp_lang_t *]: { chp_comma_list ";" }*
 }}
 ;
 
-chptxt_body[act_chp_lang_t *]: chptxt_bodylist
+chptxt_body[act_chp_lang_t *]: { chp_txtcomma_list ";" }* 
 {{X:
     return apply_X_chp_body_opt0 ($0, $1);
 }}
 ;
-
-chptxt_bodylist[list_t *]: chp_txtcomma_list chptxt_bodylist
-{{X:
-    list_append_head ($2, $1);
-    return $2;
-}}
-| chp_txtcomma_list
-{{X:
-    list_t *l = list_new ();
-    list_append (l, $1);
-    return l;
-}}
-;
-
-
 
 chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 {{X:
@@ -399,24 +384,24 @@ chp_body_item[act_chp_lang_t *]: [ ID ":" ] base_stmt
 ;
 
 
-chp_txtbody_item[act_chp_lang_t *]: [ ID ":" ] txtbase_stmt
+chp_txtbody_item[act_chp_lang_t *]: [ ID ":" ] txtselectloop_stmt
 {{X:
     return apply_X_chp_body_item_opt0 ($0, $1, $2);
 }}
-| [ ID ":" ] txtselectloop_stmt
+| [ ID ":" ] txtbase_stmt
 {{X:
     return apply_X_chp_body_item_opt0 ($0, $1, $2);
 }}
-| "(" ID
+| "(" ";" ID
 {{X:
-    if ($0->scope->Lookup ($2)) {
-      $E("Identifier ``%s'' already defined in current scope", $2);
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
     }
-    $0->scope->Add ($2, $0->tf->NewPInt());
+    $0->scope->Add ($3, $0->tf->NewPInt());
 }}
 ":" !noreal wpint_expr [ ".." wpint_expr ] ":" chptxt_body ")"
 {{X:
-    return apply_X_chp_body_item_opt3 ($0, $2, $4, $5, $7);
+    return apply_X_chp_body_item_opt3 ($0, $3, $5, $6, $8);
 }}
 | "(" "," ID
 {{X:
@@ -425,7 +410,7 @@ chp_txtbody_item[act_chp_lang_t *]: [ ID ":" ] txtbase_stmt
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
 }}
-":" !noreal wpint_expr [ ".." wpint_expr ] ":" chptxt_body ")" ";"
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" chptxt_body ")"
 {{X:
     return apply_X_chp_body_item_opt4 ($0, $3, $5, $6, $8);
 }}
@@ -617,19 +602,19 @@ base_stmt[act_chp_lang_t *]: send_stmt
 ;
 
 
-txtbase_stmt[act_chp_lang_t *]: send_stmt ";"
+txtbase_stmt[act_chp_lang_t *]: send_stmt
 {{X:
     return apply_X_base_stmt_opt0 ($0, $1);
 }}
-| recv_stmt ";"
+| recv_stmt
 {{X:
     return apply_X_base_stmt_opt1 ($0, $1);
 }}
-| assign_stmt ";"
+| assign_stmt
 {{X:
     return apply_X_base_stmt_opt2 ($0, $1);
 }}
-| "skip"  ";"
+| "skip"
 {{X:
     return apply_X_base_stmt_opt3 ($0);
 }}
@@ -637,7 +622,7 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt ";"
 {{X:
     return apply_X_base_stmt_opt4 ($0, $2);
 }}
-| "wait-for" "(" wbool_allow_chan_expr ")" ";"
+| "wait-for" "(" wbool_allow_chan_expr ")"
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
@@ -651,11 +636,11 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt ";"
     c->u.gc->g = $3;
     return c;
 }}
-| ID "(" { chp_log_item "," }* ")" ";"
+| ID "(" { chp_log_item "," }* ")"
 {{X:
     return apply_X_base_stmt_opt5 ($0, $1, $3);
 }}
-| { base_id "." }* "(" [ { w_expr "," }** ] ")" ";"
+| { base_id "." }* "(" [ { w_expr "," }** ] ")"
 {{X:
     return apply_X_base_stmt_opt6 ($0, $1, $3);
 }}
@@ -1088,7 +1073,7 @@ guarded_cmd[act_chp_gc_t *]: wbool_allow_chan_expr "->" chp_body
 
 txtselectloop_stmt[act_chp_lang_t *]: ID "{"
      txtguarded_commands_or_cmds "}"
-     [ ID "(" wbool_expr ")" ";" ]
+     [ ID "(" wbool_expr ")" ]
 {{X:
     act_chp_lang_t *c = NULL;
     NEW (c, act_chp_lang_t);
@@ -1175,17 +1160,30 @@ txtselectloop_stmt[act_chp_lang_t *]: ID "{"
 }}
 ;
 
-txtguarded_commands_or_cmds[void *]: txtgc_list
+txtguarded_commands_or_cmds[void *]: { txtgc_listitem ";" }*
 {{X:
-    act_chp_gc_t *gc = $1;
+    act_chp_gc_t *gc, *ret;
+    listitem_t *li;
     $0->txtchp_type = 0;
-    while (gc) {
+
+    ret = NULL;
+    for (li = list_first ($1); li; li = list_next (li)) {
+      gc = (act_chp_gc_t *) list_value (li);
+      if (!ret) {
+	ret = gc;
+      }
+      if (list_next (li)) {
+	gc->next = (act_chp_gc_t *)list_value (list_next (li));
+      }
+      else {
+	gc->next = NULL;
+      }
       if (!gc->g) {
 	$0->txtchp_type = 1;
       }
-      gc = gc->next;
     }
-    return (void *) $1;
+    list_free ($1);
+    return (void *) ret;
 }}
 | chptxt_body
 {{X:
@@ -1194,17 +1192,7 @@ txtguarded_commands_or_cmds[void *]: txtgc_list
 }}
 ;
 
-txtgc_list[act_chp_gc_t *]: ID wbool_allow_chan_expr ":" chptxt_body  txtgc_list
-{{X:
-    act_chp_gc_t *gc;
-    if (strcmp ($1, "case") != 0) {
-      $E("Expected case statement for guarded command");
-    }
-    gc = apply_X_guarded_cmd_opt0 ($0, $2, $4);
-    gc->next = $5;
-    return gc;
-}}
-| ID wbool_allow_chan_expr ":" chptxt_body
+txtgc_listitem[act_chp_gc_t *]: ID wbool_allow_chan_expr ":" chptxt_body
 {{X:
     if (strcmp ($1, "case") != 0) {
       $E("Expected case statement for guarded command");

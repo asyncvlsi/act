@@ -5,9 +5,9 @@ defproc testme (chan(int) l, r)
   chp-txt {
     while (true) {
     select {
-     case x > 0 :  l?x; , r!x;
+     case x > 0 :  l?x, r!x;
      case x < 0 :  r!x;
-     else : x := x + 1;
+     else : x := x + 1
     }
     }
   }

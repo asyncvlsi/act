@@ -5,14 +5,14 @@ defproc testme (chan(int) l, r)
   chp-txt {
    do {
     select {
-     case x > 0 :  l?x; , r!x;
+     case x > 0 :  l?x, r!x;
      case x < 0 :  r!x;
-     else : x := x + 1;
-     } 
-     log ("hi");
-     wait-for (x > 0);
-    } while (x < 3);
-     log ("hi");
+     else : x := x + 1
+    };
+    log ("hi");
+    wait-for (x > 0)
+  } while (x < 3);
+   log ("hi")
   }
 }
 
