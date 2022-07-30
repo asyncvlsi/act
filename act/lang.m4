@@ -1135,6 +1135,23 @@ txtselectloop_stmt[act_chp_lang_t *]: ID "{"
       FREE (r);
       c->u.gc->s = (act_chp_lang_t *) $3;
     }
+    else if (strcmp ($1, "forever") == 0) {
+      ActRet *r;
+      if (!OPT_EMPTY ($5)) {
+	$E("forever can't have a dangling clause");
+      }
+      if ($0->txtchp_type != 2) {
+	$E("forever body can't have guarded commands");
+      }
+      c->type = ACT_CHP_LOOP;
+      c->label = NULL;
+      c->space = NULL;
+      NEW (c->u.gc, act_chp_gc_t);
+      c->u.gc->next = NULL;
+      c->u.gc->id = NULL;
+      c->u.gc->g = NULL;
+      c->u.gc->s = (act_chp_lang_t *) $3;
+    }
     else {
       $E("Unknown command ``%s''", $1);
     }
