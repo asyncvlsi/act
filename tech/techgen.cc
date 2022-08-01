@@ -778,7 +778,7 @@ void emit_drc (pp_t *pp)
 	spc = Technology::T->diff[j][i]->getViaFet() -
 	  (Technology::T->diff[j][i]->getUpC()->minWidth()-
 	   Technology::T->diff[j][i]->getUpC()->getSym()+1)/2;
-	if (spc == 0) {
+	if (spc <= 0) {
 	  spc = 1;
 	}
 	
