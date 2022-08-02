@@ -1,0 +1,10 @@
+int x;
+bool b;
+chan(int) A, B;
+
+chp-txt {
+   forever {
+      recv (A,x); recv (B, int(b));
+ 	send (A, x+4); send (B, int(b))
+   }
+}
