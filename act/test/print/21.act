@@ -1,0 +1,16 @@
+defproc test () 
+{
+int x;
+bool b;
+chan(int) A, B;
+
+chp-txt {
+   while (b) {
+      recv (A,x); recv (B, int(b));
+	log(A," ", x);
+ 	send (A, x+4); send (B, int(b))
+   }
+}
+}
+
+test t;

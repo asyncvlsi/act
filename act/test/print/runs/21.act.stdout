@@ -1,0 +1,22 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+chan(int<32>) B;
+chan(int<32>) A;
+bool b;
+int<32> x;
+
+/* connections */
+chp {
+*[b -> A?x;B?int(b);log(A," ",x);A!x+0x4;B!int(b)]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
