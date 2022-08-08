@@ -279,6 +279,9 @@ int Act::_process_act_arg (const char *argvp, int *tech_specified, char **conf)
     }
     *conf = Strdup (argvp+5);
   }
+  else if (strcmp (argvp, "-refine") == 0) {
+    config_set_int ("act.refine_steps", 1);
+  }
   else if (strncmp (argvp, "-ref=", 5) == 0) {
     /* refinement steps */
     int r = atoi(argvp+5);

@@ -361,6 +361,8 @@ public:
   Act *getAct () { return a; }
   ActPass *getPass (const char *name) { return a->pass_find (name); }
 
+  Process *getRoot() { return _root; }
+
   /* -- negative modes are used internally; do not use! -- */
   virtual void run_recursive (Process *p = NULL, int mode = 0);
 
