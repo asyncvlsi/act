@@ -2103,7 +2103,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  for (int i=0; i < count; i++) {
 	    AExpr *tae;
 	    inst[i].isatype = 0;
-	    tae = new AExpr (w->u.e.l);
+	    tae = new AExpr (expr_dup (w->u.e.l));
 	    inst[i].u.tp = tae->Expand (ns, s, 0);
 	    delete tae;
 	    w = w->u.e.r;
