@@ -1313,19 +1313,19 @@ txtgc_listitem[act_chp_gc_t *]: ID wbool_allow_chan_expr ":" chptxt_body
 {{X:
     return apply_X_guarded_cmd_opt2 ($0, $3);
 }}
-| "(" ID
+| "(" ";" ID
 {{X:
-    if ($0->scope->Lookup ($2)) {
-      $E("Identifier ``%s'' already defined in current scope", $2);
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
     }
-    $0->scope->Add ($2, $0->tf->NewPInt());
+    $0->scope->Add ($3, $0->tf->NewPInt());
 }}
 ":" !noreal wpint_expr [ ".." wpint_expr ] ":" ID wbool_allow_chan_expr ":" chptxt_body ")"
 {{X:
-    if (strcmp ($7, "case") != 0) {
+    if (strcmp ($8, "case") != 0) {
       $E("Expected case statement in syntactic replication construct");
     }
-    return apply_X_guarded_cmd_opt1 ($0, $2, $4, $5, $8, $10);
+    return apply_X_guarded_cmd_opt1 ($0, $3, $5, $6, $9, $11);
 }}
 ;
 
