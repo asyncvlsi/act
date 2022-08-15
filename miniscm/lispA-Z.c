@@ -1026,8 +1026,10 @@ LispQuote (char *name, Sexp *s, Sexp *f)
 LispObj *
 LispIf (char *name, Sexp *s, Sexp *f)
 {
-  if (!ARG1P(s) || !ARG2P(s) || !ARG3P(s) || LTYPE(ARG1(s)) != S_BOOL 
-      || ARG4P(s)) {
+  LispObj *l;
+
+  if (!ARG1P(s) || !ARG2P(s) || LTYPE(ARG1(s)) != S_BOOL ||
+      (ARG3P(s) && ARG4P(s))) {
     fprintf (stderr, "Usage: (%s bool obj1 obj2)\n", name);
     RETURN;
   }
@@ -1036,8 +1038,16 @@ LispIf (char *name, Sexp *s, Sexp *f)
 
   if (LBOOL(ARG1(s)))
     return LispEval (ARG2(s), f);
-  else 
-    return LispEval (ARG3(s), f);
+  else {
+    if (ARG3P(s))
+      return LispEval (ARG3(s), f);
+    else {
+      l = LispNewObj ();
+      LTYPE(l) = S_BOOL;
+      LBOOL(l) = 0;
+      return l;
+    }
+  }
 }
 
 
