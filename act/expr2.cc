@@ -25,6 +25,7 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <act/lang.h>
+#include <act/act.h>
 #include <common/int.h>
 #include <string.h>
 #include <string>
@@ -363,22 +364,8 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
       Function *f = dynamic_cast<Function *>(u);
       Expr *tmp;
       Assert (f, "Hmm.");
-      if (f->getns() && f->getns() != ActNamespace::Global()) {
-	char *s = f->getns()->Name();
-	snprintf (buf+k, sz, "%s::", s);
-	PRINT_STEP;
-	FREE (s);
-      }
-      {
-        char *s = Strdup (f->getName());
-        int l = strlen (s);
-        if (l > 2 && s[l-1] == '>' && s[l-2] == '<') {
-	  s[l-2] = '\0';
-        }
-        snprintf (buf+k, sz, "%s", s);
-	PRINT_STEP;
-        FREE (s);
-      }
+      ActNamespace::Act()->msnprintfproc (buf+k, sz, f);
+      PRINT_STEP;
 
       if (e->u.fn.r->type == E_GT) {
 	snprintf (buf+k, sz, "<");
