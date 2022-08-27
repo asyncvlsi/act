@@ -33,7 +33,7 @@ function addone (int<32> x) : int<32>
 
 /* connections */
 chp {
-self:=x+0x1;self:=addthree<>(self)
+self:=x+0x1;self:=addthree(self)
 }
 }
 
