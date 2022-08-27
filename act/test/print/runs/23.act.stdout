@@ -1,0 +1,38 @@
+namespace foo {
+export function tst_332_4 (int<32> x) : int<32>;
+
+export function tst_332_4 (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+0x1
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> x;
+
+/* connections */
+chp {
+x:=0x1;x:=::foo::tst_332_4(x)
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

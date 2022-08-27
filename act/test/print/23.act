@@ -1,0 +1,24 @@
+namespace foo {
+
+export 
+template<pint W>
+function tst (int x) : int<W>
+{
+  chp {
+    self := x + 1
+  }
+}
+
+}
+
+
+defproc test()
+{
+   int x;
+   chp {
+      x := 1;
+      x := foo::tst<32>(x)
+    }
+}
+
+test t;

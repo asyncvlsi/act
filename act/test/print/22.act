@@ -1,0 +1,22 @@
+namespace foo {
+
+export function tst (int x) : int
+{
+  chp {
+    self := x + 1
+  }
+}
+
+}
+
+
+defproc test()
+{
+   int x;
+   chp {
+      x := 1;
+      x := foo::tst(x)
+    }
+}
+
+test t;

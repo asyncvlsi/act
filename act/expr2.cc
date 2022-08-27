@@ -364,7 +364,13 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
       Function *f = dynamic_cast<Function *>(u);
       Expr *tmp;
       Assert (f, "Hmm.");
-      ActNamespace::Act()->msnprintfproc (buf+k, sz, f);
+      if (f->getns() && f->getns() != ActNamespace::Global()) {
+	char *s = f->getns()->Name();
+	snprintf (buf+k, sz, "%s::", s);
+	PRINT_STEP;
+	FREE (s);
+      }
+      ActNamespace::Act()->msnprintfproc (buf+k, sz, f, 1);
       PRINT_STEP;
 
       if (e->u.fn.r->type == E_GT) {
