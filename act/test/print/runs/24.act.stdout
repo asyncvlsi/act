@@ -1,0 +1,9 @@
+
+
+/* instances */
+bool b;
+bool a;
+bool c;
+
+/* connections */
+a=c;a=b;

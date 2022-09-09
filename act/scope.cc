@@ -1207,30 +1207,23 @@ void Scope::printConnections (FILE *fp, act_connection *cx, bool force)
 	act_connection *c = *ci;
 
 	if (!global || c->isglobal()) {
-	  if (!first) {
-	    if (idfirst) {
-	      idfirst->Print (fp);
-	      delete idfirst;
-	      idfirst = NULL;
-	    }
-	    fprintf (fp, "=");
-	  }
 	  id = c->toid();
 	  if (first) {
 	    idfirst = id;
 	    first = 0;
 	  }
 	  else {
+	    idfirst->Print (fp);
+	    fprintf (fp, "=");
 	    id->Print (fp);
+	    fprintf (fp, ";");
 	    delete id;
 	  }
 	}
       }
       if (idfirst) {
 	delete idfirst;
-      }
-      else {
-	fprintf (fp, ";\n");
+	fprintf (fp, "\n");
       }
     }
   }

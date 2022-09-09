@@ -126,8 +126,8 @@ defproc foo (bool a; bool b)
 ::cell::c1 cx1;
 
 /* connections */
-b=cx2.in=cx1.out=cx0.out;
-a=cx2.out=cx1.in=cx0.in[0];
+b=cx2.in;b=cx1.out;b=cx0.out;
+a=cx2.out;a=cx1.in;a=cx0.in[0];
 }
 
 

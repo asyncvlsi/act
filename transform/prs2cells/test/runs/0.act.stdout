@@ -131,8 +131,8 @@ bool q;
 
 /* connections */
 y=cx0.in[1];
-x=cx1.in[0]=cx0.in[0];
-w=cx1.out=cx0.in[2];
+x=cx1.in[0];x=cx0.in[0];
+w=cx1.out;w=cx0.in[2];
 q=cx0.out;
 }
 

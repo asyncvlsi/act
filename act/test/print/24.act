@@ -1,0 +1,4 @@
+bool a, b, c;
+
+a = b;
+b = c;
