@@ -3,7 +3,13 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../prs2net.$EXT 
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../prs2net.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/prs2net
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../prs2net.$EXT
+fi
 
 if [ $# -eq 0 ]
 then

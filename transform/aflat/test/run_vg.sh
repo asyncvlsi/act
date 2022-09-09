@@ -9,8 +9,13 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../aflat.$EXT
-
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../aflat.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/aflat
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../aflat.$EXT
+fi
 check_echo=0
 myecho()
 {
@@ -65,6 +70,9 @@ do
 		myecho "** FAILED TEST $i: stdout"
 		fail=`expr $fail + 1`
 		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.x.t.stdout runs/$i.y.t.stdout
+        fi
 	fi
 	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
 	then
@@ -76,6 +84,9 @@ do
 		myecho " stderr"
 		fail=`expr $fail + 1`
 		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.t.stderr runs/$i.stderr
+        fi
 	fi
 	if [ $ok -eq 1 ]
 	then

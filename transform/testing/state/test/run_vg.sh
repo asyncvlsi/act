@@ -10,8 +10,13 @@ echo
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../test_statepass.$EXT 
-
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../test_statepass.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/test_statepass
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../test_statepass.$EXT
+fi
 check_echo=0
 myecho()
 {
@@ -66,6 +71,9 @@ do
 		myecho "** FAILED TEST $i: stdout"
 		fail=`expr $fail + 1`
 		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.t.stdout runs/$i.stdout
+        fi
 	fi
 	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
 	then
@@ -77,6 +85,9 @@ do
 		myecho " stderr"
 		fail=`expr $fail + 1`
 		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.t.stderr runs/$i.stderr
+        fi
 	fi
 	if [ $ok -eq 1 ]
 	then

@@ -3,8 +3,13 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../ext2sp.$EXT 
-
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../ext2sp.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/ext2sp
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../ext2sp.$EXT
+fi
 if [ $# -eq 0 ]
 then
 	list=[0-9]*.ext

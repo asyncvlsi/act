@@ -3,7 +3,13 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACT=../act-test.$EXT
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../act-test.$EXT ]; then
+  ACT=$ACT_HOME/bin/act-test
+  echo "testing installation"
+echo
+else
+  ACT=../act-test.$EXT
+fi
 
 if [ $# -eq 0 ]
 then

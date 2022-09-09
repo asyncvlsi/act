@@ -3,8 +3,13 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../prs2cells.$EXT 
-
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../prs2cells.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/prs2cells
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../prs2cells.$EXT
+fi
 if [ $# -eq 0 ]
 then
 	list=[0-9]*.act
