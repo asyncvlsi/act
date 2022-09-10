@@ -16,25 +16,10 @@ jobs:
           ./configure $ACT_HOME
           ./build 
           make install
+          export ACT_TEST_VERBOSE=1
           make runtest
-
-   centos8:
-     docker:
-       - image: centos:8
-     steps:
-       - checkout
-       - run: |
-          yum install -y 'dnf-command(config-manager)'
-          yum config-manager --set-enabled powertools -y
-          yum install -y gcc gcc-c++ diffutils make libedit-devel zlib-devel m4
-          mkdir install
-          export VLSI_TOOLS_SRC=`pwd`
-          export ACT_HOME=$VLSI_TOOLS_SRC/install
-          ./configure $ACT_HOME
-          ./build
-          make install
+          export ACT_TEST_INSTALL=1
           make runtest
-          
 
 
 workflows:

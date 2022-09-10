@@ -3,7 +3,13 @@
 ARCH=`$VLSI_TOOLS_SRC/scripts/getarch`
 OS=`$VLSI_TOOLS_SRC/scripts/getos`
 EXT=${ARCH}_${OS}
-ACTTOOL=../test_arbpass.$EXT 
+if [ ! x$ACT_TEST_INSTALL = x ] || [ ! -f ../test_arbpass.$EXT ]; then
+  ACTTOOL=$ACT_HOME/bin/test_arbpass
+  echo "testing installation"
+echo
+else
+  ACTTOOL=../test_arbpass.$EXT
+fi
 
 if [ $# -eq 0 ]
 then
