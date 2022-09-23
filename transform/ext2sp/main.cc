@@ -586,17 +586,61 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
   if (E->subcells) {
     printf ("*--- subcircuits ---\n");
     for (struct ext_list *lst = E->subcells; lst; lst = lst->next) {
-      int p = 0;
-      printf ("x%s %s ", lst->id, gnd_node);
-      l = strlen (lst->file);
-      if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
-	l -= 4;
+      if (lst->xlo == lst->xhi && lst->ylo == lst->yhi) {
+	int p = 0;
+	printf ("x%s %s ", lst->id, gnd_node);
+	l = strlen (lst->file);
+	if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
+	  l -= 4;
+	}
+	while (l) {
+	  putchar (lst->file[p++]);
+	  l--;
+	}
+	putchar ('\n');
       }
-      while (l) {
-	putchar (lst->file[p++]);
-	l--;
+      else if (lst->xlo != lst->xhi && lst->ylo != lst->yhi) {
+	int xid, yid;
+	for (xid = lst->xlo; xid <= lst->xhi; xid++) {
+	  for (yid = lst->ylo; yid <= lst->yhi; yid++) {
+	    int p = 0;
+	    printf ("x%s[%d][%d] %s ", lst->id, xid, yid, gnd_node);
+	    l = strlen (lst->file);
+	    if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
+	      l -= 4;
+	    }
+	    while (l) {
+	      putchar (lst->file[p++]);
+	      l--;
+	    }
+	    putchar ('\n');
+	  }
+	}
       }
-      putchar ('\n');
+      else {
+	int xid, lo, hi;
+	if (lst->xlo != lst->xhi) {
+	  lo = lst->xlo;
+	  hi = lst->xhi;
+	}
+	else {
+	  lo = lst->ylo;
+	  hi = lst->yhi;
+	}
+	for (xid = lo; xid <= hi; xid++) {
+	  int p = 0;
+	  printf ("x%s[%d] %s ", lst->id, xid, gnd_node);
+	    l = strlen (lst->file);
+	    if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
+	      l -= 4;
+	    }
+	    while (l) {
+	      putchar (lst->file[p++]);
+	      l--;
+	    }
+	    putchar ('\n');
+	}
+      }
     }
   }
   
