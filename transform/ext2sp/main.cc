@@ -604,7 +604,7 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
 	for (xid = lst->xlo; xid <= lst->xhi; xid++) {
 	  for (yid = lst->ylo; yid <= lst->yhi; yid++) {
 	    int p = 0;
-	    printf ("x%s[%d][%d] %s ", lst->id, xid, yid, gnd_node);
+	    printf ("x%s[%d,%d] %s ", lst->id, xid, yid, gnd_node);
 	    l = strlen (lst->file);
 	    if (l >= 4 && (strcmp (lst->file + l - 4, ".ext") == 0)) {
 	      l -= 4;
