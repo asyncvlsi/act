@@ -94,6 +94,26 @@ char *name_munge (const char *name)
   return ret;
 }
 
+
+char *name_munge_glob (const char *name)
+{
+  char *tmp = name_munge (name);
+  int i = 0;
+  char *newtmp;
+
+  i = strlen (tmp)-1;
+  while (i >= 0 && tmp[i] != SEP_CHAR) {
+    i--;
+  }
+  if (i >= 0) {
+    tmp[i] = '\0';
+    newtmp = Strdup (tmp+i+1);
+    FREE (tmp);
+    return newtmp;
+  }
+  return tmp;
+}
+
 static void usage (char *name)
 {
   fprintf (stderr, "Usage: %s [act-options] [-c <mincap>] [-s <scale>] <file.ext>\n", name);
@@ -109,7 +129,8 @@ struct alias_tree {
   struct alias_tree *noglob;
   hash_bucket_t *b;
   char *name;
-  int global;
+  int global;  // 0 = not a global, 1 = name with !,
+               // 2 = global with ! stripped off
   double cap_gnd;
   double *perim, *area;
 };
@@ -128,14 +149,14 @@ struct alias_tree *getroot_noglob (struct alias_tree *a)
   struct alias_tree *tmp;
 
   tmp = a;
-  while (a->up) {
-    a = a->up;
+  while (a->noglob) {
+    a = a->noglob;
   }
 
-  while (tmp->up) {
+  while (tmp->noglob) {
     struct alias_tree *x;
-    x = tmp->up;
-    tmp->up = a;
+    x = tmp->noglob;
+    tmp->noglob = a;
     tmp = x;
   }
   
@@ -652,8 +673,19 @@ void ext2spice (const char *name, struct ext_file *E, int toplevel)
     t2 = getname (N, a->n2);
     if (t1 != t2) {
       char *s1, *s2;
-      s1 = name_munge (a->n1);
-      s2 = name_munge (a->n2);
+      if (t1->global) {
+	s1 = name_munge_glob (a->n1);
+      }
+      else {
+	s1 = name_munge (a->n1);
+      }
+      
+      if (t2->global) {
+	s2 = name_munge_glob (a->n2);
+      }
+      else {
+	s2 = name_munge (a->n2);
+      }
       printf ("V%d %s %s\n", devcount++, s2, s1);
       FREE (s1);
       FREE (s2);
