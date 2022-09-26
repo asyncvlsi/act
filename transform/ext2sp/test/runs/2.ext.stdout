@@ -69,7 +69,7 @@ V8 xinv_2:in xnor2_2:out
 V9 m2_151_38# m2_116_38#
 V10 m2_116_38# m2_85_38#
 V11 m2_85_38# m2_25_38#
-V12 m2_25_38# xnor2_0:Vdd!
+V12 m2_25_38# Vdd!
 V13 m1_85_14# xnor2_1:out
 V14 xnor2_1:out xinv_1:in
 V15 w_151_18# w_116_18#
@@ -84,7 +84,7 @@ V23 xinv_2:w_n2_8# xnor2_2:w_n12_n6#
 V24 m2_151_n6# m2_116_n6#
 V25 m2_116_n6# m2_85_n6#
 V26 m2_85_n6# m2_25_n6#
-V27 m2_25_n6# xnor2_0:GND!
+V27 m2_25_n6# GND!
 V28 m1_25_14# xnor2_0:out
 V29 xnor2_0:out xinv_0:in
 V30 m1_85_7# xnor2_1:b
