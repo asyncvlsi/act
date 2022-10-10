@@ -1899,6 +1899,9 @@ tree_subckt_spec: "<" wpint_expr ">"
 bool_expr_id[ActId *]: expr_id
 {{X:
     int t;
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't use true/false as an ID!");
+    }
     t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE (t) != T_BOOL) {
       $e("Identifier ``");
@@ -1927,6 +1930,9 @@ bool_expr_id[ActId *]: expr_id
 bool_expr_id_or_array[ActId *]: expr_id
 {{X:
     int t;
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't assign to true/false!");
+    }
     t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE (t) != T_BOOL) {
       $e("Identifier ``");
@@ -1949,6 +1955,9 @@ bool_expr_id_or_array[ActId *]: expr_id
 chan_expr_id[ActId *]: expr_id
 {{X:
     int t;
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't use true/false as a channel name!");
+    }
     t = act_type_var ($0->scope, $1, NULL);
     if (T_BASETYPE(t) != T_CHAN) {
       $e("Identifier ``");
@@ -1969,6 +1978,9 @@ chan_expr_id[ActId *]: expr_id
 assignable_expr_id[ActId *]: expr_id
 {{X:
     int t;
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't assign to true/false!");
+    }
     t = act_type_var ($0->scope, $1, NULL);
     if (t == T_ERR) {
       $e("Identifier ``");
@@ -2723,6 +2735,10 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     e->t = ACT_DFLOW_FUNC;
     e->u.func.lhs = $1;
     e->u.func.istransparent = 0;
+
+    if (_act_id_is_true_false ($4)) {
+      $E("Dataflow RHS can't be true/false!");
+    }
     if (act_type_var ($0->scope, $4, NULL) != T_CHAN) {
       $e("Identifier on the RHS of a dataflow expression must be of channel type");
       fprintf ($f, "   ");
@@ -2890,6 +2906,10 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     NEW (e, act_dataflow_element);
     e->t = ACT_DFLOW_SINK;
 
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't use true/false as a channel!");
+    }
+
     if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
       $e("Identifier on the LHS of a dataflow sink must be of channel type");
       fprintf ($f, "   ");
@@ -2904,6 +2924,9 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 
 expr_id_or_star[ActId *]: expr_id
 {{X:
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't use true/false in this context!");
+    }
     return $1;
 }}
 | "*"

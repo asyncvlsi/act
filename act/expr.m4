@@ -140,6 +140,9 @@ lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
     e->type = E_VAR;
     e->u.e.l = (Expr *)$1;
 
+    if (_act_id_is_true_false ($1)) {
+      $E("Can't use true/false in this context!");
+    }
     tc = act_type_var ($0->scope, $1, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
@@ -651,6 +654,9 @@ wbool_allow_chan_expr[Expr *]: bool_expr
 
 w_chan_id[ActId *]: expr_id
 {{X:
+    if (_act_id_is_true_false ($1)) {
+      $E("true/false is not a channel!");
+    }
     if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
       $e("Identifier must be of channel type");
       fprintf ($f, "   ");

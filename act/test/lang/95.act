@@ -1,0 +1,7 @@
+defproc test()
+{
+   chan(int) X;
+   chp {
+     X?false
+   }
+}

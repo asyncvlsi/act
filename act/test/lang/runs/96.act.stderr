@@ -1,0 +1,2 @@
+ERROR: File `96.act', line 5, col 12
+	Can't use true/false as a channel name!

@@ -182,6 +182,15 @@ void print_ns_string (FILE *fp, list_t *l)
 }
 
 
+int _act_id_is_true_false (ActId *id)
+{
+  if (!id) return 0;
+  if (id->Rest()) return 0;
+  if (strcmp (id->getName(), "true") == 0 ||
+      strcmp (id->getName(), "false") == 0) return 1;
+  return 0;
+}
+
 /* external */
 ActId *act_walk_X_expr_id (ActTree *cookie, pId *n);
 

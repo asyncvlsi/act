@@ -1,0 +1,2 @@
+ERROR: File `95.act', line 5, col 14
+	Can't assign to true/false!
