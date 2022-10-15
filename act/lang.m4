@@ -101,7 +101,7 @@ supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
 }}
 ;
 
-lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
+lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body_top ] "}"
 {{X:
     ActBody *b;
     act_chp *chp;
@@ -137,7 +137,7 @@ lang_chp[ActBody *]: "chp" [ supply_spec ] "{" [ chp_body ] "}"
 
     return b;
 }}
-| "chp-txt" [ supply_spec ] "{" [ chptxt_body ] "}"
+| "chp-txt" [ supply_spec ] "{" [ chptxt_body_top ] "}"
 {{X:
     return apply_X_lang_chp_opt0 ($0,$2,$4);
 }}
@@ -285,6 +285,18 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
       list_free ($1);
     }
     return c;
+}}
+;
+
+chp_body_top[act_chp_lang_t *]: { chp_body "||" }*
+{{X:
+    return apply_X_chp_comma_list_opt0 ($0, $1);
+}}
+;
+
+chptxt_body_top[act_chp_lang_t *]: { chptxt_body "||" }*
+{{X:
+    return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
 ;
 
@@ -1384,7 +1396,7 @@ hse_bodies[act_chp_lang_t *]: hse_body
 }}
 ;
 
-labelled_hse_bodies[act_chp_lang_t *]: { label_hse_fragment ";" }*
+labelled_hse_bodies[act_chp_lang_t *]: { label_hse_fragment "||" }*
 {{X:
     listitem_t *li;
     act_chp_lang_t *ret, *prev;
@@ -1404,19 +1416,58 @@ labelled_hse_bodies[act_chp_lang_t *]: { label_hse_fragment ";" }*
 }}
 ;
 
-label_hse_fragment[act_chp_lang_t *]: ID ":" hse_body ":" ID
+label_hse_fragment[act_chp_lang_t *]: ID ":" hse_body ":"
 {{X:
     act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_HSE_FRAGMENTS;
     c->label = $1;
-    c->u.frag.nextlabel = $5;
+    c->u.frag.nextlabel = NULL;
+    c->u.frag.exit_conds = NULL;
     c->u.frag.body = $3;
     c->u.frag.next = NULL;
+    $0->clang = c;
+}}
+hse_fragment_tail
+{{X:
+    act_chp_lang_t *c = $0->clang;
+    $0->clang = NULL;
     return c;
 }}
 ;
-    
+
+hse_fragment_tail: ID
+{{X:
+    $0->clang->u.frag.nextlabel = $1;
+    return NULL;
+}}
+| "[" hse_exit_list "]"
+{{X:
+    $0->clang->u.frag.exit_conds = $2;
+    return NULL;
+}}
+;
+
+hse_exit_list[list_t *]: { hse_guarded_cmd_exit "[]" }*
+{{X:
+    list_t *tmp = list_new ();
+    listitem_t *li;
+    for (li = list_first ($1); li; li = list_next (li)) {
+      list_concat (tmp, ((list_t *) list_value (li)));
+      list_free ((list_t *)list_value (li));
+    }
+    return tmp;
+}}
+;
+
+hse_guarded_cmd_exit[list_t *]: wbool_expr "->" ID
+{{X:
+    list_t *l = list_new ();
+    list_append (l, $1);
+    list_append (l, $3);
+    return l;
+}}
+;
 
 hse_body[act_chp_lang_t *]: { hse_comma_item ";" }*
 {{X:

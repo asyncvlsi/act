@@ -188,6 +188,9 @@ typedef struct {
     2 = normal list
   */
   int txtchp_type;
+
+  /* chp language forward pointer */
+  act_chp_lang_t *clang;
   
 } ActTree;
 

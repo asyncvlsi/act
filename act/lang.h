@@ -233,6 +233,7 @@ typedef struct act_chp_lang {
 
     struct {
       const char *nextlabel;
+      list_t *exit_conds;
       struct act_chp_lang *body, *next;
     } frag;			/* HSE fragments */
     

@@ -62,6 +62,13 @@ void act_chp_free (act_chp_lang_t *c)
   case ACT_HSE_FRAGMENTS:
     act_chp_free (c->u.frag.body);
     act_chp_free (c->u.frag.next);
+    if (c->u.frag.exit_conds) {
+      for (li = list_first (c->u.frag.exit_conds); li; li = list_next (li)) {
+	expr_ex_free ((Expr *)list_value (li));
+	li = list_next (li);
+      }
+      list_free (c->u.frag.exit_conds);
+    }
     break;
 
   case ACT_CHP_SELECT:
@@ -1885,6 +1892,22 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     ret->u.frag.nextlabel = c->u.frag.nextlabel;
     ret->u.frag.body = chp_expand (c->u.frag.body, ns, s);
     ret->u.frag.next = chp_expand (c->u.frag.next, ns, s);
+    if (c->u.frag.exit_conds) {
+      listitem_t *li;
+      ret->u.frag.exit_conds = list_new ();
+      for (li = list_first (c->u.frag.exit_conds); li; li = list_next (li)) {
+	/* expr */
+	list_append (ret->u.frag.exit_conds,
+		     chp_expr_expand ((Expr *) list_value (li), ns, s));
+	
+	li = list_next (li);
+	/* label */
+	list_append (ret->u.frag.exit_conds, list_value (li));
+      }
+    }
+    else {
+      ret->u.frag.exit_conds = NULL;
+    }
     break;
     
   default:
@@ -2129,10 +2152,26 @@ static void _chp_print (FILE *fp, act_chp_lang_t *c, int prec = 0)
   case ACT_HSE_FRAGMENTS:
     do {
       _chp_print (fp, c->u.frag.body);
-      fprintf (fp, " : %s", c->u.frag.nextlabel);
+      if (c->u.frag.nextlabel) {
+	fprintf (fp, " : %s", c->u.frag.nextlabel);
+      }
+      else {
+	listitem_t *li;
+	fprintf (fp, " : [ ");
+	for (li = list_first (c->u.frag.exit_conds); li; li = list_next (li)) {
+	  print_expr (fp, (Expr *) list_value (li));
+	  fprintf (fp, " -> ");
+	  li = list_next (li);
+	  fprintf (fp, "%s", (char *) list_value (li));
+	  if (list_next (li)) {
+	    fprintf (fp, " [] ");
+	  }
+	}
+	fprintf (fp, " ] ");
+      }
       c = c->u.frag.next;
       if (c) {
-	fprintf (fp, ";\n%s : ", c->label);
+	fprintf (fp, "||\n%s : ", c->label);
       }
     } while (c);
     break; 

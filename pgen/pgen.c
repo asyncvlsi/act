@@ -572,8 +572,11 @@ void print_bnf (pp_t *pp)
     if (BNF[i].is_exclusive) {
       pp_printf (pp, " {excl}");
     }
-    if (BNF[i].tail_recursive) {
+    if (BNF[i].tail_recursive == 1) {
       pp_printf (pp, " {t-rec}");
+    }
+    else if (BNF[i].tail_recursive == 2) {
+      pp_printf (pp, " {h-rec}");
     }
     if (BNF[i].is_exclusive || BNF[i].tail_recursive) {
       pp_nl;
