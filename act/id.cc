@@ -28,7 +28,9 @@
 #include <string.h>
 #include <ctype.h>
 
-#if 0
+//#define DEBUG_CONNECTIONS
+
+#ifdef DEBUG_CONNECTIONS
 static void print_id (act_connection *c);
 #endif
 
@@ -670,7 +672,7 @@ static act_connection *_find_corresponding_slot (UserDef *ux,
   return pcx;
 }
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
 static void dump_conn (act_connection *c)
 {
   act_connection *tmp, *root;
@@ -707,7 +709,7 @@ static void _import_conn_rec (act_connection *cxroot,
     act_connection *ppx = px->primary();
     Assert (ppx != px, "What");
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
     printf ("Importing connections up\n");
     printf (" From: %s\n", ux->getName());
     printf (" cxroot: "); print_id (cxroot);
@@ -733,7 +735,7 @@ static void _import_conn_rec (act_connection *cxroot,
       list_free (l);
     }
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
     printf ("-- after importing connections up");
     printf ("\n cx: "); print_id (cx);
     printf (";  "); dump_conn (cx);
@@ -768,13 +770,16 @@ static void _import_conn_rec (act_connection *cxroot,
    ux = usertype
    a  = array info of the type (NULL if not present)
 
+   elem_num = -1 to initalize the entire array, if any; otherwise it
+   is the slement number that should be initialized.
+
    cx is a connection entry of type "(ux,a)"
 
    So now if a port of cx is connected to something else, then 
    cx[0], ... cx[sz(a)-1]'s corresponding port should be connected
    to it as well.
 */
-static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
+static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int elem_num = -1)
 {
   Scope *us = ux->CurScope();
   int sz = a ? a->size() : 0;
@@ -798,7 +803,18 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
       continue;
 
     if (sz > 0) {
-      for (int arr = 0; arr < sz; arr++) {
+      int loop_start, loop_end;
+      if (elem_num == -1) {
+	/* initialize the entire array */
+	loop_start = 0;
+	loop_end = sz;
+      }
+      else {
+	/* initialize just a single element */
+	loop_start = elem_num;
+	loop_end = elem_num + 1;
+      }
+      for (int arr = loop_start; arr < loop_end; arr++) {
 	act_connection *imp = cx->getsubconn (arr, sz);
 	act_connection *imp2;
 	imp2 = imp->getsubconn (i, ux->getNumPorts());
@@ -818,6 +834,11 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a)
       _import_conn_rec (cx, imp, pcx, ux);
     }
   }
+}
+
+void _act_int_import_connections (act_connection *cx, UserDef *ux, Array *a, int elem_num)
+{
+  _import_connections (cx, ux, a, elem_num);
 }
 
 ValueIdx *ActId::rootVx (Scope *s)
@@ -870,11 +891,11 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
     if (TypeFactory::isUserType (vx->t)) {
       UserDef *ux = dynamic_cast<UserDef *>(vx->t->BaseType());
       Assert (ux, "Hmm");
-#if 0      
+#ifdef DEBUG_CONNECTIONS
       printf ("== Import from: %s\n", ux->getName());
 #endif      
       _import_connections (cx, ux, vx->t->arrayInfo());
-#if 0      
+#ifdef DEBUG_CONNECTIONS
       printf ("== End import\n");
 #endif      
     }
@@ -944,7 +965,7 @@ act_connection *ActId::myConnection (Scope *s)
   }
 }
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
 static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();
@@ -1084,8 +1105,6 @@ act_connection *ActId::Canonical (Scope *s)
   ActId *idrest;
   
   Assert (s->isExpanded(), "ActId::Canonical called on unexpanded scope");
-
-  //#define DEBUG_CONNECTIONS
 
 #ifdef DEBUG_CONNECTIONS
   static int level = 0;
@@ -1370,7 +1389,9 @@ act_connection *ActId::Canonical (Scope *s)
   printf ("canonical: ");
   id->Print (stdout);
   printf (" [rest=");
-  idrest->Print (stdout);
+  if (idrest) {
+    idrest->Print (stdout);
+  }
   printf ("]");
 #if 0
   printf (" [new=");

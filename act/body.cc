@@ -131,7 +131,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 
   it = t->Expand (ns, s);
   act_error_setline (getLine());
-  
+
   if (it->arrayInfo() && it->arrayInfo()->size() == 0) {
     act_error_ctxt (stderr);
     fatal_error ("Instance `%s': zero-length array creation not permitted", id);
@@ -355,6 +355,18 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 	    delete newstep;
 	    FREE (vx->connection()->a);
 	    vx->connection()->a = ca;
+
+	    /*-- now extend connection imports --*/
+	    if (TypeFactory::isUserType (vx->t)) {
+	      UserDef *ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	      Arraystep *newelems = x->arrayInfo()->stepper (it->arrayInfo());
+	      while (!newelems->isend()) {
+		_act_int_import_connections (vx->connection(), ux, vx->t->arrayInfo(), newelems->index());
+		newelems->step();
+	      }
+	      delete newelems;
+	    }
+
 	  }
 	}
       }

@@ -29,7 +29,6 @@ static int set_suboffset_limit = -1;
 
 //#define DEBUG_CONNECTIONS
 
-
 /*
   Given a subconnection of the current type,
   search for it and return its index.
@@ -258,7 +257,7 @@ unsigned int act_connection::getctype()
   return 3;
 }
 
-#if 0
+#ifdef DEBUG_CONNECTIONS
 /* debugging */
 static void print_id (act_connection *c)
 {

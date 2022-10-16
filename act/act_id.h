@@ -191,4 +191,11 @@ class ActId {
 };
 
 
+// WARNING: for internal use only.
+// When extending sparse arrays, the init flag used for connection
+// initialization only applies to the existing array blocks. Some
+// additional initialization is needed for uesr-defined types.
+// elem_num = element # to be initialized, -1 = nothing
+void _act_int_import_connections (act_connection *cx, UserDef *ux, Array *a, int elem_num);
+
 #endif /* __ACT_ID_H__ */
