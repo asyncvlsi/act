@@ -1,0 +1,5 @@
+chan(int) a, b;
+
+dataflow {
+   a{0} + 1 -> b
+}

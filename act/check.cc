@@ -519,7 +519,6 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (only_chan == 1 || (only_chan == 2 && !(T_BASETYPE_INT (lt)))) {
 	if (TypeFactory::isChanType (xit)) {
 	  if (xit->isExpanded()) {
-
 	    if (xit->getDir() == Type::OUT) {
 	      typecheck_err ("Channel expression requires an input port");
 	      return T_ERR;
@@ -574,7 +573,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      *width = 32;
 	    }
 	  }
-	  return lt;
+	  return T_INT;
 	}
       }
       else {
