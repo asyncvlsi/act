@@ -758,6 +758,17 @@ chp_log_item[act_func_arguments_t *]: w_expr
     NEW (arg, struct act_func_arguments);
     arg->isstring = 0;
     arg->u.e = $1;
+
+    InstType *it = act_expr_insttype ($0->scope, $1, NULL, 2);
+    $A(it);
+    if (it->arrayInfo()) {
+      $e("Can't display an entire array; please select an element.\n");
+      fprintf ($f, "Array expression: ");
+      print_uexpr ($f, $1);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    delete it;
     return arg;
 }}
 |  STRING
@@ -1011,7 +1022,7 @@ w_expr_chp
     rhs->clrArray ();
 
     if (!type_chp_check_assignable (lhs, rhs)) {
-      $e("Typechecking failed on CHP assignment");
+      $e("Typechecking failed on CHP assignment\n");
       fprintf ($f, "  stmt: ");
       $1->Print ($f, NULL);
       fprintf ($f, " := ");
@@ -1022,8 +1033,7 @@ w_expr_chp
     lhs->MkArray (lhs_a);
     rhs->MkArray (rhs_a);
     if (rhs_a && !rhs_a->isDeref()) {
-      $e("Typechecking failed on CHP assignment: array/non-array assignment");
-      exit (1);
+      $E("Typechecking failed on CHP assignment: array/non-array assignment");
     }
     delete lhs;
     delete rhs;

@@ -1,0 +1,13 @@
+defproc test()
+{
+   int x[3];
+
+   chp {
+     x[0] := 1;
+     x[x[0]] := 1;
+     log (x);
+     x[0] := x[0] + 1
+   }
+}
+
+test t;
