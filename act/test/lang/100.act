@@ -1,0 +1,9 @@
+function tstme(int ignore) : bool;
+
+defproc test()
+{
+   bool b;
+   chp {
+     b := tstme()
+   }
+}

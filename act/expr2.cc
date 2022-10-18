@@ -373,7 +373,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
       ActNamespace::Act()->msnprintfproc (buf+k, sz, f, 1);
       PRINT_STEP;
 
-      if (e->u.fn.r->type == E_GT) {
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
 	snprintf (buf+k, sz, "<");
 	PRINT_STEP;
 	tmp = e->u.fn.r->u.e.l;
@@ -398,7 +398,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
       snprintf (buf+k, sz, "(");
       PRINT_STEP;
 
-      if (e->u.fn.r->type == E_GT) {
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
 	tmp = e->u.fn.r->u.e.r;
       }
       else {
@@ -2091,7 +2091,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       
       *width = TypeFactory::bitWidth (f->getRetType());
       
-      if (e->u.fn.r->type == E_GT) {
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
 	/* template parameters */
 	int count = 0;
 	Expr *w;

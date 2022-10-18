@@ -455,7 +455,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       ret->u.fn.s = (char *) u;
       int is_templ;
 
-      if (e->u.fn.r->type == E_GT) {
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
 	NEW (ret->u.fn.r, Expr);
 	ret->u.fn.r->type = E_GT;
 	ret->u.fn.r->u.e.l = walk_fn_args (cookie, e->u.fn.r->u.e.l, &args);

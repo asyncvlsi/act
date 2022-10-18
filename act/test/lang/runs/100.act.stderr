@@ -1,0 +1,2 @@
+ERROR: File `100.act', line 7, col 8
+	`tstme': incorrect number of arguments (expected 1, got 0)
