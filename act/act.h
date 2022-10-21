@@ -211,6 +211,14 @@ class Act {
    */
   void mfprintfproc (FILE *fp, UserDef *, int omit_ns = 0);
 
+  /**
+   * Unmangle string, assuming this is a process name and was mangled
+   * with process mangling. Same arguments and return value as
+   * unmangle_string.
+   */
+  int unmangle_stringproc (const char *src, char *dst, int sz);
+
+
   /* 
      API functions
   */

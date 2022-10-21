@@ -440,3 +440,75 @@ void Act::mfprintfproc (FILE *fp, UserDef *p, int omit_ns)
     mfprintf (fp, "%s", proc_name);
   }
 }
+
+
+
+/*------------------------------------------------------------------------
+ *
+ *  Act::unmangle_stringproc --
+ *
+ *   String unmangling for process. Returns 0 on success, -1 on error
+ *
+ *------------------------------------------------------------------------
+ */
+int Act::unmangle_stringproc (const char *src, char *dst, int sz)
+{
+  int start_proc = 0;
+  int idx;
+
+  if (!any_mangling) {
+    return unmangle_string (src, dst, sz);
+  }
+
+#define MANGLED_CHAR(x,ch)  (src[x] == mangle_result[0] && inv_map[(unsigned)src[(x)+1]] == (ch))
+
+#define MANGLED_DOUBLE_COLON(x)  (MANGLED_CHAR(x,':') && MANGLED_CHAR((x)+2,':'))
+
+  // see if we are mangling the namespace
+  if (MANGLED_DOUBLE_COLON(0)) {
+    /* has namespace */
+    idx = 4;
+    start_proc = 4;
+    while (src[idx]) {
+      if (MANGLED_DOUBLE_COLON (idx)) {
+	idx += 4;
+	start_proc = idx;
+      }
+      else {
+	idx++;
+      }
+    }
+  }
+
+  if (start_proc != 0) {
+    char *tmp = Strdup (src);
+    tmp[start_proc] = '\0';
+    if (unmangle_string (tmp, dst, sz) == 0) {
+      FREE (tmp);
+      tmp = dst + strlen (dst);
+      sz -= strlen (dst);
+      dst = tmp;
+    }
+    else {
+      FREE (tmp);
+      return -1;
+    }
+  }
+
+  // check if this ends in >
+  idx = strlen (src);
+  idx -= 2;
+  if (idx >= 0 && MANGLED_CHAR(idx, '>')) {
+    return unmangle_string (src + start_proc, dst, sz);
+  }
+  else {
+    idx = start_proc;
+    while (src[idx] && sz > 0) {
+      *dst++ = src[idx++];
+      sz--;
+      if (sz == 0) return -1;
+    }
+    *dst = '\0';
+    return 0;
+  }
+}

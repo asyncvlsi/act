@@ -422,9 +422,9 @@ void LispAppendListStart (void)
 {
   if (!lisp_return_list_stk) {
     lisp_return_list_stk = list_new ();
-    stack_push (lisp_return_list_stk, lisp_return_list);
-    lisp_return_list = list_new ();
   }
+  stack_push (lisp_return_list_stk, lisp_return_list);
+  lisp_return_list = list_new ();
 }
 
 static Sexp *_list_to_sexp (list_t *l);
