@@ -135,7 +135,20 @@ static void emit_tiletypes (pp_t *pp)
   pp_nl;
 
   for (int i=0; i < Technology::T->nmetals; i++) {
-    pp_printf (pp, "metal%d m%d", i+1, i+1); pp_nl;
+    const char *tmp;
+    pp_printf (pp, "metal%d m%d", i+1, i+1);
+    tmp = Technology::T->metal[i]->getLEFName();
+    if (tmp) {
+      char tbuf[20];
+      snprintf (tbuf, 20, "metal%d", i+1);
+      if (strcmp (tmp, tbuf) != 0) {
+	snprintf (tbuf, 20, "m%d", i+1);
+	if (strcmp (tmp, tbuf) != 0) {
+	  pp_printf (pp, ",%s", tmp);
+	}
+      }
+    }
+    pp_nl;
     pp_printf (pp, "metal%d m%dpin", i+1, i+1); pp_nl;
     if (i != Technology::T->nmetals-1) {
       pp_printf (pp, "metal%d m%dc,%s", i+1, i+2,
@@ -849,7 +862,7 @@ void emit_drc (pp_t *pp)
 
   /* metal */
   for (int i=0; i < Technology::T->nmetals; i++) {
-    sprintf (buf, "(allm%d)/m%d", i+1, i+1);
+    snprintf (buf, 1024, "(allm%d)/m%d", i+1, i+1);
     emit_width_spacing (pp, Technology::T->metal[i], buf);
     emit_width_spacing_metalc (pp, Technology::T->metal[i]->getUpC());
   }
