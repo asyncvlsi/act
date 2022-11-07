@@ -1,0 +1,34 @@
+*
+*---- act defproc: ::xfoo::test<> -----
+* raw ports: 
+*
+.subckt _8_8xfoo_8_8test
+*.POWER VDD VddN
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB VddN
+*
+* --- node flags ---
+*
+* b (combinational)
+*
+* --- end node flags ---
+*
+M0_ #5 a VddN VddN pch W=0.3U L=0.06U
+M1_ b a GND GND nch W=0.15U L=0.06U
+M2_ b VddN GND GND nch W=0.15U L=0.06U
+M3_ b VddN #5 VddN pch W=0.3U L=0.06U
+C4_0 a b 1e-14
+.ends
+*---- end of process: test<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+.ends
+*---- end of process: foo<> -----

@@ -59,7 +59,8 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
 }
 
 static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
-					  act_connection *c)
+					   act_connection *c,
+					   int uninit_fields = 0)
 {
   phash_bucket_t *b;
 
@@ -76,21 +77,23 @@ static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
     if (c->isglobal()) {
       v->isglobal = 1;
     }
-    ActId *tmp = c->toid();
-    InstType *xit;
-    act_type_var (n->cur, tmp, &xit);
-    if (TypeFactory::isChanType (xit)) {
-      v->ischan = 1;
-      v->width = TypeFactory::bitWidth (xit);
+    if (!uninit_fields) {
+      ActId *tmp = c->toid();
+      InstType *xit;
+      act_type_var (n->cur, tmp, &xit);
+      if (TypeFactory::isChanType (xit)) {
+	v->ischan = 1;
+	v->width = TypeFactory::bitWidth (xit);
+      }
+      else if (TypeFactory::isIntType (xit) ||
+	       (TypeFactory::isDataType (xit) &&
+		(TypeFactory::boolType (xit) == 0))) {
+	v->isint = 1;
+	v->width = TypeFactory::bitWidth (xit);
+      }
+      delete xit;
+      delete tmp;
     }
-    else if (TypeFactory::isIntType (xit) ||
-	     (TypeFactory::isDataType (xit) &&
-	      (TypeFactory::boolType (xit) == 0))) {
-      v->isint = 1;
-      v->width = TypeFactory::bitWidth (xit);
-    }
-    delete xit;
-    delete tmp;
   }
   return (act_booleanized_var_t *)b->v;
 }
@@ -2367,7 +2370,11 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 
       act_booleanized_var_t *v = raw_lookup (n, subinst->used_globals[i]);
       if (!v) {
-	v = _var_lookup (n, subinst->used_globals[i]);
+	// This uses the ignore initialization flag, because
+	// a global in a namespace may not be visible in the scope
+	// of the process instantiating it. Fix needed to support
+	// namespace globals.
+	v = _var_lookup (n, subinst->used_globals[i], 1);
 	*v = *vs;
       }
     }
