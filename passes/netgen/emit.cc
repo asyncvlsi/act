@@ -537,11 +537,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    if (sub->bN->ports[i].omit) continue;
 
 	    Assert (iport < A_LEN (n->bN->instports), "Hmm");
-	    id = n->bN->instports[iport]->toid();
 	    fprintf (fp, " ");
-	    id->sPrint (buf, 10240);
+	    sprint_conn (buf, 10240, n->bN->instports[iport]);
 	    a->mfprintf (fp, "%s", buf);
-	    delete id;
 	    iport++;
 	  }
 

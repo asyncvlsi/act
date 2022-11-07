@@ -1,0 +1,28 @@
+namespace xfoo {
+
+bool VddN;
+
+defproc gate(bool? a, b; bool! c)
+{
+  prs {
+   a | b => c-
+  }
+}
+
+export defproc test()
+{
+  bool a, b;
+  prs  {
+    cap<10> (a,b)
+  }
+  gate g(a,VddN,b);
+}
+
+}
+
+defproc foo()
+{
+xfoo::test t;
+}
+
+foo f;

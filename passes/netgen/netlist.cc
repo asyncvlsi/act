@@ -1371,6 +1371,26 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
   return n;
 }
 
+void ActNetlistPass::sprint_conn (char *buf, int sz, act_connection *c)
+{
+  ActId *id = c->toid();
+  if (c->isglobal()) {
+    ActNamespace *ns = c->getnsifglobal ();
+    if (ns && ns != ActNamespace::Global()) {
+      char *tmp = ns->Name(true);
+      int len;
+      snprintf (buf, sz, "%s", tmp);
+      FREE (tmp);
+      len = strlen (buf);
+      buf += len;
+      sz =- len;
+    }
+  }
+  id->sPrint (buf, sz);
+  delete id;
+  return;
+}
+
 void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 {
   if (!ActNetlistPass::local_vdd) {
@@ -1382,9 +1402,8 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
   }
 
   if (n->v) {
-    ActId *id = n->v->v->id->toid();
-    id->sPrint (buf, sz);
-    delete id;
+    sprint_conn (buf, sz, n->v->v->id);
+    return;
   }
   else {
     if (n == N->Vdd) {
@@ -1398,9 +1417,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 	if (vx) {
 	  if (vx->hasConnection()) {
 	    c = vx->connection()->primary();
-	    ActId *id  = c->toid();
-	    id->sPrint (buf, sz);
-	    delete id;
+	    sprint_conn (buf, sz, c);
 	  }
 	  else {
 	    char *tmp = NULL;
@@ -1434,9 +1451,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 	if (vx) {
 	  if (vx->hasConnection()) {
 	    c = vx->connection()->primary();
-	    ActId *id  = c->toid();
-	    id->sPrint (buf, sz);
-	    delete id;
+	    sprint_conn (buf, sz, c);
 	  }
 	  else {
 	    snprintf (buf, sz, "%s", vx->getName());

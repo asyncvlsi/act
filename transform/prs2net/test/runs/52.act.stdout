@@ -3,10 +3,10 @@
 * raw ports: 
 *
 .subckt _8_8xfoo_8_8test
-*.POWER VDD VddN
+*.POWER VDD _8_8xfoo_8_8VddN
 *.POWER GND GND
 *.POWER NSUB GND
-*.POWER PSUB VddN
+*.POWER PSUB _8_8xfoo_8_8VddN
 *
 * --- node flags ---
 *
@@ -14,10 +14,10 @@
 *
 * --- end node flags ---
 *
-M0_ #5 a VddN VddN pch W=0.3U L=0.06U
+M0_ #5 a _8_8xfoo_8_8VddN _8_8xfoo_8_8VddN pch W=0.3U L=0.06U
 M1_ b a GND GND nch W=0.15U L=0.06U
-M2_ b VddN GND GND nch W=0.15U L=0.06U
-M3_ b VddN #5 VddN pch W=0.3U L=0.06U
+M2_ b _8_8xfoo_8_8VddN GND GND nch W=0.15U L=0.06U
+M3_ b _8_8xfoo_8_8VddN #5 _8_8xfoo_8_8VddN pch W=0.3U L=0.06U
 C4_0 a b 1e-14
 .ends
 *---- end of process: test<> -----

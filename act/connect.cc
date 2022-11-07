@@ -83,6 +83,32 @@ bool act_connection::isglobal()
   return vx->global ? 1 : 0;
 }
 
+ActNamespace *act_connection::getnsifglobal()
+{
+  act_connection *c;
+  ValueIdx *vx;
+
+  c = this;
+  vx = NULL;
+  
+  while (c) {
+    if (c->vx) {
+      vx = c->vx;
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      vx = c->parent->vx;
+      c = c->parent->parent;
+    }
+    else {
+      Assert (c->parent->parent->vx, "What?");
+      vx = c->parent->parent->vx;
+      c = c->parent->parent->parent;
+    }
+  }
+  Assert (vx, "What?");
+  return vx->global;
+}
 
 list_t *_act_create_connection_stackidx (act_connection *c, act_connection **cret);
 

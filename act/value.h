@@ -58,6 +58,8 @@ public:
   bool isglobal();		// returns true if this is a global
 				// signal
 
+  ActNamespace *getnsifglobal(); // get namespace for a global signal
+
   bool isPrimary() { return (up == NULL) ? 1 : 0; }
   bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
 

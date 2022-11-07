@@ -1,0 +1,54 @@
+*
+*---- act defproc: ::xfoo::gate<> -----
+* raw ports:  a b c
+*
+.subckt _8_8xfoo_8_8gate a b c
+*.PININFO a:I b:I c:O
+*.POWER VDD _8_8xfoo_8_8VddN
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB _8_8xfoo_8_8VddN
+*
+* --- node flags ---
+*
+* c (combinational)
+*
+* --- end node flags ---
+*
+M0_ #5 a _8_8xfoo_8_8VddN _8_8xfoo_8_8VddN pch W=0.3U L=0.06U
+M1_ c a GND GND nch W=0.15U L=0.06U
+M2_ c b GND GND nch W=0.15U L=0.06U
+M3_ c b #5 _8_8xfoo_8_8VddN pch W=0.3U L=0.06U
+.ends
+*---- end of process: gate<> -----
+*
+*---- act defproc: ::xfoo::test<> -----
+* raw ports: 
+*
+.subckt _8_8xfoo_8_8test
+*.POWER VDD _8_8xfoo_8_8VddN
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB _8_8xfoo_8_8VddN
+*
+* --- node flags ---
+*
+* b (combinational)
+*
+* --- end node flags ---
+*
+C0_0 a b 1e-14
+xg a _8_8xfoo_8_8VddN b _8_8xfoo_8_8gate
+.ends
+*---- end of process: test<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+.ends
+*---- end of process: foo<> -----
