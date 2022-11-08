@@ -2088,78 +2088,85 @@ static Expr *_expr_expand (int *width, Expr *e,
     else {
       Expr *tmp, *etmp;
       Function *f = dynamic_cast<Function *>((UserDef *)e->u.fn.s);
+      if (TypeFactory::isParamType (f->getRetType())) {
+	// parameterized function: we need to evaluate this
+	// statically, even in CHP mode
+	_eval_function (ns, s, e, &ret, flags & ~ACT_EXPR_EXFLAG_CHPEX);
+	*width = -1;
+      }
+      else {
+	*width = TypeFactory::bitWidth (f->getRetType());
       
-      *width = TypeFactory::bitWidth (f->getRetType());
-      
-      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
-	/* template parameters */
-	int count = 0;
-	Expr *w;
-	w = e->u.fn.r->u.e.l;
-	while (w) {
-	  count++;
-	  w = w->u.e.r;
-	}
-	inst_param *inst;
-	if (count == 0) {
-	  f = f->Expand (ns, s, 0, NULL);
-	}
-	else {
-	  MALLOC (inst, inst_param, count);
+	if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	  /* template parameters */
+	  int count = 0;
+	  Expr *w;
 	  w = e->u.fn.r->u.e.l;
-	  for (int i=0; i < count; i++) {
-	    AExpr *tae;
-	    inst[i].isatype = 0;
-	    tae = new AExpr (expr_dup (w->u.e.l));
-	    inst[i].u.tp = tae->Expand (ns, s, 0);
-	    delete tae;
+	  while (w) {
+	    count++;
 	    w = w->u.e.r;
 	  }
-	  f = f->Expand (ns, s, count, inst);
-	  for (int i=0; i < count; i++) {
-	    delete inst[i].u.tp;
+	  inst_param *inst;
+	  if (count == 0) {
+	    f = f->Expand (ns, s, 0, NULL);
 	  }
-	  FREE (inst);
-	}
-      }
-      else {
-	if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
-	  /* nothing here */
+	  else {
+	    MALLOC (inst, inst_param, count);
+	    w = e->u.fn.r->u.e.l;
+	    for (int i=0; i < count; i++) {
+	      AExpr *tae;
+	      inst[i].isatype = 0;
+	      tae = new AExpr (expr_dup (w->u.e.l));
+	      inst[i].u.tp = tae->Expand (ns, s, 0);
+	      delete tae;
+	      w = w->u.e.r;
+	    }
+	    f = f->Expand (ns, s, count, inst);
+	    for (int i=0; i < count; i++) {
+	      delete inst[i].u.tp;
+	    }
+	    FREE (inst);
+	  }
 	}
 	else {
-	  f = f->Expand (ns, s, 0, NULL);
+	  if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
+	    /* nothing here */
+	  }
+	  else {
+	    f = f->Expand (ns, s, 0, NULL);
+	  }
 	}
-      }
 
-      if (f->isExternal()) {
-	_act_chp_is_synth_flag = 0;
-      }
+	if (f->isExternal()) {
+	  _act_chp_is_synth_flag = 0;
+	}
       
-      ret->u.fn.s = (char *) f;
-      if (!e->u.fn.r) {
-	ret->u.fn.r = NULL;
-      }
-      else {
-	NEW (tmp, Expr);
-	tmp->type = E_LT;
-	ret->u.fn.r = tmp;
-	tmp->u.e.r = NULL;
-	if (e->u.fn.r->type == E_GT) {
-	  etmp = e->u.fn.r->u.e.r;
+	ret->u.fn.s = (char *) f;
+	if (!e->u.fn.r) {
+	  ret->u.fn.r = NULL;
 	}
 	else {
-	  etmp = e->u.fn.r;
-	}
-	do {
-	  tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
-	  if (etmp->u.e.r) {
-	    NEW (tmp->u.e.r, Expr);
-	    tmp->type = E_LT;
-	    tmp = tmp->u.e.r;
-	    tmp->u.e.r = NULL;
+	  NEW (tmp, Expr);
+	  tmp->type = E_LT;
+	  ret->u.fn.r = tmp;
+	  tmp->u.e.r = NULL;
+	  if (e->u.fn.r->type == E_GT) {
+	    etmp = e->u.fn.r->u.e.r;
 	  }
-	  etmp = etmp->u.e.r;
-	} while (etmp);
+	  else {
+	    etmp = e->u.fn.r;
+	  }
+	  do {
+	    tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
+	    if (etmp->u.e.r) {
+	      NEW (tmp->u.e.r, Expr);
+	      tmp->type = E_LT;
+	      tmp = tmp->u.e.r;
+	      tmp->u.e.r = NULL;
+	    }
+	    etmp = etmp->u.e.r;
+	  } while (etmp);
+	}
       }
     }
     break;
