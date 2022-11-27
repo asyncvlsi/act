@@ -1,0 +1,4 @@
+ERROR: File `53.act', line 10, col 10
+	Typechecking failed on CHP assignment
+  stmt: value := func(0)
+	Int/non-int assignment is not permitted

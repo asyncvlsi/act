@@ -370,7 +370,12 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 	PRINT_STEP;
 	FREE (s);
       }
-      ActNamespace::Act()->msnprintfproc (buf+k, sz, f, 1);
+      if (ActNamespace::Act()) {
+	ActNamespace::Act()->msnprintfproc (buf+k, sz, f, 1);
+      }
+      else {
+	snprintf (buf+k, sz, "%s", f->getName());
+      }
       PRINT_STEP;
 
       if (e->u.fn.r && e->u.fn.r->type == E_GT) {

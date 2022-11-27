@@ -1,0 +1,12 @@
+function func(int tmp) : bool {
+  chp {
+    self := true
+  }
+}
+
+defproc test() {
+  int<1> value;
+  chp {
+    value := func(0)
+  }
+}
