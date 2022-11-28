@@ -1,0 +1,15 @@
+export template <pint N>
+deftype c1of <: enum<N> (bool?! d[N]) { }
+
+export template <pint N>
+defchan e1of <: chan(enum<N>) (c1of?!<N> b; bool?! d[N]; bool!? e) { }
+
+defproc test() {
+	e1of<2> A;
+	chan(enum<2>) B;
+	A = B;
+
+	e1of<2> C;
+	chan(enum<2>) D;
+	D = C;
+}

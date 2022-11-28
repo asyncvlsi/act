@@ -512,8 +512,7 @@ Type *InstType::isConnectable (InstType *it, int weak)
         if the type at which they match is of "chan" type, then we
         have to make sure things match
   */
-  if (subtype && (retval == t ? TypeFactory::isExactChanType (it) :
-		  TypeFactory::isExactChanType (retval))) {
+  if (subtype && TypeFactory::isExactChanType (related)) {
     if (retval == t) {
       // THIS SHOULD BE AN EQUALITY TEST!
       if (related->isEqual (it, weak)) {
