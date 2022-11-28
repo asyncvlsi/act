@@ -515,19 +515,27 @@ Type *InstType::isConnectable (InstType *it, int weak)
   if (subtype && TypeFactory::isExactChanType (related)) {
     if (retval == t) {
       // THIS SHOULD BE AN EQUALITY TEST!
+      Array *tmpa = it->a;
+      it->a = NULL;
       if (related->isEqual (it, weak)) {
+	it->a = tmpa;
 	/* good! */
       }
       else {
+	it->a = tmpa;
 	return NULL;
       }
     }
     else {
       // THIS SHOULD BE AN EQUALITY TEST!
+      Array *tmpa = a;
+      a = NULL;
       if (related->isEqual (this, weak)) {
+	a = tmpa;
 	/* good! */
       }
       else {
+	a = tmpa;
 	return NULL;
       }
     }
