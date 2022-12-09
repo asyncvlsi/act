@@ -224,6 +224,6 @@ Process *verilog_find_lib (Act *a, const char *nm)
 {
   char buf[10240];
 
-  sprintf (buf, "%s::%s", lib_namespace, nm);
+  snprintf (buf, 10240, "%s::%s", lib_namespace, nm);
   return a->findProcess (buf);
 }

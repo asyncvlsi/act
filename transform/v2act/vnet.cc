@@ -37,7 +37,7 @@ char *find_library (const char *s)
 
   ret = NULL;
   if (getenv ("CAD_HOME")) {
-    sprintf (buf, "%s/lib/v2act/%s", getenv ("CAD_HOME"), s);
+    snprintf (buf, 10240, "%s/lib/v2act/%s", getenv ("CAD_HOME"), s);
     tmp = fopen (buf, "r");
     if (tmp) {
       fclose (tmp);
@@ -45,7 +45,7 @@ char *find_library (const char *s)
     }
   }
   if (!ret && getenv ("ACT_HOME")) {
-    sprintf (buf, "%s/lib/v2act/%s", getenv ("ACT_HOME"), s);
+    snprintf (buf, 10240, "%s/lib/v2act/%s", getenv ("ACT_HOME"), s);
     tmp = fopen (buf, "r");
     if (tmp) {
       fclose (tmp);
@@ -308,7 +308,7 @@ static AGraph *_act_create_graph (VNet *v, Process *p)
 		     instname, p->getPortName (i));
       }
       /* config parameter to determine clocks */
-      sprintf (buf, "s2a.%s.%s", instname, li->pin);
+      snprintf (buf, 10240, "s2a.%s.%s", instname, li->pin);
       if (config_exists (buf)) {
 
 	if (li->isinp) {

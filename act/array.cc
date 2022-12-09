@@ -1943,8 +1943,9 @@ char *Arraystep::string(int style)
 {
   char *s, *t;
   int i;
+  int t_len = base->dims*20;
 
-  MALLOC (s, char, base->dims*20);
+  MALLOC (s, char, t_len);
 
   t = s;
 
@@ -1952,6 +1953,7 @@ char *Arraystep::string(int style)
     t[0] = '[';
     t[1] = '\0';
     t++;
+    t_len--;
   }      
   else {
     t[0] = '\0';
@@ -1960,19 +1962,21 @@ char *Arraystep::string(int style)
   for (i=0; i < base->dims; i++) {
     if (style) {
       if (i != base->dims-1) {
-	sprintf (t, "%d,", deref[i]);
+	snprintf (t, t_len, "%d,", deref[i]);
       }
       else {
-	sprintf (t, "%d", deref[i]);
+	snprintf (t, t_len, "%d", deref[i]);
       }
     }
     else {
-      sprintf (t, "[%d]", deref[i]);
+      snprintf (t, t_len, "[%d]", deref[i]);
     }
-    t += strlen (t);
+    int t_adj = strlen (t);
+    t_len -= t_adj;
+    t += t_adj;
   }
   if (style) {
-    sprintf (t, "]");
+    snprintf (t, t_len, "]");
   }
   return s;
 }

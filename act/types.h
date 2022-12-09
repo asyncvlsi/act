@@ -236,6 +236,8 @@ class UserDef : public Type {
   void refinePortType (int pos, InstType *u);
 
   const char *getName ();    /**< the name of the user-defined type */
+  char *getFullName();       /**< returns freshly allocated string
+				   with full name (including namesapce) */
   void printActName (FILE *fp);	/**< print the ACT name for the type */
 
   int isEqual (const Type *t) const;

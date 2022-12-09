@@ -344,7 +344,7 @@ void mergealias (struct alias_tree *a1, struct alias_tree *a2)
 }
 
 static struct alias_tree *get_cur_node (hash_bucket_t *b, struct Hashtable *cur,
-					char *buf, int l)
+					char *buf, int l, int bufsz)
 {
   struct alias_tree *x = (struct alias_tree *)b->v;
   hash_bucket_t *newb;
@@ -360,7 +360,7 @@ static struct alias_tree *get_cur_node (hash_bucket_t *b, struct Hashtable *cur,
     }
   }
   else {
-    sprintf (buf+l+1, "%s", b->key);
+    snprintf (buf+l+1, bufsz - l - 1,  "%s", b->key);
     newb = hash_lookup (cur, buf);
     if (!newb) {
       return NULL;
@@ -372,14 +372,14 @@ static struct alias_tree *get_cur_node (hash_bucket_t *b, struct Hashtable *cur,
 }
 
 static void import_base_node (hash_bucket_t *b, struct Hashtable *cur,
-			      char *buf, int l)
+			      char *buf, int l, int bufsz)
 {
   struct alias_tree *x = (struct alias_tree *)b->v;
   int new_node;
   hash_bucket_t *newb;
   struct alias_tree *newx;
 
-  sprintf (buf+l+1, "%s", b->key);
+  snprintf (buf+l+1, bufsz - l - 1, "%s", b->key);
 
   new_node = 1;
 
@@ -441,6 +441,7 @@ static void import_subcell_conns (struct Hashtable *N,
   if (yl != yh) { t += 10; dims++; }
   
   MALLOC (strbuf, char, l + t + 2);
+  int strbuf_sz = l+t+2;
 
   if (xl == xh && yl != yh) {
     xl = yl;
@@ -455,14 +456,15 @@ static void import_subcell_conns (struct Hashtable *N,
 
   do {
     if (dims == 0) {
-      sprintf (strbuf, "%s/", instname);
+      snprintf (strbuf, strbuf_sz, "%s/", instname);
     }
     else if (dims == 1) {
-      sprintf (strbuf, "%s[%d]/", instname, xval);
+      snprintf (strbuf, strbuf_sz, "%s[%d]/", instname, xval);
     }
     else if (dims == 2) {
-      sprintf (strbuf, "%s[%d,%d]/", instname, xval, yval);
+      snprintf (strbuf, strbuf_sz, "%s[%d,%d]/", instname, xval, yval);
     }
+    l = strlen (strbuf) - 1;
 
     for (int i=0; i < sub->size; i++) {
       for (b = sub->head[i]; b; b = b->next) {
@@ -470,21 +472,21 @@ static void import_subcell_conns (struct Hashtable *N,
 	struct alias_tree *x, *x1;
 
 	base = (struct alias_tree *)b->v;
-	import_base_node (b, N, strbuf, l);
+	import_base_node (b, N, strbuf, l, strbuf_sz);
 
 	/* x is the current node */
-	x = get_cur_node (b, N, strbuf, l);
+	x = get_cur_node (b, N, strbuf, l, strbuf_sz);
 
 	/* now import connections */
 	if (base->up) {
-	  import_base_node (base->up->b, N, strbuf, l);
-	  x1 = get_cur_node (base->up->b, N, strbuf, l);
+	  import_base_node (base->up->b, N, strbuf, l, strbuf_sz);
+	  x1 = get_cur_node (base->up->b, N, strbuf, l, strbuf_sz);
 	  Assert (x1, "What?");
 	  x->up = x1;
 	}
 	if (base->noglob) {
-	  import_base_node (base->noglob->b, N, strbuf, l);
-	  x1 = get_cur_node (base->noglob->b, N, strbuf, l);
+	  import_base_node (base->noglob->b, N, strbuf, l, strbuf_sz);
+	  x1 = get_cur_node (base->noglob->b, N, strbuf, l, strbuf_sz);
 	  Assert (x1, "What?");
 	  x->noglob = x1;
 	}
@@ -884,7 +886,7 @@ int main (int argc, char **argv)
     MALLOC (devnames, char *, num_devices);
     for (j=0; j < num_devices; j++) {
       MALLOC (devnames[j], char, strlen (rawdevs[j]) + 4 + 1);
-      sprintf (devnames[j], "net.%s", rawdevs[j]);
+      snprintf (devnames[j], strlen (rawdevs[j]) + 4 + 1, "net.%s", rawdevs[j]);
     }
   }
   else {

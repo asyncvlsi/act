@@ -47,7 +47,7 @@ void ActApplyPass::push_namespace_name (const char *s)
 {
   char *n;
   MALLOC (n, char, strlen (s)+3);
-  sprintf (n, "%s::", s);
+  snprintf (n, strlen(s)+3, "%s::", s);
   list_append (prefixes, n);
   list_append (prefix_array, NULL);
 }

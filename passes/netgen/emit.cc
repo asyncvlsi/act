@@ -49,6 +49,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 {
   FILE *fp = _outfp;
   netlist_t *n = getNL (p);
+  char *tmp_str;
 
   if (!n) {
     fprintf (stderr, "Could not find process `%s'", p ? p->getName() : "-none");
@@ -85,13 +86,15 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   if (top_level_only && p != _root) return n;
 
   fprintf (fp, "*\n");
-  if (p && p->getns() && p->getns() != ActNamespace::Global()) {
-    char *tmp = p->getns()->Name();
-    fprintf (fp, "*---- act defproc: %s::%s -----\n", tmp, p->getName());
-    FREE (tmp);
+  if (p) {
+    tmp_str = p->getFullName();
   }
   else {
-    fprintf (fp, "*---- act defproc: %s -----\n", p ? p->getName() : "-none-");
+    tmp_str = NULL;
+  }
+  fprintf (fp, "*---- act defproc: %s -----\n", tmp_str ? tmp_str : "-none-");
+  if (tmp_str) {
+    FREE (tmp_str);
   }
   if (a->mangle_active()) {
     fprintf (fp, "* raw ports: ");
@@ -364,7 +367,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  fprintf (fp, " ");
 	  emit_node (n, fp, e->bulk, 1);
 
-	  sprintf (devname, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
+	  snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   act_dev_value_to_string (e->flavor));
 	  if (!config_exists (devname)) {
 	    act_error_ctxt (stderr);

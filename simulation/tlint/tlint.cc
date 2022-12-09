@@ -270,7 +270,7 @@ int main (int argc, char **argv)
   
   if (config_name) {
     if (has_trailing_extension (config_name, "conf") == 0) {
-      sprintf (buf, "%s.conf", config_name);
+      snprintf (buf, 10240, "%s.conf", config_name);
     }
     else {
       strcpy (buf, config_name);
@@ -1080,7 +1080,7 @@ static void compute_errs (atrace *a, int Nnodes, int Nsteps)
       }
       fflush (stdout);
       tm += cputime_msec();
-      sprintf (buf, "Est. total time: %6.3g mins. [%4.2g%% done]..", tm/1000.0/i/60.0*Nsteps, (i+0.0)/Nsteps*100.0);
+      snprintf (buf, 10240, "Est. total time: %6.3g mins. [%4.2g%% done]..", tm/1000.0/i/60.0*Nsteps, (i+0.0)/Nsteps*100.0);
       printf ("%s", buf);
       fflush (stdout);
     }

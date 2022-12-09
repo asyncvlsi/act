@@ -54,6 +54,22 @@ const char *UserDef::getName()
   return name;
 }
 
+char *UserDef::getFullName()
+{
+  if (_ns == NULL || _ns == ActNamespace::Global()) {
+    return Strdup (name);
+  }
+  else {
+    char *tmp = _ns->Name(true);
+    char *buf;
+    int l = strlen (tmp) + strlen (name) + 1;
+    MALLOC (buf, char, l);
+    snprintf (buf, l, "%s%s", tmp + 2, name);
+    FREE (tmp);
+    return buf;
+  }
+}
+
 void UserDef::printActName (FILE *fp)
 {
   int i = 0;
@@ -1129,9 +1145,9 @@ const char *PType::getName ()
   }
   else if (!name) {
     char buf[10240];
-    sprintf (buf, "ptype(");
+    snprintf (buf, 10240, "ptype(");
     i->sPrint (buf+strlen (buf), 10240-strlen (buf));
-    sprintf (buf+strlen(buf), ")");
+    snprintf (buf+strlen(buf), 10240-strlen (buf), ")");
     name = Strdup (buf);
   }
   return name;
@@ -1199,7 +1215,7 @@ const char *Int::getName()
   }
   else {
     char buf[1024];
-    sprintf (buf, "%s<%d>", k2v, w);
+    snprintf (buf, 1024, "%s<%d>", k2v, w);
     name = Strdup (buf);
   }
   return name;
@@ -1211,10 +1227,10 @@ const char *Chan::getName ()
   if (name) return name;
 
   if (!p) {
-    sprintf (buf, "chan");
+    snprintf (buf, 10240, "chan");
   }
   else {
-    sprintf (buf, "chan(");
+    snprintf (buf, 10240, "chan(");
     p->sPrint (buf+strlen (buf), 10239-strlen(buf));
     if (ack) {
       strcat (buf, ",");

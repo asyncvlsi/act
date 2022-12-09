@@ -139,18 +139,19 @@ import_item: "import" STRING ";"
       }
     }
 
-    MALLOC (tmp, char, strlen(s)+14);
-    sprintf (tmp, "%s/_all_.act", s);
+    int tmp_len = strlen(s)+14;
+    MALLOC (tmp, char, tmp_len);
+    snprintf (tmp, tmp_len, "%s/_all_.act", s);
 
     char *t = act_path_open (tmp);
     FILE *tfp = fopen (t, "r");
     FREE (t);
     if (tfp) {
       fclose (tfp);
-      sprintf (tmp, "%s/_all_.act", s-1);
+      snprintf (tmp, tmp_len, "%s/_all_.act", s-1);
     }
     else {
-      sprintf (tmp, "%s.act", s-1);
+      snprintf (tmp, tmp_len, "%s.act", s-1);
     }
     strcat (tmp, "\"");
     s--;

@@ -1519,15 +1519,15 @@ std::string BigInt::sPrint() const
 #ifndef BIGINT_TEST
     if (sizeof(UNIT_TYPE) == 8) {
       if (i == len-1) {
-	sprintf(buf, "%lx", getVal (i));
+	snprintf(buf, 64, "%lx", getVal (i));
       }
       else {
-	sprintf(buf, "%016lx", getVal (i));
+	snprintf(buf, 64, "%016lx", getVal (i));
       }
     } 
 #else
     if (sizeof(UNIT_TYPE) == 1) {
-	sprintf(buf, "%02x", getVal (i));
+      snprintf(buf, 64, "%02x", getVal (i));
     }
 #endif
     s += buf; 

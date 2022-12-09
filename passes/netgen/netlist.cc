@@ -1383,7 +1383,7 @@ void ActNetlistPass::sprint_conn (char *buf, int sz, act_connection *c)
       FREE (tmp);
       len = strlen (buf);
       buf += len;
-      sz =- len;
+      sz -= len;
     }
   }
   id->sPrint (buf, sz);

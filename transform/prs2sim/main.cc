@@ -197,12 +197,12 @@ int main (int argc, char **argv)
   FILE *fps, *fpal;
   char buf[10240];
 
-  sprintf (buf, "%s.sim", simname);
+  snprintf (buf, 10240, "%s.sim", simname);
   fps = fopen (buf, "w");
   if (!fps) {
     fatal_error ("Could not open file `%s' for writing", buf);
   }
-  sprintf (buf, "%s.al", simname);
+  snprintf (buf, 10240, "%s.al", simname);
   fpal = fopen (buf, "w");
   if (!fpal) {
     fatal_error ("Could not open file `%s' for writing", buf);

@@ -2850,7 +2850,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
   /* -- expand potential cells if they don't exist -- */
   for (int i=0; i < A_LEN (xcell); i++) {
     char buf[10240];
-    sprintf (buf, "%s<>", xcell[i]);
+    snprintf (buf, 10240, "%s<>", xcell[i]);
     Type *u = cell_ns->findType (xcell[i]);
     Assert (u, "What?");
     Process *p = dynamic_cast<Process *>(u);

@@ -450,11 +450,11 @@ static char *name_convert (char *signal)
   }
 
   if (pos == l-1) {
-    sprintf (s, "%s", signal+skip);
+    snprintf (s, l+2, "%s", signal+skip);
     l = strlen (s);
   }
   else {
-    sprintf (s, "%s", signal+skip);
+    snprintf (s, l+2, "%s", signal+skip);
     l = strlen(s);
     s[l-1] = '\0';
     l--;
