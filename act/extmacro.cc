@@ -30,10 +30,11 @@ ExternMacro::ExternMacro (Process *p)
 {
   char buf[10240];
 
-  ActNamespace::Act()->msnprintfproc (buf, 10240, p);
+  //ActNamespace::Act()->msnprintfproc (buf, 10240, p);
 
   _p = p;
-  _name = Strdup (buf);
+  //_name = Strdup (buf);
+  _name = p->getFullName();
   _lef = NULL;
   _spice = NULL;
   _verilog = NULL;
@@ -51,9 +52,11 @@ ExternMacro::ExternMacro (Process *p)
   else {
     /* try and generate this! */
     /* see if we can dynamically generate a blob */
-    char tmp[1024];
-    ActNamespace::Act()->msnprintfproc (tmp, 1024, p->getUnexpanded());
+    //char tmp[1024];
+    char *tmp = p->getUnexpanded()->getFullName();
+    //ActNamespace::Act()->msnprintfproc (tmp, 1024, p->getUnexpanded());
     snprintf (buf, 10240, "macros.%s.gen", tmp);
+    FREE (tmp);
     if (config_exists (buf)) {
       char *nm = config_get_string (buf);
       /* a generator exists! */
