@@ -1,0 +1,35 @@
+deftype debug_token(int<64> v_0){}
+
+deftype f_token
+( 
+  int<32> cause_num;
+  debug_token dt
+){}
+
+deftype dc_token
+(
+  debug_token dt
+){}
+
+function foo(f_token ft) : dc_token
+{
+  dc_token dc;
+
+  chp {
+    self := dc
+  }
+}
+
+defproc test
+()
+{
+
+  f_token ft;
+  dc_token dct;
+
+  chp {
+    dct := foo(ft)
+  }
+}
+
+test t; 

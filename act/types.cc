@@ -2122,7 +2122,7 @@ ActId **Data::getStructFields (int **types)
 void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
 {
   Assert (TypeFactory::isStructure (this), "What?!");
-  
+
   for (int i=0; i < getNumPorts(); i++) {
     if (TypeFactory::isStructure (getPortType (i))) {
       Data *d = dynamic_cast<Data *> (getPortType(i)->BaseType());
@@ -2131,11 +2131,11 @@ void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
 	ActId *tl;
 	tl = prefix->Tail();
 	tl->Append (tmp);
-	d->_get_struct_fields (a, pos, types, prefix);
+	d->_get_struct_fields (a, types, pos, prefix);
 	tl->prune();
       }
       else {
-	d->_get_struct_fields (a, pos, types, tmp);
+	d->_get_struct_fields (a, types, pos, tmp);
       }
       delete tmp;
     }
