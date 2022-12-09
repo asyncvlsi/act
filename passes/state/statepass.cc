@@ -984,7 +984,7 @@ int ActStatePass::run (Process *p)
     act_dynamic_var_t *dv;
     phash_bucket_t *b;
 
-    b = phash_lookup (nl->cdH, nl->used_globals[i]);
+    b = phash_lookup (nl->cdH, nl->used_globals[i].c);
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
       if (dv->isint) {
@@ -995,7 +995,7 @@ int ActStatePass::run (Process *p)
       }
     }
     else {
-      b = phash_lookup (nl->cH, nl->used_globals[i]);
+      b = phash_lookup (nl->cH, nl->used_globals[i].c);
       Assert (b, "What?");
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
@@ -1019,10 +1019,10 @@ int ActStatePass::run (Process *p)
     act_dynamic_var_t *dv;
     phash_bucket_t *b;
 
-    b = phash_lookup (nl->cdH, nl->used_globals[i]);
+    b = phash_lookup (nl->cdH, nl->used_globals[i].c);
     if (b) {
       dv = (act_dynamic_var_t *) b->v;
-      b = phash_add (_root_si->map, nl->used_globals[i]);
+      b = phash_add (_root_si->map, nl->used_globals[i].c);
       if (dv->isint) {
 	b->i = idx.numInts() - _globals.numInts();
 	idx.addInt (dv->a->size());
@@ -1033,11 +1033,11 @@ int ActStatePass::run (Process *p)
       }
     }
     else {
-      b = phash_lookup (nl->cH, nl->used_globals[i]);
+      b = phash_lookup (nl->cH, nl->used_globals[i].c);
       Assert (b, "What?");
       v = (act_booleanized_var_t *) b->v;
       Assert (v, "What?");
-      b = phash_add (_root_si->map, nl->used_globals[i]);
+      b = phash_add (_root_si->map, nl->used_globals[i].c);
       if (v->ischan) {
 	b->i = idx.numChans() - _globals.numChans();
 	idx.addChan ();
@@ -1326,7 +1326,7 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
       return NULL;
     }
     else {
-      return si->bnl->used_globals[off];
+      return si->bnl->used_globals[off].c;
     }
   }
   else if (isPortOffset (off)) {

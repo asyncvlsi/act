@@ -38,6 +38,14 @@ struct netlist_bool_port {
   unsigned int netid;		/* if set, points to net; -1 if not set */
 };
 
+struct netlist_global_port {
+  act_connection *c;		/* port bool */
+  unsigned int input:1;		/* 1 if input, otherwise output */
+  unsigned int bidir:1;		/* bidirectional? */
+  /* if bidir set, then I/O signal; otherwise, input specifies the flag */
+};
+
+
 /*
   CHP programs can have complex dynamic accesses, with runtime array
   references.
@@ -133,7 +141,7 @@ typedef struct {
   A_DECL (struct netlist_bool_port, ports);
   A_DECL (act_connection *, instports);
   A_DECL (act_connection *, instchpports);
-  A_DECL (act_connection *, used_globals);
+  A_DECL (struct netlist_global_port, used_globals);
 
   A_DECL (act_local_net_t, nets); // nets
   struct pHashtable *nH;	  // hash to map c to net index

@@ -1708,11 +1708,13 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
     if (v->id->isglobal()) {
       int i;
       for (i=0; i < A_LEN (n->used_globals); i++) {
-	if (n->used_globals[i] == v->id) break;
+	if (n->used_globals[i].c == v->id) break;
       }
       if (i == A_LEN (n->used_globals)) {
-	A_NEWM (n->used_globals, act_connection *);
-	A_NEXT (n->used_globals) = v->id;
+	A_NEWM (n->used_globals, netlist_global_port);
+	A_NEXT (n->used_globals).c = v->id;
+	A_NEXT (n->used_globals).input = v->input;
+	A_NEXT (n->used_globals).bidir = (v->input && v->output ? 1 : 0);
 	A_INC (n->used_globals);
       }
     }
@@ -1879,12 +1881,14 @@ static void mark_c_used (act_boolean_netlist_t *n,
     if (c->isglobal()) {
       int i;
       for (i=0; i < A_LEN (n->used_globals); i++) {
-	if (c == n->used_globals[i])
+	if (c == n->used_globals[i].c)
 	  break;
       }
       if (i == A_LEN (n->used_globals)) {
-	A_NEWM (n->used_globals, act_connection *);
-	A_NEXT (n->used_globals) = c;
+	A_NEWM (n->used_globals, netlist_global_port);
+	A_NEXT (n->used_globals).c = c;
+	A_NEXT (n->used_globals).input = v->input;
+	A_NEXT (n->used_globals).bidir = (v->input && v->output ? 1 : 0);
 	A_INC (n->used_globals);
       }
     }
@@ -2357,24 +2361,33 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
   for (i=0; i < A_LEN (subinst->used_globals); i++) {
     int j;
     for (j=0; j < A_LEN (n->used_globals); j++) {
-      if (n->used_globals[j] == subinst->used_globals[i])
+      if (n->used_globals[j].c == subinst->used_globals[i].c) {
+	if (subinst->used_globals[i].bidir) {
+	  n->used_globals[j].bidir = 1;
+	}
+	else {
+	  if (subinst->used_globals[i].input != n->used_globals[j].input) {
+	    n->used_globals[j].bidir = 1;
+	  }
+	}
 	break;
+      }
     }
     if (j == A_LEN (n->used_globals)) {
       act_booleanized_var_t *vs =
-	raw_lookup (subinst, subinst->used_globals[i]);
+	raw_lookup (subinst, subinst->used_globals[i].c);
       Assert (vs, "What?");
-      A_NEWM (n->used_globals, act_connection *);
+      A_NEWM (n->used_globals, netlist_global_port);
       A_NEXT (n->used_globals) = subinst->used_globals[i];
       A_INC (n->used_globals);
 
-      act_booleanized_var_t *v = raw_lookup (n, subinst->used_globals[i]);
+      act_booleanized_var_t *v = raw_lookup (n, subinst->used_globals[i].c);
       if (!v) {
 	// This uses the ignore initialization flag, because
 	// a global in a namespace may not be visible in the scope
 	// of the process instantiating it. Fix needed to support
 	// namespace globals.
-	v = _var_lookup (n, subinst->used_globals[i], 1);
+	v = _var_lookup (n, subinst->used_globals[i].c, 1);
 	*v = *vs;
       }
     }
