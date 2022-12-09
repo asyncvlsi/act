@@ -579,7 +579,7 @@ macro_formal_list: { single_macro_port_item ";" }*
 }}
 ;
 
-function_formal_list: port_formal_list | param_formal_list ;
+function_formal_list: port_formal_list | param_formal_list | /* empty */;
 
 param_formal_list: { param_inst ";" }*
 {{X:

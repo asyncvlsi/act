@@ -707,7 +707,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	kind = 1;
       }
 
-      if (tmp->type == E_GT) {
+      if (tmp && tmp->type == E_GT) {
 	e2 = tmp->u.e.l;
 	tmp = tmp->u.e.r;
       }

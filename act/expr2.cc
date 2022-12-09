@@ -716,6 +716,13 @@ int expr_equal (const Expr *a, const Expr *b)
       at = a->u.fn.r;
       bt = b->u.fn.r;
 
+      if (at == NULL && bt == NULL) {
+	return 1;
+      }
+      if (at == NULL || bt == NULL) {
+	return 0;
+      }
+
       if (at->type != bt->type) {
 	return 0;
       }
