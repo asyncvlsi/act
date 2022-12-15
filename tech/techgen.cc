@@ -540,8 +540,20 @@ void emit_width_spacing (pp_t *pp, Material *mat, char *nm = NULL)
 
 void emit_surround (pp_t *pp, const char *mat, const char *surround, int amt, int absence_ok = 0)
 {
+  char buf[100];
+
+  if (surround[0] == 'm' && isdigit (surround[1]) &&
+      (!surround[2] ||isdigit (surround[2]) &&
+       (!surround[3] || isdigit(surround[3])))) {
+    /* metal surround */
+    snprintf (buf, 100, "(all%s)/%s", surround, surround);
+  }
+  else {
+    snprintf (buf, 100, "%s", surround);
+  }
+
   pp_printf (pp, "surround %s %s %d absence_%s \\",
-	     mat, surround, amt, absence_ok ? "ok" : "illegal");
+	     mat, buf, amt, absence_ok ? "ok" : "illegal");
   pp_nl;
   pp_printf (pp, "   \"%s surround of %s < %d\"",
 	     surround, mat, amt);
