@@ -368,7 +368,7 @@ void config_read (const char *name)
 
 #define RAW_GET_NEXT						\
   do {								\
-    s = strtok (NULL, " \t");					\
+    s = strtok (NULL, " \t\r");					\
     if (!s) fatal_error ("Invalid format [%s:%d]", name, line);	\
   } while (0)
 
@@ -412,7 +412,7 @@ void config_read (const char *name)
     }
     
     if (buf[0] == '#' || buf[0] == '\0') continue;
-    s = strtok (buf, " \t");
+    s = strtok (buf, " \t\r");
     if (!s || !*s || s[0] == '#') continue;
 
     if (strcmp (s, "include") == 0) {
@@ -443,7 +443,7 @@ void config_read (const char *name)
       }
       c = newconfig ();
       c->type = CONFIG_INT;
-      s = strtok (NULL, " \t");
+      s = strtok (NULL, " \t\r");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
       sscanf (s, "%d", &c->u.i);
       b->v = c;
@@ -464,7 +464,7 @@ void config_read (const char *name)
       c = newconfig ();
       c->type = CONFIG_STR;
 
-      s = strtok (NULL, " \t");
+      s = strtok (NULL, " \t\r");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
 
       if (s[0] != '"') {
@@ -474,7 +474,7 @@ void config_read (const char *name)
       strcpy (buf2, s);
 
       while (s && buf2[strlen(buf2)-1] != '"') {
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	if (s) {
 	  strcat (buf2, " ");
 	  strcat (buf2, s);
@@ -501,7 +501,7 @@ void config_read (const char *name)
       }
       c = newconfig ();
       c->type = CONFIG_REAL;
-      s = strtok (NULL, " \t");
+      s = strtok (NULL, " \t\r");
       if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
       sscanf (s, "%lg", &c->u.r);
       b->v = c;
@@ -527,13 +527,13 @@ void config_read (const char *name)
 	A_INIT (x);
 	
 	/* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,int);
 	  sscanf (s, "%d", &A_NEXT (x));
 	  A_INC (x);
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 	}
 	c->u.t.sz = A_LEN (x);
 	c->u.t.u.i = x;
@@ -572,13 +572,13 @@ void config_read (const char *name)
 	  }
 	}
 	/* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,int);
 	  sscanf (s, "%d", &A_NEXT (x));
 	  A_INC (x);
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 	}
 	if (c->u.t.sz > 0) {
 	  FREE (c->u.t.u.i);
@@ -608,13 +608,13 @@ void config_read (const char *name)
 	A_INIT (x);
 	
       /* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,double);
 	  sscanf (s, "%lg", &A_NEXT (x));
 	  A_INC (x);
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 	}
 	c->u.t.sz = A_LEN (x);
 	c->u.t.u.r = x;
@@ -654,13 +654,13 @@ void config_read (const char *name)
 	  }
 	}
 	/* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	while (s && s[0] != '#') {
 	  /* accumulate s in the table */
 	  A_NEWM (x,double);
 	  sscanf (s, "%lg", &A_NEXT (x));
 	  A_INC (x);
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 	}
 	if (c->u.t.sz > 0) {
 	  FREE (c->u.t.u.r);
@@ -694,7 +694,7 @@ void config_read (const char *name)
 	A_INIT (x);
 	
       /* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
 
 	do {
@@ -704,7 +704,7 @@ void config_read (const char *name)
 	  strcpy (buf2, s);
 
 	  while (s && buf2[strlen(buf2)-1] != '"') {
-	    s = strtok (NULL, " \t");
+	    s = strtok (NULL, " \t\r");
 	    if (s) {
 	      strcat (buf2, " ");
 	      strcat (buf2, s);
@@ -718,7 +718,7 @@ void config_read (const char *name)
 
 	  A_APPEND (x, char *, create_string (buf2+1));
 
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 
 	  if (s && s[0] == '#') break;  /* comment */
 
@@ -762,7 +762,7 @@ void config_read (const char *name)
 	  }
 	}
 	/* read in a space-separated list of integers */
-	s = strtok (NULL, " \t");
+	s = strtok (NULL, " \t\r");
 	if (!s) fatal_error ("Invalid format [%s:%d]", name, line);
 
 	do {
@@ -772,7 +772,7 @@ void config_read (const char *name)
 	  strcpy (buf2, s);
 
 	  while (s && buf2[strlen(buf2)-1] != '"') {
-	    s = strtok (NULL, " \t");
+	    s = strtok (NULL, " \t\r");
 	    if (s) {
 	      strcat (buf2, " ");
 	      strcat (buf2, s);
@@ -786,7 +786,7 @@ void config_read (const char *name)
 
 	  A_APPEND (x, char *, create_string (buf2+1));
 
-	  s = strtok (NULL, " \t");
+	  s = strtok (NULL, " \t\r");
 
 	  if (s && s[0] == '#') break;  /* comment */
 
