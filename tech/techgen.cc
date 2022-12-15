@@ -25,6 +25,7 @@
 #include <string.h>
 #include <map>
 #include <common/config.h>
+#include <ctype.h>
 
 #include <act/act.h>
 #include <act/tech.h>
