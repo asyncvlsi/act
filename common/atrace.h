@@ -319,6 +319,8 @@ void atrace_advance_time_to (atrace *, int nstep);
 #define ATRACE_NODE_FLOATVAL(n) (n)->vu.v
 #define ATRACE_NODE_SMALLVAL(n) (n)->vu.val
 #define ATRACE_NODE_BIGVAL(n)   (n)->vu.valp
+#define ATRACE_WIDE_NODE(n)  ((n)->width > ATRACE_SHORT_WIDTH)
+#define ATRACE_WIDE_NUM(n) (((n)->width + ATRACE_SHORT_WIDTH-1)/ATRACE_SHORT_WIDTH)
 
 /*
   Macros for channel values
