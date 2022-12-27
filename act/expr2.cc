@@ -1630,7 +1630,27 @@ static Expr *_expr_expand (int *width, Expr *e,
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
 	print_expr (stderr, e);
-	fprintf (stderr,"\n");
+	fprintf (stderr,"\n\tlhs: ");
+	if (ret->u.e.l->type == E_INT) {
+	  fprintf (stderr, "pint");
+	}
+	else if (ret->u.e.l->type == E_REAL) {
+	  fprintf (stderr, "preal");
+	}
+	else {
+	  fprintf (stderr, "other");
+	}
+	fprintf (stderr,";  rhs: ");
+	if (ret->u.e.r->type == E_INT) {
+	  fprintf (stderr, "pint");
+	}
+	else if (ret->u.e.r->type == E_REAL) {
+	  fprintf (stderr, "preal");
+	}
+	else {
+	  fprintf (stderr, "other");
+	}
+	fprintf (stderr, "\n");
 	fatal_error ("Incompatible types for comparison operator");
       }
     }
