@@ -1,0 +1,6 @@
+pint a = 5;
+preal b = 7.0;
+
+bool p, q;
+
+[ a < b -> p = q; ]

@@ -1,0 +1,5 @@
+In expanding ::<Global>
+Error on or near line number 6.
+	expanding expr: a<b
+	lhs: pint;  rhs: preal
+FATAL: Incompatible types for comparison operator
