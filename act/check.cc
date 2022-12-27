@@ -645,7 +645,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       typecheck_err ("int(.) can't accept array arguments");
       return T_ERR;
     }
-    if (lt & T_REAL) {
+    if ((lt & T_REAL) && (!(lt & T_PARAM) || e->u.e.r)) {
       typecheck_err ("int(.) can't accept real arguments");
       return T_ERR;
     }
@@ -658,6 +658,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	*width = 1;
       }
       return (lt & ~(T_BOOL|T_DATA_BOOL))|T_INT;
+    }
+    if (lt & T_REAL) {
+      if (width) {
+	*width = 64;
+      }
+      return T_INT|T_PARAM;
     }
     if (T_BASETYPE_INT (lt)) {
       if (!e->u.e.r) {

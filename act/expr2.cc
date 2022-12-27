@@ -2014,6 +2014,16 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    FREE (ret);
 	    ret = tmp;
 	  }
+	  else if (ret->u.e.l->type == E_REAL) {
+	    Expr *texpr = ret->u.e.l;
+	    ret->type = E_INT;
+	    ret->u.v = (long)texpr->u.f;
+	    ret->u.v_extra = NULL;
+	    tmp = TypeFactory::NewExpr (ret);
+	    FREE (ret);
+	    expr_free (texpr);
+	    ret = tmp;
+	  }
 	  else {
 	    ret->type = E_INT;
 	    ret->u.v = 0;

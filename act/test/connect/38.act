@@ -1,0 +1,5 @@
+pint x = int(0.5 * 5);
+
+pint y = 2;
+
+{ x = y : "What?" };
