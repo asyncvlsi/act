@@ -56,6 +56,7 @@ int main (int argc, char **argv)
   atrace_init_time (a);
   int i = 0;
   while (atrace_more_data (a)) {
+    i = a->curstep;
     atrace_val_t v = ATRACE_GET_VAL (n);
     printf ("%g ", i*ATRACE_GET_STEPSIZE (a));
     if (atrace_is_analog (n)) {

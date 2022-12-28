@@ -206,11 +206,19 @@ void atrace_filter (atrace *a, float adv, float rdv)
 {
   Assert (a->read_mode == 0, "Cannot set filter in read mode");
 
-  if (rdv < 0 || rdv > 1) return;
-  if (adv < 0) return;
+  if (rdv > 0) {
+    a->rdv = rdv;
+  }
+  else {
+    a->rdv = -1;
+  }
 
-  a->adv = adv;
-  a->rdv = rdv;
+  if (adv > 0) {
+    a->adv = adv;
+  }
+  else {
+    a->adv = -1;
+  }
 }
 
 /*
@@ -1916,11 +1924,13 @@ void atrace_advance_time (atrace *a, int nsteps)
   case ATRACE_DELTA_CAUSE:
     a->curstep += nsteps;
     a->N[0]->vu.v += nsteps*a->vdt;
-    while (a->nextt >= 0 && a->curt >= 0 && (a->nextt < a->curstep*a->vdt)) {
+    while (a->nextt >= 0 && a->curt >= 0 && (a->nextt <= a->curstep*a->vdt)) {
       a->curt = a->nextt;
       //a->N[0]->v = a->curt;
       a->nextt = _read_record (a, a->curt);
     }
+    a->curstep = VSTEP (a, a->curt);
+    a->N[0]->vu.v = a->curstep*a->vdt;
 #if 0    
     nv = VSTEP (a, a->curt);
     for (i=ISTEP (a, a->curt); i < a->Nsteps; i++) {
