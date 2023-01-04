@@ -83,14 +83,17 @@ int main (int argc, char **argv)
       }
       if (blk == -1) {
 	if (atrace_bitwidth (n) <= ATRACE_SHORT_WIDTH) {
-	  printf ("%lu\n", ATRACE_SMALLVAL (&v));
+	  printf ("%lu\n", ATRACE_SMALLVAL (&v)-ATRACE_CHAN_VAL_OFFSET);
 	}
 	else {
 	  BigInt b;
+	  BigInt tmp;
 	  b.setWidth (atrace_bitwidth (n));
 	  for (int i=0; i < b.getLen(); i++) {
 	    b.setVal (i, ATRACE_BIGVAL(&v)[i]);
 	  }
+	  tmp = ATRACE_CHAN_VAL_OFFSET;
+	  b -= tmp;
 	  b.decPrint (stdout);
 	  printf ("\n");
 	}
