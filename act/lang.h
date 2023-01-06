@@ -267,7 +267,7 @@ struct act_chp {
  *------------------------------------------------------------------------
  */
 
-#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2 || (x)->type == -3)
+#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2 || (x)->type == -3 || (x)->type == -4)
 #define ACT_SPEC_ISTIMINGFORK(x)  ((x)->type == -1 || (x)->type == -2)
 
 struct act_spec {
@@ -287,6 +287,7 @@ struct act_spec {
 		   0x04 : 1 = ?, 0 = nothing
 		   0x08 : 1 = +1, 0 = current iteration. Can only be
  		          set for ids[1] and ids[2].
+                   0x10 : a cut, not a tick
 	       */
   struct act_spec *next;
 };

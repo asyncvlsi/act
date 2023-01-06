@@ -265,8 +265,11 @@ void spec_print (FILE *fp, act_spec *spec)
       else if (spec->type == -2) {
 	fprintf (fp, " << ");
       }
-      else {
+      else if (spec->type == -3) {
 	fprintf (fp, " -> ");
+      }
+      else {
+	fprintf (fp, " #> ");
       }
       if (spec->ids[3]) {
 	fprintf (fp, "[");

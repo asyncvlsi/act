@@ -2310,9 +2310,10 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       }
       OPT_FREE (r->u.l);
       FREE (r);
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
+
     }
     else {
       s->extra[i] = 0;
@@ -2328,8 +2329,8 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       FREE (r);
     }
     else {
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
       s->extra[i] = 0;
     }
@@ -2347,8 +2348,8 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
     // $5
     if (!OPT_EMPTY ($5)) {
       s->extra[i] |= 0x8;
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
     }
     OPT_FREE ($5);
@@ -2362,8 +2363,8 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       FREE (r);
     }
     else {
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
       s->extra[i] = 0;
     }
@@ -2373,8 +2374,8 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
 
     if (!OPT_EMPTY ($10)) {
       s->extra[i] |= 0x8;
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
     }
     OPT_FREE ($10);
@@ -2391,13 +2392,13 @@ spec_body_item[act_spec *]: ID "(" { bool_expr_id_or_array "," }* ")"
       $A(r->type == R_EXPR);
       s->ids[i] = (ActId *) r->u.exp;
       FREE (r);
-      if (s->type == -3) {
-	$E("Timing directive ``->'' spec error");
+      if (s->type == -3 || s->type == -4) {
+	$E("Timing directive ``%s'' spec error", s->type == -3 ? "->" : "#>");
       }
     }
     OPT_FREE ($8);
 
-    if (intick && s->type == -3) {
+    if (intick && (s->type == -3 || s->type == -4)) {
       if (!s->ids[1]->isEqual (s->ids[2])) {
 	$E("Timing directive *: LHS and RHS IDs must match!");
       }
@@ -2450,6 +2451,10 @@ timing_type[int]: "<"
 | "->"
 {{X:
     return -3;
+}}
+| "#>"
+{{X:
+    return -4;
 }}
 ;
 
