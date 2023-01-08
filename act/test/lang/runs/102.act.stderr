@@ -1,0 +1,10 @@
+In expanding testme (102.act:1)
+In expanding ::<Global>
+Error on or near line number 6.
+WARNING: Bit-width of control input is less than the number of options.
+   Bit-width: 1; options: 3 (2 bits); ID: s
+In expanding testme (102.act:1)
+In expanding ::<Global>
+Error on or near line number 6.
+ERROR: Bit-width of control input is wider than necessary.
+   Bit-width: 32; options: 2 (1 bits); ID: c

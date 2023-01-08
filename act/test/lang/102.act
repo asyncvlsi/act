@@ -1,0 +1,13 @@
+defproc testme (chan(bool) l, r)
+{
+  chan(bool) s;
+  chan(int) c;
+
+  dataflow { 
+    {s} l -> r, s, c;
+    {c} l -> r, s
+  }
+
+}
+
+testme t;

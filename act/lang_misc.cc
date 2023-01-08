@@ -740,7 +740,37 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
     case ACT_DFLOW_MIXER:
     case ACT_DFLOW_ARBITER:
       if (e->u.splitmerge.guard) {
+	InstType *it;
+	int w;
+	unsigned int ilog = 0;
 	f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
+	act_type_var (s, f->u.splitmerge.guard, &it);
+	Assert (w >= 0, "What?");
+	w = 0;
+	ilog = e->u.splitmerge.nmulti;
+	while (ilog > 1) {
+	  w++;
+	  ilog = (ilog + 1)/2;
+	}
+	ilog = w;
+	w = TypeFactory::bitWidth (it);
+	if (w != ilog) {
+	  act_error_ctxt (stderr);
+	  if (w < ilog) {
+	    warning ("Bit-width of control input is less than the number of options.");
+	  }
+	  else {
+	    fprintf (stderr, "ERROR: Bit-width of control input is wider than necessary.\n");
+	  }
+	  fprintf (stderr, "   Bit-width: %d; options: %d (%d bits); ID: ",
+		   w, e->u.splitmerge.nmulti, ilog);
+	  f->u.splitmerge.guard->Print (stderr);
+	  fprintf (stderr , "\n");
+	  if (w > ilog) {
+	    exit (1);
+	  }
+	}
+	delete it;
       }
       else {
 	f->u.splitmerge.guard = NULL;
