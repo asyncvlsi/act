@@ -745,7 +745,6 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 	unsigned int ilog = 0;
 	f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
 	act_type_var (s, f->u.splitmerge.guard, &it);
-	Assert (w >= 0, "What?");
 	w = 0;
 	ilog = e->u.splitmerge.nmulti;
 	while (ilog > 1) {
