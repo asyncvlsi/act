@@ -62,26 +62,35 @@ int main (int argc, char **argv)
     if (atrace_is_analog (n)) {
       printf ("%g\n", ATRACE_FLOATVAL (&v));
     }
-    else {
+    else if (atrace_is_digital (n)) {
+      if (atrace_bitwidth (n) <= ATRACE_SHORT_WIDTH) {
+	printf ("%lu\n", ATRACE_SMALLVAL (&v));
+      }
+      else {
+	BigInt b;
+	b.setWidth (atrace_bitwidth (n));
+	for (int i=0; i < b.getLen(); i++) {
+	  b.setVal (i, ATRACE_BIGVAL(&v)[i]);
+	}
+	b.decPrint (stdout);
+	printf ("\n");
+      }
+    }
+    else if (atrace_is_channel (n)) {
       int blk;
-      if (atrace_is_channel (n)) {
-	blk = atrace_channel_state (n, &v);
-	if (blk != -1) {
-          if (blk == ATRACE_CHAN_SEND_BLOCKED) {
-	     printf ("send-block\n");
-          }
-          else if (blk == ATRACE_CHAN_RECV_BLOCKED) {
-	     printf ("recv-block\n");
-          }
-          else {
-	     printf ("idle\n");
-          }
+      blk = atrace_channel_state (n, &v);
+      if (blk != -1) {
+	if (blk == ATRACE_CHAN_SEND_BLOCKED) {
+	  printf ("send-block\n");
+	}
+	else if (blk == ATRACE_CHAN_RECV_BLOCKED) {
+	  printf ("recv-block\n");
+	}
+	else {
+	  printf ("idle\n");
 	}
       }
       else {
-	blk = -1;
-      }
-      if (blk == -1) {
 	if (atrace_bitwidth (n) <= ATRACE_SHORT_WIDTH) {
 	  printf ("%lu\n", ATRACE_SMALLVAL (&v)-ATRACE_CHAN_VAL_OFFSET);
 	}
