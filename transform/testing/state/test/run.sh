@@ -64,6 +64,7 @@ do
 	$ACTTOOL -Wno_local_driver:on $i 'foo<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.t.stderr
 	rm runs/$i.tmp.stderr
+        sort runs/$i.stderr > runs/$i.c.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then
@@ -75,7 +76,7 @@ do
             diff runs/$i.t.stdout runs/$i.stdout
         fi
 	fi
-	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null
+	if ! cmp runs/$i.t.stderr runs/$i.c.stderr >/dev/null 2>/dev/null
 	then
 		if [ $ok -eq 1 ]
 		then
@@ -86,7 +87,7 @@ do
 		fail=`expr $fail + 1`
 		ok=0
 		if [ ! x$ACT_TEST_VERBOSE = x ]; then
-            diff runs/$i.t.stderr runs/$i.stderr
+            diff runs/$i.t.stderr runs/$i.c.stderr
         fi
 	fi
 	if [ $ok -eq 1 ]
@@ -102,6 +103,7 @@ do
 		myecho " "
 		num=0
 	fi
+	rm runs/$i.c.stderr
 done
 
 if [ $num -ne 0 ]

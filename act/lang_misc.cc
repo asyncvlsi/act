@@ -747,9 +747,10 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 	act_type_var (s, f->u.splitmerge.guard, &it);
 	w = 0;
 	ilog = e->u.splitmerge.nmulti;
-	while (ilog > 1) {
+        ilog--;
+	while (ilog > 0) {
 	  w++;
-	  ilog = (ilog + 1)/2;
+	  ilog >>= 1;
 	}
 	ilog = w;
 	w = TypeFactory::bitWidth (it);
