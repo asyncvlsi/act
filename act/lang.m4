@@ -2805,13 +2805,23 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     if (_act_id_is_true_false ($4)) {
       $E("Dataflow RHS can't be true/false!");
     }
-    if (act_type_var ($0->scope, $4, NULL) != T_CHAN) {
+    InstType *it;
+    if (act_type_var ($0->scope, $4, &it) != T_CHAN) {
       $e("Identifier on the RHS of a dataflow expression must be of channel type");
-      fprintf ($f, "   ");
+      fprintf ($f, "\n   ID: ");
       $4->Print ($f);
       fprintf ($f, "\n");
       exit (1);
     }
+
+    if (it->getDir() == Type::IN) {
+      $e("Identifier on the RHS of a dataflow expression is an input?");
+      fprintf ($f, "\n   ID: ");
+      $4->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    
     e->u.func.rhs = $4;
     e->u.func.nbufs = NULL;
     e->u.func.init = NULL;
@@ -2848,6 +2858,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     act_dataflow_element *e;
     listitem_t *li;
     list_t *l;
+    InstType *it;
 
     $0->line = $l;
     $0->column = $c;
@@ -2857,9 +2868,16 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     e->u.splitmerge.guard = $2;
     e->u.splitmerge.nondetctrl = NULL;
     if ($2) {
-      if (act_type_var ($0->scope, $2, NULL) != T_CHAN) {
+      if (act_type_var ($0->scope, $2, &it) != T_CHAN) {
 	$e("Identifier in the condition of a dataflow expression must be of channel type");
-	fprintf ($f, "   ");
+	fprintf ($f, "\n   ID: ");
+	$2->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      if (it->getDir() == Type::OUT) {
+	$e("Identifier in the condition of a dataflow expression is an output?");
+	fprintf ($f, "\n   ID: ");
 	$2->Print ($f);
 	fprintf ($f, "\n");
 	exit (1);
@@ -2908,13 +2926,32 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
       }
       list_free ($6);
     }
-    if (act_type_var ($0->scope, e->u.splitmerge.single, NULL) != T_CHAN) {
+    if (act_type_var ($0->scope, e->u.splitmerge.single, &it) != T_CHAN) {
       $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
-      fprintf ($f, "   ");
+      fprintf ($f, "\n   ID: ");
       e->u.splitmerge.single->Print ($f);
       fprintf ($f, "\n");
       exit (1);
     }
+    if (e->t == ACT_DFLOW_SPLIT) {
+      if (it->getDir() == Type::OUT) {
+	$e("Split input is of type output?");
+	fprintf ($f, "\n   ID: ");
+	e->u.splitmerge.single->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+    }
+    else {
+      if (it->getDir() == Type::IN) {
+	$e("Merge output is of type input?");
+	fprintf ($f, "\n   ID: ");
+	e->u.splitmerge.single->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+    }
+    
     if (e->u.splitmerge.nondetctrl &&
 	act_type_var ($0->scope, e->u.splitmerge.single, NULL) != T_CHAN) {
       $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
@@ -2929,12 +2966,30 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
       e->u.splitmerge.multi[i] = (ActId *) list_value (li);
       if (e->u.splitmerge.multi[i]) {
-	if (act_type_var ($0->scope, e->u.splitmerge.multi[i], NULL) != T_CHAN) {
+	if (act_type_var ($0->scope, e->u.splitmerge.multi[i], &it) != T_CHAN) {
 	  $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
 	  fprintf ($f, "   ");
 	  e->u.splitmerge.multi[i]->Print ($f);
 	  fprintf ($f, "\n");
 	  exit (1);
+	}
+	if (e->t == ACT_DFLOW_SPLIT) {
+	  if (it->getDir() == Type::IN) {
+	    $e("Split output is of type input?");
+	    fprintf ($f, "\n   ID: ");
+	    e->u.splitmerge.multi[i]->Print ($f);
+	    fprintf ($f, "\n");
+	    exit (1);
+	  }
+	}
+	else {
+	  if (it->getDir() == Type::OUT) {
+	    $e("Merge input is of type output?");
+	    fprintf ($f, "\n   ID: ");
+	    e->u.splitmerge.multi[i]->Print ($f);
+	    fprintf ($f, "\n");
+	    exit (1);
+	  }
 	}
       }
       else {
@@ -2976,9 +3031,17 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
       $E("Can't use true/false as a channel!");
     }
 
-    if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
+    InstType *it;
+    if (act_type_var ($0->scope, $1, &it) != T_CHAN) {
       $e("Identifier on the LHS of a dataflow sink must be of channel type");
-      fprintf ($f, "   ");
+      fprintf ($f, "\n   ID: ");
+      $1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+    if (it->getDir() == Type::OUT) {
+      $e("Identifier on the LHS of a dataflow sink is an output?");
+      fprintf ($f, "\n   ID: ");
       $1->Print ($f);
       fprintf ($f, "\n");
       exit (1);

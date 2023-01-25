@@ -1,0 +1,3 @@
+ERROR: File `104.act', line 11, col 6
+	Identifier in the condition of a dataflow expression is an output?
+   ID: c

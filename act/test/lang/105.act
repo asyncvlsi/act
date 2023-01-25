@@ -1,0 +1,19 @@
+defproc testme (chan?(int) a, b; chan?(int<1>) c; chan!(int) out)
+{
+  chan(int) x, mul, y, yc;
+  chan(int) out2;
+
+  chan!(int) zero;
+
+  dataflow { 
+    a * b -> mul;
+    x + mul -> out2;
+    out2 -> [4, 0] y;
+    out2 -> out;
+    {c} y -> yc, *;
+    {c} yc, zero -> x;
+    0 -> zero
+  }
+}
+
+testme t;

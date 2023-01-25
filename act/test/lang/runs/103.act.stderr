@@ -1,0 +1,3 @@
+ERROR: File `103.act', line 7, col 6
+	Identifier on the RHS of a dataflow expression is an input?
+   ID: out
