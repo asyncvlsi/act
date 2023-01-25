@@ -64,15 +64,23 @@ static char *prompt_func (EditLine *el)
   return prompt_val;
 }
 
-/*-- two built-in commands:
+/*-- three built-in commands:
   1. source <file>
   2. help <cmd>
+  3. help-add <txt> <string>
   --*/
 
 static struct LispCliCommand *cli_commands = NULL;
 static int num_commands = 0;
 static int use_editline;
 static struct Hashtable *cli_hash = NULL;
+
+
+static struct _help_text_ {
+   char *name;
+   char *text;
+   struct _help_text_ *next;
+} *_help_hd = NULL, *_help_tl = NULL;
 
 /*------------------------------------------------------------------------
  *
@@ -283,6 +291,7 @@ static int dispatch_command (int argc, char **argv)
     if (argc == 1) {
       printf ("== Builtin ==\n");
       printf ("   help [cmd] - print help information/list commands\n");
+      printf ("   help-add <name> <text> - add user-defined help\n");
       printf ("   source <filename> [<repeat-count>] - read in a script file\n");
       printf ("   exit - terminate\n");
       printf ("   quit - terminate\n");
@@ -295,6 +304,15 @@ static int dispatch_command (int argc, char **argv)
 	  printf ("   %s %s\n", cli_commands[i].name, cli_commands[i].help);
 	}
       }
+
+      if (_help_hd) {
+	struct _help_text_ *tmp;
+	printf ("\n== User-defined help ==\n");
+	for (tmp = _help_hd; tmp; tmp = tmp->next) {
+	  printf ("   %s - %s\n", tmp->name, tmp->text);
+	}
+      }
+
       return LISP_RET_TRUE;
     }
     else if (argc == 2) {
@@ -304,13 +322,23 @@ static int dispatch_command (int argc, char **argv)
       else if (strcmp (argv[1], "source") == 0) {
 	printf ("   source <filename> [<repeat-count>] - read in a script file\n\n");
       }
+      else if (strcmp (argv[1], "help-add") == 0) {
+	printf ("   help-add <name> <text> - add user-defined help\n");
+      }
       else {
+	struct _help_text_ *tmp;
 	int sl = strlen (argv[1]);
 	int count = 0;
 	for (i=0; i < num_commands; i++) {
 	  if (!cli_commands[i].name) continue;
 	  if (strncmp (cli_commands[i].name, argv[1], sl) == 0) {
 	    printf ("   %s %s\n", cli_commands[i].name, cli_commands[i].help);
+	    count++;
+	  }
+	}
+	for (tmp = _help_hd; tmp; tmp = tmp->next) {
+	  if (strncmp (tmp->name, argv[1], sl) == 0) {
+	    printf ("   %s - %s\n", tmp->name, tmp->text);
 	    count++;
 	  }
 	}
@@ -325,6 +353,41 @@ static int dispatch_command (int argc, char **argv)
       printf ("Usage: help [cmd]\n");
       return LISP_RET_ERROR;
     }
+  } else if (strcmp (argv[0], "help-add") == 0) {
+    struct _help_text_ *tmp;
+    if (argc != 3) {
+      printf ("Usage: help-add <cmd> <help-text>\n");
+      return LISP_RET_ERROR;
+    }
+    for (i=0; i < num_commands; i++) {
+      if (!cli_commands[i].name) continue;
+      if (strcmp (cli_commands[i].name, argv[1]) == 0) {
+	fprintf (stderr, "add-help: base command with name `%s' exists\n",
+		 argv[1]);
+	return LISP_RET_ERROR;
+      }
+    }
+    for (tmp = _help_hd; tmp; tmp = tmp->next) {
+      if (strcmp (tmp->name, argv[1]) == 0) {
+	printf ("Replacing help text for `%s'\n", argv[1]);
+	FREE (tmp->text);
+	tmp->text = Strdup (argv[2]);
+	return LISP_RET_TRUE;
+      }
+    }
+    NEW (tmp, struct _help_text_);
+    tmp->name = Strdup (argv[1]);
+    tmp->text = Strdup (argv[2]);
+    tmp->next = NULL;
+    if (!_help_hd) {
+      _help_hd = tmp;
+      _help_tl = tmp;
+    }
+    else {
+      _help_tl->next = tmp;
+      _help_tl = tmp;
+    }
+    return LISP_RET_TRUE;
   } else if (strcmp (argv[0], "quit") == 0 || strcmp (argv[0], "exit") == 0) {
     int code = 0;
     LispCliEnd ();
@@ -763,6 +826,7 @@ int LispCliAddCommands (const char *mod,
 	return i;
       }
       if (strcmp (nm, "help") == 0 ||
+	  strcmp (nm, "help-add") == 0 ||
 	  strcmp (nm, "exit") == 0 ||
 	  strcmp (nm, "quit") == 0 ||
 	  strcmp (nm, "source") == 0) {
