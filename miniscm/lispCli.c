@@ -77,9 +77,10 @@ static struct Hashtable *cli_hash = NULL;
 
 
 static struct _help_text_ {
-   char *name;
-   char *text;
-   struct _help_text_ *next;
+  char *name;
+  char *short_help;
+  char *full_help;
+  struct _help_text_ *next;
 } *_help_hd = NULL, *_help_tl = NULL;
 
 /*------------------------------------------------------------------------
@@ -291,7 +292,7 @@ static int dispatch_command (int argc, char **argv)
     if (argc == 1) {
       printf ("== Builtin ==\n");
       printf ("   help [cmd] - print help information/list commands\n");
-      printf ("   help-add <name> <text> - add user-defined help\n");
+      printf ("   help-add <name> <short> <text> - add user-defined help\n");
       printf ("   source <filename> [<repeat-count>] - read in a script file\n");
       printf ("   exit - terminate\n");
       printf ("   quit - terminate\n");
@@ -309,10 +310,9 @@ static int dispatch_command (int argc, char **argv)
 	struct _help_text_ *tmp;
 	printf ("\n== User-defined help ==\n");
 	for (tmp = _help_hd; tmp; tmp = tmp->next) {
-	  printf ("   %s - %s\n", tmp->name, tmp->text);
+	  printf ("   %s - %s\n", tmp->name, tmp->short_help);
 	}
       }
-
       return LISP_RET_TRUE;
     }
     else if (argc == 2) {
@@ -323,7 +323,7 @@ static int dispatch_command (int argc, char **argv)
 	printf ("   source <filename> [<repeat-count>] - read in a script file\n\n");
       }
       else if (strcmp (argv[1], "help-add") == 0) {
-	printf ("   help-add <name> <text> - add user-defined help\n");
+	printf ("   help-add <name> <short> <text> - add user-defined help\n");
       }
       else {
 	struct _help_text_ *tmp;
@@ -338,7 +338,10 @@ static int dispatch_command (int argc, char **argv)
 	}
 	for (tmp = _help_hd; tmp; tmp = tmp->next) {
 	  if (strncmp (tmp->name, argv[1], sl) == 0) {
-	    printf ("   %s - %s\n", tmp->name, tmp->text);
+	    printf ("   %s - %s\n", tmp->name, tmp->short_help);
+	    if (strcmp (tmp->name, argv[1]) == 0) {
+	      printf ("%s\n", tmp->full_help);
+	    }
 	    count++;
 	  }
 	}
@@ -355,8 +358,8 @@ static int dispatch_command (int argc, char **argv)
     }
   } else if (strcmp (argv[0], "help-add") == 0) {
     struct _help_text_ *tmp;
-    if (argc != 3) {
-      printf ("Usage: help-add <cmd> <help-text>\n");
+    if (argc != 4) {
+      printf ("Usage: help-add <cmd> <short> <text>\n");
       return LISP_RET_ERROR;
     }
     for (i=0; i < num_commands; i++) {
@@ -370,14 +373,17 @@ static int dispatch_command (int argc, char **argv)
     for (tmp = _help_hd; tmp; tmp = tmp->next) {
       if (strcmp (tmp->name, argv[1]) == 0) {
 	printf ("Replacing help text for `%s'\n", argv[1]);
-	FREE (tmp->text);
-	tmp->text = Strdup (argv[2]);
+	FREE (tmp->short_help);
+	tmp->short_help = Strdup (argv[2]);
+	FREE (tmp->full_help);
+	tmp->full_help = Strdup (argv[3]);
 	return LISP_RET_TRUE;
       }
     }
     NEW (tmp, struct _help_text_);
     tmp->name = Strdup (argv[1]);
-    tmp->text = Strdup (argv[2]);
+    tmp->short_help = Strdup (argv[2]);
+    tmp->full_help = Strdup (argv[3]);
     tmp->next = NULL;
     if (!_help_hd) {
       _help_hd = tmp;
