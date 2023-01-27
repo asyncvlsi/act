@@ -548,9 +548,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      typecheck_err ("Bitfield can only use const integer arguments");
 	      return T_ERR;
 	    }
-	    hi = e->u.e.r->u.e.r->u.v;
+	    hi = e->u.e.r->u.e.r->u.ival.v;
 	    if (e->u.e.r->u.e.l) {
-	      lo = e->u.e.r->u.e.l->u.v;
+	      lo = e->u.e.r->u.e.l->u.ival.v;
 	    }
 	    else {
 	      lo = hi;
@@ -591,9 +591,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      typecheck_err ("Bitfield can only use const integer arguments");
 	      return T_ERR;
 	    }
-	    hi = e->u.e.r->u.e.r->u.v;
+	    hi = e->u.e.r->u.e.r->u.ival.v;
 	    if (e->u.e.r->u.e.l) {
-	      lo = e->u.e.r->u.e.l->u.v;
+	      lo = e->u.e.r->u.e.l->u.ival.v;
 	    }
 	    else {
 	      lo = hi;
@@ -678,7 +678,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       if (expr_is_a_const (e->u.e.r)) {
 	if (width) {
-	  *width = e->u.e.r->u.v;
+	  *width = e->u.e.r->u.ival.v;
 	}
       }
       else {
@@ -919,16 +919,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       int w = 0;
       unsigned long val;
 
-      if (e->u.v_extra) {
-	BigInt *b = (BigInt *) e->u.v_extra;
+      if (e->u.ival.v_extra) {
+	BigInt *b = (BigInt *) e->u.ival.v_extra;
 	*width = b->getWidth ();
       }
       else {
-	if ((long)e->u.v < 0) {
-	  val = -((long)e->u.v);
+	if ((long)e->u.ival.v < 0) {
+	  val = -((long)e->u.ival.v);
 	}
 	else {
-	  val = e->u.v;
+	  val = e->u.ival.v;
 	}
 	while (val) {
 	  w++;

@@ -447,7 +447,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     te = expr_expand (sz->p_n_mode_e, ns, s);
     ret->p_n_mode_e = te;
     if (te && te->type == E_INT) {
-      ret->p_n_mode = te->u.v;
+      ret->p_n_mode = te->u.ival.v;
     }
     else if (te && te->type == E_REAL) {
       ret->p_n_mode = te->u.f;
@@ -461,7 +461,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     te = expr_expand (sz->unit_n_e, ns, s);
     ret->unit_n_e = te;
     if (te && te->type == E_INT) {
-      ret->unit_n = te->u.v;
+      ret->unit_n = te->u.ival.v;
     }
     else if (te && te->type == E_REAL) {
       ret->unit_n = te->u.f;
@@ -475,7 +475,7 @@ act_sizing *sizing_expand (act_sizing *sz, ActNamespace *ns, Scope *s)
     te = expr_expand (sz->leak_adjust_e, ns, s);
     ret->leak_adjust_e = te;
     if (te && te->type == E_INT) {
-      ret->leak_adjust = te->u.v;
+      ret->leak_adjust = te->u.ival.v;
     }
     else if (te && te->type == E_REAL) {
       ret->leak_adjust = te->u.f;

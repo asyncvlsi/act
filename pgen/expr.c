@@ -297,7 +297,7 @@ static int const_intexpr (Expr *e, unsigned long *v)
     CONSTBINOP(E_MOD,%);
 
   case E_INT:
-    *v = e->u.v;
+    *v = e->u.ival.v;
     return 1;
     break;
 
@@ -343,16 +343,16 @@ Expr *B (void)
       file_getsym (Tl);
       e = newexpr ();
       e->type = E_TRUE;
-      e->u.v = 1;
-      e->u.v_extra = NULL;
+      e->u.ival.v = 1;
+      e->u.ival.v_extra = NULL;
     }
     else if (strcmp (file_tokenstring (Tl), "false") == 0) {
       POP (Tl);
       file_getsym (Tl);
       e = newexpr ();
       e->type = E_FALSE;
-      e->u.v = 0;
-      e->u.v_extra = NULL;
+      e->u.ival.v = 0;
+      e->u.ival.v_extra = NULL;
     }
     else {
       if (expr_parse_id) {
@@ -633,15 +633,15 @@ static Expr *W (void)
       POP (Tl);
       e = newexpr ();
       e->type = E_INT;
-      e->u.v_extra = NULL;
+      e->u.ival.v_extra = NULL;
       if (uminus) {
-	e->u.v = -file_integer (Tl);
+	e->u.ival.v = -file_integer (Tl);
       }
       else if (tilde) {
-	e->u.v = ~file_integer (Tl);
+	e->u.ival.v = ~file_integer (Tl);
       }
       else {
-	e->u.v = file_integer (Tl);
+	e->u.ival.v = file_integer (Tl);
       }
       uminus = 0;
       tilde = 0;
@@ -663,16 +663,16 @@ static Expr *W (void)
       file_getsym (Tl);
       e = newexpr ();
       e->type = E_TRUE;
-      e->u.v = 1;
-      e->u.v_extra = NULL;
+      e->u.ival.v = 1;
+      e->u.ival.v_extra = NULL;
     }
     else if (strcmp (file_tokenstring (Tl), "false") == 0) {
       POP (Tl);
       file_getsym (Tl);
       e = newexpr ();
       e->type = E_FALSE;
-      e->u.v = 0;
-      e->u.v_extra = NULL;
+      e->u.ival.v = 0;
+      e->u.ival.v_extra = NULL;
     }
     else if (expr_parse_id && (v = (*expr_parse_id)(Tl)) && 
 	     /* not a function call */ (file_sym (Tl) != T[E_LPAR])) {
@@ -1063,7 +1063,7 @@ void expr_print (pp_t *pp, Expr *e)
     break;
     
   case E_INT:
-    pp_printf_raw (pp, "%uU", e->u.v);
+    pp_printf_raw (pp, "%uU", e->u.ival.v);
     break;
 
   case E_QUERY:

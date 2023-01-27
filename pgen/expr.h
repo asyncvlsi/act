@@ -94,7 +94,7 @@ typedef struct expr {
     struct {
       unsigned long v;
       void *v_extra;
-    };
+    } ival;
   } u;
 } Expr;
 #pragma GCC diagnostic pop

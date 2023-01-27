@@ -897,7 +897,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       n->sz[f->type].flavor = f->flavor;
 
       if (sz->w) {
-	f->w = (sz->w->type == E_INT ? sz->w->u.v*getGridsPerLambda() :
+	f->w = (sz->w->type == E_INT ? sz->w->u.ival.v*getGridsPerLambda() :
 		sz->w->u.f*getGridsPerLambda());
 	n->sz[f->type].w = f->w;
       }
@@ -905,7 +905,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 	f->w = n->sz[f->type].w;
       }
       if (sz->l) {
-	f->l = (sz->l->type == E_INT ? sz->l->u.v*getGridsPerLambda() :
+	f->l = (sz->l->type == E_INT ? sz->l->u.ival.v*getGridsPerLambda() :
 		sz->l->u.f*getGridsPerLambda());
 	n->sz[f->type].l = f->l;
       }
@@ -914,7 +914,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       }
       if (sz->folds) {
 	Assert (sz->folds->type == E_INT, "What?");
-	f->nfolds = sz->folds->u.v;
+	f->nfolds = sz->folds->u.ival.v;
 	if (f->nfolds < 1) {
 	  f->nfolds = 1;
 	}
@@ -947,14 +947,14 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->flavor = sz->flavor;
 
       if (sz->w) {
-	f->w = (sz->w->type == E_INT ? sz->w->u.v*getGridsPerLambda() :
+	f->w = (sz->w->type == E_INT ? sz->w->u.ival.v*getGridsPerLambda() :
 		sz->w->u.f*getGridsPerLambda());
       }
       else {
 	f->w = min_w_in_lambda*getGridsPerLambda();
       }
       if (sz->l) {
-	f->l = (sz->l->type == E_INT ? sz->l->u.v*getGridsPerLambda() :
+	f->l = (sz->l->type == E_INT ? sz->l->u.ival.v*getGridsPerLambda() :
 		sz->l->u.f*getGridsPerLambda());
       }
       else {
@@ -962,7 +962,7 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       }
       if (sz->folds) {
 	Assert (sz->folds->type == E_INT, "What?");
-	f->nfolds = sz->folds->u.v;
+	f->nfolds = sz->folds->u.ival.v;
 	if (f->nfolds < 1) {
 	  f->nfolds = 1;
 	}
@@ -1794,11 +1794,11 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	   output,  N_reff, P_reff, autokeeper, comb 
 	*/
 	if (strcmp (attr->attr, "keeper") == 0) {
-	  if (attr->e->u.v == 0) {
+	  if (attr->e->u.ival.v == 0) {
 	    /* don't generate a keeper */
 	    VINF(v)->unstaticized = 1;
 	  }
-	  else if (attr->e->u.v == 2) {
+	  else if (attr->e->u.ival.v == 2) {
 	    /* don't generate a keeper, but it isn't state-holding */
 	    VINF(v)->unstaticized = 2;
 	  }
@@ -1807,13 +1807,13 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  }
 	}
 	else if (strcmp (attr->attr, "iskeeper") == 0) {
-	  if (attr->e->u.v) {
+	  if (attr->e->u.ival.v) {
 	    attr_type |= EDGE_KEEPER;
 	    VINF(v)->manualkeeper = 1;
 	  }
 	}
 	else if (strcmp (attr->attr, "isckeeper") == 0) {
-	  if (attr->e->u.v) {
+	  if (attr->e->u.ival.v) {
 	    attr_type |= EDGE_CKEEPER;
 	    VINF(v)->manualkeeper = 2;
 	  }
@@ -1833,7 +1833,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  VINF(v)->n->reff_set[EDGE_PFET] = 1;
 	}
 	else if (strcmp (attr->attr, "comb") == 0) {
-	  if (attr->e->u.v) {
+	  if (attr->e->u.ival.v) {
 	    VINF(v)->usecf = 1;
 	  }
 	  else {
@@ -1909,10 +1909,10 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       /* XXX: 1e-15 scaling; need to fix this */
       if (p->u.p.sz) {
 	c->val = unit_cap*(p->u.p.sz->w->type == E_INT ?
-			   p->u.p.sz->w->u.v : p->u.p.sz->w->u.f);
+			   p->u.p.sz->w->u.ival.v : p->u.p.sz->w->u.f);
 	if (p->u.p.sz->l) {
 	  c->val *= (p->u.p.sz->l->type == E_INT ?
-		     p->u.p.sz->l->u.v : p->u.p.sz->l->u.f);
+		     p->u.p.sz->l->u.ival.v : p->u.p.sz->l->u.f);
 	}
       }
       else {
@@ -1935,7 +1935,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     N->sz[EDGE_PFET].nf = 1;
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
-	unsigned int v = attr->e->u.v;
+	unsigned int v = attr->e->u.ival.v;
 	if (v & 0x1) {
 	  act_booleanized_var_t *x = var_lookup (N, p->u.p.s);
 	  Assert (x->output == 1, "What?");
@@ -1976,9 +1976,9 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       generate_prs_graph (N, x, 1);
     }
     tree_compute_sharing (N, N->GND, EDGE_NFET,
-			  p->u.l.lo ? p->u.l.lo->u.v : 4);
+			  p->u.l.lo ? p->u.l.lo->u.ival.v : 4);
     tree_compute_sharing (N, N->Vdd, EDGE_PFET,
-			  p->u.l.lo ? p->u.l.lo->u.v : 4);
+			  p->u.l.lo ? p->u.l.lo->u.ival.v : 4);
     break;
     
   case ACT_PRS_SUBCKT:

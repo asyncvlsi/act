@@ -186,8 +186,8 @@ static Expr *expr_basecase (void)
   else if (file_have (Tl, f_integer)) {
     e = newexpr ();
     e->type = E_INT;
-    e->u.v = file_integer (Tl);
-    e->u.v_extra = NULL;
+    e->u.ival.v = file_integer (Tl);
+    e->u.ival.v_extra = NULL;
   }
   else if (file_have (Tl, f_real)) {
     e = newexpr ();
@@ -769,7 +769,7 @@ static void expr_print (Expr *e)
     break;
     
   case E_INT:
-    printf ("%lu", e->u.v);
+    printf ("%lu", e->u.ival.v);
     break;
 
   case E_QUERY:

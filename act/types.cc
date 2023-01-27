@@ -1932,7 +1932,7 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
 	  eargs[i] = args[i]->u.f;
 	}
 	else if (args[i]->type == E_INT) {
-	  eargs[i] = args[i]->u.v;
+	  eargs[i] = args[i]->u.ival.v;
 	}
 	else {
 	  Assert (0, "What?!");

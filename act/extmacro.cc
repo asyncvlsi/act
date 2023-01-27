@@ -69,7 +69,7 @@ ExternMacro::ExternMacro (Process *p)
 	ActId *tid = new ActId (nm);
 	Expr *e = tid->Eval (p->getns(), p->CurScope(), 0, 0);
 	if (e->type == E_INT) {
-	  snprintf (buf + len, 10240 - len, " %lu", e->u.v);
+	  snprintf (buf + len, 10240 - len, " %lu", e->u.ival.v);
 	}
 	else if (e->type == E_TRUE || e->type == E_FALSE) {
 	  snprintf (buf + len, 10240 - len, " %c",

@@ -484,7 +484,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
 
     for (attr = p->u.p.attr; attr; attr = attr->next) {
       if (strcmp (attr->attr, "output") == 0) {
-	unsigned int v = attr->e->u.v;
+	unsigned int v = attr->e->u.ival.v;
 	if (v & 0x1) {
 	  visit_var (N, p->u.p.s, 0);
 	}

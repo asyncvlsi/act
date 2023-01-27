@@ -664,13 +664,13 @@ Act::Act (const char *s)
     }
     else if (vars[i].isint == 1) {
       e->type = E_INT;
-      e->u.v = vars[i].u_value;
-      e->u.v_extra = NULL;
+      e->u.ival.v = vars[i].u_value;
+      e->u.ival.v_extra = NULL;
     }
     else {
       e->type = E_INT;
-      e->u.v = vars[i].s_value;
-      e->u.v_extra = NULL;
+      e->u.ival.v = vars[i].s_value;
+      e->u.ival.v_extra = NULL;
     }
 
     Expr *tmp = TypeFactory::NewExpr (e);

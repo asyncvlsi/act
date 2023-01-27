@@ -564,7 +564,7 @@ static int expr_hash (int sz, Expr *w, int prev)
     /* leaf */
   case E_INT:
     prev = hash_function_continue 
-      (sz, (const unsigned char *) &w->u.v, sizeof (unsigned int), prev, 1);
+      (sz, (const unsigned char *) &w->u.ival.v, sizeof (unsigned int), prev, 1);
     break;
 
   case E_REAL:
@@ -835,28 +835,28 @@ Expr *TypeFactory::NewExpr (Expr *x)
   else if (x->type == E_INT) {
     ihash_bucket_t *b;
 
-    if (x->u.v_extra) {
+    if (x->u.ival.v_extra) {
       Expr *t;
       BigInt *tmp = new BigInt();
       NEW (t, Expr);
       t->type = E_INT;
-      t->u.v = x->u.v;
-      *tmp = *((BigInt *)x->u.v_extra);
-      t->u.v_extra = tmp;
+      t->u.ival.v = x->u.ival.v;
+      *tmp = *((BigInt *)x->u.ival.v_extra);
+      t->u.ival.v_extra = tmp;
       return t;
     }
     
-    b = ihash_lookup (TypeFactory::expr_int, x->u.v);
+    b = ihash_lookup (TypeFactory::expr_int, x->u.ival.v);
     if (b) {
       return (Expr *)b->v;
     }
     else {
       Expr *t;
-      b = ihash_add (TypeFactory::expr_int, x->u.v);
+      b = ihash_add (TypeFactory::expr_int, x->u.ival.v);
       NEW (t, Expr);
       t->type = E_INT;
-      t->u.v = x->u.v;
-      t->u.v_extra = NULL;
+      t->u.ival.v = x->u.ival.v;
+      t->u.ival.v_extra = NULL;
       b->v = t;
       return t;
     }

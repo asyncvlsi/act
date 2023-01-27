@@ -1053,7 +1053,7 @@ void act_syn_loop_setup (ActNamespace *ns, Scope *s,
     fatal_error ("Isn't a constant expression");
     Assert (ix->type == E_INT, "Should have been caught earlier");
   }
-  *ilo = ix->u.v;
+  *ilo = ix->u.ival.v;
   if (hi) {
     ix = expr_expand (hi, ns, s);
     if (!expr_is_a_const (ix)) {
@@ -1063,7 +1063,7 @@ void act_syn_loop_setup (ActNamespace *ns, Scope *s,
       fatal_error ("Isn't a constant expression");
     }
     Assert (ix->type == E_INT, "Should have been caught earlier");
-    *ihi = ix->u.v;
+    *ihi = ix->u.ival.v;
   }
   else {
     *ihi = *ilo-1;
@@ -1127,7 +1127,7 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 	fatal_error ("Isn't a constant expression");
       }
       Assert (e->type == E_INT, "What?");
-      ilo = e->u.v;
+      ilo = e->u.ival.v;
 
       if (igc->hi) {
 	e = expr_expand (igc->hi, ns, s);
@@ -1138,7 +1138,7 @@ void ActBody_Select::Expand (ActNamespace *ns, Scope *s)
 	  fatal_error ("Isn't a constant expression");
 	}
 	Assert (e->type == E_INT, "Hmm");
-	ihi = e->u.v;
+	ihi = e->u.ival.v;
       }
       else {
 	ihi = ilo-1;

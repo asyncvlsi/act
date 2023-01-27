@@ -340,15 +340,15 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  /* (r >> (e->u.e.r->u.e.l)) & ((1 << (r - l + 1)) - 1) */
 
 	  /* XXX bitwidth */
-	  if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v > 64) {
+	  if (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v > 64) {
 	    warning ("Bitwidth limit exceeded?");
 	    mask_amt = 0xffffffffffffffff;
 	  }
-	  else if (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v == 64) {
+	  else if (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v == 64) {
 	    mask_amt = 0xffffffffffffffff;
 	  }
 	  else {
-	    mask_amt = (1UL << (e->u.e.r->u.e.r->u.v - e->u.e.r->u.e.l->u.v + 1)) - 1;
+	    mask_amt = (1UL << (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1)) - 1;
 	  }
 	  ret->type = E_AND;
 	  ret->u.e.r = const_expr (mask_amt);

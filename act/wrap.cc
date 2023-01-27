@@ -129,8 +129,8 @@ Expr *const_expr (long val)
 
   NEW (e, Expr);
   e->type = E_INT;
-  e->u.v = val;
-  e->u.v_extra = NULL;
+  e->u.ival.v = val;
+  e->u.ival.v_extra = NULL;
 
   f = TypeFactory::NewExpr (e);
   FREE (e);
@@ -304,8 +304,8 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     break;
 
   case E_INT:
-    ret->u.v = e->u.v;
-    ret->u.v_extra = NULL;
+    ret->u.ival.v = e->u.ival.v;
+    ret->u.ival.v_extra = NULL;
     break;
 
   case E_REAL:

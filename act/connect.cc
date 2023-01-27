@@ -1297,7 +1297,7 @@ void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
 	      t->e->u.f += a->e->u.f;
 	    }
 	    else if (t->e->type == E_INT) {
-	      t->e->u.v += a->e->u.v;
+	      t->e->u.ival.v += a->e->u.ival.v;
 	    }
 	    else {
 	      act_error_ctxt (stderr);
@@ -1320,9 +1320,9 @@ void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
 	      }
 	    }
 	    else if (t->e->type == E_INT) {
-	      if (t->e->u.v < a->e->u.v) {
-		t->e->u.v = a->e->u.v;
-		t->e->u.v_extra = NULL;
+	      if (t->e->u.ival.v < a->e->u.ival.v) {
+		t->e->u.ival.v = a->e->u.ival.v;
+		t->e->u.ival.v_extra = NULL;
 	      }
 	    }
 	    else {
@@ -1346,9 +1346,9 @@ void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
 	      }
 	    }
 	    else if (t->e->type == E_INT) {
-	      if (t->e->u.v > a->e->u.v) {
-		t->e->u.v = a->e->u.v;
-		t->e->u.v_extra = NULL;
+	      if (t->e->u.ival.v > a->e->u.ival.v) {
+		t->e->u.ival.v = a->e->u.ival.v;
+		t->e->u.ival.v_extra = NULL;
 	      }
 	    }
 	    else {
@@ -1367,7 +1367,7 @@ void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
 	  else if (z[i][2] == '|') {
 	    /* OR */
 	    if (t->e->type == E_INT) {
-	      t->e->u.v |= a->e->u.v;
+	      t->e->u.ival.v |= a->e->u.ival.v;
 	    }
 	    else {
 	      act_error_ctxt (stderr);
@@ -1385,8 +1385,8 @@ void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
 	  else if (z[i][2] == '&') {
 	    /* AND */
 	    if (t->e->type == E_INT) {
-	      t->e->u.v &= a->e->u.v;
-	      t->e->u.v_extra = NULL;
+	      t->e->u.ival.v &= a->e->u.ival.v;
+	      t->e->u.ival.v_extra = NULL;
 	    }
 	    else {
 	      act_error_ctxt (stderr);

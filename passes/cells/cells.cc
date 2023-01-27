@@ -1724,7 +1724,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
       if (ret->tval != -1) {
 	fatal_error ("More than one tree!");
       }
-      ret->tval = l->u.l.lo->u.v;
+      ret->tval = l->u.l.lo->u.ival.v;
       lpush = l->next;
       l = l->u.l.p;
       in_tree = 1;
@@ -2469,7 +2469,7 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   if (prs->u.p.sz) {
     if (prs->u.p.sz->w) {
       if (prs->u.p.sz->w->type == E_INT) {
-	w = prs->u.p.sz->w->u.v;
+	w = prs->u.p.sz->w->u.ival.v;
       }
       else {
 	w = prs->u.p.sz->w->u.f;
@@ -2480,7 +2480,7 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
     }
     if (prs->u.p.sz->l) {
       if (prs->u.p.sz->l->type == E_INT) {
-	l = prs->u.p.sz->l->u.v;
+	l = prs->u.p.sz->l->u.ival.v;
       }
       else {
 	l = prs->u.p.sz->l->u.f;
@@ -2551,7 +2551,7 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
   if (prs->u.p.sz) {
     if (prs->u.p.sz->w) {
       if (prs->u.p.sz->w->type == E_INT) {
-	w = prs->u.p.sz->w->u.v;
+	w = prs->u.p.sz->w->u.ival.v;
       }
       else {
 	w = prs->u.p.sz->w->u.f;
@@ -2562,7 +2562,7 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
     }
     if (prs->u.p.sz->l) {
       if (prs->u.p.sz->l->type == E_INT) {
-	l = prs->u.p.sz->l->u.v;
+	l = prs->u.p.sz->l->u.ival.v;
       }
       else {
 	l = prs->u.p.sz->l->u.f;
@@ -2697,7 +2697,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       if (prs->u.l.lo) {
 	Assert (expr_is_a_const (prs->u.l.lo), "Hmm...");
 	Assert (prs->u.l.lo->type == E_INT, "Hmmmm");
-	_collect_group_prs (sc, prs->u.l.lo->u.v, prs->u.l.p);
+	_collect_group_prs (sc, prs->u.l.lo->u.ival.v, prs->u.l.p);
       }
       else {
 	_collect_group_prs (sc, 1, prs->u.l.p);
@@ -3007,7 +3007,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 
       if (treeval) {
 	Assert (treeval->type == E_INT, "Hmm");
-	pi->tval = treeval->u.v;
+	pi->tval = treeval->u.ival.v;
 	Assert (pi->tval > 0, "tree<> parameter has to be > 0!");
       }
       else if (mgn) {

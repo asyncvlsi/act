@@ -77,8 +77,6 @@ static void fread_idxtype (IDX_TYPE *i, NAMES_T *N, FILE *fp)
   unsigned char *b, *c;
   IDX_TYPE t;
 
-  Assert (IDX_SIZE == 4, "eh?");
-
   if (fread (i, IDX_SIZE, 1, fp) != 1) {
     fatal_error ("fread failed!");
   }
@@ -86,10 +84,25 @@ static void fread_idxtype (IDX_TYPE *i, NAMES_T *N, FILE *fp)
     t = *i;
     b = (unsigned char *)&t;
     c = (unsigned char *)i;
+#if IDX_SIZE == 4    
     c[0] = b[3];
     c[1] = b[2];
     c[2] = b[1];
     c[3] = b[0];
+#else
+#if IDX_SIZE == 8
+    c[0] = b[7];
+    c[1] = b[6];
+    c[2] = b[5];
+    c[3] = b[4];
+    c[4] = b[3];
+    c[5] = b[2];
+    c[6] = b[1];
+    c[7] = b[0];
+#else
+#error IDX_SIZE should be 4 or 8
+#endif
+#endif
   }
 }
   

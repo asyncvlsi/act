@@ -24,6 +24,8 @@
 #ifndef __NAMES_H__
 #define __NAMES_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,7 +42,7 @@ extern "C" {
      <file>_idx.dat  <- index table
 */
 
-#define IDX_TYPE unsigned int
+#define IDX_TYPE uint32_t
 #define IDX_SIZE 4
 
 #define NAMES_WRITE 1

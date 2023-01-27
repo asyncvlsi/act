@@ -193,16 +193,16 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 
   case E_INT:
     if (prec < 0) {
-      if (e->u.v_extra) {
-	std::string s = ((BigInt *)e->u.v_extra)->sPrint ();
+      if (e->u.ival.v_extra) {
+	std::string s = ((BigInt *)e->u.ival.v_extra)->sPrint ();
 	snprintf (buf+k, sz, "0x%s", s.c_str());
       }
       else {
-	snprintf (buf+k, sz, "%lu", e->u.v);
+	snprintf (buf+k, sz, "%lu", e->u.ival.v);
       }
     }
     else {
-      snprintf (buf+k, sz, "%ld", e->u.v);
+      snprintf (buf+k, sz, "%ld", e->u.ival.v);
     }
     PRINT_STEP;
     break;
@@ -744,7 +744,7 @@ int expr_equal (const Expr *a, const Expr *b)
 
     /* leaf */
   case E_INT:
-    if (a->u.v == b->u.v) {
+    if (a->u.ival.v == b->u.ival.v) {
       return 1;
     }
     else {
@@ -1157,9 +1157,9 @@ static Expr *_expr_expand (int *width, Expr *e,
     WIDTH_UPDATE(WIDTH_MAX);
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	if (ret->u.e.l->u.v_extra && ret->u.e.r->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
-	  BigInt *r = (BigInt *)ret->u.e.r->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra && ret->u.e.r->u.ival.v_extra) {
+	  BigInt *l = (BigInt *)ret->u.e.l->u.ival.v_extra;
+	  BigInt *r = (BigInt *)ret->u.e.r->u.ival.v_extra;
 
 	  if (e->type == E_AND) {
 	    *l &= (*r);
@@ -1174,27 +1174,27 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  FREE (ret->u.e.r);
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ret->u.ival.v_extra = l;
+	  ret->u.ival.v = l->getVal (0);
 	}
 	else {
 	  unsigned long v;
 
-	  v = ret->u.e.l->u.v;
+	  v = ret->u.e.l->u.ival.v;
 	  if (e->type == E_AND) {
-	    v = v & ((unsigned long)ret->u.e.r->u.v);
+	    v = v & ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_OR) {
-	    v = v | ((unsigned long)ret->u.e.r->u.v);
+	    v = v | ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  else {
-	    v = v ^ ((unsigned long)ret->u.e.r->u.v);
+	    v = v ^ ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  //FREE (ret->u.e.l);
 	  //FREE (ret->u.e.r);
 	  ret->type = E_INT;
-	  ret->u.v = v;
-	  ret->u.v_extra = NULL;
+	  ret->u.ival.v = v;
+	  ret->u.ival.v_extra = NULL;
 
 	  tmp = TypeFactory::NewExpr (ret);
 	  FREE (ret);
@@ -1247,14 +1247,14 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
 
       if (e->type == E_AND) {
-	if (ce->type == E_INT && ce->u.v == 0 &&
-	    (!ce->u.v_extra || ((BigInt *)ce->u.v_extra)->isZero())) {
+	if (ce->type == E_INT && ce->u.ival.v == 0 &&
+	    (!ce->u.ival.v_extra || ((BigInt *)ce->u.ival.v_extra)->isZero())) {
 	  if (pc) {
 	    /* return 0 */
 	    FREE (ret);
 	    ret = ce;
-	    if (ce->u.v_extra) {
-	      ((BigInt *)ce->u.v_extra)->setWidth (*width);
+	    if (ce->u.ival.v_extra) {
+	      ((BigInt *)ce->u.ival.v_extra)->setWidth (*width);
 	    }
 	    /* XXX: free re but with a new free function */
 	  }
@@ -1273,8 +1273,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
       }
       else if (e->type == E_OR) {
-	if (ce->type == E_INT && ce->u.v == 0 &&
-	    (!ce->u.v_extra || ((BigInt *)ce->u.v_extra)->isZero())) {
+	if (ce->type == E_INT && ce->u.ival.v == 0 &&
+	    (!ce->u.ival.v_extra || ((BigInt *)ce->u.ival.v_extra)->isZero())) {
 	  FREE (ret);
 	  ret = re;
 	}
@@ -1327,9 +1327,9 @@ static Expr *_expr_expand (int *width, Expr *e,
     
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	if (ret->u.e.l->u.v_extra && ret->u.e.r->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
-	  BigInt *r = (BigInt *)ret->u.e.r->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra && ret->u.e.r->u.ival.v_extra) {
+	  BigInt *l = (BigInt *)ret->u.e.l->u.ival.v_extra;
+	  BigInt *r = (BigInt *)ret->u.e.r->u.ival.v_extra;
 
 	  if (e->type == E_PLUS) {
 	    *l += *r;
@@ -1361,44 +1361,44 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  FREE (ret->u.e.r);
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ret->u.ival.v_extra = l;
+	  ret->u.ival.v = l->getVal (0);
 	  l->setWidth (*width);
 	}
 	else {
 	  signed long v;
 
-	  v = ret->u.e.l->u.v;
+	  v = ret->u.e.l->u.ival.v;
 	  if (e->type == E_PLUS) {
-	    v = v + ((signed long)ret->u.e.r->u.v);
+	    v = v + ((signed long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_MINUS) {
-	    v = v - ((signed long)ret->u.e.r->u.v);
+	    v = v - ((signed long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_MULT) {
-	    v = v * ((signed long)ret->u.e.r->u.v);
+	    v = v * ((signed long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_DIV) {
-	    v = v / ((signed long)ret->u.e.r->u.v);
+	    v = v / ((signed long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_MOD) {
-	    v = v % ((signed long)ret->u.e.r->u.v);
+	    v = v % ((signed long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_LSL) {
-	    v = v << ((unsigned long)ret->u.e.r->u.v);
+	    v = v << ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  else if (e->type == E_LSR) {
-	    v = ((unsigned long)v) >> ((unsigned long)ret->u.e.r->u.v);
+	    v = ((unsigned long)v) >> ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  else { /* ASR */
-	    v = (signed long)v >> ((unsigned long)ret->u.e.r->u.v);
+	    v = (signed long)v >> ((unsigned long)ret->u.e.r->u.ival.v);
 	  }
 	  //FREE (ret->u.e.l);
 	  //FREE (ret->u.e.r);
 
 	  ret->type = E_INT;
-	  ret->u.v = v;
-	  ret->u.v_extra = NULL;
+	  ret->u.ival.v = v;
+	  ret->u.ival.v_extra = NULL;
 
 	  tmp = TypeFactory::NewExpr (ret);
 	  FREE (ret);
@@ -1411,7 +1411,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 		   || e->type == E_DIV)) {
 	double v;
 
-#define VAL(e) (((e)->type == E_INT) ? (unsigned long)(e)->u.v : (e)->u.f)
+#define VAL(e) (((e)->type == E_INT) ? (unsigned long)(e)->u.ival.v : (e)->u.f)
 
 	v = VAL(ret->u.e.l);
 	if (e->type == E_PLUS) {
@@ -1470,8 +1470,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (pc) {
 	  FREE (ret);
 	  ret = ce;
-	  if (ce->type == E_INT && ce->u.v_extra) {
-	    ((BigInt *)ce->u.v_extra)->setWidth (*width);
+	  if (ce->type == E_INT && ce->u.ival.v_extra) {
+	    ((BigInt *)ce->u.ival.v_extra)->setWidth (*width);
 	  }
 	  /* XXX: free re */
 	}
@@ -1484,8 +1484,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (pc) {
 	  FREE (ret);
 	  ret = ce;
-	  if (ce->type == E_INT && ce->u.v_extra) {
-	    ((BigInt *)ce->u.v_extra)->setWidth (*width);
+	  if (ce->type == E_INT && ce->u.ival.v_extra) {
+	    ((BigInt *)ce->u.ival.v_extra)->setWidth (*width);
 	  }
 	  /* XXX: free re */
 	}
@@ -1498,8 +1498,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (pc) {
 	  FREE (ret);
 	  ret = ce;
-	  if (ce->type == E_INT && ce->u.v_extra) {
-	    ((BigInt *)ce->u.v_extra)->setWidth (*width);
+	  if (ce->type == E_INT && ce->u.ival.v_extra) {
+	    ((BigInt *)ce->u.ival.v_extra)->setWidth (*width);
 	  }
 	  /* XXX: free re */
 	}
@@ -1519,9 +1519,9 @@ static Expr *_expr_expand (int *width, Expr *e,
     *width = 1;
     if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
       if (ret->u.e.l->type == E_INT && ret->u.e.r->type == E_INT) {
-	if (ret->u.e.l->u.v_extra && ret->u.e.r->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
-	  BigInt *r = (BigInt *)ret->u.e.r->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra && ret->u.e.r->u.ival.v_extra) {
+	  BigInt *l = (BigInt *)ret->u.e.l->u.ival.v_extra;
+	  BigInt *r = (BigInt *)ret->u.e.r->u.ival.v_extra;
 	  int res;
 	  if (e->type == E_LT) {
 	    res = ((*l) < (*r)) ? 1 : 0;
@@ -1558,24 +1558,24 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  signed long v;
 
-	  v = ret->u.e.l->u.v;
+	  v = ret->u.e.l->u.ival.v;
 	  if (e->type == E_LT) {
-	    v = (v < ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v < ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  else if (e->type == E_GT) {
-	    v = (v > ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v > ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  else if (e->type == E_LE) {
-	    v = (v <= ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v <= ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  else if (e->type == E_GE) {
-	    v = (v >= ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v >= ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  else if (e->type == E_EQ) {
-	    v = (v == ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v == ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  else { /* NE */
-	    v = (v != ((signed long)ret->u.e.r->u.v) ? 1 : 0);
+	    v = (v != ((signed long)ret->u.e.r->u.ival.v) ? 1 : 0);
 	  }
 	  //FREE (ret->u.e.l);
 	  //FREE (ret->u.e.r);
@@ -1706,20 +1706,20 @@ static Expr *_expr_expand (int *width, Expr *e,
 	ret = tmp;
       }
       else if (ret->u.e.l->type == E_INT) {
-	if (ret->u.e.l->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra) {
+	  BigInt *l = (BigInt *)ret->u.e.l->u.ival.v_extra;
 	  *l = ~(*l);
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ret->u.ival.v_extra = l;
+	  ret->u.ival.v = l->getVal (0);
 	}
 	else {
-	  unsigned long v = ret->u.e.l->u.v;
+	  unsigned long v = ret->u.e.l->u.ival.v;
 	  //FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v = ~v;
-	  ret->u.v_extra = NULL;
+	  ret->u.ival.v = ~v;
+	  ret->u.ival.v_extra = NULL;
 	  tmp = TypeFactory::NewExpr (ret);
 	  FREE (ret);
 	  ret = tmp;
@@ -1741,22 +1741,22 @@ static Expr *_expr_expand (int *width, Expr *e,
     *width = lw;
     if (expr_is_a_const (ret->u.e.l)) {
       if (ret->u.e.l->type == E_INT) {
-	if (ret->u.e.l->u.v_extra) {
-	  BigInt *l = (BigInt *)ret->u.e.l->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra) {
+	  BigInt *l = (BigInt *)ret->u.e.l->u.ival.v_extra;
 	  l->toSigned ();
 	  *l = -(*l);
 	  l->toUnsigned ();
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ret->u.ival.v_extra = l;
+	  ret->u.ival.v = l->getVal (0);
 	}
 	else {
-	  signed long v = ret->u.e.l->u.v;
+	  signed long v = ret->u.e.l->u.ival.v;
 	  //FREE (ret->u.e.l);
 	  ret->type = E_INT;
-	  ret->u.v = -v;
-	  ret->u.v_extra = NULL;
+	  ret->u.ival.v = -v;
+	  ret->u.ival.v_extra = NULL;
 	  tmp = TypeFactory::NewExpr (ret);
 	  FREE (ret);
 	  ret = tmp;
@@ -1795,8 +1795,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  FREE (ret);
 	  FREE (tmp);
 	  ret = ce;
-	  if (ce->type == E_INT && ce->u.v_extra) {
-	    ((BigInt *)ce->u.v_extra)->setWidth (*width);
+	  if (ce->type == E_INT && ce->u.ival.v_extra) {
+	    ((BigInt *)ce->u.ival.v_extra)->setWidth (*width);
 	  }
 	}
       }
@@ -1824,8 +1824,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fprintf (stderr,"\n");
 	  fatal_error ("Query operator expression has non-Boolean value");
 	}
-	if (ret->type == E_INT && ret->u.v_extra) {
-	  ((BigInt *)ret->u.v_extra)->setWidth (*width);
+	if (ret->type == E_INT && ret->u.ival.v_extra) {
+	  ((BigInt *)ret->u.ival.v_extra)->setWidth (*width);
 	}
       }
     }
@@ -1897,21 +1897,21 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fatal_error ("Variable in bitfield operator is a non-integer");
 	}
 	if (ret->u.e.r->u.e.l) {
-	  *width = ret->u.e.r->u.e.r->u.v - ret->u.e.r->u.e.l->u.v + 1;
+	  *width = ret->u.e.r->u.e.r->u.ival.v - ret->u.e.r->u.e.l->u.ival.v + 1;
 	}
 	else {
 	  *width = 1;
 	}
 	InstType *it = s->FullLookup ((ActId *)ret->u.e.l, NULL);
-	if (ret->u.e.r->u.e.r->u.v >= TypeFactory::bitWidth (it)) {
+	if (ret->u.e.r->u.e.r->u.ival.v >= TypeFactory::bitWidth (it)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "\texpanding expr: ");
 	  print_expr (stderr, e);
 	  fprintf (stderr, "\n");
 	  warning ("Bit-width (%d) is less than the width specifier {%d..%d}",
-		   TypeFactory::bitWidth (it), ret->u.e.r->u.e.r->u.v,
-		   ret->u.e.r->u.e.l ? ret->u.e.r->u.e.l->u.v :
-		   ret->u.e.r->u.e.r->u.v);
+		   TypeFactory::bitWidth (it), ret->u.e.r->u.e.r->u.ival.v,
+		   ret->u.e.r->u.e.l ? ret->u.e.r->u.e.l->u.ival.v :
+		   ret->u.e.r->u.e.r->u.ival.v);
 	}
       }
       else {
@@ -1925,7 +1925,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fprintf (stderr,"\n");
 	  fatal_error ("Variable in bitfield operator is a non-integer");
 	}
-	v = ret->u.e.l->u.v;
+	v = ret->u.e.l->u.ival.v;
 	if (e->u.e.r->u.e.l) {
 	  lo = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
 	}
@@ -1946,9 +1946,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fatal_error ("Bitfield parameter in operator is a non-integer");
 	}
 
-	hiv = hi->u.v;
+	hiv = hi->u.ival.v;
 	if (lo) {
-	  lov = lo->u.v;
+	  lov = lo->u.ival.v;
 	}
 	else {
 	  lov = hiv;
@@ -1965,25 +1965,25 @@ static Expr *_expr_expand (int *width, Expr *e,
 	v = (v >> lov) & ~(~0UL << (hiv - lov + 1));
 
 	BigInt *ltmp;
-	if (ret->u.e.l->u.v_extra) {
-	  ltmp = (BigInt *) ret->u.e.l->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra) {
+	  ltmp = (BigInt *) ret->u.e.l->u.ival.v_extra;
 	}
 	else {
 	  ltmp = NULL;
 	}
 
 	ret->type = E_INT;
-	ret->u.v = v;
+	ret->u.ival.v = v;
 
 	if (ltmp) {
 	  *ltmp >>= lov;
 	  FREE (ret->u.e.l);
 	  ltmp->setWidth (hiv-lov+1);
-	  ret->u.v_extra = ltmp;
-	  ret->u.v = ltmp->getVal (0);
+	  ret->u.ival.v_extra = ltmp;
+	  ret->u.ival.v = ltmp->getVal (0);
 	}
 	else {
-	  ret->u.v_extra = NULL;
+	  ret->u.ival.v_extra = NULL;
 	  tmp = TypeFactory::NewExpr (ret);
 	  FREE (ret);
 	  ret = tmp;
@@ -2012,7 +2012,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       ret->u.e.r = NULL;
       if (expr_is_a_const (ret->u.e.l)) {
 	if (ret->type == E_BUILTIN_BOOL) {
-	  if (ret->u.e.l->u.v) {
+	  if (ret->u.e.l->u.ival.v) {
 	    ret->type = E_TRUE;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
@@ -2028,8 +2028,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  if (ret->u.e.l->type == E_TRUE) {
 	    ret->type = E_INT;
-	    ret->u.v = 1;
-            ret->u.v_extra = NULL;
+	    ret->u.ival.v = 1;
+            ret->u.ival.v_extra = NULL;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
 	    ret = tmp;
@@ -2037,8 +2037,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else if (ret->u.e.l->type == E_REAL) {
 	    Expr *texpr = ret->u.e.l;
 	    ret->type = E_INT;
-	    ret->u.v = (long)texpr->u.f;
-	    ret->u.v_extra = NULL;
+	    ret->u.ival.v = (long)texpr->u.f;
+	    ret->u.ival.v_extra = NULL;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
 	    expr_free (texpr);
@@ -2046,8 +2046,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  }
 	  else {
 	    ret->type = E_INT;
-	    ret->u.v = 0;
-            ret->u.v_extra = NULL;
+	    ret->u.ival.v = 0;
+            ret->u.ival.v_extra = NULL;
 	    tmp = TypeFactory::NewExpr (ret);
 	    FREE (ret);
 	    ret = tmp;
@@ -2061,18 +2061,18 @@ static Expr *_expr_expand (int *width, Expr *e,
 
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	BigInt *l;
-	int _width = ret->u.e.r->u.v;
+	int _width = ret->u.e.r->u.ival.v;
 
-	if (ret->u.e.l->u.v_extra) {
-	  l = (BigInt *)ret->u.e.l->u.v_extra;
+	if (ret->u.e.l->u.ival.v_extra) {
+	  l = (BigInt *)ret->u.e.l->u.ival.v_extra;
 	  FREE (ret->u.e.l);
 	  ret->type = E_INT;
 	  l->setWidth (_width);
-	  ret->u.v_extra = l;
-	  ret->u.v = l->getVal (0);
+	  ret->u.ival.v_extra = l;
+	  ret->u.ival.v = l->getVal (0);
 	}
 	else {
-	  unsigned long x = ret->u.e.l->u.v;
+	  unsigned long x = ret->u.e.l->u.ival.v;
 
 	  if (_width < 64) {
 	    x = x & ((1UL << _width)-1);
@@ -2083,8 +2083,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  l->setVal (0, x);
 	  
 	  ret->type = E_INT;
-	  ret->u.v = x;
-	  ret->u.v_extra = l;
+	  ret->u.ival.v = x;
+	  ret->u.ival.v_extra = l;
 	}
 	*width = _width;
       }
@@ -2093,7 +2093,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	fatal_error ("int() operator requires a constant expression for the second argument");
       }
       else {
-	*width = ret->u.e.r->u.v;
+	*width = ret->u.e.r->u.ival.v;
       }
     }
     break;
@@ -2233,10 +2233,10 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  *width = TypeFactory::bitWidth (it);
 	}
 	else if (te->type == E_INT) {
-	  if (te->u.v_extra == NULL) {
+	  if (te->u.ival.v_extra == NULL) {
 	    /* XXX: add stuff here */
 	  }
-	  *width = _int_width (te->u.v);
+	  *width = _int_width (te->u.ival.v);
 	}
 	else {
 	  *width = -1;
@@ -2247,7 +2247,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	xid = ((ActId *)e->u.e.l)->Expand (ns, s);
 	te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
 	if (te->type == E_INT) {
-	  *width = _int_width (te->u.v);
+	  *width = _int_width (te->u.ival.v);
 	}
 	else {
 	  *width = -1;
@@ -2263,28 +2263,28 @@ static Expr *_expr_expand (int *width, Expr *e,
 
   case E_INT:
     LVAL_ERROR;
-    ret->u.v = e->u.v;
-    ret->u.v_extra = NULL;
-    *width = _int_width (ret->u.v);
+    ret->u.ival.v = e->u.ival.v;
+    ret->u.ival.v_extra = NULL;
+    *width = _int_width (ret->u.ival.v);
 
     if (flags & ACT_EXPR_EXFLAG_CHPEX) {
-      if (e->u.v_extra) {
+      if (e->u.ival.v_extra) {
 	BigInt *btmp = new BigInt();
-	*btmp = *((BigInt *)e->u.v_extra);
-	ret->u.v_extra = btmp;
+	*btmp = *((BigInt *)e->u.ival.v_extra);
+	ret->u.ival.v_extra = btmp;
 	*width = btmp->getWidth ();
       }
       else {
 	BigInt *btmp = new BigInt (*width, 0, 1);
-	btmp->setVal (0, ret->u.v);
-	ret->u.v_extra = btmp;
+	btmp->setVal (0, ret->u.ival.v);
+	ret->u.ival.v_extra = btmp;
       }
     }
     else {
-      if (e->u.v_extra) {
+      if (e->u.ival.v_extra) {
 	BigInt *btmp = new BigInt();
-	*btmp = *((BigInt *)e->u.v_extra);
-	ret->u.v_extra = btmp;
+	*btmp = *((BigInt *)e->u.ival.v_extra);
+	ret->u.ival.v_extra = btmp;
 	*width = btmp->getWidth();
       }
       else {
@@ -2364,8 +2364,8 @@ static Expr *_expr_expand (int *width, Expr *e,
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;
   }
-  if (ret->type == E_INT && ret->u.v_extra) {
-    BigInt *tmp = (BigInt *) ret->u.v_extra;
+  if (ret->type == E_INT && ret->u.ival.v_extra) {
+    BigInt *tmp = (BigInt *) ret->u.ival.v_extra;
     Assert (tmp->getWidth () == *width, "What?");
   }
   return ret;
@@ -2629,8 +2629,8 @@ static void efree_ex (Expr *e)
 
   switch (e->type) {
   case E_INT:
-    if (e->u.v_extra) {
-      delete ((BigInt *)e->u.v_extra);
+    if (e->u.ival.v_extra) {
+      delete ((BigInt *)e->u.ival.v_extra);
     }
   case E_TRUE:
   case E_FALSE:
@@ -2666,7 +2666,7 @@ static void efree_ex (Expr *e)
     break;
   }
   if (e->type == E_TRUE || e->type == E_FALSE ||
-      (e->type == E_INT && !e->u.v_extra)) {
+      (e->type == E_INT && !e->u.ival.v_extra)) {
     /* cached */
   }
   else {
@@ -2928,7 +2928,7 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     _expr_expand_sz (buf, len, sz, 32);
     (*buf)[*len] = 'i';
     *len = *len + 1;
-    snprintf (*buf + *len, *sz - *len, "%lu", e->u.v);
+    snprintf (*buf + *len, *sz - *len, "%lu", e->u.ival.v);
     *len += strlen (*buf + *len);
     break;
     
@@ -3074,7 +3074,7 @@ static void _prs_expr_to_string (char **buf, int *len, int *sz,
       c = _expr_type_char (E_NOT);
       _expr_append_char (buf, len, sz, c);
     }
-    //ret->u.v.sz = act_expand_size (p->u.v.sz, ns, s);
+    //ret->u.ival.v.sz = act_expand_size (p->u.ival.v.sz, ns, s);
     break;
 
   case ACT_PRS_EXPR_TRUE:

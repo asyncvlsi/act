@@ -886,20 +886,20 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
 	act_error_ctxt (stderr);
 	fatal_error ("Array range value is a non-integer/non-constant value");
       }
-      ret->r[i].u.ex.idx.lo = lval->u.v;
-      ret->r[i].u.ex.idx.hi = hval->u.v;
+      ret->r[i].u.ex.idx.lo = lval->u.ival.v;
+      ret->r[i].u.ex.idx.hi = hval->u.ival.v;
       ret->r[i].u.ex.isrange = 1;
       //FREE (lval);
     }
     else {
       if (is_ref) {
-	ret->r[i].u.ex.idx.lo = hval->u.v;
-	ret->r[i].u.ex.idx.hi = hval->u.v;
+	ret->r[i].u.ex.idx.lo = hval->u.ival.v;
+	ret->r[i].u.ex.idx.hi = hval->u.ival.v;
 	ret->r[i].u.ex.isrange = 0;
       }
       else {
 	ret->r[i].u.ex.idx.lo = 0;
-	ret->r[i].u.ex.idx.hi = hval->u.v - 1;
+	ret->r[i].u.ex.idx.hi = hval->u.ival.v - 1;
 	ret->r[i].u.ex.isrange = 1;
       }
     }
@@ -964,8 +964,8 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
 
     if (hval->type == E_INT) {
       ret->r[i].u.ex.isrange = 0;
-      ret->r[i].u.ex.idx.lo = hval->u.v;
-      ret->r[i].u.ex.idx.hi = hval->u.v;
+      ret->r[i].u.ex.idx.lo = hval->u.ival.v;
+      ret->r[i].u.ex.idx.hi = hval->u.ival.v;
     }
     else {
       ret->r[i].u.ex.isrange = 2;
@@ -990,8 +990,8 @@ Expr *Array::getDeref (int idx)
     Expr *tmp, *tmp2;
     NEW (tmp, Expr);
     tmp->type = E_INT;
-    tmp->u.v = r[idx].u.ex.idx.lo;
-    tmp->u.v_extra = NULL;
+    tmp->u.ival.v = r[idx].u.ex.idx.lo;
+    tmp->u.ival.v_extra = NULL;
     tmp2 = TypeFactory::NewExpr (tmp);
     FREE (tmp);
     return tmp2;
@@ -1366,7 +1366,7 @@ unsigned long AExprstep::getPInt()
   switch (type) {
   case 1:
     Assert (u.const_expr->type == E_INT, "Typechecking...");
-    v = u.const_expr->u.v;
+    v = u.const_expr->u.ival.v;
     break;
 
   case 2:
@@ -1394,7 +1394,7 @@ long AExprstep::getPInts()
   switch (type) {
   case 1:
     Assert (u.const_expr->type == E_INT, "Typechecking...");
-    v = u.const_expr->u.v;
+    v = u.const_expr->u.ival.v;
     break;
 
   case 2:

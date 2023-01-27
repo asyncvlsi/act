@@ -435,7 +435,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	    fprintf (stderr, "\nNot a constant int\n");
 	    exit (1);
 	  }
-	  ilo = etmp->u.v;
+	  ilo = etmp->u.ival.v;
 	  //FREE (etmp);
 	}
 	else {
@@ -450,10 +450,10 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 	  exit (1);
 	}
 	if (p->u.l.lo) {
-	  ihi = etmp->u.v;
+	  ihi = etmp->u.ival.v;
 	}
 	else {
-	  ihi = etmp->u.v-1;
+	  ihi = etmp->u.ival.v-1;
 	}
 	//FREE (etmp);
 

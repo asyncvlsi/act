@@ -203,8 +203,8 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
       if (act_inline_isbound (tab, tmp->getName())) {
 	Expr **res = act_inline_getval (tab, tmp->getName());
 	*e = *(res[0]);
-	if (e->type == E_INT && e->u.v_extra) {
-	  e->u.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.v_extra));
+	if (e->type == E_INT && e->u.ival.v_extra) {
+	  e->u.ival.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.ival.v_extra));
 	}
 	FREE (res);
       }
