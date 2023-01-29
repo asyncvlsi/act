@@ -324,9 +324,33 @@ int TypeFactory::isUserPureEnum (const Type *t)
   }
   return 0;
 }
+
 INSTMACRO(isUserPureEnum)
 
 
+int TypeFactory::isEnum (const Type *t)
+{
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
+  if (tmp_d) {
+    if (tmp_d->isEnum()) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  const Int *tmp_i = dynamic_cast<const Int *> (t);
+  if (tmp_i) {
+    if (tmp_i->kind == 2) {
+      return 1;
+    }
+  }
+  return 0;
+}
+INSTMACRO(isEnum)
+
+
+  
 int TypeFactory::isIntType (const Type *t)
 {
   const Int *tmp_i = dynamic_cast<const Int *>(t);
@@ -967,6 +991,61 @@ int TypeFactory::bitWidth (const Type *t)
 }
 XINSTMACRO(bitWidth)
 
+
+int TypeFactory::enumNum (const Type *t)
+{
+  if (!t) return -1;
+  {
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->datatype();
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::enumNum (x);
+    }
+  }
+  {
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::enumNum (tmp->getParent());
+    }
+  }
+  { 
+    const Data *tmp = dynamic_cast<const Data *>(t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      if (tmp->getParent ()) {
+	return TypeFactory::enumNum (tmp->getParent());
+      }
+      else {
+	/* bitwidth of a structure */
+	return -1;
+      }
+    }
+  }
+  {
+    const Int *tmp = dynamic_cast<const Int *>(t);
+    if (tmp) {
+      if (tmp->kind == 2) {
+	return tmp->w;
+      }
+      else {
+	return -1;
+      }
+    }
+  }
+  {
+    const Bool *tmp = dynamic_cast<const Bool *>(t);
+    if (tmp) {
+      return -1;
+    }
+  }
+  return -1;
+}
+XINSTMACRO(enumNum)
+  
+
 int TypeFactory::boolType (const Type *t)
 {
   if (!t) return -1;
@@ -1152,6 +1231,33 @@ InstType *TypeFactory::getChanDataType (const InstType *t)
       const Chan *tmp2 = dynamic_cast <const Chan *> (tmp->getParent()->BaseType());
       Assert (tmp2, "What?");
       return tmp2->datatype();
+    }
+  }
+  return NULL;
+}
+
+InstType *TypeFactory::getChanAckType (const InstType *t)
+{
+  if (!t) return NULL;
+  {
+    const Chan *tmp = dynamic_cast <const Chan *>(t->BaseType());
+    if (tmp) {
+      /* ok */
+      return tmp->acktype();
+    }
+  }
+  {
+    const Channel *tmp = dynamic_cast <const Channel *> (t->BaseType());
+    if (tmp) {
+      while (!TypeFactory::isExactChanType (tmp->getParent())) {
+	t = tmp->getParent ();
+	tmp = dynamic_cast <const Channel *> (t->BaseType());
+	Assert (tmp, "What?");
+      }
+      Assert (tmp->getParent(), "What?");
+      const Chan *tmp2 = dynamic_cast <const Chan *> (tmp->getParent()->BaseType());
+      Assert (tmp2, "What?");
+      return tmp2->acktype();
     }
   }
   return NULL;

@@ -1473,7 +1473,7 @@ void Data::Print (FILE *fp)
   if (isEnum()) {
     fprintf (fp, "defenum ");
     ActNamespace::Act()->mfprintfproc (fp, this, 1);
-    if (!isPureEnum()) {
+    if (!isPureEnum() || expanded) {
       fprintf (fp, " : int");
     }
     fprintf (fp, " {\n");

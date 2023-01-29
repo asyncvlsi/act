@@ -2378,7 +2378,6 @@ static Expr *_expr_expand (int *width, Expr *e,
 	FREE (ret);
 	ret = tmp;
       }
-      d->MkEnum (1);
     }
     break;
     

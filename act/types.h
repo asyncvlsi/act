@@ -983,6 +983,18 @@ class TypeFactory {
   static int isUserEnum (const InstType *it);
   static int isUserPureEnum (const Type *t);
   static int isUserPureEnum (const InstType *it);
+
+  /**
+   * Return enumeartion width, -1 if not a nenumeration
+   */
+  static int enumNum (const Type *t);
+  static int enumNum (const InstType *t);
+
+  /**
+   * Return 1 if this is a user-defined or built-in enumeration
+   */
+  static int isEnum (const Type *t);
+  static int isEnum (const InstType *t);
   
   /*-- a user type that is rooted in a bool or a bool --*/
   static int isBaseBoolType (const Type *t);
@@ -994,6 +1006,7 @@ class TypeFactory {
 
   /*-- extract data type field from a channel --*/
   static InstType *getChanDataType (const InstType *t);
+  static InstType *getChanAckType (const InstType *t);
   
 };
 
