@@ -825,6 +825,18 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    *width = -1;
 	  }
 	}
+	else if (TypeFactory::isUserPureEnum (rtype)) {
+	  ret |= T_DATA_ENUM;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
+	}
+	else if (TypeFactory::isUserEnum (rtype)) {
+	  ret |= T_INT;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
+	}
 	else {
 	  Assert (0, "Unknown return type");
 	}
@@ -1244,6 +1256,9 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
     Assert (TypeFactory::isFuncType (u), "Hmm.");
     Function *fn = dynamic_cast<Function *>(u);
     return fn->getRetType();
+  }
+  else if (e->type == E_SELF) {
+    return s->Lookup ("self");
   }
   ret = act_type_expr (s, e, NULL, only_chan);
 

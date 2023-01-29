@@ -1,0 +1,16 @@
+defenum foo {
+   A, B, C
+};
+
+function advance (foo x) : foo
+{
+  chp {
+    self := self
+  }
+}
+
+foo x, y;
+
+chp {
+   x := advance(y)
+}
