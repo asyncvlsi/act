@@ -482,6 +482,7 @@ Data::Data (UserDef *u) : UserDef (u)
   int i;
 
   is_enum = 0;
+  is_eint = 0;
   b = NULL;
   enum_vals = NULL;
 
