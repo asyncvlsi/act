@@ -2360,6 +2360,28 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     break;
 
+  case E_ENUM_CONST:
+    {
+      Data *d = (Data *) e->u.fn.s;
+      d = d->Expand (d->getns(), d->getns()->CurScope(), 0, NULL);
+      ret->type = E_INT;
+      ret->u.ival.v = d->enumVal ((char *)e->u.fn.r);
+      ret->u.ival.v_extra = NULL;
+      *width = TypeFactory::bitWidth (d);
+      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+	BigInt *btmp = new BigInt (*width, 0, 1);
+	btmp->setVal (0, ret->u.ival.v);
+	ret->u.ival.v_extra = btmp;
+      }
+      else {
+	tmp = TypeFactory::NewExpr (ret);
+	FREE (ret);
+	ret = tmp;
+      }
+      d->MkEnum (1);
+    }
+    break;
+    
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;

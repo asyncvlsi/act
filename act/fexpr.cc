@@ -325,7 +325,6 @@ static Expr *expr_basecase (void)
       }
       else {
 	if (v && expr_free_id) {
-	  printf ("free %p\n", v);
 	  (*expr_free_id) (v);
 	}
 	SET (Tl);

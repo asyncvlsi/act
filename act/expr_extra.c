@@ -22,6 +22,7 @@
 #include <act/expr.h>
 #include <common/file.h>
 #include <common/misc.h>
+#include <common/mstring.h>
 #include <string.h>
 
 void *act_parse_a_fexpr (LFILE *);
@@ -32,13 +33,14 @@ void *act_parse_a_fexpr (LFILE *);
 #define E_ORLOOP (E_END + 22)
 #define E_BUILTIN_BOOL (E_END + 23)
 #define E_BUILTIN_INT  (E_END + 24)
+#define E_ENUM_CONST   (E_END + 25)
 
 
 static int tokand, tokor, lpar, rpar, ddot, colon;
 static int double_colon, comma;
 static int inttok, booltok;
 static int langle, rangle;
-
+static int dot;
 
 static void do_init (LFILE *l)
 {
@@ -56,6 +58,7 @@ static void do_init (LFILE *l)
     comma = file_addtoken (l, ",");
     inttok = file_addtoken (l, "int");
     booltok = file_addtoken (l, "bool");
+    dot = file_addtoken (l, ".");
     init = 1;
   }
 }
@@ -65,6 +68,7 @@ static Expr *_parse_expr_func (LFILE *l)
 {
   Expr *e, *f;
   Expr *templ = NULL;
+  int found_dcolon;
   
   do_init(l);
   
@@ -91,9 +95,11 @@ static Expr *_parse_expr_func (LFILE *l)
     k = 0;
     sz = 10239;
     if (file_have (l, double_colon)) {
+      found_dcolon = 1;
       snprintf (buf, 10240, "::");
     }
     else {
+      found_dcolon = 0;
       buf[0] = '\0';
     }
     PRINT_STEP;
@@ -148,6 +154,16 @@ static Expr *_parse_expr_func (LFILE *l)
     if (!file_have (l, lpar)) {
       if (templ) {
 	expr_free (templ);
+	FREE (e);
+	return NULL;
+      }
+      else if (found_dcolon && file_have (l, dot)) {
+	if (file_have (l, f_id)) {
+	  e->type = E_ENUM_CONST;
+	  e->u.fn.s = Strdup (buf);
+	  e->u.fn.r = (Expr *) string_cache (file_prev (l));
+	  return e;
+	}
       }
       FREE (e);
       return NULL;

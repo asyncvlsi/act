@@ -26,6 +26,7 @@
 #include "act_parse_int.h"
 #include <act/lang.h>
 #include <common/config.h>
+#include <string.h>
 
 static char **dev_flavors = NULL;
 static int num_devs = -1;
@@ -186,9 +187,42 @@ int _act_id_is_true_false (ActId *id)
 {
   if (!id) return 0;
   if (id->Rest()) return 0;
+  if (id->arrayInfo()) return 0;
   if (strcmp (id->getName(), "true") == 0 ||
       strcmp (id->getName(), "false") == 0) return 1;
   return 0;
+}
+
+int _act_id_is_enum_const (ActOpen *os, ActNamespace *ns, ActId *id)
+{
+  UserDef *u;
+  if (!id) return 0;
+  if (!id->Rest()) return 0;
+  if (id->Rest()->Rest()) return 0;
+  if (id->arrayInfo() || id->Rest()->arrayInfo()) return 0;
+  ns = os->findType (ns, id->getName());
+  if (!ns) {
+    return 0;
+  }
+  u = ns->findType (id->getName());
+  Assert (u, "What?");
+  if (TypeFactory::isUserEnum (u)) {
+    return 1;
+  }
+  return 0;
+}
+
+Data *_act_id_to_enum_type (ActOpen *os, ActNamespace *ns, ActId *id)
+{
+  Data *d;
+  // we can assume that it is an enumeration
+  ns = os->findType (ns, id->getName());
+  d = dynamic_cast <Data *> (ns->findType (id->getName()));
+  Assert (d, "What?");
+  if (d->enumVal (id->Rest()->getName()) == -1) {
+    return NULL;
+  }
+  return d;
 }
 
 /* external */
@@ -338,6 +372,21 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       delete id;
       ret->type = E_SELF_ACK;
     }
+    else if (ret->type == E_VAR &&
+	     _act_id_is_enum_const (cookie->os, cookie->curns, id)) {
+      ret->u.fn.s = (char *) _act_id_to_enum_type (cookie->os, cookie->curns, id);
+      if (!ret->u.fn.s) {
+	struct act_position p;
+	p.l = cookie->line;
+	p.c = cookie->column;
+	p.f = cookie->file;
+	act_parse_err (&p, "Name `%s' is not part of the enumeration type `%s'",
+		       id->Rest()->getName(), id->getName());
+      }
+      ret->u.fn.r = (Expr *) id->Tail()->getName();
+      delete id;
+      ret->type = E_ENUM_CONST;
+    }
     break;
 
   case E_TRUE: break;
@@ -389,7 +438,8 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     break;
 
   case E_FUNCTION:
-    /* we lookup the function in scope! */
+  case E_ENUM_CONST:
+    /* we lookup the function or enumeration const in scope! */
     {
       ActNamespace *ns;
       char *prev;
@@ -445,7 +495,12 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	  act_parse_err (&p, "Could not find `%s' in namespace `%s'", prev,
 			 ns->Name());
       }
-      if (!TypeFactory::isFuncType (u)) {
+      if (TypeFactory::isUserEnum (u)) {
+	ret->u.fn.s = (char *) u;
+	ret->u.fn.r = e->u.fn.r;
+	// ... and we are done
+	return ret;
+      } else if (!TypeFactory::isFuncType (u)) {
 	  struct act_position p;
 	  p.l = cookie->line;
 	  p.c = cookie->column;
@@ -526,7 +581,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       }
     }
     break;
-    
+
   default:
     fatal_error ("-- unknown expression type --");
     break;

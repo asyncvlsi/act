@@ -30,6 +30,7 @@
 #include <act/expr.h>
 #include <common/mstring.h>
 #include <act/inst.h>
+#include <string.h>
 
 class ActBody;
 struct act_chp_lang;
@@ -575,6 +576,18 @@ class Data : public UserDef {
     }
     return 0;
   }
+  
+  int enumVal (const char *s) const {
+    int i = 0;
+    if (!enum_vals) return -1;
+    for (listitem_t *li = list_first (enum_vals); li; li = list_next (li)) {
+      if (strcmp ((char *)list_value (li), s) == 0) {
+	return i;
+      }
+      i++;
+    }
+    return -1;
+  }
 
   void setMethod (int t, struct act_chp_lang *h) { methods[t] = h; }
   struct act_chp_lang *getMethod (int t) { return methods[t]; }
@@ -1111,7 +1124,24 @@ void expr_ex_free (Expr *);
 #define E_ORLOOP (E_END + 22)
 #define E_BUILTIN_BOOL (E_END + 23)
 #define E_BUILTIN_INT  (E_END + 24)
-#define E_NEWEND  E_END + 25
+
+/*
+  ENUM_CONST during parsing only used for
+     ::foo::bar::baz.N  
+     u.fn.s field == string to enum
+     u.fn.r field = string for N
+     
+  After the "walk" re-writing, this is used as:
+     u.fn.s = enum type pointer (Data *)
+     u.fn.r field = string corresponding to enum element
+
+ After type-checking, this is eliminated and replaced with an 
+ int const.
+*/
+#define E_ENUM_CONST   (E_END + 25)
+
+
+#define E_NEWEND  E_END + 26
 
 /*
   Push expansion context 

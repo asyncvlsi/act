@@ -52,5 +52,6 @@ Expr *const_expr (long val);
 Expr *act_walk_X_expr (ActTree *cookie, Expr *e);
 void print_ns_string (FILE *fp, list_t *l);
 int _act_id_is_true_false (ActId *id);
+int _act_id_is_enum_const (ActOpen *os, ActNamespace *ns, ActId *id);
 
 #endif /* __ACT_EXTRA_H__ */

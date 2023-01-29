@@ -143,6 +143,9 @@ lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
     if (_act_id_is_true_false ($1)) {
       $E("Can't use true/false in this context!");
     }
+    if (_act_id_is_enum_const ($0->os, $0->curns, $1)) {
+      $E("Can't use an enumeration constant in this context!");
+    }
     tc = act_type_var ($0->scope, $1, NULL);
     if (tc == T_ERR) {
       $e("Typechecking failed on expression!");
@@ -234,6 +237,14 @@ expr_id[ActId *]: { base_id "." }*
     /* step 1: check that ret exists in the current scope */
     it = s->FullLookup (cur->getName());
     if (!it) {
+      /*-- check if this is an enumeration --*/
+      if (list_length ($1) == 2) {
+	cur->Append ((ActId *) list_value (list_next (li)));
+	if (_act_id_is_enum_const ($0->os, $0->curns, cur)) {
+	  list_free ($1);
+	  return ret;
+	}
+      }
       $E("The identifier ``%s'' does not exist in the current scope", cur->getName());
     }
 
@@ -656,6 +667,9 @@ w_chan_id[ActId *]: expr_id
 {{X:
     if (_act_id_is_true_false ($1)) {
       $E("true/false is not a channel!");
+    }
+    if (_act_id_is_enum_const ($0->os, $0->curns, $1)) {
+      $E("Enumeration constant is not a channel!");
     }
     if (act_type_var ($0->scope, $1, NULL) != T_CHAN) {
       $e("Identifier must be of channel type");

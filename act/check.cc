@@ -1018,6 +1018,25 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       return r|T_ARRAYOF;
     }
+
+  case E_ENUM_CONST:
+    {
+      Data *d = (Data *) e->u.fn.s;
+      if (d->isPureEnum()) {
+	if (width) {
+	  *width = -1;
+	}
+	return T_DATA_ENUM;
+      }
+      else {
+	if (width) {
+	  *width = TypeFactory::bitWidth (d);
+	}
+	return T_INT;
+      }
+    }
+    break;
+    
   default:
     fatal_error ("Unknown type!");
     typecheck_err ("`%d' is an unknown type for an expression", e->type);
@@ -1245,6 +1264,12 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
     typecheck_err ("NULL expression??");
     return NULL;
   }
+
+  /* 
+     The next four cases are the only valid expressions for
+      - structures
+      - pure enumerations
+  */
   if (e->type == E_VAR) {
     /* special case */
     it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
@@ -1258,8 +1283,17 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
     return fn->getRetType();
   }
   else if (e->type == E_SELF) {
+    /* special case */
     return s->Lookup ("self");
   }
+  else if (e->type == E_ENUM_CONST) {
+    /* special case */
+    Data *d = (Data *) e->u.fn.s;
+    it = new InstType (d->getns()->CurScope(), d);
+    return it;
+  }
+
+  /* analyze the expression tree */
   ret = act_type_expr (s, e, NULL, only_chan);
 
   if (ret == T_ERR) {
