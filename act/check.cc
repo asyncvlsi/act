@@ -267,13 +267,13 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
 }
 
 
-static InstType *_act_special_expr_insttype (Scope *s, Expr *e)
+static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal)
 {
   InstType *it;
   
   if (e->type == E_VAR) {
     /* special case #1 */
-    it = act_actual_insttype (s, (ActId *)e->u.e.l, NULL);
+    it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
     return it;
   }
   else if (e->type == E_FUNCTION) {
@@ -526,9 +526,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     /* special case for enumerations */
     {
       InstType *it1, *it2;
-      it1 = _act_special_expr_insttype (s, e->u.e.l);
+      it1 = _act_special_expr_insttype (s, e->u.e.l, NULL);
       if (it1) {
-	it2 = _act_special_expr_insttype (s, e->u.e.r);
+	it2 = _act_special_expr_insttype (s, e->u.e.r, NULL);
 	if (it2) {
 	  if (it1->isEqual (it2)) {
 	    if (width) {
@@ -1317,7 +1317,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
       - structures
       - pure enumerations
   */
-  it = _act_special_expr_insttype (s, e);
+  it = _act_special_expr_insttype (s, e, islocal);
   if (it) {
     return it;
   }
