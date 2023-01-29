@@ -581,7 +581,7 @@ class Data : public UserDef {
     int i = 0;
     if (!enum_vals) return -1;
     for (listitem_t *li = list_first (enum_vals); li; li = list_next (li)) {
-      if (strcmp ((char *)list_value (li), s) == 0) {
+      if (strcmp ((const char *)list_value (li), s) == 0) {
 	return i;
       }
       i++;
