@@ -1418,6 +1418,10 @@ defenum: "defenum" ID [ ":" "int" ]
 enum_body
 {{X:
     UserDef *u;
+
+    $0->u_d->SetParent ($0->tf->NewEnum ($0->scope, Type::NONE,
+					 const_expr ($0->u_d->numEnums())));
+    
     if ((u = $0->curns->findType ($2))) {
       if (u->isDefined() && u->isEqual ($0->u_d)) {
 	delete $0->u_d;

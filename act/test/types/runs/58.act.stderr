@@ -1,0 +1,4 @@
+ERROR: File `58.act', line 9, col 5
+	Typechecking failed on CHP assignment
+  stmt: x := 4
+	Enumeration/non-enumeration types are incompatible

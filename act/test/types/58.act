@@ -1,0 +1,10 @@
+defenum foo {
+   A, B, C
+};
+
+foo x, y;
+
+chp {
+   x := y;
+   x := 4
+}

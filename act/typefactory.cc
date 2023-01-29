@@ -290,9 +290,6 @@ int TypeFactory::isStructure (const Type *t)
   }
   else {
     /* no parent, so structure! */
-    if (tmp_d->isEnum()) {
-      return 0;
-    }
     return 1;
   }
 }
@@ -944,10 +941,8 @@ int TypeFactory::bitWidth (const Type *t)
 	return TypeFactory::bitWidth (tmp->getParent());
       }
       else {
-	if (!tmp->isEnum()) {
-	  return -1;
-	}
-	return _ceil_log2 (tmp->numEnums());
+	/* bitwidth of a structure */
+	return -1;
       }
     }
   }
@@ -1104,9 +1099,6 @@ int TypeFactory::isBaseBoolType (const Type *t)
   if (isStructure (t)) {
     return 0;
   }
-  if (isUserEnum (t)) {
-    return 0;
-  }
   if (isBoolType (tmp_d->root())) {
     return 1;
   }
@@ -1129,10 +1121,6 @@ int TypeFactory::isBaseIntType (const Type *t)
   }
   if (isUserPureEnum (t)) {
     return 0;
-  }
-  if (isUserEnum (t)) {
-    // an enum that can be used as an int
-    return 1;
   }
   if (isIntType (tmp_d->root())) {
     return 1;
