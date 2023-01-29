@@ -1,0 +1,5 @@
+defenum foo {
+   A, B, C
+};
+
+foo x;

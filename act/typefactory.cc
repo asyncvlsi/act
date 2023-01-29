@@ -290,10 +290,29 @@ int TypeFactory::isStructure (const Type *t)
   }
   else {
     /* no parent, so structure! */
+    if (tmp_d->isEnum()) {
+      return 0;
+    }
     return 1;
   }
 }
 INSTMACRO(isStructure)
+
+
+int TypeFactory::isUserEnum (const Type *t)
+{
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
+  if (tmp_d) {
+    if (tmp_d->isEnum()) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  return 0;
+}
+INSTMACRO(isUserEnum)
 
 
 int TypeFactory::isIntType (const Type *t)

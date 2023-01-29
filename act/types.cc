@@ -114,16 +114,19 @@ int UserDef::AddMetaParam (InstType *t, const char *id)
     }
   }
 
-  /*printf ("ADD: %s to userdef: %x\n", id, this);*/
+  //printf ("ADD: %s to userdef: %p\n", id, this);
 
   if (!I->Add (id, t)) {
     return 0;
   }
   if (expanded) {
-    ValueIdx *vx = I->LookupVal (id);
-    Assert (vx, "What?");
-    /* port parameters are immutable */
-    vx->immutable = 1;
+    if (t) {
+      // for all non-enumerations
+      ValueIdx *vx = I->LookupVal (id);
+      Assert (vx, "What?");
+      /* port parameters are immutable */
+      vx->immutable = 1;
+    }
   }
 
   nt++;
@@ -566,6 +569,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   int k, sz, len;
   InstType *x, *p;  
   Array *xa;
+  int is_enumeration = 0;
 
   recursion_depth++;
 
@@ -628,9 +632,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   for (i=0; i < nt; i++) {
     p =  getPortType (-(i+1));
     if (!p) {
-      Assert (0, "Enumeration?");
       /* this is an enumeration type, there is nothing to be done here */
       ux->AddMetaParam (NULL, pn[i]);
+      is_enumeration = 1;
     }
     else {
       x = p->Expand (ns, ux->I); // this is the real type of the
@@ -751,7 +755,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   */
   sz = strlen (getName()) + 3 + nt;
 
-  for (int i=0; i < nt; i++) {
+  for (int i=0; !is_enumeration && (i < nt); i++) {
     InstType *x;
     Array *xa;
     ValueIdx *vx;
@@ -813,7 +817,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
   ii=0;
 
-  for (int i=0; i < nt; i++) {
+  for (int i=0; !is_enumeration && (i < nt); i++) {
     ValueIdx *vx;
 
     if (inherited_templ > 0 && inherited_param[i]) {
@@ -995,7 +999,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   else if (dynamic_cast<Data *>(this)) {
     InstType *x;
 
-    if (TypeFactory::isStructure (this)) {
+    if (TypeFactory::isStructure (this) || TypeFactory::isUserEnum (this)) {
       /* no self for structures */
     }
     else {
@@ -1050,6 +1054,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (_ns->EditType (xd->name, xd) == 1, "What?");
   xd->is_enum = is_enum;
+  xd->is_eint = is_eint;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
@@ -1468,6 +1473,26 @@ void Channel::Print (FILE *fp)
 
 void Data::Print (FILE *fp)
 {
+  if (isEnum()) {
+    fprintf (fp, "defenum ");
+    ActNamespace::Act()->mfprintfproc (fp, this, 1);
+    if (!isPureEnum()) {
+      fprintf (fp, " : int");
+    }
+    fprintf (fp, " {\n");
+    for (int i=0; i < getNumParams(); i++) {
+      if (i != 0) {
+	fprintf (fp, ", ");
+      }
+      else {
+	fprintf (fp, "   ");
+      }
+      fprintf (fp, "%s", getPortName(-(i+1)));
+    }
+    fprintf (fp, "\n};\n");
+    return;
+  }
+  
   PrintHeader (fp, "deftype");
   fprintf (fp, "\n{\n");
   if (!expanded) {

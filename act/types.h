@@ -559,8 +559,9 @@ class Data : public UserDef {
   Data (UserDef *u);
   virtual ~Data();
 
-  void MkEnum () { is_enum = 1; }
-  int isEnum () { return is_enum; }
+  void MkEnum (int is_int) { is_enum = 1; is_eint = is_int ? 1 : 0; }
+  int isEnum () const  { return is_enum; }
+  int isPureEnum() const { return (is_enum && !is_eint) ? 1 : 0; }
 
   void setMethod (int t, struct act_chp_lang *h) {  methods[t] = h; }
   struct act_chp_lang *getMethod (int t) { return methods[t]; }
@@ -585,7 +586,10 @@ private:
   void _get_struct_count (int *nbools, int *nints);
   void _get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix);
   
-  unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0 otherwise */
+  unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0
+				   otherwise */
+  unsigned int is_eint:1;	/**< 1 if this enum can be treated as
+				   an int */
   struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and get methods for this data type */
 };
 
@@ -941,6 +945,12 @@ class TypeFactory {
 
   static int isStructure (const Type *t);
   static int isStructure (const InstType *it);
+
+  /**
+   * Is this a user-defined enumeration?
+   */
+  static int isUserEnum (const Type *t);
+  static int isUserEnum (const InstType *it);
   
   /*-- a user type that is rooted in a bool or a bool --*/
   static int isBaseBoolType (const Type *t);
@@ -982,6 +992,7 @@ class TypeFactory {
 #define T_DATA_BOOL  0x8
 #define T_SELF       0x9   /* special type, "self" */
 #define T_DATA       0xa   /* structure */
+#define T_DATA_ENUM  0xb   /* enum that is not an int */
 #define T_PTYPE      0x10
 #define T_ARRAYOF    0x20
 

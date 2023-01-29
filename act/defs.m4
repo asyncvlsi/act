@@ -32,7 +32,7 @@
 definition: defproc_or_cell
 | defdata
 | defchan
-/*| defenum*/
+| defenum
 | deffunc
 | defiface
 ;
@@ -1360,10 +1360,11 @@ data_chan_body
  *
  *------------------------------------------------------------------------
  */
-defenum: "defenum" ID
+defenum: "defenum" ID [ ":" "int" ]
 {{X:
     Data *d;
     UserDef *u;
+    Data *td = NULL;
 
     switch ($0->curns->findName ($2)) {
     case 0:
@@ -1372,7 +1373,7 @@ defenum: "defenum" ID
     case 1:
       $A(u = $0->curns->findType ($2));
       if (TypeFactory::isDataType (u)) {
-	Data *td = dynamic_cast<Data *>(u);
+	td = dynamic_cast<Data *>(u);
 	$A(td);
 	if (!td->isEnum()) {
 	  $E("Name ``%s''already used as a non-enumeration data type", $2);
@@ -1393,26 +1394,39 @@ defenum: "defenum" ID
       break;
     }
 
-    u = new UserDef($0->curns);
+    int is_int = 0;
+    if (!OPT_EMPTY ($3)) {
+      is_int = 1;
+    }
+    OPT_FREE ($3);
+
+    if (td && (is_int != !td->isPureEnum())) {
+      $E("Name ``%s'' is a previous enum, with different :int attribute",
+	 $2);
+    }
+
+    $0->u = new UserDef($0->curns);
     $0->u->setFile ($n);
     $0->u->setLine ($l);
-    d = new Data (u);
-    delete u;
+    d = new Data ($0->u);
+    delete $0->u;
+    $0->u = NULL;
     $0->u_d = d;
+    $0->u_d->MkEnum(is_int);
+    $0->u_d->MkDefined ();
 }}
 enum_body
 {{X:
     UserDef *u;
-
     if ((u = $0->curns->findType ($2))) {
-      if (u->isDefined() && ($3 == 1)) {
-	$E("enum ``%s'': duplicate definition", $2);
+      if (u->isDefined() && u->isEqual ($0->u_d)) {
+	delete $0->u_d;
+	$0->u_d = dynamic_cast <Data *> (u);
+	$A($0->u_d);
       }
-      if (!u->isDefined() && ($3 == 1)) {
-	u->MkCopy ($0->u_d);
-	u->MkDefined();
+      else {
+	$E("Name ``%s'' previously defined as a different enumeration", $2);
       }
-      delete $0->u_d;
     }
     else {
       $A($0->curns->CreateType ($2, $0->u_d));
@@ -1422,13 +1436,7 @@ enum_body
     return NULL;
 }};
 
-enum_body[int]: ";" 
-{{X:
-    /* nothing to do here other than marking this as an enumeration */
-    $0->u_d->MkEnum();
-    return 0;
-}}
-| "{" bare_id_list "}" ";"
+enum_body[int]: "{" bare_id_list "}" ";"
 {{X:
     listitem_t *li;
 

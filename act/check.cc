@@ -208,6 +208,9 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
     return T_ERR;
   }
   d = dynamic_cast<Data *>(t);
+  if (d->isPureEnum()) {
+    return T_DATA_ENUM|arr;
+  }
   if (d->isEnum()) {
     return T_INT|arr;
   }

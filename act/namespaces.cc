@@ -549,8 +549,14 @@ void ActNamespace::Print (FILE *fp)
 	fprintf (fp, ";\n");
       }
       else if (TypeFactory::isDataType (t)) {
-	u->PrintHeader (fp, "deftype");
-	fprintf (fp, ";\n");
+	Data *d = dynamic_cast<Data *> (t);
+	if (d->isEnum()) {
+	  // nothing! 
+	}
+	else {
+	  u->PrintHeader (fp, "deftype");
+	  fprintf (fp, ";\n");
+	}
       }
       else if (TypeFactory::isChanType (t)) {
 	u->PrintHeader (fp, "defchan");
@@ -582,6 +588,7 @@ void ActNamespace::Print (FILE *fp)
     }
   }
   fprintf (fp, "\n");
+
   /* print types */
   for (it = it.begin(); it != it.end(); it++) {
     Type *t = *it;
@@ -595,7 +602,6 @@ void ActNamespace::Print (FILE *fp)
       }
     }
   }
-  
 
   /* print instances */
   CurScope()->Print (fp);
