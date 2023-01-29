@@ -215,11 +215,6 @@ int Scope::Add (const char *s, InstType *it)
     b->v = it;
   }
   else {
-    if (!it) {
-      // enumeration, we're done
-      return 1;
-    }
-    
     ValueIdx *v = new ValueIdx;
 
     if (it->isExpanded() == 0) {
@@ -249,7 +244,7 @@ int Scope::Add (const char *s, InstType *it)
   if (u) { fprintf (stderr, "%s ", u->getName()); }
   fprintf (stderr, "[scope=%x ex:%d] %s ", this, expanded, b->key);
   fprintf (stderr, " <> ");
-  if (it) it->Print (stderr);
+  it->Print (stderr);
   fprintf (stderr, "\n");
 #endif  
   

@@ -120,13 +120,10 @@ int UserDef::AddMetaParam (InstType *t, const char *id)
     return 0;
   }
   if (expanded) {
-    if (t) {
-      // for all non-enumerations
-      ValueIdx *vx = I->LookupVal (id);
-      Assert (vx, "What?");
-      /* port parameters are immutable */
-      vx->immutable = 1;
-    }
+    ValueIdx *vx = I->LookupVal (id);
+    Assert (vx, "What?");
+    /* port parameters are immutable */
+    vx->immutable = 1;
   }
 
   nt++;
@@ -486,6 +483,7 @@ Data::Data (UserDef *u) : UserDef (u)
 
   is_enum = 0;
   b = NULL;
+  enum_vals = NULL;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
@@ -494,7 +492,10 @@ Data::Data (UserDef *u) : UserDef (u)
 
 Data::~Data()
 {
-  
+  if (enum_vals) {
+    list_free (enum_vals);
+  }
+  enum_vals = NULL;
 }
 
 Channel::Channel (UserDef *u) : UserDef (u)
@@ -569,7 +570,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   int k, sz, len;
   InstType *x, *p;  
   Array *xa;
-  int is_enumeration = 0;
 
   recursion_depth++;
 
@@ -631,96 +631,90 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
   for (i=0; i < nt; i++) {
     p =  getPortType (-(i+1));
-    if (!p) {
-      /* this is an enumeration type, there is nothing to be done here */
-      ux->AddMetaParam (NULL, pn[i]);
-      is_enumeration = 1;
+    Assert (p, "What?");
+    x = p->Expand (ns, ux->I); // this is the real type of the
+                               // parameter
+
+    if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
+      act_error_ctxt (stderr);
+      fatal_error ("Template parameter `%s': zero-length array creation not permitted", getPortName (-(i+1)));
+    }
+
+    /* add parameter to the scope */
+    ux->AddMetaParam (x, pn[i]);
+
+    /* this one gets bound to:
+       - the next specified parameter, if it exists
+       - the next inherited parameter, if it exists
+    */
+    inst_param *bind_param = NULL;
+    if (inherited_templ > 0 && inherited_param[i]) {
+      bind_param = inherited_param[i];
+    }
+    else if (ii < spec_nt) {
+      bind_param = &u[ii];
+      ii++;
     }
     else {
-      x = p->Expand (ns, ux->I); // this is the real type of the
-				 // parameter
+      bind_param = NULL;
+    }
 
-      if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
-	act_error_ctxt (stderr);
-	fatal_error ("Template parameter `%s': zero-length array creation not permitted", getPortName (-(i+1)));
-      }
+    if (!bind_param) continue;
 
-      /* add parameter to the scope */
-      ux->AddMetaParam (x, pn[i]);
-
-      /* this one gets bound to:
-	  - the next specified parameter, if it exists
-	  - the next inherited parameter, if it exists 
-      */
-      inst_param *bind_param = NULL;
-      if (inherited_templ > 0 && inherited_param[i]) {
-	bind_param = inherited_param[i];
-      }
-      else if (ii < spec_nt) {
-	bind_param = &u[ii];
-	ii++;
+    if (TypeFactory::isPTypeType (p->BaseType())) {
+      if (!bind_param->isatype) {
+	AExpr *rhsval = bind_param->u.tp;
+	x = rhsval->isType();
       }
       else {
-	bind_param = NULL;
+	x = bind_param->u.tt;
+      }
+      if (x) {
+	x = x->Expand (ns, ux->I);
+	ux->I->BindParam (pn[i], x);
+      }
+      else {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "   Parameter: ");
+	bind_param->u.tp->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Typechecking failed for parameter %d: expected type.", i);
+      }
+    }
+    else  {
+      InstType *rhstype;
+
+      if (bind_param->isatype) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "   Parameter: ");
+	bind_param->u.tt->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Typechecking failed for parameter %d: expected value.", i);
       }
 
-      if (!bind_param) continue;
-
-      if (TypeFactory::isPTypeType (p->BaseType())) {
-	if (!bind_param->isatype) {
-	  AExpr *rhsval = bind_param->u.tp;
-	  x = rhsval->isType();
-	}
-	else {
-	  x = bind_param->u.tt;
-	}
-	if (x) {
-	  x = x->Expand (ns, ux->I);
-	  ux->I->BindParam (pn[i], x);
-	}
-	else {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "   Parameter: ");
-	  bind_param->u.tp->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Typechecking failed for parameter %d: expected type.", i);
-	}
+      AExpr *rhsval = bind_param->u.tp;
+      if (!rhsval->isArrayExpr()) {
+	rhsval = rhsval->Expand (ns, ux->I);
       }
-      else  {
-	InstType *rhstype;
-
-	if (bind_param->isatype) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "   Parameter: ");
-	  bind_param->u.tt->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Typechecking failed for parameter %d: expected value.", i);
-	}
-
-	AExpr *rhsval = bind_param->u.tp;
-        if (!rhsval->isArrayExpr()) {
-         rhsval = rhsval->Expand (ns, ux->I);
-        }
-	rhstype = rhsval->getInstType (ux->I, NULL, 1);
-	if (type_connectivity_check (x, rhstype) != 1) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "Typechecking failed, ");
-	  x->Print (stderr);
-	  fprintf (stderr, "  v/s ");
-	  rhstype->Print (stderr);
-	  fprintf (stderr, "\n\t%s\n", act_type_errmsg());
-	  exit (1);
-	}
+      rhstype = rhsval->getInstType (ux->I, NULL, 1);
+      if (type_connectivity_check (x, rhstype) != 1) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Typechecking failed, ");
+	x->Print (stderr);
+	fprintf (stderr, "  v/s ");
+	rhstype->Print (stderr);
+	fprintf (stderr, "\n\t%s\n", act_type_errmsg());
+	exit (1);
+      }
 #if 0	
-	printf ("    <> bind %s := ", pn[i]);
-	rhsval->Print (stdout);
-	printf ("\n");
+      printf ("    <> bind %s := ", pn[i]);
+      rhsval->Print (stdout);
+      printf ("\n");
 #endif	
-	ux->I->BindParam (pn[i], rhsval);
-	delete rhstype;
-        if (!rhsval->isArrayExpr()) {
-	   delete rhsval;
-        }
+      ux->I->BindParam (pn[i], rhsval);
+      delete rhstype;
+      if (!rhsval->isArrayExpr()) {
+	delete rhsval;
       }
     }
   }
@@ -755,7 +749,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   */
   sz = strlen (getName()) + 3 + nt;
 
-  for (int i=0; !is_enumeration && (i < nt); i++) {
+  for (int i=0; i < nt; i++) {
     InstType *x;
     Array *xa;
     ValueIdx *vx;
@@ -817,7 +811,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
   ii=0;
 
-  for (int i=0; !is_enumeration && (i < nt); i++) {
+  for (int i=0; i < nt; i++) {
     ValueIdx *vx;
 
     if (inherited_templ > 0 && inherited_param[i]) {
@@ -1058,6 +1052,9 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
+  }
+  if (enum_vals) {
+    xd->enum_vals = list_dup (enum_vals);
   }
   
   return xd;
@@ -1480,14 +1477,14 @@ void Data::Print (FILE *fp)
       fprintf (fp, " : int");
     }
     fprintf (fp, " {\n");
-    for (int i=0; i < getNumParams(); i++) {
-      if (i != 0) {
+    for (listitem_t *li = list_first (enum_vals); li; li = list_next (li)) {
+      if (li != list_first (enum_vals)) {
 	fprintf (fp, ", ");
       }
       else {
 	fprintf (fp, "   ");
       }
-      fprintf (fp, "%s", getPortName(-(i+1)));
+      fprintf (fp, "%s", (char *) list_value (li));
     }
     fprintf (fp, "\n};\n");
     return;
@@ -1638,7 +1635,40 @@ int Chan::isEqual (const Type *t) const
   return 1;
 }
 
-
+int Data::isEqual (const Type *t) const
+{
+  const Data *x = dynamic_cast<const Data *>(t);
+  if (!x) {
+    return 0;
+  }
+  if (x->isEnum() != isEnum()) {
+    return 0;
+  }
+  if (x->isPureEnum() != isPureEnum()) {
+    return 0;
+  }
+  if (!x->isEnum()) {
+    return UserDef::isEqual (t);
+  }
+  Assert (x->enum_vals, "What?");
+  Assert (enum_vals, "What!");
+  if (list_length (x->enum_vals) != list_length (enum_vals)) {
+    return 0;
+  }
+  listitem_t *li, *mi;
+  li = list_first (enum_vals);
+  mi = list_first (x->enum_vals);
+  while (li && mi) {
+    char *s = (char *) list_value (li);
+    char *t = (char *) list_value (mi);
+    if (strcmp (s, t) != 0) {
+      return 0;
+    }
+    li = list_next (li);
+    mi = list_next (mi);
+  }
+  return 1;
+}
 
 int UserDef::isLeaf ()
 {

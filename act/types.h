@@ -559,11 +559,18 @@ class Data : public UserDef {
   Data (UserDef *u);
   virtual ~Data();
 
+  int isEqual (const Type *t) const;
   void MkEnum (int is_int) { is_enum = 1; is_eint = is_int ? 1 : 0; }
   int isEnum () const  { return is_enum; }
   int isPureEnum() const { return (is_enum && !is_eint) ? 1 : 0; }
+  void addEnum (const char *s) {
+    if (!enum_vals) {
+      enum_vals = list_new ();
+    }
+    list_append (enum_vals, s);
+  }
 
-  void setMethod (int t, struct act_chp_lang *h) {  methods[t] = h; }
+  void setMethod (int t, struct act_chp_lang *h) { methods[t] = h; }
   struct act_chp_lang *getMethod (int t) { return methods[t]; }
   void copyMethods (Data *d);
  
@@ -590,7 +597,11 @@ private:
 				   otherwise */
   unsigned int is_eint:1;	/**< 1 if this enum can be treated as
 				   an int */
-  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and get methods for this data type */
+
+  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and
+							get methods
+							for this data type */
+  list_t *enum_vals;
 };
 
 class Channel : public UserDef {
@@ -951,6 +962,8 @@ class TypeFactory {
    */
   static int isUserEnum (const Type *t);
   static int isUserEnum (const InstType *it);
+  static int isUserPureEnum (const Type *t);
+  static int isUserPureEnum (const InstType *it);
   
   /*-- a user type that is rooted in a bool or a bool --*/
   static int isBaseBoolType (const Type *t);

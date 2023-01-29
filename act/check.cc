@@ -1777,6 +1777,19 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
       typecheck_err ("Structure/non-structure types are incompatible");
       return 0;
     }
+    else if (TypeFactory::isUserEnum (lhs)) {
+      if (TypeFactory::isUserEnum (rhs)) {
+	if (type_connectivity_check (lhs, rhs, 0)) {
+	  return 1;
+	}
+	else {
+	  typecheck_err ("Incompatible enumerations");
+	  return 0;
+	}
+      }
+      typecheck_err ("Enumeration/non-enumeration types are incompatible");
+      return 0;
+    }
     else {
       Assert (0, "What case is this?");
       return 0;

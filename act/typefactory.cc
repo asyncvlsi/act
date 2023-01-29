@@ -314,6 +314,21 @@ int TypeFactory::isUserEnum (const Type *t)
 }
 INSTMACRO(isUserEnum)
 
+int TypeFactory::isUserPureEnum (const Type *t)
+{
+  const Data *tmp_d = dynamic_cast<const Data *>(t);
+  if (tmp_d) {
+    if (tmp_d->isPureEnum()) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+  }
+  return 0;
+}
+INSTMACRO(isUserPureEnum)
+
 
 int TypeFactory::isIntType (const Type *t)
 {
@@ -1087,6 +1102,9 @@ int TypeFactory::isBaseBoolType (const Type *t)
   if (isStructure (t)) {
     return 0;
   }
+  if (isUserEnum (t)) {
+    return 0;
+  }
   if (isBoolType (tmp_d->root())) {
     return 1;
   }
@@ -1106,6 +1124,13 @@ int TypeFactory::isBaseIntType (const Type *t)
   }
   if (isStructure (t)) {
     return 0;
+  }
+  if (isUserPureEnum (t)) {
+    return 0;
+  }
+  if (isUserEnum (t)) {
+    // an enum that can be used as an int
+    return 1;
   }
   if (isIntType (tmp_d->root())) {
     return 1;

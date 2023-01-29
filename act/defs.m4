@@ -1442,7 +1442,7 @@ enum_body[int]: "{" bare_id_list "}" ";"
 
     for (li = list_first ($2); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
-      $0->u_d->AddMetaParam (NULL, s);
+      $0->u_d->addEnum (s);
     }
     list_free ($2);
     return 1;
