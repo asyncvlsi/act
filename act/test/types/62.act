@@ -1,0 +1,19 @@
+defenum foo {
+   A, B, C
+};
+
+function advance (foo x) : foo
+{
+  chp {
+   [ x = foo.A -> self := foo.B
+  [] x = foo.B -> self := foo.C
+  [] x = foo.C -> self := foo.A
+   ]
+  }
+}
+
+foo x;
+
+chp {
+   x := advance (foo.A)
+}

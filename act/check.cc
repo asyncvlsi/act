@@ -267,6 +267,37 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
 }
 
 
+static InstType *_act_special_expr_insttype (Scope *s, Expr *e)
+{
+  InstType *it;
+  
+  if (e->type == E_VAR) {
+    /* special case #1 */
+    it = act_actual_insttype (s, (ActId *)e->u.e.l, NULL);
+    return it;
+  }
+  else if (e->type == E_FUNCTION) {
+    /* special case */
+    UserDef *u = (UserDef *) e->u.fn.s;
+    Assert (TypeFactory::isFuncType (u), "Hmm.");
+    Function *fn = dynamic_cast<Function *>(u);
+    return fn->getRetType();
+  }
+  else if (e->type == E_SELF) {
+    /* special case */
+    return s->Lookup ("self");
+  }
+  else if (e->type == E_ENUM_CONST) {
+    /* special case */
+    Data *d = (Data *) e->u.fn.s;
+    d = d->Expand (d->getns(), d->getns()->CurScope(), 0, NULL);
+    it = new InstType (d->getns()->CurScope(), d);
+    return it;
+  }
+  return NULL;
+}
+
+
 /**
  *  Typecheck expression
  *
@@ -492,6 +523,22 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_EQ:
   case E_NE:
     EQUAL_LT_RT2(T_BOOL|T_REAL,T_BOOL, WIDTH_BOOL);
+    /* special case for enumerations */
+    {
+      InstType *it1, *it2;
+      it1 = _act_special_expr_insttype (s, e->u.e.l);
+      if (it1) {
+	it2 = _act_special_expr_insttype (s, e->u.e.r);
+	if (it2) {
+	  if (it1->isEqual (it2)) {
+	    if (width) {
+	      *width =1;
+	    }
+	    return T_BOOL;
+	  }
+	}
+      }
+    }
     typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_op_name (e->type));
     return T_ERR;
     break;
@@ -1270,26 +1317,8 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
       - structures
       - pure enumerations
   */
-  if (e->type == E_VAR) {
-    /* special case */
-    it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
-    return it;
-  }
-  else if (e->type == E_FUNCTION) {
-    /* special case */
-    UserDef *u = (UserDef *) e->u.fn.s;
-    Assert (TypeFactory::isFuncType (u), "Hmm.");
-    Function *fn = dynamic_cast<Function *>(u);
-    return fn->getRetType();
-  }
-  else if (e->type == E_SELF) {
-    /* special case */
-    return s->Lookup ("self");
-  }
-  else if (e->type == E_ENUM_CONST) {
-    /* special case */
-    Data *d = (Data *) e->u.fn.s;
-    it = new InstType (d->getns()->CurScope(), d);
+  it = _act_special_expr_insttype (s, e);
+  if (it) {
     return it;
   }
 
