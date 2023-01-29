@@ -569,6 +569,12 @@ class Data : public UserDef {
     }
     list_append (enum_vals, s);
   }
+  int numEnums() const {
+    if (enum_vals) {
+      return list_length (enum_vals);
+    }
+    return 0;
+  }
 
   void setMethod (int t, struct act_chp_lang *h) { methods[t] = h; }
   struct act_chp_lang *getMethod (int t) { return methods[t]; }

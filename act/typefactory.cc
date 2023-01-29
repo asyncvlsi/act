@@ -944,8 +944,10 @@ int TypeFactory::bitWidth (const Type *t)
 	return TypeFactory::bitWidth (tmp->getParent());
       }
       else {
-	/* bitwidth of a structure */
-	return -1;
+	if (!tmp->isEnum()) {
+	  return -1;
+	}
+	return _ceil_log2 (tmp->numEnums());
       }
     }
   }
