@@ -507,6 +507,33 @@ void ActNamespace::Expand ()
   act_error_pop ();
 }
 
+
+void ActNamespace::enum2Int ()
+{
+  ActNamespace *ns;
+  hash_bucket_t *bkt;
+  hash_iter_t iter;
+
+  Assert (I, "No scope?");
+
+  /* Expand any sub-namespaces */
+  hash_iter_init (N, &iter);
+  while ((bkt = hash_iter_next (N, &iter))) {
+    ns = (ActNamespace *)bkt->v;
+    ns->enum2Int ();
+  }
+
+  hash_iter_init (T, &iter);
+  while ((bkt = hash_iter_next (T, &iter))) {
+    UserDef *u = (UserDef *) bkt->v;
+    Data *d = dynamic_cast<Data *> (u);
+    if (d && d->isEnum()) {
+      d->MkEnum (1);
+    }
+  }
+}
+
+
 void ActNamespace::setAct (class Act *a)
 {
   ActNamespace::act = a;

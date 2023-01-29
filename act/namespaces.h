@@ -345,6 +345,11 @@ class ActNamespace {
   void Expand ();
 
   /**
+   * Convert any enum Data to an int
+   */
+  void enum2Int ();
+
+  /**
    * Print text representation
    */
   void Print (FILE *fp);

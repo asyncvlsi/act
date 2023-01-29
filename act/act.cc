@@ -801,6 +801,9 @@ void Act::Expand ()
   Assert (gns, "Expand() called without an object?");
   /* expand each namespace! */
   gns->Expand ();
+
+  /* mark all user-enum data types as int */
+  gns->enum2Int ();
 }
 
 
