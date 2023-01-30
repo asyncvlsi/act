@@ -1,0 +1,14 @@
+namespace foo {
+
+export 
+template<pint X> defchan bar <: chan(int) (int<X> x) { }
+
+}
+
+defproc newproc (foo::bar<3> x)
+{
+
+}
+
+
+newproc p;

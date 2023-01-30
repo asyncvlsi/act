@@ -1347,12 +1347,22 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       Array *a = it->arrayInfo();
       it->clrArray ();
       if (it->isExpanded() && TypeFactory::isUserType (it)) {
-	it->sPrint (buf, 10240, 1);
-	fprintf (fp, "%s", buf);
-	//ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	UserDef *tmpu = dynamic_cast<UserDef *> (it->BaseType());
+	ActNamespace *ns;
+	char *ns_name = NULL;
+	ns = tmpu->getns();
+	Assert (ns, "Hmm");
+	if (ns && ns != ActNamespace::Global() && ns != getns()) {
+	  ns_name = ns->Name();
+	}
+	if (ns_name) {
+	  fprintf (fp, "%s::", ns_name);
+	  FREE (ns_name);
+	}
+	ActNamespace::Act()->mfprintfproc (fp, tmpu, 1);
       }
       else {
-	it->Print (fp);
+	it->Print (fp, 1);
       }
       fprintf (fp, " %s", getPortName (i));
       if (a) {

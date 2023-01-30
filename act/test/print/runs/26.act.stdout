@@ -1,0 +1,31 @@
+namespace foo {
+export defchan bar_33_4 <: chan(int<32>) (int<3> x);
+
+export defchan bar_33_4 <: chan(int<32>) (int<3> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc newproc (::foo::bar_33_4 x);
+
+defproc newproc (::foo::bar_33_4 x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+newproc p;
+
+/* connections */
