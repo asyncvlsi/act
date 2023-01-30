@@ -1,0 +1,23 @@
+namespace test {
+
+export defenum foo {
+   A, B, C
+};
+
+}
+
+function advance (test::foo x) : test::foo
+{
+  chp {
+   [ x = ::test::foo.A -> self := ::test::foo.B
+  [] x = ::test::foo.B -> self := ::test::foo.C
+  [] x = ::test::foo.C -> self := ::test::foo.A
+   ]
+  }
+}
+
+test::foo x;
+
+chp {
+   x := advance (test::foo.A)
+}

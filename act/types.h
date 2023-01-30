@@ -1188,6 +1188,7 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l);
 Expr *act_parse_expr_intexpr_base (LFILE *l);
 Expr *act_expr_any_basecase (LFILE *l);
 int act_expr_parse_newtokens (LFILE *l);
+int act_expr_free_default (Expr *);  
 
 }
 

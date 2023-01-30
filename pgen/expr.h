@@ -219,6 +219,9 @@ extern Expr *(*expr_parse_basecase_bool)(LFILE *l);
 
 extern int (*expr_parse_newtokens)(LFILE *l);
 
+  /* define to free special basecase; return 1 if it was used, 0 otherwise */
+extern int (*expr_free_special_default)(Expr *);
+
 extern void expr_inc_parens (void);  
 extern void expr_dec_parens (void);  
 

@@ -39,6 +39,7 @@ void (*expr_print_probe)(pp_t *, void *) = NULL;
 Expr *(*expr_parse_basecase_num)(LFILE *l) = NULL;
 Expr *(*expr_parse_basecase_bool)(LFILE *l) = NULL;
 int (*expr_parse_newtokens)(LFILE *l) = NULL;
+int (*expr_free_special_default)(Expr *e) = NULL;
 
 #define PUSH(x) file_push_position(x)
 #define POP(x)  file_pop_position(x)
@@ -262,8 +263,11 @@ static void efree (Expr *e)
     break;
 
   default:
-    if (e->u.e.l) efree (e->u.e.l);
-    if (e->u.e.r) efree (e->u.e.r);
+    if (!expr_free_special_default ||
+	!(*expr_free_special_default)(e)) {
+      if (e->u.e.l) efree (e->u.e.l);
+      if (e->u.e.r) efree (e->u.e.r);
+    }
     break;
   }
   FREE (e);

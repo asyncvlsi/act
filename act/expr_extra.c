@@ -110,6 +110,9 @@ static Expr *_parse_expr_func (LFILE *l)
       if (!file_have (l, double_colon)) {
 	break;
       }
+      else {
+	found_dcolon = 1;
+      }
       snprintf (buf+k, sz, "%s", file_prev (l));
       PRINT_STEP;
     }
@@ -597,4 +600,11 @@ int act_expr_parse_newtokens (LFILE *l)
 	  file_sym (l) == booltok);
 }
 
-
+int act_expr_free_default (Expr *e)
+{
+  if (e->type == E_ENUM_CONST) {
+    FREE (e->u.fn.s);
+    return 1;
+  }
+  return 0;
+}

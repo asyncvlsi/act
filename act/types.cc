@@ -1348,7 +1348,8 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
       it->clrArray ();
       if (it->isExpanded() && TypeFactory::isUserType (it)) {
 	it->sPrint (buf, 10240, 1);
-	ActNamespace::Act()->mfprintf (fp, "%s", buf);
+	fprintf (fp, "%s", buf);
+	//ActNamespace::Act()->mfprintf (fp, "%s", buf);
       }
       else {
 	it->Print (fp);

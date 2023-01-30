@@ -1360,34 +1360,34 @@ data_chan_body
  *
  *------------------------------------------------------------------------
  */
-defenum: "defenum" ID [ ":" "int" ]
+defenum: [ "export"] "defenum" ID [ ":" "int" ]
 {{X:
     Data *d;
     UserDef *u;
     Data *td = NULL;
 
-    switch ($0->curns->findName ($2)) {
+    switch ($0->curns->findName ($3)) {
     case 0:
       /* good */
       break;
     case 1:
-      $A(u = $0->curns->findType ($2));
+      $A(u = $0->curns->findType ($3));
       if (TypeFactory::isDataType (u)) {
 	td = dynamic_cast<Data *>(u);
 	$A(td);
 	if (!td->isEnum()) {
-	  $E("Name ``%s''already used as a non-enumeration data type", $2);
+	  $E("Name ``%s''already used as a non-enumeration data type", $3);
 	}
       }
       else {
-	$E("Name ``%s'' already used in a previous type definition", $2);
+	$E("Name ``%s'' already used in a previous type definition", $3);
       }
       break;
     case 2:
-      $E("Name ``%s'' already used as a namespace", $2);
+      $E("Name ``%s'' already used as a namespace", $3);
       break;
     case 3:
-      $E("Name ``%s'' already used as an instance", $2);
+      $E("Name ``%s'' already used as an instance", $3);
       break;
     default:
       $E("Should not be here ");
@@ -1395,14 +1395,13 @@ defenum: "defenum" ID [ ":" "int" ]
     }
 
     int is_int = 0;
-    if (!OPT_EMPTY ($3)) {
+    if (!OPT_EMPTY ($4)) {
       is_int = 1;
     }
-    OPT_FREE ($3);
+    OPT_FREE ($4);
 
     if (td && (is_int != !td->isPureEnum())) {
-      $E("Name ``%s'' is a previous enum, with different :int attribute",
-	 $2);
+      $E("Name ``%s'' is a previous enum, with different :int attribute", $3);
     }
 
     $0->u = new UserDef($0->curns);
@@ -1414,6 +1413,11 @@ defenum: "defenum" ID [ ":" "int" ]
     $0->u_d = d;
     $0->u_d->MkEnum(is_int);
     $0->u_d->MkDefined ();
+
+    if (!OPT_EMPTY ($1)) {
+      $0->u_d->MkExported ();
+    }
+    OPT_FREE ($1);
 }}
 enum_body
 {{X:
@@ -1422,19 +1426,20 @@ enum_body
     $0->u_d->SetParent ($0->tf->NewEnum ($0->scope, Type::NONE,
 					 const_expr ($0->u_d->numEnums())));
     
-    if ((u = $0->curns->findType ($2))) {
+    if ((u = $0->curns->findType ($3))) {
       if (u->isDefined() && u->isEqual ($0->u_d)) {
 	delete $0->u_d;
 	$0->u_d = dynamic_cast <Data *> (u);
 	$A($0->u_d);
       }
       else {
-	$E("Name ``%s'' previously defined as a different enumeration", $2);
+	$E("Name ``%s'' previously defined as a different enumeration", $3);
       }
     }
     else {
-      $A($0->curns->CreateType ($2, $0->u_d));
+      $A($0->curns->CreateType ($3, $0->u_d));
     }
+
     $0->u_d = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;
