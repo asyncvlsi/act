@@ -1,0 +1,12 @@
+defproc test()
+{
+   bool xr, xa;
+
+   hse {
+     a : xr- : b
+||  
+     p : xa+ : w 
+   }
+}
+
+test t;

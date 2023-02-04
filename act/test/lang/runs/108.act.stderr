@@ -1,0 +1,4 @@
+In expanding test (108.act:1)
+In expanding ::<Global>
+Error on or near line number 5.
+FATAL: Missing target fragment labelled `b'!

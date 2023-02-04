@@ -1318,6 +1318,50 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	act_error_ctxt (stderr);
 	fatal_error ("Only one hse body permitted");
       }
+      if (c->c && c->c->type == ACT_HSE_FRAGMENTS) {
+	// validate fragments
+	act_chp_lang_t *x;
+	struct Hashtable *lH = hash_new (4);
+	x = c->c;
+	while (x) {
+	  if (x->label) {
+	    if (hash_lookup (lH, x->label)) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Duplicate fragment label `%s'!", x->label);
+	    }
+	    hash_add (lH, x->label);
+	  }
+	  else {
+	    if (x != c->c) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("HSE fragment missing a label!");
+	    }
+	  }
+	  x = x->u.frag.next;
+	}
+	x = c->c;
+	while (x) {
+	  if (x->u.frag.nextlabel) {
+	    if (!hash_lookup (lH, x->u.frag.nextlabel)) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Missing target fragment labelled `%s'!", x->u.frag.nextlabel);
+	    }
+	  }
+	  else {
+	    listitem_t *li;
+	    for (li = list_first (x->u.frag.exit_conds); li; li = list_next (li)) {
+	      li = list_next (li);
+	      if (!hash_lookup (lH, (const char *)list_value (li))) {
+		act_error_ctxt (stderr);
+		fatal_error ("Missing target fragment labelled `%s'!",
+			     (char *) list_value (li));
+	      }
+	    }
+	  }
+	  x = x->u.frag.next;
+	}
+	hash_free (lH);
+      }
       all_lang->sethse (c);
     }
     break;

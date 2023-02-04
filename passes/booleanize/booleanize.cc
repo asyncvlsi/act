@@ -992,6 +992,20 @@ static void generate_hse_vars (act_boolean_netlist_t *N,
   act_booleanized_var_t *v;
 
   switch (c->type) {
+  case ACT_HSE_FRAGMENTS:
+    while (c) {
+      generate_hse_vars (N, c->u.frag.body);
+      if (!c->u.frag.nextlabel) {
+	for (listitem_t *li = list_first (c->u.frag.exit_conds); li;
+	     li = list_next (li)) {
+	  generate_hse_expr_vars (N, (Expr *) list_value (li));
+	  li = list_next (li);
+	}
+      }
+      c = c->u.frag.next;
+    }
+    break;
+    
   case ACT_CHP_COMMA:
   case ACT_CHP_SEMI:
     {
