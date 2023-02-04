@@ -1,0 +1,12 @@
+defproc test()
+{
+   bool xr, xa;
+
+   hse {
+     (xr-; *[ xr+; [xa]; xr-; [~xa]; log ("hi") ] )
+||  
+     (xa-; *[ [xr]; xa+; [~xr]; xa- ])
+   }
+}
+
+test t;

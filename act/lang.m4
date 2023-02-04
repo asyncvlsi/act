@@ -1396,7 +1396,7 @@ loop_stmt[act_chp_lang_t *]: "*[" chp_body [ "<-" wbool_expr ] "]"
 }}
 ;
 
-hse_bodies[act_chp_lang_t *]: hse_body
+hse_bodies[act_chp_lang_t *]: hse_body_top
 {{X:
     return $1;
 }}
@@ -1479,6 +1479,13 @@ hse_guarded_cmd_exit[list_t *]: wbool_expr "->" ID
 }}
 ;
 
+hse_body_top[act_chp_lang_t *]: { hse_body "||" }*
+{{X:
+    return apply_X_chp_comma_list_opt0 ($0, $1);
+}}
+;
+
+
 hse_body[act_chp_lang_t *]: { hse_comma_item ";" }*
 {{X:
     return apply_X_chp_body_opt0 ($0, $1);
@@ -1526,6 +1533,17 @@ hse_body_item[act_chp_lang_t *]: "(" ";" ID
 | hse_assign_stmt
 {{X:
     return $1;
+}}
+| ID "(" { chp_log_item "," }* ")" /* log */
+{{X:
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_FUNC;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.func.name = string_create ($1);
+    c->u.func.rhs = $3;
+    return c;
 }}
 ;
 
@@ -1585,7 +1603,7 @@ hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
 
 hse_loop_stmt[act_chp_lang_t *]: "*[" hse_body "]"
 {{X:
-    return apply_X_loop_stmt_opt0 ($0, $2, NULL);
+    return apply_X_loop_stmt_opt0 ($0, $2, list_new ());
 }}
 | "*[" { hse_guarded_cmd "[]" }* "]"
 {{X:
