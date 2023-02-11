@@ -34,7 +34,7 @@
 #define BIG_ENDIAN 0
 #define LITTLE_ENDIAN 1
 
-#if defined (__i386__)
+#if defined (__i386__) || defined(__x86_64__)
 
 #define BYTE_ORDER LITTLE_ENDIAN
 
