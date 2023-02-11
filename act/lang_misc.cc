@@ -739,12 +739,10 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
     case ACT_DFLOW_MERGE:
     case ACT_DFLOW_MIXER:
     case ACT_DFLOW_ARBITER:
-      if (e->u.splitmerge.guard) {
-	InstType *it;
+      {
+	int ilog = 0;
 	int w;
-	unsigned int ilog = 0;
-	f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
-	act_type_var (s, f->u.splitmerge.guard, &it);
+	InstType *it;
 	w = 0;
 	ilog = e->u.splitmerge.nmulti;
         ilog--;
@@ -753,44 +751,88 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 	  ilog >>= 1;
 	}
 	ilog = w;
-	w = TypeFactory::bitWidth (it);
-	if (w != ilog) {
-	  act_error_ctxt (stderr);
-	  if (w < ilog) {
-	    warning ("Bit-width of control input is less than the number of options.");
+	
+	if (e->u.splitmerge.guard) {
+	  f->u.splitmerge.guard = e->u.splitmerge.guard->Expand (ns, s);
+	  act_type_var (s, f->u.splitmerge.guard, &it);
+	  w = TypeFactory::bitWidth (it);
+	  if (w != ilog) {
+	    act_error_ctxt (stderr);
+	    if (w < ilog) {
+	      warning ("Bit-width of control input is less than the number of options.");
+	    }
+	    else {
+	      fprintf (stderr, "ERROR: Bit-width of control input is wider than necessary.\n");
+	    }
+	    fprintf (stderr, "   Bit-width: %d; options: %d (%d bits); ID: ",
+		     w, e->u.splitmerge.nmulti, ilog);
+	    f->u.splitmerge.guard->Print (stderr);
+	    fprintf (stderr , "\n");
+	    if (w > ilog) {
+	      exit (1);
+	    }
+	  }
+	  delete it;
+	}
+	else {
+	  f->u.splitmerge.guard = NULL;
+	}
+	f->u.splitmerge.nmulti = e->u.splitmerge.nmulti;
+	MALLOC (f->u.splitmerge.multi, ActId *, f->u.splitmerge.nmulti);
+
+	// all channels must have the same bit-width
+	int u_bitwidth = -1;
+	
+	for (int i=0; i < f->u.splitmerge.nmulti; i++) {
+	  if (e->u.splitmerge.multi[i]) {
+	    f->u.splitmerge.multi[i] = e->u.splitmerge.multi[i]->Expand (ns, s);
+	    act_type_var (s, f->u.splitmerge.multi[i], &it);
+	    if (u_bitwidth == -1) {
+	      u_bitwidth = TypeFactory::bitWidth (it);
+	    }
+	    else {
+	      if (u_bitwidth != TypeFactory::bitWidth (it)) {
+		act_error_ctxt (stderr);
+		fprintf (stderr, "ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.\n");
+		fprintf (stderr, "  Current width: %d; channel `", u_bitwidth);
+		f->u.splitmerge.multi[i]->Print (stderr);
+		fprintf (stderr, "' width %d\n", TypeFactory::bitWidth (it));
+		exit (1);
+	      }
+	    }
 	  }
 	  else {
-	    fprintf (stderr, "ERROR: Bit-width of control input is wider than necessary.\n");
+	    f->u.splitmerge.multi[i] = NULL;
 	  }
-	  fprintf (stderr, "   Bit-width: %d; options: %d (%d bits); ID: ",
-		   w, e->u.splitmerge.nmulti, ilog);
-	  f->u.splitmerge.guard->Print (stderr);
-	  fprintf (stderr , "\n");
-	  if (w > ilog) {
+	}
+	f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
+	if (u_bitwidth != -1) {
+	  act_type_var (s, f->u.splitmerge.single, &it);
+	  if (u_bitwidth != TypeFactory::bitWidth (it)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.\n");
+	    fprintf (stderr, "  Current width: %d; channel `", u_bitwidth);
+	    f->u.splitmerge.single->Print (stderr);
+	    fprintf (stderr, "' width %d\n", TypeFactory::bitWidth (it));
 	    exit (1);
 	  }
 	}
-	delete it;
-      }
-      else {
-	f->u.splitmerge.guard = NULL;
-      }
-      f->u.splitmerge.nmulti = e->u.splitmerge.nmulti;
-      MALLOC (f->u.splitmerge.multi, ActId *, f->u.splitmerge.nmulti);
-      for (int i=0; i < f->u.splitmerge.nmulti; i++) {
-	if (e->u.splitmerge.multi[i]) {
-	  f->u.splitmerge.multi[i] = e->u.splitmerge.multi[i]->Expand (ns, s);
+	if (e->u.splitmerge.nondetctrl) {
+	  f->u.splitmerge.nondetctrl = e->u.splitmerge.nondetctrl->Expand (ns, s);
+	  act_type_var (s, f->u.splitmerge.nondetctrl, &it);
+	  w = TypeFactory::bitWidth (it);
+	  if (w != ilog) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "ERROR: bit-width of generated control `");
+	    f->u.splitmerge.nondetctrl->Print (stderr);
+	    fprintf (stderr, "' is incorrect.\n");
+	    fprintf (stderr, "   Bit-width: %d; expected: %d\n", w, ilog);
+	    exit (1);
+	  }
 	}
 	else {
-	  f->u.splitmerge.multi[i] = NULL;
+	  f->u.splitmerge.nondetctrl = NULL;
 	}
-      }
-      f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
-      if (e->u.splitmerge.nondetctrl) {
-	f->u.splitmerge.nondetctrl = e->u.splitmerge.nondetctrl->Expand (ns, s);
-      }
-      else {
-	f->u.splitmerge.nondetctrl = NULL;
       }
       break;
 

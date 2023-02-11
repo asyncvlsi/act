@@ -1,11 +1,11 @@
-defproc testme (chan?(int<8>) A, B; chan!(bool) OUT)
+defproc testme (chan?(int<8>) A, B; chan!(bool) OUT; chan!(int<8>) OUTd)
 {                                                      
   dataflow {                                          
     dataflow_cluster {
       A > B -> OUT
     };
 
-   {|} A, B -> OUT
+   {|} A, B -> OUTd
   }                                                    
 }                                                      
 

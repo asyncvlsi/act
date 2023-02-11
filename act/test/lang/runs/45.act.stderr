@@ -1,0 +1,5 @@
+In expanding testme (45.act:1)
+In expanding ::<Global>
+Error on or near line number 3.
+ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.
+  Current width: 8; channel `OUT' width 1
