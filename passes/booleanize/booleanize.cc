@@ -1412,6 +1412,10 @@ static void generate_dflow_vars (act_boolean_netlist_t *N,
 	visit_chp_var (N, e->u.splitmerge.multi[i], 1, 1);
       }
     }
+
+    if (e->u.splitmerge.nondetctrl) {
+      visit_chp_var (N, e->u.splitmerge.nondetctrl, 0, 0);
+    }
     break;
 
   case ACT_DFLOW_CLUSTER:

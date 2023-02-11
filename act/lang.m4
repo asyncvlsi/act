@@ -2926,7 +2926,8 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     }
     else {
       if (list_length ($6) != 1) {
-	if (!(list_length ($6) == 2 && $0->non_det)) {
+	if (!(list_length ($6) == 2 && (e->t == ACT_DFLOW_MIXER ||
+					e->t == ACT_DFLOW_ARBITER))) {
 	  $E("RHS has too many channels for a merge");
 	}
       }
