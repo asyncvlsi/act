@@ -1126,7 +1126,7 @@ act_connection *ActId::Canonical (Scope *s)
   cx = cx->primary();
   
   vx = cx->getvx();
-
+  
 #ifdef DEBUG_CONNECTIONS
   printf ("Type-vx-update: ");
   vx->t->Print (stdout);
@@ -1217,174 +1217,6 @@ act_connection *ActId::Canonical (Scope *s)
 #endif      
     }
   
-#if 0
-  /*-- 
-    Since we now pull in subtype connections through ports, this
-    code is redundant.
-  --*/
-  ActId *topf = NULL;
-  
-  if (idrest) {
-    /* now check to see if id->Reset() has a *DIFFERENT* 
-       canonical name in the subtype! 
-
-       1. It is a global! In that case, abort this loop and return
-       the connection idx for the global.
-
-       2. It is the same, no change. Continue as below.
-       
-       3. It is a different name. By construction, the new name must
-       be a port.
-       
-       Replace id->Rest with the new id!
-    */
-
-    act_connection *cxrest;
-    ValueIdx *vxrest;
-    UserDef *ux;
-
-    /* find canonical connection of rest in the scope for the inst
-       type */
-
-    ux = dynamic_cast<UserDef *>(vx->t->BaseType());
-    Assert (ux, "What?");
-
-    
-    cxrest = idrest->Canonical (ux->CurScope());
-
-#if 0
-    printf ("------\n");
-    printf ("Original name: ");
-    idrest->Print (stdout);
-    printf ("\nUnique name: ");
-    print_id (cxrest);
-    {
-      act_connection *tx;
-      tx = cxrest;
-      while (tx->next != cxrest) {
-	tx = tx->next;
-	printf ("=");
-	print_id (tx);
-      }
-    }
-    printf("\n");
-    dump_conn (cxrest);
-    printf ("------\n");
-#endif
-
-    /* YYY: convert cxrest into an ID! */
-    vxrest = cxrest->vx;
-    if (!vxrest) {
-      vxrest = cxrest->parent->vx;
-      if (!vxrest) {
-	vxrest = cxrest->parent->parent->vx;
-      }
-    }
-    Assert (vxrest, "What?");
-    if (vxrest->global) {
-      /* we're done! */
-#ifdef DEBUG_CONNECTIONS
-      level--;
-      printf (" -->%d returned-early: ", level);
-      print_id (cxrest);
-      printf ("\n");
-#endif      
-      return cxrest;
-    }
-
-    /* not global, so re-write the port to be the canonical port name.
-       Note that this *will* be canonical at all levels. 
-    */
-
-    /* compute new idrest! */
-    list_t *stk = list_new ();
-
-    while (cxrest) {
-      stack_push (stk, cxrest);
-      if (cxrest->vx) {
-	cxrest = cxrest->parent;
-      }
-      else if (cxrest->parent->vx) {
-	cxrest = cxrest->parent->parent;
-      }
-      else {
-	Assert (cxrest->parent->parent->vx, "What?");
-	cxrest = cxrest->parent->parent->parent;
-      }
-    }
-    ActId *fresh;
-
-    fresh = NULL;
-    /* replace idrest! */
-    
-    while (!stack_isempty (stk)) {
-      cxrest = (act_connection *) stack_pop (stk);
-      if (cxrest->vx) {
-	vxrest = cxrest->vx;
-	if (!fresh) {
-	  fresh = new ActId (vxrest->u.obj.name);
-	  topf = fresh;
-	}
-	else {
-	  fresh->Append (new ActId (vxrest->u.obj.name));
-	  fresh = fresh->Rest();
-	}
-      }
-      else if (cxrest->parent->vx) {
-	vxrest = cxrest->parent->vx;
-	if (vxrest->t->arrayInfo()) {
-	  Array *tmp;
-	  tmp = vxrest->t->arrayInfo()->unOffset (cxrest->myoffset());
-	  if (!fresh) {
-	    fresh = new ActId (vxrest->u.obj.name, tmp);
-	    topf = fresh;
-	  }
-	  else {
-	    fresh->Append (new ActId (vxrest->u.obj.name, tmp));
-	    fresh = fresh->Rest();
-	  }
-	}
-	else {
-	  UserDef *ux;
-
-	  ux = dynamic_cast<UserDef *> (vxrest->t->BaseType());
-	  Assert (ux, "???");
-	  
-	  if (!fresh) {
-	    fresh = new ActId (vxrest->u.obj.name);
-	    topf = fresh;
-	  }
-	  else {
-	    fresh->Append (new ActId (vxrest->u.obj.name));
-	    fresh = fresh->Rest();
-	  }
-	}
-      }
-      else {
-	vxrest = cxrest->parent->parent->vx;
-	Assert (vxrest, "???");
-
-	Array *tmp;
-	tmp = vxrest->t->arrayInfo()->unOffset (cxrest->parent->myoffset());
-	UserDef *ux;
-	ux = dynamic_cast<UserDef *> (vxrest->t->BaseType());
-	Assert (ux, "what?");
-
-	if (!fresh) {
-	  fresh = new ActId (vxrest->u.obj.name, tmp);
-	  topf = fresh;
-	}
-	else {
-	  fresh->Append (new ActId (vxrest->u.obj.name, tmp));
-	  fresh = fresh->Rest();
-	  fresh->Append (new ActId (ux->getPortName (cxrest->myoffset())));
-	}
-      }
-    }
-    list_free (stk);
-  }
-#endif
-  
 #ifdef DEBUG_CONNECTIONS
   printf ("canonical: ");
   id->Print (stdout);
@@ -1402,10 +1234,6 @@ act_connection *ActId::Canonical (Scope *s)
   printf ("\n");
 #endif
 
-#if 0
-  idrest = topf;
-#endif  
-  
   do {
     /* vx is the value 
        cx is the object
@@ -1413,7 +1241,6 @@ act_connection *ActId::Canonical (Scope *s)
     if (id->arrayInfo() && id->arrayInfo()->isDeref()) {
       /* find array slot, make vx the value, cx the connection id for
 	 the canonical value */
-
       int idx = vx->t->arrayInfo()->Offset (id->arrayInfo());
       Assert (idx != -1, "This should have been caught earlier");
 
@@ -1441,27 +1268,6 @@ act_connection *ActId::Canonical (Scope *s)
       /* find port id */
 
       ux = dynamic_cast<UserDef *>(vx->t->BaseType());
-#if 0      
-      if (cx->vx == vx) {
-	/* raw connection, basetype is fine */
-      }
-      else {
-	if (id->arrayInfo()) {
-	  if (cx->parent->vx == vx) {
-	    /* cx is just array, basetype is fine */
-	  }
-	  else {
-	    /* foo[].bar; arrays are first, so bar is the offset */
-	    ux = dynamic_cast <UserDef *>
-	      (ux->getPortType (offset (cx->parent->a, cx))->BaseType());
-	  }
-	}
-	else {
-	  ux = dynamic_cast<UserDef *>
-	    (ux->getPortType (offset (cx->parent->a, cx))->BaseType());
-	}
-      }
-#endif      
       Assert (ux, "Should have been caught earlier!");
       
 #if 0
@@ -1477,18 +1283,8 @@ act_connection *ActId::Canonical (Scope *s)
 
       /* WWW: is this right?! */
       cx->vx = idrest->rawValueIdx (ux->CurScope());
-      
+      vx = cx->vx;
       cx = cx->primary();
-      
-      if (cx->vx) {
-	vx = cx->vx;
-      }
-      else if (cx->parent->vx) {
-	vx = cx->parent->vx;
-      }
-      else {
-	vx = cx->parent->parent->vx;
-      }
       Assert (vx, "What?");
     }
     id = idrest;

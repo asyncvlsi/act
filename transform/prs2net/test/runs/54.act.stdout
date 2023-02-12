@@ -1,0 +1,39 @@
+*
+*---- act defproc: test<> -----
+* raw ports:  x[0] x[1] x[2]
+*
+.subckt test x_20_3 x_21_3 x_22_3
+*.PININFO x_20_3:I x_21_3:I x_22_3:I
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* y_20_3 (combinational)
+* y_21_3 (combinational)
+* y_22_3 (combinational)
+*
+* --- end node flags ---
+*
+M0_ y_20_3 x_20_3 Vdd Vdd pch W=0.3U L=0.06U
+M1_ y_21_3 x_21_3 Vdd Vdd pch W=0.3U L=0.06U
+M2_ y_22_3 x_22_3 Vdd Vdd pch W=0.3U L=0.06U
+M3_ y_20_3 x_20_3 GND GND nch W=0.15U L=0.06U
+M4_ y_21_3 x_21_3 GND GND nch W=0.15U L=0.06U
+M5_ y_22_3 x_22_3 GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: test<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xt w_23_3 w_24_3 w_25_3 test
+.ends
+*---- end of process: foo<> -----

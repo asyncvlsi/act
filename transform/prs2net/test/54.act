@@ -1,0 +1,18 @@
+defproc test(bool x[3]) 
+{
+  bool y[3];
+
+  prs { 
+    (i:3: x[i] => y[i]-) 
+  }
+}
+
+
+defproc foo()
+{
+  bool w[3..5];
+  test t(w);
+}
+
+
+foo f;
