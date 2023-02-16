@@ -1124,16 +1124,17 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
 
   it = s->FullLookup (id->getName());
   Assert (it, "This should have been caught earlier!");
+
   while (id->Rest()) {
       /* this had better be an array deref if there is a array'ed type
 	 involved */
       if (it->arrayInfo()) {
 	if (!id->arrayInfo()) {
-	  typecheck_err ("Port `.%s' access for an arrayed type is missing an array dereference", id->getName ());
+	  typecheck_err ("Port `%s.%s' access for an arrayed type is missing an array dereference", id->getName (), id->Rest()->getName());
 	  return NULL;
 	}
 	if (it->arrayInfo()->nDims () != id->arrayInfo()->nDims ()) {
-	  typecheck_err ("Port `.%s': number of dimensions don't match type (%s v/s %s)", id->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
+	  typecheck_err ("Port `%s': number of dimensions don't match type (%d v/s %d)", id->getName(), id->arrayInfo()->nDims(), it->arrayInfo()->nDims ());
 	  return NULL;
 	}
 	/* for expanded types, we need to check that this is a
@@ -1154,7 +1155,7 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
       }
       else {
 	if (id->arrayInfo()) {
-	  typecheck_err ("Array de-reference for a non-arrayed type, port `.%s'", id->getName ());
+	  typecheck_err ("Array de-reference for a non-arrayed type, port `%s'", id->getName ());
 	  return NULL;
 	}
       }
@@ -1216,12 +1217,12 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
     return it;
   }
   if (!it->arrayInfo()) {
-    typecheck_err ("Array de-reference for a non-arrayed type, port `.%s'", id->getName ());
+    typecheck_err ("Array de-reference for a non-arrayed type, port `%s'", id->getName ());
     return NULL;
   }
   
   if (it->arrayInfo ()->nDims () != id->arrayInfo()->nDims ()) {
-    typecheck_err ("Port `.%s': number of dimensions don't match type (%d v/s %d)", id->getName(), id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
+    typecheck_err ("Port `%s': number of dimensions don't match type (%d v/s %d)", id->getName(), id->arrayInfo()->nDims (), it->arrayInfo()->nDims ());
     return NULL;
   }
 
@@ -1360,7 +1361,8 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
       return it;
     }
     else {
-      fatal_error ("Not sure how we got here");
+      // error
+      return NULL;
     }
   }
   else {

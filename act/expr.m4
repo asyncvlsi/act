@@ -286,6 +286,12 @@ expr_id[ActId *]: { base_id "." }*
 	  exit (1);
 	}
       }
+      else if (it->arrayInfo()) {
+	$e("Array type needs de-reference before a ``.'' can be used: ");
+	ret->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
       /* check that the id fragment exists in the scope of the inst
 	 type */
       it = ud->Lookup ((ActId *)list_value (li));
