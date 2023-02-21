@@ -67,6 +67,7 @@ struct act_nl_varinfo {
   struct node *vdd, *gnd;	/* power supply for the gate: used to
 				   check if two gates are compatible */
 
+  unsigned int spec_keeper:1;	// special keeper
   unsigned int unstaticized:2;	/* unstaticized! 
 				   0 = generate keeper
 				   1 = no keeper, but it is state-holding

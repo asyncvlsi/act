@@ -1,0 +1,43 @@
+*
+*---- act defproc: test<> -----
+* raw ports:  a b c
+*
+.subckt test a b c
+*.PININFO a:I b:I c:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* c (state-holding): pup_reff=0.8; pdn_reff=1
+*
+* --- end node flags ---
+*
+M0_ #7 a Vdd Vdd pch W=0.15U L=0.06U
+M1_ #8 b Vdd Vdd pch W=0.15U L=0.06U
+M2_ #fb9# c Vdd Vdd pch W=0.15U L=0.06U
+M3_ #3 a GND GND nch W=0.12U L=0.06U
+M4_ #6 b GND GND nch W=0.12U L=0.06U
+M5_ #fb9# c GND GND nch W=0.15U L=0.06U
+M6_ c b #3 GND nch W=0.12U L=0.06U
+M7_ c a #6 GND nch W=0.12U L=0.06U
+M8_ c b #7 Vdd pch W=0.15U L=0.06U
+M9_ c a #8 Vdd pch W=0.15U L=0.06U
+M10_keeper #6 #fb9# #3 GND nch W=0.12U L=0.06U
+M11_keeper #8 #fb9# #7 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: test<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xt t_4a t_4b t_4c test
+.ends
+*---- end of process: foo<> -----

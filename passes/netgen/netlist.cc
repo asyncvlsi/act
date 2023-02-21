@@ -268,7 +268,8 @@ static void *varinfo_alloc (netlist_t *n, act_booleanized_var_t *v)
 
   vi->vdd = NULL;
   vi->gnd = NULL;
-
+  
+  vi->spec_keeper = 0;
   vi->unstaticized = 0;
   vi->stateholding = 0;
   vi->usecf = 2;
@@ -414,21 +415,23 @@ static node_t *search_supply_list_for_null (list_t *x)
 
 
 #define EDGE_TYPE(t) ((t) & (0x1 << 0))
-#define EDGE_SIZE(t) ((t) & (0x3 << 1))
-#define EDGE_MODE(t) ((t) & (0xf << 3))
+#define EDGE_SIZE(t) ((t) & (0x7 << 1))
+#define EDGE_MODE(t) ((t) & (0xf << 4))
 
 /* these three size options are exclusive */
 #define EDGE_NORMAL   (0x01 << 1)
 #define EDGE_FEEDBACK (0x02 << 1)
 #define EDGE_STATINV  (0x03 << 1)
+#define EDGE_HALFNORM (0x04 << 1)
+#define EDGE_HALFNORMREV (0x05 << 1)
 
 /* flags */
-#define EDGE_TREE     (0x01 << 3) // tree edges -- mark specially
-#define EDGE_PCHG     (0x02 << 3) // pchg edges: can use n to vdd, p to gnd
-#define EDGE_INVERT   (0x04 << 3) // strip pchg
-#define EDGE_CELEM    (0x08 << 3) // strip pchg
-#define EDGE_KEEPER   (0x10 << 3) // keeper edge (force)
-#define EDGE_CKEEPER  (0x20 << 3) // ckeeper edge (force)
+#define EDGE_TREE     (0x01 << 4) // tree edges -- mark specially
+#define EDGE_PCHG     (0x02 << 4) // pchg edges: can use n to vdd, p to gnd
+#define EDGE_INVERT   (0x04 << 4) // strip pchg
+#define EDGE_CELEM    (0x08 << 4) // strip pchg
+#define EDGE_KEEPER   (0x10 << 4) // keeper edge (force)
+#define EDGE_CKEEPER  (0x20 << 4) // ckeeper edge (force)
 
 int ActNetlistPass::find_length_fit (int len)
 {
@@ -639,164 +642,210 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
       }
 
       /*-- node has forward inverter --*/
-      if ((n->v->usecf == 1) || (cf_keepers && (n->v->usecf == 2))) {
-	/* combinational feedback */
-	node_t *tmp;
+
+      if (n->v->spec_keeper) {
+	/* special H-tree structure */
+	node_t *node[2][2];
+	int cnt[2];
+	listitem_t *li;
 	edge_t *e;
+	node[0][0] = NULL;
+	node[0][1] = NULL;
+	node[1][0] = NULL;
+	node[1][1] = NULL;
+	cnt[0] = 0;
+	cnt[1] = 0;
 
-	/* pfets */
-	tmp = node_alloc (N, NULL);
-	e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
-	e->type = EDGE_PFET;
-	e->w = min_w_in_lambda*getGridsPerLambda();
-	e->l = min_l_in_lambda*getGridsPerLambda();
-	e->keeper = 1;
-	e->combf = 1;
-	create_expr_edges (N, EDGE_PFET|EDGE_FEEDBACK|EDGE_INVERT,
-			   N->Vdd, n->v->e_dn, tmp, 1 /* invert */);
-
-	/* nfets */
-	tmp = node_alloc (N, NULL);
-	e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
+	for (li = list_first (n->e); li; li = list_next (li)) {
+	  e = (edge_t *) list_value (li);
+	  if (cnt[e->type] == 2) {
+	    fatal_error ("Error: invalid node used for h-type keeper!");
+	  }
+	  if (e->a == n) {
+	    node[e->type][cnt[e->type]] = e->b;
+	  }
+	  else {
+	    node[e->type][cnt[e->type]] = e->a;
+	  }
+	  cnt[e->type]++;
+	}
+	if (cnt[0] != 2 || cnt[1] != 2) {
+	  fatal_error ("Error: invalid node used for h-type keeper!");
+	}
+	e = edge_alloc (N, n->v->inv, node[EDGE_NFET][0], node[EDGE_NFET][1],
+			N->psc);
 	e->type = EDGE_NFET;
+	e->keeper = 1;
 	e->w = min_w_in_lambda*getGridsPerLambda();
 	e->l = min_l_in_lambda*getGridsPerLambda();
+	
+	e = edge_alloc (N, n->v->inv, node[EDGE_PFET][0], node[EDGE_PFET][1],
+			N->nsc);
+	e->type = EDGE_PFET;
 	e->keeper = 1;
-	e->combf = 1;
-	create_expr_edges (N, EDGE_NFET|EDGE_FEEDBACK|EDGE_INVERT,
-			   N->GND, n->v->e_up, tmp, 1);
+	e->w = min_w_in_lambda*getGridsPerLambda();
+	e->l = min_l_in_lambda*getGridsPerLambda();
       }
       else {
-	double r;
-	double rleft;
-	int len;
-	edge_t *e;
-	/* weak inverter */
+	if ((n->v->usecf == 1) || (cf_keepers && (n->v->usecf == 2))) {
+	  /* combinational feedback */
+	  node_t *tmp;
+	  edge_t *e;
 
-	/*-- p stack --*/
-	r = n->reff[EDGE_NFET]; // strength of n-stack
-	r /= weak_to_strong_ratio;
-	r /= p_n_ratio;
+	  /* pfets */
+	  tmp = node_alloc (N, NULL);
+	  e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
+	  e->type = EDGE_PFET;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = min_l_in_lambda*getGridsPerLambda();
+	  e->keeper = 1;
+	  e->combf = 1;
+	  create_expr_edges (N, EDGE_PFET|EDGE_FEEDBACK|EDGE_INVERT,
+			     N->Vdd, n->v->e_dn, tmp, 1 /* invert */);
 
-	rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
-	if (rleft < 0) {
-	  len = 0;
+	  /* nfets */
+	  tmp = node_alloc (N, NULL);
+	  e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
+	  e->type = EDGE_NFET;
+	  e->w = min_w_in_lambda*getGridsPerLambda();
+	  e->l = min_l_in_lambda*getGridsPerLambda();
+	  e->keeper = 1;
+	  e->combf = 1;
+	  create_expr_edges (N, EDGE_NFET|EDGE_FEEDBACK|EDGE_INVERT,
+			     N->GND, n->v->e_up, tmp, 1);
 	}
 	else {
-	  len = (int) (0.5 + rleft*min_w_in_lambda);
-	}
+	  double r;
+	  double rleft;
+	  int len;
+	  edge_t *e;
+	  /* weak inverter */
 
-	/* two options:
-	   - minimum size is weak enough, or 
-	   series resistance is less than min length in which
-	   case use slightly longer inverter
+	  /*-- p stack --*/
+	  r = n->reff[EDGE_NFET]; // strength of n-stack
+	  r /= weak_to_strong_ratio;
+	  r /= p_n_ratio;
+
+	  rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
+	  if (rleft < 0) {
+	    len = 0;
+	  }
+	  else {
+	    len = (int) (0.5 + rleft*min_w_in_lambda);
+	  }
+
+	  /* two options:
+	     - minimum size is weak enough, or 
+	     series resistance is less than min length in which
+	     case use slightly longer inverter
 	      
-	   - min size + series resistance
-	*/
-	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
-	    (len < min_l_in_lambda)) {
-	  e = edge_alloc (N, n->v->inv, N->Vdd, n, N->nsc);
-	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = (min_l_in_lambda + len)*getGridsPerLambda();
-	  e->keeper = 1;
-	}
-	else {
-	  /* two edges */
-	  /* residual length conforming to rules */
-
-	  if (num_vdd_share == weak_share_max) {
-	    _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
-	    weak_vdd = NULL;
-	    num_vdd_share = 0;
+	     - min size + series resistance
+	  */
+	  if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
+	      (len < min_l_in_lambda)) {
+	    e = edge_alloc (N, n->v->inv, N->Vdd, n, N->nsc);
+	    e->type = EDGE_PFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = (min_l_in_lambda + len)*getGridsPerLambda();
+	    e->keeper = 1;
 	  }
-	  if (!weak_vdd) {
-	    weak_vdd = node_alloc (N, NULL);
-	    num_vdd_share = 0;
-	    vdd_len = 0;
-	  }
+	  else {
+	    /* two edges */
+	    /* residual length conforming to rules */
 
-	  num_vdd_share++;
-	  vdd_len = MAX(vdd_len, len);
+	    if (num_vdd_share == weak_share_max) {
+	      _alloc_weak_vdd (N, weak_vdd, min_w_in_lambda, vdd_len);
+	      weak_vdd = NULL;
+	      num_vdd_share = 0;
+	    }
+	    if (!weak_vdd) {
+	      weak_vdd = node_alloc (N, NULL);
+	      num_vdd_share = 0;
+	      vdd_len = 0;
+	    }
+
+	    num_vdd_share++;
+	    vdd_len = MAX(vdd_len, len);
 
 #if 0
-	  /* lazy  emission of this resistor */
-	  node_t *tmp;
-	  tmp = node_alloc (N, NULL); // tmp node
+	    /* lazy  emission of this resistor */
+	    node_t *tmp;
+	    tmp = node_alloc (N, NULL); // tmp node
 
-	  /* resistor */
-	  e = edge_alloc (N, N->GND, N->Vdd, tmp, N->nsc);
-	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = len*getGridsPerLambda();
-	  e->keeper = 1;
+	    /* resistor */
+	    e = edge_alloc (N, N->GND, N->Vdd, tmp, N->nsc);
+	    e->type = EDGE_PFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = len*getGridsPerLambda();
+	    e->keeper = 1;
 #endif	  
 
-	  /* inv */
-	  e = edge_alloc (N, n->v->inv, weak_vdd, n, N->nsc);
-	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = min_l_in_lambda*getGridsPerLambda();
-	  e->keeper = 1;
-	}
+	    /* inv */
+	    e = edge_alloc (N, n->v->inv, weak_vdd, n, N->nsc);
+	    e->type = EDGE_PFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = min_l_in_lambda*getGridsPerLambda();
+	    e->keeper = 1;
+	  }
 
-	/*-- n stack --*/
-	r = n->reff[EDGE_PFET];
-	r /= weak_to_strong_ratio;
-	r *= p_n_ratio;
-	rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
-	if (rleft < 0) {
-	  len = 0;
-	}
-	else {
-	  len = (int) (0.5 + rleft*min_w_in_lambda);
-	}
+	  /*-- n stack --*/
+	  r = n->reff[EDGE_PFET];
+	  r /= weak_to_strong_ratio;
+	  r *= p_n_ratio;
+	  rleft = r - (double)min_l_in_lambda/(double)min_w_in_lambda;
+	  if (rleft < 0) {
+	    len = 0;
+	  }
+	  else {
+	    len = (int) (0.5 + rleft*min_w_in_lambda);
+	  }
 	
-	if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
-	    (len < min_l_in_lambda)) {
-	  e = edge_alloc (N, n->v->inv, N->GND, n, N->psc);
-	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = (min_l_in_lambda + len)*getGridsPerLambda();
-	  e->keeper = 1;
-	}
-	else {
-	  /* two edges */
-	  /* residual length conforming to rules */
-
-	  if (num_gnd_share == weak_share_max) {
-	    _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
-	    weak_gnd = NULL;
-	    num_gnd_share = 0;
+	  if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
+	      (len < min_l_in_lambda)) {
+	    e = edge_alloc (N, n->v->inv, N->GND, n, N->psc);
+	    e->type = EDGE_NFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = (min_l_in_lambda + len)*getGridsPerLambda();
+	    e->keeper = 1;
 	  }
-	  if (!weak_gnd) {
-	    weak_gnd = node_alloc (N, NULL);
-	    gnd_len = 0;
-	    num_gnd_share = 0;
-	  }
+	  else {
+	    /* two edges */
+	    /* residual length conforming to rules */
 
-	  num_gnd_share++;
-	  gnd_len = MAX(gnd_len, len);
+	    if (num_gnd_share == weak_share_max) {
+	      _alloc_weak_gnd (N, weak_gnd, min_w_in_lambda, gnd_len);
+	      weak_gnd = NULL;
+	      num_gnd_share = 0;
+	    }
+	    if (!weak_gnd) {
+	      weak_gnd = node_alloc (N, NULL);
+	      gnd_len = 0;
+	      num_gnd_share = 0;
+	    }
+
+	    num_gnd_share++;
+	    gnd_len = MAX(gnd_len, len);
 
 #if 0
-	  node_t *tmp;
+	    node_t *tmp;
 
-	  tmp = node_alloc (N, NULL); // tmp node
+	    tmp = node_alloc (N, NULL); // tmp node
 
-	  /* resistor */
-	  e = edge_alloc (N, N->Vdd, N->GND, tmp, N->psc);
-	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = len*getGridsPerLambda();
-	  e->keeper = 1;
+	    /* resistor */
+	    e = edge_alloc (N, N->Vdd, N->GND, tmp, N->psc);
+	    e->type = EDGE_NFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = len*getGridsPerLambda();
+	    e->keeper = 1;
 #endif	  
 
-	  /* inv */
-	  e = edge_alloc (N, n->v->inv, weak_gnd, n, N->psc);
-	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = min_l_in_lambda*getGridsPerLambda();
-	  e->keeper = 1;
+	    /* inv */
+	    e = edge_alloc (N, n->v->inv, weak_gnd, n, N->psc);
+	    e->type = EDGE_NFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = min_l_in_lambda*getGridsPerLambda();
+	    e->keeper = 1;
+	  }
 	}
       }
     }
@@ -888,7 +937,9 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
   if (type & EDGE_TREE) {
     f->tree = 1;
   }
-  if (EDGE_SIZE (type) == EDGE_NORMAL) {
+  if (EDGE_SIZE (type) == EDGE_NORMAL ||
+      EDGE_SIZE (type) == EDGE_HALFNORMREV ||
+      EDGE_SIZE (type) == EDGE_HALFNORM) {
     /* if type & EDGE_INVERT, could be => opp rule 
        if type & EDGE_CELEM, could be #> rule
     */
@@ -926,6 +977,9 @@ void ActNetlistPass::set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
       f->l = n->sz[f->type].l;
       f->nfolds = n->sz[f->type].nf;
       f->flavor = n->sz[f->type].flavor;
+    }
+    if (EDGE_SIZE (type) != EDGE_NORMAL) {
+      f->w = (f->w + 1)/2;
     }
     f->w = MAX(f->w, min_w_in_lambda*getGridsPerLambda());
     f->l = MAX(f->l, min_l_in_lambda*getGridsPerLambda());
@@ -1052,6 +1106,25 @@ static bool_t *compute_bool (netlist_t *N, act_prs_expr_t *e, int type, int sens
   return NULL;
 }
 
+static int is_two_inp_c_elem (act_prs_expr_t *e)
+{
+  if (!e) {
+    return 0;
+  }
+  if (e->type != ACT_PRS_EXPR_AND) {
+    return 0;
+  }
+  
+#define IS_VAR_OR_NOTVAR(x) ((x)->type == ACT_PRS_EXPR_VAR || (x)->type == ACT_PRS_EXPR_NOT && (x)->u.e.l->type == ACT_PRS_EXPR_VAR)
+  
+  if (!IS_VAR_OR_NOTVAR (e->u.e.l) || !IS_VAR_OR_NOTVAR (e->u.e.r)) {
+    return 0;
+  }
+  
+  return 1;
+}
+
+
 /*
  * create edges from left to right, corresponding to expression "e"
  *
@@ -1108,8 +1181,14 @@ int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       /* create edges recursively */
       if (!at_node) {
 	mid = node_alloc (N, NULL);
-	ldepth = create_expr_edges (N, type, left, e->u.e.l, mid, sense);
-	rdepth = create_expr_edges (N, type, mid, e->u.e.r, right, sense);
+	if ((type & EDGE_HALFNORMREV) == EDGE_HALFNORMREV) {
+	  ldepth = create_expr_edges (N, type, left, e->u.e.r, mid, sense);
+	  rdepth = create_expr_edges (N, type, mid, e->u.e.l, right, sense);
+	}
+	else {
+	  ldepth = create_expr_edges (N, type, left, e->u.e.l, mid, sense);
+	  rdepth = create_expr_edges (N, type, mid, e->u.e.r, right, sense);
+	}
       }
       else {
 	mid = at_node;
@@ -1785,6 +1864,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       act_booleanized_var_t *v;
       double cap = default_load_cap;
       unsigned int attr_type = 0;
+      int is_h_celem = 0;
 
       v = var_lookup (N, p->u.one.id);
       Assert (v->output == 1, "eh?");
@@ -1804,6 +1884,9 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  }
 	  else {
 	    VINF(v)->unstaticized = 0;
+	    if (attr->e->u.ival.v == 3) {
+	      is_h_celem = 1;
+	    }
 	  }
 	}
 	else if (strcmp (attr->attr, "iskeeper") == 0) {
@@ -1845,6 +1928,9 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
       VINF(v)->n->cap = cap;
 
       if (p->u.one.arrow_type == 0) {
+	if (is_h_celem) {
+	  warning ("H-type c-element specifier ignored");
+	}
 	/* -> */
 	depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL | (istree ? EDGE_TREE : 0),
 			   (d == EDGE_NFET ? N->GND : N->Vdd),
@@ -1855,6 +1941,9 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	check_supply (N, p->u.one.id, d, (d == EDGE_NFET ? N->GND : N->Vdd));
       }
       else if (p->u.one.arrow_type == 1) {
+	if (is_h_celem) {
+	  warning ("H-type c-element specifier ignored");
+	}
 	if (istree) {
 	  act_error_ctxt (stderr);
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
@@ -1882,17 +1971,51 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  fatal_error ("tree { } blocks can only contain `->' production rules");
 	}
 	/* #> */
-	depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL,
-				   (d == EDGE_NFET ? N->GND : N->Vdd),
-				   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_NORMAL);
-	_check_emit_warning (d, depth, p->u.one.id);
+
+	if (is_h_celem) {
+	  if (!is_two_inp_c_elem (p->u.one.e) || attr_type != 0) {
+	    warning ("H-type c-element specifier ignored");
+	    is_h_celem = 0;
+	  }
+	  else {
+	    VINF(v)->spec_keeper = 1;
+	  }
+	}
+
+	if (is_h_celem) {
+	  depth = create_expr_edges (N, d | EDGE_HALFNORM,
+				     (d == EDGE_NFET ? N->GND : N->Vdd),
+				     p->u.one.e, VINF(v)->n, 0);
+	  depth = create_expr_edges (N, d | EDGE_HALFNORMREV,
+				     (d == EDGE_NFET ? N->GND : N->Vdd),
+				     p->u.one.e, VINF(v)->n, 0);
+	  _check_emit_warning (d, depth, p->u.one.id);
+	  update_bdds_exprs (N, v, p->u.one.e, d | EDGE_NORMAL);
+
+	  depth = create_expr_edges (N, (1-d) | EDGE_HALFNORM | EDGE_CELEM,
+				     (d == EDGE_NFET ? N->Vdd : N->GND),
+				     p->u.one.e, VINF(v)->n, 0);
+	  depth = create_expr_edges (N, (1-d) | EDGE_HALFNORMREV | EDGE_CELEM,
+				     (d == EDGE_NFET ? N->Vdd : N->GND),
+				     p->u.one.e, VINF(v)->n, 0);
+	  update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_CELEM |
+			     EDGE_NORMAL);
+	  _check_emit_warning (1-d, depth, p->u.one.id);
+	}
+	else {
+	  depth = create_expr_edges (N, d | attr_type | EDGE_NORMAL,
+				     (d == EDGE_NFET ? N->GND : N->Vdd),
+				     p->u.one.e, VINF(v)->n, 0);
+
+	  update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_NORMAL);
+	  _check_emit_warning (d, depth, p->u.one.id);
 	
-	depth = create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
-				   (d == EDGE_NFET ? N->Vdd : N->GND),
-				   p->u.one.e, VINF(v)->n, 0);
-	update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_CELEM | EDGE_NORMAL);
-	_check_emit_warning (1-d, depth, p->u.one.id);
+	  depth = create_expr_edges (N, (1-d) | attr_type | EDGE_CELEM | EDGE_NORMAL,
+				     (d == EDGE_NFET ? N->Vdd : N->GND),
+				     p->u.one.e, VINF(v)->n, 0);
+	  update_bdds_exprs (N, v, p->u.one.e, d | attr_type | EDGE_CELEM | EDGE_NORMAL);
+	  _check_emit_warning (1-d, depth, p->u.one.id);
+	}
 
 	check_supply (N, p->u.one.id, EDGE_NFET, N->GND);
 	check_supply (N, p->u.one.id, EDGE_PFET, N->Vdd);

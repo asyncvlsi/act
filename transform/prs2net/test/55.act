@@ -1,0 +1,16 @@
+defproc test(bool a, b, c)
+{
+
+  prs { 
+    [keeper=3] a & b #> c-
+  }
+}
+
+
+defproc foo()
+{
+  test t;
+}
+
+
+foo f;
