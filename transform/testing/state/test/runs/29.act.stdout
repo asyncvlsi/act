@@ -1,0 +1,36 @@
+--- Process: sink<> ---
+   loc-nbools = 0, loc-nvars = 1
+   port-nbools = 0, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 1
+--- End Process: sink<> ---
+--- Process: src<> ---
+   loc-nbools = 0, loc-nvars = 1
+   port-nbools = 0, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 1
+--- End Process: src<> ---
+--- Process: probe_wait<> ---
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 0, port-chpvars = 4
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
+--- End Process: probe_wait<> ---
+--- Process: src_delay<1000> ---
+   loc-nbools = 0, loc-nvars = 2
+   port-nbools = 0, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 2
+--- End Process: src_delay<1000> ---
+--- Process: foo<> ---
+   loc-nbools = 0, loc-nvars = 5
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 10
+--- End Process: foo<> ---
+Globals: 0 bools

@@ -1650,3 +1650,10 @@ int ValueIdx::numAttrIdx()
   }
   return t->arrayInfo()->size();
 }
+
+void act_connection::Print (FILE *fp)
+{
+  ActId *tmp = toid();
+  tmp->Print (fp);
+  delete tmp;
+}

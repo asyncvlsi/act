@@ -94,6 +94,13 @@ static act_booleanized_var_t *_var_lookup (act_boolean_netlist_t *n,
       delete xit;
       delete tmp;
     }
+    int dir = c->getDir();
+    if (dir == Type::IN) {
+      v->input = 1;
+    }
+    else if (dir == Type::OUT) {
+      v->output = 1;
+    }
   }
   return (act_booleanized_var_t *)b->v;
 }
@@ -1923,6 +1930,10 @@ void *ActBooleanizePass::local_op (Process *p, int mode)
     _createNets (p);
     return getMap (p);
   }
+  else if (mode == 2) {
+    _print (p);
+    return getMap (p);
+  }
   else {
     fatal_error ("Unknown mode?");
     return NULL;
@@ -1965,6 +1976,7 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     A_NEXT (n->chpports).used = 0;
     A_NEXT (n->chpports).input = 0;
     A_NEXT (n->chpports).bidir = 0;
+
     if (dir == Type::IN) {
       A_NEXT (n->chpports).input = 1;
     }
@@ -2744,4 +2756,63 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
     cx = id->Canonical (n->cur);
   }
   return ActBooleanizePass::isDynamicRef (n, cx);
+}
+
+
+void ActBooleanizePass::Print (FILE *fp, Process *p)
+{
+  if (!completed()) {
+    warning ("ActBooleanizePass::Print() called without pass being run");
+    return;
+  }
+  _fp = fp;
+  run_recursive (p, 2);
+}
+
+void ActBooleanizePass::_print (Process *p)
+{
+  act_boolean_netlist_t *bnl = (act_boolean_netlist_t *) getMap (p);
+  if (!bnl) {
+    if (p) {
+      fprintf (_fp, "Process: %s [empty]\n", p->getName());
+    }
+    else {
+      fprintf (_fp, "top-level: [empty]\n");
+    }
+    return;
+  }
+
+  if (p) {
+    fprintf (_fp, "Process %s\n", p->getName());
+  }
+  else {
+    fprintf (_fp, "top-level\n");
+  }
+
+  if (bnl->macro) {
+    fprintf (_fp, "   > macro\n");
+  }
+  if (bnl->isempty) {
+    fprintf (_fp, "   > empty\n");
+  }
+
+  fprintf (_fp, " >> boolean-ports:\n");
+  for (int i=0; i < A_LEN (bnl->ports); i++) {
+    fprintf (_fp, "      ");
+    bnl->ports[i].c->Print (_fp);
+    fprintf (_fp, " / i=%d bi=%d omit=%d used=%d\n",
+	     bnl->ports[i].input, bnl->ports[i].bidir,
+	     bnl->ports[i].omit, bnl->ports[i].used);
+  }
+
+  fprintf (_fp, " >> chp-ports:\n");
+  for (int i=0; i < A_LEN (bnl->chpports); i++) {
+    fprintf (_fp, "      ");
+    bnl->chpports[i].c->Print (_fp);
+    fprintf (_fp, " / i=%d bi=%d omit=%d used=%d\n",
+	     bnl->chpports[i].input, bnl->chpports[i].bidir,
+	     bnl->chpports[i].omit, bnl->chpports[i].used);
+  }
+  fprintf (_fp, " >> conn-hash: %d\n", bnl->cH ? bnl->cH->n : -1);
+  fprintf (_fp, " >> dync-hash: %d\n", bnl->cdH ? bnl->cdH->n : -1);
 }

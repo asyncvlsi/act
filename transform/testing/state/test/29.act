@@ -1,0 +1,49 @@
+defproc src (chan!(int) S)
+{
+  int s;
+  chp {
+    s := 10;
+    *[ S!s ]
+  }
+}
+
+template <pint D>
+defproc src_delay (chan!(int) S)
+{
+  int d, s;
+  chp {
+    d := 0;
+    s := 20;
+    *[ S!s; *[ d < D -> d := d + 1]; d := 0 ]
+  }
+}
+  
+defproc sink (chan?(int) S)
+{
+  int s;
+  chp {
+    *[ S?s ]
+  }
+}
+
+defproc probe_wait (chan?(int) tick, tS, tN; enum<4> c)
+{
+  chp {
+    c:=0;
+    *[ [#tick]; tS?, tN?; c := (c + 1)]
+  }
+}
+
+defproc foo()
+{
+  src src1, src2;
+  src_delay<1000> src_d;
+  sink sink;
+  probe_wait pw;
+
+  pw.tick = src_d.S;
+  pw.tS = src1.S;
+  pw.tN = src2.S;
+}
+
+foo f;

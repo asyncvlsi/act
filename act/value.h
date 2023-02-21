@@ -113,6 +113,8 @@ public:
      Returns true on success, false otherwise -- */
   bool disconnect ();
   bool disconnectable ();
+
+  void Print (FILE *fp);
 };
 
 

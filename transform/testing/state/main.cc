@@ -72,5 +72,8 @@ int main (int argc, char **argv)
 
   sp->Print (stdout, p);
 
+//  ActBooleanizePass *bp = dynamic_cast<ActBooleanizePass *>(a->pass_find ("booleanize"));
+//  bp->Print (stdout, p);
+
   return 0;
 }

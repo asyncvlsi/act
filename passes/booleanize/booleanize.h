@@ -184,6 +184,10 @@ class ActBooleanizePass : public ActPass {
    */
   void createNets (Process *p = NULL);
 
+  /**
+   * Print ports/flags computed.
+   */
+  void Print (FILE *fp, Process *p);
 
   static act_dynamic_var_t *isDynamicRef (act_boolean_netlist_t *,
 					  act_connection *);
@@ -199,8 +203,12 @@ class ActBooleanizePass : public ActPass {
 
   int _create_nets_run;
 
+  FILE *_fp;
+
   /*-- internal functions: generate booleans for a process --*/
   act_boolean_netlist_t *_create_local_bools (Process *p);
+
+  void _print (Process *p);
 
   void flatten_ports_to_bools (act_boolean_netlist_t *,
 			       ActId *prefix,
