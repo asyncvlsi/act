@@ -380,7 +380,8 @@ static void visit_chp_var (act_boolean_netlist_t *N,
   }
 
   v = var_lookup (N, id);
-  
+
+#if 0
   if (is_dataflow && !v->usedchp && TypeFactory::isChanType (it)) {
     InstType *it2 = TypeFactory::getChanDataType (it);
     if (it2) {
@@ -399,15 +400,27 @@ static void visit_chp_var (act_boolean_netlist_t *N,
       idv->output = 1;		/* this is written */
     }
   }
+#endif
 
   v->usedchp = 1;
 
   if (isinput == 1) {
     v->input = 1;
+#if 0
+    if (TypeFactory::isChanType (it)) {
+      v->chp_recv = 1;
+    }
+#endif
   }
   else if (isinput == 0) {
     v->output = 1;
+#if 0
+    if (TypeFactory::isChanType (it)) {
+      v->chp_send = 1;
+    }
+#endif
   }
+  /* isinput == -1 => probe */
 
   UserDef *u = id->canFragment (N->cur);
   Channel *ch = NULL;
