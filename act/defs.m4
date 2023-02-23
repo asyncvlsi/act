@@ -394,9 +394,10 @@ override_spec: override_one_spec override_spec
 {{X: return NULL; }}
 ;
 
-override_one_spec: user_type bare_id_list ";"
+override_one_spec: user_type [ "+" ] bare_id_list ";"
 {{X:
     listitem_t *li;
+    int append_params = 0;
 
     if ($1->getDir() != Type::NONE) {
       $e("Override specification must not have direction flags\n");
@@ -406,8 +407,16 @@ override_one_spec: user_type bare_id_list ";"
       exit (1);
     }
 
+    if (OPT_EMPTY ($2)) {
+      append_params = 0;
+    }
+    else {
+      append_params = 1;
+    }
+    OPT_FREE ($2);
+
     ActBody *override_asserts = NULL;
-    for (li = list_first ($2); li; li = list_next (li)) {
+    for (li = list_first ($3); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
       if (!it) {
@@ -431,6 +440,16 @@ override_one_spec: user_type bare_id_list ";"
 
       int num_params = $1->getNumParams();
       int start_pos = 0;
+
+      if (append_params) {
+	if (TypeFactory::isUserType (it) && (it->getNumParams() > 0)) {
+	  if (list_length ($3) != 1) {
+	    $E("Append parameter syntax requires only one ID on the RHS (found %d)", list_length ($3));
+	  }
+	  $1->appendParams (it->getNumParams(), it->allParams());
+	  num_params += it->getNumParams();
+	}
+      }
 
       while (chk) {
 	//printf("CHECK [%d]: ", num_params);
@@ -477,6 +496,8 @@ override_one_spec: user_type bare_id_list ";"
 	  }
 	}
       }
+
+      
       it->MkArray (tmpa);
       if (!chk) {
 	$e("Illegal override; the new type doesn't implement the original.\n");
@@ -515,7 +536,7 @@ override_one_spec: user_type bare_id_list ";"
     }
     /* walk through the body, editing instances */
     if (b) {
-      b->updateInstType ($2, $1);
+      b->updateInstType ($3, $1);
       if (override_asserts) {
 	b->Tail()->Append (override_asserts);
       }
@@ -547,7 +568,7 @@ override_one_spec: user_type bare_id_list ";"
       $A(0);
     }
     for (int i=0; i < px->getNumPorts(); i++) {
-      for (li = list_first ($2); li; li = list_next (li)) {
+      for (li = list_first ($3); li; li = list_next (li)) {
 	if (strcmp (px->getPortName (i), (char *) list_value (li)) == 0) {
 	  break;
 	}
@@ -556,10 +577,10 @@ override_one_spec: user_type bare_id_list ";"
 	px->refinePortType (i, $1);
       }
     }
-    for (li = list_first ($2); li; li = list_next (li)) {
+    for (li = list_first ($3); li; li = list_next (li)) {
       $0->scope->refineBaseType ((char *)list_value (li), $1);
     }
-    list_free ($2);
+    list_free ($3);
     return NULL;
 }}
 ;

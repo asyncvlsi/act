@@ -1810,7 +1810,9 @@ void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
     }
     else {
       chk = ux->getParent ();
-      Assert (chk->arrayInfo() == NULL, "What?");
+      if (chk) {
+	Assert (chk->arrayInfo() == NULL, "What?");
+      }
     }
   }
   if (!chk) {

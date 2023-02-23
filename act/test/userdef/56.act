@@ -1,0 +1,24 @@
+template<pint X>
+deftype bar (bool w[X]) { }
+
+template<pint A>
+deftype  foo <: bar (bool x[A]) { }
+
+template<pint W>
+defproc proc1 (bool xx)
+{
+  pint M = W + 3;
+
+  bar<M> x;
+}
+
+
+defproc proc2 <: proc1 ()
++{ 
+   foo<W>+ x;
+}
+{
+
+}
+
+proc2<2> p;
