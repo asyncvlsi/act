@@ -41,6 +41,7 @@ class ActBody {
   virtual ~ActBody();
   
   void Append (ActBody *b);
+  void insertNext (ActBody *b);
   ActBody *Tail ();
   ActBody *Next () { return next; }
 

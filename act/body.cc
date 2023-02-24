@@ -74,6 +74,17 @@ ActBody *ActBody::Tail ()
   return b;
 }
 
+void ActBody::insertNext (ActBody *b)
+{
+  ActBody *t = next;
+
+  if (!b) return;
+
+  next = b;
+  b = b->Tail();
+  b->next = t;
+}
+
 ActBody_Inst::ActBody_Inst (int line, InstType *it, const char *_id)
 : ActBody (line)
 {
@@ -1735,7 +1746,14 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
 	}
       }
       if (li) {
+	ActBody *override_asserts =
+	  new ActBody_OverrideAssertion (bi->getLine(),
+					 bi->getName(),
+					 bi->getType(),
+					 it);
+
 	bi->updateInstType (it);
+	bi->insertNext (override_asserts);
       }
     }
     else if (dynamic_cast<ActBody_Loop *> (b)) {
@@ -1799,8 +1817,9 @@ void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
 
   if (chk->isEqual (orig)) {
     act_error_ctxt (stderr);
-    fprintf (stderr, " Orig: "); orig->Print (stderr);
-    fprintf (stderr, "\n  New: "); chk->Print (stderr);
+    fprintf (stderr, "Override for: %s\n", _name_check);
+    fprintf (stderr, "   Orig: "); orig->Print (stderr);
+    fprintf (stderr, "\n    New: "); chk->Print (stderr);
     fprintf (stderr, "\n");
     warning ("Override not required when the types are the same");
     return;
@@ -1822,8 +1841,9 @@ void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
   }
   if (!chk) {
     act_error_ctxt (stderr);
-    fprintf (stderr, " Orig: "); orig->Print (stderr);
-    fprintf (stderr, "\n  New: "); ochk->Print (stderr);
+    fprintf (stderr, "Override for: %s\n", _name_check);
+    fprintf (stderr, "   Orig: "); orig->Print (stderr);
+    fprintf (stderr, "\n    New: "); ochk->Print (stderr);
     fprintf (stderr, "\n");
     fatal_error ("Illegal override; the new type doesn't implement the original.");
   }

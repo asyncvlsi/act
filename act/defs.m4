@@ -415,7 +415,7 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
     }
     OPT_FREE ($2);
 
-    ActBody *override_asserts = NULL;
+    ActBody *port_override_asserts = NULL;
     for (li = list_first ($3); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
@@ -496,7 +496,6 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
 	  }
 	}
       }
-
       
       it->MkArray (tmpa);
       if (!chk) {
@@ -509,11 +508,28 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
 	exit (1);
       }
       /* insert expansion-time assertion that $1 <: it */
-      if (!override_asserts) {
-	override_asserts = new ActBody_OverrideAssertion ($l, s, it, $1);
+      int is_port = 0;
+      if ($0->u_p) {
+	is_port = $0->u_p->isPort (s);
+      }
+      else if ($0->u_d) {
+	is_port = $0->u_d->isPort (s);
+      }
+      else if ($0->u_c) {
+	is_port = $0->u_c->isPort (s);
       }
       else {
-	override_asserts->Append (new ActBody_OverrideAssertion ($l, s, it, $1));
+	$A(0);
+      }
+      if (is_port) {
+	if (!port_override_asserts) {
+	  port_override_asserts =
+	    new ActBody_OverrideAssertion ($l, s, it, $1);
+	}
+	else {
+	  port_override_asserts->Append
+	    (new ActBody_OverrideAssertion ($l, s, it, $1));
+	}
       }
     }
     /* Now actually perform the override! */
@@ -537,19 +553,21 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
     /* walk through the body, editing instances */
     if (b) {
       b->updateInstType ($3, $1);
-      if (override_asserts) {
-	b->Tail()->Append (override_asserts);
+      if (port_override_asserts) {
+	b->Tail()->Append (port_override_asserts);
       }
     }
     else {
-      if ($0->u_p) {
-	$0->u_p->AppendBody (override_asserts);
-      }
-      else if ($0->u_d) {
-	$0->u_d->AppendBody (override_asserts);
-      }
-      else if ($0->u_c) {
-	$0->u_c->AppendBody (override_asserts);
+      if (port_override_asserts) {
+	if ($0->u_p) {
+	  $0->u_p->AppendBody (port_override_asserts);
+	}
+	else if ($0->u_d) {
+	  $0->u_d->AppendBody (port_override_asserts);
+	}
+	else if ($0->u_c) {
+	  $0->u_c->AppendBody (port_override_asserts);
+	}
       }
     }
 

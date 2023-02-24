@@ -1,6 +1,7 @@
 In expanding test2 (15.act:12)
 In expanding ::<Global>
 Error on or near line number 14.
- Orig: chan(int<1>)
-  New: e1of2<2>
+Override for: A
+   Orig: chan(int<1>)
+    New: e1of2<2>
 FATAL: Illegal override; the new type doesn't implement the original.
