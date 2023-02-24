@@ -1779,13 +1779,18 @@ ActBody_Select_gc *ActBody_Select_gc::Clone ()
 ActBody_OverrideAssertion *ActBody_OverrideAssertion::Clone()
 {
   ActBody_OverrideAssertion *ret =
-    new ActBody_OverrideAssertion (_line, _orig_type, _new_type);
+    new ActBody_OverrideAssertion (_line, _name_check, _orig_type, _new_type);
   return ret;
 }
 
 
 void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
 {
+  if (s->Lookup (_name_check) == NULL) {
+    // this is conditionally created; if it is not created, skip the check!
+    return;
+  }
+  
   Array *tmpa = _orig_type->arrayInfo();
   _orig_type->clrArray();
   InstType *orig = _orig_type->Expand (ns, s);

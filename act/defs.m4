@@ -510,10 +510,10 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
       }
       /* insert expansion-time assertion that $1 <: it */
       if (!override_asserts) {
-	override_asserts = new ActBody_OverrideAssertion ($l, it, $1);
+	override_asserts = new ActBody_OverrideAssertion ($l, s, it, $1);
       }
       else {
-	override_asserts->Append (new ActBody_OverrideAssertion ($l, it, $1));
+	override_asserts->Append (new ActBody_OverrideAssertion ($l, s, it, $1));
       }
     }
     /* Now actually perform the override! */

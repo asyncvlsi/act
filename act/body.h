@@ -312,8 +312,11 @@ private:
 
 class ActBody_OverrideAssertion : public ActBody {
 public:
-  ActBody_OverrideAssertion (int line, InstType *it, InstType *chk)
+  ActBody_OverrideAssertion (int line,
+			     const char *name_check,
+			     InstType *it, InstType *chk)
     : ActBody (line) {
+    _name_check = name_check;
     _orig_type = it;
     _new_type = chk;
   }
@@ -323,6 +326,7 @@ public:
   ActBody_OverrideAssertion *Clone();
 private:
   InstType *_orig_type, *_new_type;
+  const char *_name_check;
 };
 
 
