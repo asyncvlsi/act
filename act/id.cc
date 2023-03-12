@@ -1511,6 +1511,23 @@ ActId *ActId::parseId (char *s, const char delim1, const char arrayL,
 
   if (!s) return NULL;
 
+  // find namespace, if any
+  int ns_info = -1;
+  for (int i=0; s[i]; i++) {
+    if (s[i] == ':' && s[i+1] == ':') {
+      ns_info = i+1;
+    }
+  }
+  if (ns_info != -1) {
+    char t = s[ns_info+1];
+    s[ns_info+1] = '\0';
+    ret = new ActId (s, NULL);
+    tail = ret;
+    
+    s[ns_info+1] = t;
+    s = s + ns_info+1;
+  }
+  
   do {
     nextdot = -1;
     
@@ -1624,6 +1641,11 @@ ActId *ActId::parseId (char *s, const char delim1, const char arrayL,
       s = s + nextdot + 1;
     }
   } while (nextdot != -1);
+
+  if (ns_info != -1 && ret->Rest() == NULL) {
+    delete ret;
+    return NULL;
+  }
 
   return ret;
 }  
