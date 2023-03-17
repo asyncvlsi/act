@@ -1,3 +1,3 @@
-WARNING: File `37.act', line 8, col 10
+WARNING: File `37.act', line: 8, col: 10
 	else has been used in non-deterministic selections.
 	I hope you know what you're doing.
