@@ -47,11 +47,21 @@ aspects of the design in a hierarchical fashion.
 
 The basic usage of the library is the following:
 
-- Read in the ACT files to be processed.
-- Expand the design.
-- Access the expanded circuit definitions, potentially transforming them and/or generating output based on the specified design.
+1. Read in the ACT files to be processed.
+2. Expand the design.
+3. Access and potentially transform the expanded circuit definitions.
+
+Before any of these steps, the Act library should be initialized via
+the call:
+
+```
+Act::Init (&argc, &argv);
+```
+
+Here ``argc``/``argv`` are the standard C command-line arguments. The
+common ACT command-line arguments are extracted by this process.
  
-## Reading in files
+## Step 1: Reading in files
 
 In this step the ACT files are parsed, and the syntax is type-checked
 to identify potential errors in the input. Files may be rejected at
@@ -59,12 +69,17 @@ this stage, in which case the library will exit with a fatal error
 message along with information to help the user identify the location
 and cause of the error.
 
-To read in a design contained in the ACT file ``test.act``, use
+**Example:** To read in a design contained in the ACT file ``test.act``, use
 ```
 Act *a = new Act ("test.act");
 ```
 The returned data structure can be used to access the entire design
-hierarchy.
+hierarchy. If additional ACT files need to be read in (beyond those
+imported directly from the original ACT file), then additional files
+can be merged into the Act data structure using
+```
+a->Merge ("extra.act");
+```
 
 All instances and user-defined types are associated with a _namespace_
 (represented using the ActNamespace class). In the absence of a
@@ -72,7 +87,9 @@ namespace specifier, instances/types are part of the default global
 namespace that is always present in the ACT data structures.
 
 ```
+
 ActNamespace *ns = a->Global();
+
 ```
 
 The global namespace can also be accessed using the static method
@@ -87,27 +104,31 @@ ActNamespace *arith_ns = a->findNamespace ("arithmetic");
 
 The names of user-defined types (processes, channels, data types) at this stage in the design correspond to the name in their ACT definitions. For example, the process
 ```
-template<pint N>
-defproc adder (bool a[N], b[N], out[N]) { ... }
+
+template<pint N> defproc adder (bool a[N], b[N], out[N]) { ... }
+
 ```
 can be found via its name `"adder"` within the namespace in which the
 type is defined.
-
 If this was defined in the global namespace and included in the
 `test.act`, then the data structure for the process can be accessed
 using
 ```
+
 Process *p = a->findProcess ("adder");
+
 ```
 
 If, instead, the adder was defined within the arithmetic namespace,
 then it can be accessed using
 ```
+
 Process *p = a->findProcess (arith_ns, "adder");
+
 ```
 
 
-## Expanding the design
+## Step 2: Expanding the design
 
 In this step, the design is expanded/elaborated. ACT permits designs
 to be specified in a parameterized fashion. For example, a user could
@@ -117,6 +138,16 @@ the design. At this stage, all array dimensions are finalized, and so
 any incompatibilities in array sizes/connections can also result in an
 error being reported. Other errors that can be reported in this stage
 include assertion failures, as well as type override errors.
+
+To expand the Act data structure, use:
+```
+
+Act *a = new Act("test.act");
+
+a->Expand();
+
+```
+
 
 At this stage, the expanded types can be found in the ACT data
 structures. For example, if the design included an instance of type
@@ -128,6 +159,14 @@ expanded definitions will have empty angle brackets after them. For
 example, an and gate called ``AND2X1`` without any parameters will be
 expanded to `AND2X1<>`. Both the unexpanded definitions and expanded
 definitions can be found in the namespace.
+
+Reading in expanded processes operates in the same way as earlier:
+
+```
+Process *p = a->findProcess ("adder<8>");
+```
+
+This will return an expanded process (or NULL if not found).
 
 Integer template parameters are added to the type name for expanded
 types as described above. Multiple parameters will be separated by
@@ -147,7 +186,7 @@ types, connection information, and expanded sub-language definitions
 (if any).
 
 
-## Name mangling
+### Name mangling
 
 Expanded ACT type names can contain characters like `<`, `>`, and
 `,` (among others). Instances can have names like `a[3].b[5].z`,
@@ -168,25 +207,31 @@ expanded process has no parameters, its mangled name is obtained
 simply be omitting the trailing `<>`.
 
 
-## Passes
+## Step 3: Access and manipulate designs
 
 Most of the work in manipulating a design operates on the expanded ACT
-description.
+description. This starts with accessing the data structure for a
+namespace or user-defined type. While ``findProcess()`` can be used to
+find a user-defined process, other user-defined types (channel and
+data types) can be accessed using
+```
+UserDef *u = a->findUserdef ("datatypename");
+```
 
+The data structures for user-defined types have APIs that can be used
+to access/manipulate the design.
+
+A commonly used pattern is to apply some analysis/transformation to
+every process/user-defined type in the user design, starting from some
+top-level process name. Act has a built-in notion of an Act _pass_
+(supported by the ActPass class) that includes traversal methods/etc.
 
  */
 
 /**
  * @file act.h
  *       Contains top-level initialization/management functions for
- *       the ACT library
- */
-
-class ActPass;
-class Log;
-
-
-/*
+ *       the ACT library.
  *
  *  ACT can model a circuit at different levels of detail. The four
  *  levels are specified below.
@@ -195,34 +240,81 @@ class Log;
  *  provided by the user (PRS)
  *
  */
-
-#define ACT_MODEL_CHP  0		// CHP language
-#define ACT_MODEL_HSE  1		// HSE language
-#define ACT_MODEL_PRS  2		// PRS language
-#define ACT_MODEL_DEVICE 3              // PRS + sizing translated into netlist
-#define ACT_MODEL_TOTAL 4
+#define ACT_MODEL_CHP  0		///< Modeling level is the CHP language
+#define ACT_MODEL_HSE  1	        ///< Modeling level is the HSE language
+#define ACT_MODEL_PRS  2		///< Modeling level is the PRS language
+#define ACT_MODEL_DEVICE 3              ///< Modeling level is device: PRS + sizing translated into netlist
+#define ACT_MODEL_TOTAL 4               ///< The total number of modeling levels (used for error checking)
 
 extern const char *act_model_names[];
 
+class ActPass;
+class Log;
 
 /**
- *   The main Act class used to read in an ACT file and create basic
- *   data structures
+ *   @class Act
+ *
+ *   @brief The main Act class used to read in an ACT file and create basic
+ *   data structures. All design information can be accessed through this
+ *   data structure.
  */
 class Act {
  public:
   /**
+   * 
    * Initialize the ACT library
    *
    *  @param argc is a pointer to argc (command-line processing)
    *  @param argv is a pointer to argv (command-line processing)
+   *  @param optional_conf is a file name for an optional
+   *  configuration file that must be loaded as part of the
+   *  initialization. A configation name can be of the form
+   *  `prefix:file.conf`. Here the names in the configuration file are
+   *  assumed to be enclosed in a `begin prefix`/`end` group.
    *
    *  @return *argc and *argv are modified to reflect the command-line
    *  options left after ACT has extracted the ones it understands
    */
   static void Init (int *argc, char ***argv, const char *optional_conf);
+
+  /**
+   * Another initialization method, supporting multiple configuration
+   * files.
+   *  
+   *  @param argc is a pointer to argc (command-line processing)
+   *  @param argv is a pointer to argv (command-line processing)
+   *  @param multi_conf is a list of strings, each corresponding to a
+   *  configuration file name (same as the simple Init method). All
+   *  the configuration files are loaded as part of the initialization.
+   * 
+   *  @return *argc and *argv are modified to reflect the command-line
+   *  options left after ACT has extracted the ones it understands
+   */
   static void Init (int *argc, char ***argv, list_t *multi_conf = NULL);
+
+  /**
+   * When the ACT library is used as part of a scripting language, it
+   * is sometimes useful for the script to initiate argument
+   * processing. This function is used to process command-line
+   * arguments, and create auxillary data structures to record the
+   * options specified by the user. The option string (ala getopt())
+   * is set by the setOptionString() method.
+   *
+   *  @param argc is a pointer to argc (command-line processing)
+   *  @param argv is a pointer to argv (command-line processing)
+   *
+   *  @return 1 if this succeeded, 0 if there was an error during
+   *  command-line argument processing.
+   */
   static int getOptions (int *argc, char ***argv);
+
+  /**
+   * This function works together with getOptions() and is used to
+   * specify the option string for command-line argument processing.
+   *  
+   * @param str is the getopt string for arguments
+   *  
+   */
   static void setOptionString (char *str);
 
   /**
@@ -240,12 +332,15 @@ class Act {
 #include "warn.def"
   
   /**
-   * Command-line arguments if -opt= is used
+   * Command-line arguments if -opt= is used. Used to record the
+   * options from setOptionString().
    */
   static list_t *cmdline_args;
 
   /**
-   * Parser flags 
+   * Parser flags. If this is set, then the names of .act files read
+   * in during parsing are printed out. This is used by the `adepend`
+   * tool, which can be useful when writing Makefiles.
    */
   static int emit_depend;
 
@@ -275,7 +370,7 @@ class Act {
 
 
   /**
-   * Change global signal to use the port list
+   * Change global signal to use the port list throughout the design.
    *
    * @param s is the name of the global signal
    *    
@@ -284,7 +379,8 @@ class Act {
   bool LocalizeGlobal (const char *s);
 
   /**
-   * Expand types
+   * Expand types. This expands the entire design, updating the data
+   * structures stored in the Act class.
    */
   void Expand ();
 
@@ -295,9 +391,15 @@ class Act {
    * @param s is a string corresponding to the list of characters to
    * be mangled.
    */
-  int mangle_set_char (unsigned char c);
-  
   void mangle (char *s);
+
+  /**
+   * Specify the character used as the prefix for the name mangling
+   * procedure.
+   *
+   * @param c is the character used as the name mangling character.
+   */
+  int mangle_set_char (unsigned char c);
 
   int mangle_active() { return any_mangling; } /**< @return 1 if
 						  mangling is active, 
@@ -322,22 +424,46 @@ class Act {
   int unmangle_string (const char *src, char *dst, int sz);
 
   /**
-   * Mangle fprintf functionality
+   * Mangle fprintf functionality. This provides an fprintf() API,
+   * except the output is mangled.
+   *
+   * @param fp output file pointer
+   * @param s  format string
+   *
    */
   void mfprintf (FILE *fp, const char *s, ...);
 
   /**
-   * Unmangle fprintf functionality
+   * Unmangle fprintf functionality. This provides an fprintf() API,
+   * except the output is unmangled.
+   *
+   * @param fp output file pointer
+   * @param s  format string
+   *
    */
   void ufprintf (FILE *fp, const char *s, ...);
 
   /**
-   * Mangle snprintf functionality
+   * Mangle snprintf functionality. This provides an snprintf() API,
+   * except the output is mangled.
+   *
+   * @param fp output string buffer
+   * @param sz size of the output buffer
+   * @param s  format string
+   *
+   * @return snprintf() result
    */
   int msnprintf (char *fp, int sz, const char *s, ...);
 
   /**
-   * Unmangle snprintf functionality
+   * Unmangle snprintf functionality. This provides an snprintf() API,
+   * except the output is mangled.
+   *
+   * @param fp output string buffer
+   * @param sz size of the output buffer
+   * @param s  format string
+   *
+   * @return snprintf() result
    */
   int usnprintf (char *fp, int sz, const char *s, ...);
 
@@ -358,10 +484,9 @@ class Act {
   /**
    * Unmangle string, assuming this is a process name and was mangled
    * with process mangling. Same arguments and return value as
-   * unmangle_string.
+   * unmangle_string().
    */
   int unmangle_stringproc (const char *src, char *dst, int sz);
-
 
   /* 
      API functions
@@ -380,6 +505,8 @@ class Act {
    * Find a process within a namespace
    * @param s is the name of the process
    * @param ns is the ACT namespace
+   * @param allow_expand if set to true, then if the process has angle
+   * brackets then findProcess is allowed to expand the process
    * @return the process pointer if found, NULL otherwise
    */
   Process *findProcess (ActNamespace *ns, const char *s, bool allow_expand = false);
@@ -391,18 +518,64 @@ class Act {
    */
   UserDef *findUserdef (const char *s);
 
+  /**
+   * Find a namespace.
+   * @param s is the name of the namespace
+   * @return the ActNamespace pointer if found, NULL otherwise
+   */
   ActNamespace *findNamespace (const char *s);
-  ActNamespace *findNamespace (ActNamespace *, const char *);
+  
+  /**
+   * Find a namespace nested within another namespace
+   * @param ns is the parent namespace
+   * @param s is the name of the nested namespace
+   * @return the ActNamespace pointer if found, NULL otherwise
+   */
+  ActNamespace *findNamespace (ActNamespace *ns, const char *s);
+
+  
+  /**
+   * @return the ActNamespace pointer for the global namespace
+   */
   ActNamespace *Global() { return gns; }
 
-  /*
-    Dump to a file 
-  */
+  /**
+   * Prints the entire ACT data structure to a file.
+   *
+   * @param fp is the file pointer to which the output is written.
+   */
   void Print (FILE *fp);
 
+  /**
+   * Register an ActPass with the ACT library
+   *
+   * @param name is the name of the pass
+   * @param p is the ActPass to be registered
+   */
   void pass_register (const char *name, ActPass *p);
+
+  /**
+   * Search for a pass by its registered name.
+   *
+   * @param name is the name of the pass
+   * @return the ActPass that is registered by the specified name,
+   * NULL if the pass does not exist.
+   */
   ActPass *pass_find (const char *name);
+  
+  /**
+   * Remove a previosly registered ActPass from the ACT library
+   *
+   * @param name is the name of the pass
+   */
   void pass_unregister (const char *name);
+  
+  /**
+   * @return an immutable string that corresponds to the pass name,
+   * NULL if the pass does not exist
+   *
+   * @param name is the name of the pass of interest
+   */
   const char *pass_name (const char *name);
 
   /*
@@ -417,11 +590,11 @@ class Act {
   */
   list_t *getDecompTypes ();
 
-  /* 
-    To mess with types after parsing
+  /**
+   * Returns the type factory used to manipulate/create types.
+   * @return the TypeFactory used by the ACT library.
   */
   TypeFactory *getTypeFactory () { return tf; }
-
 
   /*
     Get modeling level of detail and refinement steps.
