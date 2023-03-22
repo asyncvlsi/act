@@ -33,6 +33,150 @@
 #include <unordered_set>
 
 /**
+  @mainpage The ACT Library
+ 
+This contains the documentation for the APIs provided by the core
+ACT library, available via github at
+https://github.com/asyncvlsi/act The top-level API is provided by
+the Act class. This class is used to read in an ACT design file and
+provides basic operations such as merging in additional files into
+the design and expanding the design. After a file is read in, core
+data structures that represent the entire design are created and
+available for manipulation.  The core data structures represent all
+aspects of the design in a hierarchical fashion.
+
+The basic usage of the library is the following:
+
+- Read in the ACT files to be processed.
+- Expand the design.
+- Access the expanded circuit definitions, potentially transforming them and/or generating output based on the specified design.
+ 
+## Reading in files
+
+In this step the ACT files are parsed, and the syntax is type-checked
+to identify potential errors in the input. Files may be rejected at
+this stage, in which case the library will exit with a fatal error
+message along with information to help the user identify the location
+and cause of the error.
+
+To read in a design contained in the ACT file ``test.act``, use
+```
+Act *a = new Act ("test.act");
+```
+The returned data structure can be used to access the entire design
+hierarchy.
+
+All instances and user-defined types are associated with a _namespace_
+(represented using the ActNamespace class). In the absence of a
+namespace specifier, instances/types are part of the default global
+namespace that is always present in the ACT data structures.
+
+```
+ActNamespace *ns = a->Global();
+```
+
+The global namespace can also be accessed using the static method
+ActNamespace::Global() for convenience in case the Act pointer is
+unavailable.
+
+If an ACT file contains multiple namespaces, then a specific
+namespaces can be accessed as follows:
+```
+ActNamespace *arith_ns = a->findNamespace ("arithmetic");
+```
+
+The names of user-defined types (processes, channels, data types) at this stage in the design correspond to the name in their ACT definitions. For example, the process
+```
+template<pint N>
+defproc adder (bool a[N], b[N], out[N]) { ... }
+```
+can be found via its name `"adder"` within the namespace in which the
+type is defined.
+
+If this was defined in the global namespace and included in the
+`test.act`, then the data structure for the process can be accessed
+using
+```
+Process *p = a->findProcess ("adder");
+```
+
+If, instead, the adder was defined within the arithmetic namespace,
+then it can be accessed using
+```
+Process *p = a->findProcess (arith_ns, "adder");
+```
+
+
+## Expanding the design
+
+In this step, the design is expanded/elaborated. ACT permits designs
+to be specified in a parameterized fashion. For example, a user could
+design an N-bit adder. In this step, all parameters are expanded out
+into their actual values, and the values are substituted throughout
+the design. At this stage, all array dimensions are finalized, and so
+any incompatibilities in array sizes/connections can also result in an
+error being reported. Other errors that can be reported in this stage
+include assertion failures, as well as type override errors.
+
+At this stage, the expanded types can be found in the ACT data
+structures. For example, if the design included an instance of type
+`"adder<8>"`, then the string `"adder<8>"` will get added to the
+namespace definition, and this corresponds to the definition of the
+adder with the value `8` substituted for `N` throughout its
+definition. For a type definition without any template parameters, the
+expanded definitions will have empty angle brackets after them. For
+example, an and gate called ``AND2X1`` without any parameters will be
+expanded to `AND2X1<>`. Both the unexpanded definitions and expanded
+definitions can be found in the namespace.
+
+Integer template parameters are added to the type name for expanded
+types as described above. Multiple parameters will be separated by
+commas. Boolean template parameters are printed as either `t` or
+`f` (for true and false), and real parameters appear as real
+numbers. Arrays of parameters are specified using curly braces to
+demarcate the array, followed by a comma-separated list of array
+element values. This is used for both one-dimensional as well as
+multi-dimensional arrays, since the number of dimensions and the shape
+of the array is known.
+
+In addition to substituting values of parameters, the expansion
+process will also eliminate all conditional and loop constructs from
+any definitions. This means that an expanded type will contain data
+structures corresponding to the names of instances and their expanded
+types, connection information, and expanded sub-language definitions
+(if any).
+
+
+## Name mangling
+
+Expanded ACT type names can contain characters like `<`, `>`, and
+`,` (among others). Instances can have names like `a[3].b[5].z`,
+including the characters `[`, `]`, and `.`.  When exporting an
+ACT design to another format for use by a third-party tool, names with
+such characters in them can be potentially problematic. A good example
+of this is when exporting a SPICE netlist---different versions of
+SPICE have different syntactic restrictions. To handle this in a
+disciplined manner, the ACT library has the notion of a //mangled//
+name. A mangled name is generated by re-writing a user-specified list
+of special characters with an underscore and a number/character
+combination. This mapping is invertible, so a name can be unmangled as
+well. The set of characters to be mangled is specified in the ACT
+configuration option `act.mangle_string`.
+
+Process names have a special case in terms of name mangling. If an
+expanded process has no parameters, its mangled name is obtained
+simply be omitting the trailing `<>`.
+
+
+## Passes
+
+Most of the work in manipulating a design operates on the expanded ACT
+description.
+
+
+ */
+
+/**
  * @file act.h
  *       Contains top-level initialization/management functions for
  *       the ACT library
