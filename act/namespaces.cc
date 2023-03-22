@@ -589,6 +589,10 @@ void ActNamespace::Print (FILE *fp)
 	u->PrintHeader (fp, "defchan");
 	fprintf (fp, ";\n");
       }
+      else if (TypeFactory::isInterfaceType (t)) {
+	u->PrintHeader (fp, "interface");
+	fprintf (fp, ";\n");
+      }
       else if (TypeFactory::isFuncType (t)) {
 	Function *f = dynamic_cast<Function *> (t);
 	if (!u->isExpanded()  || !TypeFactory::isParamType (f->getRetType())) {

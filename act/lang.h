@@ -166,12 +166,17 @@ enum act_chp_lang_type {
   ACT_CHP_ASSIGN = 7,
   ACT_CHP_SEND = 8,
   ACT_CHP_RECV = 9,
-  ACT_CHP_FUNC = 10,
-  ACT_CHP_SEMILOOP = 11,
-  ACT_CHP_COMMALOOP = 12,
-  ACT_CHP_HOLE = 13,
-  ACT_CHP_ASSIGNSELF = 14,   /* same as assign, used to indicate self
-			       assignment in some tools */
+
+  ACT_CHP_FUNC = 10,		// used for log(...)
+
+  ACT_CHP_SEMILOOP = 11, 	// removed after expansion
+  ACT_CHP_COMMALOOP = 12,	// removed after expansion
+
+  ACT_CHP_HOLE = 13,		// only used by downstream tools
+
+  ACT_CHP_ASSIGNSELF = 14,    /* same as assign, used to indicate self
+				 assignment in some tools */
+
   ACT_CHP_MACRO = 15,	     /* macro call, gets removed when
 				chp_expand is called */
 
@@ -182,6 +187,23 @@ enum act_chp_lang_type {
 
 struct act_chp_lang;
 
+
+/*
+ * Data structure for guarded commands
+ *
+ *   id = NULL : normal guard
+ *   id != NULL : syntactic replication, where "id" is the variable,
+ *                lo and hi are the low and high values for the range
+ *
+ *   g  : guard expression, NULL means "else" for selection
+ *        statements, and true for loops.
+ *
+ *   s  : statement (might be NULL in the case of [g]
+ *
+ *   next : used to construct list of guard -> statement, NULL
+ *   terminated list.
+ *
+ */
 typedef struct act_chp_gc {
   const char *id;
   Expr *lo, *hi;
@@ -198,25 +220,33 @@ typedef struct act_chp_lang {
     struct {
       ActId *id;
       Expr *e;
-    } assign;
+    } assign;			// assignment statement id := e
+
+    /* A bi-directional channel can have both var and e that are non-NULL */
     struct {
-      ActId *chan;
+      ActId *chan;		// channel for communication
       ActId *var;		/* variable for assignment */
       Expr *e;			/* expression to be sent */
-      unsigned int flavor:2;	/* 0 = blank, 1 = up, 2 = down */
+      unsigned int flavor:2;	/* 0 = blank, 1 = up, 2 = down; used for
+                                   explicit two-phase CHP */
       unsigned int convert:2; /* 0 = nothing, 1 = bool(.), 2 = int(.) */
     } comm;
+
+    /* used for log(...) */
     struct {
       mstring_t *name;		/* function name */
       list_t *rhs;		/* arguments */
     } func;
 
+    /* used for process/type macros */
     struct {
       ActId *id;
       mstring_t *name;
       list_t *rhs;
     } macro;			// macro call
-    
+
+    /* ;/, : this is the list of statements that are either comma or
+       semi-colon separated */
     struct {
       list_t *cmd;
     } semi_comma;
