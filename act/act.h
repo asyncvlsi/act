@@ -787,6 +787,18 @@ protected:
    */
   virtual void _actual_update (Process *p);
 
+  /**
+   * This function sould only be called in the constructor. It
+   * specifies that execution of the pass depends on
+   * data/transformations from another ActPass. This dependency is
+   * added to the dependency-tracking mechanism built-into the ActPass
+   * structures.
+   *
+   * @param pass is the name of the other ActPass this one depends on
+   * @return should always return 1.
+   */
+  int AddDependency (const char *pass);
+
 public:
   /**
    * Create, initialize, and register pass
@@ -803,17 +815,6 @@ public:
   
   virtual ~ActPass ();			       ///< release storage
 
-
-  /**
-   * This function sould only be called in the constructor. It
-   * specifies that execution of the pass depends on
-   * data/transformations from another ActPass.
-   *
-   * @param pass is the name of the other ActPass this one depends on
-   * @return should always return 1.
-   */
-  int AddDependency (const char *pass); // insert dependency on an
-					// actpass
 
   /**
    * Propagate the updates from the current pass to all passes that
@@ -1259,37 +1260,104 @@ public:
   bool loaded() { return _load_success; }
   
 private:
-  virtual void *local_op (Process *p, int mode = 0);
-  virtual void *local_op (Channel *c, int mode = 0);
-  virtual void *local_op (Data *d, int mode = 0);
+
+  /**
+   * Implementation of local_op() for dynamic pass.
+   */
+  virtual void *local_op (Process *, int = 0);
+  /**
+   * Implementation of local_op() for dynamic pass.
+   */
+  virtual void *local_op (Channel *, int  = 0);
+  /**
+   * Implementation of local_op() for dynamic pass.
+   */
+  virtual void *local_op (Data *, int  = 0);
+  /**
+   * Implementation of free_local() for dynamic pass.
+   */
   virtual void free_local (void *);
 
-  bool _load_success;
+  bool _load_success; ///< flag set when the pass is loaded
   
-  char *_libused;
-  act_sh_dispatch_table _d;
-  struct Hashtable *_params;
-  struct Hashtable *_config_state;
-  Technology *T;
+  char *_libused;  ///< library used by this pass
   
-  /* open shared object libraries */
+  act_sh_dispatch_table _d;  ///< dispatch table for this pass
+  
+  struct Hashtable *_params;  ///< hash table holding parameters for
+			      ///the pass
+  
+  struct Hashtable *_config_state; ///< hash table holding the 
+				   ///config parameter state
+  
+  Technology *T;		///< the technology pointer for the library
+  
+  /**
+   * A list of shared object libraries stored as a list of 
+   * act_sh_passlib_info pointers. THis is shared across all dynamic
+   * passes.
+   */
   static list_t *_sh_libs;
 };
 
 
 /* this should be elsewhere */
-Expr *const_expr (long);
-Expr *const_expr_bool (int);
-Expr *const_expr_real (double);
+
+/**
+ * Create an Expr pointer corresponding to a constant integer
+ * expression. Constant expressions are cached globally, and should
+ * never be explicitly free'd.
+ *
+ * @param x is the constant value for the expression
+ * @return an Expr corresponding to the constant value
+ */
+Expr *const_expr (long x);
+
+/**
+ * Create an Expr pointer corresponding to a constant Boolean value
+ * (true or false). Constant expressions are cached globally, and should
+ * never be explicitly free'd.
+ *
+ * @param v is the constant value for the expression (1 for true, 0
+ * for false)
+ * @return an Expr corresponding to the constant Boolean value
+ */
+Expr *const_expr_bool (int v);
+
+/**
+ * Create an Expr pointer corresponding to a constant real number.
+ * Constant expressions are cached globally, and should
+ * never be explicitly free'd.
+ *
+ * @param v is the constant value for the expression.
+ * @return an Expr corresponding to the constant real number.
+ */
+Expr *const_expr_real (double v);
 
 
-/*
-   Should be called after Act::Init() to add global parameter
-   definitions.
-
-   MUST BE CALLED BEFORE an Act object is created!
-*/
+/**
+ * For internal use only. This function is used to add a constant
+ * parameter definition before the Act library is used to read in a
+ * file.  It should be called after Act::Init() to add global
+ * parameter definitions.  IT MUST BE CALLED BEFORE an Act object is
+ * created!
+ *
+ * @param name is the name of the pint parameter
+ * @param val is the value of the parameter
+ */
 void act_add_global_pint (const char *name, int val);
+
+
+/**
+ * For internal use only. This function is used to add a constant
+ * parameter definition before the Act library is used to read in a
+ * file.  It should be called after Act::Init() to add global
+ * parameter definitions.  IT MUST BE CALLED BEFORE an Act object is
+ * created!
+ *
+ * @param name is the name of the pbool parameter
+ * @param val is the value of the parameter
+ */
 void act_add_global_pbool (const char *name, int val);
 
 #endif /* __ACT_H__ */
