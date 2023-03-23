@@ -322,9 +322,9 @@ void ActPass::recursive_op (UserDef *p, int mode)
 }
 
  
-void *ActPass::getMap (Process *p)
+void *ActPass::getMap (UserDef *u)
 {
-  return (*pmap)[p];
+  return (*pmap)[u];
 }
 
 /*
