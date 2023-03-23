@@ -261,7 +261,12 @@ simply be omitting the trailing `<>`.
 #define ACT_MODEL_DEVICE 3              ///< Modeling level is device: PRS + sizing translated into netlist
 #define ACT_MODEL_TOTAL 4               ///< The total number of modeling levels (used for error checking)
 
-extern const char *act_model_names[];
+
+/**
+ * the string name for each model level, indexed by the
+ * ACT_MODEL_... macros
+ */
+extern const char *act_model_names[]; 
 
 class ActPass;
 class Log;
