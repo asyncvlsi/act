@@ -1263,6 +1263,16 @@ public:
    * @return true if the pass was successfully loaded, false otherwise
    */
   bool loaded() { return _load_success; }
+
+  /**
+   * This provides access to the protected ActPass::AddDependency()
+   * method since this call may be required from the dynamically
+   * loaded functions
+   *
+   * @param name is the name of the pass for dependency tracking.
+   * @return pass-through for ActPass::AddDependency()
+   */
+  int addDependency (const char *name) { return AddDependency (name); }
   
 private:
 
