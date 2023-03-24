@@ -2371,7 +2371,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
     $0->in_cond--;
     if (OPT_EMPTY ($6)) {
       OPT_FREE ($6);
-      return new ActBody_Loop ($l, ActBody_Loop::SEMI, $3, $5, NULL, $8);
+      return new ActBody_Loop ($l, $3, $5, NULL, $8);
     }
     else {
       ActRet *r;
@@ -2381,7 +2381,7 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
       tmp = r->u.exp;
       FREE (r);
       OPT_FREE ($6);
-      return new ActBody_Loop ($l, ActBody_Loop::SEMI, $3, $5, tmp, $8);
+      return new ActBody_Loop ($l, $3, $5, tmp, $8);
     }
 }}
 | "*["

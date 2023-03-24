@@ -852,7 +852,6 @@ static void _process_body_conn (Process *proc, InstType *it, const char *s,
 		hi = NULL;
 	      }
 	      tmp = new ActBody_Loop (b->getLine(),
-				      ActBody_Loop::SEMI,
 				      string_cache (idxnames[i]),
 				      lo, hi, prev ? (ActBody *)prev :
 				      (ActBody *)ac);

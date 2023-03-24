@@ -563,6 +563,7 @@ class AExpr {
 
   /**
    * Return an InstType corresponding to this array expression
+   * @param s is the scope
    * @param islocal if non-NULL, used to return 1 if this array
    * expression only has local ID references, 0 otherwise
    * @param expanded is used if the instance type should expect

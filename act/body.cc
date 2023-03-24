@@ -1003,26 +1003,6 @@ void ActBody_Conn::Print (FILE *fp)
 void ActBody_Loop::Print (FILE *fp)
 {
   fprintf (fp, "(");
-  switch (t) {
-  case ActBody_Loop::SEMI:
-    fprintf (fp, ";");
-    break;
-  case ActBody_Loop::COMMA:
-    fprintf (fp, ",");
-    break;
-  case ActBody_Loop::AND:
-    fprintf (fp, "&");
-    break;
-  case ActBody_Loop::OR:
-    fprintf (fp, "|");
-    break;
-  case ActBody_Loop::BAR:
-    fprintf (fp, "[]");
-    break;
-  default:
-    fatal_error ("Eh?");
-    break;
-  }
   fprintf (fp, "%s", id);
   fprintf (fp, ":");
   if (hi) {
@@ -1095,8 +1075,6 @@ void ActBody_Loop::Expand (ActNamespace *ns, Scope *s)
   int ilo, ihi;
   ValueIdx *vx;
   
-  Assert (t == ActBody_Loop::SEMI, "What loop is this?");
-
   act_syn_loop_setup (ns, s, id, lo, hi, &vx, &ilo, &ihi);
 
   for (; ilo <= ihi; ilo++) {
@@ -1590,7 +1568,7 @@ ActBody *ActBody_Loop::Clone ()
 {
   ActBody_Loop *ret;
 
-  ret = new ActBody_Loop (_line, t, id, lo, hi, b->Clone());
+  ret = new ActBody_Loop (_line, id, lo, hi, b->Clone());
   if (Next()) {
     ret->Append (Next()->Clone());
   }
