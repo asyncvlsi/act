@@ -469,10 +469,9 @@ private:
  * @class ActBody_Assertion
  *
  * @brief This is used to store assertions in the body. There are
- * three types of assertions:
+ * two types of assertions:
  * 1. A boolean expression is true (with an optional message)
- * 2. id1 === id2 or  id1 !=== id2 : check for connections
- * 3. Internal assertion to check overrides are valid.
+ * 2. id1 === id2 or  id1 !== id2 : check for connections
  */
 class ActBody_Assertion : public ActBody {
 public:
@@ -497,22 +496,13 @@ public:
    */
   ActBody_Assertion (int line, ActId *_id1, ActId *_id2, int op,
 		     const char *_msg = NULL) : ActBody (line) {
-    type = 2;
-    u.t2.id1 = _id1;
-    u.t2.id2 = _id2;
-    u.t2.msg = _msg;
-    u.t2.op = op;
+    type = 1;
+    u.t1.id1 = _id1;
+    u.t1.id2 = _id2;
+    u.t1.msg = _msg;
+    u.t1.op = op;
   }
 
-  /**
-   * Internal check for overrides
-   */
-  ActBody_Assertion (int line, InstType *nu, InstType *old) : ActBody (line) {
-    type = 1;
-    u.t1.nu = nu;
-    u.t1.old = old;
-  }
-  
   ~ActBody_Assertion () {
     if (type == 0) {
       if (u.t0.e) {
@@ -529,13 +519,10 @@ private:
       const char *msg;
     } t0;
     struct {
-      InstType *nu, *old;
-    } t1;
-    struct {
       int op;
       ActId *id1, *id2;
       const char *msg;
-    } t2;
+    } t1;
   } u;
   int type;
 };

@@ -446,48 +446,24 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
     }
   }
   else if (type == 1) {
-    InstType *xo, *xn, *tmp;
-    xo = u.t1.old->Expand (ns, s);
-    xn = u.t1.nu->Expand (ns, s);
-    tmp = xn;
-    while (tmp) {
-      if (xo->BaseType() == tmp->BaseType()) return;
-      UserDef *ux = dynamic_cast <UserDef *> (tmp->BaseType());
-      if (!ux) {
-	tmp = NULL;
-      }
-      else {
-	tmp = ux->getParent();
-      }
-    }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Illegal override during expansion; new type doesn't implement the original.\n");
-    fprintf (stderr, "\tOriginal: ");
-    xo->Print (stderr);
-    fprintf (stderr, "\n\tNew: ");
-    xn->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
-  }
-  else if (type == 2) {
     ActId *x1, *x2;
     act_connection *c1, *c2;
 
-    x1 = u.t2.id1->Expand (ns, s);
-    x2 = u.t2.id2->Expand (ns, s);
+    x1 = u.t1.id1->Expand (ns, s);
+    x2 = u.t1.id2->Expand (ns, s);
 
     c1 = x1->Canonical (s);
     c2 = x2->Canonical (s);
-    if (((u.t2.op == 0) && (c1 != c2)) || ((u.t2.op == 1) && (c1 == c2))) {
+    if (((u.t1.op == 0) && (c1 != c2)) || ((u.t1.op == 1) && (c1 == c2))) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Identifiers `");
       x1->Print (stderr);
       fprintf (stderr, "' and `");
       x2->Print (stderr);
-      fprintf (stderr, "' are %sconnected.\n", u.t2.op == 0 ? "not " : "");
+      fprintf (stderr, "' are %sconnected.\n", u.t1.op == 0 ? "not " : "");
 
-      if (u.t2.msg) {
-	char *s = Strdup (u.t2.msg+1);
+      if (u.t1.msg) {
+	char *s = Strdup (u.t1.msg+1);
 	s[strlen(s)-1] = '\0';
 	fprintf (stderr, "   message: %s\n", s);
       }
@@ -1535,6 +1511,7 @@ ActBody *ActBody_Conn::Clone ()
     ret = new ActBody_Conn (_line, u.basic.lhs, u.basic.rhs);
   }
   else {
+    Assert (type == 1, "Hmm");
     ret = new ActBody_Conn (_line, u.general.lhs, u.general.rhs);
   }
   if (Next()) {
@@ -1658,8 +1635,11 @@ ActBody *ActBody_Assertion::Clone()
   if (type == 0) {
     ret = new ActBody_Assertion (_line, u.t0.e, u.t0.msg);
   }
+  else if (type == 1) {
+    ret = new ActBody_Assertion (_line, u.t1.id1, u.t1.id2, u.t1.op, u.t1.msg);
+  }
   else {
-    ret = new ActBody_Assertion (_line, u.t1.nu, u.t1.old);
+    Assert (0, "Should not be here");
   }
   if (Next()) {
     ret->Append (Next()->Clone());
