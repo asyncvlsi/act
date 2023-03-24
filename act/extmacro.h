@@ -24,34 +24,68 @@
 
 #include <act/act.h>
 
-/* 
-   Macro configuration file
-      begin macros
-
-      begin <expanded_name>
-        string lef     "leffile"
-	string spice   "spicefile"
-	string verilog "verilogfile"
-	int llx 
-	int lly
-	int urx 
-	int ury
-      end
-
-      begin <unexpanded_name>.gen "string"   <-- generator
-      
-      end
+/**
+ * @class ExternMacro
+ *
+ * @brief This is used to record information about a macro from an ACT
+ * configuration file.
+ *
+ * A macro is specified in a configuration file in the macro section
+ * as follows
+ *
+ * ```
+ * begin macros
+ *
+ *   begin <expanded_name>
+ *      string lef     "leffile"
+ *      string spice   "spicefile"
+ *      string verilog "verilogfile"
+ *      int llx <val>
+ *	int lly <val>
+ *	int urx <val>
+ *	int ury <val>
+ *   end
+ *
+ * end
+ * ```
+ *
+ * A macro generator can be specified using
+ *
+ * ```
+ * begin macros
+ *
+ *    string <unexpanded_name>.gen "string" 
+ *
+ * end
+ * ```
 */
-
 class ExternMacro {
  public:
+  /**
+   * Search for an external macro definition for process p
+   *
+   * @param p is the process to look for
+   */
   ExternMacro (Process *p);
   ~ExternMacro ();
 
+  /**
+   * @return true if a valid macro for the process was found, false
+   * otherwise 
+   */
   bool isValid() { return (_lef == nullptr ? false : true); }
 
+  /**
+   * @return the LEF file name associated with the macro
+   */
   const char *getLEFFile() { return _lef; }
 
+  /**
+   * @param bllx the lower left x coordinate of the macro
+   * @param blly the lower left y coordinate of the macro
+   * @param burx the upper right x coordinate of the macro
+   * @param bury the upper right y coordinate of the macro
+   */
   void getBBox (long *bllx, long *blly,
 		long *burx, long *bury) {
     *bllx = llx;
@@ -60,20 +94,29 @@ class ExternMacro {
     *bury = ury;
   }
 
+  /**
+   * @return the SPICE file name for the macro
+   */
   const char *getSPICEFile() { return _spice; }
 
+  /**
+   * @return the Verilog file name for the macro
+   */
   const char *getVerilogFile() { return _verilog; }
 
+  /**
+   * @return the name of the macro
+   */
   const char *getName() { return _name; }
 
  private:
-  Process *_p;
-  char *_name;			// name of macro
-  const char *_lef;		// lef path
-  const char *_spice;		// spice path
-  const char *_verilog;		// verilog path
+  Process *_p;			///< the process
+  char *_name;			///< name of macro
+  const char *_lef;		///< lef path
+  const char *_spice;		///< spice path
+  const char *_verilog;		///< verilog path
   
-  long llx, lly, urx, ury;	// bounding box
+  long llx, lly, urx, ury;	///< bounding box
 };
 
 
