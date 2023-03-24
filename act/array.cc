@@ -289,6 +289,7 @@ int Array::isEqual (Array *a, int strict)
   struct range *r1, *r2;
   int i;
 
+  if (expanded != a->isExpanded()) return 0;
   if (!isDimCompatible (a)) return 0;
 
   r1 = r;

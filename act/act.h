@@ -1323,10 +1323,10 @@ private:
  * expression. Constant expressions are cached globally, and should
  * never be explicitly free'd.
  *
- * @param x is the constant value for the expression
+ * @param val is the constant value for the expression
  * @return an Expr corresponding to the constant value
  */
-Expr *const_expr (long x);
+Expr *const_expr (long val);
 
 /**
  * Create an Expr pointer corresponding to a constant Boolean value
