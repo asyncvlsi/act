@@ -604,6 +604,11 @@ static Expr *expr_parse (void)
 #endif	    
 	    return NULL;
 	  }
+#ifdef EXPR_VERBOSE
+	  printf ("[%d] unwind op: ", depth);
+	  _print_tok (top_op);
+	  printf ("\n");
+#endif
 	}
 	else if (top_op == E_QUERY) {
 	  SET (Tl);
@@ -619,13 +624,18 @@ static Expr *expr_parse (void)
 	stack_pop (stk_op);
 	top_op = _stack_top_op (stk_op);
       }
-      if (tok == E_COLON && _stack_top_op (stk_op) == E_COLON) {
+      while (tok == E_COLON && _stack_top_op (stk_op) == E_COLON) {
 	if (!_unwind_op (top_op, stk_op, stk_res)) {
 #ifdef EXPR_VERBOSE
 	  printf ("[%d] <fail>\n", depth--);
 #endif
 	  return NULL;
 	}
+#ifdef EXPR_VERBOSE
+	printf ("[%d] unwind op: ", depth);
+	_print_tok (top_op);
+	printf ("\n");
+#endif
 	stack_pop (stk_op);
 	top_op = _stack_top_op (stk_op);
 	if (top_op != E_QUERY) {
@@ -643,6 +653,11 @@ static Expr *expr_parse (void)
 #endif
 	  return NULL;
 	}
+#ifdef EXPR_VERBOSE
+	printf ("[%d] unwind op: ", depth);
+	_print_tok (top_op);
+	printf ("\n");
+#endif
 	stack_pop (stk_op);
 	top_op = _stack_top_op (stk_op);
       }

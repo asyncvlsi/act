@@ -1,0 +1,13 @@
+defproc test ()
+{
+
+  int a, b, c, d, e;
+
+  chp {
+    //a := b = 0 ? (c = 0 ? d : e = 0 ? d : a) : a
+    //a := b = 0 ? c = 0 ? d : (e = 0 ? d : a) : a
+    //a := b = 0 ? (c = 0 ? d : (e = 0 ? d : a)) : a
+    a :=  b = 0 ? c = 0 ? d : e = 0 ? d : a : a
+  }
+}
+test t; 
