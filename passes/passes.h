@@ -34,5 +34,27 @@
 #include <act/passes/finline.h>
 #include <act/passes/chpdecomp.h>
 
+/**
 
+  @mainpage The Standard ACT Pass Library
+
+  The standard ActPass library contains a collection of pre-defined
+  passes that are used by many of the standard ACT tools. Each pass
+  has an associated class name and a string name. These passes are
+  combined into the ACT pass library (libactpass.a or
+  libactpass_sh.so) and installed with the ACT repository.
+
+  The standard passes are:
+
+  1. ActBooleanizePass (name: "booleanize")
+  2. ActSizingPass (name: "sizing")
+  3. ActNetlistPass (name: "prs2net")
+  4. ActCellPass (name: "prs2cells")
+  5. ActStatePass (name: "collect_state")
+  6. ActCHPFuncInline (name: "finline")
+  7. ActCHPMemory (name: "chpmem")
+  8. ActCHPArbiter (name: "chparb")
+
+*/
+ 
 #endif /* __ACT_PASSES_H__ */

@@ -732,6 +732,9 @@ private:
  *   that depend on what has been re-computed via the
  *   ActPass::update() call.
  *
+ *   The standard passes that are included in the core ACT library are
+ *   documented in the Act Pass library documentation.
+ *
  */
 class ActPass {
 protected:
