@@ -29,6 +29,14 @@
 #include <common/bitset.h>
 #include <common/array.h>
 
+/**
+ * @file namespaces.h
+ *
+ * @brief This contains the defintions of the ActNamespace class as
+ * well as the Scope classes. These are the primary data structures
+ * used to hold a design.
+ */
+
 class Act;
 class ActBody;
 class UserDef;
@@ -48,25 +56,87 @@ struct act_prs;
 struct act_spec;
 class Array;
 
+
+/**
+ * @class Scope
+ *
+ * @brief This is the data structure that holds all instances and
+ * their associated types within a scope. Each user-defined type has
+ * an associated Scope, and so does each ActNamespace.
+ *
+ * Scopes also know about their parent (enclosing) scope. So a process
+ * definition would have a scope whose parent is the scope of the
+ * namespace in which it is defined. A namespace scope would have a
+ * parent scope that is the namespace within which it was created. The
+ * top-level scope of the entire design is the built-in global
+ * namespace.
+ *
+ * Scopes can be either expanded or unexpanded. Expanded scopes and
+ * unexpanded scopes have different internals.
+ */
 class Scope {
  public:
+
+  /**
+   * @param parent is the parent scope for this namespace
+   * @param is_expanded is 1 if this is an expanded scope, 0 otherwise
+   */
   Scope(Scope *parent, int is_expanded = 0);
   ~Scope();
 
+  /**
+   * @return the parent scope
+   */
   Scope *Parent () { return up; }
 
-  /* Local scope lookup only */
+  /**
+   * Lookup an identifier in the specified scope only. Restrict the
+   * scope to a local lookup---don't look in parent scopes.
+   *
+   * @param s is the name to lookup
+   * @return the InstType for the specified name, NULL if not found
+   */
   InstType *Lookup (const char *s);
-  InstType *Lookup (ActId *id, int err = 1); /**< only looks up a root
-						id; default report an error */
-  /* u = plain vanilla user-def type with potential template parameters */
-  void refineBaseType (const char *s, InstType *u);
-  
-  InstType *FullLookup (const char *s); /**< return full lookup,
-					   including in parent scopes */
 
-  int isGlobal (const char *s); /**< 1 if the lookup succeeded in a
-				   namespace */
+  /**
+   * Similar to Lookup(), but takes an ActId as a parameter. Only
+   * looks at only looks up the root of the identifier. By default
+   * this reports an error if the ActId has a sub-identifier. This
+   * error is suppressed by the err flag
+   * @param id the ActId to lookup in the local scope
+   * @param err 1 if a fatal error should be reported, 0 to ignore the
+   * error
+   * @return the InstType for the specified name if it exists, NULL if
+   * not found
+   */
+  InstType *Lookup (ActId *id, int err = 1);
+  
+  /**
+   * Look up the local variable specified, and if it exists then
+   * refine its base type using the new type information. Used to
+   * update scope tables while processing overrides.
+   * @param s is the name of the instance whose type is to be updated
+   * @param u is the updated type for the instance
+   */
+  void refineBaseType (const char *s, InstType *u);
+
+  /**
+   * Similar to lookup, but instead of just looking in the local scope
+   * also look at the parent scopes as well---i.e. any visible scope
+   * where the name can be found
+   * @param s is the name to be looked up
+   * @return the InstType for the name if found, NULL otherwise
+   */
+  InstType *FullLookup (const char *s);
+
+  /**
+   * Do a lookup and see if the lookup succeeded in a namespace or in
+   * a user-defined type
+   * @param s is the name to be looked up
+   * @return 1 if this was in namespace (i.e. a  namespace global), 0
+   * otherwise 
+   */
+  int isGlobal (const char *s);
 
   InstType *FullLookup (ActId *id, Array **aref);
   /**< return actual type of ID,  after full lookup including
@@ -322,13 +392,20 @@ class ActNamespace {
    * Create a new user-defined type in this namespace
    *
    * @param u is a pointer to the userdefined type
-   * @param nm is the name of the type
+   * @param s is the name of the type
    *
    * @return 1 if successful, 0 otherwise
    */
-  int CreateType (const char *nm, UserDef *u);
+  int CreateType (const char *s, UserDef *u);
 
-  /* edit type */
+  /**
+   * Edit type: replace the type definition for the type name with the
+   * updated definition.
+   *
+   * @param u is the new type definition
+   * @param s is the name of the type to be edited
+   * @return 1 if successful, 0 if the type name was not found.
+   */
   int EditType (const char *s, UserDef *u);
 
   /**
@@ -450,6 +527,8 @@ class ActNamespace {
   /**
    * Substitute globals within the namespace
    *
+   * @param subst is used to return a list of user-defined types where
+   * the globals were substituted.
    * @param it is the type of the global
    * @param s is the name of the global
    */

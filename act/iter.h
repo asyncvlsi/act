@@ -37,8 +37,26 @@
   rettype operator*();				\
   name begin();					\
   name end()
+
+
+/**
+ * @file iter.h
+ * 
+ * @brief This contains the implementation of a number of C++
+ * iterators to make it easier to walk through an ACT data structure
+ */
     
 
+/**
+ * @class ActNamespaceiter
+ *
+ * @brief This is an iterator that, when passed an ActNamespace pointer,
+ * allows you to iterate through nested namespaces within the
+ * specified namespace.
+ *
+ * The iterator returns an ActNamespace pointer corresponding to the
+ * subnamespace. 
+ */
 class ActNamespaceiter 
 #if __cplusplus < 201703L
 /* deprecated in C++17 onward */
@@ -60,6 +78,16 @@ class ActNamespaceiter
 };
 
 
+/**
+ * @class ActInstiter
+ *
+ * @brief This is an iterator that, when passed a Scope pointer, 
+ * allows you to iterate through all instances within the Scope. Note
+ * that if two instances are connected to each other, they will both
+ * be visited by the iterator.
+ *
+ * The iterator returns a ValueIdx pointer corresponding to the instance. 
+ */
 class ActInstiter
 #if __cplusplus < 201703L
   : public std::iterator<std::input_iterator_tag, ValueIdx *>
@@ -79,6 +107,16 @@ class ActInstiter
   ACTSTDITER(ActInstiter, ValueIdx *);
 };
 
+/**
+ * @class ActConniter
+ *
+ * @brief This is an iterator that, when passed an act_connection
+ * pointer, allows you to iterate through all the connections made to
+ * this particular connection pointer.
+ *
+ * The iterator returns an act_connection pointer corresponding to the
+ * connection visited.
+ */
 class ActConniter
 #if __cplusplus < 201703L
   : public std::iterator<std::input_iterator_tag, act_connection *>
@@ -97,6 +135,17 @@ class ActConniter
   ACTSTDITER(ActConniter, act_connection *);
 };
 
+/**
+ * @class ActTypeiter
+ *
+ * @brief This is an iterator that, when passed an ActNamespace
+ * pointer, allows you to iterate through all user-defined types that
+ * were defined within the namespace.
+ *
+ * The iterator returns a Type pointer that can be dynamically cast to
+ * a user-defined type. These can be processes, channels, data types,
+ * interface types, structures, or functions.
+ */
 class ActTypeiter
 #if __cplusplus < 201703L
   : public std::iterator<std::input_iterator_tag, Type *>
@@ -116,6 +165,20 @@ class ActTypeiter
   ACTSTDITER(ActTypeiter, Type *);
 };
 
+/**
+ * @class ActUniqProcInstiter
+ *
+ * @brief This is an iterator that, when passed a Scope pointer,
+ * allows you to iterate through all the uinque process instances
+ * within the scope.
+ *
+ * The iterator returns a ValueIdx pointer correspoding to the process
+ * instance. Note that if this is an array instance, then not all
+ * elements of the array may be unique (there could be connections to
+ * them), so that must also be checked when iterating through the
+ * array elements. This iterator is the standard way to iterate
+ * through all design components that may have a circuit in them.
+ */
 class ActUniqProcInstiter
 #if __cplusplus < 201703L
   : public std::iterator<std::input_iterator_tag, ValueIdx *>

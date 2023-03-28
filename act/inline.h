@@ -56,18 +56,22 @@ void act_inline_free (act_inline_table *);
  * in case the identifier corresponds to a structure. The inline table
  * bindings are updated.
  *
+ * @param Hs is the current inline binding table
  * @param id is the identifier to be set
  * @param e is the array of expressions for values (e[0] will contain
  * the value if the  * identifier is simple one)
  */
-void act_inline_setval (act_inline_table *, ActId *id, Expr **e);
+void act_inline_setval (act_inline_table *Hs, ActId *id, Expr **e);
 
 /**
+ * @param Hs is the current inline binding table
+ * @param s is the name of the identifier
  * @return the binding for an identifier from the table
  */
-Expr **act_inline_getval (act_inline_table *, const char *s);
+Expr **act_inline_getval (act_inline_table *Hs, const char *s);
 
 /**
+ * @param tab is the current inline binding table
  * @param s is the identifier to search for
  * @returns 1 if there is a binding present, 0 otherwise
  */

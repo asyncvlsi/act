@@ -344,11 +344,12 @@ class ActBooleanizePass : public ActPass {
    * @param prefix is used to construct the full ActId name for the
    * expanded port component. This is the prefix to the current
    * instance. 
+   * @param n is the boolean netlist data structure
    * @param s is the parent scope of the current user defined object
    * @param u is the current user-defined object
    * @param nochp is a flag saying we've broken down a channel so skip for chp
    */
-  void flatten_ports_to_bools (act_boolean_netlist_t *,
+  void flatten_ports_to_bools (act_boolean_netlist_t *n,
 			       ActId *prefix,
 			       Scope *s,
 			       UserDef *u, int nochp);

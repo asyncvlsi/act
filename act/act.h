@@ -231,6 +231,33 @@ name has an associated act_connection structure. This connection
 maintains connectivity information and can be used to determine local
 connectivity information within a user-defined type or namespace.
 
+The ACT library provides a number of iterators (in iter.h) that
+can be used to walk through elements of a number of different data
+structures. 
+
+## ACT Passes
+
+The standard ActPass library contains a collection of pre-defined
+passes that are used by many of the standard ACT tools. Each pass
+has an associated class name and a string name. These passes are
+combined into the ACT pass library (libactpass.a or
+libactpass_sh.so) and installed with the ACT repository.
+
+The standard passes are:
+
+  Pass Name    | Class 
+  -------------| -----
+  booleanize   | ActBooleanizePass
+  sizing       | ActSizingPass
+  prs2net      | ActNetlistPass
+  prs2cells    | ActCellPass
+  collect_state| ActStatePass
+  apply        | ActApplyPass
+  finline      | ActCHPFuncInline
+  chpmem       | ActCHPMemory
+  chparb       | ActCHPArbiter
+
+
 ## Name mangling
 
 Expanded ACT type names can contain characters like `<`, `>`, and

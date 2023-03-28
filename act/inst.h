@@ -188,7 +188,7 @@ class InstType {
   
   /**
    * Append parameters to the list of current template parameters. 
-   * @param ns are the additional parameters
+   * @param na are the additional parameters
    * @param a is an array of template parameters that are to be
    * appended.
    */
