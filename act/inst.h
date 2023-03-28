@@ -347,7 +347,13 @@ class InstType {
   InstType *refineBaseType (Type *update);
 
   /**
-   * set PType ID
+   * set PType ID. When an instance is created using a "ptype" type,
+   * we need a dummy place-holder name for the type itself. When this
+   * is expanded out, the type is replaced with the actual value of
+   * this parameter. Additionally, the Type pointer is actually set to
+   * the interface so that one can determine that this is a ptype.
+   * XXX: this can be cleaned up.
+   * @param s is the name of the ID that is the ptype
    */
   void setPTypeID (char *s) { ptype_id = string_cache (s); }
 
