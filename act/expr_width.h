@@ -25,20 +25,31 @@
 #define __ACT_EXPR_WIDTH_H__
 
 
-  /*
-    Modes:
-       0 = max of lw. rw
-       1 = max of lw, rw + 1
-       2 = sum of lw, rw
-       3 = 1 (bool result)
+/**
+   @file expr_width.h
+
+   @brief This file contains a macro that is used to compute the
+   bit-width of the result of two sub-expressions based on different
+   combination modes. The bit-width rules for ACT expressions fall
+   into one of the modes specified in this file.
+
+   Modes:
+      0 = max of lw. rw
+      1 = max of lw, rw + 1
+      2 = sum of lw, rw
+      3 = 1 (bool result)
+      4 = lw itself
+      5 = rw itself
+      6 = lw + (2^rw-1)
   */
-#define WIDTH_MAX   0
-#define WIDTH_MAX1  1
-#define WIDTH_SUM   2
-#define WIDTH_BOOL  3
-#define WIDTH_LEFT  4
-#define WIDTH_RIGHT 5
-#define WIDTH_LSHIFT 6
+
+#define WIDTH_MAX   0   ///< set width to the max of lw, rw
+#define WIDTH_MAX1  1   ///< set width to max of lw, rw + 1
+#define WIDTH_SUM   2   ///< set width to sum of lw, rw
+#define WIDTH_BOOL  3   ///< set width to 1
+#define WIDTH_LEFT  4   ///< set width to lw
+#define WIDTH_RIGHT 5   ///< set width to rw
+#define WIDTH_LSHIFT 6  ///< set width to lw + 2^rw-1
 
 #ifndef MAX
 #define MAX(a,b) ((a) < (b) ? (b) : (a))

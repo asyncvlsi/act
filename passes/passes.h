@@ -46,14 +46,16 @@
 
   The standard passes are:
 
-  1. ActBooleanizePass (name: "booleanize")
-  2. ActSizingPass (name: "sizing")
-  3. ActNetlistPass (name: "prs2net")
-  4. ActCellPass (name: "prs2cells")
-  5. ActStatePass (name: "collect_state")
-  6. ActCHPFuncInline (name: "finline")
-  7. ActCHPMemory (name: "chpmem")
-  8. ActCHPArbiter (name: "chparb")
+  Pass Name    | Class 
+  -------------| -----
+  booleanize   | ActBooleanizePass
+  sizing       | ActSizingPass
+  prs2net      | ActNetlistPass
+  prs2cells    | ActCellPass
+  collect_state| ActStatePass
+  finline      | ActCHPFuncInline
+  chpmem       | ActCHPMemory
+  chparb       | ActCHPArbiter
 
 */
  

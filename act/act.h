@@ -69,7 +69,7 @@ this stage, in which case the library will exit with a fatal error
 message along with information to help the user identify the location
 and cause of the error.
 
-**Example:** To read in a design contained in the ACT file ``test.act``, use
+To read in a design contained in the ACT file ``test.act``, use
 ```
 Act *a = new Act ("test.act");
 ```
@@ -198,13 +198,38 @@ UserDef *u = a->findUserdef ("datatypename");
 ```
 
 The data structures for user-defined types have APIs that can be used
-to access/manipulate the design.
+to access/manipulate the design. The primary data structures are
+namespaces and user-defined types. Namespaces contain global instances
+and connections, definitions of nested namespaces, and user-defined
+types. User-defined types contain their port and template parameters,
+instances within the user-defined type and connections, and any
+sub-language bodies. The global namespace can also contain
+sub-language bodies.
 
 A commonly used pattern is to apply some analysis/transformation to
 every process/user-defined type in the user design, starting from some
 top-level process name. Act has a built-in notion of an Act _pass_
 (supported by the ActPass class) that includes traversal methods/etc.
 
+
+### Unexpanded designs
+
+When a design is unexpanded, the primary data structures hold
+unexpanded values. The design information is contained within the
+ActBody data structure associated with each namespace and user-defined
+type (a UserDef). In addition, names that are associated with
+instances types are also available in the instance tables in each
+ActNamespace and UserDef.
+
+### Expanded designs
+
+Expanded namespaces and user-defined types no longer contain any
+ActBody references. Instead, the precise list of instances are
+available via the ActNamespace or UserDef. The main data type used to
+represent an instance is a ValueIdx. In addition, each instance and
+name has an associated act_connection structure. This connection
+maintains connectivity information and can be used to determine local
+connectivity information within a user-defined type or namespace.
 
 ## Name mangling
 
@@ -230,7 +255,7 @@ mangling operates character-by-character as follows:
 it is not modified.
 3. If a character is at position k in the name mangling string, it is
 replaced with an underscore followed by k. The position character is 0
-to 9 for positions 0 to 9, followed by a-z. Up to 26 characters can be
+to 9 for positions 0 to 9, followed by a-z. Up to 36 characters can be
 mangled.
 
 Name mangling can at most double the length of the string. Various
@@ -719,7 +744,7 @@ private:
  *   the design hierarchy is visited exactly once during the design
  *   traversal.
  *
- *   A pass can also dpeend on information computed by another
+ *   A pass can also depend on information computed by another
  *   pass. These dependencies are explicitly specified in the pass
  *   constructor using the AddDependency() call. This tracks both
  *   forward and backward dependencies---i.e. other passes that depend

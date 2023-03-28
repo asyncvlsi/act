@@ -28,7 +28,14 @@
 struct act_inline_table;
 
 /**
- * Helper functions to handle function inlining
+ * @file inline.h
+ *
+ * @brief Helper functions to handle function inlining. Used to
+ * inline simple functions (without internal loops) and return a
+ * single expression that corresponds to the inlined function. This is
+ * done by keeping track of current bindings of all variables to a
+ * symbolic expression, and updating the symbolic expression as you
+ * go through the function definition.
  */
 
 /**
