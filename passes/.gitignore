@@ -1,3 +1,5 @@
 i386_*
 lib*.a
 x86_64_*
+html
+latex

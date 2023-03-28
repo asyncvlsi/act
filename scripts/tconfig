@@ -20,8 +20,8 @@ do
 	then
 		j=`echo $i | sed s,/,_,g | sed s,-,_,g`
 		echo "#define FOUND_$j" >> ./config_pkg.h
-		echo "${j}_INCLUDE=\$(shell $ACT_HOME/scripts/findpkg -i $i)" >> ./config.mk
-		echo "${j}_LIBDIR=\$(shell $ACT_HOME/scripts/findpkg -l $i)" >> ./config.mk
+		echo "${j}_INCLUDE=`$ACT_HOME/scripts/findpkg -i $i`" >> ./config.mk
+		echo "${j}_LIBDIR=`$ACT_HOME/scripts/findpkg -l $i`" >> ./config.mk
 		echo "Package $i: YES"
 	else	  
 		echo "Package $i: NO"
