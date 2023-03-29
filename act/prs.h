@@ -29,6 +29,14 @@
 #include <common/file.h>
 #include "treetypes.h"
 
+/**
+   @file prs.h
+
+   @brief Functions to support the faster prs expression parser used by
+   the prs body.
+*/
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -39,14 +39,38 @@ struct act_prs;
 struct act_spec;
 struct act_attr;
 
+/**
+ * @class PInt
+ *
+ * @brief Integer parameter type.
+ *
+ */
 class PInt : public Type {
+  /**
+   * @return the name for this type
+   */
   const char *getName() { return "pint"; }
+
+  /**
+   * Expansion doesn't do anything
+   */
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
+
+  /**
+   * Equality is actual pointer equality
+   */
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
+
+/**
+ * @class PInts
+ *
+ * @brief Unused. Originally pint and pints were supposed to be
+ * unsigned and signed integers. Now pint is a signed integer
+ */
 class PInts : public Type {
   const char *getName() { return "pints"; }
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
@@ -55,25 +79,78 @@ class PInts : public Type {
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
-class PBool : public Type { 
+
+/**
+ * @class PBool
+ *
+ * @brief Used for Boolean parameters
+ */
+class PBool : public Type {
+  /**
+   * @return the name of the type
+   */
   const char *getName() { return "pbool"; }
+
+  /**
+   * @return the type itself---nothing to do for expansion
+   */
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
+
+  /**
+   * Equality is pointer equality
+   */
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
+
+/**
+ * @class PReal
+ *
+ * @brief Used for real parameters
+ */
 class PReal : public Type {
+  /**
+   * @return the name of the type
+   */
   const char *getName() { return "preal"; }
+
+  /**
+   * @return the type itself--nothing to do for expansion
+   */
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
+
+  /**
+   * Equality is pointer equality
+   */
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
+/**
+ * @class PType
+ *
+ * @brief Used for ptype( ) parameters. ptype parameters take an
+ * interface type as a template parameter.
+ */
 class PType : public Type {
 public:
+  /**
+   * @return the name of the type
+   */
   const char *getName();
+
+  /**
+   * Expand the ptype. The number of template parameters must be
+   * exactly one and be a type.
+   * @param ns is the namespace
+   * @param s is the scope
+   * @param nt is the number of template parameters
+   * @param u are the parameters
+   * @return the expanded PType
+   */
   PType *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   PType() { i = NULL; name = NULL; };
@@ -81,53 +158,123 @@ public:
   /* wrong */
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 
+  /**
+   * @return the instance type associated with the ptype( )
+   */
   InstType *getType () { return i; }
 
 private:
-  InstType *i;			// when it is expanded
-  const char *name;
+  InstType *i;			///< used when it is expanded to hold
+				///the ptype(...) parameter
+
+  const char *name;		///< the name of the form ptype(inst)
+				///after expansion
 
   friend class TypeFactory;
 };
 
+/**
+ * @class Bool
+ *
+ * @brief Used to represent the built-in ACT bool datatype
+ */
 class Bool : public Type {
+  /**
+   * @return the name of the type
+   */
   const char *getName() { return "bool"; }
+  
   Type *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     return this;
   }
   int isEqual (const Type *t) const { return t == this ? 1 : 0; }
 };
 
+
+/**
+ * @class Int
+ *
+ * @brief Used to represent the built-in ACT int< > datatype. This is
+ * also used to represent enumerations.
+ */
 class Int : public Type {
+  /**
+   * @return the name of the type
+   */
   const char *getName();
+
+  /**
+   * Expand integer. This requires one template parameter that
+   * specfies the bit-width of the integer data type.
+   * @param ns is the namespace
+   * @param s is the scope
+   * @param nt is the number of template parameters
+   * @param u has the single parameter
+   */
   Int *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
-  
+
+  /**
+   * @return 1 if the type t is equal to this one, 0 otherwise
+   */
   int isEqual (const Type *t) const;
   
-  unsigned int kind:2;		// 0 = unsigned, 1 = signed, 2 = enum
-  int w;
-  const char *name;
+  unsigned int kind:2;		///< 0 = unsigned, 1 = signed, 2 = enum
+  int w;		        ///< bit-width for integers, the
+				///number of values for enumeration
+  
+  const char *name;		///< string name for the type (for printing)
   
   friend class TypeFactory;
 };
 
 /**
- * Chan class. Paramterized chan(foo) type
+ * @class Chan
+ * 
+ * @brief Used to represent the built-in ACT Paramterized chan(foo)
+ * type or chan(foo,foo) bi-directional/exchange channel.
  */
 class Chan : public Type {
+  /**
+   * @return the name of the type
+   */
   const char *getName ();
-  Chan *Expand (ActNamespace *ns, Scope *s, int, inst_param *);
 
+  /**
+   * Expand the channel type. The number of tempate parameters is
+   * either 1 (normal channel) or 2 (bi-directional/exchange
+   * channel). 
+   *
+   * @param ns is the namespace
+   * @param s is the scope
+   * @param nt is the number of template parameters
+   * @param u holds type parameters
+   */
+  Chan *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  /**
+   * @return 1 if t is equal to this type, 0 otherwise
+   */
   int isEqual (const Type *t) const;
   
-  /* type info here */
-  const char *name;
-  InstType *p;			// data type for expanded channel
-  InstType *ack;		// second data type for exchange channel
+
+  const char *name;	      ///< the string name for the type
+  InstType *p;		      ///< data type for expanded channel
+  InstType *ack;	      ///< second data type for exchange channel
 
 public:
+  /**
+   * @return the channel data type
+   */
   InstType *datatype() const { return p; }
+
+  /**
+   * @return the "acknowledge" data type, the backward direction
+   */
   InstType *acktype() const { return ack; }
+
+  /**
+   * @return 1 if this is a bi-directional channel, 0 otherwise
+   */
   int isBiDirectional() { return ack == NULL ? 0 : 1; }
 
   friend class TypeFactory;
@@ -140,34 +287,62 @@ class UserMacro;
 
 
 /**
- *  UserDef stores information that is common to all user-defined
- *  types. User-defined types are more complex, because they can have
- *  definitions and template parameters. To handle this complexity and
- *  to reduce storage requirements, the "shared" part of a
- *  user-defined type is factored out into this class. That way the
- *  body of a channel x1of2 is shared with x1of2? and x1of2!, as well
- *  as an array of x1of2 (for example).
+ *  @class UserDef
+ *
+ *  @brief UserDef stores information that is common to all
+ *  user-defined types. User-defined types are more complex, because
+ *  they can have definitions and template parameters. To handle this
+ *  complexity and to reduce storage requirements, the "shared" part
+ *  of a user-defined type is factored out into this class. That way
+ *  the body of a channel x1of2 is shared with x1of2? and x1of2!, as
+ *  well as an array of x1of2 (for example).
+ *
+ *  UserDef types can be either a Process, Data, Channel, Function, or
+ *  Interface.
+ *
+ *  Parameters to the type are 
+ *   - ports, which correspond to signals/hardware
+ *   - template parameters, which correspond to circuit construction
+ *  parameters
  *
  */
 class UserDef : public Type {
  public:
-  UserDef (ActNamespace *ns); /**< constructor, initialize everything
-				 correctly */
+  /**
+   * @param ns is the namespace in which the type is defined
+   */
+  UserDef (ActNamespace *ns);
 
-  UserDef (UserDef *x);  /**< move over info from x to current type */
+  /**
+   * This moves all the information from the specified user-defined
+   * type over into this one.
+   * @param x is a previously created UserDef type
+   */
+  UserDef (UserDef *x);
 
-  virtual ~UserDef (); /**< destructor, releases storage */
+  virtual ~UserDef (); ///< destructor, releases storage
 
-  /// Get file name where this was defined
+  /**
+   * Get file name where this was defined
+   * @return the file name
+   */
   const char *getFile() { return file; }
 
-  /// Set file name
+  /**
+   * Set file name for this type
+   * @param s is the file name
+   */
   void setFile(const  char *s) { file = string_cache (s); }
 
-  /// Get line number where this was defined
+  /**
+   * @return the line number where this was defined
+   */
   int getLine() { return lineno; }
 
-  /// Set file name
+  /**
+   * Set the line number where this type was defined
+   * @param num is the line number
+   */
   void setLine(int num) { lineno = num; }
   
   /**
@@ -182,27 +357,21 @@ class UserDef : public Type {
    */
   void MkExported () { exported = 1; }
 
+  /**
+   * @return 1 if the type is expanded, or 0 if it is not
+   */
   int isExpanded() const { return expanded; }
   
 
   /**
-   * Add a new parameter
+   * Add a new template ("meta") parameter
    *
    *  @param t is the type of the parameter
    *  @param id is the the identifier for this parameter
    *
    *  @return 1 on success, 0 on error (duplicate parameter name)
-   *
    */
   int AddMetaParam (InstType *t, const char *id);
-
-  /**
-   * Allocate space for meta parameters
-   *
-   * @param id is the name of the meta parameter
-   * 
-   */
-  void AllocMetaParam (const char *id);
 
   /**
    * Add a new port
@@ -216,7 +385,14 @@ class UserDef : public Type {
 
 
   /**
-   * Find a port
+   * Find a port. Returns the port number encoded in the following
+   * way:
+   *   - if the parameter is a port at position k in the port list,
+   * the value returned is (k+1)
+   *   - if the parameter is a port at position k in the
+   * meta-parameter/template parameter list, the value returned is
+   * -(k+1)
+   *   - if the name is not in the port list, 0 is returned
    *
    * @param id is the name of the port
    * @return 0 if not found. Positive values mean ports; negative
@@ -225,7 +401,8 @@ class UserDef : public Type {
   int FindPort (const char *id);
 
   /**
-   * Returns name of port at specified position
+   * Returns name of port at specified position. 0..k are the port
+   * list, -1 to -(l+1) are the template parameters.
    * 
    * @param pos is the position of the port in the port list. Negative
    * numbers indicate meta-parameters, 0 and positive parameters
@@ -233,176 +410,324 @@ class UserDef : public Type {
    * @return the name of the specified port
    */
   const char *getPortName (int pos) const;
+
+  
+  /**
+   * Returns the type of the port at specified position. 0..k are the port
+   * list, -1 to -(l+1) are the template parameters.
+   * 
+   * @param pos is the position of the port in the port list. Negative
+   * numbers indicate meta-parameters, 0 and positive parameters
+   * indicate physical port parameters.
+   * @return the name of the specified port
+   */
   InstType *getPortType (int pos) const;
+
+  /**
+   * Used for overrides. Refine the type for the port parameter at the
+   * specified position.
+   * @param pos is 0..k for the port list (temlpate parameters are
+   * never refined)
+   * @param u is the updated instance type
+   */
   void refinePortType (int pos, InstType *u);
 
-  const char *getName ();    /**< the name of the user-defined type */
-  char *getFullName();       /**< returns freshly allocated string
-				   with full name (including namesapce) */
-  void printActName (FILE *fp);	/**< print the ACT name for the type */
+  /**
+   * @return the name of the type. For expanded types, this uses the
+   * expanded type naming convention.
+   */
+  const char *getName ();
+  
+  /**
+   * @return a freshly allocated string with full name (including
+   * namespace) for the type.
+   */
+  char *getFullName(); 
+  
+
+  /**
+   * Print the ACT name for the type.  WARNING: this does not do the
+   * right thing for array template parameters.
+   * @param fp is the output file
+   */
+  void printActName (FILE *fp);
 
   int isEqual (const Type *t) const;
 
   /**
-   * Set the name of the type
+   * Set the name of the type. Used to share the string pointer
+   * between this data structure and the hash table that holds the
+   * type name as well.
+   * @param s is the new string pointer to use for the type name
    */
   void setName (const char *s) { name = s; }
 
   /**
    * Make a copy: copy over all fields from u, and clear the fields of
    * u at the same time.
+   * @param u is the user-defined type to "take over"
    */
   void MkCopy (UserDef *u);
 
   /**
    * Compare user-defined types to see if the port parameters match
+   * @param u is the user-defined type to compare with
+   * @return 1 if the types are equal, 0 otherwise
    */
   int isEqual (const UserDef *u) const;
 
   /**
-   * Setup parent relationship
+   * Setup parent relationship for the imlementation relation between
+   * types.
    *
    * @param t is the parent type
-   * @param eq is 1 if this is an equality typing relationship, 0 if
-   * subtyping
-   *
    */
   void SetParent (InstType *t);
+
+  /**
+   * @return the parent type in the implementation hierarchy, if any
+   */
   InstType *getParent () const { return parent; }
 
   /**
    * Specify if this type has been fully defined yet or not. It may
    * only be a declared type at this point.
+   * @return 1 if the type has been defined, 0 if it has only been
+   * declared.
    */
   int isDefined () { return defined; }
+
+  /**
+   * Mark this type as defined
+   */
   void MkDefined () { defined = 1; }
 
   /**
    * Is this parameter a port?
    *
    * @param name is the name of the instance to be checked.
-   *
+   * @return 1 if name is a port, 0 otherwise
    */
   int isPort(const char *name);
 
   /**
-   * Returns the number of template parameters
+   * @return the number of template parameters
    */
   int getNumParams () const { return nt; }
 
   /**
-   * Returus the number of remaining template parameters
+   * Template parameters may be explicitly declared, or inherited by
+   * un-specified template parameters in parent types. The "remaining"
+   * template parameters are the fresh ones for this user-defined
+   * type.
+   *
+   * @return the number of remaining template parameters
    */
   int getRemainingParams() const { return nt - inherited_templ; }
 
   /**
-   * Returns the number of ports
+   * @return the number of ports
    */
   int getNumPorts () const { return nports; }
 
   /**
    * Looks up an identifier within the scope of the body of the type
+   * @param id is the ActId to look up
+   * @return the type for the identifier in the local scope, or NULL
+   * if it does not exist. Essentially a direct way to call Lookup()
+   * for the scope.
    */
   InstType *Lookup (ActId *id) { return I->Lookup (id, 0); }
+  
+  /**
+   * Looks up an identifier within the scope of the body of the type
+   * @param nm is the name to look up
+   * @return the type for the identifier in the local scope, or NULL
+   * if it does not exist. Essentially a direct way to call Lookup()
+   * for the scope.
+   */
   InstType *Lookup (const char *nm) { return I->Lookup (nm); }
 
+  /**
+   * @return the scope pointer for the user-defined type
+   */
   Scope *CurScope() { return I; }
 
   /**
+   * THIS IS NOT USED NOW. Always returns 1.
    * @param name is the name of the port to be checked
    * @return 1 if this is a port name that is also in the "strict"
    * parameter list
    */
   int isStrictPort (const char *name);
 
-
   /**
    * Print out user defined type 
    */
   virtual void Print (FILE */*fp*/) { }
+
+  /**
+   * Print out the header for the type. This function can be used for
+   * all the different ways a UserDef can be used. The type field is
+   * used to print out one of the following strings: "defproc",
+   * "deftype", "defchan", "interface", "function".
+   * @param fp is the output file
+   * @param type is the string for the kind of user-defined type. 
+   */
   void PrintHeader (FILE *fp, const char *type);
 
-  void setBody (ActBody *x) { b = x; } /**< Set the body of the
-					  process */
+  /**
+   * Directly set the body of the user-defined type 
+   * @param x the body to assign to this user-defined type
+   */
+  void setBody (ActBody *x) { b = x; }
+
+  /**
+   * Append to the current body of the user-defined type
+   * @param x is the additional body to append
+   */
   void AppendBody (ActBody *x);
+
+  /**
+   * @return the current body of the user-defined type
+   */
   ActBody *getBody () { return b; }
-  
+
+  /**
+   * Here in case someone called the wrong Expand!
+   */
   UserDef *Expand (ActNamespace */*ns*/, Scope */*s*/, int /*nt*/, inst_param */*u*/) {
     Assert (0, "Don't call this ever");
   }
-  
+
+  /**
+   * Expand the user-defined type
+   * @param ns is the namespace
+   * @param s is the scope
+   * @param nt is the number of specified template parameters
+   * @param u holds the template parameters
+   * @param cache_hit returns 1 on a hit (i.e. found a previously
+   * expanded identical type that is being returned), 0 otherwise
+   * @param is_process is 0 by default, 1 for processes, 2 for
+   * functions
+   * @return expanded type either from the construction, or from the cache
+   */
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit, int is_process = 0);
-  /* is_process = 0 by default, 1 for process, 2 for functions */
 
-  /* append in the case of multiple bodies! */
-
+  /**
+   * @return the namespace in which the user-defined type was defined
+   */
   ActNamespace *getns() { return _ns; }
+
+  /**
+   * This should only be called for user-defined data types or
+   * channels.
+   *
+   * @return the root type for this one in the implementation
+   * hierarchy. NULL if there is no root non user-defined type.
+   */
   InstType *root() const;
 
+  /**
+   * @return the prs body (NULL if it does not exist)
+   */
   act_prs *getprs ();
+
+  /**
+   * @return the spec body (NULL if it does not exist)
+   */
   act_spec *getspec ();
+
+  /**
+   * @return all the sub-language bodies, NULL if there are none
+   */
   act_languages *getlang () { return lang; }
 
-  int isLeaf(); /**< if there are no sub-circuits, return 1 */
+  /**
+   * Only useful for process types.
+   * @return 1 if there are no sub-circuits within this type, 0 otherwise
+   */
+  int isLeaf();
 
+  /**
+   * Mark this as a type that has a refinement body
+   */
   void mkRefined() { has_refinement = 1; }
+
+  /**
+   * @return 1 if this has a refinement body, 0 otherwise
+   */
   int hasRefinement() { return has_refinement; }
 
+  /**
+   * Create a new user-defined macro
+   * @param name is the name of the macro
+   * @return the blank macro
+   */
   UserMacro *newMacro (const char *name);
+
+  /**
+   * Return a user-defined macro
+   * @param name is the name of the macro
+   * @return the user-defined macro (NULL if it doesn't exist)
+   */
   UserMacro *getMacro (const char *name);
 
  protected:
-  InstType *parent;		/**< implementation relationship, if any */
+  InstType *parent;		///< implementation relationship, if any
   
-  unsigned int defined:1;	/**< 1 if this has been defined, 0
-				   otherwise */
-  unsigned int expanded:1;	/**< 1 if this has been expanded, 0
-				   otherwise */
+  unsigned int defined:1;	///< 1 if this has been defined, 0 otherwise
+  unsigned int expanded:1;	///< 1 if this has been expanded, 0 otherwise
 
-  unsigned int pending:1;	/**< 1 if this is currently being
-				   expanded, 0 otherwise. */
+  unsigned int pending:1;	///< 1 if this is currently being expanded, 0 otherwise
 
-  act_languages *lang;
+  unsigned int exported:1;      ///< 1 if the type is exported, 0 otherwise
+
+  act_languages *lang;		///< sub-languages within this type
   
-  int nt;			/**< number of template parameters */
-  InstType **pt;		/**< parameter types */
-  const char **pn;		/**< parameter names */
-  int exported;			/**< 1 if the type is exported, 0 otherwise */
+  int nt;			///< number of template parameters
+  InstType **pt;		///< parameter types
+  const char **pn;		///< parameter names
 
-  int nports;			/**< number of ports */
-  InstType **port_t;		/**< port types */
-  const char **port_n;		/**< port names */
+  int nports;			///< number of ports
+  InstType **port_t;		///< port types
+  const char **port_n;		///< port names
 
-  Scope *I;			/**< instances */
+  Scope *I;			///< instances
 
-  const char *name;		/**< Name of the user-defined type */
+  const char *name;		///< Name of the user-defined type
 
-  ActBody *b;			/**< body of user-defined type */
-  ActNamespace *_ns;		/**< namespace within which this type is defined */
+  ActBody *b;			///< body of user-defined type
+  ActNamespace *_ns;		///< namespace within which this type is defined 
 
-  UserDef *unexpanded;		/**< unexpanded type, if any **/
+  UserDef *unexpanded;		///< unexpanded type, if any
 
-  int level;		  /**< default modeling level for the type **/
+  int level;		        ///< default modeling level for the type
 
-  const char *file; /**< file name (if known) where this was defined **/
-  int lineno;       /**< line number (if known) where this was defined **/
-  int has_refinement;	      /**< 1 if there is a refinement body **/
+  const char *file; ///< file name (if known) where this was defined
+  int lineno;       ///< line number (if known) where this was defined
+  int has_refinement;	      ///< 1 if there is a refinement body
 
-  int inherited_templ;
-  inst_param **inherited_param;
+  int inherited_templ;       ///< number of inherited template parameters
+  inst_param **inherited_param;  ///< the inherited parameters
 
+  /**
+   * Used to print macros in the type
+   * @param fp is the output file
+   * @return 1 if there are some macros, 0 otherwise
+   */
   int emitMacros (FILE *fp);
 
-  /// user-defined macros
-  A_DECL (UserMacro *, um);
+  A_DECL (UserMacro *, um);   ///< user-defined macros
 };
 
 
 /**
  *
- * Interfaces
+ * @class Interface
  *
- *  Looks like a process. Body is empty.
+ * @brief Holds the interface definition. Looks like a process. Body
+ * is empty.
  *
  */
 class Interface : public UserDef {
@@ -416,44 +741,77 @@ class Interface : public UserDef {
 
 /**
  *
- * User-defined processes
+ * @class Process
+ *
+ * @brief User-defined processes.
  *
  */
 class Process : public UserDef {
  public:
-  Process (UserDef *u);		/**< Construct a process from a userdef */
+  /**
+   * Construct a process from a UserDef
+   * @param u is the UserDef
+   */
+  Process (UserDef *u);
   virtual ~Process ();
-  void MkCell () { is_cell = 1; } /**< Mark this as a cell */
+
+  /**
+   * This process is actually a defcell
+   */
+  void MkCell () { is_cell = 1; }
+
+  /**
+   * @return 1 if this is a cell, 0 otherwise
+   */
   int isCell() { return is_cell; }
 
   Process *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   void Print (FILE *fp);
 
-  int isBlackBox();		// black box declaration
-  
-  int isLowLevelBlackBox ();	// low level blackbox: might have CHP,
-				// HSE, or dataflow models, but does
-				// not have any circuits and is a leaf
-				// cell
+  /**
+   * @return 2 if this is a black-box definition, 0 otherwise
+   */
+  int isBlackBox();
 
-  /* add an interface with an id mapping */
+  /**
+   * A low level blackbox: might have CHP, HSE, or dataflow models,
+   * but does not have any circuits and is a leaf cell
+   * @return 1 if this is a low-level black box, 0 otherwise
+   */
+  int isLowLevelBlackBox ();	
+				
+  /**
+   * Add an interface specification that this process exports
+   * @param iface is the interface exported
+   * @param imap is the name mapping from the process ports to the
+   * interface ports
+   */
   void addIface (InstType *iface, list_t *imap);
-  int hasIface (InstType *x, int weak); // weak check for interface equality
+
+  /**
+   * Weak check for interface equality
+   */
+  int hasIface (InstType *x, int weak);
+
+  /**
+   * @return the port name map for the interface exported by this
+   * process
+   */
   list_t *findMap (InstType *iface);
 
   /*-- edit API --*/
 
-  /*
+  /**
    *  Take "name" and replace its base type with "t"
    *  For this to succeed, "t" must have exactly the same port list 
    *  as the orginal type for "name"
    * 
-   *  Returns true on success, false on failure.
+   *  @return true on success, false on failure.
    */
   bool updateInst (char *name, Process *t);
 
-  /*
+  /**
    *
    *  Buffer insertion
    *
@@ -461,14 +819,19 @@ class Process : public UserDef {
    *    and then create a new instance "buf" (has to have one input
    *    port and one output port).
    *
-   *    Returns the name of the newly created buffer instance, or NULL
+   *    port has to be either a simple id or id[num]
+   *
+   *    @param name is the instance name
+   *    @param port is the port within the instance
+   *    @param buf is the buffer type
+   *
+   *    @return the name of the newly created buffer instance, or NULL
    *    if it failed.
    *
-   *    port has to be either a simple id or id[num]
    */
   const char *addBuffer (char *name, ActId *port, Process *buf);
 
-  /*
+  /**
    * Similar to the single buffer addition, except that a list of
    * end-points are disconnected. Each of them must be connected to
    * the same primary name, must be disconnectable, and must all be
@@ -476,13 +839,29 @@ class Process : public UserDef {
    */
   const char *addBuffer (Process *buf, list_t *inst_ports);
 
-  /* returns the unexpanded type from which this one was generated */
+  /**
+   * @return the unexpanded type from which this one was generated
+   */
   Process *getUnexpanded();
 
-
-  /* record the usage of a global signal */
+  /** 
+   * record the usage of a global signal 
+   * @param id is the global signal name
+   */
   void recordGlobal (ActId *id);
+
+  /**
+   * @param id is the name of the signal
+   * @return 1 if the global signal was found in the recorded global
+   * signal list, 0 otherwise.
+   */
   int findGlobal (ActId *id);
+
+  /**
+   * @param s is the name of the signal
+   * @return 1 if the global signal was found in the recorded global
+   * signal list, 0 otherwise 
+   */
   int findGlobal (const char *s);
     
  private:
