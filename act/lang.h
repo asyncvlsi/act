@@ -586,6 +586,7 @@ void sizing_print (FILE *, act_sizing *);
 void initialize_print (FILE *, act_initialize *);
 void dflow_print (FILE *, act_dataflow *);
 void dflow_print (FILE *, act_dataflow_element *);
+void act_print_size (FILE *fp, act_size_spec_t *sz);
 
 class ActNamespace;
 class Scope;
@@ -675,67 +676,207 @@ public:
 };
 
 
+/**
+ * Expand an Initialize { ... } block
+ */
 act_initialize *initialize_expand (act_initialize *, ActNamespace *, Scope *);
-act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
-void chp_check_channels (act_chp_lang_t *c, Scope *s);
+
+/**
+ * Expand a prs { ... } block
+ */
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
+
+/** 
+ * Expand a spec { ... } block
+ */
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
+
+/** 
+ * Expand a refine { .. } block
+ */
 void refine_expand (act_refine *, ActNamespace *, Scope *);
+
+/**
+ * Expand a sizing { ... } block
+ */
 act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
+
+/**
+ * Expand a dataflow { ... } block
+ */
 act_dataflow *dflow_expand (act_dataflow *, ActNamespace *, Scope *);
 
-const char *act_spec_string (int type);
-const char *act_dev_value_to_string (int);
-int act_dev_string_to_value (const char *s);
+/**
+ * Expand a chp { ... } block. Also used for hse { ... }
+ */
+act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 
+/**
+ * Set the CHP expansion mode (1 if in macro, 0 otherwise)
+ */
+void chp_expand_macromode (int mode);
+
+/**
+ * chp_expand helper for the items within the language block
+ */
+act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
+
+/**
+ * Expansion helper for instance attributes
+ */
 act_attr_t *inst_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
+
+/**
+ * Expansion helper for prs attributes
+ */
 act_attr_t *prs_attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s);
 
-void chp_expand_macromode (int mode);
-act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
-void act_print_size (FILE *fp, act_size_spec_t *sz);
+/**
+ * Expansion helper for width/length/flavor/folding spec on variables
+ */
+act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
 
+/**
+ * Check that the CHP body only accesses unfragmented
+ * channels/integers.
+ */
+void chp_check_channels (act_chp_lang_t *c, Scope *s);
 
+/**
+ * Given a spec #, returns the string from the spec table
+ * corresponding to the spec directive.
+ */
+const char *act_spec_string (int type);
+
+/**
+ * Convert a device flavor value to the flavor string name
+ */
+const char *act_dev_value_to_string (int);
+
+/**
+ * Convert the device flavor string into an index. The default index
+ * is 0, so 0 should always be the default transistor flavor
+ */
+int act_dev_string_to_value (const char *s);
+
+/**
+ * Compute a new prs expression that is the complement of the provided
+ * expression. The original rule is copied.
+ */
 act_prs_expr_t *act_prs_complement_rule (act_prs_expr_t *e);
+
+/**
+ * Apply a C-element transformation to the rule. This makes a copy of
+ * the expression and inverts each variable in the rule.
+ */
 act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
+
+/**
+ * Print a single production rule
+ */
 void act_print_one_prs (FILE *fp, act_prs_lang_t *p);
 
+
+/**
+ * Used as a leaf conversion function in act_prs_expr_nnf
+ */
 typedef void *(*ACT_VAR_CONV) (void *, void *);
 
-/*
-  at_hash : hash table from label strings to act_prs_lang_t pointers
-  All variable pointers at the leaves are converted using the conv_var
-  function that is an argument. First argument of the function is the
-  cookie, the second is the ID pointer for the expression.
-*/
+/**
+ * Makes a copy of the provided prs expression, and converts it into
+ * negation-normal form. Any at-labels are translated into their
+ * corresponding expression as well.
+ *
+ * All variable pointers at the leaves are converted using the
+ * conv_var function that is an argument to this function. The first
+ * argument of the function is the cookie, the second is the ID
+ * pointer for the expression.
+ *
+ * @param at_hash is a hash table from label strings to act_prs_lang_t
+ * pointers
+ * @param e is the prs expression
+ * @param cookie is used for the conversion function
+ * @param conv_var is the conversion function used for the leaves of the
+ * expression.
+ * @return new prs expression in negation-normal form.
+ */
 act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 				  struct Hashtable *at_hash,
 				  act_prs_expr_t *e,
 				  ACT_VAR_CONV conv_var);
 
+
+/**
+ * Construct a unique string that summarizes the expression tree for
+ * production rule expressions
+ * @param id_list is the list of ActId pointers or any other opaque
+ * pointer. The string contains position values for leaf variables.
+ * @param e is the expression
+ * @return a string that captures the expression tree
+ */
 char *act_prs_expr_to_string (list_t *id_list,  act_prs_expr_t *e);
+
+/**
+ * Construct a unique string that summarizes the expression tree for
+ * an ACT Expr data structure.
+ * @param id_list is the list of ActId pointers or any other opaque
+ * pointer. The string contains position values for leaf variables.
+ * @param e is the expression
+ * @return a string that captures the expression tree
+ */
 char *act_expr_to_string (list_t *id_list, Expr *e);
 
-/* 
-   Pass in a non-NULL list of ActId *'s.
-
-   Collects any new ids and adds them to the list l
-   This list is suitable for use in act_expr_to_strnig and
-   act_prs_expr_to_string
+/**
+ * Pass in a non-NULL list of ActId *'s. This function 
+ * collects any new ids and adds them to the list l.
+ * This list is suitable for use in act_expr_to_string and
+ * 
+ * @param l is the list that is used to collect all the IDs in the
+ * expression
+ * @param e is the Expr pointer
 */
 void act_expr_collect_ids (list_t *l, Expr *e);
 
+/**
+ * Free a prs expression
+ */
 void act_prs_expr_free (act_prs_expr_t *e);
+
+/**
+ * Free a CHP lang body
+ */
 void act_chp_free (act_chp_lang_t *);
+
+/**
+ * This checks to see if the variable is correctly accessible by a
+ * macro. This is an internal call, but is also needed by
+ * expr_expand(); hence it is exported.
+ * @param s is the scope
+ * @param id is the identifer to be checked.
+ */
 void act_chp_macro_check (Scope *s, ActId *id);
 
+/**
+ * Expand an ActId corresponding to a chp variable that can be
+ * written. This permits arrays to have dynamic de-references.
+ * @param id is the ActId to be expanded
+ * @param ns is the namespace
+ * @param s is the scope
+ * @return the expanded variable, checking that it is actually
+ * something that can be written.
+ */
 ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
 
+/**
+ * Returns 0 if the ID is not found, 1 if it is read, 2 if it is
+ * written
+ */
 int act_hse_direction (act_chp_lang_t *, ActId *);
 
-act_size_spec_t *act_expand_size (act_size_spec_t *sz, ActNamespace *ns, Scope *s);
-
-/* only use this on guard expressions */
+/**
+ * Check if an expression has a negated probe. Only use this on a
+ * guard expression
+ */
 int act_expr_has_neg_probes (Expr *e);
 
 

@@ -100,9 +100,9 @@ class Scope {
 
   /**
    * Similar to Lookup(), but takes an ActId as a parameter. Only
-   * looks at only looks up the root of the identifier. By default
+   * looks up the root of the identifier. By default
    * this reports an error if the ActId has a sub-identifier. This
-   * error is suppressed by the err flag
+   * error is suppressed by the err flag.
    * @param id the ActId to lookup in the local scope
    * @param err 1 if a fatal error should be reported, 0 to ignore the
    * error
@@ -138,65 +138,149 @@ class Scope {
    */
   int isGlobal (const char *s);
 
+  /**
+   * To a complete lookup of the ActId. The (possibly NULL) array
+   * reference at the end of the ID is returned in aref, if aref is
+   * non-NULL. 
+   *
+   * @param id is the identifier to be looked up in the current scope
+   * (and its parents if necessary)
+   * @param aref is used to return the array specifier in the ID
+   * @return the actual type of the identifier
+   */
   InstType *FullLookup (ActId *id, Array **aref);
-  /**< return actual type of ID,  after full lookup including
-     parent scopes. aref is used to store final array reference in
-     id, if any */
 
+  /**
+   * Only looks in the current scope for the ID. However, the type
+   * returned is the actual type of the full ID (not just the root),
+   * and aref is used to return any array reference associated with
+   * the specified id.
+   *
+   * @param id is the ID to lookup in the local scope
+   * @param aref returns the array reference in the id, if any
+   * @return the type of the id, if found in the current scope.
+   */
   InstType *localLookup (ActId *id, Array **aref);
 
-  /* 
-     only for expanded scopes
-     returns ValueIdx information for identifier
-  */
+  /**
+   * Only for expanded scopes. This returns ValueIdx information for
+   * identifier.
+   * @param s is the name to lookup 
+   * @return the ValueIdx associated with s in the current scope
+   */
   ValueIdx *LookupVal (const char *s);
+
+  /**
+   * Like LookupVal(), but also looks in the parent scope if you can't
+   * find the specified name in the current scope.
+   * @param s is the name to lookup
+   * @return the ValueIdx for the specified name
+   */
   ValueIdx *FullLookupVal (const char *s);
 
-
+  /**
+   *  Add a new identifier to the scope.
+   *
+   *  @param s is a string corresponding to the identifier being added
+   *  to the scope
+   *  @param it is the instantiation type 
+   *
+   *  @return 0 on a failure, 1 on success.
+   */
   int Add (const char *s, InstType *it);
-  void Del (const char *s);	/* used to delete loop index variables
-				   */
-  void FlushExpand ();  /* clear the table, and make sure the new
-			   scope is expanded */
 
-  void Merge (Scope *s);	/**< Merge in instances into the
-				   current scope. This must be called
-				   *before* any other instances have
-				   been created.
-				*/
+  /**
+   * Delete a name from the current scope. This is used to delete loop
+   * index variables.
+   * @param s is the name to be deleted.
+   */
+  void Del (const char *s);
 
+  /**
+   * Clear the scope table, and mark this as an expanded scope.
+   */
+  void FlushExpand ();
+
+  /**
+   * Merge in instances into the scope. This must be called *before*
+   * any other instances have been created.
+   */
+  void Merge (Scope *s);
+
+  /**
+   * Print out the scope
+   * @param fp is the output file
+   */
   void Print (FILE *fp);
 
   /**
-   * Create a new scope that is a child of the current scope
-   */
-  Scope *Push () { return new Scope (this); }
-
-  /**
-   * Delete current scope, returning parent [does this work?]
-   */
-  Scope *Pop () {
-    Scope *x = this, *ret = this;
-    ret = this->up;
-    delete x;
-    return ret;
-  }
-
-  /**
-   * Associate scope with a user defined type 
+   * Associate scope with a user defined type.
+   * @param _u is the user-defined type to be associated with this scope
    */
   void setUserDef (UserDef *_u) { u = _u; }
+
+  /**
+   * Use to indicate that this scope is part of a function
+   */
   void mkFunction () { is_function = 1; }
+
+  /**
+   * Check if this is a function scope
+   */
   int isFunction() { return is_function; }
+
+  /**
+   * @return the user-defined type this scope is for, if it
+   * exists. NULL means this is not associated with a user-defined type.
+   */
   UserDef *getUserDef () { return u; }
 
+  /**
+   * Set the namespace associated with this scope
+   * @param _ns is the namespace to be associated with the scope
+   */
   void setNamespace (ActNamespace *_ns) { ns = _ns; }
+
+  /**
+   * @return the namespace associated with the scope, NULL if there
+   * isn't one
+   */
   ActNamespace *getNamespace () { return ns; }
 
+  /**
+   * Allocate space to hold a pint in the scope
+   * @param count is the number of pints to allocate
+   * @return the index for the first new pint allocated.
+   */
   unsigned long AllocPInt(int count = 1);
+
+  /**
+   * De-allocate pints starting from the index. This only works if
+   * you are de-allocating from the end of the allocated pint
+   * array. Otherwise it is silently ignored.
+   * @param idx is index at which to de-allocate
+   * @param count is the number to deallocate
+   */
   void DeallocPInt(unsigned long idx, int count = 1);
+
+  /**
+   * Set the pint at index id to the specified value
+   * @param id is the index of the pint
+   * @param val is the value to set
+   */
   void setPInt(unsigned long id, unsigned long val);
+
+  /**
+   * Check if the pint is in fact set
+   * @param id is the index of the pint
+   * @return 1 if it is set, 0 otherwise
+   */
   int issetPInt (unsigned long id);
+
+  /**
+   * @param id is the index of the pint
+   * @return the value of the pint at the specified index
+   */
   unsigned long getPInt(unsigned long id);
 
   unsigned long AllocPInts(int count = 1);
@@ -205,43 +289,142 @@ class Scope {
   long getPInts(unsigned long id);
   void setPInts(unsigned long id, long val);
 
+  /**
+   * Like AllocPInt(), but for preals
+   */
   unsigned long AllocPReal(int count = 1);
+
+  /**
+   * Like DeallocPInt(), but for preals
+   */
   void DeallocPReal(unsigned long idx, int count = 1);
+
+  /**
+   * Like issetPInt(), but for preals
+   */
   int issetPReal (unsigned long id);
+
+  /**
+   * Like getPInt(), but for preals
+   */
   double getPReal(unsigned long id);
+  
+  /**
+   * Like setPInt(), but for preals
+   */
   void setPReal(unsigned long id, double val);
 
+  /**
+   * Like AllocPInt(), but for pbools
+   */
   unsigned long AllocPBool(int count = 1);
+
+  /**
+   * Like DeallocPInt(), but for pbools
+   */
   void DeallocPBool(unsigned long idx, int count = 1);
+
+  /**
+   * Like issetPInt(), but for pbools
+   */
   int issetPBool (unsigned long id);
+
+  /**
+   * Like getPInt(), but for pbools
+   */
   int getPBool(unsigned long id);
+  
+  /**
+   * Like setPInt(), but for pbools
+   */
   void setPBool(unsigned long id, int val);
 
+  /**
+   * Like AllocPInt(), but for ptypes
+   */
   unsigned long AllocPType(int count = 1);
+
+  /**
+   * Like DeallocPInt(), but for ptypes
+   */
   void DeallocPType(unsigned long idx, int count = 1);
+
+  /**
+   * Like issetPInt(), but for ptypes
+   */
   int issetPType (unsigned long id);
+
+  /**
+   * Like getPInt(), but for ptypes
+   */
   InstType *getPType(unsigned long id);
+
+  /**
+   * Like setPInt(), but for ptypes
+   */
   void setPType(unsigned long id, InstType *val);
 
-  /**< returns 1 if this is an expanded scope */
+  /**
+   * @return 1 if this is an expanded scope, 0 otherwise
+   */
   int isExpanded () { return expanded; }
 
   /**
-     Add a binding function
-  */
+   * Bind a name to a type. Allocates space for it if needed.
+   * @param s is the name
+   * @param tt is the type to bind to the name
+   */
   void BindParam (const char *s, InstType *tt);
+
+  /**
+   * Bind a name to a type. Must be a local name
+   * @param id is the name
+   * @param tt is the type to use
+   */
   void BindParam (ActId *id, InstType *tt);
+
+  /**
+   * Bind a name to the array expression
+   * @param s is the name to be set
+   * @param ae contains the array expression
+   */
   void BindParam (const char *s, AExpr *ae);
+
+  /**
+   * Bind a name to the array expression
+   * @param id is the name
+   * @param ae is the array expression
+   */
   void BindParam (ActId *id, AExpr *ae);
 
+  /**
+   * Bind a name at the specified offset (in idx) to the current
+   * element from the AExpr stepper AExprstep
+   */
   void BindParam (ActId *id, AExprstep *aes, int idx = -1);
 
+  /**
+   * Create instances given the body
+   * @param b is the body to be processed.
+   */
   void playBody (ActBody *b); /* create instances in the scope based
 				 on what is in the body */
 
+  /**
+   * @return the name of the user-defined type or namespace
+   * corresponding to this scope. Returns -unknown- if neither exist.
+   */
   const char *getName();
 
-
+  /**
+   * Print the connections specified by the cx pointer. Normally this
+   * only prints the essential connections---i.e. if cx is a
+   * primary. The force flag can be used to override this, forcing
+   * redundant connections to be printed.
+   * @param fp is the output file
+   * @param cx is the connection 
+   * @param force is used to force the printing of non-primary connections
+   */
   static void printConnections (FILE *fp, act_connection *cx, bool force = false);
   
  private:
@@ -278,14 +461,10 @@ class Scope {
 
 
 /**
- *   @file namespaces.h
- *         This contains the definitions for a namespace
+ * @class ActNamespace
  *
- */
-
-/**
- *   The ActNamespace class holds all the information about a
- *   namespace.
+ * @brief The ActNamespace class holds all the information about a
+ * namespace.
  */
 class ActNamespace {
  public:
@@ -359,6 +538,10 @@ class ActNamespace {
    * Set this to be an exported namespace
    */
   void MkExported () { exported = 1; }
+
+  /**
+   * Clear the exported flag
+   */
   void clrExported () { exported = 0; }
 
   /**
@@ -443,28 +626,76 @@ class ActNamespace {
   static void Init ();
 
   /**
-   * Returns global namespace
+   * @return the global namespace
    */
   static ActNamespace *Global () { return global; }
+
+  /**
+   * @return the Act pointer
+   */
   static class Act *Act() { return act; }
 
+  /**
+   * Set the Act pointer
+   */
   static void setAct (class Act *a);
 
+  /**
+   * Replace the body with the one specified
+   * @param b is the new body
+   */
   void setBody (ActBody *b) { B = b; }
+
+  /**
+   * Append to the current body
+   * @param b is the body to be appended
+   */
   void AppendBody (ActBody *b);
+
+  /**
+   * @return the current body of the namespace
+   */
   ActBody *getBody () { return B; }
 
+  /**
+   * helper function to return the prs body
+   */
   act_prs *getprs ();
+
+  /**
+   * helper function to return the spec body
+   */
   act_spec *getspec ();
+
+  /**
+   * @return the language bodies within this namespace
+   */
   act_languages *getlang() { return lang; }
 
+  /**
+   * @return a list of char *'s of the names of the sub-namespaces
+   * nested within this one
+   */
   list_t *getSubNamespaces ();
+
+  /**
+   * @return a list of process names
+   */
   list_t *getProcList();
+
+  /**
+   * @return a list of user-defined data type names
+   */
   list_t *getDataList();
+
+  /**
+   * @return a list of user-defined channel names
+   */
   list_t *getChanList();
 
  private:
-  act_languages *lang;
+  
+  act_languages *lang; ///< the sub-languages in the namespace
 
   /**
    * hash table entry for this namespace
@@ -485,7 +716,8 @@ class ActNamespace {
   struct Hashtable *T;
 
   /**
-   *  hash table of all the instances within this namespace.
+   *  hash table of all the instances within this namespace,
+   *  encapsulated within the Scope
    */
   Scope *I;
 
@@ -508,6 +740,10 @@ class ActNamespace {
    * pointer to the global namespace
    */
   static ActNamespace *global;
+
+  /**
+   * pointer to the Act class
+   */
   static class Act *act;
 
   /**
@@ -546,7 +782,9 @@ class ActNamespace {
 
 
 /**
- *  Functions to manage namespace search paths
+ * @class ActOpen
+ *
+ * @brief Functions to manage namespace search paths.
  *
  *  There are two open commands:
  *     open foo;
