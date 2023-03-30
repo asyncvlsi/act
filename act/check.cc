@@ -823,13 +823,14 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  InstType *x = fn->getPortType (-(i+1));
 	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
 	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
+
 	  if (!x->isConnectable (y, 1)) {
 	    typecheck_err ("Function `%s': template arg #%d has an incompatible type",
 			   fn->getName(), i);
 	    return T_ERR;
 	  }
+	  tmp = tmp->u.e.r;
 	}
-	tmp = tmp->u.e.r;
       }
       /*-- provide return type --*/
       
