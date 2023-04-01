@@ -1054,8 +1054,8 @@ enum datatype_methods {
  * 
  * @brief A user-defined data types
  *
- * A data type can implement a built-in data type (int/bool/enum), or
- * be a structure.
+ * This type is used to implement user-defined enumerations,
+ * structures, as well as implementations of int/bool/enum types.
  *
  */
 class Data : public UserDef {
@@ -1063,23 +1063,54 @@ class Data : public UserDef {
   Data (UserDef *u);
   virtual ~Data();
 
-  int isEqual (const Type *t) const;
+  int isEqual (const Type *t) const; ///< equality test
+
+  /**
+   * Convert this data type into an enumeration. Also indicate if this
+   * enumeration can be used as an integer data type or not.
+   * @param is_int is 1 to indicate the enumeration can be used in the
+   * contexts where an integer is needed
+   */
   void MkEnum (int is_int) { is_enum = 1; is_eint = is_int ? 1 : 0; }
+
+  /**
+   * @return 1 if this is an enumeration type, 0 otherwise
+   */
   int isEnum () const  { return is_enum; }
+
+  /**
+   * @return 1 if this is an enumeration and one that cannot be used
+   * in an integer context (a "pure" enumeration)
+   */
   int isPureEnum() const { return (is_enum && !is_eint) ? 1 : 0; }
+
+  /**
+   * Add a new option to an enumeration data type
+   * @param s is the name of the new enumeration option
+   */
   void addEnum (const char *s) {
     if (!enum_vals) {
       enum_vals = list_new ();
     }
     list_append (enum_vals, s);
   }
+
+  /**
+   * @return the number of enumeration options for this data type
+   */
   int numEnums() const {
     if (enum_vals) {
       return list_length (enum_vals);
     }
     return 0;
   }
-  
+
+  /**
+   * This is used to map enumeration constants to their value
+   * @param s is the name of the constant
+   * @return the value of the enumeration constant specified, -1 if
+   * not found.
+   */
   int enumVal (const char *s) const {
     int i = 0;
     if (!enum_vals) return -1;
@@ -1092,72 +1123,176 @@ class Data : public UserDef {
     return -1;
   }
 
+  /**
+   * Set the specified method from the method table to the CHP.
+   * @param t is the method type from the datatype_methods enumeration
+   * @param h is the method body
+   */
   void setMethod (int t, struct act_chp_lang *h) { methods[t] = h; }
-  struct act_chp_lang *getMethod (int t) { return methods[t]; }
-  void copyMethods (Data *d);
- 
-  Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
+  /**
+   * @param t is the method type from the datatype_methods enumeration
+   * @return the method body for the specified method
+   */
+  struct act_chp_lang *getMethod (int t) { return methods[t]; }
+
+  /**
+   * Copy over all the methods from the specified data type. This
+   * uses a shallow copy of the method body
+   * @param d is the Data type from which the method table should be copied
+   */
+  void copyMethods (Data *d);
+
+  /**
+   * Expand the type
+   */
+  Data *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  /**
+   * Print the type
+   */
   void Print (FILE *fp);
 
-  /* returns # of booleans and # of ints needed to implement the
-     structure */
+  /**
+   * Returns # of booleans and # of ints needed to implement the
+   * structure.
+   * @param nbools used to return the # of bools in the structure
+   * @param nints  used to return the # of int/enums in the structure
+   */
   void getStructCount (int *nbools, int *nints);
 
-  /* returns offset of field within  the structure.
-     if sz is non-NULL, also returns the # of entries in case this is
-     a sub-structure
+  /**
+   * Returns offset of field within the structure.
+   * If sz is non-NULL, also returns the # of entries in case this is
+   * a sub-structure. The offset corresponds to the index into the
+   * structure where the field was found. For fields of the form
+   * foo.bar, it is the sum of the offsets for each field (so the
+   * offset for "foo", plus the offset of "bar" within "foo".
+   * 
+   * @param field is the ActId that describes the field
+   * @param sz is used to return the size of the field (# of bools +
+   * # of ints)
+   * @return the offset of the field, -1 if not found
   */
   int getStructOffset (ActId *field, int *sz);
+
+  /**
+   * Elaborate the structure into all the "leaf" field names, and also return
+   * the types for each field. The type is either 0 or 1, 0 for bools
+   * and 1 for ints.
+   * @param types should be an int array of size # of ints + # of
+   * bools for the structure (see getStructCount())
+   * @return an ActId array of the same size that contains all the
+   * field names for the structure.
+   */
   ActId **getStructFields (int **types);
 
 private:
   void _get_struct_count (int *nbools, int *nints);
   void _get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix);
   
-  unsigned int is_enum:1;	/**< 1 if this is an enumeration, 0
-				   otherwise */
-  unsigned int is_eint:1;	/**< 1 if this enum can be treated as
-				   an int */
+  unsigned int is_enum:1;	///< 1 if this is an enumeration, 0
+				///otherwise
+  unsigned int is_eint:1;	///< 1 if this enum can be treated as an int
 
-  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; /**< set and
-							get methods
-							for this data type */
-  list_t *enum_vals;
+  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; ///< all the
+						     ///user-defined
+						     ///methods for
+						     ///this type
+  
+  list_t *enum_vals;		///< the list of enumeration values
+				///(char *) for enumeration types.
 };
 
 
-
-
+/**
+ * @class Channel
+ *
+ * @brief User-defined channel type. Channels can be unidirectional or
+ * bi-directional (sometimes called exchange channels).
+ */
 class Channel : public UserDef {
  public:
   Channel (UserDef *u);
   virtual ~Channel();
-  
+
+  /**
+   * Similar to Data::setMethod()
+   */
   void setMethod (int t, act_chp_lang *h) { methods[t] = h; }
+
+  /**
+   * Similar to setMethod(), but used to set methods that return
+   * expressions
+   * @param t is the method number (from the datatype_methods enumeration)
+   * @param e is the expression to be used as the return value
+   */
   void setMethod (int t, Expr *e) { emethods[t-ACT_NUM_STD_METHODS] = e; }
+
+  /**
+   * Similar to Data::getMethod()
+   */
   act_chp_lang *getMethod(int t) { return methods[t]; }
+
+  /**
+   * @return similar to getMethod(), but returns the expression for
+   * e-methods 
+   */
   Expr *geteMethod(int t) { return emethods[t-ACT_NUM_STD_METHODS]; }
+
+  /**
+   * Copy methods over from the specified channel. This copies
+   * pointers over---i.e. a shallow copy
+   * @param c is the Channel from whom methods should be copied over
+   */
   void copyMethods (Channel *c);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
   void Print (FILE *fp);
 
+  /**
+   * Check the direction flags for an identifier that is part of the
+   * channel. 
+   *
+   * Given that the id has the direction specified, what is the
+   * channel direction?  1 = input, 2 = output, 3 = both, 0 = undetermined
+   * id is typically a fragmented piece of the channel, and hence this
+   * involves examining the channel methods as well.
+   *
+   * @param id is the part of the channel to be inspected
+   * @param isinput is 1 to check on the direction of the type
+   * assuming a "?" operation, 0 if it is a "!" operation
+   * @return 0, 1, 2, or 3 (see above).
+   */
   int chanDir (ActId *id, int isinput);
-  // given that the id has the direction specified, what is the
-  // channel direction?  1 = input, 2 = output, 3 = both, 0 = undetermined
-  // id is typically a fragmented piece of the channel, and hence this
-  // involves examining the channel methods as well.
 
+  /**
+   * One end of a channel is active and the other is passive. Only one
+   * end of the channel can be probed, and this checks if a probe has
+   * been defined that dictates the active v/s passive end of the
+   * channel.
+   *
+   * @return 1 if the send of this channel must be active, 0 if it
+   * must be passive, -1 if it is not determined by the channel type
+   */
   int mustbeActiveSend ();
-  // return 1 if send has to be active, 0 if it has to be passive, -1
-  // if not determined by the channel type.
-
+  
+  /**
+   * One end of a channel is active and the other is passive. Only one
+   * end of the channel can be probed, and this checks if a probe has
+   * been defined that dictates the active v/s passive end of the
+   * channel.
+   *
+   * @return 1 if the receive on this channel must be active, 0 if it
+   * must be passive, -1 if it is not determined by the channel type
+   */
   int mustbeActiveRecv ();
-  // return 1 if recv has to be active, 0 if it has to be passive, -1
-  // if not determined by the channel type.
-
+  
+  /**
+   * For this to work the channel must have a parent definition.
+   * @return 1 if this is a bidirectional channel, 0 otherwise
+   */
   int isBiDirectional() {
     Assert (parent, "what?");
     Channel *p = dynamic_cast<Channel *>(parent->BaseType());
@@ -1171,65 +1306,159 @@ class Channel : public UserDef {
     }
   }
  private:
-  struct act_chp_lang *methods[ACT_NUM_STD_METHODS];
-  Expr *emethods[ACT_NUM_EXPR_METHODS];
+  struct act_chp_lang *methods[ACT_NUM_STD_METHODS]; ///< methods table
+  Expr *emethods[ACT_NUM_EXPR_METHODS];		     ///< emethods table
 };
+
 
 struct act_inline_table;
 
+
+/**
+ * @class UserMacro
+ *
+ * @brief Used to hold a user-defined macro. These macros provide more
+ * convenient methods to interface with processes and data types
+ */
 class UserMacro {
 public:
+  /**
+   * Create a new user-defined macro associated with a user-defined
+   * type.
+   * @param u is the user-defined type that holds the macro
+   * @param name is the name of the macro
+   */
   UserMacro (UserDef *u, const char *name);
   ~UserMacro ();
 
   void Print (FILE *fp);
+
+  /**
+   * Expand a user-defined macro. The is_proc flag is used because
+   * process user-macros and data type user-macros are slightly
+   * different: a process macro inherits direction flags for the
+   * environment of the process rather than the process itself
+   */
   UserMacro *Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_proc);
 
+  /**
+   * Add a port to the macro
+   * @param it is the type of the macro port
+   * @param name is the name of the port
+   */
   int addPort (InstType *it, const char *name);
 
+  /**
+   * @return the name of the macro
+   */
   const char *getName () { return _nm; }
+
+  /**
+   * @return the number of ports for the macro
+   */
   int getNumPorts() const { return nports; }
+
+  /**
+   * Returns the name of a port for this macro
+   * @param i is the port number
+   * @return the name of the specified port
+   */
   const char *getPortName (int i) const { return port_n[i]; }
+
+  /**
+   * Returns the type of a port for this macro
+   * @param i is the port number
+   * @return the type of the specified port
+   */
   InstType *getPortType (int i) const { return port_t[i]; }
 
+  /**
+   * Sets the body of the macro to be the specified value
+   */
   void setBody (struct act_chp_lang *);
 
+  /**
+   * Given an instance name and bindings for all the macro ports in
+   * the act_inline_table, return the CHP body fragment that is the
+   * result of the macro expansion
+   * @param instnm is the name of the instance
+   * @param tab is the binding table
+   * @return the chp body fragment that results from the substitution.
+   */
   struct act_chp_lang *substitute (ActId *instnm, act_inline_table *tab); 
 
 private:
-  const char *_nm;
-  UserDef *parent;		/**< user-defined type with this macro */
+  const char *_nm;	     ///< name of the macro
+  UserDef *parent;	     ///< user-defined type with this macro
 
-  int nports;			/**< number of ports */
-  InstType **port_t;		/**< port types */
-  const char **port_n;		/**< port names */
+  int nports;		     ///< number of ports
+  InstType **port_t;	     ///< port types
+  const char **port_n;	     ///< port names
 
-  struct act_chp_lang *c;	/**< body */
+  struct act_chp_lang *c;    ///< body
 };
 
 
-
+/**
+ * @class TypeFactory
+ *
+ * @brief This is the class used to create all instance types. It also
+ * caches types to reduce memory usage.
+ *
+ * All types should be created using the static TypeFactory
+ * methods. In addition, the TypeFactory provides methods that can be
+ * used to inspect attributes of types (e.g. is this a user-defined
+ * type?)
+ *
+ */
 class TypeFactory {
  private:
-  static TypeFactory *tf;
+  static TypeFactory *tf;	///< there can only be one TypeFactory
+				///in the system, and this is it.
+  
   /**
-   * Built-in parameter types: only one copy of these can exist, since
-   * they do not have any parameters themselves
+   * Built-in parameter type for a pint: only one copy of this type
+   * can exist, since there are no parameters.
    */
-  static InstType *pint, *pints;
+  static InstType *pint;
+  
+  /**
+   * Built-in parameter type for a pints: only one copy of this type
+   * can exist, since there are no parameters. NOTE: THIS IS UNUSED
+   */
+  static InstType *pints;
+  
+  /**
+   * Built-in parameter type for a preal: only one copy of this type
+   * can exist, since there are no parameters.
+   */
   static InstType *preal;
+
+  /**
+   * Built-in parameter type for a pbool: only one copy of this type
+   * can exist, since there are no parameters.
+   */
   static InstType *pbool;
 
   /**
-   * Five types of bool types: NONE, IN, OUT, INOUT, OUTIN 
+   * Five types of bool types: NONE, IN, OUT, INOUT, OUTIN.
    */
   static InstType *bools[5];
 
   /**
-   * Const exprs
+   * Constant expr E_TRUE. This is used to cache expressions.
    */
   static Expr *expr_true;
+
+  /**
+   * Constant expr E_FALSE. This is used to cache expressions.
+   */
   static Expr *expr_false;
+
+  /**
+   * Constant expr E_INT. This is used to cache constant integer
+   * expressions. The hash table maps integers to the Expr *.
+   */
   static struct iHashtable *expr_int;
 
   /**
@@ -1248,11 +1477,6 @@ class TypeFactory {
    * Hash table for ptype types. Uses channel hash functions.
    */
   static struct cHashtable *ptypehash;
-
-  /**
-   * Hash table for const exprs 
-   */
-  static struct cHashtable *ehash;
 
   /**
    * Helper functions for hash table operations.
@@ -1285,13 +1509,33 @@ class TypeFactory {
   void operator delete (void *);
 
   /** 
-   * Return unique pointer to the parameterized type
+   * @return the unique pointer to a pint
    */
   InstType *NewPInt ()  { return pint; }
+
+  /**
+   * @return the unique pointer to a pints
+   */
   InstType *NewPInts ()  { return pints; }
+
+  /**
+   * @return the unique pointer to a pbool
+   */
   InstType *NewPBool () { return pbool; }
+
+  /**
+   * @return the unique pointer to a preal
+   */
   InstType *NewPReal () { return preal; }
+
+  /**
+   * @return the unique pointer to the ptype InstType
+   */
   InstType *NewPType (Scope *s, InstType *t);
+
+  /**
+   * @return the unique pointer to a Ptype
+   */
   PType *NewPType (InstType *t);
 
   /**
@@ -1334,12 +1578,16 @@ class TypeFactory {
    *
    * \param dir is the direction flag for the type
    * \param s is the scope in which the channel is created
-   * \param n are the number of types in the type list for the channel
-   * \param l is an array that corresponds to the list of types for
-   * the channel
+   * \param l is the data type for the channel
+   * \param ack is the "ack" type for the channel (bi-directional
+   * channels)
    * \return a unique pointer to the specified channel type
    */
   InstType *NewChan (Scope *s, Type::direction dir, InstType *l, InstType *ack);
+
+  /**
+   * Similar to NewChan(), but returns the Chan type rather than an InstType.
+   */
   Chan *NewChan (InstType *l, InstType *ack);
 
   /**
@@ -1352,65 +1600,148 @@ class TypeFactory {
 
 
   /**
-   * Returns a unique pointer to a constant expression
+   * Returns a unique pointer to a constant expression. This
+   * expression pointer is cached so this should never be free'ed.
+   * @return a cached expression pointer that is equal to the one
+   * passed in.
    */
   static Expr *NewExpr (Expr *e);
 
+  /**
+   * @return the TypeFactory used by the program/library.
+   */
   static TypeFactory *Factory() { return tf; }
   
   /** 
-   * Initialize and allocate the first type factory object 
+   * Initialize and allocate the first type factory object.
    */
   static void Init ();
 
 
   /**
-   * Determines if the specified type is a data type or not
+   * Determines if the specified type is a data type or not. Note: if
+   * the type is a structure, then isDataType will return 0.
    *
    * @param t is the type to be inspected
    * @return 1 if it is a valid data type, 0 otherwise
    */
   static int isDataType (const Type *t);
+
+  /** see the other isDataType() method */
   static int isDataType (const InstType *t);
 
+  /**
+   * Determines if the specified type is a built-in int<> type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is an int<>, 0 otherwise
+   */
   static int isIntType (const Type *t);
+  
+  /** see the other isIntType() method */
   static int isIntType (const InstType *t);
 
+  /**
+   * Determines if the specified type is a built-in pint type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a pint, 0 otherwise
+   */
   static int isPIntType (const Type *t);
+
+  /** see other isPIntType() method */
   static int isPIntType (const InstType *t);
 
+  /**
+   * Determines if the specified type is a built-in pints type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a pints, 0 otherwise
+   */
   static int isPIntsType (const Type *t);
+
+  /** see other isPIntsType() method */
   static int isPIntsType (const InstType *t);
 
+  /**
+   * Determines if the specified type is a built-in bool type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a bool, 0 otherwise
+   */
   static int isBoolType (const Type *t);
+
+  /** see other isBoolType() method */
   static int isBoolType (const InstType *it);
   
+  /**
+   * Determines if the specified type is a built-in pbool type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a pbool, 0 otherwise
+   */
   static int isPBoolType (const Type *t);
+
+  /** see other isPBoolType() method */
   static int isPBoolType (const InstType *it);
 
+  /**
+   * Determines if the specified type is a built-in preal type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a preal, 0 otherwise
+   */
   static int isPRealType (const Type *t);
+
+  /** see other isPRealType() method */
   static int isPRealType (const InstType *it);
 
+  /**
+   * Determines if the specified type is a user-defined type
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a UserDef type, 0 otherwise
+   */
   static int isUserType (const Type *t);
+  
+  /** see other isUserType() method */
   static int isUserType (const InstType *it);
 
   /**
-   * Determines if the specified type is a channel type or not
+   * Determines if the specified type is a channel type or not. This
+   * returns 1 if it is a user-defined channel or a built-in channel type.
    *
    * @param t is the type to be inspected
    * @return 1 if it is a valid channel type, 0 otherwise
    */
   static int isChanType (const Type *t);
+
+  /** see other isChanType() method */
   static int isChanType (const InstType *it);
 
-  /* 1 only on ``chan(...)'', not on userdefined channels */
+  /**
+   * Determines if the specified type is a built-in chan(...) type.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid built-in channel type, 0 otherwise
+   */
   static int isExactChanType (const Type *t);
+
+  /** see other isExactChanType() method */
   static int isExactChanType (const InstType *it);
 
-  /* 1 only for  valid data types within a chan(...) 
-     Assumes that "t" is in fact a data type as a pre-condition.
+  /**
+   * Determines if the specified type is a valid type to be included
+   * within the data type for a built-in chan(..). 
+   *
+   * Assumes that "t" is in fact a data type as a pre-condition.
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid channel data type, 0 otherwise
    */
   static int isValidChannelDataType (const Type *t);
+  
+  /** see other isValidChannelDataType() method */
   static int isValidChannelDataType (const InstType *t);
 
   /**
@@ -1420,6 +1751,8 @@ class TypeFactory {
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
   static int isProcessType (const Type *t);
+  
+  /** see other isProcessType() method */
   static int isProcessType (const InstType *it);
 
   /**
@@ -1429,6 +1762,8 @@ class TypeFactory {
    * @return 1 if it is a valid function, 0 otherwise
    */
   static int isFuncType (const Type *t);
+
+  /** see other isFuncType() method */
   static int isFuncType (const InstType *it);
 
 
@@ -1439,6 +1774,8 @@ class TypeFactory {
    * @return 1 if it is a valid process/cell, 0 otherwise
    */
   static int isInterfaceType (const Type *t);
+
+  /** see other isInterfaceType() method */
   static int isInterfaceType (const InstType *it);
   
   /**
@@ -1448,72 +1785,145 @@ class TypeFactory {
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
   static int isPTypeType (const Type *t);
+
+  /** see other isPTypeType() method */
   static int isPTypeType (const InstType *it);
 
 
   /**
-   * Determines if the specified type is a parameter type
+   * Determines if the specified type is a parameter type (pint,
+   * pints (UNUSED), pbool, preal, ptype).
    *
    * @param t is the type to be inspected
    * @return 1 if it is a valid ptype type, 0 otherwise
    */
   static int isParamType (const Type *t);
+
+  /** see other isParamType() method */
   static int isParamType (const InstType *it);
 
   /**
-   * Determines the bit-width of the type
+   * Determines the bit-width of the type.
    * The type must be either a channel or a data type. If it isn't,
-   * the function returns -1
+   * the function returns -1.
+   * If the type is an enumeration, the bitwidth is the smallest # of
+   * bits needed to hold the enumeration count.
+   *
+   * @return the bit-width of the type, or the type sent over the
+   * channel in the case of channel types.
    */
   static int bitWidth (const Type *t);
+
+  /** see other bitWidth() method */
   static int bitWidth (const InstType *t);
 
   /**
    * For bidirectional channels only. Returns 0 for normal channels,
-   * -1 for non-channels
+   * -1 for non-channels. This returns the bit-width (like the
+   * bitWidth() method) for the acknowledge type for the channel.
+   *
+   * @return the bit-width of the acknowledgment end of the channel.
    */
   static int bitWidthTwo (const Type *t);
+
+  /** see other bitWidthTwo() method */
   static int bitWidthTwo (const InstType *t);
-  
-  static int boolType (const Type *t); // 1 if a boolean within a channel or
-				// a boolean type, -1 if NULL parent
+
+  /**
+   * 1 if a boolean within a channel or
+   * a boolean type, -1 if NULL parent
+   *
+   * @return 1 if this is a Boolean data type or a channel that
+   * carries a Boolean data type.
+   */
+  static int boolType (const Type *t); 
+
+  /** see other boolType() method */
   static int boolType (const InstType *t);
 
+  /**
+   * A UserDef that is a Data type can hold a structure. A data type
+   * is a structure when it does not implement a built-in data type.
+   * Note that currently structures cannot contain arrays.
+   * @return 1 if this is a structure, 0 otherwise
+   */
   static int isStructure (const Type *t);
+
+  /** see other isStructure() method */
   static int isStructure (const InstType *it);
 
   /**
    * Is this a user-defined enumeration?
+   * @return 1 if this is a user-defined enumeration type, 0 otherwise
    */
   static int isUserEnum (const Type *t);
+
+  /** see other isUserEnum() method */
   static int isUserEnum (const InstType *it);
+  
+  /**
+   * Is this a user-defined pure enumeration (one that cannot be used
+   * as an integer)
+   * @return 1 if this is a user-defined pure enumeration type, 0 otherwise
+   */
   static int isUserPureEnum (const Type *t);
+
+  /** see other isUserPureEnum() method */
   static int isUserPureEnum (const InstType *it);
 
   /**
-   * Return enumeartion width, -1 if not a nenumeration
+   * Used to determine the # of values in the enumeration. Return
+   * enumeartion width, -1 if not a nenumeration. Works for channels
+   * too, except it refers to the type within the channel.
+   * 
+   * @return the number of values in the enumeration, or the
+   * enumeration for the channel type.
    */
   static int enumNum (const Type *t);
   static int enumNum (const InstType *t);
 
   /**
-   * Return 1 if this is a user-defined or built-in enumeration
+   * Test if a type is an enumeration (user-defined or built-in)
+   *
+   * @return 1 if this is a user-defined or built-in enumeration
    */
   static int isEnum (const Type *t);
+
+  /** see other isEnum() method */
   static int isEnum (const InstType *t);
   
-  /*-- a user type that is rooted in a bool or a bool --*/
+  /**
+   * This is used to check if a user type that is rooted in a bool or
+   * a bool itself
+   * @return 1 if the base type is a bool, 0 otherwise
+   */
   static int isBaseBoolType (const Type *t);
+
+  /** see other isBaseBoolType() method */
   static int isBaseBoolType (const InstType *t);
 
-  /*-- a user type that is rooted in an int or an int --*/
+  /**
+   * This is used to check if a user type that is rooted in an int/int-enum or
+   * an int/int-enum itself. An "int-enum" is an enum that can also be
+   * treated as an int. 
+   * @return 1 if the base type is a bool, 0 otherwise
+   */
   static int isBaseIntType (const Type *t);
+
+  /** see other isBaseIntType() method */
   static int isBaseIntType (const InstType *t);
 
-  /*-- extract data type field from a channel --*/
+  /**
+   * @return the data type for the channel specified, NULL on an error
+   */
   static InstType *getChanDataType (const InstType *t);
+
+  /**
+   * @return the ack type for the channel specified (the data type for
+   * the acknowledge end in the case of a bi-directional channel),
+   * NULL on error.
+   */
   static InstType *getChanAckType (const InstType *t);
-  
 };
 
 
