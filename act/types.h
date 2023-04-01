@@ -770,19 +770,25 @@ class Process : public UserDef {
   void Print (FILE *fp);
 
   /**
-   * @return 2 if this is a black-box definition, 0 otherwise
+   * @return 1 if this is a black-box definition, 0 otherwise
    */
   int isBlackBox();
 
   /**
    * A low level blackbox: might have CHP, HSE, or dataflow models,
-   * but does not have any circuits and is a leaf cell
+   * but does not have any circuits (prs) and is a leaf cell. Low
+   * level black boxes are used to provide a simulation model, but
+   * where the circuit implementation is provided by a macro. This is
+   * used for memories, for example.
+   *
    * @return 1 if this is a low-level black box, 0 otherwise
    */
   int isLowLevelBlackBox ();	
 				
   /**
-   * Add an interface specification that this process exports
+   * Add an interface specification that this process exports. Note
+   * that a process can export multiple interfaces.
+   *
    * @param iface is the interface exported
    * @param imap is the name mapping from the process ports to the
    * interface ports
@@ -865,22 +871,41 @@ class Process : public UserDef {
   int findGlobal (const char *s);
     
  private:
-  unsigned int is_cell:1;	/**< 1 if this is a defcell, 0 otherwise  */
-  list_t *ifaces;		/**< list of interfaces, map pairs */
+  unsigned int is_cell:1;	///< 1 if this is a defcell, 0 otherwise 
+  list_t *ifaces;		///< a mixed list of interface, map
+				///pairs. The map is also a list of
+				///oldname, newname pairs
 
-  list_t *used_globals;		// list of used globals
+  list_t *used_globals;		///< list of used globals as ActId
+				///pointers
 
-  int bufcnt;
-  list_t *changelist;
+  int bufcnt;			///< used to generate unique buffer
+				///names for buffer insertion
 };
 
 
 /**
  *
- * Functions
+ * @class Function
  *
- *  Looks like a process. The ActBody consists of a chp body,
- *  nothing else.
+ * @brief This holds information about ACT functions. ACT functions
+ * are of two types:
+ *   - parameter functions: all arguments and return types are
+ * parameter types. These functions are evaluated at expansion time
+ * and replaced by constant values in the circuit.
+ *   - run-time functions: all arguments/return values are
+ * non-parameter types. These functions are used in CHP and dataflow
+ * bodies.
+ *
+ * Functions can also be externally defined in C.
+ *
+ * Looks like a process. The ActBody consists of a chp body, nothing
+ * else.
+ *
+ * A function can be one that is amenable to a simple inlining
+ * operation. This is the case for any function that does not have an
+ * internal loop, since conditional assignments can be converted into
+ * a normal expression using the "? : " operator.
  *
  */
 class Function : public UserDef {
@@ -888,50 +913,149 @@ class Function : public UserDef {
   Function (UserDef *u);
   ~Function ();
 
+  /**
+   * Set the return type for the function
+   * @param i is the return type
+   */
   void setRetType (InstType *i) { ret_type = i; }
+
+  /**
+   * @return the function return type
+   */
   InstType *getRetType () { return ret_type; }
 
+  /**
+   * Expand the function
+   */
   Function *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  /**
+   * Print the function
+   */
   void Print (FILE *fp);
 
+  /**
+   * Evaluate the function. This should only be called for parameter
+   * functions. The arguments must all be constant values
+   * (i.e. already evaluated by the caller).
+   *
+   * @param ns is the namespace 
+   * @param nargs are the number of arguments passed into the function
+   * @param args is the list of arguments
+   * @return the result of evaluating the expression
+   */
   Expr *eval (ActNamespace *ns, int nargs, Expr **args);
+
+  /**
+   * Symbolic evaluation of a function. Returns an array of
+   * expressions. The # of expressions corresponds to the # of
+   * flattened components in a structure. This does not work if the
+   * function has an internal loop. The isSimpleInline() method can be
+   * used to determine if this function can be called.
+   *
+   * @param nargs are the number of arguments
+   * @param args are the arguments
+   * @return the symbolic result
+   */
   Expr **toInline (int nargs, Expr **args);
 
+  /**
+   * @return 1 if this is an external function, 0 otherwise
+   */
   int isExternal ();
+  
+  /**
+   * @return 1 if this is a simple inline---an inline that can be
+   * expressed as a simple expression.
+   */
+  
   int isSimpleInline () { return is_simple_inline; }
+
+  /**
+   * This computes the "simple inline" flag
+   */
   void chkInline ();
   
  private:
-  InstType *ret_type;
-  int is_simple_inline;
+  InstType *ret_type;		///< holds return type
+  int is_simple_inline;		///< holds the simple inline flag
 
-  void _chk_inline (Expr *e);
-  void _chk_inline (struct act_chp_lang *c);
+  void _chk_inline (Expr *e);	///< used to check simple inline
+  void _chk_inline (struct act_chp_lang *c); ///< used to check simple inline
 };
 
-#define ACT_NUM_STD_METHODS 8
-#define ACT_NUM_EXPR_METHODS 2
 
+#define ACT_NUM_STD_METHODS 8    ///< number of standard methods for
+				 ///data/channel types
+
+#define ACT_NUM_EXPR_METHODS 2  ///< number of "expression" methods
+				///that can be specified
+
+/**
+ * A pre-defined array that holds all the method names supported for
+ * channel and data types.
+ */
 extern const char *act_builtin_method_name[ACT_NUM_STD_METHODS];
+
+/**
+ * A pre-defined array that holds all the method names corresponding
+ * to methods that return an expression
+ */
 extern const char *act_builtin_method_expr[ACT_NUM_EXPR_METHODS];
+
+/**
+ * For each built-in method that returns an expression, this is 1 if
+ * the expression return type is Boolean, 0 otherwise.
+ */
 extern const int act_builtin_method_boolret[ACT_NUM_EXPR_METHODS];
 
+
+/**
+ * This is used as an index into a methods table for channel and
+ * user-defined types.
+ */
 enum datatype_methods {
-    ACT_METHOD_SET = 0,
-    ACT_METHOD_GET = 1,
-    ACT_METHOD_SEND_REST = 2,
-    ACT_METHOD_RECV_REST = 3,
-    ACT_METHOD_SEND_UP = 4,
-    ACT_METHOD_RECV_UP = 5,
-    ACT_METHOD_SEND_INIT = 6,
-    ACT_METHOD_RECV_INIT = 7,
-    ACT_METHOD_SEND_PROBE = 0 + ACT_NUM_STD_METHODS,
-    ACT_METHOD_RECV_PROBE = 1 + ACT_NUM_STD_METHODS
+    ACT_METHOD_SET = 0,		///< the set method used for channel
+				///and data types
+    
+    ACT_METHOD_GET = 1,		///< the get method used for channel
+				///and data types
+    
+    ACT_METHOD_SEND_REST = 2,	///< the reset part of the sender
+				///handshake, if any
+    
+    ACT_METHOD_RECV_REST = 3,	///< the reset part of the receive
+				///handshake, if any
+    
+    ACT_METHOD_SEND_UP = 4,	///< the second part of the first half
+				///of the send handshake, if any
+    
+    ACT_METHOD_RECV_UP = 5,	///< the second part of the first half
+				///of the receive handshake, if any
+    
+    ACT_METHOD_SEND_INIT = 6,	///< on Reset, the initialization for
+				///the sender end of the channel
+    
+    ACT_METHOD_RECV_INIT = 7,	///< on Reset, the initialization for
+				///the receiver end of the channel
+    
+    ACT_METHOD_SEND_PROBE = 0 + ACT_NUM_STD_METHODS, ///< expression
+						     ///method for
+						     ///sender probe
+    
+    ACT_METHOD_RECV_PROBE = 1 + ACT_NUM_STD_METHODS ///< expression
+						    ///method for recver probe
 };
+
 
 /**
  *
- * User-defined data types
+ * @class Data
+ * 
+ * @brief A user-defined data types
+ *
+ * A data type can implement a built-in data type (int/bool/enum), or
+ * be a structure.
  *
  */
 class Data : public UserDef {
@@ -1001,6 +1125,9 @@ private:
 							for this data type */
   list_t *enum_vals;
 };
+
+
+
 
 class Channel : public UserDef {
  public:

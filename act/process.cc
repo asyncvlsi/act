@@ -39,7 +39,6 @@ Process::Process (UserDef *u) : UserDef (u)
   is_cell = 0;
   b = NULL;
   ifaces = NULL;
-  changelist = NULL;
   bufcnt = 0;
   used_globals = NULL;
 }

@@ -648,8 +648,11 @@ public:
   act_languages *Expand (ActNamespace *ns, Scope *s);
 
   /**
+   * Used to check if a circuit description language is
+   * included. A circuit description langugae is chp, hse, prs, or
+   * dataflow.
    * @return 1 if the language block has some circuit description
-   * language, 0 otherwise
+   * language, 0 otherwise.
   */
   int hasCktLang () {
     if (chp || hse || prs || dflow) return 1;
@@ -657,6 +660,8 @@ public:
   }
 
   /**
+   * Used to check if a netlist description language exists. The netlist
+   * description language is prs.
    * @return 1 if the language is at a level of detail sufficient to
    * generate a netlist (i.e. a prs sub-language exists), 0 otherwise
   */

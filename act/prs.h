@@ -44,10 +44,16 @@ extern "C" {
 void act_init_prs_expr (LFILE *);
 int act_is_a_prs_expr (LFILE *);
 void act_free_a_prs_expr (void *);
-void act_free_a_prs_exexpr (void *);
 void *act_parse_a_prs_expr (LFILE *);
 void *act_walk_X_prs_expr (ActTree *, void *);
 
+/**
+ * This is used to free an expanded Expr pointer. It is here since the
+ * code is almost identical to free'ing a normal expression that was
+ * constructed by the parser.
+ */  
+void act_free_a_prs_exexpr (void *);
+  
 #ifdef __cplusplus
 }
 #endif
