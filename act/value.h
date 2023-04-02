@@ -323,62 +323,190 @@ public:
 };
 
 
-/*
-  Values: this is the core expanded data structure
-*/
+/**
+ * @class ValueIdx
+ *
+ * @brief This class is used to create an instance in a scope. The
+ * name comes from the fact that this is used to keep track of the
+ * index of a value within a particular type (rather than a flat data
+ * structure, one per instance) and so is not defined as a
+ * value-per-instance, but rather a value-per-type.
+ *
+ * When a value is "allocated", it means it contains information about
+ * its value. 
+ * 
+ * A value can also have a list of instance attributes associated with
+ * it. These are also held in this data structure.
+ *
+ */
 class ValueIdx {
 public:
-  InstType *t;
-  struct act_attr *a;			// attributes for the value
-  struct act_attr **array_spec;	// array deref-specific value
+  InstType *t;			///< the type corresponding to this
+				///particular instance
   
-  unsigned int init:1;	   /**< Has this been allocated? 
-			         0 = no allocation
-				 1 = allocated
-			    */
-  unsigned int immutable:1;	/**< for parameter types: immutable if
-				   it is in a namespace or a template
-				   parameter */
+  struct act_attr *a;		///< instance attributes for the value
+  struct act_attr **array_spec;	///< array deref-specific attributes,
+				///if any
+  
+  unsigned int init:1;	   ///< Has this been allocated? 0 = no
+			   /// allocation, 1 = allocated
 
-  ActNamespace *global;	     /**< set for a namespace global; NULL
-				otherwise. Note that global =>
-				immutable, but not the other way
-				around. */
+  unsigned int immutable:1;	///< for parameter types: immutable if
+				///it is in a namespace or a template
+				///parameter
+
+  ActNamespace *global;	     ///< set for a namespace global; NULL
+			     ///otherwise. Note that global =>
+			     ///immutable, but not the other way around
 
   union {
-    long idx;		   /**< Base index for allocated storage for
-			      ptypes */
+    long idx;		   ///< Base index for allocated storage for
+			   ///parameterized types
     struct {
-      act_connection *c;	/**< For non-parameter types */
-      const char *name;		/**< the base name, from the hash
-				   table lookup: DO NOT FREE */
-    } obj;
-  } u;
+      act_connection *c;	///< For non-parameter types, the
+				///connection pointer. This is
+				///allocated in a lazy fashion.
+      
+      const char *name;		///<  the base name, from the hash
+				///table lookup: DO NOT FREE
 
-  /* assumes object is not a parameter type */
+    } obj;			///< information about the object for
+				///non-paramter types
+    
+  } u;				///< the value associated with this instance
+
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * For non-parameter types, this checks if there is a connection
+   * pointer associated with this object.
+   * @return true if there is a connection pointer, false otherwise
+   */
   bool hasConnection()  { return init && (u.obj.c != NULL); }
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * Checks if there is any connection associated with this object
+   * @return true if there is any connection/subconnection to this
+   * object, false otherwise
+   */
   bool hasAnyConnection() { if (!hasConnection()) return false; else return u.obj.c->hasAnyConnection(); }
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * Checks if there is a connection pointer associated with a
+   * sub-connection at index i for this object
+   * @return true if there is a sub-connection at index i, false
+   * otherwise
+   */
   bool hasConnection(int i) { return init && (u.obj.c != NULL) && (u.obj.c->a) && (u.obj.c->a[i]); }
 
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * Check if there are any sub-connections to this object
+   * @return true if there are any sub-connections, false otherwise
+   */
   bool hasSubconnections() { return hasConnection() && connection()->hasSubconnections(); }
-  
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * Check if this is a primary instance
+   * @return true if this is the primary (canonical) instance, false otherwise
+   */
   bool isPrimary() { return !hasConnection() || (u.obj.c->isPrimary()); }
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * Check if the sub-connection at index i is the primary instance,
+   * @return true if the i-th sub-connection is the primary instance,
+   * false otherwise.
+   */
   bool isPrimary(int i) { return !hasConnection(i) || (u.obj.c->a[i]->isPrimary()); }
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * @return the connection pointer associated with this instance,
+   * NULL if none yet
+   */
   act_connection *connection() { return init ? u.obj.c : NULL; }
+
+  /**
+   * ONLY FOR NON-PARAM TYPES.
+   * @return the string name for the instance
+   */
   const char *getName() { return u.obj.name; }
 
+  /**
+   * @return the attributes associated with this instance
+   */
   act_attr *getAttr() { return a; }
+
+  /**
+   * For attributes associated with array instances
+   * @param i is the index into the array
+   * @return the attributes associated with the sub-array at index i
+   * for this instance
+   */
   act_attr *getAttrIdx(int i) { return array_spec ? array_spec[i] : NULL; }
+
+  /**
+   * Check if there is an array-specific attribute specifier
+   * @return true if an array specifier exists, false otherwise
+   */
   bool haveAttrIdx() { return array_spec ? true : false; }
+
+  /**
+   * @return the number of indices that are valid for the attribute
+   * index check
+   */
   int numAttrIdx();
 };
 
+/**
+ * Function used to actually make a connection. This also determines
+ * which of the two connections should be  the canonical one according
+ * to the rules for an act_connection.
+ *
+ * @param id1 is the id for the first connection element
+ * @param c1 is the connection pointer for id1
+ * @param id2 is the id for the second connection element
+ * @param c2 is the connection pointer for id2
+ * @param ux is the user-defined type, if any for the connection
+ * context. This is needed to determine which of the two is
+ * canonical. 
+ */
 void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 			ActId *id2, act_connection *c2);
 
+/**
+ * Merge the attributes of two instances. The vx1 and vx2 pointers are
+ * used for error reporting only. The real merge happens between the
+ * attribute lists provided.
+ *
+ * @param vx1 is the name of one of the instances
+ * @param vx2 is the name of the other instance
+ * @param a is the attribute list that should be merged
+ * @param x is the attribute list into which the attributes should be
+ * merged
+ *
+ */
 void act_merge_attributes (ValueIdx *vx1, ValueIdx *vx2,
-			   struct act_attr **x, act_attr *a);
+			   struct act_attr **x, struct act_attr *a);
+
+/**
+ * The union-find connection function. Make a simple connection,
+ * combining c1 and c2. c1 has the canonical connection pointer.
+ *
+ * @param c1 is the canonical one
+ * @param c2 is the one to connect to c1
+ */
 void _act_mk_raw_connection (act_connection *c1, act_connection *c2);
+
+/**
+ * Print out the attribute list
+ * @param fp is the output file
+ * @param a is the attribute list
+ */
 void act_print_attributes (FILE *fp, act_attr *a);
 
 #endif /* __ACT_VALUE_H__ */
