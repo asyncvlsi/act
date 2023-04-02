@@ -20,21 +20,13 @@
  **************************************************************************
  */
 #include <act/expr.h>
+#include <act/expr_extra.h>
 #include <common/file.h>
 #include <common/misc.h>
 #include <common/mstring.h>
 #include <string.h>
 
 void *act_parse_a_fexpr (LFILE *);
-
-/*--- WARNING: replicated here ---*/
-
-#define E_ANDLOOP (E_END + 21) 
-#define E_ORLOOP (E_END + 22)
-#define E_BUILTIN_BOOL (E_END + 23)
-#define E_BUILTIN_INT  (E_END + 24)
-#define E_ENUM_CONST   (E_END + 25)
-
 
 static int tokand, tokor, lpar, rpar, ddot, colon;
 static int double_colon, comma;

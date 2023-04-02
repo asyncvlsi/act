@@ -31,89 +31,294 @@ struct act_attr;
 
 #include <act/basetype.h>
 
-/*
-  Connections
-
-  For non-parameter types, we represent connections.
-   - ring of connections
-   - union-find tree
-*/
+/**
+ * @class act_connection
+ *
+ * @brief Connections
+ *
+ * This is the core data structure that maintains hierarchical
+ * connectivity information. An act_connection pointer is associated
+ * with a scope. Within the scope, the act_connection pointer can be
+ * used to identify the unique instance (or part of an instance)
+ * associated with an identifier within the scope.
+ *
+ * When there is a parameter, we don't use connection pointers since
+ * we simply bind each parameter to its value. 
+ *
+ * For non-parameter types, we represent connections using a
+ * combination of a union-find tree (to make it cheap to find the
+ * canonical connection pointer), and a ring of connections (so that
+ * we can find all other instances/instance fragments that are
+ * connected together).
+ *
+ * For simple connections (e.g. x = y, where x and y are bool types),
+ * the union-find + tree structure is easy to understand.
+ *  
+ * We also directly represent connections between user-defined types
+ * as well as arrays. So for example in the case of
+ * ```
+ *   bool x[4], y[4];
+ *   x = y
+ * ```
+ * we would represent this as a *single* connection between two
+ * arrays, rather than four element-wise connections between bools.
+ * We could also have situations such as:
+ * ```
+ *   bool x[4], y[4], z;
+ *   x = y;
+ *   x[3] = z;
+ * ```
+ * In this case, we have both an array connection, as well as a
+ * connection to an individual element.
+ *
+ * To represent complex connections, each instance has a potential
+ * connection *tree*. For an array like `x` above, that means we have:
+ *   - a connection pointer for `x` itself 
+ *   - sub-connections within `x`. These are represented as an array
+ * of act_connection pointers within the connection structure for
+ * `x`.
+ * Each element of the sub-connection array corresponds to an element
+ * of the array. The same idea is used for user-defined types. The
+ * sub-connection array corresponds to the port parameters from left
+ * to right. For an array of user-defined types, there are two levels
+ * of hierarchy: the first is for the array, and then the next is for
+ * the user-defined type.
+ * 
+ * In a connection tree, the parent pointer can be used to go back up in
+ * the connection tree.
+ *
+ * Connections are mainted in a manner that the root of the union-find
+ * tree is the _canonical_ connection pointer for a particular
+ * connection. The rules for being canonical are as follows:
+ *   - a global connection takes precedence over a non-global
+ * connection
+ *   - a port connection takes precedence over a non-port connection
+ *   - an array connection takes precedence over a non-arrayed
+ * connection (this is to keep arrays as "compact" as possible later
+ * on in the design flow)
+ *   - all other things being the same, the smallest (in terms of
+ * string lexicographic ordering) name with the fewest hierarchy
+ * separators is given precedence (so if a.b = c, then c would be used
+ * as the canonical name).
+ *
+ * Subconnection pointers are allocated in a lazy fashion.
+ *
+ * Connections to globals are special. This is because we do not
+ * replicate all the connection pointers on a per-instance
+ * basis. Instead, if a global signal is connected to a local one
+ * within a scope, then that is represented by a single
+ * connection---the representative for all instances of the entire
+ * user-defined type.
+ */
 class act_connection {
 public:
-  ValueIdx *vx;			// identifier that has been allocated
+  ValueIdx *vx;			///< identifier that has been
+				///allocated within the scope of this
+				///connection that corresponds to this
+				///particular connection pointer. Note
+				///that this could be NULL for
+				///sub-connection elements. When a
+				///user-defined type is traversed, the
+				///vx pointer switches scope to the
+				///user-defined type self. This is
+				///done to speed up lookups.
 
-  act_connection *parent;	// parent for id.id or id[val]
+
+  act_connection *parent;	///< parent in the subconnection tree
+				///for id.id or id[val]
   
-  act_connection *up;
-  act_connection *next;
-  act_connection **a;	// slots for root arrays and root userdefs
+  act_connection *up;		///< up pointer in the union-find data
+				///structure
+  
+  act_connection *next;	        ///< next pointer in the ring of
+				///connections used to find all other
+				///connections to this particular one.
+  
+  act_connection **a;	///< slots for root arrays and root userdefs
+			///for sub-connections
 
-
+  /**
+   * Constuctor
+   * @param _parent is the parent pointer, if any
+   */
   act_connection(act_connection *_parent = NULL);
 
   
-
-  ActId *toid();		// the ActId name for this connection entity
+  ActId *toid();		///< convert the connection pointer
+				///into a freshly allocated ActId name
+				///corresponding to this connection element.
   
-  bool isglobal();		// returns true if this is a global
-				// signal
+  bool isglobal();		///< returns true if this is a global
+				/// signal
 
-  ActNamespace *getnsifglobal(); // get namespace for a global signal
+  ActNamespace *getnsifglobal(); ///< get namespace for a global
+				 ///signal, if any
 
+  /**
+   * Check if this is a primary connection pointer: the canonical one
+   * for this connection. This is done by checking the up pointer in
+   * the union-find tree.
+   * @return true if this is a primary connection, false otherwise
+   */
   bool isPrimary() { return (up == NULL) ? 1 : 0; }
+
+  /**
+   * Check if the i-th sub-connection for this type is a primary
+   * connection. Note that the sub-connections may not exist so a
+   * non-NULL test is part of this function.
+   *
+   * This should only be called if hasSubconnections() is true.
+   *
+   * @param i is the index of the sub-connection
+   * @return true if the i-th sub-connection is a primary connection,
+   * false otherwise.
+   */
   bool isPrimary(int i)  { return a[i] && (a[i]->isPrimary()); }
 
   
-  /* return subconnection pointer; allocate slots if necessary. 
-        sz = # of subconnections possible for this object
-       idx = index of subconnection
+  /**
+   *  Return a subconnection pointer, allocating slots if necessary. 
+   *
+   *  @param sz is the # of subconnections possible for this object
+   *  @param idx is index of subconnection
+   *  @return the sub-connection slot
    */
   act_connection *getsubconn(int idx, int sz);
 
-  /* return offset of subconnection c within current connection object */
+  /**
+   * Given a sub-connection slot, find the index in the sub-connection
+   * array that matches this one. NOTE: this is a slow call, since it
+   * does a linear search through the sub-connection pointer
+   * array. The act.suboffset_limit parameter is used to truncate the
+   * search, and print a warning.
+   *
+   * @param c is the sub-connection pointer to lookup
+   * @return offset of subconnection c within current connection
+   * object 
+   */
   int suboffset (act_connection *c);
 
-  /* return my offset within my parent */
+  /**
+   * For sub-connection pointers (note that the parent must be
+   * non-NULL!), return my offset within my parent.
+   * @return my sub-connection offset within my parent
+   */
   int myoffset () { return parent->suboffset (this); }
   
-  // returns true when there are other things connected to
-  // the object directly
+  /**
+   * Check to see if there are direct connections to this particular
+   * connection pointer. This is done by looking at the connection
+   * ring.
+   * @return true if there are direct connections, false otherwise
+   */
   bool hasDirectconnections() { return next != this; }
+
+  /**
+   * Check if there are any connections to this particular instance
+   * @return true if there are either direct connections or
+   * connections to an part of the instance
+   */
   bool hasAnyConnection();
 
-  // returns true when there is a subconnection at index i
+  /**
+   * This checks to see if there are any direct connections to the
+   * i-th subconnection for this instance
+   * @param i is the sub-connection index to inspect
+   * @return true if there are any direct connections to the i-th
+   * subconnection, false otherwise.
+   */
   bool hasDirectconnections(int i) { return a && a[i] && a[i]->hasDirectconnections(); }
   
-  // returns true if this is a complex object (array or user-defined)
-  // with potential subconnections to it
+  /**
+   * @return true if this is a complex object (array or user-defined)
+   * with potential subconnections to it, false otherwise
+   */
   bool hasSubconnections() { return a != NULL; }
+
+  /**
+   * Check to see if there are sub-connections registered for the i-th
+   * sub-connection within this object
+   * @param i is the sub-connection index to inspect
+   * @return true if there are sub-connetions at position i, false otherwise
+   */
   bool hasSubconnections(int i) { return a && a[i]; }
 
 
-  // returns the number of potential subconnections; returns 0 if none exist
+  /**
+   * Return the number of potential sub-connection slots for this
+   * instance. This corresponds to the size of the array, or the
+   * number of port parameters for a user-defined type. If the lazily
+   * allocated array pointer is NULL, this returns 0. Use this to
+   * iterate over potential sub-connection slots.
+   *
+   * @return the number of potential sub-connections
+   */
   int numSubconnections();
 
-  // returns the number of potential subconnection fields
+  /**
+   * This returns the number of subconnection slots that could exist
+   * for this particular instance. This is called by
+   * numSubconnections() when the array pointer is non-NULL
+   * @return the number of potential sub-connection slots
+   */
   int numTotSubconnections();
-  
-  ValueIdx *getvx();		/* this returns the root ValueIdx for
-				   this particular connection */
-  
+
+  /**
+   * The ValueIdx pointer for a connection is the primary instance
+   * corresponding to this particular connection pointer. For a simple
+   * instance, it is clear what it is. But for an array instance, this
+   * would be the ValueIdx for the parent. If this connection pointer
+   * corresponds to part of a user-defined type, it would be the
+   * ValueIdx for the parent as well. For arrays of user-defined
+   * types, it would be the ValueIdx  in the parent's parent.
+   *
+   * @return the ValueIdx pointer for this connection
+   */
+  ValueIdx *getvx();
+
+  /**
+   * A connection type can be identified as one of four possibilies
+   *   - 0 = standard  "x"
+   *   - 1 = array element "x[i]"
+   *   - 2 = port "x.y" 
+   *   - 3 = array element + port "x[i].y"
+   *
+   * @return the connection type for this pointer
+   */
   unsigned int getctype();
-  // 0 = standard  "x"
-  // 1 = array element "x[i]"
-  // 2 = port "x.y" 
-  // 3 = array element + port "x[i].y"
 
-  act_connection *primary(); // return primary designee for this connection
+  /**
+   * Return the primary connection pointer for this one. This does the
+   * self-flattening operation for the union-find tree
+   * @return primary connection pointer
+   */
+  act_connection *primary();
 
-  Type::direction getDir(); // get direction flags: none, in, or out.
+  /**
+   * This computes the direction flags for this connection pointer (in
+   * or out). This translates INOUT/OUTIN flags to the correct version
+   * given the context. It returns either Type::NONE, Type::IN, or
+   * Type::OUT.
+   * @return the direction flag for this connection
+   */
+  Type::direction getDir();
 
-  /* -- disconnect: only works for non-primary connections.
-     Returns true on success, false otherwise -- */
+  /**
+   * Disconnect: only works for non-primary connections.
+   * @return true on success, false otherwise
+   */
   bool disconnect ();
+
+  /**
+   * Check to see if this connection is disconnectable
+   * @return true if this can be disconnected, false otherwise
+   */
   bool disconnectable ();
 
+  /**
+   * Print the ActId corresponding to this connection pointer
+   * @param fp is the output file
+   */
   void Print (FILE *fp);
 };
 

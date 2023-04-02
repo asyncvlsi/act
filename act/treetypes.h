@@ -26,7 +26,6 @@
 
 #include <act/namespaces.h>
 #include <act/types.h>
-#include <act/expr.h>
 
 /**
  * This type is used to store "wrapped" return values for the

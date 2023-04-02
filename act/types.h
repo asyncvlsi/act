@@ -28,6 +28,7 @@
 #include <act/namespaces.h>
 #include <act/act_array.h>
 #include <act/expr.h>
+#include <act/expr_extra.h>
 #include <common/mstring.h>
 #include <act/inst.h>
 #include <string.h>
@@ -1926,66 +1927,7 @@ class TypeFactory {
   static InstType *getChanAckType (const InstType *t);
 };
 
-
-
-
-/*------------------------------------------------------------------------
- *
- *
- *  Typechecking identifiers and expression: returns -1 on failure
- *
- *
- *------------------------------------------------------------------------
- */
-#define T_ERR         -1
-
-#define T_STRICT     0x40   // a port parameter that is in the
-			    // "strict" list... i.e. not optional,
-			    // i.e. before the vertical bar
-#define T_PARAM      0x80   // a parameter type pint/... etc
-
-#define T_INT        0x1
-#define T_REAL       0x2
-#define T_BOOL       0x4
-#define T_PROC       0x5
-#define T_CHAN       0x6
-#define T_DATA_INT   0x7
-#define T_DATA_BOOL  0x8
-#define T_SELF       0x9   /* special type, "self" */
-#define T_DATA       0xa   /* structure */
-#define T_DATA_ENUM  0xb   /* enum that is not an int */
-#define T_PTYPE      0x10
-#define T_ARRAYOF    0x20
-
-#define T_FIXBASETYPE(x)  ((((x) & 0x1f) == T_DATA_BOOL) ? T_BOOL : ((((x) & 0x1f) == T_DATA_INT) ? T_INT : ((x) & 0x1f)))
-
-#define T_BASETYPE(x) ((x) & 0x1f)
-
-#define T_BASETYPE_ISNUM(x) (T_FIXBASETYPE (x) == T_INT || T_BASETYPE (x) == T_REAL)
-
-#define T_BASETYPE_ISINTBOOL(x) ((T_FIXBASETYPE (x) == T_INT) || (T_FIXBASETYPE (x) == T_BOOL))
-
-#define T_BASETYPE_INT(x) (T_FIXBASETYPE(x) == T_INT)
-
-#define T_BASETYPE_BOOL(x) (T_FIXBASETYPE(x) == T_BOOL)
-
-
-int act_type_expr (Scope *, Expr *, int *width, int only_chan = 0);
-int act_type_var (Scope *, ActId *, InstType **xit);
-int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
-		   int override_id);
-
-int act_type_conn (Scope *, ActId *, AExpr *);
-int act_type_conn (Scope *, AExpr *, AExpr *);
-int type_connectivity_check (InstType *lhs, InstType *rhs, int skip_last_array = 0);
-int type_chp_check_assignable (InstType *lhs, InstType *rhs);
-
-InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan);
-InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);
-
-void type_set_position (int l, int c, char *n);
-const char *act_type_errmsg (void);
-
+#include <act/typecheck.h>
 
 /*------------------------------------------------------------------------
  *
@@ -1993,96 +1935,130 @@ const char *act_type_errmsg (void);
  *
  *------------------------------------------------------------------------
  */
+
+/**
+ * Check if two expressions are equal. This is a structural test.
+ *
+ * @param a is the first expression
+ * @param b is the second expression
+ * @return 1 if they are equal, 0 otherwise
+ */
 int expr_equal (const Expr *a, const Expr *b);
 
+/**
+ * Print an expression to a file. This is used to print parameter
+ * expressions (e.g. in the core ACT language), and not chp/dataflow
+ * expressions.
+ *
+ * @param fp is the output file
+ * @param e is the expression
+ */
 void print_expr (FILE *fp, const Expr *e);
+
+/**
+ * Print an expression to a string buffer. This is used to print
+ * parameter expressions (e.g. in the core ACT language), and not
+ * chp/dataflow expressions.
+ *
+ * @param buf is the output buffer 
+ * @param sz is the size of the output buffer
+ * @param e is the expression
+ */
 void sprint_expr (char *buf, int sz, const Expr *e);
 
-/* unsigned variations of the functions above */
+
+/**
+ * Print an expression to a file. This is used to print unsigned
+ * expressions from chp/dataflow expressions.
+ *
+ * @param fp is the output file
+ * @param e is the expression
+ */
 void print_uexpr (FILE *fp, const Expr *e);
+
+
+/**
+ * Print an expression to an output buffer. This is used to print unsigned
+ * expressions from chp/dataflow expressions.
+ *
+ * @param buf is the output buffer 
+ * @param sz is the size of the output buffer
+ * @param e is the expression
+ */
 void sprint_uexpr (char *buf, int sz, const Expr *e);
 
+/**
+ * Check if the expression is a simple constant leaf expression
+ *
+ * @param e is the expression to be checked
+ * @return 1 if it is a constant, 0 otherwise
+ */
 int expr_is_a_const (Expr *e);
+
+/**
+ * Duplicate an expression that is a constant. Some constant
+ * expressions are cached by the TypeFactory. If that is the case,
+ * then this simply returns the same pointer. Otherwise, it actually
+ * allocates new memory and returns a duplicate of the constant
+ * expression.
+ *
+ * @param e the constant expression to be duplicated
+ * @return the duplicated expression (may or may not be a deep copy)
+ */
 Expr *expr_dup_const (Expr *e);
 
-/* 
-   returns a string constant for the expression operator 
+/**
+ * This translates the E_... options into the string corresponding to
+ * the expression operator
+ *
+ * @return a string constant for the expression operator
 */
 const char *expr_op_name (int);
 
 /* unified expression expansion code, with flags to control
    different variations */
-#define ACT_EXPR_EXFLAG_ISLVAL   0x1
-#define ACT_EXPR_EXFLAG_PARTIAL  0x2
-#define ACT_EXPR_EXFLAG_CHPEX    0x4
-#define ACT_EXPR_EXFLAG_DUPONLY  0x8
+#define ACT_EXPR_EXFLAG_ISLVAL   0x1 ///< if set, this expression must
+				     ///be an lvalue (i.e. a variable)
 
-extern int _act_chp_is_synth_flag;
+#define ACT_EXPR_EXFLAG_PARTIAL  0x2 ///< if set, partial constant
+				     ///propagation during expansion
+				     ///is used
+
+#define ACT_EXPR_EXFLAG_CHPEX    0x4 ///< if set, this uses CHP
+				     ///expansion mode
+
+#define ACT_EXPR_EXFLAG_DUPONLY  0x8 ///< this just duplicates the expression
+
+extern int _act_chp_is_synth_flag;   ///< this flag is set as a
+				     ///side-effect of expression
+				     ///expansion. Set to 0 if the
+				     ///expression calls a
+				     ///non-synthesizable function.
+
+/**
+ * Used to expand an expression. The flags are used to specify how the
+ * expansion is performed. A duplicate expression is returned that
+ * corresponds to the expanded expression. Parameter constants are
+ * substituted, and for CHP/dataflow expressions, a BigInt is attached
+ * to each constant value with the appropriate bit-width.
+ *
+ * @param e is the expression to be expanded
+ * @param ns is the namespace
+ * @param s is the evaluation scope
+ * @param flag is the ACT_EXPR_EXFLAG_... flag
+ * @return the expanded expression
+ */
 Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2);
 
+/**
+ * A macro that just calls expr_expand() with the right flags.
+ */
 #define expr_dup(e) expr_expand ((e), NULL, NULL, ACT_EXPR_EXFLAG_DUPONLY)
 
-/* free an expanded expression */
+/**
+ * Free an expanded expression
+ */
 void expr_ex_free (Expr *);
-
-/*-- more options for expanded expressions --*/
-
-#define E_TYPE  (E_END + 10)  /* the "l" field will point to an InstType */
-
-#define E_ARRAY (E_END + 11) /* an expanded paramter array
-				- the l field will point to the ValueIdx
-				- the r field will point to the Scope 
-			     */
-
-#define E_SUBRANGE (E_END + 12) /* like array, but it is a subrange
-				   - l points to the ValueIdx
-				   - r points to another Expr whose
-				         l points to Scope
-					 r points to the array range
-				*/
-
-#define E_SELF (E_END + 20)
-#define E_SELF_ACK (E_END + 19)
-
-/* 
-   For loops:
-      e->l->l = id, e->r->l = lo, e->r->r->l = hi, e->r->r->r = expr
-      WARNING: replicated in expr_extra.c
-*/
-#define E_ANDLOOP (E_END + 21) 
-#define E_ORLOOP (E_END + 22)
-#define E_BUILTIN_BOOL (E_END + 23)
-#define E_BUILTIN_INT  (E_END + 24)
-
-/*
-  ENUM_CONST during parsing only used for
-     ::foo::bar::baz.N  
-     u.fn.s field == string to enum
-     u.fn.r field = string for N
-     
-  After the "walk" re-writing, this is used as:
-     u.fn.s = enum type pointer (Data *)
-     u.fn.r field = string corresponding to enum element
-
- After type-checking, this is eliminated and replaced with an 
- int const.
-*/
-#define E_ENUM_CONST   (E_END + 25)
-
-
-#define E_NEWEND  E_END + 26
-
-/*
-  Push expansion context 
-*/
-void act_error_push (const char *s, const char *file, int line);
-void act_error_update (const char *file, int line); // set file to
-						    // NULL to keep
-						    // the file name
-void act_error_pop ();
-void act_error_ctxt (FILE *);
-const char *act_error_top ();
-void act_error_setline (int line);
 
 /*
   External functions for core act library must 
@@ -2092,20 +2068,61 @@ void act_error_setline (int line);
 */
 
 struct ExtLibs;
+
+/**
+ * Given an external library sturcture, look up the function within
+ * the specified namespace in the external library
+ *
+ * @param el is the external library structure
+ * @param ns is the namespace in which the function exists
+ * @param f is the name of the function
+ * @return the function pointer, if found, and NULL otherwise
+ */
 void *act_find_dl_func (struct ExtLibs *el, ActNamespace *ns, const char *f);
+
+/**
+ * Query the ACT configuration to see if an external function table
+ * exists given the configuration prefix string
+ *
+ * @param prefix is the configuration prefix string
+ * @return the list of external libraries available according to the
+ * configuration file
+ */
 struct ExtLibs *act_read_extern_table (const char *prefix);
 
 
-void typecheck_err (const char *s, ...);
 
-extern "C" {
+/**
+ * Push expansion error context
+ * 
+ * @param s is the context (process name, instance name, etc)
+ * @param file is the file name
+ * @param line is the line number
+ */
+void act_error_push (const char *s, const char *file, int line);
 
-Expr *act_parse_expr_syn_loop_bool (LFILE *l);
-Expr *act_parse_expr_intexpr_base (LFILE *l);
-Expr *act_expr_any_basecase (LFILE *l);
-int act_expr_parse_newtokens (LFILE *l);
-int act_expr_free_default (Expr *);  
+/**
+ * Update the file name and line number for the top-level error
+ * context. If the file pointer is NULL, then the previous one is
+ * preserved.
+ *
+ * @param file is the updated file name
+ * @param line is the updated line number
+ *
+ */
+void act_error_update (const char *file, int line); // set file to
+						    // NULL to keep
+						    // the file name
 
-}
+void act_error_pop ();				    ///< pop the error
+						    ///context
+
+void act_error_ctxt (FILE *);	///< print the error context to the
+				///output stream
+
+const char *act_error_top ();	///< return the message for the
+				///top-level error
+
+void act_error_setline (int line); ///< set the current line number 
 
 #endif /* __ACT_TYPES_H__ */
