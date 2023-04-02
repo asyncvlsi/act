@@ -761,26 +761,26 @@ void Technology::Init ()
     /* extra spacing rules */
     snprintf (buf+j, BUF_SZ-j-1, "runlength");
     if (config_exists (buf)) {
-      mat->runlength_mode = 0;
-      mat->runlength = config_get_table_size (buf);
-      mat->parallelrunlength = config_get_table_int (buf);
+      mat->r.runlength_mode = 0;
+      mat->r.runlength = config_get_table_size (buf);
+      mat->r.parallelrunlength = config_get_table_int (buf);
 
       snprintf (buf+j, BUF_SZ-j-1, "runlength_mode");
       if (config_exists (buf)) {
-	mat->runlength_mode = config_get_int (buf);
+	mat->r.runlength_mode = config_get_int (buf);
       }
-      int num_extra = mat->runlength;
-      if (mat->runlength_mode == 1) {
+      int num_extra = mat->r.runlength;
+      if (mat->r.runlength_mode == 1) {
 	num_extra--;
       }
-      MALLOC (mat->spacing_aux, RangeTable *, num_extra);
+      MALLOC (mat->r.spacing_aux, RangeTable *, num_extra);
       for (int k=0; k < num_extra; k++) {
 	snprintf (buf+j, BUF_SZ-j-1, "spacing%d", k+1);
 	verify_range_table (buf);
-	mat->spacing_aux[k] = new RangeTable (config_get_table_size (buf),
-					      config_get_table_int (buf));
+	mat->r.spacing_aux[k] = new RangeTable (config_get_table_size (buf),
+						config_get_table_int (buf));
       }
-      if (mat->runlength_mode == 1) {
+      if (mat->r.runlength_mode == 1) {
 	/* XXX: check that all spacing tables are the same! */
 	
       }
