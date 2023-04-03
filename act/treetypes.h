@@ -27,12 +27,6 @@
 #include <act/namespaces.h>
 #include <act/types.h>
 
-/**
- * This type is used to store "wrapped" return values for the
- * auto-generated code that walks the parse tree
- */
-
-
 enum act_ret_type_type {
   R_INT,
   R_EXPR,
@@ -53,6 +47,13 @@ enum act_ret_type_type {
   R_ACT_BODY
 };
 
+/**
+ * @class ActRet
+ *
+ * @brief This type is used to store "wrapped" return values for the
+ * auto-generated code that walks the parse tree. Not used after the
+ * parsing stage.
+ */
 typedef struct {
   enum act_ret_type_type type;
   union {

@@ -572,7 +572,7 @@ class AExpr {
    * @return the newly allocated InstType corresponding to the type of
    * the array expression.
    */
-  InstType *getInstType (Scope *, int *islocal, int expanded = 0);
+  InstType *getInstType (Scope *s, int *islocal, int expanded = 0);
 
   AExpr *Expand (ActNamespace *, Scope *, int is_lval = 0);
   /**< expand out all parameters */

@@ -41,7 +41,7 @@ class AExpr;
 class InstType;
 
 /**
- * @class inst_para
+ * @class inst_param
  *
  * @brief This holds a single template parameter. A template parameter
  * is either an array expression, or an InstType.

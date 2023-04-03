@@ -27,8 +27,10 @@
 #include <act/extmacro.h>
 
 /**
- * This holds information about a port in the Booleanized netlist data
- * structure
+ * @class netlist_bool_port
+ * 
+ * @brief This holds information about a port in the Booleanized netlist data
+ * structure. 
  */
 struct netlist_bool_port {
   act_connection *c;		/**< port bool connection pointer */
@@ -46,8 +48,10 @@ struct netlist_bool_port {
 };
 
 /**
- * This is used to hold information about a global signal used in a
- * process
+ * @class netlist_global_port
+ *
+ * @brief This is used to hold information about a global signal used
+ * in a process.
  */
 struct netlist_global_port {
   act_connection *c;		/**< port bool connection pointer */
@@ -60,9 +64,11 @@ struct netlist_global_port {
 
 
 /**
-  CHP programs can have complex dynamic accesses, with runtime array
-  references. The Booleanize pass records these as "dynamic
-  variables" represented by this structure.
+ * @class act_dynamic_var
+ *
+ * @brief CHP programs can have complex dynamic accesses, with runtime
+ * array references. The Booleanize pass records these as "dynamic
+ * variables" represented by this structure.
 */
 typedef struct act_dynamic_var {
   act_connection *id;	   ///< The connection ID corresponding to the
@@ -77,19 +83,22 @@ typedef struct act_dynamic_var {
   
 
 /**
-  The core data type for a variable accessed in an ACT process. A
-  variable may be an act_booleanized_var or an act_dynamic_var. The
-  latter is used for dynamic array references, and the
-  act_booleanized_var structure is used for all other variables.
-
-  Structures are expanded out as individual variables for normal
-  accesses. Only dynamic references are maintained as intact
-  structures.
-
-  A variable can be used in CHP, dataflow, HSE, and PRS bodies. The
-  true use case will be selected by the tool that picks which level of
-  modeling is to be used. HSE/PRS are "Boolean" modeling levels,
-  whereas CHP/dataflow are "CHP" levels.
+ * @class act_booleanized_var
+ *
+ * @brief The core data type for a variable accessed in an ACT
+ * process. A   variable may be an act_booleanized_var or an
+ * act_dynamic_var. The   latter is used for dynamic array references,
+ * and the   act_booleanized_var structure is used for all other
+ * variables. 
+ *
+ * Structures are expanded out as individual variables for normal
+ * accesses. Only dynamic references are maintained as intact
+ * structures.
+ * 
+ * A variable can be used in CHP, dataflow, HSE, and PRS bodies. The
+ * true use case will be selected by the tool that picks which level
+ * of  modeling is to be used. HSE/PRS are "Boolean" modeling levels,
+ * whereas CHP/dataflow are "CHP" levels.
 */
 typedef struct act_booleanized_var {
   act_connection *id;		/**< unique connection id
@@ -139,8 +148,10 @@ typedef struct act_booleanized_var {
 
 
 /**
- * This is used for flat netlist generation to represent an I/O pin
- * for a leaf cell.
+ * @class act_local_pin_t
+ * 
+ * @brief This is used for flat netlist generation to represent an I/O
+ * pin for a leaf cell.
  */
 typedef struct {
   ActId *inst;			/**< path to instance */
@@ -150,8 +161,10 @@ typedef struct {
   
 
 /**
- * This is used for flat netlist generation to represent a net that
- * consists of a net name and a list of pins.
+ * @class act_local_net_t
+ *
+ * @brief This is used for flat netlist generation to represent a net
+ * that consists of a net name and a list of pins.
  */
 typedef struct {
   act_connection *net; ///< the name of the net; note that this could
@@ -163,9 +176,13 @@ typedef struct {
 
 
 /**
- * This structure is computed for each process by the Booleanize
- * pass. It summarizes the information about all the variables in the
- * design, capturing basic information for all the language bodies.
+ *
+ * @class act_boolean_netlist_t
+ *
+ * @brief This structure is computed for each process by the
+ * Booleanize pass. It summarizes the information about all the
+ * variables in the design, capturing basic information for all the
+ * language bodies.
  */
 typedef struct {
   Process *p;			///< The process this structure

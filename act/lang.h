@@ -76,7 +76,9 @@ enum act_prs_expr_type {
 
 
 /**
- * Sizing specifier for variables
+ * @class act_size_spec_t
+ * 
+ * @brief Sizing specifier for variables.
  */
 typedef struct {
   Expr *w;              ///< transistor width
@@ -87,8 +89,10 @@ typedef struct {
 
 
 /**
- * A production rule expression, corresponding to the guard for the
- * production rule
+ * @class act_prs_expr
+ * 
+ * @brief A production rule expression, corresponding to the guard for
+ * the production rule
  */
 typedef struct act_prs_expr {
   unsigned int type:4;		///< an act_prs_expr_type value
@@ -128,7 +132,9 @@ enum act_prs_lang_type {
 };
 
 /**
- * Structure that holds a prs sub-language body. This consists
+ * @class act_prs_lang
+ *
+ * @brief Structure that holds a prs sub-language body. This consists
  * of a linked-list of individual items in the prs body.
  */
 typedef struct act_prs_lang {
@@ -179,7 +185,9 @@ typedef struct act_prs_lang {
 } act_prs_lang_t;
 
 /**
- * Structure that holds all the prs { } blocks in a particular
+ * @class act_prs
+ *
+ * @brief Structure that holds all the prs { } blocks in a particular
  * scope. This is a linked-list of blocks, each of which can have
  * their own voltage domain specification.
  */
@@ -244,7 +252,9 @@ struct act_chp_lang;
 
 
 /**
- * Data structure for guarded commands
+ * @class act_chp_gc
+ *
+ * @brief Data structure for guarded commands.
  *
  *   id = NULL : normal guard
  *   id != NULL : syntactic replication, where "id" is the variable,
@@ -269,7 +279,9 @@ typedef struct act_chp_gc {
 
 
 /**
- * Data structure for the chp sub-language body
+ * @class act_chp_lang
+ *
+ * @brief Data structure for the chp sub-language body.
  */
 typedef struct act_chp_lang {
   int type;			///< this is taken from act_chp_lang_type
@@ -333,7 +345,10 @@ typedef struct act_chp_lang {
 
 
 /**
- * Used to represent log(...) arguments
+ * @class act_func_arguments
+ *
+ * @brief Used to represent log(...) arguments. Holds either a string
+ * or an expression.
  */
 typedef struct act_func_arguments {
   unsigned int isstring:1;	///< true if string, false otherwise
@@ -345,7 +360,9 @@ typedef struct act_func_arguments {
 
 
 /**
- * CHP sub-language
+ * @class act_chp
+ *
+ * @brief Holds a CHP sub-language
  */
 struct act_chp {
   ActId *vdd;			///< power supply
@@ -373,7 +390,9 @@ struct act_chp {
 
 
 /**
- * The specification sub-language
+ * @class act_spec
+ *
+ * @brief The specification sub-language
  */
 struct act_spec {
   int isrequires;	///< 1 if this is a requires clause;
@@ -418,7 +437,9 @@ class ActBody;
  */
 
 /**
- * The refinement sub-language just contains an ActBody
+ * @class act_refine
+ *
+ * @brief The refinement sub-language just contains an ActBody
  */
 struct act_refine {
   ActBody *b;			///< the body of the refine { ... }
@@ -433,7 +454,9 @@ struct act_refine {
  */
 
 /**
- * An individual sizing directive
+ * @class act_sizing_directive
+ *
+ * @brief An individual sizing directive
  */
 struct act_sizing_directive {
   ActId *id;			///< the signal to be sized
@@ -452,7 +475,9 @@ struct act_sizing_directive {
 };
 
 /**
- * The sizing { ... } body data 
+ * @class act_sizing
+ *
+ * @brief The sizing { ... } body data.
  */
 struct act_sizing {
   // p_n_mode  0/1  0 = default, 1 = sqrt sizing
@@ -480,7 +505,10 @@ struct act_sizing {
  */
 
 /**
- * The Initialize { ... } body. Only used in the global namespace.
+ * @class act_initialize
+ *
+ * @brief The Initialize { ... } body. Only used in the global
+ * namespace.
  */
 struct act_initialize {
   list_t *actions;		///< the list of actions. This is a
@@ -508,6 +536,12 @@ enum act_dataflow_element_types {
  ACT_DFLOW_SINK = 6		///< a dataflow sink
 };
 
+
+/**
+ * @class act_dataflow_element
+ *
+ * @brief An individual dataflow element
+ */
 typedef struct  {
   act_dataflow_element_types t;	///< the type
   union {
@@ -537,8 +571,12 @@ typedef struct  {
   } u;
 } act_dataflow_element;
 
+
 /**
- * An order directive in the dataflow language
+ * @class act_dataflow_order
+ *
+ * @brief An order directive in the dataflow language, used for
+ * optimizations in the presence of hierarchy.
  */
 struct act_dataflow_order {
   list_t *lhs;			///< first list of ActId pointers (channels)
@@ -547,7 +585,9 @@ struct act_dataflow_order {
 
 
 /**
- * The dataflow sub-language
+ * @class act_dataflow
+ *
+ * @brief The dataflow sub-language.
  */
 struct act_dataflow {
   list_t *dflow;		///< list of dataflow elements

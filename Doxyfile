@@ -980,7 +980,8 @@ EXCLUDE_SYMLINKS       = NO
 
 EXCLUDE_PATTERNS       = act_parse* \
                          act_walk_X.* \
-                         act.cy
+                         act.cy \
+                         *.c *.cc treetypes.h
 
 # The EXCLUDE_SYMBOLS tag can be used to specify one or more symbol names
 # (namespaces, classes, functions, etc.) that should be excluded from the
