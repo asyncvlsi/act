@@ -7,6 +7,9 @@ module nand2(a, b, c);
    output c;
 
 // -- signals ---
+   reg c;
+   reg b;
+   reg a;
 
 // --- instances
 endmodule
@@ -20,11 +23,11 @@ module foo(p, q, r);
    output r;
 
 // -- signals ---
-   reg p;
-   reg \n.c ;
-   reg \n2.c ;
    reg q;
+   reg \n.c ;
    reg r;
+   reg p;
+   reg \n2.c ;
 
 // --- instances
 nand2 \n  (.a(p), .b(q), .c(\n.c ));

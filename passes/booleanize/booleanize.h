@@ -106,7 +106,7 @@ typedef struct act_booleanized_var {
   
   unsigned int input:1;		/**< set to 1 if this is an input variable */
   unsigned int output:1;	/**< set to 1 if this is an output variable */
-  
+  unsigned int localout:1;	/**< set to 1 if this is driven by a local circuit */
   unsigned int used:1;		/**< used flag for prs/hse */
   unsigned int ischan:1;	/**< for channel variables that
 				   have not been turned into bools! */
@@ -123,8 +123,7 @@ typedef struct act_booleanized_var {
   unsigned int usedchp:1;	/**< used flag for CHP mode */
   unsigned int isglobal:1;	/**< is this a global variable flag */
   unsigned int isport:1;	/**< 1 if this is in the port list, and
-				   isn't omitted; won't be set for
-				   black box processes */
+				   isn't omitted **/
   unsigned int ischpport:1;	/**< 1 if this is in the chp port list,
 				   and isn't omitted; won't be set
 				   for black box processes */

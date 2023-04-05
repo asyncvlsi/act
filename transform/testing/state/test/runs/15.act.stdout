@@ -1,7 +1,10 @@
 --- Process: nand2<> ---
   ** black box **
-  portbools: 3
-    portchp: 3
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 3, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
 --- End Process: nand2<> ---
 --- Process: foo<> ---
    loc-nbools = 2, loc-nvars = 0

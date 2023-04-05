@@ -1,4 +1,4 @@
-defproc nand2 (bool a, b, c)
+defproc nand2 (bool? a, b; bool! c)
 { }
 
 defproc foo (bool p, q, r)

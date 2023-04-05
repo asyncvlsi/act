@@ -82,10 +82,17 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 		 p->getName());
   }
 
+#if 0
+  /*
+     Black box mode change: need some basic state info just for the
+     pure port list. This avoids having special cases for black boxes
+     in other tools that use information from the statepass
+  */
   if (_black_box_mode && p && p->isBlackBox()) {
     /* Black box module */
     return NULL;
   }
+#endif
 
   Assert (b->cH, "Hmm");
   Assert (b->cdH, "Hmm...");
@@ -379,15 +386,17 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       /*-- look for multi-drivers: globals are ignored --*/
       if (!v->isglobal) {
 	if (v->output) {
-	  if (bitset_tst (tmpbits, ocount)) {
-	    /* found multi driver! */
-	    bitset_set (si->multi, ocount);
+	  if (v->localout) {
+	    if (bitset_tst (tmpbits, ocount)) {
+	      /* found multi driver! */
+	      bitset_set (si->multi, ocount);
 #if 0
-	    printf ("     -> multi-driver!\n");
+	      printf ("     -> multi-driver!\n");
 #endif
-	  }
-	  else {
-	    bitset_set (tmpbits, ocount);
+	    }
+	    else {
+	      bitset_set (tmpbits, ocount);
+	    }
 	  }
 	}
 	else {
@@ -491,25 +500,19 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       stateinfo_t *ti = (stateinfo_t *) getMap (x);
       state_counts n_sub;
 
-      if (ti) {
-	n_sub = ti->all;
+      Assert (ti, "There is always state info!");
 
-	if (_inst_offsets) {
-	  if (!si->inst) {
-	    si->inst = phash_new (4);
-	  }
-	  phash_bucket_t *b;
-	  b = phash_add (si->inst, vx);
-	  state_counts *sc = new state_counts;
-	  *sc = si->all;
-	  b->v = sc;
+      n_sub = ti->all;
+
+      if (_inst_offsets) {
+	if (!si->inst) {
+	  si->inst = phash_new (4);
 	}
-      }
-      else {
-	/* black box */
-	act_boolean_netlist_t *bn = bp->getBNL (x);
-	Assert (bn, "What?");
-	n_sub = zero;
+	phash_bucket_t *b;
+	b = phash_add (si->inst, vx);
+	state_counts *sc = new state_counts;
+	*sc = si->all;
+	b->v = sc;
       }
       int sz;
       /* map valueidx pointer to the current bool offset */
@@ -551,7 +554,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       stateinfo_t *subsi;
 
       sub = bp->getBNL (x);
-      subsi = getStateInfo (x);
+      subsi = (stateinfo_t *) getMap (x);
       ports_exist = 0;
       for (int j=0; j < A_LEN (sub->ports); j++) {
 	if (sub->ports[j].omit == 0) {
@@ -591,7 +594,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      /* ignore globals here */
 	      continue;
 	    }
-	      
+
 	    if (bi) {
 	      ocount = bi->i + si->ports.numBools();
 	    }
@@ -611,10 +614,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      if (bitset_tst (tmpbits, ocount)) {
 		/* found multi driver! */
 		bitset_set (si->multi, ocount);
-		if (subsi) {
-		  /* could be NULL, if it is a black box */
-		  subsi->ismulti = 1;
-		}
+		subsi->ismulti = 1;
 #if 0
 		printf (" *multi-driver: ");
 		ActId *id = c->toid();
@@ -713,10 +713,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	      if (bitset_tst (tmpchp, ocount)) {
 		/* found multi driver! */
 		bitset_set (chpmulti, ocount);
-		if (subsi) {
-		  /* could be NULL, if it is a black box */
-		  subsi->chp_ismulti = 1;
-		}
+		subsi->chp_ismulti = 1;
 #if 0
 		printf (" *multi-driver: ");
 		ActId *id = c->toid();
@@ -1089,23 +1086,20 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
   si = getStateInfo (p);
 
   fprintf (fp, "--- Process: %s ---\n", p ? p->getName() : "-toplevel-");
+  Assert (si, "What?");
 
-  if (!si) {
-    act_boolean_netlist_t *bn = bp->getBNL (p);
-    Assert (bn, "Hmm");
+  if (p && _black_box_mode && p->isBlackBox()) {
     fprintf (fp, "  ** black box **\n");
-    fprintf (fp, "  portbools: %d\n", A_LEN (bn->ports));
-    fprintf (fp, "    portchp: %d\n", A_LEN (bn->chpports));
   }
-  else {
-    fprintf (fp, "   loc-nbools = %d, loc-nvars = %d\n",
-	     si->local.numBools(), si->local.numCHPVars());
-    fprintf (fp, "   port-nbools = %d, port-chpvars = %d\n",
-	     si->ports.numBools(), si->ports.numCHPVars());
-    fprintf (fp, "  ismulti: %d\n", si->ismulti);
-    fprintf (fp, "  all booleans (incl. inst): %d\n", si->all.numBools());
-    fprintf (fp, "  all chpvars (incl. inst): %d\n", si->all.numCHPVars());
-  }
+      
+  fprintf (fp, "   loc-nbools = %d, loc-nvars = %d\n",
+	   si->local.numBools(), si->local.numCHPVars());
+  fprintf (fp, "   port-nbools = %d, port-chpvars = %d\n",
+	   si->ports.numBools(), si->ports.numCHPVars());
+  fprintf (fp, "  ismulti: %d\n", si->ismulti);
+  fprintf (fp, "  all booleans (incl. inst): %d\n", si->all.numBools());
+  fprintf (fp, "  all chpvars (incl. inst): %d\n", si->all.numCHPVars());
+  
   fprintf (fp, "--- End Process: %s ---\n", p->getName());
 }
 

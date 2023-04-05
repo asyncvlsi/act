@@ -44,6 +44,7 @@ static act_booleanized_var_t *var_alloc (act_boolean_netlist_t *n,
   v->used = 0;
   v->ischan = 0;
   v->chanflag = 0;
+  v->localout = 0;
   v->proc_in = -1;
   v->proc_out = -1;
   v->isint = 0;
@@ -147,6 +148,7 @@ static void visit_var (act_boolean_netlist_t *N, ActId *id, int isinput)
   }
   else if (isinput == 0) {
     v->output = 1;
+    v->localout = 1;
   }
 
   UserDef *u;
@@ -414,6 +416,7 @@ static void visit_chp_var (act_boolean_netlist_t *N,
   }
   else if (isinput == 0) {
     v->output = 1;
+    v->localout = 1;
 #if 0
     if (TypeFactory::isChanType (it)) {
       v->chp_send = 1;
@@ -1731,6 +1734,28 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   /*-- create elaborated port list --*/
   if (p) {
     flatten_ports_to_bools (n, NULL, sc, p, 0);
+  }
+
+
+  /*-- mark the ports as used for black boxes --*/
+  if (black_box_mode && p && (p->isBlackBox() || p->isLowLevelBlackBox())) {
+    for (int i=0; i < A_LEN (n->ports); i++) {
+      ActId *tid;
+      if (n->ports[i].omit) continue;
+      tid = n->ports[i].c->toid();
+      switch (n->ports[i].c->getDir()) {
+      case Type::IN:
+	visit_var (n, tid, 1);
+	break;
+
+      default:
+	visit_var (n, tid, 0);
+	break;
+      }
+      act_booleanized_var_t *v = var_lookup (n, tid);
+      v->isport = 1;
+      delete tid;
+    }
   }
 
   /*-- collect globals --*/
