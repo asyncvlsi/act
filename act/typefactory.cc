@@ -448,9 +448,11 @@ int TypeFactory::isValidChannelDataType (const Type *t)
     if (!isValidChannelDataType (x->getPortType(i)->BaseType())) {
       return 0;
     }
+#if 0
     if (x->getPortType(i)->arrayInfo()) {
       return 0;
     }
+#endif
   }
 
   if (x->getParent()) {
