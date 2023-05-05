@@ -1750,42 +1750,62 @@ void Data::_get_struct_count (int *nb, int *ni)
 
 int Data::getStructOffset (ActId *field, int *sz)
 {
+  int loc_offset = 0;
   Assert (TypeFactory::isStructure (this), "What?");
   if (!field) return -1;
   
   for (int i=0; i < getNumPorts(); i++) {
+    InstType *it = getPortType (i);
+    int field_sz = 1;
+
+    /* compute the size of the field in terms of # of values */
+    if (TypeFactory::isStructure (it)) {
+      Data *xd = dynamic_cast<Data *> (it->BaseType());
+      int nb, ni;
+      xd->getStructCount (&nb, &ni);
+      field_sz = nb + ni;
+    }
+
     if (strcmp (field->getName(), getPortName (i)) == 0) {
+      /* a partial match */
       if (!field->Rest()) {
+	/* a complete match */
+        if (field->arrayInfo()) {
+	  /* an array index */
+	  Assert (it->arrayInfo(), "What?");
+	  loc_offset += it->arrayInfo()->Offset (field->arrayInfo()) * field_sz;
+	}
 	if (sz) {
-	  InstType *tmp = getPortType (i);
-	  if (TypeFactory::isStructure (tmp)) {
-	    Data *xd = dynamic_cast<Data *> (tmp->BaseType());
-	    int nb, ni;
-	    xd->getStructCount (&nb, &ni);
-	    *sz = nb + ni;
-	  }
-	  else {
-	    *sz = 1;
-	  }
-	  if (tmp->arrayInfo()) {
-	    *sz = *sz * tmp->arrayInfo()->size();
+	  *sz = field_sz;
+	  if (it->arrayInfo() && !field->arrayInfo()) {
+	    *sz = *sz * it->arrayInfo()->size();
 	  }
 	}
-	return i;
+	return loc_offset;
       }
       else {
-	InstType *it = getPortType (i);
 	Data *d;
 	int x;
 	Assert (TypeFactory::isStructure (it), "What?");
-	Assert (it->arrayInfo() == NULL, "What?");
+
+	if (field->arrayInfo()) {
+	  Assert (it->arrayInfo(), "What?");
+	  loc_offset += it->arrayInfo()->Offset (field->arrayInfo()) * field_sz;
+	}
 	d = dynamic_cast <Data *> (it->BaseType());
 	x = d->getStructOffset (field->Rest(), sz);
 	if (x == -1) {
 	  return -1;
 	}
-	return i + x;
+	return loc_offset + x;
       }
+    }
+
+    if (it->arrayInfo()) {
+      loc_offset += field_sz * it->arrayInfo()->size();
+    }
+    else {
+      loc_offset += field_sz;
     }
   }
   return -1;
