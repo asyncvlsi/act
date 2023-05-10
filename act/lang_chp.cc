@@ -1674,13 +1674,36 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	 Check if this is a dynamic array; if it is, we just need the
 	 type and nothing else
       */
+
       if (tmp->isDynamicDeref()) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Structure dynamic array assignment currently unsupported.\n");
-	fprintf (stderr, "\tVariable: ");
-	ret->u.assign.id->Print (stderr);
-	fprintf (stderr, "\n");
-	exit (1);
+	/* walk through and make it a static array */
+	ActId *walk = tmp;
+	while (walk) {
+	  if (walk->arrayInfo()) {
+	    Array *x = walk->arrayInfo();
+	    if (x->isDynamicDeref()) {
+	      /* need to replace this with a valid array index */
+	      InstType *it;
+	      ActId *rest = walk->Rest();
+	      walk->prune();
+	      walk->setArray (NULL);
+
+	      it = s->FullLookup (tmp, NULL);
+
+	      Assert (it, "What?");
+	      Assert (it->arrayInfo(), "What?");
+
+	      delete x;
+
+	      /* use the first element of the array */
+	      x = it->arrayInfo()->unOffset (0);
+
+	      walk->setArray (x);
+	      walk->Append (rest);
+	    }
+	  }
+	  walk = walk->Rest();
+	}
       }
 
       act_connection *d = tmp->Canonical (s);
@@ -1744,12 +1767,34 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       ActId *tmp = ret->u.comm.var->stripArray();
 
       if (tmp->isDynamicDeref()) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Structure dynamic array access currently unsupported.\n");
-	fprintf (stderr, "\tVariable: ");
-	ret->u.comm.var->Print (stderr);
-	fprintf (stderr, "\n");
-	exit (1);
+	/* walk through and make it a static array */
+	ActId *walk = tmp;
+	while (walk) {
+	  if (walk->arrayInfo()) {
+	    Array *x = walk->arrayInfo();
+	    if (x->isDynamicDeref()) {
+	      /* need to replace this with a valid array index */
+	      InstType *it;
+	      ActId *rest = walk->Rest();
+	      walk->prune();
+	      walk->setArray (NULL);
+
+	      it = s->FullLookup (tmp, NULL);
+
+	      Assert (it, "What?");
+	      Assert (it->arrayInfo(), "What?");
+
+	      delete x;
+
+	      /* use the first element of the array */
+	      x = it->arrayInfo()->unOffset (0);
+
+	      walk->setArray (x);
+	      walk->Append (rest);
+	    }
+	  }
+	  walk = walk->Rest();
+	}
       }
       
       act_connection *d = tmp->Canonical (s);

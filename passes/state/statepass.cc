@@ -140,7 +140,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       bool_count += v->a->size();
     }
   }
-  
+
   phash_iter_init (b->cH, &iter);
   while ((hb = phash_iter_next (b->cH, &iter))) {
     act_booleanized_var_t *v = (act_booleanized_var_t *)hb->v;
@@ -149,6 +149,11 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       /*-- already counted --*/
       continue;
     }
+
+    /*
+       Note: if there is a static structure, then it is not represented as a
+       structure but rather as constituent components (ints, bools, chans)
+    */
     
     if (v->used && !v->isglobal) {
       bool_count++;
@@ -275,6 +280,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       x->i = chpidx;
       chpidx += ts.numInts()*v->a->size();
       si->all.addVar (ts, v->a->size());
+      si->all.addBool (-v->a->size()*ts.numBools());
     }
     else if (v->isint) {
       x = phash_add (/*si->map*/ _cmap, pb->key);
@@ -487,8 +493,13 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
   si->all.addBool (si->local.numBools());
 
 #if 0
-  printf ("%s: stats: %d local; %d port\n", p->getName(),
-	  si->localbools, si->nportbools);
+  printf ("%s: stats:\n\tlocal:: ", p->getName());
+  si->local.Print (stdout);
+  printf ("\n\tport:: ");
+  si->ports.Print (stdout);
+  printf ("\n\tall:: ");
+  si->all.Print (stdout);
+  printf ("\n");
 #endif
 
   ActUniqProcInstiter i(p ? p->CurScope() : ActNamespace::Global()->CurScope());
@@ -1171,6 +1182,7 @@ int ActStatePass::getTypeOffset (stateinfo_t *si, act_connection *c,
     act_dynamic_var_t *dv = (act_dynamic_var_t *)b->v;
     b = phash_lookup (si->map, c);
     Assert (b, "What?");
+
     if (dv->isint) {
       if (type) {
 	*type = 1;
@@ -1404,6 +1416,11 @@ act_connection *ActStatePass::getConnFromOffset (stateinfo_t *si, int off, int t
 	}
 	else {
 	  act_dynamic_var_t *dv;
+
+	  if (b->key & 1) {
+	    c = (act_connection *) (b->key & ~1UL);
+	  }
+
 	  xb = phash_lookup (si->bnl->cdH, c);
 	  Assert (xb, "What?!");
 	  dv = (act_dynamic_var_t *)xb->v;

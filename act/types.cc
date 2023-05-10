@@ -1748,7 +1748,7 @@ void Data::_get_struct_count (int *nb, int *ni)
   }
 }
 
-int Data::getStructOffset (ActId *field, int *sz)
+int Data::getStructOffset (ActId *field, int *sz, InstType **rit)
 {
   int loc_offset = 0;
   Assert (TypeFactory::isStructure (this), "What?");
@@ -1781,6 +1781,9 @@ int Data::getStructOffset (ActId *field, int *sz)
 	    *sz = *sz * it->arrayInfo()->size();
 	  }
 	}
+	if (rit) {
+	  *rit = it;
+	}
 	return loc_offset;
       }
       else {
@@ -1793,7 +1796,7 @@ int Data::getStructOffset (ActId *field, int *sz)
 	  loc_offset += it->arrayInfo()->Offset (field->arrayInfo()) * field_sz;
 	}
 	d = dynamic_cast <Data *> (it->BaseType());
-	x = d->getStructOffset (field->Rest(), sz);
+	x = d->getStructOffset (field->Rest(), sz, rit);
 	if (x == -1) {
 	  return -1;
 	}
@@ -1870,6 +1873,85 @@ void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
     }
   }
 }
+
+
+int Data::getStructOffsetPair (ActId *field, int *boff, int *ioff)
+{
+  int i_offset = 0;
+  int b_offset = 0;
+  Assert (TypeFactory::isStructure (this), "What?");
+  if (!field) return 0;
+  
+  for (int i=0; i < getNumPorts(); i++) {
+    InstType *it = getPortType (i);
+    int field_sz_b, field_sz_i;
+    int cnt;
+
+    /* compute the size of the field in terms of # of values */
+    if (TypeFactory::isStructure (it)) {
+      Data *xd = dynamic_cast<Data *> (it->BaseType());
+      xd->getStructCount (&field_sz_b, &field_sz_i);
+    }
+    else if (TypeFactory::isBaseBoolType (it)) {
+      field_sz_b = 1;
+      field_sz_i = 0;
+    }
+    else {
+      field_sz_i = 1;
+      field_sz_b = 0;
+    }
+
+    if (strcmp (field->getName(), getPortName (i)) == 0) {
+      /* a partial match */
+      if (!field->Rest()) {
+	/* a complete match */
+        if (field->arrayInfo()) {
+	  /* an array index */
+	  Assert (it->arrayInfo(), "What?");
+	  cnt = it->arrayInfo()->Offset (field->arrayInfo());
+	}
+	else {
+	  cnt = 0;
+	}
+	i_offset += cnt  * field_sz_i;
+	b_offset += cnt * field_sz_b;
+	*boff = b_offset;
+	*ioff = i_offset;
+	return 1;
+      }
+      else {
+	Data *d;
+	int x;
+	Assert (TypeFactory::isStructure (it), "What?");
+
+	if (field->arrayInfo()) {
+	  Assert (it->arrayInfo(), "What?");
+	  cnt = it->arrayInfo()->Offset (field->arrayInfo());
+	  i_offset += cnt * field_sz_i;
+	  b_offset += cnt * field_sz_b;
+	}
+	d = dynamic_cast <Data *> (it->BaseType());
+	x = d->getStructOffsetPair (field->Rest(), boff, ioff);
+	if (x == 0) {
+	  return 0;
+	}
+	*boff += b_offset;
+	*ioff += i_offset;
+	return 1;
+      }
+    }
+    if (it->arrayInfo()) {
+      cnt = it->arrayInfo()->size();
+    }
+    else {
+      cnt = 1;
+    }
+    i_offset += cnt * field_sz_i;
+    b_offset += cnt * field_sz_b;
+  }
+  return 0;
+}
+
 
 int Function::isExternal ()
 {

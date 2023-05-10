@@ -1173,9 +1173,23 @@ class Data : public UserDef {
    * @param field is the ActId that describes the field
    * @param sz is used to return the size of the field (# of bools +
    * # of ints)
+   * @param rit is used to return the type of the field (if non-NULL)
    * @return the offset of the field, -1 if not found
   */
-  int getStructOffset (ActId *field, int *sz);
+  int getStructOffset (ActId *field, int *sz, InstType **rit = NULL);
+
+
+  /**
+   * Returns offset of field within the structure, separating the
+   * integer offset as well as the Boolean offset.
+   *
+   * @param field is the ActId that describes the field
+   * @param boff is used to return the Boolean offset
+   * @param ioff is used to return the integer offset
+   * @return 1 on success, 0 on failure
+  */
+  int getStructOffsetPair (ActId *field, int *ioffset, int *boffset);
+  
 
   /**
    * Elaborate the structure into all the "leaf" field names, and also return

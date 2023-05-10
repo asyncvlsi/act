@@ -68,6 +68,11 @@ public:
     chans += sz*s.chans;
     ints += sz*s.ints;
   }
+
+  void Print (FILE *fp) {
+    fprintf (fp, "bools: %d; ints: %d; chans: %d; xbools: %d",
+	     bools, ints, chans, xbools);
+  }
   
   state_counts() { bools = 0; xbools = 0; chans = 0; ints = 0; }
 };

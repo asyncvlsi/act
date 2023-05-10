@@ -1,5 +1,0 @@
-In expanding test (69.act:3)
-In expanding ::<Global>
-Error on or near line number 8.
-Structure dynamic array assignment currently unsupported.
-	Variable: s[i].a
