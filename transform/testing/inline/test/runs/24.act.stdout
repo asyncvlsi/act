@@ -1,0 +1,41 @@
+deftype foo (int<32> b);
+defproc test ();
+function baz (foo f) : foo;
+
+deftype foo (int<32> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+defproc test ()
+{
+
+/* instances */
+foo f;
+foo x;
+
+/* connections */
+chp {
+*[true -> x.b:=f.b=0x0 ? 0x0 : 0x1]
+}
+}
+
+function baz (foo f) : foo
+{
+
+/* instances */
+
+/* connections */
+chp {
+self.b:=f.b=0x0 ? 0x0 : 0x1
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

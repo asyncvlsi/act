@@ -1,0 +1,22 @@
+deftype foo(int b){}
+
+function baz(foo f) : foo
+{
+  chp {
+    self.b := f.b = 0 ? 0 : 1
+  }
+}
+
+defproc test ()
+{
+
+  foo x;
+  foo f;
+
+  chp {
+  *[
+    x := baz(f)
+  ]
+  }
+}
+test t; 

@@ -389,6 +389,8 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 
   case E_QUERY:
     ret->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.l, recurse));
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->type = E_COLON;
     ret->u.e.r->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.r->u.e.l, recurse));
     ret->u.e.r->u.e.r = _ex_one (_expand_inline (Hs, e->u.e.r->u.e.r, recurse));
     MALLOC (rets, Expr *, 1);
