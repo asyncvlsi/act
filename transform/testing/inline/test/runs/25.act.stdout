@@ -1,0 +1,68 @@
+function abc (baz b) : ret;
+deftype foo (bar b[5]);
+deftype ret (int<32> a);
+defproc test ();
+deftype bar (int<32> x);
+deftype baz (foo f);
+
+function abc (baz b) : ret
+{
+
+/* instances */
+
+/* connections */
+chp {
+self.a:=0x1
+}
+}
+
+deftype foo (bar b[5])
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype ret (int<32> a)
+{
+
+/* instances */
+
+/* connections */
+}
+
+defproc test ()
+{
+
+/* instances */
+baz b;
+ret a;
+
+/* connections */
+chp {
+a.a:=0x1
+}
+}
+
+deftype bar (int<32> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype baz (foo f)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

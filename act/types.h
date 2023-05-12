@@ -1194,7 +1194,8 @@ class Data : public UserDef {
   /**
    * Elaborate the structure into all the "leaf" field names, and also return
    * the types for each field. The type is either 0 or 1, 0 for bools
-   * and 1 for ints.
+   * and 1 for ints. Array are expanded out.
+   *
    * @param types should be an int array of size # of ints + # of
    * bools for the structure (see getStructCount())
    * @return an ActId array of the same size that contains all the

@@ -1,0 +1,26 @@
+deftype bar (int x){}
+
+deftype foo (bar b[5]){}
+
+deftype baz (foo f){}
+
+deftype ret (int a) {}
+
+function abc (baz b) : ret
+{
+  chp {
+    self.a := 1
+  }
+}
+
+defproc test() 
+{
+  ret a;
+  baz b;
+
+  chp {
+    a := abc(b)
+  }
+}
+
+test t; 

@@ -1838,38 +1838,60 @@ void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
   Assert (TypeFactory::isStructure (this), "What?!");
 
   for (int i=0; i < getNumPorts(); i++) {
-    if (TypeFactory::isStructure (getPortType (i))) {
-      Data *d = dynamic_cast<Data *> (getPortType(i)->BaseType());
-      ActId *tmp = new ActId (getPortName (i));
-      if (prefix) {
-	ActId *tl;
-	tl = prefix->Tail();
-	tl->Append (tmp);
-	d->_get_struct_fields (a, types, pos, prefix);
-	tl->prune();
-      }
-      else {
-	d->_get_struct_fields (a, types, pos, tmp);
-      }
-      delete tmp;
+    InstType *it = getPortType (i);
+    Array *arr;
+    Arraystep *as = NULL;
+
+    if (it->arrayInfo()) {
+      as = it->arrayInfo()->stepper();
     }
-    else {
-      ActId *tmp = new ActId (getPortName (i));
-      if (prefix) {
-	a[*pos] = prefix->Clone();
-	a[*pos]->Tail()->Append (tmp);
+
+    while (!as || !as->isend()) {
+      if (!as) {
+	arr = NULL;
       }
       else {
-	a[*pos] = tmp;
+	arr = as->toArray();
       }
-      if (TypeFactory::isBoolType (getPortType (i))) {
-	types[*pos] = 0;
+      if (TypeFactory::isStructure (it)) {
+	Data *d = dynamic_cast<Data *> (it->BaseType());
+	ActId *tmp = new ActId (getPortName (i), arr);
+	if (prefix) {
+	  ActId *tl;
+	  tl = prefix->Tail();
+	  tl->Append (tmp);
+	  d->_get_struct_fields (a, types, pos, prefix);
+	  tl->prune();
+	}
+	else {
+	  d->_get_struct_fields (a, types, pos, tmp);
+	}
+	delete tmp;
       }
       else {
-	Assert (TypeFactory::isIntType (getPortType (i)), "Structure invariant violated?");
-	types[*pos] = 1;
+	ActId *tmp = new ActId (getPortName (i), arr);
+	if (prefix) {
+	  a[*pos] = prefix->Clone();
+	  a[*pos]->Tail()->Append (tmp);
+	}
+	else {
+	  a[*pos] = tmp;
+	}
+	if (TypeFactory::isBoolType (getPortType (i))) {
+	  types[*pos] = 0;
+	}
+	else {
+	  Assert (TypeFactory::isIntType (getPortType (i)), "Structure invariant violated?");
+	  types[*pos] = 1;
+	}
+	*pos = *pos + 1;
       }
-      *pos = *pos + 1;
+      if (as) {
+	as->step();
+      }
+      else {
+	break;
+      }
     }
   }
 }
