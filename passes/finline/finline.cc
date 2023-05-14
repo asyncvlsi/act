@@ -510,6 +510,7 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
       ActInstiter it(fx->CurScope());
       for (it = it.begin(); it != it.end(); it++) {
 	ValueIdx *vx = (*it);
+	if (TypeFactory::isParamType (vx->t)) continue;
 	if (fx->FindPort (vx->getName()) == 0 &&
 	    (strcmp (vx->getName(), "self") != 0)) {
 	  hash_bucket_t *ab;
