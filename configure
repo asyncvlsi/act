@@ -125,8 +125,11 @@ else
 fi    
 
 
-c_compiler_name=gcc
-cxx_compiler_name=g++
+c_compiler_name=$C_COMPILER_NAME
+cxx_compiler_name=$CXX_COMPILER_NAME
+#c_compiler_name=gcc
+#cxx_compiler_name=g++
+
 # the double parentesis are needed beause of double parcing in the check script and are removed in the makefile to have the intended behaviour
 c_compiler_flags="\"-O2 ${addon_cflags}\""
 make_program=gmake
