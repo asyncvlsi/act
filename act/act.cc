@@ -1305,6 +1305,7 @@ bool Act::LocalizeGlobal (const char *s)
     return false;
   }
 
+  s = string_cache (s);
   /* apply first phase substitutions */
   list_t *defs_subst = list_new ();
   gns->_subst_globals (defs_subst, it, s);
