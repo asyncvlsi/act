@@ -92,8 +92,9 @@ then
     mkdir $installdir/act
 fi
 
-c_compiler_name=gcc
-cxx_compiler_name=g++
+# use gcc and g++ if not otherwise specified
+c_compiler_name=${C_COMPILER_NAME:-gcc}
+cxx_compiler_name=${CXX_COMPILER_NAME:-g++}
 
 # get additional CFLAGS and pass them through
 while [ $# -gt 1 ]
