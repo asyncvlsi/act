@@ -68,6 +68,9 @@ private:
   list_t *_new_cells;
   list_t *_used_cells;
 
+  const char *_inport_name;
+  const char *_outport_name;
+
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
   void add_passgates_cap ();

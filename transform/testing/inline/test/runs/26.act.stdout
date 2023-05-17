@@ -1,0 +1,47 @@
+defproc test ();
+function test__func_332_732_4 (int<64> x) : int<64>;
+defproc test2_332_732_4 (chan(int<64>)! OUT);
+
+defproc test ()
+{
+
+/* instances */
+test2_332_732_4 t;
+
+/* connections */
+}
+
+function test__func_332_732_4 (int<64> x) : int<64>
+{
+
+/* instances */
+int<32> i;
+
+/* connections */
+chp {
+self:=x,i:=0x0;*[i<0xa -> self:=self+0x1;i:=i+0x1]
+}
+}
+
+defproc test2_332_732_4 (chan(int<64>)! OUT)
+{
+
+/* instances */
+int<64> fuse_0;
+int<64> farg_0;
+int<64> x;
+int<32> floc_0;
+int<64> fret_0;
+int<64> result;
+
+/* connections */
+chp {
+x:=0xa;farg_0:=x;fret_0:=farg_0,floc_0:=0x0;*[floc_0<0xa -> fret_0:=fret_0+0x1;floc_0:=floc_0+0x1];fuse_0:=fret_0;result:=fuse_0;log(result);OUT!result
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

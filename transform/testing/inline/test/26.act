@@ -1,0 +1,29 @@
+template<pint A; pint B>
+function test_func (int<A+B> x) : int<A+B>
+{
+  int i;        
+   chp {
+    self := x, i := 0;
+    *[ i < 10 -> self := self + 1; i := i + 1 ]
+  }
+}
+
+
+
+template<pint A, B>
+defproc test2 (chan!(int<A+B>)OUT)
+{
+  int<A+B> x, result;
+  chp{
+    x := 10;
+    result := test_func<A, B> (x); log(result);
+    OUT!result
+  }
+}
+
+defproc test()
+{
+  test2<32, 32> t;
+}
+
+test t;

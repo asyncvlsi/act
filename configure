@@ -92,16 +92,26 @@ then
     mkdir $installdir/act
 fi
 
+c_compiler_name=gcc
+cxx_compiler_name=g++
+
 # get additional CFLAGS and pass them through
-if [ $# -gt 1 ]
-then
+while [ $# -gt 1 ]
+do
     case $2 in
     "CFLAGS="*) addon_cflags=${2#CFLAGS=}
      addon_cflags=${addon_cflags#\"}
      addon_cflags=${addon_cflags#\'}
      echo "CFLAGS: $addon_cflags"
+     ;;
+    "CC="*) c_compiler_name=${2#CC=}
+     ;;
+    "CXX="*) cxx_compiler_name=${2#CXX=}
+     ;;
+    *) echo "Unknown argument: $2"; exit 1
     esac
-fi
+    shift
+done
 
 #
 # shared linking on macos

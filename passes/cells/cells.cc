@@ -184,6 +184,8 @@ static void _add_used_cell (list_t *l, Process *p)
 
 static void _dump_prsinfo (struct act_prsinfo *p);
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
+						const char *_inport_name,
+						const char *_outport_name,
 						struct act_prsinfo *pi);
 
 
@@ -1154,11 +1156,11 @@ void ActCellPass::add_passgates_cap ()
       it->MkArray (ta);
     }
 
-    Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
+    Assert (proc->AddPort (it, _inport_name) == 1, "Error adding in port?");
 
     it = TypeFactory::Factory()->NewBool (g[i][0] == 'c' ? Type::NONE :
 					  Type::OUT);
-    Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
+    Assert (proc->AddPort (it, _outport_name) == 1, "Error adding out port?");
 
     /*-- prs body --*/
     act_prs *prs_body;
@@ -1192,14 +1194,14 @@ void ActCellPass::add_passgates_cap ()
 
     if (g[i][0] != 'c') {
       if (g[i][0] != 'p') {
-	rules->u.p.g = new ActId ("in", new Array (const_expr (j)));
+	rules->u.p.g = new ActId (_inport_name, new Array (const_expr (j)));
 	j++;
       }
       else {
 	rules->u.p.g = NULL;
       }
       if (g[i][0] != 'n') {
-	rules->u.p._g = new ActId ("in", new Array (const_expr (j)));
+	rules->u.p._g = new ActId (_inport_name, new Array (const_expr (j)));
 	j++;
       }
       else {
@@ -1211,13 +1213,13 @@ void ActCellPass::add_passgates_cap ()
       rules->u.p.g = NULL;
     }
     if (g[i][0] != 'c') {
-      rules->u.p.s = new ActId ("in", new Array (const_expr (j)));
+      rules->u.p.s = new ActId (_inport_name, new Array (const_expr (j)));
       j++;
     }
     else {
-      rules->u.p.s = new ActId ("in");
+      rules->u.p.s = new ActId (_inport_name);
     }
-    rules->u.p.d = new ActId ("out");
+    rules->u.p.d = new ActId (_outport_name);
 
     if (g[i][1] == '0') {
       act_size_spec_t *sz;
@@ -1262,7 +1264,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   ta->mkArray ();
   it->MkArray (ta);
 
-  Assert (proc->AddPort (it, "in") == 1, "Error adding in port?");
+  Assert (proc->AddPort (it, _inport_name) == 1, "Error adding in port?");
 
   it = TypeFactory::Factory()->NewBool (Type::OUT);
   if (pi->nout > 1) {
@@ -1272,7 +1274,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
     ta->mkArray ();
     it->MkArray (ta);
   }
-  Assert (proc->AddPort (it, "out") == 1, "Error adding out port?");
+  Assert (proc->AddPort (it, _outport_name) == 1, "Error adding out port?");
 
   /*-- prs body --*/
   act_prs *prs_body;
@@ -1298,7 +1300,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j+1] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.e = _convert_prsexpr_to_act (pi->up[j], pi);
+      rules->u.one.e =
+	_convert_prsexpr_to_act (pi->up[j], _inport_name, _outport_name, pi);
       if (rules->u.one.label) {
 	char buf[10];
 	snprintf (buf, 10, "x%d", j-pi->nout);
@@ -1306,10 +1309,10 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       }
       else {
 	if (pi->nout == 1) {
-	  rules->u.one.id = new ActId ("out");
+	  rules->u.one.id = new ActId (_outport_name);
 	}
 	else {
-	  rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
+	  rules->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
 	}
       }
       rules->u.one.dir = 1; /* up */
@@ -1324,7 +1327,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j] : NULL);
       rules->u.one.arrow_type = 0;
       rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.e = _convert_prsexpr_to_act (pi->dn[j], pi);
+      rules->u.one.e =
+	_convert_prsexpr_to_act (pi->dn[j], _inport_name, _outport_name, pi);
       if (rules->u.one.label) {
 	char buf[10];
 	snprintf (buf, 10, "x%d", j-pi->nout);
@@ -1332,10 +1336,10 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       }
       else {
 	if (pi->nout == 1) {
-	  rules->u.one.id = new ActId ("out");
+	  rules->u.one.id = new ActId (_outport_name);
 	}
 	else {
-	  rules->u.one.id = new ActId ("out", new Array (const_expr (j)));
+	  rules->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
 	}
       }
       rules->u.one.dir = 0; /* dn */
@@ -1425,7 +1429,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   for (int i=0; i < pi->nvars - pi->nout - pi->nat; i++) {
     ActId *tmp;
     Expr *arr = const_expr (i);
-    tmp = new ActId ("in", new Array (arr));
+    tmp = new ActId (_inport_name, new Array (arr));
     list_append (l, tmp);
   }
   while (rules) {
@@ -1445,6 +1449,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
 
 
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
+						const char *_inport_name,
+						const char *_outport_name,
 						struct act_prsinfo *pi)
 {
   int v;
@@ -1459,30 +1465,34 @@ static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
   case ACT_PRS_EXPR_OR:
-    ret->u.e.l = _convert_prsexpr_to_act (e->u.e.l, pi);
-    ret->u.e.r = _convert_prsexpr_to_act (e->u.e.r, pi);
+    ret->u.e.l =
+      _convert_prsexpr_to_act (e->u.e.l, _inport_name, _outport_name, pi);
+    ret->u.e.r =
+      _convert_prsexpr_to_act (e->u.e.r, _inport_name, _outport_name, pi);
     ret->u.e.pchg_type = e->u.e.pchg_type;
-    ret->u.e.pchg = _convert_prsexpr_to_act (e->u.e.pchg, pi);
+    ret->u.e.pchg =
+      _convert_prsexpr_to_act (e->u.e.pchg, _inport_name, _outport_name, pi);
     break;
     
   case ACT_PRS_EXPR_NOT:
-    ret->u.e.l = _convert_prsexpr_to_act (e->u.e.l, pi);
+    ret->u.e.l =
+      _convert_prsexpr_to_act (e->u.e.l, _inport_name, _outport_name, pi);
     break;
 
   case ACT_PRS_EXPR_VAR:
     v = (unsigned long)e->u.v.id;
     if (v < pi->nout) {
       if (pi->nout == 1) {
-	ret->u.v.id = new ActId ("out");
+	ret->u.v.id = new ActId (_outport_name);
       }
       else {
 	Expr *tmp = const_expr (v);
-	ret->u.v.id = new ActId ("out", new Array (tmp));
+	ret->u.v.id = new ActId (_outport_name, new Array (tmp));
       }
     }
     else if (v >= (pi->nout + pi->nat)) {
       Expr *tmp = const_expr (v-pi->nout-pi->nat);
-      ret->u.v.id = new ActId ("in", new Array (tmp));
+      ret->u.v.id = new ActId (_inport_name, new Array (tmp));
     }
     else {
       /* XXX should not be here */
@@ -1518,6 +1528,8 @@ static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
 }
 
 static void _dump_expr (FILE *fp,
+			const char *_inport_name,
+			const char *_outport_name,
 			act_prs_expr_t *e, struct act_prsinfo *pi, int prec = 0)
 {
   int v;
@@ -1528,9 +1540,9 @@ static void _dump_expr (FILE *fp,
     if (prec > 2) {
       fprintf (fp, "(");
     }
-    _dump_expr (fp, e->u.e.l, pi, 2);
+    _dump_expr (fp, _inport_name, _outport_name, e->u.e.l, pi, 2);
     fprintf (fp, " & ");
-    _dump_expr (fp, e->u.e.r, pi, 2);
+    _dump_expr (fp, _inport_name, _outport_name, e->u.e.r, pi, 2);
     if (prec > 2) {
       fprintf (fp, ")");
     }
@@ -1541,9 +1553,9 @@ static void _dump_expr (FILE *fp,
     if (prec > 1) {
       fprintf (fp, "(");
     }
-    _dump_expr (fp, e->u.e.l, pi, 1);
+    _dump_expr (fp, _inport_name, _outport_name, e->u.e.l, pi, 1);
     fprintf (fp, " | ");
-    _dump_expr (fp, e->u.e.r, pi, 1);
+    _dump_expr (fp, _inport_name, _outport_name, e->u.e.r, pi, 1);
     if (prec > 1) {
       fprintf (fp, ")");
     }
@@ -1551,21 +1563,21 @@ static void _dump_expr (FILE *fp,
 
   case ACT_PRS_EXPR_NOT:
     fprintf (fp, "~");
-    _dump_expr (fp, e->u.e.l, pi, 3);
+    _dump_expr (fp, _inport_name, _outport_name, e->u.e.l, pi, 3);
     break;
 
   case ACT_PRS_EXPR_VAR:
     v = (unsigned long)e->u.v.id;
     if (v < pi->nout) {
       if (pi->nout == 1) {
-	fprintf (fp, "out");
+	fprintf (fp, "%s", _outport_name);
       }
       else {
-	fprintf (fp, "out[%d]", v);
+	fprintf (fp, "%s[%d]", _outport_name, v);
       }
     }
     else if (v >= (pi->nout + pi->nat)) {
-      fprintf (fp, "in[%d]", v-pi->nout-pi->nat);
+      fprintf (fp, "%s[%d]", _inport_name, v-pi->nout-pi->nat);
     }
     else {
       fprintf (fp, "@x%d", v-pi->nout);
@@ -1701,14 +1713,14 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 
   if (noutp > 0) {
     if (noutp == 1) {
-      ActId *tmp = new ActId ("out");
+      ActId *tmp = new ActId (_outport_name);
       tmp = tmp->Expand (NULL, NULL);
       _alloc_new_id (&imap, tmp);
       _add_new_outslot (ret);
     }
     else {
       for (int i=0; i < noutp; i++) {
-	ActId *tmp = new ActId ("out", new Array (const_expr (i)));
+	ActId *tmp = new ActId (_outport_name, new Array (const_expr (i)));
 	tmp = tmp->Expand (NULL, NULL);
 	_alloc_new_id (&imap, tmp);
 	_add_new_outslot (ret);
@@ -1781,7 +1793,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 
   if (ninp > 0) {
     for (int i=0; i < ninp; i++) {
-      ActId *tmp = new ActId ("in", new Array (const_expr (i)));
+      ActId *tmp = new ActId (_inport_name, new Array (const_expr (i)));
       tmp = tmp->Expand (NULL, NULL);
       _find_alloc_id (&imap, tmp, 0);
     }
@@ -1938,7 +1950,8 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 }
 
 
-static void _dump_prsinfo (struct act_prsinfo *p)
+static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
+			   const char *_outport_name)
 {
   printf ("-------\n");
   if (p->cell) {
@@ -1953,10 +1966,10 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   for (int i=0; i < A_LEN (p->up); i++) {
     printf (" %d: up = ", i);
     if (!p->up[i]) { printf ("n/a"); }
-    else { _dump_expr (stdout, p->up[i], p); }
+    else { _dump_expr (stdout, _inport_name, _outport_name, p->up[i], p); }
     printf (" ; dn = ");
     if (!p->dn[i]) { printf ("n/a"); }
-    else { _dump_expr (stdout, p->dn[i], p); }
+    else { _dump_expr (stdout, _inport_name, _outport_name, p->dn[i], p); }
     printf ("\n");
   }
   for (int i=0; i < A_LEN (p->attrib); i++) {
@@ -1976,7 +1989,10 @@ static void _dump_prsinfo (struct act_prsinfo *p)
   printf ("-------\n");
 }
 
-static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
+static void _dump_prs_cell (FILE *fp,
+			    const char *_inport_name,
+			    const char *_outport_name,
+			    struct act_prsinfo *p, const char *name)
 {
   const char *s = name;
   fprintf (fp, "export defcell ");
@@ -1985,7 +2001,8 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
     s++;
   }
   fprintf (fp, " (");
-  fprintf (fp, "bool? in[%d]; bool! out", p->nvars - p->nout - p->nat);
+  fprintf (fp, "bool? %s[%d]; bool! %s", _inport_name,
+	   p->nvars - p->nout - p->nat, _outport_name);
   if (p->nout > 1) {
     fprintf (fp, "[%d]", p->nout);
   }
@@ -2017,14 +2034,14 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
 	fprintf (fp, "] ");
       }
 
-      _dump_expr (fp, p->dn[i], p);
+      _dump_expr (fp, _inport_name, _outport_name, p->dn[i], p);
       fprintf (fp, " -> ");
       if (i < p->nout) {
 	if (p->nout == 1) {
-	  fprintf (fp, "out-");
+	  fprintf (fp, "%s-", _outport_name);
 	}
 	else {
-	  fprintf (fp, "out[%d]-", i);
+	  fprintf (fp, "%s[%d]-", _outport_name, i);
 	}
       }
       else {
@@ -2049,14 +2066,14 @@ static void _dump_prs_cell (FILE *fp, struct act_prsinfo *p, const char *name)
 	fprintf (fp, "] ");
       }
       
-      _dump_expr (fp, p->up[i], p);
+      _dump_expr (fp, _inport_name, _outport_name, p->up[i], p);
       fprintf (fp, " -> ");
       if (i < p->nout) {
 	if (p->nout == 1) {
-	  fprintf (fp, "out+");
+	  fprintf (fp, "%s+", _outport_name);
 	}
 	else {
-	  fprintf (fp, "out[%d]+", i);
+	  fprintf (fp, "%s[%d]+", _outport_name, i);
 	}
       }
       else {
@@ -2130,7 +2147,7 @@ void ActCellPass::dump_celldb (FILE *fp)
   /* print */
   for (i=0; i < A_LEN (cells); i++) {
     pi = cells[i]->p;
-    _dump_prs_cell (fp, pi, cells[i]->name);
+    _dump_prs_cell (fp, _inport_name, _outport_name, pi, cells[i]->name);
     if (!pi->cell) {
       FREE ((void*)cells[i]->name);
     }
@@ -2138,29 +2155,41 @@ void ActCellPass::dump_celldb (FILE *fp)
   }
   A_FREE (cells);
 
-  fprintf (fp, "export template<pint w,l> defcell p0(bool? in[2]; bool! out) {\n");
-  fprintf (fp, "  prs { passp<w,l> (in[0],in[1],out) }\n}\n\n");
+  fprintf (fp, "export template<pint w,l> defcell p0(bool? %s[2]; bool! %s) {\n", _inport_name, _outport_name);
+  fprintf (fp, "  prs { passp<w,l> (%s[0],%s[1],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export template<pint w,l> defcell n0(bool? in[2]; bool! out) {\n");
-  fprintf (fp, "  prs { passn<w,l> (in[0],in[1],out) }\n}\n\n");
+  fprintf (fp, "export template<pint w,l> defcell n0(bool? %s[2]; bool! %s) {\n", _inport_name, _outport_name);
+  fprintf (fp, "  prs { passn<w,l> (%s[0],%s[1],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export template<pint w,l> defcell t0(bool? in[3]; bool! out) {\n");
-  fprintf (fp, "  prs { transgate<w,l> (in[0],in[1],in[2],out) }\n}\n\n");
+  fprintf (fp, "export template<pint w,l> defcell t0(bool? %s[3]; bool! %s) {\n", _inport_name, _outport_name);
+  fprintf (fp, "  prs { transgate<w,l> (%s[0],%s[1],%s[2],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export defcell p1(bool? in[2]; bool! out) {\n");
-  fprintf (fp, "  prs { passp (in[0],in[1],out) }\n}\n\n");
+  fprintf (fp, "export defcell p1(bool? %s[2]; bool! %s) {\n",
+	   _inport_name, _outport_name);
+  fprintf (fp, "  prs { passp (%s[0],%s[1],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export defcell n1(bool? in[2]; bool! out) {\n");
-  fprintf (fp, "  prs { passn (in[0],in[1],out) }\n}\n\n");
+  fprintf (fp, "export defcell n1(bool? %s[2]; bool! %s) {\n",
+	   _inport_name, _outport_name);
+  fprintf (fp, "  prs { passn (%s[0],%s[1],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export defcell t1(bool? in[3]; bool! out) {\n");
-  fprintf (fp, "  prs { transgate (in[0],in[1],in[2],out) }\n}\n\n");
+  fprintf (fp, "export defcell t1(bool? %s[3]; bool! %s) {\n",
+	   _inport_name, _outport_name);
+  fprintf (fp, "  prs { transgate (%s[0],%s[1],%s[2],%s) }\n}\n\n",
+	   _inport_name, _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export template<pint w,l> defcell c0(bool in; bool out) {\n");
-  fprintf (fp, "  prs { cap<w,l> (in,out) }\n}\n\n");
+  fprintf (fp, "export template<pint w,l> defcell c0(bool %s; bool %s) {\n",
+	   _inport_name, _outport_name);
+  fprintf (fp, "  prs { cap<w,l> (%s,%s) }\n}\n\n",
+	   _inport_name, _outport_name);
   
-  fprintf (fp, "export defcell c1(bool in; bool out) {\n");
-  fprintf (fp, "  prs { cap (in,out) }\n}\n\n");
+  fprintf (fp, "export defcell c1(bool %s; bool %s) {\n",
+	   _inport_name, _outport_name);
+  fprintf (fp, "  prs { cap (%s,%s) }\n}\n\n", _inport_name, _outport_name);
   
   fprintf (fp, "\n\n}\n");
 }
@@ -2204,12 +2233,12 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   }
 
   instname = new ActId (name);
-  instname->Append (new ActId ("in"));
+  instname->Append (new ActId (_inport_name));
   
   ActBody_Conn *ac = new ActBody_Conn (-1, instname, ret);
 
   instname = new ActId (name);
-  instname->Append (new ActId ("out"));
+  instname->Append (new ActId (_outport_name));
 
   idexpr = _idexpr (0, pi);
   if (pi->nout == 1) {
@@ -2269,12 +2298,12 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   }
 
   instname = new ActId (name);
-  instname->Append (new ActId ("in"));
+  instname->Append (new ActId (_inport_name));
   
   ActBody_Conn *ac = new ActBody_Conn (-1, instname, ret);
 
   instname = new ActId (name);
-  instname->Append (new ActId ("out"));
+  instname->Append (new ActId (_outport_name));
 
   ac->Append (new ActBody_Conn (-1, instname, new AExpr (_id_to_expr (gate->u.p.d))));
 
@@ -2901,8 +2930,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	fatal_error ("Cell `%s::%s': More than two ports",
 		     cell_ns->getName(), p->getName());
       }
-      if ((strcmp (p->getPortName (0), "in") != 0) ||
-	  (strcmp (p->getPortName (1), "out") != 0)) {
+      if ((strcmp (p->getPortName (0), _inport_name) != 0) ||
+	  (strcmp (p->getPortName (1), _outport_name) != 0)) {
 	fatal_error ("Cell `%s::%s': Ports should be in/out",
 		     cell_ns->getName(), p->getName());
       }
@@ -3115,8 +3144,12 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   current_idmap.nat = 0;
 
   config_set_default_string ("net.cell_namespace", "cell");
+  config_set_default_string ("net.cell_inport", "in");
+  config_set_default_string ("net.cell_outport", "out");
     
   cell_ns = a->findNamespace (config_get_string ("net.cell_namespace"));
+  _inport_name = config_get_string ("net.cell_inport");
+  _outport_name = config_get_string ("net.cell_outport");
   
   if (!cell_ns) {
     cell_ns = new ActNamespace (ActNamespace::Global(),
