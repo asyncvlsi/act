@@ -92,8 +92,9 @@ then
     mkdir $installdir/act
 fi
 
-c_compiler_name=gcc
-cxx_compiler_name=g++
+# use gcc and g++ if not otherwise specified
+c_compiler_name=${C_COMPILER_NAME:-gcc}
+cxx_compiler_name=${CXX_COMPILER_NAME:-g++}
 
 # get additional CFLAGS and pass them through
 while [ $# -gt 1 ]
@@ -134,9 +135,6 @@ else
     sh_exe_options="\"-Wl,-rpath=$ACT_HOME/lib\""
 fi    
 
-# use gcc and g++ if not otherwise specified
-c_compiler_name=${C_COMPILER_NAME:-gcc}
-cxx_compiler_name=${CXX_COMPILER_NAME:-g++}
 
 # the double parentesis are needed beause of double parcing in the check script and are removed in the makefile to have the intended behaviour
 c_compiler_flags="\"-O2 ${addon_cflags}\""
