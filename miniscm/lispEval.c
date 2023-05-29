@@ -39,14 +39,14 @@ struct LispBuiltinFn {
   char *name;
   const char *id;
   int lazy;			/* != 0 if lazy */
-  LispObj *(*f) ();		/* built-in */
+  LispObj *(*f) (char *, Sexp *, Sexp *);		/* built-in */
 };
 
 
 struct LispDynamicFn {
   char *name;
   const char *id;
-  LispObj *(*f) ();		/* dynamic */
+  LispObj *(*f) (char *, Sexp *);		/* dynamic */
 };
 
 static struct LispDynamicFn *DyTable = NULL;
@@ -156,7 +156,7 @@ static struct LispBuiltinFn FnTable[] = {
   { NULL, 0, 0, NULL }
 };
 
-static LispObj *evalList ();
+static LispObj *evalList (Sexp *, Sexp *);
 
 
 

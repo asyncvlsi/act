@@ -25,6 +25,7 @@
 #include "act_walk_X.h"
 #include "act_parse_int.h"
 #include <act/lang.h>
+#include <act/act.h>
 #include <common/config.h>
 #include <string.h>
 
@@ -587,4 +588,9 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     break;
   }
   return ret;
+}
+
+int _act_shadow_warning (void)
+{
+  return Act::shadow;
 }

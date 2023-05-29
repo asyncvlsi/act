@@ -2005,7 +2005,9 @@ instance_id[ActBody *]: ID [ sparse_range ]
     else {
       /* check if it shadows something */
       if ($0->scope->FullLookup ($1)) {
-	$W("Instance ``%s'' shadows another instance of the same name", $1);
+	if (_act_shadow_warning()) {
+	  $W("Instance ``%s'' shadows another instance of the same name", $1);
+	}
       }
 
       /* create a slot */

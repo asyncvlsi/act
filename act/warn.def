@@ -13,5 +13,8 @@ WARNING_FLAG(dup_pass, 1)
 /* warn if a language is being substituted for another */
 WARNING_FLAG(lang_subst, 1)
 
+/* warn if an instance shadows another */
+WARNING_FLAG(shadow, 1)
+
 #undef WARNING_FLAG
 
