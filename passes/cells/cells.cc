@@ -2125,18 +2125,20 @@ void ActCellPass::dump_celldb (FILE *fp)
   if (!cell_table) return;
 
   chash_iter_init (cell_table, &iter);
-  while ((b = chash_iter_next (cell_table, &iter))) {
-    pi = (struct act_prsinfo *)b->v;
-    A_NEW (cells, struct cell_name *);
-    NEW (A_NEXT (cells), struct cell_name);
-    A_NEXT (cells)->p = pi;
-    if (pi->cell) {
-      A_NEXT (cells)->name = pi->cell->getName();
+  if (cell_table->n > 0) {
+    while ((b = chash_iter_next (cell_table, &iter))) {
+      pi = (struct act_prsinfo *)b->v;
+      A_NEW (cells, struct cell_name *);
+      NEW (A_NEXT (cells), struct cell_name);
+      A_NEXT (cells)->p = pi;
+      if (pi->cell) {
+	A_NEXT (cells)->name = pi->cell->getName();
+      }
+      else {
+	A_NEXT (cells)->name = _get_basename (pi);
+      }
+      A_INC (cells);
     }
-    else {
-      A_NEXT (cells)->name = _get_basename (pi);
-    }
-    A_INC (cells);
   }
 
   /* lets sort the cell names */
