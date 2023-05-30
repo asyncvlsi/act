@@ -1,0 +1,13 @@
+template<pint w> deftype foo (int<w> a, b) { }
+
+template<pint N> defproc test(chan?(foo<N>) x[32])
+{
+  foo<N> y[32];
+
+  chp {
+
+    x[0]?y[0]
+  }
+}
+
+test<4> t;

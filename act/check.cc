@@ -1890,6 +1890,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
   int ret = 1;
   int it1_override, it2_override;
   InstType *it1, *it2;
+  int id_type;
 
   it1_override = -1;
   it2_override = override_id;
@@ -1901,12 +1902,16 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
     it1 = NULL;
   }
   if (id) {
-    if (act_type_var (sc, id, &it2) == T_ERR) {
+    id_type = act_type_var (sc, id, &it2);
+    if (id_type == T_ERR) {
       typecheck_err ("Could not find variable type");
       if (it1) {
 	delete it1;
       }
       return 0;
+    }
+    if (!(id_type & T_ARRAYOF)) {
+      it2 = new InstType (it2, 1);
     }
   }
   else {
