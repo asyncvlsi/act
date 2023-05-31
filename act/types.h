@@ -1834,6 +1834,21 @@ class TypeFactory {
   static int bitWidth (const InstType *t);
 
   /**
+   * Bit-width of a type that also works for structures. In the case
+   * of structures, the bit-width is the sum of the bit-widths of all
+   * fields. The type must be either a data or channel type.
+   *
+   * @return the total bit-width to hold the type, similar to the
+   * normal bitWidth method.
+   */
+  static int totBitWidth (const Type *t);
+
+  /**
+   * See other totBitWidth method
+   */
+  static int totBitWidth (const InstType *t);
+
+  /**
    * For bidirectional channels only. Returns 0 for normal channels,
    * -1 for non-channels. This returns the bit-width (like the
    * bitWidth() method) for the acknowledge type for the channel.
@@ -1844,6 +1859,16 @@ class TypeFactory {
 
   /** see other bitWidthTwo() method */
   static int bitWidthTwo (const InstType *t);
+
+  /**
+   * See totBitWidth and bitWidthTwo
+   */
+  static int totBitWidthTwo (const Type *t);
+
+  /**
+   * See other totBitWidthTwo
+   */
+  static int totBitWidthTwo (const InstType *t);
 
   /**
    * 1 if a boolean within a channel or

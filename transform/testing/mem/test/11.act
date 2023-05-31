@@ -1,0 +1,19 @@
+import "mem.act";
+
+deftype struct2 (int<8> w) { }
+
+deftype mystruct (int<4> a; struct2 m[3]; int<8> b[4]) { }
+
+defproc test()
+{
+  int x;
+  mystruct mem[8];
+  mystruct y;
+  
+  chp {
+   x := 0;
+   mem[x] := y
+  }
+}
+
+test t;

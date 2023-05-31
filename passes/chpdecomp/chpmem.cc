@@ -50,15 +50,17 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
 }
 
 static const char *MEMVAR_STRING = "_memdatv";
+static const char *MEMSTR_STRING = "_memdats";
 
-int ActCHPMemory::_fresh_memdata (Scope *sc, int bw)
+int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
 {
   char buf[100];
   int xval;
 
   xval = 0;
   for (int i=0; i < _memdata_len; i++) {
-    if (_memdata_var[i].bw == bw && _memdata_var[i].used == 0) {
+    if ((isstruct ? _memdata_var[i].isstruct->isEqual (isstruct)
+	 : _memdata_var[i].bw == bw) && _memdata_var[i].used == 0) {
       _memdata_var[i].used = 1;
       return _memdata_var[i].idx;
     }
@@ -72,11 +74,22 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw)
     snprintf (buf, 100, "%s%d", MEMVAR_STRING, xval);
   } while (sc->Lookup (buf));
 
+  if (isstruct) {
+    bw = TypeFactory::totBitWidth (isstruct);
+  }
+
   /* add this! */
   InstType *it = TypeFactory::Factory()->NewInt (_curbnl->cur, Type::NONE,
 						 0, const_expr (bw));
   it = it->Expand (ActNamespace::Global(), sc);
   sc->Add (buf, it);
+
+  if (isstruct) {
+    snprintf (buf, 100, "%s%d", MEMSTR_STRING, xval);
+    it = new InstType (sc, isstruct, 0);
+    it = it->Expand (ActNamespace::Global(), sc);
+    sc->Add (buf, it);
+  }
 
   if (_memdata_len == 0) {
     MALLOC (_memdata_var, struct memvar_info, 1);
@@ -84,12 +97,17 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw)
   else {
     REALLOC (_memdata_var, struct memvar_info, _memdata_len + 1);
   }
+  _memdata_var[_memdata_len].isstruct = isstruct;
   _memdata_var[_memdata_len].used = 1;
   _memdata_var[_memdata_len].bw = bw;
   _memdata_var[_memdata_len].idx = xval;
+  
   _memdata_len++;
+  
   return xval;
 }
+
+
 
 void ActCHPMemory::_fresh_release (int idx)
 {
@@ -137,7 +155,12 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     InstType *it = new InstType (_curbnl->cur, p, 0);
     it->setNumParams (2);
     it->setParam (0, const_expr (v->a->size()));
-    it->setParam (1, const_expr (v->width));
+    if (v->isstruct) {
+      it->setParam (1, const_expr (TypeFactory::totBitWidth (v->isstruct)));
+    }
+    else {
+      it->setParam (1, const_expr (v->width));
+    }
     it = it->Expand (ActNamespace::Global(), _curbnl->cur);
     
     /*-- delete dynamic variable! --*/
@@ -209,7 +232,235 @@ static Expr *_gen_address (InstType *it, Array *a)
   return tmp;
 }
 
-static void _append_mem_read (list_t *top, ActId *access, int idx, Scope *sc)
+
+int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d, int off,
+				    Scope *sc)
+{
+  Assert (d && TypeFactory::isStructure (d), "What?");
+  ActId *ftail, *oldtail;
+
+  if (field) {
+    ftail = field->Tail ();
+    oldtail = ftail;
+  }
+  else {
+    ftail = NULL;
+    oldtail = NULL;
+  }
+
+  for (int i=0; i < d->getNumPorts(); i++) {
+    int sz;
+    InstType *it = d->getPortType (i);
+    Array *a = it->arrayInfo();
+    Arraystep *as;
+    if (a) {
+      as = a->stepper();
+    }
+    else {
+      as = NULL;
+    }
+
+    if (!field) {
+      field = new ActId (d->getPortName (i));
+      ftail = field;
+    }
+    else {
+      ftail->Append (new ActId (d->getPortName (i)));
+      ftail = ftail->Rest();
+    }
+    
+    sz = TypeFactory::bitWidth (it);
+    while (!as || !as->isend()) {
+      Array *fa;
+      if (as) {
+	fa = as->toArray();
+      }
+      else {
+	fa = NULL;
+      }
+      ftail->setArray (fa);
+      if (TypeFactory::isStructure (it)) {
+	Data *sub = dynamic_cast <Data *> (it->BaseType());
+	Assert (field, "what?");
+	off = _elemwise_assign (l, idx, field, sub, off, sc);
+      }
+      else {
+	act_chp_lang_t *c;
+	char buf[100];
+	ActId *rhs;
+	NEW (c, act_chp_lang_t);
+	c->space = NULL;
+	c->label = NULL;
+	c->type = ACT_CHP_ASSIGN;
+	snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
+	c->u.assign.id = new ActId (buf);
+	c->u.assign.id->Append (field->Clone());
+
+	snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+	rhs = new ActId (buf);
+	
+	NEW (c->u.assign.e, Expr);
+	c->u.assign.e->type = E_BITFIELD;
+	c->u.assign.e->u.e.l = (Expr *) rhs;
+	NEW (c->u.assign.e->u.e.r, Expr);
+	c->u.assign.e->u.e.r->type = E_BITFIELD;
+	c->u.assign.e->u.e.r->u.e.l = const_expr (off);
+	c->u.assign.e->u.e.r->u.e.r = const_expr (off + sz - 1);
+
+	Expr *tmp = expr_expand (c->u.assign.e, ActNamespace::Global(), sc,
+				 ACT_EXPR_EXFLAG_CHPEX);
+	expr_free (c->u.assign.e);
+	c->u.assign.e = tmp;
+
+	list_append (l, c);
+	
+	off += sz;
+      }
+      ftail->setArray (NULL);
+      if (fa) {
+	delete fa;
+      }
+      if (!as) {
+	break;
+      }
+      else {
+	as->step();
+      }
+    }
+    if (as) {
+      delete as;
+    }
+    if (oldtail) {
+      delete oldtail->Rest();
+      oldtail->prune();
+    }
+    else {
+      delete field;
+      field = NULL;
+    }
+  }
+  return off;
+}
+
+
+Expr *ActCHPMemory::_elemwise_fieldlist (int idx, ActId *field, Data *d)
+{
+  Assert (d && TypeFactory::isStructure (d), "What?");
+  ActId *ftail, *oldtail;
+  Expr *ret = NULL;
+  Expr *rtail = NULL;
+
+  if (field) {
+    ftail = field->Tail ();
+    oldtail = ftail;
+  }
+  else {
+    ftail = NULL;
+    oldtail = NULL;
+  }
+
+  for (int i=0; i < d->getNumPorts(); i++) {
+    int sz;
+    InstType *it = d->getPortType (i);
+    Array *a = it->arrayInfo();
+    Arraystep *as;
+    if (a) {
+      as = a->stepper();
+    }
+    else {
+      as = NULL;
+    }
+
+    if (!field) {
+      field = new ActId (d->getPortName (i));
+      ftail = field;
+    }
+    else {
+      ftail->Append (new ActId (d->getPortName (i)));
+      ftail = ftail->Rest();
+    }
+    
+    sz = TypeFactory::bitWidth (it);
+    while (!as || !as->isend()) {
+      Expr *elem;
+      Array *fa;
+      if (as) {
+	fa = as->toArray();
+      }
+      else {
+	fa = NULL;
+      }
+      ftail->setArray (fa);
+      if (TypeFactory::isStructure (it)) {
+	Data *sub = dynamic_cast <Data *> (it->BaseType());
+	Assert (field, "what?");
+	elem = _elemwise_fieldlist (idx, field, sub);
+      }
+      else {
+	NEW (elem, Expr);
+	elem->type = E_CONCAT;
+	elem->u.e.r = NULL;
+	NEW (elem->u.e.l, Expr);
+	elem->u.e.l->type = E_VAR;
+	elem->u.e.l->u.e.r = NULL;
+
+	ActId *rhs;
+	char buf[100];
+	snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
+	rhs = new ActId (buf);
+	rhs->Append (field->Clone());
+
+	elem->u.e.l->u.e.l = (Expr *)rhs;
+      }
+      ftail->setArray (NULL);
+      if (fa) {
+	delete fa;
+      }
+
+      if (!ret) {
+	ret = elem;
+	rtail = ret;
+      }
+      else {
+	rtail->u.e.r = elem;
+      }
+      while (rtail->u.e.r) {
+	rtail = rtail->u.e.r;
+      }
+      if (!as) {
+	break;
+      }
+      else {
+	as->step();
+      }
+    }
+    if (as) {
+      delete as;
+    }
+    if (oldtail) {
+      delete oldtail->Rest();
+      oldtail->prune();
+    }
+    else {
+      delete field;
+      field = NULL;
+    }
+  }
+  return ret;
+}
+
+
+int ActCHPMemory::_inv_idx (int idx)
+{
+  for (int i=0; i < _memdata_len; i++) {
+    if (_memdata_var[i].used && _memdata_var[i].idx == idx) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope *sc)
 {
   act_chp_lang_t *c;
   ActId *tmp;
@@ -274,10 +525,32 @@ static void _append_mem_read (list_t *top, ActId *access, int idx, Scope *sc)
   c->type = ACT_CHP_COMMA;
   c->u.semi_comma.cmd = l;
 
+  /* check if structure */
+  int idx_i = _inv_idx (idx);
+  Assert (idx_i >= 0, "What!");
+  
+  if (_memdata_var[idx_i].isstruct) {
+    act_chp_lang_t *d;
+    list_t *nl;
+
+    nl = list_new ();
+    list_append (nl, c);
+
+    // do element-wise structure assignment
+    _elemwise_assign (nl, idx, NULL, _memdata_var[idx_i].isstruct, 0, sc);
+     
+    NEW (d, act_chp_lang_t);
+    d->space = NULL;
+    d->label = NULL;
+    d->type = ACT_CHP_SEMI;
+    d->u.semi_comma.cmd = nl;
+    c = d;
+  }
+
   list_append (top, c);
 }
 
-static void _append_mem_write (list_t *top, ActId *access, Expr *e, Scope *sc)
+void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr *e, Scope *sc)
 {
   act_chp_lang_t *c;
   ActId *tmp;
@@ -328,7 +601,16 @@ static void _append_mem_write (list_t *top, ActId *access, Expr *e, Scope *sc)
   c->u.comm.var = NULL;
   c->u.comm.chan = new ActId (access->getName());
   c->u.comm.chan->Append (new ActId ("din"));
-  c->u.comm.e = e;
+
+  int inv_idx = _inv_idx (idx);
+  Assert (inv_idx >= 0, "What?");
+  if (_memdata_var[inv_idx].isstruct) {
+    expr_free (e);
+    c->u.comm.e = _elemwise_fieldlist (idx, NULL, _memdata_var[inv_idx].isstruct);
+  }
+  else {
+    c->u.comm.e = e;
+  }
 
   /* mem.din!e */
   list_append (l, c);
@@ -395,12 +677,15 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 	}
 	
 	/* we need to re-write this! */
-	if (v->isstruct) {
-	  warning ("Ignoring structure memory");
-	}
-	int idx = _fresh_memdata (_curbnl->cur, v->width);
+	int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
 	char buf[100];
-	snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+
+	if (v->isstruct) {
+	  snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
+	}
+	else {
+	  snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+	}
 	list_iappend (l, idx);
 	list_append (l, e->u.e.l);
 	e->u.e.l = (Expr *) new ActId (buf);
@@ -542,26 +827,29 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	}
 	
 	/* write */
-	if (v->isstruct) {
-	  warning ("Structure memory, problem!");
-	}
-	int idx = _fresh_memdata (_curbnl->cur, v->width);
+	int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
 	Expr *var;
 	post = list_new ();
 
 	char buf[100];
-	snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+
+	if (v->isstruct) {
+	  snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
+	}
+	else {
+	  snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+	}
 
 	Expr *e;
 	NEW (e, Expr);
 	e->type = E_VAR;
 	e->u.e.l = (Expr *) new ActId (buf);
 	if (c->type == ACT_CHP_ASSIGN) {
-	  _append_mem_write (post, c->u.assign.id, e, _curbnl->cur);
+	  _append_mem_write (post, c->u.assign.id, idx, e, _curbnl->cur);
 	  c->u.assign.id = new ActId (buf);
 	}
 	else {
-	  _append_mem_write (post, c->u.comm.var, e, _curbnl->cur);
+	  _append_mem_write (post, c->u.comm.var, idx, e, _curbnl->cur);
 	  c->u.comm.var = new ActId (buf);
 	}
 	_fresh_release (idx);

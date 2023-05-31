@@ -994,6 +994,81 @@ int TypeFactory::bitWidth (const Type *t)
 XINSTMACRO(bitWidth)
 
 
+static int _count_struct_width (const Type *t)
+{
+  int w = 0;
+  Assert (TypeFactory::isStructure (t), "need a structure!");
+  const Data *d = dynamic_cast<const Data *>(t);
+  Assert (d, "huh");
+  for (int i=0; i < d->getNumPorts(); i++) {
+    InstType *it = d->getPortType (i);
+    int sz;
+    if (it->arrayInfo()) {
+      sz = it->arrayInfo()->size();
+    }
+    else {
+      sz = 1;
+    }
+    w += sz*TypeFactory::totBitWidth (it->BaseType());
+  }
+  return w;
+}
+
+
+int TypeFactory::totBitWidth (const Type *t)
+{
+  if (!t) return -1;
+  {
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->datatype();
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::totBitWidth (x);
+    }
+  }
+  {
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::totBitWidth (tmp->getParent());
+    }
+  }
+  { 
+    const Data *tmp = dynamic_cast<const Data *>(t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      if (tmp->getParent ()) {
+	return TypeFactory::totBitWidth (tmp->getParent());
+      }
+      else {
+	/* bitwidth of a structure */
+	return _count_struct_width (tmp);
+      }
+    }
+  }
+  {
+    const Int *tmp = dynamic_cast<const Int *>(t);
+    if (tmp) {
+      if (tmp->kind == 2) {
+	return _ceil_log2 (tmp->w);
+      }
+      else {
+	return tmp->w;
+      }
+    }
+  }
+  {
+    const Bool *tmp = dynamic_cast<const Bool *>(t);
+    if (tmp) {
+      return 1;
+    }
+  }
+  return -1;
+}
+XINSTMACRO(totBitWidth)
+
+
 int TypeFactory::enumNum (const Type *t)
 {
   if (!t) return -1;
@@ -1165,6 +1240,32 @@ int TypeFactory::bitWidthTwo (const Type *t)
   return -1;
 }
 XINSTMACRO(bitWidthTwo)
+
+
+int TypeFactory::totBitWidthTwo (const Type *t)
+{
+  if (!t) return -1;
+  {
+    const Chan *tmp = dynamic_cast <const Chan *>(t);
+    if (tmp) {
+      /* ok */
+      InstType *x = tmp->acktype();
+      if (!x) return 0;
+      if (!x->isExpanded()) return -1;
+      return TypeFactory::totBitWidthTwo (x);
+    }
+  }
+  {
+    const Channel *tmp = dynamic_cast <const Channel *> (t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      return TypeFactory::totBitWidthTwo (tmp->getParent());
+    }
+  }
+  return -1;
+}
+XINSTMACRO(totBitWidthTwo)
+  
 
 
 int TypeFactory::isBaseBoolType (const Type *t)

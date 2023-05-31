@@ -38,7 +38,7 @@ private:
 
   void _extract_memory (act_chp_lang_t *c);
 
-  int _fresh_memdata (Scope *sc, int bw);
+  int _fresh_memdata (Scope *sc, int bw, Data *isstruct);
   void _fresh_release (int idx);
 
   void _subst_dynamic_array (list_t *l, Expr *e);
@@ -46,9 +46,17 @@ private:
 
   int _is_dynamic_array (ActId *id);
 
+  void _append_mem_write (list_t *top, ActId *access, int idx, Expr *e, Scope *sc);
+  void _append_mem_read (list_t *top, ActId *access, int idx, Scope *sc);
+  int _elemwise_assign (list_t *top, int idx, ActId *field, Data *d, int off, Scope *sc);
+  Expr *_elemwise_fieldlist (int idx, ActId *field, Data *d);
+  
+  int _inv_idx (int idx);
+
   ActBooleanizePass *_bp;
 
   struct memvar_info {
+    Data *isstruct;
     int bw;
     int idx;
     int used;
