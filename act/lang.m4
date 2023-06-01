@@ -288,17 +288,93 @@ chp_comma_list[act_chp_lang_t *]: { chp_body_item "," }*
 }}
 ;
 
-chp_body_top[act_chp_lang_t *]: { chp_body "||" }*
+chp_body_top[act_chp_lang_t *]: { par_chp_body "||" }*
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
 ;
 
-chptxt_body_top[act_chp_lang_t *]: { chptxt_body "||" }*
+par_chp_body[act_chp_lang_t *]: chp_body
+{{X:
+    return $1;
+}}
+| "(" "||" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" chp_body_top ")"
+{{X:
+    act_chp_lang_t *c;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_COMMALOOP;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.loop.id = $3;
+    c->u.loop.lo = $5;
+    c->u.loop.hi = hi;
+    c->u.loop.body = $8;
+    return c;
+}}
+;
+
+
+chptxt_body_top[act_chp_lang_t *]: { par_chptxt_body "||" }*
 {{X:
     return apply_X_chp_comma_list_opt0 ($0, $1);
 }}
 ;
+
+par_chptxt_body[act_chp_lang_t *]: chptxt_body
+{{X:
+    return $1;
+}}
+| "(" "||" ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" chptxt_body_top ")"
+{{X:
+    act_chp_lang_t *c;
+    Expr *hi = NULL;
+    $0->scope->Del ($3);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE ($6);
+
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_COMMALOOP;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.loop.id = $3;
+    c->u.loop.lo = $5;
+    c->u.loop.hi = hi;
+    c->u.loop.body = $8;
+    return c;
+}}
+;
+
 
 chp_txtcomma_list[act_chp_lang_t *]: { chp_txtbody_item "," }*
 {{X:
@@ -371,27 +447,7 @@ chp_body_item[act_chp_lang_t *]: [ ID ":" ] base_stmt
 }}
 ":" !noreal wpint_expr [ ".." wpint_expr ] ":" chp_body ")"
 {{X:
-    act_chp_lang_t *c;
-    Expr *hi = NULL;
-    $0->scope->Del ($3);
-    if (!OPT_EMPTY ($6)) {
-      ActRet *r;
-      r = OPT_VALUE ($6);
-      $A(r->type == R_EXPR);
-      hi = r->u.exp;
-      FREE (r);
-    }
-    OPT_FREE ($6);
-
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_COMMALOOP;
-    c->label = NULL;
-    c->space = NULL;
-    c->u.loop.id = $3;
-    c->u.loop.lo = $5;
-    c->u.loop.hi = hi;
-    c->u.loop.body = $8;
-    return c;
+    return apply_X_par_chp_body_opt1 ($0, $3, $5, $6, $8);
 }}
 ;
 
