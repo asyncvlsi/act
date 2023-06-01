@@ -1,0 +1,19 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> x[4];
+
+/* connections */
+chp {
+x[0]:=x[0]+0x2;skip;x[1]:=x[1]+0x4
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

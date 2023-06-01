@@ -1546,6 +1546,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       }
       act_syn_loop_teardown (ns, s, c->u.loop.id, vx);
     }
+    if (list_isempty (ret->u.semi_comma.cmd)) {
+      list_free (ret->u.semi_comma.cmd);
+      ret->type = ACT_CHP_SKIP;
+    }
     break;
 
   case ACT_CHP_SELECT:
