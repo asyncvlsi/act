@@ -2365,6 +2365,9 @@ loop[ActBody *]: "(" [ ";" ] ID ":" !noreal wpint_expr [ ".." wpint_expr ] ":"
     }
     $0->scope->Add ($3, $0->tf->NewPInt());
     $0->in_cond++;
+    if (!OPT_EMPTY ($2)) {
+      $W("Using ``;'' in a ACT loop is deprecated. To fix this, just remove the semicolon.");
+    }
     OPT_FREE ($2);
 }}
    base_item_list ")"

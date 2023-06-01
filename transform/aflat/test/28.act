@@ -88,7 +88,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	// case.
 	pint Dmax_[W+1], Dmax, Dstart;
 	Dmax_[0] = 0;
-	(;i:W:
+	(i:W:
 		[  Dp[i] >  Dmax_[i] -> Dmax_[i+1] = Dp[i];
 		[] Dp[i] <= Dmax_[i] -> Dmax_[i+1] = Dmax_[i];
 		]
@@ -116,7 +116,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	pint J[Jcnt];
 	pint Jsz, Jidx;
 	J[0] = 2;
-	(;i:(Jcnt-1):
+	(i:(Jcnt-1):
 		J[i+1] = (3*J[i])/2;
 		[ J[i+1] >= Dmax -> [ J[i] < Dmax -> Jsz = i+1; Jidx = i; ] ]
 	)
@@ -139,13 +139,13 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 	//Dx[0] = D;
 	Col_Dx[0][0] = 0;
-	(;j:W:
+	(j:W:
 		Dx[0][j] = Dp[j];
 		Col_Dx[0][j+1] = Col_Dx[0][j] + Dx[0][j];
 	)
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
+		(i:Jsz:
 			Col_Dx[i+1][0] = Col_Dx[i][W];
 			[ i = 0 ->
 				Col_A2[i][0] = 0;
@@ -160,7 +160,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 			A2[i][0] = 0;
 			A3[i][0] = 0;
 
-			(;j:W:
+			(j:W:
 				// We're already less than the next step, just pass these partial
 				// sums onto the next.
 				[ (Dx[i][j] + A2[i][j] + A3[i][j]) <= J[Jidx-i] ->
@@ -245,11 +245,11 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	Sum_A3_np[0] = 0;
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
-			(;j:W:
+		(i:Jsz:
+			(j:W:
 				// Determine full adders if any
 				[ A3[i][j+1] > 0 ->
-					(;k:A3[i][j+1]:
+					(k:A3[i][j+1]:
 						[ (Ps[Col_Dx[i  ][j] + k*3 + 0] + Ps[Col_Dx[i  ][j] + k*3 + 1] + Ps[Col_Dx[i  ][j] + k*3 + 2]) >= 0 ->
 							A3_pn[Col_A3[i][j] + k] = 1; // pn
 							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k] = -1; // S
@@ -266,7 +266,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Determine half adders if any
 				[ A2[i][j+1] > 0 ->
-					(;k:A2[i][j+1]:
+					(k:A2[i][j+1]:
 						// We prefer add_half_ripple_pn over add_half_ripple_np. Its
 						// smaller and more efficient.
 						[ (Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0] + Ps[Col_Dx[i][j] + A3[i][j+1]*3 + k*2 + 1]) >= 0 ->
@@ -285,7 +285,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Hook up wire connections if any
 				[ A1[i][j+1] > 0 ->
-					(;k:A1[i][j+1]:
+					(k:A1[i][j+1]:
 						Ps[Col_Dx[i+1][j] + k] = Ps[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
 					)
 				]
@@ -311,8 +311,8 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	[ Total_A3_np > 0 -> add_full_ripple_inv<sz> add3_np[Total_A3_np]; ]
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
-			(;j:W:
+		(i:Jsz:
+			(j:W:
 				// For the inputs of a column, order should be add3, add2, add1. For
 				// the outputs, order should be add1, add2, add3. This will minimize
 				// the total gate depth of the dadda multiplier by spreading the gates
@@ -320,7 +320,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Place down full adders if any
 				[ A3[i][j+1] > 0 ->
-					(;k:A3[i][j+1]:
+					(k:A3[i][j+1]:
 						[ A3_pn[Col_A3[i][j] + k] = 1 ->
 							add3_pn[Sum_A3_pn[Col_A3[i][j] + k]](g,
 								P[Col_Dx[i  ][j] + k*3 + 0].d[1],
@@ -329,7 +329,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[0] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[0] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:3:
+							(l:3:
 								[ Ps[Col_Dx[i  ][j] + k*3 + l] < 0 -> 
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[1]-
@@ -345,7 +345,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[1] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[1] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:3:
+							(l:3:
 								[ Ps[Col_Dx[i  ][j] + k*3 + l] > 0 -> 
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[0]-
@@ -359,7 +359,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Place down half adders if any
 				[ A2[i][j+1] > 0 ->
-					(;k:A2[i][j+1]:
+					(k:A2[i][j+1]:
 						[ A2_pn[Col_A2[i][j] + k] = 1 ->
 							add2_pn[Sum_A2_pn[Col_A2[i][j] + k]](g,
 								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0].d[1],
@@ -367,7 +367,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[0] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[0] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:2:
+							(l:2:
 								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] < 0 ->
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]-
@@ -382,7 +382,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[1] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[1] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:2:
+							(l:2:
 								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] > 0 ->
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]-
@@ -396,7 +396,7 @@ defproc add_bingham_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Hook up wire connections if any
 				[ A1[i][j+1] > 0 ->
-					(;k:A1[i][j+1]:
+					(k:A1[i][j+1]:
 						P[Col_Dx[i+1][j] + k] = P[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
 					)
 				]

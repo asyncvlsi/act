@@ -80,12 +80,12 @@ defproc mult_partial_fwd(globals g; pair A[Na], B[Nb], P[Na*Nb])
 	// Determine which sense has the most votes
 	pint Sum_ABs[Na+Nb+1], ABs;
 	Sum_ABs[0] = 0;
-	(;i:Na: Sum_ABs[i+1] = Sum_ABs[i] + As[i]; )
-	(;i:Nb: Sum_ABs[i+Na+1] = Sum_ABs[i+Na] + Bs[i]; )
+	(i:Na: Sum_ABs[i+1] = Sum_ABs[i] + As[i]; )
+	(i:Nb: Sum_ABs[i+Na+1] = Sum_ABs[i+Na] + Bs[i]; )
 	ABs = Sum_ABs[Na+Nb];	
 
 	// Invert all signals to the sense with the most votes
-	(;i:Na:
+	(i:Na:
 		[ ABs >= 0 -> [ As[i] < 0 ->
 			prs <g.Vdd, g.GND>
 			{
@@ -101,7 +101,7 @@ defproc mult_partial_fwd(globals g; pair A[Na], B[Nb], P[Na*Nb])
 		] ]
 	)
 
-	(;i:Nb:
+	(i:Nb:
 		[ ABs >= 0 -> [ Bs[i] < 0 ->
 			prs <g.Vdd, g.GND>
 			{
@@ -126,7 +126,7 @@ defproc mult_partial_fwd(globals g; pair A[Na], B[Nb], P[Na*Nb])
 	Dp[Na+Nb-1] = 0;
 
 	pint x[Na+Nb-1], y[Na+Nb-1];
-	(;i:(Na+Nb-1):
+	(i:(Na+Nb-1):
 		// x is the starting offset into A
 		// y is the starting offset into B
 		[  i <  Nb -> x[i] = 0;      y[i] = i;
@@ -139,7 +139,7 @@ defproc mult_partial_fwd(globals g; pair A[Na], B[Nb], P[Na*Nb])
 
 		Col[i+1] = Col[i] + Dp[i];
 		
-		(;j:Dp[i]:
+		(j:Dp[i]:
 			[ (As[x[i] + j] + Bs[y[i] - j]) < 0 ->
 				Ps[Col[i] + j] = 1;
 				prs <g.Vdd, g.GND>
@@ -190,7 +190,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	// this event, Dmax_[0] will be 3 and Dmax_[1] will be 2.
 	pint Dmax_[W+1], Dmax;
 	Dmax_[W] = 0;
-	(;i:W:
+	(i:W:
 		[ Dp[W-i-1] > Dmax_[W-i] -> Dmax_[W-i-1] = Dp[W-i-1];
 		[] Dp[W-i-1] <= Dmax_[W-i] -> Dmax_[W-i-1] = Dmax_[W-i];
 		]
@@ -214,7 +214,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	pint J[Jcnt];
 	pint Jsz, Jidx;
 	J[0] = 2;
-	(;i:(Jcnt-1):
+	(i:(Jcnt-1):
 		J[i+1] = (3*J[i])/2;
 		[ J[i+1] >= Dmax -> [ J[i] < Dmax -> Jsz = i+1; Jidx = i; ] ]
 	)
@@ -236,13 +236,13 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 	//Dx[0] = D;
 	Col_Dx[0][0] = 0;
-	(;j:W:
+	(j:W:
 		Dx[0][j] = Dp[j];
 		Col_Dx[0][j+1] = Col_Dx[0][j] + Dx[0][j];
 	)
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
+		(i:Jsz:
 			Col_Dx[i+1][0] = Col_Dx[i][W];
 			[ i = 0 ->
 				Col_A2[i][0] = 0;
@@ -256,7 +256,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 			A2[i][0] = 0;
 			A3[i][0] = 0;
 
-			(;j:W:
+			(j:W:
 				// We're already less than the next step, just pass these partial
 				// sums onto the next.
 				[ (Dx[i][j] + A2[i][j] + A3[i][j]) <= J[Jidx-i] ->
@@ -313,11 +313,11 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	Sum_A3_np[0] = 0;
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
-			(;j:W:
+		(i:Jsz:
+			(j:W:
 				// Determine full adders if any
 				[ A3[i][j+1] > 0 ->
-					(;k:A3[i][j+1]:
+					(k:A3[i][j+1]:
 						[ (Ps[Col_Dx[i  ][j] + k*3 + 0] + Ps[Col_Dx[i  ][j] + k*3 + 1] + Ps[Col_Dx[i  ][j] + k*3 + 2]) >= 0 ->
 							A3_pn[Col_A3[i][j] + k] = 1; // pn
 							Ps[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k] = -1; // S
@@ -334,7 +334,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Determine half adders if any
 				[ A2[i][j+1] > 0 ->
-					(;k:A2[i][j+1]:
+					(k:A2[i][j+1]:
 						// We prefer add_half_ripple_pn over add_half_ripple_np. Its
 						// smaller and more efficient.
 						[ (Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0] + Ps[Col_Dx[i][j] + A3[i][j+1]*3 + k*2 + 1]) >= 0 ->
@@ -353,7 +353,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Hook up wire connections if any
 				[ A1[i][j+1] > 0 ->
-					(;k:A1[i][j+1]:
+					(k:A1[i][j+1]:
 						Ps[Col_Dx[i+1][j] + k] = Ps[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
 					)
 				]
@@ -381,8 +381,8 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 	//{ Total_A2_np > 0 : "There shouldn't be any add2_np to begin with" };
 
 	[ Jsz > 0 ->
-		(;i:Jsz:
-			(;j:W:
+		(i:Jsz:
+			(j:W:
 				// For the inputs of a column, order should be add3, add2, add1. For
 				// the outputs, order should be add1, add2, add3. This will minimize
 				// the total gate depth of the dadda multiplier by spreading the gates
@@ -390,7 +390,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Place down full adders if any
 				[ A3[i][j+1] > 0 ->
-					(;k:A3[i][j+1]:
+					(k:A3[i][j+1]:
 						[ A3_pn[Col_A3[i][j] + k] = 1 ->
 							add3_pn[Sum_A3_pn[Col_A3[i][j] + k]](g,
 								P[Col_Dx[i  ][j] + k*3 + 0].d[1],
@@ -399,7 +399,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[0] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[0] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:3:
+							(l:3:
 								[ Ps[Col_Dx[i  ][j] + k*3 + l] < 0 -> 
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[1]-
@@ -415,7 +415,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + A2[i][j+1] + A3[i][j] + k].d[1] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + A2[i][j+1] + A2[i][j+2] + k].d[1] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:3:
+							(l:3:
 								[ Ps[Col_Dx[i  ][j] + k*3 + l] > 0 -> 
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + k*3 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + k*3 + l].d[0]-
@@ -429,7 +429,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Place down half adders if any
 				[ A2[i][j+1] > 0 ->
-					(;k:A2[i][j+1]:
+					(k:A2[i][j+1]:
 						[ A2_pn[Col_A2[i][j] + k] = 1 ->
 							add2_pn[Sum_A2_pn[Col_A2[i][j] + k]](g,
 								P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + 0].d[1],
@@ -437,7 +437,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[0] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[0] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:2:
+							(l:2:
 								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] < 0 ->
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]-
@@ -452,7 +452,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 								P[Col_Dx[i+1][j] + A1[i][j+1] + A2[i][j] + k].d[1] /* S */,
 								P[Col_Dx[i+1][j+1] + A1[i][j+2] + k].d[1] /* Co */);
 							// Check the sense of each input signal, inverting if necessary
-							(;l:2:
+							(l:2:
 								[ Ps[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l] > 0 ->
 									prs <g.Vdd, g.GND> {
 										[after=0; unstab=1]  P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[1]<sz>    -> P[Col_Dx[i  ][j] + A3[i][j+1]*3 + k*2 + l].d[0]-
@@ -466,7 +466,7 @@ defproc add_dadda_fwd_raw(globals g; pair Pi[Np], S[W*2+1])
 
 				// Hook up wire connections if any
 				[ A1[i][j+1] > 0 ->
-					(;k:A1[i][j+1]:
+					(k:A1[i][j+1]:
 						P[Col_Dx[i+1][j] + k] = P[Col_Dx[i][j] + A3[i][j+1]*3 + A2[i][j+1]*2 + k];
 					)
 				]
@@ -480,8 +480,8 @@ pair A[4], B[4];
 pair P[16];
 pair X[17];
 pint As[4], Bs[4];
-(;i:4: As[i] = 0; )
-(;i:4: Bs[i] = 0; )
+(i:4: As[i] = 0; )
+(i:4: Bs[i] = 0; )
 globals g;
 
 mult_partial_fwd<4, 4, As, Bs, 6> part(g, A, B, P);

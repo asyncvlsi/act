@@ -13,7 +13,7 @@ defproc foo (bool x)
   
    bar q[w];
 
-   (;i:w: q[i](m.d[i]); )
+   (i:w: q[i](m.d[i]); )
 //   (;i:w: q[i].m = m.d[i]; )
 
 

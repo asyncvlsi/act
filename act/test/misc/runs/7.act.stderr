@@ -1,0 +1,4 @@
+WARNING: File `channel.act', line: 67, col: 3
+	Using `;' in a ACT loop is deprecated. To fix this, just remove the semicolon.
+WARNING: File `channel.act', line: 108, col: 4
+	Using `;' in a ACT loop is deprecated. To fix this, just remove the semicolon.
