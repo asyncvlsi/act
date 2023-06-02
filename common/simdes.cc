@@ -497,12 +497,32 @@ bool SimDES::hasPendingEvent (void)
 }
 
 
-bool SimDES::matchPendingEvent (bool (*matchfn) (Event *))
+Event *SimDES::matchPendingEvent (bool (*matchfn) (Event *))
 {
   for (int i=0; i < heap_size (all); i++) {
     if ((*matchfn)((Event *)all->value[i])) {
-      return true;
+      return (Event *)all->value[i];
     }
   }
-  return false;
+  return NULL;
+}
+
+
+void SimDES::showAll (FILE *fp, void (*disp)(FILE *, Event *))
+{
+  fprintf (fp, " -- ev-heap --\n>>");
+  for (int i=0; i < heap_size (all); i++) {
+    Event *ev = (Event *)all->value[i];
+    if (disp) {
+      (*disp) (fp, ev);
+    }
+    else {
+      fprintf (fp, " (%d,%d)", SIM_EV_FLAGS (ev->getType()),
+	       SIM_EV_TYPE (ev->getType()));
+    }
+    if ((i+1)%10 == 0) {
+      fprintf (fp, "\n>>");
+    }
+  }
+  fprintf (fp, "\n --\n");
 }

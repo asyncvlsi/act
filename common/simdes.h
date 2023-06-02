@@ -164,7 +164,7 @@ class SimDES {
 
   /** @return true if there are pending events **/
   static bool hasPendingEvent();
-  static bool matchPendingEvent (bool (*matchfn) (Event *));
+  static Event *matchPendingEvent (bool (*matchfn) (Event *));
 
   static int isEmpty() { return initialized_sim ? 0 : 1; }
   /*
@@ -182,6 +182,8 @@ class SimDES {
 
   static void interrupt () { _interrupt = 1; }
   static void resume () { _interrupt = 0; }
+
+  static void showAll (FILE *fp, void (*disp)(FILE *, Event *) = NULL);
 
 protected:
   unsigned int break_point:2;	// set a breakpoint on this object
