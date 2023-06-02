@@ -1912,6 +1912,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
     }
     if (!(id_type & T_ARRAYOF)) {
       it2 = new InstType (it2, 1);
+      it2->MkCached ();
     }
   }
   else {
