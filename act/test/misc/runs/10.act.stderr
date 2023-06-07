@@ -1,0 +1,5 @@
+In expanding ::<Global>
+Error on or near line number 1.
+*** Assertion failed ***
+ assertion: (|i:5:false)
+FATAL: Aborted execution on failed assertion

@@ -1,0 +1,7 @@
+bool w;
+
+[ w -> bool x; ]
+
+bool y;
+
+x = y;

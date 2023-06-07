@@ -1,0 +1,7 @@
+bool w;
+
+[ (&i:4:w) -> bool x; ]
+
+bool y;
+
+x = y;

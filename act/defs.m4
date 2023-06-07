@@ -2460,6 +2460,13 @@ guarded_cmds[ActBody *]: { gc_1 "[]" }*
 
 gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
 {{X:
+    InstType *it = act_expr_insttype ($0->scope, $1, NULL, 0);
+    if (!TypeFactory::isPBoolType (it->BaseType()) ||
+	it->arrayInfo() != NULL) {
+      $E("Conditional in ACT requires a Boolean expression of parameters/consts only");
+    }
+    delete it;
+    
     return new ActBody_Select_gc ($1, $3);
 }}
 | "(" "[]" ID
@@ -2481,6 +2488,14 @@ gc_1[ActBody_Select_gc *]: wbool_expr "->" base_item_list
       FREE (r);
     }
     OPT_FREE ($6);
+
+    InstType *it = act_expr_insttype ($0->scope, $8, NULL, 0);
+    if (!TypeFactory::isPBoolType (it->BaseType()) ||
+	it->arrayInfo() != NULL) {
+      $E("Conditional in ACT requires a Boolean expression of parameters/consts only");
+    }
+    delete it;
+    
     return new ActBody_Select_gc ($3, $5, hi, $8, $10);
 }}
 | "else" "->" base_item_list

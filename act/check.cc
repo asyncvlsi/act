@@ -411,7 +411,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     if (width) {
       *width = 1;
     }
-    return T_BOOL;
+    return T_BOOL | (lt & T_PARAM);
     break;
 
     /* Boolean, unary */

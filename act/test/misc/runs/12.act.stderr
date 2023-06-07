@@ -1,0 +1,2 @@
+ERROR: File `12.act', line 3, col 4
+	Conditional in ACT requires a Boolean expression of parameters/consts only
