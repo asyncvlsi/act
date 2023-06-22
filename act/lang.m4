@@ -62,6 +62,10 @@ language_body[ActBody *]: lang_chp
 {{X:
     return $1;
 }}
+| lang_extern
+{{X:
+    return $1;
+}}
 ;
 
 supply_spec: "<" bool_expr_id [ "," bool_expr_id ]
@@ -3148,5 +3152,12 @@ expr_id_or_star_or_bar[ActId *]: expr_id_or_star
 {{X:
     $0->non_det = 1;
     return NULL;
+}}
+;
+
+lang_extern[ActBody *]: "extern" "(" ID !push ")" "{"
+ EXTERN[extern_lang] "}"
+{{X:
+    return new ActBody_Lang ($l, $3, $6);
 }}
 ;

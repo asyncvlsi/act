@@ -28,6 +28,7 @@
 #include <common/mstring.h>
 #include <common/list.h>
 #include <common/array.h>
+#include <common/hash.h>
 
 class ActId;
 
@@ -628,8 +629,18 @@ void dflow_print (FILE *, act_dataflow *);
 void dflow_print (FILE *, act_dataflow_element *);
 void act_print_size (FILE *fp, act_size_spec_t *sz);
 
-class ActNamespace;
-class Scope;
+/**
+ * External language handling: print a language
+ */
+void lang_extern_print (FILE *fp, const char *nm, void *v);
+
+/**
+ * External language handling: expand a language
+ */
+void *lang_extern_expand (const char *nm, void *v, ActNamespace *ns, Scope *s);
+
+
+
 
 
 /**
@@ -649,6 +660,7 @@ public:
     sizing = NULL;
     init = NULL;
     dflow = NULL;
+    ext = NULL;
   }
   void Print (FILE *fp) {
     if (chp) { chp_print (fp, chp); }
@@ -659,6 +671,15 @@ public:
     if (refine) { }
     if (init) { initialize_print (fp, init); }
     if (dflow) { dflow_print (fp, dflow); }
+    if (ext) {
+      hash_bucket_t *b;
+      hash_iter_t it;
+      if (!ext) return;
+      hash_iter_init (ext, &it);
+      while ((b = hash_iter_next (ext, &it))) {
+	lang_extern_print (fp, b->key, b->v);
+      }
+    }
   }
 
   act_chp *getchp () { return chp; }
@@ -684,6 +705,26 @@ public:
 
   act_dataflow *getdflow() { return dflow; }
   void setdflow (act_dataflow *s) { dflow = s; }
+
+  void *getextern(const char *nm) {
+    hash_bucket_t *b;
+    if (!ext) return NULL;
+    b = hash_lookup (ext, nm);
+    if (!b) return NULL;
+    return b->v;
+  }
+    
+  void setextern (const char *nm, void *v) {
+    hash_bucket_t *b;
+    if (!ext) {
+      ext = hash_new (4);
+    }
+    b = hash_lookup (ext, nm);
+    if (!b) {
+      b = hash_add (ext, nm);
+    }
+    b->v = v;
+  }
 
   act_languages *Expand (ActNamespace *ns, Scope *s);
 
@@ -718,6 +759,7 @@ public:
   act_sizing *sizing;
   act_initialize *init;
   act_dataflow *dflow;
+  struct Hashtable *ext; /// external
 };
 
 
@@ -923,6 +965,5 @@ int act_hse_direction (act_chp_lang_t *, ActId *);
  * guard expression
  */
 int act_expr_has_neg_probes (Expr *e);
-
 
 #endif /* __LANG_H__ */

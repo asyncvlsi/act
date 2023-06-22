@@ -1212,6 +1212,9 @@ void ActBody_Lang::Print (FILE *fp)
   case ActBody_Lang::LANG_DFLOW:
     dflow_print (fp, (act_dataflow *)lang);
     break;
+  case ActBody_Lang::LANG_EXTERN:
+    lang_extern_print (fp, nm, lang);
+    break;
   }
 }
 
@@ -1225,6 +1228,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   act_initialize *init;
   act_dataflow *dflow;
   act_languages *all_lang;
+  void *ext;
   int in_refinement = 0;
 
   ux = s->getUserDef();
@@ -1401,6 +1405,17 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
       }
     }
     break;
+
+  case ActBody_Lang::LANG_EXTERN:
+    if (!in_refinement) {
+      ext = lang_extern_expand (nm, lang, ns, s);
+      if (all_lang->getextern (nm)) {
+	act_error_ctxt (stderr);
+	warning ("Duplicate external language `%s'; ignoring previous one",
+		 nm);
+      }
+      all_lang->setextern (nm, ext);
+    }
   }
 }
 

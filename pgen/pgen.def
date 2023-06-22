@@ -23,4 +23,5 @@ TOKEN(RANGLE,">")
 TOKEN(INTFLAG, "!noreal")
 TOKEN(ENDANGLE, "!endgt")
 TOKEN(ENDANGLE2, "!noendgt")
+TOKEN(PARSEPUSH, "!push")
 #undef TOKEN

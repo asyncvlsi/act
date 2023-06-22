@@ -484,7 +484,7 @@ array_expr_or_type[inst_param *]: "@" user_type
 ;
 
 /* This is a qualified type name */
-qualified_type[UserDef *]: [ "::" ] { ID "::" }*
+qualified_type[UserDef *]: [ "::" ] { ID !push "::" }*
 {{X:
     ActNamespace *g, *ns;
     listitem_t *li;

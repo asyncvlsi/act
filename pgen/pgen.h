@@ -75,6 +75,7 @@ struct token_type {
   int int_flag;			/* set to suppress reals next! */
   int end_gt;			/* something ends in ">" for
 				   expression parser */
+  int parse_push;
 
   struct body_info *opt_next;
 

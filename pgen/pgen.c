@@ -182,6 +182,12 @@ int parse_token (LEX_T *l)
   }
   else if (lex_have (l, ID)) {
     curTOKEN->type = T_L_ID;
+    if (lex_have (l, PARSEPUSH)) {
+      curTOKEN->parse_push = 1;
+    }
+    else {
+      curTOKEN->parse_push = 0;
+    }
     return 1;
   }
   else if (lex_have (l, STRING)) {
@@ -484,6 +490,9 @@ void print_tok_list (pp_t *pp, token_list_t *t)
       break;
     case T_L_ID:
       pp_puts (pp, " ID");
+      if (t->a[i].parse_push) {
+	pp_printf (pp, " !push");
+      }
       break;
     case T_L_STRING:
       pp_puts (pp, " STRING");
@@ -946,12 +955,16 @@ static char *fix_percents (char *s)
   } while (0)
 
 
-#define RETRY					\
-  do {						\
-    if (in_end_gt) {				\
-       pp_printf (pp, "expr_endgtmode (0);");	\
-    }						\
-    pp_printf (pp, "THROW (EXC_LPF);");		\
+#define RETRY						\
+  do {							\
+    int idx;						\
+    if (in_end_gt) {					\
+       pp_printf (pp, "expr_endgtmode (0);");		\
+    }							\
+    for (idx = 0; idx < in_push; idx++) {		\
+      pp_printf (pp, "stack_pop (__parse_id_stack);");	\
+    }							\
+    pp_printf (pp, "THROW (EXC_LPF);");			\
   } while (0)
 
 void emit_tmptok_wrapper (pp_t *pp, int type)
@@ -1102,14 +1115,16 @@ static void emit_frees_upto_curtoken (pp_t *pp, token_list_t *tl, int nest, int 
   }
 }
 
-int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
+int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl, int *npush)
 {
   int i, j;
   static int nest = 0;
   bnf_item_t *b;
   token_list_t *tmp;
   int nbraces, nret;
+  int lnpush;
   static int in_end_gt = 0;
+  int in_push = 0;
     
   nest++;
   nbraces = 0;
@@ -1174,9 +1189,15 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
     case T_L_ID:
       nbraces++;
       pp_printf (pp, "{ const char *f_%d_%d;", nest, i); pp_nl;
-      pp_printf (pp, "if (file_have (l, f_id))"); pp_nl;
+      pp_printf (pp, "if (file_have (l, f_id)) {"); pp_nl;
       pp_printf (pp, "  f_%d_%d = strdup (file_prev (l));", nest, i); pp_nl;
-      pp_printf (pp, "else {");
+      if (tl->a[i].parse_push) {
+	in_push++;
+	pp_printf (pp, "   stack_push (__parse_id_stack, f_%d_%d);",
+		   nest, i);
+	pp_nl;
+      }
+      pp_printf (pp, "} else {");
       BEGIN_INDENT; 
       emit_frees_upto_curtoken (pp, tl, nest, i);
       ERR("identifier"); 
@@ -1335,7 +1356,7 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       pp_printf (pp, "TRY {");
       BEGIN_INDENT;
       pp_printf (pp, "file_push_position (l);"); pp_nl;
-      nret = emit_code_for_parsing_tokens (pp, tmp);
+      nret = emit_code_for_parsing_tokens (pp, tmp, &lnpush);
       for (j=0; j < A_LEN (tmp->a); j++) {
 	emit_code_helper (pp, tmp, j, i, nest, prefix);
       }
@@ -1350,6 +1371,9 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       pp_puts (pp, "}");
       while (nret--) {
 	pp_puts (pp, "}");
+      }
+      while (lnpush--) {
+	pp_puts (pp, " stack_pop (__parse_id_stack);");
       }
       pp_nl;
       pp_puts (pp, "CATCH { EXCEPT_SWITCH {"); pp_nl;
@@ -1377,7 +1401,7 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       pp_printf (pp, "TRY { ");
       pp_nl;
       A_LEN_RAW (tmp->a)--;
-      nret = emit_code_for_parsing_tokens (pp, tmp);
+      nret = emit_code_for_parsing_tokens (pp, tmp, &lnpush);
       A_LEN_RAW (tmp->a)++;
       for (j=0; j < A_LEN (tmp->a); j++) {
 	emit_code_helper (pp, tmp, j, i, nest, prefix);
@@ -1392,6 +1416,9 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
       pp_printf (pp, "file_push_position (l);"); 
       while (nret--) {
 	pp_puts (pp, "}");
+      }
+      while (lnpush--) {
+	pp_puts (pp, " stack_pop (__parse_id_stack);");
       }
       pp_nl;
       pp_printf (pp, "} CATCH { EXCEPT_SWITCH {"); pp_nl;
@@ -1432,6 +1459,7 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl)
     }
   }
   nest--;
+  *npush = in_push;
   return nbraces;
 }
 
@@ -1443,7 +1471,7 @@ void emit_parse_functions (pp_t *pp)
 {
   int i, j, k;
   int flag;
-  int nret;
+  int nret, npush;
 
   for (i=0; i < A_LEN (BNF); i++) {
     pp_printf_text (pp, "static Node_%s *parse_a_%s (LFILE *l, int *opt)\n", 
@@ -1489,7 +1517,7 @@ void emit_parse_functions (pp_t *pp)
 
       pp_printf (pp, "TRY {");
       BEGIN_INDENT;
-      nret = emit_code_for_parsing_tokens (pp, &BNF[i].a[j]);
+      nret = emit_code_for_parsing_tokens (pp, &BNF[i].a[j], &npush);
       pp_nl;
       pp_printf (pp, "file_pop_position (l);"); pp_nl;
       if (BNF[i].is_exclusive) {
@@ -1614,6 +1642,10 @@ void emit_parse_functions (pp_t *pp)
 
       while (nret--) {
 	pp_puts (pp, "}");
+      }
+
+      while (npush--) {
+	pp_puts (pp, " stack_pop (__parse_id_stack);");
       }
 
       pp_printf (pp, "} CATCH { EXCEPT_SWITCH {"); pp_nl;
@@ -1996,6 +2028,12 @@ void emit_parser (void)
   pp_puts (pp, "}");
   pp_nl; pp_nl;
 
+
+  pp_printf_text (pp, "static list_t *__parse_id_stack;\n");
+  pp_printf_text (pp, "list_t *%s_parse_id_stack (void) { return __parse_id_stack; }\n", prefix);
+  pp_nl;
+  
+
   pp_printf (pp, "void %s_parse_warn (struct %s_position *p, const char *fmt, ...)", prefix, prefix);
   pp_nl;
   pp_puts (pp, "{"); pp_nl;
@@ -2140,6 +2178,7 @@ void emit_parser (void)
   pp_printf_text (pp, "LFILE *l = file_open (s);\n");
   pp_printf_text (pp, "Token * t;\n");
   pp_printf_text (pp, "%s_lex_init (l);\n", prefix);
+  pp_printf_text (pp, "__parse_id_stack = list_new ();\n");
   pp_printf_raw (pp, "snprintf (errstring,");
   pp_printf_raw (pp, " 4096, \"Expecting `%s'\\n\");\n", BNF[0].lhs);
 
@@ -2167,6 +2206,7 @@ void emit_parser (void)
   pp_printf_text (pp, "THROW (EXC_NULL_EXCEPTION);");
   END_INDENT;
   pp_puts (pp, "}"); pp_nl;
+  pp_printf_text (pp, "  list_free (__parse_id_stack);\n");
   pp_printf_text (pp, "  list_cleanup();\n");
   pp_printf_text (pp, "  file_close (l);\n");
   pp_printf_text (pp, "  return t;\n");

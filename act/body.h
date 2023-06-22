@@ -639,7 +639,8 @@ class ActBody_Lang : public ActBody {
     LANG_REFINE,
     LANG_SIZE,
     LANG_INIT,
-    LANG_DFLOW
+    LANG_DFLOW,
+    LANG_EXTERN
   };
 
   ActBody_Lang (int line, act_prs *p) : ActBody (line) {
@@ -685,6 +686,12 @@ class ActBody_Lang : public ActBody {
     t = LANG_DFLOW;
     lang = dflow;
   }
+
+  ActBody_Lang (int line, const char *nm, void *v) : ActBody (line) {
+    t = LANG_EXTERN;
+    lang = v;
+    nm = Strdup (nm);
+  }
   
   void Expand (ActNamespace *, Scope *);
   void Print (FILE *fp);
@@ -696,6 +703,7 @@ class ActBody_Lang : public ActBody {
  private:
   enum langtype t;
   void *lang;
+  const char *nm;
 };
 
 

@@ -99,7 +99,7 @@ void *act_find_dl_func (struct ExtLibs *el, ActNamespace *ns, const char *f)
     snprintf (buf, 2048, "%s.%s.%s%s", el->prefix,
 	      el->files[i].name, ns_name ? (ns_name+2) : "", f);
     buf[strlen(buf)-2] = '\0';
-    
+
     if (config_exists (buf)) {
       if (!el->files[i].dl) {
 	el->files[i].dl = dlopen (el->files[i].path, RTLD_LAZY);

@@ -28,6 +28,7 @@
 #include <act/body.h>
 #include <act/value.h>
 #include <act/inline.h>
+#include <act/extlang.h>
 #include "prs.h"
 #include <common/qops.h>
 #include <common/config.h>
@@ -1311,3 +1312,4 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
 {
   return _conv_nnf (cookie, at_hash, e, conv, 0);
 }
+
