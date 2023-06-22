@@ -629,6 +629,9 @@ void dflow_print (FILE *, act_dataflow *);
 void dflow_print (FILE *, act_dataflow_element *);
 void act_print_size (FILE *fp, act_size_spec_t *sz);
 
+class ActNamespace;
+class Scope;
+
 /**
  * External language handling: print a language
  */
@@ -638,10 +641,6 @@ void lang_extern_print (FILE *fp, const char *nm, void *v);
  * External language handling: expand a language
  */
 void *lang_extern_expand (const char *nm, void *v, ActNamespace *ns, Scope *s);
-
-
-
-
 
 /**
  * @class act_languages
