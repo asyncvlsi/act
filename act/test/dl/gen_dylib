@@ -20,7 +20,7 @@ else
 	gcc -shared -DPIC -fPIC -I${ACT_HOME}/include -c ${FILE}.c
 	gcc -shared -Wl,-x -L${ACT_HOME}/lib -o ext.lib ${FILE}.o
 	gcc -shared -DPIC -fPIC -I${ACT_HOME}/include -c ${FILE}2.c
-	gcc -shared -Wl,-x -L${ACT_HOME}/lib -o ext2.lib ${FILE}2.o -lvlsilib_sh
+	gcc -shared -Wl,-x,-rpath=${ACT_HOME}/lib -L${ACT_HOME}/lib -o ext2.lib ${FILE}2.o -lvlsilib_sh
 fi
 
 rm ${FILE}.o
