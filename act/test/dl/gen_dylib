@@ -10,13 +10,18 @@ then
 # For MacOS
 #
 	gcc -fPIC -c -I${ACT_HOME}/include ${FILE}.c
-	gcc -dynamiclib -L${ACT_HOME}/lib -o ext.lib ${FILE}.o -lvlsilib_sh
+	gcc -dynamiclib -L${ACT_HOME}/lib -o ext.lib ${FILE}.o
+	gcc -fPIC -c -I${ACT_HOME}/include ${FILE}2.c
+	gcc -dynamiclib -L${ACT_HOME}/lib -o ext2.lib ${FILE}2.o -lvlsilib_sh
 else 
 #
 # For Linux
 #
 	gcc -shared -DPIC -fPIC -I${ACT_HOME}/include -c ${FILE}.c
-	gcc -shared -Wl,-x -L${ACT_HOME}/lib -o ext.lib ${FILE}.o -lvlsilib_sh
+	gcc -shared -Wl,-x -L${ACT_HOME}/lib -o ext.lib ${FILE}.o
+	gcc -shared -DPIC -fPIC -I${ACT_HOME}/include -c ${FILE}2.c
+	gcc -shared -Wl,-x -L${ACT_HOME}/lib -o ext2.lib ${FILE}2.o -lvlsilib_sh
 fi
 
 rm ${FILE}.o
+rm ${FILE}2.o
