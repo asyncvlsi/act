@@ -37,7 +37,7 @@
 #include <act/types.h>
 #include <act/inst.h>
 #include <act/body.h>
-#include "treetypes.h"
+#include <act/treetypes.h>
 
 #define OPT_EXISTS(x)    !list_isempty (x)
 #define OPT_EMPTY(x)     list_isempty (x)
