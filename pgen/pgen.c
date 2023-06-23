@@ -2134,13 +2134,26 @@ void emit_parser (void)
   pp_nl;
   pp_nl;
 
+  pp_printf_text (pp, "int %s_lex_addtokens (LFILE *l)", prefix);
+  pp_nl; pp_printf (pp, "{ ");
+  pp_nl;
+  pp_printf_text (pp, "int count = 0;"); pp_nl;
+  pp_printf_text (pp, "#define TOKEN(a,b)  count += !file_istoken (l, b); a = file_addtoken (l, b);");
+  pp_nl;
+  pp_printf_text (pp, "#include \"%s_parse.def\"", prefix); pp_nl;
+  pp_printf_text (pp, "   if (!errstring) errstring = (char *)malloc (4096*sizeof (char));");pp_nl;
+  pp_printf_text (pp, "   if (!errstring) { fatal_error "); 
+  pp_puts (pp, "(\"out of memory\"); }"); pp_nl;
+  pp_printf_text (pp, "   errstring[0] = '\\0';"); pp_nl;
+  pp_printf_text (pp, "return count;");
+  pp_nl;
+  pp_printf_text (pp, "}"); pp_nl; pp_nl;
+
   pp_printf_text (pp, "void %s_lex_init (LFILE *l)", prefix);
 
   pp_nl; pp_printf (pp, "{ ");
   pp_nl;
-  pp_printf_text (pp, "#define TOKEN(a,b)  a = file_addtoken (l, b);");
-  pp_nl;
-  pp_printf_text (pp, "#include \"%s_parse.def\"", prefix); pp_nl;
+  pp_printf_text (pp, "    %s_lex_addtokens (l);"); pp_nl;
   if (verilog_ids) {
     pp_printf_text (pp, "  file_setflags (l, file_flags(l)|FILE_FLAGS_ESCAPEID|FILE_FLAGS_PARENCOM);");
     pp_nl;
@@ -2162,12 +2175,8 @@ void emit_parser (void)
     pp_printf_text (pp, "  expr_free_id = free_a_expr__id;\n");
   }
   for (i=0; i < A_LEN (EXTERN_P); i++) {
-    pp_printf_text (pp, "%s_init_%s (l);\n", prefix, EXTERN_P[i]);
+    pp_printf_text (pp, " %s_init_%s (l);\n", prefix, EXTERN_P[i]);
   }
-  pp_printf_text (pp, "   if (!errstring) errstring = (char *)malloc (4096*sizeof (char));");pp_nl;
-  pp_printf_text (pp, "   if (!errstring) { fatal_error "); 
-  pp_nl; pp_puts (pp, "(\"out of memory\"); }"); pp_nl;
-  pp_printf_text (pp, "   errstring[0] = '\\0';"); pp_nl;
   pp_printf_text (pp, "   file_getsym (l);");
   pp_nl; pp_puts (pp, "}"); pp_nl; pp_nl;
 
