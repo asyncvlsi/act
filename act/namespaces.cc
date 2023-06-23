@@ -772,6 +772,7 @@ static void _process_body_conn (Process *proc, InstType *it, const char *s,
     ActBody_Loop *l = dynamic_cast<ActBody_Loop *> (b);
     ActBody_Select *sel = dynamic_cast<ActBody_Select *> (b);
     ActBody_Genloop *gl = dynamic_cast<ActBody_Genloop *> (b);
+    ActBody_Lang *lang = dynamic_cast<ActBody_Lang *> (b);
     if (inst) {
       InstType *inst_it = inst->getType ();
       if (TypeFactory::isProcessType (inst_it)) {
@@ -890,6 +891,12 @@ static void _process_body_conn (Process *proc, InstType *it, const char *s,
       while (gc) {
 	_process_body_conn (proc, it, s, deflist, start, gc->getBody ());
 	gc = gc->getNext ();
+      }
+    }
+    else if (lang) {
+      if (lang->gettype() == ActBody_Lang::LANG_REFINE && lang->getlang()) {
+	_process_body_conn (proc, it, s, deflist, start,
+			    ((act_refine *)lang->getlang())->b);
       }
     }
     b = b->Next();
