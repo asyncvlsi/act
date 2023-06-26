@@ -43,10 +43,9 @@ extern "C" int act_is_a_extern_lang (LFILE *l)
     if (list_length (t) > 0) {
       const char *nm = (const char *) stack_peek (t);
       act_error_ctxt (stderr);
-      fprintf (stderr, "No parser found for external language `%s'\n", nm);
-      fprintf (stderr, "  >> missing is_a_%s()\n", nm);
+      fprintf (stderr, "No parser found for external language `%s'; skipping!\n", nm);
     }
-    return 0;
+    return 1;
   }
   
   const char *val = ((const char *) stack_peek (t));
@@ -59,9 +58,8 @@ extern "C" int act_is_a_extern_lang (LFILE *l)
   
   if (!f) {
     act_error_ctxt (stderr);
-    fprintf (stderr, "No parser found for external language `%s'\n", val);
-    fprintf (stderr, "  >> missing is_a_%s()\n", val);
-    return 0;
+    fprintf (stderr, "No parser found for external language `%s'; skipping!\n", val);
+    return 1;
   }
   
   return (*f) (l);
@@ -70,21 +68,48 @@ extern "C" int act_is_a_extern_lang (LFILE *l)
 extern "C" void *act_parse_a_extern_lang (LFILE *l)
 {
   char buf[1024];
-  Assert (_ext_lang, "What?");
-  Assert (list_length (act_parse_id_stack()) > 0, "What?");
+
   const char *val = (const char *) stack_peek (act_parse_id_stack());
   snprintf (buf, 1024, "parse_a_%s<>", val);
-  void *(*f) (LFILE *) =
-    (void * (*) (LFILE *))
-    act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
 
-  if (!f) {
-    act_error_ctxt (stderr);
-    fprintf (stderr, "No parser found for external language `%s'\n", val);
-    fprintf (stderr, "  >> missing parse_a_%s()\n", val);
-    return NULL;
+  void *(*f) (LFILE *) = NULL;
+
+  if (_ext_lang) {
+    f = (void * (*) (LFILE *))
+      act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
   }
 
+  if (!f) {
+    /* dummy parser to ignore the body */
+    int braces = 1;
+    int start = file_addtoken (l,  "{");
+    int end = file_addtoken (l,  "}");
+    while (!file_eof (l) && braces > 0) {
+      if (file_sym (l) == start) {
+	braces++;
+	file_getsym (l);
+      }
+      else if (file_sym (l) == end) {
+	braces--;
+	if (braces != 0) {
+	  file_getsym (l);
+	}
+      }
+      else {
+	file_getsym (l);
+      }
+    }
+    if (file_eof (l)) {
+      fprintf (stderr, "EOF encountered while skipping external language `%s'\n", val);
+      return NULL;
+    }
+    else {
+      struct act_extern_language_header *x;
+      NEW (x, struct act_extern_language_header);
+      x->name = Strdup (val);
+      return x;
+    }
+  }
   return (*f) (l);
 }
 
@@ -93,18 +118,20 @@ extern "C" void *act_walk_X_extern_lang (ActTree *t, void *v)
 {
   char buf[1024];
   struct act_extern_language_header *h;
-  Assert (_ext_lang, "What?");
 
   h = (struct act_extern_language_header *)v;
   Assert (h->name, "Hmm...");
   snprintf (buf, 1024, "walk_a_%s<>", h->name);
-  void *(*f) (ActTree *, void *) = 
-    (void * (*) (ActTree *, void *))
-    act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  void *(*f) (ActTree *, void *) = NULL;
+  if (_ext_lang) {
+    f = (void * (*) (ActTree *, void *))
+      act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  }
   if (!f) {
-    act_error_ctxt (stderr);
-    fprintf (stderr, "No walker found for external language `%s'\n", h->name);
-    return NULL;
+    struct act_extern_language_header *x;
+    NEW (x, struct act_extern_language_header);
+    x->name = Strdup (h->name);
+    return x;
   }
   return (*f) (t, v);
 }
@@ -113,15 +140,19 @@ extern "C" void act_free_a_extern_lang (void *v)
 {
   char buf[1024];
   struct act_extern_language_header *h;
-  Assert (_ext_lang, "What?");
 
   h = (struct act_extern_language_header *)v;
   Assert (h->name, "Hmm...");
   snprintf (buf, 1024, "free_a_%s<>", h->name);
-  void (*f) (void *) = 
-    (void (*) (void *))
-    act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  
+  void (*f) (void *) = NULL;
+  if (_ext_lang) {
+    f = (void (*) (void *))
+      act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  }
   if (!f) {
+    FREE ((char *)h->name);
+    FREE (h);
     return;
   }
   (*f) (v);

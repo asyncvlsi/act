@@ -1,0 +1,4 @@
+defproc test()
+{
+  extern (newlang2) { hello }
+}
