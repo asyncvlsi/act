@@ -958,6 +958,8 @@ void ActStatePass::free_local (void *v)
 {
   stateinfo_t *s = (stateinfo_t *)v;
 
+  if (!s) return;
+
   if (s->map) {
     ihash_free (s->map);
     s->map = NULL;
