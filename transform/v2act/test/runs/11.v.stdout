@@ -1,0 +1,21 @@
+/* -- declarations -- */
+export defproc blk0 (bool? e0[5]; bool! out[5]);
+
+export defproc blk0 (bool? e0[5]; bool! out[5])
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   bool f;
+   benchlib::DFFPOSX1 _newf_1;
+   bool b;
+   bool a;
+   benchlib::DFFPOSX1 _newf_0;
+   bool c;
+   bool d;
+   /*--- connections ---*/
+   out[0]=GND;
+   _newf_0(.D=d, .Q=c, .CLK=out[2]);
+   _newf_1(.D=b, .Q=a, .CLK=out[2]);
+}
+

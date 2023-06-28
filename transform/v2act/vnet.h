@@ -184,6 +184,8 @@ typedef struct {
   int flag;			/* temp flag */
   id_info_t *tmpid;		/* temp */
   int port_count;
+  int flop_count;
+  id_deref_t *clk;
   
   
 } VNet;

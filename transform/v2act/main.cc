@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include "v2act.h"
 #include <common/misc.h>
+#include <common/config.h>
 
 char *channame;
 
@@ -100,6 +101,16 @@ int main (int argc, char **argv)
   lib_namespace = Strdup ("sync");
 
   toggle_haz = 0;
+
+  /*-- Warning: we will be ignoring initial values on the flops --*/
+  config_set_default_string ("v2act.posflop.cell", "DFFPOSX1");
+  config_set_default_string ("v2act.posflop.dpin", "D");
+  config_set_default_string ("v2act.posflop.qpin", "Q");
+  config_set_default_string ("v2act.posflop.clkpin", "CLK");
+  config_set_default_string ("v2act.negflop", "DFFNEGX1");
+  config_set_default_string ("v2act.negflop.dpin", "D");
+  config_set_default_string ("v2act.negflop.qpin", "Q");
+  config_set_default_string ("v2act.negflop.clkpin", "CLK");
 
   while ((ch = getopt (argc, argv, "gC:c:ao:l:n:")) != -1) {
     switch (ch) {

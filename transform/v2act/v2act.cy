@@ -412,7 +412,108 @@ one_instance: id id
     $0->prefix = NULL;
     return NULL;
 }}
- ;
+| "always" "@" "(" ID id_deref ")"
+{{X:
+    if (strcmp ($4, "posedge") == 0) {
+
+    }
+    else if (strcmp ($4, "negedge") == 0) {
+
+    }
+    else {
+      $E("Limited always block: only posedge/negedge allowed; see abc output format.");
+    }
+    $0->clk = $5;
+}}
+"begin" flop_list "end"
+{{X:
+    return NULL;
+}}   
+| "initial" "begin" init_assign_list "end"
+{{X:
+    return NULL;
+}}    
+;
+
+flop_list: id_deref "<=" id_deref ";" flop_list
+{{X:
+    int i;
+    char buf[100];
+    id_info_t *id, *mod;
+    conn_info_t *ci;
+    char *pin;
+    const char *pins[] = { "v2act.posflop.dpin",
+			   "v2act.posflop.qpin",
+			   "v2act.posflop.clkpin" };
+    id_deref_t *ids[3];
+    
+    snprintf (buf, 100, "_newf_%d", $0->flop_count++);
+    id = verilog_gen_id ($0, buf);    
+    id->ismodname = 0;
+    if (!config_exists ("v2act.posflop.cell")) {
+      $E("always block found without a flop cell defined");
+    }
+    mod = verilog_find_id ($0, config_get_string ("v2act.posflop.cell"));
+    if (mod) {
+      $0->flag = 0;
+    }
+    else {
+      $0->flag = 1;
+      mod = verilog_gen_id ($0, config_get_string ("v2act.posflop.cell"));
+    }
+    mod->ismodname = 1;
+    lapply_X_one_instance_0_1 ($0, mod, id);
+    /* now we add the port connections */
+
+    /* dpin */
+    ids[0] = $3;
+    /* qpin */
+    ids[1] = $1;
+    /* clkpin */
+    ids[2] = $0->clk;
+
+    for (i=0; i < 3; i++) {
+      NEW (ci, conn_info_t);
+      ci->prefix = $0->prefix;
+      ci->id.id = NULL;
+      ci->id.isderef = 0;
+      ci->l = NULL;
+      ci->isclk = 0;
+      NEW (ci->r, conn_rhs_t);
+      ci->r->id = *(ids[i]);
+      ci->r->issubrange = 0;
+      pin = config_get_string (pins[i]);
+      id = verilog_alloc_id (pin);
+      ci->id.id = id;
+      ci->id.cnt = 0;
+      ci->id.isderef = 0;
+
+      A_NEW (CURMOD($0)->conn, conn_info_t *);
+      A_NEXT (CURMOD($0)->conn) = ci;
+      A_INC (CURMOD($0)->conn);
+    }
+    return NULL;
+}}
+| /* empty */
+;
+
+init_assign_list: id_deref "<=" zero_or_one ";" init_assign_list
+{{X:
+    /* we're ignoring initial values */
+    return NULL;
+}}   
+| /* empty */
+;
+
+zero_or_one[int]: "1'b0"
+{{X:
+    return 0;
+}}
+| "1'b1"
+{{X:
+    return 1;
+}}
+;
 
 port_conns: { one_port2 "," }*
 | { bad_port_style "," }*
@@ -719,25 +820,18 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
     }
     return d;
 }}
-| "1'b0"
+| zero_or_one
 {{X:
   id_deref_t *d;
   VRet *r;
 
   NEW (d, id_deref_t);
-  d->id = verilog_gen_id ($0, "GND");
-  d->id->isport = 1;
-  d->isderef = 0;
-  d->deref = 0;
-  return d;
-}}
-| "1'b1"
-{{X:
-  id_deref_t *d;
-  VRet *r;
-
-  NEW (d, id_deref_t);
-  d->id = verilog_gen_id ($0, "Vdd");
+  if ($1 == 0) {
+    d->id = verilog_gen_id ($0, "GND");
+  }
+  else {
+    d->id = verilog_gen_id ($0, "Vdd");
+  }
   d->id->isport = 1;
   d->isderef = 0;
   d->deref = 0;
@@ -746,7 +840,7 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
 | "1'bx"
 {{X:
   $W("Binary constant \"x\" has non-0/non-1 entries that were treated as zero");
-  return apply_X_id_deref_opt1 ($0);
+  return apply_X_id_deref_opt1 ($0, 0);
 }}
 ;
 
