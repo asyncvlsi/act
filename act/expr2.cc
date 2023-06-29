@@ -3235,3 +3235,85 @@ void act_expr_collect_ids (list_t *l, Expr *e)
   }
   return _collect_ids_from_expr (l, e);
 }
+
+
+int act_expr_bitwidth (int etype, int lw, int rw)
+{
+  int ret;
+  int *width = &ret;
+  
+  switch (etype) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+    WIDTH_UPDATE(WIDTH_MAX);
+    break;
+
+  case E_PLUS:
+  case E_MINUS:
+    WIDTH_UPDATE (WIDTH_MAX1);
+    break;
+    
+  case E_MULT:
+      WIDTH_UPDATE (WIDTH_SUM);
+      break;
+      
+  case E_DIV: 
+  case E_LSR:
+  case E_ASR:
+      WIDTH_UPDATE (WIDTH_LEFT);
+      break;
+      
+  case E_MOD:
+      WIDTH_UPDATE (WIDTH_RIGHT);
+      break;
+      
+  case E_LSL:
+      WIDTH_UPDATE (WIDTH_LSHIFT);
+      break;
+
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    *width = 1;
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    WIDTH_UPDATE (WIDTH_LEFT);
+    break;
+    
+  case E_QUERY:
+  case E_COLON:
+    WIDTH_UPDATE (WIDTH_MAX);
+    break;
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_BITFIELD:
+  case E_PROBE:
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+  case E_FUNCTION:
+  case E_INT:
+  case E_VAR:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+  case E_CONCAT:
+  case E_ENUM_CONST:
+  default:
+    return -1;
+    break;
+  }
+  return ret;
+}
+

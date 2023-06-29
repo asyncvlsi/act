@@ -2100,6 +2100,15 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2)
  */
 void expr_ex_free (Expr *);
 
+/**
+ * Helper function for bit-width determination
+ * @param etype is the expression type (E_AND, etc.)
+ * @param lw is the width of the left arg
+ * @param rw is the width of the right arg
+ * @return the resulting bitwidth by ACT expression rules
+ */
+int act_expr_bitwidth (int etype, int lw, int rw);
+
 /*
   External functions for core act library must 
   be of the form
