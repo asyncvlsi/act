@@ -2109,6 +2109,13 @@ void expr_ex_free (Expr *);
  */
 int act_expr_bitwidth (int etype, int lw, int rw);
 
+/**
+ * Helper function for bit-width determination
+ * @param v is the integer
+ * @return bitwidth for integer 
+ */
+int act_expr_intwidth (unsigned long v);
+
 /*
   External functions for core act library must 
   be of the form

@@ -3317,3 +3317,7 @@ int act_expr_bitwidth (int etype, int lw, int rw)
   return ret;
 }
 
+int act_expr_intwidth (unsigned long v)
+{
+  return _int_width (v);
+}
