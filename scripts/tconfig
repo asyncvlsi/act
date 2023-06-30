@@ -24,7 +24,16 @@ do
 		echo "${j}_LIBDIR=`$ACT_HOME/scripts/findpkg -l $i`" >> ./config.mk
 		echo "Package $i: YES"
 	else	  
-		echo "Package $i: NO"
+		if $ACT_HOME/scripts/findpkg -l $i > /dev/null
+	 	then
+			j=`echo $i | sed s,/,_,g | sed s,-,_,g`
+			echo "#define FOUND_$j" >> ./_config_pkg.h
+			echo "${j}_LIBDIR=`$ACT_HOME/scripts/findpkg -l $i`" >> ./config.mk
+			echo "Package $i: YES: library"
+
+		else
+			echo "Package $i: NO"
+		fi
 	fi
 done
 

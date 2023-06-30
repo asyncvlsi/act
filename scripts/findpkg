@@ -40,4 +40,16 @@ do
 	fi
 done
 
+if [ $include -eq 0 ]
+then
+for i in $PKG_SPECIFIC $FINDPKG_EXTRA_DIRS $ACT_HOME $trial
+do
+if [ -f $i/lib/lib${file}.a ]
+then
+   echo "-L${i}/lib"
+   exit 0
+fi
+done
+fi
+
 exit 1
