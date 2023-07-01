@@ -937,7 +937,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_INT;
 	  }
 	}
-	if ((lt & (T_INT|T_PARAM)) && !(lt & T_ARRAYOF)) {
+	if (((lt & (T_INT|T_PARAM)) == (T_INT|T_PARAM)) && !(lt & T_ARRAYOF)) {
 	  if (width) {
 	    *width = 64;
 	  }
