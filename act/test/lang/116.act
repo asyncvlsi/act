@@ -1,0 +1,7 @@
+template<pint W>
+defproc testme (chan?(int) X; chan!(int) Y)
+{
+   dataflow {
+     X > W ? 10 : 20 -> Y
+   }
+}
