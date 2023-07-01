@@ -937,6 +937,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_INT;
 	  }
 	}
+	if ((lt & (T_INT|T_PARAM)) && !(lt & T_ARRAYOF)) {
+	  if (width) {
+	    *width = 64;
+	  }
+	  return lt;
+	}
 	if (only_chan == 1) {
 	  typecheck_err ("Channel expressions can't have non-channel variables");
 	  return T_ERR;
