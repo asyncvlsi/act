@@ -937,9 +937,14 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_INT;
 	  }
 	}
-	if ((lt & (T_INT|T_PARAM)) && !(lt & T_ARRAYOF)) {
+	if (!(lt & T_ARRAYOF) && (lt & T_PARAM) && T_BASETYPE_ISINTBOOL (lt)) {
 	  if (width) {
-	    *width = 64;
+	    if (T_BASETYPE_BOOL (lt)) {
+	      *width = 1;
+	    }
+	    else {
+	      *width = 64;
+	    }
 	  }
 	  return lt;
 	}
