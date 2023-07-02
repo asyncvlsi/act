@@ -115,10 +115,11 @@ int main (int argc, char **argv)
   while ((ch = getopt (argc, argv, "gC:c:ao:l:n:t")) != -1) {
     switch (ch) {
     case 't':
-      config_set_default_string ("v2act.tiehi.cell", "TIEHIX1");
-      config_set_default_string ("v2act.tiehi.pin", "Y");
-      config_set_default_string ("v2act.tielo.cell", "TIELOX1");
-      config_set_default_string ("v2act.tielo.pin", "Y");
+      config_set_default_string ("v2act.tie.hi.cell", "TIEHIX1");
+      config_set_default_string ("v2act.tie.hi.pin", "Y");
+      config_set_default_string ("v2act.tie.lo.cell", "TIELOX1");
+      config_set_default_string ("v2act.tie.lo.pin", "Y");
+      config_set_default_int ("v2act.tie.fanout_limit", 0);
       break;
       
     case 'n':

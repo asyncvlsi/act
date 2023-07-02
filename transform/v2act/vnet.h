@@ -147,6 +147,7 @@ typedef struct moduletype {
 
   /* output pin for tiehi/tilo cells, if they exist */
   id_info_t *tiehi, *tielo;
+  int tiehi_cnt, tielo_cnt;
 
   /* has this been instantiated? */
   int inst_exists;

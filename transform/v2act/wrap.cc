@@ -130,20 +130,25 @@ void lapply_X_one_instance_0_1 (VNet *, id_info_t *, id_info_t *);
 id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
 {
   const char *cellname, *pinname, *sig;
+  int threshold;
   if (zero_or_one) {
-    cellname = "v2act.tiehi.cell";
-    pinname = "v2act.tiehi.pin";
+    cellname = "v2act.tie.hi.cell";
+    pinname = "v2act.tie.hi.pin";
     sig = "Vdd";
   }
   else {
-    cellname = "v2act.tielo.cell";
-    pinname = "v2act.tielo.pin";
+    cellname = "v2act.tie.lo.cell";
+    pinname = "v2act.tie.lo.pin";
     sig = "GND";
   }
   
   if ((zero_or_one == 0 && CURMOD(v)->tielo) ||
       (zero_or_one == 1 && CURMOD(v)->tiehi) || config_exists (cellname)) {
-    if (!(zero_or_one ? CURMOD(v)->tiehi : CURMOD(v)->tielo)) {
+    threshold = config_get_int ("v2act.tie.fanout_limit");
+    if (!(zero_or_one ? CURMOD(v)->tiehi : CURMOD(v)->tielo) ||
+	(threshold > 0 &&
+	 ((zero_or_one ? CURMOD(v)->tiehi_cnt : CURMOD(v)->tielo_cnt)
+	  >= threshold))) {
       conn_info_t *ci;
       id_info_t *id, *mod;
       char buf[100];
@@ -173,9 +178,11 @@ id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
       
       if (zero_or_one) {
 	CURMOD(v)->tiehi = newsig;
+	CURMOD(v)->tiehi_cnt = 0;
       }
       else {
 	CURMOD(v)->tielo = newsig;
+	CURMOD(v)->tielo_cnt = 0;
       }
 
       NEW (ci, conn_info_t);
@@ -197,9 +204,11 @@ id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
       v->prefix = tmp_prefix;
     }
     if (zero_or_one) {
+      CURMOD(v)->tiehi_cnt++;
       return CURMOD(v)->tiehi;
     }
     else {
+      CURMOD(v)->tielo_cnt++;
       return CURMOD(v)->tielo;
     }
   }
