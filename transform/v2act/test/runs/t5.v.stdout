@@ -1,0 +1,21 @@
+/* -- declarations -- */
+export defproc blk0 (bool? e0[5]; bool! out[5]);
+
+export defproc blk0 (bool? e0[5]; bool! out[5])
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   bool f;
+   benchlib::TIEHIX1 _nref_2;
+   benchlib::TIELOX1 _nref_0;
+   /*--- connections ---*/
+   _nref_0(.Y=_nsig_1);
+   _nref_2(.Y=_nsig_3);
+out[4]=_nsig_1;
+   out[3]=_nsig_3;
+   out[2]=_nsig_1;
+   out[1]=_nsig_1;
+   out[0]=_nsig_3;
+}
+

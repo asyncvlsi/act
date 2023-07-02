@@ -1,0 +1,2 @@
+WARNING: File `9.vp', line: 5, col: 25
+	Binary constant "01x01" has non-0/non-1 entries that were treated as zero

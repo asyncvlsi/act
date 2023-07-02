@@ -112,8 +112,15 @@ int main (int argc, char **argv)
   config_set_default_string ("v2act.negflop.qpin", "Q");
   config_set_default_string ("v2act.negflop.clkpin", "CLK");
 
-  while ((ch = getopt (argc, argv, "gC:c:ao:l:n:")) != -1) {
+  while ((ch = getopt (argc, argv, "gC:c:ao:l:n:t")) != -1) {
     switch (ch) {
+    case 't':
+      config_set_default_string ("v2act.tiehi.cell", "TIEHIX1");
+      config_set_default_string ("v2act.tiehi.pin", "Y");
+      config_set_default_string ("v2act.tielo.cell", "TIELOX1");
+      config_set_default_string ("v2act.tielo.pin", "Y");
+      break;
+      
     case 'n':
       if (lib_namespace) {
 	FREE (lib_namespace);

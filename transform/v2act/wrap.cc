@@ -125,6 +125,90 @@ void verilog_delete_id (VNet *v, const  char *s)
   hash_delete (CURMOD(v)->H, s);
 }
 
+void lapply_X_one_instance_0_1 (VNet *, id_info_t *, id_info_t *);
+
+id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
+{
+  const char *cellname, *pinname, *sig;
+  if (zero_or_one) {
+    cellname = "v2act.tiehi.cell";
+    pinname = "v2act.tiehi.pin";
+    sig = "Vdd";
+  }
+  else {
+    cellname = "v2act.tielo.cell";
+    pinname = "v2act.tielo.pin";
+    sig = "GND";
+  }
+  
+  if ((zero_or_one == 0 && CURMOD(v)->tielo) ||
+      (zero_or_one == 1 && CURMOD(v)->tiehi) || config_exists (cellname)) {
+    if (!(zero_or_one ? CURMOD(v)->tiehi : CURMOD(v)->tielo)) {
+      conn_info_t *ci;
+      id_info_t *id, *mod;
+      char buf[100];
+      id_info_t *newsig;
+      id_info_t *tmp_prefix;
+	
+      // create instance
+      snprintf (buf, 100, "_nref_%d", v->flop_count++);
+      id = verilog_gen_id (v, buf);
+      id->ismodname = 0;
+      mod = verilog_find_id (v, config_get_string (cellname));
+      if (mod) {
+	v->flag = 0;
+      }
+      else {
+	v->flag = 1;
+	mod = verilog_gen_id (v, config_get_string (cellname));
+      }
+      mod->ismodname = 1;
+
+      tmp_prefix = v->prefix;
+      lapply_X_one_instance_0_1 (v, mod, id);
+      
+      snprintf (buf, 100, "_nsig_%d", v->flop_count++);
+      
+      newsig = verilog_gen_id (v, buf);
+      
+      if (zero_or_one) {
+	CURMOD(v)->tiehi = newsig;
+      }
+      else {
+	CURMOD(v)->tielo = newsig;
+      }
+
+      NEW (ci, conn_info_t);
+      ci->l = NULL;
+      ci->isclk = 0;
+      NEW (ci->r, conn_rhs_t);
+      ci->r->id.id = newsig;
+      ci->r->id.isderef = 0;
+      ci->r->id.cnt = 0;
+      ci->r->issubrange = 0;
+      ci->prefix = v->prefix;
+      ci->id.id = verilog_alloc_id (config_get_string (pinname));
+      ci->id.cnt = 0;
+      ci->id.isderef = 0;
+      A_NEW (CURMOD(v)->conn, conn_info_t *);
+      A_NEXT (CURMOD(v)->conn) = ci;
+      A_INC (CURMOD(v)->conn);
+      
+      v->prefix = tmp_prefix;
+    }
+    if (zero_or_one) {
+      return CURMOD(v)->tiehi;
+    }
+    else {
+      return CURMOD(v)->tielo;
+    }
+  }
+  else {
+    id_info_t *id = verilog_gen_id (v, sig);
+    id->isport = 1;
+    return id;
+  }
+}
 
 int array_length (conn_info_t *c)
 {

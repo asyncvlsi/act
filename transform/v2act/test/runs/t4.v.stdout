@@ -1,0 +1,17 @@
+/* -- declarations -- */
+export defproc blk0 (bool? e0[5]; bool out[5]);
+
+export defproc blk0 (bool? e0[5]; bool out[5])
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   bool f;
+   /*--- connections ---*/
+   out[4]=e0[2];
+   out[3]=e0[1];
+   out[2]=e0[0];
+   out[1]=e0[3];
+   out[0]=e0[4];
+}
+

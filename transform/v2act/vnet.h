@@ -144,7 +144,9 @@ typedef struct moduletype {
   /* instances */
   struct Hashtable *H;
   id_info_t *hd, *tl;
-  
+
+  /* output pin for tiehi/tilo cells, if they exist */
+  id_info_t *tiehi, *tielo;
 
   /* has this been instantiated? */
   int inst_exists;

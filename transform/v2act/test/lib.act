@@ -81,5 +81,7 @@ export defproc LATCH (bool? CLK, D; bool! Q);
 export defproc DFFPOSX1 (bool? CLK, D; bool! Q);
 export defproc DFFNEGX1 (bool? CLK, D; bool! Q);
 export defproc DFFSR (bool? CLK, R, S, D; bool! Q);
+export defproc TIEHIX1 (bool! Y);
+export defproc TIELOX1 (bool! Y);
 
 }

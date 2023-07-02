@@ -38,5 +38,7 @@ id_info_t *verilog_gen_id (VNet *, const char *);
 id_info_t *verilog_find_id (VNet *v, const char *s);
 id_info_t *verilog_alloc_id (char *name);
 void verilog_delete_id (VNet *v, const char *s);
+id_info_t *verilog_gen_const (VNet *, int);
+
 
 #endif /* __V2ACT_EXTRA_H__ */

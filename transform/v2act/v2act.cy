@@ -25,6 +25,9 @@ module: "module" ID
     m->flags = 0;
     m->hd = NULL;
     m->tl = NULL;
+    m->tiehi = NULL;
+    m->tielo = NULL;
+    
     if (m->b) {
       $E("Duplicate module name `%s'", $2);
     }
@@ -760,14 +763,14 @@ id_deref_or_range[list_t *]: id_deref_range
       d->deref = 0;
 
       if (digit == 0) {
-	d->id = verilog_gen_id ($0, "GND");
+	d->id = verilog_gen_const ($0, 0);
 	d->id->isport = 1;
       }
       else {
 	if (digit != 1) {
 	  $W("Binary constant has non-binary digit (%d)", d);
 	}
-	d->id = verilog_gen_id ($0, "Vdd");
+	d->id = verilog_gen_const ($0, 1);
 	d->id->isport = 1;
       }
       list_append (l, d);
@@ -826,13 +829,8 @@ id_deref[id_deref_t *]: id [ "[" INT "]" ]
   VRet *r;
 
   NEW (d, id_deref_t);
-  if ($1 == 0) {
-    d->id = verilog_gen_id ($0, "GND");
-  }
-  else {
-    d->id = verilog_gen_id ($0, "Vdd");
-  }
-  d->id->isport = 1;
+  
+  d->id = verilog_gen_const ($0, $1);
   d->isderef = 0;
   d->deref = 0;
   return d;
@@ -881,11 +879,11 @@ id_or_const[conn_rhs_t *]: id_deref [ "[" INT ":" INT "]" ]
     conn_rhs_t *r;
 
     if ($1) {
-      id = verilog_gen_id ($0, "Vdd");
+      id = verilog_gen_const ($0, 1);
       id->isport = 1;
     }
     else {
-      id = verilog_gen_id ($0, "GND");
+      id = verilog_gen_const ($0, 0);
       id->isport = 1;
     }
     NEW (r, conn_rhs_t);
