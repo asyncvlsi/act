@@ -551,11 +551,11 @@ void ActId::Append (ActId *id)
   next = id;
 }
 
-void ActId::Print (FILE *fp, ActId *end, int style)
+void ActId::Print (FILE *fp, ActId *end, int style, char delim)
 {
   char buf[10240];
   buf[0] = '\0';
-  sPrint (buf, 10240, end, style);
+  sPrint (buf, 10240, end, style, delim);
   fprintf (fp, "%s", buf);
 }
 
@@ -567,7 +567,7 @@ void ActId::Print (FILE *fp, ActId *end, int style)
     if (sz <= 1) return;			\
   } while (0)
 
-void ActId::sPrint (char *buf, int sz, ActId *end, int style)
+void ActId::sPrint (char *buf, int sz, ActId *end, int style, char delim)
 {
   ActId *start = this;
   int k = 0;
@@ -577,7 +577,7 @@ void ActId::sPrint (char *buf, int sz, ActId *end, int style)
   while (start && start != end) {
     if (start != this) {
       if (!ns) {
-	snprintf (buf+k, sz, ".");
+	snprintf (buf+k, sz, "%c", delim);
 	PRINT_STEP;
       }
       ns = 0;

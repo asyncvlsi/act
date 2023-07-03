@@ -124,8 +124,9 @@ class ActId {
    * @param stop is the stopping criteria: the sub-identifier that
    * should not be printed.
    * @param style specifies the printing style
+   * @param delim is the hierarchy delimiter
    */
-  void Print (FILE *fp, ActId *stop = NULL, int style = 0);
+  void Print (FILE *fp, ActId *stop = NULL, int style = 0, char delim = '.');
 
   /**
    * This is like Print(), except the ID is printed to a buffer
@@ -134,8 +135,10 @@ class ActId {
    * @param sz is the size of the output buffer
    * @param stop is the stopping condition
    * @param style is the array style
+   * @param delim is the hierarchy separator
    */
-  void sPrint (char *buf, int sz, ActId *stop = NULL, int style = 0); 
+  void sPrint (char *buf, int sz, ActId *stop = NULL, int style = 0,
+	       char delim = '.'); 
 
   /**
    * Returns a deep copy of the ActID. Note that string pointers are
