@@ -2741,7 +2741,7 @@ static void find_tail_recursion (void)
 	    if (equal_toks (&BNF[i].a[p].a[1], BNF[i].a[q].a, 
 			    A_LEN (BNF[i].a[q].a))) {
 	      BNF[i].tail_recursive = 2;
-	      printf ("Head-recursive call for %s\n", BNF[i].lhs);
+	      /*printf ("Head-recursive call for %s\n", BNF[i].lhs);*/
 	      /* swap to make a[0] the shorter longer */
 	      if (p == 1) {
 		A_DECL (token_type_t, tmp);

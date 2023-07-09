@@ -35,6 +35,7 @@ struct _list_ {
   union {
     const void *data;
     int idata;
+    double fdata;
   };
   struct _list_ *next;
 };
@@ -46,8 +47,10 @@ struct _listDATA_ {
 list_t *list_new (void);
 void list_append (list_t *, const void *);
 void list_iappend (list_t *,  int);
+void list_dappend (list_t *,  double);
 #define list_append_head(l,x) stack_push ((l), (x))
 #define list_iappend_head(l,x) stack_ipush ((l), (x))
+#define list_dappend_head(l,x) stack_dpush ((l), (x))
 int list_length (list_t *);
 const void *list_delete_tail (list_t *);
 void list_delete_next (list_t *l, listitem_t *li);
@@ -75,19 +78,23 @@ void list_apply (list_t *l, void *cookie, void (*f)(void *, const void *));
 #define list_next(l)     ((l)->next)
 #define list_value(l)    ((l)->data)
 #define list_ivalue(l)  ((l)->idata)  
+#define list_dvalue(l)  ((l)->fdata)  
 
 typedef void *(*LISTMAPFN)(const void *);
 typedef void *(*LISTMAPFNCOOKIE)(void *, const void *);
 
 void stack_push (list_t *l, const void *item);
 void stack_ipush (list_t *l, int item);
+void stack_dpush (list_t *l, double item);
 const void *stack_pop (list_t *l);
 int stack_ipop (list_t *l);
+double stack_dpop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
 #define stack_peek(l)  list_value (list_first (l))
 
 #define list_delete_head(l) stack_pop(l)
 #define list_delete_ihead(l) stack_ipop(l)
+#define list_delete_dhead(l) stack_dpop(l)
 
 #ifdef __cplusplus
 }

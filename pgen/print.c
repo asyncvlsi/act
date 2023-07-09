@@ -367,57 +367,43 @@ void print_walker_main (pp_t *pp)
   pp_nl;
 }
 
-static void print_trec_helper_body (pp_t *pp, pp_t *app, bnf_item_t *bnf, int j)
+    
+static void _print_next_token_walker (pp_t *pp, token_type_t *tt, int idx)
 {
-  token_list_t *tl;
   bnf_item_t *b;
-  int k = 0;
-
-  /* base case */
-  tl = &bnf->a[j];
-
-  if (HAS_DATA(tl->a[k])) {
-    pp_printf (pp, "%s f%d = n->u.Option_%s%d.f%d;",
-	       tok_type_to_parser_type (&tl->a[k]), k, bnf->lhs, j, k);
-  }
-  pp_nl;
-
-  /* Part 2: Convert non-built-in types recursively, replacing
-     f# with g# for those.
-  */
-  if (HAS_DATA (tl->a[k])) {
-    switch (tl->a[k].type) {
+  if (HAS_DATA (*tt)) {
+    switch (tt->type) {
     case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
     case T_L_ID: case T_L_STRING: case T_L_FLOAT:
     case T_L_INT:
       break;
 
     case T_LHS:
-      b = (bnf_item_t *)tl->a[k].toks;
+      b = (bnf_item_t *)tt->toks;
       pp_printf (pp, "%s g%d = walk_%s_%s (cookie, f%d);", 
-		 user_ret (b), k, WNAME, b->lhs, k);
+		 user_ret (b), idx, WNAME, b->lhs, idx);
       pp_nl;
       break;
 
     case T_EXTERN:
       pp_printf (pp, "void *g%d = %s_walk_%s_%s (cookie, f%d);",
-		 k, prefix, WNAME, tl->a[k].toks, k);
+		 idx, prefix, WNAME, tt->toks, idx);
       pp_nl;
       break;
 
     case T_OPT:
     case T_LIST:
-      if (opt_token_no_data (&tl->a[k])) {
-	pp_printf (pp, "%s g%d = list_new ();", 
-		   production_to_ret_type (&tl->a[k]), k);
-	pp_printf (pp, "if (!list_isempty (f%d)) ", k);
-	pp_printf (pp, "list_append (g%d, NULL);", k);
+      if (opt_token_no_data (tt)) {
+	pp_printf (pp, "%s g%d = list_new ();",
+		   production_to_ret_type (tt), idx);
+	pp_printf (pp, "if (!list_isempty (f%d)) ", idx);
+	pp_printf (pp, "list_append (g%d, NULL);", idx);
 	pp_nl;
       }
       else {
 	pp_printf (pp, "%s g%d = list_map_cookie " 
 		   "(f%d, cookie, %s walkmap_%s);", 
-		   production_to_ret_type (&tl->a[k]), k, k, 
+		   production_to_ret_type (tt), idx, idx,
 		   "(LISTMAPFNCOOKIE)", WNAME);
 	pp_nl;
       }
@@ -426,10 +412,10 @@ static void print_trec_helper_body (pp_t *pp, pp_t *app, bnf_item_t *bnf, int j)
     case T_LIST_SPECIAL:
       pp_printf (pp, "%s g%d = list_map_cookie "
 		 "(f%d, cookie, %s %s);", 
-		 production_to_ret_type (&tl->a[k]), 
-		 k, k, 
+		 production_to_ret_type (tt),
+		 idx, idx,
 		 "(LISTMAPFNCOOKIE)",
-		 special_wrapper_name (&tl->a[k]), 
+		 special_wrapper_name (tt),
 		 WNAME);
       break;
     default:
@@ -437,8 +423,216 @@ static void print_trec_helper_body (pp_t *pp, pp_t *app, bnf_item_t *bnf, int j)
       break;
     }
   }
-  pp_printf (pp, "return g%d;", k);
+}
+
+
+static void print_trec_helper_body (pp_t *pp, pp_t *app, bnf_item_t *bnf)
+{
+  token_list_t *tl, *tl_long;
+  bnf_item_t *b;
+  int k = 0;
+
+  /* base case */
+  tl_long = &bnf->a[0];
+  Assert (A_LEN (tl_long->a) == 2, "What?");
+
+  /* bnf->tail_recursive == 1 */
+
+  /* tail recursion */
+  tl = &bnf->a[1];
+
+  /* declare both variables */
+  for (k=0; k < A_LEN (tl_long->a); k++) {
+    if (HAS_DATA (tl_long->a[k])) {
+      pp_printf (pp, "%s f%d;", tok_type_to_parser_type (&tl_long->a[k]), k);
+      pp_nl;
+    }
+  }
+
+  pp_printf (pp, "%s gret;", user_ret (bnf));
+  pp_printf (pp, "list_t *tmplist = list_new ();");
+  pp_printf (pp, "list_t *tmppos = list_new ();");
   pp_nl;
+
+  pp_printf (pp, "while (n->type == 0) {");
+  BEGIN_INDENT;
+
+  pp_printf (pp, "f0 = n->u.Option_%s0.f0;", bnf->lhs);
+  pp_nl;
+  _print_next_token_walker (pp, &tl_long->a[0], 0);
+  if (tl_long->a[0].opt_next && tl_long->a[0].opt_next[walk_id].s) {
+    pp_printf (pp, "/* %s */", tl_long->a[0].opt_next[walk_id].s);
+    pp_puts (pp, "curpos = n->p;");
+    pp_nl;
+    pp_printf (pp, "lapply_%s_%s_0_0 (cookie", WNAME, bnf->lhs);
+    pp_printf (app, "void lapply_%s_%s_0_0 (%s *", WNAME, bnf->lhs, WCOOKIE);
+    if (HAS_DATA (tl->a[0])) {
+      pp_printf (app, ", %s", production_to_ret_type (&tl->a[0]));
+      switch (tl->a[0].type) {
+      case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
+      case T_L_ID: case T_L_STRING: case T_L_FLOAT: case T_L_INT:
+	pp_printf (pp, ", f0");
+	break;
+      case T_LHS: case T_OPT:
+      case T_LIST: case T_LIST_SPECIAL: case T_EXTERN:
+	pp_printf (pp, ", g0");
+	break;
+      default:
+	fatal_error ("Uh oh");
+	break;
+      }
+      pp_puts (pp, ");"); pp_nl;
+      pp_puts (app, ");"); pp_forced (app, 0);
+    }
+  }
+  
+  if (HAS_DATA (tl_long->a[0])) {
+    pp_printf (pp, "stack_push (tmppos, n);");
+    pp_nl;
+    switch (tl_long->a[0].type) {
+    case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
+    case T_L_ID: case T_L_STRING:
+      pp_printf (pp, "stack_push (tmplist, f0);");
+      pp_nl;
+      break;
+    case T_L_FLOAT:
+      pp_printf (pp, "stack_dpush (tmplist, f0);");
+      pp_nl;
+      break;
+    case T_L_INT:
+      pp_printf (pp, "stack_ipush (tmplist, f0);");
+      pp_nl;
+      break;
+    case T_LHS:
+      {
+	char *tmp = production_to_ret_type (&tl_long->a[0]);
+	if (tmp[strlen(tmp)-1] == '*') {
+	  pp_printf (pp, "stack_push (tmplist, g0);");
+	}
+	else if (strcmp (tmp, "int") == 0 ||
+		 strcmp (tmp, "long") == 0) {
+	  pp_printf (pp, "stack_ipush (tmplist, g0);");
+	}
+	else if (strcmp (tmp, "float") == 0 ||
+		 strcmp (tmp, "double") == 0) {
+	  pp_printf (pp, "stack_dpush (tmplist, g0);");
+	}
+	else {
+	  pp_printf (pp, "stack_push (tmplist, g0);");
+	}
+	pp_nl;
+      }
+      break;
+    case T_OPT:
+    case T_LIST: case T_LIST_SPECIAL: case T_EXTERN:
+      pp_printf (pp, "stack_push (tmplist, g0);");
+      pp_nl;
+      break;
+    default:
+      fatal_error ("Uh oh");
+      break;
+    }
+  }
+  pp_printf (pp, "n = n->u.Option_%s0.f1;", bnf->lhs);
+  
+
+  END_INDENT;
+  pp_puts (pp, "}");
+  pp_nl;
+
+  pp_printf (pp, "curpos = n->p;");
+  pp_nl;
+  pp_printf (pp, "gret = apply_%s_%s_opt1 (cookie", WNAME, bnf->lhs);
+  if (HAS_DATA (tl_long->a[0])) {
+    switch (tl_long->a[0].type) {
+    case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
+    case T_L_ID: case T_L_STRING: case T_L_FLOAT: case T_L_INT:
+      pp_printf (pp, ", n->u.Option_%s1.f0", bnf->lhs);
+      break;
+
+    case T_LHS:
+      pp_printf (pp, ", walk_%s_%s (cookie, n->u.Option_%s1.f0)",
+		 WNAME, ((bnf_item_t *)tl_long->a[0].toks)->lhs, bnf->lhs);
+      break;
+      
+    case T_EXTERN:
+      pp_printf (pp, ", walk_%s_%s (cookie, n->u.Option_%s1.f0)",
+		 WNAME, tl_long->a[0].toks, bnf->lhs);
+      break;
+
+    case T_OPT:
+    case T_LIST:
+    case T_LIST_SPECIAL:
+      /* FIXME */
+      pp_printf (pp, ", n->u.Option_%s1.f0", bnf->lhs);
+      break;
+      
+    default:
+      break;
+    }
+  }
+  pp_printf (pp, ");");
+  pp_nl;
+
+  pp_printf (pp, "while (!stack_isempty (tmplist)) {");
+  BEGIN_INDENT;
+  if (HAS_DATA (tl_long->a[0])) {
+    pp_printf (pp, "n = (Node_%s *) stack_pop (tmppos);", bnf->lhs);
+    pp_nl;
+    pp_printf (pp, "curpos = n->p;");
+    pp_nl;
+    pp_printf (pp, "%s tmpptr;", production_to_ret_type (&tl_long->a[0]));
+    pp_nl;
+    switch (tl_long->a[0].type) {
+    case T_L_FLOAT:
+      pp_printf (pp, "tmpptr = stack_dpop (tmplist);");
+      pp_nl;
+      break;
+    case T_L_INT:
+      pp_printf (pp, "tmpptr = stack_ipop (tmplist);");
+      pp_nl;
+
+    case T_LHS:
+      {
+	char *tmp = production_to_ret_type (&tl_long->a[0]);
+	if (tmp[strlen(tmp)-1] == '*') {
+	  pp_printf (pp, "tmpptr = (%s) stack_pop (tmplist);", tmp);
+	}
+	else if (strcmp (tmp, "int") == 0 ||
+		 strcmp (tmp, "long") == 0) {
+	  pp_printf (pp, "tmpptr = stack_ipop (tmplist);");
+	}
+	else if (strcmp (tmp, "float") == 0 ||
+		 strcmp (tmp, "double") == 0) {
+	  pp_printf (pp, "tmpptr = stack_dpop (tmplist);");
+	}
+	else {
+	  pp_printf (pp, "tmpptr = stack_pop (tmplist);");
+	}
+	pp_nl;
+      }
+      break;
+    default:
+      pp_printf (pp, "tmpptr = (%s) stack_pop (tmplist);",
+		 tok_type_to_parser_type (&tl_long->a[0]));
+      pp_nl;
+    }
+    /* FIXME: need to set position correctly */
+    pp_printf (pp, "gret = apply_%s_%s_opt0 (cookie, tmpptr, gret);",
+	       WNAME, bnf->lhs);
+  }
+  else {
+    pp_printf (pp, "gret = apply_%s_%s_opt0 (cookie, gret);",
+	       WNAME, bnf->lhs);
+  }
+  END_INDENT;
+  pp_printf (pp, "}");
+  pp_nl;
+  pp_printf (pp, "list_free (tmplist);");
+  pp_nl;
+  pp_printf (pp, "list_free (tmppos);");
+  pp_nl;
+  pp_printf (pp, "return gret;");
 }
 
 static void print_trec_helper (pp_t *pp, pp_t *app, bnf_item_t *bnf)
@@ -450,16 +644,8 @@ static void print_trec_helper (pp_t *pp, pp_t *app, bnf_item_t *bnf)
   pp_printf (pp, "{");
   BEGIN_INDENT;
 
-  pp_printf (pp, "if (n->type == 1) {");
-  pp_nl;
-  print_trec_helper_body (pp, app, bnf, 1);
+  print_trec_helper_body (pp, app, bnf);
 
-  pp_printf (pp, "}");
-  pp_printf (pp, "else {");
-  pp_nl;
-  print_trec_helper_body (pp, app, bnf, 0);
-  pp_printf (pp, "}");
-  
   END_INDENT;
   pp_puts (pp, "}");
   pp_nl;
@@ -478,8 +664,8 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
   */
   for (i=0; i < A_LEN (BNF); i++) {
 
-#if 0 
-    if (BNF[i].tail_recursive) {
+#if 1
+    if (BNF[i].tail_recursive == 1 && A_LEN (BNF[i].a[0].a) == 2) {
       print_trec_helper (pp, app, &BNF[i]);
     }
 #endif
@@ -491,165 +677,14 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
     pp_printf (pp, "{");
     BEGIN_INDENT;
 
-#if 0
-    if (BNF[i].tail_recursive) {
-      pp_printf (pp, "if (n->type == 1) {");
-      j = 1;
-      /* base case */
-      tl = &BNF[i].a[j];
-      for (k=0; k < A_LEN (tl->a); k++) {
-	if (HAS_DATA(tl->a[k])) {
-	  pp_printf (pp, "%s f%d = n->u.Option_%s%d.f%d;", tok_type_to_parser_type (&tl->a[k]), k, BNF[i].lhs, j, k);
-	}
-      }
-      BEGIN_INDENT;
-
-      /* Part 2: Convert non-built-in types recursively, replacing
-	         f# with g# for those.
-      */
-      for (k=0; k < A_LEN (tl->a); k++) {
-	if (HAS_DATA (tl->a[k])) {
-	  switch (tl->a[k].type) {
-	  case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
-	  case T_L_ID: case T_L_STRING: case T_L_FLOAT:
-	  case T_L_INT:
-	    break;
-
-	  case T_LHS:
-	    b = (bnf_item_t *)tl->a[k].toks;
-	    pp_printf (pp, "%s g%d = walk_%s_%s (cookie, f%d);", 
-		       user_ret (b), k, WNAME, b->lhs, k);
-	    pp_nl;
-	    break;
-
-	  case T_EXTERN:
-	    pp_printf (pp, "void *g%d = %s_walk_%s_%s (cookie, f%d);",
-		       k, prefix, WNAME, tl->a[k].toks, k);
-	    pp_nl;
-	    break;
-
-	  case T_OPT:
-	  case T_LIST:
-	    if (opt_token_no_data (&tl->a[k])) {
-	      pp_printf (pp, "%s g%d = list_new ();", 
-			 production_to_ret_type (&tl->a[k]), k);
-	      pp_printf (pp, "if (!list_isempty (f%d)) ", k);
-	      pp_printf (pp, "list_append (g%d, NULL);", k);
-	      pp_nl;
-	    }
-	    else {
-	      pp_printf (pp, "%s g%d = list_map_cookie " 
-			 "(f%d, cookie, %s walkmap_%s);", 
-			 production_to_ret_type (&tl->a[k]), k, k, 
-			 "(LISTMAPFNCOOKIE)", WNAME);
-	      pp_nl;
-	    }
-	    break;
-
-	  case T_LIST_SPECIAL:
-	    pp_printf (pp, "%s g%d = list_map_cookie "
-		       "(f%d, cookie, %s %s);", 
-		       production_to_ret_type (&tl->a[k]), 
-		       k, k, 
-		       "(LISTMAPFNCOOKIE)",
-		       special_wrapper_name (&tl->a[k]), 
-		       WNAME);
-	    break;
-	  default:
-	    fatal_error ("Uh oh");
-	    break;
-	  }
-	}
-
-	/* Emit local apply function, if necessary */
-	if (tl->a[k].opt_next && (k != A_LEN(tl->a)-1) &&
-	    tl->a[k].opt_next[walk_id].s) {
-	  /* Specified walker for a subset of the entire production; 
-	     Create the local apply function
-	  */
-	  pp_puts (pp, "curpos = n->p;"); pp_nl;
-	  pp_printf (pp, "lapply_%s_%s_%d_%d (cookie", WNAME, 
-		     BNF[i].lhs, j, k);
-	  pp_printf (app, "void lapply_%s_%s_%d_%d (%s *", WNAME,
-		     BNF[i].lhs, j, k, WCOOKIE);
-	  for (l=0; l <= k; l++) {
-	    if (HAS_DATA (tl->a[l])) {
-	      pp_printf (app, ", %s", production_to_ret_type (&tl->a[l]));
-	      switch (tl->a[l].type) {
-	      case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
-	      case T_L_ID: case T_L_STRING: case T_L_FLOAT: case T_L_INT:
-		pp_printf (pp, ", f%d", l);
-		break;
-	      case T_LHS: case T_OPT:
-	      case T_LIST: case T_LIST_SPECIAL: case T_EXTERN:
-		pp_printf (pp, ", g%d", l);
-		break;
-	      default:
-		fatal_error ("Uh oh");
-		break;
-	      }
-	    }
-	  }
-	  pp_puts (pp, ");"); pp_nl;
-	  pp_puts (app, ");"); pp_forced (app, 0);
-	}
-      }
-
-      /* Part 3: Call apply_... */
-      pp_puts (pp, "curpos = n->p;"); pp_nl;
-      pp_printf (pp, "return apply_%s_%s_opt%d (cookie", WNAME, BNF[i].lhs, j);
-
-      /* args to apply */
-      for (k=0; k < A_LEN (BNF[i].a[j].a); k++) {
-	if (HAS_DATA (BNF[i].a[j].a[k])) {
-	  switch (BNF[i].a[j].a[k].type) {
-	  case T_L_EXPR:
-	  case T_L_IEXPR:
-	  case T_L_BEXPR:
-	  case T_L_REXPR:
-	    pp_printf (pp, ", f%d", k);
-	    break;
-	  case T_L_ID:
-	  case T_L_STRING:
-	    pp_printf (pp, ", f%d", k);
-	    break;
-	  case T_L_FLOAT:
-	    pp_printf (pp, ", f%d", k);
-	    break;
-	  case T_L_INT:
-	    pp_printf (pp, ", f%d", k);
-	    break;
-	  case T_LHS:
-	  case T_EXTERN:
-	    pp_printf (pp, ", g%d", k);
-	    break;
-	  case T_OPT:
-	  case T_LIST:
-	  case T_LIST_SPECIAL:
-	    pp_printf (pp, ", g%d", k);
-	    break;
-	  default:
-	    fatal_error ("Uh oh");
-	    break;
-	  }
-	}
-      }
-      pp_puts (pp, ");"); pp_nl;
-      END_INDENT;
-      pp_puts (pp, "}"); pp_nl;
-      pp_printf (pp, "else { ");
-      BEGIN_INDENT;
-
-      /*-- reverse list --*/
-      
-      
-
-      END_INDENT;
-      pp_puts (pp, "}"); pp_nl;
-      goto finish;
+#if 1
+    if (BNF[i].tail_recursive == 1 && A_LEN (BNF[i].a[0].a) == 2) {
+      pp_printf (pp, "return trec_walk_%s_%s (cookie, n);",
+		 WNAME, BNF[i].lhs);
+      pp_nl;
     }
 #endif
-
+    
     pp_printf (pp, "switch (n->type)");
     pp_nl;
     pp_puts (pp, "{");
@@ -676,58 +711,7 @@ void print_walker_recursive (pp_t *pp, pp_t *app)
 	         f# with g# for those.
       */
       for (k=0; k < A_LEN (tl->a); k++) {
-	if (HAS_DATA (tl->a[k])) {
-	  switch (tl->a[k].type) {
-	  case T_L_EXPR: case T_L_IEXPR: case T_L_BEXPR: case T_L_REXPR:
-	  case T_L_ID: case T_L_STRING: case T_L_FLOAT:
-	  case T_L_INT:
-	    break;
-
-	  case T_LHS:
-	    b = (bnf_item_t *)tl->a[k].toks;
-	    pp_printf (pp, "%s g%d = walk_%s_%s (cookie, f%d);", 
-		       user_ret (b), k, WNAME, b->lhs, k);
-	    pp_nl;
-	    break;
-
-	  case T_EXTERN:
-	    pp_printf (pp, "void *g%d = %s_walk_%s_%s (cookie, f%d);",
-		       k, prefix, WNAME, tl->a[k].toks, k);
-	    pp_nl;
-	    break;
-
-	  case T_OPT:
-	  case T_LIST:
-	    if (opt_token_no_data (&tl->a[k])) {
-	      pp_printf (pp, "%s g%d = list_new ();", 
-			 production_to_ret_type (&tl->a[k]), k);
-	      pp_printf (pp, "if (!list_isempty (f%d)) ", k);
-	      pp_printf (pp, "list_append (g%d, NULL);", k);
-	      pp_nl;
-	    }
-	    else {
-	      pp_printf (pp, "%s g%d = list_map_cookie " 
-			 "(f%d, cookie, %s walkmap_%s);", 
-			 production_to_ret_type (&tl->a[k]), k, k, 
-			 "(LISTMAPFNCOOKIE)", WNAME);
-	      pp_nl;
-	    }
-	    break;
-
-	  case T_LIST_SPECIAL:
-	    pp_printf (pp, "%s g%d = list_map_cookie "
-		       "(f%d, cookie, %s %s);", 
-		       production_to_ret_type (&tl->a[k]), 
-		       k, k, 
-		       "(LISTMAPFNCOOKIE)",
-		       special_wrapper_name (&tl->a[k]), 
-		       WNAME);
-	    break;
-	  default:
-	    fatal_error ("Uh oh");
-	    break;
-	  }
-	}
+	_print_next_token_walker (pp, &tl->a[k], k);
 
 	/* Emit local apply function, if necessary */
 	if (tl->a[k].opt_next && (k != A_LEN(tl->a)-1) &&
