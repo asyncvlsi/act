@@ -1930,7 +1930,7 @@ void atrace_advance_time (atrace *a, int nsteps)
       //a->N[0]->v = a->curt;
       a->nextt = _read_record (a, a->curt);
     }
-    a->curstep = VSTEP (a, a->curt);
+    //a->curstep = VSTEP (a, a->curt);
     a->N[0]->vu.v = a->curstep*a->vdt;
 #if 0    
     nv = VSTEP (a, a->curt);
