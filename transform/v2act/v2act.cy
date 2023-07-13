@@ -115,11 +115,13 @@ id[id_info_t *]: ID
 }}
 ;
 
-module_body: decls 
+module_body: [ decls ]
 {{X:
     int i;
     conn_info_t **c;
     conn_rhs_t *r;
+
+    list_free ($1);
 
     c = CURMOD($0)->conn;
     
@@ -144,7 +146,11 @@ module_body: decls
       }
     }
 }}
-assigns_or_instances "endmodule" 
+[ assigns_or_instances ]  "endmodule" 
+{{X:
+  list_free ($2);
+  return NULL;
+}}
 ;
 
 one_decl: decl_type [ "[" INT ":" INT "]" ] { id "," }**  ";"
@@ -234,15 +240,13 @@ decl_type[int]: "input"
 }}
 ;
 
-decls: one_decl decls | /* empty */ ;
+decls: one_decl decls | one_decl;
 
 assigns_or_instances: assign_or_inst assigns_or_instances
-| /* empty */;
+| assign_or_inst;
 
 
 assign_or_inst: one_assign |  one_instance ;
-
-assigns: one_assign assigns | /* empty */ ;
 
 one_assign: "assign" id_deref "=" id_deref ";"
 {{X:
@@ -352,8 +356,6 @@ one_assign: "assign" id_deref "=" id_deref ";"
     return apply_X_one_assign_opt2 ($0, $2, $4);
 }}
 ;
-
-instances: one_instance instances | /* empty */ ;
 
 one_instance: id id 
 {{X:

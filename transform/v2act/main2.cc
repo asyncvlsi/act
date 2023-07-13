@@ -29,30 +29,6 @@
 #include <common/misc.h>
 #include <common/agraph.h>
 
-static char *find_exepath (const char *s)
-{
-  char buf[10240];
-  char *ret;
-  FILE *tmp;
-
-  ret = NULL;
-  if (getenv ("ACT_HOME")) {
-    snprintf (buf, 10240, "%s/bin/%s", getenv ("ACT_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (ret) {
-    return Strdup (ret);
-  }
-  else {
-    return NULL;
-  }
-}
-
-
 static void usage (char *s)
 {
   fprintf (stderr, "Usage: %s [-c clkname] [-o outfile] <file.v>\n", s);
@@ -120,30 +96,12 @@ int main (int argc, char **argv)
 
   config_read ("s2a.conf");
 
-
-  char *script = find_exepath ("v2act_quote.sed");
-  if (!script) {
-    warning ("Multi-bit constants may not work; could not find pre-processing script");
-    w = verilog_read (argv[optind], config_get_string ("s2a.library"));
-  }
-  else {
-    char buf[10240];
-    snprintf (buf, 10240, "sed -f %s %s > %sp", script, argv[optind],
-	      argv[optind]);
-    FREE (script);
-    system (buf);
-    snprintf (buf, 10240, "%sp", argv[optind]);
-    w = verilog_read (buf, config_get_string ("s2a.library"));
-    script = Strdup (buf);
-  }
-  
+  w = verilog_read (argv[optind], config_get_string ("s2a.library"));
   
   AGraph *ag = verilog_create_netgraph (w);
 
   verilog_mark_clock_nets (w);
 
-  
-  
   if (fname) {
     w->out = fopen (fname, "w");
     if (!w->out) {
@@ -152,11 +110,6 @@ int main (int argc, char **argv)
   }
 
   fclose (w->out);
-
-  if (script) {
-    unlink (script);
-    FREE (script);
-  }
 
   return 0;
 }

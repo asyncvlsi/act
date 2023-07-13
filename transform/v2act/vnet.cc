@@ -21,6 +21,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <common/agraph.h>
 #include <common/config.h>
@@ -28,28 +29,24 @@
 #include "v_parse.h"
 #include "v_walk_X.h"
 
-static
-char *find_library (const char *s)
+static char *find_path_subdir (const char *s, const char *subdir)
 {
   char buf[10240];
   char *ret;
   FILE *tmp;
 
+  const char *env_vars[] = { "ACT_HOME", "CAD_HOME", NULL };
+  int i;
+
   ret = NULL;
-  if (getenv ("CAD_HOME")) {
-    snprintf (buf, 10240, "%s/lib/v2act/%s", getenv ("CAD_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (!ret && getenv ("ACT_HOME")) {
-    snprintf (buf, 10240, "%s/lib/v2act/%s", getenv ("ACT_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
+  for (i=0; !ret && env_vars[i]; i++) {
+    if (getenv (env_vars[i])) {
+      snprintf (buf, 10240, "%s/%s/%s", getenv(env_vars[i]), subdir, s);
+      tmp = fopen (buf, "r");
+      if (tmp) {
+	fclose (tmp);
+	ret = buf;
+      }
     }
   }
   if (ret) {
@@ -58,6 +55,18 @@ char *find_library (const char *s)
   else {
     return NULL;
   }
+}
+
+static char *find_exepath (const char *s)
+{
+  return find_path_subdir (s, "bin");
+}
+
+
+static
+char *find_library (const char *s)
+{
+  return find_path_subdir (s, "lib/v2act");
 }
 
 
@@ -108,6 +117,24 @@ VNet *verilog_read (const char *netlist, const char *actlib)
   v_Token *t;
   VNet *w;
   Act *a;
+  const char *real_netlist;
+  char *_real_netlist;
+  char *script = find_exepath ("v2act_quote.sed");
+
+  /* pre-process verilog file */
+  if (!script) {
+    warning ("Multi-bit constants may not work; could not find pre-processing script");
+    real_netlist = netlist;
+  }
+  else {
+    char buf[10240];
+    snprintf (buf, 10240, "sed -f %s %s > %sp", script, netlist, netlist);
+    FREE (script);
+    system (buf);
+    snprintf (buf, 10240, "%sp", netlist);
+    _real_netlist = Strdup (buf);
+    real_netlist = _real_netlist;
+  }
     
   s = find_library (actlib);
   if (!s) {
@@ -118,7 +145,7 @@ VNet *verilog_read (const char *netlist, const char *actlib)
     FREE (s);
   }
 
-  t = v_parse (netlist);
+  t = v_parse (real_netlist);
 
   NEW (w, VNet);
   w->a = a;
@@ -146,7 +173,11 @@ VNet *verilog_read (const char *netlist, const char *actlib)
   }
 
   _walk_io_flags (w);
-  
+
+  if (netlist != real_netlist) {
+    unlink (real_netlist);
+    FREE (_real_netlist);
+  }
   return w;
 }
 

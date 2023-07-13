@@ -30,30 +30,6 @@
 
 char *channame;
 
-static char *find_exepath (const char *s)
-{
-  char buf[10240];
-  char *ret;
-  FILE *tmp;
-
-  ret = NULL;
-  if (getenv ("ACT_HOME")) {
-    snprintf (buf, 10240, "%s/bin/%s", getenv ("ACT_HOME"), s);
-    tmp = fopen (buf, "r");
-    if (tmp) {
-      fclose (tmp);
-      ret = buf;
-    }
-  }
-  if (ret) {
-    return Strdup (ret);
-  }
-  else {
-    return NULL;
-  }
-}
-
-
 static void usage (char *s)
 {
   fprintf (stderr, "Usage: %s [act-options] [-a] [-n lib_namespace] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
@@ -192,22 +168,8 @@ int main (int argc, char **argv)
     emit_hazards = 1 - emit_hazards;
   }
 
-  char *script = find_exepath ("v2act_quote.sed");
-  if (!script) {
-    warning ("Multi-bit constants may not work; could not find pre-processing script");
-    w = verilog_read (argv[optind], libname);
-  }
-  else {
-    char buf[10240];
-    snprintf (buf, 10240, "sed -f %s %s > %sp", script, argv[optind],
-	      argv[optind]);
-    FREE (script);
-    system (buf);
-    snprintf (buf, 10240, "%sp", argv[optind]);
-    w = verilog_read (buf, libname);
-    script = Strdup (buf);
-  }
-
+  w = verilog_read (argv[optind], libname);
+  
   label_clocks (w, clkname ? clkname : "clock");
 
   if (fname) {
@@ -227,11 +189,6 @@ int main (int argc, char **argv)
   emit_types (w);
 
   fclose (w->out);
-
-  if (script) {
-    unlink (script);
-    FREE (script);
-  }
 
   return 0;
 }
