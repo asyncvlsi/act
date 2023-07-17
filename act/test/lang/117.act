@@ -1,0 +1,16 @@
+defproc test1(chan?(bool) in; chan!(int<1>) out)
+{
+  bool b;
+  chp {
+    *[ [#in];b:=in;out!int(b),in? ]
+  }
+}
+
+defproc test2(chan?(int<1>) in; chan!(bool) out)
+{
+  int<1> x;
+  chp {
+   *[ [#in];x:=in;out!bool(x),in? ]
+  }
+}
+

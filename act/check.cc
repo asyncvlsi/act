@@ -677,7 +677,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_BUILTIN_BOOL:
     lt = act_type_expr (s, e->u.e.l, width, only_chan);
     if (lt == T_ERR) return T_ERR;
-    if (lt & (T_BOOL|T_ARRAYOF|T_REAL)) {
+    if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
       typecheck_err ("bool(.) requires an integer argument");
       return T_ERR;
     }
@@ -695,7 +695,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       typecheck_err ("int(.) can't accept array arguments");
       return T_ERR;
     }
-    if ((lt & T_REAL) && (!(lt & T_PARAM) || e->u.e.r)) {
+    if ((T_FIXBASETYPE (lt) == T_REAL) && (!(lt & T_PARAM) || e->u.e.r)) {
       typecheck_err ("int(.) can't accept real arguments");
       return T_ERR;
     }
