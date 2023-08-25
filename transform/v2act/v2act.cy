@@ -19,7 +19,7 @@ module: "module" ID
       $0->a->mangle_string ($2+1, buf, 10240);
     }
     else {
-      $0->a->mangle_string ($2, buf, 10240);
+      snprintf (buf, 10240, "%s", $2);
     }
 
     NEW (m, module_t);
