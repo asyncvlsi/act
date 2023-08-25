@@ -98,13 +98,25 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
 int Process::isBlackBox ()
 {
+  Process *p = this;
   if (isExpanded()) {
     Assert (unexpanded, "What?");
-    return unexpanded->isDefined() && (unexpanded->getBody() == NULL);
+    p = dynamic_cast<Process *> (unexpanded);
+    Assert (p, "What?!");
   }
-  else {
-    return isDefined () && (getBody() == NULL);
+  if (p->isDefined ()) {
+    if (p->getBody () == NULL) return 1;
+    for (ActBody *tmp = p->getBody(); tmp; tmp = tmp->Next()) {
+      ActBody_Inst *bi = dynamic_cast<ActBody_Inst *>(tmp);
+      if (!bi) {
+	return 0;
+      }
+      if (!TypeFactory::isBoolType (bi->getType())) {
+	return 0;
+      }
+    }
   }
+  return 0;
 }
 
 int Process::isLowLevelBlackBox ()
