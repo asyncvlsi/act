@@ -1,8 +1,8 @@
 /* -- declarations -- */
-export defproc bslk1$ (bool? x; bool y);
+export defproc bslk1_c (bool? x; bool y);
 export defproc blk0 (bool? e0[5]; bool! out[5]);
 
-export defproc bslk1$ (bool? x; bool y)
+export defproc bslk1_c (bool? x; bool y)
 {
   spec { hazard(*) }
 
@@ -24,7 +24,7 @@ export defproc blk0 (bool? e0[5]; bool! out[5])
    bool y;
    bool a;
    benchlib::DFFPOSX1 _newf_3;
-   bslk1$ q;
+   bslk1_c q;
    benchlib::TIELOX1 _nref_0;
    bool c;
    bool d;
