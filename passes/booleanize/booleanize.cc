@@ -1756,6 +1756,35 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
       v->isport = 1;
       delete tid;
     }
+    // also mark internal nodes as used!
+    if (p->isBlackBox()) {
+      ActInstiter it(p->CurScope());
+      for (it = it.begin(); it != it.end(); it++) {
+	ValueIdx *vx = (*it);
+	if (vx->isPrimary()) {
+	  if (vx->t->arrayInfo()) {
+	    // skip for the moment
+	    continue;
+	  }
+	  else {
+	    ActId *tid = new ActId (vx->getName());
+	    switch (vx->t->getDir()) {
+	    case Type::IN:
+	      visit_var (n, tid, 1);
+	      break;
+	    case Type::OUT:
+	      visit_var (n, tid, 0);
+	      break;
+	    default:
+	      visit_var (n, tid, 0);
+	      visit_var (n, tid, 1);
+	      break;
+	    }
+	    delete tid;
+	  }
+	}
+      }
+    }
   }
 
   /*-- collect globals --*/
