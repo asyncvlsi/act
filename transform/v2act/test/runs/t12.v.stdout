@@ -1,0 +1,38 @@
+/* -- declarations -- */
+export defproc bslk1$ (bool? x; bool y);
+export defproc blk0 (bool? e0[5]; bool! out[5]);
+
+export defproc bslk1$ (bool? x; bool y)
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   /*--- connections ---*/
+   y=x;
+}
+
+export defproc blk0 (bool? e0[5]; bool! out[5])
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   bool _nsig_1;
+   benchlib::DFFPOSX1 _newf_2;
+   bool x;
+   bool f;
+   bool b;
+   bool y;
+   bool a;
+   benchlib::DFFPOSX1 _newf_3;
+   bslk1$ q;
+   benchlib::TIELOX1 _nref_0;
+   bool c;
+   bool d;
+   /*--- connections ---*/
+   _nref_0(.Y=_nsig_1);
+out[0]=_nsig_1;
+   _newf_2(.D=d, .Q=c, .CLK=out[2]);
+   _newf_3(.D=b, .Q=a, .CLK=out[2]);
+   q(.x=f, .y=out[1]);
+}
+

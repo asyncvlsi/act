@@ -16,7 +16,11 @@ module: "module" ID
     char buf[10240];
 
     if ($2[0] == '\\') {
-      $0->a->mangle_string ($2+1, buf, 10240);
+      char *tmp;
+      MALLOC (tmp, char, strlen ($2));
+      strcpy (tmp, $2+1);
+      $0->a->mangle_string (tmp, buf, 10240);
+      FREE (tmp);
     }
     else {
       snprintf (buf, 10240, "%s", $2);
