@@ -12,6 +12,15 @@ one_file_item: module
 module: "module" ID
 {{X:
     module_t *m;
+    int off = 0;
+    char buf[10240];
+
+    if ($2[0] == '\\') {
+      $0->a->mangle_string ($2+1, buf, 10240);
+    }
+    else {
+      $0->a->mangle_string ($2, buf, 10240);
+    }
 
     NEW (m, module_t);
     m->space = NULL;
@@ -20,7 +29,7 @@ module: "module" ID
     A_INIT (m->port_list);
     A_INIT (m->dangling_list);
     m->H = hash_new (128);
-    m->b = hash_lookup ($0->M, $2);
+    m->b = hash_lookup ($0->M, buf);
     m->inst_exists = 0;
     m->flags = 0;
     m->hd = NULL;
@@ -29,16 +38,16 @@ module: "module" ID
     m->tielo = NULL;
     
     if (m->b) {
-      $E("Duplicate module name `%s'", $2);
+      $E("Duplicate module name `%s' (actual: %s)", $2, buf);
     }
-    m->b = hash_add ($0->M, $2);
+    m->b = hash_add ($0->M, buf);
     m->b->v = m;
 
     /* m is now the current module */
     q_ins ($0->hd, $0->tl, m);
 
     hash_bucket_t *x;
-    x = hash_lookup ($0->missing, $2);
+    x = hash_lookup ($0->missing, buf);
     if (x) {
       id_info_t *nm, *tmp;
       /* patching missing module links */
@@ -51,7 +60,7 @@ module: "module" ID
 	nm = tmp;
       }
       /* now that we've found it, it should no longer be missing! */
-      hash_delete ($0->missing, $2);
+      hash_delete ($0->missing, buf);
     }
 }}
 "(" port_list ")" ";" module_body
