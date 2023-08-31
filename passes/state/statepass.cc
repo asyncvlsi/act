@@ -1505,6 +1505,23 @@ int ActStatePass::globalBoolOffset (ActId *id)
   /* -- "rest" may actually be available at a higher level of the
      hierarchy since it may be connected to ports or globals.
      -- */
+
+  /*
+   * nonProcSuffix() returns foo.bar. If bar is not the portlist, then 
+   * we need to go down one more level to find the signal
+   */
+  {
+    InstType *it = loc->Lookup (rest->getName());
+    if (TypeFactory::isProcessType (it)) {
+      Process *tmp = dynamic_cast<Process *> (it->BaseType());
+      Assert (tmp, "What?");
+      if (!tmp->FindPort (rest->Rest()->getName())) {
+	loc = tmp;
+	rest = rest->Rest();
+      }
+    }
+  }
+
   stateinfo_t *si;
   act_connection *conn = rest->Canonical (loc->CurScope());
   phash_bucket_t *ib;
@@ -1639,10 +1656,28 @@ int ActStatePass::checkIdExists (ActId *id)
   
   Assert (loc, "Hmm");
 
+  /*
+   * nonProcSuffix() returns foo.bar. If bar is not the portlist, then 
+   * we need to go down one more level to find the signal
+   */
+  {
+    InstType *it = loc->Lookup (rest->getName());
+    if (TypeFactory::isProcessType (it)) {
+      Process *tmp = dynamic_cast<Process *> (it->BaseType());
+      Assert (tmp, "What?");
+      if (!tmp->FindPort (rest->Rest()->getName())) {
+	loc = tmp;
+	rest = rest->Rest();
+      }
+    }
+  }
+
   /* -- "rest" may actually be available at a higher level of the
      hierarchy since it may be connected to ports or globals.
      -- */
   stateinfo_t *si;
+
+
   act_connection *conn = rest->Canonical (loc->CurScope());
   phash_bucket_t *ib;
 
