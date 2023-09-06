@@ -338,6 +338,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     }									\
     flgs = lt & rt & (T_PARAM|T_STRICT);				\
     if ((f & (T_BOOL|T_DATA_BOOL)) && (T_FIXBASETYPE (lt) == T_BOOL) && (T_FIXBASETYPE (rt) == T_BOOL)) { \
+      WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_BOOL) & ~(T_PARAM|T_STRICT))|flgs;  \
     }                                                                   \
     if ((f & T_REAL) && T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) { \
