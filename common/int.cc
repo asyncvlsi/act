@@ -1476,9 +1476,15 @@ BigInt &BigInt::operator>>=(UNIT_TYPE x)
   }
   _setVal (len-stride-1, getVal (len-stride-1) | y);
 
-  if (isDynamic() && stride > 0) {
-    _adjlen (len-stride);
-    len -= stride;
+  if (isDynamic()) {
+    if (stride > 0) {
+      _adjlen (len-stride);
+      len -= stride;
+    }
+    if (len > 1 && ((len-1)*BIGINT_BITS_ONE >= width)) {
+      _adjlen (len-1);
+      len--;
+    }
   }
 
   return (*this);
