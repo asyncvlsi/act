@@ -585,6 +585,7 @@ Act::Act (const char *s)
   int argc = 1;
   char **argv;
 
+  _finished_init = false;
   MALLOC (argv, char *, 2);
   argv[0] = Strdup ("-internal-");
   argv[1] = NULL;
@@ -597,110 +598,14 @@ Act::Act (const char *s)
     num_inst_levels[i] = 0;
   }
 
+  /* initialize act library */
   Act::Init (&argc, &argv);
   FREE (argv[0]);
   FREE (argv);
 
+  /* load in standard config parameters */
   refine_steps = config_get_int ("act.refine_steps");
   
-  passes = hash_new (2);
-
-  gns = ActNamespace::global;
-  tf = new TypeFactory();
-  
-  if (!s) {
-    return;
-  }
-
-  _init_tr (&tr, tf, ActNamespace::global);
-
-#ifdef DEBUG_PERFORMANCE
-  realtime_msec ();
-#endif
-  expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
-  expr_parse_basecase_num = act_parse_expr_intexpr_base;
-  expr_parse_basecase_extra = act_expr_any_basecase;
-  expr_parse_newtokens = act_expr_parse_newtokens;
-  expr_free_special_default = act_expr_free_default;
-
-  a = act_parse (s);
-
-#ifdef DEBUG_PERFORMANCE
-  printf ("Parser time: %g\n", (realtime_msec()/1000.0));
-#endif
-
-  ActBody *bhead, *prev;
-  InstType *it;
-  bhead = NULL;
-  prev = NULL;
-  for (int i=0; i < A_LEN (vars); i++) {
-    ActBody *b;
-    ActBody *bc;
-    Expr *e;
-    /* add variables to the global namespace
-       Note: copied from instance[] rule in defs.m4
-     */
-    if (vars[i].isint == 0) {
-      it = tr.tf->NewPBool();
-    }
-    else if (vars[i].isint == 1) {
-      it = tr.tf->NewPInt();
-    }
-    else if (vars[i].isint == 2) {
-      /* pint is signed */
-      it = tr.tf->NewPInt();
-    }
-    else {
-      Assert (0 <= vars[i].isint && vars[i].isint <= 2, "What?");
-    }
-    if (tr.global->CurScope()->Lookup (vars[i].varname)) {
-      fatal_error ("Name `%s' defined through -D is a duplicate!", vars[i].varname);
-    }
-    tr.global->CurScope()->Add (vars[i].varname, it);
-    b = new ActBody_Inst (0, it, vars[i].varname);
-    NEW (e, Expr);
-
-    if (vars[i].isint == 0) {
-      e->type = (vars[i].u_value ? E_TRUE : E_FALSE);
-    }
-    else if (vars[i].isint == 1) {
-      e->type = E_INT;
-      e->u.ival.v = vars[i].u_value;
-      e->u.ival.v_extra = NULL;
-    }
-    else {
-      e->type = E_INT;
-      e->u.ival.v = vars[i].s_value;
-      e->u.ival.v_extra = NULL;
-    }
-
-    Expr *tmp = TypeFactory::NewExpr (e);
-    FREE (e);
-    e = tmp;
-
-    bc = new ActBody_Conn (0, new ActId (vars[i].varname),
-			   new AExpr (e));
-    b->Append (bc);
-    if (!bhead) {
-      bhead = b;
-      prev = bhead->Tail();
-    }
-    else {
-      prev->Append (b);
-      prev = prev->Tail ();
-    }
-  }
-  if (bhead) {
-    tr.global->AppendBody (bhead);
-  }
-
-  act_walk_X (&tr, a);
-  
-  act_parse_free (a);
-
-#ifdef DEBUG_PERFORMANCE
-  printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
-#endif
   if (config_exists ("act.mangle_letter")) {
     const char *tmp = config_get_string ("act.mangle_letter");
     if (!mangle_set_char (*tmp)) {
@@ -713,10 +618,8 @@ Act::Act (const char *s)
   if (config_exists ("act.mangle_chars")) {
     mangle (config_get_string ("act.mangle_chars"));
   }
-  ActNamespace::act = this;
 
   /*-- now update level flags --*/
-
   if (config_exists ("level.default")) {
     const char *s = config_get_string ("level.default");
 
@@ -753,7 +656,15 @@ Act::Act (const char *s)
       inst_levels[i] = config_get_table_string (buf);
     }
   }
-  _free_tr (&tr);
+
+  /* initialize members */
+  passes = hash_new (2);
+  gns = ActNamespace::global;
+  tf = new TypeFactory();
+  ActNamespace::act = this;
+
+  /* read in file, if specified */
+  Merge (s);
 }
 
 void Act::Merge (const char *s)
@@ -770,11 +681,11 @@ void Act::Merge (const char *s)
 #ifdef DEBUG_PERFORMANCE
   realtime_msec ();
 #endif
-
   expr_parse_basecase_bool = act_parse_expr_syn_loop_bool;
   expr_parse_basecase_num = act_parse_expr_intexpr_base;
   expr_parse_basecase_extra = act_expr_any_basecase;
   expr_parse_newtokens = act_expr_parse_newtokens;
+  expr_free_special_default = act_expr_free_default;
 
   if (act_isimported (s)) {
     return;
@@ -786,6 +697,73 @@ void Act::Merge (const char *s)
   printf ("Parser time: %g\n", (realtime_msec()/1000.0));
 #endif
 
+  if (_finished_init == false) {
+    ActBody *bhead, *prev;
+    InstType *it;
+    bhead = NULL;
+    prev = NULL;
+    for (int i=0; i < A_LEN (vars); i++) {
+      ActBody *b;
+      ActBody *bc;
+      Expr *e;
+      /* add variables to the global namespace
+	 Note: copied from instance[] rule in defs.m4
+      */
+      if (vars[i].isint == 0) {
+	it = tr.tf->NewPBool();
+      }
+      else if (vars[i].isint == 1) {
+	it = tr.tf->NewPInt();
+      }
+      else if (vars[i].isint == 2) {
+	/* pint is signed */
+	it = tr.tf->NewPInt();
+      }
+      else {
+	Assert (0 <= vars[i].isint && vars[i].isint <= 2, "What?");
+      }
+      if (tr.global->CurScope()->Lookup (vars[i].varname)) {
+	fatal_error ("Name `%s' defined through -D is a duplicate!", vars[i].varname);
+      }
+      tr.global->CurScope()->Add (vars[i].varname, it);
+      b = new ActBody_Inst (0, it, vars[i].varname);
+      NEW (e, Expr);
+
+      if (vars[i].isint == 0) {
+	e->type = (vars[i].u_value ? E_TRUE : E_FALSE);
+      }
+      else if (vars[i].isint == 1) {
+	e->type = E_INT;
+	e->u.ival.v = vars[i].u_value;
+	e->u.ival.v_extra = NULL;
+      }
+      else {
+	e->type = E_INT;
+	e->u.ival.v = vars[i].s_value;
+	e->u.ival.v_extra = NULL;
+      }
+
+      Expr *tmp = TypeFactory::NewExpr (e);
+      FREE (e);
+      e = tmp;
+
+      bc = new ActBody_Conn (0, new ActId (vars[i].varname),
+			     new AExpr (e));
+      b->Append (bc);
+      if (!bhead) {
+	bhead = b;
+	prev = bhead->Tail();
+      }
+      else {
+	prev->Append (b);
+	prev = prev->Tail ();
+      }
+    }
+    if (bhead) {
+      tr.global->AppendBody (bhead);
+    }
+  }
+
   act_walk_X (&tr, a);
   
   act_parse_free (a);
@@ -794,6 +772,7 @@ void Act::Merge (const char *s)
   printf ("Walk and free time: %g\n", (realtime_msec()/1000.0));
 #endif
   _free_tr (&tr);
+  _finished_init = true;
 }
 
 

@@ -740,6 +740,10 @@ private:
 
   int default_level;  ///< the default modeling level
 
+
+  bool _finished_init;		///< set to true after the first file
+				///has been read
+
   static char *_getopt_string; ///< the string used for getopt
 
   /**
