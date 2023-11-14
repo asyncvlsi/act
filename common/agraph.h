@@ -125,6 +125,25 @@ class AGraph {
   */
   AGraph *computeSCC ();
 
+
+  /*
+   * Run depth-first search algorithm, and return a list of
+   * integer-valued vertex indicies that are roots of the DFS forest
+   *
+   * If "fn_edge" is not NULL, then this function is applied once per
+   * edge during DFS traversal. The cookie is passed to the function
+   * "fn".  Each vertex has a "visited" flag; "fn" is called before
+   * setting the visited flag (note: the visited flag may be already
+   * set via some other previous path during DFS traversal.
+   *
+   * If "fn_node" is not NULL, then this function is called twice:
+   * once on entry (the bool is set to true), and once before
+   * returning (bool is set to false).
+   */
+  list_t *runDFS (void *cookie,
+		  void (*fn_node) (void *, AGvertex *, bool),
+		  void (*fn_edge) (void *, AGedge *));
+
  private:
   AGinfo *info;
   A_DECL (AGedge, edges);
@@ -136,8 +155,10 @@ class AGraph {
   AGinfo *_edge_info;		// dummy fields
 
   void _mark_reverse (int, AGSCCInfo *);
-  void _compute_scc_helper (list_t *, int);
-  
+  void _compute_scc_helper (int);
+  void (*_dfs_apply_edge) (void *cookie, AGedge *e);
+  void (*_dfs_apply_node) (void *cookie, AGvertex *v, bool onentry);
+  void *_dfs_cookie;
 };
 
 

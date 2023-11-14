@@ -31,6 +31,9 @@ AGraph::AGraph(AGinfo *_info)
   info = _info;
   _vtx_info = NULL;
   _edge_info = NULL;
+  _dfs_apply_node = NULL;
+  _dfs_apply_edge = NULL;
+  _dfs_cookie = NULL;
 }
 
 AGraph::~AGraph()
@@ -730,19 +733,62 @@ void AGraph::_mark_reverse (int idx, AGSCCInfo *scc)
 }
 
 
-void AGraph::_compute_scc_helper (list_t *l, int idx)
+void AGraph::_compute_scc_helper (int idx)
 {
  AGvertexFwdIter fw(this, idx);
  
  getVertex(idx)->visited = 1;
+
+ /* on entry */
+ if (_dfs_apply_node != NULL) {
+   (*_dfs_apply_node) (_dfs_cookie, getVertex (idx), true);
+ }
  
  for (fw = fw.begin(); fw != fw.end(); fw++) {
    AGedge *e = (*fw);
+
+   if (_dfs_apply_edge != NULL) {
+     (*_dfs_apply_edge) (_dfs_cookie, e);
+   }
+   
    if (!getVertex (e->dst)->visited) {
-     _compute_scc_helper (l, e->dst);
+     _compute_scc_helper (e->dst);
    }
  }
- list_iappend_head (l, idx);
+
+ /* on exit */
+ if (_dfs_apply_node != NULL) {
+   (*_dfs_apply_node) (_dfs_cookie, getVertex (idx), false);
+ }
+
+}
+
+list_t *AGraph::runDFS (void *cookie,
+			void (*fn_node) (void *, AGvertex *, bool),
+			void (*fn_edge) (void *, AGedge *))
+{
+ if (A_LEN (vertices) == 0) return NULL;
+
+ for (int i=0; i < A_LEN (vertices); i++) {
+   vertices[i].visited = 0;
+ }
+ _dfs_cookie = cookie;
+ _dfs_apply_node = fn_node;
+ _dfs_apply_edge = fn_edge;
+
+ list_t *l = list_new ();
+ for (int i=0; i < A_LEN (vertices); i++) {
+   if (vertices[i].visited == 0) {
+     list_iappend_head (l, i);
+     _compute_scc_helper (i);
+   }
+ }
+
+ _dfs_cookie = NULL;
+ _dfs_apply_node = NULL;
+ _dfs_apply_edge = NULL;
+ 
+ return l;
 }
 
 AGraph *AGraph::computeSCC()
@@ -763,7 +809,8 @@ AGraph *AGraph::computeSCC()
  list_t *l = list_new ();
  for (int i=0; i < A_LEN (vertices); i++) {
    if (vertices[i].visited == 0) {
-     _compute_scc_helper (l, i);
+     list_iappend_head (l, i);
+     _compute_scc_helper (i);
    }
  }
  for (int i=0; i < A_LEN (vertices); i++) {
