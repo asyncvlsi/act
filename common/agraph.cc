@@ -748,7 +748,7 @@ void AGraph::_compute_scc_helper (int idx)
    AGedge *e = (*fw);
 
    if (_dfs_apply_edge != NULL) {
-     (*_dfs_apply_edge) (_dfs_cookie, e);
+     (*_dfs_apply_edge) (_dfs_cookie, this, e);
    }
    
    if (!getVertex (e->dst)->visited) {
@@ -765,7 +765,7 @@ void AGraph::_compute_scc_helper (int idx)
 
 list_t *AGraph::runDFS (void *cookie,
 			void (*fn_node) (void *, AGvertex *, bool),
-			void (*fn_edge) (void *, AGedge *))
+			void (*fn_edge) (void *, AGraph *, AGedge *))
 {
  if (A_LEN (vertices) == 0) return NULL;
 

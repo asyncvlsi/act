@@ -142,7 +142,7 @@ class AGraph {
    */
   list_t *runDFS (void *cookie,
 		  void (*fn_node) (void *, AGvertex *, bool),
-		  void (*fn_edge) (void *, AGedge *));
+		  void (*fn_edge) (void *, AGraph *, AGedge *));
 
  private:
   AGinfo *info;
@@ -156,7 +156,7 @@ class AGraph {
 
   void _mark_reverse (int, AGSCCInfo *);
   void _compute_scc_helper (int);
-  void (*_dfs_apply_edge) (void *cookie, AGedge *e);
+  void (*_dfs_apply_edge) (void *cookie, AGraph *g, AGedge *e);
   void (*_dfs_apply_node) (void *cookie, AGvertex *v, bool onentry);
   void *_dfs_cookie;
 };
