@@ -741,7 +741,7 @@ void AGraph::_compute_scc_helper (int idx)
 
  /* on entry */
  if (_dfs_apply_node != NULL) {
-   (*_dfs_apply_node) (_dfs_cookie, getVertex (idx), true);
+   (*_dfs_apply_node) (_dfs_cookie, this, getVertex (idx), true);
  }
  
  for (fw = fw.begin(); fw != fw.end(); fw++) {
@@ -758,13 +758,13 @@ void AGraph::_compute_scc_helper (int idx)
 
  /* on exit */
  if (_dfs_apply_node != NULL) {
-   (*_dfs_apply_node) (_dfs_cookie, getVertex (idx), false);
+   (*_dfs_apply_node) (_dfs_cookie, this, getVertex (idx), false);
  }
 
 }
 
 list_t *AGraph::runDFS (void *cookie,
-			void (*fn_node) (void *, AGvertex *, bool),
+			void (*fn_node) (void *, AGraph *, AGvertex *, bool),
 			void (*fn_edge) (void *, AGraph *, AGedge *))
 {
  if (A_LEN (vertices) == 0) return NULL;
