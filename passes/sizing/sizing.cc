@@ -30,48 +30,22 @@
 #include <act/passes/statepass.h>
 #include <act/passes/sizing.h>
 
-static int getconst_int (Expr *e, int *val)
-{
-  if (!e) return 0;
-  if (e->type == E_INT) {
-    *val = e->u.ival.v;
-  }
-  else if (e->type == E_REAL) {
-    *val = e->u.f;
-  }
-  else {
-    return 0;
-  }
-  return 1;
-}
 
-static int getconst_real (Expr *e, double *val)
-{
-  if (!e) return 0;
-  if (e->type == E_INT) {
-    *val = e->u.ival.v;
-  }
-  else if (e->type == E_REAL) {
-    *val = e->u.f;
-  }
-  else {
-    return 0;
-  }
-  return 1;
-}
-
-int _no_sizing (act_prs_expr_t *e)
+/*
+ * Utility function to check if there is any sizing present.
+ */
+int ActSizingPass::no_sizing (act_prs_expr_t *e)
 {
   if (!e) return 1;
   switch (e->type) {
   case ACT_PRS_EXPR_AND:
   case ACT_PRS_EXPR_OR:
-    return _no_sizing (e->u.e.l) && _no_sizing (e->u.e.r) &&
-      _no_sizing (e->u.e.pchg);
+    return no_sizing (e->u.e.l) && no_sizing (e->u.e.r) &&
+      no_sizing (e->u.e.pchg);
     break;
     
   case ACT_PRS_EXPR_NOT:
-    return _no_sizing (e->u.e.l);
+    return no_sizing (e->u.e.l);
     break;
 
   case ACT_PRS_EXPR_VAR:
@@ -259,7 +233,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
       if (!tmp->u.one.label) {
 	cid = tmp->u.one.id->Canonical (sc);
 	if (cid == c) {
-	  if (_no_sizing (tmp->u.one.e)) {
+	  if (ActSizingPass::no_sizing (tmp->u.one.e)) {
 	    if (tmp->u.one.arrow_type == 0) {
 	      is_p_type = tmp->u.one.dir;
 	      _do_sizing (tmp->u.one.e,
@@ -367,7 +341,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
     int unit_n;
 
     if (sz->p_specified) {
-      if (!getconst_int (sz->p_n_mode_e, &p_n_mode)) {
+      if (!act_expr_getconst_int (sz->p_n_mode_e, &p_n_mode)) {
 	act_error_ctxt (stderr);
 	fatal_error ("In `%s': p_n_mode expression is not a const",
 		     p ? p->getName() : "-toplevel-");
@@ -382,7 +356,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
       }
     }
     if (sz->unit_n_specified) {
-      if (!getconst_int (sz->unit_n_e, &unit_n)) {
+      if (!act_expr_getconst_int (sz->unit_n_e, &unit_n)) {
 	act_error_ctxt (stderr);
 	fatal_error ("In `%s': unit_n expression is not a const",
 		     p ? p->getName() : "-toplevel-");
@@ -397,7 +371,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
       }
     }
     if (sz->leak_adjust_specified && (leak_adj == 0)) {
-      if (!getconst_int (sz->leak_adjust_e, &leak_adj)) {
+      if (!act_expr_getconst_int (sz->leak_adjust_e, &leak_adj)) {
 	act_error_ctxt (stderr);
 	fatal_error ("In `%s': leak_adjust expression is not a const",
 		     p ? p->getName() : "-toplevel-");
@@ -462,7 +436,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
       fdn = sz->d[i].flav_dn;
 
       if (sz->d[i].eup) {
-	if (!getconst_real (sz->d[i].eup, &dup)) {
+	if (!act_expr_getconst_real (sz->d[i].eup, &dup)) {
 	  act_error_ctxt (stderr);
 	  fatal_error ("Sizing expression is not a const");
 	}
@@ -476,7 +450,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
 	dup = -1;
       }
       if (sz->d[i].upfolds) {
-	if (!getconst_int (sz->d[i].upfolds, &upf)) {
+	if (!act_expr_getconst_int (sz->d[i].upfolds, &upf)) {
 	  act_error_ctxt (stderr);
 	  fatal_error ("Sizing folding value is not a const");
 	}
@@ -486,7 +460,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
 	}
       }
       if (sz->d[i].edn) {
-	if (!getconst_real (sz->d[i].edn, &ddn)) {
+	if (!act_expr_getconst_real (sz->d[i].edn, &ddn)) {
 	  act_error_ctxt (stderr);
 	  fatal_error ("Sizing expression is not a const");
 	}
@@ -499,7 +473,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
 	ddn = -1;
       }
       if (sz->d[i].dnfolds) {
-	if (!getconst_int (sz->d[i].dnfolds, &dnf)) {
+	if (!act_expr_getconst_int (sz->d[i].dnfolds, &dnf)) {
 	  act_error_ctxt (stderr);
 	  fatal_error ("Sizing folding value is not a const");
 	}

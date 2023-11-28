@@ -2116,6 +2116,26 @@ int act_expr_bitwidth (int etype, int lw, int rw);
  */
 int act_expr_intwidth (unsigned long v);
 
+/**
+ * Helper function for extracting a real value from a constant
+ * expression. The expression has to be of type E_INT or E_REAL to
+ * extract its value.
+ * @param e is th expression
+ * @param val is used to return the value
+ * @return 1 if value extracted, 0 otherwise
+ */
+int act_expr_getconst_real (Expr *e, double *val);
+
+/**
+ * Helper function for extracting an integer value from a constant
+ * expression. The expression has to be of type E_INT or E_REAL to
+ * extract its value.
+ * @param e is th expression
+ * @param val is used to return the value
+ * @return 1 if value extracted, 0 otherwise
+ */
+int act_expr_getconst_int (Expr *e, int *val);
+
 /*
   External functions for core act library must 
   be of the form

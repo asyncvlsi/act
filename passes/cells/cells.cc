@@ -49,7 +49,8 @@ struct act_prsinfo {
   int nout;			/* # of outputs 
 				   Variable convention:
 				   0, 1, ..., nout-1 are outputs.
-				   nout, ... nvars-1 are inputs
+				   nout, ... nouts + nat - 1 are @ labels.
+				   nout + nat, ... nvars-1 are inputs
 				*/
 
   act_attr_t **nattr;		/* 2 per output: pull-up and pull-down */

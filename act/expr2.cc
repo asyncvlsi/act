@@ -3321,3 +3321,34 @@ int act_expr_intwidth (unsigned long v)
 {
   return _int_width (v);
 }
+
+
+int act_expr_getconst_real (Expr *e, double *val)
+{
+  if (!e) return 0;
+  if (e->type == E_INT) {
+      *val = e->u.ival.v;
+  }
+  else if (e->type == E_REAL) {
+    *val = e->u.f;
+  }
+  else {
+    return 0;
+  }
+  return 1;
+}
+
+int act_expr_getconst_int (Expr *e, int *val)
+{
+  if (!e) return 0;
+  if (e->type == E_INT) {
+    *val = e->u.ival.v;
+  }
+  else if (e->type == E_REAL) {
+    *val = e->u.f;
+  }
+  else {
+    return 0;
+  }
+  return 1;
+}
