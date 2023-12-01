@@ -619,6 +619,32 @@ RET_TYPE process_trace (ARG_LIST)
   RETURN (LISP_RET_TRUE);
 }
 
+
+static void stop_trace (void)
+{
+  if (tracing) {
+    atrace_close (tracing);
+    prs_apply (P, NULL, clear_trace_wrap);
+    re_implement_bp ();
+    tracing = NULL;
+  }
+}
+
+RET_TYPE process_endtrace (ARG_LIST)
+{
+  STD_ARG("Usage: endtrace\n");
+  char *f;
+  float tm;
+  
+  CHECK_TRAILING (usage);
+  
+  if (tracing) {
+    stop_trace ();
+    RETURN (LISP_RET_TRUE);
+  }
+  RETURN (LISP_RET_FALSE);
+}
+
 /*
  * vset vector value
  */
@@ -1174,21 +1200,10 @@ RET_TYPE process_fanout (ARG_LIST)
   RETURN (LISP_RET_TRUE);
 }
 
-static void stop_trace (void)
-{
-  if (tracing) {
-    atrace_close (tracing);
-    tracing = NULL;
-  }
-}
-
 static void check_trace_stop (void)
 {
   if (P->time >= tracing_stop_time) {
-    atrace_close (tracing);
-    prs_apply (P, NULL, clear_trace_wrap);
-    re_implement_bp ();
-    tracing = NULL;
+    stop_trace ();
   }
 }
 
@@ -2181,6 +2196,8 @@ struct LispCliCommand Cmds[] = {
   { "breakpt", "<n> - set a breakpoint on <n>", process_break },
   { "break", "<n> - set a breakpoint on <n>", process_break },
   { "trace", "<file> <time> - Create atrace file for <time> duration", process_trace },
+  { "endtrace", "- Stop tracing if trace file is still active",
+    process_endtrace },
   { "timescale", "<t> - set time scale to <t> picoseconds for tracing", process_timescale },
   { "break-on-warn", "- stops/doesn't stop simulation on instability/inteference", process_break_on_warn },
   { "exit-on-warn", "- like break-on-warn, but exits prsim", process_exit_on_warn },

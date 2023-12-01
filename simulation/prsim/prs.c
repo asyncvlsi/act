@@ -3621,7 +3621,12 @@ void prs_apply (Prs *p, void *cookie, void (*f)(PrsNode *, void *))
   for (i=0; i < p->H->size; i++)
     for (b = p->H->head[i]; b; b = b->next) {
       n = (PrsNode *)b->v;
+      /* before canonicalization, check this is the primary node */
       if (n->alias) continue;
+
+      /* after canonicalization, all buckets point to the canonical name */
+      if (n->b != b) continue;
+
       (*f)(n,cookie);
     }
 }
