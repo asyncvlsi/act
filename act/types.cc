@@ -104,6 +104,52 @@ void UserDef::printActName (FILE *fp)
   }
 }
 
+void UserDef::snprintActName (char *buf, int sz)
+{
+  int i = 0;
+  int in_param = 0;
+  int pos = 0;
+
+  buf[pos] = '\0';
+  while (name[i]) {
+    if (!in_param && name[i] != '<') {
+      if (pos < sz-1) {
+	buf[pos++] = name[i];
+      }
+    }
+    else if (in_param) {
+      if (name[i] == 't' && name[i-1] == ',') {
+	snprintf (buf+pos, sz-pos-1, "true");
+	pos += strlen (buf+pos);
+      }
+      else if (name[i] == 'f' && name[i-1] == ',') {
+	snprintf (buf+pos, sz-pos-1, "false");
+	pos += strlen (buf+pos);
+      }
+      else {
+	if (pos < sz-1) {
+	  buf[pos++] = name[i];
+	}
+      }
+    }
+    else {
+      /* name[i] == '<' */
+      if (name[i+1] != '>') {
+	if (pos < sz-1) {
+	  buf[pos++] = name[i];
+	}
+	in_param = 1;
+      }
+      else {
+	buf[pos] = '\0';
+	return;
+      }
+    }
+    i++;
+  }
+  buf[pos] = '\0';
+}
+
 int UserDef::AddMetaParam (InstType *t, const char *id)
 {
   int i;

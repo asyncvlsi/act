@@ -453,6 +453,13 @@ class UserDef : public Type {
    */
   void printActName (FILE *fp);
 
+  /**
+   * Same as printActName(), but prints into a buffer instead
+   * @param buf is the output buffer
+   * @param sz is the size of the buffer
+   */
+  void snprintActName (char *buf, int sz);
+
   int isEqual (const Type *t) const;
 
   /**
