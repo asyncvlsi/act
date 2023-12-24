@@ -21,7 +21,7 @@ first_char=`echo $0 | sed 's/^\(.\).*$/\1/g'`
 
 if [ x$first_char = "x/" ]
 then
-	full_pathname=./`dirname $0`
+	full_pathname=`dirname $0`
 else
 	full_pathname=`pwd`/`dirname $0`
 fi
