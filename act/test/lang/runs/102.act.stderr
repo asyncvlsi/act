@@ -1,10 +1,5 @@
 In expanding testme (102.act:1)
 In expanding ::<Global>
 Error on or near line number 6.
-WARNING: Bit-width of control input is less than the number of options.
-   Bit-width: 1; options: 3 (2 bits); ID: s
-In expanding testme (102.act:1)
-In expanding ::<Global>
-Error on or near line number 6.
 ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.
   Current width: 1; channel `c' width 32

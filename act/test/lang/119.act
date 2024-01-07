@@ -1,0 +1,15 @@
+defproc testme (chan(bool) l, r)
+{
+  chan(bool) s;
+  chan(int) c;
+  chan(int) x[10];
+  chan(int<2>) ctrl;
+
+  dataflow { 
+    {ctrl} x[3] -> (,i:3: x[i]);
+    {ctrl} (,i:3: x[i]) -> x[4]
+  }
+
+}
+
+testme t;

@@ -555,14 +555,14 @@ act_initialize *initialize_expand (act_initialize *init, ActNamespace *ns,
  *
  *------------------------------------------------------------------------
  */
-static void dflow_print (FILE *fp, list_t *dflow)
+static void dflow_print (FILE *fp, list_t *dflow, int isexp)
 {
   listitem_t *li;
   act_dataflow_element *e;
   
   for (li = list_first (dflow); li; li = list_next (li)) {
     e = (act_dataflow_element *) list_value (li);
-    dflow_print(fp, e);
+    dflow_print(fp, e, isexp);
     if (list_next (li)) {
       fprintf (fp, ";");
     }
@@ -570,7 +570,7 @@ static void dflow_print (FILE *fp, list_t *dflow)
   }
 }
 
-void dflow_print (FILE *fp, act_dataflow_element *e)
+void dflow_print (FILE *fp, act_dataflow_element *e, int isexp)
 {
   switch (e->t) {
   case ACT_DFLOW_FUNC:
@@ -605,14 +605,36 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
     e->u.splitmerge.single->Print (fp);
     fprintf (fp, " -> ");
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-      if (e->u.splitmerge.multi[i]) {
-        e->u.splitmerge.multi[i]->Print (fp);
+      if (isexp) {
+	if (e->u.splitmerge.multi[i]) {
+	  e->u.splitmerge.multi[i]->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
       }
       else {
-        fprintf (fp, "*");
+	if (e->u.splitmerge.pre_exp[i]->id) {
+	  fprintf (fp, "(,%s:", e->u.splitmerge.pre_exp[i]->id);
+	  print_expr (fp, e->u.splitmerge.pre_exp[i]->lo);
+	  if (e->u.splitmerge.pre_exp[i]->hi) {
+	    fprintf (fp, "..");
+	    print_expr (fp, e->u.splitmerge.pre_exp[i]->hi);
+	  }
+	  fprintf (fp, ":");
+	}
+	if (e->u.splitmerge.pre_exp[i]->chanid) {
+	  e->u.splitmerge.pre_exp[i]->chanid->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
+	if (e->u.splitmerge.pre_exp[i]->id) {
+	  fprintf (fp, ")");
+	}
       }
       if (i != e->u.splitmerge.nmulti-1) {
-        fprintf (fp, ", ");
+	fprintf (fp, ", ");
       }
     }
     break;
@@ -632,14 +654,36 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
     }
     fprintf (fp, "} ");
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-      if (e->u.splitmerge.multi[i]) {
-        e->u.splitmerge.multi[i]->Print (fp);
+      if (isexp) {
+	if (e->u.splitmerge.multi[i]) {
+	  e->u.splitmerge.multi[i]->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
       }
       else {
-        fprintf (fp, "*");
+	if (e->u.splitmerge.pre_exp[i]->id) {
+	  fprintf (fp, "(,%s:", e->u.splitmerge.pre_exp[i]->id);
+	  print_expr (fp, e->u.splitmerge.pre_exp[i]->lo);
+	  if (e->u.splitmerge.pre_exp[i]->hi) {
+	    fprintf (fp, "..");
+	    print_expr (fp, e->u.splitmerge.pre_exp[i]->hi);
+	  }
+	  fprintf (fp, ":");
+	}
+	if (e->u.splitmerge.pre_exp[i]->chanid) {
+	  e->u.splitmerge.pre_exp[i]->chanid->Print (fp);
+	}
+	else {
+	  fprintf (fp, "*");
+	}
+	if (e->u.splitmerge.pre_exp[i]->id) {
+	  fprintf (fp, ")");
+	}
       }
       if (i != e->u.splitmerge.nmulti-1) {
-        fprintf (fp, ", ");
+	fprintf (fp, ", ");
       }
     }
     fprintf (fp, " -> ");
@@ -657,7 +701,7 @@ void dflow_print (FILE *fp, act_dataflow_element *e)
 
   case ACT_DFLOW_CLUSTER:
     fprintf (fp, "dataflow_cluster {\n");
-    dflow_print (fp, e->u.dflow_cluster);
+    dflow_print (fp, e->u.dflow_cluster, isexp);
     fprintf (fp, "}\n");
     break;
     
@@ -703,7 +747,7 @@ void dflow_print (FILE *fp, act_dataflow *d)
   if (!d) return;
   fprintf (fp, "dataflow {\n");
   dflow_order_print (fp, d->order);
-  dflow_print (fp, d->dflow);
+  dflow_print (fp, d->dflow, d->isexpanded);
   fprintf (fp, "}\n");
 }
 
@@ -740,11 +784,100 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
     case ACT_DFLOW_MIXER:
     case ACT_DFLOW_ARBITER:
       {
-	int ilog = 0;
-	int w;
+	int ilog, w;
 	InstType *it;
+
+	// all channels must have the same bit-width
+	int u_bitwidth = -1;
+	A_DECL (ActId *, newarray);
+	A_INIT (newarray);
+	
+	for (int i=0; i < e->u.splitmerge.nmulti; i++) {
+	  A_NEW (newarray, ActId *);
+	  if (e->u.splitmerge.pre_exp[i]->id) {
+	    // loop expand!
+	    ValueIdx *vx;
+	    int ilo, ihi, ii;
+	    act_syn_loop_setup (ns, s, e->u.splitmerge.pre_exp[i]->id,
+				e->u.splitmerge.pre_exp[i]->lo,
+				e->u.splitmerge.pre_exp[i]->hi,
+				&vx, &ilo, &ihi);
+	    for (ii=ilo; ii <= ihi; ii++) {
+	      s->setPInt (vx->u.idx, ii);
+	      A_NEW (newarray, ActId *);
+	      A_NEXT (newarray) =
+		e->u.splitmerge.pre_exp[i]->chanid->Expand (ns, s);
+	      act_type_var (s, A_NEXT (newarray), &it);
+	      if (u_bitwidth == -1) {
+		u_bitwidth = TypeFactory::bitWidth (it);
+	      }
+	      else {
+		if (u_bitwidth != TypeFactory::bitWidth (it)) {
+		  act_error_ctxt (stderr);
+		  fprintf (stderr, "ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.\n");
+		  fprintf (stderr, "  Current width: %d; channel `", u_bitwidth);
+		  A_NEXT (newarray)->Print (stderr);
+		  fprintf (stderr, "' width %d\n", TypeFactory::bitWidth (it));
+		  exit (1);
+		}
+	      }
+	      A_INC (newarray);
+	    }
+	    act_syn_loop_teardown (ns, s, e->u.splitmerge.pre_exp[i]->id, vx);
+	  }
+	  else {
+	    if (e->u.splitmerge.pre_exp[i]->chanid) {
+	      A_NEXT (newarray) =
+		e->u.splitmerge.pre_exp[i]->chanid->Expand (ns, s);
+	      act_type_var (s, A_NEXT (newarray), &it);
+	      if (u_bitwidth == -1) {
+		u_bitwidth = TypeFactory::bitWidth (it);
+	      }
+	      else {
+		if (u_bitwidth != TypeFactory::bitWidth (it)) {
+		  act_error_ctxt (stderr);
+		  fprintf (stderr, "ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.\n");
+		  fprintf (stderr, "  Current width: %d; channel `", u_bitwidth);
+		  A_NEXT (newarray)->Print (stderr);
+		  fprintf (stderr, "' width %d\n", TypeFactory::bitWidth (it));
+		  exit (1);
+		}
+	      }
+	    }
+	    else {
+	      A_NEXT (newarray) = NULL;
+	    }
+	    A_INC (newarray);
+	  }
+	}
+	f->u.splitmerge.nmulti = A_LEN (newarray);
+	f->u.splitmerge.multi = newarray;
+	if (f->u.splitmerge.nmulti < 2) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "ERROR: ");
+	  int side = 0;
+	  if (e->t == ACT_DFLOW_ARBITER) {
+	    fprintf (stderr, "arbiter");
+	  }
+	  else if (e->t == ACT_DFLOW_MIXER) {
+	    fprintf (stderr, "mixer");
+	  }
+	  else if (e->t == ACT_DFLOW_MERGE) {
+	    fprintf (stderr, "merge");
+	  }
+	  else if (e->t == ACT_DFLOW_SPLIT) {
+	    fprintf (stderr, "split");
+	    side = 1;
+	  }
+	  else {
+	    Assert (0, "What?");
+	  }
+	  fprintf (stderr, " requires more than one channel after expansion on %s.\n", side ? "LHS" : "RHS");
+	  exit (1);
+	}
+
 	w = 0;
-	ilog = e->u.splitmerge.nmulti;
+	ilog = f->u.splitmerge.nmulti;
         ilog--;
 	while (ilog > 0) {
 	  w++;
@@ -777,34 +910,7 @@ static list_t *dflow_expand (list_t *dflow, ActNamespace *ns, Scope *s)
 	else {
 	  f->u.splitmerge.guard = NULL;
 	}
-	f->u.splitmerge.nmulti = e->u.splitmerge.nmulti;
-	MALLOC (f->u.splitmerge.multi, ActId *, f->u.splitmerge.nmulti);
 
-	// all channels must have the same bit-width
-	int u_bitwidth = -1;
-	
-	for (int i=0; i < f->u.splitmerge.nmulti; i++) {
-	  if (e->u.splitmerge.multi[i]) {
-	    f->u.splitmerge.multi[i] = e->u.splitmerge.multi[i]->Expand (ns, s);
-	    act_type_var (s, f->u.splitmerge.multi[i], &it);
-	    if (u_bitwidth == -1) {
-	      u_bitwidth = TypeFactory::bitWidth (it);
-	    }
-	    else {
-	      if (u_bitwidth != TypeFactory::bitWidth (it)) {
-		act_error_ctxt (stderr);
-		fprintf (stderr, "ERROR: split/merge/mixer/arbiter data channels must have uniform bitwidth.\n");
-		fprintf (stderr, "  Current width: %d; channel `", u_bitwidth);
-		f->u.splitmerge.multi[i]->Print (stderr);
-		fprintf (stderr, "' width %d\n", TypeFactory::bitWidth (it));
-		exit (1);
-	      }
-	    }
-	  }
-	  else {
-	    f->u.splitmerge.multi[i] = NULL;
-	  }
-	}
 	f->u.splitmerge.single = e->u.splitmerge.single->Expand (ns, s);
 	if (u_bitwidth != -1) {
 	  act_type_var (s, f->u.splitmerge.single, &it);
@@ -891,6 +997,7 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
   NEW (ret, act_dataflow);
   ret->dflow = dflow_expand (d->dflow, ns, s);
   ret->order = dflow_order_expand (d->order, ns, s);
+  ret->isexpanded = 1;
   
   return ret;
 }

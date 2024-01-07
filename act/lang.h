@@ -538,6 +538,13 @@ enum act_dataflow_element_types {
 };
 
 
+struct act_dataflow_loop {
+  act_dataflow_loop() { id = NULL; lo = NULL; hi = NULL; chanid = NULL; }
+  const char *id;
+  Expr *lo, *hi;
+  ActId *chanid;
+};  
+
 /**
  * @class act_dataflow_element
  *
@@ -555,8 +562,15 @@ typedef struct  {
     } func;			///< used for ACT_DFLOW_FUNC
     struct {
       ActId *guard;		///< the condition
-      ActId **multi;		///< set of channels (the multiple
+
+      // this is really quite terrible, and needs to be changed. But
+      // this hack prevents any other code from having to change.
+      union {
+	ActId **multi;		///< set of channels (the multiple
 				///channel end)
+	act_dataflow_loop **pre_exp; ///< used prior to expansion!
+      };
+      
       int nmulti;		///< number of channels in multi
       ActId *single;		///< the single channel end
       ActId *nondetctrl;	///< channel for non-deterministic
@@ -615,6 +629,8 @@ struct act_dataflow {
    * which means there is a dependency from ai to bj for all pairs.
    */
   list_t *order;
+
+  int isexpanded; // ios this expanded or not?
 };
 
 void prs_print (FILE *, act_prs *);
@@ -626,7 +642,7 @@ void refine_print (FILE *, act_refine *);
 void sizing_print (FILE *, act_sizing *);
 void initialize_print (FILE *, act_initialize *);
 void dflow_print (FILE *, act_dataflow *);
-void dflow_print (FILE *, act_dataflow_element *);
+void dflow_print (FILE *, act_dataflow_element *, int isexp);
 void act_print_size (FILE *fp, act_size_spec_t *sz);
 
 class ActNamespace;
@@ -759,6 +775,7 @@ public:
   act_initialize *init;
   act_dataflow *dflow;
   struct Hashtable *ext; /// external
+  int isexpanded;
 };
 
 

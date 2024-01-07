@@ -72,6 +72,7 @@ NULL_WRAP(act_refine_p, act_refine *)
 NULL_WRAP(inst_param_p, inst_param *);
 NULL_WRAP(act_dataflow_element_p, act_dataflow_element *);
 NULL_WRAP(act_dataflow_order_p, act_dataflow_order *);
+NULL_WRAP(act_dataflow_loop_p, act_dataflow_loop *);
 NULL_WRAP(void_p, void *);
 
 /*

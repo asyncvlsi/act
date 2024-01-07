@@ -2826,6 +2826,7 @@ lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ]
 {{X:
     act_dataflow *dflow;
     NEW (dflow, act_dataflow);
+    dflow->isexpanded = 0;
     dflow->dflow = $4;
     if (OPT_EMPTY ($3)) {
       dflow->order = NULL;
@@ -2931,7 +2932,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     e->u.func.istransparent = 1;
     return e;
 }}
-| "{" expr_id_or_star_or_bar "}" { expr_id_or_star "," }* "->" { expr_id_or_star "," }*
+| "{" expr_id_or_star_or_bar "}" { expr_id_or_star_or_rep "," }* "->" { expr_id_or_star_or_rep "," }*
 {{X:
     act_dataflow_element *e;
     listitem_t *li;
@@ -2943,6 +2944,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     $0->file = $n;
     
     NEW (e, act_dataflow_element);
+
     e->u.splitmerge.guard = $2;
     e->u.splitmerge.nondetctrl = NULL;
     if ($2) {
@@ -2969,39 +2971,56 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 	e->t = ACT_DFLOW_MIXER;
       }
     }
-    if (list_length ($4) == 1) {
+    if (list_length ($4) == 1 && NO_LOOP (list_value (list_first ($4)))) {
+      // this is a split
       if (!$2) {
 	$E("A split requires a control channel specifier");
       }
       if (list_length ($6) < 2) {
-	$E("RHS needs more than one item for a split");
+	if (NO_LOOP (list_value (list_first ($6)))) {
+	  $E("RHS needs more than one item for a split");
+	}
       }
       l = $6;
       e->t = ACT_DFLOW_SPLIT;
-      e->u.splitmerge.single = (ActId *) list_value (list_first ($4));
+      act_dataflow_loop *loop =
+	(act_dataflow_loop *) list_value (list_first ($4));
+      e->u.splitmerge.single = loop->chanid;
+      delete loop;
       if (!e->u.splitmerge.single) {
 	$E("Can't split from `*'");
       }
       list_free ($4);
     }
     else {
-      if (list_length ($6) != 1) {
-	if (!(list_length ($6) == 2 && (e->t == ACT_DFLOW_MIXER ||
-					e->t == ACT_DFLOW_ARBITER))) {
-	  $E("RHS has too many channels for a merge");
+      // this could be a merge or an arbiter or a mixer
+      listitem_t *li;
+      for (li = list_first ($6); li; li = list_next (li)) {
+	if (!NO_LOOP (list_value (li))) {
+	  $E("Can't use a loop on the RHS of a arbiter/mixer/merge");
 	}
+      }
+      if (list_length ($6) != 1) {
+        if (!(list_length ($6) == 2 && (e->t == ACT_DFLOW_MIXER ||
+                                        e->t == ACT_DFLOW_ARBITER))) {
+          $E("RHS has too many channels for a merge");
+        }   
       }
       l = $4;
       if ($2) {
-	e->t = ACT_DFLOW_MERGE;
+        e->t = ACT_DFLOW_MERGE;
       }
-      e->u.splitmerge.single = (ActId *) list_value (list_first ($6));
+      act_dataflow_loop *loop =
+	(act_dataflow_loop *) list_value (list_first ($6));
+      e->u.splitmerge.single = loop->chanid;
+      delete loop;
       if (!e->u.splitmerge.single) {
 	$E("Can't merge to `*'");
       }
       if (list_length ($6) == 2) {
-	e->u.splitmerge.nondetctrl =
-	  (ActId *) list_value (list_next (list_first ($6)));
+	loop = (act_dataflow_loop *) list_value (list_next (list_first ($6)));
+	e->u.splitmerge.nondetctrl = loop->chanid;
+	delete loop;
       }
       list_free ($6);
     }
@@ -3040,15 +3059,15 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
       exit (1);
     }
     e->u.splitmerge.nmulti = list_length (l);
-    MALLOC (e->u.splitmerge.multi, ActId *, e->u.splitmerge.nmulti);
+    MALLOC (e->u.splitmerge.pre_exp, act_dataflow_loop *, e->u.splitmerge.nmulti);
     li = list_first (l);
     for (int i=0; i < e->u.splitmerge.nmulti; i++) {
-      e->u.splitmerge.multi[i] = (ActId *) list_value (li);
-      if (e->u.splitmerge.multi[i]) {
-	if (act_type_var ($0->scope, e->u.splitmerge.multi[i], &it) != T_CHAN) {
+      e->u.splitmerge.pre_exp[i] = (act_dataflow_loop *) list_value (li);
+      if (e->u.splitmerge.pre_exp[i]->chanid) {
+	if (act_type_var ($0->scope, e->u.splitmerge.pre_exp[i]->chanid, &it) != T_CHAN) {
 	  $e("Identifier on the LHS/RHS of a dataflow expression must be of channel type");
 	  fprintf ($f, "   ");
-	  e->u.splitmerge.multi[i]->Print ($f);
+	  e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
 	  fprintf ($f, "\n");
 	  exit (1);
 	}
@@ -3056,7 +3075,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 	  if (it->getDir() == Type::IN) {
 	    $e("Split output is of type input?");
 	    fprintf ($f, "\n   ID: ");
-	    e->u.splitmerge.multi[i]->Print ($f);
+	    e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
 	    fprintf ($f, "\n");
 	    exit (1);
 	  }
@@ -3065,7 +3084,7 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 	  if (it->getDir() == Type::OUT) {
 	    $e("Merge input is of type output?");
 	    fprintf ($f, "\n   ID: ");
-	    e->u.splitmerge.multi[i]->Print ($f);
+	    e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
 	    fprintf ($f, "\n");
 	    exit (1);
 	  }
@@ -3140,6 +3159,40 @@ expr_id_or_star[ActId *]: expr_id
 | "*"
 {{X:
     return NULL;
+}}
+;
+
+expr_id_or_star_or_rep[act_dataflow_loop *]: expr_id_or_star
+{{X:
+    act_dataflow_loop *ret;
+    ret = new act_dataflow_loop();
+    ret->chanid = $1;
+    return ret;
+}}
+| "(" "," ID
+{{X:
+    if ($0->scope->Lookup ($3)) {
+      $E("Identifier ``%s'' already defined in current scope", $3);
+    }
+    $0->scope->Add ($3, $0->tf->NewPInt());
+}}
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" expr_id_or_star ")"
+{{X:
+    act_dataflow_loop *ret;
+    ret = new act_dataflow_loop();
+    ret->id = $3;
+    ret->lo = $5;
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r;
+      r = OPT_VALUE ($6);
+      $A(r->type == R_EXPR);
+      ret->hi = r->u.exp;
+      FREE (r);
+    }
+    OPT_FREE($6);
+    ret->chanid = $8;
+    $0->scope->Del ($3);
+    return ret;
 }}
 ;
 
