@@ -779,6 +779,10 @@ void Act::Merge (const char *s)
 void Act::Expand ()
 {
   Assert (gns, "Expand() called without an object?");
+
+  /* update refine steps to the latest value */
+  refine_steps = config_get_int ("act.refine_steps");
+
   /* expand each namespace! */
   gns->Expand ();
 
