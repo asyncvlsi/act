@@ -1248,15 +1248,28 @@ void Scope::printConnections (FILE *fp, act_connection *cx, bool force)
   }
 }
 
-void Scope::Print (FILE *fp)
+void Scope::Print (FILE *fp, bool all_inst)
 {
   char buf[10240];
   UserDef *u = getUserDef ();
+  struct Hashtable *H = NULL;
 
   if (!expanded)
     return;
   
   fprintf (fp, "\n/* instances */\n");
+
+  if (!all_inst && u && u->getParent()) {
+    if (TypeFactory::isUserType (u->getParent())) {
+      UserDef *up = dynamic_cast<UserDef *> (u->getParent()->BaseType());
+      H = hash_new (8);
+      ActInstiter iparent(up->CurScope());
+      for (iparent = iparent.begin(); iparent != iparent.end(); iparent++) {
+	ValueIdx *vx = *iparent;
+	hash_add (H, vx->getName());
+      }
+    }
+  }
   
   ActInstiter inst(this);
   
@@ -1266,6 +1279,7 @@ void Scope::Print (FILE *fp)
 
     if (!TypeFactory::isParamType (vx->t)) {
       if (strcmp (vx->getName(), "self") == 0) continue;
+      if (H && hash_lookup (H, vx->getName())) continue;
       if (!u || (u->FindPort (vx->getName()) == 0)) {
 	Array *ta;
 	char *ns_name;
@@ -1356,6 +1370,10 @@ void Scope::Print (FILE *fp)
 	}
       }
     }
+  }
+  if (H) {
+    hash_free (H);
+    H = NULL;
   }
 
   

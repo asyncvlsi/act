@@ -210,8 +210,10 @@ class Scope {
   /**
    * Print out the scope
    * @param fp is the output file
+   * @param all_inst if set to true, all instances are printed; if
+   * false, then instances in the parent scope are not printed
    */
-  void Print (FILE *fp);
+  void Print (FILE *fp, bool all_inst = false);
 
   /**
    * Associate scope with a user defined type.
