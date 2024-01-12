@@ -233,6 +233,11 @@ void Function::chkInline (void)
     return;
   }
 
+  if (TypeFactory::isStructure (getRetType())) {
+    is_simple_inline = 0;
+    return;
+  }
+
   act_chp_lang_t *c = getlang()->getchp()->c;
   
   is_simple_inline = 1;

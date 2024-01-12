@@ -36,12 +36,15 @@ defproc test ()
 {
 
 /* instances */
+ret fuse_0;
+baz farg_0;
 baz b;
 ret a;
+ret fret_0;
 
 /* connections */
 chp {
-a.a:=0x1
+farg_0:=b;fret_0.a:=0x1;fuse_0:=fret_0;a:=fuse_0
 }
 }
 

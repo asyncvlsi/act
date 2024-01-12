@@ -14,12 +14,15 @@ defproc test ()
 {
 
 /* instances */
+foo fuse_0;
+foo farg_0;
 foo f;
 foo x;
+foo fret_0;
 
 /* connections */
 chp {
-*[true -> x.b:=f.b=0x0 ? 0x0 : 0x1]
+*[true -> farg_0:=f;fret_0.b:=farg_0.b=0x0 ? 0x0 : 0x1;fuse_0:=fret_0;x:=fuse_0]
 }
 }
 

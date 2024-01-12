@@ -1,0 +1,64 @@
+function foo (f_token ft) : dc_token;
+deftype dc_token (debug_token dt);
+defproc test ();
+deftype debug_token (int<64> v_0);
+deftype f_token (int<32> cause_num; debug_token dt);
+
+function foo (f_token ft) : dc_token
+{
+
+/* instances */
+dc_token dc;
+
+/* connections */
+chp {
+self.dt.v_0:=dc.dt.v_0
+}
+}
+
+deftype dc_token (debug_token dt)
+{
+
+/* instances */
+
+/* connections */
+}
+
+defproc test ()
+{
+
+/* instances */
+dc_token fuse_0;
+f_token farg_0;
+dc_token floc_0;
+dc_token fret_0;
+dc_token dct;
+f_token ft;
+
+/* connections */
+chp {
+farg_0:=ft;fret_0.dt.v_0:=floc_0.dt.v_0;fuse_0:=fret_0;dct:=fuse_0
+}
+}
+
+deftype debug_token (int<64> v_0)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype f_token (int<32> cause_num; debug_token dt)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

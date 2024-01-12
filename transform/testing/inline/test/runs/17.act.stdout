@@ -6,13 +6,17 @@ defproc test ()
 {
 
 /* instances */
+mystruct fuse_0;
+int<32> farg_0;
 mystruct res2;
 int<32> y;
+mystruct floc_0;
+mystruct fret_0;
 mystruct res;
 
 /* connections */
 chp {
-res.a:=y+0x1>0x3 ? 0x0+0x1 : 0x0;res.b:=y+0x1>0x3 ? true : true;res.c:=y+0x1>0x3 ? 0x1 : 0x1-0x1;res2.a:=res.a;res2.b:=res.b;res2.c:=res.c
+farg_0:=y+0x1;floc_0.a:=0x0;floc_0.b:=true;floc_0.c:=0x1;[farg_0>0x3 -> floc_0.a:=floc_0.a+0x1 [] else -> floc_0.c:=floc_0.c-0x1];fret_0.a:=floc_0.a;fret_0.b:=floc_0.b;fret_0.c:=floc_0.c;fuse_0:=fret_0;res:=fuse_0;res2.a:=res.a;res2.b:=res.b;res2.c:=res.c
 }
 }
 
@@ -24,7 +28,7 @@ mystruct tmp;
 
 /* connections */
 chp {
-tmp.a:=0x0;tmp.b:=true;tmp.c:=0x1;[x>0x3 -> tmp.a:=tmp.a+0x1 [] else -> tmp.c:=tmp.c-0x1];self:=tmp
+tmp.a:=0x0;tmp.b:=true;tmp.c:=0x1;[x>0x3 -> tmp.a:=tmp.a+0x1 [] else -> tmp.c:=tmp.c-0x1];self.a:=tmp.a;self.b:=tmp.b;self.c:=tmp.c
 }
 }
 

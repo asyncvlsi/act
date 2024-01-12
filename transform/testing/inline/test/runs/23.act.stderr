@@ -1,3 +1,0 @@
-FATAL: Inlining failed! Variable `dc' used before being defined
-In expanding foo<> (23.act:14)
-In expanding test<> (23.act:23)
