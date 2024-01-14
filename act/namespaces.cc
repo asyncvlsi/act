@@ -895,8 +895,8 @@ static void _process_body_conn (Process *proc, InstType *it, const char *s,
     }
     else if (lang) {
       if (lang->gettype() == ActBody_Lang::LANG_REFINE && lang->getlang()) {
-	_process_body_conn (proc, it, s, deflist, start,
-			    ((act_refine *)lang->getlang())->b);
+	act_refine *r = (act_refine *) lang->getlang();
+	_process_body_conn (proc, it, s, deflist, start, r->b);
       }
     }
     b = b->Next();

@@ -443,7 +443,10 @@ class ActBody;
  * @brief The refinement sub-language just contains an ActBody
  */
 struct act_refine {
-  ActBody *b;			///< the body of the refine { ... }
+  ActBody *b;		       ///< the body of the refine<k> { ... }
+  int nsteps;                   ///< # of refinement steps
+  list_t *refsublist;	       ///< sorted list of refinement levels
+			       ///< within block
 };
 
 

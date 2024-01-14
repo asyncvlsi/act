@@ -691,10 +691,10 @@ class Act {
 
   int getRefSteps() { return refine_steps; } ///< return the remaining
 					     ///refinement steps
-  void decRefSteps() { refine_steps--; } ///< decrement the number of
+  void decRefSteps(int nsteps = 1) { refine_steps -= nsteps; } ///< decrement the number of
 					 ///remaining refinement steps
   
-  void incRefSteps() { refine_steps++; } ///< increment the number of
+  void incRefSteps(int nsteps = 1) { refine_steps += nsteps; } ///< increment the number of
 					 ///remaining refinement steps
 
 private:

@@ -191,6 +191,8 @@ typedef struct {
 
   /* chp language forward pointer */
   act_chp_lang_t *clang;
+
+  int ref_level;
   
 } ActTree;
 

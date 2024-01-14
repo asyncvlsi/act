@@ -212,7 +212,7 @@ class  library_edge_info : public AGinfo {
                                     vertex id in the instance */
   int dstpin;			/* -1 if an I/O pin; otherwise the
                                     vertex id in the instance */
-  int genclk:1;		 	/* set to 1 if this edge corresponds
+  unsigned int genclk:1;	/* set to 1 if this edge corresponds
 				   to a generated clock */
   ~library_edge_info () { }
 };

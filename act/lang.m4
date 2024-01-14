@@ -2785,14 +2785,45 @@ size_body: { size_setup ";" }* { size_directive ";" }*
 }}  
 ;
 
-lang_refine[ActBody *]: "refine" "{" base_item_list "}"
+lang_refine[ActBody *]: "refine"
+{{X:
+    $0->ref_level++;
+}}
+[ "<" INT ">" ] "{" base_item_list "}"
 {{X:
     act_refine *r;
     ActBody *b;
-    NEW (r, act_refine);
-    r->b = $3;
+    ActRet *rtype;
+    int refidx;
 
+    if (OPT_EMPTY ($2)) {
+      refidx = 1;
+    }
+    else {
+      rtype = OPT_VALUE ($2);
+      $A(rtype->type == R_INT);
+      refidx = rtype->u.ival;
+      FREE (rtype);
+    }
+    OPT_FREE ($2);
+    if (refidx < 1) {
+      $W("refinement level is less than 1; assuming 1");
+      refidx = 1;
+    }
+
+    NEW (r, act_refine);
+    r->nsteps = refidx;
+    r->b = $4;
+    r->refsublist = NULL;
+    for (ActBody *tb = $4; tb; tb = tb->Next()) {
+      ActBody_Lang *l = dynamic_cast <ActBody_Lang *> (tb);
+      if (l && l->gettype() == ActBody_Lang::LANG_REFINE) {
+	act_refine *tmp = (act_refine *) l->getlang();
+	UserDef::mkRefineList (&r->refsublist, tmp->nsteps);
+      }
+    }
     b = new ActBody_Lang ($l, r);
+    $0->ref_level--;
     return b;
 }}
 ;

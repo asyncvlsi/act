@@ -657,15 +657,62 @@ class UserDef : public Type {
    */
   int isLeaf();
 
+  static void mkRefineList(list_t **l, int idx = 1) {
+    listitem_t *prev, *li;
+    if (!*l) {
+      *l = list_new ();
+    }
+    prev = NULL;
+    for (li = list_first (*l); li; li = list_next (li)) {
+      if (list_ivalue (li) == idx) {
+	// already have it
+	return;
+      }
+      if (list_ivalue (li) > idx) {
+	listitem_t *tmp;
+	NEW (tmp, listitem_t);
+	tmp->idata = idx;
+	tmp->next = li;
+	if (prev) {
+	  prev->next = tmp;
+	}
+	else {
+	  (*l)->hd = tmp;
+	}
+	return;
+      }
+    }
+    list_iappend (*l, idx);
+  }
+
   /**
    * Mark this as a type that has a refinement body
    */
-  void mkRefined() { has_refinement = 1; }
+  void mkRefined(int idx = 1) {
+    mkRefineList (&has_refinement, idx);
+  }
 
   /**
-   * @return 1 if this has a refinement body, 0 otherwise
+   * return refinement list
    */
-  int hasRefinement() { return has_refinement; }
+  list_t *getRefineList() { return has_refinement; }
+  void setRefineList(list_t *l) {  has_refinement = l; }
+
+  bool acceptRefine (int refsteps, int mysteps) {
+    listitem_t *li;
+    int k = 0;
+
+    if (!has_refinement) {
+      return false;
+    }
+    li = list_first (has_refinement);
+    while (li && list_ivalue (li) <= refsteps) {
+      k = list_ivalue (li);
+      li = list_next (li);
+    }
+    if (k == mysteps) return true;
+    return false;
+  }
 
   /**
    * Create a new user-defined macro
@@ -714,7 +761,8 @@ class UserDef : public Type {
 
   const char *file; ///< file name (if known) where this was defined
   int lineno;       ///< line number (if known) where this was defined
-  int has_refinement;	      ///< 1 if there is a refinement body
+
+  list_t *has_refinement;     ///< list of refinement levels in this type
 
   int inherited_templ;       ///< number of inherited template parameters
   inst_param **inherited_param;  ///< the inherited parameters

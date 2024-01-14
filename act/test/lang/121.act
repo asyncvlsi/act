@@ -1,0 +1,25 @@
+defproc bar(bool a, b)
+{
+  prs {
+    a => b-
+  }
+}
+
+defproc test()
+{
+  bool x, y;
+
+  prs {
+    x => y-
+  }
+  refine {
+     prs {
+       y -> x-
+     }
+  }
+  refine <2> {
+    bar q(x,y);
+  }
+}
+
+test t;

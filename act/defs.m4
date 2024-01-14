@@ -1719,7 +1719,11 @@ base_item[ActBody *]: instance
       $A(l);
       if (l->gettype() == ActBody_Lang::LANG_REFINE) {
 	if ($0->u_p) {
-	  $0->u_p->mkRefined();
+	  act_refine *r = (act_refine *) l->getlang();
+	  $A(r);
+	  if ($0->ref_level == 0) {
+	    $0->u_p->mkRefined(r->nsteps);
+	  }
 	}
 	else {
 	  $E("refine { ... } blocks can only be used in processes.");

@@ -1240,7 +1240,9 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     all_lang = ux->getlang();
   }
 
-  if (ux && ux->hasRefinement() && ActNamespace::Act()->getRefSteps() > 0) {
+  if (ux && (ux->getRefineList() != NULL) &&
+      ActNamespace::Act()->getRefSteps() >=
+      list_ivalue (list_first (ux->getRefineList()))) {
     in_refinement = 1;
   }
 
@@ -1248,7 +1250,6 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
   printf ("in ux: %s\n", ux ? ux->getName() : "-none-");
   printf ("  in-ref: %d\n", in_refinement);
   printf ("  cursteps: %d\n", ActNamespace::Act()->getRefSteps());
-  printf ("  hasRef: %d\n", ux ? ux->hasRefinement() : -1);
 #endif
 
   switch (t) {
@@ -1351,11 +1352,21 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 
   case ActBody_Lang::LANG_REFINE:
     if (in_refinement) {
-      ActNamespace::Act()->decRefSteps();
-      if (((act_refine *)lang)->b) {
-	((act_refine *)lang)->b->Expandlist (ns, s);
+      act_refine *r = (act_refine *)lang;
+      Assert (r, "What?");
+
+      if (ux->acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps)) {
+	list_t *old = ux->getRefineList ();
+
+	ux->setRefineList (r->refsublist);
+	ActNamespace::Act()->decRefSteps(r->nsteps);
+
+	if (r->b) {
+	  r->b->Expandlist (ns, s);
+	}
+	ux->setRefineList (old);
+	ActNamespace::Act()->incRefSteps(r->nsteps);
       }
-      ActNamespace::Act()->incRefSteps();
     }
     break;
 

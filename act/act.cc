@@ -570,6 +570,8 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->um = NULL;
 
   tr->is_assignable_override = -1;
+
+  tr->ref_level = 0;
 }
 
 static void _free_tr (ActTree *tr)
