@@ -1266,6 +1266,7 @@ void Scope::Print (FILE *fp, bool all_inst)
       ActInstiter iparent(up->CurScope());
       for (iparent = iparent.begin(); iparent != iparent.end(); iparent++) {
 	ValueIdx *vx = *iparent;
+	if (TypeFactory::isParamType (vx->t)) continue;
 	hash_add (H, vx->getName());
       }
     }
