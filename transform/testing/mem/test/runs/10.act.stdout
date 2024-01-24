@@ -31,13 +31,13 @@ defproc test ()
 /* instances */
 mystruct y;
 int<32> x;
-::std::ram_38_760_4 mem;
+::std::ram_38_760_4 mem_m;
 mystruct _memdats1;
 int<60> _memdatv1;
 
 /* connections */
 chp {
-x:=0x0;mem.addr!x,mem.rd!1,mem.dout?_memdatv1;_memdats1.a:=_memdatv1{0x3..0x0};_memdats1.m[0].w:=_memdatv1{0xb..0x4};_memdats1.m[1].w:=_memdatv1{0x13..0xc};_memdats1.m[2].w:=_memdatv1{0x1b..0x14};_memdats1.b[0]:=_memdatv1{0x23..0x1c};_memdats1.b[1]:=_memdatv1{0x2b..0x24};_memdats1.b[2]:=_memdatv1{0x33..0x2c};_memdats1.b[3]:=_memdatv1{0x3b..0x34};y:=_memdats1
+x:=0x0;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;_memdats1.a:=_memdatv1{0x3..0x0};_memdats1.m[0].w:=_memdatv1{0xb..0x4};_memdats1.m[1].w:=_memdatv1{0x13..0xc};_memdats1.m[2].w:=_memdatv1{0x1b..0x14};_memdats1.b[0]:=_memdatv1{0x23..0x1c};_memdats1.b[1]:=_memdatv1{0x2b..0x24};_memdats1.b[2]:=_memdatv1{0x33..0x2c};_memdats1.b[3]:=_memdatv1{0x3b..0x34};y:=_memdats1
 }
 }
 

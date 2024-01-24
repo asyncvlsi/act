@@ -29,13 +29,13 @@ defproc test ()
 int<32> _memdatv3;
 int<32> y;
 int<32> x;
-::std::ram_316_732_4 mem;
+::std::ram_316_732_4 mem_m;
 int<32> _memdatv2;
 int<32> _memdatv1;
 
 /* connections */
 chp {
-x:=0x0;mem.addr!x,mem.rd!1,mem.dout?_memdatv1;mem.addr!4,mem.rd!1,mem.dout?_memdatv2;mem.addr!5,mem.rd!1,mem.dout?_memdatv3;_memdatv1:=_memdatv1+_memdatv2+_memdatv3;mem.addr!y,mem.rd!0,mem.din!_memdatv1
+x:=0x0;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;mem_m.addr!4,mem_m.rd!1,mem_m.dout?_memdatv2;mem_m.addr!5,mem_m.rd!1,mem_m.dout?_memdatv3;_memdatv1:=_memdatv1+_memdatv2+_memdatv3;mem_m.addr!y,mem_m.rd!0,mem_m.din!_memdatv1
 }
 }
 

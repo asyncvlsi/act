@@ -47,6 +47,7 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   _curbnl = NULL;
 
   config_set_default_string ("act.decomp.mem", "std::ram");
+  config_set_default_string ("act.decomp.mem_suffix", "_m");
 }
 
 static const char *MEMVAR_STRING = "_memdatv";
@@ -163,8 +164,20 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     }
     it = it->Expand (ActNamespace::Global(), _curbnl->cur);
     
-    /*-- delete dynamic variable! --*/
-    _curbnl->cur->Add (v->aid->getName(), it);
+    /*-- replace with new type dynamic variable, add suffix to be safe! --*/
+    const char *newname;
+    {
+      char *tbuf;
+      int tlen;
+      tlen = strlen (v->aid->getName()) +
+	strlen (config_get_string ("act.decomp.mem_suffix")) + 1;
+      MALLOC (tbuf, char, tlen);
+      snprintf (tbuf, tlen, "%s%s", v->aid->getName(),
+		config_get_string ("act.decomp.mem_suffix"));
+      newname = string_cache (tbuf);
+      FREE (tbuf);
+      _curbnl->cur->Add (newname, it);
+    }
 
     if (!_global_info) {
       _global_info = list_new ();
@@ -174,7 +187,7 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     if (!ret) {
       ret = list_new ();
     }
-    list_append (ret, _curbnl->cur->LookupVal (v->aid->getName()));
+    list_append (ret, _curbnl->cur->LookupVal (newname));
   }
   
   if (_memdata_len > 0) {
@@ -466,7 +479,19 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
   ActId *tmp;
   Array *a;
   list_t *l = list_new ();
-  tmp = new ActId (access->getName());
+  const char *newname;
+
+  {
+    char *tmpn;
+    int tmpl;
+    tmpl = strlen (access->getName())
+      + strlen (config_get_string ("act.decomp.mem_suffix")) + 1;
+    MALLOC (tmpn, char, tmpl);
+    snprintf (tmpn, tmpl, "%s%s", access->getName(), config_get_string ("act.decomp.mem_suffix"));
+    tmp = new ActId (string_cache (tmpn));
+    FREE (tmpn);
+    newname = tmp->getName();
+  }
   tmp->Append (new ActId ("addr"));
 
   NEW (c, act_chp_lang_t);
@@ -494,7 +519,7 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
   c->u.comm.flavor = 0;
   c->u.comm.convert = 0;
   c->u.comm.var = NULL;
-  c->u.comm.chan = new ActId (access->getName());
+  c->u.comm.chan = new ActId (newname);
   c->u.comm.chan->Append (new ActId ("rd"));
   c->u.comm.e = const_expr (1);
 
@@ -508,7 +533,7 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
   c->u.comm.flavor = 0;
   c->u.comm.convert = 0;
   c->u.comm.e = NULL;
-  c->u.comm.chan = new ActId (access->getName());
+  c->u.comm.chan = new ActId (newname);
   c->u.comm.chan->Append (new ActId ("dout"));
 
   char buf[100];
@@ -556,8 +581,19 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   ActId *tmp;
   Array *a;
   list_t *l = list_new ();
-  
-  tmp = new ActId (access->getName());
+  const char *newname;
+
+  {  
+    char *tmpn;
+    int tmpl;
+    tmpl = strlen (access->getName())
+      + strlen (config_get_string ("act.decomp.mem_suffix")) + 1;
+    MALLOC (tmpn, char, tmpl);
+    snprintf (tmpn, tmpl, "%s%s", access->getName(), config_get_string ("act.decomp.mem_suffix"));
+    tmp = new ActId (string_cache (tmpn));
+    FREE (tmpn);
+    newname  = tmp->getName();
+  }
   tmp->Append (new ActId ("addr"));
 
   NEW (c, act_chp_lang_t);
@@ -585,7 +621,7 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   c->u.comm.flavor = 0;
   c->u.comm.convert = 0;
   c->u.comm.var = NULL;
-  c->u.comm.chan = new ActId (access->getName());
+  c->u.comm.chan = new ActId (newname);
   c->u.comm.chan->Append (new ActId ("rd"));
   c->u.comm.e = const_expr (0);
 
@@ -599,7 +635,7 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   c->u.comm.flavor = 0;
   c->u.comm.convert = 0;
   c->u.comm.var = NULL;
-  c->u.comm.chan = new ActId (access->getName());
+  c->u.comm.chan = new ActId (newname);
   c->u.comm.chan->Append (new ActId ("din"));
 
   int inv_idx = _inv_idx (idx);

@@ -2925,11 +2925,14 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     }
 
     if (it->getDir() == Type::IN) {
-      $e("Identifier on the RHS of a dataflow expression is an input?");
-      fprintf ($f, "\n   ID: ");
-      $4->Print ($f);
-      fprintf ($f, "\n");
-      exit (1);
+      InstType *it2 = $0->scope->FullLookup ($4->getName());
+      if (!($4->Rest() && TypeFactory::isProcessType (it2))) {
+	$e("Identifier on the RHS of a dataflow expression is an input?");
+	fprintf ($f, "\n   ID: ");
+	$4->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
     }
     
     e->u.func.rhs = $4;
@@ -2987,11 +2990,14 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 	exit (1);
       }
       if (it->getDir() == Type::OUT) {
-	$e("Identifier in the condition of a dataflow expression is an output?");
-	fprintf ($f, "\n   ID: ");
-	$2->Print ($f);
-	fprintf ($f, "\n");
-	exit (1);
+	InstType *it2 = $0->scope->FullLookup ($2->getName());
+	if (!($2->Rest() && TypeFactory::isProcessType (it2))) {
+	  $e("Identifier in the condition of a dataflow expression is an output?");
+	  fprintf ($f, "\n   ID: ");
+	  $2->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
       }
     }
     else {
@@ -3064,20 +3070,26 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     }
     if (e->t == ACT_DFLOW_SPLIT) {
       if (it->getDir() == Type::OUT) {
-	$e("Split input is of type output?");
-	fprintf ($f, "\n   ID: ");
-	e->u.splitmerge.single->Print ($f);
-	fprintf ($f, "\n");
-	exit (1);
+	InstType *it2 = $0->scope->FullLookup (e->u.splitmerge.single->getName());
+	if (!(e->u.splitmerge.single->Rest() && TypeFactory::isProcessType (it2))) {
+	  $e("Split input is of type output?");
+	  fprintf ($f, "\n   ID: ");
+	  e->u.splitmerge.single->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
       }
     }
     else {
       if (it->getDir() == Type::IN) {
-	$e("Merge output is of type input?");
-	fprintf ($f, "\n   ID: ");
-	e->u.splitmerge.single->Print ($f);
-	fprintf ($f, "\n");
-	exit (1);
+	InstType *it2 = $0->scope->FullLookup (e->u.splitmerge.single->getName());
+	if (!(e->u.splitmerge.single->Rest() && TypeFactory::isProcessType (it2))) {
+	  $e("Merge output is of type input?");
+	  fprintf ($f, "\n   ID: ");
+	  e->u.splitmerge.single->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
       }
     }
     
@@ -3104,20 +3116,26 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
 	}
 	if (e->t == ACT_DFLOW_SPLIT) {
 	  if (it->getDir() == Type::IN) {
-	    $e("Split output is of type input?");
-	    fprintf ($f, "\n   ID: ");
-	    e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
-	    fprintf ($f, "\n");
-	    exit (1);
+	    InstType *it2 = $0->scope->FullLookup (e->u.splitmerge.pre_exp[i]->chanid->getName());
+	    if (!(e->u.splitmerge.pre_exp[i]->chanid->Rest() && TypeFactory::isProcessType (it2))) {
+	      $e("Split output is of type input?");
+	      fprintf ($f, "\n   ID: ");
+	      e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
+	      fprintf ($f, "\n");
+	      exit (1);
+	    }
 	  }
 	}
 	else {
 	  if (it->getDir() == Type::OUT) {
-	    $e("Merge input is of type output?");
-	    fprintf ($f, "\n   ID: ");
-	    e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
-	    fprintf ($f, "\n");
-	    exit (1);
+	    InstType *it2 = $0->scope->FullLookup (e->u.splitmerge.pre_exp[i]->chanid->getName());
+	    if (!(e->u.splitmerge.pre_exp[i]->chanid->Rest() && TypeFactory::isProcessType (it2))) {
+	      $e("Merge input is of type output?");
+	      fprintf ($f, "\n   ID: ");
+	      e->u.splitmerge.pre_exp[i]->chanid->Print ($f);
+	      fprintf ($f, "\n");
+	      exit (1);
+	    }
 	  }
 	}
       }
@@ -3169,11 +3187,14 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
       exit (1);
     }
     if (it->getDir() == Type::OUT) {
-      $e("Identifier on the LHS of a dataflow sink is an output?");
-      fprintf ($f, "\n   ID: ");
-      $1->Print ($f);
-      fprintf ($f, "\n");
-      exit (1);
+      InstType *it2 = $0->scope->FullLookup ($1->getName());
+      if (!($1->Rest() && TypeFactory::isProcessType (it2))) {
+	$e("Identifier on the LHS of a dataflow sink is an output?");
+	fprintf ($f, "\n   ID: ");
+	$1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
     }
     e->u.sink.chan = $1;
     return e;

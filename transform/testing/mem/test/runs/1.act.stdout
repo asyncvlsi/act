@@ -28,12 +28,12 @@ defproc test ()
 /* instances */
 int<32> y;
 int<32> x;
-::std::ram_316_732_4 mem;
+::std::ram_316_732_4 mem_m;
 int<32> _memdatv1;
 
 /* connections */
 chp {
-x:=0x0;_memdatv1:=y;mem.addr!x,mem.rd!0,mem.din!_memdatv1
+x:=0x0;_memdatv1:=y;mem_m.addr!x,mem_m.rd!0,mem_m.din!_memdatv1
 }
 }
 
