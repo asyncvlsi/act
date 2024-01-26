@@ -581,8 +581,9 @@ class UserDef : public Type {
    * "deftype", "defchan", "interface", "function".
    * @param fp is the output file
    * @param type is the string for the kind of user-defined type. 
+   * @Param unmangle when set to true, this will unmangle the parent type
    */
-  void PrintHeader (FILE *fp, const char *type);
+  void PrintHeader (FILE *fp, const char *type, bool ummangle = false);
 
   /**
    * Directly set the body of the user-defined type 

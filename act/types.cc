@@ -1331,7 +1331,7 @@ Chan *Chan::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 }
 
 
-void UserDef::PrintHeader (FILE *fp, const char *type)
+void UserDef::PrintHeader (FILE *fp, const char *type, bool unmangle)
 {
   char buf[10240];
   int n;
@@ -1379,7 +1379,13 @@ void UserDef::PrintHeader (FILE *fp, const char *type)
     else {
       UserDef *u = dynamic_cast<UserDef *>(parent->BaseType());
       Assert (u, "what?");
-      ActNamespace::Act()->mfprintfproc (fp, u);
+      if (unmangle) {
+        u->snprintActName (buf, 10240);
+        fprintf (fp, "%s", buf);
+      }
+      else {
+        ActNamespace::Act()->mfprintfproc (fp, u);
+      }
       skip_ports = u->getNumPorts();
     }
     fprintf (fp, " ");
