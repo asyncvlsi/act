@@ -1198,7 +1198,13 @@ int emit_code_for_parsing_tokens (pp_t *pp, token_list_t *tl, int *npush)
 	pp_nl;
       }
       pp_printf (pp, "} else {");
-      BEGIN_INDENT; 
+      BEGIN_INDENT;
+      if (tl->a[i].parse_push) {
+	// we need the # of entries on the stack to be deterministic!
+	pp_printf (pp, "   stack_push (__parse_id_stack, NULL);",
+		   nest, i);
+	pp_nl;
+      }
       emit_frees_upto_curtoken (pp, tl, nest, i);
       ERR("identifier"); 
       RETRY; 
