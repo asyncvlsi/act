@@ -1,0 +1,4 @@
+defproc characterize ()
+{
+cell::export g1;
+}

@@ -1,0 +1,5 @@
+Parse error: Could not parse entire file.
+Expecting identifier, got `export'
+	File `13.act', line: 3, col: 14.
+Exception: number=1, message -none-
+FATAL: Uncaught exception

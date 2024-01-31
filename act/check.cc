@@ -563,18 +563,22 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
   case E_BITFIELD:
     {
+      ActId *theid;
       InstType *xit;
       long lo, hi;
-      lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      theid = (ActId *)e->u.e.l;
+      lt = act_type_var (s, theid, &xit);
       if (lt == T_ERR) return T_ERR;
       if (only_chan == 1 || (only_chan == 2 && !(T_BASETYPE_INT (lt)))) {
 	if (TypeFactory::isChanType (xit)) {
 	  if (xit->isExpanded()) {
 	    if (xit->getDir() == Type::OUT) {
-	      typecheck_err ("Channel expression requires an input port");
-	      return T_ERR;
+	      InstType *xit2 = s->FullLookup (theid->getName());
+	      if (!(theid->Rest() && TypeFactory::isProcessType (xit2))) {
+		typecheck_err ("Channel expression requires an input port");
+		return T_ERR;
+	      }
 	    }
-	    
 	    if (!xit->arrayInfo() && ((ActId *)e->u.e.l)->Tail()->arrayInfo()) {
 	      typecheck_err ("Identifier is not an array type");
 	      return T_ERR;
@@ -902,12 +906,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (lt == T_ERR) return T_ERR;
       if (only_chan) {
 	if (lt == T_CHAN) {
-	  ActId *tmp;
-	  InstType *it = _act_get_var_type (s, (ActId *)e->u.e.l, &tmp, NULL);
+	  ActId *tmp, *theid;
+          theid = (ActId *) e->u.e.l;
+	  InstType *it = _act_get_var_type (s, theid, &tmp, NULL);
 
 	  if (it->getDir() == Type::OUT) {
-	    typecheck_err ("Channel expression requires an input port");
-	    return T_ERR;
+	    InstType *it2 = s->FullLookup (theid->getName());
+	    if (!(theid->Rest() && TypeFactory::isProcessType (it2))) {
+	      typecheck_err ("Channel expression requires an input port");
+	      return T_ERR;
+	    }
 	  }
 
 	  if (!it->arrayInfo() && tmp->arrayInfo()) {
