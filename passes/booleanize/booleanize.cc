@@ -1761,6 +1761,7 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
       ActInstiter it(p->CurScope());
       for (it = it.begin(); it != it.end(); it++) {
 	ValueIdx *vx = (*it);
+	if (TypeFactory::isParamType (vx->t)) continue;
 	if (vx->isPrimary()) {
 	  if (vx->t->arrayInfo()) {
 	    // skip for the moment
