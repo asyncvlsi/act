@@ -48,7 +48,8 @@
 
   highest
 
-  10  #, ~, !
+  11  #
+  10  ~, !
    9  * / %
    8  + -
    7  <<, >>, <, >, <=, >=, ==, !=
@@ -137,12 +138,12 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     
   switch (e->type) {
   case E_PROBE:
-    PREC_BEGIN (10);
+    PREC_BEGIN (11);
     snprintf (buf+k, sz, "#");
     PRINT_STEP;
     ((ActId *)(e->u.e.l))->sPrint (buf+k, sz);
     PRINT_STEP;
-    PREC_END (10);
+    PREC_END (11);
     break;
     
   case E_NOT: EMIT_UNOP(10,"~"); break;
