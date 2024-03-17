@@ -62,7 +62,7 @@
    otherwise parenthesize it.
 
 */
-static void _print_expr (char *buf, int sz, const Expr *e, int prec)
+static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 {
   int k = 0;
   int len;
@@ -73,7 +73,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 #define PREC_BEGIN(myprec)			\
   do {						\
     int uprec = (prec < 0 ? -prec : prec);	\
-    if ((myprec) < uprec) {			\
+    if ((myprec) < uprec || ((myprec) == uprec && parent != e->type)) {	\
       snprintf (buf+k, sz, "(");		\
       PRINT_STEP;				\
     }						\
@@ -82,7 +82,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 #define PREC_END(myprec)			\
   do {						\
     int uprec = (prec < 0 ? -prec : prec);	\
-    if ((myprec) < uprec) {			\
+    if ((myprec) < uprec || ((myprec) == uprec && parent != e->type)) {	\
       snprintf (buf+k, sz, ")");		\
       PRINT_STEP;				\
     }						\
@@ -92,11 +92,11 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
   do {								\
     int my_sign = (prec < 0 ? -1 : 1);				\
     PREC_BEGIN(myprec);						\
-    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec));	\
+    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec), e->type);	\
     PRINT_STEP;							\
     snprintf (buf+k, sz, "%s", (sym));				\
     PRINT_STEP;							\
-    _print_expr (buf+k, sz, e->u.e.r, my_sign*(myprec));	\
+    _print_expr (buf+k, sz, e->u.e.r, my_sign*(myprec), e->type);	\
     PRINT_STEP;							\
     PREC_END (myprec);						\
   } while (0)
@@ -107,7 +107,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
     PREC_BEGIN(myprec);						\
     snprintf (buf+k, sz, "%s", sym);				\
     PRINT_STEP;							\
-    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec));	\
+    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec), e->type);	\
     PRINT_STEP;							\
     PREC_END (myprec);						\
   } while (0)
@@ -159,17 +159,17 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
     PRINT_STEP;
     snprintf (buf+k, sz, "%s:", (char *)e->u.e.l->u.e.l);
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 1);
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, 1, -1);
     PRINT_STEP;
     if (e->u.e.r->u.e.r->u.e.l) {
       snprintf (buf+k, sz, "..");
       PRINT_STEP;
-      _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 1);
+      _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 1, -1);
       PRINT_STEP;
     }
     snprintf (buf+k, sz, ":");
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, (prec < 0 ? -1 : 1));
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.r, (prec < 0 ? -1 : 1), -1);
     PRINT_STEP;
     snprintf (buf+k, sz, ")");
     PRINT_STEP;
@@ -177,16 +177,16 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 
   case E_QUERY: /* prec = 3 */
     PREC_BEGIN(3);
-    _print_expr (buf+k, sz, e->u.e.l, (prec < 0 ? -3 : 3));
+    _print_expr (buf+k, sz, e->u.e.l, (prec < 0 ? -3 : 3), e->type);
     PRINT_STEP;
     snprintf (buf+k, sz, " ? ");
     PRINT_STEP;
     Assert (e->u.e.r->type == E_COLON, "Hmm");
-    _print_expr (buf+k, sz, e->u.e.r->u.e.l, (prec < 0 ? -3 : 3));
+    _print_expr (buf+k, sz, e->u.e.r->u.e.l, (prec < 0 ? -3 : 3), e->type);
     PRINT_STEP;
     snprintf (buf+k, sz, " : ");
     PRINT_STEP;
-    _print_expr (buf+k, sz, e->u.e.r->u.e.r, (prec < 0 ? -3 : 3));
+    _print_expr (buf+k, sz, e->u.e.r->u.e.r, (prec < 0 ? -3 : 3), e->type);
     PRINT_STEP;
     PREC_END(3);
     break;
@@ -502,7 +502,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec)
 void sprint_expr (char *buf, int sz, const Expr *e)
 {
   if (sz <= 1) return;
-  _print_expr (buf, sz, e, 1);
+  _print_expr (buf, sz, e, 1, -1);
 }
   
 void print_expr (FILE *fp, const Expr *e)
@@ -532,7 +532,7 @@ void print_expr (FILE *fp, const Expr *e)
 void sprint_uexpr (char *buf, int sz, const Expr *e)
 {
   if (sz <= 1) return;
-  _print_expr (buf, sz, e, -1);
+  _print_expr (buf, sz, e, -1, -1);
 }
   
 void print_uexpr (FILE *fp, const Expr *e)
