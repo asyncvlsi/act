@@ -101,6 +101,29 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     PREC_END (myprec);						\
   } while (0)
 
+
+#define EMIT_BIN_NONASSOC(myprec,sym)					\
+  do {									\
+    int my_sign = (prec < 0 ? -1 : 1);					\
+    PREC_BEGIN(myprec);							\
+    _print_expr (buf+k, sz, e->u.e.l, my_sign*(myprec), e->type);	\
+    PRINT_STEP;								\
+    snprintf (buf+k, sz, "%s", (sym));					\
+    PRINT_STEP;								\
+    if (e->u.e.r->type == e->type) {					\
+      snprintf (buf+k, sz, "(");					\
+      PRINT_STEP;							\
+    }									\
+    _print_expr (buf+k, sz, e->u.e.r, my_sign*(myprec), e->type);	\
+    PRINT_STEP;								\
+    if (e->u.e.r->type == e->type) {					\
+      snprintf (buf+k, sz, ")");					\
+      PRINT_STEP;							\
+    }									\
+    PREC_END (myprec);							\
+  } while (0)
+  
+
 #define EMIT_UNOP(myprec,sym)					\
   do {								\
     int my_sign = (prec < 0 ? -1 : 1);				\
@@ -130,15 +153,15 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
   case E_UMINUS: EMIT_UNOP(10, "-"); break;
 
   case E_MULT: EMIT_BIN (9, "*"); break;
-  case E_DIV:  EMIT_BIN (9, "/"); break;
-  case E_MOD:  EMIT_BIN (9, "%"); break;
+  case E_DIV:  EMIT_BIN_NONASSOC (9, "/"); break;
+  case E_MOD:  EMIT_BIN_NONASSOC (9, "%"); break;
 
   case E_PLUS:  EMIT_BIN (8, "+"); break;
   case E_MINUS: EMIT_BIN (8, "-"); break;
 
-  case E_LSL: EMIT_BIN (7, "<<"); break;
-  case E_LSR: EMIT_BIN (7, ">>"); break;
-  case E_ASR: EMIT_BIN (7, ">>>"); break;
+  case E_LSL: EMIT_BIN_NONASSOC (7, "<<"); break;
+  case E_LSR: EMIT_BIN_NONASSOC (7, ">>"); break;
+  case E_ASR: EMIT_BIN_NONASSOC (7, ">>>"); break;
   case E_LT:  EMIT_BIN (7, "<"); break;
   case E_GT:  EMIT_BIN (7, ">"); break;
   case E_LE:  EMIT_BIN (7, "<="); break;
