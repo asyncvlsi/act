@@ -405,14 +405,54 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     }
     lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
     if (lt == T_ERR) return T_ERR;
-    if (!T_BASETYPE_BOOL (lt) || (lt & T_ARRAYOF)) {
-      typecheck_err ("Loop body is not of bool type");
+    if (!T_BASETYPE_BOOL (lt) && !T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
+      typecheck_err ("Loop body is not of bool/int type");
       return T_ERR;
     }
     if (width) {
       *width = 1;
+      if (lw > *width) {
+	*width = lw;
+      }
     }
-    return T_BOOL | (lt & T_PARAM);
+    if (T_BASETYPE_BOOL (lt)) {
+      return T_BOOL | (lt & T_PARAM);
+    }
+    else {
+      return T_INT | (lt & T_PARAM);
+    }
+    break;
+
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    lt = act_type_expr (s, e->u.e.r->u.e.l, &lw, 0);
+    if (lt == T_ERR) return T_ERR;
+    if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
+      typecheck_err ("Loop range is not of integer type");
+      return T_ERR;
+    }
+    if (e->u.e.r->u.e.r->u.e.l) {
+      lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.l, &lw, 0);
+      if (lt == T_ERR) return T_ERR;
+      if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
+	typecheck_err ("Loop range is not of integer type");
+	return T_ERR;
+      }
+    }
+    lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
+    if (lt == T_ERR) return T_ERR;
+    if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
+      typecheck_err ("Loop body is not of int type");
+      return T_ERR;
+    }
+    if (width) {
+      *width = 1;
+      if (lw > *width) {
+	*width = lw;
+      }
+    }
+    return T_INT | (lt & T_PARAM);
     break;
 
     /* Boolean, unary */

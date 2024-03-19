@@ -339,6 +339,10 @@ static void _compute_dynamic_vars (struct Hashtable **H, Expr *e)
 
   case E_ANDLOOP:
   case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    /* should not be here */
     break;
 
   case E_AND:

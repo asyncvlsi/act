@@ -81,8 +81,11 @@
 */
 #define E_ENUM_CONST   (E_END + 25)  ///< used for an enumeration constant
 
+#define E_PLUSLOOP (E_END + 26)
+#define E_MULTLOOP (E_END + 27)
+#define E_XORLOOP  (E_END + 28)
 
-#define E_NEWEND  E_END + 26	     ///< new "end" of expression options
+#define E_NEWEND  E_END + 29	     ///< new "end" of expression options
 
 #ifdef __cplusplus
 extern "C" {

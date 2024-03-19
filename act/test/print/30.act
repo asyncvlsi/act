@@ -1,0 +1,19 @@
+defproc test()
+{
+  int x, y, z, w;
+
+  chp {
+    x := (+i:3:x+y);
+    x := (x+y) + (x+y) + (x+y);
+    x := (&i:3:(x+y));
+    x := (|j:3:(x+y));
+    x := (*j:3:(x+y));
+    x := x+(y+z);
+    x := x-y-z;
+    x := x-(y-z);
+    x := (+i:1:(x+y));
+    skip
+  }
+}
+
+test t;

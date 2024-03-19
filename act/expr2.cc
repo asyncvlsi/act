@@ -178,9 +178,28 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
   case E_OR: EMIT_BIN (4, "|"); break;
 
   case E_ANDLOOP:
-    snprintf (buf+k, sz, "(&");
   case E_ORLOOP:
-    snprintf (buf+k, sz, "(|");
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    snprintf (buf+k, sz, "(X");
+    if (sz > 2) {
+      if (e->type == E_ANDLOOP) {
+	buf[k+1] = '&';
+      }
+      else if (e->type == E_ORLOOP) {
+	buf[k+1] = '|';
+      }
+      else if (e->type == E_PLUSLOOP) {
+	buf[k+1] = '+';
+      }
+      else if (e->type == E_MULTLOOP) {
+	buf[k+1] = '*';
+      }
+      else if (e->type == E_XORLOOP) {
+	buf[k+1] = '^';
+      }
+    }
     PRINT_STEP;
     snprintf (buf+k, sz, "%s:", (char *)e->u.e.l->u.e.l);
     PRINT_STEP;
@@ -707,6 +726,9 @@ int expr_equal (const Expr *a, const Expr *b)
 
   case E_ANDLOOP:
   case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
     if (strcmp ((char *)a->u.e.l->u.e.l,
 		(char *)b->u.e.l->u.e.l) != 0) {
       return 0;
@@ -1075,6 +1097,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 
   case E_ANDLOOP:
   case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
     LVAL_ERROR;
     *width = 1;
     {
@@ -1093,33 +1118,42 @@ static Expr *_expr_expand (int *width, Expr *e,
       if (e->type == E_ANDLOOP) {
 	ret->type = E_AND;
       }
-      else {
+      else if (e->type == E_ORLOOP) {
 	ret->type = E_OR;
       }
-      
+      else if (e->type == E_PLUSLOOP) {
+	ret->type = E_PLUS;
+      }
+      else if (e->type == E_MULTLOOP) {
+	ret->type = E_MULT;
+	*width = 0;
+      }
+      else if (e->type == E_XORLOOP) {
+	ret->type = E_XOR;
+      }
+
       for (i=ilo; i <= ihi; i++) {
 	s->setPInt (vx->u.idx, i);
 	Expr *tmp = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.r, ns, s, flags);
-	if (is_const && expr_is_a_const (tmp)) {
-	  if (tmp->type == E_TRUE || tmp->type == E_FALSE) {
-	    if (e->type == E_ANDLOOP) {
-	      if (tmp->type == E_FALSE) {
-		/* we're done, the whole thing is false */
-		break;
-	      }
-	    }
-	    else {
-	      if (tmp->type == E_TRUE) {
-		break;
-	      }
+	if (is_const && expr_is_a_const (tmp) &&
+	    (tmp->type == E_TRUE || tmp->type == E_FALSE)) {
+	  if (e->type == E_ANDLOOP) {
+	    if (tmp->type == E_FALSE) {
+	      /* we're done, the whole thing is false */
+	      break;
 	    }
 	  }
 	  else {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, "\texpanding expr: ");
-	    print_expr (stderr, e);
-	    fprintf (stderr,"\n");
-	    fatal_error ("Incompatible types for &/| operator");
+	    if (e->type != E_ORLOOP) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "\texpanding expr: ");
+	      print_expr (stderr, e);
+	      fprintf (stderr,"\n");
+	      fatal_error ("Incompatible expression for loop operator");
+	    }
+	    if (tmp->type == E_TRUE) {
+	      break;
+	    }
 	  }
 	}
 	else {
@@ -1134,11 +1168,32 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    Expr *tmp2;
 	    NEW (tmp2, Expr);
-	    tmp2->u.e.l = cur->u.e.r;
-	    tmp2->type = cur->type;
-	    cur->u.e.r = tmp2;
-	    tmp2->u.e.r = tmp;
+
+	    if (e->type == E_PLUSLOOP) {
+	      tmp2->u.e.l = cur->u.e.l;
+	      tmp2->type = cur->type;
+	      cur->u.e.l = tmp2;
+	      tmp2->u.e.r = tmp;
+	    }
+	    else {
+	      tmp2->u.e.l = cur->u.e.r;
+	      tmp2->type = cur->type;
+	      cur->u.e.r = tmp2;
+	      tmp2->u.e.r = tmp;
+	    }
 	    cur = tmp2;
+	  }
+	  if (e->type == E_ANDLOOP || e->type == E_ORLOOP ||
+	      e->type == E_XORLOOP) {
+	    if (lw > *width) {
+	      *width = lw;
+	    }
+	  }
+	  else if (e->type == E_MULTLOOP) {
+	    *width += lw;
+	  }
+	  else if (e->type == E_PLUSLOOP) {
+	    *width = MAX(*width, lw)+1;
 	  }
 	  count++;
 	}
@@ -1152,19 +1207,115 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    ret->type = E_TRUE;
 	  }
+	  Expr *tmp = TypeFactory::NewExpr (ret);
+	  FREE (ret);
+	  ret = tmp;
 	}
 	else {
 	  if (e->type == E_ANDLOOP) {
-	    ret->type = E_TRUE;
+	    int t = act_type_expr (s, e->u.e.r->u.e.r->u.e.r,
+				   width, 2);
+	    if (T_BASETYPE_BOOL (t)) {
+	      // if this is an integer type?
+	      ret->type = E_TRUE;
+	      Expr *tmp = TypeFactory::NewExpr (ret);
+	      FREE (ret);
+	      ret = tmp;
+	    }
+	    else {
+	      ret->type = E_INT;
+	      if (*width < 64) {
+		ret->u.ival.v = (1UL << *width) - 1;
+	      }
+	      else {
+		ret->u.ival.v = ~0UL;
+	      }
+	      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+		BigInt *x = new BigInt;
+		x->setWidth (*width);
+		*x = ~*x;
+		ret->u.ival.v_extra = x;
+	      }
+	      else {
+		ret->u.ival.v_extra = NULL;
+		Expr *tmp = TypeFactory::NewExpr (ret);
+		FREE (ret);
+		ret = tmp;
+	      }
+	    }
+	  }
+	  else if (e->type == E_ORLOOP) {
+	    int t = act_type_expr (s, e->u.e.r->u.e.r->u.e.r,
+				   width, 2);
+	    if (T_BASETYPE_BOOL (t)) {
+	      ret->type = E_FALSE;
+	      Expr *tmp = TypeFactory::NewExpr (ret);
+	      FREE (ret);
+	      ret = tmp;
+	    }
+	    else {
+	      ret->type = E_INT;
+	      ret->u.ival.v = 0;
+	      ret->u.ival.v_extra = NULL;
+	      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+		BigInt *x = new BigInt;
+		x->setWidth (*width);	
+		ret->u.ival.v_extra = x;
+	      }
+	      else {
+		Expr *tmp = TypeFactory::NewExpr (ret);
+		FREE (ret);
+		ret = tmp;
+	      }
+	    }
 	  }
 	  else {
-	    ret->type = E_FALSE;
+	    // must be an empty loop
+	    Assert (ilo > ihi, "What?");
+	    int t = act_type_expr (s, e->u.e.r->u.e.r->u.e.r,
+				   width, 2);
+	    ret->type = E_INT;
+	    ret->u.ival.v = 0;
+	    ret->u.ival.v_extra = NULL;
+	    BigInt *x = new BigInt;
+	    x->setWidth (*width);
+	    if (e->type == E_MULTLOOP) {
+	      ret->u.ival.v = 1;
+	      x->setVal (0, 1);
+	      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+		ret->u.ival.v_extra = x;
+	      }
+	      else {
+		ret->u.ival.v_extra = NULL;
+		Expr *tmp = TypeFactory::NewExpr (ret);
+		FREE (ret);
+		ret = tmp;
+		delete x;
+	      }
+	    }
+	    else if (e->type == E_PLUSLOOP || e->type == E_XORLOOP) {
+	      ret->u.ival.v = 0;
+	      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+		ret->u.ival.v_extra = x;
+	      }
+	      else {
+		ret->u.ival.v_extra = NULL;
+		Expr *tmp = TypeFactory::NewExpr (ret);
+		FREE (ret);
+		ret = tmp;
+		delete x;
+	      }
+	    }
+	    else {
+	      Assert (0, "Should not be here");
+	    }
 	  }
 	}
       }
       else {
 	if (count == 1) {
-	  Expr *tmp = ret->u.e.l;
+	  Expr *tmp;
+	  tmp = ret->u.e.l;
 	  FREE (ret);
 	  ret = tmp;
 	}
@@ -3319,6 +3470,9 @@ int act_expr_bitwidth (int etype, int lw, int rw)
 
   case E_ANDLOOP:
   case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
   case E_BITFIELD:
   case E_PROBE:
   case E_BUILTIN_INT:

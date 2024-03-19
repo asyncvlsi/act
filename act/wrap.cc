@@ -318,6 +318,9 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 
   case E_ANDLOOP:
   case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
     if (cookie->scope->Lookup ((char *)e->u.e.l->u.e.l)) {
       struct act_position p;
       p.l = cookie->line;

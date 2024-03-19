@@ -29,6 +29,7 @@
 void *act_parse_a_fexpr (LFILE *);
 
 static int tokand, tokor, lpar, rpar, ddot, colon;
+static int tokxor, tokplus, tokmult;
 static int double_colon, comma;
 static int inttok, booltok;
 static int langle, rangle;
@@ -40,6 +41,9 @@ static void do_init (LFILE *l)
   if (!init) {
     tokand = expr_gettoken (E_AND);
     tokor = expr_gettoken (E_OR);
+    tokxor = expr_gettoken (E_XOR);
+    tokplus = expr_gettoken (E_PLUS);
+    tokmult = expr_gettoken (E_MULT);
     lpar = expr_gettoken (E_LPAR);
     rpar = expr_gettoken (E_RPAR);
     ddot = expr_gettoken (E_BITFIELD);
@@ -333,15 +337,213 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
   return e;
 }
 
+Expr *act_parse_expr_syn_loop_int (LFILE *l)
+{
+  Expr *e, *f;
+  int etype;
+  
+  do_init(l);
+
+  file_push_position (l);
+
+  if (file_have (l, lpar)) {
+    if (file_have (l, tokand)) {
+      etype = E_ANDLOOP;
+    }
+    else if (file_have (l, tokor)) {
+      etype = E_ORLOOP;
+    }
+    else if (file_have (l, tokplus)) {
+      etype = E_PLUSLOOP;
+    }
+    else if (file_have (l, tokmult)) {
+      etype = E_MULTLOOP;
+    }
+    else if (file_have (l, tokxor)) {
+      etype = E_XORLOOP;
+    }
+    else {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e, Expr);
+    e->type = etype;
+    e->u.e.l = NULL;
+    e->u.e.r = NULL;
+
+    if (!file_have (l, f_id)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e->u.e.l, Expr);
+    e->u.e.l->type = E_RAWFREE;
+    e->u.e.l->u.e.l = (Expr *)Strdup (file_prev (l));
+    e->u.e.l->u.e.r = NULL;
+
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    if (!(f = expr_parse_int (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e->u.e.r, Expr);
+    e->u.e.r->type = etype;
+    e->u.e.r->u.e.l = f;
+
+    NEW (e->u.e.r->u.e.r, Expr);
+    e->u.e.r->u.e.r->type = etype;
+    e->u.e.r->u.e.r->u.e.l = NULL;
+    e->u.e.r->u.e.r->u.e.r = NULL;
+
+    if (file_have (l, ddot)) {
+      if (!(f = expr_parse_int (l))) {
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+      e->u.e.r->u.e.r->u.e.l = f;
+    }
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!(e->u.e.r->u.e.r->u.e.r = expr_parse_int (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+  }
+  else {
+    e = _parse_expr_func (l);
+    if (!e) {
+      file_set_position (l);
+    }
+  }
+  file_pop_position (l);
+  return e;
+}
+
 
 Expr *act_parse_expr_intexpr_base (LFILE *l)
 {
-  Expr *e;
+  Expr *e, *f;
+  int etype;
 
   do_init(l);
   
   file_push_position (l);
 
+  if (file_have (l, lpar)) {
+    if (file_have (l, tokand)) {
+      etype = E_ANDLOOP;
+    }
+    else if (file_have (l, tokor)) {
+      etype = E_ORLOOP;
+    }
+    else if (file_have (l, tokplus)) {
+      etype = E_PLUSLOOP;
+    }
+    else if (file_have (l, tokmult)) {
+      etype = E_MULTLOOP;
+    }
+    else if (file_have (l, tokxor)) {
+      etype = E_XORLOOP;
+    }
+    else {
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e, Expr);
+    e->type = etype;
+    e->u.e.l = NULL;
+    e->u.e.r = NULL;
+
+    if (!file_have (l, f_id)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    NEW (e->u.e.l, Expr);
+    e->u.e.l->type = E_RAWFREE;
+    e->u.e.l->u.e.l = (Expr *)Strdup (file_prev (l));
+    e->u.e.l->u.e.r = NULL;
+
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    if (!(f = expr_parse_int (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+
+    NEW (e->u.e.r, Expr);
+    e->u.e.r->type = etype;
+    e->u.e.r->u.e.l = f;
+
+    NEW (e->u.e.r->u.e.r, Expr);
+    e->u.e.r->u.e.r->type = etype;
+    e->u.e.r->u.e.r->u.e.l = NULL;
+    e->u.e.r->u.e.r->u.e.r = NULL;
+
+    if (file_have (l, ddot)) {
+      if (!(f = expr_parse_int (l))) {
+	expr_free (e);
+	file_set_position (l);
+	file_pop_position (l);
+	return NULL;
+      }
+      e->u.e.r->u.e.r->u.e.l = f;
+    }
+    if (!file_have (l, colon)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!(e->u.e.r->u.e.r->u.e.r = expr_parse_int (l))) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+    if (!file_have (l, rpar)) {
+      expr_free (e);
+      file_set_position (l);
+      file_pop_position (l);
+      return NULL;
+    }
+  }
   if (file_have_keyw (l, "int")) {
     if (!file_have (l, lpar)) {
       file_set_position (l);
@@ -413,6 +615,15 @@ static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
     }
     else if (file_have (l, tokor)) {
       etype = E_ORLOOP;
+    }
+    else if (file_have (l, tokplus)) {
+      etype = E_PLUSLOOP;
+    }
+    else if (file_have (l, tokmult)) {
+      etype = E_MULTLOOP;
+    }
+    else if (file_have (l, tokxor)) {
+      etype = E_XORLOOP;
     }
     else {
       file_set_position (l);
