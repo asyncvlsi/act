@@ -1,0 +1,19 @@
+defproc test ()
+{
+    pint N = 4;
+    int<4> x[N];
+    int<N*4> y;
+
+    chp {
+        
+        x[0] := 1;
+        x[1] := 2;
+        x[2] := 3;
+        x[3] := 4;
+
+        y := (+i : N : x[i]*i )
+
+    }
+}
+
+test t;

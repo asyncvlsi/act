@@ -1168,20 +1168,19 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    Expr *tmp2;
 	    NEW (tmp2, Expr);
-
+	    tmp2->type = cur->type;
 	    if (e->type == E_PLUSLOOP) {
-	      tmp2->u.e.l = cur->u.e.l;
-	      tmp2->type = cur->type;
-	      cur->u.e.l = tmp2;
+	      tmp2->u.e.l = cur;
 	      tmp2->u.e.r = tmp;
+	      cur = tmp2;
+	      ret = cur;
 	    }
 	    else {
 	      tmp2->u.e.l = cur->u.e.r;
-	      tmp2->type = cur->type;
 	      cur->u.e.r = tmp2;
 	      tmp2->u.e.r = tmp;
+	      cur = tmp2;
 	    }
-	    cur = tmp2;
 	  }
 	  if (e->type == E_ANDLOOP || e->type == E_ORLOOP ||
 	      e->type == E_XORLOOP) {

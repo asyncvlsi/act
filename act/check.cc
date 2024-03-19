@@ -389,6 +389,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
   case E_ANDLOOP:
   case E_ORLOOP:
+
     lt = act_type_expr (s, e->u.e.r->u.e.l, &lw, 0);
     if (lt == T_ERR) return T_ERR;
     if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
@@ -403,7 +404,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	return T_ERR;
       }
     }
+    Assert (s->Add ((char *)e->u.e.l->u.e.l, TypeFactory::Factory()->NewPInt()),"What?");
     lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
+    s->Del ((char *)e->u.e.l->u.e.l);
     if (lt == T_ERR) return T_ERR;
     if (!T_BASETYPE_BOOL (lt) && !T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of bool/int type");
@@ -440,7 +443,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	return T_ERR;
       }
     }
+    Assert (s->Add ((char *)e->u.e.l->u.e.l, TypeFactory::Factory()->NewPInt()),"What?");
     lt = act_type_expr (s, e->u.e.r->u.e.r->u.e.r, &lw, only_chan);
+    s->Del ((char *)e->u.e.l->u.e.l);
     if (lt == T_ERR) return T_ERR;
     if (!T_BASETYPE_INT (lt) || (lt & T_ARRAYOF)) {
       typecheck_err ("Loop body is not of int type");
