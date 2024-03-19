@@ -157,8 +157,9 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
   case E_DIV:  EMIT_BIN_NONASSOC (9, "/"); break;
   case E_MOD:  EMIT_BIN_NONASSOC (9, "%"); break;
 
-  case E_PLUS:  EMIT_BIN (8, "+"); break;
-  case E_MINUS: EMIT_BIN (8, "-"); break;
+    /* yes, this can actually be non-associative... */
+  case E_PLUS:  EMIT_BIN_NONASSOC (8, "+"); break;
+  case E_MINUS: EMIT_BIN_NONASSOC (8, "-"); break;
 
   case E_LSL: EMIT_BIN_NONASSOC (7, "<<"); break;
   case E_LSR: EMIT_BIN_NONASSOC (7, ">>"); break;

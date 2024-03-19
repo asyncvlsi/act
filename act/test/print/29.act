@@ -1,0 +1,14 @@
+defproc test()
+{
+  int x, y, z, w;
+
+  chp {
+    x := x+y+z;
+    x := x+(y+z);
+    x := x-y-z;
+    x := x-(y-z);
+    skip
+  }
+}
+
+test t;

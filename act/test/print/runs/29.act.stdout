@@ -1,0 +1,22 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> w;
+int<32> y;
+int<32> x;
+int<32> z;
+
+/* connections */
+chp {
+x:=x+y+z;x:=x+(y+z);x:=x-y-z;x:=x-(y-z);skip
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
