@@ -2035,7 +2035,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	// XXX: handle this for all device types, not just for caps!
 	c->wval = (p->u.p.sz->w->type == E_INT ?
 		   p->u.p.sz->w->u.ival.v : p->u.p.sz->w->u.f);
-	c->wval *= unit_cap;
+	c->wval *= unit_dev;
 	if (p->u.p.sz->l) {
 	  c->lval *= (p->u.p.sz->l->type == E_INT ?
 		     p->u.p.sz->l->u.ival.v : p->u.p.sz->l->u.f);
@@ -2045,7 +2045,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	}
       }
       else {
-	c->wval = unit_cap;
+	c->wval = unit_dev;
 	c->lval = 1;
       }
       if (!N->devs) {
@@ -2716,11 +2716,11 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
     series_p_warning = 0;
   }
 
-  if (config_exists ("net.unit_cap")) {
-    unit_cap = config_get_real ("net.unit_cap");
+  if (config_exists ("net.unit_dev")) {
+    unit_dev = config_get_real ("net.unit_dev");
   }
   else {
-    unit_cap = 1e-15;
+    unit_dev = 1e-15;
   }
 }
 

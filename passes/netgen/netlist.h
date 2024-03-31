@@ -276,8 +276,8 @@ class ActNetlistPass : public ActPass {
   int series_n_warning;
   int series_p_warning;
 
-  /* unit capacitance */
-  double unit_cap;
+  /* unit device parameter */
+  double unit_dev;
   
   
   netlist_t *generate_netlist (Process *p);
