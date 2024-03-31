@@ -485,7 +485,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
   act_attr_t *attr;
   act_booleanized_var_t *v;
 
-  switch (p->type) {
+  switch (ACT_PRS_LANG_TYPE (p->type)) {
   case ACT_PRS_RULE:
     walk_expr (N, p->u.one.e);
 
@@ -495,7 +495,7 @@ static void generate_prs_vars (act_boolean_netlist_t *N,
     break;
 
   case ACT_PRS_GATE:
-  case ACT_PRS_CAP:
+  case ACT_PRS_DEVICE:
     visit_var (N, p->u.p.s, 1);
     visit_var (N, p->u.p.d, 1);
     if (p->u.p.g) {

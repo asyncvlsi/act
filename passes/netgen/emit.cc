@@ -471,16 +471,17 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     }
   }
 
-  if (n->caps) {
+  if (n->devs) {
     int ncap = 0;
-    for (listitem_t *li = list_first (n->caps); li; li = list_next (li)) {
-      netlist_capacitor *c = (netlist_capacitor *) list_value (li);
-      fprintf (fp, "C%d_%d ", fets++, ncap++);
+    char **table = config_get_table_string ("net.device");
+    for (listitem_t *li = list_first (n->devs); li; li = list_next (li)) {
+      netlist_device *c = (netlist_device *) list_value (li);
+      fprintf (fp, "%s%d_%d ", table[c->idx], fets++, ncap++);
       emit_node (n, fp, c->n1, 1);
       fprintf (fp, " ");
       emit_node (n, fp, c->n2, 1);
       fprintf (fp, " ");
-      fprintf (fp, "%g\n", c->val);
+      fprintf (fp, "%g\n", c->wval*c->lval);
     }
   }
 

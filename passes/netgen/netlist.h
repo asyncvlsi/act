@@ -143,9 +143,10 @@ struct edge {
 				   edge is folded */
 };
 
-struct netlist_capacitor {
+struct netlist_device {
+  int idx;			//< device number
   node_t *n1, *n2;
-  double val;
+  double wval, lval;
 };
 
 typedef struct {
@@ -153,7 +154,7 @@ typedef struct {
 
   BOOL_T *B;
   node_t *hd, *tl;
-  list_t *caps;			// list of capacitors
+  list_t *devs;			// list of capacitors/devices
   int idnum;			/* used to number the nodes */
 
   struct Hashtable *atH[2];	/* hash table for @-labels to node mapping */

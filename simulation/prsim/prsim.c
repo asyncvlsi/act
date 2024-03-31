@@ -277,8 +277,8 @@ static struct Hashtable *vH = NULL;	/* vector hash */
 
 struct watchlist {
   PrsNode *n;
-  int bp:1;			/* 1 if also a breakpoint */
-  int alias:1;			/* show all aliases */
+  unsigned int bp:1;		/* 1 if also a breakpoint */
+  unsigned int alias:1;		/* show all aliases */
   Vector *v;
   struct watchlist *next;
 };

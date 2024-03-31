@@ -228,7 +228,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
   act_prs_lang_t *tmp;
   act_connection *cid;
   for (tmp = prs; tmp; tmp = tmp->next) {
-    switch (tmp->type) {
+    switch (ACT_PRS_LANG_TYPE (tmp->type)) {
     case ACT_PRS_RULE:
       if (!tmp->u.one.label) {
 	cid = tmp->u.one.id->Canonical (sc);
@@ -287,7 +287,7 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
       }
       break;
     case ACT_PRS_GATE:
-    case ACT_PRS_CAP:
+    case ACT_PRS_DEVICE:
       /* no tgate sizing here */
       break;
     case ACT_PRS_SUBCKT:

@@ -1812,7 +1812,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
   act_attr_t *attr;
   int depth;
 
-  switch (p->type) {
+  switch (ACT_PRS_LANG_TYPE (p->type)) {
   case ACT_PRS_RULE:
     d = (p->u.one.dir == 0 ? EDGE_NFET : EDGE_PFET);
 
@@ -2023,28 +2023,35 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
     }
     break;
 
-  case ACT_PRS_CAP:
+  case ACT_PRS_DEVICE:
     {
-      netlist_capacitor *c;
-      NEW (c, netlist_capacitor);
+      netlist_device *c;
+      NEW (c, netlist_device);
+      c->idx = p->type - ACT_PRS_DEVICE;
       c->n1 = VINF(var_lookup (N, p->u.p.s))->n;
       c->n2 = VINF(var_lookup (N, p->u.p.d))->n;
       /* XXX: 1e-15 scaling; need to fix this */
       if (p->u.p.sz) {
-	c->val = unit_cap*(p->u.p.sz->w->type == E_INT ?
-			   p->u.p.sz->w->u.ival.v : p->u.p.sz->w->u.f);
+	// XXX: handle this for all device types, not just for caps!
+	c->wval = (p->u.p.sz->w->type == E_INT ?
+		   p->u.p.sz->w->u.ival.v : p->u.p.sz->w->u.f);
+	c->wval *= unit_cap;
 	if (p->u.p.sz->l) {
-	  c->val *= (p->u.p.sz->l->type == E_INT ?
+	  c->lval *= (p->u.p.sz->l->type == E_INT ?
 		     p->u.p.sz->l->u.ival.v : p->u.p.sz->l->u.f);
+	}
+	else {
+	  c->lval = 1;
 	}
       }
       else {
-	c->val = unit_cap;
+	c->wval = unit_cap;
+	c->lval = 1;
       }
-      if (!N->caps) {
-	N->caps = list_new ();
+      if (!N->devs) {
+	N->devs = list_new ();
       }
-      list_append (N->caps, c);
+      list_append (N->devs, c);
     }
     break;
 
@@ -2252,7 +2259,7 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
 
   N->hd = NULL;
   N->tl = NULL;
-  N->caps = NULL;
+  N->devs = NULL;
   N->idnum = 0;
   
   N->atH[EDGE_NFET] = hash_new (2);

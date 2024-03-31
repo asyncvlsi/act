@@ -1104,7 +1104,8 @@ static int _collect_depths (struct act_prsinfo *info,
 void ActCellPass::add_passgates_cap ()
 {
   int i;
-  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1", "c0", "c1" };
+  int max;
+  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1" };
 
   Assert (cell_ns, "What?");
 
@@ -1112,7 +1113,11 @@ void ActCellPass::add_passgates_cap ()
     return;
   }
 
-  for (i=0; i < 8; i++) {
+  max = 6 + config_get_table_size ("act.prs_device")*2;
+
+  char gendev[10];
+
+  for (i=0; i < max; i++) {
     /* add the unexpanded process to the cell namespace, and then
        expand it! */
     Process *proc;
@@ -1120,7 +1125,8 @@ void ActCellPass::add_passgates_cap ()
     /*-- create a new process in the namespace --*/
     UserDef *u = new UserDef (cell_ns);
 
-    if (g[i][1] == '0') {
+    // the even ones have parameters
+    if ((i % 2) == 0) {
       InstType *xit;
       xit = TypeFactory::Factory()->NewPInt();
       u->AddMetaParam (xit, "w");
@@ -1132,18 +1138,25 @@ void ActCellPass::add_passgates_cap ()
     proc->MkCell ();
     proc->MkExported ();
 
-    Assert (cell_ns->findName (g[i]) == 0, "Name conflict?");
-    cell_ns->CreateType (g[i], proc);
+    if (i < 6) {
+      snprintf (gendev, 10, "%s", g[i]);
+    }
+    else {
+      snprintf (gendev, 10, "c%d", i - 6);
+    }
+
+    Assert (cell_ns->findName (gendev) == 0, "Name conflict?");
+    cell_ns->CreateType (gendev, proc);
 
     /*-- add ports --*/
-    InstType *it = TypeFactory::Factory()->NewBool (g[i][0] == 'c' ?
+    InstType *it = TypeFactory::Factory()->NewBool ((i >= 6) ? 
 						    Type::NONE : Type::IN);
 
     Expr *arr;
-    if (g[i][0] == 't') {
+    if (gendev[0] == 't') {
       arr = const_expr (3);
     }
-    else if (g[i][0] == 'p' || g[i][0] == 'n') {
+    else if (gendev[0] == 'p' || gendev[0] == 'n') {
       arr = const_expr (2);
     }
     else {
@@ -1159,7 +1172,7 @@ void ActCellPass::add_passgates_cap ()
 
     Assert (proc->AddPort (it, _inport_name) == 1, "Error adding in port?");
 
-    it = TypeFactory::Factory()->NewBool (g[i][0] == 'c' ? Type::NONE :
+    it = TypeFactory::Factory()->NewBool (gendev[0] == 'c' ? Type::NONE :
 					  Type::OUT);
     Assert (proc->AddPort (it, _outport_name) == 1, "Error adding out port?");
 
@@ -1177,11 +1190,11 @@ void ActCellPass::add_passgates_cap ()
 
     NEW (rules, act_prs_lang_t);
     rules->next = NULL;
-    if (g[i][0] != 'c') {
+    if (gendev[0] != 'c') {
       rules->type = ACT_PRS_GATE;
     }
     else {
-      rules->type = ACT_PRS_CAP;
+      rules->type = ACT_PRS_DEVICE + (i - 6)/2;
     }
 
     rules->u.p.sz = NULL;
@@ -1193,15 +1206,15 @@ void ActCellPass::add_passgates_cap ()
 
     int j = 0;
 
-    if (g[i][0] != 'c') {
-      if (g[i][0] != 'p') {
+    if (gendev[0] != 'c') {
+      if (gendev[0] != 'p') {
 	rules->u.p.g = new ActId (_inport_name, new Array (const_expr (j)));
 	j++;
       }
       else {
 	rules->u.p.g = NULL;
       }
-      if (g[i][0] != 'n') {
+      if (gendev[0] != 'n') {
 	rules->u.p._g = new ActId (_inport_name, new Array (const_expr (j)));
 	j++;
       }
@@ -1213,7 +1226,7 @@ void ActCellPass::add_passgates_cap ()
       rules->u.p._g = NULL;
       rules->u.p.g = NULL;
     }
-    if (g[i][0] != 'c') {
+    if (gendev[0] != 'c') {
       rules->u.p.s = new ActId (_inport_name, new Array (const_expr (j)));
       j++;
     }
@@ -1222,7 +1235,7 @@ void ActCellPass::add_passgates_cap ()
     }
     rules->u.p.d = new ActId (_outport_name);
 
-    if (g[i][1] == '0') {
+    if ((i % 2) == 0) {
       act_size_spec_t *sz;
       NEW (sz, act_size_spec_t);
       sz->flavor = 0;
@@ -2185,15 +2198,20 @@ void ActCellPass::dump_celldb (FILE *fp)
   fprintf (fp, "  prs { transgate (%s[0],%s[1],%s[2],%s) }\n}\n\n",
 	   _inport_name, _inport_name, _inport_name, _outport_name);
 
-  fprintf (fp, "export template<pint w,l> defcell c0(bool %s; bool %s) {\n",
-	   _inport_name, _outport_name);
-  fprintf (fp, "  prs { cap<w,l> (%s,%s) }\n}\n\n",
-	   _inport_name, _outport_name);
-  
-  fprintf (fp, "export defcell c1(bool %s; bool %s) {\n",
-	   _inport_name, _outport_name);
-  fprintf (fp, "  prs { cap (%s,%s) }\n}\n\n", _inport_name, _outport_name);
-  
+  int max;
+  char **table;
+  max = config_get_table_size ("act.prs_device");
+  table = config_get_table_string ("act.prs_device");
+  for (int i=0; i < max; i++) {
+    fprintf (fp, "export template<pint w,l> defcell c%d(bool %s; bool %s) {\n",
+	     2*i, _inport_name, _outport_name);
+    fprintf (fp, "  prs { %s<w,l> (%s,%s) }\n}\n\n",
+	     table[i], _inport_name, _outport_name);
+    fprintf (fp, "export defcell c%d(bool %s; bool %s) {\n",
+	     2*i+1, _inport_name, _outport_name);
+    fprintf (fp, "  prs { %s (%s,%s) }\n}\n\n",
+	     table[i], _inport_name, _outport_name);
+  }
   fprintf (fp, "\n\n}\n");
 }
 
@@ -2555,7 +2573,7 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
   int i;
   
   // add this prs to the list, if it is paired then we can find a gate
-  Assert (prs->type == ACT_PRS_CAP, "Hmm.");
+  Assert (ACT_PRS_LANG_TYPE (prs->type) == ACT_PRS_DEVICE, "Hmm.");
 
   /* XXX: ignoring attributes! */
 
@@ -2569,14 +2587,18 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
   Process *cell;
   Assert (cell_ns, "No cell namespace!");
 
+  char cname[10];
+
+
   if (prs->u.p.sz) {
-    cell = dynamic_cast<Process *>(cell_ns->findType ("c0"));
+    snprintf (cname, 10, "c%d", 2*(prs->type - ACT_PRS_DEVICE));
   }
   else {
-    cell = dynamic_cast<Process *>(cell_ns->findType ("c1"));
+    snprintf (cname, 10, "c%d", 2*(prs->type - ACT_PRS_DEVICE)+1);
   }
+  cell = dynamic_cast<Process *>(cell_ns->findType (cname));
 
-  Assert (cell, "No caps?");
+  Assert (cell, "No devices?");
 
   InstType *it = new InstType (sc, cell, 0);
   int w, l;
@@ -2677,7 +2699,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
   act_prs_lang_t *prs = *pprs;
   act_prs_lang_t *prev = NULL;
   while (prs) {
-    switch (prs->type) {
+    switch (ACT_PRS_LANG_TYPE (prs->type)) {
     case ACT_PRS_RULE:
       prs->u.one.e = _left_canonicalize (prs->u.one.e);
 #if 1
@@ -2703,7 +2725,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
 #endif      
       break;
 
-    case ACT_PRS_CAP:
+    case ACT_PRS_DEVICE:
 #if 1
       if (prev) {
 	prev->next = prs->next;
@@ -2983,8 +3005,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	while (l) {
 	  Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
 	  if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
-	      l->type == ACT_PRS_TREE || l->type == ACT_PRS_CAP) {
-	    fatal_error ("Cell `%s::%s': no fets/caps/subckts/dup trees allowed",
+	      l->type == ACT_PRS_TREE || ACT_PRS_LANG_TYPE (l->type) == ACT_PRS_DEVICE) {
+	    fatal_error ("Cell `%s::%s': no fets/devs/subckts/dup trees allowed",
 			 cell_ns->getName(), p->getName());
 	  }
 	  else if ((l->type == ACT_PRS_RULE) && l->u.one.label) {

@@ -129,8 +129,13 @@ enum act_prs_lang_type {
   ACT_PRS_LOOP = 2,   ///< a loop of production rules
   ACT_PRS_TREE = 3,   ///< a tree { ... } block
   ACT_PRS_SUBCKT = 4, ///< a subckt { ... } block
-  ACT_PRS_CAP = 5     ///< a capacitor
+  ACT_PRS_DEVICE = 5  ///< a capacitor or other user-specified device;
+		      ///if there are more devices, they are numbered
+		      ///6, 7. etc.
+
 };
+
+#define ACT_PRS_LANG_TYPE(x)  ((x) <= ACT_PRS_DEVICE ? (x) : ACT_PRS_DEVICE)
 
 /**
  * @class act_prs_lang
@@ -171,7 +176,7 @@ typedef struct act_prs_lang {
     } p;			///< pass gate: use g for n-type, use
 				///_g for p-type (full transmission
 				///gate uses both). Used by
-				///ACT_PRS_GATE and ACT_PRS_CAP (cap
+				///ACT_PRS_GATE and ACT_PRS_DEVICE (cap
 				///uses s and d fields)
     struct {
       const char *id;		///< loop id

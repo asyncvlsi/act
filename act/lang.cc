@@ -324,7 +324,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
     NEW (tmp, act_prs_lang_t);
     tmp->type = p->type;
     tmp->next = NULL;
-    switch (p->type) {
+    switch (ACT_PRS_LANG_TYPE (p->type)) {
     case ACT_PRS_RULE:
       tmp->u.one.attr = prs_attr_expand (p->u.one.attr, ns, s);
       tmp->u.one.e = prs_expr_expand (p->u.one.e, ns, s);
@@ -398,7 +398,7 @@ act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
       tmp->u.p.sz = act_expand_size (p->u.p.sz, ns, s);
       break;
 
-    case ACT_PRS_CAP:
+    case ACT_PRS_DEVICE:
       tmp->u.p.attr = prs_attr_expand (p->u.p.attr, ns, s);
       idtmp = p->u.p.s->Expand (ns, s);
       etmp = idtmp->Eval (ns, s);
@@ -707,7 +707,7 @@ static void _print_prs_expr (FILE *fp, act_prs_expr_t *e, int prec)
 static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
 {
   if (!prs) return;
-  switch (prs->type) {
+  switch (ACT_PRS_LANG_TYPE (prs->type)) {
   case ACT_PRS_RULE:
     if (prs->u.one.attr) {
       act_print_attributes (fp, prs->u.one.attr);
@@ -771,11 +771,16 @@ static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
     prs->u.p.d->Print (fp);
     fprintf (fp, ")\n");
     break;
-  case ACT_PRS_CAP:
+  case ACT_PRS_DEVICE:
     if (prs->u.p.attr) {
       act_print_attributes (fp, prs->u.p.attr);
     }
-    fprintf (fp, "cap");
+    {
+      int i = prs->type - ACT_PRS_DEVICE;
+      Assert (0 <= i && i < config_get_table_size ("act.prs_device"),
+	      "What?!");
+      fprintf (fp, "%s", config_get_table_string ("act.prs_device")[i]);
+    }
     if (prs->u.p.sz) {
       _print_size (fp, prs->u.p.sz);
     }

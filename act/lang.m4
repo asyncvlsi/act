@@ -1986,13 +1986,28 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
 | ID size_spec "(" bool_expr_id "," bool_expr_id ")"
 {{X:
     act_prs_lang_t *p;
+    int count;
+    char **table;
+    int id = -1;
 
-    if (strcmp ($1, "cap") != 0) {
-      $E("Capacitor specification needs cap keyword");
+    count = config_get_table_size ("act.prs_device");
+    table = config_get_table_string ("act.prs_device");
+
+    for (id=0; id < count; id++) {
+      if (strcmp ($1, table[id]) == 0) {
+	break;
+      }
     }
-
+    if (id == count) {
+      fprintf (stderr, "Device ``%s'' specified; valid options:", $1);
+      for (id=0; id < count; id++) {
+	fprintf (stderr, " %s", table[id]);
+      }
+      fprintf (stderr, "\n");
+      $E("Unknown device specifier");
+    }
     NEW (p, act_prs_lang_t);
-    p->type = ACT_PRS_CAP;
+    p->type = ACT_PRS_DEVICE + id;
     p->next = NULL;
     p->u.p.sz = $2;
     p->u.p.g = NULL;
