@@ -345,8 +345,36 @@ static int _equal_expr_helper (act_prs_expr_t *a, act_prs_expr_t *b,
       if (!a->u.v.sz && b->u.v.sz) return 0;
       if (a->u.v.sz && b->u.v.sz) {
 	if (a->u.v.sz->flavor != b->u.v.sz->flavor) return 0;
-	if (!expr_equal (a->u.v.sz->w, b->u.v.sz->w)) return 0;
-	if (!expr_equal (a->u.v.sz->l, b->u.v.sz->l)) return 0;
+	if (!expr_equal (a->u.v.sz->w, b->u.v.sz->w)) {
+	  double d1, d2;
+	  if (act_expr_getconst_real (a->u.v.sz->w, &d1) &&
+	      act_expr_getconst_real (b->u.v.sz->w, &d2)) {
+	    if (fabs (d1-d2) < 1e-6) {
+	      // match!
+	    }
+	    else {
+	      return 0;
+	    }
+	  }
+	  else {
+	    return 0;
+	  }
+	}
+	if (!expr_equal (a->u.v.sz->l, b->u.v.sz->l)) {
+	  double d1, d2;
+	  if (act_expr_getconst_real (a->u.v.sz->w, &d1) &&
+	      act_expr_getconst_real (b->u.v.sz->w, &d2)) {
+	    if (fabs (d1-d2) < 1e-6) {
+	      // match!
+	    }
+	    else {
+	      return 0;
+	    }
+	  }
+	  else {
+	    return 0;
+	  }
+	}
 	if (!expr_equal (a->u.v.sz->folds, b->u.v.sz->folds)) return 0;
       }
     }
