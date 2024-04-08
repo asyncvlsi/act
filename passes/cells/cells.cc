@@ -31,6 +31,7 @@
 #include <act/passes/booleanize.h>
 #include <act/passes/netlist.h>
 #include <common/config.h>
+#include <math.h>
 
 struct act_varinfo {
   int nup, ndn;			// # of times in up and down guards
