@@ -334,22 +334,44 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
   int trace;
   LispObj *l;
   int argc;
-  char *argv[LISP_MAXARGS];
-  char argstring[LISP_MAX_CMDLEN];
+  char **argv;
+  char *argstring;
   int k = 0;
   int i, j;
   int ret;
+  int argv_len = LISP_MAXARGS;
+  int argstring_len = LISP_MAX_CMDLEN;
+
+  MALLOC (argv, char *, argv_len);
+  MALLOC (argstring, char, argstring_len);
   
   argc = 1;
   argv[0] = name;
   while (s) {
-    if (argc == LISP_MAXARGS) {
-       warning ("Exceeded max argument count to built-in function %s (%d)", argv[0], LISP_MAXARGS);
-       break;
+    if (argc == argv_len) {
+      int check;
+      char *old_argstring = argstring;
+      REALLOC (argv, char *, 2*argv_len);
+      REALLOC (argstring, char, 2*argstring_len);
+
+      if (old_argstring != argstring) {
+	/* re-write all the pointers */
+	unsigned long argstring_ul = (unsigned long)old_argstring;
+	for (check=0; check < argv_len; check++) {
+	  if (argstring_ul <= (unsigned long)argv[check] &&
+	      (unsigned long)argv[check] < (argstring_ul + argstring_len)) {
+	    argv[check] = argstring + (argv[check] - old_argstring);
+	  }
+	}
+      }
+      argv_len *= 2;
+      argstring_len *= 2;
     }
     l = CAR(s);
     if (LTYPE(CDR(s)) != S_LIST) {
       fprintf (stderr, "%s: invalid argument!\n",name);
+      FREE (argv);
+      FREE (argstring);
       RETURN;
     }
     s = LLIST(CDR(s));
@@ -386,6 +408,8 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
       break;
     case S_LAMBDA:
       fprintf (stderr, "%s: Type #proc in builtin command argument.\n",name);
+      FREE (argv);
+      FREE (argstring);
       RETURN;
       break;
     case S_LAMBDA_BUILTIN:
@@ -399,6 +423,8 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
       break;
     case S_LIST:
       fprintf (stderr, "%s: Type #list in builtin command argument.\n",name);
+      FREE (argv);
+      FREE (argstring);
       RETURN;
       break;
     default:
@@ -412,45 +438,61 @@ LispMagicSend (char *name, Sexp *s, Sexp *f)
     trace = 0;
   else if (LTYPE(l) != S_BOOL) {
     fprintf (stderr, "builtin-dispatch: scm-trace-builtin is not a boolean\n");
+    FREE (argv);
+    FREE (argstring);
     RETURN;
   }
   else
     trace = LBOOL(l);
   ret = LispDispatch (argc, argv, trace, lispInFile);
   if (ret == LISP_RET_ERROR) {
+    FREE (argv);
+    FREE (argstring);
     RETURN;
   }
   else if (ret == LISP_RET_TRUE || ret == LISP_RET_FALSE) {
     l = LispNewObj ();
     LTYPE(l) = S_BOOL;
     LBOOL(l) = (ret == LISP_RET_TRUE ? 1 : 0);
+    FREE (argv);
+    FREE (argstring);
     return l;
   }
   else if (ret == LISP_RET_INT) {
     l = LispNewObj ();
     LTYPE (l) = S_INT;
     LINTEGER (l) = LispGetReturnInt ();
+    FREE (argv);
+    FREE (argstring);
     return l;
   }
   else if (ret == LISP_RET_STRING) {
     l = LispNewObj ();
     LTYPE (l) = S_STRING;
     LSTR (l) = LispGetReturnString ();
+    FREE (argv);
+    FREE (argstring);
     return l;
   }
   else if (ret == LISP_RET_FLOAT) {
     l = LispNewObj ();
     LTYPE (l) = S_FLOAT;
     LFLOAT (l) = LispGetReturnFloat ();
+    FREE (argv);
+    FREE (argstring);
     return l;
   }
   else if (ret == LISP_RET_LIST) {
     l = LispNewObj ();
     LTYPE (l) = S_LIST;
     LLIST (l) = (Sexp *) LispGetReturnSexp ();
+    FREE (argv);
+    FREE (argstring);
     return l;
   }
   /* default: error */
+  FREE (argv);
+  FREE (argstring);
   RETURN;
 }
 
