@@ -1311,6 +1311,10 @@ BigInt &BigInt::operator&=(const BigInt &b)
     }
   }
 
+  if (isDynamic()) {
+    width = std::max(width, b.width);
+  }
+  
   return (*this);
 }
 
@@ -1339,6 +1343,10 @@ BigInt &BigInt::operator|=(const BigInt &b)
     }
   }
 
+  if (isDynamic()) {
+    width = std::max(width, b.width);
+  }
+  
   return (*this);
 }
 
@@ -1365,6 +1373,10 @@ BigInt &BigInt::operator^=(const BigInt &b)
 	setVal (i, b.getVal (i));
       }
     }
+  }
+
+  if (isDynamic()) {
+    width = std::max(width, b.width);
   }
 
   return (*this);
