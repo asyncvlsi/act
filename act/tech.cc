@@ -420,7 +420,7 @@ void Technology::Init ()
 	      ADDGDS(mat, diff[j]+ik+1);
 	      ADDGDSBL(mat, diff[j]+ik+1);
 	      
-	      snprintf (buf+k, BUF_SZ-k+1, "%s.width", diff[j]+ik+1);
+	      snprintf (buf+k, BUF_SZ-k-1, "%s.width", diff[j]+ik+1);
 	      int *wt = new int[1];
 	      wt[0] = config_get_int (buf);
 	      mat->width = new RangeTable (1, wt);
