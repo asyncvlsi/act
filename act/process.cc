@@ -277,23 +277,38 @@ bool Process::updateInst (char *name, Process *t)
 }
 
 
-const char *Process::addBuffer (char *name, ActId *port, Process *buf)
+const char *Process::addBuffer (char *name, ActId *port, Process *buf,
+				bool assume_input)
 {
-  if (!name || !port || !buf || !buf->isExpanded ()) {
+  if (!name || !port || !buf) {
+    warning ("Process::addBuffer() failed: missing argument?");
+    return NULL;
+  }
+  if (!buf->isExpanded ()) {
+    warning ("Process::addBuffer() failed: %s is not expanded", buf->getName());
     return NULL;
   }
   if (port->Rest()) {
+    warning ("Process::addBuffer() failed: complex ports not supported");
+    fprintf (stderr, "  > ");
+    port->Print (stderr);
+    fprintf (stderr, "\n");
     return NULL;
   }
 
   if (buf->getNumPorts() != 2) {
+    warning ("Process::addBuffer() failed: %s: number of ports != 2",
+	     buf->getName());
     return NULL;
   }
 
+#if 0
+  /*-- allow multi-cell buffers by removing this block --*/
   if (!buf->isCell()) {
     return NULL;
   }
-
+#endif
+  
   InstType *x[2];
   x[0] = buf->getPortType (0);
   x[1] = buf->getPortType (1);
@@ -302,9 +317,13 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
 
   if (!TypeFactory::isBoolType (x[0]) ||
       !TypeFactory::isBoolType (x[1])) {
+    warning ("Process::addBuffer() failed: %s: ports are not of bool type",
+	     buf->getName());
     return NULL;
   }
   if (x[0]->arrayInfo() || x[1]->arrayInfo()) {
+    warning ("Process::addBuffer() failed: %s: arrays not permitted in ports",
+	     buf->getName());
     return NULL;
   }
 
@@ -319,17 +338,22 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
 
   if (x[iport]->getDir () != Type::IN ||
       x[oport]->getDir () != Type::OUT) {
+    warning ("Process::addBuffer() failed: %s ports need direction flags",
+	     buf->getName());
     return NULL;
   }
 
   ValueIdx *vx = I->LookupVal (name);
   if (!vx) {
+    warning ("Process::addBuffer() failed: %s not found", name);
     return NULL;
   }
   if (vx->t->arrayInfo()) {
+    warning ("Process::addBuffer() failed: %s is an array", name);
     return NULL;
   }
   if (!TypeFactory::isProcessType (vx->t)) {
+    warning ("Process::addBuffer() failed: %s is not a process", name);
     return NULL;
   }
 
@@ -338,12 +362,16 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
 
   int pos = orig->FindPort (port->getName());
   if (pos <= 0) {
+    warning ("Process::addBuffer() failed: %s is not a port for %s",
+	     port->getName(), name);
     return NULL;
   }
   pos--;
 
   InstType *it = orig->getPortType (pos);
   if (!TypeFactory::isBoolType (it)) {
+    warning ("Process::addBuffer() failed: %s.%s is not a bool port",
+	     name, port->getName());
     return NULL;
   }
 
@@ -357,7 +385,14 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf)
   }
   else {
     /* we don't know if this is an input pin or output pin */
-    return NULL;
+    if (assume_input) {
+      is_orig_input = 1;
+    }
+    else {
+      warning ("Process::addBuffer() failed: %s.%s has no direction flag",
+	       name, port->getName());
+      return NULL;
+    }
   }
 
   int array_idx = -1;

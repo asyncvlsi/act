@@ -887,12 +887,14 @@ class Process : public UserDef {
    *    @param name is the instance name
    *    @param port is the port within the instance
    *    @param buf is the buffer type
+   *    @param assume_input is set to true to allow the assumption
+   *    that name.port is an input pin in case there is no direction flag.
    *
    *    @return the name of the newly created buffer instance, or NULL
    *    if it failed.
    *
    */
-  const char *addBuffer (char *name, ActId *port, Process *buf);
+  const char *addBuffer (char *name, ActId *port, Process *buf, bool assume_input = false);
 
   /**
    * Similar to the single buffer addition, except that a list of
