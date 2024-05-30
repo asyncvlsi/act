@@ -320,13 +320,13 @@ static void sizing_print_directive (FILE *fp, act_sizing_directive *d)
       fprintf (fp, ",%s", act_dev_value_to_string (d->flav_up));
     }
     if (d->upfolds) {
-      fprintf (fp, ";");
+      fprintf (fp, ",");
       print_expr (fp, d->upfolds);
     }
   }
   if (d->edn) {
     if (d->eup) {
-      fprintf (fp, ", ");
+      fprintf (fp, "; ");
     }
     fprintf (fp, "- ");
     print_expr (fp, d->edn);
@@ -334,7 +334,7 @@ static void sizing_print_directive (FILE *fp, act_sizing_directive *d)
       fprintf (fp, ",%s", act_dev_value_to_string (d->flav_dn));
     }
     if (d->dnfolds) {
-      fprintf (fp, ";");
+      fprintf (fp, ",");
       print_expr (fp, d->dnfolds);
     }
   }

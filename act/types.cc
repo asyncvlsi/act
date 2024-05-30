@@ -1596,6 +1596,21 @@ void Function::Print (FILE *fp)
       getRetType()->Print (fp);
     }
   }
+  else {
+    char *ns_name = NULL;
+    if (TypeFactory::isUserType (getRetType())) {
+      UserDef *u = dynamic_cast<UserDef *> (getRetType()->BaseType());
+      ActNamespace *ns = u->getns();
+      if (ns && ns != ActNamespace::Global() && ns != getns()) {
+	ns_name = ns->Name();
+      }
+    }
+    if (ns_name) {
+      fprintf (fp, "%s::", ns_name);
+      FREE (ns_name);
+    }
+    getRetType()->Print (fp);
+  }
   fprintf (fp, "\n{\n");
   if (!expanded) {
     /* print act bodies */
