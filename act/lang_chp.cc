@@ -682,7 +682,7 @@ static void _check_concurrent_conflicts (act_chp_lang_t *c,
       if (count < 2) {
 	return;
       }
-      rw_sets rw[count];
+      rw_sets *rw = new rw_sets[count];
       rw_set_error errs;
       count = 0;
       for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
@@ -706,6 +706,7 @@ static void _check_concurrent_conflicts (act_chp_lang_t *c,
 	act_error_ctxt (stderr);
 	errs.printErrs();
       }
+      delete [] rw;
     }
     break;
 
