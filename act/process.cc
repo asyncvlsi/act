@@ -61,6 +61,11 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   UserDef *ux;
   int cache_hit;
 
+  // This can happen during dynamic instance addition!
+  if (expanded) {
+    return this;
+  }
+
   if (!ns->CurScope()->isExpanded()) {
     ActNamespace::Global()->Expand ();
   }
@@ -321,8 +326,9 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
 	     buf->getName());
     return NULL;
   }
-  if (x[0]->arrayInfo() || x[1]->arrayInfo()) {
-    warning ("Process::addBuffer() failed: %s: arrays not permitted in ports",
+  if ((x[0]->arrayInfo() && x[0]->arrayInfo()->size() != 1)
+      || (x[1]->arrayInfo() && x[1]->arrayInfo()->size() != 1)) {
+    warning ("Process::addBuffer() failed: %s: arrays of size > 1 not permitted in ports",
 	     buf->getName());
     return NULL;
   }
@@ -428,7 +434,8 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
     snprintf (bufnm, 100, "cxb%d", bufcnt++);
   } while (I->Lookup (bufnm));
   InstType *nit = new InstType (CurScope(), buf, 0);
-  nit = nit->Expand (NULL, CurScope());
+
+  nit = nit->Expand (getns(), CurScope());
 
   Assert (CurScope()->Add (bufnm, nit), "What?");
 
@@ -443,17 +450,28 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
 			    [need connection pointers for new
                             instance]
   */
-
   tmp = orig_c->toid();
 
   ActId *tmpport, *tmpport2;
 
   tmpport = new ActId (bufnm);
   tmpport->Append (new ActId (buf->getPortName (iport)));
+
+  if (x[iport]->arrayInfo()) {
+    ActId *rest = tmpport->Rest();
+    Array *tmpa = x[iport]->arrayInfo()->unOffset (0);
+    rest->setArray (tmpa);
+  }
   act_connection *in_conn = tmpport->Canonical (CurScope());
 
   tmpport2 = new ActId (bufnm);
   tmpport2->Append (new ActId (buf->getPortName (oport)));
+
+  if (x[oport]->arrayInfo()) {
+    ActId *rest = tmpport2->Rest();
+    Array *tmpa = x[oport]->arrayInfo()->unOffset (0);
+    rest->setArray (tmpa);
+  }
   act_connection *out_conn = tmpport2->Canonical (CurScope());
 
   if (is_orig_input) {
