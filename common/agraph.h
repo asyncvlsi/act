@@ -139,10 +139,14 @@ class AGraph {
    * If "fn_node" is not NULL, then this function is called twice:
    * once on entry (the bool is set to true), and once before
    * returning (bool is set to false).
+   *
+   * ignore_edge: if this is set and returns true, it pretends the
+   * edge doesn't exist as far as traversal is concerned.
    */
   list_t *runDFS (void *cookie,
 		  void (*fn_node) (void *, AGraph *, AGvertex *, bool),
-		  void (*fn_edge) (void *, AGraph *, AGedge *));
+		  void (*fn_edge) (void *, AGraph *, AGedge *),
+		  bool (*ignore_edge) (void *, AGraph *, AGedge *) = NULL);
 
  private:
   AGinfo *info;
@@ -158,6 +162,7 @@ class AGraph {
   void _compute_scc_helper (int);
   void (*_dfs_apply_edge) (void *cookie, AGraph *g, AGedge *e);
   void (*_dfs_apply_node) (void *cookie, AGraph *g, AGvertex *v, bool onentry);
+  bool (*_dfs_ignore_edge) (void *cookie, AGraph *g, AGedge *e);
   void *_dfs_cookie;
 };
 

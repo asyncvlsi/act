@@ -747,6 +747,12 @@ void AGraph::_compute_scc_helper (int idx)
  for (fw = fw.begin(); fw != fw.end(); fw++) {
    AGedge *e = (*fw);
 
+   if (_dfs_ignore_edge != NULL) {
+     if ((*_dfs_ignore_edge) (_dfs_cookie, this, e)) {
+       continue;
+     }
+   }
+
    if (_dfs_apply_edge != NULL) {
      (*_dfs_apply_edge) (_dfs_cookie, this, e);
    }
@@ -765,7 +771,8 @@ void AGraph::_compute_scc_helper (int idx)
 
 list_t *AGraph::runDFS (void *cookie,
 			void (*fn_node) (void *, AGraph *, AGvertex *, bool),
-			void (*fn_edge) (void *, AGraph *, AGedge *))
+			void (*fn_edge) (void *, AGraph *, AGedge *),
+			bool (*ignore_edge) (void *, AGraph *, AGedge *))
 {
  if (A_LEN (vertices) == 0) return NULL;
 
@@ -775,6 +782,7 @@ list_t *AGraph::runDFS (void *cookie,
  _dfs_cookie = cookie;
  _dfs_apply_node = fn_node;
  _dfs_apply_edge = fn_edge;
+ _dfs_ignore_edge = ignore_edge;
 
  list_t *l = list_new ();
  for (int i=0; i < A_LEN (vertices); i++) {
