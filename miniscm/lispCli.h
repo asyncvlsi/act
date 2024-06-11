@@ -112,6 +112,7 @@ void LispSetReturnListStart (void);
 void LispAppendReturnInt (long val);
 void LispAppendReturnString (const char *s);
 void LispAppendReturnFloat (double val);
+void LispAppendReturnBool (int val);
 void LispAppendListStart (void);
 void LispAppendListEnd (void);  
 void LispSetReturnListEnd (void);

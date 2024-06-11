@@ -485,6 +485,15 @@ void LispAppendReturnString (const char *s)
   list_append (lisp_return_list, l);
 }
 
+void LispAppendReturnBool (int v)
+{
+  LispObj *l = LispNewObj ();
+  LTYPE (l) = S_BOOL;
+  LINTEGER (l) = v ? 1 : 0;
+  list_append (lisp_return_list, l);
+}
+
+
 static list_t *lisp_return_list_stk = NULL;
 
 void LispAppendListStart (void)
