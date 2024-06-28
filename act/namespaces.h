@@ -24,6 +24,8 @@
 #ifndef __NAMESPACES_H__
 #define __NAMESPACES_H__
 
+#include <vector>
+#include <set>
 #include <common/hash.h>
 #include <common/list.h>
 #include <common/bitset.h>
@@ -145,7 +147,7 @@ class Scope {
    *
    * @param id is the identifier to be looked up in the current scope
    * (and its parents if necessary)
-   * @param aref is used to return the array specifier in the ID
+   * @param aref is used to return the array specifier in class Scopethe ID
    * @return the actual type of the identifier
    */
   InstType *FullLookup (ActId *id, Array **aref);
@@ -417,6 +419,26 @@ class Scope {
    * corresponding to this scope. Returns -unknown- if neither exist.
    */
   const char *getName();
+
+  /**
+   * @return the list of value ids of ports of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getPorts();
+
+  /**
+   * @return the list of value ids of user type instances of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getUserDefInst ();
+
+  /**
+   * @return the list of value ids of primitive type instances of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getPrimitiveInst ();
+
+  /**
+   * @return the list of symbol names available in the parent process, emtpy if none available (none defined or no parent)
+   */
+  const std::set<const char*> getParentSymbols ();
 
   /**
    * Print the connections specified by the cx pointer. Normally this

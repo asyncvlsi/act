@@ -21,9 +21,13 @@
  *
  **************************************************************************
  */
+#include "value.h"
 #include <act/act.h>
 #include <act/iter.h>
+#include <iterator>
+#include <set>
 #include <string.h>
+#include <vector>
 
 
 Scope::Scope (Scope *parent, int is_expanded)
@@ -1251,127 +1255,150 @@ void Scope::printConnections (FILE *fp, act_connection *cx, bool force)
 void Scope::Print (FILE *fp, bool all_inst)
 {
   char buf[10240];
-  UserDef *u = getUserDef ();
-  struct Hashtable *H = NULL;
 
+  // we can only print expanded scopes
   if (!expanded)
     return;
   
   fprintf (fp, "\n/* instances */\n");
 
-  if (!all_inst && u && u->getParent()) {
-    if (TypeFactory::isUserType (u->getParent())) {
-      UserDef *up = dynamic_cast<UserDef *> (u->getParent()->BaseType());
-      H = hash_new (8);
-      ActInstiter iparent(up->CurScope());
-      for (iparent = iparent.begin(); iparent != iparent.end(); iparent++) {
-	ValueIdx *vx = *iparent;
-	if (TypeFactory::isParamType (vx->t)) continue;
-	hash_add (H, vx->getName());
-      }
-    }
-  }
+  auto& parent_visible = this->getParentSymbols();
   
   ActInstiter inst(this);
+  UserDef *u = getUserDef ();
   
+  // go through all contents of this scope
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = *inst;
     Array *a;
 
-    if (!TypeFactory::isParamType (vx->t)) {
-      if (strcmp (vx->getName(), "self") == 0) continue;
-      if (H && hash_lookup (H, vx->getName())) continue;
-      if (!u || (u->FindPort (vx->getName()) == 0)) {
-	Array *ta;
-	char *ns_name;
-	struct act_attr *aa;
+    // skip parameters
+    if (TypeFactory::isParamType (vx->t)) continue;
+    
+    // skip ourselves
+    if (strcmp (vx->getName(), "self") == 0) continue;
 
-	ns_name = NULL;
+    // skip instances from the parent
+    if (auto search = parent_visible.find(vx->getName()); search != parent_visible.end()) continue;
 
-	a = vx->t->arrayInfo();
-	if (a) {
-	  vx->t->clrArray();
-	}
-	ta = a;
+    // skip ports
+    if (u && (u->FindPort (vx->getName()) != 0)) continue;
 
-	aa = vx->getAttr();
+    Array *ta;
+    char *ns_name;
+    struct act_attr *aa;
 
-	if (TypeFactory::isUserType (vx->t)) {
-	  UserDef *u = dynamic_cast<UserDef *> (vx->t->BaseType());
-	  ActNamespace *ns;
-	  Assert(u, "What?");
-	  ns = u->getns();
-	  Assert (ns, "Hmm");
-	  if (ns && ns != ActNamespace::Global() && ns != getNamespace()) {
-	    ns_name = ns->Name();
-	  }
-	}
-	
-	do {
-	  if (ns_name) {
-	    fprintf (fp, "%s::", ns_name);
-	  }
-	  
-	  if (vx->t->isExpanded()) {
-	    if (!TypeFactory::isUserType (vx->t)) {
-	      vx->t->sPrint (buf, 10240, 0);
-	      fprintf (fp, "%s", buf);
-	    }
-	    else {
-	      UserDef *tmpu = dynamic_cast<UserDef *>(vx->t->BaseType());
-	      Assert (tmpu, "Hmm");
-	      ActNamespace::Act()->mfprintfproc (fp, tmpu, 1);
-	    }
-	    fprintf (fp, " %s", vx->getName());
-	  }
-	  else {
-	    vx->t->Print (fp, 1);
-	    fprintf (fp, " %s", vx->getName());
-	  }
-	  if (ta) {
-	    ta->PrintOne (fp);
-	    ta = ta->Next();
-	  }
-	  if (ta) {
-	    if (aa) {
-	      fprintf (fp, " @ ");
-	      act_print_attributes (fp, aa);
-	    }
-	    fprintf (fp, ";\n");
-	  }
-	} while (ta);
-	if (aa) {
-	  fprintf (fp, " @ ");
-	  act_print_attributes (fp, aa);
-	}
-	fprintf (fp, ";\n");
-	if (a) {
-	  vx->t->MkArray (a);
-	}
+    ns_name = NULL;
 
-	if (ns_name) {
-	  FREE (ns_name);
-	}
+    // if the current element has array info, buffer it and remove for printing
+    a = vx->t->arrayInfo();
+    if (a) {
+      vx->t->clrArray();
+    }
+    ta = a;
 
-	if (vx->haveAttrIdx()) {
-	  for (int i=0; i < vx->numAttrIdx(); i++) {
-	    aa = vx->getAttrIdx (i);
-	    if (aa) {
-	      Array *tmp;
-	      Assert (a, "Hmm");
-	      fprintf (fp, " %s", vx->getName());
-	      tmp = a->unOffset (i);
-	      tmp->Print (fp);
-	      delete tmp;
-	      fprintf (fp, " @ ");
-	      act_print_attributes (fp, aa);
-	      fprintf (fp, ";\n");
-	    }
-	  }
-	}
+    // get the list of attributes for this element
+    aa = vx->getAttr();
+
+    // if the element is in a namespace other than global, save that to ns_name
+    if (TypeFactory::isUserType (vx->t)) {
+      UserDef *u = dynamic_cast<UserDef *> (vx->t->BaseType());
+      ActNamespace *ns;
+      Assert(u, "What?");
+      ns = u->getns();
+      Assert (ns, "Hmm");
+      if (ns && ns != ActNamespace::Global() && ns != getNamespace()) {
+        ns_name = ns->Name();
+      }
+    }
+
+    // we loop over all array elements
+    // if there is no array, we still need to run this at least once
+    do {
+      //print the namespace if applicable
+      if (ns_name) {
+        fprintf (fp, "%s::", ns_name);
+      }
+    
+      // if the type of the element is fully expanded
+      if (vx->t->isExpanded()) {
+        // if the type is primitive, print the info
+        if (!TypeFactory::isUserType (vx->t)) {
+          vx->t->sPrint (buf, 10240, 0);
+          fprintf (fp, "%s", buf);
+        }
+        // otherwise print the user type name
+        else {
+          UserDef *tmpu = dynamic_cast<UserDef *>(vx->t->BaseType());
+          Assert (tmpu, "Hmm");
+          ActNamespace::Act()->mfprintfproc (fp, tmpu, 1);
+        }
+        // print the instance name
+        fprintf (fp, " %s", vx->getName());
+      }
+      // if the scope of the element is not expanded
+      else {
+        // print type and instance name
+        vx->t->Print (fp, 1);
+        fprintf (fp, " %s", vx->getName());
+      }
+
+      // if there is indeed array data attached to this element, print the index
+      // and advance in the array
+      if (ta) {
+        ta->PrintOne (fp);
+        ta = ta->Next();
+      }
+
+      // if there is still data left in the array and there are attributes, print them now
+      if (ta) {
+        if (aa) {
+          fprintf (fp, " @ ");
+          act_print_attributes (fp, aa);
+        }
+        fprintf (fp, ";\n");
+      }
+
+    } while (ta);
+
+    // finally, print the attributes (necessary for non-array elements)
+    if (aa) {
+      fprintf (fp, " @ ");
+      act_print_attributes (fp, aa);
+    }
+
+    fprintf (fp, ";\n");
+    
+    // if there is array info, it was removed before. reinstate it.
+    if (a) {
+      vx->t->MkArray (a);
+    }
+
+    // if there was a namespace name, free that memory
+    if (ns_name) {
+      FREE (ns_name);
+    }
+
+    // if there are array specific attributes, print them now
+    if (vx->haveAttrIdx()) {
+      for (int i=0; i < vx->numAttrIdx(); i++) {
+        aa = vx->getAttrIdx (i);
+        if (aa) {
+          Array *tmp;
+          Assert (a, "Hmm");
+          fprintf (fp, " %s", vx->getName());
+          tmp = a->unOffset (i);
+          tmp->Print (fp);
+          delete tmp;
+          fprintf (fp, " @ ");
+          act_print_attributes (fp, aa);
+          fprintf (fp, ";\n");
+        }
       }
     }
   }
+
+  // free the parent signal list
   if (H) {
     hash_free (H);
     H = NULL;
@@ -1462,6 +1489,136 @@ const char *Scope::getName ()
   return "-unknown-";
 }
 
+const std::set<const char*> Scope::getParentSymbols ()
+{
+  UserDef *u_def = getUserDef ();
+  std::set<const char*> parent_visible;
+
+  // if the current instance has a parent
+  // we need this info to filter out signals that are also visible in the parent
+  if (
+    u_def && 
+    u_def->getParent() && 
+    TypeFactory::isUserType (u_def->getParent())
+  ) {
+    // get the base type of the parent
+    UserDef *parent = dynamic_cast<UserDef *> (u_def->getParent()->BaseType());
+    ActInstiter iparent(parent->CurScope());
+
+    // remember all to the parent visible items that are not parameters
+    for (iparent = iparent.begin(); iparent != iparent.end(); iparent++) {
+      ValueIdx *element = *iparent;
+
+      // skip parameters
+      if (TypeFactory::isParamType (element->t)) continue;
+      
+      parent_visible.insert(element->getName());
+    }
+  }
+
+  return parent_visible;
+}
+
+const std::vector<ValueIdx*> Scope::getPorts ()
+{
+  // get symbols visible to parent
+  auto& parent_visible = this->getParentSymbols();
+  
+  ActInstiter elem_iter(this);
+  std::vector<ValueIdx*> ports;
+  UserDef *u_def = getUserDef ();
+  
+  // go through all contents of this scope
+  for (elem_iter = elem_iter.begin(); elem_iter != elem_iter.end(); elem_iter++) {
+    ValueIdx *element = *elem_iter;
+
+    // skip parameters
+    if (TypeFactory::isParamType (element->t)) continue;
+    
+    // skip ourselves
+    if (strcmp (element->getName(), "self") == 0) continue;
+
+    // skip instances from the parent
+    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+
+    // skip non-ports
+    if (u_def && (u_def->FindPort (element->getName()) == 0)) continue;
+
+    ports.emplace_back(element);
+  }
+
+  return ports;
+}
+
+const std::vector<ValueIdx*> Scope::getUserDefInst ()
+{
+  // get symbols visible to parent
+  auto& parent_visible = this->getParentSymbols();
+  
+  ActInstiter elem_iter(this);
+  std::vector<ValueIdx*> userDefs;
+  UserDef *u_def = getUserDef ();
+  
+  // go through all contents of this scope
+  for (elem_iter = elem_iter.begin(); elem_iter != elem_iter.end(); elem_iter++) {
+    ValueIdx *element = *elem_iter;
+
+    // skip parameters
+    if (TypeFactory::isParamType (element->t)) continue;
+    
+    // skip ourselves
+    if (strcmp (element->getName(), "self") == 0) continue;
+
+    // skip instances from the parent
+    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+
+    // skip ports
+    if (u_def && (u_def->FindPort (element->getName()) != 0)) continue;
+
+    // skip primitive types
+    if (!TypeFactory::isUserType(element->t)) continue;
+
+    userDefs.emplace_back(element);
+
+  }
+
+  return userDefs;
+}
+
+const std::vector<ValueIdx*> Scope::getPrimitiveInst ()
+{
+  // get symbols visible to parent
+  auto& parent_visible = this->getParentSymbols();
+  
+  ActInstiter elem_iter(this);
+  std::vector<ValueIdx*> primInst;
+  UserDef *u_def = getUserDef ();
+  
+  // go through all contents of this scope
+  for (elem_iter = elem_iter.begin(); elem_iter != elem_iter.end(); elem_iter++) {
+    ValueIdx *element = *elem_iter;
+
+    // skip parameters
+    if (TypeFactory::isParamType (element->t)) continue;
+    
+    // skip ourselves
+    if (strcmp (element->getName(), "self") == 0) continue;
+
+    // skip instances from the parent
+    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+
+    // skip ports
+    if (u_def && (u_def->FindPort (element->getName()) != 0)) continue;
+
+    // skip primitive types
+    if (TypeFactory::isUserType(element->t)) continue;
+
+    primInst.emplace_back(element);
+
+  }
+
+  return primInst;
+}
 
 InstType *Scope::FullLookup (ActId *id, Array **aref)
 {
