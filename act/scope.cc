@@ -21,7 +21,6 @@
  *
  **************************************************************************
  */
-#include "value.h"
 #include <act/act.h>
 #include <act/iter.h>
 #include <iterator>

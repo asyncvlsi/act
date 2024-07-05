@@ -147,7 +147,7 @@ class Scope {
    *
    * @param id is the identifier to be looked up in the current scope
    * (and its parents if necessary)
-   * @param aref is used to return the array specifier in class Scopethe ID
+   * @param aref is used to return the array specifier in the ID
    * @return the actual type of the identifier
    */
   InstType *FullLookup (ActId *id, Array **aref);
