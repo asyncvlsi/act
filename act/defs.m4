@@ -1158,17 +1158,28 @@ one_method: ID "{" hse_body "}"
     }
     $0->scope = new Scope ($0->scope, 0);
 }}  
-"(" [ macro_formal_list ] ")" "{" [ chp_body ] "}"
+"(" [ macro_formal_list ] ")" [ ":" physical_inst_type ] 
 {{X:
     OPT_FREE ($4);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r = OPT_VALUE ($6);
+      $A(r->type == R_INST_TYPE);
+      $0->um->setRetType (r->u.inst);
+      $0->scope->Add ("self", r->u.inst);
+      FREE (r);
+    }
+    OPT_FREE ($6);
+}}
+"{" [ chp_body ] "}"
+{{X:
     /* function formal list must be data types; no parameters allowed */
-    if (!OPT_EMPTY ($7)) {
-      ActRet *r = OPT_VALUE ($7);
+    if (!OPT_EMPTY ($8)) {
+      ActRet *r = OPT_VALUE ($8);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
       FREE (r);
     }
-    OPT_FREE ($7);
+    OPT_FREE ($8);
     $0->um = NULL;
 
     Scope *tmp = $0->scope;

@@ -1,0 +1,2 @@
+ERROR: File `58.act', line 19, col 20
+	User macro `write' is not a function. In instance: misa_csr

@@ -1,0 +1,2 @@
+ERROR: File `57.act', line 17, col 14
+	Macro `tstwrite' is a function macro; need to use returned value.

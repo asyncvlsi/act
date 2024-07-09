@@ -1459,11 +1459,27 @@ public:
    * @param tab is the binding table
    * @return the chp body fragment that results from the substitution.
    */
-  struct act_chp_lang *substitute (ActId *instnm, act_inline_table *tab); 
+  struct act_chp_lang *substitute (ActId *instnm, act_inline_table *tab);
+
+
+  /**
+   * Sets the return type for the macro to the specified instance type
+   * @param it is the return type for the macro
+   */
+  void setRetType (InstType *it);
+
+  /**
+   * @return the return type of the macro function; NULL if it is not
+   * a function macro.
+   */
+  InstType *getRetType () { return rettype; }
 
 private:
   const char *_nm;	     ///< name of the macro
   UserDef *parent;	     ///< user-defined type with this macro
+
+  InstType *rettype;	     ///> for function macros, return
+			     ///> type. NULL for non-function macros
 
   int nports;		     ///< number of ports
   InstType **port_t;	     ///< port types

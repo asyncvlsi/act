@@ -45,6 +45,7 @@ UserMacro::UserMacro (UserDef *u, const char *name)
   port_t = NULL;
   port_n = NULL;
   c = NULL;
+  rettype = NULL;
   
   parent = u;
 }
@@ -77,7 +78,12 @@ void UserMacro::Print (FILE *fp)
       fprintf (fp, "; ");
     }
   }
-  fprintf (fp, ") {\n");
+  fprintf (fp, ")");
+  if (rettype) {
+    fprintf (fp, " : ");
+    rettype->Print (fp);
+  }
+  fprintf (fp, " {\n");
   if (c) {
     fprintf (fp, "   ");
     chp_print (fp, c);
@@ -141,6 +147,11 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     tsc->Add (ux->getPortName (i), ux->getPortType (i));
   }
 
+  if (rettype) {
+    ret->rettype = rettype->Expand (ns, s);
+    tsc->Add ("self", ret->rettype);
+  }
+
   if (is_proc) {
     chp_expand_macromode (2);
   }
@@ -160,6 +171,12 @@ void UserMacro::setBody (struct act_chp_lang *chp)
 {
   c = chp;
 }
+
+void UserMacro::setRetType (InstType *it)
+{
+  rettype = it;
+}
+
 
 static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
 {

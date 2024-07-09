@@ -587,6 +587,26 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     }
     break;
 
+  case E_USERMACRO:
+    {
+      int special_id;
+      struct act_position p;
+      p.l = cookie->line;
+      p.c = cookie->column;
+      p.f = cookie->file;
+      special_id = cookie->special_id;
+      cookie->special_id = 1;
+      ActId *tmp = act_walk_X_expr_id (cookie, (pId *) e->u.fn.s);
+      cookie->special_id = special_id;
+      
+      act_parse_msg (&p, "UserMacro being processed...");
+      tmp->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+		     
+    }
+    break;
+
   default:
     fatal_error ("-- unknown expression type --");
     break;

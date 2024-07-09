@@ -642,11 +642,17 @@ base_stmt[act_chp_lang_t *]: send_stmt
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
     $A(u);
 
-    if (u->isDefined() && !u->getMacro (methname)) {
+    if (!u->isDefined() || !u->getMacro (methname)) {
       $e("Macro ``%s'' not found for ``", methname);
       id1->Print ($f);
       fprintf ($f, "'' (type ``%s'')\n", u->getName());
       exit (1);
+    }
+
+    if (u->getMacro (methname)->getRetType()) {
+      /* Make this into a warning, and change how this is inlined */
+      $E("Macro ``%s'' is a function macro; need to use returned value.",
+	 methname);
     }
 
     c->u.macro.name = string_create (methname);

@@ -65,6 +65,7 @@ static Expr *_parse_expr_func (LFILE *l)
   Expr *e, *f;
   Expr *templ = NULL;
   int found_dcolon;
+  int pushed = 0;
   
   do_init(l);
   
@@ -90,6 +91,9 @@ static Expr *_parse_expr_func (LFILE *l)
 
     k = 0;
     sz = 10239;
+
+
+    /* look for initial :: */
     if (file_have (l, double_colon)) {
       found_dcolon = 1;
       snprintf (buf, 10240, "::");
@@ -99,7 +103,14 @@ static Expr *_parse_expr_func (LFILE *l)
       buf[0] = '\0';
     }
     PRINT_STEP;
+
+
+    if (!found_dcolon) {
+      pushed = 1;
+      file_push_position (l);
+    }
     
+    /* look for ::-separated identifiers */
     while (file_have (l, f_id)) {
       snprintf (buf+k, sz, "%s", file_prev (l));
       PRINT_STEP;
@@ -113,10 +124,10 @@ static Expr *_parse_expr_func (LFILE *l)
       PRINT_STEP;
     }
 
+    /* look for optional template parameters */
     if (file_have (l, langle)) {
       Expr *tt;
       expr_endgtmode (1);
-
       NEW (templ, Expr);
       templ->type = E_LT;
       templ->u.e.r = NULL;
@@ -125,6 +136,9 @@ static Expr *_parse_expr_func (LFILE *l)
 	FREE (templ);
 	FREE (e);
 	expr_endgtmode (0);
+	if (pushed) {
+	  file_pop_position (l);
+	}
 	return NULL;
       }
       tt = templ;
@@ -139,6 +153,9 @@ static Expr *_parse_expr_func (LFILE *l)
 	  expr_free (templ);
 	  FREE (e);
 	  expr_endgtmode (0);
+	  if (pushed) {
+	    file_pop_position (l);
+	  }
 	  return NULL;
 	}
       }
@@ -146,6 +163,9 @@ static Expr *_parse_expr_func (LFILE *l)
       if (!file_have (l, rangle)) {
 	expr_free (templ);
 	FREE (e);
+	if (pushed) {
+	  file_pop_position (l);
+	}
 	return NULL;
       }
     }
@@ -154,6 +174,9 @@ static Expr *_parse_expr_func (LFILE *l)
       if (templ) {
 	expr_free (templ);
 	FREE (e);
+	if (pushed) {
+	  file_pop_position (l);
+	}
 	return NULL;
       }
       else if (found_dcolon && file_have (l, dot)) {
@@ -161,8 +184,64 @@ static Expr *_parse_expr_func (LFILE *l)
 	  e->type = E_ENUM_CONST;
 	  e->u.fn.s = Strdup (buf);
 	  e->u.fn.r = (Expr *) string_cache (file_prev (l));
+	  if (pushed) {
+	    file_pop_position (l);
+	  }
 	  return e;
 	}
+      }
+      else if (!found_dcolon && file_have (l, dot)) {
+	if (pushed) {
+	  file_set_position (l);
+	  file_pop_position (l);
+	  pushed = 0;
+	}
+	// first part of the ID is in buf
+	Assert (expr_parse_id, "What?");
+	pId *v = (*expr_parse_id) (l);
+	if (!v) {
+	  FREE (e);
+	  return NULL;
+	}
+	if (!file_have (l, lpar)) {
+	  FREE (e);
+	  Assert (expr_free_id, "What?");
+	  (*expr_free_id) (v);
+	  return NULL;
+	}
+	expr_inc_parens ();
+	e->type = E_USERMACRO;
+	e->u.fn.s = (char *) v;
+	e->u.fn.r = NULL;
+	f = e;
+	if (file_sym (l) != rpar) {
+	  do {
+	    NEW (f->u.e.r, Expr); // Assumes this is the same
+				  // as u.fn.r
+	    f = f->u.e.r;
+	    f->type = E_LT;
+	    f->u.e.r = NULL;
+	    f->u.e.l = expr_parse_any (l);
+	    if (!f->u.e.l) {
+	      expr_free (e);
+	      expr_dec_parens ();
+	      return NULL;
+	    }
+	  } while (file_have (l, comma));
+	  if (file_sym (l) != rpar) {
+	    expr_free (e);
+	    expr_dec_parens ();
+	    return NULL;
+	  }
+	  /* success! */
+	  file_getsym (l);
+	  expr_dec_parens ();
+	  return e;
+	}
+	return e;
+      }
+      if (pushed) {
+	file_pop_position (l);
       }
       FREE (e);
       return NULL;
@@ -184,6 +263,9 @@ static Expr *_parse_expr_func (LFILE *l)
 	  if (templ) {
 	    expr_free (templ);
 	  }
+	  if (pushed) {
+	    file_pop_position (l);
+	  }
 	  return NULL;
 	}
       } while (file_have (l, comma));
@@ -192,6 +274,9 @@ static Expr *_parse_expr_func (LFILE *l)
 	expr_free (e);
 	if (templ) {
 	  expr_free (templ);
+	}
+	if (pushed) {
+	  file_pop_position (l);
 	}
 	return NULL;
       }
@@ -206,7 +291,13 @@ static Expr *_parse_expr_func (LFILE *l)
     expr_dec_parens ();
   }
   else {
+    if (pushed) {
+      file_pop_position (l);
+    }
     return NULL;
+  }
+  if (pushed) {
+    file_pop_position (l);
   }
   return e;
 }

@@ -193,6 +193,8 @@ typedef struct {
   act_chp_lang_t *clang;
 
   int ref_level;
+
+  int special_id; /* special ID! for user macros */
   
 } ActTree;
 

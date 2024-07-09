@@ -217,8 +217,15 @@ static Expr *expr_basecase (void)
       pId *v;
       
       PUSH (Tl);
-      if (expr_parse_id && (v = ((*expr_parse_id) (Tl))) &&
-	  (file_sym (Tl) != T[E_LPAR])) {
+
+      if (expr_parse_id) {
+	v = (*expr_parse_id) (Tl);
+      }
+      else {
+	v = NULL;
+      }
+      
+      if (v && (file_sym (Tl) != T[E_LPAR])) {
 	int flg; 
 	e = newexpr ();
 	e->type = E_VAR;
@@ -274,8 +281,8 @@ static Expr *expr_basecase (void)
 	  file_setflags (Tl, flg);
 	}
 	POP (Tl);
-      } 
-      else if (file_sym (Tl) == T[E_CONCAT]) {
+      }
+      else if (!v && (file_sym (Tl) == T[E_CONCAT])) {
 	file_getsym (Tl);
 	/* concatenation:
 	   { expr, expr, expr, expr, expr, ... }
@@ -328,6 +335,15 @@ static Expr *expr_basecase (void)
 	  (*expr_free_id) (v);
 	}
 	SET (Tl);
+#if 1
+	POP (Tl);
+	return NULL;
+#else
+	/*
+	  XXX: This is duplicate parsing code that is replicated in
+	  expr_extra.c; so leave it in one place rather than having
+	  multiple function call parsers.
+	*/
 	if (file_have (Tl, f_id) && file_sym (Tl) == T[E_LPAR]) {
 	  e = newexpr ();
 	  e->type = E_FUNCTION;
@@ -366,6 +382,7 @@ static Expr *expr_basecase (void)
 	  POP (Tl);
 	  return NULL;
 	}
+#endif	
       }
     }
   }

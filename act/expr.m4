@@ -211,6 +211,10 @@ expr_id[ActId *]: { base_id "." }*
     ret = (ActId *) list_value (li = list_first ($1));
     cur = ret;
 
+    if ($0->special_id && list_length ($1) == 1) {
+      $E("UserMacro scenario without usermacro syntax? Check for an internal error!");
+    }
+
     /* check if we are "true", "false", or "self" -- special, we
        aren't going to be found in any scope! */
     if (list_length ($1) == 1 && ret->arrayInfo() == NULL) {
@@ -238,7 +242,7 @@ expr_id[ActId *]: { base_id "." }*
     it = s->FullLookup (cur->getName());
     if (!it) {
       /*-- check if this is an enumeration --*/
-      if (list_length ($1) == 2) {
+      if (list_length ($1) == 2 && !$0->special_id) {
 	cur->Append ((ActId *) list_value (list_next (li)));
 	if (_act_id_is_enum_const ($0->os, $0->curns, cur)) {
 	  list_free ($1);
@@ -261,7 +265,7 @@ expr_id[ActId *]: { base_id "." }*
 	fprintf ($f, "\n");
 	exit (1);
       }
-      if (list_next (li) && cur->isRange ()) {
+      if ((list_next (li) || $0->special_id) && cur->isRange ()) {
 	/* a subrange specifier can occur, but it must be the *last*
 	   part of the identifier (!) */
 	$e("Invalid use of array sub-range specifier: ");
@@ -294,22 +298,53 @@ expr_id[ActId *]: { base_id "." }*
       }
       /* check that the id fragment exists in the scope of the inst
 	 type */
-      it = ud->Lookup ((ActId *)list_value (li));
-      if (!it) {
-	$e("Port name ``%s'' does not exist for the identifier: ", 
-	   ((ActId *)list_value (li))->getName());
-	ret->Print ($f);
-	fprintf ($f, "\n");
-	exit (1);
+
+      if (!list_next (li) && $0->special_id) {
+	UserMacro *um;
+	/* user macro check */
+	if (((ActId *) list_value (li))->arrayInfo()) {
+	  $e("Array de-reference for user macro: ");
+	  ret->Print ($f);
+	  fprintf ($f, ".");
+	  ((ActId *)list_value (li))->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+	um = ud->getMacro (((ActId *)list_value (li))->getName());
+	if (!um) {
+	  $e("Invalid user macro name ``%s'' in instance: ",
+	     ((ActId *)list_value (li))->getName());
+	  ret->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+	if (!um->getRetType()) {
+	  $e("User macro ``%s'' is not a function. In instance: ",
+	     ((ActId *)list_value (li))->getName());
+	  ret->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
+	}
+	cur->Append ((ActId *) list_value (li));
       }
       else {
-	if (!ud->isPort (((ActId *)list_value (li))->getName())) {
-	  $E("``%s'' is not a port for ``%s''", ((ActId *)list_value (li))->getName(),
-	     ud->getName());
+	it = ud->Lookup ((ActId *)list_value (li));
+	if (!it) {
+	  $e("Port name ``%s'' does not exist for the identifier: ", 
+	     ((ActId *)list_value (li))->getName());
+	  ret->Print ($f);
+	  fprintf ($f, "\n");
+	  exit (1);
 	}
+	else {
+	  if (!ud->isPort (((ActId *)list_value (li))->getName())) {
+	    $E("``%s'' is not a port for ``%s''", ((ActId *)list_value (li))->getName(),
+	       ud->getName());
+	  }
+	}
+	cur->Append ((ActId *)list_value (li));
+	cur = (ActId *) list_value (li);
       }
-      cur->Append ((ActId *)list_value (li));
-      cur = (ActId *) list_value (li);
     }
     
     /* array check! */

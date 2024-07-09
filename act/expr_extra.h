@@ -85,7 +85,17 @@
 #define E_MULTLOOP (E_END + 27)
 #define E_XORLOOP  (E_END + 28)
 
-#define E_NEWEND  E_END + 29	     ///< new "end" of expression options
+
+/*
+  This is used for a macro function within a user-defined type.
+
+  Parsing: ID.func(...)
+  e->u.fn.s = pId
+  e->u.fn.r- = arguments
+ */
+#define E_USERMACRO (E_END + 29)  
+
+#define E_NEWEND  E_END + 30	     ///< new "end" of expression options
 
 #ifdef __cplusplus
 extern "C" {
