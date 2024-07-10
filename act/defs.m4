@@ -1167,6 +1167,10 @@ one_method: ID "{" hse_body "}"
       $0->um->setRetType (r->u.inst);
       $0->scope->Add ("self", r->u.inst);
       FREE (r);
+
+      if (!$0->u_d) {
+	$E("Macro function ``%s'': functions are only supported for datatypes.", $2);
+      }
     }
     OPT_FREE ($6);
 }}
@@ -1674,7 +1678,18 @@ alias_or_inst_list[ActBody *]: al_item alias_or_inst_list
 
 al_item[ActBody *]: instance
 {{X:
-    return $1;
+    ActBody_Inst *inst = dynamic_cast<ActBody_Inst *> ($1);
+    $A(inst);
+    if (TypeFactory::isDataType (inst->getType()) ||
+	TypeFactory::isStructure (inst->getType()) ||
+	TypeFactory::isParamType (inst->getType())) {
+      return $1;
+    }
+    else {
+      $E("Declaration for ``%s'': function body can only declare data types!",
+	 inst->getName());
+      return NULL;
+    }
 }}
 | assertion
 {{X:

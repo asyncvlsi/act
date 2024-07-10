@@ -1,0 +1,2 @@
+ERROR: File `28.act', line 4, col 7
+	Declaration for `O': function body can only declare data types!

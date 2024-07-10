@@ -1,0 +1,2 @@
+ERROR: File `27.act', line 1, col 28
+	Parameter `O': port parameter for a function cannot be a channel

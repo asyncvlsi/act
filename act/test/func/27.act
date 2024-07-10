@@ -1,0 +1,9 @@
+function f (int<4> x; chan!(int) O) : int<5>
+{
+  int<3> w;
+  chp {
+     w := x + x;
+     O!w;
+     self := w
+  }
+}

@@ -1,0 +1,23 @@
+function f (int<4> x) : int<5>
+{
+  int<3> w;
+  chan!(int) O;
+
+  chp {
+     w := x + x;
+     O!w;
+     self := w
+  }
+}
+
+
+defproc test()
+{
+   int x;
+
+   chp {
+     x := f(x)
+   }
+}
+
+test t;
