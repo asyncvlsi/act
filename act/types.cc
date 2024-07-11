@@ -1178,6 +1178,10 @@ Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   UserDef *ux;
   int cache_hit;
 
+  if (isExpanded() && nt == 0) {
+    return this;
+  }
+
   ux = UserDef::Expand (ns, s, nt, u, &cache_hit);
 
   if (cache_hit) {
