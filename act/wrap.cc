@@ -590,20 +590,54 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
   case E_USERMACRO:
     {
       int special_id;
+      int args = 0;
       struct act_position p;
+      UserMacro *um;
+      ActId *tmp, *prev;
+      InstType *it;
+      UserDef *u;
+      Scope *sc;
       p.l = cookie->line;
       p.c = cookie->column;
       p.f = cookie->file;
       special_id = cookie->special_id;
       cookie->special_id = 1;
-      ActId *tmp = act_walk_X_expr_id (cookie, (pId *) e->u.fn.s);
+      tmp = act_walk_X_expr_id (cookie, (pId *) e->u.fn.s);
       cookie->special_id = special_id;
-      
-      act_parse_msg (&p, "UserMacro being processed...");
-      tmp->Print (stderr);
-      fprintf (stderr, "\n");
-      exit (1);
-		     
+
+      ret->u.fn.s = NULL;
+      NEW (ret->u.fn.r, Expr);
+      ret->u.fn.r->u.e.l = (Expr *) tmp;
+      ret->u.fn.r->type = E_LT;
+      ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.fn.r, &args);
+
+      // extract user macro!
+
+      sc = cookie->scope;
+      u = NULL;
+      prev = NULL;
+      while (tmp->Rest()) {
+	it = sc->Lookup (tmp->getName());
+	Assert (it, "This should have been caught earlier!");
+	u = dynamic_cast<UserDef *> (it->BaseType());
+	Assert (u, "This should have been caught earlier!");
+	sc = u->CurScope();
+	prev = tmp;
+	tmp = tmp->Rest();
+      }
+      Assert (u && prev, "This should have been caught earlier!");
+      um = u->getMacro (tmp->getName());
+      Assert (um, "Didn't find user macro?");
+
+      if (um->getNumPorts () != args) {
+	act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts(), args);
+      }
+
+      // ok: (1) e.u.fn.s should be the usermacro
+      //     (2) e.u.fn.r augmented with the id!
+      prev->prune();
+      delete tmp;
+      ret->u.fn.s = (char *) um;
     }
     break;
 

@@ -595,6 +595,7 @@ void ActNamespace::Print (FILE *fp)
       }
       else if (TypeFactory::isFuncType (t)) {
 	Function *f = dynamic_cast<Function *> (t);
+	if (!f->isUserMethod()) {
 	if (!u->isExpanded()  || !TypeFactory::isParamType (f->getRetType())) {
 	  u->PrintHeader (fp, "function");
 	  fprintf (fp, " : ");
@@ -606,6 +607,7 @@ void ActNamespace::Print (FILE *fp)
 	    f->getRetType()->Print (fp);
 	  }
 	  fprintf (fp, ";\n");
+	}
 	}
       }
       else if (TypeFactory::isStructure (t)) {
@@ -629,7 +631,9 @@ void ActNamespace::Print (FILE *fp)
     if (CurScope()->isExpanded() == u->isExpanded()) {
       Function *f = dynamic_cast<Function *> (t);
       if (!f || !u->isExpanded() || !TypeFactory::isParamType (f->getRetType())) {
-	u->Print (fp);
+	if (!f || !f->isUserMethod()) {
+	  u->Print (fp);
+	}
       }
     }
   }

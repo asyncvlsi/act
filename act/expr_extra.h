@@ -92,6 +92,15 @@
   Parsing: ID.func(...)
   e->u.fn.s = pId
   e->u.fn.r- = arguments
+
+  After walking:
+  e->u.fn.s = UserMacro pointer
+  e->u.fn.r = arguments, where first arg is the original ID!
+
+  After real expansion
+  e->u.fn.s = synthetic function *
+  e->u.fn.r = normal arguments
+  converted to E_FUNCTION
  */
 #define E_USERMACRO (E_END + 29)  
 

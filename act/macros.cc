@@ -46,7 +46,7 @@ UserMacro::UserMacro (UserDef *u, const char *name)
   port_n = NULL;
   c = NULL;
   rettype = NULL;
-  
+  _exf = NULL;
   parent = u;
 }
 
@@ -63,6 +63,9 @@ UserMacro::~UserMacro ()
   }
   if (port_n) {
     FREE (port_n);
+  }
+  if (_exf) {
+    delete _exf;
   }
   act_chp_free (c);
 }
@@ -161,7 +164,77 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
   ret->c = chp_expand (c, ns, tsc);
   chp_expand_macromode (0);
 
+  if (ret->rettype) {
+    /*--- we need to create a dummy function ---*/
+    UserDef *u = new UserDef (ux->getns());
+    int len;
+    InstType *it = new InstType (s, ux, 0);
+    it->mkExpanded ();
+    
+    /* add the ports to this function! */
+
+    Assert (u->AddPort (it, string_cache ("$internal")) == 1,
+	    "What?");
+    
+    for (int i=0; i < nports; i++) {
+      Assert (u->AddPort (port_t[i] , port_n[i]) == 1, 
+	      "Not sure what went wrong!");
+    }
+
+    len = strlen (ux->getName()) + 2 + strlen (_nm);
+    char *buf;
+    MALLOC (buf, char, len);
+    snprintf (buf, len, "%s/%s", ux->getName(), _nm);
+    
+    Function *tmpf = new Function (u);
+    ux->getns()->CreateType (buf, tmpf);
+    FREE (buf);
+
+    tmpf->setRetType (ret->rettype);
+    
+    _exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
+    
+    // now we set the CHP body!
+    // substitute with a special ID
+    ActId *prefix = new ActId (string_cache ("$internal"));
+    act_languages *all_lang = _exf->getlang();
+    act_chp *xchp;
+    NEW (xchp, act_chp);
+    xchp->vdd = NULL;
+    xchp->gnd = NULL;
+    xchp->psc = NULL;
+    xchp->nsc = NULL;
+    xchp->is_synthesizable = 1;
+    
+    act_inline_table *tab = act_inline_new (tsc, NULL);
+
+    Expr **tmp_exprs;
+    MALLOC (tmp_exprs, Expr *, nports+1);
+    for (int i=0; i < nports; i++) {
+      ActId *tid;
+      NEW (tmp_exprs[i], Expr);
+      tmp_exprs[i]->type = E_VAR;
+      tid = new ActId (port_n[i]);
+      tmp_exprs[i]->u.e.l = (Expr *) tid;
+      tmp_exprs[i]->u.e.r = NULL;
+      act_inline_setval (tab, tid, tmp_exprs+i);
+    }
+    NEW (tmp_exprs[nports], Expr);
+    tmp_exprs[nports]->type = E_VAR;
+    tmp_exprs[nports]->u.e.l = (Expr *) new ActId (string_cache ("self"));
+    tmp_exprs[nports]->u.e.r = NULL;
+    act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
+
+    FREE (tmp_exprs);
+    
+    xchp->c = ret->substitute (prefix, tab);
+    act_inline_free (tab);
+    
+    all_lang->setchp (xchp);
+    _exf->chkInline ();
+  }
   delete tsc;
+  
 
   return ret;
 }

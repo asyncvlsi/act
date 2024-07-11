@@ -1618,7 +1618,7 @@ act_attr *_clone_attrib (act_attr *a)
     }
     cur->next = NULL;
     cur->attr = a->attr;
-    cur->e = expr_dup (a->e);
+    cur->e = expr_predup (a->e);
     a = a->next;
   }
   return ret;
@@ -1659,7 +1659,8 @@ ActBody *ActBody_Assertion::Clone()
   ActBody_Assertion *ret;
 
   if (type == 0) {
-    ret = new ActBody_Assertion (_line, u.t0.e, u.t0.msg);
+    Expr *tmp = expr_predup (u.t0.e);
+    ret = new ActBody_Assertion (_line, tmp, u.t0.msg);
   }
   else if (type == 1) {
     ret = new ActBody_Assertion (_line, u.t1.id1, u.t1.id2, u.t1.op, u.t1.msg);

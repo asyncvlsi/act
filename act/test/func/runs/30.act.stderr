@@ -1,0 +1,2 @@
+ERROR: File `30.act', line 3, col 17
+	Macro argument conflicts with port/parameter name: `b'

@@ -1912,8 +1912,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	    fprintf (stderr, "\tint/bool mismatch\n");
 	    exit (1);
 	  }	    
-	  
-	  
+
 	  tsc->Add (um->getPortName (i), um->getPortType (i));
 	  ActId *tmp = new ActId (um->getPortName (i));
 	  act_inline_setval (tab, tmp, etmp);

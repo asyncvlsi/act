@@ -294,6 +294,10 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal)
     it = new InstType (d->getns()->CurScope(), d);
     return it;
   }
+  else if (e->type == E_USERMACRO) {
+    UserMacro *um = (UserMacro *) e->u.fn.s;
+    return um->getRetType();
+  }
   return NULL;
 }
 
@@ -888,6 +892,157 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	ret |= T_PARAM|strict_flag;
       }
       if (fn->getRetType()->arrayInfo()) {
+	ret |= T_ARRAYOF;
+      }
+      if (ret & T_PARAM) {
+	if (TypeFactory::isPIntType (rtype)) {
+	  ret |= T_INT;
+	}
+	else if (TypeFactory::isPBoolType (rtype)) {
+	  ret |= T_BOOL;
+	}
+	else if (TypeFactory::isPRealType (rtype)) {
+	  ret |= T_REAL;
+	}
+	else {
+	  Assert (0, "Unknown return type");
+	}
+      }
+      else {
+	if (TypeFactory::isIntType (rtype)) {
+	  ret |= T_INT;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
+	}
+	else if (TypeFactory::isBoolType (rtype)) {
+	  ret |= T_BOOL;
+	  if (width) {
+	    *width = 1;
+	  }
+	}
+	else if (TypeFactory::isStructure (rtype)) {
+	  ret |= T_DATA;
+	  if (width) {
+	    *width = -1;
+	  }
+	}
+	else if (TypeFactory::isUserPureEnum (rtype)) {
+	  ret |= T_DATA_ENUM;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
+	}
+	else if (TypeFactory::isUserEnum (rtype)) {
+	  ret |= T_INT;
+	  if (width) {
+	    *width = TypeFactory::bitWidth (rtype);
+	  }
+	}
+	else {
+	  Assert (0, "Unknown return type");
+	}
+      }
+      return ret;
+    }
+    break;
+
+  case E_USERMACRO:
+    {
+      unsigned int ret = 0;
+      UserMacro *um = (UserMacro *) e->u.fn.s;
+      InstType *rtype = um->getRetType();
+      int kind = 0;
+      Expr *tmp = e->u.fn.r->u.e.r;
+      Expr *e2;
+      int strict_flag = T_STRICT;
+
+      if (TypeFactory::isParamType (rtype)) {
+	kind = 0;
+      }
+      else {
+	kind = 1;
+      }
+
+      e2 = NULL;
+#if 0
+      // XXX: if we add macros with template parameters, this would be needed
+      if (tmp && tmp->type == E_GT) {
+	e2 = tmp->u.e.l;
+	tmp = tmp->u.e.r;
+      }
+      else {
+	e2 = NULL;
+      }
+#endif
+
+      for (int i=0;
+	   i < (kind == 0 ? um->getNumParams() : um->getNumPorts()); i++) {
+	InstType *x = um->getPortType (kind == 0 ? -(i+1) : i);
+	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
+
+	if (!y) {
+	  return T_ERR;
+	}
+
+	strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
+
+	if (only_chan) {
+	  if (only_chan == 1) {
+	    if (TypeFactory::isChanType (y)) {
+	      y = TypeFactory::getChanDataType (y);
+	    }
+	    else if (tmp->u.e.l->type == E_VAR ||
+		     !TypeFactory::isDataType (y)) {
+	      typecheck_err ("User macro `%s': arg #%d has an incompatible type",
+			     um->getName(), i);
+	      return T_ERR;
+	    }
+	  }
+	  else {
+	    if (TypeFactory::isChanType (y)) {
+	      y = TypeFactory::getChanDataType (y);
+	    }
+	  }
+	}
+
+	if (!x->isConnectable (y, 1)) {
+	  if ((TypeFactory::isIntType (x) && TypeFactory::isPIntType (y))
+	      ||
+	      (TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
+	    /* ok */
+	  }
+	  else {
+	    typecheck_err ("User macro `%s': arg #%d has an incompatible type",
+			   um->getName(), i);
+	    return T_ERR;
+	  }
+	}
+	tmp = tmp->u.e.r;
+      }
+
+      if (e2) {
+	Assert (kind == 1, "What?");
+	tmp = e2;
+	for (int i=0; i < um->getNumParams(); i++) {
+	  InstType *x = um->getPortType (-(i+1));
+	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
+	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
+
+	  if (!x->isConnectable (y, 1)) {
+	    typecheck_err ("User macro `%s': template arg #%d has an incompatible type",
+			   um->getName(), i);
+	    return T_ERR;
+	  }
+	  tmp = tmp->u.e.r;
+	}
+      }
+      /*-- provide return type --*/
+      
+      if (TypeFactory::isParamType(rtype)) {
+	ret |= T_PARAM|strict_flag;
+      }
+      if (um->getRetType()->arrayInfo()) {
 	ret |= T_ARRAYOF;
       }
       if (ret & T_PARAM) {

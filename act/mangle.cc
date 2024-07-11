@@ -430,8 +430,9 @@ void Act::mfprintfproc (FILE *fp, UserDef *p, int omit_ns)
   const char *proc_name = p->getName ();
   pos = strlen (proc_name);
   if (pos > 2 && proc_name[pos-2] == '<' &&  proc_name[pos-1] == '>') {
+    int endpos = pos-2;
     pos = 0;
-    while (proc_name[pos] != '<') {
+    while (pos != endpos) {
       fputc (proc_name[pos], fp);
       pos++;
     }

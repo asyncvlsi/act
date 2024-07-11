@@ -285,8 +285,6 @@ public:
 class InstType;
 class UserMacro;
 
-
-
 /**
  *  @class UserDef
  *
@@ -1034,6 +1032,18 @@ class Function : public UserDef {
    * This computes the "simple inline" flag
    */
   void chkInline ();
+
+
+  /**
+   * @return true if this is a generated function for a user macro,
+   * false otherwise
+   */
+  bool isUserMethod() {
+    for (int i=0; name[i]; i++) {
+      if (name[i] == '/') return true;
+    }
+    return false;
+  }
   
  private:
   InstType *ret_type;		///< holds return type
@@ -1432,6 +1442,12 @@ public:
    */
   int getNumPorts() const { return nports; }
 
+
+  /**
+   * @return the number of template parameters for the macro
+   */
+  int getNumParams() const { return 0; }
+
   /**
    * Returns the name of a port for this macro
    * @param i is the port number
@@ -1474,6 +1490,12 @@ public:
    */
   InstType *getRetType () { return rettype; }
 
+  /**
+   * @return the dummy function pointer associated with this macro, if
+   * the macro is a function, NULL otherwise
+   */
+  Function *getFunction() { return _exf; }
+
 private:
   const char *_nm;	     ///< name of the macro
   UserDef *parent;	     ///< user-defined type with this macro
@@ -1486,6 +1508,9 @@ private:
   const char **port_n;	     ///< port names
 
   struct act_chp_lang *c;    ///< body
+
+  Function *_exf;	     ///< expanded function corresponding to
+                             ///  a function macro.
 };
 
 
@@ -2141,7 +2166,11 @@ const char *expr_op_name (int);
 #define ACT_EXPR_EXFLAG_CHPEX    0x4 ///< if set, this uses CHP
 				     ///expansion mode
 
-#define ACT_EXPR_EXFLAG_DUPONLY  0x8 ///< this just duplicates the expression
+#define ACT_EXPR_EXFLAG_DUPONLY  0x8 ///< this just duplicates the
+				     ///expression
+
+#define ACT_EXPR_EXFLAG_PREEXDUP 0x10 ///< flag is like DUP, only
+                                      ///this is prior to expansion!
 
 extern int _act_chp_is_synth_flag;   ///< this flag is set as a
 				     ///side-effect of expression
@@ -2168,6 +2197,8 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2)
  * A macro that just calls expr_expand() with the right flags.
  */
 #define expr_dup(e) expr_expand ((e), NULL, NULL, ACT_EXPR_EXFLAG_DUPONLY)
+
+#define expr_predup(e) expr_expand ((e), NULL, NULL, ACT_EXPR_EXFLAG_PREEXDUP|ACT_EXPR_EXFLAG_DUPONLY)
 
 /**
  * Free an expanded expression

@@ -1,0 +1,5 @@
+defchan foo <: chan(int) (bool x) { { 0 > 5 : "What?" }; }
+
+defchan state_chan <: foo ();
+defchan state_chan <: foo ();
+defchan state_chan <: foo ();

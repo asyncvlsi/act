@@ -38,6 +38,15 @@
     if (sz <= 1) return;			\
   } while (0)
 
+#define ADD_CHAR(ch)				\
+  do {						\
+    buf[k] = ch;				\
+    k++;					\
+    buf[k] = '\0';				\
+    sz -= 1;					\
+    if (sz <= 1) return;			\
+  } while (0)
+    
 /*
   Expression helper routines, not in the standard expr.c 
 */
@@ -408,6 +417,31 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       Function *f = dynamic_cast<Function *>(u);
       Expr *tmp;
       Assert (f, "Hmm.");
+
+      if (f->isUserMethod()) {
+	int pos;
+	const char *nm = f->getName();
+	Assert (e->u.fn.r &&
+		e->u.fn.r->type == E_LT &&
+		e->u.fn.r->u.e.l->type == E_VAR, "What?");
+
+	ActId *id = (ActId *) e->u.fn.r->u.e.l->u.e.l;
+	id->sPrint (buf+k, sz);
+	pos = 0;
+	while (nm[pos] != '/') {
+	  pos++;
+	}
+	pos++;
+	PRINT_STEP;
+	ADD_CHAR('.');
+	while (nm[pos] && nm[pos] != '<') {
+	  ADD_CHAR (nm[pos]);
+	  pos++;
+	}
+	ADD_CHAR('(');
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
       if (f->getns() && f->getns() != ActNamespace::Global()) {
 	char *s = f->getns()->Name();
 	snprintf (buf+k, sz, "%s::", s);
@@ -453,6 +487,9 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       else {
 	tmp = e->u.fn.r;
       }
+
+      }
+      
       while (tmp) {
 	if (prec < 0) {
 	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
@@ -471,6 +508,70 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       PRINT_STEP;
     }
     break;
+
+  case E_USERMACRO:
+    {
+      UserMacro *um = (UserMacro *)e->u.fn.s;
+      Expr *tmp;
+
+      ActId *x = (ActId *)e->u.fn.r->u.e.l;
+      x->sPrint (buf+k, sz);
+      PRINT_STEP;
+      snprintf (buf+k, sz, ".");
+      PRINT_STEP;
+      snprintf (buf+k, sz, "%s", um->getName());
+      PRINT_STEP;
+
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	snprintf (buf+k, sz, "<");
+	PRINT_STEP;
+	tmp = e->u.fn.r->u.e.l;
+	while (tmp) {
+	  if (prec < 0) {
+	    sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	  }
+	  else {
+	    sprint_expr (buf+k, sz, tmp->u.e.l);
+	  }
+	  PRINT_STEP;
+	  tmp = tmp->u.e.r;
+	  if (tmp) {
+	    snprintf (buf+k, sz, ",");
+	    PRINT_STEP;
+	  }
+	}
+	snprintf (buf+k, sz, ">");
+	PRINT_STEP;
+      }
+      
+      snprintf (buf+k, sz, "(");
+      PRINT_STEP;
+
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	tmp = e->u.fn.r->u.e.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r->u.e.r;
+      }
+      while (tmp) {
+	if (prec < 0) {
+	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	}
+	else {
+	  sprint_expr (buf+k, sz, tmp->u.e.l);
+	}
+	PRINT_STEP;
+	tmp = tmp->u.e.r;
+	if (tmp) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+      }
+      snprintf (buf+k, sz, ")");
+      PRINT_STEP;
+    }
+    break;
+    
     
   case E_BITFIELD:
     ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
@@ -757,6 +858,7 @@ int expr_equal (const Expr *a, const Expr *b)
     break;
     
   case E_FUNCTION:
+  case E_USERMACRO:
     if (a->u.fn.s != b->u.fn.s) return 0;
     {
       Expr *at, *bt;
@@ -774,17 +876,40 @@ int expr_equal (const Expr *a, const Expr *b)
 	return 0;
       }
 
-      if (at->type == E_LT) {
+      if (a->type == E_USERMACRO) {
+	if (at->type == E_LT) {
+	  if (!_id_equal (at->u.e.l, bt->u.e.l)) {
+	    return 0;
+	  }
+	  at = at->u.e.r;
+	  bt = bt->u.e.r;
+	}
+	else {
+	  Assert (at->type == E_GT, "What?");
+	  if (!expr_args_equal (at->u.e.l, bt->u.e.l)) {
+	    return 0;
+	  }
+	  if (!_id_equal (at->u.e.r->u.e.l, bt->u.e.r->u.e.l)) {
+	    return 0;
+	  }
+	  at = at->u.e.r->u.e.r;
+	  bt = bt->u.e.r->u.e.r;
+	}
 	return expr_args_equal (at, bt);
       }
       else {
-	if (!expr_args_equal (at->u.e.l, bt->u.e.l)) {
-	  return 0;
+	if (at->type == E_LT) {
+	  return expr_args_equal (at, bt);
 	}
-	if (!expr_args_equal (at->u.e.r, bt->u.e.r)) {
-	  return 0;
+	else {
+	  if (!expr_args_equal (at->u.e.l, bt->u.e.l)) {
+	    return 0;
+	  }
+	  if (!expr_args_equal (at->u.e.r, bt->u.e.r)) {
+	    return 0;
+	  }
+	  return 1;
 	}
-	return 1;
       }
     }
     break;
@@ -1062,6 +1187,17 @@ static BigInt *_int_const (unsigned long v)
 }
 #endif
 
+
+static Expr *_expr_const_canonical (Expr *e, unsigned int flags)
+{
+  if (!(flags & ACT_EXPR_EXFLAG_PREEXDUP)) {
+    Expr *tmp = TypeFactory::NewExpr (e);
+    FREE (e);
+    e = tmp;
+  }
+  return e;
+}
+
 static Expr *_expr_expand (int *width, Expr *e,
 			   ActNamespace *ns, Scope *s, unsigned int flags)
 {
@@ -1070,6 +1206,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   Expr *tmp;
   int pc;
   int lw, rw;
+  Expr *e_orig = NULL;
   
   if (!e) return NULL;
 
@@ -1091,7 +1228,78 @@ static Expr *_expr_expand (int *width, Expr *e,
       }									\
     } while (0)
 
-#include "expr_width.h"  
+#include "expr_width.h"
+
+  if (e->type == E_USERMACRO) {
+    UserMacro *um;
+    UserDef *u;
+    Expr *etmp;
+    if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
+      Expr *tmp, *prev;
+      Expr *w = e->u.fn.r;
+      /*-- pure pre-ex dup --*/
+      ret->u.fn.s = e->u.fn.s;
+      ret->u.fn.r = NULL;
+      prev = NULL;
+      while (w) {
+	int dummy;
+	NEW (tmp, Expr);
+	tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	tmp->u.e.r = NULL;
+	if (!prev) {
+	  ret->u.fn.r = tmp;
+	}
+	else {
+	  prev->u.e.r = tmp;
+	}
+	prev = tmp;
+	w = w->u.e.r;
+      }
+      *width = -1;
+      return ret;
+    }
+    /*
+      Otherwise, expand it out and replace the usermacro and change
+      it to a function!
+    */
+    ret->type = E_FUNCTION;
+    um = (UserMacro *) e->u.fn.s;
+    e_orig = e;			/* original e; saved away */
+    NEW (e, Expr);
+    e->type = E_FUNCTION;
+    /*  XXX: replace e->u.fn.s */
+    e->u.fn.s = (char *) um->getFunction ();
+    NEW (etmp, Expr);
+    etmp->type = E_VAR;
+    etmp->u.e.l = (Expr *) ((ActId *)e_orig->u.fn.r->u.e.l)->Clone();
+    etmp->u.e.r = NULL;
+    NEW (e->u.fn.r, Expr);
+    e->u.fn.r->type = E_LT;
+    e->u.fn.r->u.e.l = etmp;
+    e->u.fn.r->u.e.r = e_orig->u.fn.r->u.e.r;
+#if 0    
+    {
+      Expr *clone1, *orig;
+      orig = e_orig->u.fn.r->u.e.r;
+      clone1 = NULL;
+      while (orig) {
+	if (clone1) {
+	  NEW (clone1->u.e.r, Expr);
+	  clone1 = clone1->u.e.r;
+	}
+	else {
+	  NEW (e->u.fn.r->u.e.r, Expr);
+	  clone1 = e->u.fn.r->u.e.r;
+	}
+	clone1->type = E_LT;
+	clone1->u.e.r = NULL;
+	clone1->u.e.l = expr_predup (orig->u.e.l);
+	orig = orig->u.e.r;
+      }
+    }
+#endif    
+  }
+  
 
   switch (e->type) {
 
@@ -1206,9 +1414,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    ret->type = E_TRUE;
 	  }
-	  Expr *tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
 	else {
 	  if (e->type == E_ANDLOOP) {
@@ -1217,9 +1423,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    if (T_BASETYPE_BOOL (t)) {
 	      // if this is an integer type?
 	      ret->type = E_TRUE;
-	      Expr *tmp = TypeFactory::NewExpr (ret);
-	      FREE (ret);
-	      ret = tmp;
+	      ret = _expr_const_canonical (ret, flags);
 	    }
 	    else {
 	      ret->type = E_INT;
@@ -1237,9 +1441,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	      }
 	      else {
 		ret->u.ival.v_extra = NULL;
-		Expr *tmp = TypeFactory::NewExpr (ret);
-		FREE (ret);
-		ret = tmp;
+		ret = _expr_const_canonical (ret, flags);
 	      }
 	    }
 	  }
@@ -1248,9 +1450,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 				   width, 2);
 	    if (T_BASETYPE_BOOL (t)) {
 	      ret->type = E_FALSE;
-	      Expr *tmp = TypeFactory::NewExpr (ret);
-	      FREE (ret);
-	      ret = tmp;
+	      ret = _expr_const_canonical (ret, flags);
 	    }
 	    else {
 	      ret->type = E_INT;
@@ -1262,9 +1462,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 		ret->u.ival.v_extra = x;
 	      }
 	      else {
-		Expr *tmp = TypeFactory::NewExpr (ret);
-		FREE (ret);
-		ret = tmp;
+		ret = _expr_const_canonical (ret, flags);
 	      }
 	    }
 	  }
@@ -1286,9 +1484,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	      }
 	      else {
 		ret->u.ival.v_extra = NULL;
-		Expr *tmp = TypeFactory::NewExpr (ret);
-		FREE (ret);
-		ret = tmp;
+		ret = _expr_const_canonical (ret, flags);
 		delete x;
 	      }
 	    }
@@ -1299,9 +1495,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	      }
 	      else {
 		ret->u.ival.v_extra = NULL;
-		Expr *tmp = TypeFactory::NewExpr (ret);
-		FREE (ret);
-		ret = tmp;
+		ret = _expr_const_canonical (ret, flags);
 		delete x;
 	      }
 	    }
@@ -1370,10 +1564,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->type = E_INT;
 	  ret->u.ival.v = v;
 	  ret->u.ival.v_extra = NULL;
-
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
       }
       else if (ret->u.e.l->type == E_TRUE || ret->u.e.l->type == E_FALSE) {
@@ -1397,10 +1588,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  ret->type = E_FALSE;
 	}
-
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else {
 	act_error_ctxt (stderr);
@@ -1574,10 +1762,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->type = E_INT;
 	  ret->u.ival.v = v;
 	  ret->u.ival.v_extra = NULL;
-
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
       }
       else if ((ret->u.e.l->type == E_INT||ret->u.e.l->type == E_REAL)
@@ -1726,9 +1911,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    ret->type = E_FALSE;
 	  }
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
 	else {
 	  signed long v;
@@ -1760,10 +1943,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  else {
 	    ret->type = E_FALSE;
 	  }
-
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
       }
       else if (ret->u.e.l->type == E_REAL && ret->u.e.r->type == E_REAL) {
@@ -1796,10 +1976,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  ret->type = E_FALSE;
 	}
-
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else {
 	act_error_ctxt (stderr);
@@ -1839,17 +2016,12 @@ static Expr *_expr_expand (int *width, Expr *e,
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
 	ret->type = E_FALSE;
-
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else if (ret->u.e.l->type == E_FALSE) {
 	//FREE (ret->u.e.l);
 	ret->type = E_TRUE;
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else {
 	act_error_ctxt (stderr);
@@ -1869,16 +2041,12 @@ static Expr *_expr_expand (int *width, Expr *e,
       if (ret->u.e.l->type == E_TRUE) {
 	//FREE (ret->u.e.l);
 	ret->type = E_FALSE;
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else if (ret->u.e.l->type == E_FALSE) {
 	//FREE (ret->u.e.l);
 	ret->type = E_TRUE;
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
       else if (ret->u.e.l->type == E_INT) {
 	if (ret->u.e.l->u.ival.v_extra) {
@@ -1895,9 +2063,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->type = E_INT;
 	  ret->u.ival.v = ~v;
 	  ret->u.ival.v_extra = NULL;
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
       }
       else {
@@ -1932,9 +2098,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->type = E_INT;
 	  ret->u.ival.v = -v;
 	  ret->u.ival.v_extra = NULL;
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
       }
       else if (ret->u.e.l->type == E_REAL) {
@@ -2159,9 +2323,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
 	else {
 	  ret->u.ival.v_extra = NULL;
-	  tmp = TypeFactory::NewExpr (ret);
-	  FREE (ret);
-	  ret = tmp;
+	  ret = _expr_const_canonical (ret, flags);
 	}
 	*width = (hiv - lov + 1);
       }
@@ -2189,15 +2351,11 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (ret->type == E_BUILTIN_BOOL) {
 	  if (ret->u.e.l->u.ival.v) {
 	    ret->type = E_TRUE;
-	    tmp = TypeFactory::NewExpr (ret);
-	    FREE (ret);
-	    ret = tmp;
+	    ret = _expr_const_canonical (ret, flags);
 	  }
 	  else {
 	    ret->type = E_FALSE;
-	    tmp = TypeFactory::NewExpr (ret);
-	    FREE (ret);
-	    ret = tmp;
+	    ret = _expr_const_canonical (ret, flags);
 	  }
 	}
 	else {
@@ -2205,27 +2363,21 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    ret->type = E_INT;
 	    ret->u.ival.v = 1;
             ret->u.ival.v_extra = NULL;
-	    tmp = TypeFactory::NewExpr (ret);
-	    FREE (ret);
-	    ret = tmp;
+	    ret = _expr_const_canonical (ret, flags);
 	  }
 	  else if (ret->u.e.l->type == E_REAL) {
 	    Expr *texpr = ret->u.e.l;
 	    ret->type = E_INT;
 	    ret->u.ival.v = (long)texpr->u.f;
 	    ret->u.ival.v_extra = NULL;
-	    tmp = TypeFactory::NewExpr (ret);
-	    FREE (ret);
+	    ret = _expr_const_canonical (ret, flags);
 	    expr_free (texpr);
-	    ret = tmp;
 	  }
 	  else {
 	    ret->type = E_INT;
 	    ret->u.ival.v = 0;
             ret->u.ival.v_extra = NULL;
-	    tmp = TypeFactory::NewExpr (ret);
-	    FREE (ret);
-	    ret = tmp;
+	    ret = _expr_const_canonical (ret, flags);
 	  }
 	}
       }
@@ -2233,7 +2385,6 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     else {
       ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
-
       if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	BigInt *l;
 	int _width = ret->u.e.r->u.ival.v;
@@ -2276,6 +2427,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_FUNCTION:
     LVAL_ERROR;
     if (!(flags & ACT_EXPR_EXFLAG_CHPEX)) {
+      /* non-chp mode: this must be a parameter thing */
       if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
 	Expr *tmp, *prev;
 	Expr *w = e->u.fn.r;
@@ -2325,7 +2477,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  }
 	  inst_param *inst;
 	  if (count == 0) {
-	    f = f->Expand (ns, s, 0, NULL);
+	    if (!f->isExpanded()) {
+	      f = f->Expand (ns, s, 0, NULL);
+	    }
 	  }
 	  else {
 	    MALLOC (inst, inst_param, count);
@@ -2350,7 +2504,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    /* nothing here */
 	  }
 	  else {
-	    f = f->Expand (ns, s, 0, NULL);
+	    if (!f->isExpanded()) {
+	      f = f->Expand (ns, s, 0, NULL);
+	    }
 	  }
 	}
 
@@ -2385,6 +2541,12 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  } while (etmp);
 	}
       }
+    }
+    if (e_orig) {
+      /* usermacro substitution; so just free the tmp Expr that was
+	 allocated. */
+      FREE (e);
+      e = e_orig;
     }
     break;
 
@@ -2463,9 +2625,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	*width = btmp->getWidth();
       }
       else {
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
     }
     break;
@@ -2479,10 +2639,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_TRUE:
   case E_FALSE:
     LVAL_ERROR;
-
-    tmp = TypeFactory::NewExpr (ret);
-    FREE (ret);
-    ret = tmp;
+    ret = _expr_const_canonical (ret, flags);
     *width = 1;
     break;
 
@@ -2549,9 +2706,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	ret->u.ival.v_extra = btmp;
       }
       else {
-	tmp = TypeFactory::NewExpr (ret);
-	FREE (ret);
-	ret = tmp;
+	ret = _expr_const_canonical (ret, flags);
       }
     }
     break;
@@ -2835,6 +2990,21 @@ static void efree_ex (Expr *e)
 
   case E_FUNCTION:
     efree_ex (e->u.fn.r);
+    break;
+
+  case E_USERMACRO:
+    if (e->u.fn.r->type == E_GT) {
+      /* for templates; not used at the moment */
+      efree_ex (e->u.fn.r->u.e.l);
+      delete (ActId *) e->u.fn.r->u.e.r->u.e.l;
+      efree_ex (e->u.fn.r->u.e.r->u.e.r);
+      FREE (e->u.fn.r->u.e.r);
+    }
+    else {
+      efree_ex (e->u.fn.r->u.e.r);
+      delete (ActId *) (e->u.fn.r->u.e.l);
+    }
+    FREE (e->u.fn.r);
     break;
 
   case E_VAR:
@@ -3186,6 +3356,7 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     }
     break;
 
+  case E_USERMACRO:
   case E_FUNCTION:
   case E_COMMA:
   case E_COLON:
@@ -3393,6 +3564,7 @@ static void _collect_ids_from_expr (list_t *ids, Expr *e)
     _collect_ids_from_expr (ids, e->u.e.l);
     break;
 
+  case E_USERMACRO:
   case E_FUNCTION:
   case E_COMMA:
   case E_COLON:
@@ -3477,6 +3649,7 @@ int act_expr_bitwidth (int etype, int lw, int rw)
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
   case E_FUNCTION:
+  case E_USERMACRO:
   case E_INT:
   case E_VAR:
   case E_REAL:

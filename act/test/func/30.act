@@ -1,0 +1,18 @@
+deftype struct (int<4> a, b) { 
+ methods {
+   macro add(int b) {
+      a := a + b
+   }
+ }
+}
+
+defproc testme()
+{
+  struct s;
+  int t;
+  chp {
+    s.add(t)
+  }
+}
+
+testme t;

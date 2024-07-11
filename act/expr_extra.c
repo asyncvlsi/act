@@ -203,6 +203,7 @@ static Expr *_parse_expr_func (LFILE *l)
 	  FREE (e);
 	  return NULL;
 	}
+	// add template parsing here!
 	if (!file_have (l, lpar)) {
 	  FREE (e);
 	  Assert (expr_free_id, "What?");
@@ -216,9 +217,15 @@ static Expr *_parse_expr_func (LFILE *l)
 	f = e;
 	if (file_sym (l) != rpar) {
 	  do {
-	    NEW (f->u.e.r, Expr); // Assumes this is the same
+	    if (f == e) {
+	      NEW (e->u.fn.r, Expr);
+	      f = e->u.fn.r;
+	    }
+	    else {
+	      NEW (f->u.e.r, Expr); // Assumes this is the same
 				  // as u.fn.r
-	    f = f->u.e.r;
+	      f = f->u.e.r;
+	    }
 	    f->type = E_LT;
 	    f->u.e.r = NULL;
 	    f->u.e.l = expr_parse_any (l);
@@ -898,6 +905,11 @@ int act_expr_free_default (Expr *e)
 {
   if (e->type == E_ENUM_CONST) {
     FREE (e->u.fn.s);
+    return 1;
+  }
+  else if (e->type == E_USERMACRO) {
+    Assert (expr_free_id, "What?");
+    (*expr_free_id) (e->u.fn.s);
     return 1;
   }
   return 0;
