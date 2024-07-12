@@ -1,0 +1,8 @@
+template<pint A, B = 8>
+defproc foo (bool x[A], y[B]) { x[0] = y[0]; }
+
+template<pint C, D = 2>
+defproc bar <: foo<3> (bool z[C], aa[D]) { }
+
+
+bar<1> b;

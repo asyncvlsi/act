@@ -150,7 +150,7 @@ void UserDef::snprintActName (char *buf, int sz)
   buf[pos] = '\0';
 }
 
-int UserDef::AddMetaParam (InstType *t, const char *id)
+int UserDef::AddMetaParam (InstType *t, const char *id, AExpr *ae)
 {
   int i;
 
@@ -189,6 +189,14 @@ int UserDef::AddMetaParam (InstType *t, const char *id)
     NEW (pt, InstType *);
   }
   pt[nt-1] = t;
+
+  if (pdefault) {
+    REALLOC (pdefault, AExpr *, nt);
+  }
+  else {
+    NEW (pdefault, AExpr *);
+  }
+  pdefault[nt-1] = ae;
 
   return 1;
 }
@@ -300,6 +308,7 @@ UserDef::UserDef (ActNamespace *ns)
   nt = 0;
   pt = NULL;
   pn = NULL;
+  pdefault = NULL;
   exported = 0;
 
   name = NULL;
@@ -391,6 +400,7 @@ void UserDef::MkCopy (UserDef *u)
   
   pt = u->pt; u->pt = NULL;
   pn = u->pn; u->pn = NULL;
+  pdefault = u->pdefault; u->pdefault = NULL;
 
   exported = u->exported; u->exported = 0;
 
@@ -593,6 +603,11 @@ int UserDef::isEqual (const UserDef *u) const
   for (i=0; i < nt; i++) {
     if (pn[i] != u->pn[i]) return 0;
     if (!pt[i]->isEqual (u->pt[i])) return 0;
+    if (pdefault[i] && !u->pdefault[i] ||
+	!pdefault[i] && u->pdefault[i]) return 0;
+    if (pdefault[i]) {
+      if (!pdefault[i]->isEqual (u->pdefault[i])) return 0;
+    }
   }
 
   for (i=0; i < nports; i++) {
@@ -694,13 +709,14 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
     }
 
     /* add parameter to the scope */
-    ux->AddMetaParam (x, pn[i]);
+    ux->AddMetaParam (x, pn[i], NULL);
 
     /* this one gets bound to:
        - the next specified parameter, if it exists
        - the next inherited parameter, if it exists
     */
     inst_param *bind_param = NULL;
+    inst_param tmp_val;
     if (inherited_templ > 0 && inherited_param[i]) {
       bind_param = inherited_param[i];
     }
@@ -709,7 +725,14 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       ii++;
     }
     else {
-      bind_param = NULL;
+      if (pdefault[i]) {
+	tmp_val.isatype = 0;
+	tmp_val.u.tp = pdefault[i]->Expand (ns, ux->I);
+	bind_param = &tmp_val;
+      }
+      else {
+	bind_param = NULL;
+      }
     }
 
     if (!bind_param) continue;

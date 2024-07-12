@@ -80,11 +80,12 @@ template_spec: [ "export" ] "template"
 }}
 ;
 
-param_inst: param_type id_list
+param_inst: param_type param_id_list
 {{X:
     listitem_t *li;
     ActRet *r;
     InstType *it;
+    int has_default = 0;
 
     for (li = list_first ($2); li; li = list_next (li)) {
 
@@ -118,18 +119,50 @@ param_inst: param_type id_list
       }
       list_free (m);
 
+      li = list_next (li);
+
+      r = (ActRet *)list_value (li);
+      $A(r->type == R_LIST);
+      m = r->u.l;
+      FREE (r);
+      AExpr *ae;
+      if (OPT_EMPTY (m)) {
+	ae = NULL;
+	if (has_default) {
+	  $E("Default template parameters must be trailing parameters!");
+	}
+      }
+      else {
+	r = OPT_VALUE (m);
+	$A(r->type == R_AEXPR);
+	ae = r->u.ae;
+	FREE (r);
+	has_default = 1;
+      }
+      list_free (m);
+      
       if ($0->u) {
-	if ($0->u->AddMetaParam (it, id_name) != 1) {
+	if ($0->u->AddMetaParam (it, id_name, ae) != 1) {
 	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
 	}
       }
       else if ($0->u_f) {
-	if ($0->u_f->AddMetaParam (it, id_name) != 1) {
+	if ($0->u_f->AddMetaParam (it, id_name, ae) != 1) {
 	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
 	}
       }
       else {
 	$A(0);
+      }
+      if (ae) {
+	ActId *tmp = new ActId (id_name);
+	type_set_position ($l, $c, $n);
+	if (!act_type_conn ($0->scope, tmp, ae)) {
+	  $e("Typechecking failed for default parameter!");
+	  fprintf ($f, "\n\t%s\n", act_type_errmsg ());
+	  exit (1);
+	}
+	delete tmp;
       }
     }
     list_free ($2);
@@ -144,6 +177,12 @@ param_inst: param_type id_list
 id_list[list_t *]: { ID [ dense_range ] "," }**
 {{X: return $1; }}
 ;
+
+
+param_id_list[list_t *]: { ID [ dense_range ] [ "=" array_expr ] "," }**
+{{X: return $1; }}
+;
+
 
 /*------------------------------------------------------------------------
  *
@@ -241,7 +280,7 @@ def_or_proc ID
       for (int i=0; i < pp->getNumParams(); i++) {
 	const char *s = pp->getPortName (-(i+1));
 	InstType *st = pp->getPortType (-(i+1));
-	if ($0->u_p->AddMetaParam (st, s) != 1) {
+	if ($0->u_p->AddMetaParam (st, s, pp->getDefaultParam(i)) != 1) {
 	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
 	  it->Print ($f);
@@ -949,7 +988,7 @@ defdata: [ template_spec ]
 	for (int i=0; i < dp->getNumParams(); i++) {
 	  const char *s = dp->getPortName (-(i+1));
 	  InstType *st = dp->getPortType (-(i+1));
-	  if ($0->u_d->AddMetaParam (st, s) != 1) {
+	  if ($0->u_d->AddMetaParam (st, s, dp->getDefaultParam(i)) != 1) {
 	    $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	    fprintf ($f, "\n\tConflict occurs due to parent type: ");
 	    ir->Print ($f);
@@ -1327,7 +1366,7 @@ defchan: [ template_spec ]
       for (int i=0; i < ch->getNumParams(); i++) {
 	const char *s = ch->getPortName (-(i+1));
 	InstType *st = ch->getPortType (-(i+1));
-	if ($0->u_c->AddMetaParam (st, s) != 1) {
+	if ($0->u_c->AddMetaParam (st, s, ch->getDefaultParam(i)) != 1) {
 	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
 	  ir->Print ($f);

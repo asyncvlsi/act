@@ -1,0 +1,7 @@
+template<pint Y, X = 3> 
+defproc foo(bool x[X])
+{
+
+}
+
+foo f;

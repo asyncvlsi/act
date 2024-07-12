@@ -1,0 +1,8 @@
+template<pint X = 3>
+defproc foo(bool x[X])
+{
+  { X = 3 : "Check" };
+  { X = 4 : "X is 3" };
+}
+
+foo x;

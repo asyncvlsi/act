@@ -1,0 +1,7 @@
+In expanding foo (64.act:1)
+In expanding ::<Global>
+Error on or near line number 5.
+*** Assertion failed ***
+ assertion: X=4
+   message: X is 3
+FATAL: Aborted execution on failed assertion

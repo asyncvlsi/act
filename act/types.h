@@ -367,10 +367,11 @@ class UserDef : public Type {
    *
    *  @param t is the type of the parameter
    *  @param id is the the identifier for this parameter
+   *  @param def is the default value
    *
    *  @return 1 on success, 0 on error (duplicate parameter name)
    */
-  int AddMetaParam (InstType *t, const char *id);
+  int AddMetaParam (InstType *t, const char *id, AExpr *def);
 
   /**
    * Add a new port
@@ -520,6 +521,11 @@ class UserDef : public Type {
    * @return the number of template parameters
    */
   int getNumParams () const { return nt; }
+
+  /**
+   * @return default parameter value
+   */
+  AExpr *getDefaultParam (int p) const { return pdefault[p]; }
 
   /**
    * Template parameters may be explicitly declared, or inherited by
@@ -742,6 +748,7 @@ class UserDef : public Type {
   int nt;			///< number of template parameters
   InstType **pt;		///< parameter types
   const char **pn;		///< parameter names
+  AExpr **pdefault;		///< default parameters
 
   int nports;			///< number of ports
   InstType **port_t;		///< port types

@@ -1,0 +1,3 @@
+ERROR: File `67.act', line 1, col 14
+	Typechecking failed for default parameter!
+	Types `pint' and `pint[1]' are not compatible
