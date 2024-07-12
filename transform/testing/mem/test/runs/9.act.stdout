@@ -35,7 +35,7 @@ int<36> _memdatv1;
 
 /* connections */
 chp {
-x:=0x0;_memdats1:=y;mem_m.addr!x,mem_m.rd!0,mem_m.din!{_memdats1.a,_memdats1.b[0],_memdats1.b[1],_memdats1.b[2],_memdats1.b[3]}
+x:=0x0;_memdats1:=y;mem_m.addr!x,mem_m.rd!0,mem_m.din! {_memdats1.a,_memdats1.b[0],_memdats1.b[1],_memdats1.b[2],_memdats1.b[3]}
 }
 }
 
