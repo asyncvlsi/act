@@ -613,7 +613,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     break;
 
   case E_CONCAT:
-    snprintf (buf+k, sz, "{");
+    snprintf (buf+k, sz, " {");
     PRINT_STEP;
     while (e) {
       if (prec < 0) {
