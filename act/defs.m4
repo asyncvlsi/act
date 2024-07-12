@@ -647,6 +647,7 @@ single_port_item: physical_inst_type id_list
     InstType *it;
     UserDef *u;
 
+
     /* Make sure that port types are acceptable */
     if ($0->u_p || $0->u_i) {
       const char *msg = "process";
@@ -700,6 +701,10 @@ single_port_item: physical_inst_type id_list
       }
       else if (TypeFactory::isChanType ($1->BaseType())) {
 	err = "channel";
+      }
+      else if (TypeFactory::isStructure ($1->BaseType()) &&
+	       !TypeFactory::isPureStruct ($1->BaseType())) {
+	err = "structure with channels";
       }
       if (err) {
 	r = (ActRet *) list_value (list_first ($2));

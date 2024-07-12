@@ -291,6 +291,7 @@ void Function::_chk_inline (act_chp_lang_t *c)
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
     fatal_error ("Send/receive in function body?!");
+    is_simple_inline = 0;
     break;
 
   default:

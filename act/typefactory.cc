@@ -431,6 +431,31 @@ int TypeFactory::isExactChanType (const Type *t)
 }
 INSTMACRO(isExactChanType)
 
+int TypeFactory::isPureStruct (const Type *t)
+{
+  if (!isStructure (t)) {
+    return 0;
+  }
+  const Data *x = dynamic_cast<const Data *>(t);
+  
+  /* -- now check that this is a structure with only data fields! -- */
+  for (int i=0; i < x->getNumPorts(); i++) {
+    InstType *it = x->getPortType (i);
+    if (isStructure (it)) {
+      if (!isPureStruct (x->getPortType(i)->BaseType())) {
+	return 0;
+      }
+    }
+    else if (!(TypeFactory::isIntType (it) ||
+	       TypeFactory::isBoolType (it) ||
+	       TypeFactory::isEnum (it))) {
+      return 0;
+    }
+  }
+  return 1;
+}
+INSTMACRO(isPureStruct)
+  
 
 int TypeFactory::isValidChannelDataType (const Type *t)
 {

@@ -1999,6 +1999,16 @@ class TypeFactory {
   /** see other isStructure() method */
   static int isStructure (const InstType *it);
 
+
+  /**
+   * @return 1 if the type is a structure with pure data fields only
+   * (recursive)
+   */
+  static int isPureStruct (const Type *t);
+
+  /** see other isPureStruct() method */
+  static int isPureStruct (const InstType *it);
+
   /**
    * Is this a user-defined enumeration?
    * @return 1 if this is a user-defined enumeration type, 0 otherwise

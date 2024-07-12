@@ -1,0 +1,23 @@
+deftype testme (int<4> x; chan(int) y)
+{
+
+}
+
+
+function foo (testme t) : bool
+{
+   chp {
+     self := true;
+     t.y!1
+   }
+}
+
+
+defproc test()
+{
+   testme x;
+   bool y;
+   chp {
+     y := foo(x)
+   }
+}

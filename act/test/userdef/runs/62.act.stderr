@@ -1,0 +1,2 @@
+ERROR: File `62.act', line 7, col 24
+	Parameter `t': port parameter for a function cannot be a structure with channels

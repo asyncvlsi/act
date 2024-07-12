@@ -1,0 +1,24 @@
+deftype testme (int x) { 
+  methods {
+    macro foo (int w) : int 
+    {
+        w := 3 + x ; self := w
+    }
+  }
+}
+
+defproc test()
+{
+   int x;
+   testme blah;
+
+   chp {
+     x := blah.foo(x)
+//     x := blah[3].foo(5)
+//     x := blah.foo[3](5) + self
+//       x := self
+   }
+}
+
+
+test t;
