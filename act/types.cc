@@ -1396,6 +1396,13 @@ void UserDef::PrintHeader (FILE *fp, const char *type, bool unmangle)
 	a->Print (fp);
       }
       it->MkArray (a);
+
+      AExpr *ae = getDefaultParam (i);
+      if (ae) {
+	fprintf (fp, " = ");
+	ae->Print (fp);
+      }
+
       if (i != n-1) {
 	fprintf (fp, "; ");
       }

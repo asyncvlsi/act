@@ -1158,8 +1158,8 @@ void ActCellPass::add_passgates_cap ()
     if ((i % 2) == 0) {
       InstType *xit;
       xit = TypeFactory::Factory()->NewPInt();
-      u->AddMetaParam (xit, "w");
-      u->AddMetaParam (xit, "l");
+      u->AddMetaParam (xit, "w", NULL);
+      u->AddMetaParam (xit, "l", NULL);
     }
     
     proc = new Process (u);
