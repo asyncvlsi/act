@@ -1444,12 +1444,11 @@ void Scope::refineBaseType (const char *s, InstType *u)
     b->v = x->refineBaseType (u);
   }
   else {
-    Assert (0, "Should not be here!");
+    //Assert (0, "Should not be here!");
     ValueIdx *vx = (ValueIdx *)b->v;
     vx->t = vx->t->refineBaseType (u);
   }
 }
-
 
 const char *Scope::getName ()
 {

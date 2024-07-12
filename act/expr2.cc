@@ -1264,6 +1264,17 @@ static Expr *_expr_expand (int *width, Expr *e,
     */
     ret->type = E_FUNCTION;
     um = (UserMacro *) e->u.fn.s;
+    /* um is the unexpanded macro; get the expanded one by looking up
+       the type! */
+    {
+      InstType *id_it;
+      id_it = s->FullLookup ((ActId *)e->u.fn.r->u.e.l, NULL);
+      Assert (id_it, "Macro error!");
+      UserDef *id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
+      Assert (id_ux, "What?");
+      um = id_ux->getMacro (um->getName());
+      Assert (um, "Expanded macro?");
+    }
     e_orig = e;			/* original e; saved away */
     NEW (e, Expr);
     e->type = E_FUNCTION;

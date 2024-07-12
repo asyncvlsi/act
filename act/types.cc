@@ -419,6 +419,12 @@ void UserDef::MkCopy (UserDef *u)
 
   A_ASSIGN (um, u->um);
   u->um = NULL;
+
+  for (int i=0; i < A_LEN (um); i++) {
+    if (um[i]->getFunction()) {
+      um[i]->updateFn (this);
+    }
+  }
 }
 
 

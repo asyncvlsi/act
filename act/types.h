@@ -1496,6 +1496,13 @@ public:
    */
   Function *getFunction() { return _exf; }
 
+
+  /**
+   * Update function argument type using the new data type pointer
+   * that is persistent
+   */
+  void updateFn (UserDef *u);
+
 private:
   const char *_nm;	     ///< name of the macro
   UserDef *parent;	     ///< user-defined type with this macro

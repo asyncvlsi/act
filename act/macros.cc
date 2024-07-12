@@ -170,6 +170,8 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     int len;
     InstType *it = new InstType (s, ux, 0);
     it->mkExpanded ();
+
+    Assert (ux->isExpanded(), "What?");
     
     /* add the ports to this function! */
 
@@ -192,12 +194,12 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 
     tmpf->setRetType (ret->rettype);
     
-    _exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
-    
+    ret->_exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
+
     // now we set the CHP body!
     // substitute with a special ID
     ActId *prefix = new ActId (string_cache ("$internal"));
-    act_languages *all_lang = _exf->getlang();
+    act_languages *all_lang = ret->_exf->getlang();
     act_chp *xchp;
     NEW (xchp, act_chp);
     xchp->vdd = NULL;
@@ -231,11 +233,10 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     act_inline_free (tab);
     
     all_lang->setchp (xchp);
-    _exf->chkInline ();
+    ret->_exf->chkInline ();
   }
   delete tsc;
   
-
   return ret;
 }
 
@@ -493,4 +494,16 @@ static act_chp_lang_t *_chp_subst_helper (ActId *id, act_inline_table *tab,
 act_chp_lang_t *UserMacro::substitute (ActId *id, act_inline_table *tab)
 {
   return _chp_subst_helper (id, tab, c);
+}
+
+
+void UserMacro::updateFn (UserDef *u)
+{
+  InstType *it;
+  Assert (_exf, "UserMacro::updateFn() SHould not be called!");
+
+  it = new InstType (_exf->CurScope(), u, 0);
+
+  _exf->CurScope()->refineBaseType ("$internal", it);
+  _exf->refinePortType (0, it);
 }
