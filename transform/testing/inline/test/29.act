@@ -1,0 +1,21 @@
+function bar (int<1> arg) : int<1>
+{
+
+  int<1> f;
+
+  chp {
+   self := arg + 2
+  }
+}
+
+defproc test ()
+{
+  
+  chan(int<1>) ff, qq;
+
+  dataflow {
+    bar(bar(qq)) -> ff
+  }
+}
+
+test t;

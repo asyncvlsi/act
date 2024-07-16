@@ -1,0 +1,33 @@
+defproc test ();
+function bar (int<1> arg) : int<1>;
+
+defproc test ()
+{
+
+/* instances */
+chan(int<1>) ff;
+chan(int<1>) qq;
+
+/* connections */
+dataflow {
+qq+0x2+0x2 -> ff
+}
+}
+
+function bar (int<1> arg) : int<1>
+{
+
+/* instances */
+int<1> f;
+
+/* connections */
+chp {
+self:=arg+0x2
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

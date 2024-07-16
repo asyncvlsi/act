@@ -296,7 +296,21 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal)
   }
   else if (e->type == E_USERMACRO) {
     UserMacro *um = (UserMacro *) e->u.fn.s;
-    return um->getRetType();
+    if (um->isBuiltinStructMacro() && e->u.fn.r->type == E_GT) {
+      int count = 0;
+      Expr *w;
+      w = e->u.fn.r->u.e.l;
+      while (w) {
+	count++;
+	w = w->u.e.r;
+      }
+      InstType *it = new InstType (s, um->getRetType()->BaseType(), 1);
+      it->setNumParams (count);
+      return it;
+    }
+    else {
+      return um->getRetType();
+    }
   }
   return NULL;
 }
@@ -961,13 +975,18 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (um->isBuiltinMacro()) {
 	tmp = e->u.fn.r;
 	if (um->isBuiltinStructMacro()) {
-	  while (tmp->type != E_LT) {
-	    tmp = tmp->u.e.r;
+	  if (tmp->type == E_GT) {
+	    tmp = tmp->u.e.r->u.e.l;
 	  }
-	  tmp = tmp->u.e.l;
+	  else {
+	    tmp = tmp->u.e.l;
+	  }
 	}
-	  
+
 	InstType *y = act_expr_insttype (s, tmp, NULL, only_chan);
+	if (!y) {
+	  return T_ERR;
+	}
 
 	if (only_chan) {
 	  if (only_chan == 1) {
@@ -997,14 +1016,17 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
 
 	if (!x->isConnectable (y, 1)) {
-	  typecheck_err ("Built-in macro `%s': argument has an incompatible type",
+	  if (TypeFactory::isPIntType (y) && TypeFactory::isIntType (x)) {
+	    // we're fine
+	  }
+	  else {
+	    typecheck_err ("Built-in macro `%s': argument has an incompatible type",
 			   um->getName());
-	  return T_ERR;
+	    return T_ERR;
+	  }
 	}
       }
       else {
-      
-
 	if (TypeFactory::isParamType (rtype)) {
 	  kind = 0;
 	}

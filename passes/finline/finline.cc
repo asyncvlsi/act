@@ -276,7 +276,61 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
   if (!e) return;
   switch (e->t) {
   case ACT_DFLOW_FUNC:
-    e->u.func.lhs = _inline_funcs (l, e->u.func.lhs);
+    {
+      InstType *it = _cursc->FullLookup (e->u.func.rhs, NULL);
+      Assert (TypeFactory::isChanType (it), "What?");
+      it = TypeFactory::getChanDataType (it);
+      if (TypeFactory::isStructure (it)) {
+	if (e->u.func.lhs->type == E_VAR) {
+	  /* nothing to be done here */
+	}
+	else {
+	  Expr **vals = _inline_funcs_general (l, e->u.func.lhs);
+	  Data *d;
+	  int *types;
+	  int nb, ni;
+
+	  if (vals) {
+	    /* simple inline */
+	    d = dynamic_cast <Data *>(it->BaseType());
+	    Assert (d, "Hmm");
+	    ActId **fields = d->getStructFields (&types);
+	    FREE (types);
+	    d->getStructCount (&nb, &ni);
+	    int sz = nb + ni;
+	    list_t *l = list_new ();
+
+	    // we need to create a multi-assignment!
+
+	    fatal_error ("FIXME: structure return type inlining for dataflow elements!");
+#if 0	    
+	    for (int i=0; i < sz; i++) {
+	      act_chp_lang_t *tc;
+
+	      if (vals[i]) {
+		NEW (tc, act_chp_lang_t);
+		tc->type = ACT_CHP_ASSIGN;
+		tc->label = NULL;
+		tc->space = NULL;
+		tc->u.assign.id = c->u.assign.id->Clone();
+		tc->u.assign.id->Tail()->Append (fields[i]);
+		tc->u.assign.e = vals[i];
+		list_append (l, tc);
+	      }
+	      else {
+		delete fields[i];
+	      }
+	    }
+#endif
+	    FREE (fields);
+	  }
+	  // otherwise what are we doing!
+	}
+      }
+      else {
+	e->u.func.lhs = _inline_funcs (l, e->u.func.lhs);
+      }
+    }
     break;
 
   case ACT_DFLOW_CLUSTER:

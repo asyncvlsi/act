@@ -447,18 +447,21 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	    return;
 	  }
 	  else {
-	    printf ("name is: %s\n", f->getName());
 	    UserDef *parent = f->CurScope()->Parent()->getUserDef();
 	    Assert (parent, "What?");
-	    if (strcmp (nm + i, parent->getName()) == 0) {
+
+	    int cnt = 0;
+	    while (nm[i + cnt] && nm[i + cnt] != '<') {
+	      cnt++;
+	    }
+	    
+	    if (strncmp (nm + i, parent->getName(), cnt) == 0) {
 	      is_special_struct = 1;
 	    }
-	    Assert (0, "fixme");
 	  }
 	}
 
 	if (!is_special_struct) {
-	  
 	Assert (e->u.fn.r &&
 		e->u.fn.r->type == E_LT &&
 		e->u.fn.r->u.e.l->type == E_VAR, "What?");
@@ -479,7 +482,66 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	ADD_CHAR('(');
 	tmp = e->u.fn.r->u.e.r;
 	}
-	
+	else {
+	  if (f->getns() && f->getns() != ActNamespace::Global()) {
+	    char *s = f->getns()->Name ();
+	    snprintf (buf+k, sz, "%s::", s);
+	    PRINT_STEP;
+	    FREE (s);
+	  }
+#if 0	  
+	  pos = 0;
+	  while (nm[pos] != '/') {
+	    pos++;
+	  }
+	  pos++;
+	  while (nm[pos] && nm[pos] != '<') {
+	    ADD_CHAR (nm[pos]);
+	    pos++;
+	  }
+	  if (nm[pos+1] != '>') {
+	    while (nm[pos]) {
+	      ADD_CHAR (nm[pos]);
+	      pos++;
+	    }
+	  }
+#endif
+	  if (ActNamespace::Act()) {
+	    ActNamespace::Act()->msnprintfproc (buf+k, sz, f->CurScope()->Parent()->getUserDef(), 1);
+	  }
+	  else {
+	    snprintf (buf+k, sz, "%s", f->CurScope()->Parent()->getUserDef()->getName());
+	  }
+	  PRINT_STEP;
+#if 0	  
+	  pos = 0;
+	  while (nm[pos] != '/') {
+	    ADD_CHAR (nm[pos]);
+	    pos++;
+	  }
+#endif	  
+	  ADD_CHAR('(');
+	  if (e->u.fn.r->type == E_GT) {
+	    Assert (0, "This cannot happen!");
+	    if (prec < 0) {
+	      sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.r->u.e.l);
+	    }
+	    else {
+	      sprint_expr (buf+k, sz, e->u.fn.r->u.e.r->u.e.l);
+	    }
+	  }
+	  else {
+	    if (prec < 0) {
+	      sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	    else {
+	      sprint_expr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	  }
+	  PRINT_STEP;
+	  snprintf (buf+k, sz, ")");
+	  return;
+	}
       }
 
       if (f->isUserMethod() && is_special_struct ||
@@ -994,9 +1056,24 @@ int expr_equal (const Expr *a, const Expr *b)
 
 	// built-in macros are a special case
 	if (((UserMacro *)a->u.fn.s)->isBuiltinMacro()) {
-	  return expr_equal (at, bt);
+	  if (((UserMacro *)a->u.fn.s)->isBuiltinStructMacro ()) {
+	    if (at->type == E_GT) {
+	      if (!expr_args_equal (at->u.e.l, bt->u.e.l)) {
+		return 0;
+	      }
+	      at = at->u.e.r;
+	      bt = bt->u.e.r;
+	    }
+	    Assert (at->type == E_LT, "What?");
+	    Assert (bt->type == E_LT, "What?");
+	    Assert (!at->u.e.r, "What?");
+	    Assert (!bt->u.e.r, "What?");
+	    return expr_equal (at->u.e.l, bt->u.e.l);
+	  }
+	  else {
+	    return expr_equal (at, bt);
+	  }
 	}
-
 	if (at->type == E_LT) {
 	  if (!_id_equal (at->u.e.l, bt->u.e.l)) {
 	    return 0;
@@ -1363,7 +1440,48 @@ static Expr *_expr_expand (int *width, Expr *e,
 
       if (um->isBuiltinMacro()) {
 	int dummy;
-	ret->u.fn.r = _expr_expand (&dummy, e->u.fn.r, ns, s, flags);
+	if (um->isBuiltinStructMacro ()) {
+	  if (w) {
+	    NEW (ret->u.fn.r, Expr);
+	    ret->u.fn.r->type = w->type;
+	    ret->u.fn.r->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	    if (w->type == E_GT) {
+	      w = w->u.e.r;
+	      if (w) {
+		NEW (ret->u.fn.r->u.e.r, Expr);
+		tmp = ret->u.fn.r->u.e.r;
+	      }
+	      else {
+		ret->u.fn.r->u.e.r = NULL;
+		tmp = NULL;
+	      }
+	    }
+	    if (w) {
+	      Assert (w->type == E_LT, "What?");
+	      tmp->type = w->type;
+	      while (w) {
+		tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+		if (w->u.e.r) {
+		  NEW (tmp->u.e.r, Expr);
+		  tmp->u.e.r->type = E_LT;
+		  tmp = tmp->u.e.r;
+		}
+		else {
+		  tmp->u.e.r = NULL;
+		}
+		w = w->u.e.r;
+	      }
+	    }
+	  }
+	  else {
+	    // this should not happen... but since this is predup this
+	    // could be before any checks are done
+	    ret->u.fn.r = w;
+	  }
+	}
+	else {
+	  ret->u.fn.r = _expr_expand (&dummy, e->u.fn.r, ns, s, flags);
+	}
       }
       else {
 	ret->u.fn.r = NULL;
@@ -1406,10 +1524,46 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
       else {
 	if (um->isBuiltinStructMacro()) {
+	  UserDef *ux;
+	  inst_param *inst;
+	  int count = 0;
+	  Expr *w;
 	  // for "struct<...>(.)": the template parameters and struct
 	  // need to just be expanded to get the macro information.
-	  // this looks like a regular templated function with one argument.
-	  
+	  // this looks like a regular templated function with one
+	  // argument.
+	  Assert (e->u.fn.r, "Function from struct(..) macro has no args?");
+	  ux = um->Parent();
+	  if (e->u.fn.r->type == E_GT) {
+	    /* Template parameters exist, extract them! */
+	    w = e->u.fn.r->u.e.l;
+	    count = 0;
+	    while (w) {
+	      count++;
+	      w = w->u.e.r;
+	    }
+	    MALLOC (inst, inst_param, count);
+	    w = e->u.fn.r->u.e.l;
+	    for (int i=0; i < count; i++) {
+	      AExpr *tae;
+	      inst[i].isatype = 0;
+	      tae = new AExpr (expr_dup (w->u.e.l));
+	      inst[i].u.tp = tae->Expand (ns, s, 0);
+	      delete tae;
+	      w = w->u.e.r;
+	    }
+	  }
+	  else {
+	    inst = NULL;
+	  }
+	  ux = ux->Expand (ns, s, count, inst);
+	  for (int i=0; i < count; i++) {
+	    delete inst[i].u.tp;
+	  }
+	  if (count > 0) {
+	    FREE (inst);
+	  }
+	  um = ux->getMacro (um->getName());
 	}
 	else {
 	  // for "int(.)": we just need the structure return type. The
@@ -1462,7 +1616,15 @@ static Expr *_expr_expand (int *width, Expr *e,
 
     if (um->isBuiltinMacro()) {
       if (um->isBuiltinStructMacro()) {
-
+	NEW (e->u.fn.r, Expr);
+	e->u.fn.r->type = E_LT;
+	e->u.fn.r->u.e.r = NULL;
+	if (e_orig->u.fn.r->type == E_GT) {
+	  e->u.fn.r->u.e.l = e_orig->u.fn.r->u.e.r->u.e.l;
+	}
+	else {
+	  e->u.fn.r->u.e.l = e_orig->u.fn.r->u.e.l;
+	}
       }
       else {
 	// int(...)

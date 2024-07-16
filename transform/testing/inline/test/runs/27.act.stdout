@@ -1,5 +1,4 @@
 defproc test ();
-function newstruct (struct s) : struct;
 function addup (struct s) : int<5>;
 deftype struct (int<4> a; int<4> b);
 
@@ -7,23 +6,12 @@ defproc test ()
 {
 
 /* instances */
-int<32> t;
-struct s;
+chan(int<32>) t;
+chan(struct) s;
 
 /* connections */
-chp {
-s.a:=0x5;s.b:=0xa;t:=s.a+s.b;s.a:=s.b;s.b:=s.a
-}
-}
-
-function newstruct (struct s) : struct
-{
-
-/* instances */
-
-/* connections */
-chp {
-self.a:=s.b;self.b:=s.a
+dataflow {
+s.a+s.b -> t
 }
 }
 

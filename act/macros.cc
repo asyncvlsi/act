@@ -165,6 +165,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       else {
 	it = new InstType (s, ux, 0);
 	it->mkExpanded();
+	it->MkCached();
       }
       ret->rettype = it;
     }
@@ -539,14 +540,22 @@ void UserMacro::updateFn (UserDef *u)
 
   it = new InstType (_exf->CurScope(), u, 0);
 
-  _exf->CurScope()->refineBaseType ("$internal", it);
-  _exf->refinePortType (0, it);
+  if (isBuiltinStructMacro()) {
+    _exf->CurScope()->refineBaseType ("self", it);
+    _exf->setRetType (it);
+  }
+  else {
+    _exf->CurScope()->refineBaseType ("$internal", it);
+    _exf->refinePortType (0, it);
+  }
+  _exf->CurScope()->updateParent (u->CurScope());
 }
 
 
 void UserMacro::populateCHP()
 {
   Data *xd;
+  act_chp_lang_t *c;
 
   Assert (isBuiltinMacro(), "Should not be called for non-built-in macros");
 
@@ -575,7 +584,36 @@ void UserMacro::populateCHP()
 #endif
 
   if (isBuiltinStructMacro()) {
-    warning ("Synthesize CHP here");
+    // create a sequence of assignments to each part of "self"
+    int pos = TypeFactory::totBitWidth (xd);
+    Assert (pos > 0, "What?");
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_SEMI;
+    c->space = NULL;
+    c->label = NULL;
+    c->u.semi_comma.cmd = list_new ();
+    for (int i=0; i < nbools + nints; i++) {
+      act_chp_lang_t *tmp;
+      Expr *e;
+      ActId *tid = new ActId (string_cache ("self"));
+      tid->Append (xfield[i]);
+      NEW (e, Expr);
+      e->type = E_BITFIELD;
+      e->u.e.l = (Expr *) new ActId (string_cache ("$internal"));
+      NEW (e->u.e.r, Expr);
+      e->u.e.r->type = E_BITFIELD;
+      e->u.e.r->u.e.r = const_expr (pos-1);
+      pos -= TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
+      e->u.e.r->u.e.l = const_expr (pos);
+      
+      NEW (tmp, act_chp_lang_t);
+      tmp->type = ACT_CHP_ASSIGN;
+      tmp->space = NULL;
+      tmp->label = NULL;
+      tmp->u.assign.e = e;
+      tmp->u.assign.id = tid;
+      list_append (c->u.semi_comma.cmd, tmp);
+    }
   }
   else {
     // create chp body
@@ -602,20 +640,19 @@ void UserMacro::populateCHP()
 	f->type = E_CONCAT;
       }
     }
-    act_chp_lang_t *c;
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
     c->label = NULL;
     c->space = NULL;
     c->u.assign.e = e;
     c->u.assign.id = new ActId (string_cache ("self"));
-    Assert (_exf, "What?");
-    act_chp *xchp = _exf->getlang()->getchp();
-    xchp->c = c;
-#if 0
-    printf ("CHP:\n");
-    chp_print (stdout, xchp->c);
-    printf ("\n");
-#endif    
   }
+  Assert (_exf, "What?");
+  act_chp *xchp = _exf->getlang()->getchp();
+  xchp->c = c;
+#if 0
+  printf ("CHP:\n");
+  chp_print (stdout, xchp->c);
+  printf ("\n");
+#endif  
 }

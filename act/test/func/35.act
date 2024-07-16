@@ -1,0 +1,23 @@
+template<pint N>
+deftype str (int<N> x, z)
+{
+   methods {
+     macro plus (int<2> y) : int<4>
+     {
+       self := x + y
+     }
+   }
+}
+
+defproc test()
+{
+   str<4> s;
+   int<8> w;
+   chp {
+      w := 0x42;
+      s := str(0x42);
+      log ("got ", s.x, " ", s.z)
+   }
+}
+
+test t;

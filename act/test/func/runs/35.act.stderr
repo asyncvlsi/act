@@ -1,0 +1,4 @@
+ERROR: File `35.act', line 18, col 9
+	Typechecking failed on CHP assignment
+  stmt: s := str(66)
+	Incompatible structures

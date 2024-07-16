@@ -418,6 +418,14 @@ class Scope {
    */
   const char *getName();
 
+
+  /**
+   * Update parent scope pointer. Warning: don't use unlesss you know
+   * what you are doing! This is used because synthetic functions
+   * generated during macro expansion have to be handled correctly.
+   */
+  void updateParent(Scope *s) { up = s; }
+
   /**
    * Print the connections specified by the cx pointer. Normally this
    * only prints the essential connections---i.e. if cx is a
