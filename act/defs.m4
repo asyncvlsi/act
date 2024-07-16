@@ -1192,6 +1192,15 @@ one_method: ID "{" hse_body "}"
       $0->um = $0->u_c->newMacro ($2);
     }
     else if ($0->u_d) {
+      if (TypeFactory::isPureStruct ($0->u_d)) {
+	if (strcmp ($2, "int") == 0) {
+	  $E("``int'' cannot be used as a macro name; it is built-in!");
+	}
+	else if (strcmp ($2, $0->u_d->getName()) == 0) {
+	  $E("``%s'' cannot be used as a macro name; it is built-in!",
+	     $0->u_d->getName());
+	}
+      }
       $0->um = $0->u_d->newMacro ($2);
     }
     else {

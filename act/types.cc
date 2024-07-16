@@ -1136,6 +1136,15 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   if (enum_vals) {
     xd->enum_vals = list_dup (enum_vals);
   }
+
+  if (TypeFactory::isPureStruct (xd)) {
+    for (int i=0; i < A_LEN (xd->um); i++) {
+      xd->um[i]->setParent (xd);
+      if (xd->um[i]->isBuiltinMacro()) {
+	xd->um[i]->populateCHP ();
+      }
+    }
+  }
   
   return xd;
 }
@@ -1195,7 +1204,13 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   Assert (_ns->EditType (xd->name, xd) == 1, "What?");
 
-  xd->setRetType (ret_type->Expand (ns, xd->I));
+  if (!ret_type->isExpanded()) {
+    xd->setRetType (ret_type->Expand (ns, xd->I));
+  }
+  else {
+    xd->setRetType (ret_type);
+  }
+  
   xd->chkInline();
   
   return xd;
@@ -2232,6 +2247,12 @@ int UserDef::emitMacros (FILE *fp)
     for (int i=0; i < A_LEN (um); i++) {
       UserMacro *u = um[i];
       Assert (u, "Hmm");
+
+      /* don't print built-in macros! */
+      if (u->isBuiltinMacro()) {
+	continue;
+      }
+      
       u->Print (fp);
       fprintf (fp, "\n");
     }

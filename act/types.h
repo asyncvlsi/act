@@ -1510,6 +1510,37 @@ public:
    */
   void updateFn (UserDef *u);
 
+  /**
+   * @return true if this is a special user macro. These are used for
+   * the built-in int(.) and struct(.) conversion macros
+   */
+  bool isBuiltinMacro() { return _builtinmacro; }
+  
+  bool isBuiltinStructMacro() {
+    return _builtinmacro && !(strcmp (_nm, "int") == 0);
+  }
+
+  /**
+   * Mark this as a special built-in macro!
+   */
+  void mkBuiltin() { _builtinmacro = true; }
+
+
+  /**
+   * @return the user-defined type that hosts this macro
+   */
+  UserDef *Parent() { return parent; }
+
+  /**
+   * Set parent pointer: used to set during elaboration
+   */
+  void setParent(UserDef *u) { parent = u; }
+  
+  /**
+   * Populate CHP for buil-in macros
+   */
+  void populateCHP();
+
 private:
   const char *_nm;	     ///< name of the macro
   UserDef *parent;	     ///< user-defined type with this macro
@@ -1525,6 +1556,11 @@ private:
 
   Function *_exf;	     ///< expanded function corresponding to
                              ///  a function macro.
+
+  bool _builtinmacro;	     ///< set to true if this is a special
+			     ///built-in macro whose argument is a complete
+			     ///expression
+
 };
 
 
@@ -1960,6 +1996,22 @@ class TypeFactory {
    * See other totBitWidth method
    */
   static int totBitWidth (const InstType *t);
+
+
+  /**
+   * Special version of totBitWidth that works for any user defined
+   * type and sums the bit-widths of all int/bool fields.
+   *
+   * @return the total bit-width to hold the type, similar to the
+   * normal bitWidth method.
+   */
+  static int totBitWidthSpecial (const Type *t);
+
+  /**
+   * See other totBitWidth method
+   */
+  static int totBitWidthSpecial (const InstType *t);
+  
 
   /**
    * For bidirectional channels only. Returns 0 for normal channels,

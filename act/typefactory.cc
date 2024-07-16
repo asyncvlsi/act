@@ -1059,7 +1059,7 @@ int TypeFactory::totBitWidth (const Type *t)
       return TypeFactory::totBitWidth (tmp->getParent());
     }
   }
-  { 
+  {
     const Data *tmp = dynamic_cast<const Data *>(t);
     if (tmp) {
       if (!tmp->isExpanded()) return -1;
@@ -1093,6 +1093,69 @@ int TypeFactory::totBitWidth (const Type *t)
 }
 XINSTMACRO(totBitWidth)
 
+static int _count_struct_width_raw (const Type *t)
+{
+  int w = 0;
+  const UserDef *d = dynamic_cast<const UserDef *>(t);
+  Assert (d, "huh");
+  for (int i=0; i < d->getNumPorts(); i++) {
+    InstType *it = d->getPortType (i);
+    int sz;
+    if (it->arrayInfo()) {
+      sz = it->arrayInfo()->size();
+    }
+    else {
+      sz = 1;
+    }
+    w += sz*TypeFactory::totBitWidthSpecial (it->BaseType());
+  }
+  return w;
+}
+
+
+int TypeFactory::totBitWidthSpecial (const Type *t)
+{
+  if (!t) return -1;
+  {
+    const UserDef *tmp = dynamic_cast <const UserDef *>(t);
+    if (tmp) {
+      if (!tmp->isExpanded()) return -1;
+      if (tmp->getParent ()) {
+	return TypeFactory::totBitWidth (tmp->getParent());
+      }
+      else {
+	/* bitwidth of a structure */
+	return _count_struct_width_raw (tmp);
+      }
+    }
+  }
+  {
+    const Int *tmp = dynamic_cast<const Int *>(t);
+    if (tmp) {
+      if (tmp->kind == 2) {
+	return _ceil_log2 (tmp->w);
+      }
+      else {
+	return tmp->w;
+      }
+    }
+  }
+  {
+    const Bool *tmp = dynamic_cast<const Bool *>(t);
+    if (tmp) {
+      return 1;
+    }
+  }
+  {
+    const Chan *tmp = dynamic_cast<const Chan *> (t);
+    if (tmp) {
+      return 0;
+    }
+  }
+  fatal_error ("Should not be here!");
+  return -1;
+}
+XINSTMACRO(totBitWidthSpecial)
 
 int TypeFactory::enumNum (const Type *t)
 {

@@ -1,0 +1,2 @@
+ERROR: File `31.act', line 14, col 7
+	int(.) operator applied to an array!

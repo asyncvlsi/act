@@ -269,6 +269,16 @@ static Expr *walk_fn_args (ActTree *cookie, Expr *e, int *nargs)
   return ret;
 }
 
+static int _single_real_arg (Expr *args)
+{
+  while (args && args->type == E_GT) {
+    args = args->u.e.r;
+  }
+  if (args && args->u.e.r == NULL) {
+    return 1;
+  }
+  return 0;
+}
 
 /*------------------------------------------------------------------------
  *
@@ -439,6 +449,55 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     }
     else {
       ret->u.e.r = NULL;
+      if (e->type == E_BUILTIN_INT) {
+	UserDef *ux = NULL;
+	struct act_position p;
+	p.l = cookie->line;
+	p.c = cookie->column;
+	p.f = cookie->file;
+	if (ret->u.e.l->type == E_VAR) {
+	  // check if this is a structure!
+	  ActId *id = (ActId *)ret->u.e.l->u.e.l;
+	  Array *aref = NULL;
+	  InstType *it = cookie->scope->FullLookup (id, &aref);
+
+	  if (it) {
+	    if (TypeFactory::isPureStruct (it)) {
+	      if (it->arrayInfo () && (!aref || !aref->isDeref())) {
+		act_parse_err (&p, "int(.) operator applied to an array!");
+	      }
+	      ux = dynamic_cast<UserDef *> (it->BaseType());
+	    }
+	  }
+	}
+	else if (ret->u.e.l->type == E_FUNCTION) {
+	  Function *f = (Function *)ret->u.e.l->u.fn.s;
+	  // check if the function returns a structure!
+	  if (TypeFactory::isPureStruct (f->getRetType())) {
+	    if (f->getRetType()->arrayInfo()) {
+	      act_parse_err (&p, "int(.) operator applied to an array!");
+	    }
+	    ux = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
+	  }
+	}
+	if (ux) {
+	  /* substitute this with a special macro expression! */
+	  UserMacro *um;
+	  um = ux->getMacro ("int");
+	  if (!um) {
+	    um = ux->newMacro (string_cache ("int"));
+	    um->mkBuiltin ();
+	    um->setRetType
+	      (cookie->tf->NewInt (cookie->scope,
+				   Type::direction::NONE,
+				   0,
+				   const_expr (32)));
+	  }
+	  ret->type = E_USERMACRO;
+	  ret->u.fn.r = ret->u.e.l;
+	  ret->u.fn.s = (char *) um;
+	}
+      }
     }
     break;
 
@@ -506,13 +565,31 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	// ... and we are done
 	return ret;
       } else if (!TypeFactory::isFuncType (u)) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
+	struct act_position p;
+	p.l = cookie->line;
+	p.c = cookie->column;
+	p.f = cookie->file;
+	if (TypeFactory::isPureStruct (u)) {
+	  if (!e->u.fn.r || !_single_real_arg (e->u.fn.r)) {
+	    act_parse_err (&p, "`%s': built-in conversion from int to pure structure requires exactly one argument!", e->u.fn.s);
+	  }
+	  UserMacro *um;
+	  um = u->getMacro (u->getName());
+	  if (!um) {
+	    um = u->newMacro (u->getName());
+	    um->mkBuiltin ();
+	    um->setRetType (new InstType (cookie->scope, u, 0));
+	  }
+	  ret->type = E_USERMACRO;
+	  ret->u.fn.s = (char *) um;
+	}
+	else {
 	  act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
+	}
       }
-      ret->u.fn.s = (char *) u;
+      if (ret->type != E_USERMACRO) {
+	ret->u.fn.s = (char *) u;
+      }
       int is_templ;
 
       if (e->u.fn.r && e->u.fn.r->type == E_GT) {
@@ -528,60 +605,65 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	is_templ = 0;
       }
 
-      Function *uf = dynamic_cast<Function *>(u);
-      Assert (uf, "What?");
-
-      if (TypeFactory::isParamType (uf->getRetType())) {
-	if (is_templ) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
-	  act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
-	}
+      if (ret->type == E_USERMACRO) {
+	// no more checking
       }
       else {
-	if (u->getNumParams() > 0) {
-	  if (!is_templ) {
+	Function *uf = dynamic_cast<Function *>(u);
+	Assert (uf, "What?");
+
+	if (TypeFactory::isParamType (uf->getRetType())) {
+	  if (is_templ) {
 	    struct act_position p;
 	    p.l = cookie->line;
 	    p.c = cookie->column;
 	    p.f = cookie->file;
-	    act_parse_err (&p, "`%s': missing template parameters", e->u.fn.s);
+	    act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
 	  }
 	}
-	else if (is_templ) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
-	  act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
+	else {
+	  if (u->getNumParams() > 0) {
+	    if (!is_templ) {
+	      struct act_position p;
+	      p.l = cookie->line;
+	      p.c = cookie->column;
+	      p.f = cookie->file;
+	      act_parse_err (&p, "`%s': missing template parameters", e->u.fn.s);
+	    }
+	  }
+	  else if (is_templ) {
+	    struct act_position p;
+	    p.l = cookie->line;
+	    p.c = cookie->column;
+	    p.f = cookie->file;
+	    act_parse_err (&p, "`%s': template parameters for non-templated function", e->u.fn.s);
+	  }
 	}
-      }
       
-      if (is_templ) {
-	if (args != u->getNumParams()) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
-	  act_parse_err (&p, "`%s': incorrect number of template arguments (expected %d, got %d)", e->u.fn.s, u->getNumParams(), args);
+	if (is_templ) {
+	  if (args != u->getNumParams()) {
+	    struct act_position p;
+	    p.l = cookie->line;
+	    p.c = cookie->column;
+	    p.f = cookie->file;
+	    act_parse_err (&p, "`%s': incorrect number of template arguments (expected %d, got %d)", e->u.fn.s, u->getNumParams(), args);
+	  }
+	  if (args2 != u->getNumPorts()) {
+	    struct act_position p;
+	    p.l = cookie->line;
+	    p.c = cookie->column;
+	    p.f = cookie->file;
+	    act_parse_err (&p, "`%s': incorrect number of parameter arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts(), args2);
+	  }
 	}
-	if (args2 != u->getNumPorts()) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
-	  act_parse_err (&p, "`%s': incorrect number of parameter arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts(), args2);
-	}
-      }
-      else {
-	if (args != (u->getNumParams() + u->getNumPorts())) {
-	  struct act_position p;
-	  p.l = cookie->line;
-	  p.c = cookie->column;
-	  p.f = cookie->file;
-	  act_parse_err (&p, "`%s': incorrect number of arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts() + u->getNumParams(), args);
+	else {
+	  if (args != (u->getNumParams() + u->getNumPorts())) {
+	    struct act_position p;
+	    p.l = cookie->line;
+	    p.c = cookie->column;
+	    p.f = cookie->file;
+	    act_parse_err (&p, "`%s': incorrect number of arguments (expected %d, got %d)", e->u.fn.s, u->getNumPorts() + u->getNumParams(), args);
+	  }
 	}
       }
     }

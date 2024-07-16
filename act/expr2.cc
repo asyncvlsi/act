@@ -416,11 +416,49 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       UserDef *u = (UserDef *)e->u.fn.s;
       Function *f = dynamic_cast<Function *>(u);
       Expr *tmp;
+      int is_special_struct = 0;
       Assert (f, "Hmm.");
 
       if (f->isUserMethod()) {
 	int pos;
 	const char *nm = f->getName();
+
+	// if it is "int<>" or "struct<>struc
+	{
+	  int i;
+	  for (i=0; nm[i]; i++) {
+	    if (nm[i] == '/') break;
+	  }
+	  i++;
+	  if (strcmp (nm + i, "int") == 0 ||
+	      strcmp (nm + i, "int<>") == 0) {
+	    // int(...)
+	    snprintf (buf+k, sz, "int(");
+	    PRINT_STEP;
+	    if (prec < 0) {
+	      sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	    else {
+	      sprint_expr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	    PRINT_STEP;
+	    snprintf (buf+k, sz, ")");
+	    PRINT_STEP;
+	    return;
+	  }
+	  else {
+	    printf ("name is: %s\n", f->getName());
+	    UserDef *parent = f->CurScope()->Parent()->getUserDef();
+	    Assert (parent, "What?");
+	    if (strcmp (nm + i, parent->getName()) == 0) {
+	      is_special_struct = 1;
+	    }
+	    Assert (0, "fixme");
+	  }
+	}
+
+	if (!is_special_struct) {
+	  
 	Assert (e->u.fn.r &&
 		e->u.fn.r->type == E_LT &&
 		e->u.fn.r->u.e.l->type == E_VAR, "What?");
@@ -440,8 +478,12 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	}
 	ADD_CHAR('(');
 	tmp = e->u.fn.r->u.e.r;
+	}
+	
       }
-      else {
+
+      if (f->isUserMethod() && is_special_struct ||
+	  !f->isUserMethod()) {
       if (f->getns() && f->getns() != ActNamespace::Global()) {
 	char *s = f->getns()->Name();
 	snprintf (buf+k, sz, "%s::", s);
@@ -513,6 +555,78 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     {
       UserMacro *um = (UserMacro *)e->u.fn.s;
       Expr *tmp;
+
+      if (um->isBuiltinMacro()) {
+	// different data structure!
+	if (um->isBuiltinStructMacro()) {
+	  UserDef *ux = um->Parent();
+	  if (ux->getns() && ux->getns() != ActNamespace::Global()) {
+	    char *s = ux->getns()->Name();
+	    snprintf (buf+k, sz, "%s::", s);
+	    PRINT_STEP;
+	    FREE (s);
+	  }
+	  if (ActNamespace::Act()) {
+	    ActNamespace::Act()->msnprintfproc (buf+k, sz, ux, 1);
+	  }
+	  else {
+	    snprintf (buf+k, sz, "%s", ux->getName());
+	  }
+	  PRINT_STEP;
+	  if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	    snprintf (buf+k, sz, "<");
+	    PRINT_STEP;
+	    tmp = e->u.fn.r->u.e.l;
+	    while (tmp) {
+	      if (prec < 0) {
+		sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	      }
+	      else {
+		sprint_expr (buf+k, sz, tmp->u.e.l);
+	      }
+	      PRINT_STEP;
+	      tmp = tmp->u.e.r;
+	      if (tmp) {
+		snprintf (buf+k, sz, ",");
+		PRINT_STEP;
+	      }
+	    }
+	    snprintf (buf+k, sz, ">");
+	    PRINT_STEP;
+	  }
+	  snprintf (buf+k, sz, "(");
+	  PRINT_STEP;
+	  if (e->u.fn.r->type == E_GT) {
+	    if (prec < 0) {
+	      sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.r->u.e.l);
+	    }
+	    else {
+	      sprint_expr (buf+k, sz, e->u.fn.r->u.e.r->u.e.l);
+	    }
+	  }
+	  else {
+	    if (prec < 0) {
+	      sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	    else {
+	      sprint_expr (buf+k, sz, e->u.fn.r->u.e.l);
+	    }
+	  }
+	}
+	else {
+	  snprintf (buf+k, sz, "%s(", um->getName());
+	  PRINT_STEP;
+	  if (prec < 0) {
+	    sprint_uexpr (buf+k, sz, e->u.fn.r);
+	  }
+	  else {
+	    sprint_expr (buf+k, sz, e->u.fn.r);
+	  }
+	}
+	PRINT_STEP;
+	snprintf (buf+k, sz, ")");
+	return;
+      }
 
       ActId *x = (ActId *)e->u.fn.r->u.e.l;
       x->sPrint (buf+k, sz);
@@ -877,6 +991,12 @@ int expr_equal (const Expr *a, const Expr *b)
       }
 
       if (a->type == E_USERMACRO) {
+
+	// built-in macros are a special case
+	if (((UserMacro *)a->u.fn.s)->isBuiltinMacro()) {
+	  return expr_equal (at, bt);
+	}
+
 	if (at->type == E_LT) {
 	  if (!_id_equal (at->u.e.l, bt->u.e.l)) {
 	    return 0;
@@ -1234,26 +1354,34 @@ static Expr *_expr_expand (int *width, Expr *e,
     UserMacro *um;
     UserDef *u;
     Expr *etmp;
+    um = (UserMacro *) e->u.fn.s;
     if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
       Expr *tmp, *prev;
       Expr *w = e->u.fn.r;
       /*-- pure pre-ex dup --*/
       ret->u.fn.s = e->u.fn.s;
-      ret->u.fn.r = NULL;
-      prev = NULL;
-      while (w) {
+
+      if (um->isBuiltinMacro()) {
 	int dummy;
-	NEW (tmp, Expr);
-	tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
-	tmp->u.e.r = NULL;
-	if (!prev) {
-	  ret->u.fn.r = tmp;
+	ret->u.fn.r = _expr_expand (&dummy, e->u.fn.r, ns, s, flags);
+      }
+      else {
+	ret->u.fn.r = NULL;
+	prev = NULL;
+	while (w) {
+	  int dummy;
+	  NEW (tmp, Expr);
+	  tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	  tmp->u.e.r = NULL;
+	  if (!prev) {
+	    ret->u.fn.r = tmp;
+	  }
+	  else {
+	    prev->u.e.r = tmp;
+	  }
+	  prev = tmp;
+	  w = w->u.e.r;
 	}
-	else {
-	  prev->u.e.r = tmp;
-	}
-	prev = tmp;
-	w = w->u.e.r;
       }
       *width = -1;
       return ret;
@@ -1263,10 +1391,61 @@ static Expr *_expr_expand (int *width, Expr *e,
       it to a function!
     */
     ret->type = E_FUNCTION;
-    um = (UserMacro *) e->u.fn.s;
     /* um is the unexpanded macro; get the expanded one by looking up
        the type! */
-    {
+
+
+    if (um->isBuiltinMacro()) {
+      // We need to get the expanded user-defined type here!
+      // int(...) or struct<...>(int)
+      // case 1: we need the expanded type for the argument
+      // case 2: we need to call the userdef-expand method on that type
+      if (um->Parent()->isExpanded()) {
+	// XXX: macro templates
+	um = um->Parent()->getMacro (um->getName());
+      }
+      else {
+	if (um->isBuiltinStructMacro()) {
+	  // for "struct<...>(.)": the template parameters and struct
+	  // need to just be expanded to get the macro information.
+	  // this looks like a regular templated function with one argument.
+	  
+	}
+	else {
+	  // for "int(.)": we just need the structure return type. The
+	  // argument MUST BE either a function or an ID.
+	  // this looks like a normal function
+	  Expr *exp = _expr_expand (&lw, e->u.fn.r, ns, s, flags);
+	  UserDef *ux = NULL;
+	  Assert (exp, "What?");
+	  if (exp->type == E_VAR) {
+	    // get the expanded type!
+	    ActId *id = (ActId *)exp->u.e.l;
+	    InstType *it = s->FullLookup (id, NULL);
+	    if (!it) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "\texpanding expr: ");
+	      print_expr (stderr, e);
+	      fprintf (stderr,"\n");
+	      fatal_error ("Could not find type? Should have been caught earlier!");
+	    }
+	    Assert (TypeFactory::isPureStruct (it), "What?");
+	    ux = dynamic_cast<UserDef *> (it->BaseType());
+	  }
+	  else if (exp->type == E_FUNCTION) {
+	    Function *f = (Function *)exp->u.fn.s;
+	    Assert (TypeFactory::isPureStruct (f->getRetType()), "What?");
+	    ux = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
+	  }
+	  Assert (ux, "Unexpected structure expression");
+	  Assert (ux->isExpanded(), "What?");
+	  um = ux->getMacro ("int");
+	}
+      }
+      Assert (um->getFunction(), "What?");
+    }
+    else {
+      /* macro invocation: <id>.macro(...) */
       InstType *id_it;
       id_it = s->FullLookup ((ActId *)e->u.fn.r->u.e.l, NULL);
       Assert (id_it, "Macro error!");
@@ -1275,40 +1454,34 @@ static Expr *_expr_expand (int *width, Expr *e,
       um = id_ux->getMacro (um->getName());
       Assert (um, "Expanded macro?");
     }
-    e_orig = e;			/* original e; saved away */
+    e_orig = e;
     NEW (e, Expr);
     e->type = E_FUNCTION;
-    /*  XXX: replace e->u.fn.s */
+    /* XXX: replace e->u.fn.s */
     e->u.fn.s = (char *) um->getFunction ();
-    NEW (etmp, Expr);
-    etmp->type = E_VAR;
-    etmp->u.e.l = (Expr *) ((ActId *)e_orig->u.fn.r->u.e.l)->Clone();
-    etmp->u.e.r = NULL;
-    NEW (e->u.fn.r, Expr);
-    e->u.fn.r->type = E_LT;
-    e->u.fn.r->u.e.l = etmp;
-    e->u.fn.r->u.e.r = e_orig->u.fn.r->u.e.r;
-#if 0    
-    {
-      Expr *clone1, *orig;
-      orig = e_orig->u.fn.r->u.e.r;
-      clone1 = NULL;
-      while (orig) {
-	if (clone1) {
-	  NEW (clone1->u.e.r, Expr);
-	  clone1 = clone1->u.e.r;
-	}
-	else {
-	  NEW (e->u.fn.r->u.e.r, Expr);
-	  clone1 = e->u.fn.r->u.e.r;
-	}
-	clone1->type = E_LT;
-	clone1->u.e.r = NULL;
-	clone1->u.e.l = expr_predup (orig->u.e.l);
-	orig = orig->u.e.r;
+
+    if (um->isBuiltinMacro()) {
+      if (um->isBuiltinStructMacro()) {
+
+      }
+      else {
+	// int(...)
+	NEW (e->u.fn.r, Expr);
+	e->u.fn.r->type = E_LT;
+	e->u.fn.r->u.e.l = e_orig->u.fn.r;
+	e->u.fn.r->u.e.r = NULL;
       }
     }
-#endif    
+    else {
+      NEW (etmp, Expr);
+      etmp->type = E_VAR;
+      etmp->u.e.l = (Expr *) ((ActId *)e_orig->u.fn.r->u.e.l)->Clone();
+      etmp->u.e.r = NULL;
+      NEW (e->u.fn.r, Expr);
+      e->u.fn.r->type = E_LT;
+      e->u.fn.r->u.e.l = etmp;
+      e->u.fn.r->u.e.r = e_orig->u.fn.r->u.e.r;
+    }
   }
   
 
@@ -3004,18 +3177,23 @@ static void efree_ex (Expr *e)
     break;
 
   case E_USERMACRO:
-    if (e->u.fn.r->type == E_GT) {
-      /* for templates; not used at the moment */
-      efree_ex (e->u.fn.r->u.e.l);
-      delete (ActId *) e->u.fn.r->u.e.r->u.e.l;
-      efree_ex (e->u.fn.r->u.e.r->u.e.r);
-      FREE (e->u.fn.r->u.e.r);
+    if (((UserMacro *)e->u.fn.s)->isBuiltinMacro()) {
+      efree_ex (e->u.fn.r);
     }
     else {
-      efree_ex (e->u.fn.r->u.e.r);
-      delete (ActId *) (e->u.fn.r->u.e.l);
+      if (e->u.fn.r->type == E_GT) {
+	/* for templates; not used at the moment */
+	efree_ex (e->u.fn.r->u.e.l);
+	delete (ActId *) e->u.fn.r->u.e.r->u.e.l;
+	efree_ex (e->u.fn.r->u.e.r->u.e.r);
+	FREE (e->u.fn.r->u.e.r);
+      }
+      else {
+	efree_ex (e->u.fn.r->u.e.r);
+	delete (ActId *) (e->u.fn.r->u.e.l);
+      }
+      FREE (e->u.fn.r);
     }
-    FREE (e->u.fn.r);
     break;
 
   case E_VAR:

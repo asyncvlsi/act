@@ -47,6 +47,7 @@ UserMacro::UserMacro (UserDef *u, const char *name)
   c = NULL;
   rettype = NULL;
   _exf = NULL;
+  _builtinmacro = false;
   parent = u;
 }
 
@@ -136,6 +137,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     MALLOC (ret->port_t, InstType *, nports);
     MALLOC (ret->port_n, const char *, nports);
   }
+  ret->_builtinmacro = _builtinmacro;
 
   Scope *tsc = new Scope (s, 1);
   
@@ -151,7 +153,24 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
   }
 
   if (rettype) {
-    ret->rettype = rettype->Expand (ns, s);
+    if (isBuiltinMacro()) {
+      InstType *it;
+      if (strcmp (getName(), "int") == 0) {
+	ux->Print (stdout);
+	it = new InstType (s, TypeFactory::Factory()->NewInt (0,TypeFactory::totBitWidthSpecial (ux)), 0);
+	it->setNumParams (1);
+	it->setParam (0, const_expr (TypeFactory::totBitWidthSpecial (ux)));
+	it = it->Expand (ns, s);
+      }
+      else {
+	it = new InstType (s, ux, 0);
+	it->mkExpanded();
+      }
+      ret->rettype = it;
+    }
+    else {
+      ret->rettype = rettype->Expand (ns, s);
+    }
     tsc->Add ("self", ret->rettype);
   }
 
@@ -166,12 +185,23 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 
   if (ret->rettype) {
     /*--- we need to create a dummy function ---*/
+    InstType *it;
     UserDef *u = new UserDef (ux->getns());
     int len;
-    InstType *it = new InstType (s, ux, 0);
-    it->mkExpanded ();
 
     Assert (ux->isExpanded(), "What?");
+
+    if (!isBuiltinMacro() || strcmp (getName(), "int") == 0) {
+      it = new InstType (s, ux, 0);
+      it->mkExpanded ();
+    }
+    else {
+      it = new InstType (s, TypeFactory::Factory()->NewInt (0,
+							    TypeFactory::totBitWidthSpecial (ux)));
+      it->setNumParams (1);
+      it->setParam (0, const_expr (TypeFactory::totBitWidthSpecial (ux)));
+      it = it->Expand (ns, s);
+    }
     
     /* add the ports to this function! */
 
@@ -207,30 +237,35 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     xchp->psc = NULL;
     xchp->nsc = NULL;
     xchp->is_synthesizable = 1;
-    
-    act_inline_table *tab = act_inline_new (tsc, NULL);
 
-    Expr **tmp_exprs;
-    MALLOC (tmp_exprs, Expr *, nports+1);
-    for (int i=0; i < nports; i++) {
-      ActId *tid;
-      NEW (tmp_exprs[i], Expr);
-      tmp_exprs[i]->type = E_VAR;
-      tid = new ActId (port_n[i]);
-      tmp_exprs[i]->u.e.l = (Expr *) tid;
-      tmp_exprs[i]->u.e.r = NULL;
-      act_inline_setval (tab, tid, tmp_exprs+i);
+    if (isBuiltinMacro()) {
+      // nothing to do here... put this code in populateCHP()
     }
-    NEW (tmp_exprs[nports], Expr);
-    tmp_exprs[nports]->type = E_VAR;
-    tmp_exprs[nports]->u.e.l = (Expr *) new ActId (string_cache ("self"));
-    tmp_exprs[nports]->u.e.r = NULL;
-    act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
+    else {
+      act_inline_table *tab = act_inline_new (tsc, NULL);
 
-    FREE (tmp_exprs);
+      Expr **tmp_exprs;
+      MALLOC (tmp_exprs, Expr *, nports+1);
+      for (int i=0; i < nports; i++) {
+	ActId *tid;
+	NEW (tmp_exprs[i], Expr);
+	tmp_exprs[i]->type = E_VAR;
+	tid = new ActId (port_n[i]);
+	tmp_exprs[i]->u.e.l = (Expr *) tid;
+	tmp_exprs[i]->u.e.r = NULL;
+	act_inline_setval (tab, tid, tmp_exprs+i);
+      }
+      NEW (tmp_exprs[nports], Expr);
+      tmp_exprs[nports]->type = E_VAR;
+      tmp_exprs[nports]->u.e.l = (Expr *) new ActId (string_cache ("self"));
+      tmp_exprs[nports]->u.e.r = NULL;
+      act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
+
+      FREE (tmp_exprs);
     
-    xchp->c = ret->substitute (prefix, tab);
-    act_inline_free (tab);
+      xchp->c = ret->substitute (prefix, tab);
+      act_inline_free (tab);
+    }
     
     all_lang->setchp (xchp);
     ret->_exf->chkInline ();
@@ -506,4 +541,81 @@ void UserMacro::updateFn (UserDef *u)
 
   _exf->CurScope()->refineBaseType ("$internal", it);
   _exf->refinePortType (0, it);
+}
+
+
+void UserMacro::populateCHP()
+{
+  Data *xd;
+
+  Assert (isBuiltinMacro(), "Should not be called for non-built-in macros");
+
+  xd = dynamic_cast<Data *> (Parent());
+  Assert (xd, "What?");
+  
+  int nbools, nints;
+  xd->getStructCount (&nbools, &nints);
+
+  if (nbools + nints == 0) {
+    return;
+  }
+  
+  int *typecodes;
+  ActId **xfield = xd->getStructFields (&typecodes);
+
+#if 0  
+  for (int i=0; i < nbools + nints; i++) {
+    printf ("field: ");
+    xfield[i]->Print (stdout);
+    printf ("; typecode: %d; type: ", typecodes[i]);
+    InstType *it = xd->CurScope()->FullLookup (xfield[i], NULL);
+    it->Print (stdout);
+    printf ("\n");
+  }
+#endif
+
+  if (isBuiltinStructMacro()) {
+    warning ("Synthesize CHP here");
+  }
+  else {
+    // create chp body
+    //   self := {$internal.one,$internal.two, etc.}
+    // if there is a bool type, wrap it in an int() directive.
+    Expr *e, *f;
+    NEW (e, Expr);
+    e->type = E_CONCAT;
+    e->u.e.l =  NULL;
+    e->u.e.r = NULL;
+    f = e;
+    for (int i=0; i < nbools + nints; i++) {
+      ActId *tid = new ActId (string_cache ("$internal"));
+      tid->Append (xfield[i]);
+      NEW (f->u.e.l, Expr);
+      f->u.e.l->type = E_VAR;
+      f->u.e.l->u.e.l = (Expr *) tid;
+      f->u.e.l->u.e.r = NULL;
+      if (i != (nbools + nints - 1)) {
+	NEW (f->u.e.r, Expr);
+	f = f->u.e.r;
+	f->u.e.l = NULL;
+	f->u.e.r = NULL;
+	f->type = E_CONCAT;
+      }
+    }
+    act_chp_lang_t *c;
+    NEW (c, act_chp_lang_t);
+    c->type = ACT_CHP_ASSIGN;
+    c->label = NULL;
+    c->space = NULL;
+    c->u.assign.e = e;
+    c->u.assign.id = new ActId (string_cache ("self"));
+    Assert (_exf, "What?");
+    act_chp *xchp = _exf->getlang()->getchp();
+    xchp->c = c;
+#if 0
+    printf ("CHP:\n");
+    chp_print (stdout, xchp->c);
+    printf ("\n");
+#endif    
+  }
 }

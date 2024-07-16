@@ -1469,17 +1469,27 @@ InstType *Scope::FullLookup (ActId *id, Array **aref)
   
   if (!id) return NULL;
 
-  if (id->isNamespace()) {
-    vx = id->getNamespace()->CurScope()->FullLookupVal (id->Rest()->getName());
-    id = id->Rest();
+  if (expanded) {
+    if (id->isNamespace()) {
+      vx = id->getNamespace()->CurScope()->FullLookupVal (id->Rest()->getName());
+      id = id->Rest();
+    }
+    else {
+      vx = FullLookupVal (id->getName());
+    }
+    if (!vx) return NULL;
+    it = vx->t;
   }
   else {
-    vx = FullLookupVal (id->getName());
+    if (id->isNamespace()) {
+      it = id->getNamespace()->CurScope()->FullLookup (id->Rest()->getName());
+      id = id->Rest();
+    }
+    else {
+      it = FullLookup (id->getName());
+    }
   }
   
-  if (!vx) return NULL;
-
-  it = vx->t;
   while (id->Rest()) {
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
     if (!u) return NULL;

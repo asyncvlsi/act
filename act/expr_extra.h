@@ -97,14 +97,20 @@
   e->u.fn.s = UserMacro pointer
   e->u.fn.r = arguments, where first arg is the original ID!
 
+  For built-in user macro int, e->u.fn.r is the
+  expression itself that is the argument.
+
+  For built-in user macro struct<...>, e->u.fn.r is the standard
+  function arguments.
+
   After real expansion
   e->u.fn.s = synthetic function *
   e->u.fn.r = normal arguments
   converted to E_FUNCTION
  */
-#define E_USERMACRO (E_END + 29)  
+#define E_USERMACRO (E_END + 29)
 
-#define E_NEWEND  E_END + 30	     ///< new "end" of expression options
+#define E_NEWEND  E_END + 31	     ///< new "end" of expression options
 
 #ifdef __cplusplus
 extern "C" {

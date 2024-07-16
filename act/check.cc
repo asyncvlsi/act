@@ -957,45 +957,26 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       Expr *e2;
       int strict_flag = T_STRICT;
 
-      if (TypeFactory::isParamType (rtype)) {
-	kind = 0;
-      }
-      else {
-	kind = 1;
-      }
 
-      e2 = NULL;
-#if 0
-      // XXX: if we add macros with template parameters, this would be needed
-      if (tmp && tmp->type == E_GT) {
-	e2 = tmp->u.e.l;
-	tmp = tmp->u.e.r;
-      }
-      else {
-	e2 = NULL;
-      }
-#endif
-
-      for (int i=0;
-	   i < (kind == 0 ? um->getNumParams() : um->getNumPorts()); i++) {
-	InstType *x = um->getPortType (kind == 0 ? -(i+1) : i);
-	InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
-
-	if (!y) {
-	  return T_ERR;
+      if (um->isBuiltinMacro()) {
+	tmp = e->u.fn.r;
+	if (um->isBuiltinStructMacro()) {
+	  while (tmp->type != E_LT) {
+	    tmp = tmp->u.e.r;
+	  }
+	  tmp = tmp->u.e.l;
 	}
-
-	strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
+	  
+	InstType *y = act_expr_insttype (s, tmp, NULL, only_chan);
 
 	if (only_chan) {
 	  if (only_chan == 1) {
 	    if (TypeFactory::isChanType (y)) {
 	      y = TypeFactory::getChanDataType (y);
 	    }
-	    else if (tmp->u.e.l->type == E_VAR ||
-		     !TypeFactory::isDataType (y)) {
-	      typecheck_err ("User macro `%s': arg #%d has an incompatible type",
-			     um->getName(), i);
+	    else if (tmp->type == E_VAR || !TypeFactory::isDataType (y)) {
+	      typecheck_err ("Built-in macro `%s': argument has an incompatible type",
+			     um->getName());
 	      return T_ERR;
 	    }
 	  }
@@ -1005,40 +986,108 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    }
 	  }
 	}
+	
+	InstType *x;
+	if (strcmp (um->getName(), "int") == 0) {
+	  x = new InstType (s, um->Parent(), 0);
+	}
+	else {
+	  x = TypeFactory::Factory()->NewInt (s, Type::direction::NONE, 0,
+					      const_expr (32));
+	}
 
 	if (!x->isConnectable (y, 1)) {
-	  if ((TypeFactory::isIntType (x) && TypeFactory::isPIntType (y))
-	      ||
-	      (TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
-	    /* ok */
-	  }
-	  else {
-	    typecheck_err ("User macro `%s': arg #%d has an incompatible type",
-			   um->getName(), i);
+	  typecheck_err ("Built-in macro `%s': argument has an incompatible type",
+			   um->getName());
+	  return T_ERR;
+	}
+      }
+      else {
+      
+
+	if (TypeFactory::isParamType (rtype)) {
+	  kind = 0;
+	}
+	else {
+	  kind = 1;
+	}
+
+	e2 = NULL;
+#if 0
+	// XXX: if we add macros with template parameters, this would be needed
+	if (tmp && tmp->type == E_GT) {
+	  e2 = tmp->u.e.l;
+	  tmp = tmp->u.e.r;
+	}
+	else {
+	  e2 = NULL;
+	}
+#endif
+
+	for (int i=0;
+	     i < (kind == 0 ? um->getNumParams() : um->getNumPorts()); i++) {
+	  InstType *x = um->getPortType (kind == 0 ? -(i+1) : i);
+	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
+
+	  if (!y) {
 	    return T_ERR;
 	  }
-	}
-	tmp = tmp->u.e.r;
-      }
 
-      if (e2) {
-	Assert (kind == 1, "What?");
-	tmp = e2;
-	for (int i=0; i < um->getNumParams(); i++) {
-	  InstType *x = um->getPortType (-(i+1));
-	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
-	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
+	  strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, only_chan);
+
+	  if (only_chan) {
+	    if (only_chan == 1) {
+	      if (TypeFactory::isChanType (y)) {
+		y = TypeFactory::getChanDataType (y);
+	      }
+	      else if (tmp->u.e.l->type == E_VAR ||
+		       !TypeFactory::isDataType (y)) {
+		typecheck_err ("User macro `%s': arg #%d has an incompatible type",
+			       um->getName(), i);
+		return T_ERR;
+	      }
+	    }
+	    else {
+	      if (TypeFactory::isChanType (y)) {
+		y = TypeFactory::getChanDataType (y);
+	      }
+	    }
+	  }
 
 	  if (!x->isConnectable (y, 1)) {
-	    typecheck_err ("User macro `%s': template arg #%d has an incompatible type",
-			   um->getName(), i);
-	    return T_ERR;
+	    if ((TypeFactory::isIntType (x) && TypeFactory::isPIntType (y))
+		||
+		(TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
+	      /* ok */
+	    }
+	    else {
+	      typecheck_err ("User macro `%s': arg #%d has an incompatible type",
+			     um->getName(), i);
+	      return T_ERR;
+	    }
 	  }
 	  tmp = tmp->u.e.r;
 	}
+
+	if (e2) {
+	  Assert (kind == 1, "What?");
+	  tmp = e2;
+	  for (int i=0; i < um->getNumParams(); i++) {
+	    InstType *x = um->getPortType (-(i+1));
+	    InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
+	    strict_flag &= act_type_expr (s, tmp->u.e.l, NULL, 0);
+
+	    if (!x->isConnectable (y, 1)) {
+	      typecheck_err ("User macro `%s': template arg #%d has an incompatible type",
+			     um->getName(), i);
+	      return T_ERR;
+	    }
+	    tmp = tmp->u.e.r;
+	  }
+	}
       }
-      /*-- provide return type --*/
       
+      /*-- provide return type --*/
       if (TypeFactory::isParamType(rtype)) {
 	ret |= T_PARAM|strict_flag;
       }
