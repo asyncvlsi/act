@@ -238,6 +238,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     xchp->psc = NULL;
     xchp->nsc = NULL;
     xchp->is_synthesizable = 1;
+    xchp->c = NULL;
 
     if (isBuiltinMacro()) {
       // nothing to do here... put this code in populateCHP()
