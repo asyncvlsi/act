@@ -2,7 +2,7 @@
 
 echo
 echo "************************************************************************"
-echo "*               Testing pass: inline                                   *"
+echo "*             Testing pass: dataflow split/merge decomp                *"
 echo "************************************************************************"
 echo
 
