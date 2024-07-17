@@ -1,8 +1,8 @@
 deftype testme (int x) { 
   methods {
-    macro foo (int w) : int 
+    function foo (int w) : int 
     {
-        w := 3 + x ; self := w
+      chp { w := 3 + x ; self := w }
     }
   }
 }

@@ -1,0 +1,28 @@
+deftype struct (int<4> a, b) { }
+
+function newstruct (struct s) : struct 
+{
+  chp {
+    self.a := s.b;
+    self.b := s.a
+  }
+}
+
+function addup (struct s) : struct
+{
+  chp {
+    self.a := s.a + s.b;
+    self.b := s.a - s.b
+  }
+}
+
+defproc test()
+{
+  chan(struct) s;
+  chan(struct) t;
+  dataflow {
+    addup(s) -> t
+  }
+}
+
+test t;

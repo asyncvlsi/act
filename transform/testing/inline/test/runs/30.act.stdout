@@ -1,0 +1,41 @@
+defproc test ();
+function addup (struct s) : struct;
+deftype struct (int<4> a; int<4> b);
+
+defproc test ()
+{
+
+/* instances */
+chan(struct) t;
+chan(struct) s;
+
+/* connections */
+dataflow {
+struct( {s.a+s.b,s.a-s.b}) -> t
+}
+}
+
+function addup (struct s) : struct
+{
+
+/* instances */
+
+/* connections */
+chp {
+self.a:=s.a+s.b;self.b:=s.a-s.b
+}
+}
+
+deftype struct (int<4> a; int<4> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

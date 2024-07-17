@@ -1676,6 +1676,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 
   case ACT_CHP_ASSIGN:
   case ACT_CHP_ASSIGNSELF:
+    {
+    InstType *lhs, *rhs;
+    Array *lhs_a, *rhs_a;
+      
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
     {
       ActId *tmp = ret->u.assign.id->stripArray ();
@@ -1724,10 +1728,53 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	fprintf (stderr, "\n");
 	exit (1);
       }
+      /*tl = */(void)(act_type_var (s, tmp, &lhs));
       delete tmp;
     }
+
     act_chp_macro_check (s, ret->u.assign.id);
     ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
+
+    rhs = act_expr_insttype (s, ret->u.assign.e, NULL, 2);
+    lhs_a = lhs->arrayInfo();
+
+    if (rhs) {
+      /* This is odd. But rhs can be NULL if the const bitfield
+	 specification includes values that are beyond the bit-width
+	 of an integer. We are currently treating this as a warning,
+	 but it really should be an error.
+      */
+      rhs_a = rhs->arrayInfo();
+      rhs->clrArray ();
+      lhs->clrArray ();
+      if (!type_chp_check_assignable (lhs, rhs)) {
+	if (TypeFactory::isEnum (lhs) &&
+	    (TypeFactory::isIntType (rhs) || TypeFactory::isPIntType (rhs))) {
+	  /* okay! After expansion, enumerations get converted into
+	     integers */
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "Typechecking failed on CHP assignment\n");
+	  fprintf (stderr, "  stmt: ");
+	  ret->u.assign.id->Print (stderr, NULL);
+	  fprintf (stderr, " := ");
+	  print_uexpr (stderr, c->u.assign.e);
+	  fprintf (stderr, "\n\t%s\n\t", act_type_errmsg ());
+	  lhs->Print (stderr);
+	  fprintf (stderr, " v/s ");
+	  rhs->Print (stderr);
+	  fprintf (stderr, "\n");
+	  exit (1);
+	}
+      }
+      rhs->MkArray (rhs_a);
+      delete rhs;
+    }
+    lhs->MkArray (lhs_a);
+    delete lhs;
+    }
+    
     break;
     
   case ACT_CHP_SEND:

@@ -2,9 +2,9 @@ template<pint N>
 deftype str (int<N> x, z)
 {
    methods {
-     macro plus (int<2> y) : int<4>
+     function plus (int<2> y) : int<4>
      {
-       self := x + y
+       chp { self := x + y }
      }
    }
 }

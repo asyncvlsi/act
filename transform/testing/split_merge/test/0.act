@@ -1,0 +1,12 @@
+defproc test()
+{
+   chan(int) a;
+   chan(int<5>) ctrl;
+   chan(int) x[20];
+
+   dataflow {
+     {ctrl} a -> (,i:20: x[i])
+   }
+}
+
+test t;

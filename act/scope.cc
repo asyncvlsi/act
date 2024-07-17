@@ -1534,3 +1534,17 @@ InstType *Scope::localLookup (ActId *id, Array **aref)
   }
   return it;
 }
+
+
+void Scope::findFresh (const char *prefix, int *num)
+{
+  char *buf;
+  int len = strlen (prefix) + 40;
+  MALLOC (buf, char, len);
+  do {
+    snprintf (buf, len, "%s%d", prefix, *num);
+    *num = *num + 1;
+  } while (Lookup (buf));
+  *num = *num - 1;
+  FREE (buf);
+}

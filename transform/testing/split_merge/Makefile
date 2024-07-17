@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2011-2019 Rajit Manohar
+#  Copyright (c) 2018 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,9 +18,17 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-#
-# Make everything, in the right order
-# 
-SUBDIRS=state inline mem arb split_merge
+BINARY=test_break_splmrg.$(EXT)
+
+TARGETS=$(BINARY)
+
+OBJS=main.o 
+
+SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
+
+$(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
+
+-include Makefile.deps

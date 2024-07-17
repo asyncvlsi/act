@@ -302,27 +302,67 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 
 	    // we need to create a multi-assignment!
 
-	    fatal_error ("FIXME: structure return type inlining for dataflow elements!");
-#if 0	    
-	    for (int i=0; i < sz; i++) {
-	      act_chp_lang_t *tc;
-
-	      if (vals[i]) {
-		NEW (tc, act_chp_lang_t);
-		tc->type = ACT_CHP_ASSIGN;
-		tc->label = NULL;
-		tc->space = NULL;
-		tc->u.assign.id = c->u.assign.id->Clone();
-		tc->u.assign.id->Tail()->Append (fields[i]);
-		tc->u.assign.e = vals[i];
-		list_append (l, tc);
-	      }
-	      else {
-		delete fields[i];
-	      }
+	    if (sz == 1) {
+	      e->u.func.lhs = vals[0];
+	      FREE (vals);
 	    }
-#endif
+	    else {
+	      Expr *te;
+	      NEW (e->u.func.lhs, Expr);
+	      e->u.func.lhs->type = E_CONCAT;
+	      te = e->u.func.lhs;
+	      for (int i=0; i < sz; i++) {
+		te->u.e.l = vals[i];
+		if (!vals[i]) {
+		  act_error_ctxt (stderr);
+		  warning ("Dataflow inlining: incomplete structure assignment, field #%d?", i);
+		  te->u.e.l = const_expr (0);
+		}
+		else {
+		  if (types[i] == 0) {
+		    NEW (te->u.e.l, Expr);
+		    te->u.e.l->type = E_BUILTIN_INT;
+		    te->u.e.l->u.e.r = NULL;
+		    te->u.e.l = vals[i];
+		  }
+		}
+		if (i != sz-1) {
+		  NEW (te->u.e.r, Expr);
+		  te = te->u.e.r;
+		  te->type = E_CONCAT;
+		}
+		else {
+		  te->u.e.r = NULL;
+		}
+	      }
+	      // this is not quite right!
+	    }
 	    FREE (fields);
+	    FREE (types);
+
+	    // we now need to wrap it in one function call!
+
+	    UserDef *ux = dynamic_cast<UserDef *> (it->BaseType());
+	    Assert (ux, "We should not be here");
+	    Assert (ux->isExpanded(), "Only expanded types here");
+	    UserMacro *um = ux->getMacro (ux->getUnexpanded()->getName());
+	    if (!um) {
+	      Data *xd = dynamic_cast<Data *> (ux);
+	      Assert (xd, "Why am I here?");
+	      xd->synthStructMacro();
+	      um = ux->getMacro (ux->getUnexpanded()->getName());
+	    }
+	    Assert (um, "What?");
+	    Expr *final;
+	    NEW (final, Expr);
+	    final->type = E_FUNCTION;
+	    final->u.fn.s = (char *) um->getFunction();
+
+	    NEW (final->u.fn.r, Expr);
+	    final->u.fn.r->type = E_LT;
+	    final->u.fn.r->u.e.r = NULL;
+	    final->u.fn.r->u.e.l = e->u.func.lhs;
+	    e->u.func.lhs = final;
 	  }
 	  // otherwise what are we doing!
 	}

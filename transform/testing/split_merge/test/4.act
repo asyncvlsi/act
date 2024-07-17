@@ -1,0 +1,14 @@
+defproc test()
+{
+   chan(int) a;
+   chan(int<7>) ctrl;
+
+   pint X = 70;
+   chan(int) x[X];
+
+   dataflow {
+     {ctrl} a -> (,i:X: x[i])
+   }
+}
+
+test t;

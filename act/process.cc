@@ -139,11 +139,6 @@ int Process::isLowLevelBlackBox ()
   return 0;
 }
 
-Process *Process::getUnexpanded()
-{
-  return dynamic_cast<Process *>(unexpanded);
-}
-
 void Process::Print (FILE *fp)
 {
   if (isCell()) {

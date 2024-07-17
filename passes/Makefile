@@ -36,7 +36,8 @@ USEOBJS=booleanize/$(EXT)/booleanize.o \
 	sizing/$(EXT)/sizing.o  \
 	finline/$(EXT)/finline.o \
 	chpdecomp/$(EXT)/chpmem.o \
-	chpdecomp/$(EXT)/chparb.o
+	chpdecomp/$(EXT)/chparb.o \
+	chpdecomp/$(EXT)/dflow.o \
 
 SHOBJS=$(USEOBJS:.o=.os)
 

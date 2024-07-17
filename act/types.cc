@@ -2296,3 +2296,26 @@ UserDef::UserDef (UserDef *x)
   A_INIT (um);
   MkCopy (x);
 }
+
+
+UserDef *UserDef::getUnexpanded()
+{
+  return unexpanded;
+}
+
+void Data::synthStructMacro ()
+{
+  UserDef *orig = getUnexpanded();
+  UserMacro *tmp_um = orig->newMacro (orig->getName());
+  tmp_um->mkBuiltin ();
+  tmp_um->setRetType (new InstType (orig->CurScope(), orig, 0));
+
+  newMacro (orig->getName());
+  
+  Assert (um[A_LEN (um)-1]->getName() == tmp_um->getName(), "What?");
+  
+  um[A_LEN(um)-1] = tmp_um->Expand (this, getns(), CurScope(), 0);
+  um[A_LEN(um)-1]->setParent (this);
+  um[A_LEN(um)-1]->populateCHP ();
+  um[A_LEN(um)-1]->updateFn (this);
+}

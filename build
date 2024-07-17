@@ -1,5 +1,15 @@
 #!/bin/sh
 
+debug=
+if [ $# -gt 0 ]
+then
+   if [ $1 = "debug" ]
+   then
+	debug="C_COMPILER_FLAGS=-g"
+	shift
+   fi
+fi
+
 if [ x$VLSI_TOOLS_SRC = x ]
 then
 	echo "Environment variable VLSI_TOOLS_SRC should point to the source tree"
@@ -13,9 +23,9 @@ else
 fi
 
 echo "Building common library/generators..." && \
-   make -C common install_inc && \
-   make -C common install && \
-   make -C pgen install && \
-   make -C miniscm install 
+   make $debug -C common install_inc && \
+   make $debug -C common install && \
+   make $debug -C pgen install && \
+   make $debug -C miniscm install 
 
-make && echo && echo 'Run "make install" to install the binaries'
+make $debug && echo && echo 'Run "make install" to install the binaries'

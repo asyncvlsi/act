@@ -11,11 +11,9 @@ deftype str (int<N> x, z)
 
 defproc test()
 {
-   str<4> s;
-   int<8> w;
+   str<5> s;
    chp {
-      w := 0x42;
-      s := str(0x42);
+      s := str<4>(0x42);
       log ("got ", s.x, " ", s.z)
    }
 }

@@ -436,6 +436,17 @@ class Scope {
    * @param force is used to force the printing of non-primary connections
    */
   static void printConnections (FILE *fp, act_connection *cx, bool force = false);
+
+
+  /**
+   * This is used to find a fresh name with a specified prefix.
+   * @param prefix is the prefix of the name
+   * @param count  is a read/write integer that is updated until you
+   * find a name called prefix<num> that is not in the scope
+   *
+   * Use this to find the next integer value that can be used.
+   */
+  void findFresh (const char *prefix, int *count);
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

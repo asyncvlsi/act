@@ -1,0 +1,6 @@
+In expanding test (37.act:31)
+In expanding ::<Global>
+Typechecking failed on CHP assignment
+  stmt: x := testme<4>(5)
+	Incompatible structures
+	str<5> v/s str<4>

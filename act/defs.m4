@@ -1211,32 +1211,17 @@ one_method: ID "{" hse_body "}"
     }
     $0->scope = new Scope ($0->scope, 0);
 }}  
-"(" [ macro_formal_list ] ")" [ ":" physical_inst_type ] 
+"(" [ macro_formal_list ] ")" "{" [ chp_body ] "}"
 {{X:
     OPT_FREE ($4);
-    if (!OPT_EMPTY ($6)) {
-      ActRet *r = OPT_VALUE ($6);
-      $A(r->type == R_INST_TYPE);
-      $0->um->setRetType (r->u.inst);
-      $0->scope->Add ("self", r->u.inst);
-      FREE (r);
-
-      if (!$0->u_d) {
-	$E("Macro function ``%s'': functions are only supported for datatypes.", $2);
-      }
-    }
-    OPT_FREE ($6);
-}}
-"{" [ chp_body ] "}"
-{{X:
     /* function formal list must be data types; no parameters allowed */
-    if (!OPT_EMPTY ($8)) {
-      ActRet *r = OPT_VALUE ($8);
+    if (!OPT_EMPTY ($7)) {
+      ActRet *r = OPT_VALUE ($7);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
       FREE (r);
     }
-    OPT_FREE ($8);
+    OPT_FREE ($7);
     $0->um = NULL;
 
     Scope *tmp = $0->scope;
@@ -1245,6 +1230,59 @@ one_method: ID "{" hse_body "}"
     
     return NULL;
 }}
+| "function" ID
+{{X:
+    if ($0->u_p) {
+      $E("Function methods cannot be used by processes!");
+    }
+    else if ($0->u_c) {
+      $E("Function methods cannot be used by channels!");
+    }
+    else if ($0->u_d) {
+      if (TypeFactory::isPureStruct ($0->u_d)) {
+	if (strcmp ($2, "int") == 0) {
+	  $E("``int'' cannot be used as a macro name; it is built-in!");
+	}
+	else if (strcmp ($2, $0->u_d->getName()) == 0) {
+	  $E("``%s'' cannot be used as a macro name; it is built-in!",
+	     $0->u_d->getName());
+	}
+      }
+      $0->um = $0->u_d->newMacro ($2);
+    }
+    else {
+      $E("Function method in invalid unknown context");
+    }
+    if (!$0->um) {
+      $E("Duplicate method name: ``%s''", $2);
+    }
+    $0->scope = new Scope ($0->scope, 0);
+}}  
+"(" [ macro_formal_list ] ")" ":" physical_inst_type
+{{X:
+    OPT_FREE ($4);
+    $0->um->setRetType ($7);
+    $0->scope->Add ("self", $7);
+}}
+"{" [ "chp" "{" chp_body "}" ] "}"
+{{X:
+    /* function formal list must be data types; no parameters allowed */
+    if (!OPT_EMPTY ($9)) {
+      ActRet *r = OPT_VALUE ($9);
+      $A(r->type == R_CHP_LANG);
+      $0->um->setBody (r->u.chp);
+      FREE (r);
+    }
+    OPT_FREE ($9);
+    $0->um = NULL;
+
+    Scope *tmp = $0->scope;
+    $0->scope = tmp->Parent ();
+    delete tmp;
+    
+    return NULL;
+}}
+
 ;
 
 /*

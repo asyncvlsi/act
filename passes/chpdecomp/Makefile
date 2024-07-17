@@ -18,11 +18,11 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-EXTRA=chpmem.o chpmem.os chparb.o chparb.os
+EXTRA=chpmem.o chpmem.os chparb.o chparb.os dflow.o dflow.os
 TARGETINCS=chpdecomp.h
 TARGETINCSUBDIR=act/passes
 
-SRCS=chpmem.cc
+SRCS=chpmem.cc chparb.cc dflow.cc
 OBJS=$(EXTRA)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

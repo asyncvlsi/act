@@ -9,14 +9,30 @@ deftype str (int<N> x, z)
    }
 }
 
-defproc test()
+template<pint N>
+function testme (int x) : str<N>
+{
+   chp {
+     self.x := x;
+     self.z := x
+   }
+}
+
+
+defproc test2()
 {
    str<4> s;
-   int<8> w;
    chp {
-      w := 0x42;
-      s := str(0x42);
+      s := str<5>(0x42);
       log ("got ", s.x, " ", s.z)
+   }
+}
+
+defproc test()
+{
+   str<5> x;
+   chp {
+      x := testme<4>(5)
    }
 }
 

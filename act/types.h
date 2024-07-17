@@ -361,6 +361,10 @@ class UserDef : public Type {
    */
   int isExpanded() const { return expanded; }
   
+  /**
+   * @return the unexpanded type from which this one was generated
+   */
+  UserDef *getUnexpanded();
 
   /**
    * Add a new template ("meta") parameter
@@ -909,11 +913,6 @@ class Process : public UserDef {
    */
   const char *addBuffer (Process *buf, list_t *inst_ports);
 
-  /**
-   * @return the unexpanded type from which this one was generated
-   */
-  Process *getUnexpanded();
-
   /** 
    * record the usage of a global signal 
    * @param id is the global signal name
@@ -1277,6 +1276,13 @@ class Data : public UserDef {
    * field names for the structure.
    */
   ActId **getStructFields (int **types);
+
+
+  /**
+   * For pure structures, synthesize the macro that converts an
+   * integer of the correct bit-width to the structure
+   */
+  void synthStructMacro ();
 
 private:
   void _get_struct_count (int *nbools, int *nints);

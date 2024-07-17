@@ -86,4 +86,21 @@ private:
 };
 
 
+class ActDflowSplitMerge : public ActPass {
+public:
+  ActDflowSplitMerge (Act *a);
+  int run (Process *p = NULL);
+
+private:
+  int _split_merge_limit;
+  void *local_op (Process *p, int mode = 0);
+  void free_local (void *);
+
+  int _idx;			// running count for tmp channel names
+  Scope *_sc;			// hidden arg
+
+  void _apply_recursive_decomp (act_dataflow_element *e, list_t *l);
+};
+
+
 #endif /* __ACT_PASS_CHPDECOMP_H__ */

@@ -4,7 +4,7 @@ deftype misa_csr(int<2> mxl; int<MXLEN-28> zero; int<26> ext)
   methods {
     macro write (int<MXLEN> val) { mxl := (val >> (MXLEN-2)) & 0x3, zero := 0, ext := val & 0x3ffffff }
 
-    macro tstwrite (int val) : bool { mxl := val; self := true }
+    function tstwrite (int val) : bool { chp { mxl := val; self := true } }
   }
 }
 
