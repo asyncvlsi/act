@@ -337,7 +337,6 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	    }
 	    FREE (fields);
 	    FREE (types);
-	    FREE (vals);
 
 	    // we now need to wrap it in one function call!
 
