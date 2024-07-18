@@ -295,7 +295,6 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	    d = dynamic_cast <Data *>(it->BaseType());
 	    Assert (d, "Hmm");
 	    ActId **fields = d->getStructFields (&types);
-	    FREE (types);
 	    d->getStructCount (&nb, &ni);
 	    int sz = nb + ni;
 	    list_t *l = list_new ();
@@ -304,7 +303,6 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 
 	    if (sz == 1) {
 	      e->u.func.lhs = vals[0];
-	      FREE (vals);
 	    }
 	    else {
 	      Expr *te;
@@ -339,6 +337,7 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	    }
 	    FREE (fields);
 	    FREE (types);
+	    FREE (vals);
 
 	    // we now need to wrap it in one function call!
 
