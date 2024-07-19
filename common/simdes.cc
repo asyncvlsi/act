@@ -325,13 +325,13 @@ void Condition::DelObject (SimDES *s)
 }
 
 /* we're done, notify all objects */
-void Condition::Wakeup (int ev_type, int delay)
+void Condition::Wakeup (int ev_type, int delay, void *cause)
 {
   SimDES *s;
 
   while (!list_isempty (waiting_objects)) {
     s = (SimDES *)list_delete_tail (waiting_objects);
-    new Event (s, SIM_EV_MKTYPE (ev_type,SIM_EV_FLAG_WAKEUP), delay);
+    new Event (s, SIM_EV_MKTYPE (ev_type,SIM_EV_FLAG_WAKEUP), delay, cause);
   }
 }
 
@@ -389,14 +389,14 @@ WaitForAll::~WaitForAll ()
  * Returns 1 if the wait is satisfied, which says that the storage for
  * the wait can now be released.
  */
-int WaitForAll::Notify (int ev_type, int n)
+int WaitForAll::Notify (int ev_type, int n, void *cause)
 {
   if (!bitset_tst (slot_state, n)) {
     bitset_set (slot_state, n);
     num--;
     if (num == 0) {
       /* let all the waiting objects know we're ready to go */
-      Wakeup (ev_type, delay);
+      Wakeup (ev_type, delay, cause);
       return 1;
     }
   }
@@ -410,12 +410,12 @@ int WaitForAll::Notify (int ev_type, int n)
  * Returns 1 if the wait is satisfied, which says that the storage for
  * the wait can now be released.
  */
-int WaitForAll::NotifyAny (int ev_type)
+int WaitForAll::NotifyAny (int ev_type, void *cause)
 {
   num--;
   if (num == 0) {
     /* let all the waiting objects know we're ready to go */
-    Wakeup (ev_type, delay);
+    Wakeup (ev_type, delay, cause);
     ReInit ();
     return 1;
   }
@@ -475,15 +475,15 @@ WaitForOne::~WaitForOne ()
  * Returns 1 if the wait is satisfied, which says that the storage for
  * the wait can now be released.
  */
-int WaitForOne::Notify (int ev_type)
+int WaitForOne::Notify (int ev_type, void *cause)
 {
   /* let all the waiting objects know we're ready to go */
-  Wakeup (ev_type, delay);
+  Wakeup (ev_type, delay, cause);
   ReInit ();
   return 1;
 }
 
-int WaitForOne::Notify (int ev_type, int slot) { return Notify (ev_type); }
+int WaitForOne::Notify (int ev_type, int slot, void *cause) { return Notify (ev_type, cause); }
 
 
 bool SimDES::hasPendingEvent (void)

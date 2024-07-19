@@ -227,7 +227,7 @@ public:
       return 1 if the condition should be released
       return 0 otherwise
    */
-  virtual int Notify (int ev_type, int slot) = 0;	// generic notifier
+  virtual int Notify (int ev_type, int slot, void *cause = NULL) = 0;	// generic notifier
 
   void AddObject (SimDES *s);	// add me to the list of things
 				// that have to be invoked when
@@ -245,7 +245,7 @@ public:
 				// objects, 0 otherwise
 
 protected:
-  void Wakeup (int ev_type, int delay = 0);
+  void Wakeup (int ev_type, int delay = 0, void *cause = NULL);
 
 private:
   list_t *waiting_objects;
@@ -256,8 +256,8 @@ public:
   WaitForAll (int slots, int delay = 0);
   ~WaitForAll ();
 
-  int Notify  (int ev_type, int slot); // slot is complete
-  int NotifyAny (int ev_type);	       // counting notification (not
+  int Notify  (int ev_type, int slot, void *cause = NULL); // slot is complete
+  int NotifyAny (int ev_type, void *cause = NULL);	       // counting notification (not
 				       // slot based)
   
   void ReInit ();		       // re-initialize
@@ -274,8 +274,8 @@ public:
   WaitForOne (int delay = 0);
   ~WaitForOne ();
 
-  int Notify  (int ev_type, int slot); // to make this not virtual
-  int Notify  (int ev_type);	// slot is complete
+  int Notify  (int ev_type, int slot, void *cause = NULL); // to make this not virtual
+  int Notify  (int ev_type, void *cause = NULL);	// slot is complete
   
   void ReInit ();		       // re-initialize
 
