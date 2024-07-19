@@ -1,0 +1,4 @@
+ ID: w
+FATAL: Cannot proceed. Dynamic arrays used in unsupported ways.
+In expanding foo<> (28.act:9)
+WARNING: Local dynamic arrays cannot have other partial connections

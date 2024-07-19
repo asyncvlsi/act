@@ -1,0 +1,13 @@
+--- Process: foo<> ---
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 5, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
+ g.gnd -> -1
+ a -> -5
+ c -> -3
+ b -> -4
+ g.vdd -> -2
+--- End Process: foo<> ---
+Globals: 0 bools

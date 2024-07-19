@@ -90,8 +90,41 @@ do
             diff runs/$i.t.stderr runs/$i.c.stderr
         fi
 	fi
+        if [ $ok -eq 1 ]
+        then
+	rm runs/$i.c.stderr
+	$ACTTOOL -Wno_local_driver:on -v $i 'foo<>' > runs/$i.t.stdoutv 2> runs/$i.tmp.stderrv
+	sort runs/$i.tmp.stderrv > runs/$i.t.stderrv
+	rm runs/$i.tmp.stderrv
+        sort runs/$i.stderrv > runs/$i.c.stderrv
+	if ! cmp runs/$i.t.stdoutv runs/$i.stdoutv >/dev/null 2>/dev/null
+	then
+		echo 
+		myecho "** FAILED TEST $i: stdoutv"
+		fail=`expr $fail + 1`
+		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.t.stdoutv runs/$i.stdoutv
+        fi
+	fi
+	if ! cmp runs/$i.t.stderrv runs/$i.c.stderrv >/dev/null 2>/dev/null
+	then
+		if [ $ok -eq 1 ]
+		then
+			echo
+			myecho "** FAILED TEST $i:"
+		fi
+		myecho " stderrv"
+		fail=`expr $fail + 1`
+		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.t.stderrv runs/$i.c.stderrv
+        fi
+	fi
+        fi
 	if [ $ok -eq 1 ]
 	then
+		rm runs/$i.c.stderrv
 		if [ $num -eq $lim ]
 		then
 			echo 
@@ -103,7 +136,6 @@ do
 		myecho " "
 		num=0
 	fi
-	rm runs/$i.c.stderr
 done
 
 if [ $num -ne 0 ]

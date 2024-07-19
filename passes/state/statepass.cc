@@ -63,6 +63,88 @@ void ActStatePass::getStructCount (Data *d, state_counts *sc)
   return;
 }
 
+
+static int _bucket_cmpfn (const void *a, const void *b)
+{
+  const hash_bucket_t *ba = (const hash_bucket_t *) a;
+  const hash_bucket_t *bb = (const hash_bucket_t *) b;
+
+  return strcmp (ba->key, bb->key);
+}
+
+static struct Hashtable *_mirror_hash (struct pHashtable *x)
+{
+  char buf[10240];
+  struct Hashtable *H;
+  if (!x) return NULL;
+
+  phash_iter_t it;
+  phash_bucket_t *b;
+
+  H = hash_new (x->size);
+
+  phash_iter_init (x, &it);
+  while ((b = phash_iter_next (x, &it))) {
+    hash_bucket_t *nb;
+    act_connection *c = (act_connection *)b->key;
+    ActId *tid = c->toid();
+    tid->sPrint (buf, 10240);
+    delete tid;
+    nb = hash_add (H, buf);
+    nb->v = c;
+  }
+
+  // now we check for bucket lists that have more than one entry, and
+  // make sure they are sorted!
+  for (int i=0; i < H->size; i++) {
+    hash_bucket_t *b;
+    int count = 0;
+    b = H->head[i];
+    while (b) {
+      count++;
+      b = b->next;
+    }
+    if (count < 2) {
+      // nothing to do
+    }
+    else {
+      if (count == 2) {
+	if (strcmp (H->head[i]->key, H->head[i]->next->key) <= 0) {
+	  // swap the buckets
+	  b = H->head[i]->next;
+	  b->next = H->head[i];
+	  H->head[i]->next = NULL;
+	  H->head[i] = b;
+	}
+      }
+      else {
+	// sort the buckets!
+	hash_bucket_t **bx;
+	MALLOC (bx, hash_bucket_t *, count);
+	b = H->head[i];
+	for (int j=0; j < count; j++) {
+	  bx[j] = b;
+	  b = b->next;
+	}
+	mymergesort ((const void **)bx,  count, _bucket_cmpfn);
+	H->head[i] = bx[0];
+	for (int j=0; j < count-1; j++) {
+	  bx[j]->next = bx[j+1];
+	}
+	bx[count-1]->next = NULL;
+      }
+    }
+  }
+  
+  return H;
+}
+
+static void _free_mirror_hash (struct Hashtable *H)
+{
+  if (!H) return;
+  hash_free (H);
+}
+
 /*
  * Count all the local booleans, and create a map from connection
  * pointers corresponding to them to integers.
@@ -254,13 +336,32 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
      integer starting at zero
   */
 
+
+  /*
+    Traversing these hash tables will be a source of non-determinism
+    since they are both connection pointer hashes. Instead, we create
+    auxillary tables hashed by the unique strings each canonical
+    connection corresponds to. This corresponds to a deterministic
+    hash table, and so this will result in repeatable results in terms
+    of connection pointer to state index mappings.
+  */
+  struct Hashtable *cHtmp;
+  struct Hashtable *cdHtmp;
+
+  cHtmp = _mirror_hash (b->cH);
+  cdHtmp = _mirror_hash (b->cdH);
+
   /*
     Start with dynamic arrays. These are always local.
   */
   phash_bucket_t *pb;
+  hash_iter_t niter;
+  hash_bucket_t *nb;
 
-  phash_iter_init (b->cdH, &iter);
-  while ((pb = ihash_iter_next (b->cdH, &iter))) {
+  hash_iter_init (cdHtmp, &niter);
+  while ((nb = hash_iter_next (cdHtmp, &niter))) {
+    pb = phash_lookup (b->cdH, nb->v);
+    
     /*---
       XXX: what if a process has a dynamic array in CHP and then a
       static array in the prs?
@@ -317,8 +418,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  phash_iter_init (b->cH, &iter);
-  while ((pb = phash_iter_next (b->cH, &iter))) {
+  hash_iter_init (cHtmp, &niter);
+  while ((nb = hash_iter_next (cHtmp, &niter))) {
+    pb = phash_lookup (b->cH, nb->v);
+    
     int found = 0;
     act_booleanized_var_t *v = (act_booleanized_var_t *) pb->v;
     act_dynamic_var_t *dv;
@@ -803,8 +906,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   state_counts c_idx;
 
-  phash_iter_init (b->cdH, &iter);
-  while ((pb = ihash_iter_next (b->cdH, &iter))) {
+  hash_iter_init (cdHtmp, &niter);
+  while ((nb = hash_iter_next (cdHtmp, &niter))) {
+    pb = phash_lookup (b->cdH, nb->v);
     act_dynamic_var_t *v = (act_dynamic_var_t *) pb->v;
     phash_bucket_t *x;
     if (v->isstruct) {
@@ -841,8 +945,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
     }
   }
 
-  phash_iter_init (b->cH, &iter);
-  while ((pb = phash_iter_next (b->cH, &iter))) {
+  hash_iter_init (cHtmp, &niter);
+  while ((nb = hash_iter_next (cHtmp, &niter))) {
+    pb = phash_lookup (b->cH, nb->v);
     int found = 0;
     act_booleanized_var_t *v = (act_booleanized_var_t *) pb->v;
     int ocount = 0;
@@ -933,12 +1038,16 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
   Assert (_cmap->n == 0, "Sanity check on chp state generation failed");
   phash_free (_cmap);
+  
+  _free_mirror_hash (cHtmp);
+  _free_mirror_hash (cdHtmp);
 
   return si;
 }
 
 ActStatePass::ActStatePass (Act *a, int inst_offset) : ActPass (a, "collect_state", 1)
 {
+  _verbose = false;
   /*-- need the booleanize pass --*/
   ActPass *ap = a->pass_find ("booleanize");
   if (!ap) {
@@ -1112,7 +1221,37 @@ void ActStatePass::printLocal (FILE *fp, Process *p)
   fprintf (fp, "  ismulti: %d\n", si->ismulti);
   fprintf (fp, "  all booleans (incl. inst): %d\n", si->all.numBools());
   fprintf (fp, "  all chpvars (incl. inst): %d\n", si->all.numCHPVars());
-  
+
+  if (_verbose) {
+    hash_bucket_t *b;
+    hash_iter_t it;
+    struct Hashtable *tmp = _mirror_hash (si->bnl->cdH);
+
+    hash_iter_init (tmp, &it);
+    while ((b = hash_iter_next (tmp, &it))) {
+      phash_bucket_t *mapv = phash_lookup (si->map, b->v);
+      if (!mapv) {
+	warning ("Something went wrong? Key: `%s'", b->key);
+      }
+      else {
+	fprintf (fp, " %s => %d\n", b->key, mapv->i);
+      }
+    }
+    _free_mirror_hash (tmp);
+    
+    tmp = _mirror_hash (si->bnl->cH);
+    hash_iter_init (tmp, &it);
+    while ((b = hash_iter_next (tmp, &it))) {
+      phash_bucket_t *mapv = phash_lookup (si->map, b->v);
+      if (!mapv) {
+	warning ("Something went wrong? Key: `%s'", b->key);
+      }
+      else {
+	fprintf (fp, " %s -> %d\n", b->key, mapv->i);
+      }
+    }
+    _free_mirror_hash (tmp);
+  }
   fprintf (fp, "--- End Process: %s ---\n", p->getName());
 }
 

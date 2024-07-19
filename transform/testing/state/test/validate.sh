@@ -28,4 +28,7 @@ do
 	$ACTTOOL -Wno_local_driver:on $i 'foo<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.stderr
 	rm runs/$i.tmp.stderr
+	$ACTTOOL -Wno_local_driver:on -v $i 'foo<>' > runs/$i.stdoutv 2> runs/$i.tmp.stderrv
+	sort runs/$i.tmp.stderrv > runs/$i.stderrv
+	rm runs/$i.tmp.stderrv
 done

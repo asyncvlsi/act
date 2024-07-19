@@ -1,0 +1,11 @@
+In expanding foo<> (26.act:8)
+WARNING: Process `foo<>': chp local variable `x[0].a': no driver
+WARNING: Process `foo<>': chp local variable `x[1].a': no driver
+WARNING: Process `foo<>': chp local variable `x[2].a': no driver
+WARNING: Process `foo<>': chp local variable `x[3].a': no driver
+WARNING: Process `foo<>': chp local variable `x[4].a': no driver
+WARNING: Process `foo<>': chp local variable `x[5].a': no driver
+WARNING: Process `foo<>': chp local variable `x[6].a': no driver
+WARNING: Process `foo<>': chp local variable `x[7].a': no driver
+WARNING: Process `foo<>': chp local variable `x[8].a': no driver
+WARNING: Process `foo<>': chp local variable `x[9].a': no driver

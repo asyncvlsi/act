@@ -1,2 +1,4 @@
 *.t.stdout
 *.t.stderr
+*.t.stdoutv
+*.t.stderrv

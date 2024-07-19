@@ -1,0 +1,37 @@
+--- Process: bar<> ---
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 0, port-chpvars = 2
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
+ a -> -2
+ b -> -1
+--- End Process: bar<> ---
+--- Process: foo<> ---
+   loc-nbools = 0, loc-nvars = 20
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 20
+ x[9].b -> 0
+ x[0].a -> 1
+ x[1].a -> 2
+ x[8].b -> 3
+ x[1].b -> 4
+ x[5].a -> 5
+ x[8].a -> 6
+ x[9].a -> 7
+ x[4].a -> 8
+ x[6].b -> 9
+ x[5].b -> 10
+ x[4].b -> 11
+ x[3].a -> 12
+ x[7].a -> 13
+ x[6].a -> 14
+ x[2].b -> 15
+ x[3].b -> 16
+ x[2].a -> 17
+ x[7].b -> 18
+ x[0].b -> 19
+--- End Process: foo<> ---
+Globals: 0 bools

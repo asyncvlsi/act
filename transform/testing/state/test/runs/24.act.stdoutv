@@ -1,0 +1,42 @@
+--- Process: bar<> ---
+   loc-nbools = 0, loc-nvars = 0
+   port-nbools = 3, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 0
+ s -> -1
+ q -> -3
+ r -> -2
+--- End Process: bar<> ---
+--- Process: fuz<> ---
+   loc-nbools = 6, loc-nvars = 0
+   port-nbools = 2, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 6
+  all chpvars (incl. inst): 0
+ zz.s -> 0
+ a -> -2
+ z.s -> 1
+ zz.q -> 2
+ b -> -1
+ z.q -> 3
+ zz.r -> 4
+ z.r -> 5
+--- End Process: fuz<> ---
+--- Process: foo<> ---
+   loc-nbools = 8, loc-nvars = 0
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 32
+  all chpvars (incl. inst): 0
+ a[3].b -> 0
+ a[2].a -> 1
+ a[1].a -> 2
+ a[2].b -> 3
+ a[3].a -> 4
+ a[0].b -> 5
+ a[0].a -> 6
+ res -> -1
+ a[1].b -> 7
+--- End Process: foo<> ---
+Globals: 1 bools

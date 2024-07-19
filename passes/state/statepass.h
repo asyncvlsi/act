@@ -203,6 +203,8 @@ public:
 				    valid */
   int globalBoolOffset (ActId *id);
 
+  void setVerbose (bool flag) { _verbose = flag; }
+
   static void getStructCount (Data *d, state_counts *sc);
 
 private:
@@ -213,6 +215,8 @@ private:
   void printLocal (FILE *fp, Process *p);
   int _black_box_mode;
   int _inst_offsets;
+  
+  bool _verbose;		// verbose flag
 
   stateinfo_t *_root_si;	// top-level state info
   state_counts _globals;

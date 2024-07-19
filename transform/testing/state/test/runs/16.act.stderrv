@@ -1,0 +1,9 @@
+In expanding foo<> (16.act:1)
+WARNING: Process `foo<>': local variable `a0': no driver
+WARNING: Process `foo<>': local variable `a1': no driver
+WARNING: Process `foo<>': local variable `b0': no driver
+WARNING: Process `foo<>': local variable `b1': no driver
+WARNING: Process `foo<>': local variable `c0': no driver
+WARNING: Process `foo<>': local variable `c1': no driver
+WARNING: Process `foo<>': local variable `de': no driver
+WARNING: Process `foo<>': local variable `en': no driver

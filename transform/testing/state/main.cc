@@ -31,7 +31,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] <actfile> <process>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-v] <actfile> <process>\n", name);
   exit (1);
 }
 
@@ -40,35 +40,45 @@ int main (int argc, char **argv)
 {
   Act *a;
   char *proc;
+  bool verbose = false;
+  int shift = 0;
 
   /* initialize ACT library */
   Act::Init (&argc, &argv);
 
   /* some usage check */
-  if (argc != 3) {
+  if (argc != 3 && argc != 4) {
     usage (argv[0]);
+  }
+  if (argc == 4 && strcmp (argv[1], "-v") != 0) {
+    usage (argv[0]);
+  }
+  else if (argc == 4) {
+    verbose = true;
+    shift = 1;
   }
 
   /* read in the ACT file */
-  a = new Act (argv[1]);
+  a = new Act (argv[1+shift]);
 
   /* expand it */
   a->Expand ();
  
   /* find the process specified on the command line */
-  Process *p = a->findProcess (argv[2]);
+  Process *p = a->findProcess (argv[2+shift]);
 
   if (!p) {
-    fatal_error ("Could not find process `%s' in file `%s'", argv[2], argv[1]);
+    fatal_error ("Could not find process `%s' in file `%s'", argv[2+shift], argv[1+shift]);
   }
 
   if (!p->isExpanded()) {
-    fatal_error ("Process `%s' is not expanded.", argv[2]);
+    fatal_error ("Process `%s' is not expanded.", argv[2+shift]);
   }
 
   /* do stuff here */
   ActStatePass *sp = new ActStatePass (a);
   sp->run (p);
+  sp->setVerbose (verbose);
 
   sp->Print (stdout, p);
 
