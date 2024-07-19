@@ -56,7 +56,7 @@ ActPass::ActPass (Act *_a, const char *s, int doroot)
   _root = NULL;
   _update_propagate = 1;
   _sticky_visited = 0;
-  _global_info = NULL;
+  _decomp_info = NULL;
 
   ActPass *_tmp = _a->pass_find ("_refresh_");
   if (!_tmp) {

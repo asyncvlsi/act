@@ -1198,82 +1198,59 @@ void act_add_global_pbool (const char *name, int val)
 
 list_t *Act::getDecomp (Process *p)
 {
-  static ActPass *_mp = NULL;
-  static ActPass *_ap = NULL;
+  ActPass *_tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+  list_t *ret;
 
-  if (!_mp) {
-    _mp = pass_find ("chpmem");
-  }
-  if (!_ap) {
-    _ap = pass_find ("chparb");
-  }
+  ret = NULL;
 
-  void *l1, *l2;
-  l1 = NULL;
-  l2 = NULL;
-
-  if (_mp && _mp->completed()) {
-    l1 = _mp->getMap (p);
-  }
-  if (_ap && _ap->completed()) {
-    l2 = _ap->getMap (p);
-  }
-
-  if (l1 || l2) {
-    list_t *ret = list_new ();
-    if (l1) {
-      list_append (ret, l1);
-    }
-    if (l2) {
-      list_append (ret, l2);
-    }
-    return ret;
-  }
-  return NULL;
-}
-
-
-list_t *Act::getDecompTypes ()
-{
-  static ActPass *_mp = NULL;
-  static ActPass *_ap = NULL;
-
-  if (!_mp) {
-    _mp = pass_find ("chpmem");
-  }
-  if (!_ap) {
-    _ap = pass_find ("chparb");
-  }
-
-  list_t *l1, *l2;
-  l1 = NULL;
-  l2 = NULL;
-
-  if (_mp && _mp->completed()) {
-    l1 = (list_t *) _mp->getGlobalInfo ();
-  }
-  if (_ap && _ap->completed()) {
-    l2 = (list_t *) _ap->getGlobalInfo ();
-  }
-
-  list_t *ret = NULL;
-
-  if (l1) {
-    ret = list_dup (l1);
-  }
-  if (l2) {
-    if (!ret) {
-      ret = list_dup (l2);
-    }
-    else {
-      list_t *tmp = list_dup (l2);
-      list_concat (ret, tmp);
-      list_free (tmp);
+  hash_iter_init (passes, &it);
+  while ((b = hash_iter_next (passes, &it))) {
+    _tmp = (ActPass *) b->v;
+    if (!_tmp->completed()) continue;
+    if (_tmp->getDecompInfo()) {
+      // this is a decomposition pass and resulted in decomposition!
+      list_t *l = (list_t *) _tmp->getMap (p);
+      if (l) {
+	if (!ret) {
+	  ret = list_new ();
+	}
+	list_append (ret, l);
+      }
     }
   }
   return ret;
 }
 
+
+list_t *Act::getDecompTypes ()
+{
+  ActPass *_tmp;
+  hash_bucket_t *b;
+  hash_iter_t it;
+  list_t *ret;
+
+  ret = NULL;
+
+  hash_iter_init (passes, &it);
+  while ((b = hash_iter_next (passes, &it))) {
+    list_t *l;
+    _tmp = (ActPass *) b->v;
+    if (!_tmp->completed()) continue;
+    l = (list_t *) _tmp->getDecompInfo ();
+    if (l) {
+      if (!ret) {
+	ret = list_dup (l);
+      }
+      else {
+	l = list_dup (l);
+	list_concat (ret, l);
+      }
+    }
+  }
+  return ret;
+}
 
 
 bool Act::LocalizeGlobal (const char *s)

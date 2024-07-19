@@ -839,8 +839,8 @@ protected:
   
   Process *_root;		///< the root of the design
   
-  void *_global_info;		///< this space is for rent. It is
-				///used by the decomposition passes to
+  list_t *_decomp_info;		///< this space is used by the
+				///decomposition passes to
 				///save away type information.
   
 
@@ -938,9 +938,16 @@ public:
   void *getMap (UserDef *u);
 
   /**
-   * @return the global info field for this pass
+   * When an ActPass applies some restructuring operation that results
+   * in a decomposition operation, the _decomp_info field is set. The
+   * existence of this field is used to indicate that the pass is a
+   * decomposition pass. Decomposition passes must use their default
+   * map to record the decomposition information as well. See the
+   * passes/chpdecomp/chpmem.cc file for an example.
+   *
+   * @return the decomposition info field for this pass
    */
-  void *getGlobalInfo () { return _global_info; }
+  list_t *getDecompInfo () { return _decomp_info; }
 
   /**
    * @return the Act pointer that this pass is attached to
