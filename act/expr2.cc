@@ -1645,6 +1645,130 @@ static Expr *_expr_expand (int *width, Expr *e,
       e->u.fn.r->u.e.r = e_orig->u.fn.r->u.e.r;
     }
   }
+  else if (e->type == E_BITSLICE) {
+    if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
+      Expr *tmp;
+      ret->u.e.l = (Expr *)((ActId *)e->u.e.l)->Clone ();
+      NEW (ret->u.e.r, Expr);
+      tmp = ret->u.e.r;
+      tmp->type = E_LT;
+      tmp->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
+      NEW (tmp->u.e.r, Expr);
+      tmp = tmp->u.e.r;
+      tmp->type = E_LT;
+      tmp->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.l, ns, s, flags);
+      tmp->u.e.r = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.r, ns, s, flags);
+      return ret;
+    }
+    // re-write this as a concatenation
+    // get the fields b_field and a_field.
+    Expr *b_field, *a_field;
+    b_field = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.l, ns, s, flags);
+    a_field = _expr_expand (&lw, e->u.e.r->u.e.r->u.e.r, ns, s, flags);
+    if (!expr_is_a_const (b_field) || b_field->type != E_INT) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "\texpanding bit-slice expression: ");
+      print_expr (stderr, e->u.e.r->u.e.r->u.e.l);
+      fprintf (stderr, "\n");
+      fatal_error ("Doesn't evaluate to an int constant!\n");
+    }
+    if (a_field && (!expr_is_a_const (a_field) || a_field->type != E_INT)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "\texpanding bit-slice expression: ");
+      print_expr (stderr, e->u.e.r->u.e.r->u.e.r);
+      fprintf (stderr, "\n");
+      fatal_error ("Doesn't evaluate to a int constant!\n");
+    }
+    if (!(flags & ACT_EXPR_EXFLAG_CHPEX)) {
+      act_error_ctxt (stderr);
+      fatal_error ("Bit-slice expression can only appear in CHP/dataflow bodies.");
+    }
+    ActId *xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+    Expr *te = xid->EvalCHP (ns, s, 0);
+    if (te->type != E_VAR) {
+      act_error_ctxt (stderr);
+      fatal_error ("Not sure why this happened? Bit-slice id doesn't evaluate to a variable!");
+    }
+    act_chp_macro_check (s, (ActId *)te->u.e.l);
+    InstType *it;
+    act_type_var (s, (ActId *)te->u.e.l, &it);
+    *width = TypeFactory::bitWidth (it);
+    // now we have the bit-width!
+    // now we convert the rest of the expression!!!
+    int b_val, a_val;
+    b_val = b_field->u.ival.v;
+    if (a_field) {
+      a_val = a_field->u.ival.v;
+    }
+    else {
+      a_val = b_val;
+    }
+    if (b_val >= *width) {
+      warning ("Bit-field assignment {%d..%d} exceeds integer width (%d); truncating", b_val, a_val, *width);
+      b_val = (*width) - 1;
+    }
+    if (b_val < a_val) {
+      act_error_ctxt (stderr);
+      fatal_error ("Bit-field assignment {%d..%d} is empty.", b_val, a_val);
+    }
+    ret->type = E_CONCAT;
+    // { opt- x{w-1 .. b+1} , int (E, b - a + 1), opt-x {a-1 .. 0} }
+    if (b_val == (*width-1) && a_val == 0) {
+      FREE (ret);
+      return _expr_expand (width, e->u.e.r->u.e.l, ns, s, flags);
+    }
+    a_field = NULL;
+    // optional x{w-1 .. b+1}
+    if (b_val != (*width - 1)) {
+      if (a_field) {
+	NEW (a_field->u.e.r, Expr);
+	a_field = a_field->u.e.r;
+	a_field->type = E_CONCAT;
+	a_field->u.e.r = NULL;
+      }
+      else {
+	a_field = ret;
+      }
+      NEW (a_field->u.e.l, Expr);
+      a_field->u.e.l->type = E_BITFIELD;
+      a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      NEW (a_field->u.e.l->u.e.r, Expr);
+      a_field->u.e.l->u.e.r->type = E_BITFIELD;
+      a_field->u.e.l->u.e.r->u.e.l = const_expr (b_val+1);
+      a_field->u.e.l->u.e.r->u.e.r = const_expr (*width - 1);
+    }
+    // int(E, b-a+1)
+    if (a_field) {
+      NEW (a_field->u.e.r, Expr);
+      a_field = a_field->u.e.r;
+      a_field->type = E_CONCAT;
+      a_field->u.e.r = NULL;
+    }
+    else {
+      a_field = ret;
+    }
+    NEW (a_field->u.e.l, Expr);
+    a_field->u.e.l->type = E_BUILTIN_INT;
+    a_field->u.e.l->u.e.l =
+      _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
+    a_field->u.e.l->u.e.r = const_expr (b_val - a_val + 1);
+
+    // opt x{a-1 .. 0}
+    if (a_val != 0) {
+      NEW (a_field->u.e.r, Expr);
+      a_field = a_field->u.e.r;
+      a_field->type = E_CONCAT;
+      a_field->u.e.r = NULL;
+      NEW (a_field->u.e.l, Expr);
+      a_field->u.e.l->type = E_BITFIELD;
+      a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      NEW (a_field->u.e.l->u.e.r, Expr);
+      a_field->u.e.l->u.e.r->type = E_BITFIELD;
+      a_field->u.e.l->u.e.r->u.e.l = const_expr (0);
+      a_field->u.e.l->u.e.r->u.e.r = const_expr (a_val - 1);
+    }
+    return ret;
+  }
   
 
   switch (e->type) {

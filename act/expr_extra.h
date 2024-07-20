@@ -110,7 +110,24 @@
  */
 #define E_USERMACRO (E_END + 29)
 
-#define E_NEWEND  E_END + 31	     ///< new "end" of expression options
+
+/*
+  A bitslice is  "bitslice(x,E,b,a)"
+  This is used to implement
+      x{b..a} := E
+
+  E_BITSLICE
+     /      |
+   ActId    E_LT
+            /  \
+	  E    E_LT
+	       /  \
+	      b   a
+*/	      
+  
+#define E_BITSLICE (E_END + 30)
+
+#define E_NEWEND  E_END + 32	     ///< new "end" of expression options
 
 #ifdef __cplusplus
 extern "C" {

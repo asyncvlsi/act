@@ -1058,7 +1058,7 @@ rcv_type[int]: "?"
 {{X: return 2; }}
 ;
 
-assign_stmt[act_chp_lang_t *]: assignable_expr_id ":="
+assign_stmt[act_chp_lang_t *]: assignable_expr_id [ "{" !noreal wpint_expr [ ".." wpint_expr ] "}" ] ":="
 {{X:
     $0->line = $l;
     $0->column = $c;
@@ -1073,11 +1073,12 @@ w_expr_chp
     c->label = NULL;
     c->space = NULL;
     c->u.assign.id = $1;
-    c->u.assign.e = $3;
+    c->u.assign.e = $4;
 
     InstType *lhs, *rhs;
-    /*tl = */(void)(act_type_var ($0->scope, $1, &lhs));
-    rhs = act_expr_insttype ($0->scope, $3, NULL, 2);
+    int val;
+    val = act_type_var ($0->scope, $1, &lhs);
+    rhs = act_expr_insttype ($0->scope, $4, NULL, 2);
 
     Array *lhs_a, *rhs_a;
 
@@ -1092,10 +1093,55 @@ w_expr_chp
       fprintf ($f, "  stmt: ");
       $1->Print ($f, NULL);
       fprintf ($f, " := ");
-      print_uexpr ($f, $3);
+      print_uexpr ($f, $4);
       fprintf ($f, "\n\t%s\n", act_type_errmsg ());
       exit (1);
     }
+    if (!OPT_EMPTY ($2)) {
+      if (!T_BASETYPE_INT(val)) {
+	$e("Bit-field assignment requires an integer variable.\n");
+	fprintf ($f, "  stmt: ");
+	$1->Print ($f, NULL);
+	fprintf ($f, " := ");
+	print_uexpr ($f, $4);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      ActRet *r, *r2;
+      Expr *b_field, *a_field;
+      r = OPT_VALUE ($2);
+      $A(r->type == R_EXPR);
+      b_field = r->u.exp;
+      FREE (r);
+      r2 = OPT_VALUE2 ($2);
+      $A(r2->type == R_LIST);
+      if (!OPT_EMPTY (r2->u.l)) {
+	r = OPT_VALUE (r2->u.l);
+	$A(r->type == R_EXPR);
+	a_field = r->u.exp;
+	FREE (r);
+      }
+      else {
+	a_field = NULL;
+      }
+      OPT_FREE (r2->u.l);
+      FREE (r2);
+      Expr *tmp;
+      NEW (tmp, Expr);
+      tmp->type = E_BITSLICE;
+      tmp->u.e.l = (Expr *) $1->Clone ();
+      NEW (tmp->u.e.r, Expr);
+      tmp->u.e.r->type = E_LT;
+      tmp->u.e.r->u.e.l = c->u.assign.e;
+      c->u.assign.e = tmp;
+      tmp = tmp->u.e.r;
+      NEW (tmp->u.e.r, Expr);
+      tmp->u.e.r->type = E_LT;
+      tmp->u.e.r->u.e.l = b_field;
+      tmp->u.e.r->u.e.r = a_field;
+    }
+    OPT_FREE ($2);
+    
     lhs->MkArray (lhs_a);
     rhs->MkArray (rhs_a);
     if (rhs_a && !rhs_a->isDeref()) {
@@ -1619,7 +1665,8 @@ hse_assign_stmt[act_chp_lang_t *]: bool_expr_id dir
 }}
 | assignable_expr_id ":=" w_expr
 {{X:
-    act_chp_lang_t *ret = apply_X_assign_stmt_opt0 ($0, $1, $3);
+    list_t *l = list_new ();
+    act_chp_lang_t *ret = apply_X_assign_stmt_opt0 ($0, $1, l, $3);
     if (!$1->Rest() &&
 	(strcmp ($1->getName(), "self") == 0
 	 || strcmp ($1->getName(), "selfack") == 0)) {

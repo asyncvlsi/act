@@ -1,0 +1,11 @@
+defproc test()
+{
+   int<8> x;
+   chp {
+     x := 0;
+     x{3..2} := 2;
+     log ("x is now: ", x)
+   }
+}
+
+test t;
