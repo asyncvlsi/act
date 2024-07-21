@@ -74,11 +74,22 @@ UserMacro::~UserMacro ()
 
 void UserMacro::Print (FILE *fp)
 {
-  fprintf (fp, "  macro %s (", _nm);
-  for (int i=0; i < nports; i++) {
+  int templ = 0;
+  int meta = 0;
+  if (rettype) {
+    fprintf (fp, "  function %s (", _nm);
+  }
+  else {
+    fprintf (fp, "  macro %s (", _nm);
+  }
+  if (TypeFactory::isParamType (rettype)) {
+    templ = Parent()->getNumParams();
+    meta = 1;
+  }
+  for (int i=0; i < nports - templ; i++) {
     port_t[i]->Print (fp);
     fprintf (fp, " %s", port_n[i]);
-    if (i != nports-1) {
+    if (i != nports-1 - templ) {
       fprintf (fp, "; ");
     }
   }
@@ -88,10 +99,19 @@ void UserMacro::Print (FILE *fp)
     rettype->Print (fp);
   }
   fprintf (fp, " {\n");
-  if (c) {
-    fprintf (fp, "   ");
-    chp_print (fp, c);
-    fprintf (fp, "\n");
+  if (meta) {
+    if (c) {
+      fprintf (fp, "   chp { ");
+      chp_print (fp, c);
+      fprintf (fp, " }\n");
+    }
+  }
+  else {
+    if (c) {
+      fprintf (fp, "   ");
+      chp_print (fp, c);
+      fprintf (fp, "\n");
+    }
   }
   fprintf (fp, "  }\n");
 }
@@ -139,12 +159,11 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
   }
   ret->_builtinmacro = _builtinmacro;
 
-  Scope *tsc = new Scope (s, 1);
-  
+  Scope *tsc = new Scope (ux->CurScope(), 1);
+
   for (int i=0; i < nports; i++) {
     ret->port_t[i] = port_t[i]->Expand (ns, s);
     ret->port_n[i] = string_cache (port_n[i]);
-
     tsc->Add (ret->port_n[i], ret->port_t[i]);
   }
 
@@ -181,7 +200,12 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
   else {
     chp_expand_macromode (1);
   }
-  ret->c = chp_expand (c, ns, tsc);
+  if (!rettype || isBuiltinMacro() || !TypeFactory::isParamType (rettype)) {
+    ret->c = chp_expand (c, ns, tsc);
+  }
+  else {
+    ret->c = c;
+  }
   chp_expand_macromode (0);
 
   if (ret->rettype) {
@@ -206,12 +230,19 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     
     /* add the ports to this function! */
 
-    Assert (u->AddPort (it, string_cache ("$internal")) == 1,
-	    "What?");
+    if (TypeFactory::isParamType  (ret->rettype)) {
+      for (int i=0; i < nports; i++) {
+	u->AddMetaParam (port_t[i], port_n[i], NULL);
+      }
+    }
+    else {
+      Assert (u->AddPort (it, string_cache ("$internal")) == 1,
+	      "What?");
     
-    for (int i=0; i < nports; i++) {
-      Assert (u->AddPort (port_t[i] , port_n[i]) == 1, 
-	      "Not sure what went wrong!");
+      for (int i=0; i < nports; i++) {
+	Assert (u->AddPort (port_t[i] , port_n[i]) == 1, 
+		"Not sure what went wrong!");
+      }
     }
 
     len = strlen (ux->getName()) + 2 + strlen (_nm);
@@ -227,9 +258,6 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     
     ret->_exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
 
-    // now we set the CHP body!
-    // substitute with a special ID
-    ActId *prefix = new ActId (string_cache ("$internal"));
     act_languages *all_lang = ret->_exf->getlang();
     act_chp *xchp;
     NEW (xchp, act_chp);
@@ -237,11 +265,20 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     xchp->gnd = NULL;
     xchp->psc = NULL;
     xchp->nsc = NULL;
-    xchp->is_synthesizable = 1;
-    xchp->c = NULL;
+    if (TypeFactory::isParamType (ret->rettype)) {
+      xchp->is_synthesizable = 0;
+      xchp->c = c;
+    }
+    else {
+      // this is going to be set below, or in the populateCHP()
+      // function call for built-in macros
+      xchp->is_synthesizable = 1;
+      xchp->c = NULL;
+    }
 
-    if (isBuiltinMacro()) {
-      // nothing to do here... put this code in populateCHP()
+    if (isBuiltinMacro() || TypeFactory::isParamType (ret->rettype)) {
+      // nothing to do here... put this code in populateCHP() for
+      // built-in macros. Param macros are elaborated separately.
     }
     else {
       act_inline_table *tab = act_inline_new (tsc, NULL);
@@ -264,13 +301,19 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
 
       FREE (tmp_exprs);
-    
+
+      ActId *prefix = new ActId (string_cache ("$internal"));
       xchp->c = ret->substitute (prefix, tab);
       act_inline_free (tab);
     }
     
     all_lang->setchp (xchp);
-    ret->_exf->chkInline ();
+    if (!TypeFactory::isParamType (ret->rettype)) {
+      ret->_exf->chkInline ();
+    }
+    else {
+      ret->_exf->setBody (new ActBody_Lang (-1 /* FIXME */, xchp));
+    }
   }
   delete tsc;
   
@@ -545,7 +588,7 @@ void UserMacro::updateFn (UserDef *u)
     _exf->CurScope()->refineBaseType ("self", it);
     _exf->setRetType (it);
   }
-  else {
+  else if (!TypeFactory::isParamType (_exf->getRetType())) {
     _exf->CurScope()->refineBaseType ("$internal", it);
     _exf->refinePortType (0, it);
   }
@@ -651,6 +694,8 @@ void UserMacro::populateCHP()
   Assert (_exf, "What?");
   act_chp *xchp = _exf->getlang()->getchp();
   xchp->c = c;
+  _exf->setBody (new ActBody_Lang (-1 /* FIXME */, xchp));
+  
 #if 0
   printf ("CHP:\n");
   chp_print (stdout, xchp->c);

@@ -1,0 +1,4 @@
+ERROR: File `40.act', line 7, col 19
+	Typechecking failed on CHP assignment
+  stmt: self := x+y
+	pint assignment requires pint expressions

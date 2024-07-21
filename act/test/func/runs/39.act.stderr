@@ -1,0 +1,2 @@
+ERROR: File `39.act', line 5, col 14
+	Macro function with non-parameter types: return type cannot be a parameter!

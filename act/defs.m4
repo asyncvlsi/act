@@ -657,6 +657,63 @@ macro_formal_list: { single_macro_port_item ";" }*
 }}
 ;
 
+macro_param_formal_list: { macro_param_inst ";" }*
+{{X:
+    list_free ($1);
+    return NULL;
+}}
+;
+
+macro_param_inst: param_type id_list
+{{X:
+    listitem_t *li;
+    ActRet *r;
+    InstType *it;
+
+    $A($0->um);
+
+    for (li = list_first ($2); li; li = list_next (li)) {
+      r = (ActRet *)list_value (li);
+      $A(r->type == R_STRING);
+      const char *id_name = r->u.str;
+      FREE (r);
+
+      li = list_next (li);
+
+      r = (ActRet *)list_value (li);
+      $A(r->type == R_LIST);
+      list_t *m = r->u.l;
+      FREE (r);
+
+      if (OPT_EMPTY (m)) {
+	/* nothing needs to be done */
+	it = $1;
+      }
+      else {
+	it = new InstType ($1);
+	r = OPT_VALUE (m);
+	$A(r->type == R_ARRAY);
+	if (TypeFactory::isPTypeType (it->BaseType())) {
+	  $E("ptype parameters cannot be arrays!");
+	}
+	r->u.array->mkArray();
+	it->MkArray (r->u.array);
+	it->MkCached();
+	FREE (r);
+      }
+      list_free (m);
+
+      if ($0->um->addPort (it, id_name) != 1) {
+	$E("Duplicate port name in port list: ``%s''", id_name);
+      }
+      $0->scope->Add (id_name, it);
+    }
+    list_free ($2);
+    return NULL;
+}}
+;
+
+
 function_formal_list: port_formal_list | param_formal_list | /* empty */;
 
 param_formal_list: { param_inst ";" }*
@@ -1258,9 +1315,30 @@ one_method: ID "{" hse_body "}"
     }
     $0->scope = new Scope ($0->scope, 0);
 }}  
-"(" [ macro_formal_list ] ")" ":" physical_inst_type
+"(" macro_fn_formal ")" ":" func_ret_type
 {{X:
-    OPT_FREE ($4);
+    if ($0->um->getNumPorts() > 0) {
+      if (TypeFactory::isParamType ($0->um->getPortType (0))) {
+	if (!TypeFactory::isParamType ($7)) {
+	  $E("Macro function with parameter types: return type must be a parameter!");
+	}
+      }
+      else {
+	if (TypeFactory::isParamType ($7)) {
+	  $E("Macro function with non-parameter types: return type cannot be a parameter!");
+	}
+      }
+    }
+    if (TypeFactory::isParamType ($7)) {
+      $A($0->u_d);
+      for (int i=0; i < $0->u_d->getNumParams (); i++) {
+	if ($0->um->addPort ($0->u_d->getPortType (-(i+1)),
+			     $0->u_d->getPortName (-(i+1))) != 1) {
+	  $E("Macro function `%s': duplicate port name for parameter type `%s'.",
+	     $0->um->getName(), $0->u_d->getPortName (-(i+1)));
+	}
+      }
+    }
     $0->um->setRetType ($7);
     $0->scope->Add ("self", $7);
 }}
@@ -1282,7 +1360,9 @@ one_method: ID "{" hse_body "}"
     
     return NULL;
 }}
+;
 
+macro_fn_formal: macro_formal_list | macro_param_formal_list | /* empty */
 ;
 
 /*

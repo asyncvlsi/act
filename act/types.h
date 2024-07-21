@@ -1439,9 +1439,10 @@ public:
   UserMacro *Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_proc);
 
   /**
-   * Add a port to the macro
+   * Add a port to the macro.
    * @param it is the type of the macro port
    * @param name is the name of the port
+   * @return 1 on success, 0 on error (duplicate port name).
    */
   int addPort (InstType *it, const char *name);
 

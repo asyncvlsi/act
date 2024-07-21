@@ -711,8 +711,8 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       um = u->getMacro (tmp->getName());
       Assert (um, "Didn't find user macro?");
 
-      if (um->getNumPorts () != args) {
-	act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts(), args);
+      if (um->getNumPorts () != args + u->getNumParams()) {
+	act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts() - u->getNumParams(), args);
       }
 
       // ok: (1) e.u.fn.s should be the usermacro
@@ -720,6 +720,31 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       prev->prune();
       delete tmp;
       ret->u.fn.s = (char *) um;
+      
+      // If this is a param type user function, then we need to append
+      // the template parameters here!
+      Assert (um->getRetType(), "What?");
+      if (TypeFactory::isParamType (um->getRetType()) &&
+	  u->getNumParams() > 0) {
+	Expr *tmp;
+	tmp = ret->u.fn.r;
+	while (tmp->u.e.r) {
+	  tmp = tmp->u.e.r;
+	}
+	for (int i=0; i < u->getNumParams(); i++) {
+	  // add id.p as a parameter!
+	  ActId *x = ((ActId *)ret->u.fn.r->u.e.l)->Clone();
+	  x->Append (new ActId (u->getPortName (-(i+1))));
+	  NEW (tmp->u.e.r, Expr);
+	  tmp = tmp->u.e.r;
+	  tmp->type = E_LT;
+	  tmp->u.e.r = NULL;
+	  NEW (tmp->u.e.l, Expr);
+	  tmp->u.e.l->type = E_VAR;
+	  tmp->u.e.l->u.e.l = (Expr *) x;
+	  tmp->u.e.l->u.e.r = NULL;
+	}
+      }
     }
     break;
 

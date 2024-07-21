@@ -462,25 +462,25 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	}
 
 	if (!is_special_struct) {
-	Assert (e->u.fn.r &&
-		e->u.fn.r->type == E_LT &&
-		e->u.fn.r->u.e.l->type == E_VAR, "What?");
+	  Assert (e->u.fn.r &&
+		  e->u.fn.r->type == E_LT &&
+		  e->u.fn.r->u.e.l->type == E_VAR, "What?");
 
-	ActId *id = (ActId *) e->u.fn.r->u.e.l->u.e.l;
-	id->sPrint (buf+k, sz);
-	pos = 0;
-	while (nm[pos] != '/') {
+	  ActId *id = (ActId *) e->u.fn.r->u.e.l->u.e.l;
+	  id->sPrint (buf+k, sz);
+	  pos = 0;
+	  while (nm[pos] != '/') {
+	    pos++;
+	  }
 	  pos++;
-	}
-	pos++;
-	PRINT_STEP;
-	ADD_CHAR('.');
-	while (nm[pos] && nm[pos] != '<') {
-	  ADD_CHAR (nm[pos]);
-	  pos++;
-	}
-	ADD_CHAR('(');
-	tmp = e->u.fn.r->u.e.r;
+	  PRINT_STEP;
+	  ADD_CHAR('.');
+	  while (nm[pos] && nm[pos] != '<') {
+	    ADD_CHAR (nm[pos]);
+	    pos++;
+	  }
+	  ADD_CHAR('(');
+	  tmp = e->u.fn.r->u.e.r;
 	}
 	else {
 	  if (f->getns() && f->getns() != ActNamespace::Global()) {
@@ -1307,9 +1307,11 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret,
     }
   }
   else {
+    // elaborate function: parameterized type!
     Expr **args;
     int nargs;
     Expr *e;
+    int skip_first = 0;
 
     nargs = 0;
     e = fn->u.e.r;
@@ -1317,9 +1319,18 @@ static void _eval_function (ActNamespace *ns, Scope *s, Expr *fn, Expr **ret,
       nargs++;
       e = e->u.e.r;
     }
+
+    if (x->isUserMethod()) {
+      skip_first = 1;
+      nargs--;
+    }
+    
     if (nargs > 0) {
       MALLOC (args, Expr *, nargs);
       e = fn->u.e.r;
+      if (skip_first) {
+	e = e->u.e.r;
+      }
       for (int i=0; i < nargs; i++) {
 	args[i] = expr_expand (e->u.e.l, ns, s, flags);
 	e = e->u.e.r;
@@ -1608,6 +1619,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       um = id_ux->getMacro (um->getName());
       Assert (um, "Expanded macro?");
     }
+
     e_orig = e;
     NEW (e, Expr);
     e->type = E_FUNCTION;
