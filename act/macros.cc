@@ -48,6 +48,7 @@ UserMacro::UserMacro (UserDef *u, const char *name)
   rettype = NULL;
   _exf = NULL;
   _builtinmacro = false;
+  _b = NULL;
   parent = u;
 }
 
@@ -99,7 +100,18 @@ void UserMacro::Print (FILE *fp)
     rettype->Print (fp);
   }
   fprintf (fp, " {\n");
-  if (meta) {
+
+  if (_exf && _exf->isExpanded()) {
+      _exf->CurScope()->Print (fp);
+  }
+  else {
+    ActBody *bi;
+    for (bi = _b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+  }
+
+  if (rettype) {
     if (c) {
       fprintf (fp, "   chp { ");
       chp_print (fp, c);
@@ -194,6 +206,10 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     tsc->Add ("self", ret->rettype);
   }
 
+  if (_b) {
+    _b->Expandlist (ns, tsc);
+  }
+
   if (is_proc) {
     chp_expand_macromode (2);
   }
@@ -255,7 +271,10 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     FREE (buf);
 
     tmpf->setRetType (ret->rettype);
-    
+
+    if (_b) {
+      tmpf->setBody (_b->Clone ());
+    }
     ret->_exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
 
     act_languages *all_lang = ret->_exf->getlang();
@@ -299,8 +318,26 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       tmp_exprs[nports]->u.e.l = (Expr *) new ActId (string_cache ("self"));
       tmp_exprs[nports]->u.e.r = NULL;
       act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
-
       FREE (tmp_exprs);
+
+      // we need to also add "self bindings" to items in the scope
+      // that are not ports!
+      ActInstiter inst(ret->_exf->CurScope());
+      for (inst = inst.begin(); inst != inst.end(); inst++) {
+	ValueIdx *vx = *inst;
+	if (strcmp (vx->getName(), "self") == 0) continue;
+	if (TypeFactory::isParamType (vx->t)) continue;
+	if (ret->_exf->FindPort (vx->getName()) == 0) {
+	  Expr **xtmp;
+	  NEW (xtmp, Expr *);
+	  NEW (xtmp[0], Expr);
+	  xtmp[0]->type = E_VAR;
+	  xtmp[0]->u.e.l = (Expr *) new ActId (vx->getName());
+	  xtmp[0]->u.e.r = NULL;
+	  act_inline_setval (tab, new ActId (vx->getName()), xtmp);
+	  FREE (xtmp);
+	}
+      }
 
       ActId *prefix = new ActId (string_cache ("$internal"));
       xchp->c = ret->substitute (prefix, tab);

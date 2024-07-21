@@ -1482,6 +1482,11 @@ public:
   void setBody (struct act_chp_lang *);
 
   /**
+   * Sets the body for function types
+   */
+  void setActBody (ActBody *b) { _b = b; }
+
+  /**
    * Given an instance name and bindings for all the macro ports in
    * the act_inline_table, return the CHP body fragment that is the
    * result of the macro expansion
@@ -1563,6 +1568,8 @@ private:
 
   Function *_exf;	     ///< expanded function corresponding to
                              ///  a function macro.
+
+  ActBody *_b;
 
   bool _builtinmacro;	     ///< set to true if this is a special
 			     ///built-in macro whose argument is a complete

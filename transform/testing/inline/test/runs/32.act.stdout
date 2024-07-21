@@ -1,0 +1,43 @@
+defproc test ();
+deftype mystruct (int<4> a; int<5> b);
+
+defproc test ()
+{
+
+/* instances */
+int<3> fuse_0;
+mystruct farg_0;
+int<32> y;
+mystruct m;
+int<32> floc_0;
+int<2> farg_1;
+int<3> fret_0;
+
+/* connections */
+chp {
+m.a:=0x1;m.b:=0x2;farg_0:=m;farg_1:=0x1;floc_0:=farg_0.a+farg_0.b;*[floc_0!=0x0 -> fret_0:=fret_0+farg_1+floc_0;floc_0:=floc_0-0x1];fuse_0:=fret_0;y:=fuse_0;skip
+}
+}
+
+deftype mystruct (int<4> a; int<5> b)
+{
+
+/* instances */
+
+/* connections */
+  function tst (int<2> y) : int<3> {
+
+/* instances */
+int<32> w;
+
+/* connections */
+   chp { w:=a+b;*[w!=0x0 -> self:=self+y+w;w:=w-0x1] }
+  }
+
+}
+
+
+/* instances */
+test t;
+
+/* connections */

@@ -1,0 +1,29 @@
+deftype mystruct(int<4> a; int<5> b)
+{  
+  methods {
+     function tst (int<2> y) : int<3>
+     {
+       int w;
+       chp {
+           w := a + b;
+           self := y + w
+       }
+     }
+  }
+}
+
+
+defproc test()
+{
+  mystruct m;
+  int y;
+
+  chp {
+     m.a := 0x1;
+     m.b := 0x2;
+     y := m.tst (1);
+     skip
+  }
+}
+
+test t;

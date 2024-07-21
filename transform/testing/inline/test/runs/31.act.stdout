@@ -1,0 +1,38 @@
+defproc test ();
+deftype mystruct (int<4> a; int<5> b);
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+mystruct m;
+
+/* connections */
+chp {
+m.a:=0x1;m.b:=0x2;y:=0x1+(m.a+m.b);skip
+}
+}
+
+deftype mystruct (int<4> a; int<5> b)
+{
+
+/* instances */
+
+/* connections */
+  function tst (int<2> y) : int<3> {
+
+/* instances */
+int<32> w;
+
+/* connections */
+   chp { w:=a+b;self:=y+w }
+  }
+
+}
+
+
+/* instances */
+test t;
+
+/* connections */

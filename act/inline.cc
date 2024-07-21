@@ -225,6 +225,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
   if (id->Rest()) {
     Assert (xd, "What?!");
     int sz2;
+    
     int off = xd->getStructOffset (id->Rest(), &sz2);
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");

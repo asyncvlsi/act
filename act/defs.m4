@@ -1342,13 +1342,17 @@ one_method: ID "{" hse_body "}"
     $0->um->setRetType ($7);
     $0->scope->Add ("self", $7);
 }}
-"{" [ "chp" "{" chp_body "}" ] "}"
+"{" [ alias_or_inst_list "chp" "{" chp_body "}" ] "}"
 {{X:
     /* function formal list must be data types; no parameters allowed */
     if (!OPT_EMPTY ($9)) {
-      ActRet *r = OPT_VALUE ($9);
+      ActRet *r = OPT_VALUE2 ($9);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
+      FREE (r);
+      r = OPT_VALUE ($9);
+      $A(r->type == R_ACT_BODY);
+      $0->um->setActBody (r->u.body);
       FREE (r);
     }
     OPT_FREE ($9);
