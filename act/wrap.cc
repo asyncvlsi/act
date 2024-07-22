@@ -689,6 +689,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 
       ret->u.fn.s = NULL;
       NEW (ret->u.fn.r, Expr);
+      /* XXX: HERE! */
       ret->u.fn.r->u.e.l = (Expr *) tmp;
       ret->u.fn.r->type = E_LT;
       ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.fn.r, &args);

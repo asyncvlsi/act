@@ -226,7 +226,7 @@ static Expr *expr_basecase (void)
       }
       
       if (v && (file_sym (Tl) != T[E_LPAR])) {
-	int flg; 
+	int flg;
 	e = newexpr ();
 	e->type = E_VAR;
 	e->u.e.l = (Expr *) v;

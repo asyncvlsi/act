@@ -728,25 +728,18 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
     else if (strcmp ($1, "send") == 0) {
       Expr *e;
       list_t *l;
-      NEW (e, Expr);
-      e->u.e.l = (Expr *) $5;
-      e->type = E_VAR;
-      e->u.e.r = NULL;
+      e = act_expr_var ($5);
       if ($0->is_assignable_override == 0) {
-	/* switch to bool(e) */
+	/* switch to bool(e), repurpose storage */
 	e->type = E_BUILTIN_BOOL;
-	NEW (e->u.e.l, Expr);
-	e->u.e.l->type = E_VAR;
-	e->u.e.l->u.e.l = (Expr *) $5;
-	e->u.e.l->u.e.r = NULL;
+	e->u.e.l = act_expr_var ($5);
+	e->u.e.r = NULL;
       }
       else if ($0->is_assignable_override == 1) {
-	/*  switch to int(e) */
+	/*  switch to int(e), repurpose storage */
 	e->type = E_BUILTIN_INT;
-	NEW (e->u.e.l, Expr);
-	e->u.e.l->type = E_VAR;
-	e->u.e.l->u.e.l = (Expr *) $5;
-	e->u.e.l->u.e.r = NULL;
+	e->u.e.l = act_expr_var ($5);
+	e->u.e.r = NULL;
       }
       l = list_new ();
       NEW (r, ActRet);
@@ -760,19 +753,13 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
       act_func_arguments_t *arg;
       NEW (arg, struct act_func_arguments);
       arg->isstring = 0;
-      NEW (arg->u.e, Expr);
-      arg->u.e->type = E_VAR;
-      arg->u.e->u.e.l = (Expr *) $3;
-      arg->u.e->u.e.r = NULL;
+      arg->u.e = act_expr_var ($3);
       l = list_new ();
       list_append (l, arg);
 
       NEW (arg, struct act_func_arguments);
       arg->isstring = 0;
-      NEW (arg->u.e, Expr);
-      arg->u.e->type = E_VAR;
-      arg->u.e->u.e.l = (Expr *) $5;
-      arg->u.e->u.e.r = NULL;
+      arg->u.e = act_expr_var ($5);
       list_append (l, arg);
       return apply_X_base_stmt_opt5 ($0, $1, l);
     }
@@ -793,10 +780,7 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
       act_func_arguments_t *arg;
       NEW (arg, struct act_func_arguments);
       arg->isstring = 0;
-      NEW (arg->u.e, Expr);
-      arg->u.e->type = E_VAR;
-      arg->u.e->u.e.l = (Expr *) $3;
-      arg->u.e->u.e.r = NULL;
+      arg->u.e = act_expr_var ($3);
       l = list_new ();
       list_append (l, arg);
 

@@ -705,10 +705,7 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
 	    tc->space = NULL;
 	    tc->u.assign.id = c->u.assign.id->Clone();
 	    tc->u.assign.id->Tail()->Append (fields[i]);
-	    NEW (tc->u.assign.e, Expr);
-	    tc->u.assign.e->type = E_VAR;
-	    tc->u.assign.e->u.e.r = NULL;
-	    tc->u.assign.e->u.e.l = (Expr *) e_rhs->Clone();
+	    tc->u.assign.e = act_expr_var (e_rhs->Clone());
 	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
 	    list_append (l, tc);
 	  }
@@ -832,10 +829,7 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
 	    tc->space = NULL;
 	    tc->u.assign.id = c->u.assign.id->Clone();
 	    tc->u.assign.id->Tail()->Append (fields[i]);
-	    NEW (tc->u.assign.e, Expr);
-	    tc->u.assign.e->type = E_VAR;
-	    tc->u.assign.e->u.e.r = NULL;
-	    tc->u.assign.e->u.e.l = (Expr *) e_rhs->Clone();
+	    tc->u.assign.e = act_expr_var (e_rhs->Clone ());
 	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
 	    list_append (l, tc);
 	  }

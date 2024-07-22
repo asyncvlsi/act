@@ -877,9 +877,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	}
 
 	Expr *e;
-	NEW (e, Expr);
-	e->type = E_VAR;
-	e->u.e.l = (Expr *) new ActId (buf);
+	e = act_expr_var (new ActId (buf));
 	if (c->type == ACT_CHP_ASSIGN) {
 	  _append_mem_write (post, c->u.assign.id, idx, e, _curbnl->cur);
 	  c->u.assign.id = new ActId (buf);

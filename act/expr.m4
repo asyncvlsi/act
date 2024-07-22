@@ -136,9 +136,7 @@ lhs_array_term[AExpr *]: "{" { lhs_array_expr "," }* "}"
     Expr *e;
     int tc;
 
-    NEW (e, Expr);
-    e->type = E_VAR;
-    e->u.e.l = (Expr *)$1;
+    e = act_expr_var ($1);
 
     if (_act_id_is_true_false ($1)) {
       $E("Can't use true/false in this context!");

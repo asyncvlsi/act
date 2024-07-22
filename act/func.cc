@@ -175,10 +175,7 @@ Expr **Function::toInline (int nargs, Expr **args)
       for (int j=0; j < nb + ni; j++) {
 	ActId *tmp = ((ActId *)args[i]->u.e.l)->Clone ();
 	tmp->Tail()->Append (fields[j]);
-	NEW (te[j], Expr);
-	te[j]->type = E_VAR;
-	te[j]->u.e.l = (Expr *) tmp;
-	te[j]->u.e.r = NULL;
+	te[j] = act_expr_var (tmp);
       }
       FREE (types);
       FREE (fields);

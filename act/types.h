@@ -2327,9 +2327,29 @@ int act_expr_getconst_real (Expr *e, double *val);
  * extract its value.
  * @param e is th expression
  * @param val is used to return the value
+ *      
  * @return 1 if value extracted, 0 otherwise
  */
 int act_expr_getconst_int (Expr *e, int *val);
+
+/**
+ * Helper function for creating an expression that's an ID
+ * @param id is the ActId
+ * @return the expression for it
+ */
+Expr *act_expr_var (ActId *id);
+
+/**
+ * Helper function: used to get a structure type from an
+ * expression. This only works in the expanded scenarios.
+ * @param s is the scope for evaluation
+ * @param e is the expression
+ * @param error is used to return the error code, if provided. Error
+ * codes are: 0 = no error, 1 = invalid expression type, 2 = can't
+ * find ID, 3 = not a structure, 4 = not expanded scope, 5 = e is NULL
+ * @return the Data type if it is a structure, NULL otherwise
+ */
+Data *act_expr_is_structure (Scope *s, Expr *e, int *error = NULL);
 
 /*
   External functions for core act library must 

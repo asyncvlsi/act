@@ -305,18 +305,11 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       Expr **tmp_exprs;
       MALLOC (tmp_exprs, Expr *, nports+1);
       for (int i=0; i < nports; i++) {
-	ActId *tid;
-	NEW (tmp_exprs[i], Expr);
-	tmp_exprs[i]->type = E_VAR;
-	tid = new ActId (port_n[i]);
-	tmp_exprs[i]->u.e.l = (Expr *) tid;
-	tmp_exprs[i]->u.e.r = NULL;
+	ActId *tid = new ActId (port_n[i]);
+	tmp_exprs[i] = act_expr_var (tid);
 	act_inline_setval (tab, tid, tmp_exprs+i);
       }
-      NEW (tmp_exprs[nports], Expr);
-      tmp_exprs[nports]->type = E_VAR;
-      tmp_exprs[nports]->u.e.l = (Expr *) new ActId (string_cache ("self"));
-      tmp_exprs[nports]->u.e.r = NULL;
+      tmp_exprs[nports] = act_expr_var (new ActId (string_cache ("self")));
       act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
       FREE (tmp_exprs);
 
@@ -330,10 +323,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 	if (ret->_exf->FindPort (vx->getName()) == 0) {
 	  Expr **xtmp;
 	  NEW (xtmp, Expr *);
-	  NEW (xtmp[0], Expr);
-	  xtmp[0]->type = E_VAR;
-	  xtmp[0]->u.e.l = (Expr *) new ActId (vx->getName());
-	  xtmp[0]->u.e.r = NULL;
+	  xtmp[0] = act_expr_var (new ActId (vx->getName()));
 	  act_inline_setval (tab, new ActId (vx->getName()), xtmp);
 	  FREE (xtmp);
 	}
@@ -709,10 +699,7 @@ void UserMacro::populateCHP()
     for (int i=0; i < nbools + nints; i++) {
       ActId *tid = new ActId (string_cache ("$internal"));
       tid->Append (xfield[i]);
-      NEW (f->u.e.l, Expr);
-      f->u.e.l->type = E_VAR;
-      f->u.e.l->u.e.l = (Expr *) tid;
-      f->u.e.l->u.e.r = NULL;
+      f->u.e.l = act_expr_var (tid);
       if (i != (nbools + nints - 1)) {
 	NEW (f->u.e.r, Expr);
 	f = f->u.e.r;

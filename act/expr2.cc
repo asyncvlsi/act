@@ -1581,30 +1581,29 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  // argument MUST BE either a function or an ID.
 	  // this looks like a normal function
 	  Expr *exp = _expr_expand (&lw, e->u.fn.r, ns, s, flags);
-	  UserDef *ux = NULL;
+	  Data *dx = NULL;
+	  int errcode = -1;
 	  Assert (exp, "What?");
-	  if (exp->type == E_VAR) {
-	    // get the expanded type!
-	    ActId *id = (ActId *)exp->u.e.l;
-	    InstType *it = s->FullLookup (id, NULL);
-	    if (!it) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, "\texpanding expr: ");
-	      print_expr (stderr, e);
-	      fprintf (stderr,"\n");
-	      fatal_error ("Could not find type? Should have been caught earlier!");
-	    }
-	    Assert (TypeFactory::isPureStruct (it), "What?");
-	    ux = dynamic_cast<UserDef *> (it->BaseType());
+	  dx = act_expr_is_structure (s, exp, &errcode);
+	  Assert (errcode != 1 && errcode != 4 && errcode != 5,
+		  "Unexpected structure expression");
+	  if (errcode == 2) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "\texpanding expr: ");
+	    print_expr (stderr, e);
+	    fprintf (stderr,"\n");
+	    fatal_error ("Could not find type for identifier? Should have been caught earlier!");
 	  }
-	  else if (exp->type == E_FUNCTION) {
-	    Function *f = (Function *)exp->u.fn.s;
-	    Assert (TypeFactory::isPureStruct (f->getRetType()), "What?");
-	    ux = dynamic_cast<UserDef *> (f->getRetType()->BaseType());
+	  else if (errcode == 3) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "\texpanding expr: ");
+	    print_expr (stderr, e);
+	    fprintf (stderr,"\n");
+	    fatal_error ("Function doesn't return a structure? Should have been caught earlier!");
 	  }
-	  Assert (ux, "Unexpected structure expression");
-	  Assert (ux->isExpanded(), "What?");
-	  um = ux->getMacro ("int");
+	  Assert (dx, "Unexpected structure expression");
+	  Assert (dx->isExpanded(), "What?");
+	  um = dx->getMacro ("int");
 	}
       }
       Assert (um->getFunction(), "What?");
@@ -1647,10 +1646,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
     }
     else {
-      NEW (etmp, Expr);
-      etmp->type = E_VAR;
-      etmp->u.e.l = (Expr *) ((ActId *)e_orig->u.fn.r->u.e.l)->Clone();
-      etmp->u.e.r = NULL;
+      etmp = act_expr_var (((ActId *)e_orig->u.fn.r->u.e.l)->Clone());
       NEW (e->u.fn.r, Expr);
       e->u.fn.r->type = E_LT;
       e->u.fn.r->u.e.l = etmp;
@@ -3256,10 +3252,7 @@ AExpr::AExpr (Expr *e)
 AExpr::AExpr (ActId *id)
 {
   Expr *e;
-  NEW (e, Expr);
-  e->type = E_VAR;
-  e->u.e.l = (Expr *)id;
-  e->u.e.r = NULL;
+  e = act_expr_var (id);
 
   r = NULL;
   l = (AExpr *)e;
@@ -4189,4 +4182,57 @@ int act_expr_getconst_int (Expr *e, int *val)
     return 0;
   }
   return 1;
+}
+
+
+Data *act_expr_is_structure (Scope *s, Expr *e, int *error)
+{
+  InstType *it;
+  UserDef *u;
+  if (!e) {
+    if (error) { *error = 5; }
+    return NULL;
+  }
+  if (!s->isExpanded()) {
+    if (error) { *error = 4; }
+    return NULL;
+  }
+  if (error) {
+    *error = 0;
+  }
+  if (e->type == E_VAR) {
+     it = s->FullLookup ((ActId *)e->u.e.l, NULL);
+     if (!it && error) {
+       *error = 2;
+     }
+  }
+  else if (e->type == E_FUNCTION) {
+     it = ((Function *)e->u.fn.s)->getRetType ();
+  }
+  else {
+     it = NULL;
+    if (error) {
+      *error = 1;
+    }
+  }
+  if (!it) return NULL;
+  u = dynamic_cast<UserDef *>(it->BaseType());
+  if (!u || !TypeFactory::isStructure (u)) {
+    if (error) {
+      *error = 3;
+    }
+    return NULL;
+  }
+  return dynamic_cast<Data *> (u);
+}
+
+
+Expr *act_expr_var (ActId *id)
+{
+  Expr *e;
+  NEW (e, Expr);
+  e->type = E_VAR;
+  e->u.e.l = (Expr *) id;
+  e->u.e.r = NULL;
+  return e;
 }
