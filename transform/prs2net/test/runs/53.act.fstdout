@@ -8,7 +8,7 @@
 *.POWER GND GND
 *.POWER NSUB GND
 *.POWER PSUB Vdd
-C0_0 in out 0
+C0_0 in out 1e-14
 .ends
 *---- end of process: c0<10,1> -----
 *

@@ -2039,7 +2039,7 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 		   p->u.p.sz->w->u.ival.v : p->u.p.sz->w->u.f);
 	c->wval *= unit_dev;
 	if (p->u.p.sz->l) {
-	  c->lval *= (p->u.p.sz->l->type == E_INT ?
+	  c->lval = (p->u.p.sz->l->type == E_INT ?
 		     p->u.p.sz->l->u.ival.v : p->u.p.sz->l->u.f);
 	}
 	else {
