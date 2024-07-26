@@ -201,6 +201,8 @@ class ActNetlistPass : public ActPass {
   void enableSharedStat();
 
   void Print (FILE *fp, Process *p);
+  void printFlat (FILE *fp);
+  
 
   static node_t *connection_to_node (netlist_t *n, act_connection *c);
   static node_t *string_to_node (netlist_t *, char *s);
@@ -309,6 +311,14 @@ class ActNetlistPass : public ActPass {
 			 act_prs_expr_t *e, node_t *right, int sense);
 
   void _check_emit_warning (int d, int depth, ActId *id);
+
+  void _printflat (ActId *prefix, ActId *tl, list_t *callstack, Process *p);
+  void _print_flat_cell (act_boolean_netlist_t *bnl,
+			 list_t *stk,
+			 ActId *prefix, Process *p);
+
+  struct pHashtable *_invNetH;
+  void flatHelper (Process *p);
 };
 
 

@@ -1,0 +1,5 @@
+Parse error: Could not parse entire file.
+Expecting bnf-item `sparse_range', got `int_table'
+	File `conf_45.act', line: 3, col: 13.
+Exception: number=1, message -none-
+FATAL: Uncaught exception

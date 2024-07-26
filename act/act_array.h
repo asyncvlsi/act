@@ -386,6 +386,12 @@ class Array {
    */
   Arraystep *stepper(Array *sub = NULL);
 
+
+  /**
+   * Helper for hashing
+   */
+  unsigned int getHash (unsigned int prev, unsigned long sz);
+
 private:
   Array ();			/**< for deep copy only */
 

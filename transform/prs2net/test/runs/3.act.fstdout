@@ -1,0 +1,51 @@
+*
+*---- act defproc: cell::g0n_0x0<> -----
+* raw ports:  in[0] out
+*
+.subckt _8_8cell_8_8g0n_0x0 in_20_3 out
+*.PININFO in_20_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (combinational)
+*
+* --- end node flags ---
+*
+M0_ out in_20_3 Vdd Vdd pch W=0.3U L=0.06U
+M1_ out in_20_3 GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: g0n_0x0<> -----
+*
+*---- act defproc: cell::g_01ax0<> -----
+* raw ports:  in[0] in[1] out
+*
+.subckt _8_8cell_8_8g_01ax0 in_20_3 in_21_3 out
+*.PININFO in_20_3:I in_21_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (state-holding): pup_reff=-1; pdn_reff=0.3
+*
+* --- end node flags ---
+*
+M0_ #fb6# out Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #7 GND Vdd Vdd pch W=0.12U L=0.09U
+M2_ #3 in_20_3 GND GND nch W=0.6U L=0.06U
+M3_ #fb6# out GND GND nch W=0.15U L=0.06U
+M4_keeper out #fb6# GND GND nch W=0.12U L=0.06U
+M5_ out in_21_3 #3 GND nch W=0.3U L=0.06U
+M6_keeper out #fb6# #7 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: g_01ax0<> -----
+.subckt foo A_4e
+xcx0 A_4e bb _8_8cell_8_8g0n_0x0
+xcpx0 A_4e w b _8_8cell_8_8g_01ax0
+.ends

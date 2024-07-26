@@ -60,6 +60,7 @@ static void usage (char *name)
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
   fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   fprintf (stderr, " -s <scale> Scale all transistor parameters by <scale>\n");
+  fprintf (stderr, " -f        Produce flat output; requires -c\n");
   exit (1);
 }
 
@@ -80,6 +81,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   int emit_parasitics = 0;
   int black_box_mode = 1;
   int top_level_only = 0;
+  int flat = 0;
   double scale_factor = 1.0;
 
   *fpout = stdout;
@@ -94,8 +96,11 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "SBdtp:o:lc:s:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "fSBdtp:o:lc:s:")) != -1) {
     switch (ch) {
+    case 'f':
+      flat = 1;
+      break;
     case 's':
       scale_factor = atof (optarg);
       config_set_real ("net.output_scale_factor", scale_factor);
@@ -171,6 +176,11 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
     fprintf (stderr, "Missing process name.\n");
     usage ((*argv)[0]);
   }
+  config_set_int ("net.flat_output", flat);
+  if (flat && !cell_file) {
+    fprintf (stderr, "Flat output requires a cell file (-c).\n");
+    usage ((*argv)[0]);
+  }
 
   *argc = 2;
   (*argv)[1] = (*argv)[optind];
@@ -235,7 +245,12 @@ int main (int argc, char **argv)
     np->enableSharedStat();
   }
   np->run (p);
-  np->Print (fpout, p);
+  if (config_get_int ("net.flat_output")) {
+     np->printFlat (fpout);
+  }
+  else {
+     np->Print (fpout, p);
+  }
   if (fpout != stdin) {
     fclose (fpout);
   }

@@ -1,0 +1,4 @@
+In expanding foo<> (inst: f) (22.act:1)
+In expanding -toplevel-
+WARNING: Sizing directive {+20,-15} specified for already sized rule
+	skipped signal: `b'

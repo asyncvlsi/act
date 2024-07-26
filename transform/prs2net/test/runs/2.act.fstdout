@@ -1,0 +1,37 @@
+*
+*---- act defproc: cell::g_0x2<> -----
+* raw ports:  in[0] out
+*
+.subckt _8_8cell_8_8g_0x2 in_20_3 out
+*.PININFO in_20_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (state-holding): pup_reff=-1; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #fb4# out Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #5 GND Vdd Vdd pch W=0.12U L=0.12U
+M2_ out in_20_3 GND GND nch W=0.15U L=0.06U
+M3_ #fb4# out GND GND nch W=0.15U L=0.06U
+M4_keeper out #fb4# GND GND nch W=0.12U L=0.06U
+M5_keeper out #fb4# #5 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: g_0x2<> -----
+.subckt foo a_20_3 a_21_3 a_22_3 a_23_3 a_25_3 a_26_3 a_27_3 a_28_3 a_29_3 b_20_3 b_21_3 b_22_3 b_23_3 b_24_3 b_25_3 b_26_3 b_27_3 b_28_3 b_29_3
+xcpx9 a_29_3 b_29_3 _8_8cell_8_8g_0x2
+xcpx0 a_20_3 b_20_3 _8_8cell_8_8g_0x2
+xcpx2 a_22_3 b_22_3 _8_8cell_8_8g_0x2
+xcpx5 a_25_3 b_25_3 _8_8cell_8_8g_0x2
+xcpx8 a_28_3 b_28_3 _8_8cell_8_8g_0x2
+xcpx1 a_21_3 b_21_3 _8_8cell_8_8g_0x2
+xcpx3 a_23_3 b_23_3 _8_8cell_8_8g_0x2
+xcpx6 a_26_3 b_26_3 _8_8cell_8_8g_0x2
+xcpx7 a_27_3 b_27_3 _8_8cell_8_8g_0x2
+xcpx4 a_23_3 b_24_3 _8_8cell_8_8g_0x2
+.ends

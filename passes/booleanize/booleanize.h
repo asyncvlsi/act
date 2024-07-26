@@ -155,7 +155,7 @@ typedef struct act_booleanized_var {
 typedef struct {
   ActId *inst;			/**< path to instance */
   act_connection *pin;		/**< pin name */
-  Process *cell;		/**< leaf cell corresponding to the pin */
+  //Process *cell;		/**< leaf cell corresponding to the pin */
 } act_local_pin_t;
   
 

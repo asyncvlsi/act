@@ -1,0 +1,4 @@
+In expanding foo<> (inst: ct) (39.act:1)
+In expanding -toplevel-
+Channel: a
+FATAL: Receive action in multiple concurrent blocks!

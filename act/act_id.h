@@ -381,6 +381,11 @@ class ActId {
   */
   ActNamespace *getNamespace();
 
+  /**
+   * Used for generic hash functions
+   */
+  unsigned int getHash (unsigned int inH, unsigned long sz);
+
  private:
   mstring_t *name;		/**< name of the identifier */
   Array *a;			/**< array reference/dereference */

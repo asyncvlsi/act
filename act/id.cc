@@ -1880,3 +1880,22 @@ int ActId::isNonLocal (Scope *s)
   }
   return 0;
 }
+
+
+/*------------------------------------------------------------------------
+ * Return the updated hash
+ *------------------------------------------------------------------------
+ */
+unsigned int ActId::getHash (unsigned int prev, unsigned long sz)
+{
+  unsigned int ret = prev;
+  if (Rest()) {
+    ret = Rest()->getHash (ret, sz);
+  }
+  ret = hash_function_continue (sz, (const unsigned char *) getName(),
+				strlen (getName()), ret, 1);
+  if (arrayInfo()) {
+    ret = arrayInfo()->getHash (ret, sz);
+  }
+  return ret;
+}

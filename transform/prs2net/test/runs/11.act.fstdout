@@ -1,0 +1,60 @@
+*
+*---- act defproc: cell::g0n1na_01ax0<> -----
+* raw ports:  in[0] in[1] out
+*
+.subckt _8_8cell_8_8g0n1na_01ax0 in_20_3 in_21_3 out
+*.PININFO in_20_3:I in_21_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (state-holding): pup_reff=0.16; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #6 in_20_3 Vdd Vdd pch W=0.75U L=0.06U
+M1_ #fb7# out Vdd Vdd pch W=0.15U L=0.06U
+M2_ckeeper #8 in_20_3 Vdd Vdd pch W=0.15U L=0.06U
+M3_ckeeper #8 in_21_3 Vdd Vdd pch W=0.15U L=0.06U
+M4_ #3 in_20_3 GND GND nch W=0.3U L=0.06U
+M5_ #fb7# out GND GND nch W=0.15U L=0.06U
+M6_ckeeper #9 in_20_3 GND GND nch W=0.15U L=0.06U
+M7_ckeeper #9 in_21_3 GND GND nch W=0.15U L=0.06U
+M8_ out in_21_3 #3 GND nch W=0.3U L=0.06U
+M9_ out in_21_3 #6 Vdd pch W=0.75U L=0.06U
+M10_ckeeper out #fb7# #8 Vdd pch W=0.12U L=0.06U
+M11_ckeeper out #fb7# #9 GND nch W=0.12U L=0.06U
+.ends
+*---- end of process: g0n1na_01ax0<> -----
+*
+*---- act defproc: cell::g_0x2<> -----
+* raw ports:  in[0] out
+*
+.subckt _8_8cell_8_8g_0x2 in_20_3 out
+*.PININFO in_20_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (state-holding): pup_reff=-1; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #fb4# out Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #5 GND Vdd Vdd pch W=0.12U L=0.12U
+M2_ out in_20_3 GND GND nch W=0.15U L=0.06U
+M3_ #fb4# out GND GND nch W=0.15U L=0.06U
+M4_keeper out #fb4# GND GND nch W=0.12U L=0.06U
+M5_keeper out #fb4# #5 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: g_0x2<> -----
+.subckt foo p q r
+xx_4cx0 p q r _8_8cell_8_8g0n1na_01ax0
+xx_4cpx0 p q _8_8cell_8_8g_0x2
+.ends

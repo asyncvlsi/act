@@ -1,0 +1,5 @@
+In expanding foo<> (inst: ct) (37.act:3)
+In expanding -toplevel-
+WARNING: Local dynamic arrays cannot have other partial connections
+ ID: x
+FATAL: Cannot proceed. Dynamic arrays used in unsupported ways.

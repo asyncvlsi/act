@@ -1,0 +1,25 @@
+*
+*---- act defproc: cell::g_0x4<> -----
+* raw ports:  in[0] out
+*
+.subckt _8_8cell_8_8g_0x4 in_20_3 out
+*.PININFO in_20_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (combinational)
+*
+* --- end node flags ---
+*
+M0_ out in_20_3 GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: g_0x4<> -----
+.subckt foo
+xu_4cpx0 l_4x b _8_8cell_8_8g_0x4
+xt_4cpx0 l_4x b _8_8cell_8_8g_0x4
+xs_4cpx0 l_4x l_4x _8_8cell_8_8g_0x4
+.ends

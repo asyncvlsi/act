@@ -2020,3 +2020,31 @@ int AExpr::isArrayExpr ()
     return 0;
   }
 }
+
+
+unsigned int Array::getHash (unsigned int prev, unsigned long sz)
+{
+  prev = hash_function_continue (sz, (const unsigned char *) &dims,
+				 sizeof (dims), prev, 1);
+  
+  for (int i=0; i < dims; i++) {
+    if (expanded) {
+      if (r[i].u.ex.isrange != 2)  {
+	prev = hash_function_continue
+	  (sz,
+	   (const unsigned char *) &r[i].u.ex.idx.lo, sizeof (long), prev, 1);
+	
+	prev = hash_function_continue
+	  (sz,
+	   (const unsigned char *) &r[i].u.ex.idx.hi, sizeof (long), prev, 1);
+      }
+      else {
+	// XXX: dynamic, we don't do anything for the moment
+      }
+    }
+    else {
+      // XXX: we don't do anything for the momentl
+    }
+  }
+  return prev;
+}

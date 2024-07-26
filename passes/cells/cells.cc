@@ -767,6 +767,7 @@ void ActCellPass::flush_pending (Scope *sc)
   int pending_count = 0;
 
   if (A_LEN (pendingprs) == 0) {
+    /* nothing to do, no pending rules! */
     A_FREE (pendingprs);
     A_INIT (pendingprs);
     return;
@@ -783,6 +784,11 @@ void ActCellPass::flush_pending (Scope *sc)
       at_len++;
     }
   }
+
+  /*
+    at_idx[.] maps the pendingprs index to a number from 0 to at_len-1
+     (at_len = # of at-variables on the RHS of all pending rules).
+  */
 
   bitset_t **at_use = NULL;
   int *grouped = NULL;
@@ -817,6 +823,11 @@ void ActCellPass::flush_pending (Scope *sc)
     at_idx = NULL;
   }
 
+  /*
+    at_use[i] is a bit-vector that indicates which at rules are used
+    by pendingprs[i]
+  */
+
   A_DECL (act_prs_lang_t, groupprs);
   A_INIT (groupprs);
 
@@ -826,6 +837,11 @@ void ActCellPass::flush_pending (Scope *sc)
     at_group = bitset_new (at_len);
     at_tmp = bitset_new (at_len);
   }
+
+  /*
+    grouped[i] : 0 if it has not been used, 1 if it is being
+    considered for the current group, 2 if it has been processed.
+  */
   
   for (int i=0; i < A_LEN (pendingprs); i++) {
     struct act_prsinfo *pi;
@@ -843,12 +859,22 @@ void ActCellPass::flush_pending (Scope *sc)
 
     if (at_len == 0 ||
 	(bitset_isclear (at_use[i]) && !pendingprs[i]->u.one.label)) {
-      /* nothing to do! */
+      /* if there are no at-rules
+	 OR
+	   this rule is not an @-rule and
+	   this rule doesn't use any @ labels,
+	 then
+	   nothing to do!
+      */
     }
     else {
       /* Some @ rule is used, or we are at an @ rule */
       grouped[i] = 1;
+
+      // the at-group for this rule includes all the labels it uses
       bitset_or (at_group, at_use[i]);
+
+      // if this is a label, the at-group includes this label
       if (pendingprs[i]->u.one.label) {
 	/* find the index of the at-variable for this label */
 	int k = _at_inv_lookup (i, at_idx, at_len);
@@ -859,13 +885,18 @@ void ActCellPass::flush_pending (Scope *sc)
       do {
 	bitset_clear (at_tmp);
 	bitset_or (at_tmp, at_group);
+
 	for (int j=i+1; j < A_LEN (pendingprs); j++) {
 	  if (!bitset_andclear (at_group, at_use[j])) {
 	    /* there is an AT in common! */
 	    bitset_or (at_group, at_use[j]);
 	    grouped[j] = 1;
+	    if (pendingprs[j]->u.one.label) {
+	      int k = _at_inv_lookup (j, at_idx, at_len);
+	      bitset_set (at_group, k);
+	    }
 	  }
-	  if (pendingprs[j]->u.one.label) {
+	  else if (pendingprs[j]->u.one.label) {
 	    /* check if this label is already in the at group */
 	    int k = _at_inv_lookup (j, at_idx, at_len);
 	    Assert (k != -1, "What?");
@@ -924,7 +955,7 @@ void ActCellPass::flush_pending (Scope *sc)
 
 #if 0
     _dump_prsinfo (pi);
-#endif    
+#endif
 
     if (cell_table) {
       b = chash_lookup (cell_table, pi);

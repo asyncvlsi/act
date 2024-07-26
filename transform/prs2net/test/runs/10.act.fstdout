@@ -1,0 +1,28 @@
+*
+*---- act defproc: cell::g_0x6<> -----
+* raw ports:  in[0] out
+*
+.subckt _8_8cell_8_8g_0x6 in_20_3 out
+*.PININFO in_20_3:I out:O
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+*
+* --- node flags ---
+*
+* out (state-holding): pup_reff=-1; pdn_reff=0.4
+*
+* --- end node flags ---
+*
+M0_ #fb4# out Vdd Vdd pch W=0.15U L=0.06U
+M1_keeper #5 GND Vdd Vdd pch W=0.12U L=0.12U
+M2_ out in_20_3 GND GND nch W=0.15U L=0.06U
+M3_ #fb4# out GND GND nch W=0.15U L=0.06U
+M4_keeper out #fb4# GND GND nch W=0.12U L=0.06U
+M5_keeper out #fb4# #5 Vdd pch W=0.12U L=0.06U
+.ends
+*---- end of process: g_0x6<> -----
+.subckt foo a b
+xcpx0 a b _8_8cell_8_8g_0x6
+.ends

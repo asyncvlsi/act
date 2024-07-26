@@ -597,3 +597,346 @@ void ActNetlistPass::Print (FILE *fp, Process *p)
   run_recursive (p, 1);
   _outfp = NULL;
 }
+
+
+void ActNetlistPass::printFlat (FILE *fp)
+{
+  if (!completed()) {
+    fatal_error ("ActNetlistPass::printFlat() called before pass is run!");
+  }
+  if (!_root) {
+    fatal_error ("ActNetlistPass::printFlat() requires a top-level process!");
+  }
+  bools->createNets (_root);
+
+  _outfp = fp;
+  _invNetH = phash_new (4);
+  run_recursive (_root, 2);
+
+  // Run a new pass that only prints cells and
+  // computes the inverse hash that we need to accelerate net
+  // identification.
+  
+
+  act_boolean_netlist_t *bnl = bools->getBNL (_root);
+  fprintf (_outfp, ".subckt ");
+
+  a->mfprintfproc (_outfp, _root);
+  for (int k=0; k < A_LEN (bnl->ports); k++) {
+    if (bnl->ports[k].omit) continue;
+    ActId *id = bnl->ports[k].c->toid();
+    char buf[10240];
+    id->sPrint (buf, 10240);
+    a->mfprintf (_outfp, " %s", buf);
+    delete id;
+  }
+  fprintf (_outfp, "\n");
+
+  list_t *stk = list_new ();
+  _printflat (NULL, NULL, stk, _root);
+  list_free (stk);
+
+  fprintf (_outfp, ".ends\n");
+  _outfp = NULL;
+
+  // free each hash table entry, and then...
+  {
+    phash_bucket_t *pb;
+    phash_iter_t it;
+    phash_iter_init (_invNetH, &it);
+    while ((pb = phash_iter_next (_invNetH, &it))) {
+      struct cHashtable *cH = (struct cHashtable *) pb->v;
+      chash_free (cH);
+    }
+  }
+  phash_free (_invNetH);
+  
+}
+
+
+/*
+  stk = stack of act_boolean_netlist_t pointers corresponding to the
+  call hierarchy.
+*/
+void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
+				       list_t *stk,
+				       ActId *inst, Process *p)
+{
+  char buf[10240];
+  list_t *l;
+  fprintf (_outfp, "x");
+  inst->sPrint (buf, 10240);
+  a->mfprintf (_outfp, "%s ", buf);
+
+  l = list_new ();
+  list_append_head (l, inst);
+  while (inst->Rest()) {
+    inst = inst->Rest();
+    list_append_head (l, inst);
+  }
+
+  Assert (list_length (l) == list_length (stk), "What?");
+
+  /* print ports! */
+  for (int i=0; i < A_LEN (bnl->ports); i++) {
+    if (bnl->ports[i].omit) continue;
+    int count = 0;
+    bool found = false;
+    act_local_net_t *thenet = NULL;
+    act_boolean_netlist_t *bN;
+    struct cHashtable *cH;
+    
+    // search for pin!
+#if 0
+    printf ("\nsearch for: ");
+    a->mfprintfproc (stdout, p);
+    printf (" / ");
+    bnl->ports[i].c->Print (stdout);
+    printf (" / ");
+    ((ActId *)stack_peek (l))->Print (stdout);
+    printf ("\n");
+#endif
+    ActId *look;
+    listitem_t *bnl_li, *id_li;
+    bnl_li = list_first (stk);
+    id_li = list_first (l);
+    while (!found && bnl_li) {
+      phash_bucket_t *pb;
+
+      bN = (act_boolean_netlist_t *) list_value (bnl_li);
+
+      pb = phash_lookup (_invNetH, bN->p);
+      cH = (struct cHashtable *) pb->v;
+      Assert (cH, "What?");
+      
+      look = (ActId *) list_value (id_li);
+#if 0      
+      for (int j=0; !found && j < A_LEN (bN->nets); j++) {
+	if (bN->nets[j].skip) continue;
+#if 0      
+	printf (" net: ");
+	bN->nets[j].net->Print (stdout);
+	printf ("\n");
+#endif      
+	for (int k=0; k < A_LEN (bN->nets[j].pins); k++) {
+#if 0
+	  printf ("   check: ");
+	  //a->mfprintfproc (stdout, bN->nets[j].pins[k].cell);
+	  printf (" / ");
+	  bN->nets[j].pins[k].pin->Print (stdout);
+	  printf (" / ");
+	  bN->nets[j].pins[k].inst->Print (stdout);
+	  printf ("\n");
+#endif	
+	  if (/*bN->nets[j].pins[k].cell == p &&*/
+	      bN->nets[j].pins[k].pin == bnl->ports[i].c &&
+	      bN->nets[j].pins[k].inst->isEqual (look)) {
+	    thenet = &bN->nets[j];
+	    found = true;
+	    break;
+	  }
+	}
+      }
+#endif
+      
+      act_local_pin_t tst;
+      chash_bucket_t *cb;
+      tst.inst = look;
+      tst.pin = bnl->ports[i].c;
+      cb = chash_lookup (cH, &tst);
+
+      /* replacement */
+      if (cb) {
+	found = true;
+	thenet = (act_local_net_t *)cb->v;
+      }
+
+#if 0      
+      if (found) {
+	if (!cb) {
+	  printf ("** (not found in hash) mismatch for ");
+	  tst.inst->Print (stdout);
+	  printf(" / ");
+	  tst.pin->Print (stdout);
+	  printf ("\n");
+	}
+	else {
+	  if (cb->v != (void *)thenet) {
+	    printf ("** >ptr mismatch for ");
+	    tst.inst->Print (stdout);
+	    printf(" / ");
+	    tst.pin->Print (stdout);
+	    printf ("\n");
+	  }
+	}
+      }
+      else {
+	if (cb) {
+	  printf ("** (found in hash) mismatch for ");
+	  tst.inst->Print (stdout);
+	  printf(" / ");
+	  tst.pin->Print (stdout);
+	  printf ("\n");
+	}
+      }
+#endif
+      bnl_li = list_next (bnl_li);
+      id_li = list_next (id_li);
+      if (found && bnl_li) {
+	if (thenet->port) {
+	  // this has a higher-level net specified
+	  found = false;
+	  thenet = NULL;
+	}
+      }
+      
+    }
+    if (found) {
+      ActId *tmp = thenet->net->toid();
+      tmp->sPrint (buf, 10240);
+      a->mfprintf (_outfp, "%s", buf);
+      delete tmp;
+    }
+    else {
+      fprintf (_outfp, "-?-");
+    }
+    fprintf (_outfp, " ");
+  }
+
+  list_free (l);
+	    
+  a->mfprintfproc (_outfp, p);
+  fprintf (_outfp, "\n");
+}
+
+void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
+				 list_t *stk, Process *p)
+{
+  ActUniqProcInstiter inst(p->CurScope());
+  list_append_head (stk, bools->getBNL (p));
+  for (inst = inst.begin(); inst != inst.end(); inst++) {
+    char buf[10240];
+    ValueIdx *vx = (*inst);
+    ActId *newid = new ActId (vx->getName());
+    ActId *ntl;
+    Process *iproc = dynamic_cast<Process *>(vx->t->BaseType());
+    act_boolean_netlist_t *bnl;
+    Assert (iproc, "What?");
+    bnl = bools->getBNL (iproc);
+
+    if (tl) {
+      tl->Append (newid);
+      ntl = tl->Rest ();
+    }
+    else {
+      prefix = newid;
+      tl = newid;
+      ntl = tl;
+    }
+
+    if (vx->t->arrayInfo()) {
+      Arraystep *as = vx->t->arrayInfo()->stepper();
+      while (!as->isend()) {
+	if (vx->isPrimary (as->index())) {
+	  Array *x = as->toArray ();
+	  newid->setArray (x);
+	  if (iproc->isCell()) {
+	    _print_flat_cell (bnl, stk, prefix, iproc);
+	  }
+	  else {
+	    _printflat (prefix, ntl, stk, iproc);
+	  }
+	  delete x;
+	  newid->setArray (NULL);
+	}
+	as->step();
+      }
+      delete as;
+    }
+    else {
+      if (iproc->isCell()) {
+	_print_flat_cell (bnl, stk, prefix, iproc);
+      }
+      else {
+	_printflat (prefix, ntl, stk, iproc);
+      }
+    }
+    delete newid;
+    if (prefix == newid) {
+      prefix = NULL;
+      tl = NULL;
+    }
+    else {
+      tl->prune ();
+    }
+  }
+  list_delete_head (stk);
+}
+
+
+static int hash_net (int sz, void *key)
+{
+  act_local_pin_t *p = (act_local_pin_t *)key;
+  int ret;
+  
+  ret = hash_function_continue
+    (sz, (const unsigned char *) &p->pin, sizeof (unsigned long), 0, 0);
+  ret = p->inst->getHash (ret, sz);
+  return ret;
+}
+
+static int match_net (void *k1, void *k2)
+{
+  act_local_pin_t *p1, *p2;
+  p1 = (act_local_pin_t *) k1;
+  p2 = (act_local_pin_t *) k2;
+
+  if (p1->pin != p2->pin) return 0;
+  if (p1->inst->isEqual (p2->inst)) return 1;
+  return 0;
+}
+
+static void *dup_net (void *key)
+{
+  return key;
+}
+
+static void free_net (void *key)
+{
+  // nothing
+}
+
+static void print_net (FILE *fp, void *key)
+{
+  // nothing
+}
+
+
+void ActNetlistPass::flatHelper (Process *p)
+{
+  if (!p) return;
+  if (p->isCell()) {
+    emitNetlist (p);
+  }
+  else {
+    // compute inverse net hash!
+    act_boolean_netlist_t *bnl;
+    phash_bucket_t *b = phash_add (_invNetH, p);
+    struct cHashtable *cH = chash_new (4);
+    cH->hash = hash_net;
+    cH->match = match_net;
+    cH->dup = dup_net;
+    cH->free = free_net;
+    cH->print = print_net;
+    b->v = cH;
+
+    bnl = bools->getBNL (p);
+    for (int i=0; i < A_LEN (bnl->nets); i++) {
+      for (int j=0; j < A_LEN (bnl->nets[i].pins); j++) {
+	chash_bucket_t *pb;
+	pb = chash_add (cH, &bnl->nets[i].pins[j]);
+	pb->v = &bnl->nets[i];
+      }
+    }
+  }
+}

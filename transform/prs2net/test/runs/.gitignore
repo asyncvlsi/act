@@ -1,2 +1,4 @@
 *.t.stdout
 *.t.stderr
+*.tf.stdout
+*.tf.stderr

@@ -68,7 +68,8 @@ static act_attr_t *attr_expand (act_attr_t *a, ActNamespace *ns, Scope *s)
       print_expr (stderr, tmp->e);
       fprintf (stderr, "\n");
       exit (1);
-    } else if (current_attr_table[pos][0] == 'r' && tmp->e->type != E_REAL) {
+    } else if (current_attr_table[pos][0] == 'r' &&
+	       (tmp->e->type != E_REAL && tmp->e->type != E_INT)) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Real attribute %s is assigned a non-real/non-constant expression\n", tmp->attr);
       fprintf (stderr, "  expr: ");

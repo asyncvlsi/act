@@ -1902,17 +1902,19 @@ void ActNetlistPass::generate_prs_graph (netlist_t *N, act_prs_lang_t *p,
 	  }
 	}
 	else if (strcmp (attr->attr, "loadcap") == 0) {
-	  cap = attr->e->u.f;
+	  Assert (act_expr_getconst_real (attr->e, &cap), "loadcap error?");
 	}
 	else if (strcmp (attr->attr, "oresis") == 0) {
 	  /* do something here */
 	}
 	else if (strcmp (attr->attr, "N_reff") == 0) {
-	  VINF(v)->n->reff[EDGE_NFET] = attr->e->u.f;
+	  Assert (act_expr_getconst_real (attr->e, &VINF(v)->n->reff[EDGE_NFET]),
+		  "N_reff error?");
 	  VINF(v)->n->reff_set[EDGE_NFET] = 1;
 	}
 	else if (strcmp (attr->attr, "P_reff") == 0) {
-	  VINF(v)->n->reff[EDGE_PFET] = attr->e->u.f;
+	  Assert (act_expr_getconst_real (attr->e, &VINF(v)->n->reff[EDGE_PFET]),
+		  "P_reff error?");
 	  VINF(v)->n->reff_set[EDGE_PFET] = 1;
 	}
 	else if (strcmp (attr->attr, "comb") == 0) {
@@ -2488,6 +2490,11 @@ void *ActNetlistPass::local_op (Process *p, int mode)
   }
   else if (mode == 1) {
     return emitNetlist (p);
+  }
+  else if (mode == 2) {
+    void *n = getMap (p);
+    flatHelper (p);
+    return n;
   }
   return NULL;
 }

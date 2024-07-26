@@ -3667,6 +3667,30 @@ static void _expr_append_char (char **buf, int *len, int *sz, char c)
   (*buf)[*len] = '\0';
 }
 
+static void _expr_to_label (char **buf, int *len, int *sz,
+			    list_t *ids, const char *v)
+{
+  int x = 0;
+  listitem_t *li;
+
+  for (li = list_first (ids); li; li = list_next (li)) {
+    if (v == (const char *) list_value (li)) {
+      break;
+    }
+    x++;
+  }
+  if (*len >= (*sz-5)) {
+    REALLOC ((*buf), char, (50 + *sz));
+    *sz += 50;
+  }
+  (*buf)[*len] = 'v';
+  *len = *len + 1;
+  (*buf)[*len] = 'l';
+  *len = *len + 1;
+  snprintf (*buf + *len, *sz - *len, "%d", x);
+  *len += strlen (*buf + *len);
+}
+
 static void _expr_to_var (char **buf, int *len, int *sz,
 			  list_t *ids, ActId *v)
 {
@@ -3702,10 +3726,10 @@ static void _expr_to_var (char **buf, int *len, int *sz,
     *sz += 50;
   }
   if (count > 10) {
-  (*buf)[*len] = 'v';
-  *len = *len + 1;
-  snprintf (*buf + *len, *sz - *len, "%d", x);
-  *len += strlen (*buf + *len);
+    (*buf)[*len] = 'v';
+    *len = *len + 1;
+    snprintf (*buf + *len, *sz - *len, "%d", x);
+    *len += strlen (*buf + *len);
   }
   else {
     (*buf)[*len] = '0' + x;
@@ -3922,6 +3946,14 @@ static void _prs_expr_to_string (char **buf, int *len, int *sz,
       _expr_append_char (buf, len, sz, c);
     }
     //ret->u.ival.v.sz = act_expand_size (p->u.ival.v.sz, ns, s);
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    _expr_to_label (buf, len, sz, ids, e->u.l.label);
+    if (isinvert) {
+      c = _expr_type_char (E_NOT);
+      _expr_append_char (buf, len, sz, c);
+    }
     break;
 
   case ACT_PRS_EXPR_TRUE:
