@@ -1565,7 +1565,7 @@ void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n,
   char buf[10240];
 
   sprint_node (buf, 10240, N, n);
-  if (split_net (buf)) {
+  if (split_net (buf) && inst_name) {
     if (mangle == 1) {
       ActNetlistPass::current_act->mfprintf (fp, "%s", inst_name);
     }
