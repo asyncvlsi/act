@@ -623,6 +623,10 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   Assert (iport == A_LEN (n->bN->instports), "Hmm...");
   Assert (iweak == A_LEN (n->instport_weak), "Hmm...");
 
+  if (_annotate) {
+    _annotate->runcmd ("dump");
+  }
+
   if (p) {
     if (n->bN->isempty) {
       fprintf (fp, "* end empty subckt\n");
