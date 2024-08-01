@@ -48,6 +48,7 @@ const char *ActNetlistPass::global_gnd = NULL;
 const char *ActNetlistPass::local_vdd = NULL;
 const char *ActNetlistPass::local_gnd = NULL;
 Act *ActNetlistPass::current_act = NULL;
+ActDynamicPass *ActNetlistPass::current_annotate = NULL;
 int ActNetlistPass::grids_per_lambda = 0;
 
 
@@ -1555,15 +1556,38 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
   }
 }
 
-void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle)
+void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n,
+				// alternate output
+				const char *inst_name,
+				const char *pin,
+				int mangle)
 {
   char buf[10240];
+
   sprint_node (buf, 10240, N, n);
-  if (mangle) {
-    ActNetlistPass::current_act->mfprintf (fp, "%s", buf);
+  if (split_net (buf)) {
+    if (mangle == 1) {
+      ActNetlistPass::current_act->mfprintf (fp, "%s", inst_name);
+    }
+    else {
+      // mangle = 0 or 2
+      fprintf (fp, "%s", inst_name);
+    }
+    if (mangle) {
+      // mangle = 1 or 2
+      ActNetlistPass::current_act->mfprintf (fp, ".%s", pin);
+    }
+    else {
+      fprintf (fp, ".%s", pin);
+    }
   }
   else {
-    fprintf (fp, "%s", buf);
+    if (mangle) {
+      ActNetlistPass::current_act->mfprintf (fp, "%s", buf);
+    }
+    else {
+      fprintf (fp, "%s", buf);
+    }
   }
 }
 
@@ -2485,6 +2509,9 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 
 void *ActNetlistPass::local_op (Process *p, int mode)
 {
+  if (_annotate) {
+    _annotate->setParam ("proc", (void *)p);
+  }
   if (mode == 0) {
     return genNetlist (p);
   }
@@ -2729,6 +2756,7 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   else {
     unit_dev = 1e-15;
   }
+  _annotate = NULL;
 }
 
 ActNetlistPass::~ActNetlistPass()
@@ -2812,3 +2840,16 @@ void ActNetlistPass::_check_emit_warning (int d, int depth, ActId *id)
     }
   }
 }
+
+bool ActNetlistPass::split_net (char *s)
+{
+  if (!current_annotate) {
+    return false;
+  }
+  current_annotate->setParam ("net", (void *)s);
+  if (current_annotate->runcmd ("split-net")) {
+    return true;
+  }
+  return false;
+}
+  

@@ -208,7 +208,21 @@ class ActNetlistPass : public ActPass {
   static node_t *string_to_node (netlist_t *, char *s);
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
   static void sprint_conn (char *buf, int sz, act_connection *c);
-  static void emit_node (netlist_t *N, FILE *fp, node_t *n, int mangle = 0);
+
+
+  /*
+   * mangle = 0 : no mangling
+   * mangle = 1 : normal mangling
+   * mangle = 2 : if inst/pin is being printed, don't mangle inst
+   * name. This is needed for fets
+   */
+  static void emit_node (netlist_t *N, FILE *fp, node_t *n,
+			 const char *inst_name, const char *pin,
+			 int mangle = 0);
+
+  /* return true if this net is split due to parasitics, false
+     otherwise */
+  static bool split_net (char *netname);
 
   static void spice_to_act_name (char *s, char *t, int sz, int xconv);
 
@@ -256,6 +270,7 @@ class ActNetlistPass : public ActPass {
   /* local and global Vdd/GND */
   static const char *local_vdd, *local_gnd, *global_vdd, *global_gnd;
   static Act *current_act;
+  static ActDynamicPass *current_annotate;
 
   /* printing flags */
   int ignore_loadcap;
@@ -298,6 +313,7 @@ class ActNetlistPass : public ActPass {
 			     node_t *weak_vdd, node_t *weak_gnd);
 
   FILE *_outfp;
+  ActDynamicPass *_annotate; // SPEF back-annotation
 
   netlist_t *genNetlist (Process *p);
   netlist_t *emitNetlist (Process *p);

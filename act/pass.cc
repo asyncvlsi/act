@@ -661,8 +661,19 @@ bool ActDynamicPass::hasParam (const char *name)
   else {
     return false;
   }
-}      
+}
 
+bool ActDynamicPass::clearParam (const char *name)
+{
+  hash_bucket_t *b;
+  if (!_params) { return false; }
+  b = hash_lookup (_params, name);
+  if (!b) {
+    return false;
+  }
+  hash_delete (_params, name);
+  return true;
+}
 
 void ActPass::_actual_update (Process *p)
 {

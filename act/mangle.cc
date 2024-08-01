@@ -190,7 +190,7 @@ int Act::unmangle_string (const char *src, char *dst, int sz)
   }
 
   while (*src && sz > 0) {
-    if (*src == mangle_result[0]) {
+    if (*src == mangle_result[0] && inv_map[(unsigned)*src] != -1) {
     //    if ((*src == mangle_result[0]) &&
     //	(mangle_invidx[*(src+1)] != -1)) {
       src++;

@@ -1305,6 +1305,13 @@ public:
   bool hasParam (const char *name);
 
   /**
+   * @param name is the name of the pameter to be queried
+   * @return true if the parameter was defined and is now deleted,
+   * false otherwise.
+   */
+  bool clearParam (const char *name);
+
+  /**
    * This is used to run the specified command. Parameters to the
    * command are typically passed using the setParam() methods.
    * @return returns the result from the runcmd function, -1 if the

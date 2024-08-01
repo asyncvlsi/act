@@ -165,7 +165,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     for (vi = list_first (n->vdd_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      emit_node (n, fp, x, 1);
+      emit_node (n, fp, x, NULL, NULL, 1);
     }
     fprintf (fp, "\n");
   }
@@ -175,7 +175,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     for (vi = list_first (n->gnd_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      emit_node (n, fp, x, 1);
+      emit_node (n, fp, x, NULL, NULL, 1);
     }
     fprintf (fp, "\n");
   }
@@ -188,7 +188,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     for (vi = list_first (n->psc_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      emit_node (n, fp, x, 1);
+      emit_node (n, fp, x, NULL, NULL, 1);
     }
     fprintf (fp, "\n");
   }
@@ -198,7 +198,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     for (vi = list_first (n->nsc_list); vi; vi = list_next (vi)) {
       node_t *x = (node_t *) list_value (vi);
       fprintf (fp, " ");
-      emit_node (n, fp, x, 1);
+      emit_node (n, fp, x, NULL, NULL, 1);
     }
     fprintf (fp, "\n");
   }
@@ -245,9 +245,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     /* emit node cap, if any */
     if ((x->cap > 0) && !ignore_loadcap) {
       fprintf (fp, "C_per_node_%d ", ncaps++);
-      emit_node (n, fp, x, 1);
+      emit_node (n, fp, x, NULL, NULL, 1);
       fprintf (fp, " ");
-      emit_node (n, fp, n->GND, 1);
+      emit_node (n, fp, n->GND, NULL, NULL, 1);
       fprintf (fp, " %g\n", x->cap*1e-15);
     }
     
@@ -306,6 +306,18 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	
       for (il = 0; il < len_repeat; il++) {
 	for (iw = 0; iw < width_repeat; iw++) {
+	  char dev_name[256];
+	  int sz = 256;
+	  int len = 0;
+	  dev_name[0] = '\0';
+
+#define UPDATE_SZ_LEN						\
+	  do {							\
+	    int tmp = strlen (dev_name + len);			\
+	    len += tmp;						\
+	    sz -= len;						\
+	    Assert (sz > 0, "Increase device name buffer!");	\
+	  } while (0)
 
 	  if (width_repeat > 1) {
 	    w = EDGE_WIDTH (e, iw);
@@ -318,54 +330,78 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    fprintf (fp, "x");
 	  }
 
-	  fprintf (fp, "M%d", fets);
+	  snprintf (dev_name + len, sz, "M%d", fets);
+	  UPDATE_SZ_LEN;
+
 	  if (len_repeat > 1) {
-	    fprintf (fp, "_%d", il);
+	    snprintf (dev_name + len, sz, "_%d", il);
+	    UPDATE_SZ_LEN;
 	  }
 	  if (width_repeat > 1) {
-	    fprintf (fp, "_%d", iw);
+	    snprintf (dev_name + len, sz, "_%d", iw);
+	    UPDATE_SZ_LEN;
 	  }
 
 	  /* name of the instance includes how the fet was generated in it */
 	  if (e->pchg) {
-	    fprintf (fp, "_pchg ");
+	    snprintf (dev_name + len, sz, "_pchg");
 	  }
 	  else if (e->combf) {
-	    fprintf (fp, "_ckeeper ");
+	    snprintf (dev_name + len, sz, "_ckeeper");
 	  }
 	  else if (e->keeper) {
-	    fprintf (fp, "_keeper ");
+	    snprintf (dev_name + len, sz, "_keeper");
 	  }
 	  else if (e->raw) {
-	    fprintf (fp, "_pass ");
+	    snprintf (dev_name + len, sz, "_pass");
 	  }
 	  else {
-	    fprintf (fp, "_ ");
+	    snprintf (dev_name + len, sz, "_");
 	  }
+	  UPDATE_SZ_LEN;
+
+	  fprintf (fp, "%s ", dev_name);
 
 	  /* if length repeat, source/drain changes */
 	  if (il == 0) {
-	    emit_node (n, fp, src, 1);
+	    emit_node (n, fp, src, dev_name, "S", 2);
 	  }
 	  else {
-	    fprintf (fp, "#l%d", repnodes);
+	    char buf[32];
+	    snprintf (buf, 32, "#l%d", repnodes);
+	    if (split_net (buf)) {
+	      fprintf (fp, "%s", dev_name);
+	      a->mfprintf (fp, ".S");
+	    }
+	    else {
+	      fprintf (fp, "%s", buf);
+	    }
 	  }
 	  fprintf (fp, " ");
-	  emit_node (n, fp, e->g, 1);
+	  emit_node (n, fp, e->g, dev_name, "G", 2);
 	  fprintf (fp, " ");
 
 	  if (il == len_repeat-1) {
-	    emit_node (n, fp, drain, 1);
+	    emit_node (n, fp, drain, dev_name, "D", 2);
 	  }
 	  else {
-	    fprintf (fp, "#l%d", repnodes+1);
+	    char buf[32];
+	    snprintf (buf, 32, "#l%d", repnodes+1);
+	    if (split_net (buf)) {
+	      fprintf (fp, "%s", dev_name);
+	      a->mfprintf (fp, ".D");
+	    }
+	    else {
+	      fprintf (fp, "%s", buf);
+	    }
 	  }
 	  if (len_repeat > 1 && il != len_repeat-1) {
 	    repnodes++;
 	  }
 
 	  fprintf (fp, " ");
-	  emit_node (n, fp, e->bulk, 1);
+	  /* Do we need spef for bulk? */
+	  emit_node (n, fp, e->bulk, NULL, NULL, 1);
 
 	  snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		   act_dev_value_to_string (e->flavor));
@@ -400,6 +436,8 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  else {
 	    fprintf (fp, "\n");
 	  }
+
+#undef UPDATE_SZ_LEN	  
 
 	  /* area/perim for source/drain */
 	  if (emit_parasitics) {
@@ -477,9 +515,10 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     for (listitem_t *li = list_first (n->devs); li; li = list_next (li)) {
       netlist_device *c = (netlist_device *) list_value (li);
       fprintf (fp, "%s%d_%d ", table[c->idx], fets++, ncap++);
-      emit_node (n, fp, c->n1, 1);
+      /* Need to know pin names for these devices! */
+      emit_node (n, fp, c->n1, NULL, NULL, /* FIXME */ 1);
       fprintf (fp, " ");
-      emit_node (n, fp, c->n2, 1);
+      emit_node (n, fp, c->n2, NULL, NULL, /* FIXME */ 1);
       fprintf (fp, " ");
       fprintf (fp, "%g\n", c->wval*c->lval);
     }
@@ -532,9 +571,6 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    fprintf (fp, "* ");
 	  }
 	  a->mfprintf (fp, "x%s%s", vx->getName(), str ? str : "");
-	  if (str) {
-	    FREE (str);
-	  }
 	  for (int i=0; i < A_LEN (sub->bN->ports); i++) {
 	    ActId *id;
 	    char buf[10240];
@@ -543,16 +579,31 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    Assert (iport < A_LEN (n->bN->instports), "Hmm");
 	    fprintf (fp, " ");
 	    sprint_conn (buf, 10240, n->bN->instports[iport]);
-	    a->mfprintf (fp, "%s", buf);
+	    if (split_net (buf)) {
+	      a->mfprintf (fp, "%s%s", vx->getName(), str ? str : "");
+	      a->mfprintf (fp, ".");
+	      ActId *idtmp = sub->bN->ports[i].c->toid();
+	      idtmp->sPrint (buf, 10240);
+	      delete idtmp;
+	      a->mfprintf (fp, "%s", buf);
+	    }
+	    else {
+	      a->mfprintf (fp, "%s", buf);
+	    }
 	    iport++;
+	  }
+	  if (str) {
+	    FREE (str);
 	  }
 
 	  if (sub->weak_supply_vdd > 0) {
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    /* XXX: what do I do here? */
 	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
 	  }
 	  if (sub->weak_supply_gnd > 0) {
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
+	    /* XXX: what do I do here? */
 	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
 	  }
 	    
@@ -592,10 +643,31 @@ void ActNetlistPass::Print (FILE *fp, Process *p)
   if (!completed()) {
     fatal_error ("ActNetlistPass::Print() called before pass is run!");
   }
-  
+  if (!_annotate) {
+    ActPass *ap = a->pass_find ("annotate");
+    if (ap) {
+       _annotate = dynamic_cast <ActDynamicPass *> (ap);
+       Assert (_annotate, "WHat?");
+       if (!_annotate->completed()) {
+          _annotate->run (p);
+       }
+       current_annotate = _annotate;
+    }
+  }
+  if (_annotate) {
+    _annotate->setParam ("outfp", (void *)fp);
+  }
+
   _outfp = fp;
   run_recursive (p, 1);
   _outfp = NULL;
+
+  if (_annotate) {
+    _annotate->clearParam ("outfp");
+    _annotate->clearParam ("proc");
+    _annotate->clearParam ("net");
+  }
+  current_annotate = NULL;
 }
 
 
@@ -608,10 +680,27 @@ void ActNetlistPass::printFlat (FILE *fp)
     fatal_error ("ActNetlistPass::printFlat() requires a top-level process!");
   }
   bools->createNets (_root);
-
   _outfp = fp;
   _invNetH = phash_new (4);
+
+  if (!_annotate) {
+    ActPass *ap = a->pass_find ("annotate");
+    if (ap) {
+       _annotate = dynamic_cast <ActDynamicPass *> (ap);
+       Assert (_annotate, "WHat?");
+       if (!_annotate->completed()) {
+	 _annotate->run (_root);
+       }
+       current_annotate = _annotate;
+    }
+  }
+  if (_annotate) {
+    _annotate->setParam ("outfp", (void *)fp);
+  }
+  
   run_recursive (_root, 2);
+
+  current_annotate = NULL;
 
   // Run a new pass that only prints cells and
   // computes the inverse hash that we need to accelerate net
@@ -638,6 +727,12 @@ void ActNetlistPass::printFlat (FILE *fp)
 
   fprintf (_outfp, ".ends\n");
   _outfp = NULL;
+
+  if (_annotate) {
+    _annotate->clearParam ("outfp");
+    _annotate->clearParam ("proc");
+    _annotate->clearParam ("net");
+  }
 
   // free each hash table entry, and then...
   {
