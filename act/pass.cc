@@ -440,7 +440,7 @@ ActDynamicPass::ActDynamicPass (Act *a, const char *name, const char *lib,
   snprintf (buf, 1024, "%s_init", prefix);
   _d._init = (void (*)(ActPass *))dlsym (lib_ptr, buf);
   if (!_d._init) {
-    warning ("Dynamic pass `%s': missing %s\n", prefix, buf);
+    warning ("Dynamic pass `%s': missing %s\n", name, buf);
   }
 
   snprintf (buf, 1024, "%s_run", prefix);

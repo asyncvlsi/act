@@ -893,7 +893,20 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     if (found) {
       ActId *tmp = thenet->net->toid();
       tmp->sPrint (buf, 10240);
-      a->mfprintf (_outfp, "%s", buf);
+      char buf2[10240];
+      a->msnprintf (buf2, 10240, "%s", buf);
+      if (split_net (buf2)) {
+	// inst.pin
+	inst->sPrint (buf, 10240);
+	a->mfprintf (_outfp, "%s.", buf);
+	delete tmp;
+	tmp = bnl->ports[i].c->toid();
+	tmp->sPrint (buf, 10240);
+	a->mfprintf (_outfp, "%s", buf);
+      }
+      else {
+	fprintf (_outfp, "%s", buf2);
+      }
       delete tmp;
     }
     else {
