@@ -17,4 +17,4 @@ More detailed documentation is available here:
     http://avlsi.csl.yale.edu/act/
     
 A first ACT tutorial:
-    http://avlsi.csl.yale.edu/act/doku.php?id=tutorial:basicprs
+    http://avlsi.csl.yale.edu/act/doku.php?id=tutorial:start
