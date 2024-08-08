@@ -7,8 +7,9 @@ is:
 
    * Set the environment variable ACT_HOME to the install directory for the core ACT library (see ACT [build instructions](https://github.com/asyncvlsi/act/blob/master/README.md))
  
-   * Run make depend, followed by make to build the tools. make install
-     will install the files in the ACT_HOME install directory.
+   * If there is a `configure` script in the main directory, run `./configure`
+ 
+   * If there is a `build.sh` script in the main directory, run `./build.sh` to build and install the files; otherwise, run `make depend`, followed by `make` to build the tools, followed by `make install` to install the files in the ACT_HOME install directory.
 
 ## More information:
 
