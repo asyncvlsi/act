@@ -642,12 +642,13 @@ static act_connection *_find_corresponding_slot (UserDef *ux,
   if (!pcx->vx) {
     pcx->vx = ux->CurScope()->LookupVal (ux->getPortName (oport));
   }
+
   Assert (pcx->vx &&
 	  pcx->vx == 
 	  ux->CurScope()->LookupVal (ux->getPortName (oport)), "Hmm");
 
   listitem_t *li;
-  
+
   for (li = list_first (stk); li; li = list_next (li)) {
     int pos = (long)list_value (li);
     if (!array_done && optype->arrayInfo()) {
@@ -661,10 +662,14 @@ static act_connection *_find_corresponding_slot (UserDef *ux,
       if (!pcx->vx) {
 	pcx->vx = oux->CurScope()->LookupVal (oux->getPortName (pos));
       }
+#if 0
+      // this assertion might fail because of the implementation
+      // relation!
       Assert (pcx->vx &&
 	      pcx->vx ==
 	      oux->CurScope()->LookupVal (oux->getPortName (pos)),
 	      "What?");
+#endif
       optype = oux->getPortType (pos);
       array_done = 0;
     }
@@ -697,6 +702,17 @@ static void dump_conn (act_connection *c)
 
 
 /*
+ * cxroot : the root of the connection pointer where we need to propagate
+ *          port connections
+ *
+ *     cx : the sub-connection within cxroot being considered; note:
+ *          this may be nested
+ *
+ *     px : the port connection pointer in the "ux" internal scope
+ *          that has to be copied over to cx
+ *
+ *     ux : the user-defined type in question
+ *
   replicate connection px into cx, in the context of user-defined type
   ux
 */
@@ -726,6 +742,8 @@ static void _import_conn_rec (act_connection *cxroot,
       list_t *l;
       const char *name;
 
+      /* compute the path through the root connection to ppx; ppx is
+	 updated to the root of the connection tree. */
       l = _act_create_connection_stackidx (ppx, &ppx);
       name = ppx->vx->getName();
 
@@ -749,11 +767,30 @@ static void _import_conn_rec (act_connection *cxroot,
     /* 0 = array; 1 = userdef */
 
     //return; /* FIX THIS */
-    
+
+#ifdef DEBUG_CONNECTIONS
+    int header = 0;
+#endif
+
     for (int i=0; i < px->numSubconnections(); i++) {
       if (px->a[i]) {
 	if (px->a[i]->isPrimary() && !px->a[i]->hasSubconnections())
 	  continue;
+
+#ifdef DEBUG_CONNECTIONS
+	if (!header) {
+	  printf ("Importing connections up / px is primary but subconns are not\n");
+	  printf (" From: %s\n", ux->getName());
+	  printf (" cxroot: "); print_id (cxroot);
+	  printf ("\n cx: "); print_id (cx);
+	  printf ("; px: "); print_id (px);
+	  printf ("\n  "); dump_conn (px->primary());
+	  header = 1;
+	}
+	printf ("  subconn: %d\n",i);
+	Assert (px->numSubconnections() == cx->numTotSubconnections(), "What?");
+#endif
+
 	tmp2 = cx->getsubconn (i, px->numSubconnections());
 	if (!tmp2->vx) {
 	  tmp2->vx = px->a[i]->vx;
@@ -766,7 +803,23 @@ static void _import_conn_rec (act_connection *cxroot,
 
 
 
-/* cx = root of instance valueidx
+/*
+ * When we create an instance of a user-defined type, that instance
+ * may already have internal connections amongst its ports because of
+ * the definition of the instance. So the first time an instance is
+ * created, its connection structure must already incorporate those
+ * internal connections that are exposed through its ports list. This
+ * function takes:
+ *
+ *   cx : the connection pointer for the root of the instance
+ *   ux : the user-defined type corresponding to the connection instance
+ *    a : the array information for the connection instance, if any
+ *        (NULL if this is not an array instance)
+ *  elem_num : -1 if the entire array is to be imported; otherwise the
+ *             specific element of the array that needs to be imported.
+ *
+
+  cx = root of instance valueidx
    ux = usertype
    a  = array info of the type (NULL if not present)
 
@@ -802,6 +855,11 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int 
     if (pcx->isPrimary () && !pcx->hasSubconnections())
       continue;
 
+    /*
+      if we are here, then either this port is not a primary port, or
+      this port has sub-connections that need to be examined
+    */
+
     if (sz > 0) {
       int loop_start, loop_end;
       if (elem_num == -1) {
@@ -826,11 +884,13 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int 
       }
     }
     else {
+      /* extract the connection pointer for this specific port */
       act_connection *imp = cx->getsubconn (i, ux->getNumPorts());
       if (!imp->vx) {
 	imp->vx = pvx;
       }
       Assert (imp->vx == pvx, "Hmm...");
+      /* now import any sub-connections here */
       _import_conn_rec (cx, imp, pcx, ux);
     }
   }
