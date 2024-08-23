@@ -772,6 +772,7 @@ static void _import_conn_rec (act_connection *cxroot,
     int header = 0;
 #endif
 
+    int cxtot = -1; 
     for (int i=0; i < px->numSubconnections(); i++) {
       if (px->a[i]) {
 	if (px->a[i]->isPrimary() && !px->a[i]->hasSubconnections())
@@ -790,8 +791,10 @@ static void _import_conn_rec (act_connection *cxroot,
 	printf ("  subconn: %d\n",i);
 	Assert (px->numSubconnections() == cx->numTotSubconnections(), "What?");
 #endif
-
-	tmp2 = cx->getsubconn (i, px->numSubconnections());
+	if (cxtot == -1) {
+	  cxtot = cx->numTotSubconnections ();
+	}
+	tmp2 = cx->getsubconn (i, cxtot);
 	if (!tmp2->vx) {
 	  tmp2->vx = px->a[i]->vx;
 	}
