@@ -911,12 +911,21 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (ret & T_PARAM) {
 	if (TypeFactory::isPIntType (rtype)) {
 	  ret |= T_INT;
+	  if (width) {
+	    *width = 32;
+	  }
 	}
 	else if (TypeFactory::isPBoolType (rtype)) {
 	  ret |= T_BOOL;
+	  if (width) {
+	    *width = 1;
+	  }
 	}
 	else if (TypeFactory::isPRealType (rtype)) {
 	  ret |= T_REAL;
+	  if (width) {
+	    *width = 32;
+	  }
 	}
 	else {
 	  Assert (0, "Unknown return type");
