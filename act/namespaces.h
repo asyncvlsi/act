@@ -447,6 +447,18 @@ class Scope {
    * Use this to find the next integer value that can be used.
    */
   void findFresh (const char *prefix, int *count);
+
+
+  /**
+   * This creates a "shallow copy" of the Scope. It will clone all the
+   * tables within the scope, but not clone any Scope pointers,
+   * namespace pointers, or userdef pointers. In other words, it only
+   * replicates the instance table. Note that this  can ONLY be called
+   * for an unexpanded scope.
+   * @return the newly created scope, NULL if the operation failed
+   * because the scope has already been expanded.
+   */
+  Scope *localClone ();
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if

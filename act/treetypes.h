@@ -44,7 +44,8 @@ enum act_ret_type_type {
   R_CHP_GC,
   R_CHP_FUNC,
   R_INST_TYPE,
-  R_ACT_BODY
+  R_ACT_BODY,
+  R_OVERRIDES
 };
 
 /**
@@ -74,6 +75,7 @@ typedef struct {
     act_func_arguments_t *func;
     InstType *inst;
     ActBody *body;
+    refine_override *ro;
   } u;
 } ActRet;
 
@@ -95,6 +97,7 @@ typedef struct {
    * Current scope
    */
   Scope *scope;
+  list_t *tmpscope;		/* used for refinement overrides */
 
   /**
    * Namespace search paths and permissions in the current context

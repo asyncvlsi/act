@@ -1088,6 +1088,16 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   }
 
   /*-- expand body --*/
+
+  /* handle any refinement overrides! */
+  if (ux && (ux->getRefineList() != NULL) &&
+      ActNamespace::Act()->getRefSteps() >=
+      list_ivalue (list_first (ux->getRefineList()))) {
+    // find any refinement overrides that might apply, and apply them!
+    Assert (b, "What?");
+    ux->_apply_ref_overrides (b, b);
+  }
+  
   if (b) {
     b->Expandlist (ns, ux->I);
   }
@@ -2318,4 +2328,24 @@ void Data::synthStructMacro ()
   um[A_LEN(um)-1]->setParent (this);
   um[A_LEN(um)-1]->populateCHP ();
   um[A_LEN(um)-1]->updateFn (this);
+}
+
+
+
+void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
+{
+  while (srch) {
+    ActBody_Lang *l = dynamic_cast<ActBody_Lang *> (srch);
+    if (l) {
+      if (l->gettype() == ActBody_Lang::LANG_REFINE) {
+	act_refine *r = (act_refine *) l->getlang();
+	if (acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps) &&
+	    r->overrides) {
+	  /* apply overrides! */
+	  b->updateInstType (r->overrides->ids, r->overrides->it);
+	}
+      }
+    }
+    srch = srch->Next();
+  }
 }

@@ -109,6 +109,7 @@ GENERIC_WRAP(act_chp_gc_t_p, act_chp_gc *, gc, R_CHP_GC)
 GENERIC_WRAP(act_func_arguments_t_p, act_func_arguments_t *, func, R_CHP_FUNC)
 GENERIC_WRAP(InstType_p, InstType *, inst, R_INST_TYPE)
 GENERIC_WRAP(ActBody_p, ActBody *,body,R_ACT_BODY)
+GENERIC_WRAP(refine_override_p,refine_override *,ro,R_OVERRIDES)
 
 /* special case for built-in expression type wrapping */
 ActRet *act_wrap_X_expr (Expr *e)

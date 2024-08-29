@@ -1323,3 +1323,12 @@ act_prs_expr_t *act_prs_expr_nnf (void *cookie,
   return _conv_nnf (cookie, at_hash, e, conv, 0);
 }
 
+
+refine_override::~refine_override()
+{
+  if (it) { delete it; }
+  if (ids) { list_free (ids); }
+  if (next) {
+    delete next;
+  }
+}

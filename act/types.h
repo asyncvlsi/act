@@ -785,6 +785,8 @@ class UserDef : public Type {
   int emitMacros (FILE *fp);
 
   A_DECL (UserMacro *, um);   ///< user-defined macros
+
+  void _apply_ref_overrides (ActBody *b, ActBody *srch);
 };
 
 

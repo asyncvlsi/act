@@ -1548,3 +1548,24 @@ void Scope::findFresh (const char *prefix, int *num)
   *num = *num - 1;
   FREE (buf);
 }
+
+
+Scope *Scope::localClone ()
+{
+  if (expanded) {
+    return NULL;
+  }
+  Scope *ret = new Scope (up);
+  ret->ns = ns;
+  ret->u = u;
+  ret->is_function = is_function;
+
+  hash_iter_t it;
+  hash_bucket_t *b;
+  hash_iter_init (H, &it);
+  while ((b = hash_iter_next (H, &it))) {
+    hash_bucket_t *nb = hash_add (ret->H, b->key);
+    nb->v = b->v;
+  }
+  return ret;
+}

@@ -2840,8 +2840,12 @@ size_body: { size_setup ";" }* { size_directive ";" }*
 lang_refine[ActBody *]: "refine"
 {{X:
     $0->ref_level++;
+    // we save away the scope on the top of the scope refinement stack
+    stack_push ($0->tmpscope, $0->scope);
 }}
-[ "<" INT ">" ] "{" base_item_list "}"
+[ "<" INT ">" ]
+[ "+{" ref_override_spec "}" ]
+"{" base_item_list "}"
 {{X:
     act_refine *r;
     ActBody *b;
@@ -2864,10 +2868,21 @@ lang_refine[ActBody *]: "refine"
     }
 
     NEW (r, act_refine);
+
+    if (OPT_EMPTY ($3)) {
+      r->overrides = NULL;
+    }
+    else {
+      rtype = OPT_VALUE ($3);
+      $A(rtype->type == R_OVERRIDES);
+      r->overrides = rtype->u.ro;
+      FREE (rtype);
+    }
+    OPT_FREE ($3);
     r->nsteps = refidx;
-    r->b = $4;
+    r->b = $5;
     r->refsublist = NULL;
-    for (ActBody *tb = $4; tb; tb = tb->Next()) {
+    for (ActBody *tb = $5; tb; tb = tb->Next()) {
       ActBody_Lang *l = dynamic_cast <ActBody_Lang *> (tb);
       if (l && l->gettype() == ActBody_Lang::LANG_REFINE) {
 	act_refine *tmp = (act_refine *) l->getlang();
@@ -2876,9 +2891,177 @@ lang_refine[ActBody *]: "refine"
     }
     b = new ActBody_Lang ($l, r);
     $0->ref_level--;
+
+    if ($0->scope != (Scope *) stack_peek ($0->tmpscope)) {
+      delete $0->scope;
+    }
+    $0->scope = (Scope *) stack_pop ($0->tmpscope);
+
     return b;
 }}
 ;
+
+
+ref_override_spec[refine_override *]: one_ref_override_spec ref_override_spec
+{{X:
+    $1->next = $2;
+    return $1;
+}}
+| one_ref_override_spec
+{{X:
+    return $1;
+}}
+;
+
+one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
+{{X:
+    listitem_t *li;
+    int append_params = 0;
+    refine_override *ro;
+
+    if ($0->ref_level > 1) {
+      $E("Refinement overrides cannot be included in nested refinement blocks!");
+    }
+
+    ro = new refine_override;
+
+    if ($1->getDir() != Type::NONE) {
+      $e("Override specification must not have direction flags\n");
+      fprintf ($f, "\tOverride: ");
+      $1->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+
+    if (OPT_EMPTY ($2)) {
+      append_params = 0;
+      ro->plus = false;
+    }
+    else {
+      append_params = 1;
+      ro->plus = true;
+    }
+    OPT_FREE ($2);
+
+    ro->it = $1;
+
+    for (li = list_first ($3); li; li = list_next (li)) {
+      const char *s = (char *)list_value (li);
+      InstType *it = $0->scope->Lookup (s);
+      if (!it) {
+	$E("Override specified for ``%s'': not found in type", s);
+      }
+
+      InstType *chk = $1;
+      $A(chk->arrayInfo() == NULL);
+      if (chk->isEqual (it, 1)) {
+	$e("Override is not necessary if type is not being refined!\n");
+	fprintf ($f, "\tOverride: ");
+	$1->Print ($f);
+	fprintf ($f, "\n\tOriginal: ");
+	it->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      Array *tmpa;
+      tmpa = it->arrayInfo();
+      it->clrArray();
+
+      int num_params = $1->getNumParams();
+      int start_pos = 0;
+
+      if (append_params) {
+	if (TypeFactory::isUserType (it) && (it->getNumParams() > 0)) {
+	  if (list_length ($3) != 1) {
+	    $E("Append parameter syntax requires only one ID on the RHS (found %d)", list_length ($3));
+	  }
+	  $1->appendParams (it->getNumParams(), it->allParams());
+	  num_params += it->getNumParams();
+	}
+      }
+
+      while (chk) {
+	//printf("CHECK [%d]: ", num_params);
+	//chk->Print (stdout);
+	//printf ("  v/s ");
+	//it->Print (stdout);
+	//printf ("\n");
+
+	if (chk->isEqual (it, 1)) {
+	  break;
+	}
+
+	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
+	if (!ux) {
+	  chk = NULL;
+	}
+	else {
+	  chk = ux->getParent();
+	}
+	if (chk) {
+	  UserDef *tmpu;
+	  $A(chk->arrayInfo() == NULL);
+
+	  tmpu = dynamic_cast<UserDef *> (chk->BaseType());
+
+	  //printf ("num-params: %d\n", num_params);
+	  //printf ("base params: %d\n", ux->getNumParams());
+	  if (tmpu) {
+	    //printf ("base parent params: %d\n", tmpu->getNumParams());
+	    start_pos += (ux->getNumParams() - tmpu->getNumParams());
+	    num_params -= (ux->getNumParams() - tmpu->getNumParams());
+	  }
+	  else {
+	    start_pos += ux->getNumParams();
+	    num_params-= ux->getNumParams();
+	  }
+
+	  //printf ("residual params: %d\n", num_params);
+	  if (num_params > 0) {
+	    chk = new InstType (chk);
+	    inst_param *ap;
+	    ap = $1->allParams ();
+	    chk->appendParams (num_params, ap + start_pos);
+	  }
+	}
+      }
+      it->MkArray (tmpa);
+      if (!chk) {
+	$e("Illegal override; the new type doesn't implement the original.\n");
+	fprintf ($f, "\tOriginal: ");
+	it->Print ($f);
+	fprintf ($f, "\n\tNew: ");
+	$1->Print ($f);
+	fprintf ($f, "\n");
+	exit (1);
+      }
+      /* insert expansion-time assertion that $1 <: it */
+      int is_port = 0;
+      if ($0->u_p) {
+	is_port = $0->u_p->isPort (s);
+      }
+      else if ($0->u_d) {
+	is_port = $0->u_d->isPort (s);
+      }
+      else if ($0->u_c) {
+	is_port = $0->u_c->isPort (s);
+      }
+      else {
+	$A(0);
+      }
+      if (is_port) {
+	$E("Cannot override port type (port ``%s'') in refinement overrides.",
+	   s);
+      }
+    }
+    for (li = list_first ($3); li; li = list_next (li)) {
+      $0->scope->refineBaseType ((char *)list_value (li), $1);
+    }
+    ro->ids = $3;
+    return ro;
+}}
+;
+
 
 lang_initialize[ActBody *]: "Initialize" "{" { action_items ";" }* "}"
 {{X:

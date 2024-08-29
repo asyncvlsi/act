@@ -527,6 +527,7 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->os = new ActOpen ();
   tr->tf = tf;
   tr->scope = tr->curns->CurScope ();
+  tr->tmpscope = list_new ();
 
   tr->u = NULL;
 
@@ -580,6 +581,7 @@ static void _free_tr (ActTree *tr)
 {
   delete tr->os;
   list_free (tr->sz_loop_stack);
+  list_free (tr->tmpscope);
 }
 
 Act::Act (const char *s)

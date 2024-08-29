@@ -447,8 +447,24 @@ class ActBody;
  *
  * @brief The refinement sub-language just contains an ActBody
  */
+class InstType;
+struct refine_override {
+  refine_override() {
+    it = NULL;
+    plus = false;
+    ids = NULL;
+    next = NULL;
+  }
+  ~refine_override();
+  InstType *it;
+  bool plus;
+  list_t *ids;
+  refine_override *next;
+};
+
 struct act_refine {
   ActBody *b;		       ///< the body of the refine<k> { ... }
+  refine_override *overrides;  ///< refinement overrides
   int nsteps;                   ///< # of refinement steps
   list_t *refsublist;	       ///< sorted list of refinement levels
 			       ///< within block
