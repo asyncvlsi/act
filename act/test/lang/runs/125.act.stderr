@@ -1,0 +1,2 @@
+ERROR: File `125.act', line 20, col 19
+	Refinement overrides cannot be within a conditional construct!

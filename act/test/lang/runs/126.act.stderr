@@ -1,0 +1,2 @@
+ERROR: File `126.act', line 20, col 19
+	Refinement overrides cannot be included in nested refinement blocks!

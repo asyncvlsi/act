@@ -2922,6 +2922,9 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
     if ($0->ref_level > 1) {
       $E("Refinement overrides cannot be included in nested refinement blocks!");
     }
+    if ($0->in_cond > 0) {
+      $E("Refinement overrides cannot be within a conditional construct!");
+    }
 
     ro = new refine_override;
 
