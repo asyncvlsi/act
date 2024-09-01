@@ -575,10 +575,11 @@ static void mk_raw_skip_connection (UserDef *ux,
     /* no subconnections. done. */
     delete c2;
 
+#if 0
     if (c2p->a) {
       _merge_subtrees (ux, c1, c2p);
     }
-    
+#endif
     return;
   }
 
