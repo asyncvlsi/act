@@ -204,9 +204,11 @@ int act_connection::numTotSubconnections()
   _vx = getvx();
   type = getctype();
 
-  Assert (type == 0 || type == 1, "Hmm");
+  Assert (type == 0 || type == 1 || type == 2, "Hmm");
 
   if (type == 0) {
+    // standard element: either it is an array, or it's a user-defined
+    // value with subconnections for ports.
     if (_vx->t->arrayInfo()) {
       /* it is an array! */
       return _vx->t->arrayInfo()->size();
@@ -217,7 +219,7 @@ int act_connection::numTotSubconnections()
       return ux->getNumPorts ();
     }
   }
-  else {
+  else if (type == 1) {
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
 #if 0
     if  (!ux) {
@@ -248,6 +250,19 @@ int act_connection::numTotSubconnections()
 	Assert (ux, "Hmm");
 	return ux->getNumPorts();
       }
+    }
+  }
+  else {
+    // type == 2
+    //   could be an array of ux, and this is the portID
+    //   could be a ux.port which has an array in it
+    if (_vx->t->arrayInfo()) {
+      UserDef *ux = dynamic_cast<UserDef *> (_vx->t->BaseType());
+      Assert (ux, "What?");
+      return ux->getNumPorts();
+    }
+    else {
+      Assert (0, "Not sure...");
     }
   }
 }
@@ -473,16 +488,19 @@ static void _verify_subconn_canonical (UserDef *ux, act_connection *c);
 static void mk_raw_skip_connection (UserDef *ux,
 				    act_connection *c1, act_connection *c2)
 {
+  act_connection *c2p;
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
 
+  c2p = c2->primary ();
+  
 #if 0
   printf ("here!\n");
   printf ("[raw-skip] entry *****\n");
   dump_conn_rec (c1);
   dump_conn_rec (c2);
   printf ("**********************\n");
-#endif  
+#endif
 
   if (c2->next == c2) {
     /* nothing to do: c2 has no other connections */
@@ -490,12 +508,11 @@ static void mk_raw_skip_connection (UserDef *ux,
   else {
     /* c2 has connections; merge them into c1, but remove c2 from the
        connection list */
-
     act_connection *t1, *t2;
     int in_ring = 0;
 
     t1 = c1->primary();
-    t2 = c2->primary();
+    t2 = c2p;
 
     if (t1 == t2) {
       in_ring = 1;
@@ -522,9 +539,10 @@ static void mk_raw_skip_connection (UserDef *ux,
 
     /* any up pointers in c2's union-find tree connection ring that point to c2
        should be updated to c2->up */
+
     t1 = c2->next;
     while (t1 != c2) {
-      if (t1->up == c2) {
+      if (t1->up == c2 && c2->up) {
 	t1->up = c2->up;
       }
       t1 = t1->next;
@@ -539,13 +557,14 @@ static void mk_raw_skip_connection (UserDef *ux,
       c1->next = t2;
       c2->next = t1;
     }
+
     t1 = c2;
     while (t1->next != c2) {
       t1 = t1->next;
     }
     t1->next = t1->next->next;
 
-    c2->next = NULL;
+    c2->next = c2;
     c2->up = NULL;
   }
   
@@ -555,6 +574,11 @@ static void mk_raw_skip_connection (UserDef *ux,
   if (!c2->a) {
     /* no subconnections. done. */
     delete c2;
+
+    if (c2p->a) {
+      _merge_subtrees (ux, c1, c2p);
+    }
+    
     return;
   }
 
@@ -616,10 +640,18 @@ static void _merge_subtrees (UserDef *ux,
   ValueIdx *vx;
   int sz;
 
-  vx = c2->getvx();
-
+  vx = c2->getvx ();
+#if 0
+  static int level = 0;
+  printf (" ==> [%d] in merge-subtrees\n", level++);
+  dump_conn_rec (c1);
+  dump_conn_rec (c2);
+#endif
   if (!c1->a) {
     if (c2->a) {
+#if 0
+      printf (" case 1\n");
+#endif
       c1->a = c2->a;
       c2->a = NULL;
       /* now fix parent pointers */
@@ -652,6 +684,9 @@ static void _merge_subtrees (UserDef *ux,
     }
   }
   else if (c2->a) {
+#if 0
+    printf (" case 2\n");
+#endif
     if (vx->t->arrayInfo()) {
       if (c2->getctype() == 1) {
 	UserDef *ux;
@@ -673,10 +708,19 @@ static void _merge_subtrees (UserDef *ux,
       /* connect c1->a[i] with c2->a[i] */
       if (c1->a[i] && c2->a[i]) {
 	/* you might have the same thing repeated... */
+#if 0
+	printf ("   %d: skip-conn\n", i);
+#endif
 	mk_raw_skip_connection (ux, c1->a[i], c2->a[i]);
 	_verify_subconn_canonical (ux, c1->a[i]);
+#if 0
+	printf ("   %d: end-skip\n", i);
+#endif
       }
       else if (c2->a[i]) {
+#if 0
+	printf ("   %d: move-conn\n", i);
+#endif
 	c1->a[i] = c2->a[i];
 	c2->a[i] = NULL;
 	c1->a[i]->parent = c1;
@@ -686,6 +730,11 @@ static void _merge_subtrees (UserDef *ux,
     FREE (c2->a);
     c2->a = NULL;
   }
+#if 0
+  printf (" === [%d] FINAL\n", --level);
+  dump_conn_rec (c1);
+  printf (" <== [%d] end merge\n", level);
+#endif
 }
 
 static int _find_earlier_port_array_conn (act_connection *d1,
@@ -959,7 +1008,7 @@ static void _fix_noncanonical_subconns (act_connection *c)
 static void _fix_noncan_to_can2 (UserDef *ux, act_connection *orig, act_connection *can_ver)
 {
   if (orig->hasSubconnections()) {
-#ifdef DEBUG_CONNECTIONS    
+#ifdef DEBUG_CONNECTIONS
     printf (" -- check subconn\n");
 #endif    
     for (int i=0; i < orig->numSubconnections(); i++) {
@@ -967,7 +1016,7 @@ static void _fix_noncan_to_can2 (UserDef *ux, act_connection *orig, act_connecti
 	act_connection *tmp = can_ver->getsubconn (i, can_ver->numTotSubconnections());
 	if (orig->a[i]->next != orig->a[i]) {
 	  if (tmp->primary() != orig->a[i]->primary()) {
-#ifdef DEBUG_CONNECTIONS	    
+#ifdef DEBUG_CONNECTIONS
 	    printf ("*** need to merge: ");
 	    print_id (tmp->primary());
 	    printf (" AND ");
@@ -1228,7 +1277,6 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
   /* actually connect them! */
   _act_mk_raw_connection (c1, c2);
 
-  
   /* now merge any subtrees */
   _merge_subtrees (ux, c1, c2);
 
@@ -1241,7 +1289,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
   _fix_noncan_to_can_transition (ux, c1);
 
 #ifdef DEBUG_CONNECTIONS
-  printf ("after-connect: ");
+  printf ("\nafter-connect: ");
   dump_conn_rec (c1);
 
   if (c1 != c1->primary()) {
@@ -1251,8 +1299,9 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
   }
 
   printf ("-- remaining --\n");
-  c2 = c2->primary();
+  //c2 = c2->primary();
   dump_conn_rec (c2);
+  printf ("\n");
 #endif
 }
 

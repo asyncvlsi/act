@@ -454,6 +454,7 @@ void ActBody_Assertion::Expand (ActNamespace *ns, Scope *s)
 
     c1 = x1->Canonical (s);
     c2 = x2->Canonical (s);
+
     if (((u.t1.op == 0) && (c1 != c2)) || ((u.t1.op == 1) && (c1 == c2))) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Identifiers `");
@@ -515,7 +516,7 @@ static void print_id (act_connection *c)
       vx = c->parent->vx;
       if (vx->t->arrayInfo()) {
 	Array *tmp;
-	tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->a, c));
+	tmp = vx->t->arrayInfo()->unOffset (c->myoffset());
 	printf ("%s", vx->u.obj.name);
 	tmp->Print (stdout);
 	delete tmp;
@@ -524,7 +525,7 @@ static void print_id (act_connection *c)
 	UserDef *ux;
 	ux = dynamic_cast<UserDef *> (vx->t->BaseType());
 	Assert (ux, "what?");
-	printf ("%s.%s", vx->u.obj.name, ux->getPortName (offset (c->parent->a, c)));
+	printf ("%s.%s", vx->u.obj.name, ux->getPortName (c->myoffset()));
       }
     }
     else {
@@ -532,14 +533,14 @@ static void print_id (act_connection *c)
       Assert (vx, "What?");
       
       Array *tmp;
-      tmp = vx->t->arrayInfo()->unOffset (offset (c->parent->parent->a, c->parent));
+      tmp = vx->t->arrayInfo()->unOffset (c->myoffset());
       UserDef *ux;
       ux = dynamic_cast<UserDef *> (vx->t->BaseType());
       Assert (ux, "what?");
 
       printf ("%s", vx->u.obj.name);
       tmp->Print (stdout);
-      printf (".%s", ux->getPortName (offset (c->parent->a, c)));
+      printf (".%s", ux->getPortName (c->myoffset()));
 
       delete tmp;
     }
