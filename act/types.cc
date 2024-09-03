@@ -2341,8 +2341,12 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 	act_refine *r = (act_refine *) l->getlang();
 	if (acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps) &&
 	    r->overrides) {
+	  refine_override *rl = r->overrides;
 	  /* apply overrides! */
-	  b->updateInstType (r->overrides->ids, r->overrides->it);
+	  while (rl) {
+	    b->updateInstType (rl->ids, rl->it);
+	    rl = rl->next;
+	  }
 	}
       }
     }
