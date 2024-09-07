@@ -1,0 +1,23 @@
+function PmEq (int<2> op1, op2, mask) : int<1>
+{
+  chp {
+    self := int((op1 & mask) = (op2 & mask))
+  }
+}
+
+defproc test ()
+{
+
+  int<2> arg[3];
+  int<1> a[3];
+  int<2> c;
+
+  chp {
+    c := 0;
+    arg[0] := 0, arg[1] := 1, arg[2] := 2;
+    a[0] := c = 0 ? PmEq({int(0,2),arg[0]},{int(0,2),arg[1]},{int(0,2),arg[2]}) : PmEq(1,2,3)
+  }
+
+}
+
+test t;

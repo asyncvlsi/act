@@ -1771,6 +1771,9 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       rhs->MkArray (rhs_a);
       delete rhs;
     }
+    else {
+      lhs->clrArray();
+    }
     lhs->MkArray (lhs_a);
     delete lhs;
     }
