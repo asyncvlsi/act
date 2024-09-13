@@ -1,0 +1,28 @@
+defproc bar(bool a, b)
+{
+  prs {
+    a => b-
+  }
+}
+
+deftype myfoo <: bool (bool t, f) { }
+
+defproc test()
+{
+  bool x, y;
+  prs {
+   
+    x => y-
+  }
+
+  refine +{ myfoo x; myfoo y; }
+  {
+    bar q(x.t,y.t);
+  }
+
+  prs {
+    x => y-
+  }
+}
+
+test t;

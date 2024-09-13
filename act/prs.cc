@@ -506,7 +506,7 @@ static ActId *_process_id (ActTree *a, ActId *id)
   if (t != T_BOOL) {
     act_parse_msg (&p, "Identifier `");
     id->Print (stderr, NULL);
-    fprintf (stderr, "' is not of type bool");
+    fprintf (stderr, "' is not of type bool\n");
     exit (1);
   }
   return id;

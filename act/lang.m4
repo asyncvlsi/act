@@ -2926,6 +2926,10 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
       $E("Refinement overrides cannot be within a conditional construct!");
     }
 
+    if ($0->scope == (Scope *) stack_peek ($0->tmpscope)) {
+      $0->scope = $0->scope->localClone ();
+    }
+
     ro = new refine_override;
 
     if ($1->getDir() != Type::NONE) {
