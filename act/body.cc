@@ -1530,7 +1530,7 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
 }
 
 
-ActBody *ActBody_Conn::Clone ()
+ActBody *ActBody_Conn::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Conn *ret;
 
@@ -1542,64 +1542,102 @@ ActBody *ActBody_Conn::Clone ()
     ret = new ActBody_Conn (_line, u.general.lhs, u.general.rhs);
   }
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Inst::Clone ()
+InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
+			      InstType *orig)
 {
-  ActBody_Inst *ret = new ActBody_Inst(_line, t,id);
+  if (!replace) {
+    return orig;
+  }
+  if (TypeFactory::isUserType (orig)) {
+    UserDef *u = dynamic_cast<UserDef *> (orig->BaseType());
+    Assert (u, "what?");
+  
+    list_t *l = replace->findNSPath (u);
+    if (l) {
+      listitem_t *li;
+      ActNamespace *tns = newns;
+      for (li = list_first (l); li; li = list_next (li)) {
+	tns = tns->findNS ((char *) list_value (li));
+	Assert (tns, "Cloning failed, ns not found!");
+      }
+      UserDef *ux = tns->findType (orig->BaseType()->getName());
+      Assert (ux, "Cloning failed, type not found.");
+      
+      list_free (l);
+
+      InstType *ret = new InstType (orig);
+      ret->refineBaseType (ux);
+      ret->MkCached ();
+      return ret;
+    }
+    return orig;
+  }
+  return orig;
+}
+
+ActBody *ActBody_Inst::Clone (ActNamespace *replace, ActNamespace *newns)
+{
+  InstType *nit;
+
+  nit = _act_clone_replace (replace, newns, t);
+  
+  ActBody_Inst *ret = new ActBody_Inst(_line, nit, id);
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Lang::Clone ()
+ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Lang *ret;
 
+  // XXX: within a language, we need to fix expressions and function calls
   ret = new ActBody_Lang (_line, t, lang);
 
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Loop::Clone ()
+ActBody *ActBody_Loop::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Loop *ret;
 
-  ret = new ActBody_Loop (_line, id, lo, hi, b->Clone());
+  ret = new ActBody_Loop (_line, id, lo, hi, b->Clone(replace, newns));
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
 
-ActBody *ActBody_Select::Clone ()
+ActBody *ActBody_Select::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Select *ret;
 
-  ret = new ActBody_Select (_line, gc->Clone());
+  ret = new ActBody_Select (_line, gc->Clone(replace, newns));
 
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Genloop::Clone ()
+ActBody *ActBody_Genloop::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Genloop *ret;
 
-  ret = new ActBody_Genloop (_line, gc->Clone());
+  ret = new ActBody_Genloop (_line, gc->Clone(replace, newns));
 
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
@@ -1626,7 +1664,7 @@ act_attr *_clone_attrib (act_attr *a)
 }
 
 
-ActBody *ActBody_Attribute::Clone()
+ActBody *ActBody_Attribute::Clone(ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Attribute *ret;
   Array *narr;
@@ -1638,27 +1676,42 @@ ActBody *ActBody_Attribute::Clone()
   }
   ret = new ActBody_Attribute (_line, inst, _clone_attrib (a), narr);
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Namespace::Clone()
+ActBody *ActBody_Namespace::Clone(ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Namespace *ret;
+  list_t *l;
 
-  ret = new ActBody_Namespace (ns);
+  l = replace->findNSPath (ns);
+  if (l) {
+    listitem_t *li;
+    ActNamespace *tmp = newns;
+    for (li = list_first (l); li; li = list_next (li)) {
+      tmp = tmp->findNS ((char *) list_value (li));
+      Assert (tmp, "Cloning failed");
+    }
+    list_free (l);
+    ret = new ActBody_Namespace (tmp);
+  }
+  else {
+    ret = new ActBody_Namespace (ns);
+  }
 
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
 
-ActBody *ActBody_Assertion::Clone()
+ActBody *ActBody_Assertion::Clone(ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Assertion *ret;
 
+  // XXX: expressions
   if (type == 0) {
     Expr *tmp = expr_predup (u.t0.e);
     ret = new ActBody_Assertion (_line, tmp, u.t0.msg);
@@ -1670,7 +1723,7 @@ ActBody *ActBody_Assertion::Clone()
     Assert (0, "Should not be here");
   }
   if (Next()) {
-    ret->Append (Next()->Clone());
+    ret->Append (Next()->Clone(replace, newns));
   }
   return ret;
 }
@@ -1712,9 +1765,14 @@ void ActBody_Print::Expand (ActNamespace *ns, Scope *s)
   Act::generic_msg ("\n");
 }
 
-ActBody *ActBody_Print::Clone()
+ActBody *ActBody_Print::Clone(ActNamespace *replace, ActNamespace *newns)
 {
-  return new ActBody_Print(_line, l);
+  ActBody_Print *ret = new ActBody_Print(_line, l);
+
+  if (Next()) {
+    ret->Append (Next()->Clone(replace, newns));
+  }
+  return ret;
 }
 
 
@@ -1770,20 +1828,30 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
 }
 
 
-ActBody_Select_gc *ActBody_Select_gc::Clone ()
+ActBody_Select_gc *ActBody_Select_gc::Clone (ActNamespace *replace, ActNamespace *newns)
 {
+  // expression!
+  
   ActBody_Select_gc *ret =
-    new ActBody_Select_gc (id, lo, hi, g, s->Clone());
+    new ActBody_Select_gc (id, lo, hi, g, s->Clone(replace, newns));
   if (next) {
-    ret->next = next->Clone();
+    ret->next = next->Clone(replace, newns);
   }
   return ret;
 }
 
-ActBody_OverrideAssertion *ActBody_OverrideAssertion::Clone()
+ActBody *ActBody_OverrideAssertion::Clone(ActNamespace *replace, ActNamespace *newns)
 {
+  InstType *x1, *x2;
+  x1 = _act_clone_replace (replace, newns, _orig_type);
+  x2 = _act_clone_replace (replace, newns, _new_type);
+  
   ActBody_OverrideAssertion *ret =
-    new ActBody_OverrideAssertion (_line, _name_check, _orig_type, _new_type);
+    new ActBody_OverrideAssertion (_line, _name_check, x1, x2);
+
+  if (Next()) {
+    ret->Append (Next()->Clone(replace, newns));
+  }
   return ret;
 }
 
@@ -1834,4 +1902,11 @@ void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
     fatal_error ("Illegal override; the new type doesn't implement the original.");
   }
   _orig_type->MkArray (tmpa);
+}
+
+
+ActBody *ActBody::Clone(ActNamespace */*replace*/,
+			ActNamespace */*newns*/)
+{
+  return NULL;
 }

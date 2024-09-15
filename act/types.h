@@ -322,6 +322,26 @@ class UserDef : public Type {
   virtual ~UserDef (); ///< destructor, releases storage
 
   /**
+   * This clones the user-defined type into the namespace "cur". The
+   * root of the clone operation is the "root" namespace.
+   *
+   * @param root is the root namespace being cloned
+   * @param cur is the namespace into which this type is being cloned
+   * @return the cloned user-defined type
+   */
+  virtual UserDef *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root, ActNamespace *newroot, UserDef *orig);
+
+  /**
+   * Given an original user-defined type, clone its fields into the
+   * current (blank) user-defined type.
+   * @param orig is the user-defined type being clonsed
+   */
+  void Clone (UserDef *orig);
+  void sharedUpdateClonedTypes (ActNamespace *root, ActNamespace  *newroot,
+				UserDef *orig);
+
+  /**
    * Get file name where this was defined
    * @return the file name
    */
@@ -801,8 +821,13 @@ class UserDef : public Type {
 class Interface : public UserDef {
  public:
   Interface (UserDef *u);
+  Interface (ActNamespace *ns);
   ~Interface ();
 
+  virtual Interface *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root,
+				  ActNamespace *newroot, UserDef *orig);
+  
   Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 };
 
@@ -821,8 +846,13 @@ class Process : public UserDef {
    * @param u is the UserDef
    */
   Process (UserDef *u);
+  Process (ActNamespace *ns);
   virtual ~Process ();
 
+  virtual Process *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root,
+				  ActNamespace *newroot, UserDef *orig);
+  
   /**
    * This process is actually a defcell
    */
@@ -976,8 +1006,15 @@ class Process : public UserDef {
 class Function : public UserDef {
  public:
   Function (UserDef *u);
+  Function (ActNamespace *ns);
   ~Function ();
 
+
+  virtual Function *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root,
+				  ActNamespace *newroot, UserDef *orig);
+  
+  
   /**
    * Set the return type for the function
    * @param i is the return type
@@ -1138,7 +1175,13 @@ enum datatype_methods {
 class Data : public UserDef {
  public:
   Data (UserDef *u);
+  Data (ActNamespace *ns);
   virtual ~Data();
+
+  virtual Data *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root,
+				  ActNamespace *newroot, UserDef *orig);
+  
 
   int isEqual (const Type *t) const; ///< equality test
 
@@ -1313,8 +1356,14 @@ private:
 class Channel : public UserDef {
  public:
   Channel (UserDef *u);
+  Channel (ActNamespace *ns);
   virtual ~Channel();
 
+  virtual Channel *Clone (ActNamespace *root, ActNamespace *cur);
+  virtual void updateClonedTypes (ActNamespace *root,
+				  ActNamespace *newroot, UserDef *orig);
+  
+  
   /**
    * Similar to Data::setMethod()
    */
@@ -1554,6 +1603,12 @@ public:
    * Populate CHP for buil-in macros
    */
   void populateCHP();
+
+  /**
+   * Clone user macro (only if not expanded)
+   * @return new clone
+   */
+  UserMacro *Clone (UserDef *parent);
 
 private:
   const char *_nm;	     ///< name of the macro

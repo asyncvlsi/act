@@ -726,3 +726,25 @@ void UserMacro::populateCHP()
   printf ("\n");
 #endif  
 }
+
+
+UserMacro *UserMacro::Clone (UserDef *u)
+{
+  Assert (_exf == NULL, "What?");
+  
+  UserMacro *ret = new UserMacro (u, _nm);
+  ret->rettype = rettype;
+  ret->nports = nports;
+  if (nports > 0) {
+    MALLOC (ret->port_t, InstType *, nports);
+    MALLOC (ret->port_n, const char *, nports);
+    for (int i=0; i < nports; i++) {
+      ret->port_t[i] = port_t[i];
+      ret->port_n[i] = string_cache (port_n[i]);
+    }
+  }
+  ret->c = c; // do we need to dup this?!
+  ret->_b = _b->Clone ();
+  ret->_builtinmacro = _builtinmacro;
+  return ret;
+}

@@ -372,7 +372,7 @@ class InstType {
    * @return the interface type
    */
   InstType *getIfaceType() { return iface_type; }
-  
+
  private:
 
 

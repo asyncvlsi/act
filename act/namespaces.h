@@ -726,6 +726,35 @@ class ActNamespace {
    */
   list_t *getChanList();
 
+
+  /**
+   * Create a clone of the namespace and any associated
+   * sub-namespaces. Pointers to namespaces within the hierarchy are
+   * also updated to the clone, whereas those to other namespaces
+   * remain unchanged. This clone operation only works prior to
+   * expansion. The clone operation also cannot be applied to the
+   * global namespace.
+   *
+   * @param parent is the parent namespace into which this is to be
+   * cloned. This is a copy of the namespace
+   * @param name is the namespace name to be used for the clone.
+   * @param root is the root of the namespace tree being cloned.
+   *
+   */
+  void Clone (ActNamespace *root,
+	      ActNamespace *parent, const char *name);
+
+
+  /**
+   * Check if a particular user-defined type exists in a scope. If it
+   * does, then return the list of namespace names that can be used to
+   * access it.
+   * @return NULL if it doesn't exist in the namespace, or a list of
+   * namespace names used to access it otherwise.
+   */
+  list_t *findNSPath (ActNamespace *ns);
+  list_t *findNSPath (UserDef *u);
+
  private:
   
   act_languages *lang; ///< the sub-languages in the namespace
@@ -806,6 +835,18 @@ class ActNamespace {
   /* second phase */
   void _subst_globals_addconn (list_t *subst, listitem_t *start,
 			       InstType *it, const char *s);
+
+  /**
+   * After a namespace has been cloned, we need to replace all types
+   * that were within the original namespace with a type that is
+   * within the cloned namespace.
+   *
+   * @param root is the root of the original cloned namespace
+   * @param newroot is the new root of the cloned namespace
+   * @param newns is the new namespace where we need to apply the update
+   */
+  void _updateClonedTypes (ActNamespace *root, ActNamespace *newroot,
+			   ActNamespace *newns);
 
   friend class Act;
   friend class ActNamespaceiter;

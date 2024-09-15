@@ -210,6 +210,65 @@ open_item: "open" qualified_ns "->" ID  ";"
     }
     return NULL;
 }}
+| "open" qualified_ns "=>" ID [ ID qualified_ns ] ";"
+{{X:
+    ActNamespace *tgt;
+    if ($2 == ActNamespace::Global()) {
+      $E("Cannot clone the global namespace!");
+    }
+    
+    if (OPT_EMPTY ($5)) {
+      tgt = ActNamespace::Global ();
+    }
+    else {
+      ActRet *r1, *r2;
+      r1 = OPT_VALUE ($5);
+      r2 = OPT_VALUE2 ($5);
+      $A(r1 && r1->type == R_STRING);
+      $A(r2 && r2->type == R_NAMESPACE);
+
+      if (strcmp (r1->u.str, "into") != 0) {
+	$E("Namespace clone directive must use ``into'' keyword.");
+      }
+
+      // check parent/child relation
+      ActNamespace *tmp;
+      tmp = r2->u.ns;
+      while (tmp) {
+	if (tmp == $2) {
+	  $e("Clone operation must be between unrelated namespaces.\n");
+	  fprintf ($f, "   Requested namespaces: %s v/s %s\n",
+		   $2->Name(), r2->u.ns->Name());
+	  exit (1);
+	}
+	tmp = tmp->Parent ();
+      }
+      tmp = $2;
+      while (tmp) {
+	if (tmp == r2->u.ns) {
+	  $e("Clone operation must be between unrelated namespaces.\n");
+	  fprintf ($f, "   Requested namespaces: %s v/s %s\n",
+		   $2->Name(), r2->u.ns->Name());
+	  exit (1);
+	}
+	tmp = tmp->Parent ();
+      }
+
+      tgt = r2->u.ns;
+      
+      FREE (r1);
+      FREE (r2);
+    }
+    OPT_FREE ($5);
+
+    // clone $2 into tgt
+    if (tgt->findNS ($4)) {
+      $E("Namespace name ``%s'' already exists in ``%s''",
+	 $4, tgt->Name());
+    }
+    $2->Clone (tgt, tgt, $4);
+    return NULL;
+}}
 | "open" qualified_ns ";"
 {{X:
     /* Add the namespace to the search path, along with access

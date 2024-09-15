@@ -701,6 +701,21 @@ public:
     dflow = NULL;
     ext = NULL;
   }
+
+  act_languages *Clone() {
+    act_languages *ret = new act_languages;
+    ret->prs = prs;
+    ret->chp = chp;
+    ret->hse = hse;
+    ret->spec = spec;
+    ret->refine = refine;
+    ret->sizing = sizing;
+    ret->init = init;
+    ret->dflow = dflow;
+    ret->ext = ext;
+    return ret;
+  }
+  
   void Print (FILE *fp) {
     if (chp) { chp_print (fp, chp); }
     if (hse) { hse_print (fp, hse); }
@@ -788,6 +803,17 @@ public:
   int hasNetlistLang () {
     if (prs) return 1;
     return 0;
+  }
+
+  /**
+   * Used to check if any language bodies are specified
+   * @return true if there is some language body specified, false
+   * otherwise
+   */
+  bool isEmpty() {
+    if (chp || hse || prs || spec || refine || sizing || init || dflow || ext)
+      return false;
+    return true;
   }
   
  private:

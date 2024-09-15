@@ -45,7 +45,8 @@ enum act_ret_type_type {
   R_CHP_FUNC,
   R_INST_TYPE,
   R_ACT_BODY,
-  R_OVERRIDES
+  R_OVERRIDES,
+  R_NAMESPACE
 };
 
 /**
@@ -76,6 +77,7 @@ typedef struct {
     InstType *inst;
     ActBody *body;
     refine_override *ro;
+    ActNamespace *ns;
   } u;
 } ActRet;
 

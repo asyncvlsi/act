@@ -348,6 +348,10 @@ UserDef::~UserDef()
     }
     FREE (pt);
   }
+  if (pdefault) {
+    // XXX: what about pdefault[i]?
+    FREE (pdefault);
+  }
   if (pn) {
     FREE (pn);
   }
@@ -437,6 +441,82 @@ void UserDef::MkCopy (UserDef *u)
   }
 }
 
+
+void UserDef::Clone (UserDef *u)
+{
+  parent = u->parent;
+  defined  = u->defined;
+  expanded = u->expanded;
+  pending = u->pending;
+
+  lang = u->lang->Clone();
+
+  nt = u->nt;
+  pt = u->pt;
+  pn = u->pn;
+
+  if (nt > 0) {
+    MALLOC (pdefault, AExpr *, nt);
+    for (int i=0; i < nt; i++) {
+      pdefault[i] = u->pdefault[i];
+    }
+  }
+  else {
+    pdefault = NULL;
+  }
+
+  exported = u->exported;
+
+  nports = u->nports;
+  if (nports > 0) {
+    MALLOC (port_t, InstType *, nports);
+    MALLOC (port_n, const char *, nports);
+    for (int i=0; i < nports; i++) {
+      port_t[i] = u->port_t[i];
+      port_n[i] = string_cache (u->port_n[i]);
+    }
+  }
+  else {
+    port_t = NULL;
+    port_n = NULL;
+  }
+  
+  I->setUserDef (this);
+  name = string_cache (u->name);
+
+  //b = u->b->Clone();
+  b = NULL;
+
+  unexpanded = u->unexpanded;
+  level = u->level;
+
+  file = string_cache (u->file);
+  lineno = u->lineno;
+  has_refinement = list_dup (u->has_refinement);
+
+  inherited_templ = u->inherited_templ;
+
+  if (inherited_templ > 0) {
+    MALLOC (inherited_param, inst_param *, inherited_templ);
+    for (int i=0; i < inherited_templ; i++) {
+      inherited_param[i] = u->inherited_param[i];
+    }
+  }
+  else {
+    inherited_param = NULL;
+  }
+
+  if (A_LEN (um) > 0) {
+    A_NEWP (um, UserMacro *, A_LEN (u->um));
+  }
+  else {
+    A_INIT (um);
+  }
+
+  for (int i=0; i < A_LEN (u->um); i++) {
+    um[i] = u->um[i]->Clone (this);
+  }
+}
 
 Function::Function (UserDef *u) : UserDef (u)
 {
@@ -2352,4 +2432,173 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
     }
     srch = srch->Next();
   }
+}
+
+Interface::Interface(ActNamespace *ns) : UserDef (ns)
+{
+
+}
+
+
+Interface *Interface::Clone (ActNamespace *root, ActNamespace *cur)
+{
+  Interface *x = new Interface (cur);
+  x->UserDef::Clone (this);
+  return x;
+}
+
+Process::Process (ActNamespace *ns) : UserDef (ns)
+{
+  is_cell = 0;
+  ifaces = NULL;
+  used_globals = NULL;
+  bufcnt = 0;
+}
+
+Process *Process::Clone (ActNamespace *root, ActNamespace *cur)
+{
+  Process *p = new Process (cur);
+  p->UserDef::Clone (this);
+  p->is_cell = is_cell;
+  p->bufcnt = bufcnt;
+
+  // XXX: fix this
+  p->ifaces = list_dup (ifaces);
+  p->used_globals = list_dup (used_globals);
+  
+  return p;
+}
+
+Function::Function (ActNamespace *ns) : UserDef (ns)
+{
+  ret_type = NULL;
+  is_simple_inline = 1;
+}
+
+Function *Function::Clone (ActNamespace *root, ActNamespace *cur)
+{
+  Function *f = new Function (cur);
+  
+  f->ret_type = ret_type;
+  f->is_simple_inline = is_simple_inline;
+  return f;
+}
+
+Channel::Channel (ActNamespace *ns) : UserDef (ns)
+{
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+    methods[i] = NULL;
+  }
+  for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
+    emethods[i] = NULL;
+  }
+}
+
+Channel *Channel::Clone (ActNamespace *root, ActNamespace *cur)
+{
+  Channel *c = new Channel (cur);
+  c->copyMethods (this);
+  return c;
+}
+
+Data::Data (ActNamespace *ns) : UserDef (ns)
+{
+  is_enum = 0;
+  is_eint = 0;
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+    methods[i] = NULL;
+  }
+  enum_vals = NULL;
+}
+
+Data *Data::Clone (ActNamespace *root, ActNamespace *cur)
+{
+  Data *d = new Data (cur);
+  d->is_enum = is_enum;
+  d->is_eint = is_eint;
+  d->copyMethods (this);
+  d->enum_vals = list_dup (enum_vals);
+  return d;
+}
+
+InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
+			      InstType *orig);
+
+
+void UserDef::sharedUpdateClonedTypes (ActNamespace *root,
+				       ActNamespace *newroot,
+				       UserDef *orig)
+{
+  for (int i=0; i < nports; i++) {
+    port_t[i] = _act_clone_replace (root, newroot, port_t[i]);
+  }
+  if (orig->b) {
+    b = orig->b->Clone (root, newroot);
+  }
+  if (parent) {
+    parent = _act_clone_replace (root, newroot, parent);
+  }
+
+  // XXX: default parameter pdefault fixes
+  // XXX: language clone fixes (lang)
+  // XXX: fix expressions in inherited templ
+  // XXX: fix macros
+}
+
+void Interface::updateClonedTypes (ActNamespace *root,
+				   ActNamespace *newroot,
+				   UserDef *u)
+{
+  UserDef::sharedUpdateClonedTypes  (root, newroot, u);
+}
+
+
+void Process::updateClonedTypes  (ActNamespace *root,
+				   ActNamespace *newroot,
+				   UserDef *u)
+{
+  UserDef::sharedUpdateClonedTypes  (root, newroot, u);
+  // ifaces
+  // globals
+}
+
+
+void Function::updateClonedTypes  (ActNamespace *root,
+				   ActNamespace *newroot,
+				   UserDef *u)
+{
+  UserDef::sharedUpdateClonedTypes  (root, newroot, u);
+  if (ret_type) {
+    ret_type = _act_clone_replace (root, newroot, ret_type);
+  }
+}
+
+void Channel::updateClonedTypes (ActNamespace *root,
+				 ActNamespace *newroot,
+				 UserDef *u)
+{
+  UserDef::sharedUpdateClonedTypes  (root, newroot, u);
+  // methods
+}
+
+void Data::updateClonedTypes  (ActNamespace *root,
+			       ActNamespace *newroot,
+			       UserDef *u)
+{
+  UserDef::sharedUpdateClonedTypes  (root, newroot, u);
+  // methods
+}
+
+
+UserDef *UserDef::Clone (ActNamespace */*root*/, ActNamespace */*cur*/)
+{
+  Assert (0, "This should not be called!");
+  return NULL;
+}
+
+void UserDef::updateClonedTypes (ActNamespace */*root*/,
+				 ActNamespace */*newroot*/,
+				 UserDef */*orig*/)
+{
+  Assert (0, "This should not be called!");
 }

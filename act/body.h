@@ -81,9 +81,18 @@ class ActBody {
   ActBody *Next () { return next; }
 
   /**
+   * In cases when we are cloning a
+   * body into a new namespace hierarchy, the "replace" pointer is
+   * used to to detect if a type in the body is from the namespace
+   * being replaced; if so it is updated to the version from the new
+   * namespace.
+   *
+   * @param replace is the namespace being replaced
+   * @param newns is the root of the new namespace
    * @return a deep copy of the body item list
    */
-  virtual ActBody *Clone() { return NULL; }
+  virtual ActBody *Clone(ActNamespace *replace = NULL,
+			 ActNamespace *newns = NULL);
 
   /**
    * Expand out the current body item, updating the necessary data structures
@@ -173,9 +182,9 @@ class ActBody_Inst : public ActBody {
   void updateInstType (InstType *u);
 
   /**
-   * Make a deep copy of this instance
+   * Make a deep copy of this instance. 
    */
-  ActBody *Clone ();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
 
  private:
   InstType *t;   ///< the type
@@ -216,7 +225,7 @@ public:
   /**
    * @return a deep copy of this body item
    */
-  ActBody *Clone ();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
 
 private:
   const char *inst;
@@ -261,7 +270,8 @@ class ActBody_Conn : public ActBody {
   void Print (FILE *fp);
   void Expand (ActNamespace *, Scope *);
 
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  
   
  private:
   union {
@@ -308,7 +318,7 @@ class ActBody_Loop : public ActBody {
 
   void Print (FILE *fp);
 
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
 
   /**
    * @return the loop body
@@ -393,7 +403,9 @@ class ActBody_Select_gc {
   /**
    * @return a deep copy
    */
-  ActBody_Select_gc *Clone ();
+  ActBody_Select_gc *Clone (ActNamespace *replace = NULL,
+			    ActNamespace *newns = NULL);
+
 
 private:
   const char *id;		/**< loop index */
@@ -429,7 +441,7 @@ class ActBody_Select : public ActBody {
 
   void Expand (ActNamespace *, Scope *);
 
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
 
   /**
    * @return the list of guarded commands
@@ -456,7 +468,8 @@ public:
     gc = _gc;
   }
   void Expand (ActNamespace *, Scope *);
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
 
   ActBody_Select_gc *getGC() { return gc; }
 
@@ -511,7 +524,8 @@ public:
     }
   }
   void Expand (ActNamespace *, Scope *);
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
 private:
   union {
     struct {
@@ -557,7 +571,8 @@ public:
   ~ActBody_OverrideAssertion () { }
 
   void Expand (ActNamespace *, Scope *);
-  ActBody_OverrideAssertion *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  
 private:
   InstType *_orig_type, *_new_type;
   const char *_name_check;
@@ -583,7 +598,8 @@ public:
     list_free (l);
   }
   void Expand (ActNamespace *, Scope *);
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
 private:
   list_t *l;
 };
@@ -606,7 +622,8 @@ public:
   }
 
   void Expand (ActNamespace *, Scope *);
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
   ActNamespace *getNS () { return ns; }
   
 private:
@@ -695,7 +712,8 @@ class ActBody_Lang : public ActBody {
   
   void Expand (ActNamespace *, Scope *);
   void Print (FILE *fp);
-  ActBody *Clone();
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
 
   void *getlang() { return lang; }
   enum langtype gettype() { return t; }

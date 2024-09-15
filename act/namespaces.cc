@@ -955,3 +955,116 @@ void ActNamespace::_subst_globals_addconn (list_t *defs, listitem_t *start,
     }
   }
 }
+
+
+
+/*
+ * Clone namespace
+ */
+void ActNamespace::Clone (ActNamespace *root,
+			  ActNamespace *parent, const char *name)
+
+{
+  Assert (I, "What?");
+  if (I->isExpanded()) return;
+  if (ActNamespace::Global() == this) return;
+
+  Assert (lang->isEmpty(), "Non-global namespace has languages?");
+
+  ActNamespace *ns = new ActNamespace (parent, name);
+  if (isExported()) {
+    ns->MkExported ();
+  }
+
+  // now copy everything over!
+  hash_iter_t it;
+  hash_bucket_t *b;
+
+  hash_iter_init (N, &it);
+  while ((b = hash_iter_next (N, &it))) {
+    ActNamespace *sub = (ActNamespace *) b->v;
+    
+    /* this clones the sub-namespace as well as adds it to the
+       namespace table for ns */
+    sub->Clone (root, ns, b->key);
+  }
+
+  // now clone user-defined types
+  // within each 
+  hash_iter_init (T, &it);
+  while ((b = hash_iter_next (T, &it))) {
+    UserDef *u = (UserDef *) b->v;
+    b = hash_add (ns->T, b->key);
+    b->v = u->Clone (root, ns);
+  }
+
+
+  //Assert (0, "FIXME!");
+  // need to update all type pointers and namespace pointers for
+  // actids.
+
+  if (root == parent) {
+    // this is the top-level cloning requirement
+    _updateClonedTypes (this, ns, ns);
+  }
+}
+
+
+void ActNamespace::_updateClonedTypes (ActNamespace *root,
+				       ActNamespace *newroot,
+				       ActNamespace *newns)
+{
+  hash_iter_t it;
+  hash_bucket_t *b, *bnew;
+
+  // update the body type info, and re-construct scopes!
+  if (B) {
+    newns->B = B->Clone (root, newroot);
+  }
+
+  hash_iter_init (N, &it);
+  while ((b = hash_iter_next (N, &it))) {
+    ActNamespace *sub = (ActNamespace *) b->v;
+    bnew = hash_lookup (newns->N, b->key);
+    Assert (bnew, "err what?");
+    
+    /* updates the cloned types in sub-namespaces */
+    sub->_updateClonedTypes (root, newroot, (ActNamespace *) bnew->v);
+  }
+
+  /* walk through all types and update */
+  hash_iter_init (T, &it);
+  while ((b = hash_iter_next (T, &it))) {
+    bnew = hash_lookup (newns->T, b->key);
+    Assert (bnew, "What?");
+    UserDef *u = (UserDef *) bnew->v;
+    u->updateClonedTypes (root, newroot, (UserDef *) b->v);
+  }
+}
+
+list_t *ActNamespace::findNSPath (ActNamespace *ns)
+{
+  list_t *ret = list_new ();
+  ActNamespace *tmp = ns;
+  if (!tmp) {
+    list_free (ret);
+    return NULL;
+  }
+
+  while (tmp) {
+    if (tmp == this) {
+      return ret;
+    }
+    if (tmp != ActNamespace::Global()) {
+      stack_push (ret, tmp->getName());
+    }
+    tmp = tmp->Parent ();
+  }
+  list_free (ret);
+  return NULL;
+}
+
+list_t *ActNamespace::findNSPath (UserDef *u)
+{
+  return findNSPath (u->getns());
+}

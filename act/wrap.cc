@@ -62,7 +62,6 @@ const char *act_dev_value_to_string (int f)
 NULL_WRAP(double,double)
 //NULL_WRAP(int,int)
 NULL_WRAP(extern, void *)
-NULL_WRAP(ActNamespace_p, ActNamespace *)
 NULL_WRAP(Type_p, Type *)
 NULL_WRAP(UserDef_p, UserDef *)
 NULL_WRAP(ActBody_Select_p, ActBody_Select *)
@@ -93,6 +92,7 @@ NULL_WRAP(void_p, void *);
   return r;					\
   }
 
+GENERIC_WRAP(ActNamespace_p, ActNamespace *, ns, R_NAMESPACE)
 GENERIC_WRAP(int,int,ival,R_INT)
 GENERIC_WRAP(string,const char *,str,R_STRING)
 GENERIC_WRAP(list,list_t *,l,R_LIST)
