@@ -178,7 +178,7 @@ Array::~Array ()
  *
  *------------------------------------------------------------------------
  */
-Array *Array::Clone ()
+Array *Array::Clone (ActNamespace *orig, ActNamespace *newns)
 {
   Array *ret;
 
@@ -187,7 +187,7 @@ Array *Array::Clone ()
   ret->deref = deref;
   ret->expanded = expanded;
   if (next) {
-    ret->next = next->Clone ();
+    ret->next = next->Clone (orig, newns);
   }
   else {
     ret->next = NULL;
@@ -197,10 +197,42 @@ Array *Array::Clone ()
   if (dims > 0) {
     MALLOC (ret->r, struct range, dims);
     for (int i= 0; i < dims; i++) {
-      ret->r[i] = r[i];
+      if (orig && !expanded) {
+	ret->r[i].u.ue.lo = expr_predup (r[i].u.ue.lo);
+	ret->r[i].u.ue.lo = expr_update (ret->r[i].u.ue.lo, orig, newns);
+	ret->r[i].u.ue.hi = expr_predup (r[i].u.ue.hi);
+	ret->r[i].u.ue.hi = expr_update (ret->r[i].u.ue.hi, orig, newns);
+      }
+      else {
+	ret->r[i] = r[i];
+      }
     }
   }
   return ret;
+}
+
+/*------------------------------------------------------------------------
+ *
+ *  Array::Clone --
+ *
+ *   Deep copy of array
+ *
+ *------------------------------------------------------------------------
+ */
+void Array::moveNS (ActNamespace *orig, ActNamespace *newns)
+{
+  if (!orig) return;
+  if (expanded) return;
+
+  if (next) {
+    next->moveNS (orig, newns);
+  }
+  if (dims > 0) {
+    for (int i= 0; i < dims; i++) {
+      r[i].u.ue.lo = expr_update (r[i].u.ue.lo, orig, newns);
+      r[i].u.ue.hi = expr_update (r[i].u.ue.hi, orig, newns);
+    }
+  }
 }
 
 

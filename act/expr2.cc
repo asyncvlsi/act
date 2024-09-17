@@ -215,7 +215,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     _print_expr (buf+k, sz, e->u.e.r->u.e.l, 1, -1);
     PRINT_STEP;
     if (e->u.e.r->u.e.r->u.e.l) {
-      snprintf (buf+k, sz, "..");
+      snprintf (buf+k, sz, ".u.");
       PRINT_STEP;
       _print_expr (buf+k, sz, e->u.e.r->u.e.r->u.e.l, 1, -1);
       PRINT_STEP;
@@ -2662,8 +2662,8 @@ static Expr *_expr_expand (int *width, Expr *e,
       ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone();
       NEW (ret->u.e.r, Expr);
       ret->u.e.r->type = E_BITFIELD;
-      ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
-      ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
+      ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
+      ret->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags);
       *width = -1;
     }
     else {
@@ -3419,7 +3419,7 @@ AExpr *AExpr::Expand (ActNamespace *ns, Scope *s, int is_lval)
  * Returns a deep copy
  *------------------------------------------------------------------------
  */
-AExpr *AExpr::Clone()
+AExpr *AExpr::Clone(ActNamespace *orig, ActNamespace *newns)
 {
   AExpr *newl, *newr;
 
@@ -3427,14 +3427,14 @@ AExpr *AExpr::Clone()
   newr = NULL;
   if (l) {
     if (t != AExpr::EXPR) {
-      newl = l->Clone ();
+      newl = l->Clone (orig, newns);
     }
     else {
-      newl = (AExpr *)expr_dup ((Expr *)l);
+      newl = (AExpr *) expr_update (expr_predup ((Expr *)l), orig, newns);
     }
   }
   if (r) {
-    newr = r->Clone ();
+    newr = r->Clone (orig, newns);
   }
   return new AExpr (t, newl, newr);
 }
@@ -4266,5 +4266,184 @@ Expr *act_expr_var (ActId *id)
   e->type = E_VAR;
   e->u.e.l = (Expr *) id;
   e->u.e.r = NULL;
+  return e;
+}
+
+Function *_act_fn_replace (ActNamespace *orig, ActNamespace *newns, Function *f);
+UserDef *_act_userdef_replace (ActNamespace *orig, ActNamespace *newns,
+			       UserDef *u);
+
+
+Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
+{
+  Expr *ret, *te;
+  ActId *xid;
+  Expr *tmp;
+  int pc;
+  int lw, rw;
+  
+  if (!e) return NULL;
+  if (!orig) return e;
+
+#define EXP_UPDATE(x)  if (x) { x = expr_update (x, orig, newns); }
+
+  switch (e->type) {
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    EXP_UPDATE (e->u.e.r->u.e.l); // hi
+    EXP_UPDATE (e->u.e.r->u.e.r->u.e.l); // lo
+    EXP_UPDATE (e->u.e.r->u.e.r->u.e.r); // expr
+    break;
+    
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    EXP_UPDATE (e->u.e.l);
+    EXP_UPDATE (e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    EXP_UPDATE (e->u.e.l);
+    break;
+    
+  case E_QUERY:
+    EXP_UPDATE (e->u.e.l);
+    EXP_UPDATE (e->u.e.r->u.e.l);
+    EXP_UPDATE (e->u.e.r->u.e.r);
+
+  case E_COLON:
+    EXP_UPDATE (e->u.e.l);
+    EXP_UPDATE (e->u.e.r);
+    break;
+
+  case E_BITFIELD:
+    ((ActId *)e->u.e.l)->moveNS (orig, newns);
+    EXP_UPDATE (e->u.e.r->u.e.l);
+    EXP_UPDATE (e->u.e.r->u.e.r);
+    break;
+
+  case E_PROBE:
+    ((ActId *)e->u.e.l)->moveNS (orig, newns);
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    EXP_UPDATE (e->u.e.l);
+    EXP_UPDATE (e->u.e.r);
+    break;
+  
+  case E_FUNCTION:
+    {
+      Expr *tmp;
+      e->u.fn.s = (char *) _act_fn_replace (orig, newns, (Function *)e->u.fn.s);
+      tmp = e->u.fn.r;
+      if (tmp && tmp->type == E_GT) {
+	tmp = tmp->u.e.l;
+	while (tmp) {
+	  EXP_UPDATE (tmp->u.e.l);
+	  tmp = tmp->u.e.r;
+	}
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
+      while (tmp) {
+	EXP_UPDATE (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_USERMACRO:
+    {
+      UserMacro *um = (UserMacro *)e->u.fn.s;
+      UserDef *u = um->Parent ();
+      u = _act_userdef_replace (orig, newns, u);
+      if (u != um->Parent ()) {
+	e->u.fn.s = (char *) u->getMacro (um->getName());
+	if (um->isBuiltinMacro()) {
+	  Assert (0, "FIXME builtinmacros-update");
+	}
+	else {
+	  Expr *tmp;
+	  ((ActId *)e->u.fn.r->u.e.l)->moveNS (orig, newns);
+	  tmp = e->u.fn.r;
+	  if (tmp && tmp->type == E_GT) {
+	    tmp = tmp->u.e.l;
+	    while (tmp) {
+	      EXP_UPDATE (tmp->u.e.l);
+	      tmp = tmp->u.e.r;
+	    }
+	    tmp = e->u.fn.r->u.e.r;
+	  }
+	  while (tmp) {
+	    EXP_UPDATE (tmp->u.e.l);
+	    tmp = tmp->u.e.r;
+	  }
+	}
+      }
+    }
+    break;
+      
+  case E_VAR:
+    ((ActId *)e->u.e.l)->moveNS (orig, newns);
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *tmp = e;
+      while (tmp) {
+	EXP_UPDATE (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_ENUM_CONST:
+    {
+      Data *d = (Data *) e->u.fn.s;
+      UserDef *ux = _act_userdef_replace (orig, newns, d);
+      Data *dx = dynamic_cast<Data *> (ux);
+      Assert (dx, "What!");
+      if (dx != d) {
+	e->u.fn.s = (char *) dx;
+      }
+    }
+    break;
+    
+  default:
+    fatal_error ("Unknown expression type (%d)!", e->type);
+    break;
+  }
   return e;
 }

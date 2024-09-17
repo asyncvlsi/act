@@ -146,7 +146,9 @@ class ActId {
    *
    * @return a freshly allocated ActID
    */
-  ActId *Clone ();
+  ActId *Clone (ActNamespace *orig = NULL, ActNamespace *newns = NULL);
+  
+  void moveNS (ActNamespace *orig = NULL, ActNamespace *newns = NULL);
 
   /**
    * Returns an expanded ID where any parameters are substituted and
@@ -380,6 +382,13 @@ class ActId {
    * namespace pointer otherwise.
   */
   ActNamespace *getNamespace();
+
+  /**
+   * Replace the namespace in the ID with a new one
+   * @param ns is the new namespace that replaces the namespace within
+   * the ID.
+   */
+  void updateNamespace (ActNamespace *ns);
 
   /**
    * Used for generic hash functions

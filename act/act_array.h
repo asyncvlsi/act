@@ -250,7 +250,10 @@ class Array {
    */
   Array *Next() { return next; }
 
-  Array *Clone ();		///< returns a deep copy of the entire array
+  Array *Clone (ActNamespace *orig = NULL,
+		ActNamespace *newns = NULL); ///< returns a deep copy of the entire array
+  void moveNS (ActNamespace *orig = NULL,
+	       ActNamespace *newns = NULL); ///< moves to new ns
 
   Array *CloneOne ();		///< only return a deep copy of the current dense range
 
@@ -565,7 +568,7 @@ class AExpr {
   void Print (FILE *fp);  ///< print array expression
   void sPrint (char *buf, int sz); ///< print array expression to string
 
-  AExpr *Clone (); ///< deep copy of array expression
+  AExpr *Clone (ActNamespace *orig = NULL, ActNamespace *newns = NULL); ///< deep copy of array expression
 
   /**
    * Return an InstType corresponding to this array expression

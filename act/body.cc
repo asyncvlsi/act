@@ -1529,17 +1529,49 @@ void ActBody::Expandlist (ActNamespace *ns, Scope *s)
   act_error_setline (-1);
 }
 
+UserDef *_act_userdef_replace (ActNamespace *replace, ActNamespace *newns,
+			       UserDef *orig)
+{
+  if (!replace) {
+    return orig;
+  }
+  list_t *l = replace->findNSPath (orig);
+  if (l) {
+    listitem_t *li;
+    ActNamespace *tns = newns;
+    for (li = list_first (l); li; li = list_next (li)) {
+      tns = tns->findNS ((char *) list_value (li));
+      Assert (tns, "Cloning failed, ns not found!");
+    }
+    UserDef *u = tns->findType (orig->getName());
+    Assert (u, "What?");
+    list_free (l);
+    return u;
+  }
+  return orig;
+}
+
+Function *_act_fn_replace (ActNamespace *replace, ActNamespace *newns,
+			   Function *orig)
+{
+  UserDef *ux = _act_userdef_replace (replace, newns, orig);
+  Function *fn = dynamic_cast <Function *> (ux);
+  Assert (fn, "What?!");
+  return fn;
+}
 
 ActBody *ActBody_Conn::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Conn *ret;
 
   if (type == 0) {
-    ret = new ActBody_Conn (_line, u.basic.lhs, u.basic.rhs);
+    ret = new ActBody_Conn (_line, u.basic.lhs->Clone(replace, newns),
+			    u.basic.rhs->Clone (replace, newns));
   }
   else {
     Assert (type == 1, "Hmm");
-    ret = new ActBody_Conn (_line, u.general.lhs, u.general.rhs);
+    ret = new ActBody_Conn (_line, u.general.lhs->Clone (replace, newns),
+			    u.general.rhs->Clone (replace, newns));
   }
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));
@@ -1556,22 +1588,11 @@ InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
   if (TypeFactory::isUserType (orig)) {
     UserDef *u = dynamic_cast<UserDef *> (orig->BaseType());
     Assert (u, "what?");
+    UserDef *unew = _act_userdef_replace (replace, newns, u);
   
-    list_t *l = replace->findNSPath (u);
-    if (l) {
-      listitem_t *li;
-      ActNamespace *tns = newns;
-      for (li = list_first (l); li; li = list_next (li)) {
-	tns = tns->findNS ((char *) list_value (li));
-	Assert (tns, "Cloning failed, ns not found!");
-      }
-      UserDef *ux = tns->findType (orig->BaseType()->getName());
-      Assert (ux, "Cloning failed, type not found.");
-      
-      list_free (l);
-
+    if (u != unew) {
       InstType *ret = new InstType (orig);
-      ret->refineBaseType (ux);
+      ret->refineBaseType (unew);
       ret->MkCached ();
       return ret;
     }
@@ -1579,6 +1600,7 @@ InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
   }
   return orig;
 }
+
 
 ActBody *ActBody_Inst::Clone (ActNamespace *replace, ActNamespace *newns)
 {
@@ -1609,8 +1631,12 @@ ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
 ActBody *ActBody_Loop::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Loop *ret;
+  Expr *newlo, *newhi;
 
-  ret = new ActBody_Loop (_line, id, lo, hi, b->Clone(replace, newns));
+  newlo = expr_update (expr_predup (lo), replace, newns);
+  newhi = expr_update (expr_predup (hi), replace, newns);
+
+  ret = new ActBody_Loop (_line, id, newlo, newhi, b->Clone(replace, newns));
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));
   }
@@ -1642,7 +1668,8 @@ ActBody *ActBody_Genloop::Clone (ActNamespace *replace, ActNamespace *newns)
   return ret;
 }
 
-act_attr *_clone_attrib (act_attr *a)
+static act_attr *_clone_attrib (act_attr *a,
+				ActNamespace *orig, ActNamespace *newns)
 {
   act_attr *ret, *cur;
   ret = NULL;
@@ -1658,6 +1685,7 @@ act_attr *_clone_attrib (act_attr *a)
     cur->next = NULL;
     cur->attr = a->attr;
     cur->e = expr_predup (a->e);
+    cur->e = expr_update (cur->e, orig, newns);
     a = a->next;
   }
   return ret;
@@ -1669,12 +1697,12 @@ ActBody *ActBody_Attribute::Clone(ActNamespace *replace, ActNamespace *newns)
   ActBody_Attribute *ret;
   Array *narr;
   if (arr) {
-    narr = arr->Clone();
+    narr = arr->Clone(replace, newns);
   }
   else {
     narr = arr;
   }
-  ret = new ActBody_Attribute (_line, inst, _clone_attrib (a), narr);
+  ret = new ActBody_Attribute (_line, inst, _clone_attrib (a, replace, newns), narr);
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));
   }
@@ -1686,18 +1714,21 @@ ActBody *ActBody_Namespace::Clone(ActNamespace *replace, ActNamespace *newns)
   ActBody_Namespace *ret;
   list_t *l;
 
-  l = replace->findNSPath (ns);
-  if (l) {
-    listitem_t *li;
-    ActNamespace *tmp = newns;
-    for (li = list_first (l); li; li = list_next (li)) {
-      tmp = tmp->findNS ((char *) list_value (li));
-      Assert (tmp, "Cloning failed");
+  ret = NULL;
+  if (replace) {
+    l = replace->findNSPath (ns);
+    if (l) {
+      listitem_t *li;
+      ActNamespace *tmp = newns;
+      for (li = list_first (l); li; li = list_next (li)) {
+	tmp = tmp->findNS ((char *) list_value (li));
+	Assert (tmp, "Cloning failed");
+      }
+      list_free (l);
+      ret = new ActBody_Namespace (tmp);
     }
-    list_free (l);
-    ret = new ActBody_Namespace (tmp);
   }
-  else {
+  if (!ret) {
     ret = new ActBody_Namespace (ns);
   }
 
@@ -1714,10 +1745,13 @@ ActBody *ActBody_Assertion::Clone(ActNamespace *replace, ActNamespace *newns)
   // XXX: expressions
   if (type == 0) {
     Expr *tmp = expr_predup (u.t0.e);
+    tmp = expr_update (tmp, replace, newns);
     ret = new ActBody_Assertion (_line, tmp, u.t0.msg);
   }
   else if (type == 1) {
-    ret = new ActBody_Assertion (_line, u.t1.id1, u.t1.id2, u.t1.op, u.t1.msg);
+    ret = new ActBody_Assertion (_line, u.t1.id1->Clone (replace, newns), 
+				 u.t1.id2->Clone (replace, newns), 
+				 u.t1.op, u.t1.msg);
   }
   else {
     Assert (0, "Should not be here");
@@ -1767,7 +1801,24 @@ void ActBody_Print::Expand (ActNamespace *ns, Scope *s)
 
 ActBody *ActBody_Print::Clone(ActNamespace *replace, ActNamespace *newns)
 {
-  ActBody_Print *ret = new ActBody_Print(_line, l);
+  list_t *newl;
+  listitem_t *li;
+  act_func_arguments_t *fn, *fn2;
+  newl = list_dup (l);
+  for (li = list_first (newl); li; li = list_next (li)) {
+    fn = (act_func_arguments_t *) list_value (li);
+    NEW (fn2, act_func_arguments_t);
+    fn2->isstring = fn->isstring;
+    if (fn->isstring) {
+      fn2->u.s = fn->u.s;
+    }
+    else {
+      fn2->u.e = expr_predup (fn->u.e);
+      expr_update (fn2->u.e, replace, newns);
+    }
+    list_value (li) = fn2;
+  }
+  ActBody_Print *ret = new ActBody_Print(_line, newl);
 
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));
@@ -1830,10 +1881,13 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
 
 ActBody_Select_gc *ActBody_Select_gc::Clone (ActNamespace *replace, ActNamespace *newns)
 {
-  // expression!
+  Expr *newlo, *newhi, *newg;
+  newlo = expr_update (expr_predup (lo), replace, newns);
+  newhi = expr_update (expr_predup (hi), replace, newns);
+  newg = expr_update (expr_predup (g), replace, newns);
   
   ActBody_Select_gc *ret =
-    new ActBody_Select_gc (id, lo, hi, g, s->Clone(replace, newns));
+    new ActBody_Select_gc (id, newlo, newhi, newg, s->Clone(replace, newns));
   if (next) {
     ret->next = next->Clone(replace, newns);
   }

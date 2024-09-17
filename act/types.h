@@ -2348,6 +2348,12 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2)
 #define expr_predup(e) expr_expand ((e), NULL, NULL, ACT_EXPR_EXFLAG_PREEXDUP|ACT_EXPR_EXFLAG_DUPONLY)
 
 /**
+ * Walk through the expression, moving it into a new namespace.
+ */
+Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns);
+
+
+/**
  * Free an expanded expression
  */
 void expr_ex_free (Expr *);

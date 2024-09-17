@@ -62,14 +62,44 @@ ActId::~ActId ()
 }
    
 
+void ActId::moveNS (ActNamespace *orig, ActNamespace *newns)
+{
+  ActId *ret;
+  Array *aclone;
 
-ActId *ActId::Clone ()
+  if (!orig) return;
+
+  if (a) {
+    a->moveNS (orig, newns);
+  }
+
+  if (isNamespace()) {
+    ActNamespace *tns = getNamespace();
+    list_t *l = orig->findNSPath (tns);
+    if (l) {
+      listitem_t *li;
+      ActNamespace *tns = newns;
+      for (li = list_first (l); li; li = list_next (li)) {
+	tns = tns->findNS ((char *) list_value (li));
+	Assert (tns, "Cloning failed, ns not found!");
+      }
+      list_free (l);
+      updateNamespace (tns);
+    }
+  }
+
+  if (next) {
+    next->moveNS (orig, newns);
+  }
+}
+
+ActId *ActId::Clone (ActNamespace *orig, ActNamespace *newns)
 {
   ActId *ret;
   Array *aclone;
 
   if (a) {
-    aclone = a->Clone();
+    aclone = a->Clone(orig, newns);
   }
   else {
     aclone = NULL;
@@ -77,8 +107,23 @@ ActId *ActId::Clone ()
 
   ret = new ActId (string_char (name), aclone);
 
+  if (orig && isNamespace()) {
+    ActNamespace *tns = getNamespace();
+    list_t *l = orig->findNSPath (tns);
+    if (l) {
+      listitem_t *li;
+      ActNamespace *tns = newns;
+      for (li = list_first (l); li; li = list_next (li)) {
+	tns = tns->findNS ((char *) list_value (li));
+	Assert (tns, "Cloning failed, ns not found!");
+      }
+      list_free (l);
+      ret->updateNamespace (tns);
+    }
+  }
+
   if (next) {
-    ret->next = next->Clone ();
+    ret->next = next->Clone (orig, newns);
   }
 
   return ret;
@@ -1961,4 +2006,16 @@ unsigned int ActId::getHash (unsigned int prev, unsigned long sz)
     ret = arrayInfo()->getHash (ret, sz);
   }
   return ret;
+}
+
+/*------------------------------------------------------------------------
+ * Update namespace
+ *------------------------------------------------------------------------
+ */
+void ActId::updateNamespace (ActNamespace *ns)
+{
+  if (!isNamespace()) return;
+  char *nm = ns->Name (true);
+  name = string_create (nm);
+  FREE (nm);
 }
