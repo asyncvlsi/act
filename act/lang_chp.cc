@@ -2439,3 +2439,190 @@ void chp_check_channels (act_chp_lang_t *c, Scope *s)
     break;
   }
 }
+
+static act_chp_lang_t *_chp_dup (act_chp_lang_t *c,
+				 ActNamespace *orig, ActNamespace *newns);
+
+static act_chp_gc_t *_chp_gc_dup (act_chp_gc_t *gc,
+				  ActNamespace *orig,
+				  ActNamespace *newns)
+{
+  act_chp_gc_t *ret;
+  if (!gc) return NULL;
+  NEW (ret, act_chp_gc_t);
+  ret->id = gc->id;
+  if (gc->id) {
+    ret->lo = expr_update (expr_predup (gc->lo), orig, newns);
+    ret->hi = expr_update (expr_predup (gc->hi), orig, newns);
+  }
+  else {
+    ret->lo = NULL;
+    ret->hi = NULL;
+  }
+  ret->g = expr_update (expr_predup (gc->g), orig, newns);
+  ret->s = _chp_dup (gc->s, orig, newns);
+  ret->next = _chp_gc_dup (gc->next, orig, newns);
+  
+  return ret;
+}
+
+static act_chp_lang_t *_chp_dup (act_chp_lang_t *c,
+				 ActNamespace *orig, ActNamespace *newns)
+{
+  act_chp_lang_t *ret;
+  if (!c) return NULL;
+  NEW (ret, act_chp_lang_t);
+  ret->type = c->type;
+  ret->label = c->label;
+  ret->space = c->space;
+
+  switch (c->type) {
+  case ACT_CHP_COMMALOOP:
+  case ACT_CHP_SEMILOOP:
+    ret->u.loop.id = c->u.loop.id;
+    ret->u.loop.lo = expr_update (expr_predup (c->u.loop.lo), orig, newns);
+    ret->u.loop.hi = expr_update (expr_predup (c->u.loop.hi), orig, newns);
+    ret->u.loop.body = _chp_dup (c->u.loop.body, orig, newns);
+    break;
+    
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      ret->u.semi_comma.cmd = list_dup (c->u.semi_comma.cmd);
+      for (li = list_first (ret->u.semi_comma.cmd); li; li = list_next (li)) {
+	list_value (li) = _chp_dup ((act_chp_lang_t *)list_value (li),
+				    orig, newns);
+      }
+    }
+    break;
+
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+    ret->u.gc = _chp_gc_dup (c->u.gc, orig, newns);
+    break;
+    
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
+    ret->u.assign.id = c->u.assign.id->Clone (orig, newns);
+    ret->u.assign.e = expr_update (expr_predup (c->u.assign.e), orig, newns);
+    break;
+    
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    ret->u.comm.chan = c->u.comm.chan->Clone (orig, newns);
+    ret->u.comm.flavor = c->u.comm.flavor;
+    {
+      if (c->u.comm.e) {
+	ret->u.comm.e = expr_update (expr_predup (c->u.comm.e), orig, newns);
+      }
+      else {
+	ret->u.comm.e = NULL;
+      }
+      if (c->u.comm.var) {
+	ret->u.comm.var = c->u.comm.var->Clone (orig, newns);
+      }
+      else {
+	ret->u.comm.var = NULL;
+      }
+      ret->u.comm.convert = ret->u.comm.convert;
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+    ret->u.func.name = c->u.func.name;
+    ret->u.func.rhs = list_dup (c->u.func.rhs);
+    for (listitem_t *li = list_first (ret->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *a = (act_func_arguments_t *) list_value (li);
+      act_func_arguments_t *ac;
+      NEW (ac, act_func_arguments_t);
+      ac->isstring = a->isstring;
+      if (a->isstring) {
+	ac->u.s = a->u.s;
+      }
+      else {
+	ac->u.e = expr_update (expr_predup (a->u.e), orig, newns);
+      }
+    }
+    break;
+
+  case ACT_CHP_HOLE: /* to support verification */
+    break;
+    
+  case ACT_CHP_MACRO:
+    ret->u.macro.id = c->u.macro.id->Clone (orig, newns);
+    ret->u.macro.name = c->u.macro.name;
+    if (c->u.macro.rhs) {
+      ret->u.macro.rhs = list_dup (c->u.macro.rhs);
+      listitem_t *li;
+      for (li = list_first (ret->u.macro.rhs); li; li = list_next (li)) {
+	list_value (li) = expr_update (expr_predup ((Expr *)list_value (li)),
+				       orig, newns);
+      }
+    }
+    else {
+      ret->u.macro.rhs = NULL;
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    ret->u.frag.body = _chp_dup (c->u.frag.body, orig, newns);
+    ret->u.frag.nextlabel = c->u.frag.nextlabel;
+    if (!c->u.frag.nextlabel) {
+      listitem_t *li;
+      ret->u.frag.exit_conds = list_dup (c->u.frag.exit_conds);
+      for (li = list_first (ret->u.frag.exit_conds); li; li = list_next (li)) {
+	list_value (li) = expr_update (expr_predup ((Expr *)list_value (li)),
+				       orig, newns);
+	li = list_next (li);
+      }
+    }
+    ret->u.frag.next = _chp_dup (c->u.frag.next, orig, newns);
+    break;
+    
+  default:
+    fatal_error ("Unknown type");
+    break;
+  }
+  return ret;
+}
+
+act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns)
+{
+  act_chp *ret;
+  if (!c) return NULL;
+
+  NEW (ret, act_chp);
+  if (c->vdd) {
+    ret->vdd = c->vdd->Clone (orig, newns);
+  }
+  else {
+    ret->vdd = NULL;
+  }
+  if (c->gnd) {
+    ret->gnd = c->gnd->Clone (orig, newns);
+  }
+  else {
+    ret->gnd = NULL;
+  }
+  if (c->psc) {
+    ret->psc = c->psc->Clone (orig, newns);
+  }
+  else {
+    ret->psc = NULL;
+  }
+  if (c->nsc) {
+    ret->nsc = c->nsc->Clone (orig, newns);
+  }
+  else {
+    ret->nsc = NULL;
+  }
+  ret->is_synthesizable = c->is_synthesizable;
+  ret->c = _chp_dup (c->c, orig, newns);
+  return ret;
+}

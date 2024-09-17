@@ -1618,9 +1618,31 @@ ActBody *ActBody_Inst::Clone (ActNamespace *replace, ActNamespace *newns)
 ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
 {
   ActBody_Lang *ret;
+  void *newlang;
 
-  // XXX: within a language, we need to fix expressions and function calls
-  ret = new ActBody_Lang (_line, t, lang);
+  // XXX: within a language, we need to fix expressions and function
+  // calls
+  switch (t) { 
+  case LANG_CHP:
+  case LANG_HSE:
+      newlang = chp_dup ((act_chp *)lang, replace, newns);
+      break;
+
+  case LANG_REFINE:
+      newlang = refine_dup ((act_refine *)lang, replace, newns);
+      break;
+
+  case LANG_DFLOW:
+  case LANG_PRS:
+  case LANG_SPEC:
+  case LANG_SIZE:
+  case LANG_INIT:
+  case LANG_EXTERN:
+    newlang = lang;
+    break;
+  }
+  
+  ret = new ActBody_Lang (_line, t, newlang);
 
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));

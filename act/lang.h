@@ -448,6 +448,7 @@ class ActBody;
  * @brief The refinement sub-language just contains an ActBody
  */
 class InstType;
+class ActNamespace;
 struct refine_override {
   refine_override() {
     it = NULL;
@@ -456,6 +457,7 @@ struct refine_override {
     next = NULL;
   }
   ~refine_override();
+  refine_override *Clone (ActNamespace *orig, ActNamespace *newns);
   InstType *it;
   bool plus;
   list_t *ids;
@@ -850,6 +852,11 @@ act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 void refine_expand (act_refine *, ActNamespace *, Scope *);
 
 /**
+ * Duplicate and migrate to new namespace
+ */
+act_refine *refine_dup (act_refine *, ActNamespace *, ActNamespace *);
+
+/**
  * Expand a sizing { ... } block
  */
 act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
@@ -873,6 +880,12 @@ void chp_expand_macromode (int mode);
  * chp_expand helper for the items within the language block
  */
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
+
+/**
+ * Duplicate and migrate
+ */
+act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns);
+
 
 /**
  * Expansion helper for instance attributes

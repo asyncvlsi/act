@@ -1332,3 +1332,47 @@ refine_override::~refine_override()
     delete next;
   }
 }
+
+
+act_refine *refine_dup (act_refine *r, ActNamespace *orig, ActNamespace *newns)
+{
+  act_refine *ret;
+  NEW (ret, act_refine);
+  if (r->b) {
+    ret->b = r->b->Clone (orig, newns);
+  }
+  else {
+    ret->b = NULL;
+  }
+  ret->nsteps = r->nsteps;
+  ret->refsublist = list_dup (r->refsublist);
+  if (r->overrides) {
+    ret->overrides = r->overrides->Clone (orig, newns);
+  }
+  else {
+    ret->overrides = NULL;
+  }
+  return ret;
+}
+
+InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
+			      InstType *it);
+
+
+refine_override *refine_override::Clone (ActNamespace *orig, ActNamespace *newns)
+{
+  refine_override *ret;
+  ret = new refine_override;
+  if (!orig) {
+    ret->it = it;
+  }
+  else {
+    ret->it = _act_clone_replace (orig, newns, it);
+  }
+  ret->plus = plus;
+  ret->ids = list_dup (ids);
+  if (next) {
+    ret->next = next->Clone (orig, newns);
+  }
+  return ret;
+}
