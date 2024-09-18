@@ -1003,6 +1003,11 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
   return ret;
 }
 
+static void _update_expr (Expr **x, ActNamespace *orig, ActNamespace *newns)
+{
+  *x = expr_update (expr_predup (*x), orig, newns);
+}
+
 static void _clone_sz_dir (act_sizing_directive *tgt,
 			   act_sizing_directive *src,
 			   ActNamespace *orig,
@@ -1010,8 +1015,8 @@ static void _clone_sz_dir (act_sizing_directive *tgt,
 {
   *tgt = *src;
   tgt->id = tgt->id->Clone (orig, newns);
-  tgt->eup = expr_update (expr_predup (tgt->eup), orig, newns);
-  tgt->edn = expr_update (expr_predup (tgt->edn), orig, newns);
+  _update_expr (&tgt->eup, orig, newns);
+  _update_expr (&tgt->edn, orig, newns);
   tgt->upfolds = expr_update (expr_predup (tgt->upfolds), orig, newns);
   tgt->dnfolds = expr_update (expr_predup (tgt->dnfolds), orig, newns);
   if (tgt->loop_id) {
@@ -1053,12 +1058,155 @@ act_sizing *sizing_dup (act_sizing *sz, ActNamespace *orig, ActNamespace *newns)
 
 act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
 {
-  return s;
+  act_spec *ret, *tmp;
+
+  ret = NULL;
+  while (s) {
+    if (!ret) {
+      NEW (ret, act_spec);
+      tmp = ret;
+    }
+    else {
+      NEW (tmp->next, act_spec);
+      tmp = tmp->next;
+    }
+    tmp->next = NULL;
+    tmp->type = s->type;
+    tmp->isrequires = s->isrequires;
+    tmp->count = s->count;
+    tmp->extra = s->extra;
+    MALLOC (tmp->ids, ActId *, s->count);
+    if (ACT_SPEC_ISTIMING (s)) {
+      MALLOC (tmp->extra, int, s->count-1);
+      for (int i=0; i < s->count-1; i++) {
+	tmp->extra[i] = s->extra[i];
+	tmp->ids[i] = s->ids[i]->Clone (orig, newns);
+      }
+      if (s->ids[s->count-1]) {
+	tmp->ids[s->count-1] =
+	  (ActId *) expr_update (expr_predup ((Expr *)s->ids[s->count-1]),
+				 orig, newns);
+      }
+      else {
+	tmp->ids[s->count-1] = NULL;
+      }
+    }
+    else {
+      for (int i=0; i < s->count; i++) {
+	tmp->ids[i] = s->ids[i]->Clone (orig, newns);
+      }
+    }
+  }
+  return ret;
 }
 
+
+static list_t *_clone_dflow_list (list_t *l,
+				  ActNamespace *orig, ActNamespace *newns,
+				  int isexp)
+{
+  list_t *ret;
+  listitem_t *li;
+  
+  ret = list_dup (l);
+  for (li = list_first (ret); li; li = list_next (li)) {
+    act_dataflow_element *x, *xnew;
+    x = (act_dataflow_element *) list_value (li);
+    NEW (xnew, act_dataflow_element);
+    *xnew = *x;
+    switch (x->t) {
+    case ACT_DFLOW_FUNC:
+      _update_expr (&xnew->u.func.lhs, orig, newns);
+      _update_expr (&xnew->u.func.nbufs, orig, newns);
+      if (xnew->u.func.nbufs) {
+	_update_expr (&xnew->u.func.init, orig, newns);
+      }
+      xnew->u.func.rhs = xnew->u.func.rhs->Clone (orig, newns);
+      break;
+    case ACT_DFLOW_SPLIT:
+    case ACT_DFLOW_MERGE:
+    case ACT_DFLOW_MIXER:
+    case ACT_DFLOW_ARBITER:
+      if (xnew->u.splitmerge.guard) {
+	xnew->u.splitmerge.guard = xnew->u.splitmerge.guard->Clone (orig, newns);
+      }
+      if (isexp) {
+	MALLOC (xnew->u.splitmerge.multi, ActId *, xnew->u.splitmerge.nmulti);
+	for (int i=0; i < xnew->u.splitmerge.nmulti; i++) {
+	  xnew->u.splitmerge.multi[i] =
+	    x->u.splitmerge.multi[i]->Clone (orig, newns);
+	}
+      }
+      else {
+	MALLOC (xnew->u.splitmerge.pre_exp, act_dataflow_loop *,
+		xnew->u.splitmerge.nmulti);
+	for (int i=0; i < xnew->u.splitmerge.nmulti; i++) {
+	  xnew->u.splitmerge.pre_exp[i] = new act_dataflow_loop;
+	  *(xnew->u.splitmerge.pre_exp[i]) = *(x->u.splitmerge.pre_exp[i]);
+	  _update_expr (&xnew->u.splitmerge.pre_exp[i]->lo, orig, newns);
+	  _update_expr (&xnew->u.splitmerge.pre_exp[i]->hi, orig, newns);
+	  if (xnew->u.splitmerge.pre_exp[i]->chanid) {
+	    xnew->u.splitmerge.pre_exp[i]->chanid =
+	      xnew->u.splitmerge.pre_exp[i]->chanid->Clone (orig, newns);
+	  }
+	}
+      }
+      if (xnew->u.splitmerge.single) {
+	xnew->u.splitmerge.single =
+	  xnew->u.splitmerge.single->Clone (orig, newns);
+      }
+      if (xnew->u.splitmerge.nondetctrl) {
+	xnew->u.splitmerge.nondetctrl =
+	  xnew->u.splitmerge.nondetctrl->Clone (orig, newns);
+      }
+      break;
+    case ACT_DFLOW_SINK:
+      xnew->u.sink.chan = xnew->u.sink.chan->Clone (orig, newns);
+      break;
+
+    case ACT_DFLOW_CLUSTER:
+      xnew->u.dflow_cluster = _clone_dflow_list (xnew->u.dflow_cluster,
+						 orig, newns, isexp);
+      break;
+
+    default:
+      Assert (0, "Why am i here?");
+      break;
+    }
+  }
+  return ret;
+}
 			
 act_dataflow *dflow_dup (act_dataflow *d, ActNamespace *orig,
 			 ActNamespace *newns)
 {
-  return d;
+  if (!d) return NULL;
+  act_dataflow *ret;
+  listitem_t *li;
+  NEW (ret, act_dataflow);
+  ret->isexpanded = d->isexpanded;
+  ret->dflow = _clone_dflow_list (d->dflow, orig, newns, ret->isexpanded);
+
+  if (d->order) {
+    ret->order = list_dup (ret->order);
+    for (li = list_first (ret->order); li; li = list_next (li)) {
+      act_dataflow_order *x, *xnew;
+      listitem_t *mi;
+      x = (act_dataflow_order *) list_value (li);
+      NEW (xnew, act_dataflow_order);
+      xnew->lhs = list_dup (x->lhs);
+      xnew->rhs = list_dup (x->rhs);
+      list_value (li) = xnew;
+      for (mi = list_first (xnew->lhs); mi; mi = list_next (mi)) {
+	list_value (mi) = ((ActId *)list_value (mi))->Clone (orig, newns);
+      }
+      for (mi = list_first (xnew->rhs); mi; mi = list_next (mi)) {
+	list_value (mi) = ((ActId *)list_value (mi))->Clone (orig, newns);
+      }
+    }
+  }
+  else {
+    ret->order = NULL;
+  }
+  return ret;
 }

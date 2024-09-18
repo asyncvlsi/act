@@ -569,7 +569,7 @@ struct act_dataflow_loop {
   const char *id;
   Expr *lo, *hi;
   ActId *chanid;
-};  
+};
 
 /**
  * @class act_dataflow_element
