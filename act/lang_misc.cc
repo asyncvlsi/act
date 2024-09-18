@@ -1080,7 +1080,12 @@ act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
       MALLOC (tmp->extra, int, s->count-1);
       for (int i=0; i < s->count-1; i++) {
 	tmp->extra[i] = s->extra[i];
-	tmp->ids[i] = s->ids[i]->Clone (orig, newns);
+        if (s->ids[i]) {
+   	   tmp->ids[i] = s->ids[i]->Clone (orig, newns);
+        }
+        else {
+           tmp->ids[i] = NULL;
+        }
       }
       if (s->ids[s->count-1]) {
 	tmp->ids[s->count-1] =
@@ -1096,6 +1101,7 @@ act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
 	tmp->ids[i] = s->ids[i]->Clone (orig, newns);
       }
     }
+    s = s->next;
   }
   return ret;
 }
