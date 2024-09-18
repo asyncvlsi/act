@@ -1003,3 +1003,62 @@ act_dataflow *dflow_expand (act_dataflow *d, ActNamespace *ns, Scope *s)
   return ret;
 }
 
+static void _clone_sz_dir (act_sizing_directive *tgt,
+			   act_sizing_directive *src,
+			   ActNamespace *orig,
+			   ActNamespace *newns)
+{
+  *tgt = *src;
+  tgt->id = tgt->id->Clone (orig, newns);
+  tgt->eup = expr_update (expr_predup (tgt->eup), orig, newns);
+  tgt->edn = expr_update (expr_predup (tgt->edn), orig, newns);
+  tgt->upfolds = expr_update (expr_predup (tgt->upfolds), orig, newns);
+  tgt->dnfolds = expr_update (expr_predup (tgt->dnfolds), orig, newns);
+  if (tgt->loop_id) {
+    tgt->lo = expr_update (expr_predup (tgt->lo), orig, newns);
+    tgt->hi = expr_update (expr_predup (tgt->hi), orig, newns);
+    A_INIT (tgt->d);
+    if (A_LEN (src->d) > 0) {
+      A_NEWP (tgt->d, act_sizing_directive, A_LEN (src->d));
+      for (int i=0; i < A_LEN (src->d); i++) {
+	A_NEW (tgt->d, act_sizing_directive);
+	_clone_sz_dir (&A_NEXT (tgt->d), &src->d[i], orig, newns);
+	A_INC (tgt->d);
+      }
+    }
+  }
+}
+
+
+act_sizing *sizing_dup (act_sizing *sz, ActNamespace *orig, ActNamespace *newns)
+{
+  act_sizing *ret;
+  if (!sz) return NULL;
+  NEW (ret, act_sizing);
+  *ret = *sz;
+  ret->p_n_mode_e = expr_update (expr_predup (sz->p_n_mode_e), orig, newns);
+  ret->unit_n_e = expr_update (expr_predup (sz->unit_n_e), orig, newns);
+  ret->leak_adjust_e = expr_update (expr_predup (sz->leak_adjust_e), orig, newns);
+  if (A_LEN (sz->d) > 0) {
+    A_INIT (ret->d);
+    A_NEWP (ret->d, act_sizing_directive, A_LEN (sz->d));
+    for (int i=0; i < A_LEN (sz->d); i++) {
+      A_NEW (ret->d, act_sizing_directive);
+      _clone_sz_dir (&A_NEXT (ret->d), &sz->d[i], orig, newns);
+      A_INC (ret->d);
+    }
+  }
+  return ret;
+}
+
+act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
+{
+  return s;
+}
+
+			
+act_dataflow *dflow_dup (act_dataflow *d, ActNamespace *orig,
+			 ActNamespace *newns)
+{
+  return d;
+}

@@ -841,10 +841,14 @@ act_initialize *initialize_expand (act_initialize *, ActNamespace *, Scope *);
  */
 act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 
+act_prs *prs_dup (act_prs *, ActNamespace *, ActNamespace *);
+
 /** 
  * Expand a spec { ... } block
  */
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
+
+act_spec *spec_dup (act_spec *, ActNamespace *, ActNamespace *);
 
 /** 
  * Expand a refine { .. } block
@@ -861,10 +865,14 @@ act_refine *refine_dup (act_refine *, ActNamespace *, ActNamespace *);
  */
 act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
 
+act_sizing *sizing_dup (act_sizing *, ActNamespace *, ActNamespace *);
+
 /**
  * Expand a dataflow { ... } block
  */
 act_dataflow *dflow_expand (act_dataflow *, ActNamespace *, Scope *);
+
+act_dataflow *dflow_dup (act_dataflow *, ActNamespace *, ActNamespace *);
 
 /**
  * Expand a chp { ... } block. Also used for hse { ... }

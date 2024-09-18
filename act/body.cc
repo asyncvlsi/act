@@ -1622,20 +1622,32 @@ ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
 
   // XXX: within a language, we need to fix expressions and function
   // calls
-  switch (t) { 
+  switch (t) {
   case LANG_CHP:
   case LANG_HSE:
-      newlang = chp_dup ((act_chp *)lang, replace, newns);
-      break;
+    newlang = chp_dup ((act_chp *)lang, replace, newns);
+    break;
 
   case LANG_REFINE:
-      newlang = refine_dup ((act_refine *)lang, replace, newns);
-      break;
+    newlang = refine_dup ((act_refine *)lang, replace, newns);
+    break;
 
   case LANG_DFLOW:
+    newlang = dflow_dup ((act_dataflow *)lang, replace, newns);
+    break;
+
   case LANG_PRS:
+    newlang = prs_dup ((act_prs *)lang, replace, newns);
+    break;
+    
   case LANG_SPEC:
+    newlang = spec_dup ((act_spec *)lang, replace, newns);
+    break;
+    
   case LANG_SIZE:
+    newlang = sizing_dup ((act_sizing *)lang, replace, newns);
+    break;
+    
   case LANG_INIT:
   case LANG_EXTERN:
     newlang = lang;

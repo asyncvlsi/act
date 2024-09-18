@@ -309,8 +309,83 @@ struct act_prsmerge {
   act_prs_lang_t *vup;		/* previous prs */
   act_prs_lang_t *vdn;		/* previous prs */
 };
+
+static act_attr_t *_attr_dup (act_attr_t *a, ActNamespace *orig,
+			      ActNamespace *newns)
+{
+  act_attr_t *hd = NULL, *tl = NULL, *tmp;
+  while (a) {
+    NEW (tmp, act_attr_t);
+    tmp->attr = a->attr;
+    tmp->e = expr_update (expr_predup (a->e), orig, newns);
+    q_ins (hd, tl, tmp);
+    a = a->next;
+  }
+  return hd;
+}
+
+static act_size_spec_t *_sizing_info_dup(act_size_spec_t *s, ActNamespace *orig,
+					 ActNamespace *newns)
+{
+  act_size_spec_t *ret;
+  if (!s) return NULL;
+  NEW (ret, act_size_spec_t);
+  ret->w = expr_update (expr_predup (s->w), orig, newns);
+  ret->l = expr_update (expr_predup (s->l), orig, newns);
+  ret->flavor = s->flavor;
+  ret->folds = expr_update (expr_predup (s->folds), orig, newns);
+  return ret;
+}
   
-  
+static act_prs_expr_t *_prs_expr_dup (act_prs_expr_t *e, ActNamespace *orig,
+				      ActNamespace *newns)
+{
+  act_prs_expr_t *ret;
+  if (!e) return NULL;
+  NEW (ret, act_prs_expr_t);
+  ret->type = e->type;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    ret->u.e.l = _prs_expr_dup (e->u.e.l, orig, newns);
+    ret->u.e.r = _prs_expr_dup (e->u.e.r, orig, newns);
+    ret->u.e.pchg = _prs_expr_dup (e->u.e.pchg, orig, newns);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    ret->u.e.l = _prs_expr_dup (e->u.e.l, orig, newns);
+    ret->u.e.r = NULL;
+    ret->u.e.pchg = NULL;
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    ret->u.l.label = e->u.l.label;
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    ret->u.loop.id = e->u.loop.id;
+    ret->u.loop.lo = expr_update (expr_predup (e->u.loop.lo), orig, newns);
+    ret->u.loop.hi = expr_update (expr_predup (e->u.loop.hi), orig, newns);
+    ret->u.loop.e = _prs_expr_dup (e->u.loop.e, orig, newns);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    ret->u.v.id = e->u.v.id->Clone (orig, newns);
+    ret->u.v.sz = _sizing_info_dup (e->u.v.sz, orig, newns);
+    break;
+    
+  default:
+    Assert (0, "What?");
+    break;
+  }
+  return ret;
+}
+
 act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 {
   act_prs_lang_t *hd = NULL;
@@ -1374,5 +1449,141 @@ refine_override *refine_override::Clone (ActNamespace *orig, ActNamespace *newns
   if (next) {
     ret->next = next->Clone (orig, newns);
   }
+  return ret;
+}
+
+static act_prs_lang_t *_prs_dup (act_prs_lang_t *p,
+				 ActNamespace *orig,
+				 ActNamespace *newns)
+{
+  act_prs_lang_t *ret, *tmp;
+  ret = NULL;
+  while (p) {
+    if (!ret) {
+      NEW (ret, act_prs_lang_t);
+      tmp = ret;
+    }
+    else {
+      NEW (tmp->next, act_prs_lang_t);
+      tmp = tmp->next;
+    }
+    tmp->next = NULL;
+    tmp->type = p->type;
+    switch (ACT_PRS_LANG_TYPE (p->type)) {
+    case ACT_PRS_RULE:
+      tmp->u.one.attr = _attr_dup (p->u.one.attr, orig, newns);
+      tmp->u.one.e = _prs_expr_dup (p->u.one.e, orig, newns);
+      tmp->u.one.arrow_type = p->u.one.arrow_type;
+      tmp->u.one.label = p->u.one.label;
+      if (p->u.one.label) {
+	tmp->u.one.id = p->u.one.id;
+      }
+      else {
+	tmp->u.one.id = p->u.one.id->Clone (orig, newns);
+      }
+      tmp->u.one.dir = p->u.one.dir;
+      break;
+    case ACT_PRS_GATE:
+      tmp->u.p.attr = _attr_dup (p->u.p.attr, orig, newns);
+      if (p->u.p.g) {
+	tmp->u.p.g = p->u.p.g->Clone (orig, newns);
+      }
+      else {
+	tmp->u.p.g = NULL;
+      }
+      if (p->u.p._g) {
+	tmp->u.p._g = p->u.p._g->Clone (orig, newns);
+      }
+      else {
+	tmp->u.p._g = NULL;
+      }
+      if (p->u.p.s) {
+	tmp->u.p.s = p->u.p.s->Clone (orig, newns);
+      }
+      else {
+	tmp->u.p.s = NULL;
+      }
+      if (p->u.p.d) {
+	tmp->u.p.d = p->u.p.d->Clone (orig, newns);
+      }
+      else {
+	tmp->u.p.d = NULL;
+      }
+      tmp->u.p.sz = _sizing_info_dup (p->u.p.sz, orig, newns);
+      break;
+      
+    case ACT_PRS_DEVICE:
+      tmp->u.p.attr = _attr_dup (p->u.p.attr, orig, newns);
+      tmp->u.p.sz = _sizing_info_dup (p->u.p.sz, orig, newns);
+      tmp->u.p.g = NULL;
+      tmp->u.p._g = NULL;
+      tmp->u.p.s = p->u.p.s->Clone (orig, newns);
+      tmp->u.p.d = p->u.p.d->Clone (orig, newns);
+      break;
+
+    case ACT_PRS_LOOP:
+      tmp->u.l.id = p->u.l.id;
+      tmp->u.l.lo = expr_update (expr_predup (p->u.l.lo), orig, newns);
+      tmp->u.l.hi = expr_update (expr_predup (p->u.l.hi), orig, newns);
+      tmp->u.l.p = _prs_dup (p->u.l.p, orig, newns);
+      break;
+
+    case ACT_PRS_TREE:
+      tmp->u.l.id = NULL;
+      tmp->u.l.lo = expr_update (expr_predup (p->u.l.lo), orig, newns);
+      tmp->u.l.hi = NULL;
+      tmp->u.l.p = _prs_dup (p->u.l.p, orig, newns);
+      break;
+      
+    case ACT_PRS_SUBCKT:
+      tmp->u.l.id = p->u.l.id;
+      tmp->u.l.lo = NULL;
+      tmp->u.l.hi = NULL;
+      tmp->u.l.p = _prs_dup (p->u.l.p, orig, newns);
+      break;
+      
+    default:
+      Assert (0, "Why did this happen?");
+      break;
+    }
+    p = p->next;
+  }
+  return ret;
+}
+
+act_prs *prs_dup (act_prs *prs, ActNamespace *orig, ActNamespace *newns)
+{
+  act_prs *ret;
+  
+  if (!prs) return NULL;
+  
+  NEW (ret, act_prs);
+  if (prs->vdd) {
+    ret->vdd = prs->vdd->Clone (orig, newns);
+  }
+  else {
+    ret->vdd = NULL;
+  }
+  if (prs->gnd) {
+    ret->gnd = prs->gnd->Clone (orig, newns);
+  }
+  else {
+    ret->gnd = NULL;
+  }
+  if (prs->psc) {
+    ret->psc = prs->psc->Clone (orig, newns);
+  }
+  else {
+    ret->psc = NULL;
+  }
+  if (prs->nsc) {
+    ret->nsc = prs->nsc->Clone (orig, newns);
+  }
+  else {
+    ret->nsc = NULL;
+  }
+  ret->leak_adjust = prs->leak_adjust;
+  ret->p = _prs_dup (prs->p, orig, newns);
+  ret->next = prs_dup (prs->next, orig, newns);
   return ret;
 }
