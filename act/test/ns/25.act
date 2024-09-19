@@ -1,0 +1,2 @@
+import "23.act";
+open test => myname into test;

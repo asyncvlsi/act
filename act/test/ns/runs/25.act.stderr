@@ -1,0 +1,3 @@
+ERROR: File `25.act', line 2, col 5
+	Clone operation must be between unrelated namespaces.
+   Requested namespaces: ::test v/s ::test

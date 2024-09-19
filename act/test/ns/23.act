@@ -1,0 +1,19 @@
+export namespace test {
+
+defproc foo (bool x) 
+{
+  prs { 
+    true -> x-
+  }
+}
+
+export defproc bar (bool x)
+{
+  foo f(x);
+}
+
+}
+
+namespace test2 {
+
+}

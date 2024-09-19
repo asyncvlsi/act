@@ -1,0 +1,5 @@
+import "23.act";
+open test => myname into test2;
+
+test2::myname::bar b;
+test::bar bb;
