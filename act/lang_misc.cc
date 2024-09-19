@@ -1041,9 +1041,24 @@ act_sizing *sizing_dup (act_sizing *sz, ActNamespace *orig, ActNamespace *newns)
   if (!sz) return NULL;
   NEW (ret, act_sizing);
   *ret = *sz;
-  ret->p_n_mode_e = expr_update (expr_predup (sz->p_n_mode_e), orig, newns);
-  ret->unit_n_e = expr_update (expr_predup (sz->unit_n_e), orig, newns);
-  ret->leak_adjust_e = expr_update (expr_predup (sz->leak_adjust_e), orig, newns);
+  if (sz->p_specified) {
+    ret->p_n_mode_e = expr_update (expr_predup (sz->p_n_mode_e), orig, newns);
+  }
+  else {
+    ret->p_n_mode_e = NULL;
+  }
+  if (sz->unit_n_specified) {
+    ret->unit_n_e = expr_update (expr_predup (sz->unit_n_e), orig, newns);
+  }
+  else {
+    ret->unit_n_e = NULL;
+  }
+  if (sz->leak_adjust_specified) {
+    ret->leak_adjust_e = expr_update (expr_predup (sz->leak_adjust_e), orig, newns);
+  }
+  else {
+    ret->leak_adjust_e = NULL;
+  }
   if (A_LEN (sz->d) > 0) {
     A_INIT (ret->d);
     A_NEWP (ret->d, act_sizing_directive, A_LEN (sz->d));
