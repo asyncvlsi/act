@@ -2822,82 +2822,89 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     LVAL_ERROR;
-    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
-    if (!e->u.e.r) {
-      ret->u.e.r = NULL;
-      if (expr_is_a_const (ret->u.e.l)) {
-	if (ret->type == E_BUILTIN_BOOL) {
-	  if (ret->u.e.l->u.ival.v) {
-	    ret->type = E_TRUE;
-	    ret = _expr_const_canonical (ret, flags);
-	  }
-	  else {
-	    ret->type = E_FALSE;
-	    ret = _expr_const_canonical (ret, flags);
-	  }
-	}
-	else {
-	  if (ret->u.e.l->type == E_TRUE) {
-	    ret->type = E_INT;
-	    ret->u.ival.v = 1;
-            ret->u.ival.v_extra = NULL;
-	    ret = _expr_const_canonical (ret, flags);
-	  }
-	  else if (ret->u.e.l->type == E_REAL) {
-	    Expr *texpr = ret->u.e.l;
-	    ret->type = E_INT;
-	    ret->u.ival.v = (long)texpr->u.f;
-	    ret->u.ival.v_extra = NULL;
-	    ret = _expr_const_canonical (ret, flags);
-	    expr_free (texpr);
-	  }
-	  else {
-	    ret->type = E_INT;
-	    ret->u.ival.v = 0;
-            ret->u.ival.v_extra = NULL;
-	    ret = _expr_const_canonical (ret, flags);
-	  }
-	}
-      }
-      *width = 1;
+    if (flags & (ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_PREEXDUP)) {
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+      *width = -1;
     }
     else {
-      ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
-      if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
-	BigInt *l;
-	int _width = ret->u.e.r->u.ival.v;
-
-	if (ret->u.e.l->u.ival.v_extra) {
-	  l = (BigInt *)ret->u.e.l->u.ival.v_extra;
-	  FREE (ret->u.e.l);
-	  ret->type = E_INT;
-	  l->setWidth (_width);
-	  ret->u.ival.v_extra = l;
-	  ret->u.ival.v = l->getVal (0);
-	}
-	else {
-	  unsigned long x = ret->u.e.l->u.ival.v;
-
-	  if (_width < 64) {
-	    x = x & ((1UL << _width)-1);
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      if (!e->u.e.r) {
+	ret->u.e.r = NULL;
+	if (expr_is_a_const (ret->u.e.l)) {
+	  if (ret->type == E_BUILTIN_BOOL) {
+	    if (ret->u.e.l->u.ival.v) {
+	      ret->type = E_TRUE;
+	      ret = _expr_const_canonical (ret, flags);
+	    }
+	    else {
+	      ret->type = E_FALSE;
+	      ret = _expr_const_canonical (ret, flags);
+	    }
 	  }
-
-	  l = new BigInt;
-	  l->setWidth (_width);
-	  l->setVal (0, x);
-	  
-	  ret->type = E_INT;
-	  ret->u.ival.v = x;
-	  ret->u.ival.v_extra = l;
+	  else {
+	    if (ret->u.e.l->type == E_TRUE) {
+	      ret->type = E_INT;
+	      ret->u.ival.v = 1;
+	      ret->u.ival.v_extra = NULL;
+	      ret = _expr_const_canonical (ret, flags);
+	    }
+	    else if (ret->u.e.l->type == E_REAL) {
+	      Expr *texpr = ret->u.e.l;
+	      ret->type = E_INT;
+	      ret->u.ival.v = (long)texpr->u.f;
+	      ret->u.ival.v_extra = NULL;
+	      ret = _expr_const_canonical (ret, flags);
+	      expr_free (texpr);
+	    }
+	    else {
+	      ret->type = E_INT;
+	      ret->u.ival.v = 0;
+	      ret->u.ival.v_extra = NULL;
+	      ret = _expr_const_canonical (ret, flags);
+	    }
+	  }
 	}
-	*width = _width;
-      }
-      else if (!expr_is_a_const (ret->u.e.r)) {
-	act_error_ctxt (stderr);
-	fatal_error ("int() operator requires a constant expression for the second argument");
+	*width = 1;
       }
       else {
-	*width = ret->u.e.r->u.ival.v;
+	ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
+	if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
+	  BigInt *l;
+	  int _width = ret->u.e.r->u.ival.v;
+
+	  if (ret->u.e.l->u.ival.v_extra) {
+	    l = (BigInt *)ret->u.e.l->u.ival.v_extra;
+	    FREE (ret->u.e.l);
+	    ret->type = E_INT;
+	    l->setWidth (_width);
+	    ret->u.ival.v_extra = l;
+	    ret->u.ival.v = l->getVal (0);
+	  }
+	  else {
+	    unsigned long x = ret->u.e.l->u.ival.v;
+
+	    if (_width < 64) {
+	      x = x & ((1UL << _width)-1);
+	    }
+
+	    l = new BigInt;
+	    l->setWidth (_width);
+	    l->setVal (0, x);
+	  
+	    ret->type = E_INT;
+	    ret->u.ival.v = x;
+	    ret->u.ival.v_extra = l;
+	  }
+	  *width = _width;
+	}
+	else if (!expr_is_a_const (ret->u.e.r)) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("int() operator requires a constant expression for the second argument");
+	}
+	else {
+	  *width = ret->u.e.r->u.ival.v;
+	}
       }
     }
     break;
