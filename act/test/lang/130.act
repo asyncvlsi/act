@@ -1,0 +1,18 @@
+template<pint W>
+defproc testcase ()
+{
+   int<W> x;
+   chp {
+     x := int(x,W-1)
+   }
+}
+
+
+defproc testcase2 <: testcase () { }
+
+defproc test()
+{
+   testcase2<5> t;
+}
+
+test t;

@@ -60,7 +60,7 @@ static void do_init (LFILE *l)
 }
   
 
-static Expr *_parse_expr_func (LFILE *l)
+static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
 {
   Expr *e, *f;
   Expr *templ = NULL;
@@ -69,7 +69,7 @@ static Expr *_parse_expr_func (LFILE *l)
   
   do_init(l);
   
-  if (file_sym (l) == double_colon || file_sym (l) == f_id) {
+  if ((allow_enums && (file_sym (l) == double_colon)) || file_sym (l) == f_id) {
 
 #define PRINT_STEP				\
   do {						\
@@ -212,14 +212,17 @@ static Expr *_parse_expr_func (LFILE *l)
 	}
 	expr_inc_parens ();
 	e->type = E_USERMACRO;
-	e->u.fn.s = (char *) v;
-	e->u.fn.r = NULL;
+	NEW (e->u.e.l, Expr);
+	e->u.e.l->type = E_VAR;
+	e->u.e.l->u.e.l = (Expr *)v;
+	e->u.e.l->u.e.r = NULL;
+	e->u.e.r = NULL;
 	f = e;
 	if (file_sym (l) != rpar) {
 	  do {
 	    if (f == e) {
-	      NEW (e->u.fn.r, Expr);
-	      f = e->u.fn.r;
+	      NEW (e->u.e.r, Expr);
+	      f = e->u.e.r;
 	    }
 	    else {
 	      NEW (f->u.e.r, Expr); // Assumes this is the same
@@ -306,6 +309,28 @@ static Expr *_parse_expr_func (LFILE *l)
   if (pushed) {
     file_pop_position (l);
   }
+  return e;
+}
+
+static Expr *_parse_id_or_func (LFILE *l)
+{
+  Expr *e = _parse_expr_func2 (l, 0);
+  if (e) return e;
+  Assert (expr_parse_id, "What?");
+  pId *v = (*expr_parse_id) (l);
+  if (!v) {
+    return NULL;
+  }
+  NEW (e, Expr);
+  e->type = E_VAR;
+  e->u.e.l = (Expr *) v;
+  e->u.e.r = NULL;
+  return e;
+}
+  
+static Expr *_parse_expr_func (LFILE *l)
+{
+  Expr *e = _parse_expr_func2 (l, 1);
   return e;
 }
 
@@ -905,11 +930,6 @@ int act_expr_free_default (Expr *e)
 {
   if (e->type == E_ENUM_CONST) {
     FREE (e->u.fn.s);
-    return 1;
-  }
-  else if (e->type == E_USERMACRO) {
-    Assert (expr_free_id, "What?");
-    (*expr_free_id) (e->u.fn.s);
     return 1;
   }
   return 0;

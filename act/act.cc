@@ -940,7 +940,7 @@ Process *Act::findProcess (ActNamespace *n, const char *s, bool allow_expand)
 		  offset++;
 		  if (s[offset] != ',' && s[offset] != '>') {
 		    for (int k=0; k <= i; k++) {
-		      delete ip[i].u.tp;
+		      delete ip[k].u.tp;
 		    }
 		    FREE (ip);
 		    return NULL;

@@ -2822,7 +2822,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     LVAL_ERROR;
-    if (flags & (ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_PREEXDUP)) {
+    if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
       ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
       ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
       *width = -1;

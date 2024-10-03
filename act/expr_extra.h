@@ -90,8 +90,15 @@
   This is used for a macro function within a user-defined type.
 
   Parsing: ID.func(...)
-  e->u.fn.s = pId
-  e->u.fn.r- = arguments
+
+  OR anything that returns a struct!
+  E_USERMACRO, E_FUNCTION, or E_STRUCT_REF or E_VAR
+
+  e->u.e.l = expr
+  e->u.e.r = arguments
+
+  // OLD e->u.fn.s = pId ... trailing field is the name of the function!
+  // OLD e->u.fn.r- = arguments
 
   After walking:
   e->u.fn.s = UserMacro pointer
@@ -126,6 +133,25 @@
 */	      
   
 #define E_BITSLICE (E_END + 30)
+
+
+/*
+  A structure reference is used to use "."s after a function call
+
+  structref(x,y)
+     E_STRUCT_REF
+        /  | 
+      x    y
+
+  x is either E_USERMACRO or E_FUNCTION
+  y is an ID
+
+   f().g, the function would be the left, and "g" would be the right
+
+   x.f().y, the usermacro would be the left, and "y" would be the
+   right
+*/
+#define E_STRUCT_REF (E_END+31)
 
 #define E_NEWEND  E_END + 32	     ///< new "end" of expression options
 

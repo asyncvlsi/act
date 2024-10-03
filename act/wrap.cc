@@ -685,67 +685,76 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       p.f = cookie->file;
       special_id = cookie->special_id;
       cookie->special_id = 1;
-      tmp = act_walk_X_expr_id (cookie, (pId *) e->u.fn.s);
-      cookie->special_id = special_id;
 
-      ret->u.fn.s = NULL;
-      NEW (ret->u.fn.r, Expr);
-      /* XXX: HERE! */
-      ret->u.fn.r->u.e.l = (Expr *) tmp;
-      ret->u.fn.r->type = E_LT;
-      ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.fn.r, &args);
+      switch (e->u.e.l->type) {
+      case E_VAR:
+	//-- original, simple user macro!
+	tmp = act_walk_X_expr_id (cookie, (pId *) e->u.e.l->u.e.l);
+	cookie->special_id = special_id;
 
-      // extract user macro!
+	ret->u.fn.s = NULL;
+	NEW (ret->u.fn.r, Expr);
+	/* XXX: HERE! */
+	ret->u.fn.r->u.e.l = (Expr *) tmp;
+	ret->u.fn.r->type = E_LT;
+	ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.e.r, &args);
 
-      sc = cookie->scope;
-      u = NULL;
-      prev = NULL;
-      while (tmp->Rest()) {
-	it = sc->Lookup (tmp->getName());
-	Assert (it, "This should have been caught earlier!");
-	u = dynamic_cast<UserDef *> (it->BaseType());
-	Assert (u, "This should have been caught earlier!");
-	sc = u->CurScope();
-	prev = tmp;
-	tmp = tmp->Rest();
-      }
-      Assert (u && prev, "This should have been caught earlier!");
-      um = u->getMacro (tmp->getName());
-      Assert (um, "Didn't find user macro?");
+	// extract user macro!
 
-      if (um->getNumPorts () != args + u->getNumParams()) {
-	act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts() - u->getNumParams(), args);
-      }
+	sc = cookie->scope;
+	u = NULL;
+	prev = NULL;
+	while (tmp->Rest()) {
+	  it = sc->Lookup (tmp->getName());
+	  Assert (it, "This should have been caught earlier!");
+	  u = dynamic_cast<UserDef *> (it->BaseType());
+	  Assert (u, "This should have been caught earlier!");
+	  sc = u->CurScope();
+	  prev = tmp;
+	  tmp = tmp->Rest();
+	}
+	Assert (u && prev, "This should have been caught earlier!");
+	um = u->getMacro (tmp->getName());
+	Assert (um, "Didn't find user macro?");
 
-      // ok: (1) e.u.fn.s should be the usermacro
-      //     (2) e.u.fn.r augmented with the id!
-      prev->prune();
-      delete tmp;
-      ret->u.fn.s = (char *) um;
+	if (um->getNumPorts () != args + u->getNumParams()) {
+	  act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts() - u->getNumParams(), args);
+	}
+
+	// ok: (1) e.u.fn.s should be the usermacro
+	//     (2) e.u.fn.r augmented with the id!
+	prev->prune();
+	delete tmp;
+	ret->u.fn.s = (char *) um;
       
-      // If this is a param type user function, then we need to append
-      // the template parameters here!
-      Assert (um->getRetType(), "What?");
-      if (TypeFactory::isParamType (um->getRetType()) &&
-	  u->getNumParams() > 0) {
-	Expr *tmp;
-	tmp = ret->u.fn.r;
-	while (tmp->u.e.r) {
-	  tmp = tmp->u.e.r;
+	// If this is a param type user function, then we need to append
+	// the template parameters here!
+	Assert (um->getRetType(), "What?");
+	if (TypeFactory::isParamType (um->getRetType()) &&
+	    u->getNumParams() > 0) {
+	  Expr *tmp;
+	  tmp = ret->u.fn.r;
+	  while (tmp->u.e.r) {
+	    tmp = tmp->u.e.r;
+	  }
+	  for (int i=0; i < u->getNumParams(); i++) {
+	    // add id.p as a parameter!
+	    ActId *x = ((ActId *)ret->u.fn.r->u.e.l)->Clone();
+	    x->Append (new ActId (u->getPortName (-(i+1))));
+	    NEW (tmp->u.e.r, Expr);
+	    tmp = tmp->u.e.r;
+	    tmp->type = E_LT;
+	    tmp->u.e.r = NULL;
+	    NEW (tmp->u.e.l, Expr);
+	    tmp->u.e.l->type = E_VAR;
+	    tmp->u.e.l->u.e.l = (Expr *) x;
+	    tmp->u.e.l->u.e.r = NULL;
+	  }
 	}
-	for (int i=0; i < u->getNumParams(); i++) {
-	  // add id.p as a parameter!
-	  ActId *x = ((ActId *)ret->u.fn.r->u.e.l)->Clone();
-	  x->Append (new ActId (u->getPortName (-(i+1))));
-	  NEW (tmp->u.e.r, Expr);
-	  tmp = tmp->u.e.r;
-	  tmp->type = E_LT;
-	  tmp->u.e.r = NULL;
-	  NEW (tmp->u.e.l, Expr);
-	  tmp->u.e.l->type = E_VAR;
-	  tmp->u.e.l->u.e.l = (Expr *) x;
-	  tmp->u.e.l->u.e.r = NULL;
-	}
+	break;
+      default:
+	fatal_error ("other user macros!");
+	break;
       }
     }
     break;
