@@ -689,9 +689,15 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	snprintf (buf+k, sz, ")");
 	return;
       }
-
-      ActId *x = (ActId *)e->u.fn.r->u.e.l;
-      x->sPrint (buf+k, sz);
+      //Assert (e->u.fn.r->u.e.l->type == E_VAR, "What?");
+      //ActId *x = (ActId *)e->u.fn.r->u.e.l->u.e.l;
+      //x->sPrint (buf+k, sz);
+      if (prec < 0) {
+	sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+      }
+      else {
+	sprint_expr (buf+k, sz, e->u.fn.r->u.e.l);
+      }
       PRINT_STEP;
       snprintf (buf+k, sz, ".");
       PRINT_STEP;
@@ -729,7 +735,11 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       else {
 	tmp = e->u.fn.r->u.e.r;
       }
-      while (tmp) {
+      int correction = um->getNumPorts();
+      if (um->isFunction() && TypeFactory::isParamType (um->getRetType())) {
+	correction -= um->Parent()->getNumParams();
+      }
+      while (tmp && correction > 0) {
 	if (prec < 0) {
 	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
 	}
@@ -738,7 +748,8 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	}
 	PRINT_STEP;
 	tmp = tmp->u.e.r;
-	if (tmp) {
+	correction--;
+	if (tmp && correction > 0) {
 	  snprintf (buf+k, sz, ",");
 	  PRINT_STEP;
 	}
@@ -806,6 +817,25 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       e = e->u.e.r;
     }
     snprintf (buf+k, sz, "}");
+    PRINT_STEP;
+    break;
+
+  case E_STRUCT_REF:
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.l);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.l);
+    }
+    PRINT_STEP;
+    snprintf (buf+k, sz, ".");
+    PRINT_STEP;
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.r);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.r);
+    }
     PRINT_STEP;
     break;
     
@@ -1524,6 +1554,7 @@ static Expr *_expr_expand (int *width, Expr *e,
        the type! */
 
 
+    Expr *lexp;
     if (um->isBuiltinMacro()) {
       // We need to get the expanded user-defined type here!
       // int(...) or struct<...>(int)
@@ -1607,16 +1638,19 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
       }
       Assert (um->getFunction(), "What?");
+      lexp = e->u.fn.r->u.e.l;
     }
     else {
       /* macro invocation: <id>.macro(...) */
       InstType *id_it;
-      id_it = s->FullLookup ((ActId *)e->u.fn.r->u.e.l, NULL);
+      lexp = _expr_expand (&lw, e->u.fn.r->u.e.l, ns, s, flags);
+      id_it = act_expr_insttype (s, lexp, NULL, 2);
       Assert (id_it, "Macro error!");
       UserDef *id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
       Assert (id_ux, "What?");
       um = id_ux->getMacro (um->getName());
       Assert (um, "Expanded macro?");
+      Assert (um->getFunction(), "What?");
     }
 
     e_orig = e;
@@ -1646,7 +1680,10 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
     }
     else {
-      etmp = act_expr_var (((ActId *)e_orig->u.fn.r->u.e.l)->Clone());
+      //Assert (e_orig->u.fn.r->u.e.l->type == E_VAR, "What?");
+      //etmp = act_expr_var (((ActId
+      //*)e_orig->u.fn.r->u.e.l->u.e.l)->Clone());
+      etmp = expr_dup (lexp);
       NEW (e->u.fn.r, Expr);
       e->u.fn.r->type = E_LT;
       e->u.fn.r->u.e.l = etmp;
@@ -3196,6 +3233,25 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
     }
     break;
+
+  case E_STRUCT_REF:
+    ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+    {
+      InstType *it = act_expr_insttype (s, ret->u.e.l, NULL, 2);
+      Assert (it, "What?");
+      Assert (TypeFactory::isPureStruct (it), "What");
+      UserDef *ux = dynamic_cast<UserDef *> (it->BaseType());
+      Assert (ux, "What");
+
+      ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, ux->CurScope(), flags);
+      if (expr_is_a_const (ret->u.e.r)) {
+	Expr *tmp = ret;
+	ret = ret->u.e.r;
+	expr_ex_free (tmp->u.e.l);
+	FREE (tmp);
+      }
+    }
+    break;
     
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);
@@ -3489,7 +3545,8 @@ static void efree_ex (Expr *e)
       }
       else {
 	efree_ex (e->u.fn.r->u.e.r);
-	delete (ActId *) (e->u.fn.r->u.e.l);
+	efree_ex (e->u.fn.r->u.e.l);
+	//delete (ActId *) (e->u.fn.r->u.e.l);
       }
       FREE (e->u.fn.r);
     }
@@ -4394,7 +4451,7 @@ Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
 	}
 	else {
 	  Expr *tmp;
-	  ((ActId *)e->u.fn.r->u.e.l)->moveNS (orig, newns);
+	  EXP_UPDATE (e->u.fn.r->u.e.l);
 	  tmp = e->u.fn.r;
 	  if (tmp && tmp->type == E_GT) {
 	    tmp = tmp->u.e.l;

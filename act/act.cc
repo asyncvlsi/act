@@ -575,6 +575,7 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->ref_level = 0;
 
   tr->special_id = 0;
+  tr->special_id_sc = NULL;
 }
 
 static void _free_tr (ActTree *tr)

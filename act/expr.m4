@@ -235,7 +235,12 @@ expr_id[ActId *]: { base_id "." }*
       }
     }
 
-    s = $0->scope;
+    if ($0->special_id_sc) {
+      s = $0->special_id_sc;
+    }
+    else {
+      s = $0->scope;
+    }
     /* step 1: check that ret exists in the current scope */
     it = s->FullLookup (cur->getName());
     if (!it) {
@@ -247,7 +252,12 @@ expr_id[ActId *]: { base_id "." }*
 	  return ret;
 	}
       }
-      $E("The identifier ``%s'' does not exist in the current scope", cur->getName());
+      if ($0->special_id_sc) {
+	$E("The identifier ``%s'' does not exist in the scope of the structure reference", cur->getName());
+      }
+      else {
+	$E("The identifier ``%s'' does not exist in the current scope", cur->getName());
+      }
     }
 
     ud = NULL;

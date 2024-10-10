@@ -95,10 +95,26 @@ int act_inline_isbound (act_inline_table *tab, const char *name)
   return 0;
 }
 
+static void dump_table (act_inline_table *tab)
+{
+  printf ("Bindings:\n\t");
+  while (tab) {
+    hash_iter_t it;
+    hash_bucket_t *b;
+    hash_iter_init (tab->state, &it);
+    while ((b = hash_iter_next (tab->state, &it))) {
+      printf (" %s", b->key);
+    }
+    printf ("\n\t");
+    tab = tab->parent;
+  }
+}
+
 static Expr **_lookup_binding (act_inline_table *Hs,
 			       const char *name, ActId *rest, int err = 1)
 {
   hash_bucket_t *b;
+  act_inline_table *origHs = Hs;
   while (Hs) {
     b = hash_lookup (Hs->state, name);
     if (b) {

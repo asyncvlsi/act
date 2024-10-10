@@ -187,7 +187,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     if (isBuiltinMacro()) {
       InstType *it;
       if (strcmp (getName(), "int") == 0) {
-	ux->Print (stdout);
+	//ux->Print (stdout);
 	it = new InstType (s, TypeFactory::Factory()->NewInt (0,TypeFactory::totBitWidthSpecial (ux)), 0);
 	it->setNumParams (1);
 	it->setParam (0, const_expr (TypeFactory::totBitWidthSpecial (ux)));
@@ -276,6 +276,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       tmpf->setBody (_b->Clone ());
     }
     ret->_exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
+    ret->_exf->CurScope()->updateParent (ux->CurScope());
 
     act_languages *all_lang = ret->_exf->getlang();
     act_chp *xchp;
@@ -301,7 +302,6 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     }
     else {
       act_inline_table *tab = act_inline_new (tsc, NULL);
-
       Expr **tmp_exprs;
       MALLOC (tmp_exprs, Expr *, nports+1);
       for (int i=0; i < nports; i++) {
@@ -309,8 +309,6 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 	tmp_exprs[i] = act_expr_var (tid);
 	act_inline_setval (tab, tid, tmp_exprs+i);
       }
-      tmp_exprs[nports] = act_expr_var (new ActId (string_cache ("self")));
-      act_inline_setval (tab, (ActId *)tmp_exprs[nports]->u.e.l, tmp_exprs + nports);
       FREE (tmp_exprs);
 
       // we need to also add "self bindings" to items in the scope

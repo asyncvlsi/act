@@ -1,0 +1,2 @@
+ERROR: File `46.act', line 25, col 9
+	User macro `plus' must return a non-parameter type for operator overloading.

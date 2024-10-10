@@ -1182,13 +1182,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
     b->Expandlist (ns, ux->I);
   }
 
-  /*-- expand macros --*/
-  for (int i=0; i < A_LEN (um); i++) {
-    A_NEW (ux->um, UserMacro *);
-    A_NEXT (ux->um) = um[i]->Expand (ux, ns, ux->I, (is_proc == 1) ? 1 : 0);
-    A_INC (ux->um);
-  }
-
   ux->pending = 0;
   recursion_depth--;
   return ux;
@@ -1227,6 +1220,13 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     xd->enum_vals = list_dup (enum_vals);
   }
 
+  /*-- expand macros --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    A_NEW (xd->um, UserMacro *);
+    A_NEXT (xd->um) = um[i]->Expand (xd, ns, xd->I, 0);
+    A_INC (xd->um);
+  }
+
   if (TypeFactory::isPureStruct (xd)) {
     for (int i=0; i < A_LEN (xd->um); i++) {
       xd->um[i]->setParent (xd);
@@ -1235,7 +1235,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
       }
     }
   }
-  
+
   return xd;
 }
 
@@ -1260,6 +1260,13 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   delete ux;
 
   Assert (_ns->EditType (xc->name, xc) == 1, "What?");
+
+  /*-- expand macros --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    A_NEW (xc->um, UserMacro *);
+    A_NEXT (xc->um) = um[i]->Expand (xc, ns, xc->I, 0);
+    A_INC (xc->um);
+  }
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
@@ -1300,9 +1307,9 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   else {
     xd->setRetType (ret_type);
   }
-  
+
   xd->chkInline();
-  
+
   return xd;
 }
 

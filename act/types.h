@@ -1561,6 +1561,11 @@ public:
   InstType *getRetType () { return rettype; }
 
   /**
+   * @return true if this is a function method, false otherwise
+   */
+  bool isFunction() { return rettype == NULL ? false : true; }
+
+  /**
    * @return the dummy function pointer associated with this macro, if
    * the macro is a function, NULL otherwise
    */

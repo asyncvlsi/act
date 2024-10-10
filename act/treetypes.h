@@ -200,6 +200,7 @@ typedef struct {
   int ref_level;
 
   int special_id; /* special ID! for user macros */
+  Scope *special_id_sc;		/* scope (if any) */
   
 } ActTree;
 

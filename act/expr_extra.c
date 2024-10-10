@@ -60,7 +60,7 @@ static void do_init (LFILE *l)
 }
   
 
-static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
+static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 {
   Expr *e, *f;
   Expr *templ = NULL;
@@ -69,7 +69,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
   
   do_init(l);
   
-  if ((allow_enums && (file_sym (l) == double_colon)) || file_sym (l) == f_id) {
+  if ((first_fn && (file_sym (l) == double_colon)) || file_sym (l) == f_id) {
 
 #define PRINT_STEP				\
   do {						\
@@ -127,6 +127,14 @@ static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
     /* look for optional template parameters */
     if (file_have (l, langle)) {
       Expr *tt;
+
+      if (!first_fn) {
+	/* no template parameters allowed in method calls */
+	if (pushed) {
+	  file_pop_position (l);
+	}
+	return NULL;
+      }
       expr_endgtmode (1);
       NEW (templ, Expr);
       templ->type = E_LT;
@@ -196,14 +204,14 @@ static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
 	  file_pop_position (l);
 	  pushed = 0;
 	}
-	// first part of the ID is in buf
+	/* first part of the ID is in buf */
 	Assert (expr_parse_id, "What?");
 	pId *v = (*expr_parse_id) (l);
 	if (!v) {
 	  FREE (e);
 	  return NULL;
 	}
-	// add template parsing here!
+	/* add template parsing here! */
 	if (!file_have (l, lpar)) {
 	  FREE (e);
 	  Assert (expr_free_id, "What?");
@@ -225,8 +233,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int allow_enums)
 	      f = e->u.e.r;
 	    }
 	    else {
-	      NEW (f->u.e.r, Expr); // Assumes this is the same
-				  // as u.fn.r
+	      NEW (f->u.e.r, Expr);
 	      f = f->u.e.r;
 	    }
 	    f->type = E_LT;
@@ -331,6 +338,143 @@ static Expr *_parse_id_or_func (LFILE *l)
 static Expr *_parse_expr_func (LFILE *l)
 {
   Expr *e = _parse_expr_func2 (l, 1);
+  if (!e) {
+    return NULL;
+  }
+
+  file_push_position (l);
+  while (file_have (l, dot)) {
+    Expr *f = _parse_id_or_func (l);
+    Expr *tmp;
+    char *fn;
+    if (!f) {
+      file_set_position (l);
+      file_pop_position (l);
+      return e;
+    }
+    /*
+      f could be: E_VAR, E_USERMACRO, or E_FUNCTION
+    */
+    if (e->type == E_USERMACRO) {
+      switch (f->type) {
+      case E_VAR:
+	/* usermacro . var -> struct ref */
+	NEW (tmp, Expr);
+	tmp->type = E_STRUCT_REF;
+	tmp->u.e.l = e;
+	tmp->u.e.r = f;
+	e = tmp;
+	break;
+
+      case E_USERMACRO:
+	/*
+	  usermacro . usermacro ->
+
+             usermacro
+              /       \
+        struct ref   args
+	  /   |
+	 um   ID from "f" (the . usermacro)
+	*/
+	NEW (tmp, Expr);
+	tmp->type = E_STRUCT_REF;
+	tmp->u.e.l = e;
+	Assert (f->u.e.l && f->u.e.l->type == E_VAR, "What?");
+	tmp->u.e.r = f->u.e.l;
+	/* f is a user macro, and so this struct ref extracts the
+	   prefix as the structure reference, and the actual macro name
+	   in the parent is the last field!
+	*/
+	f->u.e.l = tmp;
+	e = f;
+	break;
+
+      case E_FUNCTION:
+        /*
+         usermacro . function ->
+             usermacro
+             /       \
+        struct ref    args  <-- contains USERMACRO2, the function name
+        */
+	f->type = E_USERMACRO;
+	tmp = f->u.fn.r; // args
+	/* f->u.fn.s -> macro name, this is stashed in the args field
+	   with a special flag
+	*/
+	fn = f->u.fn.s;
+	f->u.e.l = e;
+	NEW (f->u.e.r, Expr);
+	f->u.e.r->type = E_USERMACRO2;
+	f->u.e.r->u.fn.s = (char *)fn;
+	f->u.e.r->u.fn.r = tmp;
+	/* if the ARGS type for a usermacro is usermacro2, then the l
+	   field is actually the macro name and we don't have to strip
+	   anything out from the usermacro l field
+	*/
+	e = f;
+	break;
+
+      default:
+	Assert (0, "This should not happen");
+	break;
+      }
+    }
+    else if (e->type == E_FUNCTION) {
+      switch (f->type) {
+      case E_VAR:
+	/* function. var -> struct ref */
+	NEW (tmp, Expr);
+	tmp->type = E_STRUCT_REF;
+	tmp->u.e.l = e;
+	tmp->u.e.r = f;
+	e = tmp;
+	break;
+
+      case E_USERMACRO:
+	/*
+          function . usermacro ->
+             usermacro
+	    /	     \
+         struct ref  args
+	*/
+	NEW (tmp, Expr);
+	tmp->type = E_STRUCT_REF;
+	tmp->u.e.l = e;
+	tmp->u.e.r = f->u.e.l;
+	f->u.e.l = tmp;
+	e = f;
+	break;
+
+      case E_FUNCTION:
+	/*
+          function . function ->
+             usermacro
+	     /        \
+          struct ref   arg <- contains usermacro2
+	*/
+	NEW (tmp, Expr);
+	tmp->type = E_USERMACRO;
+	tmp->u.e.l = e;
+	tmp->u.e.r = f;
+	f->type = E_USERMACRO2;
+	e = tmp;
+	break;
+
+      default:
+	Assert (0, "This should not happen");
+	break;
+      }
+    }
+    else {
+      Assert (0, "Should not be here");
+    }
+    file_pop_position (l);
+    if (e->type == E_STRUCT_REF) {
+      return e;
+    }
+    file_push_position (l);
+  }
+  file_pop_position (l);
   return e;
 }
 
@@ -930,6 +1074,22 @@ int act_expr_free_default (Expr *e)
 {
   if (e->type == E_ENUM_CONST) {
     FREE (e->u.fn.s);
+    return 1;
+  }
+  else if (e->type == E_USERMACRO2) {
+    FREE (e->u.e.l);
+    act_expr_free_default (e->u.e.r);
+    return 1;
+  }
+  return 0;
+}
+
+
+int act_expr_could_be_struct (Expr *e)
+{
+  if (!e) return 0;
+  if (e->type == E_VAR || e->type == E_STRUCT_REF ||
+      e->type == E_FUNCTION || e->type == E_USERMACRO) {
     return 1;
   }
   return 0;

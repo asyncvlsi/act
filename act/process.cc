@@ -98,6 +98,14 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   else {
     xp->ifaces = NULL;
   }
+
+  /*-- expand macros --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    A_NEW (xp->um, UserMacro *);
+    A_NEXT (xp->um) = um[i]->Expand (xp, ns, xp->I, 1);
+    A_INC (xp->um);
+  }
+
   return xp;
 }
 

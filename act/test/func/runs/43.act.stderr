@@ -1,0 +1,2 @@
+ERROR: File `43.act', line 27, col 31
+	Invalid use of `.' for an identifer that is not a user-defined type: x

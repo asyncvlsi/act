@@ -267,7 +267,8 @@ int act_type_var (Scope *s, ActId *id, InstType **xit)
 }
 
 
-static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal)
+static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
+					     int only_chan)
 {
   InstType *it;
   
@@ -311,6 +312,21 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal)
     else {
       return um->getRetType();
     }
+  }
+  else if (e->type == E_STRUCT_REF) {
+    it = act_expr_insttype (s, e->u.e.l, islocal, only_chan);
+    if (!it) return NULL;
+    if (!TypeFactory::isPureStruct (it)) {
+      return NULL;
+    }
+    UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+    Assert (u, "Hmm...");
+    Assert (e->u.e.r->type == E_VAR, "What?");
+    it = act_actual_insttype (u->CurScope(),
+			      (ActId *) e->u.e.r->u.e.l,
+			      islocal);
+    return it;
+
   }
   return NULL;
 }
@@ -590,9 +606,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     /* special case for enumerations */
     {
       InstType *it1, *it2;
-      it1 = _act_special_expr_insttype (s, e->u.e.l, NULL);
+      it1 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
       if (it1) {
-	it2 = _act_special_expr_insttype (s, e->u.e.r, NULL);
+	it2 = _act_special_expr_insttype (s, e->u.e.r, NULL, only_chan);
 	if (it2) {
 	  if (it1->isEqual (it2)) {
 	    if (width) {
@@ -1619,7 +1635,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
       - structures
       - pure enumerations
   */
-  it = _act_special_expr_insttype (s, e, islocal);
+  it = _act_special_expr_insttype (s, e, islocal, only_chan);
   if (it) {
     return it;
   }

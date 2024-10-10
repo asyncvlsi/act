@@ -281,6 +281,45 @@ static int _single_real_arg (Expr *args)
   return 0;
 }
 
+static Expr *_check_overload (ActTree *cookie, Expr *e, const char *nm)
+{
+  if (!e) return e;
+  if (act_expr_could_be_struct (e->u.e.l)) {
+    InstType *it = act_expr_insttype (cookie->scope, e->u.e.l, NULL, 2);
+    if (it && TypeFactory::isPureStruct (it)) {
+      struct act_position p;
+      p.l = cookie->line;
+      p.c = cookie->column;
+      p.f = cookie->file;
+      
+      UserDef *u = dynamic_cast<UserDef *>(it->BaseType());
+      Assert (u, "What?");
+      UserMacro *um = u->getMacro (nm);
+      if (um) {
+	if (!um->isFunction()) {
+	  act_parse_err (&p, "User macro `%s': must be a function.", nm);
+	}
+	if (TypeFactory::isParamType (um->getRetType())) {
+	  act_parse_err (&p, "User macro `%s' must return a non-parameter type for operator overloading.", nm);
+	}
+	if (um->getNumPorts() != (e->u.e.r ? 1 : 0)) {
+	  act_parse_err (&p, "User macro `%s' must have %s for operator overloading.", nm, (e->u.e.r ? "exactly one argument" : "no arguments"));
+	}
+	Expr *texp;
+	e->type = E_USERMACRO;
+        if (e->u.e.r) {
+   	   NEW (texp, Expr);
+	   texp->type = E_LT;
+	   texp->u.e.l = e->u.e.r;
+	   texp->u.e.r = NULL;
+	   e->u.e.r = texp;
+        }
+      }
+    }
+  }
+  return e;
+}
+
 /*------------------------------------------------------------------------
  *
  * Expression walk
@@ -306,12 +345,15 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 #define UOP						\
     ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
 
+
   case E_AND:  BINOP; break;
   case E_OR:   BINOP; break;
-  case E_PLUS: BINOP; break;
-  case E_MINUS:BINOP; break;
-  case E_MULT: BINOP; break;
-  case E_DIV:  BINOP; break;
+
+  case E_PLUS: BINOP; ret = _check_overload (cookie, ret, "plus"); break;
+  case E_MINUS:BINOP; ret = _check_overload (cookie, ret, "minus"); break;
+  case E_MULT: BINOP; ret = _check_overload (cookie, ret, "mult"); break;
+  case E_DIV:  BINOP; ret = _check_overload (cookie, ret, "div"); break;
+
   case E_MOD:  BINOP; break;
   case E_LSL:  BINOP; break;
   case E_LSR:  BINOP; break;
@@ -676,87 +718,229 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       int args = 0;
       struct act_position p;
       UserMacro *um;
+      Expr *lhs, *etmp;
       ActId *tmp, *prev;
       InstType *it;
       UserDef *u;
-      Scope *sc;
+      Scope *sc, *special_id_sc;
+      Expr *arglist;
       p.l = cookie->line;
       p.c = cookie->column;
       p.f = cookie->file;
-      special_id = cookie->special_id;
-      cookie->special_id = 1;
+
+      /* Step 1: find macro name */
+      /* Step 2: find Expr and UserDef */
+      /* Step 3: construct usermacro call & arguments */
+
+      /* prepare return expr */
+      ret->u.fn.s = NULL;
+      NEW (ret->u.fn.r, Expr);
 
       switch (e->u.e.l->type) {
       case E_VAR:
 	//-- original, simple user macro!
+	special_id = cookie->special_id;
+	special_id_sc = cookie->special_id_sc;
+	cookie->special_id = 1;
+	cookie->special_id_sc = NULL;
 	tmp = act_walk_X_expr_id (cookie, (pId *) e->u.e.l->u.e.l);
 	cookie->special_id = special_id;
+	cookie->special_id_sc = special_id_sc;
+	if (e->u.e.r) {
+	  Assert (e->u.e.r->type != E_USERMACRO2, "usermacro2 error");
+	}
+	NEW (lhs, Expr);
+	lhs->type = E_VAR;
+	lhs->u.e.l = (Expr *) tmp;  // last field will be pruned below
+	lhs->u.e.r = NULL;
+	arglist = e->u.e.r;
 
-	ret->u.fn.s = NULL;
-	NEW (ret->u.fn.r, Expr);
-	/* XXX: HERE! */
-	ret->u.fn.r->u.e.l = (Expr *) tmp;
-	ret->u.fn.r->type = E_LT;
-	ret->u.fn.r->u.e.r = walk_fn_args (cookie, e->u.e.r, &args);
-
-	// extract user macro!
-
+	// extract userdef and usermacro!
 	sc = cookie->scope;
 	u = NULL;
 	prev = NULL;
 	while (tmp->Rest()) {
 	  it = sc->Lookup (tmp->getName());
-	  Assert (it, "This should have been caught earlier!");
+	  if (!it) {
+	    act_parse_err (&p, "Field `%s' not found!", tmp->getName());
+	  }
 	  u = dynamic_cast<UserDef *> (it->BaseType());
-	  Assert (u, "This should have been caught earlier!");
+	  if (!u) {
+	    act_parse_err (&p, "Field `%s' isn't a user-defined type",
+			   tmp->getName());
+	  }
 	  sc = u->CurScope();
 	  prev = tmp;
 	  tmp = tmp->Rest();
 	}
-	Assert (u && prev, "This should have been caught earlier!");
+	if (!(u && prev)) {
+	  act_parse_err (&p, "User macro `%s' without a user-defined type?",
+			 tmp->getName());
+	}
 	um = u->getMacro (tmp->getName());
-	Assert (um, "Didn't find user macro?");
-
-	if (um->getNumPorts () != args + u->getNumParams()) {
-	  act_parse_err (&p, "User macro ``%s'': incorrect number of arguments (expected %d, got %d)", tmp->getName(), um->getNumPorts() - u->getNumParams(), args);
+	if (!um) {
+	  act_parse_err (&p, "User macro `%s' not found.", tmp->getName());
 	}
 
 	// ok: (1) e.u.fn.s should be the usermacro
 	//     (2) e.u.fn.r augmented with the id!
 	prev->prune();
 	delete tmp;
-	ret->u.fn.s = (char *) um;
-      
-	// If this is a param type user function, then we need to append
-	// the template parameters here!
-	Assert (um->getRetType(), "What?");
-	if (TypeFactory::isParamType (um->getRetType()) &&
-	    u->getNumParams() > 0) {
-	  Expr *tmp;
-	  tmp = ret->u.fn.r;
-	  while (tmp->u.e.r) {
-	    tmp = tmp->u.e.r;
-	  }
-	  for (int i=0; i < u->getNumParams(); i++) {
-	    // add id.p as a parameter!
-	    ActId *x = ((ActId *)ret->u.fn.r->u.e.l)->Clone();
-	    x->Append (new ActId (u->getPortName (-(i+1))));
-	    NEW (tmp->u.e.r, Expr);
-	    tmp = tmp->u.e.r;
-	    tmp->type = E_LT;
-	    tmp->u.e.r = NULL;
-	    NEW (tmp->u.e.l, Expr);
-	    tmp->u.e.l->type = E_VAR;
-	    tmp->u.e.l->u.e.l = (Expr *) x;
-	    tmp->u.e.l->u.e.r = NULL;
-	  }
+	break;
+
+      case E_FUNCTION:
+      case E_USERMACRO:
+	Assert (e->u.e.r && e->u.e.r->type == E_USERMACRO2, "Hmm");
+	lhs = act_walk_X_expr (cookie, e->u.e.l);
+	arglist = e->u.e.r->u.fn.r;
+	it = act_expr_insttype (cookie->scope, lhs, NULL, 2);
+	if (!it) {
+	  act_parse_err (&p, "Typechecking failed for user macro.\n\t%s",
+			 act_type_errmsg());
+	}
+	u = dynamic_cast<UserDef *> (it->BaseType());
+	if (!u) {
+	  act_parse_err (&p, "User macro `%s' without a user-defined type?",
+			 e->u.e.r->u.fn.s);
+	}
+	um = u->getMacro (e->u.e.r->u.fn.s);
+	if (!um) {
+	  act_parse_err (&p, "User macro `%s' not found", e->u.e.r->u.fn.s);
 	}
 	break;
+
+      case E_STRUCT_REF:
+	Assert (e->u.e.l->u.e.r->type == E_VAR, "What?");
+	lhs = act_walk_X_expr (cookie, e->u.e.l->u.e.l);
+	it = act_expr_insttype (cookie->scope, lhs, NULL, 2);
+	if (!it) {
+	  act_parse_err (&p, "Typechecking failed for user macro.\n\t%s",
+			 act_type_errmsg());
+	}
+	u = dynamic_cast<UserDef *> (it->BaseType());
+	if (!u) {
+	  act_parse_err (&p, "Structure reference without a user-defined type?");
+	}
+	// now figure out the ID like E_VAR, except the E_VAR field is
+	// from e->u.e.l->u.e.r
+	special_id = cookie->special_id;
+	special_id_sc = cookie->special_id_sc;
+	cookie->special_id = 1;
+	cookie->special_id_sc = u->CurScope();
+
+	// expands to a struct ref, with the last ID pruned
+	NEW (etmp, Expr);
+	etmp->type = E_STRUCT_REF;
+	etmp->u.e.l = lhs;
+	NEW (etmp->u.e.r, Expr);
+	etmp->u.e.r->type = E_VAR;
+	etmp->u.e.r->u.e.r = NULL;
+	tmp = act_walk_X_expr_id (cookie, (pId *) e->u.e.l->u.e.r->u.e.l);
+	etmp->u.e.r->u.e.l = (Expr *) tmp;
+
+	lhs = etmp;
+
+	cookie->special_id = special_id;
+	cookie->special_id_sc = special_id_sc;
+
+	if (e->u.e.r) {
+	  Assert (e->u.e.r->type != E_USERMACRO2, "usermacro2 error");
+	}
+
+	arglist = e->u.e.r;
+
+	// extract userdef and usermacro!
+	sc = u->CurScope();
+	u = NULL;
+	prev = NULL;
+	while (tmp->Rest()) {
+	  it = sc->Lookup (tmp->getName());
+	  if (!it) {
+	    act_parse_err (&p, "Field `%s' not found!", tmp->getName());
+	  }
+	  u = dynamic_cast<UserDef *> (it->BaseType());
+	  if (!u) {
+	    act_parse_err (&p, "Field `%s' isn't a user-defined type",
+			   tmp->getName());
+	  }
+	  sc = u->CurScope();
+	  prev = tmp;
+	  tmp = tmp->Rest();
+	}
+	if (!(u && prev)) {
+	  act_parse_err (&p, "User macro `%s' without a user-defined type?",
+			 tmp->getName());
+	}
+	um = u->getMacro (tmp->getName());
+	break;
+
       default:
 	fatal_error ("other user macros!");
 	break;
       }
+
+      /* lhs = expression for the first argument */
+      ret->u.fn.r->u.e.l = lhs;
+      ret->u.fn.r->type = E_LT;
+      ret->u.fn.r->u.e.r = walk_fn_args (cookie, arglist, &args);
+      ret->u.fn.s = (char *) um;
+
+      int params = 0;
+
+      if (!um->isFunction()) {
+	act_parse_err (&p, "User macro `%s' is not a function.",
+		       um->getName());
+      }
+      Assert (um->getRetType(), "What?");
+      if (TypeFactory::isParamType (um->getRetType())) {
+	params = u->getNumParams();
+      }
+
+      if (um->getNumPorts () != args + params) {
+	act_parse_err (&p, "User macro `%s': incorrect number of arguments (expected %d, got %d)", um->getName(), um->getNumPorts() - params, args);
+      }
+
+      // If this is a param type user function, then we need to append
+      // the template parameters here!
+      if (TypeFactory::isParamType (um->getRetType()) &&
+	  u->getNumParams() > 0) {
+	Expr *tmp;
+	tmp = ret->u.fn.r;
+	while (tmp->u.e.r) {
+	  tmp = tmp->u.e.r;
+	}
+	for (int i=0; i < u->getNumParams(); i++) {
+	  NEW (tmp->u.e.r, Expr);
+	  tmp = tmp->u.e.r;
+	  tmp->type = E_LT;
+	  tmp->u.e.r = NULL;
+	  NEW (tmp->u.e.l, Expr);
+	  // add id.p as a parameter!
+	  if (lhs->type == E_VAR) {
+	    ActId *x = ((ActId *)lhs->u.e.l)->Clone();
+	    x->Append (new ActId (u->getPortName (-(i+1))));
+	    tmp->u.e.l->type = E_VAR;
+	    tmp->u.e.l->u.e.l = (Expr *) x;
+	    tmp->u.e.l->u.e.r = NULL;
+	  }
+	  else {
+	    ActId *x = new ActId (u->getPortName (-(i+1)));
+	    tmp->u.e.l->type = E_STRUCT_REF;
+	    tmp->u.e.l->u.e.l = expr_predup (lhs);
+	    NEW (tmp->u.e.l->u.e.r, Expr);
+	    tmp->u.e.l->u.e.r->type = E_VAR;
+	    tmp->u.e.l->u.e.r->u.e.l = (Expr *) x;
+	    tmp->u.e.l->u.e.r->u.e.r = NULL;
+	  }
+	}
+      }
     }
+    break;
+
+  case E_STRUCT_REF:
+    // process left and then right, no biggie
+    ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
+    ret->u.e.r = act_walk_X_expr (cookie, e->u.e.r);
     break;
 
   default:

@@ -94,7 +94,7 @@
   OR anything that returns a struct!
   E_USERMACRO, E_FUNCTION, or E_STRUCT_REF or E_VAR
 
-  e->u.e.l = expr
+  e->u.e.l = expr ... trailing field is the name of the function!
   e->u.e.r = arguments
 
   // OLD e->u.fn.s = pId ... trailing field is the name of the function!
@@ -144,7 +144,12 @@
       x    y
 
   x is either E_USERMACRO or E_FUNCTION
-  y is an ID
+  y is an ID ... trailing field is going to be the name of the
+  function of the parent is a usermacro.
+
+  y could also be a usermacro, in which case what this refers to is
+  the user macro applied to the left x, and the parent must be a user
+  nacro in this case.
 
    f().g, the function would be the left, and "g" would be the right
 
@@ -152,8 +157,9 @@
    right
 */
 #define E_STRUCT_REF (E_END+31)
+#define E_USERMACRO2 (E_END+32) /* temp during parsing */
 
-#define E_NEWEND  E_END + 32	     ///< new "end" of expression options
+#define E_NEWEND  E_END + 33	     ///< new "end" of expression options
 
 #ifdef __cplusplus
 extern "C" {
@@ -166,7 +172,12 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l);
 Expr *act_parse_expr_intexpr_base (LFILE *l);
 Expr *act_expr_any_basecase (LFILE *l);
 int act_expr_parse_newtokens (LFILE *l);
-int act_expr_free_default (Expr *);  
+int act_expr_free_default (Expr *);
+
+/*
+ * @return 1 if e could possibly be a structure, 0 otherwise
+ */
+int act_expr_could_be_struct (Expr *e);
 
 #ifdef __cplusplus
 }
