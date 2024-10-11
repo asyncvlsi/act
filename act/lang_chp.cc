@@ -1941,7 +1941,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       ret->space = NULL;
     }
 
-    rhs = act_expr_insttype (s, ret->u.assign.e, NULL, 2);
+    rhs = act_expr_insttype (s, te, NULL, 2);
     lhs_a = lhs->arrayInfo();
 
     if (rhs) {
