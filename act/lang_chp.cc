@@ -33,6 +33,187 @@
 #include <common/config.h>
 #include <string.h>
 
+static int _chp_freshvar_count = 0;
+
+/*
+ * Any structture references have to be changed to assignments
+ * followed by replacement with the ID.
+ *
+ * If id != NULL, then that also applies to any self assignments for
+ * structures.
+ */
+static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
+{
+  bool ret = false;
+  
+  if (!e) return false;
+  
+  switch (e->type) {
+  case E_STRUCT_REF:
+    {
+      InstType *it = act_expr_insttype (s, e->u.e.l, NULL, 2);
+      act_chp_lang_t *c;
+      Assert (it, "What?");
+      it->MkCached ();
+      s->findFresh ("_us", &_chp_freshvar_count);
+      char buf[1024];
+      snprintf (buf, 1024, "_us%d", _chp_freshvar_count);
+      s->Add (buf, it);
+      NEW (c, act_chp_lang_t);
+      c->space = NULL;
+      c->label = NULL;
+      c->type = ACT_CHP_ASSIGN;
+      c->u.assign.id = new ActId (string_cache (buf));
+      c->u.assign.e = e->u.e.l;
+      list_append (l, c);
+      e->type = E_VAR;
+      ActId *x = new ActId (string_cache (buf));
+      Assert (e->u.e.r->type == E_VAR, "What?");
+      x->Append ((ActId *)e->u.e.r->u.e.l);
+      e->u.e.l = (Expr *) x;
+      e->u.e.r = NULL;
+    }
+    break;
+    
+  case E_VAR:
+  case E_BITFIELD:
+  case E_PROBE:
+    if (id) {
+      ActId *t = (ActId *)e->u.e.l;
+      Assert (t, "Missing ID in expr?");
+      while (id) {
+	if (strcmp (t->getName(), id->getName()) == 0) {
+	  ret = true;
+	  break;
+	}
+	id = id->Rest ();
+      }
+    }
+    break;
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    /* should not be here */
+    break;
+
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    ret |= _chp_expr_unstruct (l, s, e->u.e.r, id);
+    break;
+
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    break;
+
+  case E_QUERY: 
+    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    ret |= _chp_expr_unstruct (l, s, e->u.e.r->u.e.l, id);
+    ret |= _chp_expr_unstruct (l, s, e->u.e.r->u.e.r, id);
+    break;
+
+  case E_COLON:
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.fn.r;
+    while (e) {
+      ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
+
+  default:
+    fatal_error ("Unknown type %d in unstruct function", e->type);
+    break;
+  }
+  
+  return ret;
+}
+
+static list_t *chp_expr_unstruct (Scope *s, Expr *e, ActId *id)
+{
+  list_t *l = list_new ();
+  bool b;
+  b = _chp_expr_unstruct (l, s, e, id);
+  if (b) {
+    if (e->type == E_FUNCTION && ((Function *)e->u.fn.s)->isSimpleInline()) {
+      // add an assignment that looks like:
+      //   newvar := e
+      // and replace e with newvar
+      act_chp_lang_t *c;
+      InstType *it;
+      int xt = act_type_var (s, id, &it);
+      Assert (xt != T_ERR, "Should have found this earlier!");
+      it->MkCached();
+      s->findFresh ("_us", &_chp_freshvar_count);
+      char buf[1024];
+      snprintf (buf, 1024, "_us%d", _chp_freshvar_count);
+      s->Add (buf, it);
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_ASSIGN;
+      c->space = NULL;
+      c->label = NULL;
+      c->u.assign.id = new ActId (string_cache (buf));
+      NEW (c->u.assign.e, Expr);
+      *c->u.assign.e = *e;
+      list_append (l, c);
+      e->type = E_VAR;
+      e->u.e.l = (Expr *) new ActId (string_cache (buf));
+      e->u.e.r = NULL;
+    }
+  }
+  if (list_isempty (l)) {
+    list_free (l);
+    l = NULL;
+  }
+  return l;
+}
+
 /*--- 
   chp expressions have a slightly different expansion, because
   they might use real arrays
@@ -741,6 +922,8 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   if (!c) return NULL;
 
   NEW (ret, act_chp);
+
+  _chp_freshvar_count = 0;
   
   ret->vdd = expand_var_read (c->vdd, ns, s);
   ret->gnd = expand_var_read (c->gnd, ns, s);
@@ -1525,7 +1708,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_SEMI:
     ret->u.semi_comma.cmd = list_new ();
     for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-      list_append (ret->u.semi_comma.cmd, chp_expand ((act_chp_lang_t *)list_value (li), ns, s));
+      act_chp_lang_t *xl = chp_expand ((act_chp_lang_t *)list_value (li), ns, s);
+      list_append (ret->u.semi_comma.cmd, xl);
     }
     break;
 
@@ -1733,7 +1917,29 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     }
 
     act_chp_macro_check (s, ret->u.assign.id);
-    ret->u.assign.e = chp_expr_expand (c->u.assign.e, ns, s);
+    // XXX:
+    //   STRUCT_REF should be fixed here
+    //   self-assignment with structure on the right hand side should
+    //   also be fixed like STRUCT_REF
+    
+    Expr *te = chp_expr_expand (c->u.assign.e, ns, s);
+    list_t *xassign;
+    if (TypeFactory::isPureStruct (lhs)) {
+      xassign = chp_expr_unstruct (s, te, ret->u.assign.id);
+    }
+    else {
+      xassign = chp_expr_unstruct (s, te, NULL);
+    }
+    ret->u.assign.e = te;
+    if (xassign) {
+      ret->label = NULL;
+      list_append (xassign, ret);
+      NEW (ret, act_chp_lang_t);
+      ret->type = ACT_CHP_SEMI;
+      ret->u.semi_comma.cmd = xassign;
+      ret->label = c->label;
+      ret->space = NULL;
+    }
 
     rhs = act_expr_insttype (s, ret->u.assign.e, NULL, 2);
     lhs_a = lhs->arrayInfo();
@@ -1873,7 +2079,22 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       ret->u.comm.var = NULL;
     }
     if (c->u.comm.e) {
-      ret->u.comm.e = chp_expr_expand (c->u.comm.e, ns, s);
+      // XXX:
+      //   STRUCT_REF should be fixed here
+      //   self-assignment with structure on the right hand side should
+      //   also be fixed like STRUCT_REF
+      Expr *te = chp_expr_expand (c->u.comm.e, ns, s);
+      list_t *xassign = chp_expr_unstruct (s, te, NULL);
+      ret->u.comm.e = te;
+      if (xassign) {
+	ret->label = NULL;
+	list_append (xassign, ret);
+	NEW (ret, act_chp_lang_t);
+	ret->type = ACT_CHP_SEMI;
+	ret->u.semi_comma.cmd = xassign;
+	ret->label = c->label;
+	ret->space = NULL;
+      }
     }
     else {
       ret->u.comm.e = NULL;

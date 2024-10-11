@@ -6,13 +6,6 @@ deftype str (int<N> x, z)
      {
        chp { self := N + y }
      }
-
-     function plusx (int y) : str<4>
-     {
-       str<4> ret;
-//       chp { self.x := y; self.z := y+2 }
-       chp { ret.x := y; ret.z := y + 2; self := ret }
-     }
    }
 }
 
@@ -31,7 +24,7 @@ defproc test()
       s := str<5>(0x42);
       log ("got ", s.x, " ", s.z);
       log ("get ", s.plus(4));
-      log ("get ", s.plusx(4).plus(3))
+      log ("get ", tostr(3).z)
    }
 }
 

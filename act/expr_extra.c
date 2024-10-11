@@ -131,6 +131,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
       if (!first_fn) {
 	/* no template parameters allowed in method calls */
 	if (pushed) {
+	  file_set_position (l);
 	  file_pop_position (l);
 	}
 	return NULL;
@@ -145,6 +146,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	FREE (e);
 	expr_endgtmode (0);
 	if (pushed) {
+	  file_set_position (l);
 	  file_pop_position (l);
 	}
 	return NULL;
@@ -162,6 +164,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	  FREE (e);
 	  expr_endgtmode (0);
 	  if (pushed) {
+	    file_set_position (l);
 	    file_pop_position (l);
 	  }
 	  return NULL;
@@ -172,6 +175,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	expr_free (templ);
 	FREE (e);
 	if (pushed) {
+	  file_set_position (l);
 	  file_pop_position (l);
 	}
 	return NULL;
@@ -183,6 +187,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	expr_free (templ);
 	FREE (e);
 	if (pushed) {
+	  file_set_position (l);
 	  file_pop_position (l);
 	}
 	return NULL;
@@ -258,6 +263,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	return e;
       }
       if (pushed) {
+	file_set_position (l);
 	file_pop_position (l);
       }
       FREE (e);
@@ -281,6 +287,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	    expr_free (templ);
 	  }
 	  if (pushed) {
+	    file_set_position (l);
 	    file_pop_position (l);
 	  }
 	  return NULL;
@@ -293,6 +300,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	  expr_free (templ);
 	}
 	if (pushed) {
+	  file_set_position (l);
 	  file_pop_position (l);
 	}
 	return NULL;
@@ -309,6 +317,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
   }
   else {
     if (pushed) {
+      file_set_position (l);
       file_pop_position (l);
     }
     return NULL;
@@ -324,6 +333,7 @@ static Expr *_parse_id_or_func (LFILE *l)
   Expr *e = _parse_expr_func2 (l, 0);
   if (e) return e;
   Assert (expr_parse_id, "What?");
+
   pId *v = (*expr_parse_id) (l);
   if (!v) {
     return NULL;
@@ -332,6 +342,7 @@ static Expr *_parse_id_or_func (LFILE *l)
   e->type = E_VAR;
   e->u.e.l = (Expr *) v;
   e->u.e.r = NULL;
+
   return e;
 }
   

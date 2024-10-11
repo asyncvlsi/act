@@ -95,7 +95,7 @@ int act_inline_isbound (act_inline_table *tab, const char *name)
   return 0;
 }
 
-static void dump_table (act_inline_table *tab)
+void act_dump_table (act_inline_table *tab)
 {
   printf ("Bindings:\n\t");
   while (tab) {
@@ -103,7 +103,16 @@ static void dump_table (act_inline_table *tab)
     hash_bucket_t *b;
     hash_iter_init (tab->state, &it);
     while ((b = hash_iter_next (tab->state, &it))) {
-      printf (" %s", b->key);
+      printf (" %s -> ", b->key);
+      Expr **x = (Expr **) b->v;
+      if (x[0]) {
+	print_uexpr (stdout, x[0]);
+      }
+      else {
+	printf ("-null-");
+      }
+      
+      printf ("\n");
     }
     printf ("\n\t");
     tab = tab->parent;

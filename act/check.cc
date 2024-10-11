@@ -1400,6 +1400,26 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
     }
     break;
+
+  case E_STRUCT_REF:
+    {
+      lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
+      if (lt == T_ERR) return lt;
+      if (!(lt & T_DATA)) {
+	typecheck_err ("Left-hand side of a structure reference must be a structure!");
+	return T_ERR;
+      }
+      if (lt & T_ARRAYOF) {
+	typecheck_err ("Left-hand side of a structure reference cannot be of an array type.");
+	return T_ERR;
+      }
+      InstType *it = act_expr_insttype (s, e->u.e.l, NULL, 2);
+      Assert (it, "Hmm");
+      Data *d = dynamic_cast<Data *>(it->BaseType());
+      lt = act_type_expr (d->CurScope(), e->u.e.r, &rw, only_chan);
+      return lt;
+    }
+    break;
     
   default:
     fatal_error ("Unknown type!");

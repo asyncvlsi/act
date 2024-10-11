@@ -1,0 +1,25 @@
+deftype mystruct(int<4> a, b)
+{  }
+
+function swap(mystruct m) : mystruct
+{
+   chp {
+     self.a := m.b;
+     self.b := m.a
+   }
+}
+
+defproc test()
+{
+  mystruct m;
+  int y;
+
+  chp {
+     m.a := 0x1;
+     m.b := 0x2;
+     m := swap(m);
+     skip
+  }
+}
+
+test t;

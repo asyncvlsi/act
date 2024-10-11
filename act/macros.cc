@@ -160,6 +160,208 @@ int UserMacro::addPort (InstType *t, const char *id)
   return 1;
 }
 
+static ActId *_adddollar_id_subst (UserDef *ux, ActId *id)
+{
+  if (ux->FindPort (id->getName())) {
+    ActId *tmp = new ActId (string_cache ("$internal"));
+    tmp->Append (id);
+    id = tmp;
+  }
+  return id;
+}
+
+static void _dollar_replace_ids (UserDef *ux,  Expr *e)
+{
+  if (!e) return;
+  switch (e->type) {
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+  case E_REAL:
+    break;
+
+  case E_FUNCTION:
+    _dollar_replace_ids (ux, e->u.fn.r);
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+  case E_BITFIELD:
+    if (e->u.e.l) {
+      e->u.e.l = (Expr *) _adddollar_id_subst (ux, (ActId *)e->u.e.l);
+    }
+    break;
+
+  default:
+    if (e->u.e.l) _dollar_replace_ids (ux, e->u.e.l);
+    if (e->u.e.r) _dollar_replace_ids (ux, e->u.e.r);
+    break;
+  }
+}
+
+static Expr *_expr_adddollar (UserDef *ux, Expr *e)
+{
+  Expr *ret = expr_dup (e);
+  _dollar_replace_ids (ux, ret);
+  return ret;
+}
+
+static act_chp_lang_t *_add_dollarinternal (UserDef *ux, act_chp_lang_t *c)
+{
+  act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
+  act_chp_lang_t *ret;
+  listitem_t *li;
+  
+  if (!c) return NULL;
+
+  NEW (ret, act_chp_lang_t);
+  ret->type = c->type;
+  ret->label = c->label;
+
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    ret->u.semi_comma.cmd = list_new ();
+    for (li = list_first (c->u.semi_comma.cmd); li;
+	 li = list_next (li)) {
+      list_append (ret->u.semi_comma.cmd,
+		   _add_dollarinternal (ux, (act_chp_lang_t *)list_value (li)));
+    }
+    break;
+
+  case ACT_CHP_COMMALOOP:
+  case ACT_CHP_SEMILOOP:
+    warning ("Semi/comma loops not supported in macros/functions");
+    ret->type = ACT_CHP_SKIP;
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    gchd = NULL;
+    gctl = NULL;
+    for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+      if (gctmp->id) {
+	warning ("Guard loops not supported in macros");
+      }
+      NEW (tmp, act_chp_gc_t);
+      tmp->id = NULL;
+      tmp->next = NULL;
+      tmp->g = _expr_adddollar (ux, gctmp->g);
+      if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
+	  c->type != ACT_CHP_DOLOOP) {
+	FREE (tmp);
+      }
+      else {
+	tmp->s = _add_dollarinternal (ux, gctmp->s);
+	q_ins (gchd, gctl, tmp);
+      }
+    }
+    if (!gchd) {
+      /* ok this is false -> skip */
+      NEW (tmp, act_chp_gc_t);
+      tmp->id = NULL;
+      tmp->next = NULL;
+      
+      tmp->g = const_expr_bool (0);
+      NEW (tmp->s, act_chp_lang);
+      tmp->s->type = ACT_CHP_SKIP;
+      q_ins (gchd, gctl, tmp);
+    }
+    if (c->type != ACT_CHP_DOLOOP) {
+      if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {
+	/* loops and selections that simplify to a single guard that
+	   is constant */
+	if (c->type == ACT_CHP_LOOP) {
+	  if (gchd->g && gchd->g->type == E_FALSE) {
+	    /* whole thing is a skip */
+	    /* XXX: need chp_free */
+	    ret->u.gc = gchd;
+	    act_chp_free (ret);
+	    NEW (ret, act_chp_lang);
+	    ret->type = ACT_CHP_SKIP;
+	    return ret;
+	  }
+	}
+	else {
+	  if (!gchd->g || gchd->g->type == E_TRUE) {
+	    /* whole thing is the body */
+	    
+	    FREE (ret);
+	    ret = gchd->s;
+	    FREE (gchd);
+	    if (!ret) {
+	      NEW (ret, act_chp_lang);
+	      ret->type = ACT_CHP_SKIP;
+	    }
+	    return ret;
+	  }
+	}
+      }
+    }
+    ret->u.gc = gchd;
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
+    ret->u.assign.id = _adddollar_id_subst (ux, c->u.assign.id);
+    ret->u.assign.e = _expr_adddollar (ux, c->u.assign.e);
+    break;
+    
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    ret->u.comm.chan = _adddollar_id_subst (ux, c->u.comm.chan);
+    ret->u.comm.flavor = c->u.comm.flavor;
+    if (c->u.comm.var) {
+      ret->u.comm.var = _adddollar_id_subst (ux, c->u.comm.var);
+    }
+    else {
+      ret->u.comm.var = NULL;
+    }
+    if (c->u.comm.e) {
+      ret->u.comm.e = _expr_adddollar (ux, c->u.comm.e);
+    }
+    else {
+      ret->u.comm.e = NULL;
+    }
+    break;
+    
+  case ACT_CHP_FUNC:
+    ret->u.func.name = c->u.func.name;
+    ret->u.func.rhs = list_new ();
+    for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *arg, *ra;
+      NEW (arg, act_func_arguments_t);
+      ra = (act_func_arguments_t *) list_value (li);
+      arg->isstring = ra->isstring;
+      if (ra->isstring) {
+	arg->u.s = ra->u.s;
+      }
+      else {
+	arg->u.e = _expr_adddollar (ux, ra->u.e);
+      }
+      list_append (ret->u.func.rhs, arg);
+    }
+    break;
+
+  case ACT_CHP_MACRO:
+    {
+      act_error_ctxt (stderr);
+      fatal_error ("Nested macros not permitted");
+    }
+    break;
+    
+  default:
+    fatal_error ("Unknown chp type %d", ret->type);
+    break;
+  }
+  return ret;
+}
+
 UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_proc)
 {
   UserMacro *ret = new UserMacro (ux, _nm);
@@ -178,7 +380,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     ret->port_n[i] = string_cache (port_n[i]);
     tsc->Add (ret->port_n[i], ret->port_t[i]);
   }
-
+  
   for (int i=0; i < ux->getNumPorts(); i++) {
     tsc->Add (ux->getPortName (i), ux->getPortType (i));
   }
@@ -245,7 +447,6 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     }
     
     /* add the ports to this function! */
-
     if (TypeFactory::isParamType  (ret->rettype)) {
       for (int i=0; i < nports; i++) {
 	u->AddMetaParam (port_t[i], port_n[i], NULL);
@@ -301,35 +502,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       // built-in macros. Param macros are elaborated separately.
     }
     else {
-      act_inline_table *tab = act_inline_new (tsc, NULL);
-      Expr **tmp_exprs;
-      MALLOC (tmp_exprs, Expr *, nports+1);
-      for (int i=0; i < nports; i++) {
-	ActId *tid = new ActId (port_n[i]);
-	tmp_exprs[i] = act_expr_var (tid);
-	act_inline_setval (tab, tid, tmp_exprs+i);
-      }
-      FREE (tmp_exprs);
-
-      // we need to also add "self bindings" to items in the scope
-      // that are not ports!
-      ActInstiter inst(ret->_exf->CurScope());
-      for (inst = inst.begin(); inst != inst.end(); inst++) {
-	ValueIdx *vx = *inst;
-	if (strcmp (vx->getName(), "self") == 0) continue;
-	if (TypeFactory::isParamType (vx->t)) continue;
-	if (ret->_exf->FindPort (vx->getName()) == 0) {
-	  Expr **xtmp;
-	  NEW (xtmp, Expr *);
-	  xtmp[0] = act_expr_var (new ActId (vx->getName()));
-	  act_inline_setval (tab, new ActId (vx->getName()), xtmp);
-	  FREE (xtmp);
-	}
-      }
-
-      ActId *prefix = new ActId (string_cache ("$internal"));
-      xchp->c = ret->substitute (prefix, tab);
-      act_inline_free (tab);
+      xchp->c = _add_dollarinternal (ux, ret->c);
     }
     
     all_lang->setchp (xchp);

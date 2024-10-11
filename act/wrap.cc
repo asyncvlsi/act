@@ -716,7 +716,6 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     {
       int special_id;
       int args = 0;
-      struct act_position p;
       UserMacro *um;
       Expr *lhs, *etmp;
       ActId *tmp, *prev;
@@ -724,6 +723,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       UserDef *u;
       Scope *sc, *special_id_sc;
       Expr *arglist;
+      struct act_position p;
       p.l = cookie->line;
       p.c = cookie->column;
       p.f = cookie->file;
@@ -940,7 +940,30 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
   case E_STRUCT_REF:
     // process left and then right, no biggie
     ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
-    ret->u.e.r = act_walk_X_expr (cookie, e->u.e.r);
+    Assert (e->u.e.r->type == E_VAR, "What?");
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->type = E_VAR;
+    ret->u.e.r->u.e.r = NULL;
+    {
+      Scope *ts = cookie->scope;
+      InstType *it = act_expr_insttype (cookie->scope, ret->u.e.l, NULL, 2);
+      struct act_position p;
+      p.l = cookie->line;
+      p.c = cookie->column;
+      p.f = cookie->file;
+      
+      if (!it) {
+	act_parse_err (&p, "Structure reference: no type found for lhs");
+      }
+      if (!TypeFactory::isPureStruct (it)) {
+	act_parse_err (&p, "Structure reference: not a pure structure");
+      }
+      UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
+      cookie->scope = u->CurScope();
+      ret->u.e.r->u.e.l =
+	(Expr *) act_walk_X_expr_id (cookie, (pId *) e->u.e.r->u.e.l);
+      cookie->scope = ts;
+    }
     break;
 
   default:
