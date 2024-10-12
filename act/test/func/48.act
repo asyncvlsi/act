@@ -1,0 +1,34 @@
+template<pint N>
+deftype str (int<N> x, z)
+{
+   methods {
+     function plus (pint y) : pint
+     {
+       chp { self := N + y }
+     }
+     function blah() : pint
+     {
+        chp { self := N }
+     }
+   }
+}
+
+function tostr (int x) : str<5>
+{
+  chp {
+    self.x := 5;
+    self.z := x
+  }
+}
+
+defproc test()
+{
+   str<5> s;
+   chp {
+      s := str<5>(0x42);
+      log ("got ", s.x, " ", s.z);
+      log ("get ", s.blah())
+   }
+}
+
+test t;

@@ -253,12 +253,20 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	  if (file_sym (l) != rpar) {
 	    expr_free (e);
 	    expr_dec_parens ();
+	    if (pushed) {
+	      file_set_position (l);
+	      file_pop_position (l);
+	    }
 	    return NULL;
 	  }
 	  /* success! */
 	  file_getsym (l);
 	  expr_dec_parens ();
 	  return e;
+	}
+	else {
+	  /* eat the token */
+	  file_getsym (l);
 	}
 	return e;
       }
