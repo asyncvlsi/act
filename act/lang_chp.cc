@@ -38,15 +38,10 @@ static int _chp_freshvar_count = 0;
 /*
  * Any structture references have to be changed to assignments
  * followed by replacement with the ID.
- *
- * If id != NULL, then that also applies to any self assignments for
- * structures.
  */
-static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
+static void _chp_expr_unstruct (list_t *l, Scope *s, Expr *e)
 {
-  bool ret = false;
-  
-  if (!e) return false;
+  if (!e) return;
   
   switch (e->type) {
   case E_STRUCT_REF:
@@ -78,17 +73,6 @@ static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
   case E_VAR:
   case E_BITFIELD:
   case E_PROBE:
-    if (id) {
-      ActId *t = (ActId *)e->u.e.l;
-      Assert (t, "Missing ID in expr?");
-      while (id) {
-	if (strcmp (t->getName(), id->getName()) == 0) {
-	  ret = true;
-	  break;
-	}
-	id = id->Rest ();
-      }
-    }
     break;
 
   case E_ANDLOOP:
@@ -116,20 +100,20 @@ static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
   case E_GE:
   case E_EQ:
   case E_NE:
-    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
-    ret |= _chp_expr_unstruct (l, s, e->u.e.r, id);
+    _chp_expr_unstruct (l, s, e->u.e.l);
+    _chp_expr_unstruct (l, s, e->u.e.r);
     break;
 
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
-    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    _chp_expr_unstruct (l, s, e->u.e.l);
     break;
 
   case E_QUERY: 
-    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
-    ret |= _chp_expr_unstruct (l, s, e->u.e.r->u.e.l, id);
-    ret |= _chp_expr_unstruct (l, s, e->u.e.r->u.e.r, id);
+    _chp_expr_unstruct (l, s, e->u.e.l);
+    _chp_expr_unstruct (l, s, e->u.e.r->u.e.l);
+    _chp_expr_unstruct (l, s, e->u.e.r->u.e.r);
     break;
 
   case E_COLON:
@@ -137,20 +121,20 @@ static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
 
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+    _chp_expr_unstruct (l, s, e->u.e.l);
     break;
 
   case E_FUNCTION:
     e = e->u.fn.r;
     while (e) {
-      ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+      _chp_expr_unstruct (l, s, e->u.e.l);
       e = e->u.e.r;
     }
     break;
 
   case E_CONCAT:
     while (e) {
-      ret |= _chp_expr_unstruct (l, s, e->u.e.l, id);
+      _chp_expr_unstruct (l, s, e->u.e.l);
       e = e->u.e.r;
     }
     break;
@@ -171,42 +155,13 @@ static bool _chp_expr_unstruct (list_t *l, Scope *s, Expr *e, ActId *id)
     fatal_error ("Unknown type %d in unstruct function", e->type);
     break;
   }
-  
-  return ret;
+  return;
 }
 
-static list_t *chp_expr_unstruct (Scope *s, Expr *e, ActId *id)
+static list_t *chp_expr_unstruct (Scope *s, Expr *e)
 {
   list_t *l = list_new ();
-  bool b;
-  b = _chp_expr_unstruct (l, s, e, id);
-  if (b) {
-    if (e->type == E_FUNCTION && ((Function *)e->u.fn.s)->isSimpleInline()) {
-      // add an assignment that looks like:
-      //   newvar := e
-      // and replace e with newvar
-      act_chp_lang_t *c;
-      InstType *it;
-      int xt = act_type_var (s, id, &it);
-      Assert (xt != T_ERR, "Should have found this earlier!");
-      it->MkCached();
-      s->findFresh ("_us", &_chp_freshvar_count);
-      char buf[1024];
-      snprintf (buf, 1024, "_us%d", _chp_freshvar_count);
-      s->Add (buf, it);
-      NEW (c, act_chp_lang_t);
-      c->type = ACT_CHP_ASSIGN;
-      c->space = NULL;
-      c->label = NULL;
-      c->u.assign.id = new ActId (string_cache (buf));
-      NEW (c->u.assign.e, Expr);
-      *c->u.assign.e = *e;
-      list_append (l, c);
-      e->type = E_VAR;
-      e->u.e.l = (Expr *) new ActId (string_cache (buf));
-      e->u.e.r = NULL;
-    }
-  }
+  _chp_expr_unstruct (l, s, e);
   if (list_isempty (l)) {
     list_free (l);
     l = NULL;
@@ -1923,13 +1878,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     //   also be fixed like STRUCT_REF
     
     Expr *te = chp_expr_expand (c->u.assign.e, ns, s);
-    list_t *xassign;
-    if (TypeFactory::isPureStruct (lhs)) {
-      xassign = chp_expr_unstruct (s, te, ret->u.assign.id);
-    }
-    else {
-      xassign = chp_expr_unstruct (s, te, NULL);
-    }
+    list_t *xassign = chp_expr_unstruct (s, te);
+    
     ret->u.assign.e = te;
     if (xassign) {
       ret->label = NULL;
@@ -2084,7 +2034,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       //   self-assignment with structure on the right hand side should
       //   also be fixed like STRUCT_REF
       Expr *te = chp_expr_expand (c->u.comm.e, ns, s);
-      list_t *xassign = chp_expr_unstruct (s, te, NULL);
+      list_t *xassign = chp_expr_unstruct (s, te);
       ret->u.comm.e = te;
       if (xassign) {
 	ret->label = NULL;

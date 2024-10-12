@@ -7,13 +7,13 @@ defproc test ()
 {
 
 /* instances */
-struct _us0;
+struct _us_0;
 int<32> t;
 struct s;
 
 /* connections */
 chp {
-s.a:=0x5;s.b:=0xa;t:=s.a+s.b;_us0.a:=s.b;_us0.b:=s.a;s.a:=_us0.a;s.b:=_us0.b
+s.a:=0x5;s.b:=0xa;t:=s.a+s.b;_us_0.a:=s.b;_us_0.b:=s.a;s.a:=_us_0.a;s.b:=_us_0.b
 }
 }
 

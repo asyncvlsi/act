@@ -6,13 +6,13 @@ defproc test ()
 {
 
 /* instances */
-mystruct _us0;
+mystruct _us_0;
 int<32> y;
 mystruct m;
 
 /* connections */
 chp {
-m.a:=0x1;m.b:=0x2;_us0.a:=m.b;_us0.b:=m.a;m.a:=_us0.a;m.b:=_us0.b;skip
+m.a:=0x1;m.b:=0x2;_us_0.a:=m.b;_us_0.b:=m.a;m.a:=_us_0.a;m.b:=_us_0.b;skip
 }
 }
 

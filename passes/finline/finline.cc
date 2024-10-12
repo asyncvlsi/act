@@ -32,6 +32,9 @@ ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
   _useidx = 0;
 }
 
+// used for unique ids for structure self-assignment
+static int _inline_idx = 0;
+
 void ActCHPFuncInline::_full_inline (act_chp_lang_t *c)
 {
   list_t *l = list_new ();
@@ -98,6 +101,7 @@ void *ActCHPFuncInline::local_op (Process *p, int mode)
   }
   
   if (p->getlang()->getchp()) {
+    _inline_idx = 0;
     _full_inline (p->getlang()->getchp()->c);
   }
   if (p->getlang()->getdflow()) {
@@ -389,6 +393,114 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
     break;
   }
 }
+static bool _expr_unstruct (Expr *e, ActId *id)
+{
+  bool ret = false;
+  
+  if (!e) return false;
+  
+  switch (e->type) {
+  case E_STRUCT_REF:
+    break;
+    
+  case E_VAR:
+  case E_BITFIELD:
+  case E_PROBE:
+    if (id) {
+      ActId *t = (ActId *)e->u.e.l;
+      Assert (t, "Missing ID in expr?");
+      while (id) {
+	if (strcmp (t->getName(), id->getName()) == 0) {
+	  ret = true;
+	  break;
+	}
+	id = id->Rest ();
+      }
+    }
+    break;
+
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    /* should not be here */
+    break;
+
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    ret |= _expr_unstruct (e->u.e.l, id);
+    ret |= _expr_unstruct (e->u.e.r, id);
+    break;
+
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    ret |= _expr_unstruct (e->u.e.l, id);
+    break;
+
+  case E_QUERY: 
+    ret |= _expr_unstruct (e->u.e.l, id);
+    ret |= _expr_unstruct (e->u.e.r->u.e.l, id);
+    ret |= _expr_unstruct (e->u.e.r->u.e.r, id);
+    break;
+
+  case E_COLON:
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    ret |= _expr_unstruct (e->u.e.l, id);
+    break;
+
+  case E_FUNCTION:
+    e = e->u.fn.r;
+    while (e) {
+      ret |= _expr_unstruct (e->u.e.l, id);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_CONCAT:
+    while (e) {
+      ret |= _expr_unstruct (e->u.e.l, id);
+      e = e->u.e.r;
+    }
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
+
+  default:
+    fatal_error ("Unknown type %d in unstruct function", e->type);
+    break;
+  }
+  return ret;
+}
 
 void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 {
@@ -426,13 +538,25 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	  /* nothing to be done here */
 	}
 	else {
+	  /* unstructure this if needed */
+	  
 	  Expr **vals = _inline_funcs_general (l, c->u.assign.e);
 	  Data *d;
 	  int *types;
 	  int nb, ni;
 
 	  if (vals) {
+	    bool unstruct_me = _expr_unstruct (c->u.assign.e, c->u.assign.id);
 	    /* simple inline */
+	    ActId *myid = c->u.assign.id;
+	    ActId *origid = c->u.assign.id;
+	    if (unstruct_me) {
+	      char buf[1024];
+	      int idx = _get_fresh_idx ("_us", &_inline_idx);
+	      snprintf (buf, 1024, "_us_%d", idx);
+	      _cursc->Add (buf, it);
+	      myid = new ActId (buf);
+	    }
 	  
 	    d = dynamic_cast <Data *>(it->BaseType());
 	    Assert (d, "Hmm");
@@ -449,7 +573,7 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 		tc->type = ACT_CHP_ASSIGN;
 		tc->label = NULL;
 		tc->space = NULL;
-		tc->u.assign.id = c->u.assign.id->Clone();
+		tc->u.assign.id = myid->Clone();
 		tc->u.assign.id->Tail()->Append (fields[i]);
 		tc->u.assign.e = vals[i];
 		list_append (l, tc);
@@ -461,6 +585,19 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	    FREE (fields);
 	    c->type = ACT_CHP_SEMI;
 	    c->u.semi_comma.cmd = l;
+	    if (myid != origid) {
+	      act_chp_lang_t *tc;
+	      NEW (tc, act_chp_lang_t);
+	      tc->type = ACT_CHP_ASSIGN;
+	      tc->label = NULL;
+	      tc->space = NULL;
+	      tc->u.assign.id = origid;
+	      NEW (tc->u.assign.e, Expr);
+	      tc->u.assign.e->type = E_VAR;
+	      tc->u.assign.e->u.e.r = NULL;
+	      tc->u.assign.e->u.e.l = (Expr *)myid;
+	      list_append (l, tc);
+	    }
 	  }
 	  else {
 	    Assert (_inline_funcs_general (l, c->u.assign.e) == NULL, "What?");
