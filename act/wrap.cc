@@ -310,6 +310,56 @@ static Expr *_check_overload (ActTree *cookie, Expr *e, const char *nm)
         if (e->u.e.r) {
    	   NEW (texp, Expr);
 	   texp->type = E_LT;
+	   texp->u.e.l = e->u.e.l;
+	   NEW (texp->u.e.r, Expr);
+	   texp->u.e.r->type = E_LT;
+	   texp->u.e.r->u.e.l = e->u.e.r;
+	   texp->u.e.r->u.e.r = NULL;
+	   e->u.fn.r = texp;
+        }
+	else {
+	  NEW (texp, Expr);
+	  texp->type = E_LT;
+	  texp->u.e.l = e->u.e.l;
+	  texp->u.e.r = NULL;
+	  e->u.fn.r = texp;
+	}
+	e->u.fn.s = (char *) um;
+      }
+    }
+  }
+  return e;
+}
+
+static Expr *_check_overload_bool (ActTree *cookie, Expr *e, const char *nm)
+{
+  if (!e) return e;
+  if (act_expr_could_be_struct (e->u.e.l)) {
+    InstType *it = act_expr_insttype (cookie->scope, e->u.e.l, NULL, 2);
+    if (it && TypeFactory::isPureStruct (it)) {
+      struct act_position p;
+      p.l = cookie->line;
+      p.c = cookie->column;
+      p.f = cookie->file;
+      
+      UserDef *u = dynamic_cast<UserDef *>(it->BaseType());
+      Assert (u, "What?");
+      UserMacro *um = u->getMacro (nm);
+      if (um) {
+	if (!um->isFunction()) {
+	  act_parse_err (&p, "User macro `%s': must be a function.", nm);
+	}
+	if (!TypeFactory::isBoolType (um->getRetType())) {
+	  act_parse_err (&p, "User macro `%s' must return a bool for operator overloading.", nm);
+	}
+	if (um->getNumPorts() != (e->u.e.r ? 1 : 0)) {
+	  act_parse_err (&p, "User macro `%s' must have %s for operator overloading.", nm, (e->u.e.r ? "exactly one argument" : "no arguments"));
+	}
+	Expr *texp;
+	e->type = E_USERMACRO;
+        if (e->u.e.r) {
+   	   NEW (texp, Expr);
+	   texp->type = E_LT;
 	   texp->u.e.l = e->u.e.r;
 	   texp->u.e.r = NULL;
 	   e->u.e.r = texp;
@@ -319,6 +369,7 @@ static Expr *_check_overload (ActTree *cookie, Expr *e, const char *nm)
   }
   return e;
 }
+
 
 /*------------------------------------------------------------------------
  *
@@ -359,15 +410,16 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
   case E_LSR:  BINOP; break;
   case E_ASR:  BINOP; break;
   case E_XOR:  BINOP; break;
-  case E_LT:   BINOP; break;
-  case E_GT:   BINOP; break;
-  case E_LE:   BINOP; break;
-  case E_GE:   BINOP; break;
-  case E_EQ:   BINOP; break;
-  case E_NE:   BINOP; break;
-  case E_NOT:  UOP; break;
-  case E_COMPLEMENT: UOP; break;
-  case E_UMINUS:     UOP; break;
+  case E_LT:   BINOP; ret = _check_overload_bool (cookie, ret, "lt"); break;
+  case E_GT:   BINOP; ret = _check_overload_bool (cookie, ret, "gt"); break;
+  case E_LE:   BINOP; ret = _check_overload_bool (cookie, ret, "le"); break;
+  case E_GE:   BINOP; ret = _check_overload_bool (cookie, ret, "ge"); break;
+  case E_EQ:   BINOP; ret = _check_overload_bool (cookie, ret, "eq"); break;
+  case E_NE:   BINOP; ret = _check_overload_bool (cookie, ret, "ne"); break;
+
+  case E_NOT:  UOP; ret = _check_overload (cookie, ret, "not"); break;
+  case E_COMPLEMENT: UOP; ret = _check_overload (cookie, ret, "complement"); break;
+  case E_UMINUS: UOP; ret = _check_overload (cookie, ret, "uminus"); break;
 
   case E_ANDLOOP:
   case E_ORLOOP:

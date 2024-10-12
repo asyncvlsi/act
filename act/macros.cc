@@ -376,7 +376,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
   Scope *tsc = new Scope (ux->CurScope(), 1);
 
   for (int i=0; i < nports; i++) {
-    ret->port_t[i] = port_t[i]->Expand (ns, s);
+    ret->port_t[i] = port_t[i]->Expand (ns, ux->CurScope());
     ret->port_n[i] = string_cache (port_n[i]);
     tsc->Add (ret->port_n[i], ret->port_t[i]);
   }
@@ -393,17 +393,17 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 	it = new InstType (s, TypeFactory::Factory()->NewInt (0,TypeFactory::totBitWidthSpecial (ux)), 0);
 	it->setNumParams (1);
 	it->setParam (0, const_expr (TypeFactory::totBitWidthSpecial (ux)));
-	it = it->Expand (ns, s);
+	it = it->Expand (ns, ux->CurScope());
       }
       else {
-	it = new InstType (s, ux, 0);
+	it = new InstType (ux->CurScope(), ux, 0);
 	it->mkExpanded();
 	it->MkCached();
       }
       ret->rettype = it;
     }
     else {
-      ret->rettype = rettype->Expand (ns, s);
+      ret->rettype = rettype->Expand (ns, ux->CurScope());
     }
     tsc->Add ("self", ret->rettype);
   }
@@ -445,7 +445,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
       it->setParam (0, const_expr (TypeFactory::totBitWidthSpecial (ux)));
       it = it->Expand (ns, s);
     }
-    
+
     /* add the ports to this function! */
     if (TypeFactory::isParamType  (ret->rettype)) {
       for (int i=0; i < nports; i++) {
@@ -457,7 +457,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
 	      "What?");
     
       for (int i=0; i < nports; i++) {
-	Assert (u->AddPort (port_t[i] , port_n[i]) == 1, 
+	Assert (u->AddPort (port_t[i]->Expand (ns, ux->CurScope()), port_n[i]) == 1, 
 		"Not sure what went wrong!");
       }
     }
