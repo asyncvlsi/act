@@ -1530,6 +1530,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	while (w) {
 	  int dummy;
 	  NEW (tmp, Expr);
+	  tmp->type = E_LT;
 	  tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
 	  tmp->u.e.r = NULL;
 	  if (!prev) {
@@ -1814,10 +1815,8 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     return ret;
   }
-  
 
   switch (e->type) {
-
   case E_ANDLOOP:
   case E_ORLOOP:
   case E_PLUSLOOP:
