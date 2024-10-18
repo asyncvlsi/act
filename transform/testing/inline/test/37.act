@@ -1,0 +1,21 @@
+function flip_msb(int<4> x) : int<8>
+{ 
+
+  chp {
+    x := {~x{3}, x{2..0}};
+    self := x
+  }
+}
+
+defproc test()
+{
+  int<8> x;
+  int<8> y;
+  chp{
+    x := 0;
+    y := flip_msb(x{3..0}) ; log("%b", y) 
+
+  }
+}
+
+test t;

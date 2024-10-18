@@ -344,6 +344,9 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     ret->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.l, recurse));
+    if (e->type == E_BUILTIN_INT) {
+      ret->u.e.r = e->u.e.r;
+    }
     MALLOC (rets, Expr *, 1);
     rets[0] = ret;
     break;
@@ -382,6 +385,13 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  ret->u.e.l->type = E_LSR;
 	  ret->u.e.l->u.e.l = expr_dup (r);
 	  ret->u.e.l->u.e.r = e->u.e.r->u.e.l;
+
+	  Expr *tmp;
+	  NEW (tmp, Expr);
+	  tmp->type = E_BUILTIN_INT;
+	  tmp->u.e.l = ret;
+	  tmp->u.e.r = const_expr (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1);
+	  ret = tmp;
 	}
 	else {
 	  ret->type = E_AND;
@@ -390,6 +400,12 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  ret->u.e.l->type = E_LSR;
 	  ret->u.e.l->u.e.l = expr_dup (r);
 	  ret->u.e.l->u.e.r = e->u.e.r->u.e.r;
+	  Expr *tmp;
+	  NEW (tmp, Expr);
+	  tmp->type = E_BUILTIN_INT;
+	  tmp->u.e.l = ret;
+	  tmp->u.e.r = const_expr (1);
+	  ret = tmp;
 	}
 #if 0
 	if (Hs->sc->getUserDef()) {

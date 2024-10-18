@@ -1,0 +1,31 @@
+function weird (int<8> x; int<8> y) : int<8>;
+defproc test ();
+
+function weird (int<8> x; int<8> y) : int<8>
+{
+
+/* instances */
+
+/* connections */
+chp {
+x:= {~x{0x7},x{0x6..0x0}},y:= {~y{0x7},y{0x6..0x0}};self:=x+y
+}
+}
+
+defproc test ()
+{
+
+/* instances */
+int<8> x;
+int<8> w;
+
+/* connections */
+chp {
+w:=0x5;x:=0x7;log("%bgot ",w,"%b ",x);w:= {~int(w{0x7..0x0}>>0x7&1,1),int(w{0x7..0x0}>>0x0&127,7)}+ {~x{0x7},x{0x6..0x0}};log("%bgot ",w)
+}
+}
+
+
+/* instances */
+
+/* connections */

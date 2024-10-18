@@ -1,0 +1,20 @@
+function weird (int<8> x, y) : int<8>
+{
+   chp {
+     x := {~x{7},x{6..0}},
+     y := {~y{7},y{6..0}};
+     self := x + y
+   }
+}
+
+defproc test()
+{
+   int<8> w, x;
+
+   chp {
+      w := 5; x := 7;
+      log ("%bgot ", w, "%b ", x);
+      w := weird(w,x);
+      log ("%bgot ", w)
+   }
+}
