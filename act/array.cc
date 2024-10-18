@@ -2071,7 +2071,8 @@ unsigned int Array::getHash (unsigned int prev, unsigned long sz)
 	   (const unsigned char *) &r[i].u.ex.idx.hi, sizeof (long), prev, 1);
       }
       else {
-	// XXX: dynamic, we don't do anything for the moment
+	// dynamic
+	prev = expr_getHash (prev, sz, r[i].u.ex.deref);
       }
     }
     else {

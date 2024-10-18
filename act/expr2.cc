@@ -3343,12 +3343,7 @@ AExpr::~AExpr ()
   else {
     /* YYY: hmm... expression memory management */
     Expr *e = (Expr *)l;
-    if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY
-	|| e->type == E_SELF || e->type == E_REAL || e->type == E_SELF_ACK) {
-      FREE (e);
-    }
-    else if (e->type == E_VAR) {
-      delete ((ActId *)e->u.e.l);
+    if (e->type == E_SUBRANGE || e->type == E_TYPE || e->type == E_ARRAY) {
       FREE (e);
     }
     else {
@@ -3528,28 +3523,8 @@ static void efree_ex (Expr *e)
     break;
 
   case E_FUNCTION:
-    efree_ex (e->u.fn.r);
-    break;
-
   case E_USERMACRO:
-    if (((UserMacro *)e->u.fn.s)->isBuiltinMacro()) {
-      efree_ex (e->u.fn.r);
-    }
-    else {
-      if (e->u.fn.r->type == E_GT) {
-	/* for templates; not used at the moment */
-	efree_ex (e->u.fn.r->u.e.l);
-	delete (ActId *) e->u.fn.r->u.e.r->u.e.l;
-	efree_ex (e->u.fn.r->u.e.r->u.e.r);
-	FREE (e->u.fn.r->u.e.r);
-      }
-      else {
-	efree_ex (e->u.fn.r->u.e.r);
-	efree_ex (e->u.fn.r->u.e.l);
-	//delete (ActId *) (e->u.fn.r->u.e.l);
-      }
-      FREE (e->u.fn.r);
-    }
+    efree_ex (e->u.fn.r);
     break;
 
   case E_VAR:
@@ -3563,7 +3538,7 @@ static void efree_ex (Expr *e)
     if (e->u.e.l) {
       delete (ActId *) (e->u.e.l);
     }
-    FREE (e->u.e.r);
+    FREE (e->u.e.r); // l, r fields are constants
     break;
 
   case E_RAWFREE:

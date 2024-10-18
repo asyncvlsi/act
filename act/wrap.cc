@@ -476,11 +476,15 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	     id->Rest() == NULL) {
       delete id;
       ret->type = E_SELF;
+      ret->u.e.l = NULL;
+      ret->u.e.r = NULL;
     }
     else if (strcmp (id->getName(), "selfack") == 0 && id->arrayInfo() == NULL
 	     && id->Rest() == NULL) {
       delete id;
       ret->type = E_SELF_ACK;
+      ret->u.e.l = NULL;
+      ret->u.e.r = NULL;
     }
     else if (ret->type == E_VAR &&
 	     _act_id_is_enum_const (cookie->os, cookie->curns, id)) {

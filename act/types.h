@@ -1702,6 +1702,13 @@ class TypeFactory {
    */
   static struct iHashtable *expr_int;
 
+
+  /**
+   * Hash table for expanded expressions and ActId pointers
+   */
+  static struct cHashtable *exprH; 
+  static struct cHashtable *idH;
+
   /**
    * Hash table for integer types parameterized by bit-width and
    * direction flags.
@@ -1847,6 +1854,13 @@ class TypeFactory {
    * passed in.
    */
   static Expr *NewExpr (Expr *e);
+
+  /**
+   * Returns a unique pointer to an expanded id/deref. This
+   * pointer is cached so this should never be free'ed.
+   * @return a cached id pointer for the same id that was passed in.
+   */
+  static ActId *NewId (ActId *id);
 
   /**
    * @return the TypeFactory used by the program/library.
@@ -2357,6 +2371,10 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2)
  */
 Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns);
 
+/**
+ * Hash function for expanded expressions
+ */
+int expr_getHash (int prev, unsigned long sz, Expr *e);
 
 /**
  * Free an expanded expression

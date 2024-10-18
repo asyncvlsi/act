@@ -43,6 +43,8 @@ struct cHashtable *TypeFactory::ptypehash = NULL;
 Expr *TypeFactory::expr_true = NULL;
 Expr *TypeFactory::expr_false = NULL;
 struct iHashtable *TypeFactory::expr_int = NULL;
+struct cHashtable *TypeFactory::exprH = NULL;
+struct cHashtable *TypeFactory::idH = NULL;
 
 
 /*------------------------------------------------------------------------
@@ -900,55 +902,6 @@ PType *TypeFactory::NewPType (InstType *t)
 }
 
 
-
-
-Expr *TypeFactory::NewExpr (Expr *x)
-{
-  if (!x) return NULL;
-
-  if (x->type == E_TRUE) {
-    /* find unique ETRUE */
-    return TypeFactory::expr_true;
-  }
-  else if (x->type == E_FALSE) {
-    /* find unique E_FALSE */
-    return TypeFactory::expr_false;
-  }
-  else if (x->type == E_INT) {
-    ihash_bucket_t *b;
-
-    if (x->u.ival.v_extra) {
-      Expr *t;
-      BigInt *tmp = new BigInt();
-      NEW (t, Expr);
-      t->type = E_INT;
-      t->u.ival.v = x->u.ival.v;
-      *tmp = *((BigInt *)x->u.ival.v_extra);
-      t->u.ival.v_extra = tmp;
-      return t;
-    }
-    
-    b = ihash_lookup (TypeFactory::expr_int, x->u.ival.v);
-    if (b) {
-      return (Expr *)b->v;
-    }
-    else {
-      Expr *t;
-      b = ihash_add (TypeFactory::expr_int, x->u.ival.v);
-      NEW (t, Expr);
-      t->type = E_INT;
-      t->u.ival.v = x->u.ival.v;
-      t->u.ival.v_extra = NULL;
-      b->v = t;
-      return t;
-    }
-  }
-  else {
-    fatal_error ("TypeFactory::NewExpr() called without a constant int/bool expression!");
-  }
-  return NULL;
-}
-
 static int _ceil_log2 (int w)
 {
   int i;
@@ -1452,4 +1405,281 @@ InstType *TypeFactory::getChanAckType (const InstType *t)
     }
   }
   return NULL;
+}
+
+int expr_getHash (int prev, unsigned long sz, Expr *e)
+{
+  int hval = prev;
+  if (!e) return prev;
+  
+  hval = hash_function_continue (sz, (const unsigned char *) &e->type,
+				 sizeof (int), prev, 1);
+  
+  switch (e->type) {
+  case E_INT:
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.ival.v,
+				   sizeof (long), hval, 1);
+    if (e->u.ival.v_extra) {
+      hval = hash_function_continue (sz,
+				     (const unsigned char *) &e->u.ival.v_extra,
+				     sizeof (long *), hval, 1);
+    }
+    break;
+    
+  case E_TRUE:
+  case E_FALSE:
+    break;
+    
+  case E_REAL:
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.f,
+				   sizeof (double), hval, 1);
+    break;
+
+  case E_FUNCTION:
+  case E_USERMACRO:
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.fn.s,
+				   sizeof (char *), hval, 1);
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.fn.r,
+				   sizeof (Expr *), hval, 1);
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+    if (e->u.e.l) {
+      hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
+				     sizeof (ActId *), hval, 1);
+    }
+    break;
+
+  case E_BITFIELD:
+    if (e->u.e.l) {
+      hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
+				     sizeof (ActId *), hval, 1);
+    }
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.r->u.e.l,
+				   sizeof (Expr *), hval, 1);
+    hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.r->u.e.r,
+				   sizeof (Expr *), hval, 1);
+    break;
+
+  default:
+    if (e->u.e.l) {
+      hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
+				     sizeof (Expr *), hval, 1);
+    }
+    if (e->u.e.r) {
+      hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.r,
+				     sizeof (Expr *), hval, 1);
+    }
+    break;
+  }
+  return hval;
+}
+
+/** expression caching **/
+static int expr_hashfn (int sz, void *key)
+{
+  Expr *e = (Expr *)key;
+  int hval = 0;
+  if (!e) return 0;
+
+  return expr_getHash (0, sz, e);
+}
+
+static int expr_matchfn (void *key1, void *key2)
+{
+  Expr *e1 = (Expr *)key1;
+  Expr *e2 = (Expr *)key2;
+  if (e1 == e2) return 1;
+  if (!e1 || !e2) return 0;
+  if (e1->type != e2->type) return 0;
+  
+  switch (e1->type) {
+  case E_INT:
+    if (e1->u.ival.v != e2->u.ival.v) return 0;
+    if (e1->u.ival.v_extra == e2->u.ival.v_extra) return 1;
+    if (!e1->u.ival.v_extra || !e2->u.ival.v_extra) return 0;
+    if (*((BigInt *)e1->u.ival.v_extra) !=
+	*((BigInt *)e2->u.ival.v_extra))
+      return 0;
+    break;
+    
+  case E_TRUE:
+  case E_FALSE:
+    break;
+    
+  case E_REAL:
+    if (e1->u.f != e2->u.f) return 0;
+    break;
+
+  case E_FUNCTION:
+  case E_USERMACRO:
+    if (e1->u.fn.s != e2->u.fn.s) return 0;
+    if (e1->u.fn.r != e2->u.fn.r) return 0;
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+    if (e1->u.e.l == e2->u.e.l) return 1;
+    if (!e1->u.e.l || !e2->u.e.l) return 0;
+    if (e1->u.e.l != e2->u.e.l) {
+      ActId *id1 = (ActId *)e1->u.e.l;
+      ActId *id2 = (ActId *)e2->u.e.l;
+      if (!id1->isEqual (id2)) {
+	return 0;
+      }
+    }
+    break;
+
+  case E_BITFIELD:
+    if (e1->u.e.l && !e2->u.e.l) return 0;
+    if (!e1->u.e.l && e2->u.e.l) return 0;
+    if (e1->u.e.l && (e1->u.e.l != e2->u.e.l)) {
+      ActId *id1 = (ActId *)e1->u.e.l;
+      ActId *id2 = (ActId *)e2->u.e.l;
+      if (!id1->isEqual (id2)) return 0;
+    }
+    if (e1->u.e.r->u.e.l != e2->u.e.r->u.e.l) return 0;
+    if (e1->u.e.r->u.e.r != e2->u.e.r->u.e.r) return 0;
+    break;
+
+  default:
+    if (e1->u.e.l != e2->u.e.l) return 0;
+    if (e1->u.e.r != e2->u.e.r) return 0;
+    break;
+  }
+  return 1;
+}
+
+static void *expr_dupfn (void *key)
+{
+  Expr *e = (Expr *)key;
+  Expr *dup;
+  if (!e) return NULL;
+  
+  NEW (dup, Expr);
+  *dup = *e;
+  if (dup->type == E_INT && dup->u.ival.v_extra) {
+    BigInt *bi = new BigInt;
+    *bi = *((BigInt *)dup->u.ival.v_extra);
+    dup->u.ival.v_extra = bi;
+  }
+  else if (dup->type == E_BITFIELD) {
+    NEW (dup->u.e.r, Expr);
+    *dup->u.e.r = *e->u.e.r;
+  }
+  return dup;
+}
+
+static void expr_freefn (void *key)
+{
+  Expr *e = (Expr *)key;
+  if (!e) return;
+
+  switch (e->type) {
+  case E_INT:
+    if (e->u.ival.v_extra) {
+      delete ((BigInt *)e->u.ival.v_extra);
+    }
+  case E_TRUE:
+  case E_FALSE:
+  case E_REAL:
+    break;
+
+  case E_FUNCTION:
+  case E_USERMACRO:
+    // r is canonical
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+    break;
+
+  case E_BITFIELD:
+    FREE (e->u.e.r); // l, r fields are constants
+    break;
+
+  default:
+    // l and r will be canonical
+    break;
+  }
+  FREE (e);
+  return;
+}
+  
+static void expr_printfn (FILE *fp, void *key)
+{
+
+}
+
+
+Expr *TypeFactory::NewExpr (Expr *x)
+{
+  if (!x) return NULL;
+
+  if (x->type == E_TRUE) {
+    /* find unique ETRUE */
+    return TypeFactory::expr_true;
+  }
+  else if (x->type == E_FALSE) {
+    /* find unique E_FALSE */
+    return TypeFactory::expr_false;
+  }
+  else if (x->type == E_INT && x->u.ival.v_extra == NULL) {
+    ihash_bucket_t *b;
+
+    b = ihash_lookup (TypeFactory::expr_int, x->u.ival.v);
+    if (b) {
+      return (Expr *)b->v;
+    }
+    else {
+      Expr *t;
+      b = ihash_add (TypeFactory::expr_int, x->u.ival.v);
+      NEW (t, Expr);
+      t->type = E_INT;
+      t->u.ival.v = x->u.ival.v;
+      t->u.ival.v_extra = NULL;
+      b->v = t;
+      return t;
+    }
+  }
+  else if (x->type == E_INT) {
+    Expr *t;
+    BigInt *tmp = new BigInt();
+    NEW (t, Expr);
+    t->type = E_INT;
+    t->u.ival.v = x->u.ival.v;
+    *tmp = *((BigInt *)x->u.ival.v_extra);
+    t->u.ival.v_extra = tmp;
+    return t;
+  }
+  else {
+    fatal_error ("TypeFactory::NewExpr() called without a constant int/bool expression!");
+  }
+  return NULL;
+}
+
+static int idhash (int sz, void *key)
+{
+  return 0;
+}
+
+static int idmatch (void *k1, void *k2)
+{
+  return 0;
+}
+
+static void *iddup (void *k)
+{
+  return k;
+}
+
+static void idfree (void *k)
+{
+}
+
+ActId *TypeFactory::NewId (ActId *id)
+{
+  Assert (0, "To be implemented");
+  return id;
 }
