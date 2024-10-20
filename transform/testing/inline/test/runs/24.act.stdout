@@ -19,7 +19,7 @@ foo x;
 
 /* connections */
 chp {
-*[true -> x.b:=f.b=0x0 ? 0x0 : 0x1]
+*[true -> x.b:=int(f.b=0x0 ? 0x0 : 0x1,32)]
 }
 }
 

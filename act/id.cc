@@ -34,6 +34,8 @@
 static void print_id (act_connection *c);
 #endif
 
+struct cHashtable *ActId::idH = NULL;
+
 /*------------------------------------------------------------------------
  *
  * Identifiers
@@ -2019,3 +2021,25 @@ void ActId::updateNamespace (ActNamespace *ns)
   name = string_create (nm);
   FREE (nm);
 }
+
+
+
+static int idhash (int sz, void *key)
+{
+  return 0;
+}
+
+static int idmatch (void *k1, void *k2)
+{
+  return 0;
+}
+
+static void *iddup (void *k)
+{
+  return k;
+}
+
+static void idfree (void *k)
+{
+}
+

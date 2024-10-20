@@ -41,7 +41,7 @@ ret a;
 
 /* connections */
 chp {
-a.a:=0x1
+a.a:=int(0x1,32)
 }
 }
 

@@ -260,11 +260,6 @@ class ActId {
   int isEqual (ActId *other);
 
   /**
-   * @return 1 if this is an expanded identifier, 0 otherwise
-   */
-  int isExpanded ();
-
-  /**
    * @return the sub-identifier reference for the current identifier
    */
   ActId *Tail();
@@ -405,6 +400,8 @@ class ActId {
 				      allocating the initial
 				      connection pointer if needed */
 
+  static struct cHashtable *idH; /**< used to canonicalize ID pointers
+				    post-expansion */
 };
 
 

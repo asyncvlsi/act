@@ -44,7 +44,6 @@ Expr *TypeFactory::expr_true = NULL;
 Expr *TypeFactory::expr_false = NULL;
 struct iHashtable *TypeFactory::expr_int = NULL;
 struct cHashtable *TypeFactory::exprH = NULL;
-struct cHashtable *TypeFactory::idH = NULL;
 
 
 /*------------------------------------------------------------------------
@@ -1657,29 +1656,4 @@ Expr *TypeFactory::NewExpr (Expr *x)
     fatal_error ("TypeFactory::NewExpr() called without a constant int/bool expression!");
   }
   return NULL;
-}
-
-static int idhash (int sz, void *key)
-{
-  return 0;
-}
-
-static int idmatch (void *k1, void *k2)
-{
-  return 0;
-}
-
-static void *iddup (void *k)
-{
-  return k;
-}
-
-static void idfree (void *k)
-{
-}
-
-ActId *TypeFactory::NewId (ActId *id)
-{
-  Assert (0, "To be implemented");
-  return id;
 }

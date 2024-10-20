@@ -449,6 +449,11 @@ private:
   unsigned int expanded:1;	/**< 1 if this is expanded, 0
 				   otherwise */
 
+  unsigned int refcnt;
+
+  static struct cHashtable *arrH; /**< hash table used to canonicalize
+				     array pointers after expansion */
+
   friend class Arraystep;
 };
 

@@ -189,11 +189,66 @@ static Expr **_lookup_binding (act_inline_table *Hs,
   return NULL;
 }
 
+static void _populate_widths (Data *d, int *widths, int *pos)
+{
+  Assert (d, "What?");
+  for (int i=0; i < d->getNumPorts(); i++) {
+    int sz = 1;
+    InstType *it = d->getPortType (i);
+    if (it->arrayInfo()) {
+      sz = it->arrayInfo()->size();
+    }
+    if (TypeFactory::isStructure (it)) {
+      while (sz > 0) {
+	_populate_widths (dynamic_cast<Data *>(it->BaseType()), widths, pos);
+	sz--;
+      }
+    }
+    else if (TypeFactory::isBoolType (it)) {
+      while (sz > 0) {
+	widths[*pos] = -1;
+	*pos = *pos + 1;
+	sz--;
+      }
+    }
+    else if (TypeFactory::isIntType (it)) {
+      while (sz > 0) {
+	widths[*pos] = TypeFactory::bitWidth (it);
+	*pos = *pos + 1;
+	sz--;
+      }
+    }
+    else {
+      Assert (0, "Structure?!");
+    }
+  }
+}
+
+
+static Expr *_wrap_width (Expr *e, int w)
+{
+  Expr *tmp;
+
+  if (e->type == E_BUILTIN_INT) {
+    int val;
+    Assert (act_expr_getconst_int (e->u.e.r, &val), "Hm...");
+    if (val == w) {
+      return e;
+    }
+  }
+  NEW (tmp, Expr);
+  tmp->type = E_BUILTIN_INT;
+  tmp->u.e.l = e;
+  tmp->u.e.r = const_expr (w);
+  return tmp;
+}
+
 static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
 {
   InstType *xit = Hs->sc->Lookup (id->getName());
   int sz = 1;
   Data *xd;
+  int *widths;
 
 #if 0
   printf ("update binding for: ");
@@ -220,6 +275,13 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     int nb, ni;
     xd->getStructCount (&nb, &ni);
     sz = nb + ni;
+    MALLOC (widths, int, sz);
+    int v = 0;
+    _populate_widths (xd, widths, &v);
+  }
+  else {
+    MALLOC (widths, int, sz);
+    widths[0] = TypeFactory::bitWidth (xit);
   }
 
   hash_bucket_t *b;
@@ -243,6 +305,11 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
       }
     }
     b = hash_add (Hs->state, id->getName());
+    for (int i=0; i < sz; i++) {
+      if (bind[i] && widths[i] > 0) {
+	bind[i] = _wrap_width (bind[i], widths[i]);
+      }
+    }
     b->v = bind;
   }
   Expr **res = _lookup_binding (Hs, id->getName(), NULL, 0);
@@ -255,7 +322,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");
     for (int i=0; i < sz2; i++) {
-      res[off+i] = update[i];
+      if (update[i] && widths[off+i] > 0) {
+	res[off+i] = _wrap_width (update[i], widths[off+i]);
+      }
+      else {
+	res[off+i] = update[i];
+      }
 #if 0      
       printf ("set offset %d to ", off+i);
       if (update[i]) {
@@ -297,6 +369,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
   }
 #endif  
   FREE (xtmp);
+  FREE (widths);
 }
 
 static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
@@ -386,12 +459,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  ret->u.e.l->u.e.l = expr_dup (r);
 	  ret->u.e.l->u.e.r = e->u.e.r->u.e.l;
 
-	  Expr *tmp;
-	  NEW (tmp, Expr);
-	  tmp->type = E_BUILTIN_INT;
-	  tmp->u.e.l = ret;
-	  tmp->u.e.r = const_expr (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1);
-	  ret = tmp;
+	  ret = _wrap_width (ret, e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1);
 	}
 	else {
 	  ret->type = E_AND;
@@ -400,12 +468,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  ret->u.e.l->type = E_LSR;
 	  ret->u.e.l->u.e.l = expr_dup (r);
 	  ret->u.e.l->u.e.r = e->u.e.r->u.e.r;
-	  Expr *tmp;
-	  NEW (tmp, Expr);
-	  tmp->type = E_BUILTIN_INT;
-	  tmp->u.e.l = ret;
-	  tmp->u.e.r = const_expr (1);
-	  ret = tmp;
+	  ret = _wrap_width (ret, 1);
 	}
 #if 0
 	if (Hs->sc->getUserDef()) {

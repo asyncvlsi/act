@@ -31,6 +31,7 @@
 #include <common/misc.h>
 #include <common/hash.h>
 
+struct cHashtable *Array::arrH = NULL;
 
 #if 0
 int Array::arrayhashfn (int sz, void *key)
