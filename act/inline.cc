@@ -235,7 +235,12 @@ static Expr *_wrap_width (Expr *e, int w)
 
   if (e->type == E_BUILTIN_INT) {
     int val;
-    Assert (act_expr_getconst_int (e->u.e.r, &val), "Hm...");
+    if (e->u.e.r) {
+      Assert (act_expr_getconst_int (e->u.e.r, &val), "Hm...");
+    }
+    else {
+      val = 1;
+    }
     if (val == w) {
       return e;
     }
