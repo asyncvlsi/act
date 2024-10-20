@@ -21,7 +21,7 @@ int<8> w;
 
 /* connections */
 chp {
-w:=0x5;x:=0x7;log("%bgot ",w,"%b ",x);w:=int(int( {~int(int(w,8)>>0x7&1,1),int(int(w,8)>>0x0&127,7)},8)+int( {~int(int(x,8)>>0x7&1,1),int(int(x,8)>>0x0&127,7)},8),8);log("%bgot ",w)
+w:=0x5;x:=0x7;log("%bgot ",w,"%b ",x);w:=int(int( {~int(int(w,8)>>0x7,1),int(int(w,8)>>0x0,7)},8)+int( {~int(int(x,8)>>0x7,1),int(int(x,8)>>0x0,7)},8),8);log("%bgot ",w)
 }
 }
 

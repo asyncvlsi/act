@@ -10,7 +10,7 @@ int<32> x;
 
 /* connections */
 chp {
-x:=int(int(int(y,32)>>0x4&1,1),32)
+x:=int(int(int(y,32)>>0x4,1),32)
 }
 }
 

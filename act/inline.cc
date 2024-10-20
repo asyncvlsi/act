@@ -449,39 +449,18 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
       if (r->type != E_VAR) {
 	/* use shifts to implement bitfields */
 	if (e->u.e.r->u.e.l) {
-	  unsigned long mask_amt;
 	  Assert (e->u.e.r->u.e.l->type == E_INT &&
 		  e->u.e.r->u.e.r->type == E_INT, "WHat?");
 
-	  /* (r >> (e->u.e.r->u.e.l)) & ((1 << (r - l + 1)) - 1) */
-
-	  /* XXX bitwidth */
-	  if (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v > 64) {
-	    warning ("Bitwidth limit exceeded?");
-	    mask_amt = 0xffffffffffffffff;
-	  }
-	  else if (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v == 64) {
-	    mask_amt = 0xffffffffffffffff;
-	  }
-	  else {
-	    mask_amt = (1UL << (e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1)) - 1;
-	  }
-	  ret->type = E_AND;
-	  ret->u.e.r = const_expr (mask_amt);
-	  NEW (ret->u.e.l, Expr);
-	  ret->u.e.l->type = E_LSR;
-	  ret->u.e.l->u.e.l = expr_dup (r);
-	  ret->u.e.l->u.e.r = e->u.e.r->u.e.l;
-
+	  ret->type = E_LSR;
+	  ret->u.e.l = expr_dup (r);
+	  ret->u.e.r = e->u.e.r->u.e.l;
 	  ret = _wrap_width (ret, e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1);
 	}
 	else {
-	  ret->type = E_AND;
-	  ret->u.e.r = const_expr (1);
-	  NEW (ret->u.e.l, Expr);
-	  ret->u.e.l->type = E_LSR;
-	  ret->u.e.l->u.e.l = expr_dup (r);
-	  ret->u.e.l->u.e.r = e->u.e.r->u.e.r;
+	  ret->type = E_LSR;
+	  ret->u.e.l = expr_dup (r);
+	  ret->u.e.r = e->u.e.r->u.e.r;
 	  ret = _wrap_width (ret, 1);
 	}
 #if 0

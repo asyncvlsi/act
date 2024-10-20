@@ -10,7 +10,7 @@ int<8> c;
 
 /* connections */
 chp {
-c:=0x8c;*[c>0x78 -> o:=int(int(int(c,8)>>0x7&1,1)=0x0 ? int(0x0,12)|int(c,8) : ~int(0x0,12)<<0x8|int(c,8),12);OUT!o]
+c:=0x8c;*[c>0x78 -> o:=int(int(int(c,8)>>0x7,1)=0x0 ? int(0x0,12)|int(c,8) : ~int(0x0,12)<<0x8|int(c,8),12);OUT!o]
 }
 }
 
