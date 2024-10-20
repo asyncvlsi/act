@@ -1,0 +1,23 @@
+function sign_extend (int<8> in) : int<12>
+{
+   int<12> out;
+   chp{
+      out:=0;
+      self := in{7}=0 ? out|in  :  (~out<<8)|in 
+   }
+}
+
+
+defproc test(chan!(int<12>) OUT)
+{
+   int<8> c;
+   int<12> o;
+
+   chp{
+      c:=140;   
+      *[ c> 120 ->   o:=sign_extend(c); OUT!o ]
+   }
+}
+
+test t;
+
