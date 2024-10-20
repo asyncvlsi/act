@@ -12,7 +12,7 @@ mystruct res;
 
 /* connections */
 chp {
-res.a:=y+0x1>0x3 ? int(int(0x0,32)+0x1,32) : int(0x0,32);res.b:=y+0x1>0x3 ? true : true;res.c:=y+0x1>0x3 ? int(0x1,32) : int(int(0x1,32)-0x1,32);res2.a:=res.a;res2.b:=res.b;res2.c:=res.c
+res.a:=int(int(y+0x1,32)>0x3 ? int(int(0x0,32)+0x1,32) : int(0x0,32),32);res.b:=int(y+0x1,32)>0x3 ? true : true;res.c:=int(int(y+0x1,32)>0x3 ? int(0x1,32) : int(int(0x1,32)-0x1,32),32);res2.a:=res.a;res2.b:=res.b;res2.c:=res.c
 }
 }
 

@@ -42,9 +42,12 @@ struct act_inline_table;
  * Create a new inline table linked to a parent in the current scope
  * @param sc is the current scope
  * @param parent is the parent inline table
+ * @param ismacro is set to true if this is used for macro expansion,
+ * false otherwise
  * @return a new inline table
  */
-act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent);
+act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent,
+				  bool ismacro = false);
 
 /**
  * Release storage for a previously allocated inline table

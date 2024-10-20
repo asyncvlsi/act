@@ -10,7 +10,7 @@ mystruct m;
 
 /* connections */
 chp {
-m.a:=0x1;m.b:=0x2;y:=0x1+(m.a+m.b);skip
+m.a:=0x1;m.b:=0x2;y:=int(int(0x1,2)+int(int(m.a,4)+int(m.b,5),32),3);skip
 }
 }
 

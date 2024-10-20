@@ -2105,7 +2105,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       /* expand all parameters */
       Scope *tsc = new Scope (s, 1);
       act_inline_table *tab;
-      tab = act_inline_new (tsc, NULL);
+      tab = act_inline_new (tsc, NULL, true);
       if (um->getNumPorts() > 0) {
 	listitem_t *li = list_first (c->u.macro.rhs);
 	for (int i=0; i < um->getNumPorts(); i++) {

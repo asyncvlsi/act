@@ -35,19 +35,21 @@
  */
 struct act_inline_table {
   int ex_func;		    /* expand functions recursively or not? */
+  bool macro_mode;	    /* true for macros, false otherwise */
   Scope *sc;
   struct Hashtable *state;
   act_inline_table *parent;
 };
 
 
-act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent)
+act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent, bool ismacro)
 {
   act_inline_table *ret;
   NEW (ret, act_inline_table);
   ret->ex_func = 0;
   ret->sc = sc;
   ret->parent = parent;
+  ret->macro_mode = ismacro;
 
   if (!ret->sc && ret->parent) {
     ret->sc = ret->parent->sc;
@@ -228,6 +230,8 @@ static void _populate_widths (Data *d, int *widths, int *pos)
 static Expr *_wrap_width (Expr *e, int w)
 {
   Expr *tmp;
+  
+  if (!e) return e;
 
   if (e->type == E_BUILTIN_INT) {
     int val;
@@ -306,7 +310,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     }
     b = hash_add (Hs->state, id->getName());
     for (int i=0; i < sz; i++) {
-      if (bind[i] && widths[i] > 0) {
+      if (!Hs->macro_mode && bind[i] && widths[i] > 0) {
 	bind[i] = _wrap_width (bind[i], widths[i]);
       }
     }
@@ -322,7 +326,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");
     for (int i=0; i < sz2; i++) {
-      if (update[i] && widths[off+i] > 0) {
+      if (!Hs->macro_mode && update[i] && widths[off+i] > 0) {
 	res[off+i] = _wrap_width (update[i], widths[off+i]);
       }
       else {
@@ -354,7 +358,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
   }
   else {
     for (int i=0; i < sz; i++) {
-      res[i] = update[i];
+      if (!Hs->macro_mode && update[i] && widths[i] > 0) {
+	res[i] = _wrap_width (update[i], widths[i]);
+      }
+      else {
+	res[i] = update[i];
+      }
     }
   }
   b = hash_lookup (Hs->state, id->getName());
