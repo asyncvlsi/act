@@ -2054,18 +2054,40 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_FUNC:
     ret->u.func.name = c->u.func.name;
     ret->u.func.rhs = list_new ();
-    for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
-      act_func_arguments_t *arg, *ra;
-      NEW (arg, act_func_arguments_t);
-      ra = (act_func_arguments_t *) list_value (li);
-      arg->isstring = ra->isstring;
-      if (ra->isstring) {
-	arg->u.s = ra->u.s;
+    {
+      list_t *xassign = NULL, *tlist;
+      for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+	act_func_arguments_t *arg, *ra;
+	NEW (arg, act_func_arguments_t);
+	ra = (act_func_arguments_t *) list_value (li);
+	arg->isstring = ra->isstring;
+	if (ra->isstring) {
+	  arg->u.s = ra->u.s;
+	}
+	else {
+	  arg->u.e = chp_expr_expand (ra->u.e, ns, s);
+	  tlist = chp_expr_unstruct (s, arg->u.e);
+	  if (tlist) {
+	    if (!xassign) {
+	      xassign = tlist;
+	    }
+	    else {
+	      list_concat (xassign, tlist);
+	      list_free (tlist);
+	    }
+	  }
+	}
+	list_append (ret->u.func.rhs, arg);
       }
-      else {
-	arg->u.e = chp_expr_expand (ra->u.e, ns, s);
+      if (xassign) {
+	ret->label = NULL;
+	list_append (xassign, ret);
+	NEW (ret, act_chp_lang_t);
+	ret->type = ACT_CHP_SEMI;
+	ret->u.semi_comma.cmd = xassign;
+	ret->label = c->label;
+	ret->space = NULL;
       }
-      list_append (ret->u.func.rhs, arg);
     }
     break;
 
