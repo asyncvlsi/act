@@ -591,6 +591,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 				   Type::direction::NONE,
 				   0,
 				   const_expr (32)));
+	    um->getRetType()->MkCached ();
 	  }
 	  ret->type = E_USERMACRO;
 	  ret->u.fn.r = ret->u.e.l;
