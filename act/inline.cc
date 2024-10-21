@@ -504,7 +504,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
       if (tmp) {
 	NEW (tmp2->u.e.r, Expr);
 	tmp2 = tmp2->u.e.r;
-	tmp2->type = E_COMMA;
+	tmp2->type = E_CONCAT;
 	tmp2->u.e.l = NULL;
 	tmp2->u.e.r = NULL;
       }
