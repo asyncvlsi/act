@@ -1,0 +1,30 @@
+deftype struct(int<4> x, y) { }
+
+
+defproc sink(chan?(int) X)
+{
+   struct s;
+   int w;
+   chp {
+     *[ X?w; s := struct(w); log ("got ", s.x, " and ", s.y) ]
+   }
+}
+
+defproc src (chan!(int) O)
+{
+  struct t;
+  chp {
+    t.x := 1, t.y := 2;
+    O!int(t);
+    t.x := 2, t.y := 3;
+    O!int(t);
+    skip
+  }
+}
+  
+
+defproc test()
+{
+  src x;
+  sink y(x.O);
+}
