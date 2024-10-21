@@ -1116,6 +1116,21 @@ static Expr *_chp_fix_nnf (Expr *e, int invert)
     }
     break;
 
+  case E_STRUCT_REF:
+    if (invert) {
+      NEW (t, Expr);
+      t->type = E_NOT;
+      t->u.e.l = e;
+      t->u.e.r = NULL;
+    }
+    if (_has_probe (e->u.e.l)) {
+      warning ("Probes in structure references not correctly supported");
+    }
+    if (invert) {
+      e = t;
+    }
+    break;
+
   case E_PROBE:
     if (invert) {
       NEW (t, Expr);
@@ -1298,6 +1313,7 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
     break;
     
   case E_FUNCTION:
+  case E_STRUCT_REF:
     /*-- nothing to do --*/
     break;
 
@@ -1700,29 +1716,75 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_SELECT_NONDET:
   case ACT_CHP_LOOP:
   case ACT_CHP_DOLOOP:
-    gchd = NULL;
-    gctl = NULL;
-    expr_has_probes = 0;
-    expr_has_else = 0;
-    expr_has_nonlocal = 0;
-    for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
-      if (gctmp->id) {
-	int ilo, ihi;
+    {
+      list_t *xassign = NULL;
+      gchd = NULL;
+      gctl = NULL;
+      expr_has_probes = 0;
+      expr_has_else = 0;
+      expr_has_nonlocal = 0;
+      for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+	if (gctmp->id) {
+	  int ilo, ihi;
 
-	act_syn_loop_setup (ns, s, gctmp->id, gctmp->lo, gctmp->hi,
-			&vx, &ilo, &ihi);
+	  act_syn_loop_setup (ns, s, gctmp->id, gctmp->lo, gctmp->hi,
+			      &vx, &ilo, &ihi);
 	
-	for (int iter=ilo; iter <= ihi; iter++) {
-	  s->setPInt (vx->u.idx, iter);
+	  for (int iter=ilo; iter <= ihi; iter++) {
+	    s->setPInt (vx->u.idx, iter);
+	    NEW (tmp, act_chp_gc_t);
+	    tmp->next = NULL;
+	    tmp->id = NULL;
+	    tmp->g = chp_expr_expand (gctmp->g, ns, s);
+	    _expr_has_probes = 0;
+	    tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
+	    list_t *tmpl = chp_expr_unstruct (s, tmp->g);
+	    if (tmpl) {
+	      if (!xassign) {
+		xassign = tmpl;
+	      }
+	      else {
+		list_concat (xassign, tmpl);
+		list_free (tmpl);
+	      }
+	    }
+	    expr_has_probes = _expr_has_probes || expr_has_probes;
+	    expr_has_nonlocal = expr_has_nonlocal || _expr_has_nonlocal_vars;
+	    if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
+	      FREE (tmp);
+	    }
+	    else {
+	      tmp->s = chp_expand (gctmp->s, ns, s);
+	      q_ins (gchd, gctl, tmp);
+	    }
+	  }
+	  act_syn_loop_teardown (ns, s, gctmp->id, vx);
+	}
+	else {
 	  NEW (tmp, act_chp_gc_t);
-	  tmp->next = NULL;
 	  tmp->id = NULL;
+	  tmp->next = NULL;
 	  tmp->g = chp_expr_expand (gctmp->g, ns, s);
 	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
+	  list_t *tmpl = chp_expr_unstruct (s, tmp->g);
+	  if (tmpl) {
+	    if (!xassign) {
+	      xassign = tmpl;
+	    }
+	    else {
+	      list_concat (xassign, tmpl);
+	      list_free (tmpl);
+	    }
+	  }
 	  expr_has_probes = _expr_has_probes || expr_has_probes;
 	  expr_has_nonlocal = expr_has_nonlocal || _expr_has_nonlocal_vars;
-	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE) {
+	  if (!tmp->g && gctmp != c->u.gc) {
+	    /*-- null guard in head is the loop shortcut --*/
+	    expr_has_else = 1;
+	  }
+	  if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
+	      c->type != ACT_CHP_DOLOOP) {
 	    FREE (tmp);
 	  }
 	  else {
@@ -1730,84 +1792,70 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	    q_ins (gchd, gctl, tmp);
 	  }
 	}
-	act_syn_loop_teardown (ns, s, gctmp->id, vx);
       }
-      else {
+      if (!gchd) {
+	/* ok this is false -> skip */
 	NEW (tmp, act_chp_gc_t);
 	tmp->id = NULL;
 	tmp->next = NULL;
-	tmp->g = chp_expr_expand (gctmp->g, ns, s);
-	_expr_has_probes = 0;
-	tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
-	expr_has_probes = _expr_has_probes || expr_has_probes;
-	expr_has_nonlocal = expr_has_nonlocal || _expr_has_nonlocal_vars;
-	if (!tmp->g && gctmp != c->u.gc) {
-	  /*-- null guard in head is the loop shortcut --*/
-	  expr_has_else = 1;
-	}
-	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
-	    c->type != ACT_CHP_DOLOOP) {
-	  FREE (tmp);
-	}
-	else {
-	  tmp->s = chp_expand (gctmp->s, ns, s);
-	  q_ins (gchd, gctl, tmp);
-	}
-      }
-    }
-    if (!gchd) {
-      /* ok this is false -> skip */
-      NEW (tmp, act_chp_gc_t);
-      tmp->id = NULL;
-      tmp->next = NULL;
       
-      tmp->g = const_expr_bool (0);
-      NEW (tmp->s, act_chp_lang);
-      tmp->s->type = ACT_CHP_SKIP;
-      q_ins (gchd, gctl, tmp);
-    }
-    if (expr_has_else && expr_has_probes) {
-      act_error_ctxt (stderr);
-      fatal_error ("Cannot have an else clause when guards contain channels");
-    }
-    if (c->type == ACT_CHP_DOLOOP || c->type == ACT_CHP_LOOP) {
-      if (expr_has_nonlocal) {
-	act_error_ctxt (stderr);
-	fatal_error ("Cannot have non-local variables/probes in loop guards");
+	tmp->g = const_expr_bool (0);
+	NEW (tmp->s, act_chp_lang);
+	tmp->s->type = ACT_CHP_SKIP;
+	q_ins (gchd, gctl, tmp);
       }
-    }
-    if (c->type != ACT_CHP_DOLOOP) {
-      if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {
-	/* loops and selections that simplify to a single guard that
-	   is constant */
-	if (c->type == ACT_CHP_LOOP) {
-	  if (gchd->g && gchd->g->type == E_FALSE) {
-	    /* whole thing is a skip */
-	    /* XXX: need chp_free */
-	    ret->u.gc = gchd;
-	    act_chp_free (ret);
-	    NEW (ret, act_chp_lang);
-	    ret->type = ACT_CHP_SKIP;
-	    return ret;
-	  }
+      if (expr_has_else && expr_has_probes) {
+	act_error_ctxt (stderr);
+	fatal_error ("Cannot have an else clause when guards contain channels");
+      }
+      if (c->type == ACT_CHP_DOLOOP || c->type == ACT_CHP_LOOP) {
+	if (expr_has_nonlocal) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Cannot have non-local variables/probes in loop guards");
 	}
-	else {
-	  if (!gchd->g || gchd->g->type == E_TRUE) {
-	    /* whole thing is the body */
-	    
-	    FREE (ret);
-	    ret = gchd->s;
-	    FREE (gchd);
-	    if (!ret) {
+      }
+      if (c->type != ACT_CHP_DOLOOP) {
+	if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {
+	  /* loops and selections that simplify to a single guard that
+	     is constant */
+	  if (c->type == ACT_CHP_LOOP) {
+	    if (gchd->g && gchd->g->type == E_FALSE) {
+	      /* whole thing is a skip */
+	      /* XXX: need chp_free */
+	      ret->u.gc = gchd;
+	      act_chp_free (ret);
 	      NEW (ret, act_chp_lang);
 	      ret->type = ACT_CHP_SKIP;
+	      return ret;
 	    }
-	    return ret;
+	  }
+	  else {
+	    if (!gchd->g || gchd->g->type == E_TRUE) {
+	      /* whole thing is the body */
+	    
+	      FREE (ret);
+	      ret = gchd->s;
+	      FREE (gchd);
+	      if (!ret) {
+		NEW (ret, act_chp_lang);
+		ret->type = ACT_CHP_SKIP;
+	      }
+	      return ret;
+	    }
 	  }
 	}
       }
+      ret->u.gc = gchd;
+      if (xassign) {
+	ret->label = NULL;
+	list_append (xassign, ret);
+	NEW (ret, act_chp_lang_t);
+	ret->type = ACT_CHP_SEMI;
+	ret->u.semi_comma.cmd = xassign;
+	ret->label = c->label;
+	ret->space = NULL;
+      }
     }
-    ret->u.gc = gchd;
     break;
 
   case ACT_CHP_SKIP:
@@ -2552,6 +2600,11 @@ static void chp_check_expr (Expr *e, Scope *s)
       chp_check_expr (e->u.e.l, s);
       e = e->u.e.r;
     }
+    break;
+
+  case E_STRUCT_REF:
+    // e->u.e.r is always an ID
+    chp_check_expr (e->u.e.l, s);
     break;
 
   case E_PROBE:
