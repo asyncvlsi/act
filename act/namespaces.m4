@@ -306,6 +306,9 @@ namespace_management[ActNamespace *]: [ "export" ] "namespace" ID
       }
     }
     else {
+      if ($0->curns->findName ($3) != 0) {
+	$E("Namespace name ``%s'' is already used in the current namespace.", $3);
+      }
       ns = new ActNamespace($0->curns, $3);
       if (OPT_EXISTS ($1)) {
 	ns->MkExported ();

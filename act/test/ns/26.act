@@ -1,0 +1,6 @@
+deftype fxp(int x) { }
+
+namespace fxp {
+
+}
+

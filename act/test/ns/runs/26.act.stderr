@@ -1,0 +1,2 @@
+ERROR: File `26.act', line 3, col 10
+	Namespace name `fxp' is already used in the current namespace.
