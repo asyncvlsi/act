@@ -1102,16 +1102,8 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       prev->s->u.assign.e = const_expr_bool (0);
       prev->next = NULL;
       
+      list_append (x->u.semi_comma.cmd, tmpc);
       list_append (x->u.semi_comma.cmd, sel);
-
-      pre = list_new ();
-      list_append (pre, tmpc);
-      list_append (pre, c);
-      NEW (c, act_chp_lang_t);
-      c->label = NULL;
-      c->space = NULL;
-      c->type = ACT_CHP_SEMI;
-      c->u.semi_comma.cmd = pre;
     }
     else {
       list_free (pre);
