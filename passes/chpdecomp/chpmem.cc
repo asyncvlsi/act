@@ -701,6 +701,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
     {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, (ActId *)e->u.e.l);
       if (v) {
+	ActId *tail;
 	/* check index to see if it has a dynamic var as well! */
 	{
 	  ActId *tmp = (ActId *)e->u.e.l;
@@ -710,6 +711,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
 	  list_concat (l, tmpl);
 	  list_free (tmpl);
+	  tail = tmp->Rest();
 	}
 	
 	/* we need to re-write this! */
@@ -725,6 +727,9 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 	list_iappend (l, idx);
 	list_append (l, e->u.e.l);
 	e->u.e.l = (Expr *) new ActId (buf);
+	if (tail) {
+	  ((ActId *)e->u.e.l)->Append (tail->Clone());
+	}
       }
     }
     break;
@@ -995,12 +1000,126 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 
   case ACT_CHP_LOOP:
   case ACT_CHP_DOLOOP:
+
+    pre = list_new ();
+
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	/* XXX: check expr for memory */
+	_subst_dynamic_array (pre, gc->g);
       }
-      if (gc->s) {
-	_extract_memory (gc->s);
+    }
+
+    if (!list_isempty (pre)) {
+      /* idx (ActId *) sequence */
+      NEW (x, act_chp_lang_t);
+      x->label = NULL;
+      x->space = NULL;
+      x->type = ACT_CHP_SEMI;
+      x->u.semi_comma.cmd = list_new ();
+
+      /* 
+	 these are all reads:
+	 mem.addr!address,mem.rd!1,mem.dout?v
+      */
+      for (listitem_t *li = list_first (pre); li; li = list_next (li)) {
+	int idx = list_ivalue (li);
+	li = list_next (li);
+	ActId *mem = (ActId *) list_value (li);
+	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
+	_fresh_release (idx);
+      }
+      list_free (pre);
+
+      // we need to re-structure this into a do-loop + a selection,
+      // with an extra Boolean variable for the do-loop guard
+      act_chp_gc_t *gc;
+      int xtmp = 0;
+      char buf[100];
+
+      Assert (_curbnl, "What?");
+      Assert (_curbnl->cur, "What?!");
+      _curbnl->cur->findFresh ("_tmpx", &xtmp);
+      InstType *it = TypeFactory::Factory()->NewBool (Type::direction::NONE);
+      it = it->Expand (NULL, _curbnl->cur);
+      snprintf (buf, 100, "_tmpx%d", xtmp);
+      _curbnl->cur->Add (buf, it);
+      ActId *id = new ActId (string_cache (buf));
+
+      /* tmpx := true .. this goes BEFORE the entire do loop */
+      act_chp_lang_t *tmpc;
+      NEW (tmpc, act_chp_lang_t);
+      tmpc->space = NULL;
+      tmpc->label = NULL;
+      tmpc->type = ACT_CHP_ASSIGN;
+      tmpc->u.assign.id = id;
+      tmpc->u.assign.e = const_expr_bool (1);
+
+      /* the do loop has a single guard, which is the tmpx variable */
+      gc = c->u.gc;
+      c->type = ACT_CHP_DOLOOP;
+      NEW (c->u.gc, act_chp_gc_t);
+      c->u.gc->id = NULL;
+      c->u.gc->lo = NULL;
+      c->u.gc->hi = NULL;
+      NEW (c->u.gc->g, Expr);
+      c->u.gc->g->type = E_VAR;
+      c->u.gc->g->u.e.l = (Expr *) id->Clone ();
+      c->u.gc->g->u.e.r = NULL;
+      c->u.gc->next = NULL;
+
+      /* body of the loop starts with PRE */
+      c->u.gc->s = x;
+      
+      act_chp_lang_t *sel;
+
+      NEW (sel, act_chp_lang_t);
+      sel->space = NULL;
+      sel->label = NULL;
+      sel->type = ACT_CHP_SELECT;
+      sel->u.gc = gc;
+
+      act_chp_gc_t *prev = NULL;
+      while (gc) {
+	Assert (gc->g, "Waht?");
+	if (gc->s) {
+	  _extract_memory (gc->s);
+	}
+	prev = gc;
+	gc = gc->next;
+      }
+      Assert (prev, "What?");
+      NEW (prev->next, act_chp_gc_t);
+      prev = prev->next;
+      prev->id = NULL;
+      prev->lo = NULL;
+      prev->hi = NULL;
+      prev->g = NULL; // else
+      NEW (prev->s, act_chp_lang_t);
+      prev->s->label = NULL;
+      prev->s->space = NULL;
+      prev->s->type = ACT_CHP_ASSIGN;
+      prev->s->u.assign.id = id->Clone();
+      prev->s->u.assign.e = const_expr_bool (0);
+      prev->next = NULL;
+      
+      list_append (x->u.semi_comma.cmd, sel);
+
+      pre = list_new ();
+      list_append (pre, tmpc);
+      list_append (pre, c);
+      NEW (c, act_chp_lang_t);
+      c->label = NULL;
+      c->space = NULL;
+      c->type = ACT_CHP_SEMI;
+      c->u.semi_comma.cmd = pre;
+    }
+    else {
+      list_free (pre);
+      pre = NULL;
+      for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
+	if (gc->s) {
+	  _extract_memory (gc->s);
+	}
       }
     }
     break;
