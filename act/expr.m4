@@ -218,11 +218,19 @@ expr_id[ActId *]: { base_id "." }*
     if (list_length ($1) == 1 && ret->arrayInfo() == NULL) {
       const char *tmp;
       tmp = ret->getName ();
-      if (strcmp (tmp, "true") == 0 || strcmp (tmp, "false") == 0 ||
-	  strcmp (tmp, "self") == 0) {
+      if (strcmp (tmp, "true") == 0 || strcmp (tmp, "false") == 0) {
 	/* ok done */
 	list_free ($1);
 	return ret;
+      }
+      if (strcmp (tmp, "self") == 0) {
+	if ($0->scope->Lookup ("self") != NULL) {
+	  list_free ($1);
+	  return ret;
+	}
+	else {
+	  $E("self used as an identifier, but not defined in this scope.");
+	}
       }
     }
 

@@ -1,0 +1,23 @@
+deftype foo (bool t,f)
+{
+   spec {
+    exclhi(t,f)
+   }
+   methods {
+    set { 
+     self := 0
+    }
+   }
+}
+
+ 
+defproc test ()
+{ 
+  DR a,y;
+  chp {
+  *[
+      a.t := y.f
+   ]
+  }
+
+}
