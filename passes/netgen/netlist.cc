@@ -1429,6 +1429,10 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
       if (!id) {
 	fatal_error ("Could not convert string `%s' to an ActId", s);
       }
+      if (!id->validateDeref (N->bN->cur)) {
+	// could not validate/find signal
+	return NULL;
+      }
       act_connection *c = id->Canonical (N->bN->cur);
       n = ActNetlistPass::connection_to_node (N, c);
     }
