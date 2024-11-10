@@ -2527,6 +2527,11 @@ void *ActNetlistPass::local_op (Process *p, int mode)
     flatHelper (p);
     return n;
   }
+  else if (mode == 3) {
+    void *n = getMap (p);
+    flatActHelper (p);
+    return n;
+  }
   return NULL;
 }
 

@@ -156,7 +156,7 @@ id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
       id_info_t *tmp_prefix;
 	
       // create instance
-      snprintf (buf, 100, "_nref_%d", v->flop_count++);
+      snprintf (buf, 100, "_nref_%d", v->tie_count++);
       id = verilog_gen_id (v, buf);
       id->ismodname = 0;
       mod = verilog_find_id (v, config_get_string (cellname));
@@ -172,7 +172,7 @@ id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
       tmp_prefix = v->prefix;
       lapply_X_one_instance_0_1 (v, mod, id);
       
-      snprintf (buf, 100, "_nsig_%d", v->flop_count++);
+      snprintf (buf, 100, "_nsig_%d", v->tie_count++);
       
       newsig = verilog_gen_id (v, buf);
       

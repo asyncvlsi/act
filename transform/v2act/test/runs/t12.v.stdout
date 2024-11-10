@@ -17,22 +17,22 @@ export defproc blk0 (bool? e0[5]; bool! out[5])
 
    /*--- types ---*/
    bool _nsig_1;
-   benchlib::DFFPOSX1 _newf_2;
    bool x;
    bool f;
+   benchlib::DFFPOSX1 _newf_1;
    bool b;
    bool y;
    bool a;
-   benchlib::DFFPOSX1 _newf_3;
    bslk1_c q;
+   benchlib::DFFPOSX1 _newf_0;
    benchlib::TIELOX1 _nref_0;
    bool c;
    bool d;
    /*--- connections ---*/
    _nref_0(.Y=_nsig_1);
 out[0]=_nsig_1;
-   _newf_2(.D=d, .Q=c, .CLK=out[2]);
-   _newf_3(.D=b, .Q=a, .CLK=out[2]);
+   _newf_0(.D=d, .Q=c, .CLK=out[2]);
+   _newf_1(.D=b, .Q=a, .CLK=out[2]);
    q(.x=f, .y=out[1]);
 }
 

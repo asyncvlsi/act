@@ -157,6 +157,7 @@ VNet *verilog_read (const char *netlist, const char *actlib)
   w->missing = hash_new (8);
   w->port_count = 0;
   w->flop_count = 0;
+  w->tie_count = 0;
 
   v_walk_X (w, t);
 

@@ -1,0 +1,260 @@
+namespace cell {
+
+export defcell g0n1n2n3naaa_x0 (bool? in[4]; bool! out)
+{
+   prs {
+   [keeper=0] ~in[0]<48> & ~in[1] & ~in[2] & ~in[3] -> out+
+   }
+}
+
+export defcell g0n1n2naa_012aax0 (bool? in[3]; bool! out)
+{
+   prs {
+   in[0]<60> & in[1]<60> & in[2]<60> -> out-
+   ~in[0]<150> & ~in[1]<150> & ~in[2]<150> -> out+
+   }
+}
+
+export defcell g0n1n2naa_012aax1 (bool? in[3]; bool! out)
+{
+   prs * {
+   in[0]<60> & in[1]<60> & in[2]<60> -> out-
+   ~in[0]<150> & ~in[1]<150> & ~in[2]<150> -> out+
+   }
+}
+
+export defcell g0n1n2naa_012aax2 (bool? in[3]; bool! out)
+{
+   prs {
+   [keeper=3] in[0] & in[1] & in[2] -> out-
+   ~in[0] & ~in[1] & ~in[2] -> out+
+   }
+}
+
+export defcell g0n1n2noo_012aax0 (bool? in[3]; bool! out)
+{
+   prs {
+   in[0]<60> & in[1]<60> & in[2]<60> -> out-
+   ~in[0]<50> | ~in[1]<50> | ~in[2]<50> -> out+
+   }
+}
+
+export defcell g0n1na_01ax0 (bool? in[2]; bool! out)
+{
+   prs {
+   [comb=1] in[0]<10> & in[1]<10> -> out-
+   ~in[0]<25> & ~in[1]<25> -> out+
+   }
+}
+
+export defcell g0n1na_01ax1 (bool? in[2]; bool! out)
+{
+   prs {
+   [keeper=3] in[0] & in[1] -> out-
+   ~in[0] & ~in[1] -> out+
+   }
+}
+
+export defcell g0n1na_01ax2 (bool? in[2]; bool! out)
+{
+   prs {
+   in[0] & in[1] -> out-
+   ~in[0] & ~in[1] -> out+
+   }
+}
+
+export defcell g0n1na_01ox0 (bool? in[2]; bool! out)
+{
+   prs {
+   in[0] | in[1] -> out-
+   ~(in[0] | in[1]) -> out+
+   }
+}
+
+export defcell g0n1na_x0 (bool? in[2]; bool! out)
+{
+   prs {
+   [keeper=0] ~in[0] & ~in[1] -> out+
+   }
+}
+
+export defcell g0n1na_x1 (bool? in[2]; bool! out)
+{
+   prs {
+   [keeper=0] ~in[0]<24> & ~in[1] -> out+
+   }
+}
+
+export defcell g0n1no_01ax0 (bool? in[2]; bool! out)
+{
+   prs {
+   in[0]<40> & in[1]<40> -> out-
+   ~in[0]<50> | ~in[1]<50> -> out+
+   }
+}
+
+export defcell g0n_0x0 (bool? in[1]; bool! out)
+{
+   prs {
+   in[0] -> out-
+   ~in[0] -> out+
+   }
+}
+
+export defcell g0n_0x1 (bool? in[1]; bool! out)
+{
+   prs {
+   in[0]<20> -> out-
+   ~in[0]<50> -> out+
+   }
+}
+
+export defcell g0n_0x2 (bool? in[1]; bool! out)
+{
+   prs * {
+   in[0] -> out-
+   ~in[0] -> out+
+   }
+}
+
+export defcell g0n_0x3 (bool? in[1]; bool! out)
+{
+   prs {
+   in[0]<11.97> -> out-
+   ~in[0]<7.98> -> out+
+   }
+}
+
+export defcell g_0123aaax0 (bool? in[4]; bool! out)
+{
+   prs {
+   [keeper=0] in[0]<24> & in[1] & in[2] & in[3] -> out-
+   }
+}
+
+export defcell g_01a10aox0 (bool? in[2]; bool! out)
+{
+   prs {
+   [N_reff=0.1] in[0]<20> & in[1]<20> | in[1]<20> & in[0]<20> -> out-
+   }
+}
+
+export defcell g_01ax0 (bool? in[2]; bool! out)
+{
+   prs {
+   in[0]<20,2> & in[1]<10> -> out-
+   }
+}
+
+export defcell g_01ax1 (bool? in[2]; bool! out)
+{
+   prs {
+   in[0] & in[1] -> out-
+   }
+}
+
+export defcell g_01ax2 (bool? in[2]; bool! out)
+{
+   prs {
+   [keeper=0] in[0]<12> & in[1] -> out-
+   }
+}
+
+export defcell g_0x1 (bool? in[1]; bool! out)
+{
+   prs {
+   [loadcap=3] in[0] -> out-
+   }
+}
+
+export defcell g_0x2 (bool? in[1]; bool! out)
+{
+   prs {
+   in[0] -> out-
+   }
+}
+
+export defcell g_0x3 (bool? in[1]; bool! out)
+{
+   prs {
+   in[0]<10> -> out-
+   }
+}
+
+export defcell g_0x4 (bool? in[1]; bool! out)
+{
+   prs {
+   [keeper=0] in[0] -> out-
+   }
+}
+
+export defcell g_0x5 (bool? in[1]; bool! out)
+{
+   prs {
+   [keeper=0] in[0]<10,8> -> out-
+   }
+}
+
+export defcell g_vl0n3ax1 (bool? in[3]; bool! out)
+{
+   prs {
+   in[0] & in[1] -> @x0-
+   [keeper=0] ~@x0 & in[2] -> out-
+   }
+}
+
+export defcell gvl02na_x1 (bool? in[2]; bool! out)
+{
+   prs {
+   ~in[0] -> @x0+
+   @x0 & ~in[1] -> out+
+   }
+}
+
+export defcell gx0 (bool? in[8]; bool! out[2])
+{
+   prs {
+   in[0] & in[1] -> @x0-
+   ~@x0 & in[3] -> @x1-
+   ~@x0 & in[2] -> @x2-
+   ~@x2 & in[4] | ~@x1 & in[5] -> @x3-
+   [keeper=0] ~@x2 & in[5] | ~@x3 & in[6] -> out[0]-
+   [keeper=0] ~@x2 & in[4] | ~@x3 & in[7] -> out[1]-
+   }
+}
+
+export template<pint w,l> defcell p0(bool? in[2]; bool! out) {
+  prs { passp<w,l> (in[0],in[1],out) }
+}
+
+export template<pint w,l> defcell n0(bool? in[2]; bool! out) {
+  prs { passn<w,l> (in[0],in[1],out) }
+}
+
+export template<pint w,l> defcell t0(bool? in[3]; bool! out) {
+  prs { transgate<w,l> (in[0],in[1],in[2],out) }
+}
+
+export defcell p1(bool? in[2]; bool! out) {
+  prs { passp (in[0],in[1],out) }
+}
+
+export defcell n1(bool? in[2]; bool! out) {
+  prs { passn (in[0],in[1],out) }
+}
+
+export defcell t1(bool? in[3]; bool! out) {
+  prs { transgate (in[0],in[1],in[2],out) }
+}
+
+export template<pint w,l> defcell c0(bool in; bool out) {
+  prs { cap<w,l> (in,out) }
+}
+
+export defcell c1(bool in; bool out) {
+  prs { cap (in,out) }
+}
+
+
+
+}

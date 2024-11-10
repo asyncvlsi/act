@@ -726,7 +726,7 @@ void ActNetlistPass::printFlat (FILE *fp)
   fprintf (_outfp, "\n");
 
   list_t *stk = list_new ();
-  _printflat (NULL, NULL, stk, _root);
+  _printflat (NULL, NULL, stk, _root, false);
   list_free (stk);
 
   fprintf (_outfp, ".ends\n");
@@ -759,46 +759,106 @@ void ActNetlistPass::printFlat (FILE *fp)
 */
 void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
 				       list_t *stk,
-				       ActId *inst, Process *p)
+				       ActId *inst, Process *p,
+				       bool act_mode)
 {
   char buf[10240];
   list_t *l;
-  fprintf (_outfp, "x");
+
+  if (act_mode == false) {
+    fprintf (_outfp, "x");
+  }
+  else {
+    if (p->getns() != ActNamespace::Global()) {
+      char *tmp = p->getns()->Name (true);
+      fprintf (_outfp, " %s", tmp);
+      FREE (tmp);
+    }
+    else {
+      fprintf (_outfp, " ");
+    }
+    const char *x = p->getName();
+    while (*x) {
+      if (*x == '<' && *(x+1) == '>') {
+	break;
+      }
+      fputc (*x, _outfp);
+      x++;
+    }
+    fprintf (_outfp, " ");
+  }
   inst->sPrint (buf, 10240);
   a->mfprintf (_outfp, "%s ", buf);
 
+  ActId *orig_inst = inst;
+
   l = list_new ();
+  int orig_level;
   list_append_head (l, inst);
+  orig_level = 0;
   while (inst->Rest()) {
     inst = inst->Rest();
     list_append_head (l, inst);
+    orig_level++;
   }
 
   Assert (list_length (l) == list_length (stk), "What?");
 
   /* print ports! */
+
+  if (act_mode) {
+    fprintf (_outfp, "(");
+  }
+
+  int k = -1;
+  int sz = 0;
+  int was_array = 0;
+  int need_comma = 0;
+
   for (int i=0; i < A_LEN (bnl->ports); i++) {
-    if (bnl->ports[i].omit) continue;
     int count = 0;
     bool found = false;
     act_local_net_t *thenet = NULL;
     act_boolean_netlist_t *bN;
     struct cHashtable *cH;
+
+    if (act_mode == false && bnl->ports[i].omit) continue;
+
+    if (act_mode == true) {
+      if (sz == 0) {
+	if (was_array) {
+	  fprintf (_outfp, "}");
+	  need_comma = 1;
+	}
+	k++;
+	InstType *pt = p->getPortType (k);
+	Assert (TypeFactory::isBoolType (pt), "Cells must have only Boolean ports");
+	if (pt->arrayInfo()) {
+	  sz = pt->arrayInfo()->size();
+	  if (need_comma) {
+	    fprintf (_outfp, ",");
+	  }
+	  fprintf (_outfp, "{");
+	  need_comma = 0;
+	  was_array = 1;
+	}
+	else {
+	  sz = 1;
+	  was_array = 0;
+	}
+      }
+
+      if (need_comma) {
+	fprintf (_outfp, ",");
+      }
+    }
     
-    // search for pin!
-#if 0
-    printf ("\nsearch for: ");
-    a->mfprintfproc (stdout, p);
-    printf (" / ");
-    bnl->ports[i].c->Print (stdout);
-    printf (" / ");
-    ((ActId *)stack_peek (l))->Print (stdout);
-    printf ("\n");
-#endif
-    ActId *look;
+    ActId *look = NULL;
     listitem_t *bnl_li, *id_li;
     bnl_li = list_first (stk);
     id_li = list_first (l);
+    int found_level = -1;
+    int level = orig_level;
     while (!found && bnl_li) {
       phash_bucket_t *pb;
 
@@ -809,35 +869,7 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
       Assert (cH, "What?");
       
       look = (ActId *) list_value (id_li);
-#if 0      
-      for (int j=0; !found && j < A_LEN (bN->nets); j++) {
-	if (bN->nets[j].skip) continue;
-#if 0      
-	printf (" net: ");
-	bN->nets[j].net->Print (stdout);
-	printf ("\n");
-#endif      
-	for (int k=0; k < A_LEN (bN->nets[j].pins); k++) {
-#if 0
-	  printf ("   check: ");
-	  //a->mfprintfproc (stdout, bN->nets[j].pins[k].cell);
-	  printf (" / ");
-	  bN->nets[j].pins[k].pin->Print (stdout);
-	  printf (" / ");
-	  bN->nets[j].pins[k].inst->Print (stdout);
-	  printf ("\n");
-#endif	
-	  if (/*bN->nets[j].pins[k].cell == p &&*/
-	      bN->nets[j].pins[k].pin == bnl->ports[i].c &&
-	      bN->nets[j].pins[k].inst->isEqual (look)) {
-	    thenet = &bN->nets[j];
-	    found = true;
-	    break;
-	  }
-	}
-      }
-#endif
-      
+
       act_local_pin_t tst;
       chash_bucket_t *cb;
       tst.inst = look;
@@ -848,51 +880,66 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
       if (cb) {
 	found = true;
 	thenet = (act_local_net_t *)cb->v;
-      }
-
-#if 0      
-      if (found) {
-	if (!cb) {
-	  printf ("** (not found in hash) mismatch for ");
-	  tst.inst->Print (stdout);
-	  printf(" / ");
-	  tst.pin->Print (stdout);
-	  printf ("\n");
-	}
-	else {
-	  if (cb->v != (void *)thenet) {
-	    printf ("** >ptr mismatch for ");
-	    tst.inst->Print (stdout);
-	    printf(" / ");
-	    tst.pin->Print (stdout);
-	    printf ("\n");
-	  }
-	}
-      }
-      else {
-	if (cb) {
-	  printf ("** (found in hash) mismatch for ");
-	  tst.inst->Print (stdout);
-	  printf(" / ");
-	  tst.pin->Print (stdout);
-	  printf ("\n");
-	}
-      }
+#if 0
+	printf ("\n --- found: ");
+	look->Print (stdout);
+	printf (" ; pin: ");
+	bnl->ports[i].c->Print (stdout);
+	printf (" ; net: ");
+	thenet->net->Print (stdout);
+	printf (" / level = %d\n", level);
 #endif
+	found_level = level;
+      }
       bnl_li = list_next (bnl_li);
       id_li = list_next (id_li);
       if (found && bnl_li) {
 	if (thenet->port) {
+	  level--;
+#if 0
+	  printf (" == look higher!\n");
+#endif
 	  // this has a higher-level net specified
 	  found = false;
 	  thenet = NULL;
 	}
       }
-      
     }
     if (found) {
+      ActId *stop;
+      listitem_t *tmpli;
+#if 0
+      printf ("[lev: %d]", found_level);
+      printf ("[orig: ");
+      orig_inst->Print (stdout);
+      printf ("][net: ");
+      thenet->net->Print (stdout);
+      printf ("]");
+#endif
+      stop = orig_inst;
+      while (stop && found_level > 0) {
+	stop = stop->Rest();
+	found_level--;
+      }
+      if (stop != orig_inst) {
+	orig_inst->sPrint (buf, 10240, stop);
+      }
+      else {
+	buf[0] = '\0';
+      }
       ActId *tmp = thenet->net->toid();
-      tmp->sPrint (buf, 10240);
+      if (buf[0] != '\0') {
+	int tl = strlen (buf);
+	if (tl < 10240) {
+	  buf[tl] = '.';
+	  tl++;
+	  buf[tl] = '\0';
+	}
+	tmp->sPrint (buf + tl, 10240-tl);
+      }
+      else {
+	tmp->sPrint (buf, 10240);
+      }
       char buf2[10240];
       a->msnprintf (buf2, 10240, "%s", buf);
       if (split_net (buf2)) {
@@ -912,20 +959,69 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     else {
       fprintf (_outfp, "-?-");
     }
-    fprintf (_outfp, " ");
+    if (act_mode == false) {
+      fprintf (_outfp, " ");
+    }
+    else {
+      need_comma = 1;
+      sz--;
+    }
   }
 
   list_free (l);
-	    
-  a->mfprintfproc (_outfp, p);
+
+  if (act_mode == false) {
+    a->mfprintfproc (_outfp, p);
+  }
+  else {
+    if (was_array) {
+      fprintf (_outfp, "}");
+    }
+    fprintf (_outfp, ");");
+  }
+  
   fprintf (_outfp, "\n");
 }
 
 void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
-				 list_t *stk, Process *p)
+				 list_t *stk, Process *p,
+				 bool act_mode)
 {
   ActUniqProcInstiter inst(p->CurScope());
   list_append_head (stk, bools->getBNL (p));
+
+  if (act_mode == true) {
+    // we need to dump a list of declarations for each net
+
+    fprintf (_outfp, " /* nets for ");
+    if (prefix) {
+      prefix->Print (_outfp);
+    }
+    else {
+      fprintf (_outfp, " -toplevel-");
+    }
+    fprintf (_outfp, "*/\n");
+    
+    act_boolean_netlist_t *bnl = bools->getBNL (p);
+    for (int i=0; i < A_LEN (bnl->nets); i++) {
+      char buf[10240];
+      if (bnl->nets[i].port) continue;
+      if (bnl->nets[i].skip) continue;
+      if (A_LEN (bnl->nets[i].pins) == 0) continue;
+
+      fprintf (_outfp, " bool ");
+      if (prefix) {
+	prefix->sPrint (buf, 10240);
+	a->mfprintf (_outfp, "%s.", buf);
+      }
+      ActId *tmp = bnl->nets[i].net->toid();
+      tmp->sPrint (buf, 10240);
+      a->mfprintf (_outfp, "%s", buf);
+      fprintf (_outfp, ";\n");
+      delete tmp;
+    }
+  }
+
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     char buf[10240];
     ValueIdx *vx = (*inst);
@@ -953,10 +1049,10 @@ void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
 	  Array *x = as->toArray ();
 	  newid->setArray (x);
 	  if (iproc->isCell()) {
-	    _print_flat_cell (bnl, stk, prefix, iproc);
+	    _print_flat_cell (bnl, stk, prefix, iproc, act_mode);
 	  }
 	  else {
-	    _printflat (prefix, ntl, stk, iproc);
+	    _printflat (prefix, ntl, stk, iproc, act_mode);
 	  }
 	  delete x;
 	  newid->setArray (NULL);
@@ -967,10 +1063,10 @@ void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
     }
     else {
       if (iproc->isCell()) {
-	_print_flat_cell (bnl, stk, prefix, iproc);
+	_print_flat_cell (bnl, stk, prefix, iproc, act_mode);
       }
       else {
-	_printflat (prefix, ntl, stk, iproc);
+	_printflat (prefix, ntl, stk, iproc, act_mode);
       }
     }
     delete newid;
@@ -1023,6 +1119,29 @@ static void print_net (FILE *fp, void *key)
   // nothing
 }
 
+void ActNetlistPass::_updateInvHash (Process *p)
+{
+  // compute inverse net hash!
+  act_boolean_netlist_t *bnl;
+  phash_bucket_t *b = phash_add (_invNetH, p);
+  struct cHashtable *cH = chash_new (4);
+  cH->hash = hash_net;
+  cH->match = match_net;
+  cH->dup = dup_net;
+  cH->free = free_net;
+  cH->print = print_net;
+  b->v = cH;
+
+  bnl = bools->getBNL (p);
+  for (int i=0; i < A_LEN (bnl->nets); i++) {
+    for (int j=0; j < A_LEN (bnl->nets[i].pins); j++) {
+      chash_bucket_t *pb;
+      pb = chash_add (cH, &bnl->nets[i].pins[j]);
+      pb->v = &bnl->nets[i];
+    }
+  }
+}
+
 
 void ActNetlistPass::flatHelper (Process *p)
 {
@@ -1031,24 +1150,116 @@ void ActNetlistPass::flatHelper (Process *p)
     emitNetlist (p);
   }
   else {
-    // compute inverse net hash!
-    act_boolean_netlist_t *bnl;
-    phash_bucket_t *b = phash_add (_invNetH, p);
-    struct cHashtable *cH = chash_new (4);
-    cH->hash = hash_net;
-    cH->match = match_net;
-    cH->dup = dup_net;
-    cH->free = free_net;
-    cH->print = print_net;
-    b->v = cH;
+    _updateInvHash (p);
+  }
+}
 
-    bnl = bools->getBNL (p);
-    for (int i=0; i < A_LEN (bnl->nets); i++) {
-      for (int j=0; j < A_LEN (bnl->nets[i].pins); j++) {
-	chash_bucket_t *pb;
-	pb = chash_add (cH, &bnl->nets[i].pins[j]);
-	pb->v = &bnl->nets[i];
+static void _printnsact (FILE *fp, ActNamespace *ns, int *count)
+{
+  list_t *l;
+
+  if (ns == ActNamespace::Global()) {
+    *count = 0;
+    return;
+  }
+  
+  l = list_new ();
+  while (ns && ns != ActNamespace::Global()) {
+    stack_push (l, ns);
+    ns = ns->Parent ();
+  }
+  *count = 0;
+  while (!stack_isempty (l)) {
+    ns = (ActNamespace *) stack_pop (l);
+    if (*count > 0) {
+      fprintf (fp, "export ");
+    }
+    fprintf (fp, "namespace %s { ", ns->getName());
+    *count = *count + 1;
+  }
+  fprintf (fp, "\n");
+  list_free (l);
+}
+
+void ActNetlistPass::flatActHelper (Process *p)
+{
+  if (!p) return;
+  if (p->isCell()) {
+    if (p->getns() != _curflatns) {
+      if (_curflatns) {
+	for (int i=0; i < _curnsnest; i++) {
+	  fprintf (_outfp, "}");
+	}
+	fprintf (_outfp, "\n\n");
       }
+      _printnsact (_outfp, p->getns(), &_curnsnest);
+    }
+    _curflatns = p->getns();
+    p->Print (_outfp);
+  }
+  else {
+    _updateInvHash (p);
+  }
+}
+
+
+void ActNetlistPass::printActFlat (FILE *fp)
+{
+  if (!completed()) {
+    fatal_error ("ActNetlistPass::printActFlat() called before pass is run!");
+  }
+  if (!_root) {
+    fatal_error ("ActNetlistPass::printActFlat() requires a top-level process!");
+  }
+  bools->createNets (_root);
+  _outfp = fp;
+  _invNetH = phash_new (4);
+  _curflatns = ActNamespace::Global ();
+
+  // Run a new pass that only prints cells and
+  // computes the inverse hash that we need to accelerate net
+  // identification.
+  run_recursive (_root, 3);
+
+  if (_curflatns) {
+    for (int i=0; i < _curnsnest; i++) {
+      fprintf (_outfp, "}");
+    }
+    fprintf (_outfp, "\n\n");
+  }
+
+  act_boolean_netlist_t *bnl = bools->getBNL (_root);
+  fprintf (_outfp, "defproc ");
+  a->mfprintfproc (_outfp, _root);
+  fprintf (_outfp, " (");
+  for (int k=0; k < _root->getNumPorts(); k++) {
+    if (k > 0) {
+      fprintf (_outfp, "; ");
+    }
+    _root->getPortType (k)->Print (_outfp);
+    fprintf (_outfp, " %s", _root->getPortName (k));
+  }
+  fprintf (_outfp, ")\n{\n");
+
+  /* XXX: we need to declare all the nets used! */
+
+  list_t *stk = list_new ();
+  _printflat (NULL, NULL, stk, _root, true);
+  list_free (stk);
+
+  fprintf (_outfp, "}\n");
+
+  _outfp = NULL;
+
+  // free each hash table entry, and then...
+  {
+    phash_bucket_t *pb;
+    phash_iter_t it;
+    phash_iter_init (_invNetH, &it);
+    while ((pb = phash_iter_next (_invNetH, &it))) {
+      struct cHashtable *cH = (struct cHashtable *) pb->v;
+      chash_free (cH);
     }
   }
+  phash_free (_invNetH);
 }

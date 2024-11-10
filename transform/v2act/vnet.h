@@ -188,6 +188,7 @@ typedef struct {
   id_info_t *tmpid;		/* temp */
   int port_count;
   int flop_count;
+  int tie_count;
   id_deref_t *clk;
   
   

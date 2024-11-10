@@ -202,6 +202,7 @@ class ActNetlistPass : public ActPass {
 
   void Print (FILE *fp, Process *p);
   void printFlat (FILE *fp);
+  void printActFlat (FILE *fp);
   
 
   static node_t *connection_to_node (netlist_t *n, act_connection *c);
@@ -328,13 +329,20 @@ class ActNetlistPass : public ActPass {
 
   void _check_emit_warning (int d, int depth, ActId *id);
 
-  void _printflat (ActId *prefix, ActId *tl, list_t *callstack, Process *p);
+  void _printflat (ActId *prefix, ActId *tl, list_t *callstack, Process *p,
+		   bool act_mode);
   void _print_flat_cell (act_boolean_netlist_t *bnl,
-			 list_t *stk,
-			 ActId *prefix, Process *p);
+			 list_t *stk, ActId *prefix, Process *p,
+			 bool act_mode);
 
   struct pHashtable *_invNetH;
+  ActNamespace *_curflatns;  // used during act flat generation to
+			     // reduce the number of namespace { ... }
+			     // printed
+  int _curnsnest;
   void flatHelper (Process *p);
+  void flatActHelper (Process *p);
+  void _updateInvHash (Process *p);
 };
 
 
