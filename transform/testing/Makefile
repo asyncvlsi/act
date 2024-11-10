@@ -21,6 +21,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=state inline mem arb split_merge flat
+SUBDIRS=state inline mem arb split_merge
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std

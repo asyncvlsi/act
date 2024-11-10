@@ -25,7 +25,7 @@ fi
 
 for i in $list
 do
-	$ACTTOOL $i all.cells 'foo<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -p foo -c all.cells $i  > runs/$i.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.stderr
 	rm runs/$i.tmp.stderr
 done

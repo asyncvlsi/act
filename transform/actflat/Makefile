@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2018 Rajit Manohar
+#  Copyright (c) 2024 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-BINARY=test_actflat.$(EXT)
+BINARY=actflat.$(EXT)
 
 TARGETS=$(BINARY)
 

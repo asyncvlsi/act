@@ -30,7 +30,7 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] <actfile> <cells> <process>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-c <cells>] -p <proc> <actfile>\n", name);
   exit (1);
 }
 
@@ -38,34 +38,67 @@ static void usage (char *name)
 int main (int argc, char **argv)
 {
   Act *a;
-  char *proc;
+  char *proc, *cells;
+  extern int optind, opterr;
+  extern char *optarg;
+  int ch;
 
   /* initialize ACT library */
   Act::Init (&argc, &argv);
 
-  /* some usage check */
-  if (argc != 4) {
-    usage (argv[0]);
+  proc = NULL;
+  cells = NULL;
+  while ((ch = getopt (argc, argv, "c:p:")) != -1) {
+    switch (ch) {
+    case 'p':
+      if (proc) {
+	FREE (proc);
+      }
+      proc = Strdup (optarg);
+      break;
+    case 'c':
+      if (cells) {
+	FREE (cells);
+      }
+      cells = Strdup (optarg);
+      break;
+    case '?':
+      usage (argv[0]);
+      break;
+      
+    default:
+      fatal_error ("getopt buggy?");
+      break;
+    }
   }
 
-  /* read in the ACT file */
-  a = new Act (argv[1]);
+  if (optind != argc - 1) {
+    fprintf (stderr, "Missing ACT file.\n");
+    usage (argv[0]);
+  }
+  if (proc == NULL) {
+    fprintf (stderr, "Missing top-level process.\n");
+    usage (argv[0]);
+  }
   
-  /* merge in cells file */
-  a->Merge (argv[2]);
-
+  /* read in the ACT file */
+  a = new Act (argv[optind]);
+  if (cells) {
+    a->Merge (cells);
+  }
+  FREE (cells);
+  
   /* expand it */
   a->Expand ();
  
   /* find the process specified on the command line */
-  Process *p = a->findProcess (argv[3]);
-
+  Process *p = a->findProcess (proc);
   if (!p) {
-    fatal_error ("Could not find process `%s' in file `%s'", argv[2], argv[1]);
+    fatal_error ("Could not find process `%s' in file `%s'", proc, argv[optind]);
   }
 
   if (!p->isExpanded()) {
-    fatal_error ("Process `%s' is not expanded.", argv[2]);
+    p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
   }
 
   /* do stuff here */
