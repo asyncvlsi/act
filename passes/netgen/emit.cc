@@ -1215,6 +1215,7 @@ void ActNetlistPass::printActFlat (FILE *fp)
   _outfp = fp;
   _invNetH = phash_new (4);
   _curflatns = ActNamespace::Global ();
+  _curnsnest = 0;
 
   // Run a new pass that only prints cells and
   // computes the inverse hash that we need to accelerate net
