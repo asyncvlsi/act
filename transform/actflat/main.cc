@@ -30,7 +30,10 @@
 
 static void usage (char *name)
 {
-  fprintf (stderr, "Usage: %s [act-options] [-c <cells>] -p <proc> <actfile>\n", name);
+  fprintf (stderr, "Usage: %s [act-options] [-u] [-c <cells>] -p <proc> <actfile>\n", name);
+  fprintf (stderr, "-u         : unmangled cell ports\n");
+  fprintf (stderr, "-c <cells> : specify cells files\n");
+  fprintf (stderr, "-p <proc>  : top-level process\n");
   exit (1);
 }
 
@@ -46,10 +49,16 @@ int main (int argc, char **argv)
   /* initialize ACT library */
   Act::Init (&argc, &argv);
 
+  config_set_int ("net.mangled_ports_actflat", 1);
+
   proc = NULL;
   cells = NULL;
-  while ((ch = getopt (argc, argv, "c:p:")) != -1) {
+  while ((ch = getopt (argc, argv, "c:p:u")) != -1) {
     switch (ch) {
+    case 'u':
+      config_set_int ("net.mangled_ports_actflat", 0);
+      break;
+      
     case 'p':
       if (proc) {
 	FREE (proc);
@@ -71,6 +80,7 @@ int main (int argc, char **argv)
       break;
     }
   }
+
 
   if (optind != argc - 1) {
     fprintf (stderr, "Missing ACT file.\n");

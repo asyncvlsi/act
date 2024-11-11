@@ -2766,6 +2766,13 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
     unit_dev = 1e-15;
   }
   _annotate = NULL;
+
+  if (config_exists ("net.mangled_ports_actflat")) {
+    mangled_ports_actflat = config_get_int ("net.mangled_ports_actflat") ? true : false;
+  }
+  else {
+    mangled_ports_actflat = true;
+  }
 }
 
 ActNetlistPass::~ActNetlistPass()

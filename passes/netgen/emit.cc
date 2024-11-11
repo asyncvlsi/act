@@ -777,13 +777,18 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     else {
       fprintf (_outfp, " ");
     }
-    const char *x = p->getName();
-    while (*x) {
-      if (*x == '<' && *(x+1) == '>') {
-	break;
+    if (!mangled_ports_actflat) {
+      const char *x = p->getName();
+      while (*x) {
+	if (*x == '<' && *(x+1) == '>') {
+	  break;
+	}
+	fputc (*x, _outfp);
+	x++;
       }
-      fputc (*x, _outfp);
-      x++;
+    }
+    else {
+      a->mfprintfproc (_outfp, p);
     }
     fprintf (_outfp, " ");
   }
@@ -822,32 +827,33 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     act_boolean_netlist_t *bN;
     struct cHashtable *cH;
 
-    if (act_mode == false && bnl->ports[i].omit) continue;
+    if ((mangled_ports_actflat || act_mode == false) && bnl->ports[i].omit) continue;
 
     if (act_mode == true) {
-      if (sz == 0) {
-	if (was_array) {
-	  fprintf (_outfp, "}");
-	  need_comma = 1;
-	}
-	k++;
-	InstType *pt = p->getPortType (k);
-	Assert (TypeFactory::isBoolType (pt), "Cells must have only Boolean ports");
-	if (pt->arrayInfo()) {
-	  sz = pt->arrayInfo()->size();
-	  if (need_comma) {
-	    fprintf (_outfp, ",");
+      if (!mangled_ports_actflat) {
+	if (sz == 0) {
+	  if (was_array) {
+	    fprintf (_outfp, "}");
+	    need_comma = 1;
 	  }
-	  fprintf (_outfp, "{");
-	  need_comma = 0;
-	  was_array = 1;
-	}
-	else {
-	  sz = 1;
-	  was_array = 0;
+	  k++;
+	  InstType *pt = p->getPortType (k);
+	  Assert (TypeFactory::isBoolType (pt), "Cells must have only Boolean ports");
+	  if (pt->arrayInfo()) {
+	    sz = pt->arrayInfo()->size();
+	    if (need_comma) {
+	      fprintf (_outfp, ",");
+	    }
+	    fprintf (_outfp, "{");
+	    need_comma = 0;
+	    was_array = 1;
+	  }
+	  else {
+	    sz = 1;
+	    was_array = 0;
+	  }
 	}
       }
-
       if (need_comma) {
 	fprintf (_outfp, ",");
       }
@@ -964,7 +970,9 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     }
     else {
       need_comma = 1;
-      sz--;
+      if (!mangled_ports_actflat) {
+	sz--;
+      }
     }
   }
 
@@ -974,8 +982,10 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     a->mfprintfproc (_outfp, p);
   }
   else {
-    if (was_array) {
-      fprintf (_outfp, "}");
+    if (!mangled_ports_actflat) {
+      if (was_array) {
+	fprintf (_outfp, "}");
+      }
     }
     fprintf (_outfp, ");");
   }
@@ -1185,6 +1195,7 @@ void ActNetlistPass::flatActHelper (Process *p)
 {
   if (!p) return;
   if (p->isCell()) {
+    char buf[10240];
     if (p->getns() != _curflatns) {
       if (_curflatns) {
 	for (int i=0; i < _curnsnest; i++) {
@@ -1195,7 +1206,64 @@ void ActNetlistPass::flatActHelper (Process *p)
       _printnsact (_outfp, p->getns(), &_curnsnest);
     }
     _curflatns = p->getns();
-    p->Print (_outfp);
+
+    // we have to print the header differently
+    if (!mangled_ports_actflat) {
+      p->Print (_outfp);
+    }
+    else {
+      if (p->IsExported()) {
+	fprintf (_outfp, "export ");
+      }
+      fprintf (_outfp, "defcell ");
+      a->mfprintfproc (_outfp, p);
+      fprintf (_outfp, " (");
+      act_boolean_netlist_t *bnl = bools->getBNL (p);
+      Assert (bnl, "What?");
+      int need_comma = 0;
+      for (int i=0; i < A_LEN (bnl->ports); i++) {
+	if (bnl->ports[i].omit) continue;
+	if (need_comma) {
+	  fprintf (_outfp, ";");
+	}
+	fprintf (_outfp, "bool ");
+	ActId *id = bnl->ports[i].c->toid();
+	id->sPrint (buf, 10240);
+	a->mfprintf (_outfp, "%s", buf);
+	delete id;
+	need_comma = 1;
+      }
+      fprintf (_outfp, ")\n{\n");
+      // now connect this up
+      for (int i=0; i < p->getNumPorts(); i++) {
+	InstType *it = p->getPortType (i);
+	Array *a = it->arrayInfo();
+	if (TypeFactory::isBoolType (it) && !a) continue;
+	it->clrArray ();
+	fprintf (_outfp, " ");
+	it->Print (_outfp, 1);
+	fprintf (_outfp, " %s", p->getPortName (i));
+	if (a) {
+	  a->Print (_outfp);
+	  it->MkArray (a);
+	}
+	fprintf (_outfp, ";\n");
+      }
+      for (int i=0; i < A_LEN (bnl->ports); i++) {
+	if (bnl->ports[i].omit) continue;
+	fprintf (_outfp, " ");
+	ActId *id = bnl->ports[i].c->toid();
+	id->sPrint (buf, 10240);
+	fprintf (_outfp, "%s=", buf);
+	a->mfprintf (_outfp, "%s", buf);
+	fprintf (_outfp, ";\n");
+      }
+      p->CurScope()->Print (_outfp);
+      if (p->getlang()) {
+	p->getlang()->Print (_outfp);
+      }
+      fprintf (_outfp, "}\n");
+    }
   }
   else {
     _updateInvHash (p);

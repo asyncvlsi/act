@@ -62,7 +62,8 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL -p foo -c all.cells $i > runs/$i.t.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -u -p foo -c all.cells $i > runs/$i.t.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -p foo -c all.cells $i > runs/$i.mt.stdout 2> /dev/null
 	sort runs/$i.tmp.stderr > runs/$i.t.stderr
 	rm runs/$i.tmp.stderr
 	ok=1
@@ -74,6 +75,16 @@ do
 		ok=0
 		if [ ! x$ACT_TEST_VERBOSE = x ]; then
             diff runs/$i.t.stdout runs/$i.stdout
+        fi
+	fi
+	if ! cmp runs/$i.mt.stdout runs/$i.m.stdout >/dev/null 2>/dev/null
+	then
+		echo 
+		myecho "** FAILED TEST $i: mstdout"
+		fail=`expr $fail + 1`
+		ok=0
+		if [ ! x$ACT_TEST_VERBOSE = x ]; then
+            diff runs/$i.mt.stdout runs/$i.m.stdout
         fi
 	fi
 	if ! cmp runs/$i.t.stderr runs/$i.stderr >/dev/null 2>/dev/null

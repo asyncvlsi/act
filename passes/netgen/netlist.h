@@ -296,8 +296,10 @@ class ActNetlistPass : public ActPass {
 
   /* unit device parameter */
   double unit_dev;
-  
-  
+
+  /* mangled cells for flat act output? */
+  bool mangled_ports_actflat;
+
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,
 			  int num_vdd_share,

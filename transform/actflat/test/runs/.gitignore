@@ -1,2 +1,3 @@
 *.t.stdout
 *.t.stderr
+*.mt.stdout
