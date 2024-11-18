@@ -1,0 +1,2 @@
+ERROR: File `71.act', line 3, col 13
+	The name `self' is a reserved identifier name.

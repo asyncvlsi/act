@@ -1,0 +1,4 @@
+defproc test()
+{
+  bool self;
+}

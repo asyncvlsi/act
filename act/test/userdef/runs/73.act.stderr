@@ -1,0 +1,2 @@
+ERROR: File `73.act', line 1, col 20
+	Port name cannot be the reserved identifier `self'.

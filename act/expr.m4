@@ -213,7 +213,7 @@ expr_id[ActId *]: { base_id "." }*
       $E("UserMacro scenario without usermacro syntax? Check for an internal error!");
     }
 
-    /* check if we are "true", "false", or "self" -- special, we
+    /* check if we are "true", "false", "self", or "selfack" -- special, we
        aren't going to be found in any scope! */
     if (list_length ($1) == 1 && ret->arrayInfo() == NULL) {
       const char *tmp;
@@ -223,13 +223,13 @@ expr_id[ActId *]: { base_id "." }*
 	list_free ($1);
 	return ret;
       }
-      if (strcmp (tmp, "self") == 0) {
-	if ($0->scope->Lookup ("self") != NULL) {
+      if (_act_is_reserved_id (tmp)) {
+	if ($0->scope->Lookup (tmp) != NULL) {
 	  list_free ($1);
 	  return ret;
 	}
 	else {
-	  $E("self used as an identifier, but not defined in this scope.");
+	  $E("``%s'' used as an identifier, but not defined in this scope.", tmp);
 	}
       }
     }

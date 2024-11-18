@@ -1,2 +1,2 @@
 ERROR: File `131.act', line 8, col 11
-	self used as an identifier, but not defined in this scope.
+	`self' used as an identifier, but not defined in this scope.

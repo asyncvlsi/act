@@ -1034,3 +1034,11 @@ int _act_shadow_warning (void)
 {
   return Act::shadow;
 }
+
+int _act_is_reserved_id (const char *s)
+{
+  if (strcmp (s, "self") == 0 || strcmp (s, "selfack") == 0) {
+    return 1;
+  }
+  return 0;
+}

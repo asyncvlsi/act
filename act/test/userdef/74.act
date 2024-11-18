@@ -1,0 +1,5 @@
+template<pint self>
+defproc test(bool foo)
+{
+  bool bar;
+}

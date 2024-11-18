@@ -1,0 +1,2 @@
+ERROR: File `72.act', line 3, col 16
+	The name `selfack' is a reserved identifier name.

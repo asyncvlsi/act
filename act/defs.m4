@@ -140,6 +140,10 @@ param_inst: param_type param_id_list
 	has_default = 1;
       }
       list_free (m);
+
+      if (_act_is_reserved_id (id_name)) {
+	$E("Parameter name cannot be the reserved identifier ``%s''.", id_name);
+      }
       
       if ($0->u) {
 	if ($0->u->AddMetaParam (it, id_name, ae) != 1) {
@@ -703,6 +707,10 @@ macro_param_inst: param_type id_list
       }
       list_free (m);
 
+      if (_act_is_reserved_id (id_name)) {
+	$E("Port name cannot be the reserved identifier ``%s''.", id_name);
+      }
+
       if ($0->um->addPort (it, id_name) != 1) {
 	$E("Duplicate port name in port list: ``%s''", id_name);
       }
@@ -853,6 +861,10 @@ single_port_item: physical_inst_type id_list
       }
       list_free (m);
 
+      if (_act_is_reserved_id (id_name)) {
+	$E("Port name cannot be the reserved identifier ``%s''.", id_name);
+      }
+
       if (u->AddPort (it, id_name) != 1) {
 	if ($0->u_f) {
 	  $E("Duplicate parameter name in argument list: ``%s''", id_name);
@@ -929,6 +941,11 @@ single_macro_port_item: physical_inst_type id_list
       if (u->FindPort (id_name) != 0) {
 	$E("Macro argument conflicts with port/parameter name: ``%s''", id_name);
       }
+
+      if (_act_is_reserved_id (id_name)) {
+	$E("Port name cannot be the reserved identifier ``%s''.", id_name);
+      }
+      
       if (!$0->um->addPort (it, id_name)) {
 	$E("Duplicate macro port name: ``%s''", id_name);
       }
@@ -2136,6 +2153,10 @@ instance_id[ActBody *]: ID [ sparse_range ]
 
     /* Create the instance */
     //$0->i_t = $0->t;
+
+    if (_act_is_reserved_id ($1)) {
+      $E("The name ``%s'' is a reserved identifier name.", $1);
+    }
 
     if (!OPT_EMPTY ($2)) {
       $A($0->t->arrayInfo() == NULL);

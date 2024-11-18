@@ -1651,13 +1651,11 @@ hse_assign_stmt[act_chp_lang_t *]: bool_expr_id dir
 {{X:
     list_t *l = list_new ();
     act_chp_lang_t *ret = apply_X_assign_stmt_opt0 ($0, $1, l, $3);
-    if (!$1->Rest() &&
-	(strcmp ($1->getName(), "self") == 0
-	 || strcmp ($1->getName(), "selfack") == 0)) {
+    if (!$1->Rest() && _act_is_reserved_id ($1->getName())) {
       return ret;
     }
     else {
-      $E("Assignments only permitted to ``self'' or ``selfack'' in HSE body");
+      $E("Assignments only permitted to ``%s'' in HSE body", $1->getName());
     }
     return NULL;
 }}

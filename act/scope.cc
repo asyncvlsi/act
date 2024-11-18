@@ -28,6 +28,7 @@
 #include <string.h>
 #include <vector>
 
+int _act_is_reserved_id (const char *s);
 
 Scope::Scope (Scope *parent, int is_expanded)
 {
@@ -1288,9 +1289,8 @@ void Scope::Print (FILE *fp, bool all_inst)
     // skip parameters
     if (TypeFactory::isParamType (vx->t)) continue;
 
-    // skip ourselves
-    if (strcmp (vx->getName(), "self") == 0) continue;
-    if (strcmp (vx->getName(), "selfack") == 0) continue;
+    // skip internally generated names
+    if (_act_is_reserved_id (vx->getName())) continue;
     
     // skip instances from parent
     if (H && hash_lookup (H, vx->getName())) continue;
@@ -1547,9 +1547,8 @@ const std::vector<ValueIdx*> Scope::getPorts ()
     // skip parameters
     if (TypeFactory::isParamType (element->t)) continue;
     
-    // skip ourselves
-    if (strcmp (element->getName(), "self") == 0) continue;
-    if (strcmp (element->getName(), "selfack") == 0) continue;
+    // skip internally generated names
+    if (_act_is_reserved_id (element->getName())) continue;
 
     // skip instances from the parent
     auto search = parent_visible.find(element->getName());
@@ -1580,9 +1579,8 @@ const std::vector<ValueIdx*> Scope::getUserDefInst ()
     // skip parameters
     if (TypeFactory::isParamType (element->t)) continue;
     
-    // skip ourselves
-    if (strcmp (element->getName(), "self") == 0) continue;
-    if (strcmp (element->getName(), "selfack") == 0) continue;
+    // skip internally generated names
+    if (_act_is_reserved_id (element->getName())) continue;
 
     // skip instances from the parent
     auto search = parent_visible.find(element->getName());
@@ -1617,9 +1615,8 @@ const std::vector<ValueIdx*> Scope::getPrimitiveInst ()
     // skip parameters
     if (TypeFactory::isParamType (element->t)) continue;
     
-    // skip ourselves
-    if (strcmp (element->getName(), "self") == 0) continue;
-    if (strcmp (element->getName(), "selfack") == 0) continue;
+    // skip internally generated names
+    if (_act_is_reserved_id (element->getName())) continue;
 
     // skip instances from the parent
     auto search = parent_visible.find(element->getName());
