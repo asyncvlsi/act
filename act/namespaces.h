@@ -24,6 +24,8 @@
 #ifndef __NAMESPACES_H__
 #define __NAMESPACES_H__
 
+#include <vector>
+#include <set>
 #include <common/hash.h>
 #include <common/list.h>
 #include <common/bitset.h>
@@ -425,6 +427,26 @@ class Scope {
    * generated during macro expansion have to be handled correctly.
    */
   void updateParent(Scope *s) { up = s; }
+
+  /**
+   * @return the list of value ids of ports of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getPorts();
+
+  /**
+   * @return the list of value ids of user type instances of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getUserDefInst ();
+
+  /**
+   * @return the list of value ids of primitive type instances of this user process, empty vector if there are none
+   */
+  const std::vector<ValueIdx*> getPrimitiveInst ();
+
+  /**
+   * @return the list of symbol names available in the parent process, emtpy if none available (none defined or no parent)
+   */
+  const std::set<const char*> getParentSymbols ();
 
   /**
    * Print the connections specified by the cx pointer. Normally this
