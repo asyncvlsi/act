@@ -1,0 +1,25 @@
+defproc test ();
+defchan mychan <: chan(int<32>,int<32>) (bool a);
+
+defproc test ()
+{
+
+/* instances */
+mychan x;
+
+/* connections */
+}
+
+defchan mychan <: chan(int<32>,int<32>) (bool a)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

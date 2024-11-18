@@ -1290,6 +1290,7 @@ void Scope::Print (FILE *fp, bool all_inst)
 
     // skip ourselves
     if (strcmp (vx->getName(), "self") == 0) continue;
+    if (strcmp (vx->getName(), "selfack") == 0) continue;
     
     // skip instances from parent
     if (H && hash_lookup (H, vx->getName())) continue;
@@ -1548,9 +1549,11 @@ const std::vector<ValueIdx*> Scope::getPorts ()
     
     // skip ourselves
     if (strcmp (element->getName(), "self") == 0) continue;
+    if (strcmp (element->getName(), "selfack") == 0) continue;
 
     // skip instances from the parent
-    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+    auto search = parent_visible.find(element->getName());
+    if (search != parent_visible.end()) continue;
 
     // skip non-ports
     if (u_def && (u_def->FindPort (element->getName()) == 0)) continue;
@@ -1579,9 +1582,11 @@ const std::vector<ValueIdx*> Scope::getUserDefInst ()
     
     // skip ourselves
     if (strcmp (element->getName(), "self") == 0) continue;
+    if (strcmp (element->getName(), "selfack") == 0) continue;
 
     // skip instances from the parent
-    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+    auto search = parent_visible.find(element->getName());
+    if (search != parent_visible.end()) continue;
 
     // skip ports
     if (u_def && (u_def->FindPort (element->getName()) != 0)) continue;
@@ -1614,9 +1619,11 @@ const std::vector<ValueIdx*> Scope::getPrimitiveInst ()
     
     // skip ourselves
     if (strcmp (element->getName(), "self") == 0) continue;
+    if (strcmp (element->getName(), "selfack") == 0) continue;
 
     // skip instances from the parent
-    if (auto search = parent_visible.find(element->getName()); search != parent_visible.end()) continue;
+    auto search = parent_visible.find(element->getName());
+    if (search != parent_visible.end()) continue;
 
     // skip ports
     if (u_def && (u_def->FindPort (element->getName()) != 0)) continue;

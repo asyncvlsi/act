@@ -1,0 +1,8 @@
+defchan mychan <: chan(int,int) (bool a) { }
+
+defproc test()
+{
+  mychan x;
+}
+
+test t;
