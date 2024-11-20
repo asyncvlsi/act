@@ -555,8 +555,11 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	c->u.comm.e = val.getVal();
       }
       else {
+	if (c->type == ACT_CHP_SEND && c->u.comm.e &&
+	    c->u.comm.e->type != E_VAR) {
 	/* XXX: check special case of function that returns a structure */
-	warning ("Structure return value inlining for send data not currently supported!");
+	  warning ("Structure return value inlining for send data not currently supported!");
+	}
       }
     }
     break;
@@ -854,7 +857,9 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
       Assert (cx, "What?");
       if (TypeFactory::isStructure (cx->datatype())) {
 	/* XXX: check special case of function that returns a structure */
-	warning ("Structure return value inlining for send data not currently supported!");
+	if (c->type == ACT_CHP_SEND && c->u.comm.e && c->u.comm.e->type != E_VAR) {
+	  warning ("Structure return value inlining for send data not currently supported!");
+	}
       }
     }
     break;
@@ -983,7 +988,9 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
       }
       else {
 	/* XXX: check special case of function that returns a structure */
-	warning ("Structure return value inlining for send data not currently supported!");
+	if (c->type == ACT_CHP_SEND && c->u.comm.e && c->u.comm.e->type != E_VAR)  {
+	  warning ("Structure return value inlining for send data not currently supported!");
+	}
       }
     }
     break;
