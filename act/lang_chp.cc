@@ -2179,13 +2179,13 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       if (um->getNumPorts() > 0) {
 	listitem_t *li = list_first (c->u.macro.rhs);
 	for (int i=0; i < um->getNumPorts(); i++) {
-	  Expr **etmp;
-	  MALLOC (etmp, Expr *, 1);
-	  etmp[0] = chp_expr_expand ((Expr *)list_value (li), ns, s);
+	  act_inline_value eval;
 	  int tr;
+	  eval.is_struct = 0;
+	  eval.u.val = chp_expr_expand ((Expr *)list_value (li), ns, s);
 
 	  /* -- typecheck -- */
-	  tr = act_type_expr (s, etmp[0], NULL);
+	  tr = act_type_expr (s, eval.u.val, NULL);
 	  if (!T_BASETYPE_ISINTBOOL (tr)) {
 	    act_error_ctxt (stderr);
 	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n", um->getName(), i);
@@ -2206,9 +2206,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 
 	  tsc->Add (um->getPortName (i), um->getPortType (i));
 	  ActId *tmp = new ActId (um->getPortName (i));
-	  act_inline_setval (tab, tmp, etmp);
+	  act_inline_setval (tab, tmp, eval);
 	  delete tmp;
-	  FREE (etmp);
 	  li = list_next (li);
 	}
       }

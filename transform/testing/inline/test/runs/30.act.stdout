@@ -11,7 +11,7 @@ chan(struct) s;
 
 /* connections */
 dataflow {
-struct( {int(int(s.a,4)+int(s.b,4),4),int(int(s.a,4)-int(s.b,4),4)}) -> t
+struct( {int(s.a+s.b,4),int(s.a-s.b,4)}) -> t
 }
 }
 

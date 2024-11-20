@@ -533,9 +533,9 @@ void UserMacro::setRetType (InstType *it)
 static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
 {
   if (act_inline_isbound (tab, inp->getName())) {
-    Expr **e  = act_inline_getval (tab, inp->getName());
-    Expr *tmp = e[0];
-    FREE (e);
+    act_inline_value ve = act_inline_getval (tab, inp->getName());
+    Assert (ve.isSimple(), "What?");
+    Expr *tmp = ve.getVal();
     if (tmp->type == E_VAR) {
       return ((ActId *)tmp->u.e.l)->Clone();
     }
@@ -570,12 +570,12 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
     if (e->u.e.l) {
       ActId *tmp = (ActId *)e->u.e.l;
       if (act_inline_isbound (tab, tmp->getName())) {
-	Expr **res = act_inline_getval (tab, tmp->getName());
-	*e = *(res[0]);
+	act_inline_value rv = act_inline_getval (tab, tmp->getName());
+	Assert (rv.isSimple(), "What?");
+	*e = *(rv.getVal());
 	if (e->type == E_INT && e->u.ival.v_extra) {
 	  e->u.ival.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.ival.v_extra));
 	}
-	FREE (res);
       }
       else {
 	ActId *ret = id->Clone ();

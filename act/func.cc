@@ -63,7 +63,9 @@ static void _run_function_fwd (act_inline_table *Hs, act_chp_lang_t *c)
       nh = 0;
       for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
 	if (gc->g) {
-	  guards[nh] = act_inline_expr_simple (Hs, gc->g);
+	  act_inline_value ev = act_inline_expr (Hs, gc->g);
+	  Assert (!ev.is_struct, "Structure in guard?");
+	  guards[nh] = ev.getVal();
 	}
 	else {
 	  guards[nh] = NULL;
@@ -94,8 +96,8 @@ static void _run_function_fwd (act_inline_table *Hs, act_chp_lang_t *c)
     
   case ACT_CHP_ASSIGN:
     {
-      Expr **tmp = act_inline_expr (Hs, c->u.assign.e);
-      act_inline_setval (Hs, c->u.assign.id, tmp);
+      act_inline_value ev = act_inline_expr (Hs, c->u.assign.e);
+      act_inline_setval (Hs, c->u.assign.id, ev);
     }
     break;
     
@@ -114,8 +116,9 @@ static void _run_function_fwd (act_inline_table *Hs, act_chp_lang_t *c)
 /*
  * This only applies to non-parameter functions, and simple functions
  */
-Expr **Function::toInline (int nargs, Expr **args)
+act_inline_value Function::toInline (int nargs, act_inline_value *args)
 {
+  act_inline_value ret;
   Assert (nargs == getNumPorts(), "Function for parameters used in CHP!");
 
   Assert (isSimpleInline() && !isExternal(), "Function::toInline() called for complex inlining scenario");
@@ -130,7 +133,7 @@ Expr **Function::toInline (int nargs, Expr **args)
       act_error_ctxt (stderr);
       warning ("Inlining failed; array declarations!");
       act_error_pop ();
-      return NULL;
+      return ret;
     }
   }
 
@@ -157,60 +160,63 @@ Expr **Function::toInline (int nargs, Expr **args)
   /* bind arguments! */
 
   for (int i=0; i < nargs; i++) {
-    Expr **te;
-
     if (TypeFactory::isStructure (getPortType (i))) {
       Data *d = dynamic_cast <Data *> (getPortType(i)->BaseType());
       int nb, ni;
       Assert (d, "What?");
       d->getStructCount (&nb, &ni);
-      MALLOC (te, Expr *, nb + ni);
-      int *types;
-      ActId **fields = d->getStructFields (&types);
-      if (args[i]->type != E_VAR) {
+      if (!args[i].is_struct) {
 	act_error_ctxt (stderr);
-	fatal_error ("toInline(): handle more complex expr `%s'",
-		     args[i]->type);
+	fatal_error ("toInline(): arg #%d is a non-structure argument to structure field?", i);
       }
-      for (int j=0; j < nb + ni; j++) {
-	ActId *tmp = ((ActId *)args[i]->u.e.l)->Clone ();
-	tmp->Tail()->Append (fields[j]);
-	te[j] = act_expr_var (tmp);
+      if (!args[i].is_struct_id && (nb + ni != args[i].numElems())) {
+	act_error_ctxt (stderr);
+	fatal_error ("toInline(): arg #%d structure count mismatch (%d vs %d)", i, nb + ni, args[i].numElems());
       }
-      FREE (types);
-      FREE (fields);
     }
     else {
-      NEW (te, Expr *);
-      te[0] = args[i];
+      if (args[i].is_struct) {
+	act_error_ctxt (stderr);
+	fatal_error ("toInline(): arg #%d is a structure argument to a non-struct field?", i);
+      }
     }
     
     Assert (i < getNumPorts(), "Hmm...");
     
     ActId *tmp = new ActId (getPortName (i));
-    act_inline_setval (Hs, tmp, te);
+    act_inline_setval (Hs, tmp, args[i]);
+#if 0
+    printf ("Setting ");
+    tmp->Print (stdout);
+    printf ("  to ");
+    args[i].Print (stdout);
+    if (args[i].isSimple()) {
+      printf (" > %p", args[i].u.val);
+    }
+    printf ("\n");
+#endif    
     delete tmp;
   }
 
   _run_function_fwd (Hs, getlang()->getchp()->c);
 
-  Expr **xret = act_inline_getval (Hs, "self");
+  act_inline_value vret = act_inline_getval (Hs, "self");
 
   act_inline_free (Hs);
   
-  if (!xret) {
+  if (!vret.isValidFull()) {
     act_error_ctxt (stderr);
     warning ("%s: Function inlining failed; self was not assigned!",
 	     getName());
     act_error_pop ();
-    return NULL;
+    return vret;
   }
 
   pending = 0;
   
   act_error_pop ();
   
-  return xret;
+  return vret;
 }
 
 

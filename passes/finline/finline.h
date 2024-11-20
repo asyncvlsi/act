@@ -36,8 +36,8 @@ private:
   void free_local (void *);
 
   Scope *_cursc;
-  Expr *_inline_funcs (list_t *, Expr *);
-  Expr **_inline_funcs_general (list_t *, Expr *);
+  act_inline_value _inline_funcs (list_t *, Expr *);
+  act_inline_value _inline_funcs_general (list_t *, Expr *);
   
   void _inline_funcs (list_t *, act_chp_lang_t *);
   void _inline_funcs (list_t *, act_dataflow_element *);

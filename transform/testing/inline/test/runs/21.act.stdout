@@ -13,7 +13,7 @@ struct s;
 
 /* connections */
 chp {
-s.a:=0x5;s.b:=0xa;t:=int(int(s.a,4)+int(s.b,4),5);_us_0.a:=int(s.b,4);_us_0.b:=int(s.a,4);s.a:=_us_0.a;s.b:=_us_0.b
+s.a:=0x5;s.b:=0xa;t:=int(s.a+s.b,5);_us_0.a:=int(s.b,4);_us_0.b:=int(s.a,4);s.a:=_us_0.a;s.b:=_us_0.b
 }
 }
 

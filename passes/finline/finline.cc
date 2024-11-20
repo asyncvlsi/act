@@ -136,11 +136,12 @@ int ActCHPFuncInline::run (Process *p)
   return ActPass::run (p);
 }
 
-Expr *ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
+act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
 {
   Expr *tmp;
+  act_inline_value lv, rv, retv;
   
-  if (!e) return e;
+  if (!e) return retv;
   switch (e->type) {
   case E_AND:
   case E_OR:
@@ -159,8 +160,11 @@ Expr *ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_GE:
   case E_NE:
   case E_EQ:
-    e->u.e.l = _inline_funcs (l, e->u.e.l);
-    e->u.e.r = _inline_funcs (l, e->u.e.r);
+    lv = _inline_funcs (l, e->u.e.l);
+    rv = _inline_funcs (l, e->u.e.r);
+    Assert (lv.isSimple() && rv.isSimple(), "Hmm");
+    e->u.e.l = lv.getVal();
+    e->u.e.r = rv.getVal();
     break;
 
   case E_NOT:
@@ -168,33 +172,39 @@ Expr *ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    e->u.e.l = _inline_funcs (l, e->u.e.l);
+    lv = _inline_funcs (l, e->u.e.l);
+    Assert (lv.isSimple(), "Hmm");
+    e->u.e.l = lv.getVal();
     break;
 
   case E_BITFIELD:
     break;
 
   case E_QUERY:
-    e->u.e.l = _inline_funcs (l, e->u.e.l);
-    e->u.e.r->u.e.l = _inline_funcs (l, e->u.e.r->u.e.l);
-    e->u.e.r->u.e.r = _inline_funcs (l, e->u.e.r->u.e.r);
+    lv = _inline_funcs (l, e->u.e.l);
+    Assert (lv.isSimple(), "Hmm");
+    e->u.e.l = lv.getVal();
+    lv = _inline_funcs (l, e->u.e.r->u.e.l);
+    rv = _inline_funcs (l, e->u.e.r->u.e.r);
+    Assert (lv.isSimple() && rv.isSimple(), "Hmm");
+    e->u.e.r->u.e.l = lv.getVal ();
+    e->u.e.r->u.e.r = rv.getVal ();
     break;
 
   case E_CONCAT:
     tmp = e;
     do {
-      tmp->u.e.l = _inline_funcs (l, tmp->u.e.l);
+      lv = _inline_funcs (l, tmp->u.e.l);
+      Assert (lv.isSimple(), "Hmm");
+      tmp->u.e.l = lv.getVal();
       tmp = tmp->u.e.r;
     } while (tmp);
     break;
 
   case E_FUNCTION:
-    {
-      Expr **x2 = _inline_funcs_general (l, e);
-      if (x2) {
-	e = x2[0];
-	FREE (x2);
-      }
+    lv = _inline_funcs_general (l, e);
+    if (lv.isValid()) {
+      return lv;
     }
     break;
     
@@ -212,16 +222,19 @@ Expr *ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
     fatal_error ("Unknown expression type (%d)\n", e->type);
     break;
   }
-  return e;
+  retv.u.val = e;
+  return retv;
 }
 
-Expr **ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
+act_inline_value ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
 {
   Assert (e->type == E_FUNCTION, "What?!");
+  
+  act_inline_value retv;
 
   Expr *tmp;
   int args;
-  Expr **arglist;
+  act_inline_value *arglist;
 
   UserDef *ux = (UserDef *) e->u.fn.s;
   Assert (ux, "Hmm.");
@@ -230,11 +243,11 @@ Expr **ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
 
   
   if (fx->isExternal()) {
-    return NULL;
+    return retv;
   }
   if (!fx->isSimpleInline()) {
     list_append (l, fx);
-    return NULL;
+    return retv;
   }
   
   tmp = e;
@@ -247,13 +260,19 @@ Expr **ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
   }
 
   if (args > 0) {
-    MALLOC (arglist, Expr *, args);
+    MALLOC (arglist, act_inline_value, args);
     tmp = e->u.fn.r;
     args = 0;
     while (tmp) {
-      arglist[args++] = expr_expand (tmp->u.e.l, NULL, NULL,
-				     ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_CHPEX);
-      arglist[args-1] = _inline_funcs (l, arglist[args-1]);
+      Expr *ex = expr_expand (tmp->u.e.l, NULL, NULL,
+			      ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_CHPEX);
+
+      arglist[args++] = _inline_funcs (l, ex);
+      if (TypeFactory::isStructure (fx->getPortType (args-1))) {
+	arglist[args-1].is_struct_id = 1;
+	arglist[args-1].is_struct = 1;
+      }
+      Assert (arglist[args-1].isValid(), "What?");
       tmp = tmp->u.e.r;
     }
   }
@@ -262,10 +281,10 @@ Expr **ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
   }
 
   /*-- now simplify! --*/
-  Expr **x2;
+  act_inline_value x2;
 
   x2 = fx->toInline (args, arglist);
-  Assert (x2, "What?");
+  Assert (x2.isValid(), "What?");
   
   if (args > 0) {
     FREE (arglist);
@@ -289,12 +308,12 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	  /* nothing to be done here */
 	}
 	else {
-	  Expr **vals = _inline_funcs_general (l, e->u.func.lhs);
+	  act_inline_value vals = _inline_funcs_general (l, e->u.func.lhs);
 	  Data *d;
 	  int *types;
 	  int nb, ni;
 
-	  if (vals) {
+	  if (vals.isValid()) {
 	    /* simple inline */
 	    d = dynamic_cast <Data *>(it->BaseType());
 	    Assert (d, "Hmm");
@@ -305,8 +324,10 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 
 	    // we need to create a multi-assignment!
 
+	    Assert (!vals.isSimple(), "Hmm.");
+
 	    if (sz == 1) {
-	      e->u.func.lhs = vals[0];
+	      e->u.func.lhs = vals.u.arr[0];
 	    }
 	    else {
 	      Expr *te;
@@ -314,8 +335,8 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	      e->u.func.lhs->type = E_CONCAT;
 	      te = e->u.func.lhs;
 	      for (int i=0; i < sz; i++) {
-		te->u.e.l = vals[i];
-		if (!vals[i]) {
+		te->u.e.l = vals.u.arr[i];
+		if (!vals.u.arr[i]) {
 		  act_error_ctxt (stderr);
 		  warning ("Dataflow inlining: incomplete structure assignment, field #%d?", i);
 		  te->u.e.l = const_expr (0);
@@ -325,7 +346,7 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 		    NEW (te->u.e.l, Expr);
 		    te->u.e.l->type = E_BUILTIN_INT;
 		    te->u.e.l->u.e.r = NULL;
-		    te->u.e.l = vals[i];
+		    te->u.e.l = vals.u.arr[i];
 		  }
 		}
 		if (i != sz-1) {
@@ -370,7 +391,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	}
       }
       else {
-	e->u.func.lhs = _inline_funcs (l, e->u.func.lhs);
+	act_inline_value vr = _inline_funcs (l, e->u.func.lhs);
+	Assert (vr.isSimple(), "Hmm.");
+	e->u.func.lhs = vr.getVal();
       }
     }
     break;
@@ -393,6 +416,12 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
     break;
   }
 }
+
+
+/*
+ * Returns true if the expression contains an identifier that matches
+ * id or is a suffix of it
+ */
 static bool _expr_unstruct (Expr *e, ActId *id)
 {
   bool ret = false;
@@ -521,7 +550,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
       }
 
       if (!is_struct) {
-	c->u.comm.e = _inline_funcs (l, c->u.comm.e);
+	act_inline_value val = _inline_funcs (l, c->u.comm.e);
+	Assert (val.isSimple(), "Hmm");
+	c->u.comm.e = val.getVal();
       }
       else {
 	/* XXX: check special case of function that returns a structure */
@@ -539,13 +570,13 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	}
 	else {
 	  /* unstructure this if needed */
-	  
-	  Expr **vals = _inline_funcs_general (l, c->u.assign.e);
+
+	  act_inline_value vals = _inline_funcs_general (l, c->u.assign.e);
 	  Data *d;
 	  int *types;
 	  int nb, ni;
 
-	  if (vals) {
+	  if (vals.isValid()) {
 	    bool unstruct_me = _expr_unstruct (c->u.assign.e, c->u.assign.id);
 	    /* simple inline */
 	    ActId *myid = c->u.assign.id;
@@ -565,17 +596,20 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	    d->getStructCount (&nb, &ni);
 	    int sz = nb + ni;
 	    list_t *l = list_new ();
+
+	    Assert (!vals.isSimple(), "Hmm");
+	    
 	    for (int i=0; i < sz; i++) {
 	      act_chp_lang_t *tc;
 
-	      if (vals[i]) {
+	      if (vals.u.arr[i]) {
 		NEW (tc, act_chp_lang_t);
 		tc->type = ACT_CHP_ASSIGN;
 		tc->label = NULL;
 		tc->space = NULL;
 		tc->u.assign.id = myid->Clone();
 		tc->u.assign.id->Tail()->Append (fields[i]);
-		tc->u.assign.e = vals[i];
+		tc->u.assign.e = vals.u.arr[i];
 		list_append (l, tc);
 	      }
 	      else {
@@ -599,13 +633,16 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	      list_append (l, tc);
 	    }
 	  }
-	  else {
-	    Assert (_inline_funcs_general (l, c->u.assign.e) == NULL, "What?");
-	  }
+          else {
+	    act_inline_value vx = _inline_funcs_general (l, c->u.assign.e);
+	    Assert (!vx.isValid(), "What?");
+          }
 	}
       }
       else {
-	c->u.assign.e = _inline_funcs (l, c->u.assign.e);
+	act_inline_value vx = _inline_funcs (l, c->u.assign.e);
+	Assert (vx.isSimple(), "Hmm");
+	c->u.assign.e = vx.getVal();
       }
     }
     break;
@@ -624,7 +661,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
   case ACT_CHP_DOLOOP:
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	gc->g = _inline_funcs (l, gc->g);
+	act_inline_value vx = _inline_funcs (l, gc->g);
+	Assert (vx.isSimple(), "Hmm");
+	gc->g = vx.getVal();
       }
       if (gc->s) {
 	_inline_funcs (l, gc->s);
@@ -676,10 +715,12 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
 {
   char tmpnm[1024];
   int ret_idx = 0, arg_idx = 0, local_idx = 0;
+  bool was_null = false;
   
   phash_bucket_t *b;
 
   if (!Hargs) {
+    was_null = true;
     Hargs = phash_new (4);
   }
   
@@ -786,7 +827,10 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
     }
     FREE (args);
   }
-  phash_free (Hargs);
+
+  if (was_null) {
+    phash_free (Hargs);
+  }
 
   while (!list_isempty (l)) {
     list_delete_head (l);
@@ -825,30 +869,32 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
 	  ActId *e_rhs;
 
 	  e_rhs = (ActId *) c->u.assign.e->u.e.l;
-	  
-	  /* element-wise assignment */
-	  Data *d = dynamic_cast<Data *> (it->BaseType());
-	  Assert (d, "Hmm");
-	  ActId **fields = d->getStructFields (&types);
-	  FREE (types);
-	  d->getStructCount (&nb, &ni);
-	  int sz = nb + ni;
-	  list_t *l = list_new ();
-	  for (int i=0; i < sz; i++) {
-	    act_chp_lang_t *tc;
-	    NEW (tc, act_chp_lang_t);
-	    tc->type = ACT_CHP_ASSIGN;
-	    tc->label = NULL;
-	    tc->space = NULL;
-	    tc->u.assign.id = c->u.assign.id->Clone();
-	    tc->u.assign.id->Tail()->Append (fields[i]);
-	    tc->u.assign.e = act_expr_var (e_rhs->Clone());
-	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
-	    list_append (l, tc);
+	  InstType *rhs = _cursc->FullLookup (e_rhs, NULL);
+	  if (!TypeFactory::isChanType (rhs)) {
+	    /* element-wise assignment */
+	    Data *d = dynamic_cast<Data *> (it->BaseType());
+	    Assert (d, "Hmm");
+	    ActId **fields = d->getStructFields (&types);
+	    FREE (types);
+	    d->getStructCount (&nb, &ni);
+	    int sz = nb + ni;
+	    list_t *l = list_new ();
+	    for (int i=0; i < sz; i++) {
+	      act_chp_lang_t *tc;
+	      NEW (tc, act_chp_lang_t);
+	      tc->type = ACT_CHP_ASSIGN;
+	      tc->label = NULL;
+	      tc->space = NULL;
+	      tc->u.assign.id = c->u.assign.id->Clone();
+	      tc->u.assign.id->Tail()->Append (fields[i]);
+	      tc->u.assign.e = act_expr_var (e_rhs->Clone());
+	      ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
+	      list_append (l, tc);
+	    }
+	    FREE (fields);
+	    c->type = ACT_CHP_SEMI;
+	    c->u.semi_comma.cmd = l;
 	  }
-	  FREE (fields);
-	  c->type = ACT_CHP_SEMI;
-	  c->u.semi_comma.cmd = l;
 	}
 	else {
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
@@ -919,6 +965,9 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
 	list_t *l = list_new ();
 	_collect_complex_inlines (l, c->u.comm.e);
 	if (!list_isempty (l)) {
+
+	  printf (" --> _do_inline\n");
+	  
 	  act_chp_lang_t *ch = _do_inline (H, l);
 	  _apply_complex_inlines (l, c->u.comm.e);
 
@@ -942,6 +991,7 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
   case ACT_CHP_ASSIGN:
     {
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
+
       if (TypeFactory::isStructure (it)) {
 	if (c->u.assign.e->type == E_VAR) {
 	  int *types;
@@ -949,30 +999,35 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
 	  ActId *e_rhs;
 
 	  e_rhs = (ActId *) c->u.assign.e->u.e.l;
-	  
-	  /* element-wise assignment */
-	  Data *d = dynamic_cast<Data *> (it->BaseType());
-	  Assert (d, "Hmm");
-	  ActId **fields = d->getStructFields (&types);
-	  FREE (types);
-	  d->getStructCount (&nb, &ni);
-	  int sz = nb + ni;
-	  list_t *l = list_new ();
-	  for (int i=0; i < sz; i++) {
-	    act_chp_lang_t *tc;
-	    NEW (tc, act_chp_lang_t);
-	    tc->type = ACT_CHP_ASSIGN;
-	    tc->label = NULL;
-	    tc->space = NULL;
-	    tc->u.assign.id = c->u.assign.id->Clone();
-	    tc->u.assign.id->Tail()->Append (fields[i]);
-	    tc->u.assign.e = act_expr_var (e_rhs->Clone ());
-	    ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
-	    list_append (l, tc);
+	  InstType *rhs = _cursc->FullLookup (e_rhs, NULL);
+	  if (!TypeFactory::isChanType (rhs)) {
+	    /* element-wise assignment */
+	    Data *d = dynamic_cast<Data *> (it->BaseType());
+	    Assert (d, "Hmm");
+	    ActId **fields = d->getStructFields (&types);
+	    FREE (types);
+	    d->getStructCount (&nb, &ni);
+	    int sz = nb + ni;
+	    list_t *l = list_new ();
+	    for (int i=0; i < sz; i++) {
+	      act_chp_lang_t *tc;
+	      NEW (tc, act_chp_lang_t);
+	      tc->type = ACT_CHP_ASSIGN;
+	      tc->label = NULL;
+	      tc->space = NULL;
+	      tc->u.assign.id = c->u.assign.id->Clone();
+	      tc->u.assign.id->Tail()->Append (fields[i]);
+	      tc->u.assign.e = act_expr_var (e_rhs->Clone ());
+	      ((ActId *)tc->u.assign.e->u.e.l)->Append (fields[i]->Clone());
+	      list_append (l, tc);
+	    }
+	    FREE (fields);
+	    c->type = ACT_CHP_SEMI;
+	    c->u.semi_comma.cmd = l;
 	  }
-	  FREE (fields);
-	  c->type = ACT_CHP_SEMI;
-	  c->u.semi_comma.cmd = l;
+	  else {
+	    /* nothing to do! */
+	  }
 	}
 	else {
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
@@ -1154,6 +1209,7 @@ void ActCHPFuncInline::_collect_complex_inlines (list_t *l, Expr *e)
 	tmp = tmp->u.e.r;
       }
       Function *fx = (Function *) e->u.fn.s;
+      
       if (!fx->isExternal() && !fx->isSimpleInline()) {
 	struct complex_inline_req *req;
 	int n;

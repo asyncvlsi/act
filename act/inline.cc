@@ -71,20 +71,15 @@ void act_inline_free (act_inline_table *T)
   hash_iter_init (T->state, &it);
   while ((b = hash_iter_next (T->state, &it))) {
     if (b->v) {
-      FREE (b->v);
+      act_inline_value *iv = (act_inline_value *) b->v;
+      iv->clear ();
+      delete iv;
     }
   }
   hash_free (T->state);
   FREE (T);
 }
 		      
-
-static Expr *_ex_one (Expr **x)
-{
-  Expr *e = x[0];
-  FREE (x);
-  return e;
-}
 
 int act_inline_isbound (act_inline_table *tab, const char *name)
 {
@@ -106,14 +101,9 @@ void act_dump_table (act_inline_table *tab)
     hash_iter_init (tab->state, &it);
     while ((b = hash_iter_next (tab->state, &it))) {
       printf (" %s -> ", b->key);
-      Expr **x = (Expr **) b->v;
-      if (x[0]) {
-	print_uexpr (stdout, x[0]);
-      }
-      else {
-	printf ("-null-");
-      }
-      
+      act_inline_value *ev = (act_inline_value *) b->v;
+      Assert (ev, "What?");
+      ev->Print (stdout);
       printf ("\n");
     }
     printf ("\n\t");
@@ -121,11 +111,13 @@ void act_dump_table (act_inline_table *tab)
   }
 }
 
-static Expr **_lookup_binding (act_inline_table *Hs,
-			       const char *name, ActId *rest, int err = 1)
+static act_inline_value
+_lookup_binding (act_inline_table *Hs,
+		 const char *name, ActId *rest, int err = 1)
 {
   hash_bucket_t *b;
   act_inline_table *origHs = Hs;
+  act_inline_value rv;
   while (Hs) {
     b = hash_lookup (Hs->state, name);
     if (b) {
@@ -133,17 +125,20 @@ static Expr **_lookup_binding (act_inline_table *Hs,
       int sz = 1;
       InstType *it = Hs->sc->Lookup (name);
       Data *d = NULL;
+
+      if (!b->v) {
+	// return invalid binding
+	return rv;
+      }
+      
       if (TypeFactory::isStructure (it)) {
 	d = dynamic_cast<Data *>(it->BaseType());
 	d->getStructCount (&nb, &ni);
 	sz = nb + ni;
       }
       /* return a copy */
-      Expr **ret;
-      MALLOC (ret, Expr *, sz);
-      for (int i=0; i < sz; i++) {
-	ret[i] = ((Expr **)b->v)[i];
-      }
+      act_inline_value bval;
+      bval = *((act_inline_value *)b->v);
       if (rest) {
 	if (!d) {
 	  act_error_ctxt (stderr);
@@ -154,11 +149,55 @@ static Expr **_lookup_binding (act_inline_table *Hs,
 	Assert (off >= 0 && off <= sz, "What?");
 	Assert (off + sz2 <= sz, "What?");
 	Assert (sz2 > 0, "Hmm");
-	Expr **newret;
-	MALLOC (newret, Expr *, sz2);
+
+	Assert (bval.is_struct, "What?");
+
+	if (sz2 == 1) {
+	  /* XXX: FIXME. This may or may not be a structure */
+	  rv.is_struct = 0;
+	}
+	else {
+	  rv.is_struct = 1;
+	}
+	rv.is_struct_id = 0;
+	if (rv.is_struct) {
+	  MALLOC (rv.u.arr, Expr *, sz2);
+	  rv.struct_count = sz2;
+	}
+
+	ActId **fields = NULL;
+	if (bval.isSimple()) {
+	  int *types;
+	  fields = d->getStructFields (&types);
+	  FREE (types);
+	}
 	for (int i=0; i < sz2; i++) {
-	  newret[i] = ret[i+off];
-	  if (err && (newret[i] == NULL)) {
+	  Expr *bind_val;
+	  if (bval.isSimple()) {
+	    ActId *xnew;
+	    if (bval.getVal()->type != E_VAR) {
+	      fprintf (stderr, " PTR is %p\n", bval.getVal());
+	      bval.Print (stderr);
+	      fprintf (stderr, "\n");
+	    }
+	    Assert (bval.getVal()->type == E_VAR, "Hmm");
+	    xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
+	    xnew->Append (fields[i+off]->Clone());
+	    NEW (bind_val, Expr);
+	    bind_val->type = E_VAR;
+	    bind_val->u.e.r = NULL;
+	    bind_val->u.e.l = (Expr *)xnew;
+	  }
+	  else {
+	    bind_val = bval.u.arr[i+off];
+	  }
+	  if (rv.is_struct) {
+	    rv.u.arr[i] = bind_val;
+	  }
+	  else {
+	    rv.u.val = bind_val;
+	  }
+	  if (err && (bind_val == NULL)) {
 	    act_error_ctxt (stderr);
 	    fprintf (stderr, "Access to: `%s.", name);
 	    rest->Print (stderr);
@@ -166,20 +205,30 @@ static Expr **_lookup_binding (act_inline_table *Hs,
 	    fatal_error ("Uninitialized fields for `%s'.", name);
 	  }
 	}
-	FREE (ret);
-	ret = newret;
+	if (fields) {
+	  for (int i=0; i < sz; i++) {
+	    delete fields[i];
+	  }
+	  FREE (fields);
+	}
       }
       else {
-	if (err) {
+	rv = bval;
+	if (!bval.isSimple()) {
+	  Assert (bval.struct_count == sz, "What?");
+	  MALLOC (rv.u.arr, Expr *, bval.struct_count);
 	  for (int i=0; i < sz; i++) {
-	    if (ret[i] == NULL) {
-	      act_error_ctxt (stderr);
-	      fatal_error ("Found NULL binding for `%s': certain fields are undefined.", name);
+	    rv.u.arr[i] = bval.u.arr[i];
+	    if (err) {
+	      if (rv.u.arr[i] == NULL) {
+		act_error_ctxt (stderr);
+		fatal_error ("Found NULL binding for `%s': certain fields are undefined.", name);
+	      }
 	    }
 	  }
 	}
       }
-      return ret;
+      return rv;
     }
     Hs = Hs->parent;
   }
@@ -188,7 +237,7 @@ static Expr **_lookup_binding (act_inline_table *Hs,
     fatal_error ("Inlining failed! Variable `%s' used before being defined",
 		 name);
   }
-  return NULL;
+  return rv;
 }
 
 static void _populate_widths (Data *d, int *widths, int *pos)
@@ -252,7 +301,8 @@ static Expr *_wrap_width (Expr *e, int w)
   return tmp;
 }
 
-static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
+static void _update_binding (act_inline_table *Hs, ActId *id,
+			     act_inline_value update)
 {
   InstType *xit = Hs->sc->Lookup (id->getName());
   int sz = 1;
@@ -262,16 +312,13 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
 #if 0
   printf ("update binding for: ");
   id->Print (stdout);
+  printf (" / type: ");
+  xit->Print (stdout);
   printf ("\n");
 
-  printf ("entry 0 is %p: ", update[0]);
-  fflush (stdout);
-  if (update[0]) {
-    print_expr (stdout, update[0]);
-  }
-  else {
-    printf ("-null-");
-  }
+
+  printf ("| updated value should be: ");
+  update.Print (stdout);
   printf ("\n");
 #endif
   
@@ -289,8 +336,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     _populate_widths (xd, widths, &v);
   }
   else {
+    Assert (sz == 1, "Hmm");
     MALLOC (widths, int, sz);
     widths[0] = TypeFactory::bitWidth (xit);
+    if (TypeFactory::isBoolType (xit)) {
+      widths[0] = -1;
+    }
   }
 
   hash_bucket_t *b;
@@ -301,46 +352,99 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
    */
   b = hash_lookup (Hs->state, id->getName());
   if (!b) {
-    Expr **bind;
-    Expr **xtmp = _lookup_binding (Hs, id->getName(), NULL, 0);
-
-    if (xtmp) {
-      bind = xtmp;
+    act_inline_value lv, bindv;
+    lv = _lookup_binding (Hs, id->getName(), NULL, 0);
+#if 0
+    printf ("I'm here, lv = ");
+    lv.Print (stdout);
+    printf ("\n");
+#endif
+    if (lv.isValid()) {
+      // found a valid binding
+      bindv = lv;
+      if (bindv.isSimple() && xd) {
+#if 0	
+	printf ("| populate and elaborate binding\n");
+#endif
+	// structure, elaborate the binding
+	bindv.elaborateStructId (xd);
+#if 0	
+	printf ("| ");
+	bindv.Print (stdout);
+	printf ("\n");
+#endif
+      }
     }
     else {
-      MALLOC (bind, Expr *, sz);
-      for (int i=0; i < sz; i++) {
-	bind[i] = NULL;
+      // create a dummy NULL binding
+      if (xd) {
+	bindv.is_struct = 1;
+	bindv.struct_count = sz;
+	MALLOC (bindv.u.arr, Expr *, sz);
+	for (int i=0; i < sz; i++) {
+	  bindv.u.arr[i] = NULL;
+	}
       }
     }
     b = hash_add (Hs->state, id->getName());
-    for (int i=0; i < sz; i++) {
-      if (!Hs->macro_mode && bind[i] && widths[i] > 0) {
-	bind[i] = _wrap_width (bind[i], widths[i]);
+
+    /* add int(.) wrapper if needed */
+    if (xd) {
+      for (int i=0; i < sz; i++) {
+	if (!Hs->macro_mode && bindv.u.arr[i] && widths[i] > 0) {
+	  bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[i]);
+	}
       }
     }
-    b->v = bind;
+    else {
+      if (!Hs->macro_mode && bindv.u.val && widths[0] > 0) {
+	bindv.u.val = _wrap_width (bindv.u.val, widths[0]);
+      }
+    }
+    b->v = new act_inline_value();
+    *((act_inline_value *)b->v) = bindv;
   }
-  Expr **res = _lookup_binding (Hs, id->getName(), NULL, 0);
+  act_inline_value resv = _lookup_binding (Hs, id->getName(), NULL, 0);
 
   if (id->Rest()) {
     Assert (xd, "What?!");
     int sz2;
-    
+
+#if 0
+    printf (" >> update scenario:\n ");
+    printf ("   >> orig: ");
+    resv.Print (stdout);
+    printf ("\n   >>> update: ");
+    update.Print (stdout);
+    printf ("\n");
+#endif
+
     int off = xd->getStructOffset (id->Rest(), &sz2);
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");
+    Assert (!update.isSimple() || sz2 == 1, "Hmm");
+    if (resv.isSimple()) {
+      resv.elaborateStructId (xd);
+    }
+    Assert (!resv.isSimple(), "Hmm");
     for (int i=0; i < sz2; i++) {
-      if (!Hs->macro_mode && update[i] && widths[off+i] > 0) {
-	res[off+i] = _wrap_width (update[i], widths[off+i]);
+      Expr *updatev;
+      if (update.isSimple()) {
+	updatev = update.getVal();
       }
       else {
-	res[off+i] = update[i];
+	updatev = update.u.arr[i];
+      }
+      if (!Hs->macro_mode && updatev && widths[off+i] > 0) {
+	resv.u.arr[off+i] = _wrap_width (updatev, widths[off+i]);
+      }
+      else {
+	resv.u.arr[off+i] = updatev;
       }
 #if 0      
       printf ("set offset %d to ", off+i);
-      if (update[i]) {
-	print_expr (stdout, update[i]);
+      if (update.u.arr[i]) {
+	print_expr (stdout, update.u.arr[i]);
       }
       else {
 	printf ("null");
@@ -352,7 +456,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
     for (int i=0; i < sz; i++) {
       printf ("cur %d = ", i);
       if (res[i]) {
-	print_expr (stdout, res[i]);
+	print_expr (stdout, resv.u.arr[i]);
       }
       else {
 	printf ("null");
@@ -362,40 +466,60 @@ static void _update_binding (act_inline_table *Hs, ActId *id, Expr **update)
 #endif	
   }
   else {
-    for (int i=0; i < sz; i++) {
-      if (!Hs->macro_mode && update[i] && widths[i] > 0) {
-	res[i] = _wrap_width (update[i], widths[i]);
+    if (xd) {
+      if (update.isSimple()) {
+	resv = update;
       }
       else {
-	res[i] = update[i];
+	if (resv.isSimple()) {
+	  resv.elaborateStructId (xd);
+	}
+	for (int i=0; i < sz; i++) {
+	  if (!Hs->macro_mode && update.u.arr[i] && widths[i] > 0) {
+	    resv.u.arr[i] = _wrap_width (update.u.arr[i], widths[i]);
+	  }
+	  else {
+	    resv.u.arr[i] = update.u.arr[i];
+	  }
+	}
+      }
+    }
+    else {
+      Assert (update.isSimple(), "Hmm");
+      if (!Hs->macro_mode && update.u.val && widths[0] > 0) {
+	resv.u.val = _wrap_width (update.u.val, widths[0]);
+      }
+      else {
+	resv.u.val = update.u.val;
       }
     }
   }
   b = hash_lookup (Hs->state, id->getName());
   Assert (b, "Hmm");
-  Expr **xtmp = (Expr **)b->v;
-  b->v = res;
-#if 0  
-  for (int i=0; i < sz; i++) {
-    if (xtmp[i]) {
-      expr_ex_free (xtmp[i]);
-    }
-  }
+  act_inline_value *iv = (act_inline_value *) b->v;
+  iv->clear ();
+  delete iv;
+  iv = new act_inline_value();
+  *iv = resv;
+#if 0
+  printf ("    ==> final binding is: ");
+  iv->Print (stdout);
+  printf ("\n");
 #endif  
-  FREE (xtmp);
+	  
+  b->v = iv;
   FREE (widths);
 }
 
-static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
+static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 {
   Expr *tmp, *tmp2;
   Expr *ret;
-  Expr **rets;
+  act_inline_value retv;
+  act_inline_value lv, rv;
     
-  if (!e) return NULL;
+  if (!e) return retv;
 
-  rets = NULL;
-  
   NEW (ret, Expr);
   ret->type = e->type;
   ret->u.e.l = NULL;
@@ -419,10 +543,12 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_GE:
   case E_NE:
   case E_EQ:
-    ret->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.l, recurse));
-    ret->u.e.r = _ex_one (_expand_inline (Hs, e->u.e.r, recurse));
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    lv = _expand_inline (Hs, e->u.e.l, recurse);
+    rv = _expand_inline (Hs, e->u.e.r, recurse);
+    Assert (lv.isSimple() && rv.isSimple(), "What?");
+    ret->u.e.l = lv.getVal();
+    ret->u.e.r = rv.getVal();
+    retv.u.val = ret;
     break;
 
   case E_NOT:
@@ -430,22 +556,23 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    ret->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.l, recurse));
+    lv = _expand_inline (Hs, e->u.e.l, recurse);
+    Assert (lv.isSimple(), "What?");
+    ret->u.e.l = lv.getVal ();
     if (e->type == E_BUILTIN_INT) {
       ret->u.e.r = e->u.e.r;
     }
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    retv.u.val = ret;
     break;
 
   case E_BITFIELD:
     /* we can work with bitfield so long as it is a basic varaible
        only */
     {
-      Expr **res = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName(),
-				    ((ActId *)e->u.e.l)->Rest());
-      Expr *r = res[0];
-      FREE (res);
+      lv = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName(),
+			    ((ActId *)e->u.e.l)->Rest());
+      Assert (lv.isSimple(), "What?");
+      Expr *r = lv.getVal();
       if (r->type != E_VAR) {
 	/* use shifts to implement bitfields */
 	if (e->u.e.r->u.e.l) {
@@ -481,25 +608,30 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
       }
     }
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    retv.u.val = ret;
     break;
 
   case E_QUERY:
-    ret->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.l, recurse));
+    lv = _expand_inline (Hs, e->u.e.l, recurse);
+    Assert (lv.isSimple(), "Hmm");
+    ret->u.e.l = lv.getVal ();
     NEW (ret->u.e.r, Expr);
     ret->u.e.r->type = E_COLON;
-    ret->u.e.r->u.e.l = _ex_one (_expand_inline (Hs, e->u.e.r->u.e.l, recurse));
-    ret->u.e.r->u.e.r = _ex_one (_expand_inline (Hs, e->u.e.r->u.e.r, recurse));
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    lv = _expand_inline (Hs, e->u.e.r->u.e.l, recurse);
+    rv = _expand_inline (Hs, e->u.e.r->u.e.r, recurse);
+    Assert (lv.isSimple() && rv.isSimple(), "Hmm");
+    ret->u.e.r->u.e.l = lv.getVal ();
+    ret->u.e.r->u.e.r = rv.getVal ();
+    retv.u.val = ret;
     break;
 
   case E_CONCAT:
     tmp = e;
     tmp2 = ret;
     do {
-      tmp2->u.e.l = _ex_one (_expand_inline (Hs, tmp->u.e.l, recurse));
+      lv = _expand_inline (Hs, tmp->u.e.l, recurse);
+      Assert (lv.isSimple(), "Hmm");
+      tmp2->u.e.l = lv.getVal();
       tmp = tmp->u.e.r;
       if (tmp) {
 	NEW (tmp2->u.e.r, Expr);
@@ -509,16 +641,14 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	tmp2->u.e.r = NULL;
       }
     } while (tmp);
-
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    retv.u.val = ret;
     break;
 
   case E_FUNCTION:
 
     if (recurse) {
       int args;
-      Expr **arglist;
+      act_inline_value *arglist;
       
       tmp = e;
       tmp = tmp->u.fn.r;
@@ -530,11 +660,12 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
       }
 
       if (args > 0) {
-	MALLOC (arglist, Expr *, args);
+	MALLOC (arglist, act_inline_value, args);
 	tmp = e->u.fn.r;
 	args = 0;
 	while (tmp) {
-	  arglist[args++] = _ex_one (_expand_inline (Hs, tmp->u.e.l, recurse));
+	  // a structure argument will be an array or a simple ID!
+	  arglist[args++] = _expand_inline (Hs, tmp->u.e.l, recurse);
 	  tmp = tmp->u.e.r;
 	}
       }
@@ -551,9 +682,9 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
       Assert (!fx->isExternal(), "Why are we here?");
       Assert (fx->isSimpleInline(), "Why are we here?");
 
-      rets = fx->toInline (args, arglist);
-      Assert (rets, "What?!");
-      
+      retv = fx->toInline (args, arglist);
+      Assert (retv.isValid(), "What?!");
+
       if (args > 0) {
 	FREE (arglist);
       }
@@ -575,11 +706,12 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
 	  args = args->u.e.r;
 	}
 	args->u.e.r = NULL;
-	args->u.e.l = _ex_one (_expand_inline (Hs, tmp->u.e.l, recurse));
+	lv = _expand_inline (Hs, tmp->u.e.l, recurse);
+	Assert (lv.isSimple(), "What?");
+	args->u.e.l = lv.getVal();
 	tmp = tmp->u.e.r;
       }
-      MALLOC (rets, Expr *, 1);
-      rets[0] = ret;
+      retv.u.val = ret;
     }
     break;
     
@@ -588,9 +720,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_TRUE:
   case E_FALSE:
     FREE (ret);
-    ret = e;
-    MALLOC (rets, Expr *, 1);
-    rets[0] = ret;
+    retv.u.val = e;
     break;
     
   case E_PROBE:
@@ -598,7 +728,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
     break;
     
   case E_SELF:
-    rets = _lookup_binding (Hs, "self", NULL);
+    retv = _lookup_binding (Hs, "self", NULL);
     break;
 
   case E_SELF_ACK:
@@ -608,7 +738,7 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
   case E_VAR:
     {
       ActId *tid = (ActId *)e->u.e.l;
-      rets = _lookup_binding (Hs, tid->getName(), tid->Rest());
+      retv = _lookup_binding (Hs, tid->getName(), tid->Rest());
     }
     break;
 
@@ -616,25 +746,21 @@ static Expr **_expand_inline (act_inline_table *Hs, Expr *e, int recurse)
     fatal_error ("Unknown expression type (%d)\n", e->type);
     break;
   }
-  return rets;
+  return retv;
 }
 
-
-Expr *act_inline_expr_simple (act_inline_table *T, Expr *e, int recurse)
+act_inline_value act_inline_expr (act_inline_table *T, Expr *e, int recurse)
 {
-  if (!e) return NULL;
-  return _ex_one (_expand_inline (T, e, recurse));
-}
+  act_inline_value badret;
+  if (!e) return badret;
 
-Expr **act_inline_expr (act_inline_table *T, Expr *e, int recurse)
-{
-  if (!e) return NULL;
   return _expand_inline (T, e, recurse);
 }
 
 
 
-act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **cond)
+act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
+					   Expr **cond)
 {
   Assert (nT > 0, "What?");
   
@@ -665,17 +791,20 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
     hash_bucket_t *xb;
     /* construct expression for b->key! */
     unsigned int sz = 1;
-    Expr **inpval;
     int *types;
+    Data *d;
+    act_inline_value vl;
 
-    inpval = _lookup_binding (Tret, b->key, NULL, 0);
+    /* vl is the value before the merge, in the parent context */
+    vl = _lookup_binding (Tret, b->key, NULL, 0);
 
     InstType *et = sc->Lookup (b->key);
     Assert (et, "What?");
 
     ActId **fields;
     fields = NULL;
-    
+
+    d = NULL;
     if (TypeFactory::isIntType (et)) {
       MALLOC (types, int, 1);
       types[0] = 1;
@@ -685,14 +814,14 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
       types[0] = 0;
     }
     else {
-      Assert (TypeFactory::isStructure (et), "What?");
-      Data *d = dynamic_cast <Data *> (et->BaseType());
       int nb, ni;
+      Assert (TypeFactory::isStructure (et), "What?");
+      d = dynamic_cast <Data *> (et->BaseType());
       d->getStructCount (&nb, &ni);
       sz = nb + ni;
       fields = d->getStructFields (&types);
     }
-    
+
     Expr *update;
     Expr **newval;
 
@@ -730,14 +859,21 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 	  */
 	  Assert (i == nT-1, "else is not the last case?");
 	}
-	Expr *curval;
+	Expr *curval = NULL;
+	act_inline_value *ival;
 	if (xb) {
-	  Expr **val = (Expr **) xb->v;
-	  curval = val[idx];
+	  ival = (act_inline_value *) xb->v;
 	}
 	else {
-	  if (inpval && inpval[idx]) {
-	    curval = inpval[idx];
+	  ival = &vl;
+	}
+	if (ival) {
+	  if (ival->isValid() && (d && !ival->isSimple())) {
+	    curval = ival->u.arr[idx];
+	  }
+	  else if (ival->isValid() && (!d && idx == 0)) {
+	    Assert (ival->isSimple(), "Hmm");
+	    curval = ival->getVal();
 	  }
 	  else {
 	    if (types[idx] == 0) {
@@ -748,7 +884,6 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 	    }
 	  }
 	}
-
 	if (curval == NULL) {
 	  act_error_ctxt (stderr);
 	  if (fields) {
@@ -771,9 +906,8 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 	  update->u.e.r = NULL;
 
 	  if (i == nT-1) {
-	    if (inpval && inpval[idx]) {
-	      update->u.e.r = expr_expand (inpval[idx], NULL, NULL,
-					   ACT_EXPR_EXFLAG_DUPONLY);
+	    if (vl.isValid() && !vl.isSimple() && vl.u.arr[idx]) {
+	      update->u.e.r = expr_dup (vl.u.arr[idx]);
 	    }
 	    else if (types[idx] == 0) {
 	      update->u.e.r = boolconst;
@@ -793,10 +927,22 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
       FREE (fields);
       fields = NULL;
     }
+
+    act_inline_value nv;
+    if (d) {
+      nv.is_struct = 1;
+      nv.struct_count = sz;
+      nv.u.arr = newval;
+    }
+    else {
+      nv.is_struct = 0;
+      nv.u.val = newval[0];
+      FREE (newval);
+    }
     
     FREE (types);
     ActId *tmpid = new ActId (b->key);
-    _update_binding (Tret, tmpid, newval);
+    _update_binding (Tret, tmpid, nv);
     delete tmpid;
   }
   hash_free (Hmerge);
@@ -805,13 +951,82 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T, Expr **
 }
 
 
-void act_inline_setval (act_inline_table *Hs, ActId *id, Expr **update)
+void act_inline_setval (act_inline_table *Hs, ActId *id,
+			act_inline_value update)
 {
   _update_binding (Hs, id, update);
 }
 
-Expr **act_inline_getval (act_inline_table *Hs, const char *s)
+act_inline_value act_inline_getval (act_inline_table *Hs, const char *s)
 {
-  Expr **rets = _lookup_binding (Hs, s, NULL);
-  return rets;
+  return _lookup_binding (Hs, s, NULL);
+}
+
+
+void act_inline_value::Print (FILE *fp)
+{
+  if (!isValid()) {
+    fprintf (fp, "@invalid@");
+    return;
+  }
+  fprintf (fp, "@%s", is_struct ? "struct" : "elem");
+  if (is_struct) {
+    if (is_struct_id) {
+      fprintf (fp, " id: ");
+      print_uexpr (fp, u.val);
+    }
+    else {
+      fprintf (fp, "%d ", struct_count);
+      for (int i=0; i < struct_count; i++) {
+	if (i != 0) {
+	  fprintf (fp, " ; ");
+	}
+	if (u.arr[i]) {
+	  print_uexpr (fp, u.arr[i]);
+	}
+	else {
+	  fprintf (fp, "nul");
+	}
+      }
+    }
+  }
+  else {
+    fprintf (fp, " ");
+    print_uexpr (fp, u.val);
+  }
+  fprintf (fp, "@");
+}
+
+
+void act_inline_value::elaborateStructId (Data *d)
+{
+  Assert (isSimple(), "hmm");
+  Assert (is_struct, "What?");
+  
+  ActId **fields;
+  int *types;
+  ActId *baseid;
+  int ni, nb;
+  d->getStructCount (&nb, &ni);
+  int sz = ni + nb;
+  fields = d->getStructFields (&types);
+  FREE (types);
+  Assert (getVal()->type == E_VAR, "Hmm");
+  baseid = (ActId *)getVal()->u.e.l;
+  MALLOC (u.arr, Expr *, sz);
+  struct_count = sz;
+  is_struct_id = 0;
+
+  for (int i=0; i < sz; i++) {
+    ActId *varnew;
+    NEW (u.arr[i], Expr);
+    u.arr[i]->type = E_VAR;
+    u.arr[i]->u.e.r = NULL;
+    varnew = baseid->Clone();
+    varnew->Append (fields[i]);
+    u.arr[i]->u.e.l = (Expr *) varnew;
+  }
+  FREE (fields);
+  Assert (!isSimple(), "Hmm{");
+  Assert (isValid(), "Check");
 }

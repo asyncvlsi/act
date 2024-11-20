@@ -32,6 +32,7 @@
 #include <common/mstring.h>
 #include <act/inst.h>
 #include <string.h>
+#include <act/inline.h>
 
 class ActBody;
 struct act_chp_lang;
@@ -1059,7 +1060,7 @@ class Function : public UserDef {
    * @param args are the arguments
    * @return the symbolic result
    */
-  Expr **toInline (int nargs, Expr **args);
+  act_inline_value toInline (int nargs, act_inline_value *args);
 
   /**
    * @return 1 if this is an external function, 0 otherwise
@@ -1315,8 +1316,9 @@ class Data : public UserDef {
    * the types for each field. The type is either 0 or 1, 0 for bools
    * and 1 for ints. Array are expanded out.
    *
-   * @param types should be an int array of size # of ints + # of
-   * bools for the structure (see getStructCount())
+   * @param types will be an int array of size # of ints + # of
+   * bools for the structure (see getStructCount()). The array is
+   * allocated within the function using malloc().
    * @return an ActId array of the same size that contains all the
    * field names for the structure.
    */

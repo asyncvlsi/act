@@ -25,7 +25,69 @@
 #include <act/expr.h>
 #include <act/act_id.h>
 
+class Data;
 struct act_inline_table;
+struct act_inline_value {
+  act_inline_value() {
+    is_struct = 0;
+    is_struct_id = 0;
+    struct_count = 0;
+    u.val = NULL;
+  }
+
+  void clear() {
+    if (!isSimple()) {
+      FREE (u.arr);
+      u.arr = NULL;
+    }
+  }
+
+  Expr *getVal() { return u.val; }
+  
+  bool isSimple() {
+    if (is_struct == 0 || is_struct_id) return true;
+    return false;
+  }
+
+  void elaborateStructId (Data *d); 
+  
+  int numElems() { return struct_count; }
+
+  // check if there is some legitimate binding stored here
+  bool isValid() {
+    if (isSimple()) {
+      if (u.val == NULL) return false;
+      if (is_struct) {
+	if (u.val->type != E_VAR) return false;
+      }
+      return true;
+    }
+    if (struct_count == 0) return false;
+    if (u.arr == NULL) return false;
+    return true;
+  }
+
+  // check if everthing is valid
+  bool isValidFull() {
+    if (!isValid()) return false;
+    if (is_struct && !is_struct_id) {
+      for (int i=0; i < struct_count; i++) {
+	if (u.arr[i] == NULL) return false;
+      }
+    }
+    return true;
+  }
+
+  void Print (FILE *fp);
+
+  unsigned int is_struct:1;	/* is this a structure? */
+  unsigned int is_struct_id:1;	/* special case structure, ID map */
+  unsigned int struct_count:30;	/* size of array for sanity checking */
+  union {
+    Expr *val;			/* single value */
+    Expr **arr;			/* flattened array of values */
+  } u;
+};
 
 /**
  * @file inline.h
@@ -64,14 +126,14 @@ void act_inline_free (act_inline_table *);
  * @param e is the array of expressions for values (e[0] will contain
  * the value if the  * identifier is simple one)
  */
-void act_inline_setval (act_inline_table *Hs, ActId *id, Expr **e);
+void act_inline_setval (act_inline_table *Hs, ActId *id, act_inline_value v);
 
 /**
  * @param Hs is the current inline binding table
  * @param s is the name of the identifier
  * @return the binding for an identifier from the table
  */
-Expr **act_inline_getval (act_inline_table *Hs, const char *s);
+act_inline_value act_inline_getval (act_inline_table *Hs, const char *s);
 
 /**
  * @param tab is the current inline binding table
@@ -85,14 +147,8 @@ int act_inline_isbound (act_inline_table *, const char *s);
  * expression specified. The result might be a structure, so this
  * returns an array of expressions.
  */
-Expr **act_inline_expr (act_inline_table *, Expr *, int recurse_fn = 1);
+act_inline_value act_inline_expr (act_inline_table *, Expr *, int recurse_fn = 1);
 
-/**
- * Return the simple result of inlining all function calls into the
- * expression specified. If the result is a structure, the first item
- * from the structure is returned.
- */
-Expr *act_inline_expr_simple (act_inline_table *, Expr *, int recurse_fn = 1);
 
 /**
  * Given inline tables corresponding to a set of conditions (e.g. via
