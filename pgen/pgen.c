@@ -1777,7 +1777,10 @@ void emit_parser (void)
   pp_printf_text (pp, "#endif\n");
   pp_printf_text (pp, "struct %s_DefToken;\n", prefix);
   pp_printf_text (pp, "typedef struct %s_DefToken %s_Token;\n", prefix, prefix);
+  pp_printf_text (pp, "struct _file_;\n");
+  pp_printf_text (pp, "typedef struct _file_ LFILE;\n");
   pp_printf_text (pp, "%s_Token *%s_parse (const char *);\n", prefix, prefix);
+  pp_printf_text (pp, "%s_Token *%s_parse_lfile (LFILE *);\n", prefix, prefix);
   pp_printf_text (pp, "void %s_parse_free (%s_Token *);\n", prefix, prefix);
   pp_printf_text (pp, "#ifdef __cplusplus\n");
   pp_printf_text (pp, "}\n");
@@ -2035,7 +2038,7 @@ void emit_parser (void)
   pp_nl; pp_nl;
 
 
-  pp_printf_text (pp, "static list_t *__parse_id_stack;\n");
+  pp_printf_text (pp, "static list_t *__parse_id_stack = NULL;\n");
   pp_printf_text (pp, "list_t *%s_parse_id_stack (void) { return __parse_id_stack; }\n", prefix);
   pp_nl;
   
@@ -2155,11 +2158,11 @@ void emit_parser (void)
   pp_nl;
   pp_printf_text (pp, "}"); pp_nl; pp_nl;
 
-  pp_printf_text (pp, "void %s_lex_init (LFILE *l)", prefix);
+  pp_printf_text (pp, "int %s_lex_init (LFILE *l)", prefix);
 
   pp_nl; pp_printf (pp, "{ ");
   pp_nl;
-  pp_printf_text (pp, "    %s_lex_addtokens (l);", prefix); pp_nl;
+  pp_printf_text (pp, "    int rval = %s_lex_addtokens (l);", prefix); pp_nl;
   if (verilog_ids) {
     pp_printf_text (pp, "  file_setflags (l, file_flags(l)|FILE_FLAGS_ESCAPEID|FILE_FLAGS_PARENCOM);");
     pp_nl;
@@ -2184,16 +2187,18 @@ void emit_parser (void)
     pp_printf_text (pp, " %s_init_%s (l);\n", prefix, EXTERN_P[i]);
   }
   pp_printf_text (pp, "   file_getsym (l);");
+  pp_nl;
+  pp_printf_text (pp, "   return rval;");
   pp_nl; pp_puts (pp, "}"); pp_nl; pp_nl;
 
-  pp_printf_text (pp, "Token * %s_parse (const char *s)", prefix);
+  pp_printf_text (pp, "Token * %s_parse_lfile (LFILE *l)", prefix);
   pp_nl; pp_printf (pp, "{ ");
   pp_setb (pp);
   pp_nl;
-  pp_printf_text (pp, "LFILE *l = file_open (s);\n");
-  pp_printf_text (pp, "Token * t;\n");
-  pp_printf_text (pp, "%s_lex_init (l);\n", prefix);
-  pp_printf_text (pp, "__parse_id_stack = list_new ();\n");
+  pp_printf_text (pp, "Token * t; int dummy, free_id_stk;\n");
+  pp_printf_text (pp, "dummy = %s_lex_init (l);\n", prefix);
+  pp_printf_text (pp, "free_id_stk = (__parse_id_stack ? 0 : 1);\n");
+  pp_printf_text (pp, "if (free_id_stk) __parse_id_stack = list_new ();\n");
   pp_printf_raw (pp, "snprintf (errstring,");
   pp_printf_raw (pp, " 4096, \"Expecting `%s'\\n\");\n", BNF[0].lhs);
 
@@ -2213,7 +2218,7 @@ void emit_parser (void)
   pp_printf (pp, "}");
   pp_printf_text (pp, "}\n");
 
-  pp_printf_text (pp, "  if (!file_eof (l)) {");
+  pp_printf_text (pp, "  if (!file_eof (l) && free_id_stk) {");
   BEGIN_INDENT;
   ERR("end-of-file");
   pp_puts (pp, "fprintf (stderr, \"Parse error: Could not parse entire file.\\n%s.\\n\", file_errstring (l));"); pp_nl;
@@ -2221,10 +2226,23 @@ void emit_parser (void)
   pp_printf_text (pp, "THROW (EXC_NULL_EXCEPTION);");
   END_INDENT;
   pp_puts (pp, "}"); pp_nl;
-  pp_printf_text (pp, "  list_free (__parse_id_stack);\n");
-  pp_printf_text (pp, "  list_cleanup();\n");
-  pp_printf_text (pp, "  file_close (l);\n");
+  pp_printf_text (pp, "  if (free_id_stk) { list_free (__parse_id_stack); __parse_id_stack = NULL; }\n");
+  pp_printf_text (pp, "  file_deltokens (l, dummy);\n");
   pp_printf_text (pp, "  return t;\n");
+  pp_endb (pp); pp_nl;
+  pp_puts (pp, "}"); pp_nl; pp_nl;
+  
+
+  pp_printf_text (pp, "Token * %s_parse (const char *s)", prefix);
+  pp_nl; pp_printf (pp, "{ ");
+  pp_setb (pp);
+  pp_nl;
+  pp_printf_text (pp, "LFILE *l = file_open (s);\n");
+  pp_printf_text (pp, "Token * t;\n");
+  pp_printf_text (pp, "t = %s_parse_lfile (l);\n", prefix);
+  pp_printf_text (pp, "list_cleanup();\n");
+  pp_printf_text (pp, "file_close (l);\n");
+  pp_printf_text (pp, "return t;\n");
   pp_endb (pp); pp_nl;
   pp_puts (pp, "}"); pp_nl; pp_nl;
 

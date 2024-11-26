@@ -245,6 +245,21 @@ void file_deltoken (LFILE *l, const char *s)
   }
 }
 
+void file_deltokens (LFILE *l, int n)
+{
+  flist *m;
+  
+  if (n <= 0) return;
+  Assert (l->ntoks >= n, "What?");
+  l->ntoks -= n;
+  for (int i=l->ntoks; i < l->ntoks + n; i++) {
+    FREE (l->toks[i]);
+  }
+  for (m=l->l; m; m = m->next) {
+    lex_deltokens (m->l, n);
+  }
+}
+
 int file_istoken (LFILE *l, const char *s)
 {
   return lex_istoken (l->l->l, s);

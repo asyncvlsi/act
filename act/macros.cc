@@ -83,7 +83,7 @@ void UserMacro::Print (FILE *fp)
   else {
     fprintf (fp, "  macro %s (", _nm);
   }
-  if (TypeFactory::isParamType (rettype)) {
+  if (rettype && TypeFactory::isParamType (rettype)) {
     templ = Parent()->getNumParams();
     meta = 1;
   }
