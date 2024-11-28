@@ -1675,3 +1675,76 @@ void BigInt::decPrint (FILE *fp, int w) const
 
  FREE (buf);
 }
+
+BigInt BigInt::sscan (const char *s)
+{
+  BigInt tmp;
+  int mode = 0; // 0 = decimal, 1 = hex, 2 = binary
+  if (!*s) return tmp;
+  if (*s == '0') {
+    // could be binary or hex
+    s++;
+    if (*s == 'x') {
+      mode = 1;
+      s++;
+    }
+    else if (*s == 'b') {
+      mode = 2;
+      s++;
+    }
+  }
+  tmp.toDynamic ();
+  BigInt base(4,0,1);
+  if (mode == 0) {
+    base.setVal (0, 10);
+  }
+  else if (mode == 1) {
+    base.setVal (0, 16);
+  }
+  while (*s) {
+    BigInt d(4,0,1);
+    if (mode == 0) {
+      if ('0' <= *s && *s <= '9') {
+	tmp = tmp * base;
+	d.setVal (0, *s - '0');
+	tmp += d;
+      }
+      else {
+	break;
+      }
+    }
+    else if (mode == 1) {
+      if ('0' <= *s && *s <= '9') {
+	tmp = tmp * base;
+	d.setVal (0, *s - '0');
+	tmp += d;
+      }
+      else if ('a' <= *s && *s <= 'f') {
+	tmp = tmp * base;
+	d.setVal (0, 10 + (*s - 'a'));
+	tmp += d;
+      }	
+      else if ('A' <= *s && *s <= 'F') {
+	tmp = tmp * base;
+	d.setVal (0, 10 + (*s - 'A'));
+	tmp += d;
+      }
+      else {
+	break;
+      }
+    }
+    else {
+      if (*s == '0' || *s == '1') {
+	tmp <<= 1;
+	d.setVal (0, *s - '0');
+	tmp |= d;
+      }
+      else {
+	break;
+      }
+    }
+    s++;
+  }
+  tmp.toStatic();
+  return tmp;
+}
