@@ -2278,14 +2278,13 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->u.ival.v_extra = NULL;
 	  ret = _expr_const_canonical (ret, flags);
 	}
-      }
-      else if ((ret->u.e.l->type == E_INT||ret->u.e.l->type == E_REAL)
-	       && (ret->u.e.r->type == E_INT || ret->u.e.r->type == E_REAL)
-	       && (e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
-		   || e->type == E_DIV)) {
-	double v;
-
+#define NUMERIC(e) ((e)->type == E_INT || (e)->type == E_REAL)
 #define VAL(e) (((e)->type == E_INT) ? (unsigned long)(e)->u.ival.v : (e)->u.f)
+      }
+      else if (NUMERIC (ret->u.e.l) && NUMERIC (ret->u.e.r) &&
+	       (e->type == E_PLUS || e->type == E_MINUS || e->type == E_MULT
+		|| e->type == E_DIV)) {
+	double v;
 
 	v = VAL(ret->u.e.l);
 	if (e->type == E_PLUS) {
@@ -2635,15 +2634,15 @@ static Expr *_expr_expand (int *width, Expr *e,
     LVAL_ERROR;
     ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
     ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
-    WIDTH_UPDATE (WIDTH_MAX);
+    WIDTH_UPDATE (WIDTH_MAX); // right, but left width = 1 so this is fine
     if (!expr_is_a_const (ret->u.e.l)) {
       Expr *tmp = ret->u.e.r;
-
       if (expr_is_a_const (tmp->u.e.l) && expr_is_a_const (tmp->u.e.r)) {
 	Expr *ce = tmp->u.e.l;
 	if ((tmp->u.e.l->type == E_TRUE && tmp->u.e.r->type == E_TRUE) ||
 	    (tmp->u.e.l->type == E_FALSE && tmp->u.e.r->type == E_FALSE) ||
-	    (VAL(tmp->u.e.l) == VAL(tmp->u.e.r))) {
+	    (NUMERIC(tmp->u.e.l) && NUMERIC(tmp->u.e.r) &&
+	     VAL(tmp->u.e.l) == VAL(tmp->u.e.r))) {
 	  /* XXX need to free ret->u.e.l */
 	  FREE (ret);
 	  FREE (tmp);
