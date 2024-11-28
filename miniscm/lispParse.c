@@ -29,6 +29,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <common/mstring.h>
 
@@ -146,6 +147,38 @@ LispAtomParse (char **pstr, int quoted)
     else {
       LTYPE(l) = S_INT;
       sscanf (q, "%ld", &LINTEGER(l));
+    }
+    *str = c;
+  }
+  else if ((*str == '0') && ((str[1] == 'b') | (str[1] == 'x'))) {
+    /* eat 0[x,b] */
+    q = str;
+    str++;
+    char base = *str;  // can only be 'b' or 'x'
+    str++;
+    if (!*str) {
+      fprintf (stderr, "Invalid number\n");
+      *pstr = str;
+      return NULL;
+    }
+    if (base == 'b') {
+      while (*str && (*str == '0' | *str == '1'))
+        str++;
+    }
+    else {
+      while (*str && isxdigit (*str))
+        str++;
+    }
+    c = *str;
+    *str = '\0';
+    LTYPE(l) = S_INT;
+    if (base == 'b') {
+      q++;
+      q++;
+      LINTEGER(l) = strtol(q, NULL, 2);
+    }
+    else {
+      sscanf (q, "%lx", &LINTEGER(l));
     }
     *str = c;
   }
