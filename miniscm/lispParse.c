@@ -150,7 +150,7 @@ LispAtomParse (char **pstr, int quoted)
     }
     *str = c;
   }
-  else if ((*str == '0') && ((str[1] == 'b') | (str[1] == 'x'))) {
+  else if ((*str == '0') && ((str[1] == 'b') || (str[1] == 'x'))) {
     /* eat 0[x,b] */
     q = str;
     str++;
@@ -162,7 +162,7 @@ LispAtomParse (char **pstr, int quoted)
       return NULL;
     }
     if (base == 'b') {
-      while (*str && (*str == '0' | *str == '1'))
+      while (*str && (*str == '0' || *str == '1'))
         str++;
     }
     else {
