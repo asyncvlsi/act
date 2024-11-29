@@ -1619,6 +1619,10 @@ void BigInt::decPrint (FILE *fp, int w) const
  int sign;
  tmp = (*this);
  if (tmp.isSigned()) {
+   if (tmp.isNegative()) {
+     fputc('-', fp);
+     tmp = -tmp;
+   }
    tmp.toUnsigned();
  }
  if (tmp.isZero()) {
@@ -1680,6 +1684,8 @@ BigInt BigInt::sscan (const char *s)
 {
   BigInt tmp;
   int mode = 0; // 0 = decimal, 1 = hex, 2 = binary
+  bool is_negative = false;
+
   if (!*s) return tmp;
   if (*s == '0') {
     // could be binary or hex
@@ -1692,6 +1698,10 @@ BigInt BigInt::sscan (const char *s)
       mode = 2;
       s++;
     }
+  }
+  if (*s == '-') {
+    is_negative = true;
+    s++;
   }
   tmp.toDynamic ();
   BigInt base(4,0,1);
@@ -1744,6 +1754,10 @@ BigInt BigInt::sscan (const char *s)
       }
     }
     s++;
+  }
+  if (is_negative) {
+    tmp.toSigned();
+    tmp = -tmp;
   }
   tmp.toStatic();
   return tmp;
