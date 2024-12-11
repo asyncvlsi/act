@@ -315,11 +315,24 @@ public:
    */
   bool disconnectable ();
 
+
+  /**
+   * Check connection invariant in terms of vx positions
+   * @return true if validated, false otherwise
+   */
+  bool vxValidate ();
+
   /**
    * Print the ActId corresponding to this connection pointer
    * @param fp is the output file
    */
   void Print (FILE *fp);
+
+  /**
+   * Debug print parents and vx values to root.
+   * @param fp is the output file
+   */
+  void printUpTree (FILE *fp);
 };
 
 

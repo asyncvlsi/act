@@ -83,6 +83,25 @@ bool act_connection::isglobal()
   return vx->global ? 1 : 0;
 }
 
+bool act_connection::vxValidate ()
+{
+  act_connection *c;
+  c = this;
+  while (c) {
+    if (c->vx) {
+      c = c->parent;
+    }
+    else if (c->parent->vx) {
+      c = c->parent->parent;
+    }
+    else {
+      if (!c->parent->parent->vx) return false;
+      c = c->parent->parent->parent;
+    }
+  }
+  return true;
+}
+
 ActNamespace *act_connection::getnsifglobal()
 {
   act_connection *c;
@@ -305,6 +324,12 @@ static void print_id (act_connection *c)
   list_t *stk = list_new ();
   ValueIdx *vx;
 
+  if (!c->vxValidate()) {
+    printf ("**> Validation failed\n");
+    c->printUpTree (stdout);
+  }
+  Assert (c->vxValidate(), "VX validation failed.");
+
   while (c) {
     stack_push (stk, c);
     if (c->vx) {
@@ -403,11 +428,11 @@ static void dump_conn_rec (act_connection *c, int non_prim = 0)
   if (c->up != NULL) {
     non_prim = 1;
   }
-  
+
   if (c->hasSubconnections()) {
     for (int i=0; i < c->numSubconnections(); i++) {
       if (c->a[i]) {
-	printf ("[%2d]", level);
+	printf ("[%2d / %d]", level, i);
 	if (non_prim && c->a[i]->up == NULL && c->a[i]->next != c->a[i]) {
 	  printf ("[ERR]");
 	}
@@ -567,6 +592,22 @@ static void mk_raw_skip_connection (UserDef *ux,
     c2->next = c2;
     c2->up = NULL;
   }
+
+#if 0
+  printf ("after first c1/c2 merge!\n");
+  printf ("[raw-skip] entry *****\n");
+  dump_conn_rec (c1);
+  dump_conn_rec (c2);
+  dump_conn_rec (c2p);
+  printf ("**********************\n");
+#endif
+
+  if (c2p->hasSubconnections() && c2p != c2) {
+    // XXX: is this right?
+    _merge_subtrees (ux, c1, c2p);
+    delete c2;
+    return;
+  }
   
   /* now we need to merge any further subconnections between the array
      elements of c1->a and c2->a, if any */
@@ -575,11 +616,6 @@ static void mk_raw_skip_connection (UserDef *ux,
     /* no subconnections. done. */
     delete c2;
 
-#if 0
-    if (c2p->a) {
-      _merge_subtrees (ux, c1, c2p);
-    }
-#endif
     return;
   }
 
@@ -625,6 +661,9 @@ static void _verify_subconn_canonical (UserDef *ux, act_connection *c)
   if ((c != d) && _raw_should_swap (ux, d, c)) {
     c->up = NULL;
     d->up = c;
+    if (d->a) {
+      _merge_subtrees (ux, c, d);
+    }
   }
   if (c->hasSubconnections()) {
     for (int i=0; i < c->numSubconnections(); i++) {
@@ -1014,7 +1053,24 @@ static void _fix_noncan_to_can2 (UserDef *ux, act_connection *orig, act_connecti
 #endif    
     for (int i=0; i < orig->numSubconnections(); i++) {
       if (orig->a[i]) {
+#ifdef DEBUG_CONNECTIONS
+	printf (">> looking-at: ");
+	print_id (can_ver);
+	printf ("\n");
+	can_ver->printUpTree (stdout);
+	printf ("<< -----\n");
+#endif
 	act_connection *tmp = can_ver->getsubconn (i, can_ver->numTotSubconnections());
+	if (tmp->getctype() == 2) {
+	  /* a[i].field; we need to populate the vx field! */
+	  ValueIdx *_tvx = tmp->getvx();
+	  UserDef *_ux = dynamic_cast<UserDef *> (_tvx->t->BaseType());
+	  Assert (_ux, "What?");
+	  ValueIdx *_lvx = _ux->CurScope()->LookupVal (_ux->getPortName (i));
+	  Assert (_lvx, "What happened?");
+	  tmp->vx = _lvx;
+	}
+
 	if (orig->a[i]->next != orig->a[i]) {
 	  if (tmp->primary() != orig->a[i]->primary()) {
 #ifdef DEBUG_CONNECTIONS
@@ -1706,4 +1762,15 @@ void act_connection::Print (FILE *fp)
   ActId *tmp = toid();
   tmp->Print (fp);
   delete tmp;
+}
+
+void act_connection::printUpTree (FILE *fp)
+{
+  act_connection *tmp;
+  int count = 0;
+  tmp = this;
+  while (tmp) {
+    fprintf (fp, "%2d: %s [ctype=%d]\n", count++, tmp->vx ? tmp->vx->getName() : "no-vx", tmp->getctype());
+    tmp = tmp->parent;
+  }
 }

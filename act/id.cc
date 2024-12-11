@@ -745,6 +745,34 @@ static void dump_conn (act_connection *c)
   } while (tmp != c);
   printf("\n");
 }
+
+static void dump_conn_rec (act_connection *c, int non_prim = 0)
+{
+  static int level = 0;
+
+  level++;
+
+  if (level == 1) printf ("-- conn block --\n");
+  dump_conn (c);
+
+  if (c->up != NULL) {
+    non_prim = 1;
+  }
+
+  if (c->hasSubconnections()) {
+    for (int i=0; i < c->numSubconnections(); i++) {
+      if (c->a[i]) {
+	printf ("[%2d / %d]", level, i);
+	if (non_prim && c->a[i]->up == NULL && c->a[i]->next != c->a[i]) {
+	  printf ("[ERR]");
+	}
+	dump_conn_rec (c->a[i], non_prim);
+      }
+    }
+  }
+  level--;
+  if (level == 0) printf ("^^^^^^^^^^^^^^^^\n");
+}
 #endif
 
 
@@ -812,6 +840,7 @@ static void _import_conn_rec (act_connection *cxroot,
     int ct = px->getctype ();
     Assert (ct == 0 || ct == 1, "Hmm");
     /* 0 = array; 1 = userdef */
+    //printf ("glob: %d\n", px->isglobal());
 
     //return; /* FIX THIS */
 
@@ -833,6 +862,7 @@ static void _import_conn_rec (act_connection *cxroot,
 	  printf ("\n cx: "); print_id (cx);
 	  printf ("; px: "); print_id (px);
 	  printf ("\n  "); dump_conn (px->primary());
+	  printf ("[full]\n  "); dump_conn_rec (px);
 	  header = 1;
 	}
 	printf ("  subconn: %d\n",i);
@@ -910,6 +940,11 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int 
       this port has sub-connections that need to be examined
     */
 
+#ifdef DEBUG_CONNECTIONS
+    printf ("=====> top-level, importing port conns\n");
+    dump_conn_rec (pcx);
+    printf ("<====\n");
+#endif
     if (sz > 0) {
       int loop_start, loop_end;
       if (elem_num == -1) {
@@ -955,6 +990,8 @@ ValueIdx *ActId::rootVx (Scope *s)
 {
   return rawValueIdx (s);
 }
+
+
 
 ValueIdx *ActId::rawValueIdx (Scope *s)
 {
@@ -1006,6 +1043,7 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
 #endif      
       _import_connections (cx, ux, vx->t->arrayInfo());
 #ifdef DEBUG_CONNECTIONS
+      dump_conn_rec (cx);
       printf ("== End import\n");
 #endif      
     }
@@ -1080,6 +1118,8 @@ static void print_id (act_connection *c)
 {
   list_t *stk = list_new ();
   ValueIdx *vx;
+
+  Assert (c->vxValidate(), "Validation failed!");
 
   while (c) {
     stack_push (stk, c);
