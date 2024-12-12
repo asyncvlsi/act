@@ -28,6 +28,8 @@
 static int set_suboffset_limit = -1;
 
 //#define DEBUG_CONNECTIONS
+//#define DEBUG_MERGE_SUBTREE
+//#define DEBUG_SKIP_CONN
 
 /*
   Given a subconnection of the current type,
@@ -234,29 +236,30 @@ int act_connection::numTotSubconnections()
     }
     else {
       UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
-      Assert (ux, "hmm...");
-      return ux->getNumPorts ();
+      if (ux) {
+	return ux->getNumPorts ();
+      }
+      else {
+	// no subconnections
+	return 0;
+      }
     }
   }
   else if (type == 1) {
+    // one down in the connection hierarchy, and parent has a vx
     UserDef *ux = dynamic_cast<UserDef *>(_vx->t->BaseType());
-#if 0
-    if  (!ux) {
-      printf ("Hmm... id is: ");
-      toid()->Print (stdout);
-      printf ("\n");
-      printf ("  +++ VX t is: ");
-      _vx->t->Print (stdout);
-      printf ("\n");
+    if (!ux) {
+      // this must have been an array slot, but parent is not
+      // user-defined so no further subconnections
+      Assert (_vx->t->arrayInfo(), "What?");
       return 0;
     }
-#endif
-    Assert (ux, "hmm...");
-
     if (_vx->t->arrayInfo()) {
       return ux->getNumPorts ();
     }
     else {
+      // parent is user-defined, this is a field, now we need to check
+      // if this field itself is user-defined or has an array
       int off = myoffset();
       InstType *itmp;
       Assert (off >= 0 && off < ux->getNumPorts(), "Hmm");
@@ -266,8 +269,12 @@ int act_connection::numTotSubconnections()
       }
       else {
 	ux = dynamic_cast<UserDef *>(itmp->BaseType());
-	Assert (ux, "Hmm");
-	return ux->getNumPorts();
+	if (ux) {
+	  return ux->getNumPorts();
+	}
+	else {
+	  return 0;
+	}
       }
     }
   }
@@ -275,12 +282,32 @@ int act_connection::numTotSubconnections()
     // type == 2
     //   could be an array of ux, and this is the portID
     //   could be a ux.port which has an array in it
+    Assert (type == 2, "What?");
     if (_vx->t->arrayInfo()) {
       UserDef *ux = dynamic_cast<UserDef *> (_vx->t->BaseType());
       Assert (ux, "What?");
-      return ux->getNumPorts();
+
+      int off = myoffset();
+      InstType *itmp;
+      Assert (off >= 0 && off < ux->getNumPorts(), "Hmm");
+      itmp = ux->getPortType (off);
+      if (itmp->arrayInfo()) {
+	return itmp->arrayInfo()->size();
+      }
+      else {
+	ux = dynamic_cast<UserDef *>(itmp->BaseType());
+	if (ux) {
+	  return ux->getNumPorts();
+	}
+	else {
+	  return 0;
+	}
+      }
     }
     else {
+      // userdef.userdef[i]
+      //  *or* userdef.userdef.userdef
+      // we shouldn't be here
       Assert (0, "Not sure...");
     }
   }
@@ -317,7 +344,7 @@ unsigned int act_connection::getctype()
   return 3;
 }
 
-#ifdef DEBUG_CONNECTIONS
+#if defined(DEBUG_CONNECTIONS) || defined(DEBUG_MERGE_SUBTREE) || defined(DEBUG_SKIP_CONN)
 /* debugging */
 static void print_id (act_connection *c)
 {
@@ -432,7 +459,8 @@ static void dump_conn_rec (act_connection *c, int non_prim = 0)
   if (c->hasSubconnections()) {
     for (int i=0; i < c->numSubconnections(); i++) {
       if (c->a[i]) {
-	printf ("[%2d / %d]", level, i);
+	for (int j=0; j < level; j++) { printf (" "); }
+	printf ("[%d/%d]", level, i);
 	if (non_prim && c->a[i]->up == NULL && c->a[i]->next != c->a[i]) {
 	  printf ("[ERR]");
 	}
@@ -517,11 +545,12 @@ static void mk_raw_skip_connection (UserDef *ux,
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
 
+  if (c1 == c2) return;
+
   c2p = c2->primary ();
-  
-#if 0
-  printf ("here!\n");
-  printf ("[raw-skip] entry *****\n");
+
+#ifdef DEBUG_SKIP_CONN
+  printf ("\n[raw-skip] entry *****\n");
   dump_conn_rec (c1);
   dump_conn_rec (c2);
   printf ("**********************\n");
@@ -593,19 +622,28 @@ static void mk_raw_skip_connection (UserDef *ux,
     c2->up = NULL;
   }
 
-#if 0
-  printf ("after first c1/c2 merge!\n");
-  printf ("[raw-skip] entry *****\n");
+#ifdef DEBUG_SKIP_CONN
+  printf ("[raw-skip/2] after first c1/c2, showing c1 and c2p.\n");
   dump_conn_rec (c1);
-  dump_conn_rec (c2);
   dump_conn_rec (c2p);
+  printf (">>c2: ");
+  print_id (c2);
+  printf ("\n");
   printf ("**********************\n");
 #endif
 
   if (c2p->hasSubconnections() && c2p != c2) {
     // XXX: is this right?
-    _merge_subtrees (ux, c1, c2p);
-    delete c2;
+    if (c1->primary() != c2p) {
+      _merge_subtrees (ux, c1->primary(), c2p);
+      delete c2;
+    }
+
+#ifdef DEBUG_SKIP_CONN
+    printf ("[raw-skip/3a] return value...\n");
+    dump_conn_rec (c1);
+    printf ("*********************\n");
+#endif
     return;
   }
   
@@ -616,6 +654,11 @@ static void mk_raw_skip_connection (UserDef *ux,
     /* no subconnections. done. */
     delete c2;
 
+#ifdef DEBUG_SKIP_CONN
+    printf ("[raw-skip/3b] return value...\n");
+    dump_conn_rec (c1);
+    printf ("*********************\n");
+#endif
     return;
   }
 
@@ -632,11 +675,23 @@ static void mk_raw_skip_connection (UserDef *ux,
     }
     c2->a = NULL;
     delete c2;
+
+#ifdef DEBUG_SKIP_CONN
+    printf ("[raw-skip/3c] return value...\n");
+    dump_conn_rec (c1);
+    printf ("*********************\n");
+#endif
     return;
   }
 
   _merge_subtrees (ux, c1, c2);
   delete c2;
+
+#ifdef DEBUG_SKIP_CONN
+  printf ("[raw-skip/3d] return value...\n");
+  dump_conn_rec (c1);
+  printf ("*********************\n");
+#endif
   return;
 }
 
@@ -662,9 +717,17 @@ static void _verify_subconn_canonical (UserDef *ux, act_connection *c)
     c->up = NULL;
     d->up = c;
     if (d->a) {
-      _merge_subtrees (ux, c, d);
+      Assert (c->a == NULL, "What?");
+      c->a = d->a;
+      for (int i=0; i < d->numTotSubconnections(); i++) {
+	if (c->a[i]) {
+	  c->a[i]->parent = c;
+	}
+      }
+      d->a = NULL;
     }
   }
+  c = c->primary();
   if (c->hasSubconnections()) {
     for (int i=0; i < c->numSubconnections(); i++) {
       if (c->a[i]) {
@@ -680,39 +743,27 @@ static void _merge_subtrees (UserDef *ux,
   ValueIdx *vx;
   int sz;
 
+  Assert (c1->isPrimary(), "What?");
+
   vx = c2->getvx ();
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
   static int level = 0;
+  if (level == 0) {
+    printf ("\n");
+  }
   printf (" ==> [%d] in merge-subtrees\n", level++);
   dump_conn_rec (c1);
   dump_conn_rec (c2);
 #endif
   if (!c1->a) {
     if (c2->a) {
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
       printf (" case 1\n");
 #endif
+      sz = c2->numSubconnections ();
       c1->a = c2->a;
       c2->a = NULL;
       /* now fix parent pointers */
-      if (vx->t->arrayInfo()) {
-	/* the value is an array, but are we connecting arrays or derefs? */
-	if (c2->getctype() == 1) {
-	  UserDef *ux;
-	  ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	  Assert (ux, "Why are we here?!");
-	  sz = ux->getNumPorts();
-	}
-	else {
-	  sz = vx->t->arrayInfo()->size();
-	}
-      }
-      else {
-	UserDef *ux;
-	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	Assert (ux, "Hmm!");
-	sz = ux->getNumPorts();
-      }
       for (int i=0; i < sz; i++) {
 	if (c1->a[i]) {
 	  c1->a[i]->parent = c1;
@@ -724,41 +775,25 @@ static void _merge_subtrees (UserDef *ux,
     }
   }
   else if (c2->a) {
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
     printf (" case 2\n");
 #endif
-    if (vx->t->arrayInfo()) {
-      if (c2->getctype() == 1) {
-	UserDef *ux;
-	ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-	Assert (ux, "Why are we here?!");
-	sz = ux->getNumPorts();
-      }
-      else {
-	sz = vx->t->arrayInfo()->size();
-      }
-    }
-    else {
-      UserDef *ux;
-      ux = dynamic_cast <UserDef *> (vx->t->BaseType());
-      Assert (ux, "Hmm?!");
-      sz = ux->getNumPorts();
-    }
+    sz = c2->numSubconnections ();
     for (int i=0; i < sz; i++) {
       /* connect c1->a[i] with c2->a[i] */
       if (c1->a[i] && c2->a[i]) {
 	/* you might have the same thing repeated... */
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
 	printf ("   %d: skip-conn\n", i);
 #endif
 	mk_raw_skip_connection (ux, c1->a[i], c2->a[i]);
 	_verify_subconn_canonical (ux, c1->a[i]);
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
 	printf ("   %d: end-skip\n", i);
 #endif
       }
       else if (c2->a[i]) {
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
 	printf ("   %d: move-conn\n", i);
 #endif
 	c1->a[i] = c2->a[i];
@@ -770,7 +805,7 @@ static void _merge_subtrees (UserDef *ux,
     FREE (c2->a);
     c2->a = NULL;
   }
-#if 0
+#ifdef DEBUG_MERGE_SUBTREE
   printf (" === [%d] FINAL\n", --level);
   dump_conn_rec (c1);
   printf (" <== [%d] end merge\n", level);
@@ -1039,86 +1074,6 @@ static void _fix_noncanonical_subconns (act_connection *c)
 }
 
 
-/*
- * if a node in the connection tree is non-canonical, then
- * all subtrees must be non-canonical. In particular, the sub-tree
- * name should include the canonical name derived from the parent as
- * an option.
- */
-static void _fix_noncan_to_can2 (UserDef *ux, act_connection *orig, act_connection *can_ver)
-{
-  if (orig->hasSubconnections()) {
-#ifdef DEBUG_CONNECTIONS
-    printf (" -- check subconn\n");
-#endif    
-    for (int i=0; i < orig->numSubconnections(); i++) {
-      if (orig->a[i]) {
-#ifdef DEBUG_CONNECTIONS
-	printf (">> looking-at: ");
-	print_id (can_ver);
-	printf ("\n");
-	can_ver->printUpTree (stdout);
-	printf ("<< -----\n");
-#endif
-	act_connection *tmp = can_ver->getsubconn (i, can_ver->numTotSubconnections());
-	if (tmp->getctype() == 2) {
-	  /* a[i].field; we need to populate the vx field! */
-	  ValueIdx *_tvx = tmp->getvx();
-	  UserDef *_ux = dynamic_cast<UserDef *> (_tvx->t->BaseType());
-	  Assert (_ux, "What?");
-	  ValueIdx *_lvx = _ux->CurScope()->LookupVal (_ux->getPortName (i));
-	  Assert (_lvx, "What happened?");
-	  tmp->vx = _lvx;
-	}
-
-	if (orig->a[i]->next != orig->a[i]) {
-	  if (tmp->primary() != orig->a[i]->primary()) {
-#ifdef DEBUG_CONNECTIONS
-	    printf ("*** need to merge: ");
-	    print_id (tmp->primary());
-	    printf (" AND ");
-	    print_id (orig->a[i]->primary());
-	    printf ("\n");
-#endif
-	    act_connection *x1 = tmp->primary();
-	    act_connection *x2 = orig->a[i]->primary();
-	    if (_raw_should_swap (ux, x1, x2)) {
-	      /* x2 is canonical */
-	      act_connection *x3 = x1;
-	      x1 = x2;
-	      x2 = x3;
-	    }
-	    _act_mk_raw_connection (x1, x2);
-	  }
-	}
-	_fix_noncan_to_can2 (ux, orig->a[i], tmp);
-      }
-    }
-  }
-}
-
-
-static void _fix_noncan_to_can_transition (UserDef *ux, act_connection *c)
-{
-  /* check this level */
-  if (c != c->primary()) {
-#ifdef DEBUG_CONNECTIONS    
-    printf ("check: "); print_id (c); printf (" vs "); print_id (c->primary()); printf ("\n");
-#endif    
-    _fix_noncan_to_can2 (ux, c, c->primary());
-  }
-  else {
-    if (c->hasSubconnections()) {
-      for (int i=0; i < c->numSubconnections(); i++) {
-	if (c->a[i]) {
-	  _fix_noncan_to_can_transition (ux, c->a[i]);
-	}
-      }
-    }
-  }
-}
-
-
 void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
 			ActId *id2, act_connection *c2)
 {
@@ -1128,7 +1083,11 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
   int do_swap = 0;
 
 #ifdef DEBUG_CONNECTIONS
-  printf ("before-connect:\n");
+  printf ("before-connect: ");
+  print_id (c1);
+  printf (" <-> ");
+  print_id (c2);
+  printf ("\n");
   dump_conn_rec (c1);
   dump_conn_rec (c2);
 #endif
@@ -1331,6 +1290,8 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
     }
   }
 
+  c1 = c1->primary();
+
   /* actually connect them! */
   _act_mk_raw_connection (c1, c2);
 
@@ -1342,8 +1303,6 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
      migrated into c1 primary.
   */
   _fix_noncanonical_subconns (c1);
-
-  _fix_noncan_to_can_transition (ux, c1);
 
 #ifdef DEBUG_CONNECTIONS
   printf ("\nafter-connect: ");

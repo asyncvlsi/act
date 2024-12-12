@@ -278,10 +278,19 @@ public:
 
   /**
    * A connection type can be identified as one of four possibilies
-   *   - 0 = standard  "x"
-   *   - 1 = array element "x[i]"
-   *   - 2 = port "x.y" 
-   *   - 3 = array element + port "x[i].y"
+   *   - standard  "x"
+   *   - array element "x[i]"
+   *   - port "x.y"
+   *   - array element + port "x[i].y"
+   *
+   * The connection pointer has a "vx" that corresponds to the
+   * "closest" ValueIdx that it corresponds to. That vx could be at a
+   * distance of 0 (e.g. a standard instance), 1 (array or port), or 2
+   * (array element + port) away.
+   *
+   * This function returns the distance of the vx pointer from the
+   * connection pointer. If it returns 3, then that means it is
+   * further away.
    *
    * @return the connection type for this pointer
    */
