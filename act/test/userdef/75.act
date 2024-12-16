@@ -1,0 +1,23 @@
+deftype myexample (int x)
+{
+  methods {
+     function lt (myexample m) : bool
+     {
+        chp { 
+           self := x < m.x
+        }
+     }
+  }
+}
+
+defproc test()
+{
+   myexample m1, m2;
+   bool b;
+ 
+   chp {
+      b := m1 < m2
+   }
+}
+
+test t;

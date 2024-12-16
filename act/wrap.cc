@@ -357,13 +357,24 @@ static Expr *_check_overload_bool (ActTree *cookie, Expr *e, const char *nm)
 	}
 	Expr *texp;
 	e->type = E_USERMACRO;
-        if (e->u.e.r) {
-   	   NEW (texp, Expr);
-	   texp->type = E_LT;
-	   texp->u.e.l = e->u.e.r;
-	   texp->u.e.r = NULL;
-	   e->u.e.r = texp;
+	if (e->u.e.r) {
+	  NEW (texp, Expr);
+	  texp->type = E_LT;
+	  texp->u.e.l = e->u.e.l;
+	  NEW (texp->u.e.r, Expr);
+	  texp->u.e.r->type = E_LT;
+	  texp->u.e.r->u.e.l = e->u.e.r;
+	  texp->u.e.r->u.e.r = NULL;
+	  e->u.fn.r = texp;
+	}
+	else {
+	  NEW (texp, Expr);
+	  texp->type = E_LT;
+	  texp->u.e.l = e->u.e.r;
+	  texp->u.e.r = NULL;
+	  e->u.e.r = texp;
         }
+	e->u.fn.s = (char *) um;
       }
     }
   }
