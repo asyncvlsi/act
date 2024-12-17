@@ -1,0 +1,30 @@
+deftype myexample (int x)
+{
+  methods {
+     function lt (myexample m) : bool
+     {
+        chp { 
+           self := x < m.x
+        }
+     }
+  }
+}
+
+deftype myeg2 <: myexample ()
+{ }
+
+/*
+defproc test()
+{
+   myeg2 m1, m2;
+   bool b;
+ 
+   chp {
+      b := m1 < m2
+   }
+}
+
+test t;
+*/
+
+myeg2 m;

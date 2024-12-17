@@ -20,6 +20,7 @@ deftype mystruct (int<4> a; int<5> b)
 /* instances */
 
 /* connections */
+  methods {
   function tst (int<2> y) : int<3> {
 
 /* instances */
@@ -29,6 +30,7 @@ int<32> w;
    chp { w:=a+b;self:=y+w }
   }
 
+ }
 }
 
 

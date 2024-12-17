@@ -915,7 +915,12 @@ UserMacro *UserMacro::Clone (UserDef *u)
     }
   }
   ret->c = c; // do we need to dup this?!
-  ret->_b = _b->Clone ();
+  if (_b) {
+    ret->_b = _b->Clone ();
+  }
+  else {
+    ret->_b = NULL;
+  }
   ret->_builtinmacro = _builtinmacro;
   return ret;
 }

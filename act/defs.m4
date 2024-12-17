@@ -369,10 +369,25 @@ proc_body:
 }}
   "{" def_body  [ methods_body ] "}"
 {{X:
+    InstType *parent = NULL;
     OPT_FREE ($1);
     OPT_FREE ($2);
     OPT_FREE ($5);
     $0->u_p->MkDefined ();
+    /* See if there are any methods in the parent, and if so, clone
+       them if they have not been overridden */
+    parent = $0->u_p->getParent ();
+    if (parent && TypeFactory::isUserType (parent)) {
+      UserDef *px = dynamic_cast<UserDef *>(parent->BaseType());
+      Assert (px, "What?");
+
+      for (int i=0; i < px->getNumMacros(); i++) {
+	UserMacro *ux = px->getMacroId (i);
+	if (!$0->u_p->getMacro (ux->getName())) {
+	  $0->u_p->newMacro (ux);
+	}
+      }
+    }
     return NULL;
 }}
 ;
@@ -1153,18 +1168,35 @@ data_chan_body: ";"
 }}
 "{" base_body [ methods_body ] "}"
 {{X:
+    InstType *parent;
+    UserDef *me;
     if ($0->u_c) {
       $0->u_c->MkDefined ();
       $0->u_c->AppendBody ($3);
+      me = $0->u_c;
     }
     else if ($0->u_d) {
       $0->u_d->MkDefined();
       $0->u_d->AppendBody ($3);
+      me = $0->u_d;
     }
     else {
       $A(0);
     }
     OPT_FREE ($4);
+
+    parent = me->getParent ();
+    if (parent && TypeFactory::isUserType (parent)) {
+      UserDef *px = dynamic_cast<UserDef *>(parent->BaseType());
+      Assert (px, "What?");
+
+      for (int i=0; i < px->getNumMacros(); i++) {
+	UserMacro *ux = px->getMacroId (i);
+	if (!me->getMacro (ux->getName())) {
+	  me->newMacro (ux);
+	}
+      }
+    }
     return NULL;
 }}
 ;

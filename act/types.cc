@@ -1687,7 +1687,7 @@ void Channel::Print (FILE *fp)
     EMIT_METHODEXPR (i + ACT_NUM_STD_METHODS);
   }
 
-  firstmeth = emitMacros (fp) ? 1 : firstmeth;
+  emitMacros (fp, firstmeth);
   
   if (!firstmeth) {
     fprintf (fp, "}\n");
@@ -1738,7 +1738,7 @@ void Data::Print (FILE *fp)
   EMIT_METHOD(ACT_METHOD_SET);
   EMIT_METHOD(ACT_METHOD_GET);
 
-  firstmeth = emitMacros (fp) ? 1 : firstmeth;
+  emitMacros (fp, firstmeth);
 
   if (!firstmeth) {
     fprintf (fp, " }\n");
@@ -2338,7 +2338,7 @@ int Channel::mustbeActiveRecv ()
 }
 
 
-int UserDef::emitMacros (FILE *fp)
+void UserDef::emitMacros (FILE *fp, int &firstmeth)
 {
   if (A_LEN (um) > 0) {
     for (int i=0; i < A_LEN (um); i++) {
@@ -2349,13 +2349,15 @@ int UserDef::emitMacros (FILE *fp)
       if (u->isBuiltinMacro()) {
 	continue;
       }
-      
+
+      if (firstmeth) {
+	fprintf (fp, "  methods {\n");
+	firstmeth = 0;
+      }
       u->Print (fp);
       fprintf (fp, "\n");
     }
-    return 1;
   }
-  return 0;
 }
 
 /*--- macros ---*/
@@ -2371,6 +2373,14 @@ UserMacro *UserDef::newMacro (const char *name)
   }
   A_NEW (um, UserMacro *);
   A_NEXT (um) = new UserMacro (this, name);
+  A_INC (um);
+  return um[A_LEN(um)-1];
+}
+
+UserMacro *UserDef::newMacro (UserMacro *_um)
+{
+  A_NEW (um, UserMacro *);
+  A_NEXT (um) = _um->Clone (this);
   A_INC (um);
   return um[A_LEN(um)-1];
 }

@@ -752,11 +752,32 @@ class UserDef : public Type {
   UserMacro *newMacro (const char *name);
 
   /**
+   * Create a new user-defined macro by cloning another one. This must
+   * only be called when there isn't a duplicate macro name!
+   * @param um the macro to be cloned
+   * @return the new macro
+   */
+  UserMacro *newMacro (UserMacro *um);
+
+  /**
    * Return a user-defined macro
    * @param name is the name of the macro
    * @return the user-defined macro (NULL if it doesn't exist)
    */
   UserMacro *getMacro (const char *name);
+
+  /**
+   * @return the number of user-defined macros in this type
+   */
+  int getNumMacros () { return A_LEN (um); }
+
+  /**
+   * Used to iterate through all the macros.
+   * @param id is the position of the user-defined macro
+   * @return the user macro located at position id.
+   */
+  UserMacro *getMacroId (int id) { return um[id]; }
+
 
  protected:
   InstType *parent;		///< implementation relationship, if any
@@ -800,10 +821,11 @@ class UserDef : public Type {
 
   /**
    * Used to print macros in the type
+   * @param firstmeth 1 if methods have not been printed. Gets updated
+   * to 0 if a method is printed.
    * @param fp is the output file
-   * @return 1 if there are some macros, 0 otherwise
    */
-  int emitMacros (FILE *fp);
+  void emitMacros (FILE *fp, int &firstmeth);
 
   A_DECL (UserMacro *, um);   ///< user-defined macros
 
