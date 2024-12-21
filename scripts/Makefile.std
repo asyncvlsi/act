@@ -77,7 +77,7 @@ endif
 CFLAGS=$(subst ",,$(C_COMPILER_FLAGS)) 
 
 
-all: installincsub dependsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out postsub
+all: installincsub allsub move-in $(TARGETLIBS) install_lib install_inc $(TARGETS) $(EXTRA) move-out postsub
 
 ALLSUBDIRS=$(SUBDIRS) $(SUBDIRSPOST)
 

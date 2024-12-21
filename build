@@ -28,4 +28,4 @@ echo "Building common library/generators..." && \
    make $debug -C pgen install && \
    make $debug -C miniscm install 
 
-make $debug && echo && echo 'Run "make install" to install the binaries'
+make $debug installincsub dependsub all && echo && echo 'Run "make install" to install the binaries'
