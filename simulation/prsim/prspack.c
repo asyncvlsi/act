@@ -167,7 +167,7 @@ int main (int argc, char **argv)
     else if (lex_have_keyw (l, "after")) {
       putchar ('\03');
       lex_mustbe (l, l_integer);
-      printf ("%d", lex_integer (l));
+      printf ("%ld", lex_integer (l));
     }
     else if (lex_have_keyw (l, "unstab")) {
       putchar ('\01');

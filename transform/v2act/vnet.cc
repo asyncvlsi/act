@@ -128,9 +128,10 @@ VNet *verilog_read (const char *netlist, const char *actlib)
   }
   else {
     char buf[10240];
+    int ignore_ret;
     snprintf (buf, 10240, "sed -f %s %s > %sp", script, netlist, netlist);
     FREE (script);
-    system (buf);
+    ignore_ret = system (buf);
     snprintf (buf, 10240, "%sp", netlist);
     _real_netlist = Strdup (buf);
     real_netlist = _real_netlist;

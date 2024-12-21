@@ -598,19 +598,19 @@ void raw_convert (FILE *fp, const char *output)
   buf[sz-1] = '\0';
 
   /* line 1 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 1 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 2 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 2 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 3 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 3 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 4 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 4 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 5 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 5 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   tok = strtok (buf, " ");
   tok = strtok (NULL, " ");
@@ -619,10 +619,10 @@ void raw_convert (FILE *fp, const char *output)
   nvars = atoi (tok);
 
   /* line 6 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 6 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 7 */
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Line 7 error");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
 
   /* now read the variables */
@@ -673,7 +673,7 @@ void raw_convert (FILE *fp, const char *output)
     A_INC (skipvars);
   }
 
-  (void)fgets (buf, sz, fp);
+  Assert (fgets (buf, sz, fp), "Unexpected EOF");
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   if (strcmp (buf, "Binary:\n") != 0) {
     fatal_error ("Expecting `Binary:'");

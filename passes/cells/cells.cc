@@ -1377,8 +1377,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.e =
 	_convert_prsexpr_to_act (pi->up[j], _inport_name, _outport_name, pi);
       if (rules->u.one.label) {
-	char buf[10];
-	snprintf (buf, 10, "x%d", j-pi->nout);
+	char buf[12];
+	snprintf (buf, 12, "x%d", j-pi->nout);
 	rules->u.one.id = (ActId *) Strdup (buf);
       }
       else {
@@ -1579,8 +1579,8 @@ static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
   case ACT_PRS_EXPR_LABEL:
     v = (long)e->u.l.label;
     {
-      char buf[10];
-      snprintf (buf, 10, "x%d", v-pi->nout);
+      char buf[12];
+      snprintf (buf, 12, "x%d", v-pi->nout);
       ret->u.l.label = Strdup (buf);
     }    
     break;
