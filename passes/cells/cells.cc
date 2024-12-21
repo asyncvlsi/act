@@ -1404,8 +1404,8 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
       rules->u.one.e =
 	_convert_prsexpr_to_act (pi->dn[j], _inport_name, _outport_name, pi);
       if (rules->u.one.label) {
-	char buf[10];
-	snprintf (buf, 10, "x%d", j-pi->nout);
+	char buf[12];
+	snprintf (buf, 12, "x%d", j-pi->nout);
 	rules->u.one.id = (ActId *) Strdup (buf);
       }
       else {

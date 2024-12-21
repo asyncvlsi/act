@@ -245,7 +245,7 @@ void Technology::Init ()
 #define ADDGDS(mat,name)				\
   do {							\
     if (T->gdsH) {					\
-      if (name) {					\
+      if ((name) != NULL) {				\
 	snprintf (buf+k, BUF_SZ-k-1, "%s.gds", name);	\
       }							\
       else {						\
@@ -258,7 +258,7 @@ void Technology::Init ()
 #define ADDGDSBL(mat,name)					\
   do {								\
     if (T->gdsH) {						\
-      if (name) {						\
+      if ((name) != NULL) {					\
 	snprintf (buf+k, BUF_SZ-k-1, "%s.gds_bloat", name);	\
       }								\
       else {							\

@@ -81,7 +81,7 @@ static void getch (LEX_T *l)
 	c_fgets (l->buf+pos, l->buflen-pos, l->inp.fp);
       }
       else {
-	fgets (l->buf+pos, l->buflen-pos, l->inp.fp);
+	(void)fgets (l->buf+pos, l->buflen-pos, l->inp.fp);
       }
       l->bufptr = pos;
     }

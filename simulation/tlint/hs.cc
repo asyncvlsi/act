@@ -598,19 +598,19 @@ void raw_convert (FILE *fp, const char *output)
   buf[sz-1] = '\0';
 
   /* line 1 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 2 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 3 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 4 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 5 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   tok = strtok (buf, " ");
   tok = strtok (NULL, " ");
@@ -619,10 +619,10 @@ void raw_convert (FILE *fp, const char *output)
   nvars = atoi (tok);
 
   /* line 6 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   /* line 7 */
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
 
   /* now read the variables */
@@ -673,7 +673,7 @@ void raw_convert (FILE *fp, const char *output)
     A_INC (skipvars);
   }
 
-  fgets (buf, sz, fp);
+  (void)fgets (buf, sz, fp);
   Assert (buf[sz-1] == '\0' && buf[strlen (buf)-1] == '\n', "Hmm");
   if (strcmp (buf, "Binary:\n") != 0) {
     fatal_error ("Expecting `Binary:'");
