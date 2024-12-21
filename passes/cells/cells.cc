@@ -1175,7 +1175,7 @@ void ActCellPass::add_passgates_cap ()
 
   max = 6 + config_get_table_size ("act.prs_device")*2;
 
-  char gendev[10];
+  char gendev[12];
 
   for (i=0; i < max; i++) {
     /* add the unexpanded process to the cell namespace, and then
@@ -1199,10 +1199,10 @@ void ActCellPass::add_passgates_cap ()
     proc->MkExported ();
 
     if (i < 6) {
-      snprintf (gendev, 10, "%s", g[i]);
+      snprintf (gendev, 12, "%s", g[i]);
     }
     else {
-      snprintf (gendev, 10, "c%d", i - 6);
+      snprintf (gendev, 12, "c%d", i - 6);
     }
 
     Assert (cell_ns->findName (gendev) == 0, "Name conflict?");
