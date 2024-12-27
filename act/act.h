@@ -432,7 +432,7 @@ class Act {
    * read.
    */
   Act (const char *s = NULL);
-  ~Act ();
+  ~Act () = default;
 
   /** 
    * Merge in ACT file "s" into current ACT database
