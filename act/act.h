@@ -432,6 +432,11 @@ class Act {
    * read.
    */
   Act (const char *s = NULL);
+
+  /**
+   * XXX: This needs to be implemented properly so that storage is 
+   * released.
+   */
   ~Act () = default;
 
   /** 

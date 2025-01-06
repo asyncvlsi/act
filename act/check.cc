@@ -29,7 +29,7 @@
 #include <common/int.h>
 #include "act_parse_int.h"
 #include "act_walk.extra.h"
-
+#include "expr_width.h"  
 
 /*
  *
@@ -357,7 +357,6 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   printf ("check: %s\n", expr_op_name (e->type));
   printf (" lt: %x  rt: %x\n", lt, rt);      
   */
-#include "expr_width.h"  
 
   
 #define EQUAL_LT_RT2(f,g,mode)						\
