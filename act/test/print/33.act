@@ -1,0 +1,10 @@
+defproc test()
+{
+  int a, b, c;
+
+  chp {
+    a := b << c
+  }
+}
+
+test t;

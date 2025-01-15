@@ -4,14 +4,13 @@ defproc test ()
 {
 
 /* instances */
-int<32> w;
-int<32> y;
-int<32> x;
-int<32> z;
+int<32> b;
+int<32> a;
+int<32> c;
 
 /* connections */
 chp {
-x:=int(x+y,32)+z;x:=x+int(y+z,32);x:=int(x-y,32)-z;x:=x-int(y-z,32);skip
+a:=(c>>0x6)!=0x0 ? int(0x0,32) : int(b<<int(c,6),32)
 }
 }
 

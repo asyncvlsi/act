@@ -11,7 +11,7 @@ int<32> m[16];
 
 /* connections */
 chp {
-*[true -> addr?a,rd?b;[b=0x0 -> din?m[a] [] b=0x1 -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+*[true -> addr?a,rd?b;[(b>>0x1)=0x0 ? int(b,1)=0x0 : false -> din?m[a] [] (b>>0x1)=0x0 ? int(b,1)=0x1 : false -> dout!m[a] [] (b>>0x2)=0x0 ? b=0x2 : false -> dout!m[a];din?m[a]]]
 }
 }
 
@@ -35,7 +35,7 @@ int<32> _memdatv1;
 
 /* connections */
 chp {
-x:=0x0;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;[_memdatv1>0x0 -> mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;mem_m.addr!4,mem_m.rd!1,mem_m.dout?_memdatv2;mem_m.addr!5,mem_m.rd!1,mem_m.dout?_memdatv3;_memdatv1:=_memdatv1+_memdatv2+_memdatv3;mem_m.addr!y,mem_m.rd!0,mem_m.din!_memdatv1]
+x:=0x0;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv2;[(_memdatv1>>0x1)=0x0 ? int(_memdatv2,1)>0x0 : true -> mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;mem_m.addr!4,mem_m.rd!1,mem_m.dout?_memdatv2;mem_m.addr!5,mem_m.rd!1,mem_m.dout?_memdatv3;_memdatv1:=int(_memdatv1+_memdatv2,32)+_memdatv3;mem_m.addr!y,mem_m.rd!0,mem_m.din!_memdatv1]
 }
 }
 

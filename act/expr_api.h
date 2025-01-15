@@ -234,6 +234,6 @@ Expr *act_expr_var (ActId *id);
  */
 Data *act_expr_is_structure (Scope *s, Expr *e, int *error = NULL);
 
-
+Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s);
 
 #endif /* __ACT_EXPR_API_H__ */

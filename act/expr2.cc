@@ -2550,8 +2550,12 @@ static int _expr_bw_calc(struct pHashtable *H, Expr *e, Scope *s)
     break;
 
   case E_INT:
-    Assert (e->u.ival.v_extra, "What?");
-    width = ((BigInt *)e->u.ival.v_extra)->getWidth ();
+    if (e->u.ival.v_extra) {
+      width = ((BigInt *)e->u.ival.v_extra)->getWidth ();
+    }
+    else {
+      width = act_expr_intwidth (e->u.ival.v);
+    }
     break;
 
   case E_REAL:
@@ -2634,6 +2638,50 @@ static Expr *_wrapint (Expr *e, int w)
   ret->u.e.l = e;
   ret->u.e.r = const_expr (w);
   return ret;
+}
+
+static Expr *_expr_bw_adjust (struct pHashtable *H,
+			      int needed_width, Expr *e, Scope *s);
+
+static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
+			       int lw, int rw,
+			       int boolone, int booltwo,
+			       struct pHashtable *H,
+			       Scope *s)
+{
+  int type = ret->type;
+  
+  ret->type = E_QUERY;
+  NEW (ret->u.e.l, Expr);
+  ret->u.e.l->type = E_EQ;
+  ret->u.e.l->u.e.r = const_int_ex (0);
+  NEW (ret->u.e.l->u.e.l, Expr);  
+  ret->u.e.l->u.e.l->type = E_LSR;
+
+  NEW (ret->u.e.r, Expr);
+  ret->u.e.r->type = E_COLON;
+
+  NEW (ret->u.e.r->u.e.l, Expr);
+  ret->u.e.r->u.e.l->type = type;
+  
+  if (lw < rw) {
+    ret->u.e.l->u.e.l->u.e.r = const_int_ex (lw);
+    ret->u.e.l->u.e.l->u.e.l = _expr_bw_adjust (H, -1, r, s);
+    
+    ret->u.e.r->u.e.r = const_expr_bool (boolone);
+    
+    ret->u.e.r->u.e.l->u.e.l = _expr_bw_adjust (H, -1, l, s);
+    ret->u.e.r->u.e.l->u.e.r = _expr_bw_adjust (H, lw, r, s);
+  }
+  else {
+    ret->u.e.l->u.e.l->u.e.r = const_int_ex (rw);
+    ret->u.e.l->u.e.l->u.e.l = _expr_bw_adjust (H, -1, l, s);
+    
+    ret->u.e.r->u.e.r = const_expr_bool (booltwo);
+    
+    ret->u.e.r->u.e.l->u.e.l = _expr_bw_adjust (H, rw, l, s);
+    ret->u.e.r->u.e.l->u.e.r = _expr_bw_adjust (H, -1, r, s);
+  }
 }
 
 static Expr *_expr_bw_adjust (struct pHashtable *H,
@@ -2734,14 +2782,28 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
     
   case E_GT:
   case E_GE:
-    
+    lw = _getbw (H, e->u.e.l);
+    rw = _getbw (H, e->u.e.r);
+    _expr_cmp_helper (ret, e->u.e.l, e->u.e.r, lw, rw, 0, 1, H, s);
+    break;
     
   case E_LE:
   case E_LT:
+    lw = _getbw (H, e->u.e.l);
+    rw = _getbw (H, e->u.e.r);
+    _expr_cmp_helper (ret, e->u.e.l, e->u.e.r, lw, rw, 1, 0, H, s);
+    break;
     
   case E_EQ:
+    lw = _getbw (H, e->u.e.l);
+    rw = _getbw (H, e->u.e.r);
+    _expr_cmp_helper (ret, e->u.e.l, e->u.e.r, lw, rw, 0, 0, H, s);
+    break;
+    
   case E_NE:
-    /* width = 1 */
+    lw = _getbw (H, e->u.e.l);
+    rw = _getbw (H, e->u.e.r);
+    _expr_cmp_helper (ret, e->u.e.l, e->u.e.r, lw, rw, 1, 1, H, s);
     break;
     
   case E_NOT:
@@ -2883,7 +2945,7 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
 	}
 	e = e->u.e.r;
       } while (e);
-      if (lw > needed_width) {
+      if (needed_width != -1 && (lw > needed_width)) {
 	ret = _wrapint (ret, needed_width);
       }
     }
@@ -2898,16 +2960,8 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
     break;
 
   case E_INT:
-    if (needed_width != -1 && needed_width < _getbw (H, e)) {
-      BigInt *x = new BigInt (*((BigInt *)e->u.ival.v_extra));
-      x->setWidth (needed_width);
-      ret->u.ival.v_extra = x;
-      ret->u.ival.v = x->getVal (0);
-    }
-    else {
-      FREE (ret);
-      ret = expr_dup (e);
-    }
+    FREE (ret);
+    ret = expr_dup (e);
     break;
 
   case E_REAL:
@@ -2942,9 +2996,26 @@ Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s)
 {
   struct pHashtable *pH;
   int tmp;
+  Expr *f;
+
+  if (!e) return NULL;
+  
   pH = phash_new (4);
+
   tmp = _expr_bw_calc (pH, e, s);
-  e = _expr_bw_adjust (pH, needed_width, e, s);
+  f = e;
+  e = _expr_bw_adjust (pH, needed_width, f, s);
+  expr_ex_free (f);
+  if (needed_width != -1) {
+    if (e->type == E_BUILTIN_INT && e->u.e.r) {
+      if (e->u.e.r->u.ival.v >= needed_width) {
+	f = e->u.e.l;
+	e->u.e.l = NULL;
+	expr_ex_free (e);
+	e = f;
+      }
+    }
+  }
   phash_free (pH);
   return e;
 }

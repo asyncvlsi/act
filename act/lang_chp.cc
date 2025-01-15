@@ -35,6 +35,9 @@
 
 static int _chp_freshvar_count = 0;
 
+static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s);
+
+
 /*
  * Any structture references have to be changed to assignments
  * followed by replacement with the ID.
@@ -1661,7 +1664,7 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
   return e;
 }
 
-act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
+static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
   act_chp_lang_t *ret;
   act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
@@ -1679,7 +1682,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   case ACT_CHP_SEMI:
     ret->u.semi_comma.cmd = list_new ();
     for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-      act_chp_lang_t *xl = chp_expand ((act_chp_lang_t *)list_value (li), ns, s);
+      act_chp_lang_t *xl = chp_expand_1 ((act_chp_lang_t *)list_value (li), ns, s);
       list_append (ret->u.semi_comma.cmd, xl);
     }
     break;
@@ -1701,7 +1704,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
       for (int iter=ilo; iter <= ihi; iter++) {
 	s->setPInt (vx->u.idx, iter);
 	list_append (ret->u.semi_comma.cmd,
-		     chp_expand (c->u.loop.body, ns, s));
+		     chp_expand_1 (c->u.loop.body, ns, s));
 	
       }
       act_syn_loop_teardown (ns, s, c->u.loop.id, vx);
@@ -1754,7 +1757,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	      FREE (tmp);
 	    }
 	    else {
-	      tmp->s = chp_expand (gctmp->s, ns, s);
+	      tmp->s = chp_expand_1 (gctmp->s, ns, s);
 	      q_ins (gchd, gctl, tmp);
 	    }
 	  }
@@ -1788,7 +1791,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	    FREE (tmp);
 	  }
 	  else {
-	    tmp->s = chp_expand (gctmp->s, ns, s);
+	    tmp->s = chp_expand_1 (gctmp->s, ns, s);
 	    q_ins (gchd, gctl, tmp);
 	  }
 	}
@@ -2221,7 +2224,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 	int tmp = Act::double_expand;
 	act_chp_lang_t *oret = ret;
 	Act::double_expand = 0;
-	ret = chp_expand (oret, ns, s);
+	ret = chp_expand_1 (oret, ns, s);
 	Act::double_expand = tmp;
 	act_chp_free (oret);
       }
@@ -2233,8 +2236,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 
   case ACT_HSE_FRAGMENTS:
     ret->u.frag.nextlabel = c->u.frag.nextlabel;
-    ret->u.frag.body = chp_expand (c->u.frag.body, ns, s);
-    ret->u.frag.next = chp_expand (c->u.frag.next, ns, s);
+    ret->u.frag.body = chp_expand_1 (c->u.frag.body, ns, s);
+    ret->u.frag.next = chp_expand_1 (c->u.frag.next, ns, s);
     if (c->u.frag.exit_conds) {
       listitem_t *li;
       ret->u.frag.exit_conds = list_new ();
@@ -2871,3 +2874,192 @@ act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns)
   ret->c = _chp_dup (c->c, orig, newns);
   return ret;
 }
+
+static act_chp_lang_t *chp_update_bw (act_chp_lang_t *c, Scope *s)
+{
+  act_chp_lang_t *ret;
+  act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
+  listitem_t *li;
+  ValueIdx *vx;
+  
+  if (!c) return NULL;
+  NEW (ret, act_chp_lang_t);
+  ret->label = c->label;
+  ret->space = NULL;
+  ret->type = c->type;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    ret->u.semi_comma.cmd = list_new ();
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      act_chp_lang_t *xl = chp_update_bw ((act_chp_lang_t *)list_value (li), s);
+      list_append (ret->u.semi_comma.cmd, xl);
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    {
+      gchd = NULL;
+      gctl = NULL;
+      for (gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+	Assert (!gctmp->id, "What?");
+	NEW (tmp, act_chp_gc_t);
+	tmp->id = NULL;
+	tmp->next = NULL;
+	tmp->g = expr_bw_adjust (1, gctmp->g, s);
+	if (!tmp->g && gctmp != c->u.gc) {
+	  /*-- null guard in head is the loop shortcut --*/
+	}
+	if (tmp->g && expr_is_a_const (tmp->g) && tmp->g->type == E_FALSE &&
+	    c->type != ACT_CHP_DOLOOP) {
+	  FREE (tmp);
+	}
+	else {
+	  tmp->s = chp_update_bw (gctmp->s, s);
+	  q_ins (gchd, gctl, tmp);
+	}
+      }
+      if (!gchd) {
+	/* ok this is false -> skip */
+	NEW (tmp, act_chp_gc_t);
+	tmp->id = NULL;
+	tmp->next = NULL;
+      
+	tmp->g = const_expr_bool (0);
+	NEW (tmp->s, act_chp_lang);
+	tmp->s->type = ACT_CHP_SKIP;
+	q_ins (gchd, gctl, tmp);
+      }
+      if (c->type != ACT_CHP_DOLOOP) {
+	if (gchd->next == NULL && (!gchd->g || expr_is_a_const (gchd->g))) {
+	  /* loops and selections that simplify to a single guard that
+	     is constant */
+	  if (c->type == ACT_CHP_LOOP) {
+	    if (gchd->g && gchd->g->type == E_FALSE) {
+	      /* whole thing is a skip */
+	      /* XXX: need chp_free */
+	      ret->u.gc = gchd;
+	      act_chp_free (ret);
+	      NEW (ret, act_chp_lang);
+	      ret->type = ACT_CHP_SKIP;
+	      return ret;
+	    }
+	  }
+	  else {
+	    if (!gchd->g || gchd->g->type == E_TRUE) {
+	      /* whole thing is the body */
+	      FREE (ret);
+	      ret = gchd->s;
+	      FREE (gchd);
+	      if (!ret) {
+		NEW (ret, act_chp_lang);
+		ret->type = ACT_CHP_SKIP;
+	      }
+	      return ret;
+	    }
+	  }
+	}
+      }
+      ret->u.gc = gchd;
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
+    {
+      ret->u.assign.id = c->u.assign.id->Clone ();
+      
+      InstType *xit;
+      int dum;
+      dum = act_type_var (s, ret->u.assign.id, &xit);
+      int width = TypeFactory::bitWidth (xit);
+      ret->u.assign.e = expr_bw_adjust (width, c->u.assign.e, s);
+    }
+    break;
+    
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    ret->u.comm.chan = c->u.comm.chan->Clone ();
+    ret->u.comm.flavor = c->u.comm.flavor;
+    ret->u.comm.convert = c->u.comm.convert;
+    if (c->u.comm.var) {
+      ret->u.comm.var = c->u.comm.var->Clone ();
+    }
+    else {
+      ret->u.comm.var = NULL;
+    }
+    if (c->u.comm.e) {
+      InstType *xit;
+      int dum = act_type_var (s, c->u.comm.chan, &xit);
+      int width = TypeFactory::bitWidth (xit);
+      ret->u.comm.e = expr_bw_adjust (width, c->u.comm.e, s);
+    }
+    else {
+      ret->u.comm.e = NULL;
+    }
+    break;
+    
+  case ACT_CHP_FUNC:
+    ret->u.func.name = c->u.func.name;
+    ret->u.func.rhs = list_new ();
+    {
+      list_t *xassign = NULL, *tlist;
+      for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+	act_func_arguments_t *arg, *ra;
+	NEW (arg, act_func_arguments_t);
+	ra = (act_func_arguments_t *) list_value (li);
+	arg->isstring = ra->isstring;
+	if (ra->isstring) {
+	  arg->u.s = ra->u.s;
+	}
+	else {
+	  arg->u.e = expr_dup (ra->u.e);
+	}
+	list_append (ret->u.func.rhs, arg);
+      }
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    ret->u.frag.nextlabel = c->u.frag.nextlabel;
+    ret->u.frag.body = chp_update_bw (c->u.frag.body, s);
+    ret->u.frag.next = chp_update_bw (c->u.frag.next, s);
+    if (c->u.frag.exit_conds) {
+      listitem_t *li;
+      ret->u.frag.exit_conds = list_new ();
+      for (li = list_first (c->u.frag.exit_conds); li; li = list_next (li)) {
+	/* expr */
+	list_append (ret->u.frag.exit_conds, expr_dup ((Expr *) list_value (li)));
+	li = list_next (li);
+	/* label */
+	list_append (ret->u.frag.exit_conds, list_value (li));
+      }
+    }
+    else {
+      ret->u.frag.exit_conds = NULL;
+    }
+    break;
+    
+  default:
+    fatal_error ("Unknown chp type %d", ret->type);
+    break;
+  }
+  return ret;
+}
+
+
+act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
+{
+  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
+  if (!_chp_expanding_macro) {
+    cnew = chp_update_bw (cnew, s);
+  }
+  return cnew;
+}
+

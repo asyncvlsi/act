@@ -11,7 +11,7 @@ int<32> z;
 
 /* connections */
 chp {
-x:=x+y+(x+y)+(x+y);x:=x+y+(x+y)+(x+y);x:=x+y&x+y&x+y;x:=x+y|x+y|x+y;x:=(x+y)*(x+y)*(x+y);x:=x+(y+z);x:=x-y-z;x:=x-(y-z);x:=x+y;skip
+x:=int(int(x+y,32)+int(x+y,32),32)+int(x+y,32);x:=int(int(x+y,32)+int(x+y,32),32)+int(x+y,32);x:=int(x+y,32)&int(x+y,32)&int(x+y,32);x:=int(x+y,32)|int(x+y,32)|int(x+y,32);x:=int(x+y,32)*int(int(x+y,32)*int(x+y,32),32);x:=x+int(y+z,32);x:=int(x-y,32)-z;x:=x-int(y-z,32);x:=x+y;skip
 }
 }
 
