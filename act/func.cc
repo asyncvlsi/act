@@ -150,7 +150,7 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
   pending = 1;
 
   /* convert CHP body into an expression! */
-  act_inline_table *Hs = act_inline_new (CurScope(), NULL);
+  act_inline_table *Hs = act_inline_new (CurScope(), NULL, false, true);
 
   if (!getlang() || !getlang()->getchp()) {
     act_error_ctxt (stderr);

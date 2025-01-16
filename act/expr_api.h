@@ -236,4 +236,16 @@ Data *act_expr_is_structure (Scope *s, Expr *e, int *error = NULL);
 
 Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s);
 
+
+/**
+ * Print an expression as a DAG to a file. This is used to print parameter
+ * expressions (e.g. in the core ACT language), and not chp/dataflow
+ * expressions.
+ *
+ * @param fp is the output file
+ * @param e is the expression
+ */
+void print_dag_expr (FILE *fp, const Expr *e);
+
+
 #endif /* __ACT_EXPR_API_H__ */

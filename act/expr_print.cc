@@ -2053,3 +2053,492 @@ Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
   }
   return e;
 }
+
+
+
+
+/*
+ *  Dag printing
+ *
+ */
+static int _print_dag_expr (struct pHashtable *H,
+			    int *count,
+			    char *buf, int sz, const Expr *e)
+{
+  int k = 0;
+  int len;
+  phash_bucket_t *b;
+
+  if (!e) return -1;
+  if (sz <= 1) return -1;
+
+  b = phash_lookup (H, e);
+  if (b) {
+    return b->i;
+  }
+  b = phash_add (H, e);
+  b->i = *count;
+  *count = *count + 1;
+
+#define REC_CALL(x) \
+  _print_dag_expr (H, count, buf+k, sz, (x))
+
+#undef PRINT_STEP
+#define PRINT_STEP				\
+  do {						\
+    len = strlen (buf+k);			\
+    k += len;					\
+    sz -= len;					\
+    if (sz <= 1) return b->i;			\
+  } while (0)
+
+#undef ADD_CHAR
+#define ADD_CHAR(ch)				\
+  do {						\
+    buf[k] = ch;				\
+    k++;					\
+    buf[k] = '\0';				\
+    sz -= 1;					\
+    if (sz <= 1) return b->i;			\
+  } while (0)
+
+#undef EMIT_BIN
+#define EMIT_BIN(sym)							\
+  do {									\
+    int n1, n2;								\
+    n1 = REC_CALL (e->u.e.l);						\
+    PRINT_STEP;								\
+    n2 = REC_CALL (e->u.e.r);						\
+    PRINT_STEP;								\
+    snprintf (buf+k, sz, "@%d <- @%d %s @%d; ", b->i, n1, (sym), n2);	\
+    PRINT_STEP;								\
+  } while (0)
+
+#undef EMIT_UNOP
+#define EMIT_UNOP(sym)						\
+  do {								\
+    int n1;							\
+    n1 = REC_CALL (e->u.e.l);					\
+    PRINT_STEP;							\
+    snprintf (buf+k, sz, "@%d <- %s @%d; ", b->i, sym, n1);	\
+    PRINT_STEP;							\
+  } while (0)
+
+#define EMIT_BASE(body)				\
+  do {						\
+    snprintf (buf+k, sz, "@%d <- ", b->i);	\
+    PRINT_STEP;					\
+    do {					\
+      body;					\
+    } while (0);				\
+    PRINT_STEP;					\
+    snprintf (buf+k, sz, "; ");			\
+    PRINT_STEP;					\
+  } while (0)
+
+  switch (e->type) {
+  case E_PROBE:
+    EMIT_BASE(
+	      snprintf (buf+k, sz, "#");
+	      PRINT_STEP;
+	      ((ActId *)(e->u.e.l))->sPrint (buf+k, sz);
+	       );
+    break;
+
+  case E_NOT: EMIT_UNOP("~"); break;
+  case E_COMPLEMENT: EMIT_UNOP("~"); break;
+  case E_UMINUS: EMIT_UNOP("-"); break;
+
+  case E_MULT: EMIT_BIN ("*"); break;
+  case E_DIV:  EMIT_BIN ("/"); break;
+  case E_MOD:  EMIT_BIN ("%"); break;
+  case E_PLUS:  EMIT_BIN ("+"); break;
+  case E_MINUS: EMIT_BIN ("-"); break;
+  case E_LSL: EMIT_BIN ("<<"); break;
+  case E_LSR: EMIT_BIN (">>"); break;
+  case E_ASR: EMIT_BIN (">>>"); break;
+  case E_LT:  EMIT_BIN ("<"); break;
+  case E_GT:  EMIT_BIN (">"); break;
+  case E_LE:  EMIT_BIN ("<="); break;
+  case E_GE:  EMIT_BIN (">="); break;
+  case E_EQ:  EMIT_BIN ("="); break;
+  case E_NE:  EMIT_BIN ("!="); break;
+  case E_AND: EMIT_BIN ("&"); break;
+  case E_XOR: EMIT_BIN ("^"); break;
+  case E_OR: EMIT_BIN ("|"); break;
+
+  case E_QUERY: /* prec = 3 */
+    {
+      int n1, n2, n3;
+      n1 = REC_CALL(e->u.e.l);
+      PRINT_STEP;
+      n2 = REC_CALL(e->u.e.r->u.e.l);
+      PRINT_STEP;
+      n3 = REC_CALL(e->u.e.r->u.e.r);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "@%d <- @%d ? @%d : @%d; ",
+		b->i, n1, n2, n3);
+    }
+    break;
+
+  case E_INT:
+    EMIT_BASE(if (e->u.ival.v_extra) {
+	std::string s = ((BigInt *)e->u.ival.v_extra)->sPrint ();
+	snprintf (buf+k, sz, "0x%s", s.c_str());
+      }
+      else {
+	snprintf (buf+k, sz, "%lu", e->u.ival.v);
+      }
+      );
+    break;
+
+  case E_REAL:
+    EMIT_BASE(snprintf (buf+k, sz, "%g", e->u.f););
+    break;
+
+  case E_TRUE:
+    EMIT_BASE (snprintf (buf+k, sz, "true"););
+    break;
+
+  case E_FALSE:
+    EMIT_BASE (snprintf (buf+k, sz, "false"););
+    break;
+
+  case E_VAR:
+    EMIT_BASE (((ActId *)e->u.e.l)->sPrint (buf+k, sz););
+    break;
+
+  case E_FUNCTION:
+    {
+      UserDef *u = (UserDef *)e->u.fn.s;
+      Function *f = dynamic_cast<Function *>(u);
+      Expr *tmp;
+      int is_special_struct = 0;
+      Assert (f, "Hmm.");
+      int num, ii;
+      int *ids;
+
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
+      num = 0;
+      while (tmp) {
+	num++;
+	tmp = tmp->u.e.r;
+      }
+
+      if (num > 0) {
+	MALLOC (ids, int, num);
+	if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	  tmp = e->u.fn.r->u.e.r;
+	}
+	else {
+	  tmp = e->u.fn.r;
+	}
+	for (ii=0; ii < num; ii++) {
+	  ids[ii] = REC_CALL(tmp->u.e.l);
+	  PRINT_STEP;
+	  tmp = tmp->u.e.r;
+	}
+      }
+
+      snprintf (buf+k, sz, "@%d <- ", b->i);
+      PRINT_STEP;
+
+      if (f->isUserMethod()) {
+	int pos;
+	const char *nm = f->getName();
+
+	// if it is "int<>" or "struct<>struc
+	{
+	  int i;
+	  for (i=0; nm[i]; i++) {
+	    if (nm[i] == '/') break;
+	  }
+	  i++;
+	  if (strcmp (nm + i, "int") == 0 ||
+	      strcmp (nm + i, "int<>") == 0) {
+	    // int(...)
+	    snprintf (buf+k, sz, "int(");
+	    PRINT_STEP;
+	    sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+	    PRINT_STEP;
+	    snprintf (buf+k, sz, ");");
+	    PRINT_STEP;
+	    return b->i;
+	  }
+	  else {
+	    UserDef *parent = f->CurScope()->Parent()->getUserDef();
+	    Assert (parent, "What?");
+
+	    int cnt = 0;
+	    while (nm[i + cnt] && nm[i + cnt] != '<') {
+	      cnt++;
+	    }
+	    if (strncmp (nm + i, parent->getName(), cnt) == 0) {
+	      is_special_struct = 1;
+	    }
+	  }
+	}
+
+	if (!is_special_struct) {
+	  Assert (e->u.fn.r &&
+		  e->u.fn.r->type == E_LT &&
+		  e->u.fn.r->u.e.l->type == E_VAR, "What?");
+
+	  ActId *id = (ActId *) e->u.fn.r->u.e.l->u.e.l;
+	  id->sPrint (buf+k, sz);
+	  pos = 0;
+	  while (nm[pos] != '/') {
+	    pos++;
+	  }
+	  pos++;
+	  PRINT_STEP;
+	  ADD_CHAR('.');
+	  while (nm[pos] && nm[pos] != '<') {
+	    ADD_CHAR (nm[pos]);
+	    pos++;
+	  }
+	  ADD_CHAR('(');
+	  tmp = e->u.fn.r->u.e.r;
+	}
+	else {
+	  if (f->getns() && f->getns() != ActNamespace::Global()) {
+	    char *s = f->getns()->Name ();
+	    snprintf (buf+k, sz, "%s::", s);
+	    PRINT_STEP;
+	    FREE (s);
+	  }
+	  if (ActNamespace::Act()) {
+	    ActNamespace::Act()->msnprintfproc (buf+k, sz, f->CurScope()->Parent()->getUserDef(), 1);
+	  }
+	  else {
+	    snprintf (buf+k, sz, "%s", f->CurScope()->Parent()->getUserDef()->getName());
+	  }
+	  PRINT_STEP;
+	  ADD_CHAR('(');
+	  if (e->u.fn.r->type == E_GT) {
+	    Assert (0, "This cannot happen!");
+	  }
+	  else {
+	    sprint_uexpr (buf+k, sz, e->u.fn.r->u.e.l);
+	  }
+	  PRINT_STEP;
+	  snprintf (buf+k, sz, ");");
+	  return b->i;
+	}
+      }
+
+      if (f->isUserMethod() && is_special_struct ||
+	  !f->isUserMethod()) {
+      if (f->getns() && f->getns() != ActNamespace::Global()) {
+	char *s = f->getns()->Name();
+	snprintf (buf+k, sz, "%s::", s);
+	PRINT_STEP;
+	FREE (s);
+      }
+      if (ActNamespace::Act()) {
+	ActNamespace::Act()->msnprintfproc (buf+k, sz, f, 1);
+      }
+      else {
+	snprintf (buf+k, sz, "%s", f->getName());
+      }
+      PRINT_STEP;
+
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	snprintf (buf+k, sz, "<");
+	PRINT_STEP;
+	tmp = e->u.fn.r->u.e.l;
+	while (tmp) {
+	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	  PRINT_STEP;
+	  tmp = tmp->u.e.r;
+	  if (tmp) {
+	    snprintf (buf+k, sz, ",");
+	    PRINT_STEP;
+	  }
+	}
+	snprintf (buf+k, sz, ">");
+	PRINT_STEP;
+      }
+      snprintf (buf+k, sz, "(");
+      PRINT_STEP;
+
+      if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
+
+      }
+      
+      for (ii=0; ii < num; ii++) {
+	snprintf (buf+k, sz, "@%d", ids[ii]);
+	PRINT_STEP;
+	if (ii != num-1) {
+	  ADD_CHAR(',');
+	}
+      }
+      snprintf (buf+k, sz, "); ");
+      PRINT_STEP;
+      if (num > 0) {
+	FREE (ids);
+      }
+    }
+    break;
+
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+  case E_TYPE:
+  case E_USERMACRO:
+    snprintf (buf+k, sz, "EType %d found!", e->type);
+    PRINT_STEP;
+    //fatal_error ("EType %d found after expansion", e->type);
+    break;
+
+  case E_SELF:
+    EMIT_BASE (snprintf (buf+k, sz, "self"););
+    break;
+
+  case E_SELF_ACK:
+    EMIT_BASE (snprintf (buf+k, sz, "selfack"););
+    break;
+
+  case E_BUILTIN_BOOL:
+    {
+      int n1 = REC_CALL(e->u.e.l);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "@%d <- bool(@%d); ", b->i, n1);
+      PRINT_STEP;
+    }
+    break;
+
+  case E_BUILTIN_INT:
+    {
+      int n1 = REC_CALL (e->u.e.l);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "@%d <- int(@%d", b->i, n1);
+      PRINT_STEP;
+      if (e->u.e.r) {
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
+	sprint_uexpr (buf+k, sz, e->u.e.r);
+	PRINT_STEP;
+      }
+      snprintf (buf+k, sz, "); ");
+      PRINT_STEP;
+    }
+    break;
+
+  case E_BITFIELD:
+    EMIT_BASE(
+	      ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
+	      PRINT_STEP;
+	      snprintf (buf+k, sz, "{");
+	      PRINT_STEP;
+	      if (e->u.e.r->u.e.l) {
+		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+		PRINT_STEP;
+		snprintf (buf+k, sz, "..");
+		PRINT_STEP;
+		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.l);
+	      }
+	      else {
+		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+	      }
+	      PRINT_STEP;
+	      snprintf (buf+k, sz, "}");
+	      PRINT_STEP;
+	      );
+    break;
+
+  case E_CONCAT:
+    {
+      int num = 0;
+      int *ids;
+      const Expr *tmp;
+      int ii;
+      tmp = e;
+      while (tmp) {
+	num++;
+	tmp = tmp->u.e.r;
+      }
+      MALLOC (ids, int, num);
+      tmp = e;
+      for (ii=0; ii < num; ii++) {
+	ids[ii] = REC_CALL (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+      EMIT_BASE(
+	       snprintf (buf+k, sz, " {");
+	       PRINT_STEP;
+	       for (ii=0; ii < num; ii++) {
+		 if (ii != 0) {
+		   snprintf (buf+k, sz, ",");
+		   PRINT_STEP;
+		 }
+		 snprintf (buf+k, sz, "@%d", ids[ii]);
+		 PRINT_STEP;
+	       }
+	       snprintf (buf+k, sz, "}");
+	       PRINT_STEP;
+	       );
+      FREE (ids);
+    }
+    break;
+
+  case E_STRUCT_REF:
+    {
+      int n1 = REC_CALL (e->u.e.l);
+      EMIT_BASE (
+		 snprintf (buf+k, sz, "@%d.", n1);
+		 PRINT_STEP;
+		 sprint_uexpr (buf+k, sz, e->u.e.r);
+		 PRINT_STEP;
+		 );
+    }
+    break;
+
+  default:
+    fatal_error ("Unhandled case %d!\n", e->type);
+    break;
+  }
+  return b->i;
+}
+
+void print_dag_expr (FILE *fp, const Expr *e)
+{
+  char *buf;
+  int bufsz = 10240;
+  int n;
+  struct pHashtable *H;
+
+  H = phash_new (8);
+
+  fprintf (fp, "{{ ");
+  MALLOC (buf, char, bufsz);
+  while (1) {
+    buf[0] = '\0';
+    buf[bufsz-1] = '\0';
+    buf[bufsz-2] = '\0';
+    n = 0;
+    n = _print_dag_expr (H, &n, buf, bufsz, e);
+    if (buf[bufsz-2] == '\0') {
+      fprintf (fp, "%s @%d }}", buf, n);
+      FREE (buf);
+      phash_free (H);
+      return;
+    }
+    bufsz *= 2;
+    REALLOC (buf, char, bufsz);
+  }
+}

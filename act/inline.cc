@@ -36,20 +36,30 @@
 struct act_inline_table {
   int ex_func;		    /* expand functions recursively or not? */
   bool macro_mode;	    /* true for macros, false otherwise */
+  bool allow_dag;	    /* true for dag expressions, false otherwise */
   Scope *sc;
   struct Hashtable *state;
   act_inline_table *parent;
 };
 
 
-act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent, bool ismacro)
+act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent,
+				  bool ismacro, bool allow_dag)
 {
   act_inline_table *ret;
   NEW (ret, act_inline_table);
   ret->ex_func = 0;
   ret->sc = sc;
   ret->parent = parent;
-  ret->macro_mode = ismacro;
+
+  if (parent) {
+    ret->macro_mode = parent->macro_mode;
+    ret->allow_dag = parent->allow_dag;
+  }
+  else {
+    ret->macro_mode = ismacro;
+    ret->allow_dag = allow_dag;
+  }
 
   if (!ret->sc && ret->parent) {
     ret->sc = ret->parent->sc;
@@ -580,13 +590,13 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
 		  e->u.e.r->u.e.r->type == E_INT, "WHat?");
 
 	  ret->type = E_LSR;
-	  ret->u.e.l = expr_dup (r);
+	  ret->u.e.l = Hs->allow_dag ? r : expr_dup (r);
 	  ret->u.e.r = e->u.e.r->u.e.l;
 	  ret = _wrap_width (ret, e->u.e.r->u.e.r->u.ival.v - e->u.e.r->u.e.l->u.ival.v + 1);
 	}
 	else {
 	  ret->type = E_LSR;
-	  ret->u.e.l = expr_dup (r);
+	  ret->u.e.l = Hs->allow_dag ? r : expr_dup (r);
 	  ret->u.e.r = e->u.e.r->u.e.r;
 	  ret = _wrap_width (ret, 1);
 	}
@@ -847,8 +857,8 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
 	    update->u.e.l = cond[i];
 	  }
 	  else {
-	    update->u.e.l = expr_expand (cond[i], NULL, NULL,
-					 ACT_EXPR_EXFLAG_DUPONLY);
+	    update->u.e.l =
+	      T[i]->allow_dag ? cond[i] : expr_dup (cond[i]);
 	  }
 	  update->u.e.r = NULL;
 	}
@@ -907,7 +917,7 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
 
 	  if (i == nT-1) {
 	    if (vl.isValid() && !vl.isSimple() && vl.u.arr[idx]) {
-	      update->u.e.r = expr_dup (vl.u.arr[idx]);
+	      update->u.e.r = T[i]->allow_dag ? vl.u.arr[idx] : expr_dup (vl.u.arr[idx]);
 	    }
 	    else if (types[idx] == 0) {
 	      update->u.e.r = boolconst;

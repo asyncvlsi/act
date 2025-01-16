@@ -106,10 +106,17 @@ struct act_inline_value {
  * @param parent is the parent inline table
  * @param ismacro is set to true if this is used for macro expansion,
  * false otherwise
+ * @param allow_dag is set to true if expression dags are permitted, false
+ * otherwise. This disables cloning expressions.
+ *
+ * If parent is non-NULL, then the ismacro and allow_dag flags are
+ * inherited from the parent.
+ *
  * @return a new inline table
  */
 act_inline_table *act_inline_new (Scope *sc, act_inline_table *parent,
-				  bool ismacro = false);
+				  bool ismacro = false,
+				  bool allow_dag = false);
 
 /**
  * Release storage for a previously allocated inline table
