@@ -2176,7 +2176,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
 	    if (etmp->u.e.r) {
 	      NEW (tmp->u.e.r, Expr);
-	      tmp->type = E_LT;
+	      tmp->u.e.r->type = E_LT;
 	      tmp = tmp->u.e.r;
 	      tmp->u.e.r = NULL;
 	    }
