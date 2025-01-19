@@ -1,0 +1,13 @@
+defproc test()
+{
+  chan(int) x[4];
+  int y;
+  int z[10];
+
+  chp {
+     z[y] := 0;
+     x[y]!0
+  }
+}
+
+test t;

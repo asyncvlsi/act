@@ -340,7 +340,7 @@ ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
 
 static ActId *expand_var_chan (ActId *id, ActNamespace *ns, Scope *s)
 {
-  return expand_var_read (id, ns, s);
+  return expand_var_write (id, ns, s);
 }
 
 

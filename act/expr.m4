@@ -622,6 +622,13 @@ wint_or_bool_expr[Expr *]: expr
     if (!(tc & (T_INT|T_BOOL))) {
       $E("Expression must be of type int or bool");
     }
+    if (tc & T_ARRAYOF) {
+      $e("Expression cannot be of an array type!");
+      fprintf ($f, "\n   Expression: ``");
+      print_expr ($f, e);
+      fprintf ($f, "''\n");
+      exit (1);
+    }
     return e;
 }}
 ;
@@ -654,6 +661,13 @@ wint_expr[Expr *]: int_expr
     if (!(tc & T_INT)) {
       $E("Expression must be of type int");
     }
+    if (tc & T_ARRAYOF) {
+      $e("Expression cannot be of an array type!");
+      fprintf ($f, "\n   Expression: ``");
+      print_expr ($f, e);
+      fprintf ($f, "''\n");
+      exit (1);
+    }
     return e;
 }}
 ;
@@ -685,6 +699,13 @@ wpint_expr[Expr *]: int_expr
     if (!(tc & T_PARAM)) {
       $E("Expression must be of type pint");
     }
+    if (tc & T_ARRAYOF) {
+      $e("Expression cannot be of an array type!");
+      fprintf ($f, "\n   Expression: ``");
+      print_expr ($f, e);
+      fprintf ($f, "''\n");
+      exit (1);
+    }
     return e;
 }}
 ;
@@ -712,6 +733,13 @@ wbool_expr[Expr *]: bool_expr
     if (!(tc & T_BOOL)) {
       $E("Expression must be of type bool");
     }
+    if (tc & T_ARRAYOF) {
+      $e("Expression cannot be of an array type!");
+      fprintf ($f, "\n   Expression: ``");
+      print_expr ($f, e);
+      fprintf ($f, "''\n");
+      exit (1);
+    }
     return e;
 }}
 ;
@@ -737,6 +765,13 @@ wbool_allow_chan_expr[Expr *]: bool_expr
     }
     if (!(tc & T_BOOL)) {
       $E("Expression must be of type bool");
+    }
+    if (tc & T_ARRAYOF) {
+      $e("Expression cannot be of an array type!");
+      fprintf ($f, "\n   Expression: ``");
+      print_expr ($f, e);
+      fprintf ($f, "''\n");
+      exit (1);
     }
     return e;
 }}

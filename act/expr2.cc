@@ -1971,7 +1971,20 @@ static Expr *_expr_expand (int *width, Expr *e,
       ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
     }
     else {
-      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
+      ActId *tmp = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+      Expr *te = tmp->EvalCHP (ns, s, 0);
+      Assert (te->type == E_VAR, "Whaat? Probe turned into something else?");
+      if (tmp->isDynamicDeref()) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Dynamic channel array probes are unsupported.\n");
+	fprintf (stderr, "\tVariable: ");
+	tmp->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      FREE (ret);
+      ret = te;
+      ret->type = E_PROBE;
     }
     *width = 1;
     break;
