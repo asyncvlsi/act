@@ -2143,7 +2143,7 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
 {
   Assert (lhs && rhs, "NULL argument to type_check_assignable()");
 
-  if (!TypeFactory::isDataType (lhs) && !TypeFactory::isStructure (lhs) &&
+  if (!TypeFactory::isDataType (lhs) && !TypeFactory::isPureStruct (lhs) &&
       !TypeFactory::isPBoolType (lhs) && !TypeFactory::isPIntType (lhs)) {
     typecheck_err ("Assignable variable requires data types!");
     return 0;
@@ -2180,8 +2180,8 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
       typecheck_err ("Int/non-int assignment is not permitted");
       return 0;
     }
-    else if (TypeFactory::isStructure (lhs)) {
-      if (TypeFactory::isStructure (rhs)) {
+    else if (TypeFactory::isPureStruct (lhs)) {
+      if (TypeFactory::isPureStruct (rhs)) {
 	if (type_connectivity_check (lhs, rhs, 0)) {
 	  return 1;
 	}

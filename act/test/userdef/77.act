@@ -1,0 +1,13 @@
+deftype testme (int x; chan(int) y) { }
+
+
+defproc test()
+{
+  testme s, t;
+ 
+  chp {
+    s := t
+  }
+}
+
+test t;

@@ -1,0 +1,4 @@
+ERROR: File `77.act', line 9, col 7
+	Typechecking failed on CHP assignment
+  stmt: s := t
+	Assignable variable requires data types!
