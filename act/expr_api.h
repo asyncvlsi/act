@@ -178,6 +178,7 @@ int expr_getHash (int prev, unsigned long sz, Expr *e);
  */
 void expr_ex_free (Expr *);
 
+
 /**
  * Helper function for bit-width determination
  * @param etype is the expression type (E_AND, etc.)
@@ -246,6 +247,17 @@ Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s);
  * @param e is the expression
  */
 void print_dag_expr (FILE *fp, const Expr *e);
+
+/**
+ * Convert an expression into a dag. This can only be called on
+ * expanded expressions.
+ */
+Expr *expr_dag (Expr *e);
+
+/**
+ * Free a dag expression
+ */
+void expr_dag_free (Expr *);
 
 
 #endif /* __ACT_EXPR_API_H__ */
