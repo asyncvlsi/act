@@ -608,38 +608,25 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    NEW (ret->u.fn.r, Expr);
 	    ret->u.fn.r->type = w->type;
 	    ret->u.fn.r->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
-	    if (w->type == E_GT) {
-	      w = w->u.e.r;
-	      if (w) {
-		NEW (ret->u.fn.r->u.e.r, Expr);
-		tmp = ret->u.fn.r->u.e.r;
-	      }
-	      else {
-		ret->u.fn.r->u.e.r = NULL;
-		tmp = NULL;
-	      }
-	    }
-	    if (w) {
+	    ret->u.fn.r->u.e.r = NULL;
+	    // we've either copied the first argument or the
+	    // templates!
+	    w = w->u.e.r;
+	    tmp = ret->u.fn.r;
+	    while (w) {
 	      Assert (w->type == E_LT, "What?");
-	      tmp->type = w->type;
-	      while (w) {
-		tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
-		if (w->u.e.r) {
-		  NEW (tmp->u.e.r, Expr);
-		  tmp->u.e.r->type = E_LT;
-		  tmp = tmp->u.e.r;
-		}
-		else {
-		  tmp->u.e.r = NULL;
-		}
-		w = w->u.e.r;
-	      }
+	      NEW (tmp->u.e.r, Expr);
+	      tmp = tmp->u.e.r;
+	      tmp->u.e.r = NULL;
+	      tmp->type = E_LT;
+	      tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	      w = w->u.e.r;
 	    }
 	  }
 	  else {
 	    // this should not happen... but since this is predup this
 	    // could be before any checks are done
-	    ret->u.fn.r = w;
+	    ret->u.fn.r = NULL;
 	  }
 	}
 	else {
