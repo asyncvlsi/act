@@ -2910,6 +2910,7 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
 	  tmp->u.e.l = _expr_bw_adjust (H, TypeFactory::bitWidth (fn->getPortType (i)), args->u.e.l, s);
 	}
 	args = args->u.e.r;
+	i++;
       }
     }
     lw = _getbw (H, e);
