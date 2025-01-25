@@ -11,7 +11,7 @@ int<32> m[16];
 
 /* connections */
 chp {
-*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] bool((b>>0x2)=0x0 ? int(b=0x2) : 0x0) -> dout!m[a];din?m[a]]]
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
 }
 }
 
