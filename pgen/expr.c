@@ -216,6 +216,7 @@ int expr_parse_isany (LFILE *l)
 /*
   Helper functions for parser
 */
+static Expr *BQE (void);
 static Expr *BE (void);
 static Expr *I (void);
 static int int_real_only;
@@ -330,7 +331,7 @@ Expr *B (void)
   else {
     if (file_have (Tl, T[E_LPAR])) {
       paren_count++;
-      e = BE ();
+      e = BQE ();
       paren_count--;
       if (file_have (Tl, T[E_RPAR])) {
 	POP (Tl);
@@ -936,6 +937,42 @@ static Expr *I (void)
   return H();
 }
 
+static Expr *BQE (void)
+{
+  Expr *e, *f;
+
+
+  if (T[E_QUERY] == -1 || T[E_COLON] == -1)
+    return BE();
+  
+  PUSH (Tl);
+  if ((e = BE()) && file_have (Tl, T[E_QUERY])) {
+    f = newexpr ();
+    f->type = E_QUERY;
+    f->u.e.l = e;
+    e = f;
+    e->u.e.r = newexpr ();
+    e->u.e.r->type = E_COLON;
+    e->u.e.r->u.e.l = I();
+    if (!e->u.e.r->u.e.l) {
+      goto fail;
+    }
+    if (file_have (Tl, T[E_COLON])) {
+      e->u.e.r->u.e.r = I();
+      if (!e->u.e.r->u.e.r)
+	goto fail;
+      POP (Tl);
+      return e;
+    }
+  }
+ fail:
+  SET (Tl);
+  POP (Tl);
+  if (e) efree (e);
+  return BE();
+}
+
+
 
 /*------------------------------------------------------------------------
  *
@@ -954,7 +991,7 @@ Expr *expr_parse_bool (LFILE *l)
   INIT (E_LSR, ">>");
 
   Tl = l;
-  e = BE();
+  e = BQE();
 
   if (count) {
     file_deltoken (l, ">>");
