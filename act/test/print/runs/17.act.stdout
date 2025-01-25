@@ -13,7 +13,7 @@ bool c;
 
 /* connections */
 chp {
-*[true -> [#A&#B&a&(((int(b)+int(c)>>0x1)=0x0 ? int(int(b)+int(c),1)>0x1 : true)|#C)|#C&c -> b:=false]]
+*[true -> [#A&#B&a&(bool((int(b)+int(c)>>0x1)=0x0 ? int(int(int(b)+int(c),1)>0x1) : 0x1)|#C)|#C&c -> b:=false]]
 }
 }
 

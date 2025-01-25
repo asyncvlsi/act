@@ -9,7 +9,7 @@ int<32> x;
 
 /* connections */
 chp {
-x:=0x5;*[true -> [~a|#l&((l>>0x1)=0x0 ? int(l,1)<=0x0 : false) -> l?x;r!x]]
+x:=0x5;*[true -> [~a|#l&bool((l>>0x1)=0x0 ? int(int(l,1)<=0x0) : 0x0) -> l?x;r!x]]
 }
 }
 

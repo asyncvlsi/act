@@ -2640,6 +2640,17 @@ static Expr *_wrapint (Expr *e, int w)
   return ret;
 }
 
+static Expr *_wrapbool2int (Expr *e)
+{
+  Expr *ret;
+  NEW (ret, Expr);
+  ret->type = E_BUILTIN_INT;
+  ret->u.e.l = e;
+  ret->u.e.r = NULL;
+  return ret;
+}
+
+
 static Expr *_expr_bw_adjust (struct pHashtable *H,
 			      int needed_width, Expr *e, Scope *s);
 
@@ -2668,7 +2679,7 @@ static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
     ret->u.e.l->u.e.l->u.e.r = const_int_ex (lw);
     ret->u.e.l->u.e.l->u.e.l = _expr_bw_adjust (H, -1, r, s);
     
-    ret->u.e.r->u.e.r = const_expr_bool (boolone);
+    ret->u.e.r->u.e.r = const_int_ex (boolone);
     
     ret->u.e.r->u.e.l->u.e.l = _expr_bw_adjust (H, -1, l, s);
     ret->u.e.r->u.e.l->u.e.r = _expr_bw_adjust (H, lw, r, s);
@@ -2677,11 +2688,19 @@ static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
     ret->u.e.l->u.e.l->u.e.r = const_int_ex (rw);
     ret->u.e.l->u.e.l->u.e.l = _expr_bw_adjust (H, -1, l, s);
     
-    ret->u.e.r->u.e.r = const_expr_bool (booltwo);
+    ret->u.e.r->u.e.r = const_int_ex (booltwo);
     
     ret->u.e.r->u.e.l->u.e.l = _expr_bw_adjust (H, rw, l, s);
     ret->u.e.r->u.e.l->u.e.r = _expr_bw_adjust (H, -1, r, s);
   }
+
+  ret->u.e.r->u.e.l = _wrapbool2int (ret->u.e.r->u.e.l);
+  Expr *tmp;
+  NEW (tmp, Expr);
+  *tmp = *ret;
+  ret->type = E_BUILTIN_BOOL;
+  ret->u.e.l = tmp;
+  ret->u.e.r = NULL;
 }
 
 static Expr *_expr_bw_adjust (struct pHashtable *H,
