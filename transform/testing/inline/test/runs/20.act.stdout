@@ -14,7 +14,7 @@ int<1> fret_0;
 
 /* connections */
 chp {
-farg_0:=0x1;floc_0:=0x0;*[(farg_0>>0x1)=0x0 ? farg_0>0x0 : true -> floc_0:=floc_0+0x1;farg_0:=farg_0-0x1];fret_0:=floc_0+0x2;fuse_0:=fret_0;farg_0:=fuse_0;floc_0:=0x0;*[(farg_0>>0x1)=0x0 ? farg_0>0x0 : true -> floc_0:=floc_0+0x1;farg_0:=farg_0-0x1];fret_0:=floc_0+0x2;fuse_1:=fret_0;ff:=fuse_1
+farg_0:=0x1;floc_0:=0x0;*[farg_0>0x0 -> floc_0:=floc_0+0x1;farg_0:=farg_0-0x1];fret_0:=floc_0+0x2;fuse_0:=fret_0;farg_0:=fuse_0;floc_0:=0x0;*[farg_0>0x0 -> floc_0:=floc_0+0x1;farg_0:=farg_0-0x1];fret_0:=floc_0+0x2;fuse_1:=fret_0;ff:=fuse_1
 }
 }
 
@@ -26,7 +26,7 @@ int<1> f;
 
 /* connections */
 chp {
-f:=0x0;*[(arg>>0x1)=0x0 ? arg>0x0 : true -> f:=f+0x1;arg:=arg-0x1];self:=f+0x2
+f:=0x0;*[arg>0x0 -> f:=f+0x1;arg:=arg-0x1];self:=f+0x2
 }
 }
 

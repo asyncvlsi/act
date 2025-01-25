@@ -2650,6 +2650,13 @@ static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
 			       Scope *s)
 {
   int type = ret->type;
+
+  ret->u.e.l = _expr_bw_adjust (H, -1, l, s);
+  ret->u.e.r = _expr_bw_adjust (H, -1, r, s);
+
+  return;
+
+  // XXX: x ? b : c  is only for integer expressions at the moment
   
   ret->type = E_QUERY;
   NEW (ret->u.e.l, Expr);
