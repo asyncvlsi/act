@@ -1,0 +1,40 @@
+pint XLEN = 32;
+
+deftype mseccfg_csr (int<1> rlb, mmwp, mml)
+{
+  methods
+  {
+    macro read (int<XLEN> v) { v := {int(0,XLEN-3), rlb, mmwp, mml} }
+    macro read_h (int<XLEN> v) { v := 0 }
+    macro write (int<XLEN> v) { rlb := v{2}, mmwp := v{1}, mml := v{0} }
+    macro write_h (int<XLEN> v) { v := 0 }
+    macro read_rlb (int<1> v) { v := rlb }
+    macro write_rlb (int<1> v) { rlb := v }
+    macro read_mmwp (int<1> v) { v := mmwp }
+    macro write_mmwp (int<1> v) { mmwp := v }
+    macro read_mml (int<1> v) { v := mml }
+    macro write_mml (int<1> v) { mml := v }
+  }
+}
+
+deftype csr (mseccfg_csr mseccfg)
+{}
+
+function WriteCSRmseccfg (mseccfg_csr mseccfg; int<1> l; int<3> sys_op) : mseccfg_csr
+{
+  chp {
+    self.rlb := ~(mseccfg.rlb = 0 & bool(l)) | mseccfg.rlb = 1 ? sys_op{2} : mseccfg.rlb,
+    self.mmwp := mseccfg.mmwp = 0 ? sys_op{1} : 1,
+    self.mml := mseccfg.mml = 0 ? sys_op{0} : 1
+  }
+}
+
+defproc test ()
+{
+
+  csr csr;
+
+  chp {
+    csr.mseccfg := WriteCSRmseccfg(csr.mseccfg, 0, 0)
+  }
+}

@@ -1,0 +1,91 @@
+function WriteCSRmseccfg (mseccfg_csr mseccfg; int<1> l; int<3> sys_op) : mseccfg_csr;
+deftype csr (mseccfg_csr mseccfg);
+defproc test ();
+deftype mseccfg_csr (int<1> rlb; int<1> mmwp; int<1> mml);
+
+function WriteCSRmseccfg (mseccfg_csr mseccfg; int<1> l; int<3> sys_op) : mseccfg_csr
+{
+
+/* instances */
+
+/* connections */
+chp {
+self.rlb:=~(mseccfg.rlb=0x0&bool(l))|mseccfg.rlb=0x1 ? sys_op{0x2} : mseccfg.rlb,self.mmwp:=mseccfg.mmwp=0x0 ? sys_op{0x1} : 0x1,self.mml:=mseccfg.mml=0x0 ? sys_op{0x0} : 0x1
+}
+}
+
+deftype csr (mseccfg_csr mseccfg)
+{
+
+/* instances */
+
+/* connections */
+}
+
+defproc test ()
+{
+
+/* instances */
+mseccfg_csr _us_0;
+csr csr;
+
+/* connections */
+chp {
+_us_0.rlb:=int(~(csr.mseccfg.rlb=0x0&bool(int(0x0,1)))|csr.mseccfg.rlb=0x1 ? int(int(0x0,3)>>0x2,1) : csr.mseccfg.rlb,1);_us_0.mmwp:=int(csr.mseccfg.mmwp=0x0 ? int(int(0x0,3)>>0x1,1) : 0x1,1);_us_0.mml:=int(csr.mseccfg.mml=0x0 ? int(int(0x0,3)>>0x0,1) : 0x1,1);csr.mseccfg.rlb:=_us_0.rlb;csr.mseccfg.mmwp:=_us_0.mmwp;csr.mseccfg.mml:=_us_0.mml
+}
+}
+
+deftype mseccfg_csr (int<1> rlb; int<1> mmwp; int<1> mml)
+{
+
+/* instances */
+
+/* connections */
+  methods {
+  macro read (int<32> v) {
+   v:= {0x0,rlb,mmwp,mml}
+  }
+
+  macro read_h (int<32> v) {
+   v:=0x0
+  }
+
+  macro write (int<32> v) {
+   rlb:=v{0x2},mmwp:=v{0x1},mml:=v{0x0}
+  }
+
+  macro write_h (int<32> v) {
+   v:=0x0
+  }
+
+  macro read_rlb (int<1> v) {
+   v:=rlb
+  }
+
+  macro write_rlb (int<1> v) {
+   rlb:=v
+  }
+
+  macro read_mmwp (int<1> v) {
+   v:=mmwp
+  }
+
+  macro write_mmwp (int<1> v) {
+   mmwp:=v
+  }
+
+  macro read_mml (int<1> v) {
+   v:=mml
+  }
+
+  macro write_mml (int<1> v) {
+   mml:=v
+  }
+
+ }
+}
+
+
+/* instances */
+
+/* connections */

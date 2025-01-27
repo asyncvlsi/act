@@ -1,0 +1,231 @@
+namespace math {
+  export namespace fxp {
+
+    export
+    function conv_to_fxp(pint A, B; preal v) : pint
+    {
+      chp {
+        [ v >= 0.0 -> self := int(v * (1 << B) + 0.5)
+       [] else -> self := int(-v * (1 << B) + 0.5);
+              self := (1 << (A+B)) - self
+        ]
+      }
+    }
+
+    export
+    template<pint A,B>
+    function positive(int<A+B> x) : bool
+    {
+      chp {
+        self := (x{A+B-1} = 0) & (x != 0)
+      }
+    }
+
+    export
+    template<pint A,B>
+    function negative(int<A+B> x) : bool
+    {
+      chp {
+        self := (x{A+B-1} = 1)
+      }
+    }
+
+    export
+    template<pint A,B>
+    function le(int<A+B> x, y) : bool
+    {
+      chp {
+	[ x{A+B-1} = 1 & y{A+B-1} = 0 -> self := true
+       [] y{A+B-1} = 1 & x{A+B-1} = 0 -> self := false
+       [] else -> self := (x <= y)
+        ]
+      }
+    }
+
+    export
+    template<pint A,B>
+    function add (int<A+B> x, y) : int<A+B>
+    {
+      chp {
+        self := x + y
+      }
+    }
+
+    export
+    template<pint A,B>
+    function sub (int<A+B> x, y) : int<A+B>
+    {
+      chp {
+        self := x - y
+      }
+    }
+
+    export
+    template<pint A,B>
+    function mults (int<A+B> x, y) : int<A+B>
+    {
+      bool sx, sy;
+      chp {
+	[ x{A+B-1} = 1 -> sx+; x := ~x + 1 [] else -> sx- ];
+	[ y{A+B-1} = 1 -> sy+; y := ~y + 1 [] else -> sy- ];
+        self := (x * y) >> B;
+	[ sx != sy -> self := ~self + 1 [] else -> skip ]
+      }
+    }
+
+    export
+    template<pint A,B>
+    function multu (int<A+B> x, y) : int<A+B>
+    {
+      chp {
+        self := (x * y) >> B
+      }
+    }
+	   
+    export
+    template<pint A,B>
+    function divs (int<A+B> x, y) : int<A+B>
+    {
+      bool sx, sy;
+      chp {
+	[ x{A+B-1} = 1 -> sx+; x := ~x + 1 [] else -> sx- ];
+	[ y{A+B-1} = 1 -> sy+; y := ~y + 1 [] else -> sy- ];
+        self := (x << B) / y;
+	[ sx != sy -> self := ~self + 1 [] else -> skip ]
+      }
+    }
+	   
+    export
+    template<pint A,B>
+    function divu (int<A+B> x, y) : int<A+B>
+    {
+      chp {
+        self := (x << B) / y
+      }
+    }
+
+    export
+    template<pint A,B>
+    function uminus (int<A+B> x) : int<A+B>
+    {
+      chp {
+        self := ~x + 1
+      }
+    }
+
+  }
+
+  export
+  template <pint A, B>
+  deftype fixpoint(int<A+B> x)
+  {
+    methods {
+      function plus(fixpoint<A,B> rhs) : fixpoint<A,B>
+      {
+	chp {
+	  self.x := fxp::add<A,B>(x,rhs.x)
+	}
+      }
+      function minus(fixpoint<A,B> rhs) : fixpoint<A,B>
+      {
+	chp {
+	   self.x := fxp::sub<A,B>(x,rhs.x)
+	}
+      }
+      function mult(fixpoint<A,B> rhs) : fixpoint<A,B>
+      {
+	chp {
+	  self.x := fxp::mults<A,B>(x,rhs.x)
+	}
+      }
+      function div(fixpoint<A,B> rhs) : fixpoint<A,B>
+      {
+	chp {
+	  self.x := fxp::divs<A,B>(x,rhs.x)
+	}
+      }
+      function uminus() : fixpoint<A,B>
+      {
+	chp {
+	  self.x := fxp::uminus<A,B>(x)
+	}
+      }
+      function le(fixpoint<A,B> rhs) : bool
+      {
+	chp {
+	  self := fxp::le<A,B>(x, rhs.x)
+	}
+      }
+      function lt(fixpoint<A,B> rhs) : bool
+      {
+	chp {
+	  self := (x != rhs.x) & fxp::le<A,B>(x, rhs.x)
+	}
+      }
+      function ne(fixpoint<A,B> rhs) : bool
+      {
+	chp {
+	  self := (x != rhs.x)
+	}
+      }
+      function ge(fixpoint<A,B> rhs) : bool
+      {
+	chp {
+	  self := fxp::le<A,B>(rhs.x, x)
+	}
+      }
+      function gt(fixpoint<A,B> rhs) : bool
+      {
+	chp {
+	  self := (x != rhs.x) & fxp::le<A,B>(rhs.x, x)
+	}
+      }
+
+      macro set(int<A+B> v)
+      {
+        x := v
+      }
+
+      function const(preal v) : pint
+      {
+	chp {
+	  self := fxp::conv_to_fxp(A,B,v)
+	}
+      }
+
+      macro log()
+      {
+	log_st("");
+	[ x{A+B-1} = 1 -> log_p("-", int(~x+1,A+B)>>B)
+	[] else -> log_p("+", x >> B)
+	];
+	log_p (".{", (x{A+B-1} = 1 ? int(~x+1,A+B) : x) & int((1 << B)-1,B), "/", (1 << B), "}");
+	log_nl("")
+      }
+
+      macro log_p()
+      {
+	[ x{A+B-1} = 1 -> log_p("-", int(~x+1,A+B)>>B)
+	[] else -> log_p("+", x >> B)
+	];
+	log_p (".{", (x{A+B-1} = 1 ? int(~x+1,A+B) : x) & int((1 << B)-1,B), "/", (1 << B), "}")
+      }
+    }
+  }
+}
+
+
+template<pint W>
+deftype sint <: math::fixpoint<W,0> () { }
+
+defproc test()
+{
+   sint<4> a, b;
+//   math::fixpoint<4,0> a, b;
+   chp {
+     a.set(a.const(-4.0));
+     b.set(b.const(2.0));
+     a := a + b;
+     a.log()
+   }
+}

@@ -87,6 +87,7 @@ void UserMacro::Print (FILE *fp)
     templ = Parent()->getNumParams();
     meta = 1;
   }
+
   for (int i=0; i < nports - templ; i++) {
     port_t[i]->Print (fp);
     fprintf (fp, " %s", port_n[i]);
@@ -905,15 +906,36 @@ UserMacro *UserMacro::Clone (UserDef *u)
   
   UserMacro *ret = new UserMacro (u, _nm);
   ret->rettype = rettype;
-  ret->nports = nports;
-  if (nports > 0) {
-    MALLOC (ret->port_t, InstType *, nports);
-    MALLOC (ret->port_n, const char *, nports);
+
+  if (rettype && TypeFactory::isParamType (rettype) && nports > 0) {
+    ret->nports = nports - Parent()->getNumParams() + u->getNumParams();
+  }
+  else {
+    ret->nports = nports;
+  }
+  if (ret->nports > 0) {
+    MALLOC (ret->port_t, InstType *, ret->nports);
+    MALLOC (ret->port_n, const char *, ret->nports);
+  }
+
+  if (rettype && TypeFactory::isParamType (rettype) && ret->nports > 0) {
+    int i;
+    for (i=0; i < nports - Parent()->getNumParams(); i++) {
+      ret->port_t[i] = port_t[i];
+      ret->port_n[i] = string_cache (port_n[i]);
+    }
+    for (int j=0; j < u->getNumParams(); j++) {
+      ret->port_t[i+j] = u->getPortType (-(j+1));
+      ret->port_n[i+j] = string_cache (u->getPortName (-(j+1)));
+    }
+  }
+  else {
     for (int i=0; i < nports; i++) {
       ret->port_t[i] = port_t[i];
       ret->port_n[i] = string_cache (port_n[i]);
     }
   }
+
   ret->c = c; // do we need to dup this?!
   if (_b) {
     ret->_b = _b->Clone ();

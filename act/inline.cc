@@ -192,7 +192,7 @@ _lookup_binding (act_inline_table *Hs,
 	    }
 	    Assert (bval.getVal()->type == E_VAR, "Hmm");
 	    xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
-	    xnew->Append (fields[i+off]->Clone());
+	    xnew->Tail()->Append (fields[i+off]->Clone());
 	    NEW (bind_val, Expr);
 	    bind_val->type = E_VAR;
 	    bind_val->u.e.r = NULL;
