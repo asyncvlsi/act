@@ -113,7 +113,7 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
     break;
     
   case E_BUILTIN_BOOL:
-    ret->u.e.l = REC_CALL (e->u.e.r);
+    ret->u.e.l = REC_CALL (e->u.e.l);
     ret->u.e.r = NULL;
     break;
     
