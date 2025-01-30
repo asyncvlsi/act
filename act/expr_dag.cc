@@ -24,6 +24,7 @@
 #include <act/act_id.h>
 #include <common/hash.h>
 #include <common/misc.h>
+#include <common/int.h>
 
 /*------------------------------------------------------------------------
  *
@@ -246,6 +247,43 @@ static int _exprhashfn (int sz,  void *key)
       e = e->u.e.r;
     }
     break;
+
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_DIV:
+  case E_MOD:
+  case E_GT:
+  case E_GE:
+  case E_LE:
+  case E_LT:
+  case E_EQ:
+  case E_NE:
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+  case E_QUERY:
+  case E_COLON:
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    res = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
+				  sizeof (Expr *), res, 1);
+    res = hash_function_continue (sz, (const unsigned char *) &e->u.e.r,
+				  sizeof (Expr *), res, 1);
+    break;
+
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
     
   default:
     Assert (0, "unexpected expr!");
@@ -292,6 +330,24 @@ static int _exprmatchfn (void *key1, void *key2)
       return 0;
     }
     else {
+      if (e1->type == E_TRUE || e1->type == E_FALSE ||
+	  e1->type == E_SELF || e1->type == E_SELF_ACK) {
+	return 1;
+      }
+      else if (e1->type == E_INT) {
+	if (e1->u.ival.v != e2->u.ival.v) return 0;
+	if (e1->u.ival.v_extra == e2->u.ival.v_extra) {
+	  return 1;
+	}
+	else if (e1->u.ival.v_extra && e2->u.ival.v_extra) {
+	  if (*((BigInt *)e1->u.ival.v_extra) ==
+	      *((BigInt *)e2->u.ival.v_extra)) {
+	    return 1;
+	  }
+	  return 0;
+	}
+	return 0;
+      }
       if (e1->u.e.l == e2->u.e.l && e1->u.e.r == e2->u.e.r) return 1;
       return 0;
     }
