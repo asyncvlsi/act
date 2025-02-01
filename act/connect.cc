@@ -638,6 +638,12 @@ static void mk_raw_skip_connection (UserDef *ux,
       _merge_subtrees (ux, c1->primary(), c2p);
       delete c2;
     }
+    else {
+      // c1 primary matches c2p since we've fused them;
+      // now we need to walk through c1's subtrees and find those
+      // connections and move them to c2p's subtree!
+      _merge_subtrees (ux, c2p, c1);
+    }
 
 #ifdef DEBUG_SKIP_CONN
     printf ("[raw-skip/3a] return value...\n");
@@ -1083,7 +1089,7 @@ void act_mk_connection (UserDef *ux, ActId *id1, act_connection *c1,
   int do_swap = 0;
 
 #ifdef DEBUG_CONNECTIONS
-  printf ("before-connect: ");
+  printf ("before-connect [%s]: ", ux->getName());
   print_id (c1);
   printf (" <-> ");
   print_id (c2);
