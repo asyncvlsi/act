@@ -1,0 +1,8 @@
+pint N = 4;
+
+defproc test()
+{
+  N = 1;
+}
+
+test t;

@@ -181,6 +181,11 @@ class Scope {
   ValueIdx *FullLookupVal (const char *s);
 
   /**
+   * Like FullLookupVal(), but also returns the scope
+   */
+  ValueIdx *FullLookupValSc (const char *s, Scope **sc);
+
+  /**
    *  Add a new identifier to the scope.
    *
    *  @param s is a string corresponding to the identifier being added
@@ -407,6 +412,14 @@ class Scope {
    */
   void BindParam (ActId *id, AExprstep *aes, int idx = -1);
 
+
+  /**
+   * Same as BindParam, but permit the id to be in a parent scope.
+   */
+  void BindParamFull (ActId *id, AExprstep *aes, int idx = -1);
+  void BindParamFull (ActId *id, InstType *tt);
+  void BindParamFull (ActId *id, AExpr *ae);
+  
   /**
    * Create instances given the body
    * @param b is the body to be processed.

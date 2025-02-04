@@ -102,6 +102,25 @@ ValueIdx *Scope::FullLookupVal (const char *s)
   }
 }
 
+ValueIdx *Scope::FullLookupValSc (const char *s, Scope **sc)
+{
+  ValueIdx *vx;
+
+  vx = LookupVal (s);
+  if (vx) {
+    *sc = this;
+    return vx;
+  }
+  if (up) {
+    return up->FullLookupValSc (s, sc);
+  }
+  else {
+    *sc = NULL;
+    return NULL;
+  }
+}
+
+
 int Scope::isGlobal (const char *s)
 {
   hash_bucket_t *b;
@@ -881,6 +900,74 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
     Assert (0, "Should not be here");
   }
 }
+
+
+void Scope::BindParamFull (ActId *id, AExprstep *aes, int idx)
+{
+  if (id->Rest() != NULL) {
+    if (id->isNamespace()) {
+      Scope *sc = id->getNamespace()->CurScope();
+      sc->BindParamFull (id->Rest(), aes, idx);
+      return;
+    }
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+  Scope *nsc;
+  ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
+  Assert (vx, "should have checked this before");
+
+  nsc->BindParam (id, aes, idx);
+}
+
+void Scope::BindParamFull (ActId *id, AExpr *ae)
+{
+  if (id->Rest() != NULL) {
+    if (id->isNamespace()) {
+      Scope *sc = id->getNamespace()->CurScope();
+      sc->BindParamFull (id->Rest(), ae);
+      return;
+    }
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+  Scope *nsc;
+  ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
+  Assert (vx, "should have checked this before");
+
+  nsc->BindParam (id, ae);
+}
+
+void Scope::BindParamFull (ActId *id, InstType *tt)
+{
+  if (id->Rest() != NULL) {
+    if (id->isNamespace()) {
+      Scope *sc = id->getNamespace()->CurScope();
+      sc->BindParamFull (id->Rest(), tt);
+      return;
+    }
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+    fprintf (stderr," ID: ");
+    id->Print (stderr);
+    fprintf (stderr, "\n");
+    exit (1);
+  }
+  Scope *nsc;
+  ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
+  Assert (vx, "should have checked this before");
+
+  nsc->BindParam (id, tt);
+}
+
 
 /*
   ae has to be expanded

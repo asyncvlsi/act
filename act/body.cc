@@ -698,7 +698,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	/* ptype assignment */
 	AExprstep *astep = arhs->stepper();
 
-	s->BindParam ((ActId *)e->u.e.l, astep->getPType());
+	s->BindParamFull ((ActId *)e->u.e.l, astep->getPType());
 	
 	astep->step();
 	Assert (astep->isend(), "What?");
@@ -706,7 +706,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       }
       else {
 	/* any other parameter assignment */
-	s->BindParam ((ActId *)e->u.e.l, arhs);
+	s->BindParamFull ((ActId *)e->u.e.l, arhs);
       }
     }
     else {
@@ -858,7 +858,7 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
       if (TypeFactory::isPTypeType (tlhs->BaseType())) {
 	/* ptype assignment */
 	AExprstep *astep = arhs->stepper();
-	s->BindParam (alhs->toid(), astep->getPType());
+	s->BindParamFull (alhs->toid(), astep->getPType());
 	astep->step();
 	Assert (astep->isend(), "What?");
 	delete astep;
@@ -874,10 +874,10 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
 	  aes->getID (&lhsid, &lhsidx, NULL);
 	  if (lhsidx == -1) {
 	    /* it's a pure ID */
-	    s->BindParam (lhsid, bes);
+	    s->BindParamFull (lhsid, bes);
 	  }
 	  else {
-	    s->BindParam (lhsid, bes, lhsidx);
+	    s->BindParamFull (lhsid, bes, lhsidx);
 	  }
 	  aes->step();
 	  bes->step();

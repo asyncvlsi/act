@@ -1,0 +1,5 @@
+In expanding test (9.act:3)
+In expanding ::<Global>
+Error on or near line number 5.
+ Id: N
+FATAL: Setting immutable parameter that has already been set
