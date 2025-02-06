@@ -1,0 +1,23 @@
+deftype struct (int<4> a, b) { }
+
+defproc sink(chan?(struct) X)
+{
+  struct x;
+  chp {
+    *[ X?x; log ("got ", x) ]
+  }
+}
+
+defproc test()
+{
+  struct s;
+  chan(struct) C;
+  
+  sink snk(C);
+
+  chp {
+      s.a := 1;
+      s.b := 2;
+      C!s
+  }
+}

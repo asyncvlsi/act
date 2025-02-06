@@ -818,6 +818,13 @@ chp_log_item[act_func_arguments_t *]: w_expr
       fprintf ($f, "\n");
       exit (1);
     }
+    if (TypeFactory::isStructure (it)) {
+      $e("Can't display a structure; please select a member.\n");
+      fprintf ($f, "Expression: ");
+      print_uexpr ($f, $1);
+      fprintf ($f, "\n");
+      exit (1);
+    }
     delete it;
     return arg;
 }}

@@ -1,0 +1,3 @@
+ERROR: File `135.act', line 7, col 27
+	Can't display a structure; please select a member.
+Expression: x
