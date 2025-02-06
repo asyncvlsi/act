@@ -1014,14 +1014,15 @@ static void _clone_sz_dir (act_sizing_directive *tgt,
 			   ActNamespace *newns)
 {
   *tgt = *src;
-  if (tgt->id) { // could be NULL prior to expansion
+
+  if (!tgt->loop_id) {
     tgt->id = tgt->id->Clone (orig, newns);
+    _update_expr (&tgt->eup, orig, newns);
+    _update_expr (&tgt->edn, orig, newns);
+    tgt->upfolds = expr_update (expr_predup (tgt->upfolds), orig, newns);
+    tgt->dnfolds = expr_update (expr_predup (tgt->dnfolds), orig, newns);
   }
-  _update_expr (&tgt->eup, orig, newns);
-  _update_expr (&tgt->edn, orig, newns);
-  tgt->upfolds = expr_update (expr_predup (tgt->upfolds), orig, newns);
-  tgt->dnfolds = expr_update (expr_predup (tgt->dnfolds), orig, newns);
-  if (tgt->loop_id) {
+  else {
     tgt->lo = expr_update (expr_predup (tgt->lo), orig, newns);
     tgt->hi = expr_update (expr_predup (tgt->hi), orig, newns);
     A_INIT (tgt->d);
