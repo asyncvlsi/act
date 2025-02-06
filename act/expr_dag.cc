@@ -144,6 +144,7 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
 
   case E_CONCAT:
     {
+      Expr *e_save = e;
       Expr *tmp = ret;
       while (e) {
 	tmp->u.e.l = REC_CALL (e->u.e.l);
@@ -156,6 +157,7 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
 	}
 	e = e->u.e.r;
       }
+      e = e_save;
     }
     break;
 
