@@ -109,7 +109,7 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
   case E_BUILTIN_INT:
     ret->u.e.l = REC_CALL (e->u.e.l);
     // constants, so unique already and hashed
-    ret->u.e.r = expr_dup (e->u.e.r);
+    ret->u.e.r = e->u.e.r;
     break;
     
   case E_BUILTIN_BOOL:
