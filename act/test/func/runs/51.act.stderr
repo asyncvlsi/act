@@ -1,0 +1,2 @@
+ERROR: File `51.act', line 11, col 20
+	Recursive calls in function methods is unsupported: `double' in namespace `'

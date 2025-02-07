@@ -661,45 +661,86 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	ns = tmp;
 	prev = prev + i + 2;
       }
-      UserDef *u = ns->findType (prev);
-      if (!u) {
+
+      // now look for function name "prev"
+      // check if this is a structure local function... this can
+      // happen if this is a function call, we are in a structure, and
+      // defining a user macro
+      int is_nested_macro = 0;
+      if (cookie->um && cookie->u_d && prev == e->u.fn.s) {
+	if (TypeFactory::isPureStruct (cookie->u_d)) {
+	  // user macro call
+	  // if this function call is in fact a usermacro call, then
+	  // we need to set the ID field for the user macro to NULL (!)
+	  // so now user macros can have NULL ids, in which case the type
+	  // is taken from the current id type (inherited from parent
+	  // call).
+	  UserMacro *nest = cookie->u_d->getMacro (prev);
+	  if (nest && nest->getRetType()) {
+	    if (nest == cookie->um) {
+	      struct act_position p;
+	      p.l = cookie->line;
+	      p.c = cookie->column;
+	      p.f = cookie->file;
+	      act_parse_err (&p, "Recursive calls in function methods is unsupported: `%s' in namespace `%s'", prev, ns->Name());
+	    }
+	    is_nested_macro = 1;
+	    ret->type = E_USERMACRO;
+	    ret->u.fn.s = (char *) nest;
+	    Expr *tmp;
+	    NEW (tmp, Expr);
+	    tmp->u.e.l = NULL; // NULL-variable
+	    tmp->u.e.r = e->u.fn.r;
+	    e->u.fn.r = tmp;
+	  }
+	}
+      }
+
+      UserDef *u;
+      if (!is_nested_macro) {
+	u = ns->findType (prev);
+	if (!u) {
 	  struct act_position p;
 	  p.l = cookie->line;
 	  p.c = cookie->column;
 	  p.f = cookie->file;
 	  act_parse_err (&p, "Could not find `%s' in namespace `%s'", prev,
 			 ns->Name());
-      }
-      if (TypeFactory::isUserEnum (u)) {
-	ret->u.fn.s = (char *) u;
-	ret->u.fn.r = e->u.fn.r;
-	// ... and we are done
-	return ret;
-      } else if (!TypeFactory::isFuncType (u)) {
-	struct act_position p;
-	p.l = cookie->line;
-	p.c = cookie->column;
-	p.f = cookie->file;
-	if (TypeFactory::isPureStruct (u)) {
-	  if (!e->u.fn.r || !_single_real_arg (e->u.fn.r)) {
-	    act_parse_err (&p, "`%s': built-in conversion from int to pure structure requires exactly one argument!", e->u.fn.s);
-	  }
-	  UserMacro *um;
-	  um = u->getMacro (u->getName());
-	  if (!um) {
-	    um = u->newMacro (u->getName());
-	    um->mkBuiltin ();
-	    um->setRetType (new InstType (cookie->scope, u, 0));
-	  }
-	  ret->type = E_USERMACRO;
-	  ret->u.fn.s = (char *) um;
 	}
-	else {
-	  act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
+	if (TypeFactory::isUserEnum (u)) {
+	  ret->u.fn.s = (char *) u;
+	  ret->u.fn.r = e->u.fn.r;
+	  // ... and we are done
+	  return ret;
+	} else if (!TypeFactory::isFuncType (u)) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  if (TypeFactory::isPureStruct (u)) {
+	    if (!e->u.fn.r || !_single_real_arg (e->u.fn.r)) {
+	      act_parse_err (&p, "`%s': built-in conversion from int to pure structure requires exactly one argument!", e->u.fn.s);
+	    }
+	    UserMacro *um;
+	    um = u->getMacro (u->getName());
+	    if (!um) {
+	      um = u->newMacro (u->getName());
+	      um->mkBuiltin ();
+	      um->setRetType (new InstType (cookie->scope, u, 0));
+	    }
+	    ret->type = E_USERMACRO;
+	    ret->u.fn.s = (char *) um;
+	  }
+	  else {
+	    act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
+	  }
+	}
+	if (ret->type != E_USERMACRO) {
+	  ret->u.fn.s = (char *) u;
 	}
       }
-      if (ret->type != E_USERMACRO) {
-	ret->u.fn.s = (char *) u;
+      else {
+	u = cookie->u_d;
       }
       int is_templ;
 

@@ -560,6 +560,8 @@ static Expr *_expr_const_canonical (Expr *e, unsigned int flags)
   return e;
 }
 
+static list_t *_idstack = NULL;
+
 static Expr *_expr_expand (int *width, Expr *e,
 			   ActNamespace *ns, Scope *s, unsigned int flags)
 {
@@ -569,6 +571,7 @@ static Expr *_expr_expand (int *width, Expr *e,
   int pc;
   int lw, rw;
   Expr *e_orig = NULL;
+  int stack_op = 0;
   
   if (!e) return NULL;
 
@@ -754,13 +757,61 @@ static Expr *_expr_expand (int *width, Expr *e,
       /* macro invocation: <id>.macro(...) */
       InstType *id_it;
       lexp = _expr_expand (&lw, e->u.fn.r->u.e.l, ns, s, flags);
-      id_it = act_expr_insttype (s, lexp, NULL, 2);
+      if (!lexp) {
+	Assert (_idstack && !stack_isempty (_idstack), "What?");
+	id_it = (InstType *) stack_peek (_idstack);
+      }
+      else {
+	id_it = act_expr_insttype (s, lexp, NULL, 2);
+      }
       Assert (id_it, "Macro error!");
       UserDef *id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
       Assert (id_ux, "What?");
       um = id_ux->getMacro (um->getName());
+      if (!_idstack) {
+	_idstack = list_new ();
+      }
+      stack_push (_idstack, id_it);
+      stack_op = 1;
       Assert (um, "Expanded macro?");
       Assert (um->getFunction(), "What?");
+
+      if (!lexp && TypeFactory::isParamType (um->getRetType())) {
+	if (id_ux->getNumParams() > 0) {
+	  /* Add them as arguments!
+	     Note that for other cases, these arguments are added by
+	     the wrap call, since they are id.<param>. Here the ID is
+	     missing due to the nesting calls, so we can directly
+	     extract the parameters from the template arguments.
+	  */
+	  Expr *synth_args, *prev;
+	  prev = NULL;
+	  for (int i=0; i < id_ux->getNumParams(); i++) {
+	    ActId *tmpid = new ActId (id_ux->getPortName (-(i+1)));
+	    Expr *te = tmpid->Eval (ns, id_ux->CurScope());
+	    if (te->type == E_ARRAY) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Array arguments to functions are not currently supported.");
+	    }
+	    Assert (expr_is_a_const (te),
+		    "Unexpected error; expression must be a constant!");
+	    if (!prev) {
+	      NEW (synth_args, Expr);
+	      prev = synth_args;
+	    }
+	    else {
+	      NEW (prev->u.e.r, Expr);
+	      prev = prev->u.e.r;
+	    }
+	    prev->u.e.r = NULL;
+	    prev->u.e.l = te;
+	    prev->type = E_LT;
+	  }
+	  Assert (prev, "Hmm");
+	  prev->u.e.r = e->u.fn.r->u.e.r;
+	  e->u.fn.r->u.e.r = synth_args;
+	}
+      }
     }
 
     e_orig = e;
@@ -2190,6 +2241,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	 allocated. */
       FREE (e);
       e = e_orig;
+    }
+    if (stack_op) {
+      stack_pop (_idstack);
     }
     break;
 
