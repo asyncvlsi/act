@@ -84,6 +84,8 @@ extern "C" void *act_parse_a_extern_lang (LFILE *l)
     int braces = 1;
     int start = file_addtoken (l,  "{");
     int end = file_addtoken (l,  "}");
+
+    file_mustbe (l, start);
     while (!file_eof (l) && braces > 0) {
       if (file_sym (l) == start) {
 	braces++;
@@ -105,6 +107,7 @@ extern "C" void *act_parse_a_extern_lang (LFILE *l)
     }
     else {
       struct act_extern_language_header *x;
+      file_mustbe (l, end);
       NEW (x, struct act_extern_language_header);
       x->name = Strdup (val);
       return x;

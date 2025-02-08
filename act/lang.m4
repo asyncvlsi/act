@@ -3507,9 +3507,8 @@ expr_id_or_star_or_bar[ActId *]: expr_id_or_star
 }}
 ;
 
-lang_extern[ActBody *]: "extern" "(" ID !push ")" "{"
- EXTERN[extern_lang] "}"
+lang_extern[ActBody *]: "extern" "(" ID !push ")" EXTERN[extern_lang]
 {{X:
-    return new ActBody_Lang ($l, $3, $6);
+    return new ActBody_Lang ($l, $3, $5);
 }}
 ;

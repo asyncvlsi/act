@@ -841,6 +841,16 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     }
     PRINT_STEP;
     break;
+
+  case E_ENUM_CONST:
+    {
+      Data *d = (Data *) e->u.fn.s;
+      snprintf (buf+k, sz, "%s.", d->getName());
+      PRINT_STEP;
+      snprintf (buf+k, sz, "%s", (char *) e->u.fn.r);
+      PRINT_STEP;
+    }
+    break;
     
   default:
     fatal_error ("Unhandled case!\n");

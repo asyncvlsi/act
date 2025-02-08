@@ -6,8 +6,7 @@
 
 int is_a_newlang (LFILE *l)
 {
-  if (file_sym (l) == f_id &&
-      strcmp (file_tokenstring (l), "hello") == 0) {
+  if (strcmp (file_tokenstring (l), "{") == 0) {
     return 1;
   }
   return 0;
@@ -21,6 +20,11 @@ struct testme {
 void *parse_a_newlang (LFILE *l)
 {
   struct testme *x;
+  int start, end;
+  start = file_addtoken (l, "{");
+  end = file_addtoken (l, "}");
+
+  file_mustbe (l, start);
   
   if (file_sym (l) == f_id &&
       strcmp (file_tokenstring (l), "hello") == 0) {
@@ -32,6 +36,8 @@ void *parse_a_newlang (LFILE *l)
   NEW (x, struct testme);
   x->h.name = "newlang";
   x->val = 0xf43;
+
+  file_mustbe (l, end);
 
   return x;
 }
