@@ -2127,6 +2127,34 @@ static Expr *_expr_expand (int *width, Expr *e,
 	ret->u.fn.s = e->u.fn.s;
 	ret->u.fn.r = NULL;
 	prev = NULL;
+
+	if (w && w->type == E_GT) {
+	  NEW (ret->u.fn.r, Expr);
+	  ret->u.fn.r->u.e.r = NULL;
+	  ret->u.fn.r->type = E_GT;
+	  w = e->u.fn.r->u.e.l;
+	  prev = NULL;
+	  while (w) {
+	    int dummy;
+	    NEW (tmp, Expr);
+	    tmp->type = w->type;
+	    tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	    tmp->u.e.r = NULL;
+	    if (!prev) {
+	      ret->u.fn.r->u.e.l = tmp;
+	    }
+	    else {
+	      prev->u.e.r = tmp;
+	    }
+	    prev = tmp;
+	    w = w->u.e.r;
+	  }
+	}
+	w = e->u.fn.r;
+	if (w && w->type == E_GT) {
+	  w = w->u.e.r;
+	}
+	prev = NULL;
 	while (w) {
 	  int dummy;
 	  NEW (tmp, Expr);
@@ -2134,7 +2162,12 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
 	  tmp->u.e.r = NULL;
 	  if (!prev) {
-	    ret->u.fn.r = tmp;
+	    if (e->u.fn.r->type == E_GT) {
+	      ret->u.fn.r->u.e.r = tmp;
+	    }
+	    else {
+	      ret->u.fn.r = tmp;
+	    }
 	  }
 	  else {
 	    prev->u.e.r = tmp;
@@ -3079,7 +3112,7 @@ Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s)
   Expr *f;
 
   if (!e) return NULL;
-  
+
   pH = phash_new (4);
 
   tmp = _expr_bw_calc (pH, e, s);

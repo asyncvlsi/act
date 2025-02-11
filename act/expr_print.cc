@@ -2548,6 +2548,7 @@ void print_dag_expr (FILE *fp, const Expr *e)
       phash_free (H);
       return;
     }
+    phash_clear (H);
     bufsz *= 2;
     REALLOC (buf, char, bufsz);
   }
