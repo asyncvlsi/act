@@ -1,0 +1,15 @@
+template<pint EXP>
+function nan() : int<EXP> {
+    chp {
+        self := 0
+    }
+}
+
+defproc test() {
+    int<5> x;
+    chp {
+        x := nan<5>()
+    }
+}
+
+test t;

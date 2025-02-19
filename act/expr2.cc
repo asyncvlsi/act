@@ -2246,26 +2246,32 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  ret->u.fn.r = NULL;
 	}
 	else {
-	  NEW (tmp, Expr);
-	  tmp->type = E_LT;
-	  ret->u.fn.r = tmp;
-	  tmp->u.e.r = NULL;
 	  if (e->u.fn.r->type == E_GT) {
 	    etmp = e->u.fn.r->u.e.r;
 	  }
 	  else {
 	    etmp = e->u.fn.r;
 	  }
-	  do {
-	    tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
-	    if (etmp->u.e.r) {
-	      NEW (tmp->u.e.r, Expr);
-	      tmp->u.e.r->type = E_LT;
-	      tmp = tmp->u.e.r;
-	      tmp->u.e.r = NULL;
-	    }
-	    etmp = etmp->u.e.r;
-	  } while (etmp);
+	  if (etmp) {
+	    NEW (tmp, Expr);
+	    tmp->type = E_LT;
+	    ret->u.fn.r = tmp;
+	    tmp->u.e.r = NULL;
+	    do {
+	      tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
+	      if (etmp->u.e.r) {
+		NEW (tmp->u.e.r, Expr);
+		tmp->u.e.r->type = E_LT;
+		tmp = tmp->u.e.r;
+		tmp->u.e.r = NULL;
+	      }
+	      etmp = etmp->u.e.r;
+	    } while (etmp);
+	  }
+	  else {
+	    /* no arguments */
+	    ret->u.fn.r = NULL;
+	  }
 	}
       }
     }
