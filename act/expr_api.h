@@ -260,4 +260,14 @@ Expr *expr_dag (Expr *e);
 void expr_dag_free (Expr *);
 
 
+class UserMacro;
+/*
+ * Set usermacro context during expansion of user macros. This is
+ * needed for anonymous function calls that are nested within a
+ * methods body
+ */
+void act_expr_push_macro_context (UserMacro **um, int sz);
+void act_expr_pop_macro_context (void);
+
+
 #endif /* __ACT_EXPR_API_H__ */

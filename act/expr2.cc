@@ -562,6 +562,32 @@ static Expr *_expr_const_canonical (Expr *e, unsigned int flags)
 
 static list_t *_idstack = NULL;
 
+struct um_info {
+  UserMacro **ctxt;
+  int sz;
+};
+
+static list_t *_umstack = NULL;
+
+void act_expr_push_macro_context (UserMacro **um, int sz)
+{
+  if (!_umstack) {
+    _umstack = list_new ();
+  }
+  um_info *x;
+  NEW (x, um_info);
+  x->ctxt = um;
+  x->sz = sz;
+  stack_push (_umstack, x);
+}
+
+void act_expr_pop_macro_context (void)
+{
+  um_info *x = (um_info *) stack_pop (_umstack);
+  FREE (x);
+}
+
+
 static Expr *_expr_expand (int *width, Expr *e,
 			   ActNamespace *ns, Scope *s, unsigned int flags)
 {
@@ -758,25 +784,53 @@ static Expr *_expr_expand (int *width, Expr *e,
       InstType *id_it;
       lexp = _expr_expand (&lw, e->u.fn.r->u.e.l, ns, s, flags);
       if (!lexp) {
-	Assert (_idstack && !stack_isempty (_idstack), "What?");
-	id_it = (InstType *) stack_peek (_idstack);
+	if (_idstack && !stack_isempty (_idstack)) {
+	  id_it = (InstType *) stack_peek (_idstack);
+	  Assert (id_it, "Macro error!");
+	}
+	else if (_umstack && !stack_isempty (_umstack)) {
+	  id_it = NULL;
+	}
+	else {
+	  Assert (0, "Nested macro function error!");
+	}
       }
       else {
 	id_it = act_expr_insttype (s, lexp, NULL, 2);
+	Assert (id_it, "Macro error!");
       }
-      Assert (id_it, "Macro error!");
-      UserDef *id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
-      Assert (id_ux, "What?");
-      um = id_ux->getMacro (um->getName());
-      if (!_idstack) {
-	_idstack = list_new ();
+      UserDef *id_ux = NULL;
+      if (id_it) {
+	id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
+	Assert (id_ux, "What?");
+	um = id_ux->getMacro (um->getName());
+	if (!_idstack) {
+	  _idstack = list_new ();
+	}
+	stack_push (_idstack, id_it);
+	stack_op = 1;
       }
-      stack_push (_idstack, id_it);
-      stack_op = 1;
+      else {
+	um_info *x = (um_info *) stack_peek (_umstack);
+	for (int i=0; i < x->sz; i++) {
+	  UserMacro *up = x->ctxt[i];
+	  if (strcmp (up->getName(), um->getName()) == 0) {
+	    um = up;
+	    x = NULL;
+	    break;
+	  }
+	}
+	Assert (x == NULL, "nested umacro error?");
+      }
+
       Assert (um, "Expanded macro?");
       Assert (um->getFunction(), "What?");
 
       if (!lexp && TypeFactory::isParamType (um->getRetType())) {
+	if (!id_ux) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Nested parameter functions not supported!");
+	}
 	if (id_ux->getNumParams() > 0) {
 	  /* Add them as arguments!
 	     Note that for other cases, these arguments are added by

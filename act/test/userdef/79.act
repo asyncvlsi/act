@@ -1,0 +1,30 @@
+namespace pfloat {
+    export
+    template<pint EXP,MAN>
+    deftype float(int<1> sign; int<EXP> exponent; int<MAN> significand) {
+        methods {
+            function is_infinite() : bool {
+                chp {
+                    self := exponent = (1 << EXP) - 1 & significand = 0
+                }
+            }
+
+            function is_finite() : bool {
+                chp {
+                    // self := ~(exponent = (1 << EXP) - 1 & significand != 0)
+                    self := is_infinite()
+                }
+            }
+        }
+    }
+
+    export defproc test() {
+        float<1,5> y;
+        chp {
+            y := float<1,5>(0);
+            log(y.is_finite())
+        }
+    }
+}
+
+pfloat::test t;

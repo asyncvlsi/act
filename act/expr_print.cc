@@ -467,17 +467,21 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
 	if (!is_special_struct) {
 	  Assert (e->u.fn.r &&
 		  e->u.fn.r->type == E_LT &&
-		  e->u.fn.r->u.e.l->type == E_VAR, "What?");
-
-	  ActId *id = (ActId *) e->u.fn.r->u.e.l->u.e.l;
-	  id->sPrint (buf+k, sz);
+		  (!e->u.fn.r->u.e.l || e->u.fn.r->u.e.l->type == E_VAR), "What?");
+	  ActId *id = (ActId *) (e->u.fn.r->u.e.l ?
+				 e->u.fn.r->u.e.l->u.e.l : NULL);
+	  if (id) {
+	    id->sPrint (buf+k, sz);
+	  }
 	  pos = 0;
 	  while (nm[pos] != '/') {
 	    pos++;
 	  }
 	  pos++;
 	  PRINT_STEP;
-	  ADD_CHAR('.');
+	  if (id) {
+	    ADD_CHAR('.');
+	  }
 	  while (nm[pos] && nm[pos] != '<') {
 	    ADD_CHAR (nm[pos]);
 	    pos++;
