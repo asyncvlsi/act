@@ -2313,6 +2313,13 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    tmp->u.e.r = NULL;
 	    do {
 	      tmp->u.e.l = _expr_expand (&lw, etmp->u.e.l, ns, s, flags);
+	      if (ret->u.fn.r == tmp && etmp->u.e.l == NULL) {
+		/*-- nested user macro! --*/
+		NEW (tmp->u.e.l, Expr);
+		tmp->u.e.l->type = E_VAR;
+		tmp->u.e.l->u.e.r = NULL;
+		tmp->u.e.l->u.e.l = (Expr *) new ActId ("$internal");
+	      }
 	      if (etmp->u.e.r) {
 		NEW (tmp->u.e.r, Expr);
 		tmp->u.e.r->type = E_LT;

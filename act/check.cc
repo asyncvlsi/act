@@ -885,7 +885,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
 
 	if (!x->isConnectable (y, 1)) {
-	  if ((TypeFactory::isIntType (x) && TypeFactory::isPIntType (y))
+	  if ((TypeFactory::isIntType (x) &&
+	       (TypeFactory::isPIntType (y) || TypeFactory::isIntType (y)))
 	      ||
 	      (TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
 	    /* ok */
