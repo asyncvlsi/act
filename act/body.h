@@ -663,6 +663,7 @@ class ActBody_Lang : public ActBody {
   ActBody_Lang (int line, act_prs *p) : ActBody (line) {
     t = LANG_PRS;
     lang = p;
+    nm = NULL;
   }
   ActBody_Lang (int line, act_chp *c, int ishse = 0) : ActBody (line) {
     if (ishse) {
@@ -672,11 +673,13 @@ class ActBody_Lang : public ActBody {
       t = LANG_CHP;
     }
     lang = c;
+    nm = NULL;
   }
 
   ActBody_Lang (int line, act_spec *s) : ActBody (line) {
     t = LANG_SPEC;
     lang = s;
+    nm = NULL;
   }
   
   ActBody_Lang (int line, enum langtype _t, const char *_nm, void *l) : ActBody (line) {
@@ -693,21 +696,25 @@ class ActBody_Lang : public ActBody {
   ActBody_Lang (int line, act_refine *r) : ActBody (line) {
     t = LANG_REFINE;
     lang = r;
+    nm = NULL;
   }
 
   ActBody_Lang (int line, act_sizing *s) : ActBody (line) {
     t = LANG_SIZE;
     lang = s;
+    nm = NULL;
   }
 
   ActBody_Lang (int line, act_initialize *init) : ActBody (line) {
     t = LANG_INIT;
     lang = init;
+    nm = NULL;
   }
 
   ActBody_Lang (int line, act_dataflow *dflow) : ActBody (line) {
     t = LANG_DFLOW;
     lang = dflow;
+    nm = NULL;
   }
 
   ActBody_Lang (int line, const char *_nm, void *v) : ActBody (line) {
