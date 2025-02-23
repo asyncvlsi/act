@@ -679,9 +679,15 @@ class ActBody_Lang : public ActBody {
     lang = s;
   }
   
-  ActBody_Lang (int line, enum langtype _t, void *l) : ActBody (line) {
+  ActBody_Lang (int line, enum langtype _t, const char *_nm, void *l) : ActBody (line) {
     t = _t;
     lang = l;
+    if (_nm) {
+      nm = Strdup (_nm);
+    }
+    else {
+      nm = NULL;
+    }
   }
 
   ActBody_Lang (int line, act_refine *r) : ActBody (line) {
@@ -704,10 +710,10 @@ class ActBody_Lang : public ActBody {
     lang = dflow;
   }
 
-  ActBody_Lang (int line, const char *nm, void *v) : ActBody (line) {
+  ActBody_Lang (int line, const char *_nm, void *v) : ActBody (line) {
     t = LANG_EXTERN;
     lang = v;
-    nm = Strdup (nm);
+    nm = Strdup (_nm);
   }
   
   void Expand (ActNamespace *, Scope *);

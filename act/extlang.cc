@@ -203,3 +203,25 @@ void *lang_extern_expand (const char *nm, void *v, ActNamespace *ns, Scope *s)
   }
   return (*f) (v, ns, s);
 }
+
+void *lang_extern_clone (const char *nm, void *v, ActNamespace *root,
+			 ActNamespace *clone)
+{
+  char buf[1024];
+  struct act_extern_language_header *h;
+
+  if (!v) return NULL;
+
+  h = (struct act_extern_language_header *)v;
+  Assert (h->name, "Hmm...");
+  Assert (strcmp (nm, h->name) == 0, "What!");
+  snprintf (buf, 1024, "clone_a_%s<>", h->name);
+  void *(*f) (void *, ActNamespace *, ActNamespace *) =
+    (void *(*) (void *, ActNamespace *, ActNamespace *))
+    act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  if (!f) {
+    warning ("external language %s: clone called but not found, using alias!", nm);
+    return v;
+  }
+  return (*f) (v, root, clone);
+}

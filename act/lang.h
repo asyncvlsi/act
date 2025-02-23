@@ -685,6 +685,11 @@ void lang_extern_print (FILE *fp, const char *nm, void *v);
 void *lang_extern_expand (const char *nm, void *v, ActNamespace *ns, Scope *s);
 
 /**
+ * External language handling: clone
+ */
+void *lang_extern_clone (const char *nm, void *v, ActNamespace *root, ActNamespace *newns);
+
+/**
  * @class act_languages
  *
  * @brief This holds all the sub-langugae bodies in a

@@ -1420,15 +1420,13 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 
   case ActBody_Lang::LANG_EXTERN:
     if (!in_refinement) {
-      if (nm) {
-	ext = lang_extern_expand (nm, lang, ns, s);
-	if (all_lang->getextern (nm)) {
-	  act_error_ctxt (stderr);
-	  warning ("Duplicate external language `%s'; ignoring previous one",
-		   nm);
-	}
-	all_lang->setextern (nm, ext);
+      ext = lang_extern_expand (nm, lang, ns, s);
+      if (all_lang->getextern (nm)) {
+	act_error_ctxt (stderr);
+	warning ("Duplicate external language `%s'; ignoring previous one",
+		 nm);
       }
+      all_lang->setextern (nm, ext);
     }
   }
 }
@@ -1651,12 +1649,15 @@ ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
     break;
     
   case LANG_INIT:
-  case LANG_EXTERN:
     newlang = lang;
     break;
+    
+  case LANG_EXTERN:
+    newlang = lang_extern_clone (nm, lang, replace, newns);
+    break;
   }
-  
-  ret = new ActBody_Lang (_line, t, newlang);
+
+  ret = new ActBody_Lang (_line, t, nm, newlang);
 
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));
