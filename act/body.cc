@@ -1420,13 +1420,15 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 
   case ActBody_Lang::LANG_EXTERN:
     if (!in_refinement) {
-      ext = lang_extern_expand (nm, lang, ns, s);
-      if (all_lang->getextern (nm)) {
-	act_error_ctxt (stderr);
-	warning ("Duplicate external language `%s'; ignoring previous one",
-		 nm);
+      if (nm) {
+	ext = lang_extern_expand (nm, lang, ns, s);
+	if (all_lang->getextern (nm)) {
+	  act_error_ctxt (stderr);
+	  warning ("Duplicate external language `%s'; ignoring previous one",
+		   nm);
+	}
+	all_lang->setextern (nm, ext);
       }
-      all_lang->setextern (nm, ext);
     }
   }
 }
