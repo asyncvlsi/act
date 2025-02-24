@@ -1657,7 +1657,12 @@ ActBody *ActBody_Lang::Clone (ActNamespace *replace, ActNamespace *newns)
     break;
   }
 
-  ret = new ActBody_Lang (_line, t, nm, newlang);
+  if (t == LANG_EXTERN) {
+    ret = new ActBody_Lang (_line, t, nm, newlang);
+  }
+  else {
+    ret = new ActBody_Lang (_line, t, NULL, newlang);
+  }
 
   if (Next()) {
     ret->Append (Next()->Clone(replace, newns));

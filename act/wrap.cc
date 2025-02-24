@@ -689,6 +689,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	    ret->u.fn.s = (char *) nest;
 	    Expr *tmp;
 	    NEW (tmp, Expr);
+            tmp->type = E_LT;
 	    tmp->u.e.l = NULL; // NULL-variable
 	    tmp->u.e.r = e->u.fn.r;
 	    e->u.fn.r = tmp;
