@@ -702,6 +702,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       if (um->Parent()->isExpanded()) {
 	// XXX: macro templates
 	um = um->Parent()->getMacro (um->getName());
+	Assert (um, "Internal issue; macro missing?");
       }
       else {
 	if (um->isBuiltinStructMacro()) {
@@ -745,6 +746,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	    FREE (inst);
 	  }
 	  um = ux->getMacro (um->getName());
+	  Assert (um, "Macro missing?");
 	}
 	else {
 	  // for "int(.)": we just need the structure return type. The
@@ -774,6 +776,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  Assert (dx, "Unexpected structure expression");
 	  Assert (dx->isExpanded(), "What?");
 	  um = dx->getMacro ("int");
+	  Assert (um, "Macro int() missing?");
 	}
       }
       Assert (um->getFunction(), "What?");

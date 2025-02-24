@@ -1221,20 +1221,27 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
 
   /*-- expand macros --*/
-  for (int i=0; i < A_LEN (um); i++) {
-    A_NEW (xd->um, UserMacro *);
-    act_expr_push_macro_context (xd->um, i);
-    A_NEXT (xd->um) = um[i]->Expand (xd, ns, xd->I, 0);
-    act_expr_pop_macro_context ();
-    A_INC (xd->um);
-  }
 
-  if (TypeFactory::isPureStruct (xd)) {
-    for (int i=0; i < A_LEN (xd->um); i++) {
-      xd->um[i]->setParent (xd);
-      if (xd->um[i]->isBuiltinMacro()) {
-	xd->um[i]->populateCHP ();
-      }
+  /*-- do this in two phases: first, the built-in ones! --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    if (um[i]->isBuiltinMacro()) {
+      A_NEW (xd->um, UserMacro *);
+      act_expr_push_macro_context (xd->um, A_LEN (xd->um));
+      A_NEXT (xd->um) = um[i]->Expand (xd, ns, xd->I, 0);
+      act_expr_pop_macro_context ();
+      A_NEXT (xd->um)->setParent (xd);
+      A_NEXT (xd->um)->populateCHP ();
+      A_INC (xd->um);
+    }
+  }
+  
+  for (int i=0; i < A_LEN (um); i++) {
+    if (!um[i]->isBuiltinMacro()) {
+      A_NEW (xd->um, UserMacro *);
+      act_expr_push_macro_context (xd->um, A_LEN (xd->um));
+      A_NEXT (xd->um) = um[i]->Expand (xd, ns, xd->I, 0);
+      act_expr_pop_macro_context ();
+      A_INC (xd->um);
     }
   }
 

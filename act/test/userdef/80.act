@@ -1,0 +1,22 @@
+deftype myint(int<2> x) {
+    methods {
+           function test() : myint
+           {
+               chp {
+                   self := myint(1)
+                   // self.x := 1
+               }
+           }
+      }
+}
+
+defproc test() {
+    myint x;
+    chp {
+        x := myint(1 << 2);
+        x := x.test();
+        log(x.x)
+    }
+}
+
+test t;
