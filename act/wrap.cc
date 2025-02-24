@@ -408,19 +408,19 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
 
 
-  case E_AND:  BINOP; break;
-  case E_OR:   BINOP; break;
+  case E_AND:  BINOP; ret = _check_overload (cookie, ret, "and"); break;
+  case E_OR:   BINOP; ret = _check_overload (cookie, ret, "or"); break;
 
   case E_PLUS: BINOP; ret = _check_overload (cookie, ret, "plus"); break;
   case E_MINUS:BINOP; ret = _check_overload (cookie, ret, "minus"); break;
   case E_MULT: BINOP; ret = _check_overload (cookie, ret, "mult"); break;
   case E_DIV:  BINOP; ret = _check_overload (cookie, ret, "div"); break;
 
-  case E_MOD:  BINOP; break;
-  case E_LSL:  BINOP; break;
-  case E_LSR:  BINOP; break;
-  case E_ASR:  BINOP; break;
-  case E_XOR:  BINOP; break;
+  case E_MOD:  BINOP; ret = _check_overload (cookie, ret, "mod"); break;
+  case E_LSL:  BINOP; ret = _check_overload (cookie, ret, "lsl"); break;
+  case E_LSR:  BINOP; ret = _check_overload (cookie, ret, "lsr"); break;
+  case E_ASR:  BINOP; ret = _check_overload (cookie, ret, "asr"); break;
+  case E_XOR:  BINOP; ret = _check_overload (cookie, ret, "xor"); break;
   case E_LT:   BINOP; ret = _check_overload_bool (cookie, ret, "lt"); break;
   case E_GT:   BINOP; ret = _check_overload_bool (cookie, ret, "gt"); break;
   case E_LE:   BINOP; ret = _check_overload_bool (cookie, ret, "le"); break;
