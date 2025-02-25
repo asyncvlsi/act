@@ -2120,7 +2120,7 @@ void Data::_get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix)
 	  types[*pos] = 0;
 	}
 	else {
-	  Assert (TypeFactory::isIntType (getPortType (i)), "Structure invariant violated?");
+	  Assert (TypeFactory::isBaseIntType (getPortType (i)), "Structure invariant violated?");
 	  types[*pos] = 1;
 	}
 	*pos = *pos + 1;
