@@ -103,13 +103,15 @@ void *act_find_dl_func (struct ExtLibs *el, ActNamespace *ns, const char *f)
     if (config_exists (buf)) {
       if (!el->files[i].dl) {
 	el->files[i].dl = dlopen (el->files[i].path, RTLD_LAZY);
+  // if dlerror is called anywhere later the error is already overwritten by a new dl call, so cache the message:
+  char *error_msg = dlerror();
 	if (!el->files[i].dl) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "Expected to find `%s%s' as `%s' in library `%s'\n",
 		   ns_name ? (ns_name+2) : "", f,
 		   config_get_string (buf), el->files[i].path);
-	  if (dlerror()) {
-	    fprintf (stderr, "%s\n", dlerror());
+	  if (error_msg) {
+	    fprintf (stderr, "%s\n", error_msg);
 	  }
 	  fatal_error ("Could not open dynamic library `%s'", el->files[i].path);
 	}
