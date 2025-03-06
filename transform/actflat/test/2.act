@@ -1,0 +1,16 @@
+defcell bar(bool a, b)
+{
+  bool c, d;
+  prs {
+   [keeper=0] a <10> -> b-
+   [keeper=0] c <10> -> d-
+  }
+}
+
+defproc foo(bool p, q)
+{
+  bar x1(p);
+  bar x2(q);
+}
+
+foo f;

@@ -1,0 +1,22 @@
+defcell buf (bool a;bool b)
+{
+ a=a;
+ b=b;
+
+/* instances */
+
+/* connections */
+prs {
+a => _b-
+_b => b-
+}
+}
+
+
+defproc foo ()
+{
+ /* nets for  -toplevel-*/
+ bool b_aa;
+ bool b_ab;
+ buf b (b_aa,b_ab);
+}

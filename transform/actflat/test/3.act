@@ -1,0 +1,16 @@
+defcell base(bool? a; bool! b)
+{
+  bool _b;
+  prs {
+    a => _b-
+   _b => b-
+  }
+}
+
+defcell buf <: base() { }
+
+
+defproc foo()
+{
+ buf b;
+}

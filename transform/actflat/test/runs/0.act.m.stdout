@@ -1,7 +1,7 @@
 
 
 namespace cell { 
-export defcell _0_0cell_0_0g_0x5 (bool in_50_6;bool out)
+export defcell g_0x5 (bool in_50_6;bool out)
 {
  bool? in[1];
  in[0]=in_50_6;
@@ -24,11 +24,11 @@ defproc foo (bool p; bool q)
  /* nets for x2*/
  bool x2_ac;
  bool x2_ad;
- ::cell::_0_0cell_0_0g_0x5 x2_acpx1 (x2_ac,x2_ad);
- ::cell::_0_0cell_0_0g_0x5 x2_acpx0 (q,x2_ab);
+ ::cell::g_0x5 x2_acpx1 (x2_ac,x2_ad);
+ ::cell::g_0x5 x2_acpx0 (q,x2_ab);
  /* nets for x1*/
  bool x1_ac;
  bool x1_ad;
- ::cell::_0_0cell_0_0g_0x5 x1_acpx1 (x1_ac,x1_ad);
- ::cell::_0_0cell_0_0g_0x5 x1_acpx0 (p,x1_ab);
+ ::cell::g_0x5 x1_acpx1 (x1_ac,x1_ad);
+ ::cell::g_0x5 x1_acpx0 (p,x1_ab);
 }

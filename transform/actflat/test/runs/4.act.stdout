@@ -1,0 +1,29 @@
+defcell buf (bool? a; bool! b)
+{
+
+/* instances */
+bool _b;
+
+/* connections */
+prs {
+a => _b-
+_b => b-
+}
+}
+
+
+
+defproc foo (bool? x_0; bool? x_1; bool? x_2)
+{
+ /* port internal connections */
+ x_0=x_2; x_0=x_1; 
+ /* nets for  -toplevel-*/
+ bool u_50_6_ab;
+ bool u_51_6_aa;
+ bool u_51_6_ab;
+ bool u_52_6_aa;
+ bool u_52_6_ab;
+ buf u_50_6 (x_0,u_50_6_ab);
+ buf u_51_6 (u_51_6_aa,u_51_6_ab);
+ buf u_52_6 (u_52_6_aa,u_52_6_ab);
+}

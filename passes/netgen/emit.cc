@@ -777,19 +777,7 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
     else {
       fprintf (_outfp, " ");
     }
-    if (!mangled_ports_actflat) {
-      const char *x = p->getName();
-      while (*x) {
-	if (*x == '<' && *(x+1) == '>') {
-	  break;
-	}
-	fputc (*x, _outfp);
-	x++;
-      }
-    }
-    else {
-      a->mfprintfproc (_outfp, p);
-    }
+    a->mfprintfproc (_outfp, p, true);
     fprintf (_outfp, " ");
   }
   inst->sPrint (buf, 10240);
@@ -947,7 +935,18 @@ void ActNetlistPass::_print_flat_cell (act_boolean_netlist_t *bnl,
 	tmp->sPrint (buf, 10240);
       }
       char buf2[10240];
-      a->msnprintf (buf2, 10240, "%s", buf);
+
+      /* XXX:
+	 if !mangled_ports and buf is actually the very top level
+	 port, then we need to print it, not mangle print it
+      */
+      if (!mangled_ports_actflat &&
+	  found_level == 0 && _root->FindPort (tmp->getName())) {
+	snprintf (buf2, 10240, "%s", buf);
+      }
+      else {
+	a->msnprintf (buf2, 10240, "%s", buf);
+      }
       if (split_net (buf2)) {
 	// inst.pin
 	inst->sPrint (buf, 10240);
@@ -1208,16 +1207,35 @@ void ActNetlistPass::flatActHelper (Process *p)
     _curflatns = p->getns();
 
     // we have to print the header differently
+    if (p->IsExported()) {
+      fprintf (_outfp, "export ");
+    }
+    fprintf (_outfp, "defcell ");
+    a->mfprintfproc (_outfp, p, true /* omit namespace */);
+    fprintf (_outfp, " (");
     if (!mangled_ports_actflat) {
-      p->Print (_outfp);
+      for (int i=0; i < p->getNumPorts (); i++) {
+	InstType *it = p->getPortType (i);
+	Array *a = it->arrayInfo();
+	it->clrArray();
+	it->Print (_outfp);
+	fprintf (_outfp, " %s", p->getPortName (i));
+	if (a) {
+	  a->Print (_outfp);
+	}
+	it->MkArray (a);
+	if (i != p->getNumPorts()-1) {
+	  fprintf (_outfp, "; ");
+	}
+      }
+      fprintf (_outfp, ")\n{\n");
+      p->CurScope()->Print (_outfp, true /* print all instances */);
+      if (p->getlang()) {
+	p->getlang()->Print (_outfp);
+      }
+      fprintf (_outfp, "}\n\n");
     }
     else {
-      if (p->IsExported()) {
-	fprintf (_outfp, "export ");
-      }
-      fprintf (_outfp, "defcell ");
-      a->mfprintfproc (_outfp, p);
-      fprintf (_outfp, " (");
       act_boolean_netlist_t *bnl = bools->getBNL (p);
       Assert (bnl, "What?");
       int need_comma = 0;
@@ -1279,6 +1297,10 @@ void ActNetlistPass::printActFlat (FILE *fp)
   if (!_root) {
     fatal_error ("ActNetlistPass::printActFlat() requires a top-level process!");
   }
+  if (_root->isCell()) {
+    fatal_error ("ActNetlistPass::printActFlat() must be called on a process, not a cell!");
+  }
+  
   bools->createNets (_root);
   _outfp = fp;
   _invNetH = phash_new (4);
@@ -1301,16 +1323,88 @@ void ActNetlistPass::printActFlat (FILE *fp)
   fprintf (_outfp, "defproc ");
   a->mfprintfproc (_outfp, _root);
   fprintf (_outfp, " (");
-  for (int k=0; k < _root->getNumPorts(); k++) {
-    if (k > 0) {
-      fprintf (_outfp, "; ");
+
+  if (!mangled_ports_actflat) {
+    for (int k=0; k < _root->getNumPorts(); k++) {
+      if (k > 0) {
+	fprintf (_outfp, "; ");
+      }
+      _root->getPortType (k)->Print (_outfp);
+      fprintf (_outfp, " %s", _root->getPortName (k));
     }
-    _root->getPortType (k)->Print (_outfp);
-    fprintf (_outfp, " %s", _root->getPortName (k));
+  }
+  else {
+    Assert (bnl, "What?");
+    int need_comma = 0;
+    char buf[10240];
+    for (int i=0; i < A_LEN (bnl->ports); i++) {
+      if (bnl->ports[i].omit) continue;
+      if (need_comma) {
+	fprintf (_outfp, "; ");
+      }
+      fprintf (_outfp, "bool ");
+      ActId *id = bnl->ports[i].c->toid();
+      id->sPrint (buf, 10240);
+      a->mfprintf (_outfp, "%s", buf);
+      delete id;
+      need_comma = 1;
+    }
   }
   fprintf (_outfp, ")\n{\n");
 
+  /* XXX: internal port list connections */
+  if (!mangled_ports_actflat) {
+    A_DECL (act_connection *, emitted);
+    A_INIT (emitted);
+    for (int i=0; i < A_LEN (bnl->ports); i++) {
+      if (bnl->ports[i].omit) {
+	bool found = false;
+	for (int j=0; !found && j < A_LEN (emitted); j++) {
+	  if (bnl->ports[i].c == emitted[j]) {
+	    found = true;
+	  }
+	}
+	if (!found) {
+	  A_NEW (emitted, act_connection *);
+	  A_NEXT (emitted) = bnl->ports[i].c;
+	  A_INC (emitted);
+	  // print connections for c!
+	  if (A_LEN (emitted) == 1) {
+	    fprintf (_outfp, " /* port internal connections */\n");
+	  }
+	  fprintf (_outfp, " ");
+	  ActConniter ci(bnl->ports[i].c);
+	  ActId *idfirst;
+	  int first = 1;
+	  for (ci = ci.begin(); ci != ci.end(); ci++) {
+	    act_connection *c = *ci;
+	    ActId *tmpid = c->toid();
+	    if (first) {
+	      idfirst = tmpid;
+	      first = 0;
+	    }
+	    else {
+	      if (_root->FindPort (tmpid->getName())) {
+		idfirst->Print (_outfp);
+		fprintf (_outfp, "=");
+		tmpid->Print (_outfp);
+		fprintf (_outfp, "; ");
+	      }
+	      delete tmpid;
+	    }
+	  }
+	  if (idfirst) {
+	    delete idfirst;
+	  }
+	  fprintf (_outfp, "\n");
+	}
+      }
+    }
+    A_FREE (emitted);
+  }
+
   /* XXX: we need to declare all the nets used! */
+  
 
   list_t *stk = list_new ();
   _printflat (NULL, NULL, stk, _root, true);

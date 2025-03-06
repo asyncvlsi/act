@@ -1,7 +1,7 @@
 
 
 namespace cell { 
-export defcell _0_0cell_0_0g_0x5 (bool in_50_6;bool out)
+export defcell g_0x5 (bool in_50_6;bool out)
 {
  bool? in[1];
  in[0]=in_50_6;
@@ -29,37 +29,37 @@ defproc foo (bool x; bool y)
  /* nets for third.x2*/
  bool third_ax2_ac;
  bool third_ax2_ad;
- ::cell::_0_0cell_0_0g_0x5 third_ax2_acpx1 (third_ax2_ac,third_ax2_ad);
- ::cell::_0_0cell_0_0g_0x5 third_ax2_acpx0 (third_aq,third_ax2_ab);
+ ::cell::g_0x5 third_ax2_acpx1 (third_ax2_ac,third_ax2_ad);
+ ::cell::g_0x5 third_ax2_acpx0 (third_aq,third_ax2_ab);
  /* nets for third.x1*/
  bool third_ax1_ac;
  bool third_ax1_ad;
- ::cell::_0_0cell_0_0g_0x5 third_ax1_acpx1 (third_ax1_ac,third_ax1_ad);
- ::cell::_0_0cell_0_0g_0x5 third_ax1_acpx0 (tmp,third_ax1_ab);
+ ::cell::g_0x5 third_ax1_acpx1 (third_ax1_ac,third_ax1_ad);
+ ::cell::g_0x5 third_ax1_acpx0 (tmp,third_ax1_ab);
  /* nets for second*/
  bool second_ax2_ab;
  bool second_ax1_ab;
  /* nets for second.x2*/
  bool second_ax2_ac;
  bool second_ax2_ad;
- ::cell::_0_0cell_0_0g_0x5 second_ax2_acpx1 (second_ax2_ac,second_ax2_ad);
- ::cell::_0_0cell_0_0g_0x5 second_ax2_acpx0 (second_aq,second_ax2_ab);
+ ::cell::g_0x5 second_ax2_acpx1 (second_ax2_ac,second_ax2_ad);
+ ::cell::g_0x5 second_ax2_acpx0 (second_aq,second_ax2_ab);
  /* nets for second.x1*/
  bool second_ax1_ac;
  bool second_ax1_ad;
- ::cell::_0_0cell_0_0g_0x5 second_ax1_acpx1 (second_ax1_ac,second_ax1_ad);
- ::cell::_0_0cell_0_0g_0x5 second_ax1_acpx0 (y,second_ax1_ab);
+ ::cell::g_0x5 second_ax1_acpx1 (second_ax1_ac,second_ax1_ad);
+ ::cell::g_0x5 second_ax1_acpx0 (y,second_ax1_ab);
  /* nets for first*/
  bool first_ax2_ab;
  bool first_ax1_ab;
  /* nets for first.x2*/
  bool first_ax2_ac;
  bool first_ax2_ad;
- ::cell::_0_0cell_0_0g_0x5 first_ax2_acpx1 (first_ax2_ac,first_ax2_ad);
- ::cell::_0_0cell_0_0g_0x5 first_ax2_acpx0 (first_aq,first_ax2_ab);
+ ::cell::g_0x5 first_ax2_acpx1 (first_ax2_ac,first_ax2_ad);
+ ::cell::g_0x5 first_ax2_acpx0 (first_aq,first_ax2_ab);
  /* nets for first.x1*/
  bool first_ax1_ac;
  bool first_ax1_ad;
- ::cell::_0_0cell_0_0g_0x5 first_ax1_acpx1 (first_ax1_ac,first_ax1_ad);
- ::cell::_0_0cell_0_0g_0x5 first_ax1_acpx0 (x,first_ax1_ab);
+ ::cell::g_0x5 first_ax1_acpx1 (first_ax1_ac,first_ax1_ad);
+ ::cell::g_0x5 first_ax1_acpx0 (x,first_ax1_ab);
 }

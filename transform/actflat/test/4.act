@@ -1,0 +1,19 @@
+defcell blah(bool? a; bool! b)
+{
+  bool _b;
+  prs {
+    a => _b-
+   _b => b-
+  }
+}
+
+defcell buf <: blah() { }
+
+
+defproc foo(bool? x_0, x_1, x_2)
+{
+ buf u[3];
+ x_0 = x_1;
+ u[0].a = x_0;
+ x_1 = x_2;
+}

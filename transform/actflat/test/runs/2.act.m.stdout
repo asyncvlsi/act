@@ -1,0 +1,25 @@
+defcell bar (bool a;bool b)
+{
+ a=a;
+ b=b;
+
+/* instances */
+bool d;
+bool c;
+
+/* connections */
+prs {
+[keeper=0]a<10> -> b-
+[keeper=0]c<10> -> d-
+}
+}
+
+
+defproc foo (bool p; bool q)
+{
+ /* nets for  -toplevel-*/
+ bool x2_ab;
+ bool x1_ab;
+ bar x2 (q,x2_ab);
+ bar x1 (p,x1_ab);
+}
