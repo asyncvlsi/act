@@ -1053,10 +1053,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       else {
 	if (TypeFactory::isParamType (rtype)) {
-	  kind = 0;
+	  kind = 1;
+	  kind += um->Parent()->getNumParams();
 	}
 	else {
-	  kind = 1;
+	  kind = 0;
 	}
 
 	e2 = NULL;
@@ -1070,10 +1071,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  e2 = NULL;
 	}
 #endif
-
+	// meta parameters in parent are appended to macro ports for
+	// meta parameter macros
 	for (int i=0;
-	     i < (kind == 0 ? um->getNumParams() : um->getNumPorts()); i++) {
-	  InstType *x = um->getPortType (kind == 0 ? -(i+1) : i);
+	     i < (kind == 0 ? um->getNumPorts() : um->getNumPorts() - (kind-1)); i++) {
+	  InstType *x = um->getPortType (i);
 	  InstType *y = act_expr_insttype (s, tmp->u.e.l, NULL, only_chan);
 
 	  if (!y) {
@@ -1117,7 +1119,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
 
 	if (e2) {
-	  Assert (kind == 1, "What?");
+	  Assert (kind == 0, "What?");
 	  tmp = e2;
 	  for (int i=0; i < um->getNumParams(); i++) {
 	    InstType *x = um->getPortType (-(i+1));

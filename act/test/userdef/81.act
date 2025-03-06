@@ -1,0 +1,24 @@
+deftype foo(bool x)
+{
+  methods {
+    function testme (pint x) : pint
+    {
+      chp {
+        self := x + 1
+      }
+    }
+  }
+}
+
+defproc test()
+{
+   foo f;
+   int x;
+ 
+   chp {
+     x := f.testme(3);
+     x := f.testme(x)
+   }
+}
+
+test t;
