@@ -1703,9 +1703,9 @@ hse_guarded_cmd[act_chp_gc_t *]: wbool_expr "->" hse_body
 }}
 ;
 
-hse_loop_stmt[act_chp_lang_t *]: "*[" hse_body "]"
+hse_loop_stmt[act_chp_lang_t *]: "*[" hse_body [ "<-" wbool_expr ] "]"
 {{X:
-    return apply_X_loop_stmt_opt0 ($0, $2, list_new ());
+    return apply_X_loop_stmt_opt0 ($0, $2, $3);
 }}
 | "*[" { hse_guarded_cmd "[]" }* "]"
 {{X:

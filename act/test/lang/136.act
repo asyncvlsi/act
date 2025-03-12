@@ -1,0 +1,10 @@
+
+defproc basic (bool b)
+{
+  bool q;
+  hse {
+    *[ b+ <- q ]
+  }
+}
+
+basic b;
