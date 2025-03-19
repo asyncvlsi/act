@@ -165,6 +165,7 @@ class SimDES {
   /** @return true if there are pending events **/
   static bool hasPendingEvent();
   static Event *matchPendingEvent (bool (*matchfn) (Event *));
+  static Event *matchPendingEvent (bool (*matchfn) (Event *, unsigned long tm));
 
   static int isEmpty() { return initialized_sim ? 0 : 1; }
   /*

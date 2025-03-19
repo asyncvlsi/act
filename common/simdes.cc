@@ -507,6 +507,16 @@ Event *SimDES::matchPendingEvent (bool (*matchfn) (Event *))
   return NULL;
 }
 
+Event *SimDES::matchPendingEvent (bool (*matchfn) (Event *, unsigned long))
+{
+  for (int i=0; i < heap_size (all); i++) {
+    if ((*matchfn)((Event *)all->value[i], all->key[i])) {
+      return (Event *)all->value[i];
+    }
+  }
+  return NULL;
+}
+
 
 void SimDES::showAll (FILE *fp, void (*disp)(FILE *, Event *))
 {
