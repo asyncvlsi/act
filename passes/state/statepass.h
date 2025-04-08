@@ -197,6 +197,16 @@ public:
     return off/2 - 1;
   }
 
+  int portOffset(int idx) {
+    Assert (idx >= 0, "What?");
+    return -2 * idx - 1;
+  }
+
+  int globalOffset(int idx) {
+    Assert (idx >= 0, "What?");
+    return -2 * idx - 2;
+  }
+
   int instOffsets () { return _inst_offsets; }
 
   int checkIdExists (ActId *id);  /*< checks if the full ID path is
