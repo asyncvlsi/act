@@ -956,6 +956,63 @@ bool_list_t *bool_qlist (BOOL_T *B, unsigned long n, bool_var_t *v)
   return l;
 }
 
+/*========================================================================*/
+static bool_t *_bool_negate_var (BOOL_T *B, bool_t *b1, bool_t *v)
+{
+  bool_t *b, *l, *r;
+
+  if (ISLEAF(b1)) {
+    INC_REF(b1);
+    return b1;
+  }
+
+  if ((b = thash_locate(pairvisited,b1,v))) {
+    INC_REF(b);
+    return b;
+  }
+
+  l = _bool_negate_var (B, b1->l, v);
+  r = _bool_negate_var (B, b1->r, v);
+
+  if (b1->id == v->id) {
+    bool_t *tmp = l;
+    l = r;
+    r = tmp;
+  }
+
+  if ((b = hash_locate (B->H[b1->id], l, r))) {
+    DEC_REF (l); DEC_REF (r);
+    INC_REF (b);
+    thash_insert (pairvisited,b1,v,b);
+    return b;
+  }
+  else {
+    b = newbool();
+    ASSIGN_LEAF (b,0);
+    b->id = b1->id;
+    b->l = l;
+    b->r = r;
+    hash_insert (B->H[b->id], b);
+    INC_REF (b);
+    thash_insert (pairvisited,b1,v,b);
+    return b;
+  }
+}
+
+/*-------------------------------------------------------------------------
+ * negate all instances of variable
+ * Example:
+ *      Negating a in (a & b) | (c & ~a) becomes (~a & b) | (c & a)
+ *-----------------------------------------------------------------------*/
+bool_t *bool_negate_var (BOOL_T *B, bool_t *b1, bool_t *v)
+{
+  bool_t *b;
+  if (v->l != B->btrue || v->r != B->bfalse)
+    return NULL;
+  pairvisited = B->TH[BOOL_NEGATE_VAR];
+  b = _bool_negate_var (B,b1,v);
+  return b;
+}
 
 static bool_t *_bool_substitute (BOOL_T *B, bool_list_t *l1, bool_list_t *l2,
 				 bool_t *b, int loc)

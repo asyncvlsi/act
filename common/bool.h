@@ -84,12 +84,12 @@ typedef struct bool_t {
 
 enum triple_operations_t {
   BOOL_AND = 0, BOOL_OR = 1, BOOL_XOR = 2, BOOL_IMPLIES = 3, BOOL_NOT = 4,
-  BOOL_MKTRUE = 5, BOOL_MKFALSE = 6
+  BOOL_MKTRUE = 5, BOOL_MKFALSE = 6, BOOL_NEGATE_VAR = 7
   } ;
 
 #endif
 
-#define BOOL_MAXOP 7
+#define BOOL_MAXOP 8
 
 typedef struct {
   unsigned long nelements;	/* number of elements in the hashtable */
@@ -144,6 +144,7 @@ extern bool_t *bool_implies (BOOL_T *, bool_t *, bool_t *);
 extern bool_t *bool_maketrue (BOOL_T *, bool_t *, bool_t *);
 extern bool_t *bool_makefalse (BOOL_T *, bool_t *, bool_t *);
 
+extern bool_t *bool_negate_var (BOOL_T *, bool_t *, bool_t *);
 extern bool_t *bool_substitute (BOOL_T *, bool_list_t *, bool_list_t *, 
 				bool_t *);
 extern bool_t *bool_exists (BOOL_T *, bool_list_t *, bool_t *);
