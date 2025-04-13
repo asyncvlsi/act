@@ -59,6 +59,7 @@
 #define T_DATA       0xa    ///< a structure
 #define T_DATA_ENUM  0xb    ///< an enum that is not an int
 #define T_PTYPE      0x10   ///< used when the expression is a type
+#define T_PSTRUCT    0x11   ///< used when the expression is a pstruct
 
 #define T_MASK       0x1f   ///< mask for the list of options
 

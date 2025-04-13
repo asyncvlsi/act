@@ -654,6 +654,7 @@ public:
   double getPReal(); ///< get the current preal value
   int getPBool(); ///< get the current pbool value
   InstType *getPType(); ///< get the current ptype value
+  Scope::pstruct getPStruct(); ///< get the current pstruct offsets
 
   /**
    * get the current identifier. If the identifier is an array

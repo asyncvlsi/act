@@ -43,6 +43,7 @@ Scope::Scope (Scope *parent, int is_expanded)
   A_INIT (vpreal);
   A_INIT (vptype);
   vpbool = NULL;
+  A_INIT (vpstruct);
 
   vpint_set = NULL;
   vpints_set = NULL;
@@ -51,7 +52,6 @@ Scope::Scope (Scope *parent, int is_expanded)
   vpbool_set = NULL;
 
   is_function = 0;
-  allow_sub = 0;
 }
 
 InstType *Scope::Lookup (const char *s)
@@ -183,6 +183,7 @@ Scope::~Scope ()
   A_FREE (vpints);
   A_FREE (vpreal);
   A_FREE (vptype);
+  A_FREE (vpstruct);
   if (vpbool) { bitset_free (vpbool); }
   if (vpint_set) { bitset_free (vpint_set); }
   if (vpints_set) { bitset_free (vpints_set); }
@@ -714,6 +715,84 @@ int Scope::getPBool(unsigned long id)
   return bitset_tst (vpbool, id) ? 1 : 0;
 }
 
+/**----- pstruct -----**/
+
+unsigned long Scope::AllocPStruct(PStruct *ps, int count)
+{
+  unsigned long ret;
+  if (count <= 0) {
+    fatal_error ("Scope::AllocPStruct(): count must be >0!");
+  }
+  A_NEWP (vpstruct, Scope::pstruct, count);
+  ret = A_LEN (vpstruct);
+
+  // now we need to also allocate all the aux fields
+  int pb, pi, pr, pt;
+  Assert (ps, "Scope::AllocPStruct() called without a pstruct??");
+  ps->getCounts (&pb, &pi, &pr, &pt);
+  unsigned long curpb, curpi, curpr, curpt;
+
+  /* allocate the actual parameters in this scope */
+  if (pb > 0) {
+    curpb = AllocPBool (pb*count);
+  }
+  else {
+    curpb = 0;
+  }
+  if (pi > 0) {
+    curpi = AllocPInt (pi*count);
+  }
+  else {
+    curpi = 0;
+  }
+  if (pr > 0) {
+    curpr = AllocPReal (pr*count);
+  }
+  else {
+    curpr = 0;
+  }
+  if (pt > 0) {
+    curpt = AllocPType (pt*count);
+  }
+  else {
+    curpt = 0;
+  }
+
+  /* populate the pstruct offsets */
+  for (unsigned long i=0; i < count; i++) {
+    if (pb > 0) {
+      vpstruct[ret+i].b_off = curpb;
+      curpb += pb;
+    }
+    else {
+      vpstruct[ret+i].b_off = 0;
+    }
+    if (pi > 0) {
+      vpstruct[ret+i].i_off = curpi;
+      curpi += pi;
+    }
+    else {
+      vpstruct[ret+i].i_off = 0;
+    }
+    if (pr > 0) {
+      vpstruct[ret+i].r_off = curpr;
+      curpr += pr;
+    }
+    else {
+      vpstruct[ret+i].r_off = 0;
+    }
+    if (pt > 0) {
+      vpstruct[ret+i].t_off = curpt;
+      curpt += pt;
+    }
+    else {
+      vpstruct[ret+i].t_off = 0;
+    }
+  }
+  A_LEN_RAW (vpstruct) += count;
+  return ret;
+}
+
 
 /*
   tt has to be expanded
@@ -731,7 +810,6 @@ void Scope::BindParam (const char *s, InstType *tt)
     need_alloc = 1;
   }
   vx->init = 1;
-
 
   /* allocate space and bind it to a value */
   Assert (TypeFactory::isPTypeType (vx->t->BaseType()), "BindParam called with a Type, but needs a value");
@@ -767,12 +845,58 @@ void Scope::BindParam (ActId *id, InstType *tt)
       sc->BindParam (id->Rest(), tt);
       return;
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
+    ValueIdx *vx = LookupVal (id->getName());
+    Assert (vx, "Should have been caught earlier?");
+    if (!TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+    PStruct *ps = dynamic_cast<PStruct *> (vx->t->BaseType());
+    Assert (ps, "Hmm");
+    int pb, pi, pr, pt;
+    if (!ps->getOffset (id->Rest(), &pb, &pi, &pr, &pt)) {
+      Assert (0, "Should have been caught earlier!");
+    }
+    if (pt < 0 || (pb >= 0 || pi >= 0 || pr >= 0)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding a type to a non-type field");
+      fprintf (stderr, " ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
+    if (!vx->init) {
+      vx->init = 1;
+      int count;
+      if (vx->t->arrayInfo()) {
+	count = vx->t->arrayInfo()->size();
+      }
+      else {
+	count = 1;
+      }
+      vx->u.idx = AllocPStruct (ps, count);
+    }
+    int aoff;
+    if (id->arrayInfo()) {
+      aoff = vx->t->arrayInfo()->Offset (id->arrayInfo());
+    }
+    else {
+      aoff = 0;
+    }
+    if (vx->immutable && issetPType (vpstruct[vx->u.idx + aoff].t_off + pt)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " Id: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Setting immutable parameter that has already been set");
+    }
+    setPType (vpstruct[vx->u.idx + aoff].t_off + pt, tt);
+    Assert (getPType (vpstruct[vx->u.idx + aoff].t_off + pt) == tt, "What?");
+    tt->MkCached ();
   }
 }
 
@@ -784,12 +908,16 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
       sc->BindParam (id->Rest(), aes, idx);
       return;
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
+    ValueIdx *vx = LookupVal (id->getName());
+    Assert (vx, "Should have been caught earlier?");
+    if (!TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
   }
   
   ValueIdx *vx = LookupVal (id->getName());
@@ -829,6 +957,9 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
     }
     else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
       vx->u.idx = AllocPBool (len);
+    }
+    else if (TypeFactory::isPStructType (vx->t->BaseType())) {
+      vx->u.idx = AllocPStruct (dynamic_cast<PStruct *>(vx->t->BaseType()), len);
     }
     else {
       Assert (0, "Should not be here!");
@@ -897,6 +1028,11 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
   else if (TypeFactory::isPBoolType (vx->t->BaseType())) {
     setPBool (vx->u.idx + offset, aes->getPBool());
   }
+  else if (TypeFactory::isPStructType (vx->t->BaseType())) {
+    // XXX: pstruct fixme
+    Assert (0, "FIXME!");
+
+  }
   else {
     Assert (0, "Should not be here");
   }
@@ -911,19 +1047,15 @@ void Scope::BindParamFull (ActId *id, AExprstep *aes, int idx)
       sc->BindParamFull (id->Rest(), aes, idx);
       return;
     }
-    ValueIdx *vx = LookupVal (id->getName());
-    if (vx) {
-      Assert (getUserDef(), "Hmm...");
-      Assert (TypeFactory::isPStructType (getUserDef()), "Hmm..");
-      PStruct *ps = dynamic_cast<PStruct *> (getUserDef());
-      printf ("hi!\n");
+    ValueIdx *vx = FullLookupVal (id->getName());
+    if (vx && !TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
   }
   Scope *nsc;
   ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
@@ -940,12 +1072,15 @@ void Scope::BindParamFull (ActId *id, AExpr *ae)
       sc->BindParamFull (id->Rest(), ae);
       return;
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
+    ValueIdx *vx = FullLookupVal (id->getName());
+    if (vx && !TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
   }
   Scope *nsc;
   ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
@@ -962,12 +1097,15 @@ void Scope::BindParamFull (ActId *id, InstType *tt)
       sc->BindParamFull (id->Rest(), tt);
       return;
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
+    ValueIdx *vx = FullLookupVal (id->getName());
+    if (vx && !TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
   }
   Scope *nsc;
   ValueIdx *vx = FullLookupValSc (id->getName(), &nsc);
@@ -998,12 +1136,15 @@ void Scope::BindParam (ActId *id, AExpr *ae)
       id->getNamespace()->CurScope()->BindParam (id->Rest(), ae);
       return;
     }
-    act_error_ctxt (stderr);
-    fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
-    fprintf (stderr," ID: ");
-    id->Print (stderr);
-    fprintf (stderr, "\n");
-    exit (1);
+    ValueIdx *vx = FullLookupVal (id->getName());
+    if (vx && !TypeFactory::isPStructType(vx->t)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, "Binding to a parameter that is in a different user-defined type");
+      fprintf (stderr," ID: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      exit (1);
+    }
   }
 
   /* nothing to do here */
@@ -1268,6 +1409,16 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	Assert (aes->isend(), "This should have been caught earlier");
       }
     }
+  }
+  else if (TypeFactory::isPStructType (vx->t->BaseType())) {
+
+    if (need_alloc) {
+      vx->u.idx = AllocPStruct (dynamic_cast<PStruct *>(vx->t->BaseType()), len);
+    }
+
+    // XXX: pstruct fixme
+    Assert (0, "FIXME!");
+
   }
   else {
     fatal_error ("Should not be here: meta params only");

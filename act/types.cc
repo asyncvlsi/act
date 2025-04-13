@@ -1451,7 +1451,9 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
   *pr = 0;
   *ptn = 0;
   if (!isExpanded()) return false;
-  if (!v) return false;
+
+  // asking for an offset, but actually this is the entire type!
+  if (!v) return true;
 
   for (int i=0; i < nt; i++) {
     unsigned int sz = 1;
@@ -1484,6 +1486,9 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
 	  return false;
 	}
 	*pb = *pb + xoff;
+	*pi = -1;
+	*pr = -1;
+	*ptn = -1;
 	return true;
       }
       else if (TypeFactory::isPIntType (pt[i])) {
@@ -1491,6 +1496,9 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
 	  return false;
 	}
 	*pi = *pi + xoff;
+	*pb = -1;
+	*pr = -1;
+	*ptn = -1;
 	return true;
       }
       else if (TypeFactory::isPRealType (pt[i])) {
@@ -1498,6 +1506,9 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
 	  return false;
 	}
 	*pr = *pr + xoff;
+	*pb = -1;
+	*pi = -1;
+	*ptn = -1;
 	return true;
       }
       else if (TypeFactory::isPTypeType (pt[i])) {
@@ -1505,6 +1516,9 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
 	  return false;
 	}
 	*ptn = *ptn + xoff;
+	*pb = -1;
+	*pi = -1;
+	*pr = -1;
 	return true;
       }
       else if (TypeFactory::isPStructType (pt[i])) {

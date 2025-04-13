@@ -1307,8 +1307,10 @@ void AExprstep::step()
 	Expr *xe = (Expr *) cur->l;
 	Assert (xe->type == E_VAR || expr_is_a_const (xe) ||
 		xe->type == E_ARRAY || xe->type == E_SUBRANGE ||
+		xe->type == E_PSTRUCT ||
 		xe->type == E_TYPE, "What?");
-	if (expr_is_a_const (xe) || xe->type == E_TYPE) {
+	if (expr_is_a_const (xe) || xe->type == E_TYPE ||
+	    xe->type == E_PSTRUCT) {
 	  /* return the constant! */
 	  type = 1;
 	  u.const_expr = xe;
@@ -1530,6 +1532,37 @@ InstType *AExprstep::getPType()
   }
   return v;
 }
+
+#if 0
+// XXX: pstruct fixme
+Scope::pstruct AExprstep::getPStruct()
+{
+  unsigned long v;
+  Assert (type != 0, "AExprstep::getPStruct() called without step or on end");
+
+  v = 0;
+  switch (type) {
+  case 1:
+    Assert (u.const_expr->type == E_PSTRUCT, "Typechecking...");
+    v = u.const_expr->u.ival.v;
+    break;
+
+  case 2:
+    Assert (0, "getPInt() called, but looks like a raw identifier");
+    break;
+    
+  case 3:
+    Assert (u.vx.vx->init, "Should have been caught earlier");
+    return u.vx.s->getPStruct (u.vx.vx->u.idx + u.vx.a->index());
+    break;
+
+  default:
+    fatal_error ("Hmm");
+    break;
+  }
+  return v;
+}
+#endif
 
 
 void AExprstep::getID (ActId **id, int *idx, int *size)

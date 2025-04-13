@@ -1032,7 +1032,7 @@ AExpr *AExpr::Expand (ActNamespace *ns, Scope *s, int is_lval)
       xe = expr_expand ((Expr *)l, ns, s, is_lval);
       if (!expr_is_a_const (xe) && xe->type != E_VAR
 	  && xe->type != E_ARRAY && xe->type != E_SUBRANGE &&
-	  xe->type != E_TYPE) {
+	  xe->type != E_TYPE && xe->type != E_PSTRUCT) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\t array expression: ");
 	this->Print (stderr);

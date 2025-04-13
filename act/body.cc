@@ -315,7 +315,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 	  FREE (vals);
 	}
 	else {
-	  Assert (0, "no ptype arrays");
+	  Assert (0, "no ptype arrays or pstruct dynamic arrays");
 	}
         bitset_free (b);
       }

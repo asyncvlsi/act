@@ -57,6 +57,7 @@ struct act_chp;
 struct act_prs;
 struct act_spec;
 class Array;
+class PStruct;
 
 
 /**
@@ -239,12 +240,6 @@ class Scope {
   int isFunction() { return is_function; }
 
   /**
-   * Use to permit assignments to sub-scope parameter types. Used for
-   * pstruct types
-   */
-  void allowSubscopeBind() { allow_sub = 1; }
-
-  /**
    * @return the user-defined type this scope is for, if it
    * exists. NULL means this is not associated with a user-defined type.
    */
@@ -380,6 +375,11 @@ class Scope {
   void setPType(unsigned long id, InstType *val);
 
   /**
+   * Like AllocPStruct(), but for pstructs
+   */
+  unsigned long AllocPStruct(PStruct *ps, int count = 1);
+
+  /**
    * @return 1 if this is an expanded scope, 0 otherwise
    */
   int isExpanded () { return expanded; }
@@ -504,6 +504,14 @@ class Scope {
    * because the scope has already been expanded.
    */
   Scope *localClone ();
+
+
+  struct pstruct {
+    int i_off;			///< pint offset
+    int b_off;			///< pbool offset
+    int r_off;			///< preal offset
+    int t_off;			///< ptype offset
+  };
   
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if
@@ -512,8 +520,6 @@ class Scope {
   
   UserDef *u;			/* if it is a user-defined type */
   unsigned int expanded:1;	/* if it is an expanded scope */
-  unsigned int allow_sub:1;     /* if 1, allows binding to sub-scopes;
-				   used for pstruct types */
   ActNamespace *ns;		/* if it is a namespace scope */
 
   int is_function;		/* 1 if this is a function scope */
@@ -530,6 +536,8 @@ class Scope {
 
   A_DECL (InstType *, vptype);
   bitset_t *vptype_set;
+
+  A_DECL (pstruct, vpstruct);
 
   unsigned long vpbool_len;
   bitset_t *vpbool;

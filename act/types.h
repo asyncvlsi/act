@@ -876,11 +876,30 @@ public:
   PStruct (ActNamespace *ns);
   ~PStruct ();
 
-  // return counts of pbools, pints, preals, and ptypes in the structure
+  /**
+   * Return the number of pbools, pints, preals, and ptypes needed for
+   * this PStruct
+   * @param pb is used to return the number of pbool
+   * @param pi is used to return the number of pint
+   * @param pr is used to return the number of preal
+   * @param pt is used to return the number of ptype
+   */
   void getCounts (int *pb, int *pi, int *pr, int *pt);
 
-  // return offset for pbool/pint/preal/ptypes for the subid specified
-  // true on success, false on error
+  /**
+   * Returns the offset within the pstruct record for the specified
+   * id. If A NULL subid is passed in, then the returned offset will
+   * be (0,0,0,0). If the subid is a pstruct, then all the returned offsets
+   * will be non-negative and one has to inspect the structure to
+   * figure out what fields will be actually used.
+   *
+   * @param subid is the field within the pstruct of interest
+   * @param pb is used to return the pbool offset, -1 if not used
+   * @param pi is used to return the pint offset, -1 if not used
+   * @param pr is used to return the preal offset, -1 if not used
+   * @param pt is used to return the ptype offset, -1 if not used
+   * @return true on success, false if there was some error
+   */
   bool getOffset (ActId *subid, int *pb, int *pi, int *pr, int *pt);
 
 private:

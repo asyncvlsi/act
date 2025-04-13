@@ -1,0 +1,4 @@
+In expanding ::<Global>
+Error on or near line number 5.
+ id: x.a
+FATAL: Uninitialized identifier

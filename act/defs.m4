@@ -2944,7 +2944,6 @@ defptype: "defptype" ID
     $0->u = NULL;
 
     $A($0->curns->CreateType ($2, ps));
-    $0->scope->allowSubscopeBind ();
 
     $0->scope = $0->curns->CurScope ();
     OPT_FREE ($4);

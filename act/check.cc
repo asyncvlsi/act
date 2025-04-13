@@ -175,6 +175,9 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   if (TypeFactory::isPTypeType (t)) {
     return T_PTYPE|T_PARAM|arr;
   }
+  if (TypeFactory::isPStructType (t)) {
+    return T_PSTRUCT|T_PARAM|arr;
+  }
   if (TypeFactory::isIntType (t)) {
     return T_INT|arr;
   }

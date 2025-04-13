@@ -564,6 +564,14 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       ret->u.e.l = (Expr *) s->getPType (offset + vx->u.idx);
       return ret;
     }
+    else if (TypeFactory::isPStructType (base)) {
+      ret->type = E_PSTRUCT;
+      // ret->u.e.l = list of items!
+      // XXX: pstruct fixme
+      Assert (0, "E_PSTRUCT fixme!");
+      ret->u.ival.v = offset + vx->u.idx;
+      return ret;
+    }
     else {
       Assert (0, "Should not be here");
     }
