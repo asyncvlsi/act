@@ -239,6 +239,12 @@ class Scope {
   int isFunction() { return is_function; }
 
   /**
+   * Use to permit assignments to sub-scope parameter types. Used for
+   * pstruct types
+   */
+  void allowSubscopeBind() { allow_sub = 1; }
+
+  /**
    * @return the user-defined type this scope is for, if it
    * exists. NULL means this is not associated with a user-defined type.
    */
@@ -506,6 +512,8 @@ class Scope {
   
   UserDef *u;			/* if it is a user-defined type */
   unsigned int expanded:1;	/* if it is an expanded scope */
+  unsigned int allow_sub:1;     /* if 1, allows binding to sub-scopes;
+				   used for pstruct types */
   ActNamespace *ns;		/* if it is a namespace scope */
 
   int is_function;		/* 1 if this is a function scope */

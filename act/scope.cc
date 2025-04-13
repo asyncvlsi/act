@@ -51,6 +51,7 @@ Scope::Scope (Scope *parent, int is_expanded)
   vpbool_set = NULL;
 
   is_function = 0;
+  allow_sub = 0;
 }
 
 InstType *Scope::Lookup (const char *s)
@@ -909,6 +910,13 @@ void Scope::BindParamFull (ActId *id, AExprstep *aes, int idx)
       Scope *sc = id->getNamespace()->CurScope();
       sc->BindParamFull (id->Rest(), aes, idx);
       return;
+    }
+    ValueIdx *vx = LookupVal (id->getName());
+    if (vx) {
+      Assert (getUserDef(), "Hmm...");
+      Assert (TypeFactory::isPStructType (getUserDef()), "Hmm..");
+      PStruct *ps = dynamic_cast<PStruct *> (getUserDef());
+      printf ("hi!\n");
     }
     act_error_ctxt (stderr);
     fprintf (stderr, "Binding to a parameter that is in a different user-defined type");

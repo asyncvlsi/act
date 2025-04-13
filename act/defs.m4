@@ -35,6 +35,7 @@ definition: defproc_or_cell
 | defenum
 | deffunc
 | defiface
+| defptype
 ;
 
 /*-- distinguish between a process and a cell --*/
@@ -2894,6 +2895,59 @@ defiface: [ template_spec ]
     OPT_FREE ($5);
     $0->strict_checking = 0;
     $0->scope =$0->curns->CurScope();
+    return NULL;
+}}
+;
+
+
+/*------------------------------------------------------------------------
+ *
+ * Parameter structure
+ *
+ *------------------------------------------------------------------------
+ */
+defptype: "defptype" ID
+{{X:
+    UserDef *u;
+    $0->u = new UserDef($0->curns);
+    $0->u->setFile ($n);
+    $0->u->setLine ($l);
+    $0->u->MkExported();
+    $0->scope = $0->u->CurScope();
+
+    switch ($0->curns->findName ($2)) {
+    case 0:
+      /* whew */
+      break;
+    case 1:
+      $A($0->curns->findType ($2));
+      $E("Name ``%s'' already used as a previous type definition", $2);
+      break;
+    case 2:
+      $E("Name ``%s'' already used as a namespace", $2);
+      break;
+    case 3:
+      $E("Name ``%s'' already used as an instance", $2);
+      break;
+    default:
+      $E("Should not be here ");
+      break;
+    }
+    /*printf ("Orig scope: %x\n", $0->scope);*/
+    //    $0->scope = $0->u_i->CurScope ();
+}}
+"(" { param_inst ";" }* ")" ";"
+{{X:
+    /* Create type here */
+    PStruct *ps = new PStruct ($0->u);
+    delete $0->u;
+    $0->u = NULL;
+
+    $A($0->curns->CreateType ($2, ps));
+    $0->scope->allowSubscopeBind ();
+
+    $0->scope = $0->curns->CurScope ();
+    OPT_FREE ($4);
     return NULL;
 }}
 ;

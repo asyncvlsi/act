@@ -538,7 +538,14 @@ Interface::Interface (UserDef *u) : UserDef (u)
 
 }
 
+PStruct::PStruct (UserDef *u) : UserDef (u)
+{
+
+}
+
 Interface::~Interface() { }
+
+PStruct::~PStruct() { }
 
 
 void UserDef::SetParent (InstType *t)
@@ -1367,6 +1374,193 @@ const char *PType::getName ()
   return name;
 }
 
+
+PStruct *PStruct::Expand (ActNamespace *ns, Scope *s, int _nt, inst_param *u)
+{
+  if (nt < _nt) {
+    act_error_ctxt (stderr);
+    fatal_error ("PStruct being expanded; too many parameters (%d v/s %d).", nt, _nt);
+  }
+
+  PStruct *xd;
+  UserDef *ux;
+  int cache_hit;
+
+  if (isExpanded() && _nt == 0) {
+    return this;
+  }
+
+  ux = UserDef::Expand (ns, s, _nt, u, &cache_hit);
+
+  if (cache_hit) {
+    return dynamic_cast<PStruct *>(ux);
+  }
+
+  xd = new PStruct (ux);
+  delete ux;
+
+  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
+  return xd;
+}
+
+
+void PStruct::getCounts (int *pb, int *pi, int *pr, int *ptn)
+{
+  *pb = 0;
+  *pi = 0;
+  *pr = 0;
+  *ptn = 0;
+  if (!isExpanded()) return;
+  for (int i=0; i < nt; i++) {
+    unsigned int sz = 1;
+    if (pt[i]->arrayInfo()) {
+      sz = pt[i]->arrayInfo()->size();
+    }
+    if (TypeFactory::isPBoolType (pt[i])) {
+      *pb = *pb + sz;
+    }
+    else if (TypeFactory::isPIntType (pt[i])) {
+      *pi = *pi + sz;
+    }
+    else if (TypeFactory::isPRealType (pt[i])) {
+      *pr = *pr + sz;
+    }
+    else if (TypeFactory::isPTypeType (pt[i])) {
+      *ptn = *ptn + sz;
+    }
+    else if (TypeFactory::isPStructType (pt[i])) {
+      int a, b, c, d;
+      PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType());
+      Assert (ps, "What?");
+      ps->getCounts (&a, &b, &c, &d);
+      *pb = *pb + sz * a;
+      *pi = *pi + sz * b;
+      *pr = *pr + sz * c;
+      *ptn = *ptn + sz * d;
+    }
+    else {
+      Assert (0, "New parameterized type?");
+    }
+  }
+}
+
+bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
+{
+  *pb = 0;
+  *pi = 0;
+  *pr = 0;
+  *ptn = 0;
+  if (!isExpanded()) return false;
+  if (!v) return false;
+
+  for (int i=0; i < nt; i++) {
+    unsigned int sz = 1;
+    if (pt[i]->arrayInfo()) {
+      sz = pt[i]->arrayInfo()->size();
+    }
+
+    if (strcmp (v->getName(), pn[i]) == 0) {
+      // match!
+      // XXX here:
+      if (v->arrayInfo() && !pt[i]->arrayInfo()) {
+	return false;
+      }
+      if (!v->arrayInfo() && pt[i]->arrayInfo() && v->Rest()) {
+	return false;
+      }
+      unsigned int xoff;
+      int a, b, c, d;
+
+      if (v->arrayInfo()) {
+	Assert (pt[i]->arrayInfo(), "Hmm?");
+	xoff = pt[i]->arrayInfo()->Offset (v->arrayInfo());
+      }
+      else {
+	xoff = 0;
+      }
+
+      if (TypeFactory::isPBoolType (pt[i])) {
+	if (v->Rest()) {
+	  return false;
+	}
+	*pb = *pb + xoff;
+	return true;
+      }
+      else if (TypeFactory::isPIntType (pt[i])) {
+	if (v->Rest()) {
+	  return false;
+	}
+	*pi = *pi + xoff;
+	return true;
+      }
+      else if (TypeFactory::isPRealType (pt[i])) {
+	if (v->Rest()) {
+	  return false;
+	}
+	*pr = *pr + xoff;
+	return true;
+      }
+      else if (TypeFactory::isPTypeType (pt[i])) {
+	if (v->Rest()) {
+	  return false;
+	}
+	*ptn = *ptn + xoff;
+	return true;
+      }
+      else if (TypeFactory::isPStructType (pt[i])) {
+	int a, b, c, d;
+	PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType());
+	Assert (ps, "What?");
+	ps->getCounts (&a, &b, &c, &d);
+	*pb = *pb + xoff * a;
+	*pi = *pi + xoff * b;
+	*pr = *pr + xoff * c;
+	*ptn = *ptn + xoff * d;
+	if (v->Rest()) {
+	  if (!ps->getOffset (v->Rest(), &a, &b, &c, &d)) {
+	    return false;
+	  }
+	  *pb += a;
+	  *pi += b;
+	  *pr += c;
+	  *pt += d;
+	}
+	return true;
+      }
+      else {
+	Assert (0, "New parameterized type?");
+      }
+    }
+    else {
+      if (TypeFactory::isPBoolType (pt[i])) {
+	*pb = *pb + sz;
+      }
+      else if (TypeFactory::isPIntType (pt[i])) {
+	*pi = *pi + sz;
+      }
+      else if (TypeFactory::isPRealType (pt[i])) {
+	*pr = *pr + sz;
+      }
+      else if (TypeFactory::isPTypeType (pt[i])) {
+	*ptn = *ptn + sz;
+      }
+      else if (TypeFactory::isPStructType (pt[i])) {
+	int a, b, c, d;
+	PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType());
+	Assert (ps, "What?");
+	ps->getCounts (&a, &b, &c, &d);
+	*pb = *pb + sz * a;
+	*pi = *pi + sz * b;
+	*pr = *pr + sz * c;
+	*ptn = *ptn + sz * d;
+      }
+      else {
+	Assert (0, "New parameterized type?");
+      }
+    }
+  }
+  return false;
+}
 
 
 Int *Int::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
@@ -2461,6 +2655,11 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 }
 
 Interface::Interface(ActNamespace *ns) : UserDef (ns)
+{
+
+}
+
+PStruct::PStruct (ActNamespace *ns) : UserDef (ns)
 {
 
 }

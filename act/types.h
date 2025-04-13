@@ -451,7 +451,7 @@ class UserDef : public Type {
   /**
    * Used for overrides. Refine the type for the port parameter at the
    * specified position.
-   * @param pos is 0..k for the port list (temlpate parameters are
+   * @param pos is 0..k for the port list (template parameters are
    * never refined)
    * @param u is the updated instance type
    */
@@ -854,6 +854,38 @@ class Interface : public UserDef {
   Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 };
 
+/**
+ * @class PStruct
+ *
+ * @brief Used to group ptype parameters into a structure.
+ */
+class PStruct : public UserDef {
+public:
+  /**
+   * Expand the ptype. The number of template parameters must be
+   * exactly one and be a type.
+   * @param ns is the namespace
+   * @param s is the scope
+   * @param nt is the number of template parameters
+   * @param u are the parameters
+   * @return the expanded PType
+   */
+  PStruct *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  PStruct (UserDef *u);
+  PStruct (ActNamespace *ns);
+  ~PStruct ();
+
+  // return counts of pbools, pints, preals, and ptypes in the structure
+  void getCounts (int *pb, int *pi, int *pr, int *pt);
+
+  // return offset for pbool/pint/preal/ptypes for the subid specified
+  // true on success, false on error
+  bool getOffset (ActId *subid, int *pb, int *pi, int *pr, int *pt);
+
+private:
+  friend class TypeFactory;
+};
 
 /**
  *
@@ -2060,6 +2092,16 @@ class TypeFactory {
   /** see other isPTypeType() method */
   static int isPTypeType (const InstType *it);
 
+  /**
+   * Determines if the specified type is a parameter structure or not
+   *
+   * @param t is the type to be inspected
+   * @return 1 if it is a valid pstruct type, 0 otherwise
+   */
+  static int isPStructType (const Type *t);
+
+  /** see other isPStructType() method */
+  static int isPStructType (const InstType *it);
 
   /**
    * Determines if the specified type is a parameter type (pint,

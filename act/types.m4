@@ -53,6 +53,12 @@ param_type[InstType *]: "pint"
 {{X:
     return $0->tf->NewPType($0->scope, $3);
 }}
+| ID
+{{X:
+    // check if this exists!!!
+    Assert (0, "What?");
+    return NULL;
+}}
 ;
 
 T_INT[int]: "int"
@@ -277,6 +283,17 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
 
     ud = $1;
     $A(ud);
+
+    if (TypeFactory::isPStructType (ud)) {
+      if (!OPT_EMPTY ($2)) {
+	$E("defptype structure ``%s'' cannot have direction flags.",
+	   ud->getName());
+      }
+      if (!OPT_EMPTY ($3)) {
+	$E("defptype structure ``%s'' cannot have template arguments.",
+	   ud->getName());
+      }
+    }    
 
     ui = new InstType ($0->scope, ud);
 

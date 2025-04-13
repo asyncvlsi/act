@@ -535,9 +535,23 @@ int TypeFactory::isPTypeType (const Type *t)
 INSTMACRO(isPTypeType)
 
 
+int TypeFactory::isPStructType (const Type *t)
+{
+  const PStruct *tmp_t = dynamic_cast<const PStruct *>(t);
+  if (tmp_t) {
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+INSTMACRO(isPStructType)
+
+
 int TypeFactory::isParamType (const Type *t)
 {
   if (isPTypeType (t) ||
+      isPStructType (t) ||
       isPIntType (t) ||
       isPIntsType (t) ||
       isPBoolType (t) ||
