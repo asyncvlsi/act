@@ -80,6 +80,15 @@ class PStruct;
 class Scope {
  public:
 
+  /** used for pstruct offsets */
+  struct pstruct {
+    int i_off;			///< pint offset
+    int b_off;			///< pbool offset
+    int r_off;			///< preal offset
+    int t_off;			///< ptype offset
+  };
+  
+
   /**
    * @param parent is the parent scope for this namespace
    * @param is_expanded is 1 if this is an expanded scope, 0 otherwise
@@ -380,6 +389,11 @@ class Scope {
   unsigned long AllocPStruct(PStruct *ps, int count = 1);
 
   /**
+   * Returns structure offsets for PStruct
+   */
+  Scope::pstruct getPStruct (unsigned long id);
+
+  /**
    * @return 1 if this is an expanded scope, 0 otherwise
    */
   int isExpanded () { return expanded; }
@@ -506,13 +520,6 @@ class Scope {
   Scope *localClone ();
 
 
-  struct pstruct {
-    int i_off;			///< pint offset
-    int b_off;			///< pbool offset
-    int r_off;			///< preal offset
-    int t_off;			///< ptype offset
-  };
-  
  private:
   struct Hashtable *H;		/* maps names to InstTypes, if
 				   unexpanded; maps to ValueIdx if expanded. */

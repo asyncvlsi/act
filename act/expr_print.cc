@@ -855,6 +855,13 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       PRINT_STEP;
     }
     break;
+
+  case E_PSTRUCT:
+    {
+      snprintf (buf+k, sz, "pstruct{}");
+      PRINT_STEP;
+    }
+    break;
     
   default:
     fatal_error ("Unhandled case!\n");
@@ -1095,6 +1102,25 @@ static void efree_ex (Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_REAL:
+    break;
+
+  case E_PSTRUCT:
+    if (e->u.e.l) {
+      struct expr_pstruct *p = (struct expr_pstruct *) e->u.e.l;
+      if (p->pbool) {
+	FREE (p->pbool);
+      }
+      if (p->preal) {
+	FREE (p->preal);
+      }
+      if (p->pint) {
+	FREE (p->pint);
+      }
+      if (p->ptype) {
+	FREE (p->ptype);
+      }
+      FREE (p);
+    }
     break;
 
   case E_FUNCTION:

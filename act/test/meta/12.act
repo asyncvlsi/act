@@ -1,9 +1,13 @@
 defptype mytype(pint a, b);
 
-mytype x = mytype (4, 8);
+mytype x;
 mytype y;
+
+x.a = 5;
+x.b = 7;
 
 y = x;
 
+{ y.a = 5 : "What?" };
 
 ${ "got", y.a };

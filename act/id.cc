@@ -251,6 +251,8 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     id = this;
   }
 
+  Scope *orig_s = s;
+
   do {
 
 #if 0
@@ -349,6 +351,11 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       
       u = dynamic_cast<UserDef *>(it->BaseType ());
       Assert (u, "This should have been caught earlier!");
+
+      if (TypeFactory::isPStructType (u)) {
+	// exit early if we hit a pstruct
+	break;
+      }
     
       /* WWW: here we would have to check the array index for relaxed
 	 parameters */
@@ -420,7 +427,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 
   /* now, verify that the type is a parameter v/s not a parameter */
   if (TypeFactory::isParamType (base)) {
-    ValueIdx *vx = s->LookupVal (id->getName ());
+    ValueIdx *vx = s->LookupVal (id->getName());
     int offset = 0;
     if (!vx->init && !is_lval) {
       act_error_ctxt (stderr);
@@ -500,23 +507,68 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       }
       return ret;
     }
-    if ((TypeFactory::isPIntType(base) && !s->issetPInt (vx->u.idx + offset)) ||
-	(TypeFactory::isPIntsType(base) && !s->issetPInts (vx->u.idx + offset)) ||
-	(TypeFactory::isPBoolType(base) && !s->issetPBool (vx->u.idx + offset)) ||
-	(TypeFactory::isPRealType(base) && !s->issetPReal (vx->u.idx + offset)) ||
-	(TypeFactory::isPTypeType(base) && !s->issetPType (vx->u.idx + offset))) {
 
+    int idx = vx->u.idx + offset;
+
+    int nb, ni, nr, nt;
+
+    if (TypeFactory::isPStructType (base) && id->Rest()) {
+      Scope::pstruct val = s->getPStruct (idx);
+      PStruct *ps = dynamic_cast<PStruct *> (base);
+      Assert (ps, "Hmm");
+      if (!ps->getOffset (id->Rest(), &nb, &ni, &nr, &nt)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " Id: ");
+	Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Could not find non-array field in pstruct definition");
+      }
+      
+      InstType *it = NULL;
+      Assert (act_type_var (s, id, &it) != T_ERR, "Typecheck err");
+      // find out the actual base type within the pstruct, if any.
+      if (nb < 0 || ni < 0 || nr < 0 || nt < 0) {
+	// base type
+	if (nb >= 0) {
+	  idx = nb + val.b_off;
+	}
+	else if (ni >= 0) {
+	  idx = ni + val.i_off;
+	}
+	else if (nr >= 0) {
+	  idx = nr + val.r_off;
+	}
+	else {
+	  Assert (nt >= 0, "What!");
+	  idx = nt + val.t_off;
+	}
+      }
+      else {
+	nb = nb + val.b_off;
+	ni = ni + val.i_off;
+	nr = nr + val.r_off;
+	nt = nt + val.t_off;
+      }
+      base = it->BaseType();
+    }
+    
+    if ((TypeFactory::isPIntType(base) && !s->issetPInt (idx)) ||
+	(TypeFactory::isPIntsType(base) && !s->issetPInts (idx)) ||
+	(TypeFactory::isPBoolType(base) && !s->issetPBool (idx)) ||
+	(TypeFactory::isPRealType(base) && !s->issetPReal (idx)) ||
+	(TypeFactory::isPTypeType(base) && !s->issetPType (idx))) {
       act_error_ctxt (stderr);
       fprintf (stderr, " id: ");
       this->Print (stderr);
       fprintf (stderr, "\n");
       fatal_error ("Uninitialized value");
     }
+
     if (TypeFactory::isPIntType (base)) {
       Expr *tmp;
 
       ret->type = E_INT;
-      ret->u.ival.v = s->getPInt (offset + vx->u.idx);
+      ret->u.ival.v = s->getPInt (idx);
       ret->u.ival.v_extra = NULL;
 
       tmp = TypeFactory::NewExpr (ret);
@@ -529,7 +581,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       Expr *tmp;
 
       ret->type = E_INT;
-      ret->u.ival.v = s->getPInts (offset + vx->u.idx);
+      ret->u.ival.v = s->getPInts (idx);
       ret->u.ival.v_extra = NULL;
 
       tmp = TypeFactory::NewExpr (ret);
@@ -541,7 +593,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     else if (TypeFactory::isPBoolType (base)) {
       Expr *tmp;
 
-      if (s->getPBool (offset + vx->u.idx)) {
+      if (s->getPBool (idx)) {
 	ret->type = E_TRUE;
       }
       else {
@@ -556,20 +608,104 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     }
     else if (TypeFactory::isPRealType (base)) {
       ret->type = E_REAL;
-      ret->u.f = s->getPReal (offset + vx->u.idx);
+      ret->u.f = s->getPReal (idx);
       return ret;
     }
     else if (TypeFactory::isPTypeType (base)) {
       ret->type = E_TYPE;
-      ret->u.e.l = (Expr *) s->getPType (offset + vx->u.idx);
+      ret->u.e.l = (Expr *) s->getPType (idx);
       return ret;
     }
     else if (TypeFactory::isPStructType (base)) {
       ret->type = E_PSTRUCT;
       // ret->u.e.l = list of items!
       // XXX: pstruct fixme
-      Assert (0, "E_PSTRUCT fixme!");
-      ret->u.ival.v = offset + vx->u.idx;
+      Scope::pstruct val;
+      val.i_off = ni;
+      val.b_off = nb;
+      val.r_off = nr;
+      val.t_off = nt;
+      
+      PStruct *ps = dynamic_cast<PStruct *> (base);
+      Assert (ps, "Hmm");
+      ps->getCounts (&nb, &ni, &nr, &nt);
+      struct expr_pstruct *ep;
+      NEW (ep, struct expr_pstruct);
+      if (nb > 0) {
+	MALLOC (ep->pbool, int, nb);
+      }
+      else {
+	ep->pbool = NULL;
+      }
+      if (ni > 0) {
+	MALLOC (ep->pint, unsigned long, ni);
+      }
+      else {
+	ep->pint = NULL;
+      }
+      if (nr > 0) {
+	MALLOC (ep->preal, double, nr);
+      }
+      else {
+	ep->preal = NULL;
+      }
+      if (nt > 0) {
+	MALLOC (ep->ptype, void *, nt);
+      }
+      else {
+	ep->ptype = NULL;
+      }
+      // now populate!
+      for (unsigned int i=0; i < nb; i++) {
+	if (s->issetPBool (val.b_off + i)) {
+	  ep->pbool[i] = s->getPBool (val.b_off + i);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("PStruct has an uninitialized pbool @ position %d", i);
+	}
+      }
+      for (unsigned int i=0; i < ni; i++) {
+	if (s->issetPInt (val.i_off + i)) {
+	  ep->pint[i] = s->getPInt (val.i_off + i);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("PStruct has an uninitialized pint @ position %d", i);
+	}
+      }
+      for (unsigned int i=0; i < nr; i++) {
+	if (s->issetPReal (val.r_off + i)) {
+	  ep->preal[i] = s->getPReal (val.r_off + i);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("PStruct has an uninitialized preal @ position %d", i);
+	}
+      }
+      for (unsigned int i=0; i < nt; i++) {
+	if (s->issetPType (val.t_off + i)) {
+	  ep->ptype[i] = s->getPType (val.t_off + i);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  this->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("PStruct has an uninitialized ptype @ position %d", i);
+	}
+      }
+      ret->u.e.l = (Expr *)ep;
+      ret->u.e.r = (Expr *)ps;
       return ret;
     }
     else {

@@ -1533,27 +1533,25 @@ InstType *AExprstep::getPType()
   return v;
 }
 
-#if 0
-// XXX: pstruct fixme
-Scope::pstruct AExprstep::getPStruct()
+struct expr_pstruct *AExprstep::getPStruct()
 {
-  unsigned long v;
+  struct expr_pstruct *v;
   Assert (type != 0, "AExprstep::getPStruct() called without step or on end");
 
-  v = 0;
+  v = NULL;
   switch (type) {
   case 1:
     Assert (u.const_expr->type == E_PSTRUCT, "Typechecking...");
-    v = u.const_expr->u.ival.v;
+    v = (struct expr_pstruct*) u.const_expr->u.e.l;
     break;
 
   case 2:
-    Assert (0, "getPInt() called, but looks like a raw identifier");
+    Assert (0, "getPStruct() called, but looks like a raw identifier");
     break;
-    
+
   case 3:
     Assert (u.vx.vx->init, "Should have been caught earlier");
-    return u.vx.s->getPStruct (u.vx.vx->u.idx + u.vx.a->index());
+    Assert (0, "FIXME!");
     break;
 
   default:
@@ -1562,7 +1560,6 @@ Scope::pstruct AExprstep::getPStruct()
   }
   return v;
 }
-#endif
 
 
 void AExprstep::getID (ActId **id, int *idx, int *size)

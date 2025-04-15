@@ -1425,7 +1425,11 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       return lt;
     }
     break;
-    
+
+  case E_PSTRUCT:
+    return T_PARAM|T_PSTRUCT;
+    break;
+
   default:
     fatal_error ("Unknown type!");
     typecheck_err ("`%d' is an unknown type for an expression", e->type);
@@ -1690,6 +1694,11 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
   else if (ret == (T_PTYPE|T_PARAM)) {
     Assert (e->type == E_TYPE, "What?");
     return (InstType *)e->u.e.l;
+  }
+  else if (ret == (T_PSTRUCT|T_PARAM)) {
+    Assert (e->type == E_PSTRUCT, "What?");
+    // XXX: pstruct fixme
+    return new InstType (NULL, (PStruct *)e->u.e.r);
   }
   else if (ret & T_ARRAYOF) {
     if (e->type == E_ARRAY) {

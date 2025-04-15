@@ -163,9 +163,21 @@
 
 #define E_NEWEND  E_END + 33	     ///< new "end" of expression options
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/**
+ * An expr_pstruct is an array of initialized parameter values, where
+ * the values are indexed based on the PStruct type numbering system.
+ */
+struct expr_pstruct {
+  unsigned long *pint;
+  double *preal;
+  int *pbool;
+  void **ptype; // this is an InstType array
+};
 
 /*
  * Parsing functions for external function extras

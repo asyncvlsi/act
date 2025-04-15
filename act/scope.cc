@@ -793,6 +793,13 @@ unsigned long Scope::AllocPStruct(PStruct *ps, int count)
   return ret;
 }
 
+Scope::pstruct Scope::getPStruct(unsigned long id)
+{
+  if (id >= A_LEN (vpstruct)) {
+    fatal_error ("Scope::getPStruct(): invalid identifier!");
+  }
+  return vpstruct[id];
+}
 
 /*
   tt has to be expanded
@@ -1029,9 +1036,96 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
     setPBool (vx->u.idx + offset, aes->getPBool());
   }
   else if (TypeFactory::isPStructType (vx->t->BaseType())) {
-    // XXX: pstruct fixme
-    Assert (0, "FIXME!");
+    Scope::pstruct val = getPStruct (vx->u.idx + offset);
 
+    /* we've taken care of the top-level array already */
+    
+    PStruct *ps = dynamic_cast<PStruct *> (vx->t->BaseType());
+    int nb, ni, nr, nt;
+    if (!ps->getOffset (id->Rest(), &nb, &ni, &nr, &nt)) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " Id: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Could not find non-array field in pstruct definition");
+    }
+    InstType *it = NULL;
+    Assert (act_type_var (this, id, &it) != T_ERR, "Typecheck err?");
+    if (vx->immutable &&
+	((TypeFactory::isPIntType (it) && issetPInt (val.i_off + ni)) ||
+	 (TypeFactory::isPBoolType (it) && issetPBool (val.b_off + nb)) ||
+	 (TypeFactory::isPRealType (it) && issetPReal (val.r_off + nr)) ||
+	 (TypeFactory::isPTypeType (it) && issetPType (val.t_off + nt)))) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " Id: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Setting immutable parameter that has already been set");
+    }
+    if (TypeFactory::isPIntType (it)) {
+      setPInt (val.i_off + ni, aes->getPInt());
+    }
+    else if (TypeFactory::isPBoolType (it)) {
+      setPBool (val.b_off + nb, aes->getPBool());
+    }
+    else if (TypeFactory::isPRealType (it)) {
+      setPReal (val.r_off + nr, aes->getPReal());
+    }
+    else if (TypeFactory::isPTypeType (it)) {
+      setPType (val.i_off + nt, aes->getPType());
+    }
+    else if (TypeFactory::isPStructType (it)) {
+      struct expr_pstruct *v = aes->getPStruct();
+      
+      // we are assigning to the following pstruct
+      PStruct *pps = dynamic_cast<PStruct *> (it->BaseType());
+      Assert (pps, "Hmm");
+      int cb, ci, cr, ct;
+      pps->getCounts (&cb, &ci, &cr, &ct);
+      for (int i=0; i < cb; i++) {
+	if (vx->immutable && issetPBool (val.b_off + nb + i)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Setting immutable pbool parameter @ %d that has already been set", i);
+	}
+	setPBool (val.b_off + nb + i, v->pbool[i]);
+      }
+      for (int i=0; i < ci; i++) {
+	if (vx->immutable && issetPInt (val.i_off + ni + i)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Setting immutable pint parameter @ %d that has already been set", i);
+	}
+	setPInt (val.i_off + ni + i, v->pint[i]);
+      }
+      for (int i=0; i < cr; i++) {
+	if (vx->immutable && issetPReal (val.r_off + nr + i)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Setting immutable preal parameter @ %d that has already been set", i);
+	}
+	setPReal (val.r_off + nr + i, v->preal[i]);
+      }
+      for (int i=0; i < ct; i++) {
+	if (vx->immutable && issetPType (val.t_off + nt + i)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Setting immutable ptype parameter @ %d that has already been set", i);
+	}
+	setPType (val.t_off + nt + i, (InstType *)v->ptype[i]);
+      }
+    }
+    else {
+      Assert (0, "FIXME!");
+    }
   }
   else {
     Assert (0, "Should not be here");
