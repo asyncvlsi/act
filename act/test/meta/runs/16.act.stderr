@@ -1,0 +1,5 @@
+In expanding test<q> (16.act:3)
+In expanding ::<Global>
+Error on or near line number 15.
+ id: q
+FATAL: PStruct has an uninitialized pint @ position 1

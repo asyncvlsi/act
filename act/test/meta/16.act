@@ -10,6 +10,6 @@ defproc test(bool i[x.a]; bool o[x.b])
 mytype q;
 
 q.a = 5;
-q.b = 6;
+//q.b = 6;
 
 test<q> w;
