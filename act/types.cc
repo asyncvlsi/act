@@ -1036,6 +1036,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	      snprintf (buf+k, sz, "%c",
 			ux->I->getPBool (vx->u.idx + as->index()) ? 't' : 'f');
 	    }
+	    else if (TypeFactory::isPStructType (x->BaseType())) {
+	      Assert (0, "FIXME!");
+	    }
 	    else {
 	      fatal_error ("What type is this?");
 	    }
@@ -1057,16 +1060,54 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	  else if (TypeFactory::isPIntsType (x->BaseType())) {
 	    snprintf (buf+k, sz, "%ld", ux->I->getPInts (vx->u.idx));
 	  }
-	    else if (TypeFactory::isPRealType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->u.idx));
-	    }
-	    else if (TypeFactory::isPBoolType (x->BaseType())) {
-	      snprintf (buf+k, sz, "%c", ux->I->getPBool (vx->u.idx) ? 't' : 'f');
-	    }
-	    else {
-	      fatal_error ("What type is this?");
-	    }
+	  else if (TypeFactory::isPRealType (x->BaseType())) {
+	    snprintf (buf+k, sz, "%g", ux->I->getPReal (vx->u.idx));
+	  }
+	  else if (TypeFactory::isPBoolType (x->BaseType())) {
+	    snprintf (buf+k, sz, "%c", ux->I->getPBool (vx->u.idx) ? 't' : 'f');
+	  }
+	  else if (TypeFactory::isPStructType (x->BaseType())) {
+	    PStruct *ps = dynamic_cast<PStruct *> (x->BaseType());
+	    Scope::pstruct off = ux->I->getPStruct (vx->u.idx);
+	    Assert (ps, "Hmm");
+	    snprintf (buf+k, sz, "%s{", ps->getName());
 	    len = strlen (buf+k); k+= len; sz-= len;
+	    int nb, ni, nr, nt;
+	    bool first = true;
+	    ps->getCounts (&nb, &ni, &nr, &nt);
+	    for (int i=0; i < nb; i++) {
+	      snprintf (buf+k, sz, "%s%c", first ? "" : ",",
+			ux->I->getPBool (off.b_off + i) ? 't' : 'f');
+	      len = strlen (buf+k); k+= len; sz-= len;
+	      first = false;
+	    }
+	    for (int i=0; i < ni; i++) {
+	      snprintf (buf+k, sz, "%s%lu", first ? "" : ",",
+			ux->I->getPInt (off.i_off + i));
+	      len = strlen (buf+k); k+= len; sz-= len;
+	      first = false;
+	    }
+	    for (int i=0; i < nr; i++) {
+	      snprintf (buf+k, sz, "%s%g", first ? "" : ",",
+			ux->I->getPReal (off.r_off + i));
+	      len = strlen (buf+k); k+= len; sz-= len;
+	      first = false;
+	    }
+	    for (int i=0; i < nt; i++) {
+	      InstType *it = ux->I->getPType (off.t_off + i);
+	      char buf[1024];
+	      it->sPrint (buf, 1024);
+	      snprintf (buf+k, sz, "%s%s", first ? "" : ",", buf);
+	      len = strlen (buf+k); k+= len; sz-= len;
+	      first = false;
+	    }
+	    snprintf (buf+k, sz, "}");
+	    len = strlen (buf+k); k+= len; sz-= len;
+	  }
+	  else {
+	    fatal_error ("What type is this?");
+	  }
+	  len = strlen (buf+k); k+= len; sz-= len;
 	}
       }
     }

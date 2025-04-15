@@ -106,11 +106,13 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
   Assert (s, "Scope?");
   Assert (id, "Identifier?");
 
+  /* if this is a namespace qualified ID, switch to the namespace
+     scope */
   if (id->isNamespace()) {
     s = id->getNamespace()->CurScope();
     id = id->Rest();
   }
-  
+
   it = s->Lookup (id->getName());
   if (!it) {
     it = s->FullLookup (id->getName());
@@ -120,6 +122,14 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
     is_strict = 0;
   }
   Assert (it, "This should have been caught during parsing!");
+
+  /* pstruct can be strict even if there is an id de-reference */
+  if (TypeFactory::isPStructType (it) && id->Rest()) {
+    u = s->getUserDef ();
+    if (u && u->isStrictPort (id->getName())) {
+      is_strict = 1;
+    }
+  }
 
   if (id->Rest ()) {
     while (id->Rest()) {
@@ -173,10 +183,10 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
     return T_REAL|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isPTypeType (t)) {
-    return T_PTYPE|T_PARAM|arr;
+    return T_PTYPE|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isPStructType (t)) {
-    return T_PSTRUCT|T_PARAM|arr;
+    return T_PSTRUCT|T_PARAM|is_strict|arr;
   }
   if (TypeFactory::isIntType (t)) {
     return T_INT|arr;
@@ -329,7 +339,11 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
 			      (ActId *) e->u.e.r->u.e.l,
 			      islocal);
     return it;
-
+  }
+  else if (e->type == E_PSTRUCT) {
+    Assert (e->u.e.r, "What?");
+    it = new InstType (s, (PStruct *)e->u.e.r, 0);
+    return it;
   }
   return NULL;
 }
@@ -1698,6 +1712,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
   else if (ret == (T_PSTRUCT|T_PARAM)) {
     Assert (e->type == E_PSTRUCT, "What?");
     // XXX: pstruct fixme
+    Assert (e->u.e.r, "What?");
     return new InstType (NULL, (PStruct *)e->u.e.r);
   }
   else if (ret & T_ARRAYOF) {

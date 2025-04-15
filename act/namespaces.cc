@@ -614,6 +614,9 @@ void ActNamespace::Print (FILE *fp)
 	u->PrintHeader (fp, "deftype");
 	fprintf (fp, ";\n");
       }
+      else if (TypeFactory::isPStructType (t)) {
+	// nothing to print!
+      }
       else {
 	fprintf (stderr, "Got: %s\n", t->getName());
 	fatal_error ("Unhandled case...");

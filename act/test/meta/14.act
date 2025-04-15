@@ -1,0 +1,8 @@
+defptype mytype(pint a, b);
+
+template<myptype x>
+defproc test(bool i[x.a]; bool o[x.b])
+{
+  i[0] = o[0];
+}
+

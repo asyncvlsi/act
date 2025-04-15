@@ -1,0 +1,14 @@
+defptype mytype(pint a, b);
+defptype mytype2(pint a, c);
+
+mytype x;
+mytype2 y;
+
+x.a = 5;
+x.b = 7;
+
+y = x;
+
+{ y.a = 5 : "What?" };
+
+${ "got", y.a };

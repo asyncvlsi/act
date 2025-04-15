@@ -1,0 +1,3 @@
+ERROR: File `13.act', line 10, col 2
+	Typechecking failed on connection!
+	Types `mytype2' and `mytype' are not compatible

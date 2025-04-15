@@ -2443,6 +2443,14 @@ static Expr *_expr_expand (int *width, Expr *e,
     *width = 1;
     break;
 
+  case E_PSTRUCT:
+    LVAL_ERROR;
+    // we need to dup?!
+    ret->u.e.l = e->u.e.l;
+    ret->u.e.r = e->u.e.r;
+    *width = 64;
+    break;
+
   case E_ARRAY:
   case E_SUBRANGE:
     ret->u = e->u;

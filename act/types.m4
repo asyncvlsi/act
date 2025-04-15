@@ -53,11 +53,15 @@ param_type[InstType *]: "pint"
 {{X:
     return $0->tf->NewPType($0->scope, $3);
 }}
-| ID
+| qualified_type
 {{X:
+    if (!TypeFactory::isPStructType ($1)) {
+      $E("User-defined type in template is not a parameter type");
+    }
+    InstType *it = new InstType ($0->scope, $1);
+    it->MkCached ();
     // check if this exists!!!
-    Assert (0, "What?");
-    return NULL;
+    return it;
 }}
 ;
 

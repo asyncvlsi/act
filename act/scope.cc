@@ -326,6 +326,7 @@ void Scope::FlushExpand ()
     A_FREE (vpints);
     A_FREE (vpreal);
     A_FREE (vptype);
+    A_FREE (vpstruct);
     if (vpbool) { bitset_free (vpbool); }
     if (vpint_set) { bitset_free (vpint_set); }
     if (vpints_set) { bitset_free (vpints_set); }
@@ -341,6 +342,7 @@ void Scope::FlushExpand ()
   A_INIT (vpints);
   A_INIT (vpreal);
   A_INIT (vptype);
+  A_INIT (vpstruct);
   vpbool = NULL;
 
   vpint_set = NULL;
@@ -1505,14 +1507,134 @@ void Scope::BindParam (ActId *id, AExpr *ae)
     }
   }
   else if (TypeFactory::isPStructType (vx->t->BaseType())) {
-
+    struct expr_pstruct *v;
+    
     if (need_alloc) {
       vx->u.idx = AllocPStruct (dynamic_cast<PStruct *>(vx->t->BaseType()), len);
     }
 
-    // XXX: pstruct fixme
-    Assert (0, "FIXME!");
+    PStruct *ps = dynamic_cast<PStruct *>(vx->t->BaseType());
+    Assert (ps, "What?");
+    int nb, ni, nr, nt;
+    ps->getCounts (&nb, &ni, &nr, &nt);
+    
+    if (ae) {
+      if (xa) {		/* array assignment */
+	int idx;
+	Arraystep *as;
+	  
+	as = xa->stepper(subrange_info);
 
+	while (!as->isend()) {
+	  Scope::pstruct off;
+	  Assert (!aes->isend(), "This should have been caught earlier");
+
+	  idx = as->index();
+	  v = aes->getPStruct();
+
+	  off = getPStruct (vx->u.idx + idx);
+
+	  for (int i=0; i < nb; i++) {
+	    if (vx->immutable && issetPBool (off.b_off + i)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, " Id: %s", id->getName());
+	      as->Print (stderr);
+	      fprintf (stderr, "\n");
+	    
+	      fatal_error ("Setting immutable parameter that has already been set");
+	    }
+	    setPBool (off.b_off + i, v->pbool[i]);
+	  }
+	  for (int i=0; i < ni; i++) {
+	    if (vx->immutable && issetPInt (off.i_off + i)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, " Id: %s", id->getName());
+	      as->Print (stderr);
+	      fprintf (stderr, "\n");
+	    
+	      fatal_error ("Setting immutable parameter that has already been set");
+	    }
+	    setPInt (off.i_off + i, v->pint[i]);
+	  }
+	  for (int i=0; i < nr; i++) {
+	    if (vx->immutable && issetPReal (off.r_off + i)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, " Id: %s", id->getName());
+	      as->Print (stderr);
+	      fprintf (stderr, "\n");
+	    
+	      fatal_error ("Setting immutable parameter that has already been set");
+	    }
+	    setPReal (off.r_off + i, v->preal[i]);
+	  }
+	  for (int i=0; i < nr; i++) {
+	    if (vx->immutable && issetPType (off.t_off + i)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, " Id: %s", id->getName());
+	      as->Print (stderr);
+	      fprintf (stderr, "\n");
+	    
+	      fatal_error ("Setting immutable parameter that has already been set");
+	    }
+	    setPType (off.t_off + i, (InstType*)v->ptype[i]);
+	  }
+
+	  as->step();
+	  aes->step();
+	}
+	Assert (aes->isend(), "What on earth?");
+	delete as;
+      }
+      else {
+	Scope::pstruct off;
+	off = getPStruct (vx->u.idx);
+	v = aes->getPStruct();
+	
+	for (int i=0; i < nb; i++) {
+	  if (vx->immutable && issetPBool (off.b_off + i)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  setPBool (off.b_off + i, v->pbool[i]);
+	}
+	for (int i=0; i < ni; i++) {
+	  if (vx->immutable && issetPInt (off.i_off + i)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  setPInt (off.i_off + i, v->pint[i]);
+	}
+	for (int i=0; i < nr; i++) {
+	  if (vx->immutable && issetPReal (off.r_off + i)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  setPReal (off.r_off + i, v->preal[i]);
+	}
+	for (int i=0; i < nr; i++) {
+	  if (vx->immutable && issetPType (off.t_off + i)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    fprintf (stderr, "\n");
+	    
+	    fatal_error ("Setting immutable parameter that has already been set");
+	  }
+	  setPType (off.t_off + i, (InstType*)v->ptype[i]);
+	}
+	
+	aes->step();
+	Assert (aes->isend(), "This should have been caught earlier");
+      }
+    }
   }
   else {
     fatal_error ("Should not be here: meta params only");
