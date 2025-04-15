@@ -2445,10 +2445,54 @@ static Expr *_expr_expand (int *width, Expr *e,
 
   case E_PSTRUCT:
     LVAL_ERROR;
-    // we need to dup?!
-    ret->u.e.l = e->u.e.l;
-    ret->u.e.r = e->u.e.r;
-    *width = 64;
+    // duplicate e->u.e.l:
+    {
+      PStruct *ps = (PStruct *) e->u.e.r;
+      struct expr_pstruct *cp, *orig;
+      NEW (cp, struct expr_pstruct);
+      int nb, ni, nr, nt;
+      ps->getCounts (&nb, &ni, &nr, &nt);
+      orig = (struct expr_pstruct *) e->u.e.l;
+      if (nb > 0) {
+	MALLOC (cp->pbool, int, nb);
+	for (int i=0; i < nb; i++) {
+	  cp->pbool[i] = orig->pbool[i];
+	}
+      }
+      else {
+	cp->pbool = NULL;
+      }
+      if (ni > 0) {
+	MALLOC (cp->pint, unsigned long, ni);
+	for (int i=0; i < ni; i++) {
+	  cp->pint[i] = orig->pint[i];
+	}
+      }
+      else {
+	cp->pint = NULL;
+      }
+      if (nr > 0) {
+	MALLOC (cp->preal, double, nr);
+	for (int i=0; i < nr; i++) {
+	  cp->preal[i] = orig->preal[i];
+	}
+      }
+      else {
+	cp->preal = NULL;
+      }
+      if (nt > 0) {
+	MALLOC (cp->ptype, void *, nt);
+	for (int i=0; i < nt; i++) {
+	  cp->ptype[i] = orig->ptype[i];
+	}
+      }
+      else {
+	cp->ptype = NULL;
+      }
+      ret->u.e.l = (Expr *) cp;
+      ret->u.e.r = e->u.e.r;
+      *width = 64;
+    }
     break;
 
   case E_ARRAY:

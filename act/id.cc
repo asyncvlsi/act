@@ -551,6 +551,13 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       }
       base = it->BaseType();
     }
+    else if (TypeFactory::isPStructType (base)) {
+      Scope::pstruct val = s->getPStruct (idx);
+      nb = val.b_off;
+      ni = val.i_off;
+      nr = val.r_off;
+      nt = val.t_off;
+    }
     
     if ((TypeFactory::isPIntType(base) && !s->issetPInt (idx)) ||
 	(TypeFactory::isPIntsType(base) && !s->issetPInts (idx)) ||
