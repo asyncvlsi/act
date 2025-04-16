@@ -1,0 +1,7 @@
+defptype mytype(pint a, b);
+
+mytype x;
+
+x = mytype (6, 8);
+
+${ "got", x.a };

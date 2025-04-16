@@ -47,7 +47,9 @@
 				///      l points to Scope
 				///	 r points to the array range
 
-#define E_PSTRUCT (E_END + 13)
+#define E_PSTRUCT (E_END + 13)	/* constant pstruct  */
+
+#define E_PSTRUCT_FN (E_END + 14) /* pstruct constructor */
 
 #define E_SELF (E_END + 20)	///< used for "self"
 #define E_SELF_ACK (E_END + 19) ///< used for "selfack"

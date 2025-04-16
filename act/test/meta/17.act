@@ -1,0 +1,14 @@
+defptype mytype(pint a; pbool b);
+
+template<mytype x>
+defproc test(bool i[x.a]; bool o[x.b ? 5 : 10])
+{
+  i[0] = o[0];
+}
+
+mytype q;
+
+q.a = 5;
+//q.b = 6;
+
+test<q> w;

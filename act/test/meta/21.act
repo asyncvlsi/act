@@ -1,0 +1,8 @@
+defptype mytype (pint x; pbool y);
+
+mytype x = mytype (1, false);
+
+{ x.x = 1 : "What?" };
+
+{ x.y = true : "What?" };
+

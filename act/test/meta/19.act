@@ -1,0 +1,3 @@
+defptype mytype (pint x; pbool y);
+
+mytype x = mytype (1);

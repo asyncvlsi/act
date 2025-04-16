@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Error on or near line number 7.
+*** Assertion failed ***
+ assertion: x.y=true
+   message: What?
+FATAL: Aborted execution on failed assertion

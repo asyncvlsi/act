@@ -868,13 +868,46 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
       }
       PRINT_STEP;
       int nb, ni, nr, nt;
+      if (!ps->isExpanded()) {
+	ps = ps->Expand (NULL, NULL, 0, NULL);
+      }
       ps->getCounts (&nb, &ni, &nr, &nt);
       Assert (v->validate (nb, ni, nr, nt), "Typecheck err?");
       v->sPrint (buf+k, sz);
       PRINT_STEP;
     }
     break;
-    
+
+  case E_PSTRUCT_FN:
+    {
+      PStruct *ps = (PStruct *)e->u.e.r;
+      Expr *tmp = e->u.e.l;
+      if (ps->getUnexpanded()) {
+	snprintf (buf+k, sz, "%s(", ps->getUnexpanded()->getName());
+      }
+      else {
+	snprintf (buf+k, sz, "%s(", ps->getName());
+      }
+      PRINT_STEP;
+      while (tmp) {
+	if (prec < 0) {
+	  sprint_uexpr (buf+k, sz, tmp->u.e.l);
+	}
+	else {
+	  sprint_expr (buf+k, sz, tmp->u.e.l);
+	}
+	PRINT_STEP;
+	tmp = tmp->u.e.r;
+	if (tmp) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+      }
+      snprintf (buf+k, sz, ")");
+      PRINT_STEP;
+    }
+    break;
+
   default:
     fatal_error ("Unhandled case!\n");
     break;
@@ -1121,6 +1154,10 @@ static void efree_ex (Expr *e)
       expr_pstruct *p = (expr_pstruct *) e->u.e.l;
       delete p;
     }
+    break;
+
+  case E_PSTRUCT_FN:
+    efree_ex (e->u.e.l);
     break;
 
   case E_FUNCTION:

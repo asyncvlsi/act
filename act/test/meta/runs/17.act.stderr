@@ -1,0 +1,5 @@
+In expanding test<q> (17.act:3)
+In expanding ::<Global>
+Error on or near line number 14.
+ id: q
+FATAL: PStruct has an uninitialized pbool @ position 0

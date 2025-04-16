@@ -732,6 +732,23 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	    ret->type = E_USERMACRO;
 	    ret->u.fn.s = (char *) um;
 	  }
+          else if (TypeFactory::isPStructType (u)) {
+	    // now we count the args to check if this lines up!
+	    PStruct *ps = dynamic_cast<PStruct *> (u);
+	    Expr *tmp, *t2;
+	    if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	      act_parse_err (&p, "Template arguments not permitted for parameter struct `%s'", e->u.fn.s);
+	    }
+	    tmp = walk_fn_args (cookie, e->u.fn.r, &args);
+
+	    if (args != ps->getNumParams()) {
+	      act_parse_err (&p, "`%s': parameter structure constructor has invalid number of arguments (%d v/s %d)", e->u.fn.s, args, ps->getNumParams());
+	    }
+	    ret->type = E_PSTRUCT_FN;
+	    ret->u.e.l = tmp;
+	    ret->u.e.r = (Expr *)ps;
+	    return ret;
+          }
 	  else {
 	    act_parse_err (&p, "`%s' is not a function type", e->u.fn.s);
 	  }

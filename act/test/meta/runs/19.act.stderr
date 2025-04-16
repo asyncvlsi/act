@@ -1,0 +1,2 @@
+ERROR: File `19.act', line 3, col 20
+	`mytype': parameter structure constructor has invalid number of arguments (1 v/s 2)

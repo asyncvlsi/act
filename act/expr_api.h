@@ -55,6 +55,12 @@ public:
 
   bool validate (int cb, int ci, int cr, int ct);
 
+  void addBool (int *idx, int v);
+  void addInt (int *idx, unsigned long v);
+  void addReal (int *idx, double v);
+  void addType (int *idx, InstType *v);
+  void merge (expr_pstruct *s, int *cb, int *ci, int *cr, int *ct);
+
   const char *etypeToStr (int etype);
 
   void sPrint (char *buf, int sz);

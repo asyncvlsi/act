@@ -587,6 +587,55 @@ void act_expr_pop_macro_context (void)
   FREE (x);
 }
 
+static void _populate_pstruct (ActNamespace *ns, Scope *s, unsigned int flags,
+			       PStruct *ps, Expr *args,
+			       expr_pstruct *v,
+			       int *cb, int *ci, int *cr, int *ct)
+{
+  if (!ps->isExpanded()) {
+    ps = ps->Expand (ns, s, 0, NULL);
+  }
+  int count = 0;
+  while (args) {
+    Expr *x = expr_expand (args->u.e.l, ns, s, flags);
+    if (!expr_is_a_const (x) && x->type != E_TYPE) {
+      act_error_ctxt (stderr);
+      fatal_error ("Argument to parameter structure constructor `%s' is not a constant", ps->getName());
+    }
+    int islocal;
+    InstType *it = act_expr_insttype (s, x, &islocal, 0);
+    if (type_connectivity_check (ps->getPortType (-(1+count)), it) != 1) {
+      act_error_ctxt (stderr);
+      fatal_error ("Typechecking failed for parameter #%d\n\t%s", count,
+		   act_type_errmsg());
+    }
+    if (x->type == E_INT) {
+      v->addInt (ci, x->u.ival.v);
+    }
+    else if (x->type == E_TRUE) {
+      v->addBool (cb, 1);
+    }
+    else if (x->type == E_FALSE) {
+      v->addBool (cb, 0);
+    }
+    else if (x->type == E_REAL) {
+      v->addReal (cr, x->u.f);
+    }
+    else if (x->type == E_TYPE) {
+      v->addType (ct, (InstType *)x->u.e.l);
+    }
+    else if (x->type == E_PSTRUCT) {
+      v->merge ((expr_pstruct *)x->u.e.l, cb, ci, cr, ct);
+    }
+    else {
+      Assert (0, "Not sure what we have here? An array?");
+    }
+    count++;
+    expr_ex_free (x);
+    args = args->u.e.r;
+  }
+}
+
 
 static Expr *_expr_expand (int *width, Expr *e,
 			   ActNamespace *ns, Scope *s, unsigned int flags)
@@ -1708,6 +1757,28 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
 	ret = _expr_const_canonical (ret, flags);
       }
+      else if ((ret->u.e.l->type == E_TRUE && ret->u.e.r->type == E_TRUE)
+	       || (ret->u.e.l->type == E_FALSE && ret->u.e.r->type == E_FALSE)){
+	if (e->type == E_EQ) {
+	  ret->type = E_TRUE;
+	}
+	else {
+	  Assert (e->type == E_NE, "Hmm");
+	  ret->type = E_FALSE;
+	}
+	ret = _expr_const_canonical (ret, flags);
+      }
+      else if ((ret->u.e.l->type == E_TRUE && ret->u.e.r->type == E_FALSE)
+	       || (ret->u.e.l->type == E_FALSE && ret->u.e.r->type == E_TRUE)) {
+	if (e->type == E_NE) {
+	  ret->type = E_TRUE;
+	}
+	else {
+	  Assert (e->type == E_EQ, "Hmm");
+	  ret->type = E_FALSE;
+	}
+	ret = _expr_const_canonical (ret, flags);
+      }	
       else {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "\texpanding expr: ");
@@ -2457,6 +2528,33 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     break;
 
+  case E_PSTRUCT_FN:
+    LVAL_ERROR;
+    // duplicate e->u.e.l:
+    {
+      PStruct *ps = (PStruct *) e->u.e.r;
+      expr_pstruct *v;
+
+      if (!ps->isExpanded()) {
+	ps = ps->Expand (ns, s, 0, NULL);
+      }
+      v = new expr_pstruct (ps);
+      int cb, ci, cr, ct;
+      // now we have to walk through the arguments and type-check
+      cb = 0;
+      ci = 0;
+      cr = 0;
+      ct = 0;
+      _populate_pstruct (ns, s, flags, ps, e->u.e.l, v, &cb, &ci, &cr, &ct);
+      Assert (v->validate (cb, ci, cr, ct), "Typecheck error?");
+      ret->type = E_PSTRUCT;
+      ret->u.e.l = (Expr *) v;
+      ret->u.e.r = (Expr *) ps;
+      *width = 64;
+    }
+    break;
+    
+
   case E_ARRAY:
   case E_SUBRANGE:
     ret->u = e->u;
@@ -2569,6 +2667,7 @@ int expr_is_a_const (Expr *e)
 {
   Assert (e, "What?");
   if (e->type == E_INT || e->type == E_REAL ||
+      e->type == E_PSTRUCT ||
       e->type == E_TRUE || e->type == E_FALSE) {
     return 1;
   }
@@ -3279,7 +3378,7 @@ AExpr::~AExpr ()
 
 expr_pstruct::expr_pstruct(PStruct *ps)
 {
-  ps->getCounts (&nb, &ni, &nr, &nt);
+  ps->getCounts (&nb, &ni, &nr, &nt); 
   _alloc();
 }
 
@@ -3598,4 +3697,61 @@ void expr_pstruct::sPrint (char *buf, int sz)
   }
   snprintf (buf+k, sz, "}");
   PRINT_STEP;
+}
+
+
+void expr_pstruct::addBool (int *idx, int v)
+{
+  Assert (0 <= *idx && *idx < nb, "Too many bools?");
+  pbool[*idx] = v;
+  *idx = *idx + 1;
+}
+
+void expr_pstruct::addInt (int *idx, unsigned long v)
+{
+  Assert (0 <= *idx && *idx < ni, "Too many ints?");
+  pint[*idx] = v;
+  *idx = *idx + 1;
+}
+
+void expr_pstruct::addReal (int *idx, double v)
+{
+  Assert (0 <= *idx && *idx < nr, "Too many reals?");
+  preal[*idx] = v;
+  *idx = *idx + 1;
+}
+
+void expr_pstruct::addType (int *idx, InstType *v)
+{
+  Assert (0 <= *idx && *idx < nt, "Too many types?");
+  ptype[*idx] = v;
+  *idx = *idx + 1;
+}
+
+void expr_pstruct::merge (expr_pstruct *s, int *cb, int *ci, int *cr, int *ct)
+{
+  Assert (*cb + s->nb < nb, "What?");
+  Assert (*ci + s->ni < ni, "What?");
+  Assert (*cr + s->nr < nr, "What?");
+  Assert (*ct + s->nt < nt, "What?");
+
+  for (int i=0; i < s->nb; i++) {
+    pbool[i + *cb] = s->pbool[i];
+  }
+  *cb = *cb + s->nb;
+
+  for (int i=0; i < s->ni; i++) {
+    pint[i + *ci] = s->pint[i];
+  }
+  *ci = *ci + s->ni;
+
+  for (int i=0; i < s->nr; i++) {
+    preal[i + *cr] = s->preal[i];
+  }
+  *cr = *cr + s->nr;
+  
+  for (int i=0; i < s->nt; i++) {
+    ptype[i + *ct] = s->ptype[i];
+  }
+  *ct = *ct + s->nt;
 }

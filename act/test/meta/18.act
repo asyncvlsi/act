@@ -1,0 +1,10 @@
+defptype mytype(pint a, b);
+
+mytype x;
+
+x.b = 8;
+x.a = 3;
+
+x.b = 7;
+
+${ "got", x.a };

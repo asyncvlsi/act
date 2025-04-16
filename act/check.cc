@@ -345,6 +345,11 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
     it = new InstType (s, (PStruct *)e->u.e.r, 0);
     return it;
   }
+  else if (e->type == E_PSTRUCT_FN) {
+    Assert (e->u.e.r, "What?");
+    it = new InstType (s, (PStruct *)e->u.e.r, 0);
+    return it;
+  }
   return NULL;
 }
 
@@ -1441,6 +1446,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     break;
 
   case E_PSTRUCT:
+  case E_PSTRUCT_FN:
     return T_PARAM|T_PSTRUCT;
     break;
 
@@ -1710,8 +1716,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
     return (InstType *)e->u.e.l;
   }
   else if (ret == (T_PSTRUCT|T_PARAM)) {
-    Assert (e->type == E_PSTRUCT, "What?");
-    // XXX: pstruct fixme
+    Assert (e->type == E_PSTRUCT || e->type == E_PSTRUCT_FN, "What?");
     Assert (e->u.e.r, "What?");
     return new InstType (NULL, (PStruct *)e->u.e.r);
   }
