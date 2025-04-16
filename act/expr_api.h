@@ -30,6 +30,31 @@ class ActNamespace;
 class Scope;
 class ActId;
 class Data;
+class InstType;
+class PStruct;
+
+/**
+ * An expr_pstruct is an array of initialized parameter values, where
+ * the values are indexed based on the PStruct type numbering system.
+ */
+class expr_pstruct {
+public:
+  expr_pstruct();
+  expr_pstruct(PStruct *ps);
+  ~expr_pstruct();
+
+  expr_pstruct *dup ();
+
+  int nb, ni, nr, nt;
+  unsigned long *pint;
+  double *preal;
+  int *pbool;
+  InstType **ptype; // this is an InstType array
+
+private:
+  void _alloc();
+};
+
 
 /*------------------------------------------------------------------------
  *

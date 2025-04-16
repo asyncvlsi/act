@@ -1533,16 +1533,16 @@ InstType *AExprstep::getPType()
   return v;
 }
 
-struct expr_pstruct *AExprstep::getPStruct()
+expr_pstruct *AExprstep::getPStruct()
 {
-  struct expr_pstruct *v;
+  expr_pstruct *v;
   Assert (type != 0, "AExprstep::getPStruct() called without step or on end");
 
   v = NULL;
   switch (type) {
   case 1:
     Assert (u.const_expr->type == E_PSTRUCT, "Typechecking...");
-    v = (struct expr_pstruct*) u.const_expr->u.e.l;
+    v = (expr_pstruct*) u.const_expr->u.e.l;
     break;
 
   case 2:

@@ -636,32 +636,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       PStruct *ps = dynamic_cast<PStruct *> (base);
       Assert (ps, "Hmm");
       ps->getCounts (&nb, &ni, &nr, &nt);
-      struct expr_pstruct *ep;
-      NEW (ep, struct expr_pstruct);
-      if (nb > 0) {
-	MALLOC (ep->pbool, int, nb);
-      }
-      else {
-	ep->pbool = NULL;
-      }
-      if (ni > 0) {
-	MALLOC (ep->pint, unsigned long, ni);
-      }
-      else {
-	ep->pint = NULL;
-      }
-      if (nr > 0) {
-	MALLOC (ep->preal, double, nr);
-      }
-      else {
-	ep->preal = NULL;
-      }
-      if (nt > 0) {
-	MALLOC (ep->ptype, void *, nt);
-      }
-      else {
-	ep->ptype = NULL;
-      }
+      expr_pstruct *ep = new expr_pstruct (ps);
       // now populate!
       for (unsigned int i=0; i < nb; i++) {
 	if (s->issetPBool (val.b_off + i)) {

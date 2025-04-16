@@ -2448,47 +2448,9 @@ static Expr *_expr_expand (int *width, Expr *e,
     // duplicate e->u.e.l:
     {
       PStruct *ps = (PStruct *) e->u.e.r;
-      struct expr_pstruct *cp, *orig;
-      NEW (cp, struct expr_pstruct);
-      int nb, ni, nr, nt;
-      ps->getCounts (&nb, &ni, &nr, &nt);
-      orig = (struct expr_pstruct *) e->u.e.l;
-      if (nb > 0) {
-	MALLOC (cp->pbool, int, nb);
-	for (int i=0; i < nb; i++) {
-	  cp->pbool[i] = orig->pbool[i];
-	}
-      }
-      else {
-	cp->pbool = NULL;
-      }
-      if (ni > 0) {
-	MALLOC (cp->pint, unsigned long, ni);
-	for (int i=0; i < ni; i++) {
-	  cp->pint[i] = orig->pint[i];
-	}
-      }
-      else {
-	cp->pint = NULL;
-      }
-      if (nr > 0) {
-	MALLOC (cp->preal, double, nr);
-	for (int i=0; i < nr; i++) {
-	  cp->preal[i] = orig->preal[i];
-	}
-      }
-      else {
-	cp->preal = NULL;
-      }
-      if (nt > 0) {
-	MALLOC (cp->ptype, void *, nt);
-	for (int i=0; i < nt; i++) {
-	  cp->ptype[i] = orig->ptype[i];
-	}
-      }
-      else {
-	cp->ptype = NULL;
-      }
+      expr_pstruct *cp, *orig;
+      orig = (expr_pstruct *) e->u.e.l;
+      cp = orig->dup ();
       ret->u.e.l = (Expr *) cp;
       ret->u.e.r = e->u.e.r;
       *width = 64;
@@ -3307,3 +3269,96 @@ AExpr::~AExpr ()
   }
 }
 
+
+/*------------------------------------------------------------------------
+ *
+ * Functions for pstruct values that are used in expression evaluation
+ *
+ *------------------------------------------------------------------------
+ */
+
+expr_pstruct::expr_pstruct(PStruct *ps)
+{
+  ps->getCounts (&nb, &ni, &nr, &nt);
+  _alloc();
+}
+
+expr_pstruct::expr_pstruct()
+{
+  nb = 0;
+  ni = 0;
+  nr = 0;
+  nt = 0;
+  _alloc();
+}
+
+expr_pstruct::~expr_pstruct()
+{
+  if (pbool) {
+    FREE (pbool);
+    pbool = NULL;
+  }
+  if (pint) {
+    FREE (pint);
+    pint = NULL;
+  }
+  if (preal) {
+    FREE (preal);
+    preal = NULL;
+  }
+  if (ptype) {
+    FREE (ptype);
+    ptype = NULL;
+  }
+}
+
+void expr_pstruct::_alloc ()
+{
+  if (nb > 0) {
+    MALLOC (pbool, int, nb);
+  }
+  else {
+    pbool = NULL;
+  }
+  if (ni > 0) {
+    MALLOC (pint, unsigned long, ni);
+  }
+  else {
+    pint = NULL;
+  }
+  if (nr > 0) {
+    MALLOC (preal, double, nr);
+  }
+  else {
+    preal = NULL;
+  }
+  if (nt > 0) {
+    MALLOC (ptype, InstType *, nt);
+  }
+  else {
+    ptype = NULL;
+  }
+}  
+
+expr_pstruct *expr_pstruct::dup ()
+{
+  expr_pstruct *ret = new expr_pstruct();
+  ret->ni = ni;
+  ret->nr = nr;
+  ret->nt = nt;
+  ret->nb = nb;
+  ret->_alloc();
+  for (int i=0; i < nb; i++) {
+    ret->pbool[i] = pbool[i];
+  }
+  for (int i=0; i < ni; i++) {
+    ret->pint[i] = pint[i];
+  }
+  for (int i=0; i < nr; i++) {
+    ret->preal[i] = preal[i];
+  }
+  for (int i=0; i < nt; i++) {
+    ret->ptype[i] = ptype[i];
+  }
+  return ret;
+}

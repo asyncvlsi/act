@@ -33,7 +33,7 @@ class Arraystep;
 class ActId;
 class InstType;
 class ValueIdx;
-
+class expr_pstruct;
 
 /**
  *  @class Array
@@ -654,7 +654,7 @@ public:
   double getPReal(); ///< get the current preal value
   int getPBool(); ///< get the current pbool value
   InstType *getPType(); ///< get the current ptype value
-  struct expr_pstruct *getPStruct(); ///< get the current pstruct value
+  expr_pstruct *getPStruct(); ///< get the current pstruct value
 
   /**
    * get the current identifier. If the identifier is an array

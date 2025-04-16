@@ -859,7 +859,7 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
   case E_PSTRUCT:
     {
       PStruct *ps = (PStruct *)e->u.e.r;
-      struct expr_pstruct *v = (struct expr_pstruct *) e->u.e.l;
+      expr_pstruct *v = (expr_pstruct *) e->u.e.l;
       snprintf (buf+k, sz, "%s{", ps->getName());
       PRINT_STEP;
       int nb, ni, nr, nt;
@@ -1151,20 +1151,8 @@ static void efree_ex (Expr *e)
 
   case E_PSTRUCT:
     if (e->u.e.l) {
-      struct expr_pstruct *p = (struct expr_pstruct *) e->u.e.l;
-      if (p->pbool) {
-	FREE (p->pbool);
-      }
-      if (p->preal) {
-	FREE (p->preal);
-      }
-      if (p->pint) {
-	FREE (p->pint);
-      }
-      if (p->ptype) {
-	FREE (p->ptype);
-      }
-      FREE (p);
+      expr_pstruct *p = (expr_pstruct *) e->u.e.l;
+      delete p;
     }
     break;
 

@@ -1077,7 +1077,7 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
       setPType (val.i_off + nt, aes->getPType());
     }
     else if (TypeFactory::isPStructType (it)) {
-      struct expr_pstruct *v = aes->getPStruct();
+      expr_pstruct *v = aes->getPStruct();
       
       // we are assigning to the following pstruct
       PStruct *pps = dynamic_cast<PStruct *> (it->BaseType());
@@ -1507,7 +1507,7 @@ void Scope::BindParam (ActId *id, AExpr *ae)
     }
   }
   else if (TypeFactory::isPStructType (vx->t->BaseType())) {
-    struct expr_pstruct *v;
+    expr_pstruct *v;
     
     if (need_alloc) {
       vx->u.idx = AllocPStruct (dynamic_cast<PStruct *>(vx->t->BaseType()), len);
