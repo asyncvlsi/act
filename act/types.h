@@ -852,6 +852,10 @@ class Interface : public UserDef {
 				  ActNamespace *newroot, UserDef *orig);
   
   Interface *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  const char *validateMacros (UserDef *u, UserMacro **um, int n);
+
+  void Print (FILE *fp);
 };
 
 /**
@@ -971,6 +975,15 @@ class Process : public UserDef {
    * Weak check for interface equality
    */
   int hasIface (InstType *x, int weak);
+
+  /**
+   * Validate interfaces exported to make sure any macros/methods are
+   * defined.
+   *
+   * @return macro name that caused the error, if any. NULL return
+   * value means success.
+   */
+  const char *validateInterfaces ();
 
   /**
    * @return the port name map for the interface exported by this
@@ -1404,7 +1417,41 @@ class Data : public UserDef {
    */
   void synthStructMacro ();
 
+  /**
+   * Add an interface specification that this process exports. Note
+   * that a process can export multiple interfaces.
+   *
+   * @param iface is the interface exported
+   * @param imap is the name mapping from the process ports to the
+   * interface ports
+   */
+  void addIface (InstType *iface, list_t *imap);
+
+  /**
+   * Weak check for interface equality
+   */
+  int hasIface (InstType *x, int weak);
+
+  /**
+   * Validate interfaces exported to make sure any macros/methods are
+   * defined.
+   *
+   * @return macro name that caused the error, if any. NULL return
+   * value means success.
+   */
+  const char *validateInterfaces ();
+
+  /**
+   * @return the port name map for the interface exported by this
+   * type
+   */
+  list_t *findMap (InstType *iface);
+  
 private:
+  list_t *ifaces;		///< a mixed list of interface, map
+				///pairs. The map is also a list of
+				///oldname, newname pairs
+  
   void _get_struct_count (int *nbools, int *nints);
   void _get_struct_fields (ActId **a, int *types, int *pos, ActId *prefix);
   
@@ -1554,7 +1601,7 @@ public:
   UserMacro (UserDef *u, const char *name);
   ~UserMacro ();
 
-  void Print (FILE *fp);
+  void Print (FILE *fp, bool header_only = false);
 
   /**
    * Expand a user-defined macro. The is_proc flag is used because

@@ -1,0 +1,32 @@
+template<pint N>
+interface linear(bool in[N], out[N])
+{
+  methods {
+    macro sum(int x, y);
+  }
+}
+
+template<pint N; ptype(linear<N>) p>
+defproc foo ()
+{
+  bool w[N];
+  int a, b;
+  p y;
+
+  y.in = w;
+  chp {
+    y.sum(a, b)
+  }
+}
+
+defproc bar (bool in[4], out[4]) :> linear<4> { in -> in, out -> out }
+{
+  bool q[4];
+  methods {
+    macro sum(int a, b) {
+      a := a + b
+    }
+  }
+}
+
+foo<4, @bar> x;

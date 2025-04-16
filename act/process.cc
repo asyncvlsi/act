@@ -742,3 +742,27 @@ void Process::recordGlobal (ActId *id)
   if (findGlobal (id)) return;
   list_append (used_globals, id->Clone());
 }
+
+
+const char *Process::validateInterfaces ()
+{
+  static char buf[1024];
+  if (!ifaces) return NULL;
+  listitem_t *li;
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *x = (InstType *) list_value (li);
+    Interface *ix = dynamic_cast<Interface *> (x->BaseType());
+    Assert (ix, "What?!");
+
+    // now typecheck macros
+    const char *ret = ix->validateMacros (this, um, A_LEN (um));
+    if (ret) {
+      snprintf (buf, 1024, "Method `%s' from interface `%s'", ret,
+		ix->getName());
+      return buf;
+    }
+
+    li = list_next (li);
+  }
+  return NULL;
+}

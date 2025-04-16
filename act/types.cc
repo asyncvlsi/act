@@ -634,6 +634,7 @@ Data::Data (UserDef *u) : UserDef (u)
   is_eint = 0;
   b = NULL;
   enum_vals = NULL;
+  ifaces = NULL;
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     methods[i] = NULL;
@@ -1301,6 +1302,22 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
   if (enum_vals) {
     xd->enum_vals = list_dup (enum_vals);
+  }
+
+  if (ifaces) {
+    listitem_t *li;
+    xd->ifaces = list_new ();
+    for (li = list_first (ifaces); li; li = list_next (li)) {
+      InstType *iface = (InstType *)list_value (li);
+      Assert (list_next (li), "What?");
+      list_t *lmap = (list_t *)list_value (list_next (li));
+      li = list_next (li);
+      list_append (xd->ifaces, iface->Expand (ns, xd->I));
+      list_append (xd->ifaces, lmap);
+    }
+  }
+  else {
+    xd->ifaces = NULL;
   }
 
   /*-- expand macros --*/
@@ -2916,4 +2933,125 @@ void UserDef::updateClonedTypes (ActNamespace */*root*/,
 				 UserDef */*orig*/)
 {
   Assert (0, "This should not be called!");
+}
+
+
+void Data::addIface (InstType *iface, list_t *lmap)
+{
+  if (!ifaces) {
+    ifaces = list_new ();
+  }
+  list_append (ifaces, iface);
+  list_append (ifaces, lmap);
+}
+
+int Data::hasIface (InstType *x, int weak)
+{
+  listitem_t *li;
+  if (!ifaces) return 0;
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *itmp = (InstType *)list_value (li);
+    Assert (itmp, "What?");
+    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
+    Assert (tmp, "What?");
+    if (itmp->isEqual (x, weak)) {
+      return 1;
+    }
+    li = list_next (li);
+  }
+  return 0;
+}
+
+list_t *Data::findMap (InstType *x)
+{
+  listitem_t *li;
+
+  if (!ifaces) return NULL;
+
+  Array *xtmp = x->arrayInfo();
+  x->clrArray();
+
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *itmp = (InstType *)list_value (li);
+    Assert (itmp, "What?");
+    Interface *tmp = dynamic_cast <Interface *>(itmp->BaseType());
+    Assert (tmp, "What?");
+
+    if (itmp->isEqual (x)) {
+      x->MkArray (xtmp);
+      return (list_t *)list_value (list_next (li));
+    }
+    li = list_next (li);
+  }
+  x->MkArray (xtmp);
+  return NULL;
+}
+
+const char *Data::validateInterfaces ()
+{
+  static char buf[1024];
+  if (!ifaces) return NULL;
+  listitem_t *li;
+  for (li = list_first (ifaces); li; li = list_next (li)) {
+    InstType *x = (InstType *) list_value (li);
+    Interface *ix = dynamic_cast<Interface *> (x->BaseType());
+    Assert (ix, "What?!");
+
+    // now typecheck macros
+    const char *ret = ix->validateMacros (this, um, A_LEN (um));
+    if (ret) {
+      snprintf (buf, 1024, "Method `%s' from interface `%s'", ret,
+		ix->getName());
+      return buf;
+    }
+
+    li = list_next (li);
+  }
+  return NULL;
+}
+
+void Interface::Print (FILE *fp)
+{
+  PrintHeader (fp, "interface");
+  if (A_LEN (um) > 0) {
+    fprintf (fp, "\n{ methods {\n");
+    for (int i=0; i < A_LEN (um); i++) {
+      um[i]->Print (fp, true);
+    }
+    fprintf (fp, "  }\n}\n");
+  }
+  else {
+    fprintf (fp, ";\n");
+  }
+}
+
+const char *Interface::validateMacros (UserDef *u, UserMacro **macros, int count)
+{
+  // we have to try type substitutions for the interface name with the
+  // specified type name!
+  for (int i=0; i < A_LEN (um); i++) {
+    const char *err = um[i]->getName();
+    int idx;
+    for (idx=0; idx < count; idx++) {
+      if (strcmp (macros[idx]->getName(), err) == 0) {
+	break;
+      }
+    }
+    if (idx == count) return err;
+
+    /* now check that um[i] and macros[idx] match up! */
+    if (um[i]->getNumPorts() != macros[idx]->getNumPorts()) return err;
+    
+    if (um[i]->getRetType()) {
+      if (!macros[idx]->getRetType()) return err;
+    }
+    else {
+      if (macros[idx]->getRetType()) return err;
+    }
+
+    /* now match the types for each of the arguments as well as the
+       return value */
+    
+  }
+  return NULL;
 }

@@ -73,7 +73,7 @@ UserMacro::~UserMacro ()
 }
 
 
-void UserMacro::Print (FILE *fp)
+void UserMacro::Print (FILE *fp, bool header_only)
 {
   int templ = 0;
   int meta = 0;
@@ -99,6 +99,10 @@ void UserMacro::Print (FILE *fp)
   if (rettype) {
     fprintf (fp, " : ");
     rettype->Print (fp);
+  }
+  if (header_only) {
+    fprintf (fp, ";\n");
+    return;
   }
   fprintf (fp, " {\n");
 

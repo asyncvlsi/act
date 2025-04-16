@@ -1790,6 +1790,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else if (ret->u.e.l->type == E_REAL) {
 	  fprintf (stderr, "preal");
 	}
+	else if (ret->u.e.l->type == E_TRUE || ret->u.e.l->type == E_FALSE) {
+	  fprintf (stderr, "pbool");
+	}
 	else {
 	  fprintf (stderr, "other");
 	}
@@ -1799,6 +1802,9 @@ static Expr *_expr_expand (int *width, Expr *e,
 	}
 	else if (ret->u.e.r->type == E_REAL) {
 	  fprintf (stderr, "preal");
+	}
+	else if (ret->u.e.r->type == E_TRUE || ret->u.e.r->type == E_FALSE) {
+	  fprintf (stderr, "pbool");
 	}
 	else {
 	  fprintf (stderr, "other");

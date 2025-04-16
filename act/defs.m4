@@ -389,6 +389,12 @@ proc_body:
 	}
       }
     }
+
+    const char *r = $0->u_p->validateInterfaces ();
+    if (r) {
+      $E("%s: inconsistent/missing method", r);
+    }
+    
     return NULL;
 }}
 ;
@@ -420,7 +426,10 @@ interface_one_spec: iface_inst_type
     }
 
     $A(iface);
-    $A($0->u_p);
+    if (!$0->u_p && !$0->u_d) {
+      $E("Interfaces can only be exported by processes and data types");
+    }
+    $A($0->u_p || $0->u_d);
     for (li = list_first (ret); li; li = list_next (li)) {
       if (!iface->isPort ((char *)list_value (li))) {
 	$E("``%s'' is not a port in interface ``%s''",
@@ -428,12 +437,25 @@ interface_one_spec: iface_inst_type
       }
       li = list_next (li);
       $A(li);
-      if (!$0->u_p->isPort ((char *)list_value (li))) {
-	$E("``%s'' is not a port in process ``%s''",
-	   (char *)list_value (li), $0->u_p->getName());
+      if ($0->u_p) {
+	if (!$0->u_p->isPort ((char *)list_value (li))) {
+	  $E("``%s'' is not a port in process ``%s''",
+	     (char *)list_value (li), $0->u_p->getName());
+	}
+      }
+      else {
+	if (!$0->u_d->isPort ((char *)list_value (li))) {
+	  $E("``%s'' is not a port in data type ``%s''",
+	     (char *)list_value (li), $0->u_d->getName());
+	}
       }
     }
-    $0->u_p->addIface ($1, ret);
+    if ($0->u_p) {
+      $0->u_p->addIface ($1, ret);
+    }
+    else {
+      $0->u_d->addIface ($1, ret);
+    }
     return NULL;
 }}
 ;
@@ -918,6 +940,9 @@ single_macro_port_item: physical_inst_type id_list
     else if ($0->u_d) {
       u = $0->u_d;
     }
+    else if ($0->u_i) {
+      u = $0->u_i;
+    }
     else {
       $A(0);
     }
@@ -1150,7 +1175,9 @@ data_chan_body: ";"
 {{X:
     return NULL;
 }}
-| [ "+{" override_spec "}" ]
+|
+[ ":>" interface_spec ]
+[ "+{" override_spec "}" ]
 {{X:
     if ($0->u_c) {
       if ($0->u_c->isDefined ()) {
@@ -1166,6 +1193,7 @@ data_chan_body: ";"
       $A(0);
     }
     OPT_FREE ($1);
+    OPT_FREE ($2);
 }}
 "{" base_body [ methods_body ] "}"
 {{X:
@@ -1173,18 +1201,18 @@ data_chan_body: ";"
     UserDef *me;
     if ($0->u_c) {
       $0->u_c->MkDefined ();
-      $0->u_c->AppendBody ($3);
+      $0->u_c->AppendBody ($4);
       me = $0->u_c;
     }
     else if ($0->u_d) {
       $0->u_d->MkDefined();
-      $0->u_d->AppendBody ($3);
+      $0->u_d->AppendBody ($4);
       me = $0->u_d;
     }
     else {
       $A(0);
     }
-    OPT_FREE ($4);
+    OPT_FREE ($5);
 
     parent = me->getParent ();
     if (parent && TypeFactory::isUserType (parent)) {
@@ -1196,6 +1224,12 @@ data_chan_body: ";"
 	if (!me->getMacro (ux->getName())) {
 	  me->newMacro (ux);
 	}
+      }
+    }
+    if ($0->u_d) {
+      const char *r = $0->u_d->validateInterfaces ();
+      if (r) {
+	$E("%s: inconsistent/missing method", r);
       }
     }
     return NULL;
@@ -2873,8 +2907,8 @@ defiface: [ template_spec ]
     /*printf ("Orig scope: %x\n", $0->scope);*/
     $0->scope = $0->u_i->CurScope ();
 }}
- "(" [ port_formal_list ] ")" ";"
-{{X:
+ "(" [ port_formal_list ] ")"
+{{X: 
     /* Create type here */
     UserDef *u;
 
@@ -2892,13 +2926,107 @@ defiface: [ template_spec ]
     else {
       $A($0->curns->CreateType ($3, $0->u_i));
     }
-    OPT_FREE ($5);
     $0->strict_checking = 0;
+}}
+interface_methods
+{{X:
     $0->scope =$0->curns->CurScope();
+    $0->u_i->MkDefined ();
     return NULL;
 }}
 ;
 
+
+interface_methods: "{" "methods" "{" method_decl_list "}" "}"
+{{X:
+    return NULL;
+}}
+| ";"
+{{X:
+    return NULL;
+}}
+;
+
+method_decl_list: one_method_decl method_decl_list 
+| one_method_decl
+;
+
+one_method_decl: "macro" ID 
+{{X:
+    $A($0->u_i);
+    if (strcmp ($2, "int") == 0) {
+      $E("``int'' cannot be used as a macro name; it is built-in!");
+    }
+    else if (strcmp ($2, $0->u_i->getName()) == 0) {
+      $E("``%s'' cannot be used as a macro name; it is built-in!",
+	 $0->u_i->getName());
+    }
+    $0->um = $0->u_i->newMacro ($2);
+    if (!$0->um) {
+      $E("Duplicate macro name: ``%s''", $2);
+    }
+    $0->scope = new Scope ($0->scope, 0);
+}}
+"(" [ macro_formal_list ] ")" ";"
+{{X:
+    OPT_FREE ($4);
+    $0->um = NULL;
+
+    Scope *tmp = $0->scope;
+    $0->scope = tmp->Parent ();
+    delete tmp;
+
+    return NULL;
+}}
+| "function" ID 
+{{X:
+    $A($0->u_i);
+    if (strcmp ($2, "int") == 0) {
+      $E("``int'' cannot be used as a macro name; it is built-in!");
+    }
+    else if (strcmp ($2, $0->u_i->getName()) == 0) {
+      $E("``%s'' cannot be used as a macro name; it is built-in!",
+	 $0->u_i->getName());
+    }
+    $0->um = $0->u_i->newMacro ($2);
+    if (!$0->um) {
+      $E("Duplicate macro name: ``%s''", $2);
+    }
+    $0->scope = new Scope ($0->scope, 0);
+}}
+"(" macro_fn_formal ")" ":" func_ret_type ";"
+{{X:
+    if ($0->um->getNumPorts() > 0) {
+      if (TypeFactory::isParamType ($0->um->getPortType (0))) {
+	if (!TypeFactory::isParamType ($7)) {
+	  $E("Macro function with parameter types: return type must be a parameter!");
+	}
+      }
+      else {
+	if (TypeFactory::isParamType ($7)) {
+	  $E("Macro function with non-parameter types: return type cannot be a parameter!");
+	}
+      }
+    }
+    if (TypeFactory::isParamType ($7)) {
+      for (int i=0; i < $0->u_i->getNumParams (); i++) {
+	if ($0->um->addPort ($0->u_i->getPortType (-(i+1)),
+			     $0->u_i->getPortName (-(i+1))) != 1) {
+	  $E("Macro function `%s': duplicate port name for parameter type `%s'.",
+	     $0->um->getName(), $0->u_i->getPortName (-(i+1)));
+	}
+      }
+    }
+    $0->um->setRetType ($7);
+    $0->um = NULL;
+
+    Scope *tmp = $0->scope;
+    $0->scope = tmp->Parent ();
+    delete tmp;
+    
+    return NULL;
+}}
+;
 
 /*------------------------------------------------------------------------
  *

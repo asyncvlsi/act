@@ -590,8 +590,7 @@ void ActNamespace::Print (FILE *fp)
 	fprintf (fp, ";\n");
       }
       else if (TypeFactory::isInterfaceType (t)) {
-	u->PrintHeader (fp, "interface");
-	fprintf (fp, ";\n");
+	u->Print (fp);
       }
       else if (TypeFactory::isFuncType (t)) {
 	Function *f = dynamic_cast<Function *> (t);
