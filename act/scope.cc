@@ -1083,46 +1083,18 @@ void Scope::BindParam (ActId *id, AExprstep *aes, int idx)
       PStruct *pps = dynamic_cast<PStruct *> (it->BaseType());
       Assert (pps, "Hmm");
       int cb, ci, cr, ct;
+      int err, etype;
       pps->getCounts (&cb, &ci, &cr, &ct);
-      for (int i=0; i < cb; i++) {
-	if (vx->immutable && issetPBool (val.b_off + nb + i)) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: ");
-	  id->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Setting immutable pbool parameter @ %d that has already been set", i);
-	}
-	setPBool (val.b_off + nb + i, v->pbool[i]);
-      }
-      for (int i=0; i < ci; i++) {
-	if (vx->immutable && issetPInt (val.i_off + ni + i)) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: ");
-	  id->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Setting immutable pint parameter @ %d that has already been set", i);
-	}
-	setPInt (val.i_off + ni + i, v->pint[i]);
-      }
-      for (int i=0; i < cr; i++) {
-	if (vx->immutable && issetPReal (val.r_off + nr + i)) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: ");
-	  id->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Setting immutable preal parameter @ %d that has already been set", i);
-	}
-	setPReal (val.r_off + nr + i, v->preal[i]);
-      }
-      for (int i=0; i < ct; i++) {
-	if (vx->immutable && issetPType (val.t_off + nt + i)) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " Id: ");
-	  id->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Setting immutable ptype parameter @ %d that has already been set", i);
-	}
-	setPType (val.t_off + nt + i, (InstType *)v->ptype[i]);
+      Assert (v->validate (cb, ci, cr, ct), "Typecheck error?");
+      if (!v->pushToScope (vx->immutable, this, val.b_off + nb,
+			    val.i_off + ni, val.r_off + nr, val.t_off + nt,
+			    &err, &etype)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " Id: ");
+	id->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("Setting immutable %s parameter @ %d that has already been set",
+		     v->etypeToStr (etype), err);
       }
     }
     else {
@@ -1534,49 +1506,16 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 
 	  off = getPStruct (vx->u.idx + idx);
 
-	  for (int i=0; i < nb; i++) {
-	    if (vx->immutable && issetPBool (off.b_off + i)) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, " Id: %s", id->getName());
-	      as->Print (stderr);
-	      fprintf (stderr, "\n");
+	  int err, etype;
+	  if (!v->pushToScope (vx->immutable, this, off.b_off, off.i_off,
+			       off.r_off, off.t_off, &err, &etype)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " Id: %s", id->getName());
+	    as->Print (stderr);
+	    fprintf (stderr, "\n");
 	    
-	      fatal_error ("Setting immutable parameter that has already been set");
-	    }
-	    setPBool (off.b_off + i, v->pbool[i]);
-	  }
-	  for (int i=0; i < ni; i++) {
-	    if (vx->immutable && issetPInt (off.i_off + i)) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, " Id: %s", id->getName());
-	      as->Print (stderr);
-	      fprintf (stderr, "\n");
-	    
-	      fatal_error ("Setting immutable parameter that has already been set");
-	    }
-	    setPInt (off.i_off + i, v->pint[i]);
-	  }
-	  for (int i=0; i < nr; i++) {
-	    if (vx->immutable && issetPReal (off.r_off + i)) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, " Id: %s", id->getName());
-	      as->Print (stderr);
-	      fprintf (stderr, "\n");
-	    
-	      fatal_error ("Setting immutable parameter that has already been set");
-	    }
-	    setPReal (off.r_off + i, v->preal[i]);
-	  }
-	  for (int i=0; i < nr; i++) {
-	    if (vx->immutable && issetPType (off.t_off + i)) {
-	      act_error_ctxt (stderr);
-	      fprintf (stderr, " Id: %s", id->getName());
-	      as->Print (stderr);
-	      fprintf (stderr, "\n");
-	    
-	      fatal_error ("Setting immutable parameter that has already been set");
-	    }
-	    setPType (off.t_off + i, (InstType*)v->ptype[i]);
+	    fatal_error ("Setting immutable parameter %s @ %d that has already been set",
+			 v->etypeToStr (etype), err);
 	  }
 
 	  as->step();
@@ -1589,46 +1528,18 @@ void Scope::BindParam (ActId *id, AExpr *ae)
 	Scope::pstruct off;
 	off = getPStruct (vx->u.idx);
 	v = aes->getPStruct();
+
+	Assert (v->validate (nb, ni, nr, nt), "Typecheck err?");
 	
-	for (int i=0; i < nb; i++) {
-	  if (vx->immutable && issetPBool (off.b_off + i)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", id->getName());
-	    fprintf (stderr, "\n");
+	int err, etype;
+	if (!v->pushToScope (vx->immutable, this, off.b_off, off.i_off,
+			     off.r_off, off.t_off, &err, &etype)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " Id: %s", id->getName());
+	  fprintf (stderr, "\n");
 	    
-	    fatal_error ("Setting immutable parameter that has already been set");
-	  }
-	  setPBool (off.b_off + i, v->pbool[i]);
-	}
-	for (int i=0; i < ni; i++) {
-	  if (vx->immutable && issetPInt (off.i_off + i)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", id->getName());
-	    fprintf (stderr, "\n");
-	    
-	    fatal_error ("Setting immutable parameter that has already been set");
-	  }
-	  setPInt (off.i_off + i, v->pint[i]);
-	}
-	for (int i=0; i < nr; i++) {
-	  if (vx->immutable && issetPReal (off.r_off + i)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", id->getName());
-	    fprintf (stderr, "\n");
-	    
-	    fatal_error ("Setting immutable parameter that has already been set");
-	  }
-	  setPReal (off.r_off + i, v->preal[i]);
-	}
-	for (int i=0; i < nr; i++) {
-	  if (vx->immutable && issetPType (off.t_off + i)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, " Id: %s", id->getName());
-	    fprintf (stderr, "\n");
-	    
-	    fatal_error ("Setting immutable parameter that has already been set");
-	  }
-	  setPType (off.t_off + i, (InstType*)v->ptype[i]);
+	  fatal_error ("Setting immutable parameter %s @ %d that has already been set",
+		       v->etypeToStr (etype), err);
 	}
 	
 	aes->step();

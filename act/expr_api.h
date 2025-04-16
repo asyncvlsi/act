@@ -45,14 +45,38 @@ public:
 
   expr_pstruct *dup ();
 
+  bool pullFromScope (Scope *s,
+		      int start_b, int start_i, int start_r, int start_t,
+		      int *err_idx, int *err_type);
+
+  bool pushToScope (bool immutable, Scope *s,
+		    int start_b, int start_i, int start_r, int start_t,
+		    int *err_idx, int *err_type);
+
+  bool validate (int cb, int ci, int cr, int ct);
+
+  const char *etypeToStr (int etype);
+
+  void sPrint (char *buf, int sz);
+
+private:
   int nb, ni, nr, nt;
   unsigned long *pint;
   double *preal;
   int *pbool;
   InstType **ptype; // this is an InstType array
 
-private:
   void _alloc();
+  
+  bool scopeToBool (Scope *s, int start, int *err);
+  bool scopeToInt (Scope *s, int start, int *err);
+  bool scopeToReal (Scope *s, int start, int *err);
+  bool scopeToType (Scope *s, int start, int *err);
+  
+  bool boolToScope (bool immutable, Scope *s, int start, int *err);
+  bool intToScope (bool immutable, Scope *s, int start, int *err);
+  bool realToScope (bool immutable, Scope *s, int start, int *err);
+  bool typeToScope (bool immutable, Scope *s, int start, int *err);
 };
 
 

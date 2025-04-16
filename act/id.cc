@@ -637,54 +637,16 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       Assert (ps, "Hmm");
       ps->getCounts (&nb, &ni, &nr, &nt);
       expr_pstruct *ep = new expr_pstruct (ps);
+      int err, etype;
       // now populate!
-      for (unsigned int i=0; i < nb; i++) {
-	if (s->issetPBool (val.b_off + i)) {
-	  ep->pbool[i] = s->getPBool (val.b_off + i);
-	}
-	else {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " id: ");
-	  this->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("PStruct has an uninitialized pbool @ position %d", i);
-	}
-      }
-      for (unsigned int i=0; i < ni; i++) {
-	if (s->issetPInt (val.i_off + i)) {
-	  ep->pint[i] = s->getPInt (val.i_off + i);
-	}
-	else {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " id: ");
-	  this->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("PStruct has an uninitialized pint @ position %d", i);
-	}
-      }
-      for (unsigned int i=0; i < nr; i++) {
-	if (s->issetPReal (val.r_off + i)) {
-	  ep->preal[i] = s->getPReal (val.r_off + i);
-	}
-	else {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " id: ");
-	  this->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("PStruct has an uninitialized preal @ position %d", i);
-	}
-      }
-      for (unsigned int i=0; i < nt; i++) {
-	if (s->issetPType (val.t_off + i)) {
-	  ep->ptype[i] = s->getPType (val.t_off + i);
-	}
-	else {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, " id: ");
-	  this->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("PStruct has an uninitialized ptype @ position %d", i);
-	}
+      if (!ep->pullFromScope (s, val.b_off, val.i_off, val.r_off, val.t_off,
+			      &err, &etype)) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, " id: ");
+	this->Print (stderr);
+	fprintf (stderr, "\n");
+	fatal_error ("PStruct has an uninitialized %s @ position %d",
+		     ep->etypeToStr (etype), err);
       }
       ret->u.e.l = (Expr *)ep;
       ret->u.e.r = (Expr *)ps;

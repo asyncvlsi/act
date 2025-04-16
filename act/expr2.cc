@@ -3362,3 +3362,240 @@ expr_pstruct *expr_pstruct::dup ()
   }
   return ret;
 }
+
+bool expr_pstruct::scopeToBool (Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nb; i++) {
+    if (s->issetPBool (off + i)) {
+      pbool[i] = s->getPBool (off + i);
+    }
+    else {
+      if (err) {
+	*err = i;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+bool expr_pstruct::scopeToInt (Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < ni; i++) {
+    if (s->issetPInt (off + i)) {
+      pint[i] = s->getPInt (off + i);
+    }
+    else {
+      if (err) {
+	*err = i;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+bool expr_pstruct::scopeToReal (Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nr; i++) {
+    if (s->issetPReal (off + i)) {
+      preal[i] = s->getPReal (off + i);
+    }
+    else {
+      if (err) {
+	*err = i;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+bool expr_pstruct::scopeToType (Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nt; i++) {
+    if (s->issetPType (off + i)) {
+      ptype[i] = s->getPType (off + i);
+    }
+    else {
+      if (err) {
+	*err = i;
+      }
+      return false;
+    }
+  }
+  return true;
+}
+
+bool expr_pstruct::boolToScope (bool immutable, Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nb; i++) {
+    if (immutable && s->issetPBool (off + i)) {
+      *err = i;
+      return false;
+    }
+    s->setPBool (off + i, pbool[i]);
+  }
+  return true;
+}
+
+bool expr_pstruct::intToScope (bool immutable, Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < ni; i++) {
+    if (immutable && s->issetPInt (off + i)) {
+      *err = i;
+      return false;
+    }
+    s->setPInt (off + i, pint[i]);
+  }
+  return true;
+}
+
+bool expr_pstruct::realToScope (bool immutable, Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nr; i++) {
+    if (immutable && s->issetPReal (off + i)) {
+      *err = i;
+      return false;
+    }
+    s->setPReal (off + i, preal[i]);
+  }
+  return true;
+}
+
+bool expr_pstruct::typeToScope (bool immutable, Scope *s, int off, int *err)
+{
+  for (unsigned int i=0; i < nt; i++) {
+    if (immutable && s->issetPType (off + i)) {
+      *err = i;
+      return false;
+    }
+    s->setPType (off + i, ptype[i]);
+  }
+  return true;
+}
+
+bool expr_pstruct::pullFromScope (Scope *s,
+				  int start_b, int start_i,
+				  int start_r, int start_t,
+				  int *err, int *etype)
+{
+  if (!scopeToBool (s, start_b, err)) {
+    if (etype) {
+      *etype = 0;
+    }
+    return false;
+  }
+  if (!scopeToInt (s, start_i, err)) {
+    if (etype) {
+      *etype = 1;
+    }
+    return false;
+  }
+  if (!scopeToReal (s, start_r, err)) {
+    if (etype) {
+      *etype = 2;
+    }
+    return false;
+  }
+  if (!scopeToType (s, start_t, err)) {
+    if (etype) {
+      *etype = 3;
+    }
+    return false;
+  }
+  return true;
+}
+
+bool expr_pstruct::pushToScope (bool immutable, Scope *s,
+				 int start_b, int start_i,
+				 int start_r, int start_t,
+				 int *err,
+				 int *etype)
+{
+  if (!boolToScope (immutable, s, start_b, err)) {
+    if (etype) {
+      *etype = 0;
+    }
+    return false;
+  }
+  if (!intToScope (immutable, s, start_i, err)) {
+    if (etype) {
+      *etype = 1;
+    }
+    return false;
+  }
+  if (!realToScope (immutable, s, start_r, err)) {
+    if (etype) {
+      *etype = 2;
+    }
+    return false;
+  }
+  if (!typeToScope (immutable, s, start_t, err)) {
+    if (etype) {
+      *etype = 3;
+    }
+    return false;
+  }
+  return true;
+}
+
+const char *expr_pstruct::etypeToStr (int etype)
+{
+  if (etype == 0) { return "pbool"; }
+  else if (etype == 1) { return "pint"; }
+  else if (etype == 2) { return "preal"; }
+  else if (etype == 3) { return "ptype"; }
+  else { return "???"; }
+}
+
+bool expr_pstruct::validate (int cb, int ci, int cr, int ct)
+{
+  if (cb == nb && ci == ni && cr == nr && ct == nt) return true;
+  return false;
+}
+
+void expr_pstruct::sPrint (char *buf, int sz)
+{
+  int k = 0;
+  int len;
+
+#define PRINT_STEP \
+  do { len = strlen (buf + k); k += len; sz -= len; if (sz <= 1) return; } while (0)
+
+  snprintf (buf+k, sz, "{"); PRINT_STEP;
+  bool first = true;
+  
+  for (int i=0; i < nb; i++) {
+    if (!first) {
+      snprintf (buf+k, sz, ","); PRINT_STEP;
+    }
+    first = false;
+    snprintf (buf+k, sz, "%c", pbool[i] ? 't' : 'f'); PRINT_STEP;
+  }
+  for (int i=0; i < ni; i++) {
+    if (!first) {
+      snprintf (buf+k, sz, ","); PRINT_STEP;
+    }
+    first = false;
+    snprintf (buf+k, sz, "%lu", pint[i]); PRINT_STEP;
+  }
+  for (int i=0; i < nr; i++) {
+    if (!first) {
+      snprintf (buf+k, sz, ","); PRINT_STEP;
+    }
+    first = false;
+    snprintf (buf+k, sz, "%g", preal[i]); PRINT_STEP;
+  }
+  for (int i=0; i < nt; i++) {
+    char tbuf[1024];
+    if (!first) {
+      snprintf (buf+k, sz, ","); PRINT_STEP;
+    }
+    first = false;
+    ptype[i]->sPrint (tbuf, 1024);
+    snprintf (buf+k, sz, "%s", tbuf); PRINT_STEP;
+  }
+  snprintf (buf+k, sz, "}");
+  PRINT_STEP;
+}

@@ -860,50 +860,17 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     {
       PStruct *ps = (PStruct *)e->u.e.r;
       expr_pstruct *v = (expr_pstruct *) e->u.e.l;
-      snprintf (buf+k, sz, "%s{", ps->getName());
+      if (ps->getUnexpanded()) {
+	snprintf (buf+k, sz, "%s", ps->getUnexpanded()->getName());
+      }
+      else {
+	snprintf (buf+k, sz, "%s", ps->getName());
+      }
       PRINT_STEP;
       int nb, ni, nr, nt;
       ps->getCounts (&nb, &ni, &nr, &nt);
-      bool first = true;
-      for (int i=0; i < nb; i++) {
-	if (!first) {
-	  snprintf (buf+k, sz, ",");
-	  PRINT_STEP;
-	  first = false;
-	}
-	snprintf (buf+k, sz, "%c", v->pbool[i] ? 't' : 'f');
-	PRINT_STEP;
-      }
-      for (int i=0; i < ni; i++) {
-	if (!first) {
-	  snprintf (buf+k, sz, ",");
-	  PRINT_STEP;
-	  first = false;
-	}
-	snprintf (buf+k, sz, "%lu", v->pint[i]);
-	PRINT_STEP;
-      }
-      for (int i=0; i < nr; i++) {
-	if (!first) {
-	  snprintf (buf+k, sz, ",");
-	  PRINT_STEP;
-	  first = false;
-	}
-	snprintf (buf+k, sz, "%g", v->preal[i]);
-	PRINT_STEP;
-      }
-      for (int i=0; i < nt; i++) {
-	if (!first) {
-	  snprintf (buf+k, sz, ",");
-	  PRINT_STEP;
-	  first = false;
-	}
-	char tbuf[1024];
-	((InstType *)v->ptype[i])->sPrint (tbuf, 1024);
-	snprintf (buf+k, sz, "%s", tbuf);
-	PRINT_STEP;
-      }
-      snprintf (buf+k, sz, "}");
+      Assert (v->validate (nb, ni, nr, nt), "Typecheck err?");
+      v->sPrint (buf+k, sz);
       PRINT_STEP;
     }
     break;
