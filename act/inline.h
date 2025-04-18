@@ -32,6 +32,7 @@ struct act_inline_value {
     is_struct = 0;
     is_struct_id = 0;
     struct_count = 0;
+    is_top_arr = 0;
     u.val = NULL;
   }
 
@@ -82,7 +83,8 @@ struct act_inline_value {
 
   unsigned int is_struct:1;	/* is this a structure? */
   unsigned int is_struct_id:1;	/* special case structure, ID map */
-  unsigned int struct_count:30;	/* size of array for sanity checking */
+  unsigned int is_top_arr:1;	/* is this an array? */
+  unsigned int struct_count:29;	/* size of array for sanity checking */
   union {
     Expr *val;			/* single value */
     Expr **arr;			/* flattened array of values */

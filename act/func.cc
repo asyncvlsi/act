@@ -552,7 +552,8 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
   Assert (nargs == getNumParams(), "What?");
   
   for (int i=0; i < nargs; i++) {
-      Assert (expr_is_a_const (args[i]), "Argument is not a constant?");
+    Assert (args[i]->type == E_ARRAY ||
+	    expr_is_a_const (args[i]), "Argument is not a constant?");
   }
 
   /* 
@@ -576,25 +577,48 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
   expanded = 1;
 
   ValueIdx *vx;
-      
+  bool ext_err = false;
+
   for (int i=0; i < getNumParams(); i++) {
     InstType *it;
     const char *name;
+    int count;
     it = getPortType (-(i+1));
     name = getPortName (-(i+1));
-    
-    I->Add (name, it);
+
+    if (it->arrayInfo()) {
+      if (!it->arrayInfo()->isExpanded()) {
+	Array *xa = it->arrayInfo()->Expand (ns, ns->CurScope());
+	count = xa->size();
+	delete xa;
+      }
+      else {
+	count = it->arrayInfo()->size();
+      }
+      ext_err = true;
+    }
+    else {
+      count = 1;
+    }
+
+    if (it->isExpanded()) {
+      I->Add (name, it);
+    }
+    else {
+      InstType *xit = it->Expand (ns, ns->CurScope());
+      xit->MkCached ();
+      I->Add (name, xit);
+    }
     vx = I->LookupVal (name);
+
     Assert (vx, "Hmm");
-    vx->init = 1;
-    if (TypeFactory::isPIntType (it)) {
-      vx->u.idx = I->AllocPInt();
+    if (TypeFactory::isPIntType (it) ||
+	TypeFactory::isPBoolType (it) ||
+	TypeFactory::isPRealType (it)) {
+      // okay
     }
-    else if (TypeFactory::isPBoolType (it)) {
-      vx->u.idx = I->AllocPBool();
-    }
-    else if (TypeFactory::isPRealType (it)) {
-      vx->u.idx = I->AllocPReal();
+    else if (TypeFactory::isPStructType (it)) {
+      ext_err = true;
     }
     else {
       fatal_error ("Invalid type in function signature");
@@ -607,21 +631,26 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
   I->Add ("self", getRetType ()->Expand (ns, I));
   vx = I->LookupVal ("self");
   Assert (vx, "Hmm");
-  vx->init = 1;
-  if (TypeFactory::isPIntType (getRetType())) {
-    vx->u.idx = I->AllocPInt();
+  int count;
+  if (vx->t->arrayInfo()) {
+    count = vx->t->arrayInfo()->size();
+    ext_err = true;
   }
-  else if (TypeFactory::isPBoolType (getRetType())) {
-    vx->u.idx = I->AllocPBool();
+  else {
+    count = 1;
   }
-  else if (TypeFactory::isPRealType (getRetType())) {
-    vx->u.idx = I->AllocPReal();
+  if (TypeFactory::isPIntType (getRetType()) ||
+      TypeFactory::isPBoolType (getRetType()) ||
+      TypeFactory::isPRealType (getRetType())) {
+    // okay
+  }
+  else if (TypeFactory::isPStructType (getRetType())) {
+    ext_err = true;
   }
   else {
     fatal_error ("Invalid return type in function signature");
   }
   
-
   /* now run the chp body */
   act_chp *c = NULL;
   
@@ -654,6 +683,10 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
       act_error_ctxt (stderr);
       fatal_error ("Function `%s': no chp body, and no external definition",
 		   getName());
+    }
+    if (ext_err) {
+      act_error_ctxt (stderr);
+      fatal_error ("Function `%s': external functions can only have simple arguments and return types", getName());
     }
     long *eargs = NULL;
     if (nargs != 0) {
@@ -693,51 +726,41 @@ Expr *Function::eval (ActNamespace *ns, int nargs, Expr **args)
 
   Expr *ret = NULL;
 
-  if (TypeFactory::isPIntType (getRetType())) {
-    if (ext_found) {
+  if (ext_found) {
+    if (TypeFactory::isPIntType (getRetType())) {
       ret = const_expr (nargs);
     }
-    else {
-      if (I->issetPInt (vx->u.idx)) {
-	ret = const_expr (I->getPInt (vx->u.idx));
-      }
-      else {
-	act_error_ctxt (stderr);
-	fatal_error ("self is not assigned!");
-      }
-    }
-  }
-  else if (TypeFactory::isPBoolType (getRetType())) {
-    if (ext_found) {
+    else if (TypeFactory::isPBoolType (getRetType())) {
       ret = const_expr_bool (nargs == 0 ? 0 : 1);
     }
-    else {
-      if (I->issetPBool (vx->u.idx)) {
-	ret = const_expr_bool (I->getPBool (vx->u.idx));
-      }
-      else {
-	act_error_ctxt (stderr);
-	fatal_error ("self is not assigned!");
-      }
-    }
-  }
-  else if (TypeFactory::isPRealType (getRetType())) {
-    if (ext_found) {
+    else if (TypeFactory::isPRealType (getRetType())) {
       ret = const_expr_real (nargs);
     }
     else {
-      if (I->issetPReal (vx->u.idx)) {
-	ret = const_expr_real (I->getPReal (vx->u.idx));
-      }
-      else {
-	act_error_ctxt (stderr);
-	fatal_error ("self is not assigned!");
-      }
+      fatal_error ("Invalid return type in function signature");
     }
   }
   else {
-    fatal_error ("Invalid return type in function signature");
+    ActId *res = new ActId (string_cache ("self"));
+    ret = res->Eval (ns, I);
   }
   return ret;
 }
 
+
+void Function::convPortsToParams ()
+{
+  Assert (!isExpanded(), "Must be only called on unexpanded functions!");
+
+  Assert (nt == 0 && nports > 0, "What?");
+  Assert (pt == NULL && port_t != NULL, "What?");
+  Assert (pn == NULL && port_n != NULL, "What?");
+
+  pt = port_t;
+  port_t = NULL;
+  pn = port_n;
+  port_n = NULL;
+  nt = nports;
+  nports = 0;
+}    
+  

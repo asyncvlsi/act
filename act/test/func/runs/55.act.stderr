@@ -1,0 +1,5 @@
+In expanding pfunc (55.act:1)
+In expanding ::<Global>
+Error on or near line number 15.
+ id: self
+FATAL: Uninitialized identifier

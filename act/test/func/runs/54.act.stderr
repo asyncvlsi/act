@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Error on or near line number 19.
+*** Assertion failed ***
+ assertion: res=10
+   message: What?
+FATAL: Aborted execution on failed assertion

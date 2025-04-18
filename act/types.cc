@@ -786,7 +786,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   int ii = 0;
 
   for (i=0; i < nt; i++) {
-    p =  getPortType (-(i+1));
+    p = getPortType (-(i+1));
     Assert (p, "What?");
     x = p->Expand (ns, ux->I); // this is the real type of the
                                // parameter
@@ -1467,7 +1467,6 @@ const char *PType::getName ()
   return name;
 }
 
-
 PStruct *PStruct::Expand (ActNamespace *ns, Scope *s, int _nt, inst_param *u)
 {
   if (nt < _nt) {
@@ -1475,25 +1474,30 @@ PStruct *PStruct::Expand (ActNamespace *ns, Scope *s, int _nt, inst_param *u)
     fatal_error ("PStruct being expanded; too many parameters (%d v/s %d).", nt, _nt);
   }
 
-  PStruct *xd;
-  UserDef *ux;
-  int cache_hit;
-
   if (isExpanded() && _nt == 0) {
     return this;
   }
 
-  ux = UserDef::Expand (ns, s, _nt, u, &cache_hit);
+  recursion_depth++;
 
-  if (cache_hit) {
-    return dynamic_cast<PStruct *>(ux);
+  if (recursion_depth >= Act::max_recurse_depth) {
+    act_error_ctxt (stderr);
+    fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
+  }
+  
+  // in place expansion
+  I->FlushExpand ();
+  pending = 1;
+  expanded = 1;
+  for (int i =0; i < nt; i++) {
+    pt[i] = pt[i]->Expand (ns, s);
+    pt[i]->MkCached ();
+    I->Add (pn[i], pt[i]);
   }
 
-  xd = new PStruct (ux);
-  delete ux;
-
-  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
-  return xd;
+  pending = 0;
+  recursion_depth--;
+  return this;
 }
 
 

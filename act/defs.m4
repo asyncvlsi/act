@@ -1857,6 +1857,21 @@ ID
     else {
       $A($0->curns->CreateType($3, $0->u_f));
     }
+    if ($0->u_f->getNumPorts() > 0) {
+      // we have a situation where this could be PURELY pstruct ports!
+      // In this case, we need to move them over to parameter types
+      bool convert = true;
+      for (int i=0; convert && i < $0->u_f->getNumPorts(); i++) {
+	InstType *it = $0->u_f->getPortType (i);
+	if (!TypeFactory::isParamType (it)) {
+	  convert = false;
+	}
+      }
+      if (convert) {
+	$0->u_f->convPortsToParams();
+      }
+    }
+    
     if ($0->u_f->getNumPorts() > 0 && TypeFactory::isParamType ($8)) {
       $E("Function ``%s'': return type incompatible with arguments", $3);
     }

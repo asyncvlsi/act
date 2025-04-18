@@ -1,0 +1,6 @@
+In expanding ::<Global>
+Error on or near line number 17.
+*** Assertion failed ***
+ assertion: testme(x)=8
+   message: Should fail!
+FATAL: Aborted execution on failed assertion

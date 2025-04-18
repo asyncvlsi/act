@@ -1,0 +1,17 @@
+defptype foo (pint a; pbool b);
+
+function testme (foo x) : pint
+{
+   chp {
+    [ x.b -> self := x.a + 4
+   [] else -> self := x.a - 1
+    ]
+   }
+}
+
+foo x;
+x = foo (5, true);
+
+{ testme (x) = 9 : "Should pass!" };
+
+{ testme (x) = 8 : "Should fail!" };

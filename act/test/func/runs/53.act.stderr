@@ -1,0 +1,5 @@
+In expanding pfunc (53.act:1)
+In expanding ::<Global>
+Error on or near line number 14.
+Typechecking failed, pint[4]  v/s pint[3]
+	Types `pint[4]' and `pint[3]' are not compatible

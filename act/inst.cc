@@ -917,8 +917,8 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
   }
 
 #if 0
-  printf ("[%x] Name: %s\n", t, t->getName());
-  printf ("[%x] Expanded: %s\n", xt, xt->getName());
+  printf ("[%p] Name: %s\n", t, t->getName());
+  printf ("[%p] Expanded: %s\n", xt, xt->getName());
 #endif  
   
   /* If parent is user-defined, we need to make sure we have the

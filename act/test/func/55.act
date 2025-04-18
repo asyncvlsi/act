@@ -1,0 +1,19 @@
+function pfunc (pint a[4]) : pint 
+{
+  chp {
+    a[0] := a[0] + a[1] + a[2] + a[3]
+  }
+}  
+
+pint w[4];
+
+w[0] = 5;
+w[1] = 3;
+w[2] = 17;
+w[3] = 2;
+
+pint res = pfunc (w);
+
+{ res = 27 : "Should match!" };
+
+{ res = 10 : "What?" };

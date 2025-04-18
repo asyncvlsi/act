@@ -1176,6 +1176,13 @@ class Function : public UserDef {
     }
     return false;
   }
+
+  /**
+   * The user-defined types in the function argument list are all
+   * template parameters; convert them from the port list to the
+   * template list.
+   */
+  void convPortsToParams ();
   
  private:
   InstType *ret_type;		///< holds return type
