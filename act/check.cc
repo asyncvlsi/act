@@ -714,11 +714,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
 	      return T_ERR;
 	    }
+#if 0	    
 	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
 	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
 			     hi, lo, TypeFactory::bitWidth (xit));
 	      return T_ERR;
 	    }
+#endif	    
 	    if (width) {
 	      *width = hi - lo + 1;
 	    }
@@ -757,11 +759,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
 	      return T_ERR;
 	    }
+#if 0	    
 	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
 	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
 			     hi, lo, TypeFactory::bitWidth (xit));
 	      return T_ERR;
 	    }
+#endif
 	    if (width) {
 	      *width = hi - lo + 1;
 	    }
@@ -907,7 +911,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
 
 	if (!x->isConnectable (y, 1)) {
-	  if ((TypeFactory::isIntType (x) &&
+	  if (((TypeFactory::isIntType (x) || TypeFactory::isEnum (x)) &&
 	       (TypeFactory::isPIntType (y) || TypeFactory::isIntType (y)))
 	      ||
 	      (TypeFactory::isBoolType (x) && TypeFactory::isPBoolType (y))) {
@@ -919,6 +923,22 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_ERR;
 	  }
 	}
+
+	if ((x->arrayInfo() && !y->arrayInfo()) ||
+	    (y->arrayInfo() && !x->arrayInfo())) {
+	  typecheck_err ("Function `%s': arg #%d has an incompatible type",
+			 fn->getName(), i);
+	  return T_ERR;
+	}
+	else if (x->arrayInfo() &&
+		 y->arrayInfo() && x->arrayInfo()->isExpanded()) {
+	  if (!x->arrayInfo()->isEqual (y->arrayInfo(), 0)) {
+	    typecheck_err ("Function `%s': arg #%d has an incompatible type",
+			   fn->getName(), i);
+	    return T_ERR;
+	  }
+	}
+
 	tmp = tmp->u.e.r;
       }
 

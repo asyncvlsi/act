@@ -1929,9 +1929,24 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     //   also be fixed like STRUCT_REF
     
     Expr *te = chp_expr_expand (c->u.assign.e, ns, s);
+
     list_t *xassign = chp_expr_unstruct (s, te);
     
     ret->u.assign.e = te;
+
+    if (_chp_expanding_macro == 0) {
+      int tr = act_type_expr (s, te, NULL, 2);
+      if (tr == T_ERR) {
+	fprintf (stderr, "Typechecking failed on CHP assignment\n");
+	fprintf (stderr, "  stmt: ");
+	ret->u.assign.id->Print (stderr, NULL);
+	fprintf (stderr, " := ");
+	print_uexpr (stderr, c->u.assign.e);
+	fprintf (stderr, "\n\t%s\n", act_type_errmsg ());
+	exit (1);
+      }
+    }
+    
     if (xassign) {
       ret->label = NULL;
       list_append (xassign, ret);
