@@ -1091,6 +1091,7 @@ int act_expr_parse_newtokens (LFILE *l)
 
 int act_expr_free_default (Expr *e)
 {
+  if (!e) return 0;
   if (e->type == E_ENUM_CONST) {
     FREE (e->u.fn.s);
     return 1;

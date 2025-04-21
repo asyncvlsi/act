@@ -1,0 +1,29 @@
+deftype mystruct (int a, b)
+{
+     methods {
+          function getsum() : int
+          {
+              chp {
+                  self := a + b
+              }
+         }
+         function addone() : mystruct
+         {
+            chp {
+                self.a := a + 1;
+                self.b := b + 1
+             }
+         }
+    }
+}
+
+defproc test()
+{
+   mystruct s;
+   int a;
+   chp {
+       s := s.addone();
+       a := s.getsum();
+       a := s.addone().getsum()
+   }
+}
