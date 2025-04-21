@@ -6,7 +6,7 @@ defproc foo (bool x[i]; bool y[i])
   prs {
    (k:i: x[k] => y[k]-)
   }
-  foo<i-1> f;
+  [ i > 0 -> foo<i-1> f; ]
 }
 
 

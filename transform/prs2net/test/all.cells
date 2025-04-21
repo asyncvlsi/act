@@ -202,6 +202,20 @@ export defcell g_0x5 (bool? in[1]; bool! out)
    }
 }
 
+export defcell g_i0x0 (bool? in[0]; bool! out)
+{
+   prs {
+   false -> out-
+   }
+}
+
+export defcell g_i1x0 (bool? in[0]; bool! out)
+{
+   prs {
+   true -> out-
+   }
+}
+
 export defcell g_vl0n3ax1 (bool? in[3]; bool! out)
 {
    prs {

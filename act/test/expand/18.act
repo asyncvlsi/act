@@ -1,0 +1,10 @@
+template<pint N>
+defproc test(int a, b[N])
+{
+  (i:N: a=b[i];)
+  a=b[0];
+}
+
+test<3> x;
+
+test<0> y;

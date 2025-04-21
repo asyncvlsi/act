@@ -792,6 +792,11 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
                                // parameter
 
     if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
+      // we just skip this one!
+      continue;
+    }
+
+    if (x->arrayInfo() && x->arrayInfo()->size() == 0) {
       act_error_ctxt (stderr);
       fatal_error ("Template parameter `%s': zero-length array creation not permitted", getPortName (-(i+1)));
     }
@@ -1201,8 +1206,14 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   /*-- create ports --*/
   for (int i=0; i < nports; i++) {
     InstType *chk;
-    Assert (ux->AddPort ((chk = getPortType(i)->Expand (ns, ux->I)),
-			 getPortName (i)), "What?");
+    chk = getPortType(i)->Expand (ns, ux->I);
+
+    if (chk->arrayInfo() && chk->arrayInfo()->size() == 0) {
+      // skip the port!
+      continue;
+    }
+    
+    Assert (ux->AddPort (chk, getPortName (i)), "What?");
 
     if (chk->arrayInfo() && chk->arrayInfo()->size() == 0) {
       act_error_ctxt (stderr);

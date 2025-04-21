@@ -2299,6 +2299,11 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   Expr *idexpr;
 
   i = pi->nout + pi->nat;
+
+  if (i == pi->nvars) {
+    // no inputs, so nothing to connect to
+    return NULL;
+  }
   Assert (i < pi->nvars, "No inputs?");
 
   idexpr = _idexpr (i, pi);
@@ -2515,11 +2520,12 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     //ac->Next()->Print (stdout);
     //printf (" --- \n");
 
-
-    int oval = Act::double_expand;
-    Act::double_expand = 0;
-    ac->Expandlist (NULL, sc);
-    Act::double_expand = oval;
+    if (ac) {
+      int oval = Act::double_expand;
+      Act::double_expand = 0;
+      ac->Expandlist (NULL, sc);
+      Act::double_expand = oval;
+    }
 
     if (pi->match_perm) {
       FREE (pi->match_perm);
@@ -3011,18 +3017,33 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	fatal_error ("Unexpected cell `%s' in cell namespace (has parameters?)",
 		     p->getName());
       }
-      if (p->getNumPorts() != 2) {
+      if (p->getNumPorts() != 2 && p->getNumPorts() != 1) {
 	fatal_error ("Cell `%s::%s': More than two ports",
 		     cell_ns->getName(), p->getName());
       }
-      if ((strcmp (p->getPortName (0), _inport_name) != 0) ||
-	  (strcmp (p->getPortName (1), _outport_name) != 0)) {
-	fatal_error ("Cell `%s::%s': Ports should be in/out",
-		     cell_ns->getName(), p->getName());
+      if (p->getNumPorts() == 2) {
+	if ((strcmp (p->getPortName (0), _inport_name) != 0) ||
+	    (strcmp (p->getPortName (1), _outport_name) != 0)) {
+	  fatal_error ("Cell `%s::%s': Ports should be in/out",
+		       cell_ns->getName(), p->getName());
+	}
+      }
+      else if (p->getNumPorts() == 1) {
+	if (strcmp (p->getPortName (0), _outport_name) != 0) {
+	  fatal_error ("Cell `%s::%s': Ports should be in/out",
+		       cell_ns->getName(), p->getName());
+	}
       }
       InstType *in_t, *out_t;
-      in_t = p->getPortType (0);
-      out_t = p->getPortType (1);
+
+      if (p->getNumPorts() == 2) {
+	in_t = p->getPortType (0);
+	out_t = p->getPortType (1);
+      }
+      else {
+	in_t = NULL;
+	out_t = p->getPortType (0);
+      }
 
 #if 0      
       int id, version;
@@ -3036,7 +3057,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       /* in_t must be a bool array or bool
 	 out_t must be a bool array or bool
       */
-      if (!TypeFactory::isBoolType (in_t) || !TypeFactory::isBoolType (out_t)) {
+      if ((in_t && !TypeFactory::isBoolType (in_t)) || !TypeFactory::isBoolType (out_t)) {
 	fatal_error ("Cell `%s::%s': Port base types must `bool'",
 		     cell_ns->getName(), p->getName());
       }
@@ -3082,8 +3103,10 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
       
       /* fine. now dump into celldb */
-      pi = _gen_prs_attributes (l, in_t->arrayInfo() ?
-				in_t->arrayInfo()->size() : 1,
+      pi = _gen_prs_attributes (l,
+				in_t ?
+				(in_t->arrayInfo() ?
+				 in_t->arrayInfo()->size() : 1) : 0,
 				out_t->arrayInfo() ?
 				out_t->arrayInfo()->size() : 1);
       pi->leak_adjust = prs->leak_adjust;

@@ -144,6 +144,10 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
   act_error_setline (getLine());
 
   if (it->arrayInfo() && it->arrayInfo()->size() == 0) {
+    return;
+  }
+
+  if (it->arrayInfo() && it->arrayInfo()->size() == 0) {
     act_error_ctxt (stderr);
     fatal_error ("Instance `%s': zero-length array creation not permitted", id);
   }
