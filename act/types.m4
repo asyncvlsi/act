@@ -182,7 +182,7 @@ chan_type[InstType *]: "chan" [ chan_dir ] "(" physical_inst_type [ "," physical
     }
     if (!TypeFactory::isValidChannelDataType (t) ||
 	(ack && !TypeFactory::isValidChannelDataType (ack))) {
-      $e("User-defined channel data type must be a structure with pure data.\n");
+      $e("User-defined channel data type must be a structure with pure data or enumeration.\n");
       fprintf ($f, "\tType%s: ", ack ? "s" : "");
       t->Print ($f);
       if (ack) {

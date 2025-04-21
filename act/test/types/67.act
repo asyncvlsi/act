@@ -1,0 +1,18 @@
+defenum alu_ctrl {
+   ADD, SUB, AND, OR
+};   
+
+defproc alu (chan?(int) A, B; chan?(alu_ctrl) ctrl; chan!(int) O)
+{
+   int a, b;
+   alu_ctrl c;
+   
+   chp {
+      *[ A?a, B?b, ctrl?c;
+          [ c = alu_ctrl.ADD -> O!(a+b)
+          [] c = alu_ctrl.SUB -> O!(a-b)
+          [] c = alu_ctrl.AND -> O!(a&b)
+          [] c = alu_ctrl.OR -> O!(a|b)
+       ] ]
+    }
+}

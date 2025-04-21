@@ -2324,6 +2324,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
     }
     ret = 0;
     if (!TypeFactory::isDataType (it1) && !TypeFactory::isStructure (it1) &&
+	!TypeFactory::isEnum (it1) &&
 	!TypeFactory::isPIntType (it1) && !TypeFactory::isPBoolType (it1)) {
       typecheck_err ("Channels require data types!");
     }
@@ -2350,9 +2351,25 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
 	  if (type_connectivity_check (it1, ch->datatype(), 0)) {
 	    ret = 1;
 	  }
+	  else {
+	    typecheck_err ("Incompatible structures");
+	  }
 	}
 	else {
 	  typecheck_err ("Structure/non-structure types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isEnum (ch->datatype())) {
+	if (TypeFactory::isEnum (it1)) {
+	  if (type_connectivity_check (it1, ch->datatype(), 0)) {
+	    ret = 1;
+	  }
+	  else {
+	    typecheck_err ("Incompatible enumerations");
+	  }
+	}
+	else {
+	  typecheck_err ("Enum/non-enum types are incompatible.");
 	}
       }
     }
@@ -2374,7 +2391,7 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
     }
     ret = 0;
     if (!TypeFactory::isDataType (it2) && !TypeFactory::isStructure (it2) &&
-	!TypeFactory::isPIntType (it2) &&
+	!TypeFactory::isPIntType (it2) && !TypeFactory::isEnum (it2) &&
 	!TypeFactory::isPBoolType (it2)) {
       typecheck_err ("Channels require data types!");
     }
@@ -2402,9 +2419,25 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
 	  if (type_connectivity_check (it2, ch->acktype(), 0)) {
 	    ret = 1;
 	  }
+	  else {
+	    typecheck_err ("Incompatible structures");
+	  }
 	}
 	else {
 	  typecheck_err ("Structure/non-structure types are incompatible.");
+	}
+      }
+      else if (TypeFactory::isEnum (ch->acktype())) {
+	if (TypeFactory::isEnum (it2)) {
+	  if (type_connectivity_check (it2, ch->acktype(), 0)) {
+	    ret = 1;
+	  }
+	  else {
+	    typecheck_err ("Incompatible enumerations");
+	  }
+	}
+	else {
+	  typecheck_err ("Enumeration/non-enumeration types are incompatible.");
 	}
       }
     }

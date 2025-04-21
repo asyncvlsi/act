@@ -465,6 +465,9 @@ int TypeFactory::isValidChannelDataType (const Type *t)
     /* is an int/enum/bool */
     return 1;
   }
+  if (isEnum (t)) {
+    return 1;
+  }
   if (!isStructure (t)) {
     return 0;
   }
