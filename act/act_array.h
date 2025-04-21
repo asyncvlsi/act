@@ -351,6 +351,14 @@ class Array {
   Expr *getDeref (int idx);
 
   /**
+   * Must be called on an expanded array that is in fact an array
+   * dereference, and where the de-reference is non-const
+   * @param idx is the dimension of the array of interest
+   * @param e is the updated expression for the de-reference
+   */
+  void setDeref (int idx, Expr *e);
+
+  /**
    * Given an array deference or subrange, returns the offset for the
    * first element of the sub-range/dereference in the standard linear
    * numbering of the elements of the array

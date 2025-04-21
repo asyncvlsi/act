@@ -129,12 +129,14 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
   for (it = it.begin(); it != it.end(); it++) {
     ValueIdx *vx = (*it);
     if (TypeFactory::isParamType (vx->t)) continue;
+#if 0
     if (vx->t->arrayInfo()) {
       act_error_ctxt (stderr);
       warning ("Inlining failed; array declarations!");
       act_error_pop ();
       return ret;
     }
+#endif
   }
 
   /* 
@@ -169,15 +171,26 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
 	act_error_ctxt (stderr);
 	fatal_error ("toInline(): arg #%d is a non-structure argument to structure field?", i);
       }
-      if (!args[i].is_struct_id && (nb + ni != args[i].numElems())) {
+      if (!args[i].is_just_id && (nb + ni != args[i].numStructElems())) {
 	act_error_ctxt (stderr);
-	fatal_error ("toInline(): arg #%d structure count mismatch (%d vs %d)", i, nb + ni, args[i].numElems());
+	fatal_error ("toInline(): arg #%d structure count mismatch (%d vs %d)", i, nb + ni, args[i].numStructElems());
       }
     }
     else {
       if (args[i].is_struct) {
 	act_error_ctxt (stderr);
 	fatal_error ("toInline(): arg #%d is a structure argument to a non-struct field?", i);
+      }
+    }
+    if (getPortType (i)->arrayInfo()) {
+      if (!args[i].is_array) {
+	act_error_ctxt (stderr);
+	fatal_error ("toInline(): arg #%d is a non-array argument to array field?", i);
+      }
+      if (!args[i].is_just_id && getPortType(i)->arrayInfo()->size () !=
+	  args[i].numArrayElems()) {
+	act_error_ctxt (stderr);
+	fatal_error ("toInline(): arg #%d array count mismatch (%d vs %d)", i, getPortType (i)->arrayInfo()->size(), args[i].numArrayElems());
       }
     }
     
@@ -194,7 +207,7 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
       printf (" > %p", args[i].u.val);
     }
     printf ("\n");
-#endif    
+#endif
     delete tmp;
   }
 
@@ -312,9 +325,18 @@ void Function::_chk_inline (Expr *e)
   case E_TRUE:
   case E_FALSE:
   case E_REAL:
+    break;
+
   case E_VAR:
   case E_PROBE:
   case E_BITFIELD:
+    {
+      ActId *id = (ActId *)e->u.e.l;
+      if (id->isDynamicDeref ()) {
+	is_simple_inline = 0;
+	return;
+      }
+    }
     break;
 
   case E_FUNCTION:

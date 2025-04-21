@@ -123,16 +123,19 @@ void act_dump_table (act_inline_table *tab)
 
 static act_inline_value
 _lookup_binding (act_inline_table *Hs,
-		 const char *name, ActId *rest, int err = 1)
+		 const char *name,
+		 Array *deref,
+		 ActId *rest, int err = 1)
 {
   hash_bucket_t *b;
   act_inline_table *origHs = Hs;
   act_inline_value rv;
+
   while (Hs) {
     b = hash_lookup (Hs->state, name);
     if (b) {
       int ni, nb;
-      int sz = 1;
+      int sz, array_sz;
       InstType *it = Hs->sc->Lookup (name);
       Data *d = NULL;
 
@@ -146,6 +149,18 @@ _lookup_binding (act_inline_table *Hs,
 	d->getStructCount (&nb, &ni);
 	sz = nb + ni;
       }
+      else {
+	sz = -1;
+      }
+
+      if (it->arrayInfo()) {
+	// XXX: deal with deref
+	array_sz = it->arrayInfo()->size();
+      }
+      else {
+	array_sz = -1;
+      }
+
       /* return a copy */
       act_inline_value bval;
       bval = *((act_inline_value *)b->v);
@@ -160,16 +175,29 @@ _lookup_binding (act_inline_table *Hs,
 	Assert (off + sz2 <= sz, "What?");
 	Assert (sz2 > 0, "Hmm");
 
+	int array_off = 0;
+
+	if (array_sz != -1) {
+	  Assert (deref, "Array var without deref?");
+	  array_off = it->arrayInfo()->Offset (deref);
+	  act_error_ctxt (stderr);
+	  fatal_error ("Access to index that is out of bounds in _lookup!");
+	}
+
 	Assert (bval.is_struct, "What?");
 
-	if (sz2 == 1) {
-	  /* XXX: FIXME. This may or may not be a structure */
+	// get type of the "rest"
+	InstType *rit;
+	act_type_var (d->CurScope(), rest, &rit);
+	Assert (rit, "Hmm");
+
+	if (sz2 == 1 && !TypeFactory::isStructure (rit)) {
 	  rv.is_struct = 0;
 	}
 	else {
 	  rv.is_struct = 1;
 	}
-	rv.is_struct_id = 0;
+	rv.is_just_id = 0;
 	if (rv.is_struct) {
 	  MALLOC (rv.u.arr, Expr *, sz2);
 	  rv.struct_count = sz2;
@@ -192,6 +220,9 @@ _lookup_binding (act_inline_table *Hs,
 	    }
 	    Assert (bval.getVal()->type == E_VAR, "Hmm");
 	    xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
+	    if (deref) {
+	      xnew->Tail()->setArray (deref->Clone());
+	    }
 	    xnew->Tail()->Append (fields[i+off]->Clone());
 	    NEW (bind_val, Expr);
 	    bind_val->type = E_VAR;
@@ -199,7 +230,7 @@ _lookup_binding (act_inline_table *Hs,
 	    bind_val->u.e.l = (Expr *)xnew;
 	  }
 	  else {
-	    bind_val = bval.u.arr[i+off];
+	    bind_val = bval.u.arr[array_off*sz+i+off];
 	  }
 	  if (rv.is_struct) {
 	    rv.u.arr[i] = bind_val;
@@ -222,11 +253,44 @@ _lookup_binding (act_inline_table *Hs,
 	  FREE (fields);
 	}
       }
+      else if (deref) {
+	if (bval.isSimple()) {
+	  ActId *xnew;
+	  if (bval.getVal()->type != E_VAR) {
+	    fprintf (stderr, " PTR is %p\n", bval.getVal());
+	    bval.Print (stderr);
+	    fprintf (stderr, "\n");
+	  }
+	  Assert (bval.getVal()->type == E_VAR, "Hmm");
+	  xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
+	  xnew->Tail()->setArray (deref->Clone());
+
+	  Expr *bind_val;
+	  NEW (bind_val, Expr);
+	  bind_val->type = E_VAR;
+	  bind_val->u.e.r = NULL;
+	  bind_val->u.e.l = (Expr *)xnew;
+	  rv.u.val = bind_val;
+	  rv.is_just_id = 1;
+	}
+	else {
+	  int array_off = it->arrayInfo()->Offset (deref);
+	  Assert (array_off != -1, "Out of bounds?");
+	  rv.u.val = bval.u.arr[array_off];
+	  if (rv.u.val->type == E_VAR) {
+	    rv.is_just_id = 1;
+	  }
+	}
+      }
       else {
+	// either simple ID access or structure access
 	rv = bval;
 	if (!bval.isSimple()) {
-	  Assert (bval.struct_count == sz, "What?");
-	  MALLOC (rv.u.arr, Expr *, bval.struct_count);
+	  Assert (sz == -1 || bval.struct_count == sz, "What?");
+	  Assert (array_sz == -1 || bval.array_sz == array_sz, "What?!");
+	  MALLOC (rv.u.arr, Expr *,
+		  (sz == -1 ? 1 : bval.struct_count)*
+		  (array_sz == -1 ? 1 : bval.array_sz));
 	  for (int i=0; i < sz; i++) {
 	    rv.u.arr[i] = bval.u.arr[i];
 	    if (err) {
@@ -318,6 +382,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
   int sz = 1;
   Data *xd;
   int *widths;
+  Array *deref = id->arrayInfo();
 
 #if 0
   printf ("update binding for: ");
@@ -363,7 +428,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
   b = hash_lookup (Hs->state, id->getName());
   if (!b) {
     act_inline_value lv, bindv;
-    lv = _lookup_binding (Hs, id->getName(), NULL, 0);
+    lv = _lookup_binding (Hs, id->getName(), id->arrayInfo(), NULL, 0);
 #if 0
     printf ("I'm here, lv = ");
     lv.Print (stdout);
@@ -372,13 +437,13 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
     if (lv.isValid()) {
       // found a valid binding
       bindv = lv;
-      if (bindv.isSimple() && xd) {
-#if 0	
+      if (bindv.isSimple() && (xd || xit->arrayInfo())) {
+#if 0
 	printf ("| populate and elaborate binding\n");
 #endif
 	// structure, elaborate the binding
-	bindv.elaborateStructId (xd);
-#if 0	
+	bindv.elaborateStructId (xd, xit->arrayInfo());
+#if 0
 	printf ("| ");
 	bindv.Print (stdout);
 	printf ("\n");
@@ -387,38 +452,67 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
     }
     else {
       // create a dummy NULL binding
-      if (xd) {
-	bindv.is_struct = 1;
-	bindv.struct_count = sz;
-	MALLOC (bindv.u.arr, Expr *, sz);
-	for (int i=0; i < sz; i++) {
+      if (xd || xit->arrayInfo()) {
+	if (xd) {
+	  bindv.is_struct = 1;
+	  bindv.struct_count = sz;
+	}
+
+	if (xit->arrayInfo()) {
+	  bindv.is_array = 1;
+	  bindv.array_sz = xit->arrayInfo()->size();
+	}
+
+	MALLOC (bindv.u.arr, Expr *, sz*(bindv.is_array ? bindv.array_sz : 1));
+
+	for (int i=0; i < sz*(bindv.is_array ? bindv.array_sz : 1); i++) {
 	  bindv.u.arr[i] = NULL;
 	}
+
+#if 0
+	printf ("| ");
+	bindv.Print (stdout);
+	printf ("\n");
+#endif
       }
     }
     b = hash_add (Hs->state, id->getName());
 
     /* add int(.) wrapper if needed */
-    if (xd) {
-      for (int i=0; i < sz; i++) {
-	if (!Hs->macro_mode && bindv.u.arr[i] && widths[i] > 0) {
-	  bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[i]);
+    if (xd || xit->arrayInfo()) {
+      int tot = sz * (bindv.is_array ? bindv.array_sz : 1);
+      for (int i=0; i < tot; i++) {
+	if (!Hs->macro_mode && bindv.u.arr[i]) {
+	  if (xd) {
+	    if (widths[i % sz] > 0) {
+	      bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[i]);
+	    }
+	  }
+	  else {
+	    if (widths[0] > 0) {
+	      bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[0]);
+	    }
+	  }
 	}
       }
     }
     else {
       if (!Hs->macro_mode && bindv.u.val && widths[0] > 0) {
 	bindv.u.val = _wrap_width (bindv.u.val, widths[0]);
+	bindv.is_just_id = 0;
       }
     }
     b->v = new act_inline_value();
     *((act_inline_value *)b->v) = bindv;
-  }
-  act_inline_value resv = _lookup_binding (Hs, id->getName(), NULL, 0);
 
-  if (id->Rest()) {
-    Assert (xd, "What?!");
-    int sz2;
+#if 0
+    printf ("F| ");
+    bindv.Print (stdout);
+    printf ("\n");
+#endif
+  }
+  act_inline_value resv = _lookup_binding (Hs, id->getName(),
+					   id->arrayInfo(), NULL, 0);
 
 #if 0
     printf (" >> update scenario:\n ");
@@ -429,12 +523,21 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
     printf ("\n");
 #endif
 
+  if (id->Rest()) {
+    Assert (xd, "What?!");
+    int sz2;
+
     int off = xd->getStructOffset (id->Rest(), &sz2);
+    int array_off = 0;
+    if (deref) {
+      array_off = xit->arrayInfo()->Offset (deref);
+      Assert (array_off != -1, "Invalid array index?");
+    }
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");
     Assert (!update.isSimple() || sz2 == 1, "Hmm");
     if (resv.isSimple()) {
-      resv.elaborateStructId (xd);
+      resv.elaborateStructId (xd, xit->arrayInfo());
     }
     Assert (!resv.isSimple(), "Hmm");
     for (int i=0; i < sz2; i++) {
@@ -446,10 +549,10 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 	updatev = update.u.arr[i];
       }
       if (!Hs->macro_mode && updatev && widths[off+i] > 0) {
-	resv.u.arr[off+i] = _wrap_width (updatev, widths[off+i]);
+	resv.u.arr[array_off*sz + off+i] = _wrap_width (updatev, widths[off+i]);
       }
       else {
-	resv.u.arr[off+i] = updatev;
+	resv.u.arr[array_off*sz + off+i] = updatev;
       }
 #if 0      
       printf ("set offset %d to ", off+i);
@@ -476,31 +579,64 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 #endif	
   }
   else {
-    if (xd) {
-      if (update.isSimple()) {
+    if (xd || deref) {
+      if (update.isSimple() && !deref) {
 	resv = update;
       }
       else {
 	if (resv.isSimple()) {
-	  resv.elaborateStructId (xd);
+	  resv.elaborateStructId (xd, xit->arrayInfo());
 	}
-	for (int i=0; i < sz; i++) {
-	  if (!Hs->macro_mode && update.u.arr[i] && widths[i] > 0) {
-	    resv.u.arr[i] = _wrap_width (update.u.arr[i], widths[i]);
+	int array_off = 0;
+	if (deref) {
+	  array_off = xit->arrayInfo()->Offset (deref);
+	  Assert (array_off != -1, "Out of bounds");
+	}
+	if (xd) {
+	  for (int i=0; i < sz; i++) {
+	    if (!Hs->macro_mode && update.u.arr[i] && widths[i] > 0) {
+	      resv.u.arr[array_off*sz + i] = _wrap_width (update.u.arr[i], widths[i]);
+	    }
+	    else {
+	      resv.u.arr[array_off*sz + i] = update.u.arr[i];
+	    }
+	  }
+	}
+	else {
+	  if (!Hs->macro_mode && update.u.val && widths[0] > 0) {
+	    resv.u.arr[array_off] = _wrap_width (update.u.val, widths[0]);
 	  }
 	  else {
-	    resv.u.arr[i] = update.u.arr[i];
+	    resv.u.arr[array_off] = update.u.val;
 	  }
 	}
       }
     }
     else {
       Assert (update.isSimple(), "Hmm");
-      if (!Hs->macro_mode && update.u.val && widths[0] > 0) {
-	resv.u.val = _wrap_width (update.u.val, widths[0]);
+
+      if (resv.isValid()) {
+	if (resv.isSimple()) {
+	  resv.u.val = update.u.val;
+	  resv.is_just_id = update.is_just_id;
+	}
+	else {
+	  if (resv.u.arr) {
+	    FREE (resv.u.arr);
+	  }
+	  resv.u.val = update.u.val;
+	  resv.is_just_id = update.is_just_id;
+	}
       }
       else {
-	resv.u.val = update.u.val;
+	resv = update;
+      }
+
+      if (!Hs->macro_mode && update.u.val && widths[0] > 0) {
+	if (!xit->arrayInfo()) {
+	  resv.u.val = _wrap_width (resv.u.val, widths[0]);
+	  resv.is_just_id = 0;
+	}
       }
     }
   }
@@ -580,6 +716,7 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
        only */
     {
       lv = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName(),
+			    ((ActId *)e->u.e.l)->arrayInfo(),
 			    ((ActId *)e->u.e.l)->Rest());
       Assert (lv.isSimple(), "What?");
       Expr *r = lv.getVal();
@@ -738,7 +875,7 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
     break;
     
   case E_SELF:
-    retv = _lookup_binding (Hs, "self", NULL);
+    retv = _lookup_binding (Hs, "self", NULL, NULL);
     break;
 
   case E_SELF_ACK:
@@ -748,7 +885,8 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
   case E_VAR:
     {
       ActId *tid = (ActId *)e->u.e.l;
-      retv = _lookup_binding (Hs, tid->getName(), tid->Rest());
+      retv = _lookup_binding (Hs, tid->getName(),
+			      tid->arrayInfo(), tid->Rest());
     }
     break;
 
@@ -806,7 +944,7 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
     act_inline_value vl;
 
     /* vl is the value before the merge, in the parent context */
-    vl = _lookup_binding (Tret, b->key, NULL, 0);
+    vl = _lookup_binding (Tret, b->key, NULL, NULL, 0);
 
     InstType *et = sc->Lookup (b->key);
     Assert (et, "What?");
@@ -969,7 +1107,7 @@ void act_inline_setval (act_inline_table *Hs, ActId *id,
 
 act_inline_value act_inline_getval (act_inline_table *Hs, const char *s)
 {
-  return _lookup_binding (Hs, s, NULL);
+  return _lookup_binding (Hs, s, NULL, NULL);
 }
 
 
@@ -979,17 +1117,41 @@ void act_inline_value::Print (FILE *fp)
     fprintf (fp, "@invalid@");
     return;
   }
+  if (is_array && !is_just_id) {
+    fprintf (fp, "@arr[%d]", array_sz);
+  }
   fprintf (fp, "@%s", is_struct ? "struct" : "elem");
   if (is_struct) {
-    if (is_struct_id) {
+    if (is_just_id) {
       fprintf (fp, " id: ");
       print_uexpr (fp, u.val);
     }
     else {
       fprintf (fp, "%d ", struct_count);
-      for (int i=0; i < struct_count; i++) {
+      for (int j=0; j < (array_sz == 0 ? 1 : array_sz); j++) {
+	if (j != 0) {
+	  fprintf(fp, " | ");
+	}
+	for (int i=0; i < struct_count; i++) {
+	  if (i != 0) {
+	    fprintf (fp, " ; ");
+	  }
+	  if (u.arr[i+j*struct_count]) {
+	    print_uexpr (fp, u.arr[i+j*struct_count]);
+	  }
+	  else {
+	    fprintf (fp, "nul");
+	  }
+	}
+      }
+    }
+  }
+  else {
+    fprintf (fp, " ");
+    if (is_array && !is_just_id) {
+      for (int i=0; i < array_sz; i++) {
 	if (i != 0) {
-	  fprintf (fp, " ; ");
+	  fprintf (fp, " | ");
 	}
 	if (u.arr[i]) {
 	  print_uexpr (fp, u.arr[i]);
@@ -999,44 +1161,77 @@ void act_inline_value::Print (FILE *fp)
 	}
       }
     }
-  }
-  else {
-    fprintf (fp, " ");
-    print_uexpr (fp, u.val);
+    else {
+      print_uexpr (fp, u.val);
+    }
   }
   fprintf (fp, "@");
 }
 
 
-void act_inline_value::elaborateStructId (Data *d)
+void act_inline_value::elaborateStructId (Data *d, Array *a)
 {
   Assert (isSimple(), "hmm");
   Assert (is_struct, "What?");
   
   ActId **fields;
-  int *types;
   ActId *baseid;
   int ni, nb;
-  d->getStructCount (&nb, &ni);
-  int sz = ni + nb;
-  fields = d->getStructFields (&types);
-  FREE (types);
+  int sz;
+
+  if (d) {
+    int *types;
+    d->getStructCount (&nb, &ni);
+    sz = ni + nb;
+    fields = d->getStructFields (&types);
+    FREE (types);
+  }
+  else {
+    sz = 1;
+    fields = NULL;
+  }
   Assert (getVal()->type == E_VAR, "Hmm");
   baseid = (ActId *)getVal()->u.e.l;
-  MALLOC (u.arr, Expr *, sz);
-  struct_count = sz;
-  is_struct_id = 0;
 
-  for (int i=0; i < sz; i++) {
-    ActId *varnew;
-    NEW (u.arr[i], Expr);
-    u.arr[i]->type = E_VAR;
-    u.arr[i]->u.e.r = NULL;
-    varnew = baseid->Clone();
-    varnew->Append (fields[i]);
-    u.arr[i]->u.e.l = (Expr *) varnew;
+  if (a) {
+    is_array = 1;
+    array_sz = a->size();
+    MALLOC (u.arr, Expr *, sz*array_sz);
   }
-  FREE (fields);
+  else {
+    is_array = 0;
+    array_sz = 0;
+    MALLOC (u.arr, Expr *, sz);
+  }
+  struct_count = sz;
+  is_just_id = 0;
+
+  for (int arr=0; arr < (array_sz == 0 ? 1 : array_sz); arr++) {
+    Array *newa;
+
+    if (a) {
+      newa = a->unOffset (arr);
+    }
+    else {
+      newa = NULL;
+    }
+
+    for (int i=0; i < sz; i++) {
+      ActId *varnew;
+      NEW (u.arr[arr*sz + i], Expr);
+      u.arr[arr*sz + i]->type = E_VAR;
+      u.arr[arr*sz + i]->u.e.r = NULL;
+      varnew = baseid->Clone();
+      if (fields) {
+	varnew->Append (fields[i]);
+      }
+      varnew->setArray (newa);
+      u.arr[arr*sz + i]->u.e.l = (Expr *) varnew;
+    }
+  }
+  if (fields) {
+    FREE (fields);
+  }
   Assert (!isSimple(), "Hmm{");
   Assert (isValid(), "Check");
 }

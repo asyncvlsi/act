@@ -1036,6 +1036,13 @@ Expr *Array::getDeref (int idx)
   }
 }
 
+void Array::setDeref (int idx, Expr *e)
+{
+  Assert (0 <= idx && idx < dims, "Invalid dimension");
+  Assert (r[idx].u.ex.isrange == 2, "Updating only for non-const derefs");
+  r[idx].u.ex.deref = e;
+}
+
 /*------------------------------------------------------------------------
  *
  *  Array::stepper --

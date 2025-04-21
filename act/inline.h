@@ -1,6 +1,6 @@
 /*************************************************************************
  *
- *  Copyright (c) 2021 Rajit Manohar
+ *  Copyright (c) 2021, 2025 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -29,10 +29,11 @@ class Data;
 struct act_inline_table;
 struct act_inline_value {
   act_inline_value() {
+    is_just_id = 0;
     is_struct = 0;
-    is_struct_id = 0;
     struct_count = 0;
-    is_top_arr = 0;
+    is_array = 0;
+    array_sz = 0;
     u.val = NULL;
   }
 
@@ -46,24 +47,26 @@ struct act_inline_value {
   Expr *getVal() { return u.val; }
   
   bool isSimple() {
-    if (is_struct == 0 || is_struct_id) return true;
+    if ((is_struct == 0 && is_array == 0) || is_just_id) return true;
     return false;
   }
 
-  void elaborateStructId (Data *d); 
+  void elaborateStructId (Data *d, Array *a = NULL); 
   
-  int numElems() { return struct_count; }
+  int numStructElems() { return struct_count; }
+  int numArrayElems() { return array_sz; }
 
   // check if there is some legitimate binding stored here
   bool isValid() {
     if (isSimple()) {
+      // the binding is stored in u.val
       if (u.val == NULL) return false;
-      if (is_struct) {
+      if (is_just_id) {
 	if (u.val->type != E_VAR) return false;
       }
       return true;
     }
-    if (struct_count == 0) return false;
+    if (struct_count == 0 && array_sz == 0) return false;
     if (u.arr == NULL) return false;
     return true;
   }
@@ -71,8 +74,10 @@ struct act_inline_value {
   // check if everthing is valid
   bool isValidFull() {
     if (!isValid()) return false;
-    if (is_struct && !is_struct_id) {
-      for (int i=0; i < struct_count; i++) {
+    if (!is_just_id) {
+      int tot = (struct_count == 0 ? 1 : struct_count) *
+	(array_sz == 0 ? 1 : array_sz);
+      for (int i=0; i < tot; i++) {
 	if (u.arr[i] == NULL) return false;
       }
     }
@@ -82,9 +87,11 @@ struct act_inline_value {
   void Print (FILE *fp);
 
   unsigned int is_struct:1;	/* is this a structure? */
-  unsigned int is_struct_id:1;	/* special case structure, ID map */
-  unsigned int is_top_arr:1;	/* is this an array? */
-  unsigned int struct_count:29;	/* size of array for sanity checking */
+  unsigned int is_array:1;	/* this is an array */
+  unsigned int is_just_id:1;	/* special case, ID */
+  unsigned int struct_count:30;	/* size of flattened struct for sanity checking */
+  unsigned int array_sz:30;	/* array size, if any */
+
   union {
     Expr *val;			/* single value */
     Expr **arr;			/* flattened array of values */

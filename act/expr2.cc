@@ -2815,7 +2815,13 @@ static int _expr_bw_calc(struct pHashtable *H, Expr *e, Scope *s)
     {
       InstType *xit;
       lw = act_type_var (s, (ActId *)e->u.e.l, &xit);
-      width = TypeFactory::bitWidth (xit);
+      if (xit->arrayInfo() && !((ActId *)e->u.e.l)->arrayInfo()) {
+	// not a de-reference
+	width = -1;
+      }
+      else {
+	width = TypeFactory::bitWidth (xit);
+      }
     }
     break;
 

@@ -1,0 +1,32 @@
+defproc test ();
+function testme (int<32> x[4]) : int<32>;
+
+defproc test ()
+{
+
+/* instances */
+int<32> a;
+int<32> w[4];
+
+/* connections */
+chp {
+a:=int(w[3],32)
+}
+}
+
+function testme (int<32> x[4]) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x[3]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

@@ -1,0 +1,20 @@
+function testme (int x[4]) : int
+{
+  chp {
+    self := x[3]
+  }
+}
+
+
+
+defproc test()
+{
+   int w[4];
+   int a;
+
+   chp {
+     a := testme (w)
+   }
+}
+
+test t;

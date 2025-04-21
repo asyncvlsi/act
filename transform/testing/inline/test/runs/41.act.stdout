@@ -1,0 +1,42 @@
+defproc test ();
+function swap (mystruct m) : mystruct;
+deftype mystruct (int<4> a; int<4> b);
+
+defproc test ()
+{
+
+/* instances */
+mystruct _us_0;
+int<32> y;
+mystruct m;
+
+/* connections */
+chp {
+m.a:=0x1;m.b:=0x2;_us_0.a:=int(m.a,4);_us_0.b:=int(m.b,4);m.a:=_us_0.a;m.b:=_us_0.b;skip
+}
+}
+
+function swap (mystruct m) : mystruct
+{
+
+/* instances */
+
+/* connections */
+chp {
+self.a:=m.b;self.b:=m.a
+}
+}
+
+deftype mystruct (int<4> a; int<4> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

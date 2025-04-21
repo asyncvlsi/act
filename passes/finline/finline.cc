@@ -215,7 +215,10 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_SELF:
   case E_SELF_ACK:
   case E_PROBE:
+    break;
+
   case E_VAR:
+    retv.is_just_id = 1;
     break;
 
   default:
@@ -268,9 +271,13 @@ act_inline_value ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
 			      ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_CHPEX);
 
       arglist[args++] = _inline_funcs (l, ex);
+      // this computes a pure inlined expression value
+      // now we need to set various flags
       if (TypeFactory::isStructure (fx->getPortType (args-1))) {
-	arglist[args-1].is_struct_id = 1;
 	arglist[args-1].is_struct = 1;
+      }
+      if (fx->getPortType (args-1)->arrayInfo()) {
+	arglist[args-1].is_array = 1;
       }
       Assert (arglist[args-1].isValid(), "What?");
       tmp = tmp->u.e.r;
@@ -1343,6 +1350,8 @@ void ActCHPFuncInline::_apply_complex_inlines (list_t *l, Expr *e)
   return;
 }
 
+static Expr *_expr_clone_subst (struct fn_inline_args *fn, Expr *e);
+
 static ActId *_find_subst (struct fn_inline_args *fn, ActId *id)
 {
   ActId *repl;
@@ -1370,6 +1379,20 @@ static ActId *_find_subst (struct fn_inline_args *fn, ActId *id)
 
   if (id && id->Rest()) {
     repl->Append (id->Rest()->Clone());
+  }
+
+  /*-- there might be arrays here, so include them --*/
+  if (id && id->arrayInfo()) {
+    Array *c = id->arrayInfo()->Clone ();
+
+    /* substitute any array derefs here as well */
+    for (int i=0; i < c->nDims(); i++) {
+      Expr *e = c->getDeref (i);
+      if (e->type != E_INT) {
+	c->setDeref (i, _expr_clone_subst (fn, e));
+      }
+    }
+    repl->setArray (c);
   }
   return repl;
 }
@@ -1607,36 +1630,82 @@ act_chp_lang_t *ActCHPFuncInline::_do_inline (struct pHashtable *H,
       
       /* -- inline this function -- */
       for (int i=0; i < fn->fx->getNumPorts(); i++) {
-	NEW (tmpc, act_chp_lang_t);
-	tmpc->label = NULL;
-	tmpc->space = NULL;
-	tmpc->type = ACT_CHP_ASSIGN;
-	tmpc->u.assign.id = fn->args[i]->Clone();
-	tmpc->u.assign.e = req->args[i];
-	list_append (c->u.semi_comma.cmd, tmpc);
+
+	if (fn->fx->getPortType (i)->arrayInfo()) {
+	  // array assignment!
+	  Array *xa = fn->fx->getPortType (i)->arrayInfo();
+	  for (int j=0; j < xa->size(); j++) {
+	    Array *a = xa->unOffset (j);
+	    NEW (tmpc, act_chp_lang_t);
+	    tmpc->label = NULL;
+	    tmpc->space = NULL;
+	    tmpc->type = ACT_CHP_ASSIGN;
+	    tmpc->u.assign.id = fn->args[i]->Clone ();
+	    tmpc->u.assign.id->setArray (a);
+	    if (req->args[i]->type != E_VAR) {
+	      act_error_ctxt (stderr);
+	      fatal_error ("Failed in complex inline in the presence of arrays?");
+	    }
+	    tmpc->u.assign.e = expr_dup (req->args[i]);
+	    Assert (((ActId *)tmpc->u.assign.e->u.e.l)->arrayInfo() == NULL,
+		    "Hmm...");
+	    ((ActId *)tmpc->u.assign.e->u.e.l)->setArray (a->Clone ());
+	    list_append (c->u.semi_comma.cmd, tmpc);
+	  }
+	}
+	else {
+	  NEW (tmpc, act_chp_lang_t);
+	  tmpc->label = NULL;
+	  tmpc->space = NULL;
+	  tmpc->type = ACT_CHP_ASSIGN;
+	  tmpc->u.assign.id = fn->args[i]->Clone();
+	  tmpc->u.assign.e = req->args[i];
+	  list_append (c->u.semi_comma.cmd, tmpc);
+	}
       }
       
       list_append (c->u.semi_comma.cmd,
 		   _chp_clone_subst (fn, fn->fx->getlang()->getchp()->c));
 
-      NEW (tmpc, act_chp_lang_t);
-      tmpc->label = NULL;
-      tmpc->space = NULL;
-      tmpc->type = ACT_CHP_ASSIGN;
-      NEW (tmpc->u.assign.e, Expr);
-      tmpc->u.assign.e->type = E_VAR;
-      tmpc->u.assign.e->u.e.r = NULL;
-      tmpc->u.assign.e->u.e.l = (Expr *) fn->ret->Clone();
-
+      // return value
       int idx = _get_fresh_idx ("fuse", &_useidx);
       char buf[1024];
       snprintf (buf, 1024, "fuse_%d", idx);
       Assert (_cursc->Add (buf, fn->fx->getRetType()) == 1, "Hmm");
-      tmpc->u.assign.id = new ActId (buf);
-      list_append (l, new ActId (buf));
 
-      list_append (c->u.semi_comma.cmd, tmpc);
-      
+      if (fn->fx->getRetType()->arrayInfo()) {
+	Array *xa = fn->fx->getRetType()->arrayInfo();
+	for (int j=0; j < xa->size(); j++) {
+	  Array *a = xa->unOffset (j);
+	  NEW (tmpc, act_chp_lang_t);
+	  tmpc->label = NULL;
+	  tmpc->space = NULL;
+	  tmpc->type = ACT_CHP_ASSIGN;
+	  NEW (tmpc->u.assign.e, Expr);
+	  tmpc->u.assign.e->type = E_VAR;
+	  tmpc->u.assign.e->u.e.r = NULL;
+	  tmpc->u.assign.e->u.e.l = (Expr *) fn->ret->Clone();
+	  Assert (tmpc->u.assign.e->u.e.l->type == E_VAR, "What?");
+	  Assert (((ActId*)tmpc->u.assign.e->u.e.l->u.e.l)->arrayInfo() == NULL, "Huh?");
+	  ((ActId*)tmpc->u.assign.e->u.e.l->u.e.l)->setArray (a);
+	  tmpc->u.assign.id = new ActId (buf);
+	  tmpc->u.assign.id->setArray (a->Clone ());
+	  list_append (c->u.semi_comma.cmd, tmpc);
+	}
+      }
+      else {
+	NEW (tmpc, act_chp_lang_t);
+	tmpc->label = NULL;
+	tmpc->space = NULL;
+	tmpc->type = ACT_CHP_ASSIGN;
+	NEW (tmpc->u.assign.e, Expr);
+	tmpc->u.assign.e->type = E_VAR;
+	tmpc->u.assign.e->u.e.r = NULL;
+	tmpc->u.assign.e->u.e.l = (Expr *) fn->ret->Clone();
+	tmpc->u.assign.id = new ActId (buf);
+	list_append (c->u.semi_comma.cmd, tmpc);
+      }
+      list_append (l, new ActId (buf));
     }
     len--;
   }
