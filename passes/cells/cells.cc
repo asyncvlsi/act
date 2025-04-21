@@ -996,10 +996,12 @@ void ActCellPass::flush_pending (Scope *sc)
       //ac->Next()->Print (stdout);
       //printf (" --- \n");
 
-      int oval = Act::double_expand;
-      Act::double_expand = 0;
-      ac->Expandlist (NULL, sc);
-      Act::double_expand = oval;
+      if (ac) {
+	int oval = Act::double_expand;
+	Act::double_expand = 0;
+	ac->Expandlist (NULL, sc);
+	Act::double_expand = oval;
+      }
       //printf ("---\n");
     }
     A_FREE (groupprs);
@@ -2627,11 +2629,12 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
     //ac->Next()->Print (stdout);
     //printf (" --- \n");
 
-
-  int oval = Act::double_expand;
-  Act::double_expand = 0;
-  ac->Expandlist (NULL, sc);
-  Act::double_expand = oval;
+  if (ac) {
+    int oval = Act::double_expand;
+    Act::double_expand = 0;
+    ac->Expandlist (NULL, sc);
+    Act::double_expand = oval;
+  }
 }
 
 void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
@@ -2713,11 +2716,12 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
     //ac->Next()->Print (stdout);
     //printf (" --- \n");
 
-
-  int oval = Act::double_expand;
-  Act::double_expand = 0;
-  ac->Expandlist (NULL, sc);
-  Act::double_expand = oval;
+  if (ac) {
+    int oval = Act::double_expand;
+    Act::double_expand = 0;
+    ac->Expandlist (NULL, sc);
+    Act::double_expand = oval;
+  }
 }
 
 
