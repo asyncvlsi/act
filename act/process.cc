@@ -23,8 +23,11 @@
 #include <act/body.h>
 #include <act/lang.h>
 #include <act/value.h>
+#include <act/act.h>
 #include <string.h>
 
+int _act_inc_rec_depth ();
+void _act_dec_rec_depth();
 
 /*------------------------------------------------------------------------
  *
@@ -99,12 +102,21 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     xp->ifaces = NULL;
   }
 
+  int recval = _act_inc_rec_depth ();
+
+  if (recval >= Act::max_recurse_depth) {
+    act_error_ctxt (stderr);
+    fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
+  }
+
   /*-- expand macros --*/
   for (int i=0; i < A_LEN (um); i++) {
     A_NEW (xp->um, UserMacro *);
     A_NEXT (xp->um) = um[i]->Expand (xp, ns, xp->I, 1);
     A_INC (xp->um);
   }
+
+  _act_dec_rec_depth ();
 
   return xp;
 }

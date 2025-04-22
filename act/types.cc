@@ -712,6 +712,9 @@ int UserDef::isEqual (const UserDef *u) const
 
 static int recursion_depth = 0;
 
+int _act_inc_rec_depth () { recursion_depth++; return recursion_depth; }
+void _act_dec_rec_depth() { recursion_depth--; }
+
 /*------------------------------------------------------------------------
  *
  *   Expand user-defined type! 
@@ -727,9 +730,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   InstType *x, *p;  
   Array *xa;
 
-  recursion_depth++;
+  int recval = _act_inc_rec_depth();
 
-  if (recursion_depth >= Act::max_recurse_depth) {
+  if (recval >= Act::max_recurse_depth) {
     act_error_ctxt (stderr);
     fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
   }
@@ -1172,7 +1175,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
     FREE (buf);
     /* we found one! */
     delete ux;
-    recursion_depth--;
+    _act_dec_rec_depth ();
     *cache_hit = 1;
     return uy;
   }
@@ -1278,7 +1281,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   }
 
   ux->pending = 0;
-  recursion_depth--;
+
+  _act_dec_rec_depth ();
+
   return ux;
 }
 
@@ -1333,6 +1338,13 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   /*-- expand macros --*/
 
+  int recval = _act_inc_rec_depth ();
+
+  if (recval  >= Act::max_recurse_depth) {
+    act_error_ctxt (stderr);
+    fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
+  }
+  
   /*-- do this in two phases: first, the built-in ones! --*/
   for (int i=0; i < A_LEN (um); i++) {
     if (um[i]->isBuiltinMacro()) {
@@ -1355,6 +1367,8 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
       A_INC (xd->um);
     }
   }
+
+  _act_dec_rec_depth ();
 
   return xd;
 }
