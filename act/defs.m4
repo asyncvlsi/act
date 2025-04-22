@@ -407,27 +407,35 @@ interface_spec: { interface_one_spec "," }*
 ;
 
 interface_one_spec: iface_inst_type
-"{" { idmap "," }*  "}"
+"{" opt_idmap  "}"
 {{X:
     listitem_t *li;
     list_t *ret;
     Interface *iface = dynamic_cast <Interface *>($1->BaseType());
 
-    ret = NULL;
-    for (li = list_first ($3); li; li = list_next (li)) {
-      list_t *tlist = (list_t *) list_value (li);
-      if (!ret) {
-	ret = tlist;
-      }
-      else {
-	list_concat (ret, tlist);
-	list_free (tlist);
+    if ($3 == NULL) {
+      ret = list_new ();
+    }
+    else {
+      ret = NULL;
+      for (li = list_first ($3); li; li = list_next (li)) {
+	list_t *tlist = (list_t *) list_value (li);
+	if (!ret) {
+	  ret = tlist;
+	}
+	else {
+	  list_concat (ret, tlist);
+	  list_free (tlist);
+	}
       }
     }
 
     $A(iface);
     if (!$0->u_p && !$0->u_d) {
       $E("Interfaces can only be exported by processes and data types");
+    }
+    if ($0->u_d && !TypeFactory::isStructure ($0->u_d)) {
+      $E("Interfaces can only be exported by structures");
     }
     $A($0->u_p || $0->u_d);
     for (li = list_first (ret); li; li = list_next (li)) {
@@ -467,7 +475,14 @@ idmap[list_t *]: ID "->" ID
     list_append (ret, $3);
     return ret;
 }}
-;    
+;
+
+opt_idmap[list_t *]: { idmap "," }*
+{{X:
+    return $1;
+}}
+| /* empty */
+;
 
 override_spec: override_one_spec override_spec
 {{X: return NULL; }}
@@ -1871,7 +1886,7 @@ ID
 	$0->u_f->convPortsToParams();
       }
     }
-    
+
     if ($0->u_f->getNumPorts() > 0 && TypeFactory::isParamType ($8)) {
       $E("Function ``%s'': return type incompatible with arguments", $3);
     }
@@ -2923,7 +2938,7 @@ defiface: [ template_spec ]
     $0->scope = $0->u_i->CurScope ();
 }}
  "(" [ port_formal_list ] ")"
-{{X: 
+ {{X:
     /* Create type here */
     UserDef *u;
 
@@ -2941,12 +2956,14 @@ defiface: [ template_spec ]
     else {
       $A($0->curns->CreateType ($3, $0->u_i));
     }
+    OPT_FREE ($5);
     $0->strict_checking = 0;
 }}
 interface_methods
 {{X:
-    $0->scope =$0->curns->CurScope();
     $0->u_i->MkDefined ();
+    $0->u_i = NULL;
+    $0->scope =$0->curns->CurScope();
     return NULL;
 }}
 ;
@@ -2962,11 +2979,11 @@ interface_methods: "{" "methods" "{" method_decl_list "}" "}"
 }}
 ;
 
-method_decl_list: one_method_decl method_decl_list 
+method_decl_list: one_method_decl method_decl_list
 | one_method_decl
 ;
 
-one_method_decl: "macro" ID 
+one_method_decl: "macro" ID
 {{X:
     $A($0->u_i);
     if (strcmp ($2, "int") == 0) {
@@ -2993,7 +3010,7 @@ one_method_decl: "macro" ID
 
     return NULL;
 }}
-| "function" ID 
+| "function" ID
 {{X:
     $A($0->u_i);
     if (strcmp ($2, "int") == 0) {
@@ -3038,7 +3055,7 @@ one_method_decl: "macro" ID
     Scope *tmp = $0->scope;
     $0->scope = tmp->Parent ();
     delete tmp;
-    
+
     return NULL;
 }}
 ;

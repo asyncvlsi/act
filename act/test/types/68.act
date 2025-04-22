@@ -1,0 +1,31 @@
+interface me() {
+   methods {
+      function sum (int x) : int;
+   }
+}
+
+deftype myint (int xa) :> me  { }
+{
+   methods {
+     function sum (int w) : int
+     { 
+       chp {
+          self := w + xa
+       }
+     }
+   }
+}
+
+template<ptype(me) x> defproc test()
+{
+   x a;
+   int y;
+
+   chp {
+
+     y := 0;
+     y := a.sum(y)
+   }
+}
+
+test<@myint> t;

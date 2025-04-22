@@ -450,10 +450,11 @@ Type *InstType::isConnectable (InstType *it, int weak)
       /* other valid case:
 	 ptype(x) to connect to y, where y exports interface x
       */
-      if (TypeFactory::isPTypeType (t) && TypeFactory::isProcessType (it)) {
+      if (TypeFactory::isPTypeType (t) &&
+	  (TypeFactory::isProcessType (it) || TypeFactory::isStructure (it))) {
 	/* ok there is hope 
 	   - extract interface from ptype
-	   - check that process exports this interface 
+	   - check that process/data type exports this interface
 	*/
 	if ((arrayInfo() && !arrayInfo()->isDeref())
 	    || (it->arrayInfo() && !it->arrayInfo()->isDeref())) {
@@ -463,18 +464,35 @@ Type *InstType::isConnectable (InstType *it, int weak)
 	}
 	PType *pt = dynamic_cast <PType *>(t);
 	InstType *iface = pt->getType();
-	Process *rhs = dynamic_cast <Process *>(it->BaseType());
-	Assert (rhs, "What?");
-	if (!iface) {
-	  iface = this->getTypeParam (0);
+	if (TypeFactory::isProcessType (it)) {
+	  Process *rhs = dynamic_cast <Process *>(it->BaseType());
+	  Assert (rhs, "What?");
+	  if (!iface) {
+	    iface = this->getTypeParam (0);
+	  }
+	  Assert (iface, "What?");
+	  if (!rhs->hasIface (iface, weak)) {
+	    typecheck_err ("Process `%s' does not export interface `%s'\n",
+			   rhs->getName(), iface->BaseType()->getName());
+	    return NULL;
+	  }
+	  return t;
 	}
-	Assert (iface, "What?");
-	if (!rhs->hasIface (iface, weak)) {
-	  typecheck_err ("Process `%s' does not export interface `%s'\n",
-			 rhs->getName(), iface->BaseType()->getName());
-	  return NULL;
+	else {
+	  Assert (TypeFactory::isStructure (it), "I should not be here");
+	  Data *rhs = dynamic_cast <Data *>(it->BaseType());
+	  Assert (rhs, "What?");
+	  if (!iface) {
+	    iface = this->getTypeParam (0);
+	  }
+	  Assert (iface, "What?");
+	  if (!rhs->hasIface (iface, weak)) {
+	    typecheck_err ("Data type `%s' does not export interface `%s'\n",
+			   rhs->getName(), iface->BaseType()->getName());
+	    return NULL;
+	  }
+	  return t;
 	}
-	return t;
       }
       return NULL;
     }
