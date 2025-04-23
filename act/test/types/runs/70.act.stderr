@@ -1,0 +1,6 @@
+In expanding mytype (70.act:8)
+In expanding test<mytype> (70.act:20)
+In expanding ::<Global>
+Error on or near line number 30.
+FATAL: Inconsistent/missing method
+	Method `test', interface `foo<>': arg #0 type mismatch

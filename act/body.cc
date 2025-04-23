@@ -409,6 +409,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
       }
 
       InstType *x = new InstType (s->getPType (vx->u.idx));
+      x->MkCached ();
       x->setIfaceType (it);
       if (it->arrayInfo()) {
 	x->MkArray (it->arrayInfo());

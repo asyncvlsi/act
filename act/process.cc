@@ -116,6 +116,12 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     A_INC (xp->um);
   }
 
+  const char *ret = xp->validateInterfaces ();
+  if (ret) {
+    act_error_ctxt (stderr);
+    fatal_error ("Inconsistent/missing method\n\t%s", ret);
+  }
+
   _act_dec_rec_depth ();
 
   return xp;
@@ -758,7 +764,6 @@ void Process::recordGlobal (ActId *id)
 
 const char *Process::validateInterfaces ()
 {
-  static char buf[1024];
   if (!ifaces) return NULL;
   listitem_t *li;
   for (li = list_first (ifaces); li; li = list_next (li)) {
@@ -769,9 +774,7 @@ const char *Process::validateInterfaces ()
     // now typecheck macros
     const char *ret = ix->validateMacros (this, um, A_LEN (um));
     if (ret) {
-      snprintf (buf, 1024, "Method `%s' from interface `%s'", ret,
-		ix->getName());
-      return buf;
+      return ret;
     }
 
     li = list_next (li);

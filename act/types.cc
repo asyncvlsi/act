@@ -1368,6 +1368,12 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
     }
   }
 
+  const char *ret = xd->validateInterfaces ();
+  if (ret) {
+    act_error_ctxt (stderr);
+    fatal_error ("Inconsistent/missing method\n\t%s", ret);
+  }
+
   _act_dec_rec_depth ();
 
   return xd;
@@ -1466,7 +1472,24 @@ Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   xd = new Interface (ux);
   delete ux;
 
+  int recval = _act_inc_rec_depth ();
+
+  if (recval >= Act::max_recurse_depth) {
+    act_error_ctxt (stderr);
+    fatal_error ("Exceeded maximum recursion depth of %d\n", Act::max_recurse_depth);
+  }
+
   Assert (_ns->EditType (xd->name, xd) == 1, "What?");
+  
+  /*-- expand macros --*/
+  for (int i=0; i < A_LEN (um); i++) {
+    A_NEW (xd->um, UserMacro *);
+    A_NEXT (xd->um) = um[i]->Expand (xd, ns, xd->I, 1);
+    A_INC (xd->um);
+  }
+
+  _act_dec_rec_depth ();
+
   return xd;
 }
 
@@ -3018,7 +3041,6 @@ list_t *Data::findMap (InstType *x)
 
 const char *Data::validateInterfaces ()
 {
-  static char buf[1024];
   if (!ifaces) return NULL;
   listitem_t *li;
   for (li = list_first (ifaces); li; li = list_next (li)) {
@@ -3029,9 +3051,7 @@ const char *Data::validateInterfaces ()
     // now typecheck macros
     const char *ret = ix->validateMacros (this, um, A_LEN (um));
     if (ret) {
-      snprintf (buf, 1024, "Method `%s' from interface `%s'", ret,
-		ix->getName());
-      return buf;
+      return ret;
     }
 
     li = list_next (li);
@@ -3056,31 +3076,86 @@ void Interface::Print (FILE *fp)
 
 const char *Interface::validateMacros (UserDef *u, UserMacro **macros, int count)
 {
+  static char buf[1024];
+  int len;
   // we have to try type substitutions for the interface name with the
   // specified type name!
   for (int i=0; i < A_LEN (um); i++) {
-    const char *err = um[i]->getName();
     int idx;
+    int err;
     for (idx=0; idx < count; idx++) {
-      if (strcmp (macros[idx]->getName(), err) == 0) {
+      if (strcmp (macros[idx]->getName(), um[i]->getName()) == 0) {
 	break;
       }
     }
-    if (idx == count) return err;
 
-    /* now check that um[i] and macros[idx] match up! */
-    if (um[i]->getNumPorts() != macros[idx]->getNumPorts()) return err;
+    if (idx == count) {
+      snprintf (buf, 1024, "Method `%s' from interface '%s' is missing.",
+		um[i]->getName(), getName());
+      return buf;
+    }
     
+    /* now check that um[i] and macros[idx] match up! */
+    if (um[i]->getNumPorts() != macros[idx]->getNumPorts()) {
+      snprintf (buf, 1024, "Method `%s', interface `%s': mismatch in port count (%d vs %d)",
+		um[i]->getName (), getName(),
+		um[i]->getNumPorts(), macros[idx]->getNumPorts());
+      return buf;
+    }
+
+
+    /* match the types for each of the arguments as well as the return value */
+    err = 0;
+    for (int j=0; j < um[i]->getNumPorts(); j++) {
+      /* 1. normal test for typechecking connections, and
+	 2. stricter check: the interface must be the same as the type
+      */
+#define _TYPEMATCH(t1,t2)						\
+      do {								\
+	if (TypeFactory::isInterfaceType (t1)) {			\
+	  InstType *tmp = new InstType (u->CurScope(), u);		\
+	  if (!type_connectivity_check ((t2), tmp) ||			\
+	      (!u->isEqual ((t2)->BaseType()))) {			\
+	    delete tmp;							\
+	    err = 1;							\
+	  }								\
+	  delete tmp;							\
+	}								\
+	else {								\
+	  if (!type_connectivity_check (t1, t2)) {			\
+	    err = 1;							\
+	  }								\
+	}								\
+      } while (0)
+      _TYPEMATCH(um[i]->getPortType (j), macros[idx]->getPortType (j));
+      if (err) {
+	snprintf (buf, 1024, "Method `%s', interface `%s': arg #%d type mismatch",
+		  um[i]->getName (), getName(), j);
+	return buf;
+      }
+    }
+
     if (um[i]->getRetType()) {
-      if (!macros[idx]->getRetType()) return err;
+      if (!macros[idx]->getRetType()) {
+	snprintf (buf, 1024, "Method `%s', interface `%s': macro/function inconsistency",
+		  um[i]->getName(), getName());
+	return buf;
+      }
+      _TYPEMATCH (um[i]->getRetType(), macros[idx]->getRetType());
+      if (err) {
+	snprintf (buf, 1024, "Method `%s', interface `%s': return type mismatch",
+		  um[i]->getName (), getName());
+	return buf;
+      }
     }
     else {
-      if (macros[idx]->getRetType()) return err;
+      if (macros[idx]->getRetType()) {
+	snprintf (buf, 1024, "Method `%s', interface `%s': macro/function inconsistency",
+		  um[i]->getName(), getName());
+	return buf;
+      }
     }
-
-    /* now match the types for each of the arguments as well as the
-       return value */
-    
+#undef _TYPEMATCH    
   }
   return NULL;
 }

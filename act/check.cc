@@ -124,7 +124,7 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
   Assert (it, "This should have been caught during parsing!");
 
   /* pstruct can be strict even if there is an id de-reference */
-  if (TypeFactory::isPStructType (it) && id->Rest()) {
+  if (id->Rest() && TypeFactory::isPStructType (it)) {
     u = s->getUserDef ();
     if (u && u->isStrictPort (id->getName())) {
       is_strict = 1;
@@ -205,6 +205,8 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
       return T_PROC|arr;
     }
     if (TypeFactory::isInterfaceType (t)) {
+      return T_IFACE|arr;
+      
       char *tmpbuf;
       MALLOC (tmpbuf, char, 10240);
       id->sPrint (tmpbuf, 10240);
@@ -1230,6 +1232,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    *width = TypeFactory::bitWidth (rtype);
 	  }
 	}
+	else if (TypeFactory::isInterfaceType (rtype)) {
+	  ret |= T_IFACE;
+	  if (width) {
+	    *width = -1;
+	  }
+	}
 	else {
 	  Assert (0, "Unknown return type");
 	}
@@ -2200,8 +2208,15 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs)
 
   if (!TypeFactory::isDataType (lhs) && !TypeFactory::isPureStruct (lhs) &&
       !TypeFactory::isPBoolType (lhs) && !TypeFactory::isPIntType (lhs)) {
-    typecheck_err ("Assignable variable requires data types!");
-    return 0;
+    if (TypeFactory::isInterfaceType (lhs) &&
+	TypeFactory::isInterfaceType (rhs) &&
+	lhs->BaseType()->isEqual (rhs->BaseType())) {
+      return 1;
+    }
+    else {
+      typecheck_err ("Assignable variable requires data types!");
+      return 0;
+    }
   }
   if (TypeFactory::isPBoolType (lhs)) {
     if (TypeFactory::isPBoolType (rhs)) {

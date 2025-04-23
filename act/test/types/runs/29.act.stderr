@@ -1,3 +1,4 @@
-ERROR: File `29.act', line 17, col 4
-	Typechecking failed on expression!
-	Identifier `y' is an interface type
+ERROR: File `29.act', line 25, col 8
+	Typechecking failed for template parameter #1
+	Process `bitinv' does not export interface `linear'
+Types `ptype<linear>' and `bitinv' are not compatible
