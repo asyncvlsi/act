@@ -430,6 +430,10 @@ Type *InstType::isConnectable (InstType *it, int weak)
   /* Even if the base types are not the same,
      they might be connectable because they have a common root */
 
+  if (TypeFactory::isInterfaceType (t) && t == it->t) {
+    return t;
+  }
+
   /* EVENTUALLY insttype pointers will be unique, and so this
      will work! */
   if (TypeFactory::isInterfaceType (t)) {

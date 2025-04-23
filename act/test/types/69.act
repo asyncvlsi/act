@@ -1,0 +1,30 @@
+/* F-bounded polymorphism */
+interface foo() { 
+methods {
+  function test (foo x) : bool;
+}
+}
+
+deftype mytype (int x) :> foo { }
+{
+   methods {
+     function test (mytype y) : bool 
+     {
+       chp {
+           self := y.x > x ? true : false
+       }
+     }
+  }
+}
+
+template<ptype(foo) t>
+defproc test()
+{
+   t x;
+   bool w;
+   chp {
+     w := x.test(x)
+   }
+}
+
+test<@mytype> x;

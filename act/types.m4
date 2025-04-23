@@ -230,7 +230,13 @@ physical_inst_type[InstType *]: data_type
 | user_type
 {{X:
     if (TypeFactory::isInterfaceType ($1) && !$0->ptype_expand) {
-      $E("An interface type cannot be used in this context");
+      if (TypeFactory::isInterfaceType ($1) &&
+	  $0->u_i && $0->u_i->isEqual ($1->BaseType())) {
+	/* F-bounded polymorphism! */
+      }
+      else {
+	$E("An interface type cannot be used in this context");
+      }
     }
     $0->ptype_expand = 0;
     return $1;

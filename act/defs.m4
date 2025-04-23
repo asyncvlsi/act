@@ -941,9 +941,12 @@ single_macro_port_item: physical_inst_type id_list
     UserDef *u;
 
     if (!TypeFactory::isDataType ($1) && !TypeFactory::isStructure($1)) {
-      r = (ActRet *) list_value (list_first ($2));
-      $A(r->type == R_STRING);
-      $E("Parameter ``%s'': port parameter for a macro must be a data type", r->u.str);
+      if (!TypeFactory::isInterfaceType ($1)) {
+	/* allow F-bounded polymorphism */
+	r = (ActRet *) list_value (list_first ($2));
+	$A(r->type == R_STRING);
+	$E("Parameter ``%s'': port parameter for a macro must be a data type", r->u.str);
+      }
     }
     
     if ($0->u_p) {
