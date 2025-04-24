@@ -80,6 +80,10 @@ class ActBody {
    */
   ActBody *Next () { return next; }
 
+  /** clear next pointer */
+  void clrNext() { next = NULL; }
+  void setNext(ActBody *b) { next = b; }
+
   /**
    * In cases when we are cloning a
    * body into a new namespace hierarchy, the "replace" pointer is

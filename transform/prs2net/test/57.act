@@ -1,0 +1,8 @@
+import  xfoo;
+
+defproc foo()
+{
+xfoo::test t;
+}
+
+foo f;

@@ -1,0 +1,10 @@
+import  xfoo;
+open xfoo => xbar;
+
+defproc foo()
+{
+xfoo::test t;
+xbar::test t2;
+}
+
+foo f;

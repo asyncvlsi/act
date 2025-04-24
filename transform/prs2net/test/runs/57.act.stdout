@@ -1,0 +1,33 @@
+*
+*---- act defproc: xfoo::test<> -----
+* raw ports:  a b
+*
+.subckt _8_8xfoo_8_8test a b
+*.PININFO a:I b:O
+*.POWER VDD _8_8xfoo_8_8VddN
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB _8_8xfoo_8_8VddN
+*
+* --- node flags ---
+*
+* b (combinational)
+*
+* --- end node flags ---
+*
+M0_ b a _8_8xfoo_8_8VddN _8_8xfoo_8_8VddN pch W=0.3U L=0.06U
+M1_ b a GND GND nch W=0.15U L=0.06U
+.ends
+*---- end of process: test<> -----
+*
+*---- act defproc: foo<> -----
+* raw ports: 
+*
+.subckt foo
+*.POWER VDD Vdd
+*.POWER GND GND
+*.POWER NSUB GND
+*.POWER PSUB Vdd
+xt t_4a t_4b _8_8xfoo_8_8test
+.ends
+*---- end of process: foo<> -----

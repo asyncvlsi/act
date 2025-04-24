@@ -1020,8 +1020,51 @@ void ActNamespace::_updateClonedTypes (ActNamespace *root,
   hash_bucket_t *b, *bnew;
 
   // update the body type info, and re-construct scopes!
+  if (ActNamespace::Global()->B) {
+    ActBody *tmp;
+    ActBody *update = NULL;
+    ActBody *utail = NULL;
+    bool found = false;
+
+    for (tmp = ActNamespace::Global()->B; tmp; tmp = tmp->Next()) {
+      if (dynamic_cast<ActBody_Namespace *>(tmp)) {
+	ActNamespace *tns = (dynamic_cast<ActBody_Namespace *>(tmp))->getNS();
+	if (tns == this) {
+	  found = true;
+	}
+	else {
+	  found = false;
+	}
+      }
+      if (found) {
+	ActBody *tnext = tmp->Next();
+	tmp->clrNext ();
+	ActBody *cpy = tmp->Clone (root, newroot);
+	tmp->setNext (tnext);
+	if (!update) {
+	  update = cpy;
+	  utail = update;
+	}
+	else {
+	  utail->Append (cpy);
+	  utail = cpy;
+	}
+      }
+    }
+    if (update) {
+      ActBody *tmp = new ActBody_Namespace (newns);
+      tmp->Append (update);
+      utail->Append (new ActBody_Namespace (ActNamespace::Global()));
+      ActNamespace::Global()->B->Append (tmp);
+    }
+  }
   if (B) {
-    newns->B = B->Clone (root, newroot);
+    if (newns->B) {
+      newns->B->Append (B->Clone (root, newroot));
+    }
+    else {
+      newns->B = B->Clone (root, newroot);
+    }
   }
 
   hash_iter_init (N, &it);
