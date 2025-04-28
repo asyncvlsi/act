@@ -1,0 +1,30 @@
+interface foo() { 
+methods {
+  function plus (foo x) : foo;
+}
+}
+
+deftype mytype (int x) :> foo { }
+{
+   methods {
+     function plus (mytype y) : mytype 
+     {
+       mytype ret;
+       chp {
+           ret.x := y.x;
+           self := ret
+       }
+     }
+  }
+}
+
+template<ptype(foo) t>
+defproc test()
+{
+   t x1, x2;
+   chp {
+     x1 := x1 + x2
+   }
+}
+
+test<@mytype> x;

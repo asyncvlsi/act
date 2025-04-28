@@ -286,7 +286,8 @@ static Expr *_check_overload (ActTree *cookie, Expr *e, const char *nm)
   if (!e) return e;
   if (act_expr_could_be_struct (e->u.e.l)) {
     InstType *it = act_expr_insttype (cookie->scope, e->u.e.l, NULL, 2);
-    if (it && TypeFactory::isPureStruct (it)) {
+    if (it &&
+	(TypeFactory::isPureStruct (it) || TypeFactory::isInterfaceType (it))) {
       struct act_position p;
       p.l = cookie->line;
       p.c = cookie->column;
@@ -336,7 +337,8 @@ static Expr *_check_overload_bool (ActTree *cookie, Expr *e, const char *nm)
   if (!e) return e;
   if (act_expr_could_be_struct (e->u.e.l)) {
     InstType *it = act_expr_insttype (cookie->scope, e->u.e.l, NULL, 2);
-    if (it && TypeFactory::isPureStruct (it)) {
+    if (it &&
+	(TypeFactory::isPureStruct (it) || TypeFactory::isInterfaceType (it))) {
       struct act_position p;
       p.l = cookie->line;
       p.c = cookie->column;
