@@ -214,9 +214,19 @@ int main (int argc, char **argv)
   
   a->Expand ();
 
+  Process *p = a->findProcess (proc);
+
+  if (!p) {
+    fatal_error ("Could not find process `%s' in file `%s'", proc, argv[1]);
+  }
+
+  if (!p->isExpanded()) {
+    p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
+  }
+
   if (cell_file) {
     ActCellPass *cp = new ActCellPass (a);
-    cp->run();
+    cp->run(p);
 
     FILE *oc = fopen (cell_file, "w");
     if (!oc) {
@@ -228,16 +238,6 @@ int main (int argc, char **argv)
   
   if (config_exists ("net.mangle_chars")) {
     a->mangle (config_get_string ("net.mangle_chars"));
-  }
-
-  Process *p = a->findProcess (proc);
-
-  if (!p) {
-    fatal_error ("Could not find process `%s' in file `%s'", proc, argv[1]);
-  }
-
-  if (!p->isExpanded()) {
-    p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
   }
 
   ActNetlistPass *np = new ActNetlistPass (a);
