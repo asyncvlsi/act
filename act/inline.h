@@ -77,8 +77,11 @@ struct act_inline_value {
     if (!is_just_id) {
       int tot = (struct_count == 0 ? 1 : struct_count) *
 	(array_sz == 0 ? 1 : array_sz);
-      for (int i=0; i < tot; i++) {
-	if (u.arr[i] == NULL) return false;
+
+      if (!isSimple()) {
+	for (int i=0; i < tot; i++) {
+	  if (u.arr[i] == NULL) return false;
+	}
       }
     }
     return true;
