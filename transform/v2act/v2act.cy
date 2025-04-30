@@ -13,17 +13,27 @@ module: "module" ID
 {{X:
     module_t *m;
     int off = 0;
-    char buf[10240];
+    char *buf;
+
+    int len = strlen ($2);
+    if (len < 10) {
+      len = 10;
+    }
 
     if ($2[0] == '\\') {
       char *tmp;
-      MALLOC (tmp, char, strlen ($2));
+      MALLOC (tmp, char, len);
       strcpy (tmp, $2+1);
-      $0->a->mangle_string (tmp, buf, 10240);
+
+      MALLOC (buf, char, 2*len);
+      buf[0] = '\0';
+      $0->a->mangle_string (tmp, buf, 2*len);
       FREE (tmp);
     }
     else {
-      snprintf (buf, 10240, "%s", $2);
+      MALLOC (buf, char, len+1);
+      buf[0] = '\0';
+      snprintf (buf, len+1, "%s", $2);
     }
 
     NEW (m, module_t);
@@ -66,6 +76,7 @@ module: "module" ID
       /* now that we've found it, it should no longer be missing! */
       hash_delete ($0->missing, buf);
     }
+    FREE (buf);
 }}
 "(" port_list ")" ";" module_body
 ;
