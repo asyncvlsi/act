@@ -541,6 +541,7 @@ static void _verify_subconn_canonical (UserDef *ux, act_connection *c);
 static void mk_raw_skip_connection (UserDef *ux,
 				    act_connection *c1, act_connection *c2)
 {
+  act_connection *c2arg = c2;
   act_connection *c2p;
   act_connection *tmp = c2;
   /* c1 is the root, not c2 */
@@ -658,7 +659,9 @@ static void mk_raw_skip_connection (UserDef *ux,
 
   if (!c2->a) {
     /* no subconnections. done. */
-    delete c2;
+    /* XXX: check this change:
+       delete c2;
+    */
 
 #ifdef DEBUG_SKIP_CONN
     printf ("[raw-skip/3b] return value...\n");
