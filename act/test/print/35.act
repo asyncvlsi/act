@@ -1,0 +1,11 @@
+defproc test()
+{
+    pint W = 65;
+
+    chp {
+        log(1 << (65 - 1));
+        log(1 << (W - 1))
+    }
+}
+
+test t;

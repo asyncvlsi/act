@@ -2441,10 +2441,17 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  *width = TypeFactory::bitWidth (it);
 	}
 	else if (te->type == E_INT) {
-	  if (te->u.ival.v_extra == NULL) {
-	    /* XXX: add stuff here */
-	  }
 	  *width = act_expr_intwidth (te->u.ival.v);
+	  if (te->u.ival.v_extra == NULL) {
+	    BigInt *btmp;
+	    Expr *nte;
+	    NEW (nte, Expr);
+	    *nte = *te;
+	    btmp = new BigInt(*width, 0, 1);
+	    btmp->setVal (0, nte->u.ival.v);
+	    nte->u.ival.v_extra = btmp;
+	    te = nte;
+	  }
 	}
 	else {
 	  *width = -1;
