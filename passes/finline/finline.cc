@@ -562,10 +562,76 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	c->u.comm.e = val.getVal();
       }
       else {
-	if (c->type == ACT_CHP_SEND && c->u.comm.e &&
-	    c->u.comm.e->type != E_VAR) {
-	/* XXX: check special case of function that returns a structure */
-	  warning ("Structure return value inlining for send data not currently supported!");
+	if (c->u.comm.e && c->u.comm.e->type != E_VAR) {
+	  /* unstructure this if needed */
+
+	  act_inline_value vals = _inline_funcs_general (l, c->u.comm.e);
+	  Data *d;
+	  int *types;
+	  int nb, ni;
+
+	  if (vals.isValid()) {
+	    /* simple inline */
+	    char buf[1024];
+	    int idx = _get_fresh_idx ("_us", &_inline_idx);
+	    snprintf (buf, 1024, "_us_%d", idx);
+	    _cursc->Add (buf, cx->datatype());
+	    ActId *myid = new ActId (buf);
+
+	    d = dynamic_cast <Data *>(cx->datatype()->BaseType());
+	    Assert (d, "Hmm");
+	    ActId **fields = d->getStructFields (&types);
+	    FREE (types);
+	    d->getStructCount (&nb, &ni);
+	    int sz = nb + ni;
+	    list_t *l = list_new ();
+
+	    Assert (!vals.isSimple(), "Hmm");
+
+	    for (int i=0; i < sz; i++) {
+	      act_chp_lang_t *tc;
+
+	      if (vals.u.arr[i]) {
+		NEW (tc, act_chp_lang_t);
+		tc->type = ACT_CHP_ASSIGN;
+		tc->label = NULL;
+		tc->space = NULL;
+		tc->u.assign.id = myid->Clone();
+		tc->u.assign.id->Tail()->Append (fields[i]);
+		tc->u.assign.e = vals.u.arr[i];
+		list_append (l, tc);
+	      }
+	      else {
+		delete fields[i];
+	      }
+	    }
+	    FREE (fields);
+	    {
+	      act_chp_lang_t *tc;
+	      NEW (tc, act_chp_lang_t);
+	      tc->type = c->type;
+	      tc->label = NULL;
+	      tc->space = NULL;
+	      tc->u.comm.chan = c->u.comm.chan;
+	      tc->u.comm.var = c->u.comm.var;
+	      tc->u.comm.flavor = c->u.comm.flavor;
+	      tc->u.comm.convert = c->u.comm.convert;
+
+	      // replace orig
+	      c->type = ACT_CHP_SEMI;
+	      c->u.semi_comma.cmd = l;
+	    
+	      NEW (tc->u.comm.e, Expr);
+	      tc->u.comm.e->type = E_VAR;
+	      tc->u.comm.e->u.e.r = NULL;
+	      tc->u.comm.e->u.e.l = (Expr *)myid;
+	      list_append (l, tc);
+	    }
+	  }
+	  else {
+	    act_inline_value vx = _inline_funcs_general (l, c->u.comm.e);
+	    Assert (!vx.isValid(), "What?");
+	  }
 	}
       }
     }

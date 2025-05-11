@@ -1,0 +1,40 @@
+defproc test ();
+deftype data (int<32> a; int<32> b);
+
+defproc test ()
+{
+
+/* instances */
+data _us_0;
+data d2;
+data d1;
+
+/* connections */
+chp {
+_us_0.a:=int(d2.a+d1.a,32);_us_0.b:=int(d2.b+d1.b,32);d1.a:=_us_0.a;d1.b:=_us_0.b
+}
+}
+
+deftype data (int<32> a; int<32> b)
+{
+
+/* instances */
+
+/* connections */
+  methods {
+  function plus (data d) : data {
+
+/* instances */
+
+/* connections */
+   chp { self.a:=d.a+a;self.b:=d.b+b }
+  }
+
+ }
+}
+
+
+/* instances */
+test t;
+
+/* connections */

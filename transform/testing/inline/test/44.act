@@ -1,0 +1,24 @@
+deftype data (int a, b)
+{
+   methods {
+     function plus (data d) : data
+     {
+       chp { 
+          self.a := d.a + a;
+          self.b := d.b + b
+       }
+     }
+   }
+}
+
+defproc test()
+{
+  data d1, d2;
+  chan(data) O;
+
+  chp {
+     O!(d1 + d2)
+  }
+}
+
+test t;
