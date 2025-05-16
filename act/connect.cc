@@ -541,14 +541,18 @@ static void _verify_subconn_canonical (UserDef *ux, act_connection *c);
 static void mk_raw_skip_connection (UserDef *ux,
 				    act_connection *c1, act_connection *c2)
 {
-  act_connection *c2arg = c2;
   act_connection *c2p;
   act_connection *tmp = c2;
+  bool skip_delete = false;
   /* c1 is the root, not c2 */
 
   if (c1 == c2) return;
 
   c2p = c2->primary ();
+
+  if (c2p == c1->primary()) {
+    skip_delete = true;
+  }
 
 #ifdef DEBUG_SKIP_CONN
   printf ("\n[raw-skip] entry *****\n");
@@ -659,9 +663,9 @@ static void mk_raw_skip_connection (UserDef *ux,
 
   if (!c2->a) {
     /* no subconnections. done. */
-    /* XXX: check this change:
-       delete c2;
-    */
+    if (!skip_delete) {
+      delete c2;
+    }
 
 #ifdef DEBUG_SKIP_CONN
     printf ("[raw-skip/3b] return value...\n");
@@ -797,6 +801,7 @@ static void _merge_subtrees (UserDef *ux,
 #endif
 	mk_raw_skip_connection (ux, c1->a[i], c2->a[i]);
 	_verify_subconn_canonical (ux, c1->a[i]);
+	c2->a[i] = NULL;
 #ifdef DEBUG_MERGE_SUBTREE
 	printf ("   %d: end-skip\n", i);
 #endif
