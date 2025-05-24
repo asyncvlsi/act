@@ -300,6 +300,15 @@ class ActNetlistPass : public ActPass {
   /* mangled cells for flat act output? */
   bool mangled_ports_actflat;
 
+  /* strings for fet parameters */
+  struct fet_param {
+    const char *w;
+    const char *l;
+    const char *fin;
+    const char *as, *ad;
+    const char *ps, *pd;
+  } param_names;
+
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,
 			  int num_vdd_share,

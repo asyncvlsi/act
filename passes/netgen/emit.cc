@@ -410,9 +410,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
 	  }
 	  fprintf (fp, " %s", config_get_string (devname));
-	  fprintf (fp, " W=");
+	  fprintf (fp, " %s=", param_names.w);
 	  print_number (fp, w*manufacturing_grid*output_scale_factor);
-	  fprintf (fp, " L=");
+	  fprintf (fp, " %s=", param_names.l);
 
 	  if (len_repeat > 1 && discrete_len == 0 && il == len_repeat-1) {
 	    print_number (fp, (find_length_fit (e->l - (e->nlen-1)*l)*
@@ -426,7 +426,10 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 
 	  if (_fin_width > 0) {
 	    Assert ((w % _fin_width) == 0, "Internal inconsistency in fin width value");
-	    fprintf (fp, " NFIN=%d", w/_fin_width);
+	    if (!param_names.fin) {
+	      fatal_error ("fin_width specified without fin name in fet parameters!");
+	    }
+	    fprintf (fp, " %s=%d", param_names.fin, w/_fin_width);
 	  }
 
 	  /* print extra fet string */
@@ -459,9 +462,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    else {
 	      gap = fet_spacing_diffonly;
 	    }
-	    fprintf (fp, "+ AS=");
+	    fprintf (fp, "+ %s=", param_names.as);
 	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
-	    fprintf (fp, " PS=");
+	    fprintf (fp, " %s=", param_names.ps);
 	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
 			  lambda*output_scale_factor);
 
@@ -481,9 +484,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	    else {
 	      gap = fet_spacing_diffonly;
 	    }
-	    fprintf (fp, " AD=");
+	    fprintf (fp, " %s=", param_names.ad);
 	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
-	    fprintf (fp, " PD=");
+	    fprintf (fp, " %s=", param_names.pd);
 	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
 			  lambda*output_scale_factor);
 	    fprintf (fp, "\n");

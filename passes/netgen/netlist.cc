@@ -2629,6 +2629,14 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   weak_share_min = 1;
   weak_share_max = 1;
 
+  config_set_default_string ("net.fet_params.width", "W");
+  config_set_default_string ("net.fet_params.length", "L");
+  config_set_default_string ("net.fet_params.area_src", "AS");
+  config_set_default_string ("net.fet_params.perim_src", "PS");
+  config_set_default_string ("net.fet_params.area_drain", "AD");
+  config_set_default_string ("net.fet_params.perim_drain", "PD");
+  config_set_default_string ("net.fet_params.fin", "NFIN");
+
   default_load_cap = config_get_real ("net.default_load_cap");
   p_n_ratio = config_get_real ("net.p_n_ratio");
   weak_to_strong_ratio = config_get_real ("net.weak_to_strong_ratio");
@@ -2773,6 +2781,14 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   else {
     mangled_ports_actflat = true;
   }
+
+  param_names.w = config_get_string ("net.fet_params.width");
+  param_names.l = config_get_string ("net.fet_params.length");
+  param_names.as = config_get_string ("net.fet_params.area_src");
+  param_names.ps = config_get_string ("net.fet_params.perim_src");
+  param_names.ad = config_get_string ("net.fet_params.area_drain");
+  param_names.pd = config_get_string ("net.fet_params.perim_drain");
+  param_names.fin = config_get_string ("net.fet_params.fin");
 }
 
 ActNetlistPass::~ActNetlistPass()
