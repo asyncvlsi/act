@@ -1,0 +1,21 @@
+export deftype blah (int w)
+{
+  methods {
+    macro delay(int x) {
+      *[ x > 0 -> x := x - 1 ]
+    }
+  }
+}
+
+defproc test()
+{
+  blah b;
+  int w;
+
+  chp {
+    w := 100;
+    b.delay (w)
+  }
+}
+
+test t;

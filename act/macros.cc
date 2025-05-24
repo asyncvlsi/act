@@ -581,6 +581,14 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
 	if (e->type == E_INT && e->u.ival.v_extra) {
 	  e->u.ival.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.ival.v_extra));
 	}
+	else if (e->type == E_VAR) {
+	  e->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
+	}
+	else {
+	  Expr *f = expr_dup (e);
+	  *e = *f;
+	  FREE (f);
+	}
       }
       else {
 	ActId *ret = id->Clone ();
