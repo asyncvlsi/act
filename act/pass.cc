@@ -283,7 +283,7 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	  FREE (tmp);
 	}
       }
-      else {
+      else if (TypeFactory::isDataType (vx->t)) {
 	Data *x = dynamic_cast<Data *> (vx->t->BaseType());
 	Assert (x, "what?");
 	if (x->isExpanded()) {
@@ -298,6 +298,10 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	  FREE (tmp);
 	}
       }
+      else if (TypeFactory::isPStructType (vx->t)) {
+	/* nothing to do */
+      }
+      // could be a pstruct!
     }
   }
 
