@@ -1078,6 +1078,10 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	InstType *x;
 	if (strcmp (um->getName(), "int") == 0) {
 	  x = new InstType (s, um->Parent(), 0);
+	  // get struct arguments, if any!
+	  if (y->getNumParams() > 0) {
+	    x->appendParams (y->getNumParams(), y->allParams());
+	  }
 	}
 	else {
 	  x = TypeFactory::Factory()->NewInt (s, Type::direction::NONE, 0,

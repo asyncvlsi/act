@@ -1,0 +1,24 @@
+pint w=3;
+
+template <pint w> deftype struct (
+    int<w> a;
+    int<w> b;
+    int<w> c
+){}
+
+defproc test(){
+
+int<w*3> flat0;
+struct<w> str;
+
+    chp{
+      log("running");
+      str.a:=1;
+      str.b:=int(2,1);
+      str.c:=1;
+      log("str.a: ",str.a,"%b str.b: ",str.b," str.c: ",str.c);
+
+      flat0:=int(str);
+      log("%bflat0: ",flat0)
+    }
+}
