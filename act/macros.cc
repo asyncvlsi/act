@@ -584,7 +584,7 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
 	else if (e->type == E_VAR) {
 	  e->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
 	}
-	else {
+	else if (!expr_ex_is_cached (e)) {
 	  Expr *f = expr_dup (e);
 	  *e = *f;
 	  FREE (f);

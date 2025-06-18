@@ -1132,7 +1132,15 @@ AExprstep *AExpr::stepper()
 }
 
   
-
+int expr_ex_is_cached (Expr *e)
+{
+  if (!e) return 1;
+  if (e->type == E_TRUE || e->type == E_FALSE ||
+      (e->type == E_INT && !e->u.ival.v_extra)) {
+    return 1;
+  }
+  return 0;
+}
 
 
 static void efree_ex (Expr *e)
@@ -1189,8 +1197,7 @@ static void efree_ex (Expr *e)
     if (e->u.e.r) efree_ex (e->u.e.r);
     break;
   }
-  if (e->type == E_TRUE || e->type == E_FALSE ||
-      (e->type == E_INT && !e->u.ival.v_extra)) {
+  if (expr_ex_is_cached (e)) {
     /* cached */
   }
   else {

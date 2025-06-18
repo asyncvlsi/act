@@ -314,6 +314,11 @@ Expr *expr_dag (Expr *e);
  */
 void expr_dag_free (Expr *);
 
+/**
+ * Return 1 if the expression is cached, 0 otherwise
+ */
+int expr_ex_is_cached (Expr *);
+
 
 class UserMacro;
 /*
