@@ -350,6 +350,11 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       Assert (it->isExpanded(), "This should be expanded");
       
       u = dynamic_cast<UserDef *>(it->BaseType ());
+      if (!u && is_chp) {
+	if (TypeFactory::isChanType (it)) {
+	  u = dynamic_cast<UserDef *> (TypeFactory::getChanDataType (it)->BaseType());
+	}
+      }
       Assert (u, "This should have been caught earlier!");
 
       if (TypeFactory::isPStructType (u)) {

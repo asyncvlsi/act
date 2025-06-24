@@ -848,6 +848,11 @@ static Expr *_expr_expand (int *width, Expr *e,
       UserDef *id_ux = NULL;
       if (id_it) {
 	id_ux = dynamic_cast <UserDef *> (id_it->BaseType());
+	if (!id_ux && (flags & ACT_EXPR_EXFLAG_CHPEX)) {
+	  Assert (TypeFactory::isChanType (id_it), "Should have been caught earlier");
+	  id_ux = dynamic_cast<UserDef *>
+	    (TypeFactory::getChanDataType (id_it)->BaseType());
+	}
 	Assert (id_ux, "What?");
 	um = id_ux->getMacro (um->getName());
 	if (!_idstack) {
@@ -997,7 +1002,7 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     act_chp_macro_check (s, (ActId *)te->u.e.l);
     InstType *it;
-    act_type_var (s, (ActId *)te->u.e.l, &it);
+    act_type_var_gen (s, (ActId *)te->u.e.l, &it, true);
     *width = TypeFactory::bitWidth (it);
     // now we have the bit-width!
     // now we convert the rest of the expression!!!
@@ -2437,7 +2442,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (te->type == E_VAR) {
 	  act_chp_macro_check (s, (ActId *)te->u.e.l);
 	  InstType *it;
-	  act_type_var (s, (ActId *)te->u.e.l, &it);
+	  act_type_var_gen (s, (ActId *)te->u.e.l, &it, true);
 	  *width = TypeFactory::bitWidth (it);
 	}
 	else if (te->type == E_INT) {
@@ -2821,7 +2826,7 @@ static int _expr_bw_calc(struct pHashtable *H, Expr *e, Scope *s)
   case E_VAR:
     {
       InstType *xit;
-      lw = act_type_var (s, (ActId *)e->u.e.l, &xit);
+      lw = act_type_var_gen (s, (ActId *)e->u.e.l, &xit, true);
       if (xit->arrayInfo() && !((ActId *)e->u.e.l)->arrayInfo()) {
 	// not a de-reference
 	width = -1;

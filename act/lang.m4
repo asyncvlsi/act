@@ -3099,6 +3099,7 @@ lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ]
     $0->line = $l;
     $0->column = $c;
     $0->file = $n;
+    $0->allow_chan = true;
 }}
 { dataflow_items ";" }* "}"
 {{X:
@@ -3117,6 +3118,8 @@ lang_dataflow[ActBody *]: "dataflow" "{" [ dataflow_ordering ]
       FREE (r);
     }
     OPT_FREE ($3);
+
+    $0->allow_chan = false;
 
     return new ActBody_Lang ($l, dflow);
 }}

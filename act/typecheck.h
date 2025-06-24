@@ -123,15 +123,28 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan = 0);
 
 
 /**
- * Used to type-check a variable
+ * Used to type-check a variable. If the subchan flag is set to true,
+ * this permits A.<field> to pass typechecking when A is a channel
+ * whose data type is a structure, and <field> is a valid field
+ * reference. In this case, the type of the variable is going to be a
+ * channel of type <ftype>, where <ftype> is the type of <field>.
  *
  * @param s is the scope in which to peform the type-checking
  * @param id is the variable to be checked
  * @param xit is used to return the actual InstType * for the
  * identifier, if xit is non-NULL
+ * @param subchan if this is true, then chan.sub is permitted for
+ * structure channels, and returns chan(foo) where foo is the type of
+ * the sub field.
  * @return a T_... flag that describes the result of the checking
  */
-int act_type_var (Scope *s, ActId *id, InstType **xit);
+int act_type_var_gen (Scope *s, ActId *id, InstType **xit, bool subchan);
+
+/**
+ * This definition wraps the general act_type_var call setting subchan
+ * to false.
+ */
+#define act_type_var(a,b,c)  act_type_var_gen((a),(b),(c),false)
 
 /**
  * Used to type-check a channel operation. The channel operation is of

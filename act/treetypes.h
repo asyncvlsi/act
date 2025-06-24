@@ -201,6 +201,9 @@ typedef struct {
 
   int special_id; /* special ID! for user macros */
   Scope *special_id_sc;		/* scope (if any) */
+
+  /* set this to true if a chan ID is in the expression */
+  bool allow_chan;
   
 } ActTree;
 

@@ -576,6 +576,8 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
 
   tr->special_id = 0;
   tr->special_id_sc = NULL;
+
+  tr->allow_chan = false;
 }
 
 static void _free_tr (ActTree *tr)

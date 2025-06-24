@@ -895,8 +895,13 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	  }
 	  u = dynamic_cast<UserDef *> (it->BaseType());
 	  if (!u) {
-	    act_parse_err (&p, "Field `%s' isn't a user-defined type",
-			   tmp->getName());
+	    if (cookie->allow_chan && TypeFactory::isChanType (it->BaseType())) {
+	      u = dynamic_cast<UserDef *> (TypeFactory::getChanDataType (it)->BaseType());
+	    }
+	    if (!u) {
+	      act_parse_err (&p, "Field `%s' isn't a user-defined type",
+			     tmp->getName());
+	    }
 	  }
 	  sc = u->CurScope();
 	  prev = tmp;

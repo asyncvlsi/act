@@ -268,6 +268,11 @@ expr_id[ActId *]: { base_id "." }*
       }
     }
 
+    if (list_next (li) && $0->allow_chan && TypeFactory::isExactChanType (it)) {
+      it = TypeFactory::getChanDataType (it);
+      $A(it);
+    }
+
     ud = NULL;
     for (li = list_next (li); li; li = list_next (li)) {
       /* it = the inst type of where we are so far; li has the next

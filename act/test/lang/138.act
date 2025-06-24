@@ -1,0 +1,22 @@
+deftype rec (int a, b) { 
+ methods {
+    function geta() : int
+    {
+      chp {
+        self := a
+      }
+    }
+ }
+}
+
+defproc test()
+{
+  chan(rec) a;
+  chan(int) x;
+
+  dataflow {
+    a.geta() -> x
+  }
+}
+
+test t;

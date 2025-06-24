@@ -97,7 +97,7 @@ static void dumpflags(int f)
 #endif
 
 static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
-				    int *strict)
+				    int *strict, bool subchan)
 {
   InstType *it;
   UserDef *u;
@@ -131,8 +131,14 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
     }
   }
 
+  bool subchan_conv = false;
+
   if (id->Rest ()) {
     while (id->Rest()) {
+      if (subchan && TypeFactory::isChanType (it->BaseType())) {
+	it = TypeFactory::getChanDataType (it);
+	subchan_conv = true;
+      }
       u = dynamic_cast<UserDef *>(it->BaseType ());
       Assert (u, "This should have been caught during parsing!");
       id = id->Rest();
@@ -154,6 +160,10 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
     *strict = is_strict;
   }
   *retid = id;
+
+  if (subchan_conv) {
+    it = new InstType (s, TypeFactory::Factory()->NewChan (it, NULL));
+  }
   return it;
 }  
 
@@ -241,12 +251,12 @@ static int _act_type_id_to_flags (InstType *it, ActId *id, int is_strict)
   }
 }
 
-int act_type_var (Scope *s, ActId *id, InstType **xit)
+int act_type_var_gen (Scope *s, ActId *id, InstType **xit, bool subchan)
 {
   InstType *it;
   int is_strict;
 
-  it = _act_get_var_type (s, id, &id, &is_strict);
+  it = _act_get_var_type (s, id, &id, &is_strict, subchan);
 
   if (!it->arrayInfo() && id->arrayInfo()) {
     char *tmpbuf;
@@ -669,7 +679,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       InstType *xit;
       long lo, hi;
       theid = (ActId *)e->u.e.l;
-      lt = act_type_var (s, theid, &xit);
+      lt = act_type_var_gen (s, theid, &xit, (only_chan == 0 ? false : true));
       if (lt == T_ERR) return T_ERR;
       if (only_chan == 1 || (only_chan == 2 && !(T_BASETYPE_INT (lt)))) {
 	if (TypeFactory::isChanType (xit)) {
@@ -1254,13 +1264,16 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   case E_VAR:
     {
       InstType *xit;
-      lt = act_type_var (s, (ActId *)e->u.e.l, &xit);
+
+      lt = act_type_var_gen (s, (ActId *)e->u.e.l, &xit,
+			     (only_chan == 0 ? false : true));
+      
       if (lt == T_ERR) return T_ERR;
       if (only_chan) {
 	if (lt == T_CHAN) {
 	  ActId *tmp, *theid;
           theid = (ActId *) e->u.e.l;
-	  InstType *it = _act_get_var_type (s, theid, &tmp, NULL);
+	  InstType *it = _act_get_var_type (s, theid, &tmp, NULL, true);
 
 	  if (it->getDir() == Type::OUT) {
 	    InstType *it2 = s->FullLookup (theid->getName());
