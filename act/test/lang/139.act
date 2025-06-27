@@ -1,0 +1,13 @@
+deftype rec (int a, b) { }
+
+defproc test()
+{
+  chan(rec) a;
+  chan(int) x;
+
+  dataflow {
+    x -> a.a
+  }
+}
+
+test t;

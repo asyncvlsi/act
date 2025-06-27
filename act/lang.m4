@@ -3165,6 +3165,9 @@ w_chan_int_expr "->" [ "[" wpint_expr [ "," wpint_expr ] "]" ] expr_id
     if (_act_id_is_true_false ($4)) {
       $E("Dataflow RHS can't be true/false!");
     }
+    if (_act_id_is_enum_const ($0->os, $0->curns, $4)) {
+      $E("Can't use an enumeration constant in this context!");
+    }
     InstType *it;
     if (act_type_var ($0->scope, $4, &it) != T_CHAN) {
       $e("Identifier on the RHS of a dataflow expression must be of channel type");
@@ -3455,6 +3458,9 @@ expr_id_or_star[ActId *]: expr_id
 {{X:
     if (_act_id_is_true_false ($1)) {
       $E("Can't use true/false in this context!");
+    }
+    if (_act_id_is_enum_const ($0->os, $0->curns, $1)) {
+      $E("Can't use an enumeration constant in this context!");
     }
     return $1;
 }}

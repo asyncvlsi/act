@@ -132,6 +132,7 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
   }
 
   bool subchan_conv = false;
+  ActId *orig_id = id;
 
   if (id->Rest ()) {
     while (id->Rest()) {
@@ -140,6 +141,14 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
 	subchan_conv = true;
       }
       u = dynamic_cast<UserDef *>(it->BaseType ());
+      if (!u && !subchan) {
+	char *tmpbuf;
+	MALLOC (tmpbuf, char, 10240);
+	orig_id->sPrint (tmpbuf, 10240);
+	typecheck_err ("Identifier `%s' has an illegal use of `.' in this context.", tmpbuf);
+	FREE (tmpbuf);
+	return NULL;
+      }
       Assert (u, "This should have been caught during parsing!");
       id = id->Rest();
       it = u->Lookup (id);
@@ -257,6 +266,9 @@ int act_type_var_gen (Scope *s, ActId *id, InstType **xit, bool subchan)
   int is_strict;
 
   it = _act_get_var_type (s, id, &id, &is_strict, subchan);
+  if (!it) {
+    return T_ERR;
+  }
 
   if (!it->arrayInfo() && id->arrayInfo()) {
     char *tmpbuf;
@@ -299,7 +311,8 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
   
   if (e->type == E_VAR) {
     /* special case #1 */
-    it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal);
+    it = act_actual_insttype (s, (ActId *)e->u.e.l, islocal,
+			      only_chan == 0 ? false : true);
     return it;
   }
   else if (e->type == E_FUNCTION) {
@@ -349,7 +362,8 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
     Assert (e->u.e.r->type == E_VAR, "What?");
     it = act_actual_insttype (u->CurScope(),
 			      (ActId *) e->u.e.r->u.e.l,
-			      islocal);
+			      islocal,
+			      only_chan == 0 ? false : true);
     return it;
   }
   else if (e->type == E_PSTRUCT) {
@@ -1274,6 +1288,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  ActId *tmp, *theid;
           theid = (ActId *) e->u.e.l;
 	  InstType *it = _act_get_var_type (s, theid, &tmp, NULL, true);
+	  Assert (it, "This should not happen");
 
 	  if (it->getDir() == Type::OUT) {
 	    InstType *it2 = s->FullLookup (theid->getName());
@@ -1510,7 +1525,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
   Returns the insttype for the ID. 
   If islocal != NULL, set to 1 if this is a local id within the scope
 */
-InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
+InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan)
 {
   InstType *it;
 
@@ -1572,6 +1587,10 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal)
       }
       UserDef *u;
       u = dynamic_cast<UserDef *>(it->BaseType ());
+      if (!u && subchan && TypeFactory::isChanType (it)) {
+	u = dynamic_cast<UserDef *>
+	  (TypeFactory::getChanDataType (it)->BaseType());
+      }
       Assert (u, "This should have been caught during parsing!");
 
       /* HERE: APPLY MAP! */
@@ -2166,7 +2185,7 @@ int act_type_conn (Scope *s, ActId *id, AExpr *rae)
   */
 
   int lhslocal;
-  InstType *lhs = act_actual_insttype (s, id, &lhslocal);
+  InstType *lhs = act_actual_insttype (s, id, &lhslocal, false);
 
   if (!lhs) return T_ERR;
 

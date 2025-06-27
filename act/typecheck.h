@@ -237,9 +237,10 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan);
  * @param id is the identifier
  * @param islocal is used to return 1 if the identifier is only
  * accessible within the local scope specified, 0 otherwise
+ * @param subchan has the same meaning as act_type_var_gen
  * @return the type of the identifier (NULL if not found)
  */
-InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal);
+InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan);
 
 /**
  * Used to record the line, column, and file for error reporting

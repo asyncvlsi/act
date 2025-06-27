@@ -1255,7 +1255,7 @@ void Scope::BindParam (ActId *id, AExpr *ae)
   AExprstep *aes = NULL;
 
   if (subrange_info) {
-    actual = act_actual_insttype (this, id, NULL);
+    actual = act_actual_insttype (this, id, NULL, false);
   }
   else {
     actual = vx->t;

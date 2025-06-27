@@ -1,0 +1,3 @@
+ERROR: File `139.act', line 9, col 6
+	Identifier on the RHS of a dataflow expression must be of channel type
+   ID: a.a
