@@ -212,7 +212,7 @@ LispAddDynamicFunc (char *name, void *f)
   }
   for (i=0; i < DyTableNum; i++) {
     if (DyTable[i].id == id) {
-      DyTable[i].f = (LispObj *(*)())f;
+      DyTable[i].f = (LispObj *(*)(char *, Sexp *))f;
       return 1;
     }
   }
@@ -228,7 +228,7 @@ LispAddDynamicFunc (char *name, void *f)
   }
   DyTable[DyTableNum].name = Strdup (name);
   DyTable[DyTableNum].id = id;
-  DyTable[DyTableNum].f = (LispObj *(*)()) f;
+  DyTable[DyTableNum].f = (LispObj *(*)(char *, Sexp *)) f;
   DyTableNum++;
   return 1;
 }
