@@ -33,7 +33,7 @@ static int tokxor, tokplus, tokmult;
 static int double_colon, comma;
 static int inttok, booltok;
 static int langle, rangle;
-static int dot;
+static int dot, lbrack;
 
 static void do_init (LFILE *l)
 {
@@ -55,6 +55,7 @@ static void do_init (LFILE *l)
     inttok = file_addtoken (l, "int");
     booltok = file_addtoken (l, "bool");
     dot = file_addtoken (l, ".");
+    lbrack = file_addtoken (l, "[");
     init = 1;
   }
 }
@@ -203,7 +204,7 @@ static Expr *_parse_expr_func2 (LFILE *l, int first_fn)
 	  return e;
 	}
       }
-      else if (!found_dcolon && file_have (l, dot)) {
+      else if (!found_dcolon && (file_have (l, dot) || file_sym(l) == lbrack)) {
 	if (pushed) {
 	  file_set_position (l);
 	  file_pop_position (l);

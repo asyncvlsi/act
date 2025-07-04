@@ -2437,7 +2437,10 @@ static Expr *_expr_expand (int *width, Expr *e,
     else {
       if (flags & ACT_EXPR_EXFLAG_CHPEX) {
 	/* chp mode expansion */
+	int tmpex = Act::double_expand;
+	Act::double_expand = 0;
 	xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
+	Act::double_expand = tmpex;
 	te = xid->EvalCHP (ns, s, 0);
 	if (te->type == E_VAR) {
 	  act_chp_macro_check (s, (ActId *)te->u.e.l);

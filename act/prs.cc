@@ -522,6 +522,10 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
 
   if (!e) return NULL;
 
+  int oldval;
+  oldval = a->special_id;
+  a->special_id = 0;
+
   p.l = a->line;
   p.c = a->column;
   p.f = a->file;
@@ -542,6 +546,7 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
   if (!(tc & T_PARAM)) {
     act_parse_err (&p, "Expression must be of type pint");
   }
+  a->special_id = oldval;
   return e;
 }
 

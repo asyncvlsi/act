@@ -1,0 +1,28 @@
+deftype rec (int a, b) { 
+ methods {
+    function geta() : int
+    {
+      chp {
+        self := a
+      }
+    }
+ }
+}
+
+deftype foo(rec b) { }
+
+defproc test()
+{
+  rec a[2];
+  int x;
+
+  foo b;
+
+  chp {
+    x := b.b.geta();
+    log ("got x: ", x);
+    [ a[0].geta() = 0 -> log ("equal zero") [] else -> skip ]
+  }
+}
+
+test t;

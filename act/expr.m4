@@ -425,6 +425,9 @@ w_c_expr[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -450,6 +453,9 @@ w_expr[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -465,6 +471,7 @@ w_expr[Expr *]: expr
     if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
       $E("Expressions in port parameter list can only use strict template parameters");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -475,6 +482,9 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     e = (Expr *) $1;
     $A($0->scope);
@@ -487,6 +497,7 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
     if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
       $E("Expressions in port parameter list can only use strict template parameters");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -495,6 +506,9 @@ w_exprchp[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -510,6 +524,7 @@ w_exprchp[Expr *]: expr
     if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
       $E("Expressions in port parameter list can only use strict template parameters");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -520,6 +535,9 @@ w_chan_int_expr[Expr *]: EXTERN[fexpr]
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     e = (Expr *) $1;
 
@@ -533,6 +551,7 @@ w_chan_int_expr[Expr *]: EXTERN[fexpr]
     if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
       $E("Expressions in port parameter list can only use strict template parameters");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -542,6 +561,9 @@ wnumber_expr[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -563,6 +585,7 @@ wnumber_expr[Expr *]: expr
     if (!(tc & T_PARAM)) {
       $E("Expression must be of type pint or preal");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -571,6 +594,9 @@ wnumber_flav_expr[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -581,6 +607,7 @@ wnumber_flav_expr[Expr *]: expr
     e = act_walk_X_expr ($0, $1);
     if ($0->skip_id_check == 2) {
       $0->skip_id_check = 0;
+      $0->special_id = oldval;
       return e;
     }
     $0->skip_id_check = 0;
@@ -600,6 +627,7 @@ wnumber_flav_expr[Expr *]: expr
     if (!(tc & T_PARAM)) {
       $E("Expression must be of type pint or preal");
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -609,6 +637,9 @@ wint_or_bool_expr[Expr *]: expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -634,18 +665,22 @@ wint_or_bool_expr[Expr *]: expr
       fprintf ($f, "''\n");
       exit (1);
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
 
 
 /*
-  CONSISTENCY: _wint_expr in prs.c
+  CONSISTENCY: _wint_expr in prs.cc
 */
 wint_expr[Expr *]: int_expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -673,6 +708,7 @@ wint_expr[Expr *]: int_expr
       fprintf ($f, "''\n");
       exit (1);
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -681,6 +717,8 @@ wpint_expr[Expr *]: int_expr
 {{X:
     Expr *e;
     int tc;
+    int oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -711,6 +749,7 @@ wpint_expr[Expr *]: int_expr
       fprintf ($f, "''\n");
       exit (1);
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -720,6 +759,9 @@ wbool_expr[Expr *]: bool_expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -745,6 +787,7 @@ wbool_expr[Expr *]: bool_expr
       fprintf ($f, "''\n");
       exit (1);
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;
@@ -753,6 +796,9 @@ wbool_allow_chan_expr[Expr *]: bool_expr
 {{X:
     Expr *e;
     int tc;
+    int oldval;
+    oldval = $0->special_id;
+    $0->special_id = 0;
 
     $0->line = $l;
     $0->column = $c;
@@ -778,6 +824,7 @@ wbool_allow_chan_expr[Expr *]: bool_expr
       fprintf ($f, "''\n");
       exit (1);
     }
+    $0->special_id = oldval;
     return e;
 }}
 ;

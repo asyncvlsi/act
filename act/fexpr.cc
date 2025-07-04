@@ -331,58 +331,66 @@ static Expr *expr_basecase (void)
 	}
       }
       else {
-	if (v && expr_free_id) {
-	  (*expr_free_id) (v);
-	}
-	SET (Tl);
-#if 1
-	POP (Tl);
-	return NULL;
-#else
-	/*
-	  XXX: This is duplicate parsing code that is replicated in
-	  expr_extra.c; so leave it in one place rather than having
-	  multiple function call parsers.
-	*/
-	if (file_have (Tl, f_id) && file_sym (Tl) == T[E_LPAR]) {
-	  e = newexpr ();
-	  e->type = E_FUNCTION;
-	  e->u.fn.s = Strdup (file_prev (Tl));
-	  e->u.fn.r = NULL;
-	  f = e;
-	  file_mustbe (Tl, T[E_LPAR]);
-	  if (file_sym (Tl) != T[E_RPAR]) {
-	    do {
-	      f->u.e.r = newexpr (); /* wow! rely that this is the same
-                                      space as u.fn.r */
-	      f = f->u.e.r;
-	      f->type = E_LT;
-	      f->u.e.r = NULL;
-	      f->u.e.l = expr_parse ();
-	      if (!f->u.e.l) {
-		expr_free (e);
-		SET (Tl);
-		POP (Tl);
-		return NULL;
-	      }
-	    } while (file_have (Tl, T[E_COMMA]));
-	    if (file_sym (Tl) != T[E_RPAR]) {
-	      expr_free (e);
-	      SET (Tl);
-	      POP (Tl);
-	      return NULL;
-	    }
+#if 0
+	printf (" -- got here, looking-at %s!\n", file_tokenstring (Tl));
+#endif
+	if (!file_have (Tl, T[E_LPAR])) {
+	  if (v && expr_free_id) {
+	    (*expr_free_id) (v);
 	  }
-	  /* success! */
-	  POP (Tl);
-	  file_getsym (Tl);
-	}
-	else {
 	  SET (Tl);
 	  POP (Tl);
 	  return NULL;
 	}
-#endif	
+	expr_inc_parens ();
+	e = newexpr ();
+	e->type = E_USERMACRO;
+	NEW (e->u.e.l, Expr);
+	e->u.e.l->type = E_VAR;
+	e->u.e.l->u.e.l = (Expr *)v;
+	e->u.e.l->u.e.r = NULL;
+	e->u.e.r = NULL;
+	f = e;
+	if (file_sym (Tl) != T[E_RPAR]) {
+	  do {
+	    if (f == e) {
+	      NEW (e->u.e.r, Expr);
+	      f = e->u.e.r;
+	    }
+	    else {
+	      NEW (f->u.e.r, Expr);
+	      f = f->u.e.r;
+	    }
+	    f->type = E_LT;
+	    f->u.e.r = NULL;
+	    f->u.e.l = expr_parse_any (Tl);
+	    if (!f->u.e.l) {
+	      expr_free (e);
+	      expr_dec_parens ();
+	      SET (Tl);
+	      POP (Tl);
+	      return NULL;
+	    }
+	  } while (file_have (Tl, T[E_COMMA]));
+	  if (file_sym (Tl) != T[E_RPAR]) {
+	    expr_free (e);
+	    expr_dec_parens ();
+	    SET (Tl);
+	    POP (Tl);
+	    return NULL;
+	  }
+	  /* success! */
+	  file_getsym (Tl);
+	  expr_dec_parens ();
+	  POP (Tl);
+	  return e;
+	}
+	else {
+	  /* eat the token */
+	  file_getsym (Tl);
+	}
+	POP (Tl);
+	return e;
       }
     }
   }

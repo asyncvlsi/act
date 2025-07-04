@@ -1,0 +1,2 @@
+ERROR: File `142.act', line 24, col 11
+	Array de-reference for user macro: a[0].geta[2]
