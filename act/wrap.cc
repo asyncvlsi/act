@@ -889,7 +889,7 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	u = NULL;
 	prev = NULL;
 	while (tmp->Rest()) {
-	  it = sc->Lookup (tmp->getName());
+	  it = sc->FullLookup (tmp->getName());
 	  if (!it) {
 	    act_parse_err (&p, "Field `%s' not found!", tmp->getName());
 	  }

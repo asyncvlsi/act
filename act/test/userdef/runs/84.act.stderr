@@ -1,0 +1,3 @@
+ERROR: File `84.act', line 26, col 27
+	Typechecking failed on expression!
+	Built-in macro `MyOuterType': argument has an incompatible type

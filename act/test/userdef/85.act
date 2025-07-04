@@ -1,0 +1,30 @@
+deftype MyInnerType(int<16> a, b) {
+    methods {
+        function serialize() : int<32> {
+            chp {
+                self := a << 16 | b
+            }
+        }
+    }
+}
+
+deftype MyOuterType(MyInnerType inner) {
+    methods {
+        function serialize() : int<32> {
+            chp {
+                self := inner.serialize()
+            }
+        }
+    }
+}
+
+defproc test() {
+    MyInnerType ti;
+    MyOuterType to;
+    chp {
+        ti := MyInnerType(0x23 << 16 | 0x18);
+        to.inner := ti;
+        log("%x", ti.serialize());
+        log("%x", to.serialize())
+    }
+}
