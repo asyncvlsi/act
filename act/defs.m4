@@ -1945,7 +1945,7 @@ func_body[ActBody *]: ";"
 }}
 ;
 
-func_body_items[ActBody *]: alias_or_inst_list lang_chp
+func_body_items[ActBody *]: alias_or_inst_list gen_lang_chp
 {{X:
     ActBody *b;
 
@@ -1957,6 +1957,55 @@ func_body_items[ActBody *]: alias_or_inst_list lang_chp
     else {
       return $2;
     }
+}}
+;
+
+
+gen_lang_chp[ActBody *]: lang_chp
+{{X:
+    return $1;
+}}
+| "*["
+{{X: $0->in_cond++; }}
+{ gc_1_v2 "[]" }* "]" [";"]
+{{X:
+    return apply_X_loop_opt1 ($0, $2, $4);
+}}
+| "["
+{{X: $0->in_cond++; }}
+   guarded_cmds_v2 "]" [";"]
+{{X:
+    $0->in_cond--;
+    OPT_FREE ($4);
+    return $2;
+}}
+| assertion
+{{X: return $1; }}
+| debug_output
+{{X: return $1; }}
+;
+
+gc_1_v2[ActBody_Select_gc *]: wbool_expr "->" func_body_items
+{{X:
+    return apply_X_gc_1_opt0 ($0, $1, $3);
+}}
+| "(" "[]" ID
+{{X:
+    lapply_X_gc_1_1_2 ($0, $3);
+}}
+":" !noreal wpint_expr [ ".." wpint_expr ] ":" wbool_expr "->" func_body_items ")"
+{{X:
+    return apply_X_gc_1_opt1 ($0, $3, $5, $6, $8, $10);
+}}
+| "else" "->" func_body_items
+{{X:
+    return apply_X_gc_1_opt2 ($0, $3);
+}}
+;
+
+guarded_cmds_v2[ActBody *]: { gc_1_v2 "[]" }*
+{{X:
+    return apply_X_guarded_cmds_opt0 ($0, $1);
 }}
 ;
 
