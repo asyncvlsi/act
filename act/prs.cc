@@ -522,6 +522,8 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
 
   if (!e) return NULL;
 
+  Scope *oldsc;
+  oldsc = a->special_id_sc;
   int oldval;
   oldval = a->special_id;
   a->special_id = 0;
@@ -547,6 +549,7 @@ static Expr *_wint_expr (ActTree *a, Expr *e)
     act_parse_err (&p, "Expression must be of type pint");
   }
   a->special_id = oldval;
+  a->special_id_sc = oldsc;
   return e;
 }
 

@@ -426,7 +426,9 @@ w_c_expr[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
     oldval = $0->special_id;
+    oldsc = $0->special_id_sc;
     $0->special_id = 0;
 
     $0->line = $l;
@@ -445,6 +447,8 @@ w_c_expr[Expr *]: expr
     if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
       $E("Expressions in port parameter list can only use strict template parameters");
     }
+    $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -454,6 +458,8 @@ w_expr[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -472,6 +478,7 @@ w_expr[Expr *]: expr
       $E("Expressions in port parameter list can only use strict template parameters");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -483,6 +490,8 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -498,6 +507,7 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
       $E("Expressions in port parameter list can only use strict template parameters");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -507,6 +517,8 @@ w_exprchp[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -525,6 +537,7 @@ w_exprchp[Expr *]: expr
       $E("Expressions in port parameter list can only use strict template parameters");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -536,6 +549,8 @@ w_chan_int_expr[Expr *]: EXTERN[fexpr]
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -552,6 +567,7 @@ w_chan_int_expr[Expr *]: EXTERN[fexpr]
       $E("Expressions in port parameter list can only use strict template parameters");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -562,6 +578,8 @@ wnumber_expr[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -586,6 +604,7 @@ wnumber_expr[Expr *]: expr
       $E("Expression must be of type pint or preal");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -595,6 +614,8 @@ wnumber_flav_expr[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -608,6 +629,7 @@ wnumber_flav_expr[Expr *]: expr
     if ($0->skip_id_check == 2) {
       $0->skip_id_check = 0;
       $0->special_id = oldval;
+      $0->special_id_sc = oldsc;
       return e;
     }
     $0->skip_id_check = 0;
@@ -628,6 +650,7 @@ wnumber_flav_expr[Expr *]: expr
       $E("Expression must be of type pint or preal");
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -638,6 +661,8 @@ wint_or_bool_expr[Expr *]: expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -666,6 +691,7 @@ wint_or_bool_expr[Expr *]: expr
       exit (1);
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -679,6 +705,8 @@ wint_expr[Expr *]: int_expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -709,6 +737,7 @@ wint_expr[Expr *]: int_expr
       exit (1);
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -718,6 +747,8 @@ wpint_expr[Expr *]: int_expr
     Expr *e;
     int tc;
     int oldval = $0->special_id;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     $0->special_id = 0;
 
     $0->line = $l;
@@ -750,6 +781,7 @@ wpint_expr[Expr *]: int_expr
       exit (1);
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -760,6 +792,8 @@ wbool_expr[Expr *]: bool_expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -788,6 +822,7 @@ wbool_expr[Expr *]: bool_expr
       exit (1);
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
@@ -797,6 +832,8 @@ wbool_allow_chan_expr[Expr *]: bool_expr
     Expr *e;
     int tc;
     int oldval;
+    Scope *oldsc;
+    oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
 
@@ -825,6 +862,7 @@ wbool_allow_chan_expr[Expr *]: bool_expr
       exit (1);
     }
     $0->special_id = oldval;
+    $0->special_id_sc = oldsc;
     return e;
 }}
 ;
