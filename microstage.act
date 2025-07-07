@@ -1,0 +1,45 @@
+defproc inverter (bool? i; bool! o)
+{
+  prs {
+    i => o-
+  }
+}
+defproc delay (bool? i; bool! o)
+{
+  inverter d[2];
+  d[0].i = i;
+  d[0].o = d[1].i;
+  d[1].o = o; 
+}
+
+defproc c2 (bool? a, b; bool! c)
+{
+  prs {
+    a & b #> c-
+  }
+}
+
+defproc stage (bool? a,r; bool! a2,r2)
+{
+  delay d;
+  inverter i;
+  c2 c;
+  
+  i.i = c.b; i.o = a2;
+  r = c.a;
+  d.i = a; d.i = c.c; d.o = r2;
+}
+
+defproc micropipeline (bool? a,r; bool! a2,r2)
+{
+  stage s[4];
+
+  s[0].a = a;
+  s[0].r = r;
+  s[3].a2 = a2;
+  s[3].r2 = r2;
+
+  (i : 3 : s[i+1].a=s[i].a2; s[i+1].r=s[i].r2; )
+}
+
+micropipeline test;
