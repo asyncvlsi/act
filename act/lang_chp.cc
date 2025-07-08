@@ -2159,7 +2159,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 
   case ACT_CHP_MACRO:
     {
-      ActId *x = expand_var_read (c->u.macro.id, ns, s);
+      ActId *x = expand_var_write (c->u.macro.id, ns, s);
       if (x->isNamespace()) {
 	act_error_ctxt (stderr);
 	fatal_error ("CHP macro and namespace globals don't mix");

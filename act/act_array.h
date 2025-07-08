@@ -335,6 +335,16 @@ class Array {
   int Validate (Array *a);
 
   /**
+   * Validate that the array indices specified in the argument are
+   * valid indicies for the array. This must be called on an expanded
+   * array. Skip any dynamic references.
+   *
+   * @param a is the Array that contains the indices of interest
+   * @return 1 if the de-reference is valid, 0 otherwise
+   */
+  int weakValidate (Array *a);
+
+  /**
    * Checks to see if this array includes a dynamic de-reference
    *
    * @return 1 if this is a dynamic de-reference, 0 otherwise

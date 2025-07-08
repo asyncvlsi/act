@@ -636,6 +636,49 @@ int Array::Validate (Array *a)
   return 1;
 }
 
+/*------------------------------------------------------------------------
+ *  "a" is an ExpandRef'ed array
+ *  Returns 1 if "a" is a valid de-reference or subrange reference for
+ *  the array, 0 otherwise.
+ *------------------------------------------------------------------------
+ */
+int Array::weakValidate (Array *a)
+{
+  if (!expanded || !a->isExpanded()) {
+    fatal_error ("Array::weakValidate() should only be called for expanded arrays");
+  }
+  Assert (dims == a->nDims(), "dimensions don't match!");
+
+  int i, d;
+
+  for (i=0; i < dims; i++) {
+    /* a is going to be from an ID */
+    if (a->r[i].u.ex.isrange == 2) continue;
+    d = a->r[i].u.ex.idx.hi;
+    if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
+      if (next) {
+	return next->Validate (a);
+      }
+      else {
+	return 0;
+      }
+    }
+    if (a->r[i].u.ex.idx.lo != a->r[i].u.ex.idx.hi) {
+      /* subrange, check the extreme ends */
+      d = a->r[i].u.ex.idx.lo;
+      if (r[i].u.ex.idx.lo > d || r[i].u.ex.idx.hi < d) {
+	if (next) {
+	  return next->Validate (a);
+	}
+	else {
+	  return 0;
+	}
+      }
+    }
+  }
+  return 1;
+}
+
 
 /*------------------------------------------------------------------------
  *  "a" is an ExpandRef'ed array

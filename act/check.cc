@@ -1573,7 +1573,8 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan)
 	  Assert (it->isExpanded(), "What on earth?");
 	  Assert (id->arrayInfo()->isExpanded(), "What on earth2?");
 
-	  if (!it->arrayInfo()->Validate (id->arrayInfo())) {
+	  /* weak validate, because this can come from a CHP body */
+	  if (!it->arrayInfo()->weakValidate (id->arrayInfo())) {
 	    typecheck_err ("Array dereference out of range");
 	    return NULL;
 	  }
