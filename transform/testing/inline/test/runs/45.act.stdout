@@ -1,0 +1,41 @@
+defproc test (chan(int<32>)? X; chan(int<32>)? Y; chan(int<32>)! O);
+function testme (pair p) : pair;
+deftype pair (int<32> x; int<32> y);
+
+defproc test (chan(int<32>)? X; chan(int<32>)? Y; chan(int<32>)! O)
+{
+
+/* instances */
+pair _us0;
+pair p;
+
+/* connections */
+chp {
+*[true -> X?p.x,Y?p.y;_us0.x:=p.x;_us0.y:=p.y;p.x:=_us0.x;*[p.x>p.y -> p.x:=p.x-p.y [] p.y>p.x -> p.y:=p.y-p.x];O!p.x]
+}
+}
+
+function testme (pair p) : pair
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=p
+}
+}
+
+deftype pair (int<32> x; int<32> y)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

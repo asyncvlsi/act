@@ -1515,7 +1515,7 @@ act_connection *ActId::Canonical (Scope *s)
       
 #if 0
       printf ("Type: %s, port %s\n", ux->getName(), idrest->getName());
-#endif      
+#endif
       
       portid = ux->FindPort (idrest->getName());
       Assert (portid > 0, "What?");

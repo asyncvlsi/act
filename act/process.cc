@@ -81,6 +81,7 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
 
   xp = new Process (ux);
+  ActNamespace::Act()->updateType (ux, xp);
   delete ux;
 
   Assert (_ns->EditType (xp->name, xp) == 1, "What?");

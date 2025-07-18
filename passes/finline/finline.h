@@ -52,7 +52,6 @@ private:
 
   void _structure_assign (act_chp_lang_t *c);
 
-  int _get_fresh_idx (const char *prefix, int *idx);
   int _useidx;
 };
 

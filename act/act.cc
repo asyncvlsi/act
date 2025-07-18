@@ -607,6 +607,9 @@ Act::Act (const char *s)
     num_inst_levels[i] = 0;
   }
 
+  /* empty genvars */
+  _genVars = NULL;
+
   /* initialize act library */
   Act::Init (&argc, &argv);
   FREE (argv[0]);
@@ -1225,6 +1228,27 @@ list_t *Act::getDecomp (Process *p)
       }
     }
   }
+
+  if (_genVars) {
+    phash_bucket_t *pb;
+    phash_iter_t pit;
+    list_t *l = NULL;
+    phash_iter_init (_genVars, &pit);
+    while ((pb = phash_iter_next (_genVars, &pit))) {
+      if (p == (Process *)pb->v) {
+	if (!l) {
+	  l = list_new ();
+	  list_append (l, (ValueIdx *)(pb->key));
+	}
+      }
+    }
+    if (l) {
+      if (!ret) {
+	ret = list_new ();
+      }
+      list_append (ret, l);
+    }
+  }
   return ret;
 }
 
@@ -1324,4 +1348,57 @@ bool Act::LocalizeGlobal (const char *s)
 
   }
   return true;
+}
+
+
+
+/*------------------------------------------------------------------------
+ * Expanding a process might result in a re-write that includes a
+ * freshly generated variable. These generated variables are not
+ * declared in the original ACT; during logic synthesis, these
+ * variables have to be declared, not overridden.
+ *------------------------------------------------------------------------
+ */
+void Act::addGeneratedVar (Scope *sc, ValueIdx *vx)
+{
+  Assert (vx->t->isExpanded(), "Must be called only with expanded ValueIdx!");
+
+  if (!_genVars) {
+    _genVars = phash_new (4);
+  }
+  phash_bucket_t *b;
+  b = phash_add (_genVars, vx);
+
+  while (sc && sc->getUserDef() == NULL) {
+    sc = sc->Parent ();
+  }
+  if (!sc) {
+    fatal_error ("Act::addGenerateVar(): Scope doesn't lead to a user-defined type.");
+  }
+  b->v = sc->getUserDef ();
+}
+
+void Act::updateType (UserDef *from, UserDef *to)
+{
+  if (!_genVars) return;
+  phash_bucket_t *pb;
+  phash_iter_t pit;
+
+  phash_iter_init (_genVars, &pit);
+  while ((pb = phash_iter_next (_genVars, &pit))) {
+    if (pb->v == from) {
+      pb->v = to;
+    }
+  }
+}
+
+bool Act::isGeneratedVar (ValueIdx *vx)
+{
+  if (!_genVars) {
+    return false;
+  }
+  if (phash_lookup (_genVars, vx)) {
+    return true;
+  }
+  return false;
 }

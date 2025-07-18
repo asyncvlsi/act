@@ -57,6 +57,7 @@ static void _chp_expr_unstruct (list_t *l, Scope *s, Expr *e)
       char buf[1024];
       snprintf (buf, 1024, "_us%d", _chp_freshvar_count);
       s->Add (buf, it);
+      ActNamespace::Act()->addGeneratedVar (s, s->LookupVal (buf));
       NEW (c, act_chp_lang_t);
       c->space = NULL;
       c->label = NULL;

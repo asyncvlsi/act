@@ -573,9 +573,11 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	  if (vals.isValid()) {
 	    /* simple inline */
 	    char buf[1024];
-	    int idx = _get_fresh_idx ("_us", &_inline_idx);
-	    snprintf (buf, 1024, "_us_%d", idx);
+	    _cursc->findFresh ("_us_", &_inline_idx);
+	    snprintf (buf, 1024, "_us_%d", _inline_idx);
+	    _inline_idx++;
 	    _cursc->Add (buf, cx->datatype());
+	    ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (buf));
 	    ActId *myid = new ActId (buf);
 
 	    d = dynamic_cast <Data *>(cx->datatype()->BaseType());
@@ -586,23 +588,43 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	    int sz = nb + ni;
 	    list_t *l = list_new ();
 
-	    Assert (!vals.isSimple(), "Hmm");
+	    //Assert (!vals.isSimple(), "Hmm");
 
 	    for (int i=0; i < sz; i++) {
 	      act_chp_lang_t *tc;
 
-	      if (vals.u.arr[i]) {
+	      if (vals.isSimple()) {
 		NEW (tc, act_chp_lang_t);
 		tc->type = ACT_CHP_ASSIGN;
 		tc->label = NULL;
 		tc->space = NULL;
 		tc->u.assign.id = myid->Clone();
 		tc->u.assign.id->Tail()->Append (fields[i]);
-		tc->u.assign.e = vals.u.arr[i];
+		NEW (tc->u.assign.e, Expr);
+		tc->u.assign.e->u.e.r = NULL;
+		tc->u.assign.e->type = E_VAR;
+		// structure expression can only be an actual
+		// structure variable
+		Assert (vals.getVal()->type == E_VAR, "What?");
+		ActId *tmp = ((ActId *)vals.getVal()->u.e.l)->Clone ();
+		tmp->Tail()->Append (fields[i]->Clone());
+		tc->u.assign.e->u.e.l = (Expr *) tmp;
 		list_append (l, tc);
 	      }
 	      else {
-		delete fields[i];
+		if (vals.u.arr[i]) {
+		  NEW (tc, act_chp_lang_t);
+		  tc->type = ACT_CHP_ASSIGN;
+		  tc->label = NULL;
+		  tc->space = NULL;
+		  tc->u.assign.id = myid->Clone();
+		  tc->u.assign.id->Tail()->Append (fields[i]);
+		  tc->u.assign.e = vals.u.arr[i];
+		  list_append (l, tc);
+		}
+		else {
+		  delete fields[i];
+		}
 	      }
 	    }
 	    FREE (fields);
@@ -659,9 +681,10 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	    ActId *origid = c->u.assign.id;
 	    if (unstruct_me) {
 	      char buf[1024];
-	      int idx = _get_fresh_idx ("_us", &_inline_idx);
-	      snprintf (buf, 1024, "_us_%d", idx);
+	      _cursc->findFresh ("_us_", &_inline_idx);
+	      snprintf (buf, 1024, "_us_%d", _inline_idx++);
 	      _cursc->Add (buf, it);
+	      ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (buf));
 	      myid = new ActId (buf);
 	    }
 	  
@@ -673,23 +696,43 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	    int sz = nb + ni;
 	    list_t *l = list_new ();
 
-	    Assert (!vals.isSimple(), "Hmm");
-	    
+	    //Assert (!vals.isSimple(), "Hmm");
+
 	    for (int i=0; i < sz; i++) {
 	      act_chp_lang_t *tc;
 
-	      if (vals.u.arr[i]) {
+	      if (vals.isSimple()) {
 		NEW (tc, act_chp_lang_t);
 		tc->type = ACT_CHP_ASSIGN;
 		tc->label = NULL;
 		tc->space = NULL;
 		tc->u.assign.id = myid->Clone();
 		tc->u.assign.id->Tail()->Append (fields[i]);
-		tc->u.assign.e = vals.u.arr[i];
+		NEW (tc->u.assign.e, Expr);
+		tc->u.assign.e->u.e.r = NULL;
+		tc->u.assign.e->type = E_VAR;
+		// structure expression can only be an actual
+		// structure variable
+		Assert (vals.getVal()->type == E_VAR, "What?");
+		ActId *tmp = ((ActId *)vals.getVal()->u.e.l)->Clone ();
+		tmp->Tail()->Append (fields[i]->Clone());
+		tc->u.assign.e->u.e.l = (Expr *) tmp;
 		list_append (l, tc);
 	      }
 	      else {
-		delete fields[i];
+		if (vals.u.arr[i]) {
+		  NEW (tc, act_chp_lang_t);
+		  tc->type = ACT_CHP_ASSIGN;
+		  tc->label = NULL;
+		  tc->space = NULL;
+		  tc->u.assign.id = myid->Clone();
+		  tc->u.assign.id->Tail()->Append (fields[i]);
+		  tc->u.assign.e = vals.u.arr[i];
+		  list_append (l, tc);
+		}
+		else {
+		  delete fields[i];
+		}
 	      }
 	    }
 	    FREE (fields);
@@ -760,20 +803,6 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
   }
 }
 
-
-int ActCHPFuncInline::_get_fresh_idx (const char *prefix, int *idx)
-{
-  char tmpnm[1024];
-  int i = *idx;
-  
-  do {
-    snprintf (tmpnm, 1024, "%s_%d", prefix, i++);
-  } while (_cursc->Lookup (tmpnm));
-  *idx = i;
-
-  return i-1;
-}
-
 /*------------------------------------------------------------------------
  *  
  *  Complex inlines: functions with loops
@@ -811,14 +840,14 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
     if (!b) {
       struct fn_inline_args *args;
       NEW (args, struct fn_inline_args);
-      int idx;
 
       args->fx = fx;
-      idx = _get_fresh_idx ("fret", &ret_idx);
-      snprintf (tmpnm, 1024, "fret_%d", idx);
+      _cursc->findFresh ("fret_", &ret_idx);
+      snprintf (tmpnm, 1024, "fret_%d", ret_idx++);
       args->ret = new ActId (tmpnm);
       Assert (_cursc->Add (tmpnm, fx->getRetType()), "What?");
-      
+      ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (tmpnm));
+
       if (fx->getNumPorts() > 0) {
 	MALLOC (args->args, ActId *, fx->getNumPorts());
       }
@@ -826,10 +855,11 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
 	args->args = NULL;
       }
       for (int i=0; i < fx->getNumPorts(); i++) {
-	idx = _get_fresh_idx ("farg", &arg_idx);
-	snprintf (tmpnm, 1024, "farg_%d", idx);
+	_cursc->findFresh ("farg_", &arg_idx);
+	snprintf (tmpnm, 1024, "farg_%d", arg_idx++);
 	args->args[i] = new ActId (tmpnm);
 	Assert (_cursc->Add (tmpnm, fx->getPortType (i)), "What?");
+	ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (tmpnm));
       }
       b = phash_add (Hargs, fx);
       b->v = args;
@@ -864,9 +894,10 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
 	  if (!args->local_vars) {
 	    args->local_vars = hash_new (4);
 	  }
-	  idx = _get_fresh_idx ("floc", &local_idx);
-	  snprintf (tmpnm, 1024, "floc_%d", idx);
+	  _cursc->findFresh ("floc_", &local_idx);
+	  snprintf (tmpnm, 1024, "floc_%d", local_idx++);
 	  Assert (_cursc->Add (tmpnm, vx->t), "What?");
+	  ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (tmpnm));
 	  ab = hash_add (args->local_vars, vx->getName());
 	  ab->v = new ActId (tmpnm);
 	}
@@ -1734,10 +1765,11 @@ act_chp_lang_t *ActCHPFuncInline::_do_inline (struct pHashtable *H,
 		   _chp_clone_subst (fn, fn->fx->getlang()->getchp()->c));
 
       // return value
-      int idx = _get_fresh_idx ("fuse", &_useidx);
+      _cursc->findFresh ("fuse_", &_useidx);
       char buf[1024];
-      snprintf (buf, 1024, "fuse_%d", idx);
+      snprintf (buf, 1024, "fuse_%d", _useidx++);
       Assert (_cursc->Add (buf, fn->fx->getRetType()) == 1, "Hmm");
+      ActNamespace::Act()->addGeneratedVar (_cursc, _cursc->LookupVal (buf));
 
       if (fn->fx->getRetType()->arrayInfo()) {
 	Array *xa = fn->fx->getRetType()->arrayInfo();

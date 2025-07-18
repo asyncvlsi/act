@@ -702,6 +702,13 @@ class Act {
   void incRefSteps(int nsteps = 1) { refine_steps += nsteps; } ///< increment the number of
 					 ///remaining refinement steps
 
+
+
+  void addGeneratedVar (Scope *sc, ValueIdx *vx); ///< add generated variable
+  void updateType (UserDef *from, UserDef *to); ///< update generated
+						///type
+  bool isGeneratedVar (ValueIdx *vx); ///< check if variable was generated
+  
 private:
   TypeFactory *tf;		///< type factory for the Act instance
   ActNamespace *gns;		///< the global namespace pointer
@@ -748,6 +755,12 @@ private:
 
   bool _finished_init;		///< set to true after the first file
 				///has been read
+
+  struct pHashtable *_genVars;	///< table that includes ValueIdx
+				///pointers that were generated. Since
+				///these pointers are unique per
+				///process, we don't need to save the
+				///process info.
 
   static char *_getopt_string; ///< the string used for getopt
 
