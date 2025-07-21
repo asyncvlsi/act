@@ -729,8 +729,10 @@ class UserDef : public Type {
   void setRefineList(list_t *l) {  has_refinement = l; }
 
   bool acceptRefine (int refsteps, int mysteps) {
+#if 0
     listitem_t *li;
     int k = 0;
+#endif
 
     if (!has_refinement) {
       return false;
