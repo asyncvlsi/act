@@ -2793,6 +2793,7 @@ void Data::synthStructMacro ()
 
 void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 {
+  list_t *ol = NULL;
   while (srch) {
     ActBody_Lang *l = dynamic_cast<ActBody_Lang *> (srch);
     if (l) {
@@ -2800,16 +2801,50 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 	act_refine *r = (act_refine *) l->getlang();
 	if (acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps) &&
 	    r->overrides) {
-	  refine_override *rl = r->overrides;
-	  /* apply overrides! */
-	  while (rl) {
-	    b->updateInstType (rl->ids, rl->it);
-	    rl = rl->next;
-	  }
+          listitem_t *oi, *oprev;
+          if (!ol) {
+	    ol = list_new ();
+          }
+          oi = list_first (ol);
+          oprev = NULL;
+          while (oi) {
+	    act_refine *rl = (act_refine *) list_value (oi);
+	    if (r->nsteps < rl->nsteps) {
+	      if (!oprev) {
+                list_append_head (ol, r);
+                break;
+	      }
+	      else {
+		listitem_t *xtl = list_tail (ol);
+		list_append (ol, r);
+		list_tail (ol)->next = oi;
+		oprev->next = list_tail (ol);
+		list_tail (ol) = xtl;
+		xtl->next = NULL;
+		break;
+	      }
+	    }
+	    oprev = oi;
+	    oi = list_next (oi);
+          }
+          if (!oi) {
+             list_append (ol, r);
+          }
 	}
       }
     }
     srch = srch->Next();
+  }
+  /* apply overrides in refinement order */
+  if (ol) {
+     for (listitem_t *oi = list_first (ol); oi; oi = list_next (oi)) {
+       act_refine *ri = (act_refine *) list_value (oi);
+       refine_override *rl = ri->overrides; 
+      while (rl) {
+          b->updateInstType (rl->ids, rl->it);
+          rl = rl->next;
+       }
+     }
   }
 }
 

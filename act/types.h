@@ -735,12 +735,16 @@ class UserDef : public Type {
     if (!has_refinement) {
       return false;
     }
+    if (refsteps >= mysteps) return true;
+#if 0
+    /* old refinement rule */
     li = list_first (has_refinement);
     while (li && list_ivalue (li) <= refsteps) {
       k = list_ivalue (li);
       li = list_next (li);
     }
     if (k == mysteps) return true;
+#endif    
     return false;
   }
 
