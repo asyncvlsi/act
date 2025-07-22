@@ -329,7 +329,8 @@ UserDef::UserDef (ActNamespace *ns)
   file = NULL;
   lineno = 0;
 
-  has_refinement = 0;
+  has_refinement = NULL;
+  parent_refinement = NULL;
 
   inherited_templ = 0;
   inherited_param = NULL;
@@ -425,6 +426,7 @@ void UserDef::MkCopy (UserDef *u)
   file = u->file;
   lineno = u->lineno;
   has_refinement = u->has_refinement;
+  parent_refinement = u->parent_refinement;
 
   inherited_templ = u->inherited_templ;
   inherited_param = u->inherited_param;
@@ -493,6 +495,7 @@ void UserDef::Clone (UserDef *u)
   file = string_cache (u->file);
   lineno = u->lineno;
   has_refinement = list_dup (u->has_refinement);
+  parent_refinement = list_dup (u->parent_refinement);
 
   inherited_templ = u->inherited_templ;
 
@@ -759,6 +762,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   ux->file = file;
   ux->lineno = lineno;
   ux->has_refinement = has_refinement;
+  ux->parent_refinement = parent_refinement;
 
   if (defined) {
     ux->MkDefined();

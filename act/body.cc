@@ -1246,10 +1246,15 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     all_lang = ux->getlang();
   }
 
-  if (ux && (ux->getRefineList() != NULL) &&
-      ActNamespace::Act()->getRefSteps() >=
-      list_ivalue (list_first (ux->getRefineList()))) {
-    in_refinement = 1;
+  if (ux) {
+    /* check if there are nested refines that will override language
+       bodies, OR if there are pending refines that do the same */
+    if ((ux->getRefineList() != NULL &&
+	 ActNamespace::Act()->getRefSteps() >=
+	 list_ivalue (list_first (ux->getRefineList()))) ||
+	ux->moreRefinesExist (ActNamespace::Act()->getRefSteps())) {
+      in_refinement = 1;
+    }
   }
 
 #if 0
@@ -1364,6 +1369,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
       if (ux->acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps)) {
 	list_t *old = ux->getRefineList ();
 
+        ux->pushRefine (r->nsteps, old);
 	ux->setRefineList (r->refsublist);
 	ActNamespace::Act()->decRefSteps(r->nsteps);
 
@@ -1371,6 +1377,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
 	  r->b->Expandlist (ns, s);
 	}
 	ux->setRefineList (old);
+        ux->popRefine (); 
 	ActNamespace::Act()->incRefSteps(r->nsteps);
       }
     }

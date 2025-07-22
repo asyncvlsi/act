@@ -750,6 +750,48 @@ class UserDef : public Type {
     return false;
   }
 
+
+  /**
+   * Parent list, used to check for additional refinements
+   */
+  void pushRefine (int steps, list_t *reflist) {
+    if (!parent_refinement) {
+      parent_refinement = list_new ();
+    }
+    list_append_head (parent_refinement, reflist);
+    list_iappend_head (parent_refinement, steps);
+  }
+
+  void popRefine () {
+    list_delete_head (parent_refinement);
+    list_delete_head (parent_refinement);
+  }
+
+  /**
+   * Check parent list to see if futher refinements are possible
+   */
+  bool moreRefinesExist (int steps) {
+    listitem_t *li;
+
+    if (!parent_refinement) return false;
+
+    for (li = list_first (parent_refinement); li; li = list_next (li)) {
+      int v = list_ivalue (li);
+      li = list_next (li);
+      list_t *rlist = (list_t *) list_value (li);
+      steps += v;
+
+      for (listitem_t *mi = list_first (rlist); mi; mi = list_next (mi)) {
+	// the refinement would be accepted, and this is a higher
+	// level of refinement than the current one.
+	if (steps >= list_ivalue (mi) && v < list_ivalue (mi)) {
+	  return true;
+	}
+      }
+    }
+    return false;
+  }
+
   /**
    * Create a new user-defined macro
    * @param name is the name of the macro
@@ -820,6 +862,7 @@ class UserDef : public Type {
   const char *file; ///< file name (if known) where this was defined
   int lineno;       ///< line number (if known) where this was defined
 
+  list_t *parent_refinement;  ///< stack of (refinement#, reflist) taken so far
   list_t *has_refinement;     ///< list of refinement levels in this type
 
   int inherited_templ;       ///< number of inherited template parameters
