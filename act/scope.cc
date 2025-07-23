@@ -1820,26 +1820,33 @@ void Scope::playBody (ActBody *b)
 	Add (inst->getName(), inst->getType());
       }
     }
-    else {
-      if (dynamic_cast<ActBody_Loop *>(b)) {
+    else if (dynamic_cast<ActBody_Lang *>(b)) {
+      ActBody_Lang *l = dynamic_cast<ActBody_Lang *>(b);
+      if (l->gettype() == ActBody_Lang::LANG_REFINE) {
+	act_refine *r = (act_refine *) l->getlang();
+	if (r->b) {
+	  playBody (r->b);
+	}
+      }
+    }
+    else if (dynamic_cast<ActBody_Loop *>(b)) {
 	ActBody_Loop *l = dynamic_cast<ActBody_Loop *>(b);
 	playBody (l->getBody());
+    }
+    else {
+      ActBody_Select_gc *sel;
+      if (dynamic_cast<ActBody_Select *>(b)) {
+	sel = dynamic_cast<ActBody_Select *>(b)->getGC();
+      }
+      else if (dynamic_cast<ActBody_Genloop *>(b)) {
+	sel = dynamic_cast<ActBody_Genloop *>(b)->getGC();
       }
       else {
-	ActBody_Select_gc *sel;
-	if (dynamic_cast<ActBody_Select *>(b)) {
-	  sel = dynamic_cast<ActBody_Select *>(b)->getGC();
-	}
-	else if (dynamic_cast<ActBody_Genloop *>(b)) {
-	  sel = dynamic_cast<ActBody_Genloop *>(b)->getGC();
-	}
-	else {
-	  sel = NULL;
-	}
-	while (sel) {
-	  playBody (sel->getBody());
-	  sel = sel->getNext();
-	}
+	sel = NULL;
+      }
+      while (sel) {
+	playBody (sel->getBody());
+	sel = sel->getNext();
       }
     }
   }

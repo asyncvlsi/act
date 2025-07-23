@@ -1,0 +1,29 @@
+deftype myint <: int () { }
+
+defproc p ()
+{
+    int x;
+    chp {
+        *[ x:=0 ]
+    }
+    refine {
+        int y;
+        chp {
+            *[ y:=1 ]
+        }
+    }
+}
+
+defproc p1 <: p ()
+{
+    refine<2>
+    +{
+        myint y;
+    } 
+    {
+        chp {
+          *[ y:=2 ]
+      }
+    }
+}
+
