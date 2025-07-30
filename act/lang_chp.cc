@@ -265,10 +265,16 @@ void act_chp_free (act_chp_lang_t *c)
 }
 
 static int _chp_expanding_macro = 0;
+static int _chp_still_in_macro = 0;
 
 void chp_expand_macromode (int v)
 {
   _chp_expanding_macro = v;
+}
+
+int chp_processing_macro (void)
+{
+  return _chp_expanding_macro ? 1 : (_chp_still_in_macro ? 1 : 0);
 }
 
 void act_chp_macro_check (Scope *s, ActId *id)
@@ -1935,7 +1941,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     
     ret->u.assign.e = te;
 
-    if (_chp_expanding_macro == 0) {
+    if (chp_processing_macro() == 0) {
       int tr = act_type_expr (s, te, NULL, 2);
       if (tr == T_ERR) {
 	fprintf (stderr, "Typechecking failed on CHP assignment\n");
@@ -2237,12 +2243,14 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 
       /*-- re-expand, do all the checks --*/
       {
+	_chp_still_in_macro++;
 	int tmp = Act::double_expand;
 	act_chp_lang_t *oret = ret;
 	Act::double_expand = 0;
 	ret = chp_expand_1 (oret, ns, s);
 	Act::double_expand = tmp;
 	act_chp_free (oret);
+	_chp_still_in_macro--;
       }
       
       delete tsc;

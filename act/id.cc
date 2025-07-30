@@ -27,6 +27,7 @@
 #include <act/value.h>
 #include <string.h>
 #include <ctype.h>
+#include <act/lang.h>
 
 //#define DEBUG_CONNECTIONS
 
@@ -372,12 +373,25 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	/* extract the real type */
 	InstType *itmp = it->getIfaceType();
 	Assert (itmp, "What?");
-	Process *proc = dynamic_cast<Process *> (it->BaseType());
-	Assert (proc, "What?");
-	list_t *map = proc->findMap (itmp);
+	list_t *map = NULL;
+	if (TypeFactory::isProcessType (it)) {
+	  Process *proc = dynamic_cast<Process *> (it->BaseType());
+	  Assert (proc, "What?");
+	  map = proc->findMap (itmp);
+	}
+	else if (TypeFactory::isDataType (it) || TypeFactory::isStructure (it)) {
+	  Data *dat = dynamic_cast<Data *> (it->BaseType());
+	  Assert (dat, "What?");
+	  map = dat->findMap (itmp);
+	}
+	else {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Interfaces are only supported for process and data types; got `%s'?", it->BaseType()->getName());
+	}
 	if (!map) {
-	  fatal_error ("Missing interface `%s' from process `%s'?",
-		       itmp->BaseType()->getName(), proc->getName());
+	  act_error_ctxt (stderr);
+	  fatal_error ("Missing interface `%s' from type `%s'?",
+		       itmp->BaseType()->getName(), it->BaseType()->getName());
 	}
 	listitem_t *li;
 #if 0
@@ -402,14 +416,52 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	  li = list_next (li);
 	}
 	if (!li) {
-	  fatal_error ("Map for interface `%s' doesn't contain `%s'",
-		       itmp->BaseType()->getName(), id->Rest()->getName());
+	  bool extra_check_passed = false;
+	  if (is_chp && chp_processing_macro() != 0) {
+	    // it may not be in the interface, but it may be in the
+	    // actual type! we allow this for macros.
+	    Scope *srch = s;
+	    const char *pt = itmp->getPTypeID ();
+	    if (pt) {
+	      ValueIdx *vx = s->LookupVal (pt);
+	      // XXX: this isn't really right...  we need to find the
+	      // correct scope here!
+	      if (!vx && s->Parent()) {
+		vx = s->Parent()->LookupVal (pt);
+		srch = s->Parent ();
+	      }
+	      if (vx) {
+		if (vx->init && srch->issetPType (vx->u.idx)) {
+		  InstType *px = srch->getPType (vx->u.idx);
+		  u = dynamic_cast<UserDef *>(px->BaseType());
+		  if (u) {
+		    // XXX: edit type in "s" for expanded scopes
+		    if (s->isExpanded()) {
+		      Assert (s->Lookup (id->getName()) == it, "What?");
+		      InstType *xtmp = new InstType (srch, u, 1);
+		      s->refineBaseType (id->getName(), xtmp);
+		      delete xtmp;
+		    }
+		    if (u->FindPort (id->Rest()->getName()) != 0) {
+		      extra_check_passed = true;
+		      id = id->Rest ();
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	  if (!extra_check_passed) {
+	    act_error_ctxt (stderr);
+	    fatal_error ("Map for interface `%s' doesn't contain `%s'",
+			 itmp->BaseType()->getName(), id->Rest()->getName());
+	  }
 	}
-#if 0	
+#if 0
 	printf ("NEW ID rest: ");
 	id->Print(stdout);
 	printf ("\n");
-#endif	
+#endif
       }
       else {
 	id = id->Rest ();
@@ -1450,6 +1502,7 @@ act_connection *ActId::Canonical (Scope *s)
 	li = list_next (li);
       }
       if (!li) {
+	act_error_ctxt (stderr);
 	fatal_error ("Map for interface `%s' doesn't contain `%s'",
 		     itmp->BaseType()->getName(), id->Rest()->getName());
       }

@@ -885,9 +885,15 @@ act_dataflow *dflow_dup (act_dataflow *, ActNamespace *, ActNamespace *);
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
 
 /**
- * Set the CHP expansion mode (1 if in macro, 0 otherwise)
+ * Set the CHP expansion mode (1/2 if in macro, 0 otherwise)
+ * 2 = macro in a process, 1 = other macro
  */
 void chp_expand_macromode (int mode);
+
+/**
+ * Get the CHP expansion mode: is it handling a macro?
+ */
+int chp_processing_macro (void);
 
 /**
  * chp_expand helper for the items within the language block

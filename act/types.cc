@@ -1219,8 +1219,37 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       // skip the port!
       continue;
     }
-    
-    Assert (ux->AddPort (chk, getPortName (i)), "What?");
+
+
+    /*
+     * XXX: This really needs to be "if this is a real type rather
+     * than part of an interface". Examples of "part of an interface"
+     * are interfaces themselves or functions within interfaces.
+     */
+    if (is_proc != 2 && TypeFactory::isInterfaceType (chk)) {
+      /* this means that this was a ptype... we need to do more work */
+      const char *pt = chk->getPTypeID();
+      Assert (pt, "PType ID missing!");
+      ValueIdx *vx = ux->CurScope()->LookupVal (pt);
+      Assert (vx, "PType ID not found?");
+      if (!vx->init || !ux->CurScope()->issetPType (vx->u.idx)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Ptype `%s' used to instantiate `%s' is not set", pt,
+		     getPortName (i));
+      }
+
+      InstType *x = new InstType (ux->CurScope()->getPType (vx->u.idx));
+      x->MkCached ();
+      x->setIfaceType (chk);
+      if (chk->arrayInfo()) {
+	x->MkArray (chk->arrayInfo());
+      }
+      Assert (ux->AddPort (x, getPortName (i)), "Should succeed!");
+      chk = x;
+    }
+    else {
+      Assert (ux->AddPort (chk, getPortName (i)), "Should succeed; what happened?!");
+    }
 
     if (chk->arrayInfo() && chk->arrayInfo()->size() == 0) {
       act_error_ctxt (stderr);
