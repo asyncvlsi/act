@@ -1637,38 +1637,6 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan)
 	  li = list_next (li);
 	}
 	if (!li) {
-#if 0
-	  bool extra_check_passed = false;
-	  if (chp_processing_macro() != 0) {
-	    // it may not be in the interface, but it may be in the
-	    // actual type! we allow this for macros.
-	    Scope *srch = s;
-	    const char *pt = itmp->getPTypeID ();
-	    if (pt) {
-	      ValueIdx *vx = s->LookupVal (pt);
-	      if (!vx && s->Parent()) {
-		vx = s->Parent()->LookupVal (pt);
-		srch = s->Parent ();
-	      }
-	      if (vx) {
-		if (vx->init && srch->issetPType (vx->u.idx)) {
-		  InstType *px = srch->getPType (vx->u.idx);
-		  u = dynamic_cast<UserDef *>(px->BaseType());
-		  if (u) {
-		    if (u->FindPort (id->Rest()->getName()) != 0) {
-		      extra_check_passed = true;
-		      id = id->Rest ();
-		    }
-		  }
-		}
-	      }
-	    }
-	  }
-	  if (!extra_check_passed) {
-	    fatal_error ("Map for interface `%s' doesn't contain `%s'",
-			 itmp->BaseType()->getName(), id->Rest()->getName());
-	  }
-#endif
 	  act_error_ctxt (stderr);
 	  fatal_error ("Map for interface `%s' doesn't contain `%s'",
 		       itmp->BaseType()->getName(), id->Rest()->getName());

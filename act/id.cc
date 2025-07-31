@@ -423,12 +423,10 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	    Scope *srch = s;
 	    const char *pt = itmp->getPTypeID ();
 	    if (pt) {
-	      ValueIdx *vx = s->LookupVal (pt);
-	      // XXX: this isn't really right...  we need to find the
-	      // correct scope here!
-	      if (!vx && s->Parent()) {
-		vx = s->Parent()->LookupVal (pt);
-		srch = s->Parent ();
+	      ValueIdx *vx = srch->LookupVal (pt);
+	      while (!vx && srch && srch->Parent()) {
+		vx = srch->Parent()->LookupVal (pt);
+		srch = srch->Parent ();
 	      }
 	      if (vx) {
 		if (vx->init && srch->issetPType (vx->u.idx)) {
