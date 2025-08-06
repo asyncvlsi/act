@@ -2320,7 +2320,6 @@ class TypeFactory {
   /**
    * A UserDef that is a Data type can hold a structure. A data type
    * is a structure when it does not implement a built-in data type.
-   * Note that currently structures cannot contain arrays.
    * @return 1 if this is a structure, 0 otherwise
    */
   static int isStructure (const Type *t);

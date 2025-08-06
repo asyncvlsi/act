@@ -422,7 +422,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       WIDTH_UPDATE(mode);						\
       return (((f) != (g) ? (g) : T_BOOL) & ~(T_PARAM|T_STRICT))|flgs;  \
     }                                                                   \
-    if ((f & T_REAL) && T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) { \
+    if ((T_BASETYPE (f) == T_REAL) && T_BASETYPE_ISNUM(lt) && T_BASETYPE_ISNUM(rt)) { \
       if (T_BASETYPE(lt) == T_REAL || T_BASETYPE(rt) == T_REAL) {       \
         return (((f) != (g) ? (g) : T_REAL) & ~(T_PARAM|T_STRICT))|flgs; \
       }                                                                 \
@@ -816,8 +816,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       typecheck_err ("bool(.) requires an integer argument");
       return T_ERR;
     }
-    if (lt & T_INT) {
-      return (lt & ~T_INT) | T_BOOL;
+    if (T_FIXBASETYPE(lt) == T_INT) {
+      return (lt & ~T_MASK) | T_BOOL;
     }
     typecheck_err ("Invalid use of bool(.)");
     return T_ERR;
@@ -842,9 +842,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (width) {
 	*width = 1;
       }
-      return (lt & ~(T_BOOL|T_DATA_BOOL))|T_INT;
+      return (lt & ~T_MASK)|T_INT;
     }
-    if (lt & T_REAL) {
+    if (T_BASETYPE (lt) == T_REAL) {
       if (width) {
 	*width = 64;
       }
@@ -873,7 +873,12 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       return lt;
     }
-    typecheck_err ("int(.) takes only an int or bool argument");
+    if (e->u.e.r) {
+      typecheck_err ("int(.,<int>) takes only an int argument");
+    }
+    else {
+      typecheck_err ("int(.) takes only an int or bool argument");
+    }
     return T_ERR;
     break;
     
@@ -1290,6 +1295,10 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	  InstType *it = _act_get_var_type (s, theid, &tmp, NULL, true);
 	  Assert (it, "This should not happen");
 
+	  Assert (TypeFactory::isChanType (it), "T_CHAN without channel type?");
+	  InstType *dit = TypeFactory::getChanDataType (it);
+	  Assert (dit, "Hmm");
+
 	  if (it->getDir() == Type::OUT) {
 	    InstType *it2 = s->FullLookup (theid->getName());
 	    if (!(theid->Rest() && TypeFactory::isProcessType (it2))) {
@@ -1308,13 +1317,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	    return T_ERR;
 	  }
 
-	  if (TypeFactory::boolType (it) == 1) {
+	  if (TypeFactory::boolType (dit) == 1) {
 	    if (width) {
 	      *width = 1;
 	    }
 	    return T_BOOL;
 	  }
-	  else {
+	  else if (TypeFactory::isDataType (dit)) {
 	    if (width) {
 	      if (xit->isExpanded()) {
 		*width = TypeFactory::bitWidth (xit);
@@ -1324,6 +1333,10 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	      }
 	    }
 	    return T_INT;
+	  }
+	  else {
+	    Assert (TypeFactory::isStructure (dit), "Hmm");
+	    return T_DATA;
 	  }
 	}
 	if (!(lt & T_ARRAYOF) && (lt & T_PARAM) && T_BASETYPE_ISINTBOOL (lt)) {
