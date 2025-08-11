@@ -1787,13 +1787,13 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
   if (ret == (T_INT|T_PARAM)) {
     return TypeFactory::Factory()->NewPInt();
   }
-  else if (ret == T_INT) {
+  else if (ret == T_INT || ret == T_DATA_INT) {
     return TypeFactory::Factory()->NewInt (s, Type::NONE, 0, const_expr (32));
   }
   else if (ret == (T_BOOL|T_PARAM)) {
     return TypeFactory::Factory()->NewPBool ();
   }
-  else if (ret == T_BOOL) {
+  else if (ret == T_BOOL || ret == T_DATA_BOOL) {
     return TypeFactory::Factory()->NewBool (Type::NONE);
   }
   else if (ret == (T_REAL|T_PARAM)) {
@@ -1825,7 +1825,7 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
     }
   }
   else {
-    fatal_error ("Not sure what to do now");
+    fatal_error ("Unexpected return code in typechecking: %x", ret);
   }
   return NULL;
 }
