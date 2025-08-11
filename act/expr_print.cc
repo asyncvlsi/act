@@ -1424,10 +1424,26 @@ static void _expr_to_var (char **buf, int *len, int *sz,
 }
 
 static void _expr_to_string (char **buf, int *len, int *sz,
+			     struct pHashtable *H, int *uid,
 			     list_t *ids, Expr *e, int *isassoc)
 {
   int iszero = 0;
   int tmp;
+  phash_bucket_t *b;
+
+  b = phash_lookup (H, e);
+  if (b) {
+    _expr_expand_sz (buf, len, sz, 32);
+    (*buf)[*len] = 'w';
+    *len = *len + 1;
+    snprintf (*buf + *len, *sz - *len, "%lu", (unsigned long)b->i);
+    *len += strlen (*buf + *len);
+    return;
+  }
+  b = phash_add (H, e);
+  b->i = *uid;
+  *uid = *uid + 1;
+
   switch (e->type) {
   case E_PLUS:
   case E_MULT:
@@ -1437,14 +1453,14 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     }
     if (e->u.e.l->type == e->type) {
       (*isassoc) = (*isassoc) + 1;
-      _expr_to_string (buf, len, sz, ids, e->u.e.l, isassoc);
+      _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, isassoc);
     }
     else {
       tmp = 0;
-      _expr_to_string (buf, len, sz, ids, e->u.e.l, &tmp);
+      _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &tmp);
     }
     tmp = 0;
-    _expr_to_string (buf, len, sz, ids, e->u.e.r, &tmp);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r, &tmp);
     if (iszero) {
       _expr_append_char (buf, len, sz, _expr_type_char (e->type));
       while (*isassoc) {
@@ -1460,22 +1476,22 @@ static void _expr_to_string (char **buf, int *len, int *sz,
   case E_LT:  case E_GT:
   case E_LE:  case E_GE:
   case E_EQ:  case E_NE:
-    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
-    _expr_to_string (buf, len, sz, ids, e->u.e.r, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
     
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
-    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
 
   case E_QUERY:
-    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
-    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.l, &iszero);
-    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.r, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r->u.e.r, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
 
@@ -1508,7 +1524,7 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     {
       Expr *f = e;
       while (f) {
-	_expr_to_string (buf, len, sz, ids, f->u.e.l, &iszero);
+	_expr_to_string (buf, len, sz, H, uid, ids, f->u.e.l, &iszero);
 	f = f->u.e.r;
       }
       _expr_append_char (buf, len, sz, _expr_type_char (e->type));
@@ -1520,21 +1536,21 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     _expr_to_var (buf, len, sz, ids, (ActId *)e->u.e.l);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     if (e->u.e.r->u.e.l) {
-      _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.l, &iszero);
+      _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r->u.e.l, &iszero);
     }
-    _expr_to_string (buf, len, sz, ids, e->u.e.r->u.e.r, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r->u.e.r, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
 
   case E_BUILTIN_BOOL:
-    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
     
   case E_BUILTIN_INT:
-    _expr_to_string (buf, len, sz, ids, e->u.e.l, &iszero);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
     if (e->u.e.r) {
-      _expr_to_string (buf, len, sz, ids, e->u.e.r, &iszero);
+      _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r, &iszero);
     }
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     if (e->u.e.r) {
@@ -1569,7 +1585,13 @@ char *act_expr_to_string (list_t *id_list, Expr *e)
   buf[0] = '\0';
   len = 0;
 
-  _expr_to_string (&buf, &len, &sz, id_list, e, &iszero);
+  struct pHashtable *H = phash_new (8);
+
+  int unique_id = 0;
+
+  _expr_to_string (&buf, &len, &sz, H, &unique_id, id_list, e, &iszero);
+
+  phash_free (H);
 
   char *ret = Strdup (buf);
   FREE (buf);
