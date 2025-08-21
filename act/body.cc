@@ -1881,7 +1881,7 @@ ActBody *ActBody_Print::Clone(ActNamespace *replace, ActNamespace *newns)
 }
 
 
-void ActBody::updateInstType (list_t *namelist, InstType *it)
+void ActBody::updateInstType (list_t *namelist, InstType *it, bool handle_subref)
 {
   ActBody *b = this;
   listitem_t *li;
@@ -1908,7 +1908,7 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
     else if (dynamic_cast<ActBody_Loop *> (b)) {
       ActBody_Loop *bl = dynamic_cast<ActBody_Loop *> (b);
       if (bl->getBody()) {
-	bl->getBody()->updateInstType (namelist, it);
+	bl->getBody()->updateInstType (namelist, it, handle_subref);
       }
     }
     else {
@@ -1919,12 +1919,24 @@ void ActBody::updateInstType (list_t *namelist, InstType *it)
       else if (dynamic_cast<ActBody_Genloop *> (b)) {
 	sel = dynamic_cast<ActBody_Genloop *> (b)->getGC();
       }
+      else if (dynamic_cast<ActBody_Lang *> (b) && handle_subref) {
+	ActBody_Lang *l = dynamic_cast<ActBody_Lang *> (b);
+	if (l->gettype() == ActBody_Lang::LANG_REFINE) {
+	  act_refine *r = (act_refine *) l->getlang();
+	  if (r->b && r->nsteps <= ActNamespace::Act()->getRefSteps ()) {
+	    ActNamespace::Act()->decRefSteps (r->nsteps);
+	    r->b->updateInstType (namelist, it, true);
+	    ActNamespace::Act()->incRefSteps (r->nsteps);
+	  }
+	}
+	sel = NULL;
+      }
       else {
 	sel = NULL;
       }
       while (sel) {
 	if (sel->getBody()) {
-	  sel->getBody()->updateInstType (namelist, it);
+	  sel->getBody()->updateInstType (namelist, it, handle_subref);
 	}
 	sel = sel->getNext();
       }

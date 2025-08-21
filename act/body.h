@@ -119,9 +119,13 @@ class ActBody {
    * instance type to the new one specified. This is used to support
    * overrides.
    * @param namelist is a list of names (char * list)
-   * @param it is the updated instance type for the specified identifiers
+   * @param it is the updated instance type for the specified
+   * identifiers
+   * @param handle_subref is a flag. If it is true, then the update
+   * method also handles a nested refine within the body; otherwise
+   * those are ignored.
    */
-  void updateInstType (list_t *namelist, InstType *it);
+  void updateInstType (list_t *namelist, InstType *it, bool handle_subref);
 
   /**
    * @return the saved away line number associated with a body

@@ -648,7 +648,7 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
     }
     /* walk through the body, editing instances */
     if (b) {
-      b->updateInstType ($3, $1);
+      b->updateInstType ($3, $1, false);
       if (port_override_asserts) {
 	b->Tail()->Append (port_override_asserts);
       }

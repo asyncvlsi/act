@@ -2827,17 +2827,19 @@ void Data::synthStructMacro ()
 void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 {
   list_t *ol = NULL;
+
   while (srch) {
     ActBody_Lang *l = dynamic_cast<ActBody_Lang *> (srch);
     if (l) {
       if (l->gettype() == ActBody_Lang::LANG_REFINE) {
 	act_refine *r = (act_refine *) l->getlang();
-	if (acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps) &&
-	    r->overrides) {
+	if (acceptRefine (ActNamespace::Act()->getRefSteps(), r->nsteps)) {
           listitem_t *oi, *oprev;
           if (!ol) {
 	    ol = list_new ();
           }
+
+	  /* insert the override into a sorted list of refinement levels */
           oi = list_first (ol);
           oprev = NULL;
           while (oi) {
@@ -2870,14 +2872,33 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
   }
   /* apply overrides in refinement order */
   if (ol) {
-     for (listitem_t *oi = list_first (ol); oi; oi = list_next (oi)) {
-       act_refine *ri = (act_refine *) list_value (oi);
-       refine_override *rl = ri->overrides; 
+    for (listitem_t *oi = list_first (ol); oi; oi = list_next (oi)) {
+      act_refine *ri = (act_refine *) list_value (oi);
+      refine_override *rl = ri->overrides;
+
       while (rl) {
-          b->updateInstType (rl->ids, rl->it);
-          rl = rl->next;
-       }
-     }
+	b->updateInstType (rl->ids, rl->it, false);
+	rl = rl->next;
+      }
+
+      /* also propagate the refinement to the bodies of the earlier
+	 refinement bodies! */
+
+      /** XXX: this doesn't correctly handle nested refinement blocks **/
+      if (ri->overrides) {
+	for (listitem_t *op = list_first (ol); op != oi; op = list_next (op)) {
+	  act_refine *rp = (act_refine *) list_value (op);
+	  rl = ri->overrides;
+	  Assert (rp->nsteps <= ActNamespace::Act()->getRefSteps(), "What?");
+	  ActNamespace::Act()->decRefSteps (rp->nsteps);
+	  while (rl) {
+	    rp->b->updateInstType (rl->ids, rl->it, true);
+	    rl = rl->next;
+	  }
+	  ActNamespace::Act()->incRefSteps (rp->nsteps);
+	}
+      }
+    }
   }
 }
 
