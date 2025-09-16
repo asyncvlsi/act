@@ -277,21 +277,33 @@ _lookup_binding (act_inline_table *Hs,
 	  int array_off = it->arrayInfo()->Offset (deref);
 	  Assert (array_off != -1, "Out of bounds?");
 	  rv.u.val = bval.u.arr[array_off];
-	  if (rv.u.val->type == E_VAR) {
-	    rv.is_just_id = 1;
+	  if (err && (rv.u.val == NULL)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Access to `%s", name);
+	    deref->Print (stderr);
+	    fprintf (stderr, "' has NULL binding.\n");
+	    fatal_error ("Uninitialized fields for `%s'.", name);
+	  }
+	  else if (rv.u.val) {
+	    if (rv.u.val->type == E_VAR) {
+	      rv.is_just_id = 1;
+	    }
 	  }
 	}
       }
       else {
-	// either simple ID access or structure access
+	// either simple ID access or structure access or array access
 	rv = bval;
 	if (!bval.isSimple()) {
+	  int tot_sz;
 	  Assert (sz == -1 || bval.struct_count == sz, "What?");
 	  Assert (array_sz == -1 || bval.array_sz == array_sz, "What?!");
-	  MALLOC (rv.u.arr, Expr *,
-		  (sz == -1 ? 1 : bval.struct_count)*
-		  (array_sz == -1 ? 1 : bval.array_sz));
-	  for (int i=0; i < sz; i++) {
+
+	  tot_sz = (sz == -1 ? 1 : bval.struct_count)*
+	    (array_sz == -1 ? 1 : bval.array_sz);
+
+	  MALLOC (rv.u.arr, Expr *, tot_sz);
+	  for (int i=0; i < tot_sz; i++) {
 	    rv.u.arr[i] = bval.u.arr[i];
 	    if (err) {
 	      if (rv.u.arr[i] == NULL) {
@@ -396,7 +408,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
   update.Print (stdout);
   printf ("\n");
 #endif
-  
+
   Assert (xit, "What?");
   xd = NULL;
 
@@ -421,11 +433,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 
   hash_bucket_t *b;
   
-  /* find partial or total update, and update entry in the hash table! 
+  /* find partial or total update, and update entry in the hash table!
      tmp is the FULL structure binding.
      if id->Rest() then we need to do a partial assignment.
    */
   b = hash_lookup (Hs->state, id->getName());
+
   if (!b) {
     act_inline_value lv, bindv;
     lv = _lookup_binding (Hs, id->getName(), id->arrayInfo(), NULL, 0);
@@ -468,7 +481,6 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 	for (int i=0; i < sz*(bindv.is_array ? bindv.array_sz : 1); i++) {
 	  bindv.u.arr[i] = NULL;
 	}
-
 #if 0
 	printf ("| ");
 	bindv.Print (stdout);
@@ -515,12 +527,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 					   id->arrayInfo(), NULL, 0);
 
 #if 0
-    printf (" >> update scenario:\n ");
-    printf ("   >> orig: ");
-    resv.Print (stdout);
-    printf ("\n   >>> update: ");
-    update.Print (stdout);
-    printf ("\n");
+  printf (" >> update scenario:\n ");
+  printf ("   >> orig: ");
+  resv.Print (stdout);
+  printf ("\n   >>> update: ");
+  update.Print (stdout);
+  printf ("\n");
 #endif
 
   if (id->Rest()) {
@@ -585,7 +597,13 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
       }
       else {
 	if (resv.isSimple()) {
-	  resv.elaborateStructId (xd, xit->arrayInfo());
+	  if (xd) {
+	    resv.elaborateStructId (xd, xit->arrayInfo());
+	  }
+	  else {
+	    // we need to get the original array binding
+	    resv = _lookup_binding (Hs, id->getName(), NULL, NULL, 0);
+	  }
 	}
 	int array_off = 0;
 	if (deref) {
@@ -651,8 +669,8 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
   printf ("    ==> final binding is: ");
   iv->Print (stdout);
   printf ("\n");
-#endif  
-	  
+#endif
+
   b->v = iv;
   FREE (widths);
 }
@@ -1172,7 +1190,6 @@ void act_inline_value::Print (FILE *fp)
 void act_inline_value::elaborateStructId (Data *d, Array *a)
 {
   Assert (isSimple(), "hmm");
-  Assert (is_struct, "What?");
   
   ActId **fields;
   ActId *baseid;
@@ -1180,18 +1197,21 @@ void act_inline_value::elaborateStructId (Data *d, Array *a)
   int sz;
 
   if (d) {
+    Assert (is_struct, "What?");
     int *types;
     d->getStructCount (&nb, &ni);
     sz = ni + nb;
     fields = d->getStructFields (&types);
     FREE (types);
+    Assert (getVal()->type == E_VAR, "Hmm");
+    baseid = (ActId *)getVal()->u.e.l;
   }
   else {
+    Assert (!is_struct, "What?");
     sz = 1;
     fields = NULL;
+    baseid = NULL;
   }
-  Assert (getVal()->type == E_VAR, "Hmm");
-  baseid = (ActId *)getVal()->u.e.l;
 
   if (a) {
     is_array = 1;
@@ -1217,21 +1237,26 @@ void act_inline_value::elaborateStructId (Data *d, Array *a)
     }
 
     for (int i=0; i < sz; i++) {
-      ActId *varnew;
-      NEW (u.arr[arr*sz + i], Expr);
-      u.arr[arr*sz + i]->type = E_VAR;
-      u.arr[arr*sz + i]->u.e.r = NULL;
-      varnew = baseid->Clone();
-      if (fields) {
-	varnew->Append (fields[i]);
+      if (baseid) {
+	ActId *varnew;
+	NEW (u.arr[arr*sz + i], Expr);
+	u.arr[arr*sz + i]->type = E_VAR;
+	u.arr[arr*sz + i]->u.e.r = NULL;
+	varnew = baseid->Clone();
+	if (fields) {
+	  varnew->Append (fields[i]);
+	}
+	varnew->setArray (newa);
+	u.arr[arr*sz + i]->u.e.l = (Expr *) varnew;
       }
-      varnew->setArray (newa);
-      u.arr[arr*sz + i]->u.e.l = (Expr *) varnew;
+      else {
+	u.arr[arr*sz + i] = NULL;
+      }
     }
   }
   if (fields) {
     FREE (fields);
   }
-  Assert (!isSimple(), "Hmm{");
+  Assert (!isSimple(), "Hmm!");
   Assert (isValid(), "Check");
 }

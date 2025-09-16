@@ -1,0 +1,67 @@
+namespace std {
+namespace gates {
+
+
+/* instances */
+
+/* connections */
+}
+namespace channel {
+
+
+/* instances */
+
+/* connections */
+}
+namespace data {
+
+
+/* instances */
+
+/* connections */
+}
+namespace bit {
+
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+function popcount_32_4 (int<2> x) : int<1>;
+
+defproc test ()
+{
+
+/* instances */
+int<2> x;
+
+/* connections */
+chp {
+x:=int(int(int(x,2)>>0x0,1)+int(int(x,2)>>0x1,1),1)
+}
+}
+
+function popcount_32_4 (int<2> x) : int<1>
+{
+
+/* instances */
+int<1> a[2];
+
+/* connections */
+chp {
+a[0]:=x{0x0},a[1]:=x{0x1};self:=a[0]+a[1]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

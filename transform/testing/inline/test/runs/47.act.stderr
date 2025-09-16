@@ -1,0 +1,4 @@
+Access to `a[0]' has NULL binding.
+FATAL: Uninitialized fields for `a'.
+In expanding popcount<2> (47.act:3)
+In expanding test<> (47.act:13)

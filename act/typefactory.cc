@@ -1623,12 +1623,6 @@ static void expr_freefn (void *key)
   return;
 }
   
-static void expr_printfn (FILE *fp, void *key)
-{
-
-}
-
-
 Expr *TypeFactory::NewExpr (Expr *x)
 {
   if (!x) return NULL;

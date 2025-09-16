@@ -1,0 +1,21 @@
+import std;
+
+template<pint N>
+function popcount (int<N> x) : int<std::ceil_log2(N)>
+{
+  int<1> a[N];
+  chp {
+   (,i:N:a[i] := x{i});
+   self := (+ i : N : a[i])
+   }
+}
+
+defproc test()
+{
+   int<2> x;
+   chp {
+    x := popcount<2>(x)
+   }
+}
+
+test t;
