@@ -1,7 +1,17 @@
-import std;
+export function ceil_log2 (pint a) : pint
+{
+  pint i;
+  pint M;
+  chp {
+     i := 0;
+     M := a-1;
+    *[ M > 0 -> i := i + 1; M := M/2 ];
+     self := i
+  }
+}
 
 template<pint N>
-function popcount (int<N> x) : int<std::ceil_log2(N)>
+function popcount (int<N> x) : int<ceil_log2(N)>
 {
   int<1> a[N];
   chp {
