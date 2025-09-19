@@ -136,6 +136,35 @@ int ActCHPFuncInline::run (Process *p)
   return ActPass::run (p);
 }
 
+void ActCHPFuncInline::_inline_array (list_t *l, Array *a)
+{
+  if (!a->isExpanded()) {
+    return;
+  }
+  if (!a->isDeref()) {
+    return;
+  }
+  for (int i=0; i < a->nDims(); i++) {
+    if (a->isDynamicDeref (i)) {
+      Expr *e = a->getDeref (i);
+      act_inline_value iv = _inline_funcs (l, e);
+      Assert (iv.isSimple(), "Hmm.");
+      a->setDeref (i, iv.getVal ());
+    }
+  }
+}
+
+void ActCHPFuncInline::_inline_idcheck (list_t *l, ActId *id)
+{
+  while (id) {
+    if (id->arrayInfo()) {
+      // in-place update of arrayInfo
+      _inline_array (l, id->arrayInfo());
+    }
+    id = id->Rest();
+  }
+}
+
 act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
 {
   Expr *tmp;
@@ -218,6 +247,7 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
     break;
 
   case E_VAR:
+    _inline_idcheck (l, (ActId *) e->u.e.l);
     retv.is_just_id = 1;
     break;
 
@@ -556,6 +586,8 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	is_struct = 1;
       }
 
+      _inline_idcheck (l, c->u.comm.chan);
+
       if (!is_struct) {
 	act_inline_value val = _inline_funcs (l, c->u.comm.e);
 	Assert (val.isSimple(), "Hmm");
@@ -662,6 +694,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
   case ACT_CHP_ASSIGN:
     {
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
+
+      _inline_idcheck (l, c->u.assign.id);
+      
       if (TypeFactory::isStructure (it)) {
 	if (c->u.assign.e->type == E_VAR) {
 	  /* nothing to be done here */

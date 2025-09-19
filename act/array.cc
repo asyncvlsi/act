@@ -699,6 +699,19 @@ int Array::isDynamicDeref ()
   return 0;
 }
 
+int Array::isDynamicDeref (int idx)
+{
+  if (!expanded) {
+    fatal_error ("Array::isDynamicDeref() should only be called for expanded arrays");
+  }
+  if (!isDeref()) {
+    return 0;
+  }
+  Assert (0 <= idx && idx < dims, "Invalid idx");
+  if (r[idx].u.ex.isrange == 2) return 1;
+  return 0;
+}
+
 
 /*------------------------------------------------------------------------
  * Print out array

@@ -350,6 +350,7 @@ class Array {
    * @return 1 if this is a dynamic de-reference, 0 otherwise
    */
   int isDynamicDeref ();
+  int isDynamicDeref (int idx);
 
   /**
    * Must be called on an expanded array that is in fact an array

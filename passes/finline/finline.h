@@ -51,6 +51,8 @@ private:
   void _apply_complex_inlines (list_t *, Expr *);
 
   void _structure_assign (act_chp_lang_t *c);
+  void _inline_idcheck (list_t *, ActId *);
+  void _inline_array (list_t *, Array *a);
 
   int _useidx;
 };

@@ -1,0 +1,32 @@
+defproc test ();
+function addone (int<32> x) : int<32>;
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+int<32> x[4];
+
+/* connections */
+chp {
+x[int(int(y,32)+1,32)]:=int(int(y,32)+0x1,32)
+}
+}
+
+function addone (int<32> x) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x+0x1
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

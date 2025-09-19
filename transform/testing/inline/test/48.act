@@ -1,0 +1,19 @@
+function addone (int x) : int
+{ 
+  chp {
+    self := x + 1
+  }
+}
+
+
+defproc test ()
+{
+  int x[4];
+  int y;
+
+  chp {
+    x[addone(y)] := addone (y)
+  }
+}
+
+test t;
