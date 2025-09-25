@@ -672,33 +672,46 @@ static Expr *_expr_expand (int *width, Expr *e,
       Expr *w = e->u.fn.r;
       /*-- pure pre-ex dup --*/
       ret->u.fn.s = e->u.fn.s;
+      ret->u.fn.r = NULL;
 
       if (um->isBuiltinMacro()) {
 	int dummy;
 	if (um->isBuiltinStructMacro ()) {
-	  if (w) {
+	  if (w && w->type == E_GT) {
 	    NEW (ret->u.fn.r, Expr);
-	    ret->u.fn.r->type = w->type;
-	    ret->u.fn.r->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
 	    ret->u.fn.r->u.e.r = NULL;
-	    // we've either copied the first argument or the
-	    // templates!
-	    w = w->u.e.r;
-	    tmp = ret->u.fn.r;
+	    ret->u.fn.r->type = E_GT;
+	    w = e->u.fn.r->u.e.l;
+	    prev = NULL;
 	    while (w) {
-	      Assert (w->type == E_LT, "What?");
-	      NEW (tmp->u.e.r, Expr);
-	      tmp = tmp->u.e.r;
-	      tmp->u.e.r = NULL;
-	      tmp->type = E_LT;
+	      NEW (tmp, Expr);
+	      tmp->type = w->type;
 	      tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	      tmp->u.e.r = NULL;
+	      if (!prev) {
+		ret->u.fn.r->u.e.l = tmp;
+	      }
+	      else {
+		prev->u.e.r = tmp;
+	      }
+	      prev = tmp;
 	      w = w->u.e.r;
 	    }
 	  }
+	  w = e->u.fn.r;
+	  if (w && w->type == E_GT) {
+	    w = w->u.e.r;
+	  }
+	  prev = NULL;
+	  NEW (tmp, Expr);
+	  tmp->type = w->type;
+	  tmp->u.e.l = _expr_expand (&dummy, w->u.e.l, ns, s, flags);
+	  tmp->u.e.r = NULL;
+	  if (e->u.fn.r->type == E_GT) {
+	    ret->u.fn.r->u.e.r = tmp;
+	  }
 	  else {
-	    // this should not happen... but since this is predup this
-	    // could be before any checks are done
-	    ret->u.fn.r = NULL;
+	    ret->u.fn.r = tmp;
 	  }
 	}
 	else {
