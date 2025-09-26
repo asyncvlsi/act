@@ -733,9 +733,9 @@ void BigInt::_add (const BigInt &b, int cin)
     if (isDynamic()) {
       _adjlen (b.len);
       for (i=len; i < b.len; i++) {
-        u.v[i] = 0;
+	_setVal (i, 0);
         if (sa) {
-          u.v[i] = ~u.v[i];
+	  _setVal (i, ~getVal (i));
         }
       }
       len = b.len;
@@ -847,9 +847,9 @@ BigInt &BigInt::operator-=(const BigInt &b)
     if (isDynamic()) {
       _adjlen (b.len);
       for (i=len; i < b.len; i++) {
-        u.v[i] = 0;
+	_setVal (i, 0);
         if (sa) {
-          u.v[i] = ~u.v[i];
+	  _setVal (i, ~getVal (i));
         }
       }
       if (sa) {  signExtend(); }

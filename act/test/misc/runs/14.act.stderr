@@ -1,0 +1,4 @@
+In expanding weird (14.act:1)
+In expanding ::<Global>
+Error on or near line number 4.
+FATAL: int() operator requires a non-negative constant expression for the second argument

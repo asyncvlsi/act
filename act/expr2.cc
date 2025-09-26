@@ -2222,10 +2222,17 @@ static Expr *_expr_expand (int *width, Expr *e,
 	*width = 1;
       }
       else {
-	ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s, flags);
+	// bitwidth amount is a pint expression
+	ret->u.e.r = _expr_expand (&lw, e->u.e.r, ns, s,
+				   flags & ~ACT_EXPR_EXFLAG_CHPEX);
 	if (expr_is_a_const (ret->u.e.l) && expr_is_a_const (ret->u.e.r)) {
 	  BigInt *l;
 	  int _width = ret->u.e.r->u.ival.v;
+
+	  if ((signed)ret->u.e.r->u.ival.v < 0) {
+	     act_error_ctxt (stderr);
+	     fatal_error ("int() operator requires a non-negative constant expression for the second argument");
+	  }
 
 	  if (ret->u.e.l->u.ival.v_extra) {
 	    l = (BigInt *)ret->u.e.l->u.ival.v_extra;
@@ -2257,6 +2264,10 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fatal_error ("int() operator requires a constant expression for the second argument");
 	}
 	else {
+          if (((signed)ret->u.e.r->u.ival.v) < 0) {
+	     act_error_ctxt (stderr);
+	     fatal_error ("int() operator requires a non-negative constant expression for the second argument");
+          }
 	  *width = ret->u.e.r->u.ival.v;
 	}
       }
