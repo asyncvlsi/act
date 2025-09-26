@@ -2837,7 +2837,20 @@ static bool _expr_globalid_needsfix (Expr *e,
 
   case E_ENUM_CONST:
     break;
+
+  case E_BITSLICE:
+    if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
+      return true;
+    }
+    EXP_CHECK(e->u.e.r);
+    break;
+
+  case E_STRUCT_REF:
+    EXP_CHECK(e->u.e.l);
+    EXP_CHECK(e->u.e.r);
+    break;
     
+  case E_USERMACRO2:
   default:
     fatal_error ("Unknown expression type (%d)!", e->type);
     break;
@@ -2850,12 +2863,6 @@ static bool _expr_globalid_needsfix (Expr *e,
 static Expr *_expr_globalid_dofix (Expr *e,
 				   ActNamespace *cur, ActNamespace *orig)
 {
-  Expr *ret, *te;
-  ActId *xid;
-  Expr *tmp;
-  int pc;
-  int lw, rw;
-  
   if (!e) return NULL;
 
 #define EXP_CHECK(x)  if (x) { x = _expr_globalid_dofix (x, cur, orig); }
@@ -2999,9 +3006,20 @@ static Expr *_expr_globalid_dofix (Expr *e,
 
   case E_ENUM_CONST:
     break;
-    
+
+  case E_BITSLICE:
+    e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    EXP_CHECK(e->u.e.r);
+    break;
+
+  case E_STRUCT_REF:
+    EXP_CHECK(e->u.e.l);
+    EXP_CHECK(e->u.e.r);
+    break;
+
+  case E_USERMACRO2:
   default:
-    fatal_error ("Unknown expression type (%d)!", e->type);
+    fatal_error ("Unknown expression type (%d) we know %d!", e->type);
     break;
   }
   return e;
