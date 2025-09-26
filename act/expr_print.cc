@@ -2122,7 +2122,24 @@ Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
       if (u != um->Parent ()) {
 	e->u.fn.s = (char *) u->getMacro (um->getName());
 	if (um->isBuiltinMacro()) {
-	  Assert (0, "FIXME builtinmacros-update");
+	  if (um->isBuiltinStructMacro()) {
+	    Expr *tmp;
+	    if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	      tmp = e->u.fn.r->u.e.l;
+	      while (tmp) {
+		EXP_UPDATE (tmp->u.e.l);
+		tmp = tmp->u.e.r;
+	      }
+	      tmp = e->u.fn.r->u.e.r;
+	    }
+	    else {
+	      tmp = e->u.fn.r;
+	    }
+	    EXP_UPDATE (tmp->u.e.l);
+	  }
+	  else {
+	    EXP_UPDATE (e->u.fn.r);
+	  }
 	}
 	else {
 	  Expr *tmp;
@@ -2787,7 +2804,24 @@ static bool _expr_globalid_needsfix (Expr *e,
       UserMacro *um = (UserMacro *)e->u.fn.s;
       UserDef *u = um->Parent ();
       if (um->isBuiltinMacro()) {
-	Assert (0, "FIXME builtinmacros-update");
+	if (um->isBuiltinStructMacro()) {
+	  Expr *tmp;
+	  if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	    tmp = e->u.fn.r->u.e.l;
+	    while (tmp) {
+	      EXP_CHECK (tmp->u.e.l);
+	      tmp = tmp->u.e.r;
+	    }
+	    tmp = e->u.fn.r->u.e.r;
+	  }
+	  else {
+	    tmp = e->u.fn.r;
+	  }
+	  EXP_CHECK (tmp->u.e.l);
+	}
+	else {
+	  EXP_CHECK (e->u.fn.r);
+	}
       }
       else {
 	Expr *tmp;
@@ -2958,7 +2992,24 @@ static Expr *_expr_globalid_dofix (Expr *e,
       UserMacro *um = (UserMacro *)e->u.fn.s;
       UserDef *u = um->Parent ();
       if (um->isBuiltinMacro()) {
-	Assert (0, "FIXME builtinmacros-update");
+	if (um->isBuiltinStructMacro()) {
+	  Expr *tmp;
+	  if (e->u.fn.r && e->u.fn.r->type == E_GT) {
+	    tmp = e->u.fn.r->u.e.l;
+	    while (tmp) {
+	      EXP_CHECK (tmp->u.e.l);
+	      tmp = tmp->u.e.r;
+	    }
+	    tmp = e->u.fn.r->u.e.r;
+	  }
+	  else {
+	    tmp = e->u.fn.r;
+	  }
+	  EXP_CHECK (tmp->u.e.l);
+	}
+	else {
+	  EXP_CHECK (e->u.fn.r);
+	}
       }
       else {
 	Expr *tmp;
