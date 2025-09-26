@@ -1111,3 +1111,58 @@ InstType *InstType::refineBaseType (Type *update)
     return x;
   }
 }
+
+InstType *InstType::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  Array *na = a;
+
+  if (isExpanded()) return this;
+
+  if (a) {
+    na = a->fixGlobalParams (cur, orig);
+  }
+
+  inst_param *nu = u;
+
+  for (int i=0; i < nt; i++) {
+    if (nu[i].isatype) {
+      InstType *ttnew = nu[i].u.tt->fixGlobalParams (cur, orig);
+      if (ttnew != nu[i].u.tt) {
+	if (nu == u) {
+	  MALLOC (nu, inst_param, nt);
+	  for (int j=0; j < nt; j++) {
+	    nu[j] = u[j];
+	  }
+	}
+	nu[i].u.tt = ttnew;
+      }
+    }
+    else {
+      AExpr *newtp;
+      if (nu[i].u.tp) {
+	newtp = nu[i].u.tp->fixGlobalParams (cur, orig);
+      }
+      else {
+	newtp = NULL;
+      }
+      if (newtp != nu[i].u.tp) {
+	if (nu == u) {
+	  MALLOC (nu, inst_param, nt);
+	  for (int j=0; j < nt; j++) {
+	    nu[j] = u[j];
+	  }
+	}
+	nu[i].u.tp = newtp;
+      }
+    }
+  }
+
+  if (nu != u || na != a) {
+    InstType *ret = new InstType (s, t, temp_type);
+    ret->a = na;
+    ret->u = nu;
+    ret->nt = nt;
+    return ret;
+  }
+  return this;
+}

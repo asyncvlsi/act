@@ -225,3 +225,25 @@ void *lang_extern_clone (const char *nm, void *v, ActNamespace *root,
   }
   return (*f) (v, root, clone);
 }
+
+void lang_extern_fixglobals (const char *nm, void *v, ActNamespace *cur,
+			      ActNamespace *orig)
+{
+  char buf[1024];
+  struct act_extern_language_header *h;
+
+  if (!v) return;
+
+  h = (struct act_extern_language_header *)v;
+  Assert (h->name, "Hmm...");
+  Assert (strcmp (nm, h->name) == 0, "What!");
+  snprintf (buf, 1024, "fixglobals_%s<>", h->name);
+  void *(*f) (void *, ActNamespace *, ActNamespace *) =
+    (void *(*) (void *, ActNamespace *, ActNamespace *))
+    act_find_dl_func (_ext_lang, ActNamespace::Global(), buf);
+  if (!f) {
+    warning ("external language %s: fixglobals called but not found.", nm);
+    return;
+  }
+  (*f) (v, cur, orig);
+}

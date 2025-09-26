@@ -690,6 +690,11 @@ void *lang_extern_expand (const char *nm, void *v, ActNamespace *ns, Scope *s);
 void *lang_extern_clone (const char *nm, void *v, ActNamespace *root, ActNamespace *newns);
 
 /**
+ * External language handling: fix globals
+ */
+void lang_extern_fixglobals (const char *nm, void *v, ActNamespace *cur, ActNamespace *orig);
+
+/**
  * @class act_languages
  *
  * @brief This holds all the sub-langugae bodies in a
@@ -848,12 +853,16 @@ act_prs *prs_expand (act_prs *, ActNamespace *, Scope *);
 
 act_prs *prs_dup (act_prs *, ActNamespace *, ActNamespace *);
 
+void prs_fixglobals (act_prs *, ActNamespace *, ActNamespace *);
+
 /** 
  * Expand a spec { ... } block
  */
 act_spec *spec_expand (act_spec *, ActNamespace *, Scope *);
 
 act_spec *spec_dup (act_spec *, ActNamespace *, ActNamespace *);
+
+void spec_fixglobals (act_spec *, ActNamespace *, ActNamespace *);
 
 /** 
  * Expand a refine { .. } block
@@ -866,11 +875,19 @@ void refine_expand (act_refine *, ActNamespace *, Scope *);
 act_refine *refine_dup (act_refine *, ActNamespace *, ActNamespace *);
 
 /**
+ * Fix globals
+ */
+void refine_fixglobals (act_refine *, ActNamespace *, ActNamespace *);
+
+
+/**
  * Expand a sizing { ... } block
  */
 act_sizing *sizing_expand (act_sizing *, ActNamespace *, Scope *);
 
 act_sizing *sizing_dup (act_sizing *, ActNamespace *, ActNamespace *);
+
+void sizing_fixglobals (act_sizing *, ActNamespace *, ActNamespace *);
 
 /**
  * Expand a dataflow { ... } block
@@ -878,6 +895,8 @@ act_sizing *sizing_dup (act_sizing *, ActNamespace *, ActNamespace *);
 act_dataflow *dflow_expand (act_dataflow *, ActNamespace *, Scope *);
 
 act_dataflow *dflow_dup (act_dataflow *, ActNamespace *, ActNamespace *);
+
+void dflow_fixglobals (act_dataflow *, ActNamespace *, ActNamespace *);
 
 /**
  * Expand a chp { ... } block. Also used for hse { ... }
@@ -905,6 +924,10 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
  */
 act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns);
 
+/**
+ * Fix global namespace Ids
+ */
+void chp_fixglobals (act_chp *c, ActNamespace *orig, ActNamespace *newns);
 
 /**
  * Expansion helper for instance attributes

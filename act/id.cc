@@ -2227,3 +2227,128 @@ static void idfree (void *k)
 {
 }
 
+
+ActId *ActId::_qualifyGlobals (ActNamespace *cur, ActNamespace *orig)
+{
+  ActId *ret, *nnext;
+  Array *aclone;
+
+  if (a) {
+    aclone = a->fixGlobalParams (cur, orig);
+  }
+  else {
+    aclone = NULL;
+  }
+
+  if (next) {
+    nnext = next->_qualifyGlobals (cur, orig);
+  }
+  else {
+    nnext = NULL;
+  }
+  
+  if (nnext != next || a != aclone) {
+    if (next && nnext == next) {
+      nnext = next->Clone ();
+    }
+    if (a && a == aclone) {
+      aclone = a->Clone ();
+    }
+    ret = new ActId (string_char (name), aclone);
+    ret->next = nnext;
+    return ret;
+  }
+  return this;
+}
+
+bool ActId::_isQualifyGlobals (ActNamespace *cur, ActNamespace *orig)
+{
+  if (a) {
+    Array *aclone;
+    aclone = a->fixGlobalParams (cur, orig);
+    if (aclone != a) {
+      delete aclone;
+      return true;
+    }
+  }
+  if (next) {
+    return next->_isQualifyGlobals (cur, orig);
+  }
+  return false;
+}
+
+ActId *ActId::qualifyGlobals (ActNamespace *cur, ActNamespace *orig)
+{
+  ActId *ret;
+
+  if (isNamespace()) {
+    return this;
+  }
+
+  Scope *sorig = orig->CurScope ();
+  Scope *cursc = cur->CurScope ();
+
+  while (sorig && !sorig->Lookup (getName())) {
+    sorig = sorig->Parent ();
+  }
+
+  if (!sorig) {
+    // it is in the local scaope, so we're good
+    return _qualifyGlobals (cur, orig);
+  }
+  
+  Assert (sorig->getNamespace(), "What is going on?");
+
+  while (cursc && !cursc->Lookup (getName())) {
+    cursc = cursc->Parent ();
+  }
+
+  ret = _qualifyGlobals (cur, orig);
+
+  if (!cursc || cursc != sorig) {
+    // we need to add a namespace qualifier
+    ActId *tmp;
+    char *nm = sorig->getNamespace()->Name (true);
+    tmp = new ActId (nm);
+    FREE (nm);
+
+    if (ret == this) {
+      tmp->next = Clone ();
+    }
+    else {
+      tmp->next = ret;
+    }
+    return tmp;
+  }
+  return ret;
+}
+
+bool ActId::isQualifyGlobals (ActNamespace *cur, ActNamespace *orig)
+{
+  if (isNamespace()) {
+    return false;
+  }
+
+  Scope *sorig = orig->CurScope ();
+  Scope *cursc = cur->CurScope ();
+
+  while (sorig && !sorig->Lookup (getName())) {
+    sorig = sorig->Parent ();
+  }
+
+  if (!sorig) {
+    return _isQualifyGlobals (cur, orig);
+  }
+
+  Assert (sorig->getNamespace(), "What is going on?");
+
+  while (cursc && !cursc->Lookup (getName())) {
+    cursc = cursc->Parent ();
+  }
+
+  if (!cursc || cursc != sorig) {
+    return true;
+  }
+
+  return _isQualifyGlobals (cur, orig);
+}

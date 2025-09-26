@@ -147,6 +147,17 @@ class ActId {
    * @return a freshly allocated ActID
    */
   ActId *Clone (ActNamespace *orig = NULL, ActNamespace *newns = NULL);
+
+  /**
+   * If the ID can't be found in the current namespace but can be
+   * found in the original namespace, add the namespace qualifier to the
+   * ID and return a new one.
+   * @param cur is the current namespace
+   * @param orig is the original namespace
+   * @return the updated ID, or the unmodified pointer
+   */
+  ActId *qualifyGlobals (ActNamespace *cur, ActNamespace *orig);
+  bool isQualifyGlobals (ActNamespace *cur, ActNamespace *orig);
   
   void moveNS (ActNamespace *orig = NULL, ActNamespace *newns = NULL);
 
@@ -402,6 +413,12 @@ class ActId {
 
   static struct cHashtable *idH; /**< used to canonicalize ID pointers
 				    post-expansion */
+
+
+  // this is used for the remaining of the type, i.e. the "."
+  // fields. Here we only check arrays.
+  ActId *_qualifyGlobals (ActNamespace *cur, ActNamespace *orig);
+  bool _isQualifyGlobals (ActNamespace *cur, ActNamespace *orig);
 };
 
 

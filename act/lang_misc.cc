@@ -1037,6 +1037,28 @@ static void _clone_sz_dir (act_sizing_directive *tgt,
   }
 }
 
+static void _fixglobals_sz_dir (act_sizing_directive *src,
+				ActNamespace *cur,
+				ActNamespace *orig)
+{
+  if (!src->loop_id) {
+    src->id = src->id->qualifyGlobals (cur, orig);
+    src->eup = expr_globalids (src->eup, cur, orig);
+    src->edn = expr_globalids (src->edn, cur, orig);
+    src->upfolds = expr_update (src->upfolds, cur, orig);
+    src->dnfolds = expr_update (src->dnfolds, cur, orig);
+  }
+  else {
+    src->lo = expr_globalids (src->lo, cur, orig);
+    src->hi = expr_globalids (src->hi, cur, orig);
+    if (A_LEN (src->d) > 0) {
+      for (int i=0; i < A_LEN (src->d); i++) {
+	_fixglobals_sz_dir (&src->d[i], cur, orig);
+      }
+    }
+  }
+}
+
 
 act_sizing *sizing_dup (act_sizing *sz, ActNamespace *orig, ActNamespace *newns)
 {
@@ -1072,6 +1094,25 @@ act_sizing *sizing_dup (act_sizing *sz, ActNamespace *orig, ActNamespace *newns)
     }
   }
   return ret;
+}
+
+void sizing_fixglobals (act_sizing *sz, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!sz) return;
+  if (sz->p_specified) {
+    sz->p_n_mode_e = expr_globalids (sz->p_n_mode_e, cur, orig);
+  }
+  if (sz->unit_n_specified) {
+    sz->unit_n_e = expr_globalids (sz->unit_n_e, cur, orig);
+  }
+  if (sz->leak_adjust_specified) {
+    sz->leak_adjust_e = expr_globalids (sz->leak_adjust_e, cur, orig);
+  }
+  if (A_LEN (sz->d) > 0) {
+    for (int i=0; i < A_LEN (sz->d); i++) {
+      _fixglobals_sz_dir (&sz->d[i], cur, orig);
+    }
+  }
 }
 
 act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
@@ -1122,6 +1163,29 @@ act_spec *spec_dup (act_spec *s, ActNamespace *orig, ActNamespace *newns)
     s = s->next;
   }
   return ret;
+}
+
+void spec_fixglobals (act_spec *s, ActNamespace *cur, ActNamespace *orig)
+{
+  while (s) {
+    if (ACT_SPEC_ISTIMING (s)) {
+      for (int i=0; i < s->count-1; i++) {
+        if (s->ids[i]) {
+	  s->ids[i] = s->ids[i]->qualifyGlobals (cur, orig);
+	}
+      }
+      if (s->ids[s->count-1]) {
+	s->ids[s->count-1] =
+	  (ActId *) expr_globalids ((Expr *)s->ids[s->count-1], cur, orig);
+      }
+    }
+    else {
+      for (int i=0; i < s->count; i++) {
+	s->ids[i] = s->ids[i]->qualifyGlobals (cur, orig);
+      }
+    }
+    s = s->next;
+  }
 }
 
 
@@ -1233,4 +1297,86 @@ act_dataflow *dflow_dup (act_dataflow *d, ActNamespace *orig,
     ret->order = NULL;
   }
   return ret;
+}
+
+static void _fixglobals_dflow_list (list_t *l,
+				    ActNamespace *cur, ActNamespace *orig)
+{
+  listitem_t *li;
+  for (li = list_first (l); li; li = list_next (li)) {
+    act_dataflow_element *x;
+    x = (act_dataflow_element *) list_value (li);
+    switch (x->t) {
+    case ACT_DFLOW_FUNC:
+      x->u.func.lhs = expr_globalids (x->u.func.lhs, cur, orig);
+      x->u.func.nbufs = expr_globalids (x->u.func.nbufs, cur, orig);
+      if (x->u.func.nbufs) {
+	x->u.func.init = expr_globalids (x->u.func.init, cur, orig);
+      }
+      x->u.func.rhs = x->u.func.rhs->qualifyGlobals (cur, orig);
+      break;
+    case ACT_DFLOW_SPLIT:
+    case ACT_DFLOW_MERGE:
+    case ACT_DFLOW_MIXER:
+    case ACT_DFLOW_ARBITER:
+      if (x->u.splitmerge.guard) {
+	x->u.splitmerge.guard =
+	  x->u.splitmerge.guard->qualifyGlobals (cur, orig);
+      }
+      for (int i=0; i < x->u.splitmerge.nmulti; i++) {
+	x->u.splitmerge.pre_exp[i]->lo =
+	  expr_globalids (x->u.splitmerge.pre_exp[i]->lo, cur, orig);
+	x->u.splitmerge.pre_exp[i]->hi =
+	  expr_globalids (x->u.splitmerge.pre_exp[i]->hi, cur, orig);
+	if (x->u.splitmerge.pre_exp[i]->chanid) {
+	  x->u.splitmerge.pre_exp[i]->chanid =
+	    x->u.splitmerge.pre_exp[i]->chanid->qualifyGlobals (cur, orig);
+	}
+      }
+      if (x->u.splitmerge.single) {
+	x->u.splitmerge.single =
+	  x->u.splitmerge.single->qualifyGlobals (cur, orig);
+      }
+      if (x->u.splitmerge.nondetctrl) {
+	x->u.splitmerge.nondetctrl =
+	  x->u.splitmerge.nondetctrl->qualifyGlobals (cur, orig);
+      }
+      break;
+    case ACT_DFLOW_SINK:
+      x->u.sink.chan = x->u.sink.chan->qualifyGlobals (cur, orig);
+      break;
+
+    case ACT_DFLOW_CLUSTER:
+      _fixglobals_dflow_list (x->u.dflow_cluster, cur, orig);
+      break;
+
+    default:
+      Assert (0, "Why am i here?");
+      break;
+    }
+  }
+}
+
+
+void dflow_fixglobals (act_dataflow *d, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!d) return;
+  listitem_t *li;
+
+  _fixglobals_dflow_list (d->dflow, cur, orig);
+
+  if (d->order) {
+    for (li = list_first (d->order); li; li = list_next (li)) {
+      act_dataflow_order *x;
+      listitem_t *mi;
+      x = (act_dataflow_order *) list_value (li);
+      for (mi = list_first (x->lhs); mi; mi = list_next (mi)) {
+	list_value (mi) = ((ActId *)list_value (mi))->qualifyGlobals (cur,orig);
+      }
+      for (mi = list_first (x->rhs); mi; mi = list_next (mi)) {
+	list_value (mi) = ((ActId *)list_value (mi))->qualifyGlobals (cur,orig);
+      }
+    }
+  }
+  return;
 }

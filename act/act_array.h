@@ -255,7 +255,11 @@ class Array {
   void moveNS (ActNamespace *orig = NULL,
 	       ActNamespace *newns = NULL); ///< moves to new ns
 
-  Array *CloneOne ();		///< only return a deep copy of the current dense range
+  Array *CloneOne ();		///< only return a deep copy of the
+				///current dense range
+
+  Array *fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+  
 
   Array *Reduce();		///< return a deep copy, but elide
 				///dimensions that are derefs
@@ -594,6 +598,9 @@ class AExpr {
 
   AExpr *Clone (ActNamespace *orig = NULL, ActNamespace *newns = NULL); ///< deep copy of array expression
 
+  AExpr *fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+
+  
   /**
    * Return an InstType corresponding to this array expression
    * @param s is the scope

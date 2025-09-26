@@ -1,0 +1,36 @@
+namespace test {
+
+pint X = 1;
+
+export defproc foo(int<X> x)
+{
+  int y;
+  chp {
+    y := 0
+  }
+}
+
+export defproc foo2(int x)
+{
+  int<X> y;
+  int<X+X*2> y2;
+  chp {
+    y := 0 + X
+  }
+}
+
+
+}
+
+
+defproc bar <: test::foo ()
+{
+}
+
+defproc bar2 <: test::foo2 ()
+{
+}
+
+bar2 x1;
+
+bar x2;

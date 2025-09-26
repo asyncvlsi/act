@@ -2899,6 +2899,135 @@ act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns)
   return ret;
 }
 
+static void _chp_fixglobals (act_chp_lang_t *c,
+			     ActNamespace *cur, ActNamespace *orig);
+
+static void _chp_gc_fixglobals (act_chp_gc_t *gc,
+				ActNamespace *cur,
+				ActNamespace *orig)
+{
+  while (gc) {
+    if (gc->id) {
+      gc->lo = expr_globalids (gc->lo, cur, orig);
+      gc->hi = expr_globalids (gc->hi, cur, orig);
+    }
+    gc->g = expr_globalids (gc->g, cur, orig);
+    _chp_fixglobals (gc->s, cur, orig);
+    gc = gc->next;
+  }
+}
+
+void _chp_fixglobals (act_chp_lang_t *c, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!c) return;
+
+  switch (c->type) {
+  case ACT_CHP_COMMALOOP:
+  case ACT_CHP_SEMILOOP:
+    c->u.loop.lo = expr_globalids (c->u.loop.lo, cur, orig);
+    c->u.loop.hi = expr_globalids (c->u.loop.hi, cur, orig);
+    _chp_fixglobals (c->u.loop.body, cur, orig);
+    break;
+    
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    {
+      listitem_t *li;
+      for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+	_chp_fixglobals ((act_chp_lang_t *) list_value (li), cur, orig);
+      }
+    }
+    break;
+
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+    _chp_gc_fixglobals (c->u.gc, cur, orig);
+    break;
+    
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
+    c->u.assign.id = c->u.assign.id->qualifyGlobals (cur, orig);
+    c->u.assign.e = expr_globalids (c->u.assign.e, cur, orig);
+    break;
+    
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    c->u.comm.chan = c->u.comm.chan->qualifyGlobals (cur, orig);
+    c->u.comm.e = expr_globalids (c->u.comm.e, cur, orig);
+    if (c->u.comm.var) {
+      c->u.comm.var = c->u.comm.var->qualifyGlobals (cur, orig);
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+    for (listitem_t *li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *a = (act_func_arguments_t *) list_value (li);
+      if (a->isstring) {
+	//
+      }
+      else {
+	a->u.e = expr_globalids (a->u.e, cur, orig);
+      }
+    }
+    break;
+
+  case ACT_CHP_HOLE: /* to support verification */
+    break;
+    
+  case ACT_CHP_MACRO:
+    c->u.macro.id = c->u.macro.id->qualifyGlobals (cur, orig);
+    if (c->u.macro.rhs) {
+      listitem_t *li;
+      for (li = list_first (c->u.macro.rhs); li; li = list_next (li)) {
+	list_value (li) = expr_globalids ((Expr *)list_value (li), cur, orig);
+      }
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    _chp_fixglobals (c->u.frag.body, cur, orig);
+    if (!c->u.frag.nextlabel) {
+      listitem_t *li;
+      for (li = list_first (c->u.frag.exit_conds); li; li = list_next (li)) {
+	list_value (li) = expr_globalids ((Expr *)list_value (li), cur, orig);
+	li = list_next (li);
+      }
+    }
+    _chp_fixglobals (c->u.frag.next, cur, orig);
+    break;
+    
+  default:
+    fatal_error ("Unknown type");
+    break;
+  }
+  return;
+}
+
+void chp_fixglobals (act_chp *c, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!c) return;
+
+  if (c->vdd) {
+    c->vdd = c->vdd->qualifyGlobals (cur, orig);
+  }
+  if (c->gnd) {
+    c->gnd = c->gnd->qualifyGlobals (cur, orig);
+  }
+  if (c->psc) {
+    c->psc = c->psc->qualifyGlobals (cur, orig);
+  }
+  if (c->nsc) {
+    c->nsc = c->nsc->qualifyGlobals (cur, orig);
+  }
+  _chp_fixglobals (c->c, cur, orig);
+}
+
+
 static act_chp_lang_t *chp_update_bw (act_chp_lang_t *c, Scope *s)
 {
   act_chp_lang_t *ret;

@@ -224,6 +224,13 @@ Expr *expr_expand (Expr *e, ActNamespace *ns, Scope *s, unsigned int flag = 0x2)
 Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns);
 
 /**
+ * Walk through the expression, adding a namespace qualifier for a
+ * global namespace ID if needed
+ */
+Expr *expr_globalids (Expr *e, ActNamespace *cur, ActNamespace *orig);
+int expr_hasglobalids (Expr *e, ActNamespace *cur, ActNamespace *orig);
+
+/**
  * Hash function for expanded expressions
  */
 int expr_getHash (int prev, unsigned long sz, Expr *e);

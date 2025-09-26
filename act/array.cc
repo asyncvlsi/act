@@ -214,9 +214,9 @@ Array *Array::Clone (ActNamespace *orig, ActNamespace *newns)
 
 /*------------------------------------------------------------------------
  *
- *  Array::Clone --
+ *  Array::moveNS --
  *
- *   Deep copy of array
+ *   Deep copy of array, move it to a new namespace
  *
  *------------------------------------------------------------------------
  */
@@ -236,6 +236,26 @@ void Array::moveNS (ActNamespace *orig, ActNamespace *newns)
   }
 }
 
+/*------------------------------------------------------------------------
+ *
+ *  Array::Clone --
+ *
+ *   Deep copy of array
+ *
+ *------------------------------------------------------------------------
+ */
+Array *Array::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  Array *ret;
+
+  if (expanded) {
+    return this;
+  }
+
+  /* XXXX */
+  return this;
+
+}
 
 /*------------------------------------------------------------------------
  *
@@ -2175,3 +2195,5 @@ unsigned int Array::getHash (unsigned int prev, unsigned long sz)
   }
   return prev;
 }
+
+

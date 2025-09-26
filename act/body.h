@@ -132,6 +132,15 @@ class ActBody {
    */
   int getLine () { return _line; }
 
+
+  /**
+   * If a namespace global parameter is used, add the explicit
+   * qualifier to the identifier.
+   * @param cur is the current namespace
+   * @param orig is the original namespace
+   */
+  virtual void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+
 protected:
   int _line; ///< saved away line number information
 
@@ -194,6 +203,11 @@ class ActBody_Inst : public ActBody {
    */
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
 
+  /**
+   * Update namespace globals
+   */
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+
  private:
   InstType *t;   ///< the type
   const char *id; ///< the name of the identifier to be instantiated
@@ -234,6 +248,11 @@ public:
    * @return a deep copy of this body item
    */
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+
+  /**
+   * Update namespace globals
+   */
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
 private:
   const char *inst;
@@ -279,7 +298,7 @@ class ActBody_Conn : public ActBody {
   void Expand (ActNamespace *, Scope *);
 
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
-  
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
   
  private:
   union {
@@ -327,6 +346,8 @@ class ActBody_Loop : public ActBody {
   void Print (FILE *fp);
 
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+  
 
   /**
    * @return the loop body
@@ -450,6 +471,7 @@ class ActBody_Select : public ActBody {
   void Expand (ActNamespace *, Scope *);
 
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   /**
    * @return the list of guarded commands
@@ -477,7 +499,7 @@ public:
   }
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
-
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   ActBody_Select_gc *getGC() { return gc; }
 
@@ -533,6 +555,7 @@ public:
   }
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
 private:
   union {
@@ -607,6 +630,7 @@ public:
   }
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
 private:
   list_t *l;
@@ -734,7 +758,7 @@ class ActBody_Lang : public ActBody {
   void Expand (ActNamespace *, Scope *);
   void Print (FILE *fp);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
-
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   void *getlang() { return lang; }
   enum langtype gettype() { return t; }

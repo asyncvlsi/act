@@ -1125,6 +1125,34 @@ AExpr *AExpr::Clone(ActNamespace *orig, ActNamespace *newns)
   return new AExpr (t, newl, newr);
 }
 
+AExpr *AExpr::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  AExpr *newl, *newr;
+  newl = NULL;
+  newr = NULL;
+  if (l) {
+    if (t != AExpr::EXPR) {
+      newl = l->fixGlobalParams (cur, orig);
+    }
+    else {
+      newl = (AExpr *) expr_globalids ((Expr *) l, cur, orig);
+    }
+  }
+  if (r) {
+    newr = r->fixGlobalParams (cur, orig);
+  }
+  if (l != newl || r != newr) {
+    if (l && l == newl) {
+      newl = l->Clone ();
+    }
+    if (r && r == newr) {
+      newr = r->Clone ();
+    }
+    return new AExpr (t, newl, newr);
+  }
+  return this;
+}
+
 
 AExprstep *AExpr::stepper()
 {
@@ -2648,4 +2676,349 @@ void print_dag_expr (FILE *fp, const Expr *e)
     bufsz *= 2;
     REALLOC (buf, char, bufsz);
   }
+}
+
+
+static bool _expr_globalid_needsfix (Expr *e,
+				     ActNamespace *cur, ActNamespace *orig)
+{
+  Expr *ret, *te;
+  ActId *xid;
+  Expr *tmp;
+  int pc;
+  int lw, rw;
+  
+  if (!e) return false;
+
+#define EXP_CHECK(x)  if (x && _expr_globalid_needsfix (x, cur, orig)) { return true; }
+
+  switch (e->type) {
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    EXP_CHECK (e->u.e.r->u.e.l); // hi
+    EXP_CHECK (e->u.e.r->u.e.r->u.e.l); // lo
+    EXP_CHECK (e->u.e.r->u.e.r->u.e.r); // expr
+    break;
+    
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    EXP_CHECK (e->u.e.l);
+    break;
+    
+  case E_QUERY:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.r);
+
+  case E_COLON:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+
+  case E_BITFIELD:
+    if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
+      return true;
+    }
+    EXP_CHECK (e->u.e.r->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.r);
+    break;
+
+  case E_PROBE:
+    if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
+      return true;
+    }
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+  
+  case E_FUNCTION:
+    {
+      Expr *tmp;
+      tmp = e->u.fn.r;
+      if (tmp && tmp->type == E_GT) {
+	tmp = tmp->u.e.l;
+	while (tmp) {
+	  EXP_CHECK (tmp->u.e.l);
+	  tmp = tmp->u.e.r;
+	}
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
+      while (tmp) {
+	EXP_CHECK (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_USERMACRO:
+    {
+      UserMacro *um = (UserMacro *)e->u.fn.s;
+      UserDef *u = um->Parent ();
+      if (um->isBuiltinMacro()) {
+	Assert (0, "FIXME builtinmacros-update");
+      }
+      else {
+	Expr *tmp;
+	EXP_CHECK (e->u.fn.r->u.e.l);
+	tmp = e->u.fn.r;
+	if (tmp && tmp->type == E_GT) {
+	  tmp = tmp->u.e.l;
+	  while (tmp) {
+	    EXP_CHECK (tmp->u.e.l);
+	    tmp = tmp->u.e.r;
+	  }
+	  tmp = e->u.fn.r->u.e.r;
+	}
+	while (tmp) {
+	  EXP_CHECK (tmp->u.e.l);
+	  tmp = tmp->u.e.r;
+	}
+      }
+    }
+    break;
+      
+  case E_VAR:
+    if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
+      return true;
+    }
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *tmp = e;
+      while (tmp) {
+	EXP_CHECK (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_ENUM_CONST:
+    break;
+    
+  default:
+    fatal_error ("Unknown expression type (%d)!", e->type);
+    break;
+  }
+  return false;
+}
+
+#undef EXP_CHECK
+
+static Expr *_expr_globalid_dofix (Expr *e,
+				   ActNamespace *cur, ActNamespace *orig)
+{
+  Expr *ret, *te;
+  ActId *xid;
+  Expr *tmp;
+  int pc;
+  int lw, rw;
+  
+  if (!e) return NULL;
+
+#define EXP_CHECK(x)  if (x) { x = _expr_globalid_dofix (x, cur, orig); }
+
+  switch (e->type) {
+  case E_ANDLOOP:
+  case E_ORLOOP:
+  case E_PLUSLOOP:
+  case E_MULTLOOP:
+  case E_XORLOOP:
+    EXP_CHECK (e->u.e.r->u.e.l); // hi
+    EXP_CHECK (e->u.e.r->u.e.r->u.e.l); // lo
+    EXP_CHECK (e->u.e.r->u.e.r->u.e.r); // expr
+    break;
+    
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV: 
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+  case E_LT:
+  case E_GT:
+  case E_LE:
+  case E_GE:
+  case E_EQ:
+  case E_NE:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_COMPLEMENT:
+  case E_UMINUS:
+    EXP_CHECK (e->u.e.l);
+    break;
+    
+  case E_QUERY:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.r);
+
+  case E_COLON:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+
+  case E_BITFIELD:
+    e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    EXP_CHECK (e->u.e.r->u.e.l);
+    EXP_CHECK (e->u.e.r->u.e.r);
+    break;
+
+  case E_PROBE:
+    e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    break;
+
+  case E_BUILTIN_INT:
+  case E_BUILTIN_BOOL:
+    EXP_CHECK (e->u.e.l);
+    EXP_CHECK (e->u.e.r);
+    break;
+  
+  case E_FUNCTION:
+    {
+      Expr *tmp;
+      tmp = e->u.fn.r;
+      if (tmp && tmp->type == E_GT) {
+	tmp = tmp->u.e.l;
+	while (tmp) {
+	  EXP_CHECK (tmp->u.e.l);
+	  tmp = tmp->u.e.r;
+	}
+	tmp = e->u.fn.r->u.e.r;
+      }
+      else {
+	tmp = e->u.fn.r;
+      }
+      while (tmp) {
+	EXP_CHECK (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_USERMACRO:
+    {
+      UserMacro *um = (UserMacro *)e->u.fn.s;
+      UserDef *u = um->Parent ();
+      if (um->isBuiltinMacro()) {
+	Assert (0, "FIXME builtinmacros-update");
+      }
+      else {
+	Expr *tmp;
+	EXP_CHECK (e->u.fn.r->u.e.l);
+	tmp = e->u.fn.r;
+	if (tmp && tmp->type == E_GT) {
+	  tmp = tmp->u.e.l;
+	  while (tmp) {
+	    EXP_CHECK (tmp->u.e.l);
+	    tmp = tmp->u.e.r;
+	  }
+	  tmp = e->u.fn.r->u.e.r;
+	}
+	while (tmp) {
+	  EXP_CHECK (tmp->u.e.l);
+	  tmp = tmp->u.e.r;
+	}
+      }
+    }
+    break;
+      
+  case E_VAR:
+    e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    break;
+
+  case E_INT:
+  case E_REAL:
+  case E_TRUE:
+  case E_FALSE:
+  case E_ARRAY:
+  case E_SUBRANGE:
+  case E_SELF:
+  case E_SELF_ACK:
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *tmp = e;
+      while (tmp) {
+	EXP_CHECK (tmp->u.e.l);
+	tmp = tmp->u.e.r;
+      }
+    }
+    break;
+
+  case E_ENUM_CONST:
+    break;
+    
+  default:
+    fatal_error ("Unknown expression type (%d)!", e->type);
+    break;
+  }
+  return e;
+}
+
+
+Expr *expr_globalids (Expr *e, ActNamespace *cur, ActNamespace *orig)
+{
+  if (_expr_globalid_needsfix (e, cur, orig)) {
+    e = expr_predup (e);
+    e = _expr_globalid_dofix (e, cur, orig);
+  }
+  return e;
+}
+
+
+int expr_hasglobalids (Expr *e, ActNamespace *cur, ActNamespace *orig)
+{
+  return _expr_globalid_needsfix (e, cur, orig);
 }

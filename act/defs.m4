@@ -285,6 +285,7 @@ def_or_proc ID
       for (int i=0; i < pp->getNumParams(); i++) {
 	const char *s = pp->getPortName (-(i+1));
 	InstType *st = pp->getPortType (-(i+1));
+	st = st->fixGlobalParams ($0->curns, pp->getns());
 	if ($0->u_p->AddMetaParam (st, s, pp->getDefaultParam(i)) != 1) {
 	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -301,6 +302,7 @@ def_or_proc ID
       for (int i=0; i < pp->getNumPorts(); i++) {
 	const char *s = pp->getPortName (i);
 	InstType *st = pp->getPortType (i);
+	st = st->fixGlobalParams ($0->curns, pp->getns());
 	if ($0->u_p->AddPort (st, s) != 1) {
 	  $e("Duplicate port name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -339,8 +341,11 @@ def_or_proc ID
       UserDef *ux = dynamic_cast <UserDef *> ($0->u_p->getParent()->BaseType());
       /* re-play the body, and copy it in */
       if (ux->getBody()) {
+	ActBody *tmp;
 	$0->scope->playBody (ux->getBody());
-	$0->u_p->AppendBody (ux->getBody()->Clone());
+	tmp = ux->getBody()->Clone();
+	tmp->fixGlobalParams ($0->curns, ux->getns());
+	$0->u_p->AppendBody (tmp);
       }
     }
 }}
@@ -1121,6 +1126,7 @@ defdata: [ template_spec ]
 	for (int i=0; i < dp->getNumParams(); i++) {
 	  const char *s = dp->getPortName (-(i+1));
 	  InstType *st = dp->getPortType (-(i+1));
+	  st = st->fixGlobalParams ($0->curns, dp->getns());
 	  if ($0->u_d->AddMetaParam (st, s, dp->getDefaultParam(i)) != 1) {
 	    $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	    fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -1134,6 +1140,7 @@ defdata: [ template_spec ]
 	for (int i=0; i < dp->getNumPorts(); i++) {
 	  const char *s = dp->getPortName (i);
 	  InstType *st = dp->getPortType (i);
+	  st = st->fixGlobalParams ($0->curns, dp->getns());
 	  if ($0->u_d->AddPort (st, s) != 1) {
 	    $e("Duplicate port name in port list: ``%s''", s);
 	    fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -1144,8 +1151,11 @@ defdata: [ template_spec ]
 	}
 
 	if (dp->getBody()) {
+	  ActBody *tmp;
 	  $0->scope->playBody (dp->getBody());
-	  $0->u_d->AppendBody (dp->getBody()->Clone());
+	  tmp = dp->getBody()->Clone();
+	  tmp->fixGlobalParams ($0->curns, dp->getns());
+	  $0->u_d->AppendBody (tmp);
 	}
 	$0->u_d->copyMethods (dp);
       }
@@ -1599,6 +1609,7 @@ defchan: [ template_spec ]
       for (int i=0; i < ch->getNumParams(); i++) {
 	const char *s = ch->getPortName (-(i+1));
 	InstType *st = ch->getPortType (-(i+1));
+	st = st->fixGlobalParams ($0->curns, ch->getns());
 	if ($0->u_c->AddMetaParam (st, s, ch->getDefaultParam(i)) != 1) {
 	  $e("Duplicate meta-parameter name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -1612,6 +1623,7 @@ defchan: [ template_spec ]
       for (int i=0; i < ch->getNumPorts(); i++) {
 	const char *s = ch->getPortName (i);
 	InstType *st = ch->getPortType (i);
+	st = st->fixGlobalParams ($0->curns, ch->getns());
 	if ($0->u_c->AddPort (st, s) != 1) {
 	  $e("Duplicate port name in port list: ``%s''", s);
 	  fprintf ($f, "\n\tConflict occurs due to parent type: ");
@@ -1622,8 +1634,11 @@ defchan: [ template_spec ]
       }
 
       if (ch->getBody()) {
+	ActBody *tmp;
 	$0->scope->playBody (ch->getBody());
-	$0->u_c->AppendBody (ch->getBody()->Clone());
+	tmp = ch->getBody()->Clone();
+	tmp->fixGlobalParams ($0->curns, ch->getns());
+	$0->u_c->AppendBody (tmp);
       }      
       $0->u_c->copyMethods (ch);
 

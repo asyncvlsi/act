@@ -329,6 +329,18 @@ class InstType {
   int hasinstGlobal() { return 0; }
 
   /**
+   * If a type has a global parameter that is in a different
+   * namespace, we need to add a namespace qualifier to the parameter
+   * This function applies this transformation and returns a new
+   * (cached) type if necessary.
+   *
+   * @param cur is the current namespace
+   * @param orig is the original namespace that contains the
+   * definition  of the type.
+   */
+  InstType *fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+
+  /**
    * Used to change the type signature during overrides.
    * @param update is the updated type.
    * @return an in-place updated (for temp types) or a fresh InstType

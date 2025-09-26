@@ -2030,3 +2030,164 @@ ActBody *ActBody::Clone(ActNamespace */*replace*/,
 {
   return NULL;
 }
+
+
+void ActBody::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  return;
+}
+
+
+void ActBody_Inst::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  t = t->fixGlobalParams (cur, orig);
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Attribute::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  Array *narr;
+  if (arr) {
+    arr = arr->fixGlobalParams (cur, orig);
+  }
+  act_attr *tmp;
+  for (tmp = a; tmp; tmp = tmp->next) {
+    tmp->e = expr_globalids (tmp->e, cur, orig);
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Conn::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  if (type == 0) {
+    u.basic.lhs = u.basic.lhs->qualifyGlobals (cur, orig);
+    u.basic.rhs = u.basic.rhs->fixGlobalParams (cur, orig);
+  }
+  else {
+    u.general.lhs = u.general.lhs->fixGlobalParams (cur, orig);
+    u.general.rhs = u.general.rhs->fixGlobalParams (cur, orig);
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Loop::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  lo = expr_globalids (lo, cur, orig);
+  hi = expr_globalids (hi, cur, orig);
+  if (b) {
+    b->fixGlobalParams (cur, orig);
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Select::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  ActBody_Select_gc *tmp;
+  for (tmp = gc; tmp; tmp = tmp->next) {
+    tmp->lo = expr_globalids (tmp->lo, cur, orig);
+    tmp->hi = expr_globalids (tmp->hi, cur, orig);
+    tmp->g = expr_globalids (tmp->g, cur, orig);
+    if (tmp->s) {
+      tmp->s->fixGlobalParams (cur, orig);
+    }
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Genloop::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  ActBody_Select_gc *tmp;
+  for (tmp = gc; tmp; tmp = tmp->next) {
+    tmp->lo = expr_globalids (tmp->lo, cur, orig);
+    tmp->hi = expr_globalids (tmp->hi, cur, orig);
+    tmp->g = expr_globalids (tmp->g, cur, orig);
+    if (tmp->s) {
+      tmp->s->fixGlobalParams (cur, orig);
+    }
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Assertion::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  if (type == 0) {
+    u.t0.e = expr_globalids (u.t0.e, cur, orig);
+  }
+  else {
+    Assert (type == 1, "Hmm");
+    u.t1.id1 = u.t1.id1->qualifyGlobals (cur, orig);
+    u.t1.id2 = u.t1.id2->qualifyGlobals (cur, orig);
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Print::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  listitem_t *li;
+  for (li = list_first (l); li; li = list_next (li)) {
+    act_func_arguments_t *f = (act_func_arguments_t *) list_value (li);
+    if (f->isstring) {
+      // nothing
+    }
+    else {
+      f->u.e = expr_globalids (f->u.e, cur, orig);
+    }
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Lang::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  switch (t) {
+  case LANG_CHP:
+  case LANG_HSE:
+    chp_fixglobals ((act_chp *)lang, cur, orig);
+    break;
+
+  case LANG_REFINE:
+    refine_fixglobals ((act_refine *)lang, cur, orig);
+    break;
+
+  case LANG_DFLOW:
+    dflow_fixglobals ((act_dataflow *)lang, cur, orig);
+    break;
+
+  case LANG_PRS:
+    prs_fixglobals ((act_prs *)lang, cur, orig);
+    break;
+    
+  case LANG_SPEC:
+    spec_fixglobals ((act_spec *)lang, cur, orig);
+    break;
+    
+  case LANG_SIZE:
+    sizing_fixglobals ((act_sizing *)lang, cur, orig);
+    break;
+    
+  case LANG_INIT:
+    break;
+    
+  case LANG_EXTERN:
+    lang_extern_fixglobals (nm, lang, cur, orig);
+    break;
+  }
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}

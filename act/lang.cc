@@ -324,6 +324,16 @@ static act_attr_t *_attr_dup (act_attr_t *a, ActNamespace *orig,
   return hd;
 }
 
+static void _attr_fixglobals (act_attr_t *a, ActNamespace *cur,
+			       ActNamespace *orig)
+{
+  while (a) {
+    a->e = expr_globalids (a->e, cur, orig);
+    a = a->next;
+  }
+}
+
+
 static act_size_spec_t *_sizing_info_dup(act_size_spec_t *s, ActNamespace *orig,
 					 ActNamespace *newns)
 {
@@ -336,7 +346,17 @@ static act_size_spec_t *_sizing_info_dup(act_size_spec_t *s, ActNamespace *orig,
   ret->folds = expr_update (expr_predup (s->folds), orig, newns);
   return ret;
 }
-  
+
+static void _sizing_info_fixglobals(act_size_spec_t *s,
+				    ActNamespace *cur,
+				    ActNamespace *orig)
+{
+  if (!s) return;
+  s->w = expr_globalids (s->w, cur, orig);
+  s->l = expr_globalids (s->l, cur, orig);
+  s->folds = expr_globalids (s->folds, cur, orig);
+}
+
 static act_prs_expr_t *_prs_expr_dup (act_prs_expr_t *e, ActNamespace *orig,
 				      ActNamespace *newns)
 {
@@ -385,6 +405,7 @@ static act_prs_expr_t *_prs_expr_dup (act_prs_expr_t *e, ActNamespace *orig,
   }
   return ret;
 }
+
 
 act_prs_lang_t *prs_expand (act_prs_lang_t *p, ActNamespace *ns, Scope *s)
 {
@@ -1430,6 +1451,14 @@ act_refine *refine_dup (act_refine *r, ActNamespace *orig, ActNamespace *newns)
   return ret;
 }
 
+void refine_fixglobals (act_refine *r, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!r) return;
+  if (r->b) {
+    r->b->fixGlobalParams (cur, orig);
+  }
+}
+
 InstType *_act_clone_replace (ActNamespace *replace, ActNamespace *newns,
 			      InstType *it);
 
@@ -1586,4 +1615,128 @@ act_prs *prs_dup (act_prs *prs, ActNamespace *orig, ActNamespace *newns)
   ret->p = _prs_dup (prs->p, orig, newns);
   ret->next = prs_dup (prs->next, orig, newns);
   return ret;
+}
+
+static void _prs_expr_fixglobals (act_prs_expr_t *e, ActNamespace *cur,
+				  ActNamespace *orig)
+{
+  if (!e) return;
+  switch (e->type) {
+  case ACT_PRS_EXPR_AND:
+  case ACT_PRS_EXPR_OR:
+    _prs_expr_fixglobals (e->u.e.l, cur, orig);
+    _prs_expr_fixglobals (e->u.e.r, cur, orig);
+    _prs_expr_fixglobals (e->u.e.pchg, cur, orig);
+    break;
+
+  case ACT_PRS_EXPR_NOT:
+    _prs_expr_fixglobals (e->u.e.l, cur, orig);
+    break;
+
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
+    break;
+
+  case ACT_PRS_EXPR_LABEL:
+    break;
+
+  case ACT_PRS_EXPR_ANDLOOP:
+  case ACT_PRS_EXPR_ORLOOP:
+    e->u.loop.lo = expr_globalids (e->u.loop.lo, cur, orig);
+    e->u.loop.hi = expr_globalids (e->u.loop.hi, cur, orig);
+    _prs_expr_fixglobals (e->u.loop.e, cur, orig);
+    break;
+
+  case ACT_PRS_EXPR_VAR:
+    e->u.v.id = e->u.v.id->qualifyGlobals (cur, orig);
+    _sizing_info_fixglobals (e->u.v.sz, cur, orig);
+    break;
+    
+  default:
+    Assert (0, "What?");
+    break;
+  }
+}
+
+static void _prs_fixglobals (act_prs_lang_t *p,
+			     ActNamespace *cur,
+			     ActNamespace *orig)
+{
+  while (p) {
+    switch (ACT_PRS_LANG_TYPE (p->type)) {
+    case ACT_PRS_RULE:
+      _attr_fixglobals (p->u.one.attr, cur, orig);
+      _prs_expr_fixglobals (p->u.one.e, cur, orig);
+      if (p->u.one.label) {
+	//
+      }
+      else {
+	p->u.one.id = p->u.one.id->qualifyGlobals (cur, orig);
+      }
+      break;
+    case ACT_PRS_GATE:
+      _attr_fixglobals (p->u.p.attr, cur, orig);
+      if (p->u.p.g) {
+	p->u.p.g = p->u.p.g->qualifyGlobals (cur, orig);
+      }
+      if (p->u.p._g) {
+	p->u.p._g = p->u.p._g->qualifyGlobals (cur, orig);
+      }
+      if (p->u.p.s) {
+	p->u.p.s = p->u.p.s->qualifyGlobals (cur, orig);
+      }
+      if (p->u.p.d) {
+	p->u.p.d = p->u.p.d->qualifyGlobals (cur, orig);
+      }
+      _sizing_info_fixglobals (p->u.p.sz, cur, orig);
+      break;
+      
+    case ACT_PRS_DEVICE:
+      _attr_fixglobals (p->u.p.attr, cur, orig);
+      _sizing_info_fixglobals (p->u.p.sz, cur, orig);
+      p->u.p.s = p->u.p.s->qualifyGlobals (cur, orig);
+      p->u.p.d = p->u.p.d->qualifyGlobals (cur, orig);
+      break;
+
+    case ACT_PRS_LOOP:
+      p->u.l.lo = expr_globalids (p->u.l.lo, cur, orig);
+      p->u.l.hi = expr_globalids (p->u.l.hi, cur, orig);
+      _prs_fixglobals (p->u.l.p, cur, orig);
+      break;
+
+    case ACT_PRS_TREE:
+      p->u.l.lo = expr_update (p->u.l.lo, cur, orig);
+      _prs_fixglobals (p->u.l.p, cur, orig);
+      break;
+      
+    case ACT_PRS_SUBCKT:
+      _prs_fixglobals (p->u.l.p, cur, orig);
+      break;
+      
+    default:
+      Assert (0, "Why did this happen?");
+      break;
+    }
+    p = p->next;
+  }
+}
+
+void prs_fixglobals (act_prs *prs, ActNamespace *cur, ActNamespace *orig)
+{
+  if (!prs) return;
+  
+  if (prs->vdd) {
+    prs->vdd = prs->vdd->qualifyGlobals (cur, orig);
+  }
+  if (prs->gnd) {
+    prs->gnd = prs->gnd->qualifyGlobals (cur, orig);
+  }
+  if (prs->psc) {
+    prs->psc = prs->psc->qualifyGlobals (cur, orig);
+  }
+  if (prs->nsc) {
+    prs->nsc = prs->nsc->qualifyGlobals (cur, orig);
+  }
+  _prs_fixglobals (prs->p, cur, orig);
+  prs_fixglobals (prs->next, cur, orig);
 }
