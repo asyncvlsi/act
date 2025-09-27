@@ -603,6 +603,7 @@ public:
 
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
   
 private:
   InstType *_orig_type, *_new_type;
@@ -655,6 +656,7 @@ public:
 
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   ActNamespace *getNS () { return ns; }
   

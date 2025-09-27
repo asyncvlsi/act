@@ -2191,3 +2191,20 @@ void ActBody_Lang::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
     Next()->fixGlobalParams (cur, orig);
   }
 }
+
+
+void ActBody_OverrideAssertion::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  _orig_type = _orig_type->fixGlobalParams (cur, orig);
+  _new_type = _new_type->fixGlobalParams (cur, orig);
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Namespace::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
