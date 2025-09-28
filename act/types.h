@@ -647,7 +647,7 @@ class UserDef : public Type {
    * @param cache_hit returns 1 on a hit (i.e. found a previously
    * expanded identical type that is being returned), 0 otherwise
    * @param is_process is 0 by default, 1 for processes, 2 for
-   * functions
+   * functions, and 3 for functions inside a type
    * @return expanded type either from the construction, or from the cache
    */
   UserDef *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u, int *cache_hit, int is_process = 0);
@@ -1166,6 +1166,9 @@ class Function : public UserDef {
    * Expand the function
    */
   Function *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
+
+  /** for method functions **/
+  Function *Expand2 (ActNamespace *ns, Scope *s, int nt, inst_param *u);
 
   /**
    * Print the function

@@ -481,8 +481,7 @@ UserMacro *UserMacro::Expand (UserDef *ux, ActNamespace *ns, Scope *s, int is_pr
     if (_b) {
       tmpf->setBody (_b->Clone ());
     }
-    ret->_exf = tmpf->Expand (ux->getns(), ux->CurScope(), 0, NULL);
-    ret->_exf->CurScope()->updateParent (ux->CurScope());
+    ret->_exf = tmpf->Expand2 (ux->getns(), ux->CurScope(), 0, NULL);
 
     act_languages *all_lang = ret->_exf->getlang();
     act_chp *xchp;

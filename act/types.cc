@@ -770,7 +770,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
   /* set its scope to "expanded" mode */
   ux->I->FlushExpand();
-  if (is_proc == 2) {
+  if (is_proc == 2 || is_proc == 3) {
     ux->I->mkFunction();
   }
   /* set to pending */
@@ -1226,7 +1226,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
      * than part of an interface". Examples of "part of an interface"
      * are interfaces themselves or functions within interfaces.
      */
-    if (is_proc != 2 && TypeFactory::isInterfaceType (chk)) {
+    if ((is_proc != 2 && is_proc != 3) && TypeFactory::isInterfaceType (chk)) {
       /* this means that this was a ptype... we need to do more work */
       const char *pt = chk->getPTypeID();
       Assert (pt, "PType ID missing!");
@@ -1307,6 +1307,10 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
     // find any refinement overrides that might apply, and apply them!
     Assert (b, "What?");
     ux->_apply_ref_overrides (b, b);
+  }
+
+  if (is_proc == 3) {
+    ux->CurScope()->updateParent (s);
   }
   
   if (b) {
@@ -1485,6 +1489,41 @@ Function *Function::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 
   return xd;
 }
+
+Function *Function::Expand2 (ActNamespace *ns, Scope *s, int nt, inst_param *u)
+{
+  Function *xd;
+  UserDef *ux;
+  int cache_hit;
+
+  if (isExpanded() && nt == 0) {
+    return this;
+  }
+
+  ux = UserDef::Expand (ns, s, nt, u, &cache_hit, 3);
+  ux->CurScope()->mkFunction();
+
+  if (cache_hit) {
+    return dynamic_cast<Function *>(ux);
+  }
+
+  xd = new Function (ux);
+  delete ux;
+
+  Assert (_ns->EditType (xd->name, xd) == 1, "What?");
+
+  if (!ret_type->isExpanded()) {
+    xd->setRetType (ret_type->Expand (ns, xd->I));
+  }
+  else {
+    xd->setRetType (ret_type);
+  }
+
+  xd->chkInline();
+
+  return xd;
+}
+
 
 Interface *Interface::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
 {
