@@ -347,6 +347,9 @@ def_or_proc ID
 	tmp->fixGlobalParams ($0->curns, ux->getns());
 	$0->u_p->AppendBody (tmp);
       }
+      for (int i=0; i < ux->getNumMacros(); i++) {
+	ux->getMacroId (i)->fixGlobalParams ($0->curns, ux->getns());
+      }
     }
 }}
 proc_body
@@ -1157,7 +1160,11 @@ defdata: [ template_spec ]
 	  tmp->fixGlobalParams ($0->curns, dp->getns());
 	  $0->u_d->AppendBody (tmp);
 	}
+	for (int i=0; i < dp->getNumMacros(); i++) {
+	  dp->getMacroId (i)->fixGlobalParams ($0->curns, dp->getns());
+	}
 	$0->u_d->copyMethods (dp);
+	$0->u_d->fixMethodGlobalParams ($0->curns, dp->getns());
       }
     }
     else {
@@ -1640,7 +1647,11 @@ defchan: [ template_spec ]
 	tmp->fixGlobalParams ($0->curns, ch->getns());
 	$0->u_c->AppendBody (tmp);
       }      
+      for (int i=0; i < ch->getNumMacros(); i++) {
+	ch->getMacroId (i)->fixGlobalParams ($0->curns, ch->getns());
+      }
       $0->u_c->copyMethods (ch);
+      $0->u_c->fixMethodGlobalParams ($0->curns, ch->getns());
 
       InstType *chparent = NULL;
       while (ch->getParent()) {

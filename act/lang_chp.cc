@@ -3027,6 +3027,10 @@ void chp_fixglobals (act_chp *c, ActNamespace *cur, ActNamespace *orig)
   _chp_fixglobals (c->c, cur, orig);
 }
 
+void chp_fixglobals (act_chp_lang_t *c, ActNamespace *cur, ActNamespace *orig)
+{
+  _chp_fixglobals (c, cur, orig);
+}
 
 static act_chp_lang_t *chp_update_bw (act_chp_lang_t *c, Scope *s)
 {

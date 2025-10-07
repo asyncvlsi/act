@@ -927,7 +927,8 @@ act_chp *chp_dup (act_chp *c, ActNamespace *orig, ActNamespace *newns);
 /**
  * Fix global namespace Ids
  */
-void chp_fixglobals (act_chp *c, ActNamespace *orig, ActNamespace *newns);
+void chp_fixglobals (act_chp *c, ActNamespace *cur, ActNamespace *orig);
+void chp_fixglobals (act_chp_lang_t *c, ActNamespace *cur, ActNamespace *orig);
 
 /**
  * Expansion helper for instance attributes

@@ -2247,6 +2247,15 @@ void Data::copyMethods (Data *d)
   }
 }
 
+void Data::fixMethodGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+    if (methods[i]) {
+      chp_fixglobals (methods[i], cur, orig);
+    }
+  }
+}
+
 void Channel::copyMethods (Channel *c)
 {
   for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
@@ -2254,6 +2263,20 @@ void Channel::copyMethods (Channel *c)
   }
   for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     emethods[i] = c->geteMethod ((datatype_methods)(i+ACT_NUM_STD_METHODS));
+  }
+}
+
+void Channel::fixMethodGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  for (int i=0; i < ACT_NUM_STD_METHODS; i++) {
+    if (methods[i]) {
+      chp_fixglobals (methods[i], cur, orig);
+    }
+  }
+  for (int i=0; i < ACT_NUM_EXPR_METHODS; i++) {
+    if (emethods[i]) {
+      emethods[i] = expr_globalids (emethods[i], cur, orig);
+    }
   }
 }
 

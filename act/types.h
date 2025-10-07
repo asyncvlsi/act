@@ -1408,6 +1408,7 @@ class Data : public UserDef {
    * @param d is the Data type from which the method table should be copied
    */
   void copyMethods (Data *d);
+  void fixMethodGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   /**
    * Expand the type
@@ -1575,6 +1576,7 @@ class Channel : public UserDef {
    * @param c is the Channel from whom methods should be copied over
    */
   void copyMethods (Channel *c);
+  void fixMethodGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
   Channel *Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u);
   
@@ -1795,6 +1797,8 @@ public:
    * @return new clone
    */
   UserMacro *Clone (UserDef *parent);
+
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
 
 private:
   const char *_nm;	     ///< name of the macro

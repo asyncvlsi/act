@@ -957,3 +957,20 @@ UserMacro *UserMacro::Clone (UserDef *u)
   ret->_builtinmacro = _builtinmacro;
   return ret;
 }
+
+
+void UserMacro::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
+{
+  if (rettype) {
+    rettype = rettype->fixGlobalParams (cur, orig);
+  }
+  for (int i=0; i < nports; i++) {
+    port_t[i] = port_t[i]->fixGlobalParams (cur, orig);
+  }
+  if (c) {
+    chp_fixglobals (c, cur, orig);
+  }
+  if (_b) {
+    _b->fixGlobalParams (cur, orig);
+  }
+}

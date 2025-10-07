@@ -1453,9 +1453,15 @@ act_refine *refine_dup (act_refine *r, ActNamespace *orig, ActNamespace *newns)
 
 void refine_fixglobals (act_refine *r, ActNamespace *cur, ActNamespace *orig)
 {
+  refine_override *lst;
   if (!r) return;
   if (r->b) {
     r->b->fixGlobalParams (cur, orig);
+  }
+  lst = r->overrides;
+  while (lst) {
+    lst->it = lst->it->fixGlobalParams (cur, orig);
+    lst = lst->next;
   }
 }
 
