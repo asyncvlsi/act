@@ -81,6 +81,9 @@ InstType::InstType (InstType *i, int skip_array)
       }
     }
   }
+  else {
+    u = NULL;
+  }
   temp_type = 1;
 }
 
