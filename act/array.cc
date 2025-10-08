@@ -238,7 +238,7 @@ void Array::moveNS (ActNamespace *orig, ActNamespace *newns)
 
 /*------------------------------------------------------------------------
  *
- *  Array::Clone --
+ *  Array::fixGlobalParams --
  *
  *   Deep copy of array
  *
@@ -252,9 +252,18 @@ Array *Array::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
     return this;
   }
 
-  /* XXXX */
+  for (int i=0; i < dims; i++) {
+    if (r[i].u.ue.lo) {
+      r[i].u.ue.lo = expr_globalids (r[i].u.ue.lo, cur, orig);
+    }
+    if (r[i].u.ue.hi) {
+      r[i].u.ue.hi= expr_globalids (r[i].u.ue.hi, cur, orig);
+    }
+  }
+  if (next) {
+    next = next->fixGlobalParams (cur, orig);
+  }
   return this;
-
 }
 
 /*------------------------------------------------------------------------
