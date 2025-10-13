@@ -1390,7 +1390,7 @@ static void print_id (act_connection *c)
   If it is a subrange identifier, it will be the array id rather than
   a reference to the subrange.
 */
-act_connection *ActId::Canonical (Scope *s)
+act_connection *ActId::Canonical (Scope *s, bool allow_fail)
 {
   ValueIdx *vx;
   act_connection *cx;
@@ -1504,11 +1504,11 @@ act_connection *ActId::Canonical (Scope *s)
 	fatal_error ("Map for interface `%s' doesn't contain `%s'",
 		     itmp->BaseType()->getName(), id->Rest()->getName());
       }
-#if 0      
+#if 0
       printf ("NEW ID rest: ");
       idrest->Print(stdout);
       printf ("\n");
-#endif      
+#endif
     }
   
 #ifdef DEBUG_CONNECTIONS
@@ -1524,18 +1524,21 @@ act_connection *ActId::Canonical (Scope *s)
   topf->Print (stdout);
   printf ("] ");
   fflush (stdout);
-#endif  
+#endif
   printf ("\n");
 #endif
 
   do {
-    /* vx is the value 
+    /* vx is the value
        cx is the object
     */
     if (id->arrayInfo() && id->arrayInfo()->isDeref()) {
       /* find array slot, make vx the value, cx the connection id for
 	 the canonical value */
       int idx = vx->t->arrayInfo()->Offset (id->arrayInfo());
+      if (allow_fail && (idx == -1)) {
+	return NULL;
+      }
       Assert (idx != -1, "This should have been caught earlier");
 
       cx = cx->getsubconn(idx, vx->t->arrayInfo()->size());
@@ -1562,6 +1565,9 @@ act_connection *ActId::Canonical (Scope *s)
       /* find port id */
 
       ux = dynamic_cast<UserDef *>(vx->t->BaseType());
+      if (allow_fail && !ux) {
+	return NULL;
+      }
       Assert (ux, "Should have been caught earlier!");
       
 #if 0
@@ -1569,6 +1575,9 @@ act_connection *ActId::Canonical (Scope *s)
 #endif
       
       portid = ux->FindPort (idrest->getName());
+      if (allow_fail && !(portid > 0)) {
+	return NULL;
+      }
       Assert (portid > 0, "What?");
 
       portid--;
@@ -1589,7 +1598,7 @@ act_connection *ActId::Canonical (Scope *s)
     }
   } while (id);
 
-#if 0  
+#if 0
   if (topf) {
     delete topf;
   }
@@ -1603,7 +1612,7 @@ act_connection *ActId::Canonical (Scope *s)
   dump_conn (cx);
   printf ("\n");
 #endif
-  
+
   return cx;
 }  
 

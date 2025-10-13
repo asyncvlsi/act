@@ -227,10 +227,12 @@ class ActId {
    * identifier. This returns its connection pointer.
    *
    * @param s is the scope
+   * @param allow_fail set this to true to permit this function to
+   * return a NULL pointer on a failure.
    * @returns the act_connection pointer, which is the canonical/unique
    * representation for any identifier with all connections resolved.
    */
-  act_connection *Canonical (Scope *s);
+  act_connection *Canonical (Scope *s, bool allow_fail = false);
 
   /**
    *

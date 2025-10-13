@@ -450,25 +450,24 @@ void emit_cif (pp_t *pp)
     char **gds_all = config_get_table_string (gdsl);
     for (int i=0; i < config_get_table_size (gdsl); i++) {
       GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
-      int f = 1;
       if (!g) {
 	warning ("GDS layer `%s' specified but unused?", gds_all[i]);
 	continue;
       }
-      pp_printf (pp, "layer %s ", gds_all[i]);
+      pp_printf (pp, "layer %s", gds_all[i]);
+      pp_nl;
+      pp_puts (pp, "   ");
+      pp_setb (pp);
       listitem_t *li;
       for (li = g->matList(); li; li = list_next (li)) {
-	Material *m = (Material *)list_value (li);
-	if (!f) {
-	  pp_printf (pp, ",%s", m->getName());
-	}
-	else {
-	  pp_printf (pp, "%s", m->getName());
-	}
-	f = 0;
+	struct GDSLayer::mat_info *mx = (GDSLayer::mat_info *) list_value (li);
+	pp_printf (pp, "bloat-or %s * %d", mx->m->getName(),
+		   mx->bloat);
+	pp_nl;
       }
+      pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor());
+      pp_endb (pp);
       pp_nl;
-      pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor()); pp_nl;
 
       pp_nl;
     }

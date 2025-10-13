@@ -128,7 +128,7 @@ private:
 				///the layout configuration file
   int major, minor;		///< the GDS major and minor number
 				///for this layer
-  
+
   list_t *mats;			///< link back to materials that use
 				///this GDS layer
   
@@ -148,10 +148,18 @@ public:
   }
 
   /**
+   * Holds the materials info associated with a GDS layer
+   */
+  struct mat_info {
+    Material *m;		///< the material itself
+    int bloat;			///< the bloat amount
+  };
+
+  /**
    * Add a material to the list of materials that use this GDS layer
    * @param m is the Material
    */
-  void addMat (Material *m);
+  void addMat (Material *m, int bloat);
 
   /**
    * Return a listitem_t used to iterate over the materials that use
@@ -215,16 +223,9 @@ class Material {
    * be generated for this material.
    * @param table is an array of GDS names
    * @param sz is the size of the table
+   * @param bloat is the array of bloat values (NULL if unspecified)
    */
-  void addGDS (char **table, int sz);
-
-  /**
-   * Store the GDS bloat table associated with the GDS table that was
-   * added for this material
-   * @param table is the list of bloat values
-   * @param sz is the size of the table
-   */
-  void addGDSBloat (int *table, int sz);
+  void addGDS (char **table, int *bloat, int sz);
 
   /**
    * This returns the name of the via to connect up from the material,
