@@ -31,6 +31,6 @@ OBJS=$(SRCS:.cc=.o)
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(EXE): $(OBJS) $(ACTDEPEND)
-	$(CXX) $(OBJS) -o $(EXE) $(LIBACT)
+	$(CXX) $(CFLAGS) $(OBJS) -o $(EXE) $(LIBACT)
 
 -include Makefile.deps

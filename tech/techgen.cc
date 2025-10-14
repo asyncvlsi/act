@@ -434,9 +434,127 @@ void emit_scalefactor (pp_t *pp)
   pp_nl;
 }
 
+int scalefactor (void)
+{
+  if (Technology::T->scale != (int)Technology::T->scale) {
+    double x = Technology::T->scale*10.0;
+    return (int)x;
+  }
+  else {
+    return (int)Technology::T->scale;
+  }
+}
+
+
+void emit_cifinput (pp_t *pp, Material *m)
+{
+  int i;
+  if (!m) return;
+  
+  pp_printf (pp, "layer %s", m->getName());
+  pp_TAB;
+  list_t *l = m->getGDSlist ();
+  int *bloat = m->getGDSBloat ();
+  int min_bloat;
+  if (bloat) {
+    min_bloat = bloat[0];
+  }
+  else {
+    min_bloat = 0;
+  }
+  i = 0;
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    GDSLayer *g = (GDSLayer *) list_value (li);
+    if (i == 0) {
+      pp_printf (pp, "or %s", g->getName());
+    }
+    else {
+      pp_printf (pp, "and %s", g->getName());
+    }
+    pp_nl;
+    if (bloat) {
+      if (min_bloat > bloat[i]) {
+	min_bloat = bloat[i];
+      }
+    }
+    i++;
+  }
+  if (min_bloat != 0) {
+    pp_printf (pp, "shrink %d", min_bloat);
+    pp_nl;
+  }
+  char buf[1024];
+  snprintf (buf, 1024, "layout.materials.%s.gds_mask", m->getName());
+  if (config_exists (buf)) {
+    char **table = config_get_table_string (buf);
+    for (int i=0; i < config_get_table_size (buf); i++) {
+      pp_printf (pp, "and-not %s", table[i]);
+      pp_nl;
+    }
+  }
+  pp_printf (pp, "labels %s",
+	     ((GDSLayer *) list_value (list_first (l)))->getName());
+  pp_nl;
+  
+  pp_UNTAB;
+}
+
+void emit_cifinputc (pp_t *pp, Contact *c)
+{
+  int i;
+  if (!c) return;
+  pp_printf (pp, "layer %s", c->getName());
+  pp_TAB;
+  list_t *l = c->getGDSlist ();
+  int *bloat = c->getGDSBloat ();
+  int min_bloat;
+  if (bloat) {
+    min_bloat = bloat[0];
+  }
+  else {
+    min_bloat = 0;
+  }
+  i = 0;
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    GDSLayer *g = (GDSLayer *) list_value (li);
+    if (i == 0) {
+      pp_printf (pp, "or %s", g->getName());
+    }
+    else {
+      pp_printf (pp, "and %s", g->getName());
+    }
+    pp_nl;
+    if (bloat) {
+      if (min_bloat > bloat[i]) {
+	min_bloat = bloat[i];
+      }
+    }
+    i++;
+  }
+  if (min_bloat != 0) {
+    pp_printf (pp, "shrink %d", min_bloat);
+    pp_nl;
+  }
+  char buf[1024];
+  snprintf (buf, 1024, "layout.vias.%s_gds_mask", c->getName());
+  if (config_exists (buf)) {
+    char **table = config_get_table_string (buf);
+    for (int i=0; i < config_get_table_size (buf); i++) {
+      pp_printf (pp, "and-not %s", table[i]);
+      pp_nl;
+    }
+  }
+  pp_printf (pp, "labels %s",
+	     ((GDSLayer *) list_value (list_first (l)))->getName());
+  pp_nl;
+
+  pp_UNTAB;
+}
+
 void emit_cif (pp_t *pp)
 {
   const char *gdsl = "layout.gds.layers";
+  int s = scalefactor();
   pp_printf (pp, "cifoutput"); pp_TAB;
   pp_printf (pp, "style generic"); pp_nl;
   emit_scalefactor (pp);
@@ -459,10 +577,29 @@ void emit_cif (pp_t *pp)
       pp_puts (pp, "   ");
       pp_setb (pp);
       listitem_t *li;
+      bool found_first = false;
       for (li = g->matList(); li; li = list_next (li)) {
 	struct GDSLayer::mat_info *mx = (GDSLayer::mat_info *) list_value (li);
 	pp_printf (pp, "bloat-or %s * %d", mx->m->getName(),
-		   mx->bloat);
+		   mx->bloat*s);
+	pp_nl;
+	if (mx->is_first) {
+	  found_first = true;
+	}
+      }
+      if (found_first) {
+	for (li = g->matList(); li; li = list_next (li)) {
+	  struct GDSLayer::mat_info *mx = (GDSLayer::mat_info*) list_value (li);
+	  if (mx->is_first) {
+	    if (found_first) {
+	      pp_printf (pp, "labels %s", mx->m->getName());
+	      found_first = false;
+	    }
+	    else {
+	      pp_printf (pp, ",%s", mx->m->getName());
+	    }
+	  }
+	}
 	pp_nl;
       }
       pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor());
@@ -476,10 +613,85 @@ void emit_cif (pp_t *pp)
   pp_printf (pp, "end");
   pp_SPACE;
 
+  /*
+   * For cifinput, we need to do a bit of pre-processing.
+   *
+   * A abstract geometry layer gets turned into a number of GDS
+   * layers, each optionally bloated. Let m = the min bloat
+   * (right now assumed to be non-negative). 
+   *
+   * The AND of all the GDS layers, shrunk by the min bloat should
+   * roughly correspond to the geometry.
+   *
+   * However, this is not always accurate because the set of GDS
+   * layers for one abstract layer may be a superset of those of
+   * another type. In this case, we need to mask the layers with the
+   * difference in layers (just need one).
+   *
+   */
+
   pp_printf (pp, "cifinput"); pp_TAB;
   pp_printf (pp, "style generic"); pp_nl;
   emit_scalefactor (pp);
   pp_nl;
+
+  /*
+   * Base layers
+   *  diff, diffc, fet
+   *
+   *  selects, wells
+   *  poly
+   */
+  for (int i=0; i < Technology::T->num_devs; i++) {
+    for (int j=0; j < 2; j++) {
+      Material *diff = Technology::T->diff[j][i];
+      Contact *diffc = Technology::T->diff[j][i]->getUpC();
+      Material *fet = Technology::T->fet[j][i];
+
+      emit_cifinput (pp, diff);
+      emit_cifinputc (pp, diffc);
+
+      /* well diff: nn/pp diff */
+      diff = Technology::T->welldiff[j][i];
+      if (diff) {
+	diffc = Technology::T->welldiff[j][i]->getUpC();
+      }
+      else {
+	diffc = NULL;
+      }
+      if (diff) {
+	emit_cifinput (pp, diff);
+      }
+      if (diffc) {
+	emit_cifinputc (pp, diffc);
+      }
+
+      WellMat *well = Technology::T->well[j][i];
+      if (well) {
+	// stuff here
+	emit_cifinput (pp, well);
+      }
+
+      // n/p select
+      Material *sel = Technology::T->sel[j][i];
+      if (sel) {
+	emit_cifinput (pp, sel);
+      }
+    }
+  }
+
+  // poly
+  PolyMat *poly = Technology::T->poly;
+  emit_cifinput (pp, poly);
+  emit_cifinputc (pp, poly->getUpC());
+
+  // metal
+  for (int i=0; i < Technology::T->nmetals-1; i++) {
+    RoutingMat *metal = Technology::T->metal[i];
+    Contact *metalc = metal->getUpC ();
+    emit_cifinput (pp, metal);
+    emit_cifinputc (pp, metalc);
+  }  
 
   pp_UNTAB;
   pp_printf (pp, "end");

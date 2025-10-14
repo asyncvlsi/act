@@ -1172,11 +1172,12 @@ void Material::addGDS (char **layers, int *bloat, int sz)
     }
     GDSLayer *gl = (GDSLayer *)b->v;
     list_append (gds, gl);
-    gl->addMat (this, bloat ? bloat[i] : 0);
+    gl->addMat (this, bloat ? bloat[i] : 0, i == 0 ? true : false);
   }
+  gds_bloat = bloat;
 }
 
-void GDSLayer::addMat (Material *m, int bloat)
+void GDSLayer::addMat (Material *m, int bloat, bool is_first)
 {
   struct mat_info *x;
   if (!mats) {
@@ -1185,6 +1186,7 @@ void GDSLayer::addMat (Material *m, int bloat)
   NEW (x, mat_info);
   x->m = m;
   x->bloat = bloat;
+  x->is_first = is_first;
   list_append (mats, x);
 }
 

@@ -153,13 +153,19 @@ public:
   struct mat_info {
     Material *m;		///< the material itself
     int bloat;			///< the bloat amount
+    bool is_first;		///< Is this GDS layer the first
+				///< one for the material? Then put
+				///< labels here
   };
 
   /**
    * Add a material to the list of materials that use this GDS layer
    * @param m is the Material
+   * @param bloat is the bloat amount
+   * @param is_first is true if this is the first GDS layer for the
+   * material; this is used for label association.
    */
-  void addMat (Material *m, int bloat);
+  void addMat (Material *m, int bloat, bool is_first);
 
   /**
    * Return a listitem_t used to iterate over the materials that use
@@ -178,6 +184,11 @@ public:
    * @return the minor number of this GDS layer
    */
   int getMinor() { return minor; }
+
+  /**
+   * @return the name of the GDS layer
+   */
+  const char *getName() { return name; }
 };
 
 
@@ -248,6 +259,17 @@ class Material {
    * @return the minimum spacing for this material
    */
   int minSpacing() { return spacing_w->min(); }
+
+  /**
+   * @return gds layer list
+   */
+  list_t *getGDSlist() { return gds; }
+
+  /**
+   * @return bloat amounts
+   */
+  int *getGDSBloat() { return gds_bloat; }
+  
 
 protected:
   const char *name;		///< drawing name in magic
@@ -370,6 +392,12 @@ public:
    */
   Contact *getUpC() { return viaup; }
 
+  /**
+   * @return the name of the contact to connect up from this layer to
+   * the next routing layer
+   */
+  Contact *getDnC() { return viadn; }
+  
   /**
    * @param w is the width of the material
    * @return the minimum spacing given the width 
