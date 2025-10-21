@@ -571,7 +571,7 @@ void emit_cif (pp_t *pp)
     char **gds_all = config_get_table_string (gdsl);
     for (int i=0; i < config_get_table_size (gdsl); i++) {
       GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
-      if (!g) {
+      if (!g || !g->matList()) {
 	warning ("GDS layer `%s' specified but unused?", gds_all[i]);
 	continue;
       }
