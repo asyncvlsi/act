@@ -450,6 +450,8 @@ void emit_cifinput (pp_t *pp, Material *m)
 {
   int i;
   if (!m) return;
+
+  if (!m->getGDSlist()) return;
   
   pp_printf (pp, "layer %s", m->getName());
   pp_TAB;
@@ -503,6 +505,7 @@ void emit_cifinputc (pp_t *pp, Contact *c)
 {
   int i;
   if (!c) return;
+  if (!c->getGDSlist()) return;
   pp_printf (pp, "layer %s", c->getName());
   pp_TAB;
   list_t *l = c->getGDSlist ();
