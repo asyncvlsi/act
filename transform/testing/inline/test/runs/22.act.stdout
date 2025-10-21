@@ -16,7 +16,7 @@ struct s;
 
 /* connections */
 chp {
-s.a:=0x5;s.b:=0xa;t:=int(s.a+s.b,5);farg_0:=s;floc_0:=0x5;*[bool((floc_0>>0x1)=0x0 ? int(int(floc_0)>0x0) : 0x1) -> floc_0:=floc_0-0x1];fret_0.a:=farg_0.b;fret_0.b:=farg_0.a;fuse_0:=fret_0;s:=fuse_0
+s.a:=0x5;s.b:=0xa;t:=int(s.a+s.b,5);farg_0:=s;floc_0:=0x5;*[bool((floc_0>>0x1)=0x0 ? int(int(floc_0,1)>0x0) : 0x1) -> floc_0:=floc_0-0x1];fret_0.a:=farg_0.b;fret_0.b:=farg_0.a;fuse_0:=fret_0;s:=fuse_0
 }
 }
 

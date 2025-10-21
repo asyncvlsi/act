@@ -199,11 +199,21 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
-  case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     lv = _inline_funcs (l, e->u.e.l);
     Assert (lv.isSimple(), "Hmm");
     e->u.e.l = lv.getVal();
+    break;
+
+  case E_BUILTIN_INT:
+    lv = _inline_funcs (l, e->u.e.l);
+    Assert (lv.isSimple(), "Hmm");
+    e->u.e.l = lv.getVal();
+    if (e->u.e.r) {
+      rv = _inline_funcs (l, e->u.e.r);
+      Assert (rv.isSimple(), "Hmm");
+      e->u.e.r = rv.getVal();
+    }
     break;
 
   case E_BITFIELD:
@@ -1565,9 +1575,15 @@ static Expr *_expr_clone_subst (struct fn_inline_args *fn, Expr *e)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
-  case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     ret->u.e.l = _expr_clone_subst (fn, e->u.e.l);
+    break;
+
+  case E_BUILTIN_INT:
+    ret->u.e.l = _expr_clone_subst (fn, e->u.e.l);
+    if (e->u.e.r) {
+      ret->u.e.r = _expr_clone_subst (fn, e->u.e.r);
+    }
     break;
 
   case E_BITFIELD:

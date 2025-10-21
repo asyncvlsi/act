@@ -15,7 +15,7 @@ int<32> fret_0;
 
 /* connections */
 chp {
-farg_0:=y;floc_0:=0x0;*[bool((floc_0>>0x2)=0x0 ? int(int(floc_0)<0x2) : 0x0) -> fret_0:=int(int(farg_0+0x1)*0x2);floc_0:=floc_0+0x1];fuse_0:=fret_0;x:=fuse_0
+farg_0:=y;floc_0:=0x0;*[bool((floc_0>>0x2)=0x0 ? int(int(floc_0,2)<0x2) : 0x0) -> fret_0:=int(int(farg_0+0x1,32)*0x2,32);floc_0:=floc_0+0x1];fuse_0:=fret_0;x:=fuse_0
 }
 }
 

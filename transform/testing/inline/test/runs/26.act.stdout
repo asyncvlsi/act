@@ -36,7 +36,7 @@ int<64> result;
 
 /* connections */
 chp {
-x:=0xa;farg_0:=x;fret_0:=farg_0,floc_0:=0x0;*[bool((floc_0>>0x4)=0x0 ? int(int(floc_0)<0xa) : 0x0) -> fret_0:=fret_0+0x1;floc_0:=floc_0+0x1];fuse_0:=fret_0;result:=fuse_0;log(result);OUT!result
+x:=0xa;farg_0:=x;fret_0:=farg_0,floc_0:=0x0;*[bool((floc_0>>0x4)=0x0 ? int(int(floc_0,4)<0xa) : 0x0) -> fret_0:=fret_0+0x1;floc_0:=floc_0+0x1];fuse_0:=fret_0;result:=fuse_0;log(result);OUT!result
 }
 }
 
