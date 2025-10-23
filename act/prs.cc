@@ -169,6 +169,18 @@ static void _freeexpr (act_prs_expr_t *e)
 
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
+    if (e->u.v.sz) {
+      if (e->u.v.sz->l) {
+	expr_free (e->u.v.sz->l);
+      }
+      if (e->u.v.sz->w) {
+	expr_free (e->u.v.sz->w);
+      }
+      if (e->u.v.sz->folds) {
+	expr_free (e->u.v.sz->folds);
+      }
+      FREE (e->u.v.sz);
+    }
     break;
     
   default:

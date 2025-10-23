@@ -96,6 +96,8 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
   if (!p) return NULL;
 
   NEW (ret, act_prs_expr_t);
+  ret->u.v.sz = NULL;
+  ret->u.v.id = NULL;
   ret->type = p->type;
   switch (p->type) {
   case ACT_PRS_EXPR_AND:
@@ -117,12 +119,12 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
       }
     }
     else if (ret->u.e.l->type == ACT_PRS_EXPR_FALSE) {
-	if (p->type == ACT_PRS_EXPR_AND) {
-	  pick = 1; /* LEFT */
-	}
-	else {
-	  pick = 0; /* RIGHT */
-	}
+      if (p->type == ACT_PRS_EXPR_AND) {
+	pick = 1; /* LEFT */
+      }
+      else {
+	pick = 0; /* RIGHT */
+      }
     }
     else if (ret->u.e.r->type == ACT_PRS_EXPR_TRUE) {
       if (p->type == ACT_PRS_EXPR_AND) {
@@ -201,9 +203,13 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	/* empty */
 	if (p->type == ACT_PRS_EXPR_ANDLOOP) {
 	  ret->type = ACT_PRS_EXPR_TRUE;
+	  ret->u.v.id = NULL;
+	  ret->u.v.sz = NULL;
 	}
 	else {
 	  ret->type = ACT_PRS_EXPR_FALSE;
+	  ret->u.v.id = NULL;
+	  ret->u.v.sz = NULL;
 	}
       }
       else {
@@ -281,9 +287,13 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 	  NEW (ret, act_prs_expr_t);
 	  if (p->type == ACT_PRS_EXPR_ANDLOOP) {
 	    ret->type = ACT_PRS_EXPR_TRUE;
+	    ret->u.v.id = NULL;
+	    ret->u.v.sz = NULL;
 	  }
 	  else {
 	    ret->type = ACT_PRS_EXPR_FALSE;
+	    ret->u.v.id = NULL;
+	    ret->u.v.sz = NULL;
 	  }
 	}
       }
@@ -301,8 +311,6 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
     Assert (0, "Eh?");
     break;
   }
-  
-  
   return ret;
 }
 
