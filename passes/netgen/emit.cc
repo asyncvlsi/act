@@ -45,6 +45,347 @@ static void print_number (FILE *fp, double x)
   }
 }
 
+void ActNetlistPass::emitWeakSupplies ()
+{
+  FILE *fp = _outfp;
+  listitem_t *li;
+
+  if (top_level_only) return;
+
+  fprintf (fp, "*\n*--- weak supply instances ---*\n*\n");
+  for (li = list_first (shared_stat_list); li; li = list_next (li)) {
+    int fet = 0;
+    int repcount = 0;
+    shared_stat *s = (shared_stat *) list_value (li);
+    fprintf (fp, ".subckt ");
+    if (s->en && s->ep) {
+      a->mfprintf (fp, "::cell:::weak_supply<%d,%d,%d>", s->en->w,
+		   s->en->l, s->ep->l);
+      fprintf (fp, " lvdd lgnd wvdd wgnd\n");
+      _emit_one_fet (fp, NULL, s->en, fet, repcount);
+      _emit_one_fet (fp, NULL, s->ep, fet, repcount);
+    }
+    else if (s->ep) {
+      a->mfprintf (fp, "::cell:::weak_up<%d,%d>", s->ep->w, s->ep->l);
+      fprintf (fp, " lvdd lgnd wvdd\n");
+      _emit_one_fet (fp, NULL, s->ep, fet, repcount);
+    }
+    else {
+      a->mfprintf (fp, "::cell:::weak_dn<%d,%d>", s->en->w, s->en->l);
+      fprintf (fp, " lvdd lgnd wgnd\n");
+      _emit_one_fet (fp, NULL, s->en, fet, repcount);
+    }
+    fprintf (fp, ".ends\n");
+  }
+  fprintf (fp, "*\n*--- end weak supply instances ---*\n*\n");
+}
+
+
+void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
+				    int &fets, int &repnodes)
+{
+  char devname[1024];
+  node_t *src, *drain;
+  double lambda2 = lambda*lambda;
+  double oscale2 = output_scale_factor * output_scale_factor;
+
+  int len_repeat, width_repeat;
+  int width_last;
+  int il, iw;
+  int w, l;
+  int fold;
+  int leak;
+  int len_idx;
+
+  if (e->visited || e->pruned) return;
+  e->visited = 1;
+
+  w = e->w;
+  l = e->l;
+  leak = 0;
+
+  if (e->l == min_l_in_lambda*getGridsPerLambda() && (!n || n->leak_correct)) {
+    leak = 1;
+  }
+
+  /* discretize lengths */
+  len_repeat = e->nlen;
+  if (discrete_len > 0) {
+    l = discrete_len*getGridsPerLambda();
+  }
+  else if (len_repeat > 1) {
+    len_idx = find_length_window (e);
+    Assert (len_idx != -1, "Hmm");
+    l = discrete_fet_length[len_idx+1]*getGridsPerLambda();
+  }
+
+  if (e->type == EDGE_NFET) {
+    fold = n_fold;
+  }
+  else {
+    Assert (e->type == EDGE_PFET, "Hmm");
+    fold = p_fold;
+  }
+
+  width_repeat = e->nfolds;
+
+  if (swap_source_drain) {
+    src = e->b;
+    drain = e->a;
+  }
+  else {
+    src = e->a;
+    drain = e->b;
+  }
+
+  for (il = 0; il < len_repeat; il++) {
+    for (iw = 0; iw < width_repeat; iw++) {
+      char dev_name[256];
+      int sz = 256;
+      int len = 0;
+      dev_name[0] = '\0';
+
+#define UPDATE_SZ_LEN						\
+      do {							\
+	int tmp = strlen (dev_name + len);			\
+	len += tmp;						\
+	sz -= len;						\
+	Assert (sz > 0, "Increase device name buffer!");	\
+      } while (0)
+
+      if (width_repeat > 1) {
+	w = EDGE_WIDTH (e, iw);
+      }
+      else {
+	w = e->w;
+      }
+
+      if (use_subckt_models) {
+	fprintf (fp, "x");
+      }
+
+      snprintf (dev_name + len, sz, "M%d", fets);
+      UPDATE_SZ_LEN;
+
+      if (len_repeat > 1) {
+	snprintf (dev_name + len, sz, "_%d", il);
+	UPDATE_SZ_LEN;
+      }
+      if (width_repeat > 1) {
+	snprintf (dev_name + len, sz, "_%d", iw);
+	UPDATE_SZ_LEN;
+      }
+
+      /* name of the instance includes how the fet was generated in it */
+      if (e->pchg) {
+	snprintf (dev_name + len, sz, "_pchg");
+      }
+      else if (e->combf) {
+	snprintf (dev_name + len, sz, "_ckeeper");
+      }
+      else if (e->keeper) {
+	snprintf (dev_name + len, sz, "_keeper");
+      }
+      else if (e->raw) {
+	snprintf (dev_name + len, sz, "_pass");
+      }
+      else {
+	snprintf (dev_name + len, sz, "_");
+      }
+      UPDATE_SZ_LEN;
+
+      fprintf (fp, "%s ", dev_name);
+
+      /* if length repeat, source/drain changes */
+      if (il == 0) {
+	if (!n) {
+	  if (e->type == EDGE_PFET) {
+	    fprintf (fp, "lvdd");
+	  }
+	  else {
+	    fprintf (fp, "lgnd");
+	  }
+	}
+	else {
+	  emit_node (n, fp, src, dev_name, "S", 2);
+	}
+      }
+      else {
+	char buf[32];
+	snprintf (buf, 32, "#l%d", repnodes);
+	if (split_net (buf)) {
+	  fprintf (fp, "%s", dev_name);
+	  a->mfprintf (fp, ".S");
+	}
+	else {
+	  fprintf (fp, "%s", buf);
+	}
+      }
+      fprintf (fp, " ");
+      if (!n) {
+	if (e->type == EDGE_PFET) {
+	  fprintf (fp, "lgnd");
+	}
+	else {
+	  fprintf (fp, "lvdd");
+	}
+      }
+      else {
+	emit_node (n, fp, e->g, dev_name, "G", 2);
+      }
+      fprintf (fp, " ");
+
+      if (il == len_repeat-1) {
+	if (!n) {
+	  if (e->type == EDGE_PFET) {
+	    fprintf (fp, "wvdd");
+	  }
+	  else {
+	    fprintf (fp, "wgnd");
+	  }
+	}
+	else {
+	  emit_node (n, fp, drain, dev_name, "D", 2);
+	}
+      }
+      else {
+	char buf[32];
+	snprintf (buf, 32, "#l%d", repnodes+1);
+	if (split_net (buf)) {
+	  fprintf (fp, "%s", dev_name);
+	  a->mfprintf (fp, ".D");
+	}
+	else {
+	  fprintf (fp, "%s", buf);
+	}
+      }
+      if (len_repeat > 1 && il != len_repeat-1) {
+	repnodes++;
+      }
+
+      fprintf (fp, " ");
+      /* Do we need spef for bulk? */
+      if (!n) {
+	if (e->type == EDGE_PFET) {
+	  fprintf (fp, "lvdd");
+	}
+	else {
+	  fprintf (fp, "lgnd");
+	}
+      }
+      else {
+	emit_node (n, fp, e->bulk, NULL, NULL, 1);
+      }
+
+      snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
+		act_dev_value_to_string (e->flavor));
+      if (!config_exists (devname)) {
+	act_error_ctxt (stderr);
+	fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
+      }
+      fprintf (fp, " %s", config_get_string (devname));
+      fprintf (fp, " %s=", param_names.w);
+      print_number (fp, w*manufacturing_grid*output_scale_factor);
+      fprintf (fp, " %s=", param_names.l);
+
+      if (len_repeat > 1 && discrete_len == 0 && il == len_repeat-1) {
+	print_number (fp, (find_length_fit (e->l - (e->nlen-1)*l)*
+			   manufacturing_grid + leak*leak_adjust)
+		      *output_scale_factor);
+      }
+      else {
+	print_number (fp, (l*manufacturing_grid + leak*leak_adjust)
+		      *output_scale_factor);
+      }
+
+      if (_fin_width > 0) {
+	Assert ((w % _fin_width) == 0, "Internal inconsistency in fin width value");
+	if (!param_names.fin) {
+	  fatal_error ("fin_width specified without fin name in fet parameters!");
+	}
+	fprintf (fp, " %s=%d", param_names.fin, w/_fin_width);
+      }
+
+      /* print extra fet string */
+      if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
+	fprintf (fp, " %s\n", extra_fet_string);
+      }
+      else {
+	fprintf (fp, "\n");
+      }
+
+#undef UPDATE_SZ_LEN
+
+      /* area/perim for source/drain */
+      if (emit_parasitics) {
+	int gap;
+
+	if (il == 0) {
+	  if (src->v) {
+	    gap = fet_diff_overhang;
+	  }
+	  else {
+	    if (list_length (src->e) > 2 || width_repeat > 1) {
+	      gap = fet_spacing_diffcontact;
+	    }
+	    else {
+	      gap = fet_spacing_diffonly;
+	    }
+	  }
+	}
+	else {
+	  gap = fet_spacing_diffonly;
+	}
+	fprintf (fp, "+ %s=", param_names.as);
+	print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
+	fprintf (fp, " %s=", param_names.ps);
+	print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
+		      lambda*output_scale_factor);
+
+	if (il == len_repeat-1) {
+	  if (drain->v) {
+	    gap = fet_diff_overhang;
+	  }
+	  else {
+	    if (list_length (drain->e) > 2 || width_repeat > 1) {
+	      gap = fet_spacing_diffcontact;
+	    }
+	    else {
+	      gap = fet_spacing_diffonly;
+	    }
+	  }
+	}
+	else {
+	  gap = fet_spacing_diffonly;
+	}
+	fprintf (fp, " %s=", param_names.ad);
+	print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
+	fprintf (fp, " %s=", param_names.pd);
+	print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
+		      lambda*output_scale_factor);
+	fprintf (fp, "\n");
+      }
+
+      fflush (fp);
+
+      if (e->type == EDGE_NFET) {
+	if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda*getGridsPerLambda()) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Device #%d: nfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_n_w_in_lambda);
+	}
+      }
+      else {
+	if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda*getGridsPerLambda()) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_p_w_in_lambda);
+	}
+      }
+    }
+    fets++;
+  }
+}
+
+
 netlist_t *ActNetlistPass::emitNetlist (Process *p)
 {
   FILE *fp = _outfp;
@@ -233,11 +574,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   /*-- emit local netlist --*/
   int fets = 0;
   int ncaps = 0;
-  char devname[1024];
   int repnodes = 0;
-
-  double oscale2 = output_scale_factor * output_scale_factor;
-  double lambda2 = lambda*lambda;
 
   for (x = n->hd; x; x = x->next) {
     listitem_t *li;
@@ -253,262 +590,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     
     for (li = list_first (x->e); li; li = list_next (li)) {
       edge_t *e = (edge_t *)list_value (li);
-      node_t *src, *drain;
-
-      int len_repeat, width_repeat;
-      int width_last;
-      int il, iw;
-      int w, l;
-      int fold;
-      int leak;
-      int len_idx;
-      
-      if (e->visited || e->pruned) continue;
-      e->visited = 1;
-
-      w = e->w;
-      l = e->l;
-      leak = 0;
-
-      if (e->l == min_l_in_lambda*getGridsPerLambda() && n->leak_correct) {
-	leak = 1;
-      }
-
-      /* discretize lengths */
-      len_repeat = e->nlen;
-      if (discrete_len > 0) {
-	l = discrete_len*getGridsPerLambda();
-      }
-      else if (len_repeat > 1) {
-	len_idx = find_length_window (e);
-	Assert (len_idx != -1, "Hmm");
-	l = discrete_fet_length[len_idx+1]*getGridsPerLambda();
-      }
-
-      if (e->type == EDGE_NFET) {
-	fold = n_fold;
-      }
-      else {
-	Assert (e->type == EDGE_PFET, "Hmm");
-	fold = p_fold;
-      }
-
-      width_repeat = e->nfolds;
-      
-      if (swap_source_drain) {
-	src = e->b;
-	drain = e->a;
-      }
-      else {
-	src = e->a;
-	drain = e->b;
-      }
-	
-      for (il = 0; il < len_repeat; il++) {
-	for (iw = 0; iw < width_repeat; iw++) {
-	  char dev_name[256];
-	  int sz = 256;
-	  int len = 0;
-	  dev_name[0] = '\0';
-
-#define UPDATE_SZ_LEN						\
-	  do {							\
-	    int tmp = strlen (dev_name + len);			\
-	    len += tmp;						\
-	    sz -= len;						\
-	    Assert (sz > 0, "Increase device name buffer!");	\
-	  } while (0)
-
-	  if (width_repeat > 1) {
-	    w = EDGE_WIDTH (e, iw);
-	  }
-	  else {
-	    w = e->w;
-	  }
-	
-	  if (use_subckt_models) {
-	    fprintf (fp, "x");
-	  }
-
-	  snprintf (dev_name + len, sz, "M%d", fets);
-	  UPDATE_SZ_LEN;
-
-	  if (len_repeat > 1) {
-	    snprintf (dev_name + len, sz, "_%d", il);
-	    UPDATE_SZ_LEN;
-	  }
-	  if (width_repeat > 1) {
-	    snprintf (dev_name + len, sz, "_%d", iw);
-	    UPDATE_SZ_LEN;
-	  }
-
-	  /* name of the instance includes how the fet was generated in it */
-	  if (e->pchg) {
-	    snprintf (dev_name + len, sz, "_pchg");
-	  }
-	  else if (e->combf) {
-	    snprintf (dev_name + len, sz, "_ckeeper");
-	  }
-	  else if (e->keeper) {
-	    snprintf (dev_name + len, sz, "_keeper");
-	  }
-	  else if (e->raw) {
-	    snprintf (dev_name + len, sz, "_pass");
-	  }
-	  else {
-	    snprintf (dev_name + len, sz, "_");
-	  }
-	  UPDATE_SZ_LEN;
-
-	  fprintf (fp, "%s ", dev_name);
-
-	  /* if length repeat, source/drain changes */
-	  if (il == 0) {
-	    emit_node (n, fp, src, dev_name, "S", 2);
-	  }
-	  else {
-	    char buf[32];
-	    snprintf (buf, 32, "#l%d", repnodes);
-	    if (split_net (buf)) {
-	      fprintf (fp, "%s", dev_name);
-	      a->mfprintf (fp, ".S");
-	    }
-	    else {
-	      fprintf (fp, "%s", buf);
-	    }
-	  }
-	  fprintf (fp, " ");
-	  emit_node (n, fp, e->g, dev_name, "G", 2);
-	  fprintf (fp, " ");
-
-	  if (il == len_repeat-1) {
-	    emit_node (n, fp, drain, dev_name, "D", 2);
-	  }
-	  else {
-	    char buf[32];
-	    snprintf (buf, 32, "#l%d", repnodes+1);
-	    if (split_net (buf)) {
-	      fprintf (fp, "%s", dev_name);
-	      a->mfprintf (fp, ".D");
-	    }
-	    else {
-	      fprintf (fp, "%s", buf);
-	    }
-	  }
-	  if (len_repeat > 1 && il != len_repeat-1) {
-	    repnodes++;
-	  }
-
-	  fprintf (fp, " ");
-	  /* Do we need spef for bulk? */
-	  emit_node (n, fp, e->bulk, NULL, NULL, 1);
-
-	  snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
-		   act_dev_value_to_string (e->flavor));
-	  if (!config_exists (devname)) {
-	    act_error_ctxt (stderr);
-	    fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
-	  }
-	  fprintf (fp, " %s", config_get_string (devname));
-	  fprintf (fp, " %s=", param_names.w);
-	  print_number (fp, w*manufacturing_grid*output_scale_factor);
-	  fprintf (fp, " %s=", param_names.l);
-
-	  if (len_repeat > 1 && discrete_len == 0 && il == len_repeat-1) {
-	    print_number (fp, (find_length_fit (e->l - (e->nlen-1)*l)*
-			  manufacturing_grid + leak*leak_adjust)
-			  *output_scale_factor);
-	  }
-	  else {
-	    print_number (fp, (l*manufacturing_grid + leak*leak_adjust)
-			  *output_scale_factor);
-	  }
-
-	  if (_fin_width > 0) {
-	    Assert ((w % _fin_width) == 0, "Internal inconsistency in fin width value");
-	    if (!param_names.fin) {
-	      fatal_error ("fin_width specified without fin name in fet parameters!");
-	    }
-	    fprintf (fp, " %s=%d", param_names.fin, w/_fin_width);
-	  }
-
-	  /* print extra fet string */
-	  if (extra_fet_string && strcmp (extra_fet_string, "") != 0) {
-	    fprintf (fp, " %s\n", extra_fet_string);
-	  }
-	  else {
-	    fprintf (fp, "\n");
-	  }
-
-#undef UPDATE_SZ_LEN	  
-
-	  /* area/perim for source/drain */
-	  if (emit_parasitics) {
-	    int gap;
-
-	    if (il == 0) {
-	      if (src->v) {
-		gap = fet_diff_overhang;
-	      }
-	      else {
-		if (list_length (src->e) > 2 || width_repeat > 1) {
-		  gap = fet_spacing_diffcontact;
-		}
-		else {
-		  gap = fet_spacing_diffonly;
-		}
-	      }
-	    }
-	    else {
-	      gap = fet_spacing_diffonly;
-	    }
-	    fprintf (fp, "+ %s=", param_names.as);
-	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
-	    fprintf (fp, " %s=", param_names.ps);
-	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
-			  lambda*output_scale_factor);
-
-	    if (il == len_repeat-1) {
-	      if (drain->v) {
-		gap = fet_diff_overhang;
-	      }
-	      else {
-		if (list_length (drain->e) > 2 || width_repeat > 1) {
-		  gap = fet_spacing_diffcontact;
-		}
-		else {
-		  gap = fet_spacing_diffonly;
-		}
-	      }
-	    }
-	    else {
-	      gap = fet_spacing_diffonly;
-	    }
-	    fprintf (fp, " %s=", param_names.ad);
-	    print_number (fp, (e->w/getGridsPerLambda()*gap)*(lambda2*oscale2));
-	    fprintf (fp, " %s=", param_names.pd);
-	    print_number (fp, 2*(e->w/getGridsPerLambda() + gap)*
-			  lambda*output_scale_factor);
-	    fprintf (fp, "\n");
-	  }
-
-	  fflush (fp);
-
-	  if (e->type == EDGE_NFET) {
-	    if (max_n_w_in_lambda != 0 && e->w > max_n_w_in_lambda*getGridsPerLambda()) {
-	      act_error_ctxt (stderr);
-	      fatal_error ("Device #%d: nfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_n_w_in_lambda);
-	    }
-	  }
-	  else {
-	    if (max_p_w_in_lambda != 0 && e->w > max_p_w_in_lambda*getGridsPerLambda()) {
-	      act_error_ctxt (stderr);
-	      fatal_error ("Device #%d: pfet width (%d) exceeds maximum limit (%d)\n", fets-1, e->w/getGridsPerLambda(), max_p_w_in_lambda);
-	    }
-	  }
-	}
-      }
-      fets++;
+      _emit_one_fet (fp, n, e, fets, repnodes);
     }
   }
 
@@ -625,6 +707,46 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   }
   Assert (iport == A_LEN (n->bN->instports), "Hmm...");
   Assert (iweak == A_LEN (n->instport_weak), "Hmm...");
+
+  /*-- emit weak instances --*/
+  phash_bucket_t *pb = phash_lookup (shared_inst, p);
+  if (pb) {
+    list_t *l = (list_t *) pb->v;
+    int wi_cnt = 0;
+    Scope *sc = p ? p->CurScope () : ActNamespace::Global()->CurScope();
+    fprintf (fp, "*--- weak supplies\n");
+    for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+      shared_stat_inst *si = (shared_stat_inst *) list_value (li);
+      char buf[32];
+      do {
+	snprintf (buf, 32, "wk_stat_%d", wi_cnt++);
+      } while (sc->Lookup (buf));
+      fprintf (fp, "x%s ", buf);
+      emit_node (n, fp, n->Vdd,  NULL, NULL, 1);
+      fprintf (fp, " ");
+      emit_node (n, fp, n->GND,  NULL, NULL, 1);
+      if (si->weak_vdd) {
+	fprintf (fp, " ");
+	emit_node (n, fp, si->weak_vdd, NULL, NULL, 1);
+      }
+      if (si->weak_gnd) {
+	fprintf (fp, " ");
+	emit_node (n, fp, si->weak_gnd, NULL, NULL, 1);
+      }
+      fprintf (fp, " ");
+      if (si->weak_vdd && si->weak_gnd) {
+	a->mfprintf (fp, "::cell:::weak_supply<%d,%d,%d>", si->w, si->pl,
+		     si->nl);
+      }
+      else if (si->weak_vdd) {
+	a->mfprintf (fp, "::cell:::weak_up<%d,%d>", si->w, si->pl);
+      }
+      else {
+	a->mfprintf (fp, "::cell:::weak_dn<%d,%d>", si->w, si->nl);
+      }
+      fprintf (fp, "\n");
+    }
+  }
 
   if (_annotate) {
     _annotate->runcmd ("dump");

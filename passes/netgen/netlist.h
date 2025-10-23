@@ -195,6 +195,7 @@ class ActNetlistPass : public ActPass {
   ~ActNetlistPass ();
 
   int run (Process *p = NULL);
+  void run_recursive (Process *p, int mode);
 
   netlist_t *getNL (Process *p);
 
@@ -229,10 +230,19 @@ class ActNetlistPass : public ActPass {
 
   static int getGridsPerLambda() { return grids_per_lambda; }
   
- private:
+  /* list of shared staticizer cell types */
+  struct shared_stat {
+    edge_t *en, *ep;
+  };
+  struct shared_stat_inst {
+    int w, pl, nl;
+    node_t *weak_vdd, *weak_gnd; // the node name
+  };
+
+private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *v);
-  
+
   ActBooleanizePass *bools;
 
   /* lambda value */
@@ -290,6 +300,8 @@ class ActNetlistPass : public ActPass {
 
   int weak_share_min, weak_share_max;
 
+  bool cell_pass_has_run;
+
   /* series gate warnings */
   int series_n_warning;
   int series_p_warning;
@@ -309,6 +321,16 @@ class ActNetlistPass : public ActPass {
     const char *ps, *pd;
   } param_names;
 
+  // this is a map from process pointers to a list of instances
+  // the list contains shared_stat_inst pointers.
+  struct pHashtable *shared_inst;
+
+  // list of shared stat inst types that are needed
+  // name will be cell:::weak_suply<%d,%d,%d> or cell:::weak_up<%d,%d> or
+  // cell:::weak_dn<%d,%d>
+  list_t *shared_stat_list;
+
+
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,
 			  int num_vdd_share,
@@ -323,12 +345,15 @@ class ActNetlistPass : public ActPass {
 			     int num_gnd_share,
 			     int vdd_len, int gnd_len,
 			     node_t *weak_vdd, node_t *weak_gnd);
+  void _emit_one_fet (FILE *fp, netlist_t *n, edge_t *e, int &fets,
+		      int &repnodes);
 
   FILE *_outfp;
   ActDynamicPass *_annotate; // SPEF back-annotation
 
   netlist_t *genNetlist (Process *p);
   netlist_t *emitNetlist (Process *p);
+  void emitWeakSupplies ();
 
   void fold_transistors (netlist_t *N);
   int  find_length_window (edge_t *e);

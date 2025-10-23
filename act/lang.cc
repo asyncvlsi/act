@@ -293,6 +293,8 @@ act_prs_expr_t *prs_expr_expand (act_prs_expr_t *p, ActNamespace *ns, Scope *s)
 
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
+    ret->u.v.sz = act_expand_size (p->u.v.sz, ns, s);
+    ret->u.v.id = NULL;
     break;
     
   default:
@@ -380,6 +382,8 @@ static act_prs_expr_t *_prs_expr_dup (act_prs_expr_t *e, ActNamespace *orig,
 
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
+    ret->u.v.id = NULL;
+    ret->u.v.sz = _sizing_info_dup (e->u.v.sz, orig, newns);
     break;
 
   case ACT_PRS_EXPR_LABEL:
@@ -765,10 +769,16 @@ static void _print_prs_expr (FILE *fp, act_prs_expr_t *e, int prec)
 
   case ACT_PRS_EXPR_TRUE:
     fprintf (fp, "true");
+    if (e->u.v.sz) {
+      _print_size (fp, e->u.v.sz);
+    }
     break;
 
   case ACT_PRS_EXPR_FALSE:
     fprintf (fp, "false");
+    if (e->u.v.sz) {
+      _print_size (fp, e->u.v.sz);
+    }
     break;
 
   case ACT_PRS_EXPR_LABEL:
@@ -1058,6 +1068,8 @@ static act_prs_expr_t *_copy_rule (act_prs_expr_t *e)
 
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
+    ret->u.v = e->u.v;
+    ret->u.v.sz = NULL;
     break;
 
   case ACT_PRS_EXPR_ANDLOOP:
@@ -1366,6 +1378,8 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
       ret->type = (e->type == ACT_PRS_EXPR_TRUE ?
 		   ACT_PRS_EXPR_FALSE : ACT_PRS_EXPR_TRUE);
     }
+    ret->u.v.id = NULL;
+    ret->u.v.sz = NULL;
     break;
 
   case ACT_PRS_EXPR_LABEL:
@@ -1641,6 +1655,7 @@ static void _prs_expr_fixglobals (act_prs_expr_t *e, ActNamespace *cur,
 
   case ACT_PRS_EXPR_TRUE:
   case ACT_PRS_EXPR_FALSE:
+    _sizing_info_fixglobals (e->u.v.sz, cur, orig);
     break;
 
   case ACT_PRS_EXPR_LABEL:

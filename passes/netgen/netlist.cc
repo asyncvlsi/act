@@ -526,6 +526,8 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
 }
 
 
+static list_t *_weak_edge_list = NULL;
+
 static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
 {
   edge_t *e;
@@ -537,6 +539,10 @@ static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
   e->keeper = 1;
+
+  if (_weak_edge_list) {
+    list_append (_weak_edge_list, e);
+  }
 }
 
 static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
@@ -550,6 +556,10 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
   e->keeper = 1;
+
+  if (_weak_edge_list) {
+    list_append (_weak_edge_list, e);
+  }
 }
 
 
@@ -1283,7 +1293,7 @@ int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       }
       f = edge_alloc (N, supply, left, right, sub);
       f->type = EDGE_TYPE (type);
-      set_fet_params (N, f, type, NULL);
+      set_fet_params (N, f, type, e->u.v.sz);
       ldepth = 1;
     }
     break;
@@ -1306,7 +1316,7 @@ int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
       }
       f = edge_alloc (N, supply, left, right, sub);
       f->type = EDGE_TYPE (type);
-      set_fet_params (N, f, type, NULL);
+      set_fet_params (N, f, type, e->u.v.sz);
       ldepth = 1;
     }
     break;
@@ -1490,7 +1500,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
     return;
   }
   else {
-    if (n == N->Vdd) {
+    if (N && n == N->Vdd) {
       if (N->bN->cur) {
 	ValueIdx *vx;
 	act_connection *c;
@@ -1524,7 +1534,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 	snprintf (buf, sz, "%s", global_vdd);
       }	
     }
-    else if (n == N->GND) {
+    else if (N && n == N->GND) {
       if (N->bN->cur) {
 	ValueIdx *vx;
 	act_connection *c;
@@ -2421,6 +2431,74 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
   return;
 }
 
+
+static ActNetlistPass::shared_stat *
+_find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
+{
+  ActNetlistPass::shared_stat *s;
+  for (listitem_t *mi = list_first (l); mi; mi = list_next (mi)) {
+    s = (ActNetlistPass::shared_stat *) list_value (mi);
+    if ((eg && s->en && s->en->l == eg->l || !eg && !s->en) &&
+	(ev && s->ep && s->ep->l == ev->l || !ev && !s->ep)) {
+      return s;
+    }
+  }
+  NEW (s, ActNetlistPass::shared_stat);
+  if (eg) {
+    s->en = eg; // fixme
+  }
+  else {
+    s->en = NULL;
+  }
+  if (ev) {
+    s->ep = ev; // fixme
+  }
+  else {
+    s->ep = NULL;
+  }
+  if (eg && ev) {
+    Assert (eg->w == ev->w, "What?");
+  }
+  list_append (l, s);
+  return s;
+}
+
+static ActNetlistPass::shared_stat_inst *
+_create_shared_inst (ActNetlistPass::shared_stat *s,
+		     netlist_t *n,
+		     edge_t *ev, edge_t *eg)
+{
+  ActNetlistPass::shared_stat_inst *ret;
+  NEW (ret, ActNetlistPass::shared_stat_inst);
+  ret->weak_vdd = NULL;
+  ret->weak_gnd = NULL;
+  ret->pl = 0;
+  ret->nl = 0;
+  if (ev) {
+    ret->w = ev->w;
+    ret->pl = ev->l;
+    if (n->Vdd == ev->a) {
+      ret->weak_vdd = ev->b;
+    }
+    else {
+      Assert (n->Vdd == ev->b, "Hmm");
+      ret->weak_vdd = ev->a;
+    }
+  }
+  if (eg) {
+    ret->w = eg->w;
+    ret->nl = eg->l;
+    if (n->GND == eg->a) {
+      ret->weak_gnd = eg->b;
+    }
+    else {
+      Assert (n->GND == eg->b, "Hmm");
+      ret->weak_gnd = eg->a;
+    }
+  }
+  return ret;
+}
+
 netlist_t *ActNetlistPass::genNetlist (Process *p)
 {
   int sub_proc_vdd = 0, sub_proc_gnd = 0;
@@ -2436,6 +2514,13 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
   }
   else {
     sc = ActNamespace::Global()->CurScope();
+  }
+
+  if (cell_pass_has_run && !(weak_share_min == 1 && weak_share_max == 1)) {
+    _weak_edge_list = list_new ();
+  }
+  else {
+    _weak_edge_list = NULL;
   }
 
   /* Create netlist for all sub-processes */
@@ -2462,9 +2547,11 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	if (!vx->isPrimary (cnt))
 	  continue;
       }
-      
+
+      /* compute the # of weak vdd/gnd gates in this instance */
       sub_proc_vdd += tn->weak_supply_vdd;
       if (tn->weak_supply_vdd > 0) {
+	/* there is a weak vdd needed here, add it to the port list */
 	vdd_len = MAX (vdd_len, tn->vdd_len);
 	if (!weak_vdd) {
 	  weak_vdd = node_alloc (n, NULL);
@@ -2473,8 +2560,10 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	A_NEXT (n->instport_weak) = weak_vdd->i;
 	A_INC (n->instport_weak);
       }
+
       sub_proc_gnd += tn->weak_supply_gnd;
       if (tn->weak_supply_gnd > 0) {
+	/* there is a weak gnd needed, add it to the port list */
 	gnd_len = MAX (gnd_len, tn->gnd_len);
 	if (!weak_gnd) {
 	  weak_gnd = node_alloc (n, NULL);
@@ -2507,6 +2596,66 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
   generate_netgraph (n, sub_proc_vdd, sub_proc_gnd,
 		     vdd_len, gnd_len,
 		     weak_vdd, weak_gnd);
+
+
+  /* If there are cells, then factor out these components into special
+   * cells for weak gdd and weak vdd.
+   */
+  if (_weak_edge_list && list_length (_weak_edge_list) > 0) {
+    edge_t *ev, *eg, *etmp;
+    phash_bucket_t *pb;
+    list_t *l = list_new ();
+
+    pb = phash_add (shared_inst, p);
+    pb->v = l;
+
+    ev = NULL;
+    eg = NULL;
+    etmp = NULL;
+    for (listitem_t *li = list_first (_weak_edge_list); li; li = list_next (li)) {
+      etmp = (edge_t *) list_value (li);
+      shared_stat_inst *inst;
+      shared_stat *st;
+
+      if (ev && eg) {
+	// emit ev, eg pair as a subcircuit
+	st  = _find_shared_stat_type (shared_stat_list, ev, eg);
+	inst = _create_shared_inst (st, n, ev, eg);
+	list_append (l, inst);
+	ev = NULL;
+	eg = NULL;
+      }
+      if (etmp->type == EDGE_PFET) {
+	if (ev) {
+	  // emit ev as a subcircuit
+	  st = _find_shared_stat_type (shared_stat_list, ev, NULL);
+	  inst = _create_shared_inst (st, n, ev, NULL);
+	  ev = NULL;
+	}
+	ev = etmp;
+      }
+      else {
+	if (eg) {
+	  // emit eg as a subcircuit
+	  st = _find_shared_stat_type (shared_stat_list, NULL, eg);
+	  inst = _create_shared_inst (st, n, NULL, eg);
+	  eg = NULL;
+	}
+	eg = etmp;
+      }
+    }
+    if (ev || eg) {
+      shared_stat_inst *inst;
+      shared_stat *st;
+      // emit ev, eg
+      st = _find_shared_stat_type (shared_stat_list, ev, eg);
+      inst = _create_shared_inst (st, n, ev, eg);
+    }
+  }
+  if (_weak_edge_list) {
+    list_free (_weak_edge_list);
+  }
+  _weak_edge_list = NULL;
 
   return n;
 }
@@ -2628,6 +2777,7 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
 
   weak_share_min = 1;
   weak_share_max = 1;
+  cell_pass_has_run = false;
 
   config_set_default_string ("net.fet_params.width", "W");
   config_set_default_string ("net.fet_params.length", "L");
@@ -2789,17 +2939,54 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   param_names.ad = config_get_string ("net.fet_params.area_drain");
   param_names.pd = config_get_string ("net.fet_params.perim_drain");
   param_names.fin = config_get_string ("net.fet_params.fin");
+
+  shared_stat_list = list_new ();
+  shared_inst = phash_new (4);
 }
 
 ActNetlistPass::~ActNetlistPass()
 {
+  listitem_t *li;
   bools = NULL;
+
+  for (li = list_first (shared_stat_list); li; li = list_next (li)) {
+    shared_stat *s = (shared_stat *) list_value (li);
+    FREE (s);
+  }
+  list_free (shared_stat_list);
+  shared_stat_list = NULL;
+
+  phash_iter_t it;
+  phash_bucket_t *b;
+  phash_iter_init (shared_inst, &it);
+  while ((b = phash_iter_next (shared_inst, &it))) {
+    shared_stat_inst *inst = (shared_stat_inst *) b->v;
+    FREE (inst);
+  }
+  phash_free (shared_inst);
+  shared_inst = NULL;
 }
   
 int ActNetlistPass::run(Process *p)
 {
+  ActPass *ap = a->pass_find ("prs2cells");
+  if (ap && ap->completed()) {
+    cell_pass_has_run = true;
+  }
+  else {
+    cell_pass_has_run = false;
+  }
   return ActPass::run (p);
 }
+
+void ActNetlistPass::run_recursive (Process *p, int mode)
+{
+  if (mode == 1 && shared_inst->n > 0) {
+    emitWeakSupplies ();
+  }
+  ActPass::run_recursive (p, mode);
+}
+
 
 netlist_t *ActNetlistPass::getNL (Process *p)
 {

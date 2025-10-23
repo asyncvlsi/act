@@ -622,16 +622,16 @@ static act_prs_expr_t *_act_walk_expr (ActTree *a, act_prs_expr_t *e)
     if (ret->u.v.id->Rest() == NULL && ret->u.v.id->arrayInfo() == NULL) {
       if (strcmp (ret->u.v.id->getName(), "true") == 0) {
 	delete ret->u.v.id;
+	ret->u.v.id = NULL;
 	ret->type = ACT_PRS_EXPR_TRUE;
       }
       else if (strcmp (ret->u.v.id->getName(), "false") == 0) {
 	delete ret->u.v.id;
+	ret->u.v.id = NULL;
 	ret->type = ACT_PRS_EXPR_FALSE;
       }
     }
-    if (ret->type == ACT_PRS_EXPR_VAR) {
-      ret->u.v.sz = _process_sz (a, e->u.v.sz);
-    }
+    ret->u.v.sz = _process_sz (a, e->u.v.sz);
     break;
 
   case ACT_PRS_EXPR_LABEL:
@@ -687,6 +687,8 @@ static void _free_ex_expr (act_prs_expr_t *e)
     break;
     
   case ACT_PRS_EXPR_VAR:
+  case ACT_PRS_EXPR_TRUE:
+  case ACT_PRS_EXPR_FALSE:
     if (e->u.v.id) {
       delete (ActId *)e->u.v.id;
     }
@@ -724,10 +726,6 @@ static void _free_ex_expr (act_prs_expr_t *e)
     _free_ex_expr (e->u.loop.e);
     break;
 
-  case ACT_PRS_EXPR_TRUE:
-  case ACT_PRS_EXPR_FALSE:
-    break;
-    
   default:
     fatal_error ("what?");
     break;
