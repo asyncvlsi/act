@@ -3072,3 +3072,17 @@ bool ActNetlistPass::split_net (char *s)
   return false;
 }
   
+
+bool ActNetlistPass::emptyNetlist (netlist_t *N)
+{
+  node_t *n;
+  if (!N) return true;
+
+  n = N->hd;
+  while (n) {
+    if (!n->supply) return false;
+    if (!list_isempty (n->e)) return false;
+    n = n->next;
+  }
+  return true;
+}
