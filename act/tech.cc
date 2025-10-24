@@ -225,6 +225,7 @@ void Technology::Init ()
       if (config_exists (buf)) {					\
 	int *bloat;							\
 	char buf2[BUF_SZ];						\
+	bool have_text_pin = false;					\
 	snprintf (buf2, BUF_SZ, "%s_bloat", buf);			\
 	if (config_exists (buf2)) {					\
 	  bloat = config_get_table_int (buf2);				\
@@ -238,9 +239,21 @@ void Technology::Init ()
 	else {								\
 	  bloat = NULL;							\
 	}								\
+	snprintf (buf2, BUF_SZ, "%s_text", buf);			\
+	if (config_exists (buf2)) {					\
+	  mat->addGDStext (config_get_string (buf2));			\
+	  have_text_pin = true;						\
+	}								\
+	snprintf (buf2, BUF_SZ, "%s_pin", buf);				\
+	if (config_exists (buf2)) {					\
+	  mat->addGDSpin (config_get_string (buf2));			\
+	  have_text_pin = true;						\
+	}								\
 	mat->addGDS (config_get_table_string (buf),			\
 		     bloat,						\
-		     config_get_table_size (buf));			\
+		     config_get_table_size (buf),			\
+		     have_text_pin);					\
+									\
       }									\
       else {								\
 	warning ("No GDS information: `%s'", buf);			\
@@ -1158,7 +1171,7 @@ int Technology::getMaxSameDiffSpacing ()
   return spc;
 }
 
-void Material::addGDS (char **layers, int *bloat, int sz)
+void Material::addGDS (char **layers, int *bloat, int sz, bool have_text_pin)
 {
   hash_bucket_t *b;
   Assert (Technology::T->gdsH, "What?");
@@ -1172,12 +1185,44 @@ void Material::addGDS (char **layers, int *bloat, int sz)
     }
     GDSLayer *gl = (GDSLayer *)b->v;
     list_append (gds, gl);
-    gl->addMat (this, bloat ? bloat[i] : 0, i == 0 ? true : false);
+    gl->addMat (this, bloat ? bloat[i] : 0);
+    if (i == 0 && !have_text_pin) {
+      addGDStext (layers[0]);
+    }
   }
   gds_bloat = bloat;
 }
 
-void GDSLayer::addMat (Material *m, int bloat, bool is_first)
+void Material::addGDStext (char *name)
+{
+  hash_bucket_t *b;
+  Assert (Technology::T->gdsH, "What?");
+  Assert (!gds_text, "What?");
+
+  b = hash_lookup (Technology::T->gdsH, name);
+  if (!b) {
+    fatal_error ("Could not find GDS layer `%s'", name);
+  }
+  gds_text = (GDSLayer *)b->v;
+  gds_text->addTextMat (this);
+}
+
+void Material::addGDSpin (char *name)
+{
+  hash_bucket_t *b;
+  Assert (Technology::T->gdsH, "What?");
+  Assert (!gds_pin, "What?");
+
+  b = hash_lookup (Technology::T->gdsH, name);
+  if (!b) {
+    fatal_error ("Could not find GDS layer `%s'", name);
+  }
+  gds_pin = (GDSLayer *)b->v;
+  gds_pin->addPinMat (this);
+}
+
+
+void GDSLayer::addMat (Material *m, int bloat)
 {
   struct mat_info *x;
   if (!mats) {
@@ -1186,8 +1231,23 @@ void GDSLayer::addMat (Material *m, int bloat, bool is_first)
   NEW (x, mat_info);
   x->m = m;
   x->bloat = bloat;
-  x->is_first = is_first;
   list_append (mats, x);
+}
+
+void GDSLayer::addTextMat (Material *m)
+{
+  if (!l_text) {
+    l_text = list_new ();
+  }
+  list_append (l_text, m);
+}
+
+void GDSLayer::addPinMat (Material *m)
+{
+  if (!l_pin) {
+    l_pin = list_new ();
+  }
+  list_append (l_pin, m);
 }
 
 GDSLayer *Technology::GDSlookup (const char *s)

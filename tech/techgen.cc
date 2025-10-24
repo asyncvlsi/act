@@ -494,8 +494,10 @@ void emit_cifinput (pp_t *pp, Material *m)
       pp_nl;
     }
   }
-  pp_printf (pp, "labels %s",
-	     ((GDSLayer *) list_value (list_first (l)))->getName());
+  GDSLayer *gl = m->getGDSText();
+  if (gl) {
+    pp_printf (pp, "labels %s", gl->getName());
+  }
   pp_nl;
   
   pp_UNTAB;
@@ -580,29 +582,34 @@ void emit_cif (pp_t *pp)
       pp_puts (pp, "   ");
       pp_setb (pp);
       listitem_t *li;
-      bool found_first = false;
       for (li = g->matList(); li; li = list_next (li)) {
 	struct GDSLayer::mat_info *mx = (GDSLayer::mat_info *) list_value (li);
 	pp_printf (pp, "bloat-or %s * %d", mx->m->getName(),
 		   mx->bloat*s);
 	pp_nl;
-	if (mx->is_first) {
-	  found_first = true;
+      }
+      bool found = false;
+      for (li = g->matTextList(); li; li = list_next (li)) {
+	Material *mx = (Material *) list_value (li);
+	if (!found) {
+	  pp_printf (pp, "labels %s", mx->getName());
+	  found = true;
+	}
+	else {
+	  pp_printf (pp, ",%s", mx->getName());
 	}
       }
-      if (found_first) {
-	for (li = g->matList(); li; li = list_next (li)) {
-	  struct GDSLayer::mat_info *mx = (GDSLayer::mat_info*) list_value (li);
-	  if (mx->is_first) {
-	    if (found_first) {
-	      pp_printf (pp, "labels %s", mx->m->getName());
-	      found_first = false;
-	    }
-	    else {
-	      pp_printf (pp, ",%s", mx->m->getName());
-	    }
-	  }
+      for (li = g->matPinList(); li; li = list_next (li)) {
+	Material *mx = (Material *) list_value (li);
+	if (!found) {
+	  pp_printf (pp, "labels %s", mx->getName());
+	  found = true;
 	}
+	else {
+	  pp_printf (pp, ",%s", mx->getName());
+	}
+      }
+      if (found) {
 	pp_nl;
       }
       pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor());
@@ -694,8 +701,19 @@ void emit_cif (pp_t *pp)
     Contact *metalc = metal->getUpC ();
     emit_cifinput (pp, metal);
     emit_cifinputc (pp, metalc);
-  }  
+  }
 
+  // emit mapping from names to calma numbers
+  {
+    char **gds_all = config_get_table_string (gdsl);
+    for (int i=0; i < config_get_table_size (gdsl); i++) {
+      GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
+      if (!g || !g->matList()) continue;
+      pp_printf (pp, "calma %s %d %d", gds_all[i],
+		 g->getMajor(), g->getMinor());
+      pp_nl;
+    }
+  }
   pp_UNTAB;
   pp_printf (pp, "end");
   pp_SPACE;

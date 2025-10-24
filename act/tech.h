@@ -131,7 +131,12 @@ private:
 
   list_t *mats;			///< link back to materials that use
 				///this GDS layer
-  
+
+  list_t *l_pin;		///< materials that use this GDS layer
+				///  as a pin layer
+  list_t *l_text;		///< materials that use this GDS layer
+				///as a label layer
+
 public:
 
   /**
@@ -145,6 +150,8 @@ public:
     major = maj;
     minor = min;
     mats = NULL;
+    l_text = NULL;
+    l_pin = NULL;
   }
 
   /**
@@ -153,19 +160,26 @@ public:
   struct mat_info {
     Material *m;		///< the material itself
     int bloat;			///< the bloat amount
-    bool is_first;		///< Is this GDS layer the first
-				///< one for the material? Then put
-				///< labels here
   };
 
   /**
    * Add a material to the list of materials that use this GDS layer
    * @param m is the Material
    * @param bloat is the bloat amount
-   * @param is_first is true if this is the first GDS layer for the
-   * material; this is used for label association.
    */
-  void addMat (Material *m, int bloat, bool is_first);
+  void addMat (Material *m, int bloat);
+
+  /**
+   * Add a material that uses this GDS layer as a text/label layer
+   * @param m is the material to be added
+   */
+  void addTextMat (Material *m);
+
+  /**
+   * Add a material that uses this GDS layer as a pin/label layer
+   * @param m is the material to be added
+   */
+  void addPinMat (Material *m);
 
   /**
    * Return a listitem_t used to iterate over the materials that use
@@ -175,6 +189,22 @@ public:
    */
   listitem_t *matList () { if (mats) { return list_first (mats); } else { return NULL; } }
 
+  /**
+   * Return a listitem_t used to iterate over the materials that use
+   * this GDS layer as a text layer
+   * @return NULL if there are no materials, or the first item in the
+   * list
+   */
+  listitem_t *matTextList() { if (l_text) { return list_first (l_text); } else { return NULL; } }
+
+  /**
+   * Return a listitem_t used to iterate over the materials that use
+   * this GDS layer as a pin layer
+   * @return NULL if there are no materials, or the first item in the
+   * list
+   */
+  listitem_t *matPinList() { if (l_pin) { return list_first (l_pin); } else { return NULL; } }
+  
   /**
    * @return the major number of this GDS layer
    */
@@ -222,6 +252,8 @@ class Material {
     viadn = NULL;
     gds = NULL;
     gds_bloat = NULL;
+    gds_text = NULL;
+    gds_pin = NULL;
   }
 
   /**
@@ -235,8 +267,22 @@ class Material {
    * @param table is an array of GDS names
    * @param sz is the size of the table
    * @param bloat is the array of bloat values (NULL if unspecified)
+   * @param have_text_pin is set to true if this material has a
+   * text/pin layer specified for labels.
    */
-  void addGDS (char **table, int *bloat, int sz);
+  void addGDS (char **table, int *bloat, int sz, bool have_text_pin);
+
+  /**
+   * Add a GDS text layer for this material
+   * @param name is the GDS layer name
+   */
+  void addGDStext (char *name);
+
+  /**
+   * Add a GDS pin layer for this material
+   * @param name is the GDS layer name
+   */
+  void addGDSpin (char *name);
 
   /**
    * This returns the name of the via to connect up from the material,
@@ -269,6 +315,16 @@ class Material {
    * @return bloat amounts
    */
   int *getGDSBloat() { return gds_bloat; }
+
+  /**
+   * @return gds text field
+   */
+  GDSLayer *getGDSText() { return gds_text; }
+
+  /**
+   * @return gds pin field
+   */
+  GDSLayer *getGDSPin() { return gds_pin; }
   
 
 protected:
@@ -288,6 +344,8 @@ protected:
 
   list_t *gds;			///< GDS layer list
   int *gds_bloat;		///< GDS bloat table
+  GDSLayer *gds_text;		///< GDS text layer
+  GDSLayer *gds_pin;		///< GDS pin layer
 
   friend class Technology;
 };

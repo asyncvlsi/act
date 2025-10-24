@@ -2,12 +2,15 @@ Makefile.deps
 arm64_*
 i386_*
 x86_64_*
+aarch64_*
 *.arm64_*
 *.i386_*
 *.x86_64_*
+*.aarch64_*
 lib*_arm64_*.a
 lib*_i386_*.a
 lib*_x86_64_*.a
+lib*_aarch64_*.a
 .act_history
 *.so
 *~
