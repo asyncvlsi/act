@@ -434,8 +434,21 @@ static node_t *search_supply_list_for_null (list_t *x)
 #define EDGE_KEEPER   (0x10 << 4) // keeper edge (force)
 #define EDGE_CKEEPER  (0x20 << 4) // ckeeper edge (force)
 
+
+bool ActNetlistPass::discreteLength ()
+{
+  return discrete_len > 0 ? true : false;
+}
+
+bool ActNetlistPass::discreteLenWindows ()
+{
+  return discrete_fet_length_sz > 0 ? true : false;
+}
+
 int ActNetlistPass::find_length_fit (int len)
 {
+  Assert (discreteLenWindows(), "What?");
+
   for (int i=0; i < discrete_fet_length_sz/2; i++) {
     if (discrete_fet_length[2*i]*getGridsPerLambda() <= len &&
 	len <= discrete_fet_length[2*i+1]*getGridsPerLambda()) {
@@ -449,6 +462,7 @@ int ActNetlistPass::find_length_fit (int len)
       }
     }
   }
+  /* length is too long, find the largest one possible */
   return discrete_fet_length[discrete_fet_length_sz-1]*getGridsPerLambda();
 }
 
@@ -456,6 +470,7 @@ int ActNetlistPass::find_length_window (edge_t *e)
 {
   int i;
   int last = -1;
+  Assert (discreteLenWindows(), "What?");
   for (i=0; i < discrete_fet_length_sz/2; i++) {
     if (discrete_fet_length[2*i]*getGridsPerLambda() <= e->l &&
 	e->l <= discrete_fet_length[2*i+1]*getGridsPerLambda()) {
@@ -473,6 +488,15 @@ int ActNetlistPass::find_length_window (edge_t *e)
   return discrete_fet_length_sz - 2;
 }
 
+int ActNetlistPass::find_closest_length_upperbound (edge_t *e)
+{
+  Assert (e->nlen > 1, "ActNetlistPass::find_closest_length_upperbound() called in the wrong context.");
+
+  int idx = find_length_window (e);
+  Assert (idx != -1, "What?");
+  return discrete_fet_length[idx+1];
+}
+
 void ActNetlistPass::fold_transistors (netlist_t *N)
 {
   node_t *n;
@@ -480,8 +504,8 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
   edge_t *e;
   int fold;
 
-  if (n_fold == 0 && p_fold == 0 && discrete_len == 0 &&
-      discrete_fet_length_sz == 0) return;
+  if (n_fold == 0 && p_fold == 0 && !discreteLength() && !discreteLenWindows())
+    return;
 
   for (n = N->hd; n; n = n->next) {
     for (li = list_first (n->e); li; li = list_next (li)) {
@@ -501,10 +525,11 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
 	}
       }
 
-      if (discrete_len > 0) {
+      if (discreteLength()) {
+	/* round up */
 	e->nlen = (e->l + getGridsPerLambda()*discrete_len - 1)/(getGridsPerLambda()*discrete_len);
       }
-      else if (discrete_fet_length_sz > 0) {
+      else if (discreteLenWindows()) {
 	int last = find_length_window (e);
 	if (last != -1) {
 	  /* closest smaller window is [last, last+1]; we assume the

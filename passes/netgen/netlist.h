@@ -240,6 +240,24 @@ class ActNetlistPass : public ActPass {
     node_t *weak_vdd, *weak_gnd; // the node name
   };
 
+  list_t *getSharedStatTypes() { return shared_stat_list; }
+
+  void getSharedStatName (char *buf, int sz, int w, int pl, int nl);
+
+  /* find the closest length to the one specified given length windows */
+  int  find_length_fit (int len);
+
+  /*
+   * If an edge is cut into more than one length, then this finds the
+   * discrete value that is repeated until the final edge
+   */
+  int  find_closest_length_upperbound (edge_t *e);
+
+  bool discreteLength ();  ///< return true if there is a single
+			   ///discrete length
+
+  bool discreteLenWindows (); ///< return true if there are length windows specified
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *v);
@@ -358,7 +376,6 @@ private:
 
   void fold_transistors (netlist_t *N);
   int  find_length_window (edge_t *e);
-  int  find_length_fit (int len);
   void set_fet_params (netlist_t *n, edge_t *f, unsigned int type,
 		       act_size_spec_t *sz);
   int create_expr_edges (netlist_t *N, int type, node_t *left,

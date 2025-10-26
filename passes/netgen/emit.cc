@@ -45,10 +45,34 @@ static void print_number (FILE *fp, double x)
   }
 }
 
+void ActNetlistPass::getSharedStatName (char *buf, int sz,
+					int w, int pl, int nl)
+{
+  int pos, len;
+  pos = 0;
+
+  /** note the three colons; this is not a valid ACT process name **/
+  snprintf (buf+pos, sz, "::cell:::weak_");
+  len = strlen (buf+pos);
+  pos += len;
+  sz -= len;
+
+  if (pl != 0 && nl != 0) {
+    snprintf (buf+pos, sz, "supply<%d,%d,%d>", w, nl, pl);
+  }
+  else if (pl != 0) {
+    snprintf (buf+pos, sz, "_up<%d,%d>", w, pl);
+  }
+  else {
+    snprintf (buf+pos, sz, "_dn<%d,%d>", w, nl);
+  }
+}
+
 void ActNetlistPass::emitWeakSupplies ()
 {
   FILE *fp = _outfp;
   listitem_t *li;
+  char buf[64];
 
   if (top_level_only) return;
 
@@ -58,20 +82,20 @@ void ActNetlistPass::emitWeakSupplies ()
     int repcount = 0;
     shared_stat *s = (shared_stat *) list_value (li);
     fprintf (fp, ".subckt ");
+    buf[0] = '\0';
+    getSharedStatName (buf, 64, s->en ? s->en->w : s->ep->w,
+		       s->ep ? s->ep->l : 0, s->en ? s->en->l : 0);
+    a->mfprintf (fp, "%s", buf);
     if (s->en && s->ep) {
-      a->mfprintf (fp, "::cell:::weak_supply<%d,%d,%d>", s->en->w,
-		   s->en->l, s->ep->l);
       fprintf (fp, " lvdd lgnd wvdd wgnd\n");
       _emit_one_fet (fp, NULL, s->en, fet, repcount);
       _emit_one_fet (fp, NULL, s->ep, fet, repcount);
     }
     else if (s->ep) {
-      a->mfprintf (fp, "::cell:::weak_up<%d,%d>", s->ep->w, s->ep->l);
       fprintf (fp, " lvdd lgnd wvdd\n");
       _emit_one_fet (fp, NULL, s->ep, fet, repcount);
     }
     else {
-      a->mfprintf (fp, "::cell:::weak_dn<%d,%d>", s->en->w, s->en->l);
       fprintf (fp, " lvdd lgnd wgnd\n");
       _emit_one_fet (fp, NULL, s->en, fet, repcount);
     }
@@ -95,7 +119,6 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
   int w, l;
   int fold;
   int leak;
-  int len_idx;
 
   if (e->visited || e->pruned) return;
   e->visited = 1;
@@ -110,13 +133,13 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
 
   /* discretize lengths */
   len_repeat = e->nlen;
-  if (discrete_len > 0) {
+  if (discreteLength()) {
     l = discrete_len*getGridsPerLambda();
   }
   else if (len_repeat > 1) {
-    len_idx = find_length_window (e);
-    Assert (len_idx != -1, "Hmm");
-    l = discrete_fet_length[len_idx+1]*getGridsPerLambda();
+    int len_val = find_closest_length_upperbound (e);
+    Assert (len_val > 0, "Hmm");
+    l = len_val*getGridsPerLambda();
   }
 
   if (e->type == EDGE_NFET) {
@@ -288,7 +311,7 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
       print_number (fp, w*manufacturing_grid*output_scale_factor);
       fprintf (fp, " %s=", param_names.l);
 
-      if (len_repeat > 1 && discrete_len == 0 && il == len_repeat-1) {
+      if (len_repeat > 1 && !discreteLength() && il == len_repeat-1) {
 	print_number (fp, (find_length_fit (e->l - (e->nlen-1)*l)*
 			   manufacturing_grid + leak*leak_adjust)
 		      *output_scale_factor);
@@ -717,9 +740,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     fprintf (fp, "*--- weak supplies\n");
     for (listitem_t *li = list_first (l); li; li = list_next (li)) {
       shared_stat_inst *si = (shared_stat_inst *) list_value (li);
-      char buf[32];
+      char buf[64];
       do {
-	snprintf (buf, 32, "wk_stat_%d", wi_cnt++);
+	snprintf (buf, 64, "wk_stat_%d", wi_cnt++);
       } while (sc->Lookup (buf));
       fprintf (fp, "x%s ", buf);
       emit_node (n, fp, n->Vdd,  NULL, NULL, 1);
@@ -734,16 +757,9 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	emit_node (n, fp, si->weak_gnd, NULL, NULL, 1);
       }
       fprintf (fp, " ");
-      if (si->weak_vdd && si->weak_gnd) {
-	a->mfprintf (fp, "::cell:::weak_supply<%d,%d,%d>", si->w, si->pl,
-		     si->nl);
-      }
-      else if (si->weak_vdd) {
-	a->mfprintf (fp, "::cell:::weak_up<%d,%d>", si->w, si->pl);
-      }
-      else {
-	a->mfprintf (fp, "::cell:::weak_dn<%d,%d>", si->w, si->nl);
-      }
+
+      getSharedStatName (buf, 64, si->w, si->pl, si->nl);
+      a->mfprintf (fp, "%s", buf);
       fprintf (fp, "\n");
     }
   }
