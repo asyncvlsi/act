@@ -87,16 +87,16 @@ void ActNetlistPass::emitWeakSupplies ()
 		       s->ep ? s->ep->l : 0, s->en ? s->en->l : 0);
     a->mfprintf (fp, "%s", buf);
     if (s->en && s->ep) {
-      fprintf (fp, " lvdd lgnd wvdd wgnd\n");
+      fprintf (fp, " #0 #1 #2 #3\n");
       _emit_one_fet (fp, NULL, s->en, fet, repcount);
       _emit_one_fet (fp, NULL, s->ep, fet, repcount);
     }
     else if (s->ep) {
-      fprintf (fp, " lvdd lgnd wvdd\n");
+      fprintf (fp, " #0 #1 #2\n");
       _emit_one_fet (fp, NULL, s->ep, fet, repcount);
     }
     else {
-      fprintf (fp, " lvdd lgnd wgnd\n");
+      fprintf (fp, " #0 #1 #2\n");
       _emit_one_fet (fp, NULL, s->en, fet, repcount);
     }
     fprintf (fp, ".ends\n");
@@ -221,17 +221,7 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
 
       /* if length repeat, source/drain changes */
       if (il == 0) {
-	if (!n) {
-	  if (e->type == EDGE_PFET) {
-	    fprintf (fp, "lvdd");
-	  }
-	  else {
-	    fprintf (fp, "lgnd");
-	  }
-	}
-	else {
-	  emit_node (n, fp, src, dev_name, "S", 2);
-	}
+	emit_node (n, fp, src, dev_name, "S", 2);
       }
       else {
 	char buf[32];
@@ -245,31 +235,11 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
 	}
       }
       fprintf (fp, " ");
-      if (!n) {
-	if (e->type == EDGE_PFET) {
-	  fprintf (fp, "lgnd");
-	}
-	else {
-	  fprintf (fp, "lvdd");
-	}
-      }
-      else {
-	emit_node (n, fp, e->g, dev_name, "G", 2);
-      }
+      emit_node (n, fp, e->g, dev_name, "G", 2);
       fprintf (fp, " ");
 
       if (il == len_repeat-1) {
-	if (!n) {
-	  if (e->type == EDGE_PFET) {
-	    fprintf (fp, "wvdd");
-	  }
-	  else {
-	    fprintf (fp, "wgnd");
-	  }
-	}
-	else {
-	  emit_node (n, fp, drain, dev_name, "D", 2);
-	}
+	emit_node (n, fp, drain, dev_name, "D", 2);
       }
       else {
 	char buf[32];
@@ -288,17 +258,7 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
 
       fprintf (fp, " ");
       /* Do we need spef for bulk? */
-      if (!n) {
-	if (e->type == EDGE_PFET) {
-	  fprintf (fp, "lvdd");
-	}
-	else {
-	  fprintf (fp, "lgnd");
-	}
-      }
-      else {
-	emit_node (n, fp, e->bulk, NULL, NULL, 1);
-      }
+      emit_node (n, fp, e->bulk, NULL, NULL, 1);
 
       snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		act_dev_value_to_string (e->flavor));
@@ -610,7 +570,8 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       emit_node (n, fp, n->GND, NULL, NULL, 1);
       fprintf (fp, " %g\n", x->cap*1e-15);
     }
-    
+
+    /* mark shared staticizer subcell edges as visited for this purpose */
     for (li = list_first (x->e); li; li = list_next (li)) {
       edge_t *e = (edge_t *)list_value (li);
       _emit_one_fet (fp, n, e, fets, repnodes);

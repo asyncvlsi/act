@@ -222,16 +222,16 @@ static at_lookup *at_alloc (void)
   return a;
 }
 
-static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
+static node_t *node_alloc_raw (int &num)
 {
   node_t *x;
 
   NEW (x, node_t);
-  x->i = n->idnum++;
-  x->v = vi;
+  x->i = num++;
+  x->v = NULL;
 
   x->e = list_new ();
-  x->b = bool_false (n->B);
+  x->b = NULL;
 
   x->contact = 0;
   x->supply = 0;
@@ -249,6 +249,17 @@ static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
   x->resis = 0;
   x->next = NULL;
 
+  return x;
+}
+
+
+static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
+{
+  node_t *x;
+
+  x = node_alloc_raw (n->idnum);
+  x->v = vi;
+  x->b = bool_false (n->B);
   q_ins (n->hd, n->tl, x);
 
   return x;
@@ -325,8 +336,7 @@ static node_t *node_lookup (netlist_t *n, act_connection *c)
   }
 }
 
-static edge_t *edge_alloc (netlist_t *n, node_t *gate,
-			   node_t *a, node_t *b, node_t *bulk)
+static edge_t *edge_alloc (node_t *gate, node_t *a, node_t *b, node_t *bulk)
 {
   edge_t *e;
 
@@ -371,6 +381,27 @@ static edge_t *edge_alloc (netlist_t *n, node_t *gate,
 
   return e;
 }
+
+static void edge_copyattr (edge_t *target, edge_t *src)
+{
+  target->w = src->w;
+  target->l = src->l;
+  target->flavor = src->flavor;
+
+  target->type = src->type;
+
+  target->pchg = src->pchg;
+  target->keeper = src->keeper;
+  target->combf = src->combf;
+  target->raw = src->raw;
+
+  target->nfolds = src->nfolds;
+  target->nlen = src->nlen;
+  target->visited = src->visited;
+  target->pruned = src->pruned;
+  target->tree = src->tree;
+}
+
   
 static edge_t *edge_alloc (netlist_t *n, ActId *id, node_t *a, node_t *b,
 			   node_t *bulk)
@@ -385,7 +416,7 @@ static edge_t *edge_alloc (netlist_t *n, ActId *id, node_t *a, node_t *b,
 
   v = var_lookup (n, c);
 
-  return edge_alloc (n, VINF(v)->n, a, b, bulk);
+  return edge_alloc (VINF(v)->n, a, b, bulk);
 }
   
   
@@ -559,7 +590,7 @@ static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
 
   Assert (w, "What?");
 	  
-  e = edge_alloc (N, N->GND, N->Vdd, w, N->nsc);
+  e = edge_alloc (N->GND, N->Vdd, w, N->nsc);
   e->type = EDGE_PFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
@@ -576,7 +607,7 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
 
   Assert (w, "What?");
 	  
-  e = edge_alloc (N, N->Vdd, N->GND, w, N->psc);
+  e = edge_alloc (N->Vdd, N->GND, w, N->psc);
   e->type = EDGE_NFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
@@ -667,11 +698,11 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 
 	edge_t *e_inv;
 
-	e_inv = edge_alloc (N, n, N->Vdd, iout, N->nsc);
+	e_inv = edge_alloc (n, N->Vdd, iout, N->nsc);
 	e_inv->type = EDGE_PFET;
 	set_fet_params (N, e_inv, EDGE_STATINV|EDGE_PFET, NULL);
 
-	e_inv = edge_alloc (N, n, N->GND, iout, N->psc);
+	e_inv = edge_alloc (n, N->GND, iout, N->psc);
 	e_inv->type = EDGE_NFET;
 	set_fet_params (N, e_inv, EDGE_STATINV|EDGE_NFET, NULL);
 	n->v->inv = iout;
@@ -708,14 +739,14 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	if (cnt[0] != 2 || cnt[1] != 2) {
 	  fatal_error ("Error: invalid node used for h-type keeper!");
 	}
-	e = edge_alloc (N, n->v->inv, node[EDGE_NFET][0], node[EDGE_NFET][1],
+	e = edge_alloc (n->v->inv, node[EDGE_NFET][0], node[EDGE_NFET][1],
 			N->psc);
 	e->type = EDGE_NFET;
 	e->keeper = 1;
 	e->w = min_w_in_lambda*getGridsPerLambda();
 	e->l = min_l_in_lambda*getGridsPerLambda();
 	
-	e = edge_alloc (N, n->v->inv, node[EDGE_PFET][0], node[EDGE_PFET][1],
+	e = edge_alloc (n->v->inv, node[EDGE_PFET][0], node[EDGE_PFET][1],
 			N->nsc);
 	e->type = EDGE_PFET;
 	e->keeper = 1;
@@ -730,7 +761,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 
 	  /* pfets */
 	  tmp = node_alloc (N, NULL);
-	  e = edge_alloc (N, n->v->inv, tmp, n, N->nsc);
+	  e = edge_alloc (n->v->inv, tmp, n, N->nsc);
 	  e->type = EDGE_PFET;
 	  e->w = min_w_in_lambda*getGridsPerLambda();
 	  e->l = min_l_in_lambda*getGridsPerLambda();
@@ -741,7 +772,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 
 	  /* nfets */
 	  tmp = node_alloc (N, NULL);
-	  e = edge_alloc (N, n->v->inv, tmp, n, N->psc);
+	  e = edge_alloc (n->v->inv, tmp, n, N->psc);
 	  e->type = EDGE_NFET;
 	  e->w = min_w_in_lambda*getGridsPerLambda();
 	  e->l = min_l_in_lambda*getGridsPerLambda();
@@ -779,7 +810,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	  */
 	  if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
 	      (len < min_l_in_lambda)) {
-	    e = edge_alloc (N, n->v->inv, N->Vdd, n, N->nsc);
+	    e = edge_alloc (n->v->inv, N->Vdd, n, N->nsc);
 	    e->type = EDGE_PFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = (min_l_in_lambda + len)*getGridsPerLambda();
@@ -809,7 +840,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	    tmp = node_alloc (N, NULL); // tmp node
 
 	    /* resistor */
-	    e = edge_alloc (N, N->GND, N->Vdd, tmp, N->nsc);
+	    e = edge_alloc (N->GND, N->Vdd, tmp, N->nsc);
 	    e->type = EDGE_PFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = len*getGridsPerLambda();
@@ -817,7 +848,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 #endif	  
 
 	    /* inv */
-	    e = edge_alloc (N, n->v->inv, weak_vdd, n, N->nsc);
+	    e = edge_alloc (n->v->inv, weak_vdd, n, N->nsc);
 	    e->type = EDGE_PFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = min_l_in_lambda*getGridsPerLambda();
@@ -838,7 +869,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	
 	  if ((double)min_l_in_lambda/(double)min_w_in_lambda >= r ||
 	      (len < min_l_in_lambda)) {
-	    e = edge_alloc (N, n->v->inv, N->GND, n, N->psc);
+	    e = edge_alloc (n->v->inv, N->GND, n, N->psc);
 	    e->type = EDGE_NFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = (min_l_in_lambda + len)*getGridsPerLambda();
@@ -868,7 +899,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	    tmp = node_alloc (N, NULL); // tmp node
 
 	    /* resistor */
-	    e = edge_alloc (N, N->Vdd, N->GND, tmp, N->psc);
+	    e = edge_alloc (N->Vdd, N->GND, tmp, N->psc);
 	    e->type = EDGE_NFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = len*getGridsPerLambda();
@@ -876,7 +907,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 #endif	  
 
 	    /* inv */
-	    e = edge_alloc (N, n->v->inv, weak_gnd, n, N->psc);
+	    e = edge_alloc (n->v->inv, weak_gnd, n, N->psc);
 	    e->type = EDGE_NFET;
 	    e->w = min_w_in_lambda*getGridsPerLambda();
 	    e->l = min_l_in_lambda*getGridsPerLambda();
@@ -1316,7 +1347,7 @@ int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	supply = N->GND;
 	sub = N->nsc;
       }
-      f = edge_alloc (N, supply, left, right, sub);
+      f = edge_alloc (supply, left, right, sub);
       f->type = EDGE_TYPE (type);
       set_fet_params (N, f, type, e->u.v.sz);
       ldepth = 1;
@@ -1339,7 +1370,7 @@ int ActNetlistPass::create_expr_edges (netlist_t *N, int type, node_t *left,
 	supply = N->GND;
 	sub = N->nsc;
       }
-      f = edge_alloc (N, supply, left, right, sub);
+      f = edge_alloc (supply, left, right, sub);
       f->type = EDGE_TYPE (type);
       set_fet_params (N, f, type, e->u.v.sz);
       ldepth = 1;
@@ -2469,14 +2500,37 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
     }
   }
   NEW (s, ActNetlistPass::shared_stat);
+
+  node_t *vdd = NULL, *gnd = NULL;
+  node_t *wvdd = NULL, *wgnd = NULL;
+  int cnt = 0;
+
+  vdd = node_alloc_raw (cnt);
+  gnd = node_alloc_raw (cnt);
+  if (ev) {
+    wvdd = node_alloc_raw (cnt);
+  }
   if (eg) {
-    s->en = eg; // fixme
+    wgnd = node_alloc_raw (cnt);
+  }
+
+  // port list order is
+  // #0 (vdd)
+  // #1 (gnd)
+  // #2 (wvdd)
+  // #3 (wgnd)
+
+  if (eg) {
+    //s->en = eg;
+    s->en = edge_alloc (vdd, gnd, wgnd, gnd);
+    edge_copyattr (s->en, eg);
   }
   else {
     s->en = NULL;
   }
   if (ev) {
-    s->ep = ev; // fixme
+    s->ep = edge_alloc (gnd, vdd, wvdd, vdd);
+    edge_copyattr (s->ep, ev);
   }
   else {
     s->ep = NULL;
@@ -2509,6 +2563,9 @@ _create_shared_inst (ActNetlistPass::shared_stat *s,
       Assert (n->Vdd == ev->b, "Hmm");
       ret->weak_vdd = ev->a;
     }
+    Assert (list_length (ret->weak_vdd->e) == 1, "What?");
+    list_delete_tail (ret->weak_vdd->e);
+    ev->visited = 1;
   }
   if (eg) {
     ret->w = eg->w;
@@ -2520,6 +2577,9 @@ _create_shared_inst (ActNetlistPass::shared_stat *s,
       Assert (n->GND == eg->b, "Hmm");
       ret->weak_gnd = eg->a;
     }
+    Assert (list_length (ret->weak_gnd->e) == 1, "What?");
+    list_delete_tail (ret->weak_gnd->e);
+    eg->visited = 1;
   }
   return ret;
 }
@@ -2541,7 +2601,8 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
     sc = ActNamespace::Global()->CurScope();
   }
 
-  if (cell_pass_has_run && !(weak_share_min == 1 && weak_share_max == 1)) {
+  if (cell_pass_has_run && !(weak_share_min == 1 && weak_share_max == 1) &&
+      !p->isCell()) {
     _weak_edge_list = list_new ();
   }
   else {
@@ -2655,6 +2716,7 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	  // emit ev as a subcircuit
 	  st = _find_shared_stat_type (shared_stat_list, ev, NULL);
 	  inst = _create_shared_inst (st, n, ev, NULL);
+	  list_append (l, inst);
 	  ev = NULL;
 	}
 	ev = etmp;
@@ -2664,6 +2726,7 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	  // emit eg as a subcircuit
 	  st = _find_shared_stat_type (shared_stat_list, NULL, eg);
 	  inst = _create_shared_inst (st, n, NULL, eg);
+	  list_append (l, inst);
 	  eg = NULL;
 	}
 	eg = etmp;
@@ -2675,6 +2738,41 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
       // emit ev, eg
       st = _find_shared_stat_type (shared_stat_list, ev, eg);
       inst = _create_shared_inst (st, n, ev, eg);
+      list_append (l, inst);
+    }
+
+    // now filter these edges out of the Vdd/GND edgelist
+    if (n->Vdd) {
+      listitem_t *prev = NULL, *li;
+      li = list_first (n->Vdd->e);
+      while (li) {
+	edge_t *x = (edge_t *) list_value (li);
+	if (x->visited) {
+	  li = list_next (li);
+	  list_delete_next (n->Vdd->e, prev);
+	  FREE (x);
+	}
+	else {
+	  prev = li;
+	  li = list_next (li);
+	}
+      }
+    }
+    if (n->GND) {
+      listitem_t *prev = NULL, *li;
+      li = list_first (n->GND->e);
+      while (li) {
+	edge_t *x = (edge_t *) list_value (li);
+	if (x->visited) {
+	  li = list_next (li);
+	  list_delete_next (n->GND->e, prev);
+	  FREE (x);
+	}
+	else {
+	  prev = li;
+	  li = list_next (li);
+	}
+      }
     }
   }
   if (_weak_edge_list) {
