@@ -259,7 +259,9 @@ static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
 
   x = node_alloc_raw (n->idnum);
   x->v = vi;
-  x->b = bool_false (n->B);
+  if (n->B) {
+    x->b = bool_false (n->B);
+  }
   q_ins (n->hd, n->tl, x);
 
   return x;
@@ -2325,28 +2327,14 @@ static void _set_current_supplies (netlist_t *N, act_prs *p)
   N->GND->reff_set[EDGE_NFET] = 1;
 }
 
-static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
+static netlist_t *_initialize_empty_blank_netlist ()
 {
   netlist_t *N;
-  act_prs *p;
-  Scope *cur;
-  phash_iter_t it;
-  phash_bucket_t *b;
   
   NEW (N, netlist_t);
 
-  if (bN->p) {
-    p = bN->p->getprs();
-    cur = bN->p->CurScope();
-  }
-  else {
-    p = ActNamespace::Global()->getprs();
-    cur = ActNamespace::Global()->CurScope();
-  }
-
-  N->bN = bN;
-  N->B = bool_init ();
-  N->bN->visited = 0;
+  N->bN = NULL;
+  N->B = NULL;
   N->weak_supply_vdd = 0;
   N->weak_supply_gnd = 0;
   N->vdd_len = 0;
@@ -2367,6 +2355,32 @@ static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
   N->nsc_list = list_new ();
 
   N->leak_correct = 0;
+
+  return N;
+}
+
+static netlist_t *_initialize_empty_netlist (act_boolean_netlist_t *bN)
+{
+  netlist_t *N;
+  act_prs *p;
+  Scope *cur;
+  phash_iter_t it;
+  phash_bucket_t *b;
+
+  N = _initialize_empty_blank_netlist ();
+  
+  if (bN->p) {
+    p = bN->p->getprs();
+    cur = bN->p->CurScope();
+  }
+  else {
+    p = ActNamespace::Global()->getprs();
+    cur = ActNamespace::Global()->CurScope();
+  }
+
+  N->bN = bN;
+  N->B = bool_init ();
+  N->bN->visited = 0;
 
   /* clear extra flag! */
   phash_iter_init (bN->cH, &it);
@@ -2501,17 +2515,33 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
   }
   NEW (s, ActNetlistPass::shared_stat);
 
+  s->nl = _initialize_empty_blank_netlist ();
+
   node_t *vdd = NULL, *gnd = NULL;
   node_t *wvdd = NULL, *wgnd = NULL;
-  int cnt = 0;
 
-  vdd = node_alloc_raw (cnt);
-  gnd = node_alloc_raw (cnt);
+  vdd = node_alloc (s->nl, NULL);
+  gnd = node_alloc (s->nl, NULL);
+
+  s->nl->Vdd = vdd;
+  s->nl->nsc = vdd;
+  
+  s->nl->GND = gnd;
+  s->nl->psc = gnd;
+
+  vdd->supply = 1;
+  gnd->supply = 1;
+
+  append_node_to_list (s->nl->vdd_list, s->nl->Vdd);
+  append_node_to_list (s->nl->gnd_list, s->nl->GND);
+  append_node_to_list (s->nl->psc_list, s->nl->psc);
+  append_node_to_list (s->nl->nsc_list, s->nl->nsc);
+  
   if (ev) {
-    wvdd = node_alloc_raw (cnt);
+    wvdd = node_alloc (s->nl, NULL);
   }
   if (eg) {
-    wgnd = node_alloc_raw (cnt);
+    wgnd = node_alloc (s->nl, NULL);
   }
 
   // port list order is

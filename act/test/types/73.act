@@ -1,0 +1,12 @@
+deftype mystruct (chan(int) X) { }
+
+
+defproc test()
+{
+  chan(int) Y;
+  mystruct m;
+
+  chp {
+    Y?m.X
+  }
+}

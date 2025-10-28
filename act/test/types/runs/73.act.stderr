@@ -1,0 +1,2 @@
+ERROR: File `73.act', line 10, col 9
+	Identifier `m.X' is not of type bool/int/structure

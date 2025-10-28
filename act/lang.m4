@@ -2191,7 +2191,9 @@ assignable_expr_id[ActId *]: expr_id
       fprintf ($f, "'' is of array type\n");
       exit (1);
     }
-    if (!T_BASETYPE_ISINTBOOL (t) && !(t & T_DATA)) {
+    if (!T_BASETYPE_ISINTBOOL (t) && (T_BASETYPE(t) != T_DATA) &&
+	(T_BASETYPE (t) != T_DATA_ENUM) &&
+	(T_BASETYPE (t) != T_IFACE)) {
       $e("Identifier ``");
       $1->Print ($f, NULL);
       fprintf ($f, "'' is not of type bool/int/structure\n");

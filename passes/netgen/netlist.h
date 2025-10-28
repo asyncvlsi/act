@@ -233,6 +233,7 @@ class ActNetlistPass : public ActPass {
   
   /* list of shared staticizer cell types */
   struct shared_stat {
+    netlist_t *nl;
     edge_t *en, *ep;
   };
   struct shared_stat_inst {
