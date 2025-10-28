@@ -380,12 +380,14 @@ static act_prs_expr_t *_prs_expr_dup (act_prs_expr_t *e, ActNamespace *orig,
     ret->u.e.l = _prs_expr_dup (e->u.e.l, orig, newns);
     ret->u.e.r = _prs_expr_dup (e->u.e.r, orig, newns);
     ret->u.e.pchg = _prs_expr_dup (e->u.e.pchg, orig, newns);
+    ret->u.e.pchg_type = e->u.e.pchg_type;
     break;
 
   case ACT_PRS_EXPR_NOT:
     ret->u.e.l = _prs_expr_dup (e->u.e.l, orig, newns);
     ret->u.e.r = NULL;
     ret->u.e.pchg = NULL;
+    ret->u.e.pchg_type = -1;
     break;
 
   case ACT_PRS_EXPR_TRUE:
