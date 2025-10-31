@@ -514,6 +514,8 @@ static Expr *expr_parse (void)
   int query_op = 0;
   int last_was_tok = 1;
 
+  int query_count = 0;
+
 #ifdef EXPR_VERBOSE
   printf ("[%d] >>start\n", ++depth);
 #endif  
@@ -527,6 +529,7 @@ static Expr *expr_parse (void)
     int tok = _inv_tok (file_sym (Tl));
  
     if (tok == E_QUERY) {
+      query_count++;
       query_op++;
     }
     else if (tok == E_COLON) {
@@ -740,6 +743,39 @@ static Expr *expr_parse (void)
 #endif      
     }
     else if (top_op == E_QUERY) {
+      Expr *r;
+      if (list_length (stk_res) == 1) {
+	r = (Expr *)list_value (list_first (stk_res));
+      }
+      else {
+	r = NULL;
+      }
+      if (r && r->type == E_QUERY) {
+	// flush trailing query!
+	Expr *te;
+	r = (Expr *) stack_pop (stk_res);
+	stack_push (stk_res, r->u.e.r);
+	te = r;
+	r = r->u.e.l;
+	FREE (te);
+	_release (stk_op, stk_res);
+
+	SET (Tl);
+	POP (Tl);
+	while (query_count > 0) {
+	  int tok = _inv_tok (file_sym (Tl));
+	  if (tok == E_QUERY) {
+	    if (query_count == 1) {
+	      break;
+	    }
+	    else {
+	      query_count--;
+	    }
+	  }
+	  file_getsym (Tl);
+	}
+	return r;
+      }
       SET (Tl);
       POP (Tl);
       _release (stk_op, stk_res);

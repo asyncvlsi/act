@@ -512,36 +512,6 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
 }}
 ;
 
-w_exprchp[Expr *]: expr
-{{X:
-    Expr *e;
-    int tc;
-    int oldval;
-    Scope *oldsc;
-    oldsc = $0->special_id_sc;
-    oldval = $0->special_id;
-    $0->special_id = 0;
-
-    $0->line = $l;
-    $0->column = $c;
-    $0->file = $n;
-    e = act_walk_X_expr ($0, $1);
-    $A($0->scope);
-    tc = act_type_expr ($0->scope, e, NULL, 2);
-    if (tc == T_ERR) {
-      $e("Typechecking failed on expression!");
-      fprintf ($f, "\n\t%s\n", act_type_errmsg ());
-      exit (1);
-    }
-    if ($0->strict_checking && ((tc & T_STRICT) == 0)) {
-      $E("Expressions in port parameter list can only use strict template parameters");
-    }
-    $0->special_id = oldval;
-    $0->special_id_sc = oldsc;
-    return e;
-}}
-;
-
 /* WARNING: only used for dataflow */
 
 w_chan_int_expr[Expr *]: EXTERN[fexpr]

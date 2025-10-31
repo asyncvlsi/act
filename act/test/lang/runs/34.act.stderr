@@ -1,3 +1,3 @@
-ERROR: File `34.act', line 8, col 22
+ERROR: File `34.act', line 8, col 20
 	Typechecking failed on expression!
 	int(.) with a Boolean argument doesn't accept second arg

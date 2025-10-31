@@ -843,7 +843,7 @@ chp_log_item[act_func_arguments_t *]: w_expr
 }}
 ;
 
-send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_exprchp ]
+send_stmt[act_chp_lang_t *]: chan_expr_id snd_type [ w_expr_chp ]
                                                   [ rcv_type gen_assignable_id ]
 {{X:
     act_chp_lang_t *c;
@@ -956,7 +956,7 @@ gen_assignable_id[ActId *]: assignable_expr_id
 ;
 
 recv_stmt[act_chp_lang_t *]: chan_expr_id rcv_type [ gen_assignable_id ]
-                                        [ snd_type w_exprchp ]
+                                        [ snd_type w_expr_chp ]
 {{X:
     act_chp_lang_t *c;
     Channel *ch1;
