@@ -2696,6 +2696,21 @@ void print_dag_expr (FILE *fp, const Expr *e)
 }
 
 
+/*
+ * dag expressions visited flag
+ */
+static list_t *_visited_stack = NULL;
+
+#define _EXPR_VISIT(e,ret)					\
+  do {								\
+    struct pHashtable *_p =					\
+      (struct pHashtable *) stack_peek (_visited_stack);	\
+    if (phash_lookup (_p, (e))) {				\
+      return (ret);						\
+    }								\
+    (void)phash_add (_p, (e));					\
+  } while (0)
+  
 static bool _expr_globalid_needsfix (Expr *e,
 				     ActNamespace *cur, ActNamespace *orig)
 {
@@ -2704,8 +2719,12 @@ static bool _expr_globalid_needsfix (Expr *e,
   Expr *tmp;
   int pc;
   int lw, rw;
-  
+
   if (!e) return false;
+
+  // if visited, return false because otherwise we would have exited
+  // already
+  _EXPR_VISIT(e, false);
 
 #define EXP_CHECK(x)  if (x && _expr_globalid_needsfix (x, cur, orig)) { return true; }
 
@@ -2899,6 +2918,8 @@ static Expr *_expr_globalid_dofix (Expr *e,
 {
   if (!e) return NULL;
 
+  _EXPR_VISIT(e,e);
+
 #define EXP_CHECK(x)  if (x) { x = _expr_globalid_dofix (x, cur, orig); }
 
   switch (e->type) {
@@ -3079,15 +3100,28 @@ static Expr *_expr_globalid_dofix (Expr *e,
 
 Expr *expr_globalids (Expr *e, ActNamespace *cur, ActNamespace *orig)
 {
+  if (!_visited_stack) {
+    _visited_stack = list_new ();
+  }
+  stack_push (_visited_stack, phash_new (4));
   if (_expr_globalid_needsfix (e, cur, orig)) {
     e = expr_predup (e);
+    phash_clear ((struct pHashtable *)stack_peek (_visited_stack));
     e = _expr_globalid_dofix (e, cur, orig);
   }
+  phash_free ((struct pHashtable *)stack_pop (_visited_stack));
   return e;
 }
 
 
 int expr_hasglobalids (Expr *e, ActNamespace *cur, ActNamespace *orig)
 {
-  return _expr_globalid_needsfix (e, cur, orig);
+  bool res;
+  if (!_visited_stack) {
+    _visited_stack = list_new ();
+  }
+  stack_push (_visited_stack, phash_new (4));
+  res = _expr_globalid_needsfix (e, cur, orig);
+  phash_free ((struct pHashtable *)stack_pop (_visited_stack));
+  return res;
 }
