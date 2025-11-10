@@ -2206,7 +2206,23 @@ Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
 }
 
 
+void _clone_exprhash (struct pHashtable **ret,
+		      struct pHashtable *H)
+{
+  phash_iter_t it;
+  phash_bucket_t *b, *nb;
 
+  if (*ret == NULL) {
+    *ret = phash_new (H->n);
+  }
+
+  phash_iter_init (H, &it);
+  while ((b = phash_iter_next (H, &it))) {
+    nb = phash_add (*ret, b->key);
+    nb->v = b->v;
+  }
+  return;
+}
 
 /*
  *  Dag printing
@@ -2666,33 +2682,80 @@ static int _print_dag_expr (struct pHashtable *H,
   return b->i;
 }
 
-void print_dag_expr (FILE *fp, const Expr *e)
+
+void print_dag_expr_list (FILE *fp, list_t *l)
 {
   char *buf;
   int bufsz = 10240;
-  int n;
-  struct pHashtable *H;
+  int n, ntmp;
+  struct pHashtable *H, *Htmp;
 
-  H = phash_new (8);
-
+  H = NULL;
   fprintf (fp, "{{ ");
   MALLOC (buf, char, bufsz);
-  while (1) {
-    buf[0] = '\0';
-    buf[bufsz-1] = '\0';
-    buf[bufsz-2] = '\0';
-    n = 0;
-    n = _print_dag_expr (H, &n, buf, bufsz, e);
-    if (buf[bufsz-2] == '\0') {
-      fprintf (fp, "%s @%d }}", buf, n);
-      FREE (buf);
-      phash_free (H);
-      return;
+
+  list_t *res = list_new ();
+
+  n = 0;
+  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
+    Expr *e = (Expr *) list_value (li);
+
+    Htmp = NULL;
+
+    while (1) {
+      buf[0] = '\0';
+      buf[bufsz-1] = '\0';
+      buf[bufsz-2] = '\0';
+      ntmp = n;
+
+      if (!H) {
+	if (!Htmp) {
+	  Htmp = phash_new (8);
+	}
+      }
+      else {
+	_clone_exprhash (&Htmp, H);
+      }
+
+      ntmp = _print_dag_expr (Htmp, &ntmp, buf, bufsz, e);
+      if (buf[bufsz-2] == '\0') {
+	list_iappend (res, ntmp);
+	fprintf (fp, "%s", buf);
+	n = ntmp+1;
+	break;
+      }
+      phash_clear (Htmp);
+      bufsz *= 2;
+      REALLOC (buf, char, bufsz);
     }
-    phash_clear (H);
-    bufsz *= 2;
-    REALLOC (buf, char, bufsz);
+    if (H) {
+      phash_free (H);
+    }
+    H = Htmp;
   }
+
+  phash_free (H);
+  FREE (buf);
+
+  for (listitem_t *li = list_first (res); li; li = list_next (li)) {
+    int v = list_ivalue (li);
+    if (li == list_first (res)) {
+      fprintf (fp, "@%d", v);
+    }
+    else {
+      fprintf (fp, " @%d", v);
+    }
+  }
+  list_free (res);
+  fprintf (fp, " }}");
+}
+
+void print_dag_expr (FILE *fp, const Expr *e)
+{
+  list_t *tmp = list_new ();
+  list_append (tmp, e);
+  print_dag_expr_list (fp, tmp);
+  list_free (tmp);
 }
 
 

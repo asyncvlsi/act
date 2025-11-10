@@ -1,0 +1,11 @@
+defproc test() {
+    int x;
+    chp {
+        x:=127;
+        log(x);
+        x:=x{-2..0};
+        log(x)
+    }
+}
+
+test t;

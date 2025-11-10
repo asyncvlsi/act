@@ -24,7 +24,7 @@
 
 #include <stdio.h>
 #include <act/expr.h>
-
+#include <common/list.h>
 
 class ActNamespace;
 class Scope;
@@ -301,14 +301,22 @@ Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s);
 
 
 /**
- * Print an expression as a DAG to a file. This is used to print parameter
- * expressions (e.g. in the core ACT language), and not chp/dataflow
- * expressions.
+ * Print an expression as a DAG to a file.
  *
  * @param fp is the output file
  * @param e is the expression
  */
 void print_dag_expr (FILE *fp, const Expr *e);
+
+
+/**
+ * Print an expression list as a DAG to a file.
+ *
+ * @param fp is the output file
+ * @param l is a list of Expr *
+ */
+void print_dag_expr_list (FILE *fp, list_t *l);
+
 
 /**
  * Convert an expression into a dag. This can only be called on

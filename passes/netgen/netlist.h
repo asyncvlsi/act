@@ -234,7 +234,8 @@ class ActNetlistPass : public ActPass {
   /* list of shared staticizer cell types */
   struct shared_stat {
     netlist_t *nl;
-    edge_t *en, *ep;
+    edge_t *en, *ep; // the "b" terminal of the edge is always the
+		     // weak power supply node
   };
   struct shared_stat_inst {
     int w, pl, nl;

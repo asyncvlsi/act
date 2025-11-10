@@ -2031,8 +2031,8 @@ static Expr *_expr_expand (int *width, Expr *e,
       if (!expr_is_a_const (ret->u.e.l)) {
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = E_BITFIELD;
-	ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
-	ret->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags);
+	ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags & ~ACT_EXPR_EXFLAG_CHPEX);
+	ret->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags & ~ACT_EXPR_EXFLAG_CHPEX);
 	if ((ret->u.e.r->u.e.l && !expr_is_a_const (ret->u.e.r->u.e.l)) || !expr_is_a_const (ret->u.e.r->u.e.r)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "\texpanding expr: ");
@@ -2054,6 +2054,24 @@ static Expr *_expr_expand (int *width, Expr *e,
 	  fprintf (stderr,"\n");
 	  fatal_error ("Variable in bitfield operator is a non-integer");
 	}
+	if (ret->u.e.r->u.e.l && ((signed)ret->u.e.r->u.e.l->u.ival.v) < 0) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Bitfield indices are negative?");
+	}
+	if (((signed)ret->u.e.r->u.e.r->u.ival.v) < 0) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "\texpanding expr: ");
+	  print_expr (stderr, e);
+	  fprintf (stderr,"\n");
+	  fatal_error ("Bitfield indices are negative?");
+	}
+	if (ret->u.e.r->u.e.l) expr_ex_free (ret->u.e.r->u.e.l);
+	if (ret->u.e.r->u.e.r) expr_ex_free (ret->u.e.r->u.e.r);
+	ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
+	ret->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r, ns, s, flags);
 	if (ret->u.e.r->u.e.l) {
 	  *width = ret->u.e.r->u.e.r->u.ival.v - ret->u.e.r->u.e.l->u.ival.v + 1;
 	}
