@@ -462,7 +462,10 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 
   case E_INT:
     ret->u.ival.v = e->u.ival.v;
-    ret->u.ival.v_extra = NULL;
+    if (e->u.ival.v_extra) {
+      ret->u.ival.v_extra = e->u.ival.v_extra;
+      e->u.ival.v_extra = NULL;
+    }
     break;
 
   case E_REAL:

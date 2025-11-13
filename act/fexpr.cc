@@ -26,6 +26,7 @@
 #include <common/file.h>
 #include <common/misc.h>
 #include <common/list.h>
+#include <common/int.h>
 #include "act_parse_int.h"
 #include "act_walk.extra.h"
 
@@ -183,11 +184,21 @@ static Expr *expr_basecase (void)
     e = newexpr ();
     e->type = E_FALSE;
   }
-  else if (file_have (Tl, f_integer)) {
+  else if (file_sym (Tl) == f_integer) {
     e = newexpr ();
     e->type = E_INT;
+    BigInt bi = BigInt::sscan (file_tokenstring (Tl));
+    file_getsym (Tl);
     e->u.ival.v = file_integer (Tl);
-    e->u.ival.v_extra = NULL;
+
+    if (bi.getLen() > 1) {
+      BigInt *pbi = new BigInt;
+      *pbi = bi;
+      e->u.ival.v_extra = pbi;
+    }
+    else {
+      e->u.ival.v_extra = NULL;
+    }
   }
   else if (file_have (Tl, f_real)) {
     e = newexpr ();
