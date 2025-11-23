@@ -201,6 +201,8 @@ private:
         u.value = oval;
       }
     }
+    /* if this became zero width, clear the value */
+    if (newlen == 0) u.value = 0;
   }
 
   void _add (const BigInt &b, int cin);
