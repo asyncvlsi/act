@@ -1,0 +1,10 @@
+template <pint W>
+defproc px (bool port[W]) {}
+
+defproc test_px () {
+    px<0> px1;
+    px<0> px2;
+    px1.port = px2.port;
+}
+
+test_px t;

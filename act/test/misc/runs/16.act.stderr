@@ -1,0 +1,5 @@
+In expanding test_px (16.act:4)
+In expanding ::<Global>
+Error on or near line number 7.
+ id: px1.port
+FATAL: Identifer conditionally created, but used when it does not exist
