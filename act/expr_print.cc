@@ -1988,6 +1988,12 @@ Data *act_expr_is_structure (Scope *s, Expr *e, int *error)
     }
   }
   if (!it) return NULL;
+
+  // channel expressions
+  if (TypeFactory::isChanType (it)) {
+    it = TypeFactory::getChanDataType (it);
+  }
+
   u = dynamic_cast<UserDef *>(it->BaseType());
   if (!u || !TypeFactory::isStructure (u)) {
     if (error) {

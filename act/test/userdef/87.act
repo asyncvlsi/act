@@ -1,0 +1,12 @@
+deftype s (
+    int<1> a;
+    int<1> b
+) {}
+
+defproc sb (chan?(s) IN) {
+    int<2> x;
+    chp {
+        *[ [#IN -> x:=int(IN)] ]
+    }
+}
+

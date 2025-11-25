@@ -583,6 +583,15 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 	      }
 	      ux = dynamic_cast<UserDef *> (it->BaseType());
 	    }
+	    else if (TypeFactory::isChanType (it)) {
+	      InstType *it2 = TypeFactory::getChanDataType (it);
+	      if (TypeFactory::isPureStruct (it2)) {
+		if (it2->arrayInfo () && (!aref || !aref->isDeref())) {
+		  act_parse_err (&p, "int(.) operator applied to an array!");
+		}
+		ux = dynamic_cast<UserDef *> (it2->BaseType());
+	      }
+	    }
 	  }
 	}
 	else if (ret->u.e.l->type == E_FUNCTION) {
