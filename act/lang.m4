@@ -802,7 +802,7 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
 ;
 
 
-chp_log_item[act_func_arguments_t *]: w_expr
+chp_log_item[act_func_arguments_t *]: w_expr_chp
 {{X:
     act_func_arguments_t *arg;
     NEW (arg, struct act_func_arguments);

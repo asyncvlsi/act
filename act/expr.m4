@@ -491,6 +491,7 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
     int tc;
     int oldval;
     Scope *oldsc;
+    bool tmp;
     oldsc = $0->special_id_sc;
     oldval = $0->special_id;
     $0->special_id = 0;
@@ -508,6 +509,7 @@ w_expr_chp[Expr *]: EXTERN[fexpr]
     }
     $0->special_id = oldval;
     $0->special_id_sc = oldsc;
+
     return e;
 }}
 ;

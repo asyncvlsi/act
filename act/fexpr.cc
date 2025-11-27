@@ -942,5 +942,11 @@ void act_free_a_fexpr (void *v)
 
 void *act_walk_X_fexpr (ActTree *t, void *v)
 {
-  return act_walk_X_expr (t, (Expr *)v);
+  bool tmp;
+  void *ret;
+  tmp = t->allow_chan;
+  t->allow_chan = true;
+  ret = act_walk_X_expr (t, (Expr *)v);
+  t->allow_chan = tmp;
+  return ret;
 }

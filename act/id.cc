@@ -1711,7 +1711,7 @@ UserDef *ActId::isFragmented (Scope *s)
   while (tmp->Rest()) {
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
     if (TypeFactory::isChanType (it)) {
-      Assert (u, "Hi");
+      //Assert (u, "Hi");
       return u;
     }
     if (TypeFactory::isDataType (it)) {
