@@ -3022,6 +3022,8 @@ void PStruct::sPrint (char *buf, int sz, Scope *sc, Scope::pstruct &off)
       PRINT_STEP;
     }
   }
+  snprintf (buf+k,sz,")");
+  PRINT_STEP;
 }
 
 
