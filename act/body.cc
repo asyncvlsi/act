@@ -120,6 +120,34 @@ void ActBody_Inst::Print (FILE *fp)
   fprintf (fp, ";\n");
 }
 
+void ActBody_Assertion::Print (FILE *fp)
+{
+  fprintf (fp, "{ ");
+  if (type == 0) {
+    print_expr (fp, u.t0.e);
+    fprintf (fp, " ");
+    if (u.t0.msg) {
+      fprintf (fp, ": \"%s\" ", u.t0.msg);
+    }
+  }
+  else {
+    u.t1.id1->Print (fp);
+    if (u.t1.op == 0) {
+      fprintf (fp, " === ");
+    }
+    else {
+      fprintf (fp, " !== ");
+    }
+    u.t1.id2->Print (fp);
+    fprintf (fp, " ");
+    if (u.t1.msg) {
+      fprintf (fp, ": \"%s\" ", u.t1.msg);
+    }
+  }
+  fprintf (fp, "};\n");
+}
+
+
 /*------------------------------------------------------------------------*/
 
 /*
@@ -1004,6 +1032,46 @@ void ActBody_Loop::Print (FILE *fp)
   }
   fprintf (fp, ")\n");
 }
+
+void ActBody_Select::Print (FILE *fp)
+{
+  ActBody_Select_gc *tmp;
+  fprintf (fp, "[");
+  tmp = gc;
+  while (tmp) {
+    if (tmp->id) {
+      fprintf (fp, "([] %s : ", tmp->id);
+      if (tmp->lo) {
+	print_expr (fp, tmp->lo);
+	fprintf( fp, " .. ");
+      }
+      print_expr (fp, tmp->hi);
+      fprintf (fp, " : ");
+    }
+    else {
+      if (tmp != gc) {
+	fprintf (fp, "[] ");
+      }
+    }
+    if (tmp->g) {
+      print_expr (fp, tmp->g);
+    }
+    else {
+      fprintf (fp, "else");
+    }
+    fprintf (fp, " -> ");
+    ActBody *bi;
+    for (bi = tmp->s; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
+    if (tmp->id) {
+      fprintf (fp, " )\n");
+    }
+    tmp = tmp->next;
+  }
+  fprintf (fp, "]\n");
+}
+
 
 void act_syn_loop_setup (ActNamespace *ns, Scope *s,
 			    const char *id, Expr *lo, Expr *hi,

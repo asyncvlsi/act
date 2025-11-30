@@ -1,0 +1,12 @@
+defptype foo(pint a; pbool b; pint c);
+
+
+template<foo f | pbool b>
+defproc test(int x[f.a]) { }
+
+foo f = foo(3, false, 4);
+
+template<pint W | pbool q>
+defproc test2 <: test () { }
+
+test2<0, f> t;

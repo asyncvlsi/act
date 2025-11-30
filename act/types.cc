@@ -118,12 +118,17 @@ void UserDef::snprintActName (char *buf, int sz)
       }
     }
     else if (in_param) {
-      if (name[i] == 't' && name[i-1] == ',') {
-	snprintf (buf+pos, sz-pos-1, "true");
-	pos += strlen (buf+pos);
-      }
-      else if (name[i] == 'f' && name[i-1] == ',') {
-	snprintf (buf+pos, sz-pos-1, "false");
+      if ((name[i] == 't' || name[i] == 'f') &&
+	  (name[i-1] == ',' || name[i-1] == '{' ||
+	   name[i-1] == '<' || name[i-1] == '(') &&
+	  (!name[i+1] || name[i+1] == ',' || name[i+1] == '}' ||
+	   name[i+1] == '>' || name[i+1] == ')')) {
+	if (name[i] == 't') {
+	  snprintf (buf+pos, sz-pos-1, "true");
+	}
+	else {
+	  snprintf (buf+pos, sz-pos-1, "false");
+	}
 	pos += strlen (buf+pos);
       }
       else {
@@ -306,6 +311,7 @@ UserDef::UserDef (ActNamespace *ns)
   pending = 0;
 
   nt = 0;
+  n_strict = 0;
   pt = NULL;
   pn = NULL;
   pdefault = NULL;
@@ -402,6 +408,7 @@ void UserDef::MkCopy (UserDef *u)
   u->lang = new act_languages ();
 
   nt = u->nt; u->nt = 0;
+  n_strict = u->n_strict; u->n_strict = 0;
   
   pt = u->pt; u->pt = NULL;
   pn = u->pn; u->pn = NULL;
@@ -454,6 +461,7 @@ void UserDef::Clone (UserDef *u)
   lang = u->lang->Clone();
 
   nt = u->nt;
+  n_strict = u->n_strict;
   pt = u->pt;
   pn = u->pn;
 
@@ -601,7 +609,7 @@ int UserDef::isStrictPort (const  char *s)
 
   /*printf ("mt = %d, nt = %d [%x]\n", mt, nt, this);*/
 
-  for (i=0; i < nt; i++) {
+  for (i=0; i < n_strict; i++) {
     if (strcmp (s, pn[i]) == 0) {
       return 1;
     }
@@ -1053,39 +1061,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	      PStruct *ps = dynamic_cast<PStruct *> (x->BaseType());
 	      Scope::pstruct off = ux->I->getPStruct (vx->u.idx + as->index());
 	      Assert (ps, "Hmm");
-	      snprintf (buf+k, sz, "%s{", ps->getName());
-	      len = strlen (buf+k); k+= len; sz-= len;
-	      int nb, ni, nr, nt;
-	      bool first = true;
-	      ps->getCounts (&nb, &ni, &nr, &nt);
-	      for (int i=0; i < nb; i++) {
-		snprintf (buf+k, sz, "%s%c", first ? "" : ",",
-			  ux->I->getPBool (off.b_off + i) ? 't' : 'f');
-		len = strlen (buf+k); k+= len; sz-= len;
-		first = false;
-	      }
-	      for (int i=0; i < ni; i++) {
-		snprintf (buf+k, sz, "%s%lu", first ? "" : ",",
-			  ux->I->getPInt (off.i_off + i));
-		len = strlen (buf+k); k+= len; sz-= len;
-		first = false;
-	      }
-	      for (int i=0; i < nr; i++) {
-		snprintf (buf+k, sz, "%s%g", first ? "" : ",",
-			  ux->I->getPReal (off.r_off + i));
-		len = strlen (buf+k); k+= len; sz-= len;
-		first = false;
-	      }
-	      for (int i=0; i < nt; i++) {
-		InstType *it = ux->I->getPType (off.t_off + i);
-		char buf[1024];
-		it->sPrint (buf, 1024);
-		snprintf (buf+k, sz, "%s%s", first ? "" : ",", buf);
-		len = strlen (buf+k); k+= len; sz-= len;
-		first = false;
-	      }
-	      snprintf (buf+k, sz, "}");
-	      len = strlen (buf+k); k+= len; sz-= len;
+	      ps->sPrint (buf+k, sz, ux->I, off);
 	    }
 	    else {
 	      fatal_error ("What type is this?");
@@ -1118,39 +1094,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	    PStruct *ps = dynamic_cast<PStruct *> (x->BaseType());
 	    Scope::pstruct off = ux->I->getPStruct (vx->u.idx);
 	    Assert (ps, "Hmm");
-	    snprintf (buf+k, sz, "%s{", ps->getName());
-	    len = strlen (buf+k); k+= len; sz-= len;
-	    int nb, ni, nr, nt;
-	    bool first = true;
-	    ps->getCounts (&nb, &ni, &nr, &nt);
-	    for (int i=0; i < nb; i++) {
-	      snprintf (buf+k, sz, "%s%c", first ? "" : ",",
-			ux->I->getPBool (off.b_off + i) ? 't' : 'f');
-	      len = strlen (buf+k); k+= len; sz-= len;
-	      first = false;
-	    }
-	    for (int i=0; i < ni; i++) {
-	      snprintf (buf+k, sz, "%s%lu", first ? "" : ",",
-			ux->I->getPInt (off.i_off + i));
-	      len = strlen (buf+k); k+= len; sz-= len;
-	      first = false;
-	    }
-	    for (int i=0; i < nr; i++) {
-	      snprintf (buf+k, sz, "%s%g", first ? "" : ",",
-			ux->I->getPReal (off.r_off + i));
-	      len = strlen (buf+k); k+= len; sz-= len;
-	      first = false;
-	    }
-	    for (int i=0; i < nt; i++) {
-	      InstType *it = ux->I->getPType (off.t_off + i);
-	      char buf[1024];
-	      it->sPrint (buf, 1024);
-	      snprintf (buf+k, sz, "%s%s", first ? "" : ",", buf);
-	      len = strlen (buf+k); k+= len; sz-= len;
-	      first = false;
-	    }
-	    snprintf (buf+k, sz, "}");
-	    len = strlen (buf+k); k+= len; sz-= len;
+	    ps->sPrint (buf+k, sz, ux->I, off);
 	  }
 	  else {
 	    fatal_error ("What type is this?");
@@ -1620,7 +1564,6 @@ PStruct *PStruct::Expand (ActNamespace *ns, Scope *s, int _nt, inst_param *u)
   return this;
 }
 
-
 void PStruct::getCounts (int *pb, int *pi, int *pr, int *ptn)
 {
   *pb = 0;
@@ -1932,6 +1875,7 @@ void UserDef::PrintHeader (FILE *fp, const char *type, bool unmangle)
   n = getNumParams();
   if (!expanded && n > 0) {
     fprintf (fp, "template <");
+    if (n_strict == 0) { fprintf (fp, " | "); }
     for (int i=0; i < n; i++) {
       InstType *it = getPortType (-(i+1));
       Array *a = it->arrayInfo();
@@ -1950,7 +1894,12 @@ void UserDef::PrintHeader (FILE *fp, const char *type, bool unmangle)
       }
 
       if (i != n-1) {
-	fprintf (fp, "; ");
+        if (i == n_strict-1) {
+          fprintf (fp, " | ");
+        }
+        else {
+	  fprintf (fp, "; ");
+        }
       }
     }
     fprintf (fp, ">\n");
@@ -2972,6 +2921,104 @@ Interface::Interface(ActNamespace *ns) : UserDef (ns)
 PStruct::PStruct (ActNamespace *ns) : UserDef (ns)
 {
 
+}
+
+
+void PStruct::sPrint (char *buf, int sz, Scope *sc, Scope::pstruct &off)
+{
+  int l, k;
+  if (!isExpanded()) return;
+
+  k = 0;
+#define PRINT_STEP                              \
+  do {                                          \
+    l = strlen (buf+k);                         \
+    k += l;                                     \
+    sz -= l;                                    \
+    if (sz <= 1) return;                        \
+  } while (0)
+
+  snprintf (buf+k,sz,"%s(", getName());
+  PRINT_STEP;
+
+  for (int i=0; i < nt; i++) {
+    unsigned int arr = 1;
+    if (pt[i]->arrayInfo()) {
+      arr = pt[i]->arrayInfo()->size();
+      snprintf (buf+k,sz, "{");
+      PRINT_STEP;
+    }
+    if (TypeFactory::isPBoolType (pt[i])) {
+      for (int cnt=0; cnt < arr; cnt++) {
+	snprintf (buf+k,sz, "%s", sc->getPBool (off.b_off) ? "t" : "f");
+	PRINT_STEP;
+	if (cnt != arr-1) {
+	  snprintf (buf+k,sz, ",");
+	  PRINT_STEP;
+	}
+	off.b_off++;
+      }
+    }
+    else if (TypeFactory::isPIntType (pt[i])) {
+      for (int cnt=0; cnt < arr; cnt++) {
+	snprintf (buf+k, sz, "%lu", sc->getPInt (off.i_off));
+	PRINT_STEP;
+	if (cnt != arr-1) {
+	  snprintf (buf+k,sz, ",");
+	  PRINT_STEP;
+	}
+	off.i_off++;
+      }
+    }
+    else if (TypeFactory::isPRealType (pt[i])) {
+      for (int cnt=0; cnt < arr; cnt++) {
+	snprintf (buf+k,sz, "%g", sc->getPReal (off.r_off));
+	PRINT_STEP;
+	if (cnt != arr-1) {
+	  snprintf (buf+k,sz, ",");
+	  PRINT_STEP;
+	}
+	off.r_off++;
+      }
+    }
+    else if (TypeFactory::isPTypeType (pt[i])) {
+      for (int cnt=0; cnt < arr; cnt++) {
+	char lbuf[1024];
+	InstType *it = sc->getPType (off.t_off);
+	it->sPrint (lbuf, 1024);
+	snprintf (buf+k,sz, "%s", lbuf);
+	PRINT_STEP;
+	if (cnt != arr-1) {
+	  snprintf (buf+k,sz, ",");
+	  PRINT_STEP;
+	}
+	off.t_off++;
+      }
+    }
+    else if (TypeFactory::isPStructType (pt[i])) {
+      PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType());
+      Assert (ps, "What?");
+
+      for (int cnt=0; cnt < arr; cnt++) {
+	ps->sPrint (buf+k, sz, sc, off);
+	if (cnt != arr-1) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+      }
+    }
+    else {
+      Assert (0, "New parameterized type?");
+    }
+    if (pt[i]->arrayInfo()) {
+      snprintf (buf+k, sz, "}");
+      PRINT_STEP;
+    }
+    if (i != nt-1) {
+      snprintf (buf+k, sz, ",");
+      PRINT_STEP;
+    }
+  }
 }
 
 

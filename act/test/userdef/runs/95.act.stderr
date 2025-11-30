@@ -1,0 +1,5 @@
+ERROR: File `95.act', line 9, col 9
+	Illegal mixing of strict/non-strict parameters in <:
+	Defining: test2
+	Parent type: test
+Process has non-strict template parameters and parent has strict parameters.

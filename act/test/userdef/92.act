@@ -1,0 +1,3 @@
+template<pint N | pint M>
+deftype testme (bool x[M])
+{ }

@@ -1,0 +1,7 @@
+template<pint N | pint M>
+defproc testme (bool x[M])
+{
+  prs {
+    x[0] => x[0]-
+  }
+}

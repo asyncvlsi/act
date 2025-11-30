@@ -437,6 +437,12 @@ private:
     } u;
   } *r;				/**< range for each dimension */
 
+  /**
+   * When we have an array of non-strict user-defined processes, each
+   * range entry can change the InstType field in the expanded array
+   */
+  InstType *_ex_new_nonstrict;
+
   void dumprange (struct range *r); /**< used for debugging */
 
   /**

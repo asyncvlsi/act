@@ -550,6 +550,8 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->supply.nsc = NULL;
   
   tr->strict_checking = 0;
+  tr->in_strict_params = 0;
+  
   tr->func_template = 0;
 
   tr->in_tree = 0;

@@ -64,12 +64,35 @@ template_spec: [ "export" ] "template"
     OPT_FREE ($1);
     $0->strict_checking = 1;
     $0->scope = $0->u->CurScope ();
+    $0->in_strict_params = 1;
 }}
-"<" { param_inst ";" }* ">"
+"<" [ { param_inst ";" }* ]
 {{X:
-    list_free ($4);
-    return NULL;
+    if (!OPT_EMPTY ($4)) {
+      ActRet *r = OPT_VALUE ($4);
+      $A(r->type == R_LIST);
+      list_free (r->u.l);
+      FREE (r);
+    }
+    OPT_FREE ($4);
+    $0->in_strict_params = 0;
 }}
+[ "|" { param_inst ";" }* ] ">"
+{{X:
+    if (!OPT_EMPTY ($5)) {
+      ActRet *r = OPT_VALUE ($5);
+      $A(r->type == R_LIST);
+      list_free (r->u.l);
+      FREE (r);
+    }
+    OPT_FREE ($5);
+
+    if ($0->u->getNumParams() == 0) {
+      $E("template specifier without any template parameters?");
+    }
+
+    return NULL;
+}}   
 | "export"
 {{X:
     $A($0->u == NULL);
@@ -150,10 +173,16 @@ param_inst: param_type param_id_list
 	if ($0->u->AddMetaParam (it, id_name, ae) != 1) {
 	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
 	}
+	if ($0->in_strict_params) {
+	  $0->u->markStrict ();
+	}
       }
       else if ($0->u_f) {
 	if ($0->u_f->AddMetaParam (it, id_name, ae) != 1) {
 	  $E("Duplicate meta-parameter name in port list: ``%s''", id_name);
+	}
+	if ($0->in_strict_params) {
+	  $0->u_f->markStrict ();
 	}
       }
       else {
@@ -282,6 +311,15 @@ def_or_proc ID
       Process *pp = dynamic_cast<Process *>(it->BaseType());
       $A(pp);
 
+      if (pp->hasStrict() && $0->u_p->hasNonStrict()) {
+	$e("Illegal mixing of strict/non-strict parameters in <:");
+	fprintf ($f, "\n\tDefining: %s", $3);
+	fprintf ($f, "\n\tParent type: ");
+	it->Print ($f);
+	fprintf ($f, "\nProcess has non-strict template parameters and parent has strict parameters.\n");
+	exit (1);
+      }
+
       for (int i=0; i < pp->getNumParams(); i++) {
 	const char *s = pp->getPortName (-(i+1));
 	InstType *st = pp->getPortType (-(i+1));
@@ -292,6 +330,9 @@ def_or_proc ID
 	  it->Print ($f);
 	  fprintf ($f, "\n");
 	  exit (1);
+	}
+	if (i < pp->numStrict()) {
+	  $0->u_p->markStrict ();
 	}
       }
 
@@ -1047,6 +1088,10 @@ defdata: [ template_spec ]
     Data *d;
     UserDef *u;
 
+    if ($0->u->hasNonStrict()) {
+      $E("Definition of ``%s'': types cannot have non-strict template parameters", $3);
+    }
+    
     d = new Data ($0->u);
     delete $0->u;
     $0->u = NULL;
@@ -1554,6 +1599,10 @@ defchan: [ template_spec ]
     Channel *c;
     UserDef *u;
 
+    if ($0->u->hasNonStrict()) {
+      $E("Definition of ``%s'': channels cannot have non-strict template parameters", $3);
+    }
+
     c = new Channel ($0->u);
     delete $0->u;
     $0->u = NULL;
@@ -1851,6 +1900,10 @@ ID
     Function *f;
     UserDef *u;
 
+    if ($0->u->hasNonStrict()) {
+      $E("Definition of ``%s'': functions cannot have non-strict template parameters", $3);
+    }
+    
     f = new Function ($0->u);
     delete $0->u;
     $0->u = NULL;
@@ -2984,6 +3037,10 @@ defiface: [ template_spec ]
     Interface *iface;
     UserDef *u;
 
+    if ($0->u->hasNonStrict()) {
+      $E("Definition of ``%s'': interfaces cannot have non-strict template parameters", $3);
+    }
+    
     iface = new Interface ($0->u);
     delete $0->u;
     $0->u = NULL;
