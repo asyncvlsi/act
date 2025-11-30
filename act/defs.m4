@@ -1182,6 +1182,9 @@ defdata: [ template_spec ]
 	    fprintf ($f, "\n");
 	    exit (1);
 	  }
+	  if (i < dp->numStrict()) {
+	    $0->u_d->markStrict ();
+	  }
 	}
 
 	/* now add in port parameters */
@@ -1672,6 +1675,9 @@ defchan: [ template_spec ]
 	  ir->Print ($f);
 	  fprintf ($f, "\n");
 	  exit (1);
+	}
+	if (i < ch->numStrict()) {
+	  $0->u_c->markStrict ();
 	}
       }
 

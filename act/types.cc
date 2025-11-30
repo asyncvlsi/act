@@ -818,6 +818,9 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 
     /* add parameter to the scope */
     ux->AddMetaParam (x, pn[i], NULL);
+    if (i < n_strict) {
+      ux->markStrict ();
+    }
 
     /* this one gets bound to:
        - the next specified parameter, if it exists
