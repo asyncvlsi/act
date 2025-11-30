@@ -1,0 +1,15 @@
+defptype ss_t (
+    pint Wa;
+    pint Wb
+);
+
+template <ss_t p> 
+deftype ss1 (
+    int<p.Wa> a;
+    int<p.Wb> b
+) {}
+
+deftype ss1_3ss__t_11_72_2_4 <: ss1<ss_t(1,2)> () {}
+
+defproc p () {}
+

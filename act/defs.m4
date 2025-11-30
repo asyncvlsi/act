@@ -62,9 +62,9 @@ template_spec: [ "export" ] "template"
       $0->u->MkExported();
     }
     OPT_FREE ($1);
-    $0->strict_checking = 1;
     $0->scope = $0->u->CurScope ();
     $0->in_strict_params = 1;
+    $0->strict_checking = 1;
 }}
 "<" [ { param_inst ";" }* ]
 {{X:
@@ -279,6 +279,7 @@ def_or_proc ID
     $0->u_p = p;
     /*printf ("Orig scope: %x\n", $0->scope);*/
     $0->scope = $0->u_p->CurScope ();
+    $0->strict_checking = 0;
 }}
 [ "<:" physical_inst_type ]
 {{X:
@@ -354,6 +355,7 @@ def_or_proc ID
       }
     }
     OPT_FREE ($4);
+    $0->strict_checking = 1;
 }}
  "(" [ port_formal_list ] ")"
 {{X:
@@ -1125,6 +1127,7 @@ defdata: [ template_spec ]
     }
     $0->u_d = d;
     $0->scope = d->CurScope ();
+    $0->strict_checking = 0;
 }}
 [ "<:" physical_inst_type ]
 {{X:
@@ -1223,6 +1226,7 @@ defdata: [ template_spec ]
       $0->scope->Add ("self", ir);
     }
     $0->u_d->SetParent (phys_inst);
+    $0->strict_checking = 1;
 }}
 "(" [ port_formal_list ] ")"
 {{X:
@@ -1635,6 +1639,7 @@ defchan: [ template_spec ]
     }
     $0->u_c = c;
     $0->scope = $0->u_c->CurScope ();
+    $0->strict_checking = 0;
 }}
 "<:" physical_inst_type
 {{X:
@@ -1737,6 +1742,7 @@ defchan: [ template_spec ]
       $0->scope->Add ("selfack", ir2);
     }
     $0->u_c->SetParent ($5);
+    $0->strict_checking = 1;
 }}
  "(" [ port_formal_list ] ")" 
 {{X:
