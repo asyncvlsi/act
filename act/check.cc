@@ -1519,8 +1519,22 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     break;
 
   case E_PSTRUCT:
+    return T_PARAM|T_PSTRUCT|T_STRICT;
+    break;
+
   case E_PSTRUCT_FN:
-    return T_PARAM|T_PSTRUCT;
+    { Expr *tmp = e->u.e.l;
+      int is_strict = T_STRICT;
+      while (tmp && is_strict) {
+	int dummy;
+	int rv = act_type_expr (s, tmp->u.e.l, &dummy, only_chan);
+	if (!(rv & T_STRICT)) {
+	  is_strict = 0;
+	}
+	tmp = tmp->u.e.r;
+      }
+      return T_PARAM|T_PSTRUCT|is_strict;
+    }
     break;
 
   default:
@@ -2127,6 +2141,36 @@ InstType *AExpr::getInstType (Scope *s, int *islocal, int expanded)
   }
   return NULL;
 }
+
+bool AExpr::getStrictFlag (Scope *s)
+{
+  switch (t) {
+  case AExpr::CONCAT:
+  case AExpr::COMMA:
+    if (l->getStrictFlag (s)) return true;
+    if (r->getStrictFlag (s)) return true;
+    return false;
+
+  case AExpr::EXPR:
+    { int flag = act_type_expr (s, (Expr *)l, NULL, 2);
+      if (flag & T_STRICT) return true;
+      return false;
+    }
+    break;
+
+#if 0
+  case AExpr::SUBRANGE:
+    fatal_error ("Should not be here");
+    return act_actual_insttype (s, (ActId *)l, NULL);
+#endif
+
+  default:
+    fatal_error ("Unimplemented?, %d", t);
+    break;
+  }
+  return false;
+}
+
 
 int act_type_conn (Scope *s, AExpr *ae, AExpr *rae)
 {

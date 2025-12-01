@@ -620,6 +620,11 @@ class AExpr {
    */
   InstType *getInstType (Scope *s, int *islocal, int expanded = 0);
 
+  /**
+   * @returns true if the array expression is strict
+   */
+  bool getStrictFlag (Scope *s);
+
   AExpr *Expand (ActNamespace *, Scope *, int is_lval = 0);
   /**< expand out all parameters */
 

@@ -321,6 +321,31 @@ def_or_proc ID
 	exit (1);
       }
 
+      /*
+	Now check that the parameters in any template conform to
+	strictness requirements.
+
+	Note: this is currently redundant, because if you have
+	strict parameters in the parent than the process
+	definition cannot have non-strict parameter.
+      */
+      for (int i=0; i < pp->numStrict() && i < it->getNumParams(); i++) {
+	if (it->isParamAType (i)) {
+	  // deal with this!
+	  InstType *it = it->getTypeParam (i);
+	}
+	else {
+	  AExpr *ae = it->getAExprParam (i);
+	  if (!ae->getStrictFlag ($0->u_p->CurScope())) {
+	    $e("Parent type uses non-strict expressions for strict parameters.\n");
+	    fprintf ($f, "\tParent: ");
+	    it->Print ($f);
+	    fprintf ($f, "\n");
+	    exit (1);
+	  }
+	}
+      }
+
       for (int i=0; i < pp->getNumParams(); i++) {
 	const char *s = pp->getPortName (-(i+1));
 	InstType *st = pp->getPortType (-(i+1));
