@@ -53,7 +53,7 @@ import_item: "import" STRING ";"
 
     /* If the file has already been imported in the past, then we can
        ignore this import statement */
-    if (act_isimported (s)) {
+    if (!$0->force_import && act_isimported (s)) {
       FREE (s);
       return NULL;
     }
@@ -66,6 +66,8 @@ import_item: "import" STRING ";"
       printf ("%s ", s);
     }
 
+    $0->force_import = false;
+    
     /* Process the new file */
     TRY {
       t = act_parse (s);
@@ -110,9 +112,24 @@ import_item: "import" STRING ";"
 
     len2 = len + 4;
 
+    tmpns = ns;
     for (li = list_first ($3); li; li = list_next (li)) {
       s = (char *) list_value (li);
       len2 = len2 + strlen (s) + 1;
+
+      if (tmpns) {
+	// look for the namespace
+	tmpns = tmpns->findNS (s);
+      }
+    }
+    
+    if (tmpns) {
+      $0->force_import = false;
+    }
+    else {
+      // we didn't find the namnespace; force re-reading it, because
+      // it means it was renamed
+      $0->force_import = true;
     }
 
     MALLOC (s, char, len2+2);

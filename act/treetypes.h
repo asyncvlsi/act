@@ -206,6 +206,9 @@ typedef struct {
 
   /* set this to true if a chan ID is in the expression */
   bool allow_chan;
+
+  /* set this to true to force importing! */
+  bool force_import;
   
 } ActTree;
 
