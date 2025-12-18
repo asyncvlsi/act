@@ -184,7 +184,8 @@ static void _add_used_cell (list_t *l, Process *p)
 }
 
 
-static void _dump_prsinfo (struct act_prsinfo *p);
+static void _dump_prsinfo (struct act_prsinfo *p, const char *_in,
+			   const char *_out);
 static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
 						const char *_inport_name,
 						const char *_outport_name,
@@ -2062,6 +2063,13 @@ static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
     printf (" %d", p->attr_map[i]);
   }
   printf ("\n");
+  if (p->at_perm) {
+    printf ("at-perm:");
+    for (int i=0; i < p->nat; i++) {
+      printf (" %d", p->at_perm[i]);
+    }
+    printf ("\n");
+  }
   printf ("-------\n");
 }
 
@@ -2489,7 +2497,7 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     else {
 #if 0
       printf ("NEW CELL NEEDED!\n");
-      _dump_prsinfo (pi);
+      _dump_prsinfo (pi, "in", "out");
 #endif
       add_new_cell (pi);
       b = chash_add (cell_table, pi);
@@ -3117,9 +3125,8 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 
 #if 0
       printf ("CELL: %s\n", p->getName());
-      _dump_prsinfo (pi);
+      _dump_prsinfo (pi, "in", "out");
 #endif
-
       {
 	char *buf;
 	int cut;

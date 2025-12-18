@@ -1403,7 +1403,7 @@ static act_prs_expr_t *_conv_nnf (void *cookie,
       tmp = (act_prs_lang_t *) b->v;
       Assert (tmp->type == ACT_PRS_RULE &&
 	      tmp->u.one.label  &&
-	      strcmp ((char *)tmp->u.one.e, e->u.l.label) == 0,
+	      strcmp ((char *)tmp->u.one.id, e->u.l.label) == 0,
 	      "Error in at_hash map for nnf conversion");
       if (flip) {
 	if (tmp->u.one.dir != 0) {
