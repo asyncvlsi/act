@@ -1,0 +1,17 @@
+/* -- declarations -- */
+export defproc blk_i0_4 (bool! out[4]);
+
+export defproc blk_i0_4 (bool! out[4])
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   bool _xtpa0;
+   /*--- connections ---*/
+   _xtpa0=GND;
+   out[3]=GND;
+   out[2]=GND;
+   out[1]=GND;
+   out[0]=GND;
+}
+

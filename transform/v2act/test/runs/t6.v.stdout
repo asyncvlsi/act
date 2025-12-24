@@ -6,8 +6,10 @@ export defproc blk0 (bool? e0[13]; bool! out[13])
   spec { hazard(*) }
 
    /*--- types ---*/
+   bool _nsig_1;
    bool f;
    benchlib::TIEHIX1 _nref_2;
+   bool _nsig_3;
    benchlib::TIELOX1 _nref_0;
    /*--- connections ---*/
    _nref_0(.Y=_nsig_1);

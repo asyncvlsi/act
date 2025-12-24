@@ -17,6 +17,7 @@ export defproc b01 (bool? line1; bool? line2; bool? reset; bool! outp; bool! ove
    benchlib::or2a3 C115;
    benchlib::and2a6 C133;
    bool N34;
+   bool _nsig_1;
    bool n20;
    benchlib::inv1a1 U24;
    bool N61;
