@@ -2038,7 +2038,7 @@ func_body[ActBody *]: ";"
     $A($0->u_f);
     if ($0->u_f->isDefined ()) {
       $E("Function ``%s'' previously defined with same type signature", 
-	 $0->u->getName ());
+	 $0->u_f->getName ());
     }
 
     if (OPT_EMPTY ($2)) {
