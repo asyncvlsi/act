@@ -988,6 +988,13 @@ public:
    */
   void sPrint (char *buf, int sz, Scope *sc, Scope::pstruct &off);
 
+
+  /**
+   * Return a bound on the size needed to accommodate the sPrint() of
+   * this type
+   */
+  int sPrintCount ();
+
 private:
   friend class TypeFactory;
 };

@@ -1,0 +1,40 @@
+defproc p_ss_t ();
+deftype ss1_3ss__t_1100000_7100000_7100000_7100000_7100000_2_4 (int<100000> a; int<100000> b; int<100000> c; int<100000> d; int<100000> e);
+deftype ss1_3ss__t_11_71_71_71_71_2_4 (int<1> a; int<1> b; int<1> c; int<1> d; int<1> e);
+
+defproc p_ss_t ()
+{
+
+/* instances */
+chan(ss1<ss_t(100000,100000,100000,100000,100000)>) C2;
+ss1_3ss__t_1100000_7100000_7100000_7100000_7100000_2_4 x2;
+chan(ss1<ss_t(1,1,1,1,1)>) C1;
+ss1_3ss__t_11_71_71_71_71_2_4 x1;
+
+/* connections */
+chp {
+*[true -> C1!x1;C2!x2]
+}
+}
+
+deftype ss1_3ss__t_1100000_7100000_7100000_7100000_7100000_2_4 (int<100000> a; int<100000> b; int<100000> c; int<100000> d; int<100000> e)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype ss1_3ss__t_11_71_71_71_71_2_4 (int<1> a; int<1> b; int<1> c; int<1> d; int<1> e)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+p_ss_t x;
+
+/* connections */

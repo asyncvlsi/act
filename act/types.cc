@@ -974,14 +974,21 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       /* might have directions, upto 2 characters worth, @ for type */
     }
     else {
+      int nchars = 32;
+      /*-- if this is a defptype, then we need a different bound 
+           for the # of characters --*/
+      if (TypeFactory::isPStructType (x->BaseType())) {
+	PStruct *ps = dynamic_cast<PStruct *> (x->BaseType());
+	nchars = MAX(nchars, ps->sPrintCount());
+      }
       /* check array info */
       if (vx->init) {
 	if (xa) {
 	  Assert (xa->isExpanded(), "Array info is not expanded");
-	  sz += 32*xa->size()+2;
+	  sz += nchars*xa->size()+2;
 	}
 	else {
-	  sz += 32;
+	  sz += nchars;
 	}
       }
     }
@@ -3024,6 +3031,49 @@ void PStruct::sPrint (char *buf, int sz, Scope *sc, Scope::pstruct &off)
   }
   snprintf (buf+k,sz,")");
   PRINT_STEP;
+}
+
+int PStruct::sPrintCount ()
+{
+  int l;
+  if (!isExpanded()) return 0;
+
+  l = 0;
+
+  // name + "(" + ")" + (nt-1) * ","
+  l += 2 + strlen (getName()) + nt;
+
+  for (int i=0; i < nt; i++) {
+    unsigned int arr = 1;
+    if (pt[i]->arrayInfo()) {
+      arr = pt[i]->arrayInfo()->size();
+
+      // "{", "}", "," * size-1
+      l += 2 + arr-1;
+    }
+    if (TypeFactory::isPBoolType (pt[i])) {
+      l += arr;
+    }
+    else if (TypeFactory::isPIntType (pt[i])) {
+      l += 32*arr;
+    }
+    else if (TypeFactory::isPRealType (pt[i])) {
+      l += 32*arr;
+    }
+    else if (TypeFactory::isPTypeType (pt[i])) {
+      l += arr*(3 + /* HACK */ 1024);
+      // we need to know the type that was passed in here to get its size...
+    }
+    else if (TypeFactory::isPStructType (pt[i])) {
+      PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType());
+      Assert (ps, "What?");
+      l += arr*ps->sPrintCount();
+    }
+    else {
+      Assert (0, "New parameterized type?");
+    }
+  }
+  return l;
 }
 
 
