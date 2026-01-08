@@ -342,11 +342,12 @@ static void visit_chp_var (act_boolean_netlist_t *N,
 			   ActId *id, int isinput, int is_dataflow)
 {
   act_booleanized_var_t *v;
+  ActId *tmp_id = NULL;
 
   if (!id) return;
 
   InstType *it = N->cur->FullLookup (id, NULL);
-  if (TypeFactory::isStructure (it)) {
+  if (it && TypeFactory::isStructure (it)) {
     /* visit the pieces */
     Data *d = dynamic_cast<Data *>(it->BaseType());
     ActId *tail;
@@ -379,6 +380,12 @@ static void visit_chp_var (act_boolean_netlist_t *N,
       delete piece;
     }
     return;
+  }
+  else if (!it) {
+    tmp_id = new ActId (id->getName(), id->arrayInfo());
+    it = N->cur->FullLookup (tmp_id, NULL);
+    Assert (it && TypeFactory::isChanType (it), "What?!");
+    id = tmp_id;
   }
 
   v = var_lookup (N, id);
@@ -433,6 +440,10 @@ static void visit_chp_var (act_boolean_netlist_t *N,
   if (ch) {
     /* recursively access all booleans */
     visit_channel_ports (N, ch, id, isinput);
+  }
+  if (tmp_id) {
+    tmp_id->setArray (NULL);
+    delete tmp_id;
   }
   return;
 }
@@ -643,14 +654,32 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
       if (e->type == E_VAR) {
 	InstType *it;
 	it = N->cur->FullLookup ((ActId *)e->u.e.l, NULL);
-	if (TypeFactory::isStructure (it)) {
-	  /* skip */
+
+	if (!it) {
+	  // could be a channel reference
+	  ActId *tmp = new ActId (((ActId *)e->u.e.l)->getName(),
+				  ((ActId *)e->u.e.l)->arrayInfo());
+	  it = N->cur->FullLookup (tmp, NULL);
+	  Assert (it && TypeFactory::isChanType (it), 
+		  "This should have been caught earlier?");
+	  v = var_lookup (N, tmp);
+	  Assert (v, "Hmm");
+	  v->input = 1;
+	  Assert (v->ischan, "What?");
+	  _set_chan_passive_recv (v);
+	  tmp->setArray (NULL);
+	  delete tmp;
 	}
 	else {
-	  v = var_lookup (N, (ActId *)e->u.e.l);
-	  v->input = 1;
-	  if (v->ischan) {
-	    _set_chan_passive_recv (v);
+	  if (TypeFactory::isStructure (it)) {
+	    /* skip */
+	  }
+	  else {
+	    v = var_lookup (N, (ActId *)e->u.e.l);
+	    v->input = 1;
+	    if (v->ischan) {
+	      _set_chan_passive_recv (v);
+	    }
 	  }
 	}
       }

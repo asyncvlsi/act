@@ -790,14 +790,12 @@ id_deref_or_range[list_t *]: id_deref_range
 
       if (digit == 0) {
 	d->id = verilog_gen_const ($0, 0);
-	d->id->isport = 1;
       }
       else {
 	if (digit != 1) {
 	  $W("Binary constant has non-binary digit (%d)", d);
 	}
 	d->id = verilog_gen_const ($0, 1);
-	d->id->isport = 1;
       }
       list_append (l, d);
     }
@@ -906,11 +904,9 @@ id_or_const[conn_rhs_t *]: id_deref [ "[" INT ":" INT "]" ]
 
     if ($1) {
       id = verilog_gen_const ($0, 1);
-      id->isport = 1;
     }
     else {
       id = verilog_gen_const ($0, 0);
-      id->isport = 1;
     }
     NEW (r, conn_rhs_t);
     r->id.id = id;

@@ -1,0 +1,13 @@
+template<pint N, F, NB_INPUTS>
+defproc sum()
+ { 
+   int<N> in[NB_INPUTS];
+   int<N> sum; 
+   chp{
+       *[
+        sum := (+i: NB_INPUTS: in[i])
+        ]  
+   }    
+ } 
+
+defproc sum4 <: sum<7,2,4> () {}

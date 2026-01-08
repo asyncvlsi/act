@@ -1,0 +1,24 @@
+template<pint N | pint M>
+defproc testme (bool x[N])
+{ prs { x[0] => x[0]- } }
+
+defproc mydesign0 (bool q)
+{
+  prs { q => q- } 
+}
+
+defproc mydesign1 (bool qq)
+{
+  prs { qq => qq- } 
+}
+
+defproc impl_testme <: testme<4> ()
+{
+  bool xx;
+  [ M = 0 -> mydesign0 m0;
+ [] M = 1 -> mydesign1 m1;
+  ];
+  bool xxx;
+}
+
+impl_testme<0> x;

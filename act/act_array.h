@@ -437,6 +437,12 @@ private:
     } u;
   } *r;				/**< range for each dimension */
 
+  /**
+   * When we have an array of non-strict user-defined processes, each
+   * range entry can change the InstType field in the expanded array
+   */
+  InstType *_ex_new_nonstrict;
+
   void dumprange (struct range *r); /**< used for debugging */
 
   /**
@@ -613,6 +619,11 @@ class AExpr {
    * the array expression.
    */
   InstType *getInstType (Scope *s, int *islocal, int expanded = 0);
+
+  /**
+   * @returns true if the array expression is strict
+   */
+  bool getStrictFlag (Scope *s);
 
   AExpr *Expand (ActNamespace *, Scope *, int is_lval = 0);
   /**< expand out all parameters */

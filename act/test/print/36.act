@@ -1,0 +1,30 @@
+defptype ss_t (
+    pint Wa;
+    pint Wb;
+    pint Wc;
+    pint Wd;
+    pint We
+);
+
+template <ss_t p> 
+deftype ss1 (
+    int<p.Wa> a;
+    int<p.Wb> b;
+    int<p.Wc> c;
+    int<p.Wd> d;
+    int<p.We> e
+) {}
+
+defproc p_ss_t () {
+    ss1<ss_t(1,1,1,1,1)> x1;
+    chan(ss1<ss_t(1,1,1,1,1)>) C1;
+
+    ss1<ss_t(100000,100000,100000,100000,100000)> x2;
+    chan(ss1<ss_t(100000,100000,100000,100000,100000)>) C2;
+    
+    chp {
+        *[ C1!x1; C2!x2 ]
+    }
+}
+
+p_ss_t x;

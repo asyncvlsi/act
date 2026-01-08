@@ -478,6 +478,8 @@ class ActBody_Select : public ActBody {
    */
   ActBody_Select_gc *getGC() { return gc; }
 
+  void Print (FILE *fp);
+
 private:
   ActBody_Select_gc *gc;	///< the guarded command list
 };
@@ -556,6 +558,7 @@ public:
   void Expand (ActNamespace *, Scope *);
   ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
   void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+  void Print (FILE *fp);
 
 private:
   union {

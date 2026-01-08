@@ -98,6 +98,7 @@ Array::Array()
   deref = 0;
   expanded = 0;
   range_sz = -1;
+  _ex_new_nonstrict = NULL;
 }
 
 /*------------------------------------------------------------------------
@@ -122,6 +123,7 @@ Array::Array (Expr *e, Expr *f)
   expanded = 0;
   range_sz = -1;
   next = NULL;
+  _ex_new_nonstrict = NULL;
 }
 
 /*------------------------------------------------------------------------
@@ -139,6 +141,7 @@ Array::Array (int lo, int hi)
   expanded = 1;
   range_sz = -1;
   next = NULL;
+  _ex_new_nonstrict = NULL;
 }
 
 /*------------------------------------------------------------------------
@@ -156,6 +159,7 @@ Array::Array (int idx)
   expanded = 1;
   range_sz = -1;
   next = NULL;
+  _ex_new_nonstrict = NULL;
 }
 
 /*------------------------------------------------------------------------
@@ -187,6 +191,7 @@ Array *Array::Clone (ActNamespace *orig, ActNamespace *newns)
 
   ret->deref = deref;
   ret->expanded = expanded;
+  ret->_ex_new_nonstrict = _ex_new_nonstrict;
   if (next) {
     ret->next = next->Clone (orig, newns);
   }

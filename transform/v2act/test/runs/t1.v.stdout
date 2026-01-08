@@ -3925,6 +3925,7 @@ export defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; b
    bool n2847;
    bool n2153;
    benchlib::and2a3 U2240;
+   bool _nsig_1;
    bool n2872;
    bool n2252;
    benchlib::buf1a3 U2466;
@@ -8372,6 +8373,7 @@ export defproc b14 (bool? clock; bool? reset; bool! addr[20]; bool? datai[32]; b
    bool n3474;
    benchlib::and2a3 U3907;
    bool N4675;
+   bool _nsig_3;
    benchlib::and2a3 U3885;
    bool N3360;
    bool U3/U4/Z__28;

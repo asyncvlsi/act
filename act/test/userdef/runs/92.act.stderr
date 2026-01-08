@@ -1,0 +1,2 @@
+ERROR: File `92.act', line 1, col 9
+	Definition of `testme': types cannot have non-strict template parameters

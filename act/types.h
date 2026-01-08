@@ -591,12 +591,32 @@ class UserDef : public Type {
   Scope *CurScope() { return I; }
 
   /**
-   * THIS IS NOT USED NOW. Always returns 1.
+   * Returns 1 if this port name is a strict parameter
    * @param name is the name of the port to be checked
    * @return 1 if this is a port name that is also in the "strict"
    * parameter list
    */
   int isStrictPort (const char *name);
+
+  /**
+   * Set boundary between strict and non-strict parameters
+   */
+  void markStrict () { n_strict = nt; }
+
+  /**
+   * @return true if this has non-strict parameters
+   */
+  bool hasNonStrict() { return n_strict == nt ? false : true; }
+
+  /**
+   * @return true if this has strict parameters
+   */
+  bool hasStrict() { return n_strict > 0 ? true : false; }
+
+  /**
+   * @return strict port boundary
+   */
+  int numStrict() { return n_strict; }
 
   /**
    * Print out user defined type 
@@ -841,6 +861,9 @@ class UserDef : public Type {
   
   int nt;			///< number of template parameters
   InstType **pt;		///< parameter types
+  int n_strict;			///< the prefix that corresponds to
+				///  strict params
+  
   const char **pn;		///< parameter names
   AExpr **pdefault;		///< default parameters
 
@@ -954,6 +977,23 @@ public:
    * @return true on success, false if there was some error
    */
   bool getOffset (ActId *subid, int *pb, int *pi, int *pr, int *pt);
+
+  /**
+   * Print pstruct values in ACT format, where the scope is where the
+   * parameters are stored.
+   * @param buf is where the string is created
+   * @param sz is the size of the string
+   * @param sc is the scope that holds the value
+   * @param off are the initial offsets
+   */
+  void sPrint (char *buf, int sz, Scope *sc, Scope::pstruct &off);
+
+
+  /**
+   * Return a bound on the size needed to accommodate the sPrint() of
+   * this type
+   */
+  int sPrintCount ();
 
 private:
   friend class TypeFactory;

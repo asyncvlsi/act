@@ -1,0 +1,28 @@
+deftype foo(int a, b) { }
+
+defproc src (chan!(foo) X)
+{
+   foo f;
+ 
+   chp {
+      f.a := 5;
+      f.b := 17;
+      X!f
+   }
+}
+
+
+defproc sink (chan?(foo) Y)
+{
+  foo x;
+  chp {
+     [#Y]; 
+     log ("Got: ", Y.a, " and ", Y.b)
+  }
+}
+
+defproc test()
+{
+   src s;
+   sink t(s.X);
+}

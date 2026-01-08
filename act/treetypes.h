@@ -139,6 +139,8 @@ typedef struct {
      template parameters can be only used in port lists */
   int strict_checking;
 
+  int in_strict_params;
+
   int func_template;
 
   /* used for nested subckt/tree in prs bodies. No nesting allowed */
@@ -204,6 +206,9 @@ typedef struct {
 
   /* set this to true if a chan ID is in the expression */
   bool allow_chan;
+
+  /* set this to true to force importing! */
+  bool force_import;
   
 } ActTree;
 

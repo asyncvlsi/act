@@ -1,0 +1,2 @@
+ERROR: File `91.act', line 2, col 27
+	Expressions in port parameter list can only use strict template parameters

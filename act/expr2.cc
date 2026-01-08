@@ -1102,7 +1102,30 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_XORLOOP:
     LVAL_ERROR;
     *width = 1;
-    {
+    if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
+      // id = e->u.e.l->u.e.l (char *)
+      // e->u.e.r->u.e.l = range
+      // e->u.e.r->u.e.r->u.e.l = range
+      // e->u.e.r->u.e.r->u.e.r = body
+
+      // id
+      NEW (ret->u.e.l, Expr);
+      ret->u.e.l->type = e->u.e.l->type;
+      ret->u.e.l->u.e.l = (Expr *) Strdup ((char *)e->u.e.l->u.e.l);
+      ret->u.e.l->u.e.r = e->u.e.l->u.e.r;
+      
+      // lo and hi
+      NEW (ret->u.e.r, Expr);
+      ret->u.e.r->type = e->u.e.r->type;
+      ret->u.e.r->u.e.l = _expr_expand (&rw, e->u.e.r->u.e.l, ns, s, flags);
+      NEW (ret->u.e.r->u.e.r, Expr);
+      ret->u.e.r->u.e.r->type = e->u.e.r->u.e.r->type;
+      ret->u.e.r->u.e.r->u.e.l = _expr_expand (&rw, e->u.e.r->u.e.r->u.e.l,
+					       ns, s, flags);
+      ret->u.e.r->u.e.r->u.e.r = _expr_expand (&rw, e->u.e.r->u.e.r->u.e.r,
+					       ns, s, flags);
+    }
+    else {
       int ilo, ihi;
       ValueIdx *vx;
       Expr *cur = NULL;
