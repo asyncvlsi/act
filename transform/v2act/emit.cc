@@ -24,9 +24,51 @@
 #include <stdio.h>
 #include <string.h>
 #include "v2act.h"
+#include <unordered_set>
 
 void emit_id_deref_fo (FILE *fp, id_deref_t *id);
 
+static void vectorize (VNet *v) 
+{
+	std::unordered_set<id_info_t *> todo{};
+	for (module_t *m = v->hd; m; m = m->next) {
+		for (int i=0; i < A_LEN (m->port_list); i++) {
+			id_info_t *id = m->port_list[i];
+			if (A_LEN(id->a) == 0) {
+				A_NEW (id->a, struct array_idx);
+				A_NEXT (id->a).lo = 0;
+				A_NEXT (id->a).hi = 0;
+				A_INC (id->a);
+				todo.insert(id);
+			}
+		}
+	}
+	for (module_t *m = v->hd; m; m = m->next) {
+		for (int i=0; i < A_LEN (m->conn); i++) {
+			connectinfo *c = m->conn[i];
+			if (todo.count(c->prefix)) {
+				c->id.isderef = 1;
+				c->id.deref = 0;
+			}
+			if (c->r) {
+				if (todo.count(c->r->id.id)) {
+					c->r->id.isderef = 1;
+					c->r->id.deref = 0;
+				}
+			}
+			else {
+				for (listitem_t *li = list_first(c->l); li; li = li->next) {
+					conn_rhs_t *r = (conn_rhs_t *) list_value(li);
+					if (todo.count(r->id.id)) {
+						r->id.isderef = 1;
+						r->id.deref = 0;
+					}
+				}
+			}
+		}
+	}
+}
+ 
 static void _emit_adjusted_full_deref (FILE *fp, id_info_t *id, int k)
 {
   fprintf (fp, "%s", id->myname);
@@ -234,6 +276,9 @@ void emit_module_header (FILE *fp, module_t *m)
  */
 void emit_types (VNet *v)
 {
+  int vectorize_ports = config_get_int("v2act.vectorize");
+  if (vectorize_ports) vectorize(v);
+
   int i, j;
   hash_bucket_t *b;
   struct idinfo *id;

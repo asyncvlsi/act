@@ -35,6 +35,7 @@ static void usage (char *s)
   fprintf (stderr, "Usage: %s [act-options] [-a] [-n lib_namespace] [-c clkname] [-o outfile] -l <lib> <file.v>\n", s);
   fprintf (stderr, "  -a : async output\n");
   fprintf (stderr, "  -g : toggle hazard generation\n");
+  fprintf (stderr, "  -v : vectorize all ports in output processes \n");
   fprintf (stderr, "  -C <chan>: change default channel name to <chan>\n");
   fprintf (stderr, "  -c <clkname>: specifies the clock port name [default: clock]\n");
   fprintf (stderr, "  -o <file> : specify output file name [default: stdout]\n");
@@ -88,7 +89,9 @@ int main (int argc, char **argv)
   config_set_default_string ("v2act.negflop.qpin", "Q");
   config_set_default_string ("v2act.negflop.clkpin", "CLK");
 
-  while ((ch = getopt (argc, argv, "gC:c:ao:l:n:t")) != -1) {
+  config_set_default_int ("v2act.vectorize", 0);
+
+  while ((ch = getopt (argc, argv, "gC:c:avo:l:n:t")) != -1) {
     switch (ch) {
     case 't':
       config_set_default_string ("v2act.tie.hi.cell", "TIEHIX1");
@@ -133,6 +136,10 @@ int main (int argc, char **argv)
     case 'a':
       mode = V_ASYNC;
       emit_hazards = 0;
+      break;
+
+    case 'v':
+      config_set_int("v2act.vectorize", 1);
       break;
 
     case 'l':
