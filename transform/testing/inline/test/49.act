@@ -1,0 +1,13 @@
+deftype MyInner(int x) {}
+deftype MyOuter(MyInner i) {}
+
+defproc test() {
+  MyOuter o;
+  MyInner i;
+
+  chp {
+      o := MyOuter(7);
+      i := o.i;
+      log(i.x)
+  }
+}

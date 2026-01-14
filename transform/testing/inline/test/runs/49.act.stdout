@@ -1,0 +1,37 @@
+defproc test ();
+deftype MyInner (int<32> x);
+deftype MyOuter (MyInner i);
+
+defproc test ()
+{
+
+/* instances */
+MyInner i;
+MyOuter o;
+
+/* connections */
+chp {
+o.i.x:=int(int(0x7,32)>>0,32);i.x:=o.i.x;log(i.x)
+}
+}
+
+deftype MyInner (int<32> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype MyOuter (MyInner i)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */
