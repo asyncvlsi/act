@@ -134,6 +134,31 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     return NULL;
   }
 
+  const char *mem_procname = config_get_string ("act.decomp.mem");
+
+  char *tmpname = p->getFullName();
+  int pos = 0, pos2;
+
+  // skip any "::"
+  while (tmpname[pos] && tmpname[pos] == ':')
+    pos++;
+
+  pos2 = pos;
+  while (tmpname[pos2] && tmpname[pos2] != '<') {
+    pos2++;
+  }
+  if (tmpname[pos2]) {
+    tmpname[pos2] = '\0';
+  }
+
+  if (strcmp (mem_procname, tmpname+pos) == 0) {
+    warning ("Design has manually instantiated `%s'; skipped by memory extraction pass.", mem_procname);
+    FREE (tmpname);
+    return NULL;
+  }
+  FREE (tmpname);
+
+
   _extract_memory (p->getlang()->getchp()->c);
 
   /* now delete all memory references! */

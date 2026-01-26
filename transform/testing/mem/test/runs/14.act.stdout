@@ -1,0 +1,43 @@
+namespace std {
+export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
+
+export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
+{
+
+/* instances */
+int<4> a;
+int<2> b;
+int<32> m[16];
+
+/* connections */
+chp {
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+::std::ram_316_732_4 mymem;
+int<32> y;
+int<32> x;
+
+/* connections */
+chp {
+x:=0x0;mymem.addr!x,mymem.rd!0x1,mymem.dout?y
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

@@ -1,0 +1,14 @@
+import "mem.act";
+
+defproc test()
+{
+  int x, y;
+  std::ram<16,32> mymem;
+  
+  chp {
+   x := 0;
+   mymem.addr!x, mymem.rd!1, mymem.dout?y
+  }
+}
+
+test t;
