@@ -25,6 +25,7 @@
 #include <string.h>
 #include <string>
 #include "expr_width.h"
+#include "expr_api.h"
 
 /*
  *
@@ -3193,4 +3194,115 @@ int expr_hasglobalids (Expr *e, ActNamespace *cur, ActNamespace *orig)
   res = _expr_globalid_needsfix (e, cur, orig);
   phash_free ((struct pHashtable *)stack_pop (_visited_stack));
   return res;
+}
+
+
+static void _expr_add_var (list_t *ids, ActId *id)
+{
+  for (listitem_t *li = list_first (ids); li; li = list_next (li)) {
+    if (id == list_value (li)) {
+      return;
+    }
+    if (id->isEqual ((ActId *)list_value (li))) {
+      return;
+    }
+  }
+  list_append (ids, id);
+}
+
+static void _expr_collect_ids (struct pHashtable *H, list_t *ids, Expr *e)
+{
+  int iszero = 0;
+  int tmp;
+  phash_bucket_t *b;
+
+  b = phash_lookup (H, e);
+  if (b) {
+    return;
+  }
+  b = phash_add (H, e);
+
+  switch (e->type) {
+  case E_PLUS:
+  case E_MULT:
+  case E_MINUS:
+  case E_DIV:  case E_MOD:
+  case E_LSL:  case E_LSR:  case E_ASR:
+  case E_LT:  case E_GT:
+  case E_LE:  case E_GE:
+  case E_EQ:  case E_NE:
+  case E_AND:  case E_OR:  case E_XOR:
+    _expr_collect_ids (H, ids, e->u.e.l);
+    _expr_collect_ids (H, ids, e->u.e.r);
+    break;
+    
+  case E_NOT:
+  case E_UMINUS:
+  case E_COMPLEMENT:
+    _expr_collect_ids (H, ids, e->u.e.l);
+    break;
+
+  case E_QUERY:
+    _expr_collect_ids (H, ids, e->u.e.l);
+    _expr_collect_ids (H, ids, e->u.e.r->u.e.l);
+    _expr_collect_ids (H, ids, e->u.e.r->u.e.r);
+    break;
+
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+    break;
+
+  case E_PROBE:
+  case E_VAR:
+    _expr_add_var (ids, (ActId *)e->u.e.l);
+    break;
+
+  case E_CONCAT:
+    {
+      Expr *f = e;
+      while (f) {
+	_expr_collect_ids (H, ids, f->u.e.l);
+	f = f->u.e.r;
+      }
+    }
+    break;
+    
+  case E_BITFIELD:
+    /* var */
+    _expr_add_var (ids, (ActId *)e->u.e.l);
+    break;
+
+  case E_BUILTIN_BOOL:
+    _expr_collect_ids (H, ids, e->u.e.l);
+    break;
+    
+  case E_BUILTIN_INT:
+    _expr_collect_ids (H, ids, e->u.e.l);
+    if (e->u.e.r) {
+      _expr_collect_ids (H, ids, e->u.e.r);
+    }
+    break;
+
+  case E_USERMACRO:
+  case E_FUNCTION:
+  case E_COMMA:
+  case E_COLON:
+  default:
+    fatal_error ("What? %d\n", e->type);
+    break;
+  }
+}
+
+
+list_t *act_expr_used_ids (Expr *e)
+{
+  struct pHashtable *H = phash_new (8);
+  list_t *ret = list_new ();
+
+  _expr_collect_ids (H, ret, e);
+
+  phash_free (H);
+
+  return ret;
 }

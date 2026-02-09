@@ -36,12 +36,12 @@ private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
 
-  void _extract_memory (act_chp_lang_t *c);
+  void _extract_memory (act_chp_lang_t *c, list_t *valid_reads);
 
   int _fresh_memdata (Scope *sc, int bw, Data *isstruct);
   void _fresh_release (int idx);
 
-  void _subst_dynamic_array (list_t *l, Expr *e);
+  void _subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads);
 
 
   int _is_dynamic_array (ActId *id);

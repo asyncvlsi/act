@@ -374,12 +374,18 @@ int Array::isEqual (Array *a, int strict)
   else {
     for (i=(strict == -1 ? 1 : 0); i < dims; i++) {
       if (r1[i].u.ex.isrange != r2[i].u.ex.isrange) return 0;
-      if (strict == 1) {
-	if ((r1[i].u.ex.idx.lo != r2[i].u.ex.idx.lo) || (r1[i].u.ex.idx.hi != r2[i].u.ex.idx.hi))
-	  return 0;
+      if (r1[i].u.ex.isrange != 2) {
+	if (strict == 1) {
+	  if ((r1[i].u.ex.idx.lo != r2[i].u.ex.idx.lo) || (r1[i].u.ex.idx.hi != r2[i].u.ex.idx.hi))
+	    return 0;
+	}
+	else {
+	  if ((r1[i].u.ex.idx.hi - r1[i].u.ex.idx.lo) != (r2[i].u.ex.idx.hi - r2[i].u.ex.idx.lo))
+	    return 0;
+	}
       }
       else {
-	if ((r1[i].u.ex.idx.hi - r1[i].u.ex.idx.lo) != (r2[i].u.ex.idx.hi - r2[i].u.ex.idx.lo))
+	if (!expr_equal (r1[i].u.ex.deref, r2[i].u.ex.deref))
 	  return 0;
       }
     }

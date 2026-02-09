@@ -334,6 +334,10 @@ void expr_dag_free (Expr *);
  */
 int expr_ex_is_cached (Expr *);
 
+/**
+ * Return a list of ActId pointers used in the expression e
+ */
+list_t *act_expr_used_ids (Expr *e);
 
 class UserMacro;
 /*
