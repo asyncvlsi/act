@@ -25,19 +25,28 @@
 #include "finline.h"
 #include <act/iter.h>
 #include <string.h>
+#include <act/passes/booleanize.h>
 
 
 ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
 {
+  ActPass *ap = a->pass_find ("booleanize");
+  if (ap) {
+    _bp = dynamic_cast<ActBooleanizePass *> (ap);
+  }
+  else {
+    _bp = NULL;
+  }
   _useidx = 0;
 }
 
 // used for unique ids for structure self-assignment
 static int _inline_idx = 0;
 
-void ActCHPFuncInline::_full_inline (act_chp_lang_t *c)
+bool ActCHPFuncInline::_full_inline (act_chp_lang_t *c)
 {
   list_t *l = list_new ();
+  bool ret = false;
 
   /* -- do any simple inlines, and collect complex inline functions -- */
   _inline_funcs (l, c);
@@ -80,15 +89,21 @@ void ActCHPFuncInline::_full_inline (act_chp_lang_t *c)
   }
   else {
     _do_complex_inline (NULL, l, c);
+    ret = true;
+  }
+  if (_inline_idx > 0) {
+    ret = true;
   }
 
   list_free (l);
+  return ret;
 }
 				    
 
 void *ActCHPFuncInline::local_op (Process *p, int mode)
 {
   list_t *_complex_inlines;
+  bool re_bool = false;
   
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
@@ -100,9 +115,9 @@ void *ActCHPFuncInline::local_op (Process *p, int mode)
     _cursc = ActNamespace::Global()->CurScope();
   }
   
+  _inline_idx = 0;
   if (p->getlang()->getchp()) {
-    _inline_idx = 0;
-    _full_inline (p->getlang()->getchp()->c);
+    re_bool = _full_inline (p->getlang()->getchp()->c);
   }
   if (p->getlang()->getdflow()) {
     _complex_inlines = list_new ();
@@ -122,6 +137,11 @@ void *ActCHPFuncInline::local_op (Process *p, int mode)
       exit (1);
     }
     list_free (_complex_inlines);
+  }
+  if (_inline_idx > 0 || re_bool) {
+    if (_bp && _bp->completed()) {
+      _bp->updateCHP (p);
+    }
   }
   return NULL;
 }
@@ -1119,9 +1139,6 @@ void ActCHPFuncInline::_complex_inline_helper (struct pHashtable *H,
 	list_t *l = list_new ();
 	_collect_complex_inlines (l, c->u.comm.e);
 	if (!list_isempty (l)) {
-
-	  printf (" --> _do_inline\n");
-	  
 	  act_chp_lang_t *ch = _do_inline (H, l);
 	  _apply_complex_inlines (l, c->u.comm.e);
 

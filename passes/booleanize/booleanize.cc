@@ -1588,6 +1588,22 @@ static void process_chp_lang (act_boolean_netlist_t *N, act_chp *c)
   }
 }
 
+void ActBooleanizePass::updateCHP (Process *p)
+{
+  act_boolean_netlist_t *n;
+  if (!p) return;
+  n = getBNL (p);
+  if (!n) {
+    fatal_error ("Process %s: no netlist found!", p->getName());
+  }
+  act_languages *lang = p->getlang();
+  if (lang && lang->getchp()) {
+    _block_id = -1;
+    generate_chp_vars (n, lang->getchp()->c);
+    _block_id = -1;
+  }
+}
+
 static void process_dflow_lang (act_boolean_netlist_t *N, act_dataflow *df)
 {
   if (df) {

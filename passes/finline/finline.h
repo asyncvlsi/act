@@ -25,6 +25,7 @@
 #define __ACT_PASS_FINLINE_H__
 
 #include <act/act.h>
+#include <act/passes/booleanize.h>
 
 class ActCHPFuncInline : public ActPass {
 public:
@@ -42,7 +43,7 @@ private:
   void _inline_funcs (list_t *, act_chp_lang_t *);
   void _inline_funcs (list_t *, act_dataflow_element *);
 
-  void _full_inline (act_chp_lang_t *c);
+  bool _full_inline (act_chp_lang_t *c);
   void _do_complex_inline (struct pHashtable *, list_t *, act_chp_lang_t *);
   void _complex_inline_helper (struct pHashtable *, act_chp_lang_t *);
 
@@ -55,6 +56,7 @@ private:
   void _inline_array (list_t *, Array *a);
 
   int _useidx;
+  ActBooleanizePass *_bp;
 };
 
 #endif /* __ACT_PASS_FINLINE_H__ */

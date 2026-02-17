@@ -317,6 +317,13 @@ class ActBooleanizePass : public ActPass {
    */
   static act_dynamic_var_t *isDynamicRef (act_boolean_netlist_t *,
 					  ActId *);
+
+
+  /**
+   * Perform incremental update on CHP bodies to mark used variables,
+   * when variables are added by passes.
+   */
+  void updateCHP (Process *p);
   
   /*-- internal data structures and functions --*/
  private:
