@@ -1,32 +1,4 @@
 namespace std {
-namespace gates {
-
-
-/* instances */
-
-/* connections */
-}
-namespace channel {
-
-
-/* instances */
-
-/* connections */
-}
-namespace data {
-
-
-/* instances */
-
-/* connections */
-}
-namespace bit {
-
-
-/* instances */
-
-/* connections */
-}
 export defproc ram_310_733_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<33>)? din; chan(int<33>)! dout);
 
 export defproc ram_310_733_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<33>)? din; chan(int<33>)! dout)

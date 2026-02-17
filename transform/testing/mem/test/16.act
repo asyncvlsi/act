@@ -1,4 +1,4 @@
-import std;
+import "mem.act";
 
 deftype mytype (bool a; int b) { }
 
