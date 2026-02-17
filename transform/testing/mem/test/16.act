@@ -1,0 +1,17 @@
+import std;
+
+deftype mytype (bool a; int b) { }
+
+
+defproc test()
+{ 
+  mytype x[10];
+  mytype q;
+
+  int y;
+
+  chp {
+     x[y] := mytype(543);
+     q := x[y]
+  }
+}

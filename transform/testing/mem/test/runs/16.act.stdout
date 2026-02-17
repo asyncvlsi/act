@@ -1,0 +1,81 @@
+namespace std {
+namespace gates {
+
+
+/* instances */
+
+/* connections */
+}
+namespace channel {
+
+
+/* instances */
+
+/* connections */
+}
+namespace data {
+
+
+/* instances */
+
+/* connections */
+}
+namespace bit {
+
+
+/* instances */
+
+/* connections */
+}
+export defproc ram_310_733_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<33>)? din; chan(int<33>)! dout);
+
+export defproc ram_310_733_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<33>)? din; chan(int<33>)! dout)
+{
+
+/* instances */
+int<4> a;
+int<2> b;
+int<33> m[10];
+
+/* connections */
+chp {
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+deftype mytype (bool a; int<32> b);
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+mytype q;
+::std::ram_310_733_4 x_m;
+mytype _memdats1;
+int<33> _memdatv1;
+
+/* connections */
+chp {
+_memdats1:=mytype(0x21f);x_m.addr!y,x_m.rd!0,x_m.din! {_memdats1.a,_memdats1.b};x_m.addr!y,x_m.rd!1,x_m.dout?_memdatv1;_memdats1.a:=bool(_memdatv1{0x20..0x20});_memdats1.b:=_memdatv1{0x1f..0x0};q:=_memdats1
+}
+}
+
+deftype mytype (bool a; int<32> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */

@@ -273,8 +273,8 @@ static Expr *_gen_address (InstType *it, Array *a)
 }
 
 
-int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d, int off,
-				    Scope *sc)
+int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d,
+				    int off, Scope *sc)
 {
   Assert (d && TypeFactory::isStructure (d), "What?");
   ActId *ftail, *oldtail;
@@ -344,17 +344,24 @@ int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d, i
 	c->u.assign.e->u.e.l = (Expr *) rhs;
 	NEW (c->u.assign.e->u.e.r, Expr);
 	c->u.assign.e->u.e.r->type = E_BITFIELD;
-	c->u.assign.e->u.e.r->u.e.l = const_expr (off);
-	c->u.assign.e->u.e.r->u.e.r = const_expr (off + sz - 1);
+	c->u.assign.e->u.e.r->u.e.l = const_expr (off - sz + 1);
+	c->u.assign.e->u.e.r->u.e.r = const_expr (off);
 
 	Expr *tmp = expr_expand (c->u.assign.e, ActNamespace::Global(), sc,
 				 ACT_EXPR_EXFLAG_CHPEX);
 	expr_free (c->u.assign.e);
 	c->u.assign.e = tmp;
 
+	if (TypeFactory::isBoolType (it)) {
+	  NEW (c->u.assign.e, Expr);
+	  c->u.assign.e->type = E_BUILTIN_BOOL;
+	  c->u.assign.e->u.e.l = tmp;
+	  c->u.assign.e->u.e.r = NULL;
+	}
+
 	list_append (l, c);
 	
-	off += sz;
+	off -= sz;
       }
       ftail->setArray (NULL);
       if (fa) {
@@ -589,7 +596,8 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
     list_append (nl, c);
 
     // do element-wise structure assignment
-    _elemwise_assign (nl, idx, NULL, _memdata_var[idx_i].isstruct, 0, sc);
+    _elemwise_assign (nl, idx, NULL, _memdata_var[idx_i].isstruct,
+		      _memdata_var[idx_i].bw-1, sc);
      
     NEW (d, act_chp_lang_t);
     d->space = NULL;
