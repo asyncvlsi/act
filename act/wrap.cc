@@ -713,7 +713,13 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
 
       UserDef *u;
       if (!is_nested_macro) {
-	u = ns->findType (prev);
+	ActNamespace *cur = cookie->os->findType (ns, prev);
+	if (!cur) {
+	  u = NULL;
+	}
+	else {
+	  u = cur->findType (prev);
+	}
 	if (!u) {
 	  struct act_position p;
 	  p.l = cookie->line;

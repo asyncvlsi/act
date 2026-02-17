@@ -1,0 +1,12 @@
+export deftype mytype(int x) {}
+
+namespace ns {
+defproc test() {
+  mytype x;
+
+  chp {
+     x := mytype(7)
+  }
+}
+
+}

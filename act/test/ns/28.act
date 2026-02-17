@@ -1,0 +1,15 @@
+
+namespace ns {
+export deftype mytype(int x) {}
+
+namespace nest {
+defproc test() {
+  mytype x;
+
+  chp {
+     x := mytype(7)
+  }
+}
+}
+
+}
