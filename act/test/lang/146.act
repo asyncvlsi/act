@@ -1,0 +1,9 @@
+defproc ptt () {
+    bool y;
+    chp {
+        y := ~~y; // this doesn't work
+        [~~y -> skip] // this works
+    }
+}
+
+ptt p;

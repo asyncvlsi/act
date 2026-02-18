@@ -467,9 +467,16 @@ static int _unwind_op (int top, list_t *opstk, list_t *resstk)
   r = (Expr *) stack_pop (resstk);
 
   if (_unary_op (top)) {
-    e = newexpr ();
-    e->type = top;
-    e->u.e.l = r;
+    if (r->type == top) {
+      // repeated unary op, get rid of it!
+      e = r->u.e.l;
+      FREE (r);
+    }
+    else {
+      e = newexpr ();
+      e->type = top;
+      e->u.e.l = r;
+    }
     stack_push (resstk, e);
     return 1;
   }
@@ -598,6 +605,12 @@ static Expr *expr_parse (void)
       /* check out the top of the operand stack */
       top_op = _stack_top_op (stk_op);
       file_getsym (Tl);
+
+      /* repeated unary operator, just push on the op stack */
+      if (top_op != -1 && _unary_op (top_op) && _unary_op (tok)) {
+	stack_ipush (stk_op, tok);
+	continue;
+      }
 
 #ifdef EXPR_VERBOSE
       printf ("[%d]      top-of-stack: ", depth);
