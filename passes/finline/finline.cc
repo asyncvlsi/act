@@ -1037,7 +1037,7 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
     {
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
       if (TypeFactory::isStructure (it)) {
-	if (c->u.assign.e->type == E_VAR) {
+	if (c->u.assign.e->type == E_VAR && !c->u.assign.id->isDynamicDeref()) {
 	  int *types;
 	  int nb, ni;
 	  ActId *e_rhs;
@@ -1070,6 +1070,9 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
 	    c->u.semi_comma.cmd = l;
 	  }
 	}
+        else if (c->u.assign.e->type == E_VAR && c->u.assign.id->isDynamicDeref()) {
+          /* nothing */
+        }
 	else {
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
 	  Function *func = (Function *) c->u.assign.e->u.fn.s;
