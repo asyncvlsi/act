@@ -43,6 +43,11 @@ private:
 
   void _subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads);
 
+  /* Append to valid read list based on the memory access in id, and
+     then return the cached variable.
+  */
+  ActId *_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads);
+
 
   int _is_dynamic_array (ActId *id);
 

@@ -537,6 +537,8 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
   c->u.comm.var = NULL;
   c->u.comm.chan = tmp;
 
+  access = access->Clone ();
+
   a = access->arrayInfo();
   c->u.comm.e = _gen_address (sc->Lookup (access->getName()), a);
   delete a;
@@ -639,6 +641,8 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   c->u.comm.convert = 0;
   c->u.comm.var = NULL;
   c->u.comm.chan = tmp;
+
+  access = access->Clone ();
 
   a = access->arrayInfo();
   c->u.comm.e = _gen_address (sc->Lookup (access->getName()), a);
@@ -865,6 +869,50 @@ static void _clear_valid_list (list_t *l)
   _free_valid_list (tmp);
 }
 
+
+ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads)
+{
+  act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, id);
+
+  Assert (v, "Why am I being called");
+
+  ActId *cached = _search_for_valid_read (valid_reads, id);
+  if (cached) {
+    return cached->Clone ();
+  }
+  else {
+    /* check index to see if it has a dynamic var as well! */
+    {
+      ActId *tmp = id;
+      Array *tmpa = tmp->arrayInfo();
+      Assert (tmpa, "Hmm?!");
+      list_t *tmpl = list_new ();
+      _subst_dynamic_array (tmpl, tmpa->getDeref(0), valid_reads);
+      list_concat (l, tmpl);
+      list_free (tmpl);
+    }
+
+    /* we need to re-write this! */
+    int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
+    _prune_visited_idx (valid_reads, idx);
+
+    char buf[100];
+    if (v->isstruct) {
+      snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
+    }
+    else {
+      snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
+    }
+    list_iappend (l, idx);
+    list_append (l, id);
+
+    cached = new ActId (buf);
+    _add_cached_ref (valid_reads, id, cached, idx);
+    return cached;
+  }
+}
+
+
 /*
  * If there is a memory reference in the expression, then:
  *   - the memory reference is replaced with a reference to a fresh
@@ -912,47 +960,13 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
     {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, (ActId *)e->u.e.l);
       if (v) {
-	ActId *cached = _search_for_valid_read (valid_reads,
-						(ActId *)e->u.e.l);
-
+	ActId *base = _gen_mem_read (l, (ActId *)e->u.e.l, valid_reads);
 	ActId *tail = ((ActId *)e->u.e.l)->Rest ();
-	
-	if (cached) {
-	  e->u.e.l = (Expr *)cached->Clone();
-	}
-	else {
-	  /* check index to see if it has a dynamic var as well! */
-	  {
-	    ActId *tmp = (ActId *)e->u.e.l;
-	    Array *tmpa = tmp->arrayInfo();
-	    Assert (tmpa, "Hmm?!");
-	    list_t *tmpl = list_new ();
-	    _subst_dynamic_array (tmpl, tmpa->getDeref(0), valid_reads);
-	    list_concat (l, tmpl);
-	    list_free (tmpl);
-	  }
 
-	  /* we need to re-write this! */
-	  int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
-	  _prune_visited_idx (valid_reads, idx);
-
-	  char buf[100];
-	  if (v->isstruct) {
-	    snprintf (buf, 100, "%s%d", MEMSTR_STRING, idx);
-	  }
-	  else {
-	    snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
-	  }
-	  list_iappend (l, idx);
-	  list_append (l, e->u.e.l);
-
-	  cached = new ActId (buf);
-	  _add_cached_ref (valid_reads, (ActId *)e->u.e.l, cached, idx);
-	  e->u.e.l = (Expr *) cached;
-	}
 	if (tail) {
-	  ((ActId *)e->u.e.l)->Append (tail->Clone());
+	  base->Append (tail->Clone ());
 	}
+	e->u.e.l = (Expr *) base;
       }
     }
     break;
@@ -1006,6 +1020,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
   list_t *pre, *post;
   act_chp_lang_t *d = NULL;
   act_chp_lang_t *x = NULL;
+  ActId *mem_rmw;
   
   if (!c) return;
 
@@ -1021,6 +1036,16 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
     pre = list_new ();
     if (c->type == ACT_CHP_ASSIGN) {
       _subst_dynamic_array (pre, c->u.assign.e, valid_reads);
+      /* if it is a m[..].field assignment, we need to read the memory
+	 first! */
+      mem_rmw = c->u.assign.id;
+      if (_bp->isDynamicRef (_curbnl, c->u.assign.id)
+	  && c->u.assign.id->Rest()) {
+
+	ActId *tmp = _gen_mem_read (pre, c->u.assign.id, valid_reads);
+	tmp->Append (c->u.assign.id->Rest()->Clone ());
+	c->u.assign.id = tmp;
+      }
     }
     else {
       _subst_dynamic_array (pre, c->u.comm.e, valid_reads);
@@ -1058,15 +1083,15 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 
     post = NULL;
 
-    if ((c->type == ACT_CHP_ASSIGN && c->u.assign.id) ||
+    if ((c->type == ACT_CHP_ASSIGN && mem_rmw) ||
 	(c->type != ACT_CHP_ASSIGN && c->u.comm.var)) {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl,
 						c->type == ACT_CHP_ASSIGN ?
-						c->u.assign.id : c->u.comm.var);
+						mem_rmw : c->u.comm.var);
       if (v) {
 	{
 	  ActId *tmp = (c->type == ACT_CHP_ASSIGN ?
-			c->u.assign.id : c->u.comm.var);
+			mem_rmw : c->u.comm.var);
 	  Array *tmpa = tmp->arrayInfo();
 	  Assert (tmpa, "Hmm?!");
 	  list_t *tmpl = list_new ();
@@ -1119,8 +1144,11 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	Expr *e;
 	e = act_expr_var (new ActId (buf));
 	if (c->type == ACT_CHP_ASSIGN) {
-	  _append_mem_write (post, c->u.assign.id, idx, e, _curbnl->cur);
+	  _append_mem_write (post, mem_rmw, idx, e, _curbnl->cur);
 	  c->u.assign.id = new ActId (buf);
+	  if (mem_rmw && mem_rmw->Rest()) {
+	    c->u.assign.id->Append (mem_rmw->Rest()->Clone ());
+	  }
 	}
 	else {
 	  _append_mem_write (post, c->u.comm.var, idx, e, _curbnl->cur);
@@ -1155,11 +1183,11 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
       }
     }
     
-    if ((c->type == ACT_CHP_ASSIGN && c->u.assign.id) ||
+    if ((c->type == ACT_CHP_ASSIGN && mem_rmw) ||
 	(c->type != ACT_CHP_ASSIGN && c->u.comm.var)) {
       ActId *wr;
       if (c->type == ACT_CHP_ASSIGN) {
-	wr = c->u.assign.id;
+	wr = mem_rmw;
       }
       else {
 	wr = c->u.comm.var;

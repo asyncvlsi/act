@@ -1,0 +1,53 @@
+namespace std {
+export defproc ram_320_733_4 (chan(int<2>)? rd; chan(int<5>)? addr; chan(int<33>)? din; chan(int<33>)! dout);
+
+export defproc ram_320_733_4 (chan(int<2>)? rd; chan(int<5>)? addr; chan(int<33>)? din; chan(int<33>)! dout)
+{
+
+/* instances */
+int<5> a;
+int<2> b;
+int<33> m[20];
+
+/* connections */
+chp {
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc test ();
+deftype me (bool a; int<32> b);
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+::std::ram_320_733_4 x_m;
+me _memdats1;
+int<33> _memdatv1;
+
+/* connections */
+chp {
+x_m.addr!y,x_m.rd!1,x_m.dout?_memdatv1;_memdats1.a:=bool(_memdatv1{0x20..0x20});_memdats1.b:=_memdatv1{0x1f..0x0};_memdats1.b:=0x5;x_m.addr!y,x_m.rd!0,x_m.din! {_memdats1.a,_memdats1.b}
+}
+}
+
+deftype me (bool a; int<32> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

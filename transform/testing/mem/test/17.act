@@ -1,0 +1,14 @@
+import "mem.act";
+
+deftype me (bool a; int b) { }
+
+defproc test()
+{
+   me x[20];
+   int y;
+   chp {
+     x[y].b := 5
+   }
+}
+
+test t;
