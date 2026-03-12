@@ -197,6 +197,9 @@ param_inst: param_type param_id_list
 	  exit (1);
 	}
 	delete tmp;
+	if (!ae->isConst()) {
+	  $E("Default value for a template parameter must be a constant.");
+	}
       }
     }
     list_free ($2);

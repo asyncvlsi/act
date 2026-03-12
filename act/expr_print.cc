@@ -1154,6 +1154,28 @@ AExpr *AExpr::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
   return this;
 }
 
+/*------------------------------------------------------------------------
+ * Returns true if this is a constant expression, false otherwise
+ *------------------------------------------------------------------------
+ */
+bool AExpr::isConst()
+{
+  AExpr *newl, *newr;
+
+  if (l) {
+    if (t != AExpr::EXPR) {
+      if (!l->isConst()) return false;
+    }
+    else {
+      if (!expr_is_a_const ((Expr *)l)) return false;
+    }
+  }
+  if (r) {
+    if (!r->isConst()) return false;
+  }
+  return true;
+}
+
 
 AExprstep *AExpr::stepper()
 {

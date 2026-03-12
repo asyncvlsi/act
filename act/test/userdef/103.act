@@ -1,0 +1,27 @@
+template<pint X; pint Y=X+1>
+deftype foo (bool a[X][Y]) { 
+methods {
+   function tst(foo<X,Y> arg) : bool
+   { 
+     chp {
+      self := true
+     }
+   }
+}
+
+}
+
+
+defproc test()
+{
+   foo<3> x;
+   foo<3> y;
+   bool b;
+
+   chp {
+     x := y;
+     b := x.tst(y)
+   }
+}
+
+test t;

@@ -1,0 +1,2 @@
+ERROR: File `103.act', line 1, col 22
+	Default value for a template parameter must be a constant.

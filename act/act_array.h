@@ -591,6 +591,8 @@ class AExpr {
   
   ~AExpr();
 
+  bool isConst (); /**< Check if the expression is a constant */
+
   int isEqual (AExpr *a); /**< Check if two array expressions are
 			     equal */
 
