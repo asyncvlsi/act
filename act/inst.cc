@@ -522,7 +522,21 @@ Type *InstType::isConnectable (InstType *it, int weak)
    */
   if (nt != it->nt) {
     if (isExpanded() || subtype == 0) {
-      return NULL;
+      if (!isExpanded()) {
+	int mint = nt;
+	if (it->nt < mint) {
+	  mint = it->nt;
+	}
+	UserDef *u = dynamic_cast<UserDef *> (t);
+	if (!u) return NULL;
+	if (u->getDefaultParam (mint) == NULL) {
+	  return NULL;
+	}
+	// give it a pass...
+      }
+      else {
+	return NULL;
+      }
     }
   }
 

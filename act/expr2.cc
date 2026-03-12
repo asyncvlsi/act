@@ -780,15 +780,25 @@ static Expr *_expr_expand (int *width, Expr *e,
 	      count++;
 	      w = w->u.e.r;
 	    }
+	    // now check if there are default parameters; add them
+	    while (count < ux->getNumParams() && ux->getDefaultParam (count)) {
+	      count++;
+	    }
 	    MALLOC (inst, inst_param, count);
 	    w = e->u.fn.r->u.e.l;
 	    for (int i=0; i < count; i++) {
 	      AExpr *tae;
 	      inst[i].isatype = 0;
-	      tae = new AExpr (expr_dup (w->u.e.l));
-	      inst[i].u.tp = tae->Expand (ns, s, 0);
-	      delete tae;
-	      w = w->u.e.r;
+
+	      if (w) {
+		tae = new AExpr (expr_dup (w->u.e.l));
+		inst[i].u.tp = tae->Expand (ns, s, 0);
+		delete tae;
+		w = w->u.e.r;
+	      }
+	      else {
+		inst[i].u.tp = ux->getDefaultParam (i)->Expand (ns, s, 0);
+	      }
 	    }
 	  }
 	  else {
