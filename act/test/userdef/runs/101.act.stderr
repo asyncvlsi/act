@@ -1,0 +1,7 @@
+In expanding test (101.act:15)
+In expanding ::<Global>
+Error on or near line number 21.
+Typechecking failed on CHP assignment
+  stmt: x := y
+	Incompatible structures
+	foo<3,4> v/s foo<3,3>

@@ -1,0 +1,3 @@
+Typechecking failed on CHP assignment
+  stmt: b := x.tst(y)
+	Function `foo<3,5>/tst<>': arg #1 has an incompatible type

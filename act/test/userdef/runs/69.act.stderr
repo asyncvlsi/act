@@ -1,6 +1,6 @@
 In expanding bool
 In expanding foo (69.act:1)
-In expanding bar<1> (69.act:4)
+In expanding bar<1,2> (69.act:4)
 In expanding ::<Global>
 Error on or near line number 8.
  id: A

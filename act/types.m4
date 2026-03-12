@@ -360,12 +360,25 @@ user_type[InstType *]: qualified_type  [ chan_dir ] [ template_args ]
       l = list_new ();
     }
     OPT_FREE ($3);
-   
-    if (ud->getNumParams() < list_length (l)) {
-      $E("Number of template parameters specified (%d) > available parameters (%d) for `%s'", list_length (l), ud->getNumParams(), ud->getName());
+
+    int l_len = list_length (l);
+
+    if (ud->getNumParams() < l_len) {
+      $E("Number of template parameters specified (%d) > available parameters (%d) for `%s'", l_len, ud->getNumParams(), ud->getName());
     }
-      
-    /* 
+    if (l_len < ud->getNumParams()) {
+      // pretend the default params were typed in
+      while (l_len < ud->getNumParams() && ud->getDefaultParam (l_len)) {
+	inst_param *ip;
+	NEW (ip, inst_param);
+	ip->isatype = 0;
+	ip->u.tp = ud->getDefaultParam (l_len)->Clone();
+	list_append (l, ip);
+	l_len++;
+      }
+    }
+    
+    /*
        Now we have to examine the qualified_type to see if there are
        any derived parameters.
 
