@@ -1,0 +1,9 @@
+defproc c2 (bool? a, b; bool! c)
+{
+  prs {
+    a &  b -> c-
+   ~a & ~b -> c+
+  }
+}
+
+c2 test;
