@@ -761,6 +761,10 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       }
       else {
 	if (T_BASETYPE_INT (lt)) {
+	  if (lt & T_ARRAYOF) {
+	    typecheck_err ("Bitfield applied to an array.");
+	    return T_ERR;
+	  }
 	  if (xit->isExpanded()) {
 	    Assert (e->u.e.r, "What?");
 	    Assert (e->u.e.r->u.e.r, "What?");
@@ -1286,7 +1290,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
       lt = act_type_var_gen (s, (ActId *)e->u.e.l, &xit,
 			     (only_chan == 0 ? false : true));
-      
+
       if (lt == T_ERR) return T_ERR;
       if (only_chan) {
 	if (lt == T_CHAN) {
