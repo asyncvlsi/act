@@ -763,6 +763,7 @@ void ActNamespace::_subst_globals (list_t *defs, InstType *it, const char *s)
       if (up->findGlobal (s)) {
 	/* XXX FIXME */
 	up->AddPort (it, s);
+	up->forceUsedPort (s);
 	list_append (defs, up);
       }
     }

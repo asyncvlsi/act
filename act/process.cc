@@ -44,6 +44,7 @@ Process::Process (UserDef *u) : UserDef (u)
   ifaces = NULL;
   bufcnt = 0;
   used_globals = NULL;
+  force_used_ports = NULL;
 }
 
 Process::~Process ()
@@ -54,6 +55,10 @@ Process::~Process ()
   if (ifaces) {
     list_free (ifaces);
     ifaces = NULL;
+  }
+  if (force_used_ports) {
+    list_free (force_used_ports);
+    force_used_ports = NULL;
   }
 }
 
@@ -101,6 +106,13 @@ Process *Process::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
   else {
     xp->ifaces = NULL;
+  }
+
+  if (force_used_ports) {
+    xp->force_used_ports = list_dup (force_used_ports);
+  }
+  else {
+    xp->force_used_ports = NULL;
   }
 
   int recval = _act_inc_rec_depth ();
@@ -762,6 +774,15 @@ void Process::recordGlobal (ActId *id)
   list_append (used_globals, id->Clone());
 }
 
+void Process::recordGlobal (const char *s)
+{
+  if (!used_globals) {
+    used_globals = list_new ();
+  }
+  if (findGlobal (s)) return;
+  list_append (used_globals, new ActId (s));
+}
+
 
 const char *Process::validateInterfaces ()
 {
@@ -781,4 +802,58 @@ const char *Process::validateInterfaces ()
     li = list_next (li);
   }
   return NULL;
+}
+
+void Process::forceUsedPort (const char *s)
+{
+  int id  = FindPort (s);
+  Assert (id != 0, "forceUsedPort() called with illegal port name");
+  if (!force_used_ports) {
+    force_used_ports = list_new ();
+  }
+  list_append (force_used_ports, string_cache (s));
+}
+
+void Process::mergeParentAttribs (Process *p)
+{
+  if (p->force_used_ports) {
+    if (!force_used_ports) {
+      force_used_ports = list_dup (p->force_used_ports);
+    }
+    else {
+      list_t *tmp = list_dup (p->force_used_ports);
+      list_concat (force_used_ports, tmp);
+      list_free (tmp);
+    }
+  }
+
+  if (!p->used_globals) {
+    used_globals = NULL;
+  }
+  else {
+    listitem_t *li;
+    used_globals = list_new ();
+    for (li = list_first (p->used_globals); li; li = list_next (li)) {
+      ActId *tmp = (ActId *) list_value (li);
+      list_append (used_globals, tmp->Clone ());
+    }
+  }
+  /* XXX: ifaces? */
+}
+
+
+bool Process::isForceUsed (const char *s)
+{
+  listitem_t *li;
+
+  if (!force_used_ports) {
+    return false;
+  }
+  for (li = list_first (force_used_ports); li; li = list_next (li)) {
+    char *tmp = (char *) list_value (li);
+    if (strcmp (tmp, s) == 0) {
+      return true;
+    }
+  }
+  return false;
 }

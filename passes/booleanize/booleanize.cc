@@ -2101,12 +2101,23 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   }
 
   if (c->isglobal()) {
+    printf (" -->0 append-base-port "); c->Print (stdout); printf ("\n");
     /* globals do not need to be in the port list */
     if (mode != 2) {
       A_LAST (n->ports).omit = 1;
+      ActId *tmp = A_LAST(n->ports).c->toid();
+      if (n->p->isForceUsed (tmp->getName())) {
+	A_LAST (n->ports).omit = 0;
+      }
+      delete tmp;
     }
     if (mode != 1) {
       A_LAST (n->chpports).omit = 1;
+      ActId *tmp = A_LAST(n->ports).c->toid();
+      if (n->p->isForceUsed (tmp->getName())) {
+	A_LAST (n->ports).omit = 0;
+      }
+      delete tmp;
     }
     return;
   }
@@ -2128,13 +2139,31 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     if (!is_bb && !v->used) {
       if (mode != 2) {
 	A_LAST (n->ports).omit = 1;
-	bool_done = 1;
+	ActId *tmp = A_LAST(n->ports).c->toid();
+	if (n->p->isForceUsed (tmp->getName())) {
+	  A_LAST (n->ports).omit = 0;
+	  v->input = 1;
+	  v->used = 1;
+	}
+	else {
+	  bool_done = 1;
+	}
+	delete tmp;
       }
     }
     if (!is_bb && !v->usedchp) {
       if (mode != 1) {
 	A_LAST (n->chpports).omit = 1;
-	chp_done = 1;
+	ActId *tmp = A_LAST(n->ports).c->toid();
+	if (n->p->isForceUsed (tmp->getName())) {
+	  A_LAST (n->ports).omit = 0;
+	  v->input = 1;
+	  v->used = 1;
+	}
+	else {
+	  chp_done = 1;
+	}
+	delete tmp;
       }
     }
     if (mode != 2 && !bool_done) {
@@ -2170,13 +2199,25 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
     }
   }
   else if (!is_bb) {
-    /* connection pointers that were not found were also not used! */
-    if (mode != 2) {
-      A_LAST (n->ports).omit = 1;
+    ActId *tmp = A_LAST(n->ports).c->toid();
+    if (!n->p->isForceUsed (tmp->getName())) {
+      /* connection pointers that were not found were also not used! */
+      if (mode != 2) {
+	A_LAST (n->ports).omit = 1;
+      }
+      if (mode != 1) {
+	A_LAST (n->chpports).omit = 1;
+      }
     }
-    if (mode != 1) {
-      A_LAST (n->chpports).omit = 1;
+    else {
+      if (mode != 2) {
+	A_LAST (n->ports).input = 1;
+      }
+      if (mode != 1) {
+	A_LAST (n->chpports).input = 1;
+      }
     }
+    delete tmp;
   }
 
   if (!bool_done && mode != 2) {
@@ -2243,7 +2284,7 @@ void ActBooleanizePass::flatten_ports_to_bools (act_boolean_netlist_t *n,
       sub = new ActId (name);
       tail = sub;
     }
-      
+
     /* if it is a complex type, we need to traverse it! */
     if (TypeFactory::isUserType (it)) {
       Arraystep *step;

@@ -1128,6 +1128,12 @@ class Process : public UserDef {
   void recordGlobal (ActId *id);
 
   /**
+   * record the usage of a global signal
+   * @param s is the global signal name
+   */
+  void recordGlobal (const char *s);
+
+  /**
    * @param id is the name of the signal
    * @return 1 if the global signal was found in the recorded global
    * signal list, 0 otherwise.
@@ -1140,8 +1146,27 @@ class Process : public UserDef {
    * signal list, 0 otherwise 
    */
   int findGlobal (const char *s);
-    
- private:
+
+  /**
+   * @param s is the name of a port
+   * forces this port to be marked as used when emitting port lists
+   */
+   void forceUsedPort (const char *s);
+
+  /**
+   * Merge in any process attributes from the parent
+   * @param p is the parent process
+   */
+  void mergeParentAttribs (Process *p);
+
+  /**
+   * Search for force used globals in port list
+   * @param s is the string to look for
+   * @return true if the string is in the forced global list, false otherwise
+   */
+  bool isForceUsed (const char *s);
+
+private:
   unsigned int is_cell:1;	///< 1 if this is a defcell, 0 otherwise 
   list_t *ifaces;		///< a mixed list of interface, map
 				///pairs. The map is also a list of
@@ -1149,6 +1174,9 @@ class Process : public UserDef {
 
   list_t *used_globals;		///< list of used globals as ActId
 				///pointers
+
+  list_t *force_used_ports;	///< list of ports that are forced as
+				///used during netlist generation
 
   int bufcnt;			///< used to generate unique buffer
 				///names for buffer insertion
@@ -1546,7 +1574,13 @@ class Data : public UserDef {
    * type
    */
   list_t *findMap (InstType *iface);
-  
+
+  /**
+   * Merge in any process attributes from the parent
+   * @param p is the parent process
+   */
+  void mergeParentAttribs (Process *p);
+
 private:
   list_t *ifaces;		///< a mixed list of interface, map
 				///pairs. The map is also a list of

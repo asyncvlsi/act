@@ -228,6 +228,36 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] [ "*" ] "{"
     $0->attr_num = config_get_table_size ("act.instance_attr");
     $0->attr_table = config_get_table_string ("act.instance_attr");
 
+    if (!p->vdd || !p->gnd) {
+      // record vdd/gnd as something that is used
+      int flag = act_prs_vdd_gnd_used (p);
+      if (!p->vdd && (flag & 0x1)) {
+	// record vdd as something that is used
+	const char *s;
+	s = config_get_string ("net.local_vdd");
+	if (!s || (s && !$0->scope->isGlobal (s))) {
+	  s = config_get_string ("net.global_vdd");
+	}
+	if (s) {
+	  if ($0->u_p && $0->scope->isGlobal (s)) {
+	    $0->u_p->recordGlobal (s);
+	  }
+	}
+      }
+      if (!p->gnd && (flag & 0x2)) {
+	// record gnd as something that is used
+	const char *s;
+	s = config_get_string ("net.local_gnd");
+	if (!s || (s && !$0->scope->isGlobal (s))) {
+	  s = config_get_string ("net.global_gnd");
+	}
+	if (s) {
+	  if ($0->u_p && $0->scope->isGlobal (s)) {
+	    $0->u_p->recordGlobal (s);
+	  }
+	}
+      }
+    }
     return b;
 }}
 ;

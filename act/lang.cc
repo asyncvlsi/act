@@ -1771,3 +1771,57 @@ void prs_fixglobals (act_prs *prs, ActNamespace *cur, ActNamespace *orig)
   _prs_fixglobals (prs->p, cur, orig);
   prs_fixglobals (prs->next, cur, orig);
 }
+
+
+static int _act_prs_vdd_gnd_used (act_prs_lang_t *p)
+{
+  int flag = 0;
+  while (p) {
+    if (flag == 0x3) return flag;
+    switch (p->type) {
+    case ACT_PRS_RULE:
+      if (p->u.one.arrow_type == 0) {
+	if (p->u.one.dir) {
+	  flag |= 0x1; // vdd
+	}
+	else {
+	  flag |= 0x2; // gnd
+	}
+      }
+      else {
+	return 0x3;
+      }
+      break;
+
+    case ACT_PRS_GATE:
+      if (p->u.p.g) {
+	flag |= 0x2; // gnd
+      }
+      if (p->u.p._g) {
+	flag |= 0x1; // vdd
+      }
+      break;
+
+    case ACT_PRS_LOOP:
+    case ACT_PRS_TREE:
+    case ACT_PRS_SUBCKT:
+      flag |= _act_prs_vdd_gnd_used (p->u.l.p);
+      break;
+
+    case ACT_PRS_DEVICE:
+      break;
+    default:
+      Assert (0, "Unknown prs type?");
+      break;
+    }
+    p = p->next;
+  }
+  return flag;
+}
+
+int act_prs_vdd_gnd_used (act_prs *prs)
+{
+  act_prs_lang_t *p;
+  if (!prs) return 0;
+  return _act_prs_vdd_gnd_used (prs->p);
+}

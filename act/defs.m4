@@ -381,6 +381,7 @@ def_or_proc ID
 	  exit (1);
 	}
       }
+      $0->u_p->mergeParentAttribs (pp);
     }
     OPT_FREE ($4);
     $0->strict_checking = 1;
