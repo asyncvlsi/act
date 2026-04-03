@@ -3090,6 +3090,7 @@ Process::Process (ActNamespace *ns) : UserDef (ns)
   ifaces = NULL;
   used_globals = NULL;
   bufcnt = 0;
+  force_used_ports = NULL;
 }
 
 Process *Process::Clone (ActNamespace *root, ActNamespace *cur)
