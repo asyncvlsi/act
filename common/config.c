@@ -310,7 +310,7 @@ static config_t *newconfig(void)
 void config_read (const char *name)
 {
   FILE *fp;
-  char buf[10240];
+  char *buf;
   char buf2[10240];
   char buf3[10240];
   char *s;
@@ -322,6 +322,7 @@ void config_read (const char *name)
   char *prefix = NULL;
   int prefix_len = 0;
   int initial_phase = 1;
+  int buf_sz = 10240;
 
   if (level == 0) {
     A_INIT (files_read);
@@ -388,16 +389,26 @@ void config_read (const char *name)
     }									\
   } while (0)
 
+  MALLOC (buf, char, buf_sz);
   buf[0] = '\0';
-  buf[10239] = '\0';
-  while (fgets (buf, 10240, fp)) {
+  buf[buf_sz-1] = '\0';
+  buf[buf_sz-2] = '\n';
+
+  while (fgets (buf, buf_sz, fp)) {
     int sbuf;
     int buf_start;
 
     buf_start = 0;
   extend_buf:
     line++;
-    if (buf[10239] != '\0') {
+    while (buf[buf_sz-2] != '\n') {
+      REALLOC (buf, char, buf_sz*2);
+      buf[2*buf_sz-1] = '\0';
+      buf[2*buf_sz-2] = '\n';
+      fgets (buf+buf_sz-1, buf_sz+1, fp);
+      buf_sz *= 2;
+    }
+    if (buf[buf_sz-2] != '\n') {
       fatal_error ("Line too long [%s:%d]!", name, line);
     }
     sbuf = strlen (buf);
@@ -405,7 +416,7 @@ void config_read (const char *name)
     if (sbuf > 1 && buf[sbuf-2] == '\\') {
       /* continuation character */
       buf_start = sbuf-2;
-      if (!fgets (buf + buf_start, 10240 - buf_start, fp)) {
+      if (!fgets (buf + buf_start, buf_sz - buf_start, fp)) {
 	fatal_error ("Continuation character one the last line of file `%s'",
 		     name);
       }
@@ -834,6 +845,7 @@ void config_read (const char *name)
     A_FREE (files_read);
   }
   FREE (prefix);
+  FREE (buf);
 }
 
 
