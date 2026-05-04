@@ -726,6 +726,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   }
 
   if (_annotate) {
+    _annotate->setParam ("outfp", (void *)fp);
     _annotate->runcmd ("dump");
   }
 
