@@ -61,6 +61,7 @@ static void usage (char *name)
   fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   fprintf (stderr, " -s <scale> Scale all transistor parameters by <scale>\n");
   fprintf (stderr, " -f        Produce flat output; requires -c\n");
+  fprintf (stderr, " -a        Run SPEF back-annotation.\n");
   exit (1);
 }
 
@@ -93,11 +94,15 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
   config_set_default_string ("net.global_gnd", "GND");
   config_set_default_string ("net.local_vdd", "VddN");
   config_set_default_string ("net.local_gnd", "GNDN");
+  config_set_default_int ("net.spef_annotate", 0);
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "fSBdtp:o:lc:s:")) != -1) {
+  while ((ch = getopt (*argc, *argv, "fSBdtp:o:lc:s:a")) != -1) {
     switch (ch) {
+    case 'a':
+      config_set_int ("net.spef_annotate", 1);
+      break;
     case 'f':
       flat = 1;
       break;
@@ -245,6 +250,15 @@ int main (int argc, char **argv)
     np->enableSharedStat();
   }
   np->run (p);
+
+  if (config_get_int ("net.spef_annotate")) {
+    /* create the annotate pass! */
+    ActDynamicPass *dp = new ActDynamicPass (a, "annotate",
+					     "annotate_pass.so",
+					     "annotate_pass");
+
+  }
+
   if (config_get_int ("net.flat_output")) {
      np->printFlat (fpout);
   }
