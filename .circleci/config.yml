@@ -4,7 +4,7 @@ jobs:
    ubuntu18:
      # Ubuntu 18
      docker:
-       - image: ubuntu:18.04
+       - image: ubuntu
      steps:
        - checkout
        - run: |
