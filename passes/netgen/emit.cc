@@ -191,29 +191,29 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
       UPDATE_SZ_LEN;
 
       if (len_repeat > 1) {
-	snprintf (dev_name + len, sz, "_%d", il);
+	snprintf (dev_name + len, sz, "_N%d", il);
 	UPDATE_SZ_LEN;
       }
       if (width_repeat > 1) {
-	snprintf (dev_name + len, sz, "_%d", iw);
+	snprintf (dev_name + len, sz, "_N%d", iw);
 	UPDATE_SZ_LEN;
       }
 
       /* name of the instance includes how the fet was generated in it */
       if (e->pchg) {
-	snprintf (dev_name + len, sz, "_pchg");
+	snprintf (dev_name + len, sz, "_Npchg");
       }
       else if (e->combf) {
-	snprintf (dev_name + len, sz, "_ckeeper");
+	snprintf (dev_name + len, sz, "_Nckeeper");
       }
       else if (e->keeper) {
-	snprintf (dev_name + len, sz, "_keeper");
+	snprintf (dev_name + len, sz, "_Nkeeper");
       }
       else if (e->raw) {
-	snprintf (dev_name + len, sz, "_pass");
+	snprintf (dev_name + len, sz, "_Npass");
       }
       else {
-	snprintf (dev_name + len, sz, "_");
+	snprintf (dev_name + len, sz, "_N");
       }
       UPDATE_SZ_LEN;
 
@@ -221,32 +221,32 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
 
       /* if length repeat, source/drain changes */
       if (il == 0) {
-	emit_node (n, fp, src, dev_name, "S", 2);
+	emit_node (n, fp, src, dev_name, "s", 2);
       }
       else {
 	char buf[32];
 	snprintf (buf, 32, "#l%d", repnodes);
 	if (split_net (buf)) {
 	  fprintf (fp, "%s", dev_name);
-	  a->mfprintf (fp, ".S");
+	  a->mfprintf (fp, ".s");
 	}
 	else {
 	  fprintf (fp, "%s", buf);
 	}
       }
       fprintf (fp, " ");
-      emit_node (n, fp, e->g, dev_name, "G", 2);
+      emit_node (n, fp, e->g, dev_name, "g", 2);
       fprintf (fp, " ");
 
       if (il == len_repeat-1) {
-	emit_node (n, fp, drain, dev_name, "D", 2);
+	emit_node (n, fp, drain, dev_name, "d", 2);
       }
       else {
 	char buf[32];
 	snprintf (buf, 32, "#l%d", repnodes+1);
 	if (split_net (buf)) {
 	  fprintf (fp, "%s", dev_name);
-	  a->mfprintf (fp, ".D");
+	  a->mfprintf (fp, ".d");
 	}
 	else {
 	  fprintf (fp, "%s", buf);
@@ -257,11 +257,13 @@ void ActNetlistPass::_emit_one_fet (FILE *fp, netlist_t *n, edge_t *e,
       }
 
       fprintf (fp, " ");
-      /* Do we need spef for bulk? */
-      emit_node (n, fp, e->bulk, NULL, NULL, 1);
+
+      /* spef for bulk */
+      emit_node (n, fp, e->bulk, dev_name, "b", 2);
 
       snprintf (devname, 1024, "net.%cfet_%s", (e->type == EDGE_NFET ? 'n' : 'p'),
 		act_dev_value_to_string (e->flavor));
+
       if (!config_exists (devname)) {
 	act_error_ctxt (stderr);
 	fatal_error ("Device mapping for `%s' not defined in technology file.", devname);
@@ -550,9 +552,21 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     }
   }
   if (out) {
-    fprintf (fp, "*\n* --- end node flags ---\n*\n");
+    fprintf (fp, "*\n* --- end node flags ---\n");
   }
- 
+
+  if (current_annotate) {
+    fprintf (fp, "* SPEF annotation: ");
+    if (current_annotate->getMap (p)) {
+      fprintf (fp, "found\n");
+    }
+    else {
+      fprintf (fp, "missing\n");
+    }
+  }
+  if (out) {
+    fprintf (fp, "*\n");
+  }
   
   /*-- emit local netlist --*/
   int fets = 0;
@@ -726,8 +740,17 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   }
 
   if (_annotate) {
+    char buf[8];
     _annotate->setParam ("outfp", (void *)fp);
+    if (use_subckt_models) {
+      snprintf (buf, 8, "%s", "xM%d_N");
+    }
+    else {
+      snprintf (buf, 8, "%s", "M%d_N");
+    }
+    _annotate->setParam ("fetmatch", buf);
     _annotate->runcmd ("dump");
+    _annotate->clearParam ("fetmatch");
   }
 
   if (p) {

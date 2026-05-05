@@ -1628,6 +1628,11 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
   }
 }
 
+/*
+ * mangle = 0 : no instance mangle, no name mangle
+ * mangle = 1 : mangle instance name, mangle pin
+ * mangle = 2 : no instance mangle, no mangle pin
+ */
 void ActNetlistPass::emit_node (netlist_t *N, FILE *fp, node_t *n,
 				// alternate output
 				const char *inst_name,
