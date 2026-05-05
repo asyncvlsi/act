@@ -376,6 +376,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
   FILE *fp = _outfp;
   netlist_t *n = getNL (p);
   char *tmp_str;
+  bool spef_found = false;
 
   if (!n) {
     fprintf (stderr, "Could not find process `%s'", p ? p->getName() : "-none");
@@ -559,6 +560,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     fprintf (fp, "* SPEF annotation: ");
     if (current_annotate->getMap (p)) {
       fprintf (fp, "found\n");
+      spef_found = true;
     }
     else {
       fprintf (fp, "missing\n");
@@ -577,7 +579,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
     listitem_t *li;
 
     /* emit node cap, if any */
-    if ((x->cap > 0) && !ignore_loadcap) {
+    if (!spef_found && (x->cap > 0) && !ignore_loadcap) {
       fprintf (fp, "C_per_node_%d ", ncaps++);
       emit_node (n, fp, x, NULL, NULL, 1);
       fprintf (fp, " ");
