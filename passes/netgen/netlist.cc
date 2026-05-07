@@ -762,27 +762,35 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	  node_t *tmp;
 	  edge_t *e;
 
-	  /* pfets */
-	  tmp = node_alloc (N, NULL);
-	  e = edge_alloc (n->v->inv, tmp, n, N->nsc);
-	  e->type = EDGE_PFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = min_l_in_lambda*getGridsPerLambda();
-	  e->keeper = 1;
-	  e->combf = 1;
-	  create_expr_edges (N, EDGE_PFET|EDGE_FEEDBACK|EDGE_INVERT,
-			     N->Vdd, n->v->e_dn, tmp, 1 /* invert */);
+	  if (n->v->halfkeeper == 0 || n->v->halfkeeper == 1) {
 
-	  /* nfets */
-	  tmp = node_alloc (N, NULL);
-	  e = edge_alloc (n->v->inv, tmp, n, N->psc);
-	  e->type = EDGE_NFET;
-	  e->w = min_w_in_lambda*getGridsPerLambda();
-	  e->l = min_l_in_lambda*getGridsPerLambda();
-	  e->keeper = 1;
-	  e->combf = 1;
-	  create_expr_edges (N, EDGE_NFET|EDGE_FEEDBACK|EDGE_INVERT,
-			     N->GND, n->v->e_up, tmp, 1);
+	    /* pfets */
+	    tmp = node_alloc (N, NULL);
+	    e = edge_alloc (n->v->inv, tmp, n, N->nsc);
+	    e->type = EDGE_PFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = min_l_in_lambda*getGridsPerLambda();
+	    e->keeper = 1;
+	    e->combf = 1;
+	    create_expr_edges (N, EDGE_PFET|EDGE_FEEDBACK|EDGE_INVERT,
+			       N->Vdd, n->v->e_dn, tmp, 1 /* invert */);
+
+	  }
+
+	  if (n->v->halfkeeper == 0 || n->v->halfkeeper == 2) {
+	    
+	    /* nfets */
+	    tmp = node_alloc (N, NULL);
+	    e = edge_alloc (n->v->inv, tmp, n, N->psc);
+	    e->type = EDGE_NFET;
+	    e->w = min_w_in_lambda*getGridsPerLambda();
+	    e->l = min_l_in_lambda*getGridsPerLambda();
+	    e->keeper = 1;
+	    e->combf = 1;
+	    create_expr_edges (N, EDGE_NFET|EDGE_FEEDBACK|EDGE_INVERT,
+			       N->GND, n->v->e_up, tmp, 1);
+
+	  }
 	}
 	else {
 	  double r;
