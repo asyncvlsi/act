@@ -77,7 +77,10 @@ struct act_nl_varinfo {
   unsigned int usecf:2;		/* combinational feedback (2 = default) */
   unsigned int manualkeeper:2;	/* node has a manually specified
 				   keeper: 0 = no, 1 = std, 2 = comb feedback */
-
+  unsigned int halfkeeper:2;	/* 0 = off,
+				   1 = staticized-high only,
+				   2 = staticized-low only */
+  
   struct node *inv;		/* var is an input to an inverter
 				   whose output is inv */
 

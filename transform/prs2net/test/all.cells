@@ -93,6 +93,22 @@ export defcell g0n1no_01ax0 (bool? in[2]; bool! out)
    }
 }
 
+export defcell g0n_012aax0 (bool? in[3]; bool! out)
+{
+   prs {
+   [keeper=4] in[0] & in[1] & in[2] -> out-
+   ~in[0] -> out+
+   }
+}
+
+export defcell g0n_012aax1 (bool? in[3]; bool! out)
+{
+   prs {
+   [keeper=5] in[0] & in[1] & in[2] -> out-
+   ~in[0] -> out+
+   }
+}
+
 export defcell g0n_0x0 (bool? in[1]; bool! out)
 {
    prs {

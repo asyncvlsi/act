@@ -1,0 +1,9 @@
+defproc foo(bool a, b, c, d)
+{
+  prs {
+   [keeper=5] a & b & c -> d-
+   ~a -> d+
+  }
+}
+
+foo f;
