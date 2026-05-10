@@ -21,6 +21,6 @@
 #
 # Make everything, in the right order
 # 
-SUBDIRS=common pgen miniscm act passes transform simulation tech scripts
+SUBDIRS=common pgen miniscm act passes verilog transform simulation tech scripts
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
