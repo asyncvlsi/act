@@ -70,7 +70,7 @@ module: "module" ID
 	tmp = nm->nxt;
 	nm->nxt = NULL;
 	nm->m = m;
-	update_id_info (nm);
+	_verilog_update_id_info (nm);
 	nm = tmp;
       }
       /* now that we've found it, it should no longer be missing! */
@@ -430,14 +430,14 @@ one_instance: id id
       $2->used[i] = 0;
     }
     */
-    update_id_info ($2);
+    _verilog_update_id_info ($2);
     $2->isinst = 1;
     $2->nm = $1->myname;
     $0->prefix = $2;
 }}
 "(" port_conns ")" ";"
 {{X:
-    update_conn_info ($2);
+    _verilog_update_conn_info ($2);
     $0->prefix = NULL;
     return NULL;
 }}
@@ -575,7 +575,7 @@ one_port[id_info_t *]: "." id
     A_NEXT (CURMOD($0)->conn) = $4;
     A_INC (CURMOD($0)->conn);
 
-    len = array_length ($4);
+    len = _verilog_array_length ($4);
     if (len > 0) {
       /* excitement, this is an array, make sure the id is in fact an
 	 array */

@@ -45,7 +45,6 @@ static void usage (char *s)
 }
 
 int mode;			/* sync or async mode */
-char *lib_namespace;
 int emit_hazards;
 
 int main (int argc, char **argv)
@@ -75,7 +74,8 @@ int main (int argc, char **argv)
   clkname = NULL;
   fname = NULL;
   libname = NULL;
-  lib_namespace = Strdup ("sync");
+
+  config_set_default_string ("s2a.lib_namespace", "sync");
 
   toggle_haz = 0;
 
@@ -102,10 +102,7 @@ int main (int argc, char **argv)
       break;
       
     case 'n':
-      if (lib_namespace) {
-	FREE (lib_namespace);
-      }
-      lib_namespace = Strdup (optarg);
+      config_set_string ("s2a.lib_namespace", optarg);
       break;
       
     case 'C':

@@ -1,0 +1,9 @@
+v_parse*
+v_walk_X*
+v_parse_id.h
+*~
+i386_*
+x86_*
+arm64_*
+Makefile.deps
+libverilog_*

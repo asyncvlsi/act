@@ -25,7 +25,7 @@
 #define __V2ACT_EXTRA_H__
 
 #include <string.h>
-#include "v2act.h"
+#include "vnet.h"
 
 #define OPT_EXISTS(x)    !list_isempty (x)
 #define OPT_EMPTY(x)     list_isempty (x)
@@ -39,6 +39,10 @@ id_info_t *verilog_find_id (VNet *v, const char *s);
 id_info_t *verilog_alloc_id (char *name);
 void verilog_delete_id (VNet *v, const char *s);
 id_info_t *verilog_gen_const (VNet *, int);
+
+void _verilog_update_id_info (id_info_t *id);
+void _verilog_update_conn_info (id_info_t *id);
+int _verilog_array_length (conn_info_t *c);
 
 
 #endif /* __V2ACT_EXTRA_H__ */

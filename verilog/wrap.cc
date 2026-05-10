@@ -219,7 +219,7 @@ id_info_t *verilog_gen_const (VNet *v, int zero_or_one)
   }
 }
 
-int array_length (conn_info_t *c)
+int _verilog_array_length (conn_info_t *c)
 {
   conn_rhs_t *r;
   int x;
@@ -266,7 +266,7 @@ int array_length (conn_info_t *c)
  * update ID info
  *
  */
-void update_id_info (id_info_t *id)
+void _verilog_update_id_info (id_info_t *id)
 {
   if (id->m) {
     id->m->inst_exists = 1;
@@ -281,7 +281,7 @@ void update_id_info (id_info_t *id)
   }
 }
 
-void update_conn_info (id_info_t *id)
+void _verilog_update_conn_info (id_info_t *id)
 {
   if (!id->m) return;
   if (id->mod && id->conn_start != -1) {
@@ -312,11 +312,3 @@ void update_conn_info (id_info_t *id)
   }
 }
 
-
-Process *verilog_find_lib (Act *a, const char *nm)
-{
-  char buf[10240];
-
-  snprintf (buf, 10240, "%s::%s", lib_namespace, nm);
-  return a->findProcess (buf);
-}

@@ -1,6 +1,6 @@
 #-------------------------------------------------------------------------
 #
-#  Copyright (c) 2019 Rajit Manohar
+#  Copyright (c) 2026 Rajit Manohar
 #
 #  This program is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU General Public License
@@ -18,17 +18,32 @@
 #  Boston, MA  02110-1301, USA.
 #
 #-------------------------------------------------------------------------
-BINARY=act2v.$(EXT)
+LIB=libverilog_$(EXT).a
+SHLIB=libverilog_sh_$(EXT).a
+TARGETLIBS=$(LIB) $(SHLIB)
+TARGETINCS=vnet.h
 
-TARGETS=$(BINARY)
+OBJS=wrap.o v_parse.o v_walk_X.o vnet.o emit_verilog.o
+SHOBJS=$(OBJS:.o=.os)
 
-OBJS=main.o 
+CLEAN=v_walk_X.h v_walk_X.cc v_parse.cc v_parse.h \
+	v_parse_int.h v_parse.def v_parse.gram v_parse_id.h
 
 SRCS=$(OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
-$(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
-	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) -lverilog $(LIBACTPASS)
+$(LIB): v_parse_id.h $(OBJS)
+	ar ruv $(LIB) $(OBJS)
+	$(RANLIB) $(LIB)
+
+$(SHLIB): $(SHOBJS)
+	$(VLSI_TOOLS_SRC)/scripts/linkso $(SHLIB) $(SHOBJS) $(SHLIBACTPASS)
+
+v_walk_X.h v_parse_id.h v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
+	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -h -b -p -n v
+	-mv v_parse.c v_parse.cc
+	-mv v_walk_X.c v_walk_X.cc
+	-touch v_parse_id.h
 
 -include Makefile.deps

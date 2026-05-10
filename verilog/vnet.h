@@ -214,5 +214,6 @@ Process *verilog_find_lib (Act *a, const char *nm);
 VNet *verilog_read (const char *file, const char *lib);
 AGraph *verilog_create_netgraph (VNet *n);
 void verilog_mark_clock_nets (VNet *n);
+void act_emit_verilog (Act *a, FILE *fp, Process *p);
 
 #endif /* __ACT_VNET_H__ */

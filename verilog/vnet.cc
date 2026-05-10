@@ -243,7 +243,7 @@ static void dump_li_info (library_vertex_info *li)
 	  li->isclk, li->isinp, li->clk_port);
 }
 
-AGvertex *find_pin (AGraph *g, const char *nm)
+static AGvertex *find_pin (AGraph *g, const char *nm)
 {
   AGraphInpVertexIter it(g);
 
@@ -1144,4 +1144,13 @@ void verilog_mark_clock_nets (VNet *v)
   for (m = v->hd; m; m = m->next) {
     m->flags = 0;
   }
+}
+
+
+Process *verilog_find_lib (Act *a, const char *nm)
+{
+  char buf[10240];
+  const char *lib_namespace = config_get_string ("s2a.lib_namespace");
+  snprintf (buf, 10240, "%s::%s", lib_namespace, nm);
+  return a->findProcess (buf);
 }

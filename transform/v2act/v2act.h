@@ -44,15 +44,11 @@ void label_clocks (VNet *w, const char *clk);
 
 void emit_types (VNet *);
 void free_typetable (struct Hashtable *);
-void update_id_info (id_info_t *);
-void update_conn_info (id_info_t *);
 
 void emit_id_deref (FILE *fp, id_deref_t *id);
-int array_length (conn_info_t *c); /* crazy */
 void emit_conn_rhs (FILE *fp, conn_rhs_t *r, list_t *l);
 
 void compute_fanout (VNet *v, module_t *m);
-void emit_verilog (VNet *);
 
 extern char *channame;
 

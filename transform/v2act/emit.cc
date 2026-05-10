@@ -331,7 +331,8 @@ void emit_types (VNet *v)
 	if (id->ismodname) continue;
 	fprintf (v->out, "   ");
 	if (id->isinst) {
-	  if (id->m == NULL && lib_namespace) {
+	  if (id->m == NULL) {
+	    const char *lib_namespace = config_get_string ("s2a.lib_namespace");
 	    /* external module */
 	    fprintf (v->out, "%s::%s ", lib_namespace, id->nm);
 	  }
