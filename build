@@ -27,6 +27,7 @@ echo "Building common library/generators..." && \
    make $debug -C common install && \
    make $debug -C pgen install && \
    make $debug -C miniscm install && \
+   make $debug installincsub && \
    make $debug -C verilog install || exit 1
 
-make $debug installincsub dependsub all && echo && echo 'Run "make install" to install the binaries'
+make $debug dependsub all && echo && echo 'Run "make install" to install the binaries'
