@@ -28,6 +28,7 @@ SHOBJS=$(OBJS:.o=.os)
 
 CLEAN=v_walk_X.h v_walk_X.cc v_parse.cc v_parse.h \
 	v_parse_int.h v_parse.def v_parse.gram v_parse_id.h
+GENERATED=$(CLEAN)
 
 SRCS=$(OBJS:.o=.cc)
 
@@ -40,7 +41,7 @@ $(LIB): v_parse_id.h $(OBJS)
 $(SHLIB): $(SHOBJS)
 	$(VLSI_TOOLS_SRC)/scripts/linkso $(SHLIB) $(SHOBJS) $(SHLIBACTPASS)
 
-v_walk_X.h v_parse_id.h v_parse_int.h v_parse.cc v_walk_X.cc: v2act.cy
+$(GENERATED): v2act.cy
 	$(INSTALLDIR)/bin/pgen v2act.cy -V -w X -h -b -p -n v
 	-mv v_parse.c v_parse.cc
 	-mv v_walk_X.c v_walk_X.cc
