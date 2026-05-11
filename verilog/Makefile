@@ -19,7 +19,7 @@
 #
 #-------------------------------------------------------------------------
 LIB=libverilog_$(EXT).a
-SHLIB=libverilog_sh_$(EXT).a
+SHLIB=libverilog_sh_$(EXT).so
 TARGETLIBS=$(LIB) $(SHLIB)
 TARGETINCS=vnet.h
 
