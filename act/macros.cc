@@ -847,19 +847,17 @@ void UserMacro::populateCHP()
     c->label = NULL;
     c->u.semi_comma.cmd = list_new ();
     for (int i=0; i < nbools + nints; i++) {
-      act_chp_lang_t *tmp;
-      Expr *e;
-      ActId *tid = new ActId (string_cache ("self"));
-      tid->Append (xfield[i]);
       int bw;
 
       bw = TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
       if (bw == 0) {
 	// this is now possible!
-	tid->prune ();
-	delete tid;
 	continue;
       }
+      Expr *e;
+      act_chp_lang_t *tmp;
+      ActId *tid = new ActId (string_cache ("self"));
+      tid->Append (xfield[i]);
       
       NEW (e, Expr);
       e->type = E_BITFIELD;
@@ -888,25 +886,27 @@ void UserMacro::populateCHP()
     //   self := {$internal.one,$internal.two, etc.}
     // if there is a bool type, wrap it in an int() directive.
     Expr *e, *f;
-    NEW (e, Expr);
-    e->type = E_CONCAT;
-    e->u.e.l =  NULL;
-    e->u.e.r = NULL;
-    f = e;
+
+    e = NULL;
+    f = NULL;
     for (int i=0; i < nbools + nints; i++) {
       int bw;
       bw = TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
       if (bw != 0) {
 	ActId *tid = new ActId (string_cache ("$internal"));
 	tid->Append (xfield[i]);
-	f->u.e.l = act_expr_var (tid);
-	if (i != (nbools + nints - 1)) {
+
+	if (!e) {
+	  NEW (e, Expr);
+	  f = e;
+	}
+	else {
 	  NEW (f->u.e.r, Expr);
 	  f = f->u.e.r;
-	  f->u.e.l = NULL;
-	  f->u.e.r = NULL;
-	  f->type = E_CONCAT;
 	}
+	f->type = E_CONCAT;
+	f->u.e.r = NULL;
+	f->u.e.l = act_expr_var (tid);
       }
     }
 
@@ -915,8 +915,7 @@ void UserMacro::populateCHP()
     c->label = NULL;
     c->space = NULL;
     
-    if (e->u.e.l == NULL) {
-      FREE (e);
+    if (!e) {
       c->type = ACT_CHP_SKIP;
     }
     else {
