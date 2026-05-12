@@ -826,7 +826,7 @@ void UserMacro::populateCHP()
   int *typecodes;
   ActId **xfield = xd->getStructFields (&typecodes);
 
-#if 0  
+#if 0
   for (int i=0; i < nbools + nints; i++) {
     printf ("field: ");
     xfield[i]->Print (stdout);
@@ -851,13 +851,23 @@ void UserMacro::populateCHP()
       Expr *e;
       ActId *tid = new ActId (string_cache ("self"));
       tid->Append (xfield[i]);
+      int bw;
+
+      bw = TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
+      if (bw == 0) {
+	// this is now possible!
+	tid->prune ();
+	delete tid;
+	continue;
+      }
+      
       NEW (e, Expr);
       e->type = E_BITFIELD;
       e->u.e.l = (Expr *) new ActId (string_cache ("$internal"));
       NEW (e->u.e.r, Expr);
       e->u.e.r->type = E_BITFIELD;
       e->u.e.r->u.e.r = const_expr (pos-1);
-      pos -= TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
+      pos -= bw;
       e->u.e.r->u.e.l = const_expr (pos);
       
       NEW (tmp, act_chp_lang_t);
@@ -867,6 +877,10 @@ void UserMacro::populateCHP()
       tmp->u.assign.e = e;
       tmp->u.assign.id = tid;
       list_append (c->u.semi_comma.cmd, tmp);
+    }
+    if (list_isempty (c->u.semi_comma.cmd)) {
+      list_free (c->u.semi_comma.cmd);
+      c->type = ACT_CHP_SKIP;
     }
   }
   else {
@@ -880,23 +894,35 @@ void UserMacro::populateCHP()
     e->u.e.r = NULL;
     f = e;
     for (int i=0; i < nbools + nints; i++) {
-      ActId *tid = new ActId (string_cache ("$internal"));
-      tid->Append (xfield[i]);
-      f->u.e.l = act_expr_var (tid);
-      if (i != (nbools + nints - 1)) {
-	NEW (f->u.e.r, Expr);
-	f = f->u.e.r;
-	f->u.e.l = NULL;
-	f->u.e.r = NULL;
-	f->type = E_CONCAT;
+      int bw;
+      bw = TypeFactory::bitWidth (xd->CurScope()->FullLookup(xfield[i], NULL));
+      if (bw != 0) {
+	ActId *tid = new ActId (string_cache ("$internal"));
+	tid->Append (xfield[i]);
+	f->u.e.l = act_expr_var (tid);
+	if (i != (nbools + nints - 1)) {
+	  NEW (f->u.e.r, Expr);
+	  f = f->u.e.r;
+	  f->u.e.l = NULL;
+	  f->u.e.r = NULL;
+	  f->type = E_CONCAT;
+	}
       }
     }
+
     NEW (c, act_chp_lang_t);
     c->type = ACT_CHP_ASSIGN;
     c->label = NULL;
     c->space = NULL;
-    c->u.assign.e = e;
-    c->u.assign.id = new ActId (string_cache ("self"));
+    
+    if (e->u.e.l == NULL) {
+      FREE (e);
+      c->type = ACT_CHP_SKIP;
+    }
+    else {
+      c->u.assign.e = e;
+      c->u.assign.id = new ActId (string_cache ("self"));
+    }
   }
   Assert (_exf, "What?");
   act_chp *xchp = _exf->getlang()->getchp();

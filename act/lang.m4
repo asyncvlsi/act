@@ -1409,18 +1409,37 @@ txtselectloop_stmt[act_chp_lang_t *]: ID "{"
 | ID "(" wbool_expr ")" "{" chptxt_body "}"
 {{X:
     act_chp_lang_t *c;
-    if (strcmp ($1, "while") != 0) {
-      $E("expecting while loop!");
+    if (strcmp ($1, "while") == 0) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_LOOP;
+      c->label = NULL;
+      c->space = NULL;
+      NEW (c->u.gc, act_chp_gc_t);
+      c->u.gc->next = NULL;
+      c->u.gc->id = NULL;
+      c->u.gc->g = $3;
+      c->u.gc->s = $6;
     }
-    NEW (c, act_chp_lang_t);
-    c->type = ACT_CHP_LOOP;
-    c->label = NULL;
-    c->space = NULL;
-    NEW (c->u.gc, act_chp_gc_t);
-    c->u.gc->next = NULL;
-    c->u.gc->id = NULL;
-    c->u.gc->g = $3;
-    c->u.gc->s = $6;
+    else if (strcmp ($1, "if") == 0) {
+      NEW (c, act_chp_lang_t);
+      c->type = ACT_CHP_SELECT;
+      c->label = NULL;
+      c->space = NULL;
+      NEW (c->u.gc, act_chp_gc_t);
+      c->u.gc->next = NULL;
+      c->u.gc->id = NULL;
+      c->u.gc->g = $3;
+      c->u.gc->s = $6;
+      NEW (c->u.gc->next, act_chp_gc_t);
+      c->u.gc->next->g = NULL;
+      NEW (c->u.gc->next->s, act_chp_lang_t);
+      c->u.gc->next->s->type = ACT_CHP_SKIP;
+      c->u.gc->next->s->label = NULL;
+      c->u.gc->next->s->space = NULL;
+    }
+    else {
+      $E("Expecting if-statement or while loop!");
+    }
     return c;
 }}
 ;
