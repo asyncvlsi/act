@@ -2,7 +2,7 @@
  *
  *  This file is part of the ACT library
  *
- *  Copyright (c) 2022 Rajit Manohar
+ *  Copyright (c) 2022, 2026 Rajit Manohar
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
@@ -26,6 +26,8 @@
 #include <act/iter.h>
 #include <string.h>
 
+static const char *MEMVAR_STRING = "_memdatv";
+static const char *MEMSTR_STRING = "_memdats";
 
 ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
 {
@@ -42,34 +44,56 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   AddDependency ("booleanize");
   disableUpdate ();
 
-  _memdata_len = 0;
-  _memdata_var = NULL;
   _curbnl = NULL;
 
   config_set_default_string ("act.decomp.mem", "std::ram");
   config_set_default_string ("act.decomp.mem_suffix", "_m");
 }
 
-static const char *MEMVAR_STRING = "_memdatv";
-static const char *MEMSTR_STRING = "_memdats";
+
+int ActCHPMemory::memvar_map::get_recycled_idx (int bw, Data *isstruct)
+{
+  auto &last = v.back();
+
+  for (int i=0; i < last.size(); i++) {
+    if (last[i].match_and_unused (bw, isstruct)) {
+      // the data type matches, and the variable is free
+      last[i].mark_used ();
+      return last[i].idx;
+    }
+  }
+  return -1;
+}
+
+int ActCHPMemory::memvar_map::get_max_var_suffix ()
+{
+  auto &last = v.back();
+
+  int val = 0;
+  
+  for (int i=0; i < last.size(); i++) {
+    if (val < last[i].idx) {
+      val = last[i].idx;
+    }
+  }
+  return val;
+}
 
 int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
 {
   char buf[100];
   int xval;
 
-  xval = 0;
-  for (int i=0; i < _memdata_len; i++) {
-    if ((isstruct ? _memdata_var[i].isstruct->isEqual (isstruct)
-	 : _memdata_var[i].bw == bw) && _memdata_var[i].used == 0) {
-      _memdata_var[i].used = 1;
-      return _memdata_var[i].idx;
-    }
-    if (xval < _memdata_var[i].idx) {
-      xval = _memdata_var[i].idx;
-    }
+  // see if we have a free variable that we can recycle for this purpose
+  xval = _map.get_recycled_idx (bw, isstruct);
+  if (xval >= 0) {
+    return xval;
   }
-      
+
+  // find a fresh variable name
+  // get a good initial starting point.
+  xval = _map.get_max_var_suffix ();
+
   do {
     xval++;
     snprintf (buf, 100, "%s%d", MEMVAR_STRING, xval);
@@ -85,6 +109,8 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
   it = it->Expand (ActNamespace::Global(), sc);
   sc->Add (buf, it);
 
+  /* if structure, then we need both the integer variable as well as
+     the structure variable */
   if (isstruct) {
     snprintf (buf, 100, "%s%d", MEMSTR_STRING, xval);
     it = new InstType (sc, isstruct, 0);
@@ -92,38 +118,15 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
     sc->Add (buf, it);
   }
 
-  if (_memdata_len == 0) {
-    MALLOC (_memdata_var, struct memvar_info, 1);
-  }
-  else {
-    REALLOC (_memdata_var, struct memvar_info, _memdata_len + 1);
-  }
-  _memdata_var[_memdata_len].isstruct = isstruct;
-  _memdata_var[_memdata_len].used = 1;
-  _memdata_var[_memdata_len].bw = bw;
-  _memdata_var[_memdata_len].idx = xval;
-  
-  _memdata_len++;
-  
+  // create new memvar_info and mark it used
+  _map.add_new_var (memvar_info(isstruct,bw,xval));
+
   return xval;
-}
-
-
-
-void ActCHPMemory::_fresh_release (int idx)
-{
-  for (int i=0; i < _memdata_len; i++) {
-    if (_memdata_var[i].idx == idx) {
-      _memdata_var[i].used = 0;
-      return;
-    }
-  }
 }
 
 void *ActCHPMemory::local_op (Process *p, int mode)
 {
   Scope *sc;
-  list_t *ret = NULL;
   
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
@@ -134,6 +137,9 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     return NULL;
   }
 
+  // initialize with singleton vector that is empty
+  _map.v.push_back ({});
+  
   const char *mem_procname = config_get_string ("act.decomp.mem");
 
   char *tmpname = p->getFullName();
@@ -159,9 +165,7 @@ void *ActCHPMemory::local_op (Process *p, int mode)
   FREE (tmpname);
 
 
-  list_t *l = list_new ();
-  _extract_memory (p->getlang()->getchp()->c, l);
-  list_free (l);
+  _extract_memory (p->getlang()->getchp()->c);
 
   /* now delete all memory references! */
   phash_iter_t it;
@@ -210,34 +214,17 @@ void *ActCHPMemory::local_op (Process *p, int mode)
       _decomp_info = list_new ();
     }
     list_append (_decomp_info, it->BaseType());
+  }
 
-    if (!ret) {
-      ret = list_new ();
-    }
-    list_append (ret, _curbnl->cur->LookupVal (newname));
-  }
-  
-  if (_memdata_len > 0) {
-    char buf[100];
-    for (int i=0; i < _memdata_len; i++) {
-      snprintf (buf, 100, "%s%d", MEMVAR_STRING, _memdata_var[i].idx);
-      list_append (ret, _curbnl->cur->LookupVal (buf));
-    }
-    FREE (_memdata_var);
-  }
-  _memdata_len = 0;
-  _memdata_var = NULL;
+  _map.v.clear ();
   _curbnl = NULL;
 
-  return ret;
+  return NULL;
 }
 
 void ActCHPMemory::free_local (void *v)
 {
-  list_t *l = (list_t *)v;
-  if (l) {
-    list_free (l);
-  }
+  // should be NULL!
 }
 
 int ActCHPMemory::run (Process *p)
@@ -499,8 +486,10 @@ Expr *ActCHPMemory::_elemwise_fieldlist (int idx, ActId *field, Data *d)
 
 int ActCHPMemory::_inv_idx (int idx)
 {
-  for (int i=0; i < _memdata_len; i++) {
-    if (_memdata_var[i].used && _memdata_var[i].idx == idx) {
+  auto &last = _map.v.back();
+
+  for (int i=0; i < last.size(); i++) {
+    if (last[i].used && last[i].idx == idx) {
       return i;
     }
   }
@@ -589,8 +578,10 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
   /* check if structure */
   int idx_i = _inv_idx (idx);
   Assert (idx_i >= 0, "What!");
+
+  auto &last = _map.v.back();
   
-  if (_memdata_var[idx_i].isstruct) {
+  if (last[idx_i].isstruct) {
     act_chp_lang_t *d;
     list_t *nl;
 
@@ -598,8 +589,8 @@ void ActCHPMemory::_append_mem_read (list_t *top, ActId *access, int idx, Scope 
     list_append (nl, c);
 
     // do element-wise structure assignment
-    _elemwise_assign (nl, idx, NULL, _memdata_var[idx_i].isstruct,
-		      _memdata_var[idx_i].bw-1, sc);
+    _elemwise_assign (nl, idx, NULL, last[idx_i].isstruct,
+		      last[idx_i].bw-1, sc);
      
     NEW (d, act_chp_lang_t);
     d->space = NULL;
@@ -679,9 +670,10 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
 
   int inv_idx = _inv_idx (idx);
   Assert (inv_idx >= 0, "What?");
-  if (_memdata_var[inv_idx].isstruct) {
+  auto &last = _map.v.back();
+  if (last[inv_idx].isstruct) {
     expr_free (e);
-    c->u.comm.e = _elemwise_fieldlist (idx, NULL, _memdata_var[inv_idx].isstruct);
+    c->u.comm.e = _elemwise_fieldlist (idx, NULL, last[inv_idx].isstruct);
   }
   else {
     c->u.comm.e = e;
@@ -699,117 +691,6 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   c->u.semi_comma.cmd = l;
 
   list_append (top, c);
-}
-
-struct valid_read_ref {
-  // both ref and var are aliases, so don't need to be free'd
-  
-  ActId *ref;			/* the memory reference */
-  ActId *var;			/* the variable that holds the value */
-  int fresh_idx;
-
-  list_t *used;
-
-  valid_read_ref() { ref = NULL; var = NULL; fresh_idx = -1; used = NULL; }
-  ~valid_read_ref() {
-    if (ref) { delete ref; }
-    if (var) { delete var; }
-    if (used) { list_free (used); }
-  }
-};
-
-
-/*
- * If the reference is cached, return the cached replacement.
- *  @param l is the list holding the list of currently valid cached references
- */
-static ActId *_search_for_valid_read (list_t *l, ActId *ref)
-{
-  listitem_t *li;
-  ActId *tail = ref->Rest();
-  ref->prune ();
-  for (li = list_first (l); li; li = list_next (li)) {
-    valid_read_ref *r = (valid_read_ref *) list_value (li);
-    if (ref->isEqual (r->ref)) {
-      if (tail) {
-	ref->Append (tail);
-      }
-      return r->var;
-    }
-  }
-  if (tail) {
-    ref->Append (tail);
-  }
-  return NULL;
-}
-
-
-static void _add_cached_ref (list_t *l, ActId *orig, ActId *cached, int idx)
-{
-  valid_read_ref *r;
-
-  r = new valid_read_ref;
-
-  r->var = cached->Clone();
-  r->ref = new ActId (orig->getName(), orig->arrayInfo()->Clone());
-  r->fresh_idx = idx;
-
-  list_append (l, r);
-}
-
-static void _prune_visited_idx (list_t *l, int idx)
-{
-  listitem_t *prev, *li;
-  prev = NULL;
-  li = list_first (l);
-  while (li) {
-    valid_read_ref *r = (valid_read_ref *) list_value (li);
-    if (r->fresh_idx == idx) {
-      list_delete_next (l, prev);
-      delete r;
-      return;
-    }
-    prev = li;
-    li = list_next (li);
-  }
-}
-
-
-static int _could_change (list_t *l, ActId *wr)
-{
-  for (listitem_t *li = list_first (l); li; li = list_next (li)) {
-    ActId *x = (ActId *) list_value (li);
-    if (x->getName() == wr->getName()) return 1;
-  }
-  return 0;
-}
-
-static int _ref_changed (valid_read_ref *r, ActId *wr)
-{
-  if (r->ref->getName() == wr->getName()) return 1;
-  if (!r->used) {
-    Assert (r->ref->arrayInfo()->isDeref(), "Hmm...");
-    r->used = act_expr_used_ids (r->ref->arrayInfo()->getDeref (0));
-  }
-  if (_could_change (r->used, wr)) return 1;
-  return 0;
-}
-
-static void _prune_written_var (list_t *l, ActId *wr)
-{
-  listitem_t *prev, *li;
-  prev = NULL;
-  li = list_first (l);
-  while (li) {
-    valid_read_ref *r = (valid_read_ref *) list_value (li);
-    if (_ref_changed (r, wr)) {
-      list_delete_next (l, prev);
-      delete r;
-      return;
-    }
-    prev = li;
-    li = list_next (li);
-  }
 }
 
 /*
@@ -856,7 +737,7 @@ void _intersect_refs (list_t *l1, list_t *l2)
 static void _free_valid_list (list_t *l)
 {
   for (listitem_t *li = list_first (l); li; li = list_next (li)) {
-    valid_read_ref *r = (valid_read_ref *) list_value (li);
+    ActCHPMemory::valid_read_ref *r = (ActCHPMemory::valid_read_ref *) list_value (li);
     delete r;
   }
   list_free (l);
@@ -870,14 +751,24 @@ static void _clear_valid_list (list_t *l)
 }
 
 
-ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads)
+/*
+ * A read for the memory reference "id" is requested.
+ * Either
+ *   - satisfy it from a cached value;
+ *   - get a re-cycled or fresh ID and add the index to the list "l"
+ *     and the memory reference "id" to the list so that a memory
+ *     request can be inserted into the CHP.
+ */
+ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id)
 {
   act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, id);
+  int rv;
 
   Assert (v, "Why am I being called");
 
-  ActId *cached = _search_for_valid_read (valid_reads, id);
+  ActId *cached = _map.find_cached (id, &rv);
   if (cached) {
+    // cached, no fresh request to be generated
     return cached->Clone ();
   }
   else {
@@ -887,14 +778,13 @@ ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads)
       Array *tmpa = tmp->arrayInfo();
       Assert (tmpa, "Hmm?!");
       list_t *tmpl = list_new ();
-      _subst_dynamic_array (tmpl, tmpa->getDeref(0), valid_reads);
+      _subst_dynamic_array (tmpl, tmpa->getDeref(0));
       list_concat (l, tmpl);
       list_free (tmpl);
     }
 
     /* we need to re-write this! */
     int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
-    _prune_visited_idx (valid_reads, idx);
 
     char buf[100];
     if (v->isstruct) {
@@ -903,11 +793,30 @@ ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads)
     else {
       snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
     }
+
+    // add the (idx, id) pair to the list
     list_iappend (l, idx);
     list_append (l, id);
 
     cached = new ActId (buf);
-    _add_cached_ref (valid_reads, id, cached, idx);
+
+    // We will be reading this memory address and storing the result
+    // in the "idx" suffix. So create a reference to this variable so
+    // that we can re-use it later if necessary, and associate this
+    // reference with the index.
+    
+    ActCHPMemory::valid_read_ref *r = new ActCHPMemory::valid_read_ref;
+    r->var = cached->Clone();
+    r->ref = new ActId (id->getName(), id->arrayInfo()->Clone());
+    r->fresh_idx = idx;
+
+    int k = _map.find_idx (idx);
+
+    Assert (k >= 0, "What?");
+
+    // save the reference
+    _map.v.back()[k].ref = r;
+    
     return cached;
   }
 }
@@ -921,7 +830,7 @@ ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id, list_t *valid_reads)
  *
  * The list is used to prepend the memory read request.
  */
-void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads)
+void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 {
   if (!e) return;
   switch (e->type) {
@@ -932,20 +841,20 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
   case E_LT:  case E_GT:
   case E_LE:  case E_GE:
   case E_EQ:  case E_NE:
-    _subst_dynamic_array (l, e->u.e.l, valid_reads);
-    _subst_dynamic_array (l, e->u.e.r, valid_reads);
+    _subst_dynamic_array (l, e->u.e.l);
+    _subst_dynamic_array (l, e->u.e.r);
     break;
     
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
-    _subst_dynamic_array (l, e->u.e.l, valid_reads);
+    _subst_dynamic_array (l, e->u.e.l);
     break;
 
   case E_QUERY:
-    _subst_dynamic_array (l, e->u.e.l, valid_reads);
-    _subst_dynamic_array (l, e->u.e.r->u.e.l, valid_reads);
-    _subst_dynamic_array (l, e->u.e.r->u.e.r, valid_reads);
+    _subst_dynamic_array (l, e->u.e.l);
+    _subst_dynamic_array (l, e->u.e.r->u.e.l);
+    _subst_dynamic_array (l, e->u.e.r->u.e.r);
     break;
 
   case E_INT:
@@ -960,7 +869,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
     {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, (ActId *)e->u.e.l);
       if (v) {
-	ActId *base = _gen_mem_read (l, (ActId *)e->u.e.l, valid_reads);
+	ActId *base = _gen_mem_read (l, (ActId *)e->u.e.l);
 	ActId *tail = ((ActId *)e->u.e.l)->Rest ();
 
 	if (tail) {
@@ -975,7 +884,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
     {
       Expr *f = e;
       while (f) {
-	_subst_dynamic_array (l, f->u.e.l, valid_reads);
+	_subst_dynamic_array (l, f->u.e.l);
 	f = f->u.e.r;
       }
     }
@@ -983,14 +892,14 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
     
   case E_BUILTIN_BOOL:
   case E_BUILTIN_INT:
-    _subst_dynamic_array (l, e->u.e.l, valid_reads);
+    _subst_dynamic_array (l, e->u.e.l);
     break;
 
   case E_FUNCTION:
     {
       Expr *f = e->u.fn.r;
       while (f) {
-	_subst_dynamic_array (l, f->u.e.l, valid_reads);
+	_subst_dynamic_array (l, f->u.e.l);
 	f = f->u.e.r;
       }
     }
@@ -1010,19 +919,20 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e, list_t *valid_reads
    If anything in the address is changed or 
    if mem is assigned, we invalidate the currently
    valid accesses.
-
-   valid_reads : 
-       the array de-reference (mem[x]), 
-       the variable that holds the value
 */
-void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
+void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 {
   list_t *pre, *post;
   act_chp_lang_t *d = NULL;
   act_chp_lang_t *x = NULL;
-  ActId *mem_rmw;
+  ActId *mem_rmw = NULL;
+  ActId *wr;
   
   if (!c) return;
+
+#if 0
+  _map.dump_memrefs (stdout);
+#endif
 
   switch (c->type) {
   case ACT_CHP_SEND:
@@ -1035,25 +945,32 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
     /* in-place substitution of expression */
     pre = list_new ();
     if (c->type == ACT_CHP_ASSIGN) {
-      _subst_dynamic_array (pre, c->u.assign.e, valid_reads);
+      _subst_dynamic_array (pre, c->u.assign.e);
       /* if it is a m[..].field assignment, we need to read the memory
 	 first! */
       mem_rmw = c->u.assign.id;
       if (_bp->isDynamicRef (_curbnl, c->u.assign.id)
 	  && c->u.assign.id->Rest()) {
 
-	ActId *tmp = _gen_mem_read (pre, c->u.assign.id, valid_reads);
+	// We are assigning a field of a structure only; this means we
+	// need to generate a memory read, and then write back the
+	// field that was updated.
+
+	ActId *tmp = _gen_mem_read (pre, c->u.assign.id);
 	tmp->Append (c->u.assign.id->Rest()->Clone ());
 	c->u.assign.id = tmp;
       }
     }
     else {
-      _subst_dynamic_array (pre, c->u.comm.e, valid_reads);
+      _subst_dynamic_array (pre, c->u.comm.e);
     }
     if (list_isempty (pre)) {
       list_free (pre);
       pre = NULL;
     }
+    
+    /* check if any memory references were generated for reading; if
+       so, add in the CHP statements to do the read operation */
     if (pre) {
       /* idx (ActId *) sequence */
       NEW (x, act_chp_lang_t);
@@ -1071,14 +988,21 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	li = list_next (li);
 	ActId *mem = (ActId *) list_value (li);
 	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
-	_fresh_release (idx);
+
+	// We've issued all the read requests, and the variables have
+	// been substituted in place within the statement. So we can
+	// now release the index for re-use for subsequent statements.
+	_map.mark_unused (idx);
       }
+
+      // Also mark the cached used variables as available again
+      _map.clear_unused2_flag ();
+      list_free (pre);
     }
-    list_free (pre);
     pre = NULL;
 
     /* x = NULL if nothing to do on the expression front, 
-       otherwise it is all the "pre" operations 
+       otherwise it is all the "pre" operations
     */
 
     post = NULL;
@@ -1095,11 +1019,12 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	  Array *tmpa = tmp->arrayInfo();
 	  Assert (tmpa, "Hmm?!");
 	  list_t *tmpl = list_new ();
-	  _subst_dynamic_array (tmpl, tmpa->getDeref(0), valid_reads);
+	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
 	  if (list_isempty (tmpl)) {
 	    list_free (tmpl);
 	  }
 	  else {
+	    // more reads needed for the array indices!
 	    list_t *newcmds = list_new ();
 	    /* 
 	       these are all reads:
@@ -1110,7 +1035,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	      li = list_next (li);
 	      ActId *mem = (ActId *) list_value (li);
 	      _append_mem_read (newcmds, mem, idx, _curbnl->cur);
-	      _fresh_release (idx);
+	      _map.mark_unused (idx);
 	    }
 	    list_free (tmpl);
 	    if (x) {
@@ -1123,12 +1048,14 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	      x->type = ACT_CHP_SEMI;
 	      x->u.semi_comma.cmd = newcmds;
 	    }
+	    // Also mark the cached used variables as available again
+	    _map.clear_unused2_flag ();
 	  }
 	}
-	
+
 	/* write */
 	int idx = _fresh_memdata (_curbnl->cur, v->width, v->isstruct);
-	_prune_visited_idx (valid_reads, idx);
+
 	Expr *var;
 	post = list_new ();
 
@@ -1154,10 +1081,21 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	  _append_mem_write (post, c->u.comm.var, idx, e, _curbnl->cur);
 	  c->u.comm.var = new ActId (buf);
 	}
-	_fresh_release (idx);
+	_map.mark_unused (idx);
       }
     }
 
+    wr = NULL;
+    if ((c->type == ACT_CHP_ASSIGN && mem_rmw) ||
+	(c->type != ACT_CHP_ASSIGN && c->u.comm.var)) {
+      if (c->type == ACT_CHP_ASSIGN) {
+	wr = mem_rmw;
+      }
+      else {
+	wr = c->u.comm.var;
+      }
+    }
+    
     if (x || post) {
       list_t *l;
 
@@ -1182,32 +1120,39 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	list_free (post);
       }
     }
-    
-    if ((c->type == ACT_CHP_ASSIGN && mem_rmw) ||
-	(c->type != ACT_CHP_ASSIGN && c->u.comm.var)) {
-      ActId *wr;
-      if (c->type == ACT_CHP_ASSIGN) {
-	wr = mem_rmw;
-      }
-      else {
-	wr = c->u.comm.var;
-      }
-      _prune_written_var (valid_reads, wr);
+
+    if (wr) {
+      // We wrote a variable; make sure to invalidate any refs that
+      // depend on this variable
+      _map.invalidate_refs (wr);
     }
     break;
 
   case ACT_CHP_SEMI:
-  case ACT_CHP_COMMA:
     {
       listitem_t *li = list_first (c->u.semi_comma.cmd);
       while (li) {
 	act_chp_lang_t *x = (act_chp_lang_t *) list_value (li);
-	_extract_memory (x, valid_reads);
+	_extract_memory (x);
 	li = list_next (li);
       }
     }
     break;
 
+  case ACT_CHP_COMMA:
+    {
+      // for now, no re-use or re-cycling from existing memory references
+      listitem_t *li = list_first (c->u.semi_comma.cmd);
+      while (li) {
+	act_chp_lang_t *x = (act_chp_lang_t *) list_value (li);
+	_map.v.push_back({});
+	_extract_memory (x);
+	li = list_next (li);
+	_map.v.pop_back();
+      }
+    }
+    break;
+    
   case ACT_CHP_SELECT:
   case ACT_CHP_SELECT_NONDET:
 
@@ -1216,7 +1161,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	_subst_dynamic_array (pre, gc->g, valid_reads);
+	_subst_dynamic_array (pre, gc->g);
       }
     }
 
@@ -1237,7 +1182,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	li = list_next (li);
 	ActId *mem = (ActId *) list_value (li);
 	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
-	_fresh_release (idx);
+	_map.mark_unused (idx);
       }
     }
     list_free (pre);
@@ -1267,13 +1212,12 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 
     while (gc) {
       if (gc->s) {
-	list_t *tmp = list_new ();
-	_extract_memory (gc->s, tmp);
-	_free_valid_list (tmp);
+	_map.v.push_back({});
+	_extract_memory (gc->s);
+	_map.v.pop_back();
       }
       gc = gc->next;
     }
-    _clear_valid_list (valid_reads);
     break;
 
   case ACT_CHP_LOOP:
@@ -1283,7 +1227,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	_subst_dynamic_array (pre, gc->g, valid_reads);
+	_subst_dynamic_array (pre, gc->g);
       }
     }
 
@@ -1304,7 +1248,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
 	li = list_next (li);
 	ActId *mem = (ActId *) list_value (li);
 	_append_mem_read (x->u.semi_comma.cmd, mem, idx, _curbnl->cur);
-	_fresh_release (idx);
+	_map.mark_unused (idx);
       }
       list_free (pre);
 
@@ -1360,9 +1304,10 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
       while (gc) {
 	Assert (gc->g, "Waht?");
 	if (gc->s) {
-	  list_t *tmp = list_new ();
-	  _extract_memory (gc->s, tmp);
-	  _free_valid_list (tmp);
+	  auto oldmap = _map;
+	  _map.v.push_back({});
+	  _extract_memory (gc->s);
+	  _map.v.pop_back();
 	}
 	prev = gc;
 	gc = gc->next;
@@ -1390,13 +1335,10 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c, list_t *valid_reads)
       pre = NULL;
       for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
 	if (gc->s) {
-	  list_t *tmp = list_new ();
-	  _extract_memory (gc->s, tmp);
-	  _free_valid_list (tmp);
+	  _extract_memory (gc->s);
 	}
       }
     }
-    _clear_valid_list (valid_reads);
     break;
 
   case ACT_CHP_FUNC:

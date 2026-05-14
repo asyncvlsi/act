@@ -1,5 +1,6 @@
 namespace std {
 export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
+export defproc ram_38_732_4 (chan(int<2>)? rd; chan(int<3>)? addr; chan(int<32>)? din; chan(int<32>)! dout);
 
 export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
 {
@@ -8,6 +9,20 @@ export defproc ram_316_732_4 (chan(int<2>)? rd; chan(int<4>)? addr; chan(int<32>
 int<4> a;
 int<2> b;
 int<32> m[16];
+
+/* connections */
+chp {
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+}
+}
+
+export defproc ram_38_732_4 (chan(int<2>)? rd; chan(int<3>)? addr; chan(int<32>)? din; chan(int<32>)! dout)
+{
+
+/* instances */
+int<3> a;
+int<2> b;
+int<32> m[8];
 
 /* connections */
 chp {
@@ -26,16 +41,17 @@ defproc test ()
 {
 
 /* instances */
-int<32> _memdatv3;
 int<32> y;
 int<32> x;
 ::std::ram_316_732_4 mem_m;
+::std::ram_38_732_4 mem2_m;
 int<32> _memdatv2;
 int<32> _memdatv1;
+int<32> z;
 
 /* connections */
 chp {
-x:=0x0;mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;[bool((_memdatv1>>0x1)=0x0 ? int(int(_memdatv1,1)>0x0) : 0x1) -> mem_m.addr!4,mem_m.rd!1,mem_m.dout?_memdatv2;mem_m.addr!5,mem_m.rd!1,mem_m.dout?_memdatv3;_memdatv2:=int(_memdatv1+_memdatv2,32)+_memdatv3;mem_m.addr!y,mem_m.rd!0,mem_m.din!_memdatv2]
+x:=0x0;(mem_m.addr!x,mem_m.rd!1,mem_m.dout?_memdatv1;y:=_memdatv1),(mem2_m.addr!x+0x1,mem2_m.rd!1,mem2_m.dout?_memdatv2;z:=_memdatv2)
 }
 }
 
