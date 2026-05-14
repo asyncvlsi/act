@@ -325,7 +325,7 @@ int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d,
 
 	snprintf (buf, 100, "%s%d", MEMVAR_STRING, idx);
 	rhs = new ActId (buf);
-	
+
 	NEW (c->u.assign.e, Expr);
 	c->u.assign.e->type = E_BITFIELD;
 	c->u.assign.e->u.e.l = (Expr *) rhs;
@@ -336,7 +336,7 @@ int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d,
 
 	Expr *tmp = expr_expand (c->u.assign.e, ActNamespace::Global(), sc,
 				 ACT_EXPR_EXFLAG_CHPEX);
-	expr_free (c->u.assign.e);
+	expr_ex_free (c->u.assign.e);
 	c->u.assign.e = tmp;
 
 	if (TypeFactory::isBoolType (it)) {
@@ -672,7 +672,7 @@ void ActCHPMemory::_append_mem_write (list_t *top, ActId *access, int idx, Expr 
   Assert (inv_idx >= 0, "What?");
   auto &last = _map.v.back();
   if (last[inv_idx].isstruct) {
-    expr_free (e);
+    expr_ex_free (e);
     c->u.comm.e = _elemwise_fieldlist (idx, NULL, last[inv_idx].isstruct);
   }
   else {
