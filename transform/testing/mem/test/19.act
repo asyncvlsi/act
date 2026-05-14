@@ -4,11 +4,11 @@ defproc test()
 {
   int x, y, z;
   int mem[16];
-  int mem2[8];
   
   chp {
    x := 0;
-   y := mem[x], z := mem2[x+1]
+   y := mem[x];
+   y := mem[x], z := mem[x]
   }
 }
 
