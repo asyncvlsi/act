@@ -124,6 +124,14 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
   return xval;
 }
 
+static int dvarcmp (const void *a, const void *b)
+{
+  const act_dynamic_var_t *va = (act_dynamic_var_t *) a;
+  const act_dynamic_var_t *vb = (act_dynamic_var_t *) b;
+
+  return strcmp (va->aid->getName(), vb->aid->getName());
+}
+
 void *ActCHPMemory::local_op (Process *p, int mode)
 {
   Scope *sc;
@@ -171,8 +179,27 @@ void *ActCHPMemory::local_op (Process *p, int mode)
   phash_iter_t it;
   phash_bucket_t *b;
   phash_iter_init (_curbnl->cdH, &it);
+
+  /* use this array to make the order of operations deterministic,
+     since the hash table traversal depends on the pointer hash */
+  A_DECL (act_dynamic_var_t *, _update);
+  A_INIT (_update);
+
   while ((b = phash_iter_next (_curbnl->cdH, &it))) {
     act_dynamic_var_t *v = (act_dynamic_var_t *)b->v;
+    A_NEW (_update, act_dynamic_var_t *);
+    A_NEXT (_update) = v;
+    A_INC (_update);
+  }
+
+  /* sort dynamic arrays to canonicalize the order in which they are
+     replaced */
+  if (A_LEN (_update) > 1) {
+    mymergesort ((const void **)_update, A_LEN (_update), dvarcmp);
+  }
+
+  for (int i=0; i < A_LEN (_update); i++) {
+    act_dynamic_var_t *v = _update[i];
 
     /*-- delete dynamic variable! --*/
     _curbnl->cur->Del (v->aid->getName());
@@ -215,6 +242,8 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     }
     list_append (_decomp_info, it->BaseType());
   }
+
+  A_FREE (_update);
 
   _map.v.clear ();
   _curbnl = NULL;
