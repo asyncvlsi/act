@@ -135,6 +135,7 @@ static int dvarcmp (const void *a, const void *b)
 void *ActCHPMemory::local_op (Process *p, int mode)
 {
   Scope *sc;
+  list_t *ret = NULL;
   
   if (!p) return NULL;
   if (!p->getlang()) return NULL;
@@ -241,6 +242,17 @@ void *ActCHPMemory::local_op (Process *p, int mode)
       _decomp_info = list_new ();
     }
     list_append (_decomp_info, it->BaseType());
+
+    /*
+     * The return value contains a list of memory names that were
+     * inserted into the instance table by the re-write. This
+     * information is required during logic synthesis to correctly
+     * (not) generate overrides
+     */
+    if (!ret) {
+      ret = list_new ();
+    }
+    list_append (ret, _curbnl->cur->LookupVal (newname));
   }
 
   A_FREE (_update);
@@ -248,7 +260,7 @@ void *ActCHPMemory::local_op (Process *p, int mode)
   _map.v.clear ();
   _curbnl = NULL;
 
-  return NULL;
+  return ret;
 }
 
 void ActCHPMemory::free_local (void *v)
