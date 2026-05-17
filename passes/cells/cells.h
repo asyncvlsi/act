@@ -34,10 +34,108 @@
 
 struct act_prsinfo;
 
-struct idmap {
+/*
+ * This data structure is used to hold all the output IDs for a cell.
+ * In addition, it holds the label names. However, label names are
+ * always after outputs.
+ *   ids [0 .. nout - 1] : output variables
+ *   ids [nout ... nout + nat - 1] : label names, but actually stored
+ *                                   as strings (not ActId pointers)
+ * 
+ *   ids [nout + nat - 1 ... end] : input variables
+ */
+class idmap {
+private:
   A_DECL (ActId *, ids);
   int nout;
   int nat;
+
+public:
+  
+  idmap() {
+    A_INIT (ids);
+    nout = -1;
+    nat = 0;
+  }
+  ~idmap() {
+    A_FREE (ids);
+  }
+  void clear() {
+    A_FREE (ids);
+    A_INIT (ids);
+    nout = -1;
+    nat = 0;
+  }
+  void moved() {
+    A_INIT (ids);
+  }
+
+  void finalize_outs () {
+    nout = A_LEN (ids);
+  }
+
+  int num_outputs () {
+    return nout;
+  }
+
+  int find_idx (ActId *id) {
+    for (int i=0; i < A_LEN (ids); i++) {
+      if (ids[i] == id) return i;
+      if (ids[i]->isEqual (id)) return i;
+    }
+    return -1;
+  }
+
+  int num_ids () {
+    return A_LEN (ids);
+  }
+
+  int find_label_idx (ActId *id) {
+    for (int i=0; i < A_LEN (ids); i++) {
+      if (ids[i] == id) return i;
+    }
+    return -1;
+  }
+  
+  int alloc_new_id (ActId *id) {
+    A_NEW (ids, ActId *);
+    A_NEXT (ids) = id;
+    A_INC (ids);
+    return A_LEN(ids)-1;
+  }
+  
+  int alloc_new_atid (ActId *id) {
+    int i = alloc_new_id (id);
+    nat++;
+    return i;
+  }
+
+  /*
+   * Once the outputs have been set, this can be used to find or
+   * allocate fresh IDs and labels.
+   */
+  int find_or_alloc (ActId *id, int islabel = 0) {
+    int i;
+    Assert (nout >= 0, "Only call find_or_alloc after outputs have been set!");
+    for (i=0; i < A_LEN (ids); i++) {
+      if (ids[i] == id) return i;
+      if (!islabel && (i < nout || i >= nout + nat)) {
+	if (ids[i]->isEqual (id)) return i;
+      }
+    }
+    Assert (!islabel || (A_LEN (ids) != nout + nat), "find_or_alloc() error");
+    if (islabel) {
+      return alloc_new_atid (id);
+    }
+    else {
+      return alloc_new_id (id);
+    }
+  }
+
+  ActId *getId (int idx) {
+    return ids[idx];
+  }
+
 };
 
 
@@ -74,7 +172,8 @@ private:
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
   void add_passgates_cap ();
-  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs, int ninp = -1,
+  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs,
+					   int ninp = -1,
 					   int noutp = -1);
   void dump_celldb (FILE *);
   Expr *_idexpr (int idx, struct act_prsinfo *pi);

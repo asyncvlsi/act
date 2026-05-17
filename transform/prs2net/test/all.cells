@@ -232,7 +232,7 @@ export defcell g_i1x0 (bool? in[0]; bool! out)
    }
 }
 
-export defcell g_vl0n3ax1 (bool? in[3]; bool! out)
+export defcell g_vl0n3ax0 (bool? in[3]; bool! out)
 {
    prs {
    in[0] & in[1] -> @x0-
@@ -240,7 +240,7 @@ export defcell g_vl0n3ax1 (bool? in[3]; bool! out)
    }
 }
 
-export defcell gvl02na_x1 (bool? in[2]; bool! out)
+export defcell gvl02na_x0 (bool? in[2]; bool! out)
 {
    prs {
    ~in[0] -> @x0+

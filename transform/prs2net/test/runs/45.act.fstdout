@@ -15,8 +15,8 @@
 *
 * --- end node flags ---
 *
-M0_0_ out in_20_3 #l1 GND nch W=0.3U L=0.12U
-M0_1_ #l1 in_20_3 GND GND nch W=0.3U L=0.12U
+M0_N0_N out in_20_3 #l1 GND nch W=0.3U L=0.12U
+M1_N1_N #l1 in_20_3 GND GND nch W=0.3U L=0.12U
 .ends
 *---- end of process: g_0x5<> -----
 .subckt foo a b

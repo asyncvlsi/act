@@ -62,7 +62,9 @@ struct act_prsinfo {
 
   /* variable attributes */
   int *attr_map;
-  A_DECL (struct act_varinfo, attrib);
+
+  
+  struct act_varinfo *attrib;
 
   int leak_adjust;
 
@@ -75,6 +77,72 @@ struct act_prsinfo {
       /* The # of these will be nout + any internal labels */
 
   int *match_perm;		// used to report match!
+
+
+  act_prsinfo(int _leak_flag) {
+    cell = NULL;
+    nvars = 0;
+    nout = 0;
+    nat = 0;
+    tval = 0;
+    match_perm = NULL;
+    nattr = NULL;
+    at_perm = NULL;
+    leak_adjust = _leak_flag;
+
+    attrib = NULL;
+    A_INIT (up);
+    A_INIT (dn);
+  }
+
+  /*
+    Each unique variable right hand side of a production rule in a
+    prs block is assigned a slot. Slots are needed for both output
+    variables as well as labels (@-variables).
+  */
+  void add_new_slot () {
+    A_NEW (up, act_prs_expr_t *);
+    A_NEW (dn, act_prs_expr_t *);
+    A_NEXT (up) = NULL;
+    A_NEXT (dn) = NULL;
+    A_INC (up);
+    A_INC (dn);
+  }
+
+  /*
+    Set the number of outputs, and initialize the attribute lists for
+    the output variables. Note that @-variables do not have
+    attributes, so this is only needed for each output variable.
+  */
+  void set_num_outputs(int n) {
+    nout = n;
+    nvars = n;
+    MALLOC (nattr, act_attr_t *, n*2);
+    for (int i=0; i < n*2; i++) {
+      nattr[i] = NULL;
+    }
+  }
+
+  /*
+    Set total variables, and allocate attributes etc.
+  */
+  void set_tot_vars (int n) {
+    nvars = n;
+    Assert (nvars >= nout, "What?");
+    Assert (nout > 0, "No outputs?");
+    
+    MALLOC (attrib, struct act_varinfo, nvars);
+    for (int i=0; i < nvars; i++) {
+      attrib[i].nup = 0;
+      attrib[i].ndn = 0;
+      attrib[i].depths = NULL;
+      attrib[i].cup = 0;
+      attrib[i].cdn = 0;
+      attrib[i].tree = 0;
+    }
+  }
+
+  int numvars() { return nvars; }
   
 };
 
@@ -154,25 +222,6 @@ static char *_get_basename (struct act_prsinfo *pi)
 }
 
 
-static void _add_new_outslot (struct act_prsinfo *pi)
-{
-  A_NEW (pi->up, act_prs_expr_t *);
-  A_NEW (pi->dn, act_prs_expr_t *);
-  A_NEXT (pi->up) = NULL;
-  A_NEXT (pi->dn) = NULL;
-  A_INC (pi->up);
-  A_INC (pi->dn);
-
-  A_NEW (pi->attrib, struct act_varinfo);
-  A_NEXT (pi->attrib).nup = 0;
-  A_NEXT (pi->attrib).ndn = 0;
-  A_NEXT (pi->attrib).depths = NULL;
-  A_NEXT (pi->attrib).cup = 0;
-  A_NEXT (pi->attrib).cdn = 0;
-  A_NEXT (pi->attrib).tree = 0;
-  A_INC (pi->attrib);
-}
-
 static void _add_used_cell (list_t *l, Process *p)
 {
   for (listitem_t *li = list_first (l); li; li = list_next (li)) {
@@ -207,7 +256,7 @@ static int cell_hashfn (int sz, void *key)
   h = hash_function_continue (sz, (unsigned char *)&ckey->tval,
 			      sizeof (int), h, 1);
 
-  for (i=0; i < A_LEN (ckey->attrib); i++) {
+  for (i=0; i < ckey->numvars(); i++) {
     h = hash_function_continue (sz, (unsigned char *)&ckey->attrib[i].nup,
 				sizeof (int), h, 1);
     h = hash_function_continue (sz, (unsigned char *)&ckey->attrib[i].ndn,
@@ -462,7 +511,6 @@ static int basic_match (struct act_prsinfo *k1, struct act_prsinfo *k2)
 
   if (A_LEN (k1->up) != A_LEN (k2->up)) return 0;
   if (A_LEN (k1->dn) != A_LEN (k2->dn)) return 0;
-  if (A_LEN (k1->attrib) != A_LEN (k2->attrib)) return 0;
 
   for (int i=0; i < k1->nout*2; i++) {
     act_attr_t *a1, *a2;
@@ -498,24 +546,51 @@ static int match_prsinfo (struct act_prsinfo *k1,
 			  int chk_width)
 {
   int i;
+  static int *equal_choices = NULL;
+  static int sz = 0;
 
   if (k1->leak_adjust != k2->leak_adjust) {
     return 0;
   }
 
-  for (i=0; i < A_LEN (k1->attrib); i++) {
+  if (k1->numvars() > sz) {
+    sz = k1->numvars();
+    if (equal_choices) {
+      REALLOC (equal_choices, int, sz);
+    }
+    else {
+      MALLOC (equal_choices, int, sz);
+    }
+  }
+
+  equal_choices[0] = 0;
+  for (i=0; i < k1->numvars(); i++) {
     if (k1->attrib[i].tree != k2->attrib[i].tree) return 0;
     if (k1->attrib[i].nup != k2->attrib[i].nup) return 0;
     if (k1->attrib[i].ndn != k2->attrib[i].ndn) return 0;
     for (int j=0; j < k1->attrib[i].nup + k1->attrib[i].ndn; j++) {
       if (k1->attrib[i].depths[j] != k2->attrib[i].depths[j]) return 0;
     }
+    if (i > 0) {
+      equal_choices[i] = 0;
+      if ((k1->attrib[i].tree == k1->attrib[i-1].tree) &&
+	  (k1->attrib[i].nup == k1->attrib[i-1].nup) &&
+	  (k1->attrib[i].ndn == k1->attrib[i-1].ndn)) {
+	equal_choices[i] = 1;
+	for (int j=0; j < k1->attrib[i].nup + k1->attrib[i].ndn; j++) {
+	  if (k1->attrib[i].depths[j] != k1->attrib[i-1].depths[j]) {
+	    equal_choices[i] = 0;
+	    break;
+	  }
+	}
+      }
+    }
   }
 
 #if 0
   printf ("comparing:\n");
-  _dump_prsinfo (k1);
-  _dump_prsinfo (k2);
+  _dump_prsinfo (k1, "in", "out");
+  _dump_prsinfo (k2, "in", "out");
 #endif  
 
   int *perm;
@@ -597,7 +672,17 @@ static int cell_matchfn (void *key1, void *key2)
   k1 = (struct act_prsinfo *)key1;
   k2 = (struct act_prsinfo *)key2;
 
+#if 0
+  printf ("level0... comparing:\n");
+  _dump_prsinfo (k1, "in", "out");
+  _dump_prsinfo (k2, "in", "out");
+  printf ("end level0\n");
+#endif
   if (!basic_match (k1, k2)) return 0;
+
+#if 0
+  printf (" --> made it past basic match!\n");
+#endif
   return match_prsinfo (k1, k2, 1);
 }
 
@@ -1024,26 +1109,6 @@ void ActCellPass::flush_pending (Scope *sc)
   A_INIT (pendingprs);
 }
 
-static void _alloc_new_id (struct idmap *i, ActId *id)
-{
-  A_NEW (i->ids, ActId *);
-  A_NEXT (i->ids) = id;
-  A_INC (i->ids);
-}
-
-static int _find_alloc_id (struct idmap *i, ActId *id, int islabel)
-{
-  int k;
-  
-  for (k=0; k < A_LEN (i->ids); k++) {
-    if (i->ids[k] == id) return k;
-    if (!islabel && (k < i->nout || k >= i->nout + i->nat)) {
-      if (id->isEqual (i->ids[k])) return k;
-    }
-  }
-  _alloc_new_id (i, id);
-  return k;
-}
 
 static void _count_occurrences (struct act_prsinfo *info,
 				act_prs_expr_t *e, int isup)
@@ -1164,154 +1229,6 @@ static int _collect_depths (struct act_prsinfo *info,
   return v;
 }
 
-void ActCellPass::add_passgates_cap ()
-{
-  int i;
-  int max;
-  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1" };
-
-  Assert (cell_ns, "What?");
-
-  if (cell_ns->findType (g[0])) {
-    return;
-  }
-
-  max = 6 + config_get_table_size ("act.prs_device")*2;
-
-  char gendev[12];
-
-  for (i=0; i < max; i++) {
-    /* add the unexpanded process to the cell namespace, and then
-       expand it! */
-    Process *proc;
-
-    /*-- create a new process in the namespace --*/
-    UserDef *u = new UserDef (cell_ns);
-
-    // the even ones have parameters
-    if ((i % 2) == 0) {
-      InstType *xit;
-      xit = TypeFactory::Factory()->NewPInt();
-      u->AddMetaParam (xit, "w", NULL);
-      u->AddMetaParam (xit, "l", NULL);
-    }
-    
-    proc = new Process (u);
-    delete u;
-    proc->MkCell ();
-    proc->MkExported ();
-
-    if (i < 6) {
-      snprintf (gendev, 12, "%s", g[i]);
-    }
-    else {
-      snprintf (gendev, 12, "c%d", i - 6);
-    }
-
-    Assert (cell_ns->findName (gendev) == 0, "Name conflict?");
-    cell_ns->CreateType (gendev, proc);
-
-    /*-- add ports --*/
-    InstType *it = TypeFactory::Factory()->NewBool ((i >= 6) ? 
-						    Type::NONE : Type::IN);
-
-    Expr *arr;
-    if (gendev[0] == 't') {
-      arr = const_expr (3);
-    }
-    else if (gendev[0] == 'p' || gendev[0] == 'n') {
-      arr = const_expr (2);
-    }
-    else {
-      arr = NULL;
-    }
-    if (arr) {
-      Array *ta;
-      it = new InstType (it);
-      ta = new Array (arr);
-      ta->mkArray ();
-      it->MkArray (ta);
-    }
-
-    Assert (proc->AddPort (it, _inport_name) == 1, "Error adding in port?");
-
-    it = TypeFactory::Factory()->NewBool (gendev[0] == 'c' ? Type::NONE :
-					  Type::OUT);
-    Assert (proc->AddPort (it, _outport_name) == 1, "Error adding out port?");
-
-    /*-- prs body --*/
-    act_prs *prs_body;
-    NEW (prs_body, act_prs);
-    prs_body->vdd = NULL;
-    prs_body->gnd = NULL;
-    prs_body->psc = NULL;
-    prs_body->nsc = NULL;
-    prs_body->next = NULL;
-    prs_body->leak_adjust = 0;
-
-    act_prs_lang_t *rules = NULL;
-
-    NEW (rules, act_prs_lang_t);
-    rules->next = NULL;
-    if (gendev[0] != 'c') {
-      rules->type = ACT_PRS_GATE;
-    }
-    else {
-      rules->type = ACT_PRS_DEVICE + (i - 6)/2;
-    }
-
-    rules->u.p.sz = NULL;
-    rules->u.p.g = NULL;
-    rules->u.p._g = NULL;
-    rules->u.p.s = NULL;
-    rules->u.p.d = NULL;
-    rules->u.p.attr = NULL;
-
-    int j = 0;
-
-    if (gendev[0] != 'c') {
-      if (gendev[0] != 'p') {
-	rules->u.p.g = new ActId (_inport_name, new Array (const_expr (j)));
-	j++;
-      }
-      else {
-	rules->u.p.g = NULL;
-      }
-      if (gendev[0] != 'n') {
-	rules->u.p._g = new ActId (_inport_name, new Array (const_expr (j)));
-	j++;
-      }
-      else {
-	rules->u.p._g = NULL;
-      }
-    }
-    else {
-      rules->u.p._g = NULL;
-      rules->u.p.g = NULL;
-    }
-    if (gendev[0] != 'c') {
-      rules->u.p.s = new ActId (_inport_name, new Array (const_expr (j)));
-      j++;
-    }
-    else {
-      rules->u.p.s = new ActId (_inport_name);
-    }
-    rules->u.p.d = new ActId (_outport_name);
-
-    if ((i % 2) == 0) {
-      act_size_spec_t *sz;
-      NEW (sz, act_size_spec_t);
-      sz->flavor = 0;
-      sz->folds = NULL;
-      sz->w = _id_to_expr (new ActId ("w"));
-      sz->l = _id_to_expr (new ActId ("l"));
-      rules->u.p.sz = sz;
-    }
-    prs_body->p = rules;
-    proc->AppendBody (new ActBody_Lang  (-1, prs_body));
-    proc->MkDefined ();
-  }
-}
 
 
 void ActCellPass::add_new_cell (struct act_prsinfo *pi)
@@ -1716,11 +1633,11 @@ static act_prs_expr_t *_scrub_rule (struct idmap *i, act_prs_expr_t *e)
 
   case ACT_PRS_EXPR_VAR:
     ret->u.v.sz = e->u.v.sz; // XXX: aliased!
-    ret->u.v.id = (ActId *)(long)_find_alloc_id (i, e->u.v.id, 0);
+    ret->u.v.id = (ActId *)(long)i->find_or_alloc (e->u.v.id);
     break;
 
   case ACT_PRS_EXPR_LABEL:
-    ret->u.l.label = (char *)(long)_find_alloc_id (i, (ActId *)e->u.l.label, 1);
+    ret->u.l.label = (char *)(long)i->find_or_alloc ((ActId *)e->u.l.label, 1);
     break;
 
   case ACT_PRS_EXPR_TRUE:
@@ -1739,6 +1656,10 @@ static act_prs_expr_t *_scrub_rule (struct idmap *i, act_prs_expr_t *e)
   return ret;
 }
 
+/*
+ * If the rule doesn't exist, set the expression pointer to the
+ * rule. Otherwise, OR in the new expression with the existing one.
+ */
 static void _add_rule (act_prs_expr_t **x, act_prs_expr_t *e)
 {
   if (*x) {
@@ -1757,7 +1678,8 @@ static void _add_rule (act_prs_expr_t **x, act_prs_expr_t *e)
 }
 
 /*-- convert prs block into attriburtes used for isomorphism checking --*/
-struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int ninp, int noutp)
+struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
+						      int ninp, int noutp)
 {
   struct act_prsinfo *ret;
   act_prs_lang_t *l, *lpush;
@@ -1765,52 +1687,31 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   int i;
   int in_tree;
 
-  NEW (ret, struct act_prsinfo);
-  
-  A_FREE (current_idmap.ids);
-  A_INIT (current_idmap.ids);
+  current_idmap.clear();
 
-  ret->cell = NULL;
-  ret->nvars = 0;
-  ret->nout = 0;
-  ret->nat = 0;
-  ret->tval = -1;
-  ret->match_perm = NULL;
-  ret->nattr = NULL;
-  ret->at_perm = NULL;
-  ret->leak_adjust = _leak_flag;
+  ret = new act_prsinfo (_leak_flag);
 
-  A_INIT (ret->attrib);
-  A_INIT (ret->up);
-  A_INIT (ret->dn);
-
-  A_INIT (imap.ids);
-  imap.nout = 0;
-  imap.nat = 0;
-
-  if (noutp > 0) {
-    if (noutp == 1) {
-      ActId *tmp = new ActId (_outport_name);
-      tmp = tmp->Expand (NULL, NULL);
-      _alloc_new_id (&imap, tmp);
-      _add_new_outslot (ret);
+  /* create a slot for each output from this prs, if the number of
+     outputs is known. */
+  for (int i=0; i < noutp; i++) {
+    ActId *tmp = new ActId (_outport_name);
+    if (noutp > 1) {
+      tmp->setArray (new Array (const_expr (i)));
     }
-    else {
-      for (int i=0; i < noutp; i++) {
-	ActId *tmp = new ActId (_outport_name, new Array (const_expr (i)));
-	tmp = tmp->Expand (NULL, NULL);
-	_alloc_new_id (&imap, tmp);
-	_add_new_outslot (ret);
-      }
-    }
+    tmp = tmp->Expand (NULL, NULL);
+    imap.alloc_new_id (tmp);
+    ret->add_new_slot ();
   }
 
+  /* walk through the production rules and extract all the outputs */
   l = prs;
   lpush = NULL;
   in_tree = 0;
+  int tree_count = 0;
   while (l) {
     if (l->type == ACT_PRS_TREE) {
-      if (ret->tval != -1) {
+      tree_count++;
+      if (tree_count != 1) {
 	fatal_error ("More than one tree!");
       }
       ret->tval = l->u.l.lo->u.ival.v;
@@ -1820,19 +1721,13 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
     }
     Assert (l->type == ACT_PRS_RULE, "gen_prs_attributes context error");
 
-    for (i=0; i < A_LEN (imap.ids); i++) {
-      if (imap.ids[i] == l->u.one.id)
-	break;
-      if (!l->u.one.label && (imap.ids[i]->isEqual (l->u.one.id)))
-	break;
-    }
+    /* look for this variable */
     if (!l->u.one.label) {
-      if (i == A_LEN (imap.ids)) {
-	A_NEW (imap.ids, ActId *);
-	A_NEXT (imap.ids) = l->u.one.id;
-	A_INC (imap.ids);
-
-	_add_new_outslot (ret);
+      /* if I haven't seen it before, add it! */
+      i = imap.find_idx (l->u.one.id);
+      if (i == -1) {
+	i = imap.alloc_new_id (l->u.one.id);
+	ret->add_new_slot ();
       }
     }
     if (in_tree) {
@@ -1844,42 +1739,39 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
       in_tree = 0;
     }
   }
-  ret->nout = A_LEN (imap.ids);
-  ret->nvars = ret->nout;
-  imap.nout = ret->nout;
-  MALLOC (ret->nattr, act_attr_t *, ret->nout*2);
-  for (i=0; i < ret->nout*2; i++) {
-    ret->nattr[i] = NULL;
-  }
 
-  /* collect all labels */
+  /*-- set nout field, now that all outputs have been found and
+     collected. --*/
+  imap.finalize_outs ();
+  ret->set_num_outputs (imap.num_outputs());
+
+  /*-- collect all labels --*/
   l = prs;
   while (l) {
     if (l->u.one.label) {
       ret->nat++;
-      imap.nat++;
-
-      A_NEW (imap.ids, ActId *);
-      A_NEXT (imap.ids) = l->u.one.id;
-      A_INC (imap.ids);
-
-      _add_new_outslot (ret);
+      if (imap.find_idx (l->u.one.id) == -1) {
+	imap.alloc_new_atid (l->u.one.id);
+	ret->add_new_slot ();
+      }
     }
     l = l->next;
   }
 
+  /*-- collect specified inputs --*/
   if (ninp > 0) {
     for (int i=0; i < ninp; i++) {
       ActId *tmp = new ActId (_inport_name, new Array (const_expr (i)));
       tmp = tmp->Expand (NULL, NULL);
-      _find_alloc_id (&imap, tmp, 0);
+      imap.find_or_alloc (tmp);
     }
   }
-  
+
+  /*-- add any new inputs found in the prs, scrubbing rules as we go --*/
   l = prs;
   while (l) {
     /* collect all the inputs, scrub rules */
-    i = _find_alloc_id (&imap, l->u.one.id, l->u.one.label);
+    i = imap.find_or_alloc (l->u.one.id, l->u.one.label);
     
     /* now process the production rule, create a clean copy, replace
        all variables with ids! */
@@ -1902,53 +1794,24 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 
     /* dn first, then up */
     if (!l->u.one.dir) {
+      /* down rule */
       _add_rule (&ret->dn[i], x);
       if (l->u.one.arrow_type != 0) {
 	_add_rule (&ret->up[i], xx);
       }
     }
     else {
+      /* up rule */
       if (l->u.one.arrow_type != 0) {
 	_add_rule (&ret->dn[i], xx);
       }
       _add_rule (&ret->up[i], x);
     }
-#if 0
-    if (l->u.one.dir) {
-      /* up */
-      _add_rule (&ret->up[i], x);
-    }
-    else {
-      _add_rule (&ret->dn[i], x);
-    }
-    if (l->u.one.arrow_type != 0) {
-      if (!l->u.one.dir) {
-	_add_rule (&ret->up[i], xx);
-      }
-      else {
-	_add_rule (&ret->dn[i], xx);
-      }	
-    }
-#endif
-    
     l = l->next;
   }
+  
   /* scrubbed rules are now ready: now we can create the varinfo space */
-  ret->nvars = A_LEN (imap.ids);
-  Assert (ret->nvars >= ret->nout, "Hmmmm.");
-  Assert (ret->nout > 0, "What?");
-
-  while (ret->nvars > A_LEN (ret->attrib)) {
-    A_NEW (ret->attrib, struct act_varinfo);
-    A_NEXT (ret->attrib).nup = 0;
-    A_NEXT (ret->attrib).ndn = 0;
-    A_NEXT (ret->attrib).depths = NULL;
-    A_NEXT (ret->attrib).cup = 0;
-    A_NEXT (ret->attrib).cdn = 0;
-    A_NEXT (ret->attrib).tree = 0;
-    A_INC (ret->attrib);
-  }
-  Assert (ret->nvars == A_LEN (ret->attrib), "HMm?!");
+  ret->set_tot_vars (imap.num_ids ());
   Assert (A_LEN (ret->up) == A_LEN (ret->dn), "hmm");
   Assert (A_LEN (ret->up) >= ret->nout, "what happened?");
 
@@ -1959,7 +1822,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   }
   
   /* 2. Gather depths */
-  for (i=0; i < A_LEN (ret->attrib); i++) {
+  for (i=0; i < ret->numvars(); i++) {
     if ((ret->attrib[i].nup + ret->attrib[i].ndn) > 0) {
       MALLOC (ret->attrib[i].depths, int,
 	      ret->attrib[i].nup + ret->attrib[i].ndn);
@@ -1967,6 +1830,8 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 	ret->attrib[i].depths[j] = 0;
       }
       ret->attrib[i].cup = 0;
+
+      // counts for pull down start after pull-up
       ret->attrib[i].cdn = ret->attrib[i].nup;
     }
   }
@@ -1976,7 +1841,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   }
 
   /* Sort depths to canonicalize */
-  for (i=0; i < A_LEN (ret->attrib); i++) {
+  for (i=0; i < ret->numvars(); i++) {
     if (ret->attrib[i].depths) {
       myintmergesort (ret->attrib[i].depths, ret->attrib[i].nup);
       myintmergesort (ret->attrib[i].depths + ret->attrib[i].nup,
@@ -1998,11 +1863,12 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   mymergesort ((const void **)_core_array, ret->nvars, cmp_fn_varinfo);
 
 #if 0
+  printf ("GEN-PRS-ATTRIB:\n");
   printf("map: ");
 #endif  
   for (i=0; i < ret->nvars; i++) {
     ret->attr_map[i] = (_core_array[i] - &ret->attrib[0]);
-#if 0    
+#if 0
     printf (" %d", ret->attr_map[i]);
 #endif    
   }
@@ -2011,6 +1877,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
 #endif  
   FREE (_core_array);
 
+  /* permute the attribute array so it is sorted */
   struct act_varinfo *tmp;
   MALLOC (tmp, struct act_varinfo, ret->nvars);
   for (i=0; i < ret->nvars; i++) {
@@ -2022,6 +1889,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs, int n
   FREE (tmp);
 
   current_idmap = imap;
+  imap.moved ();
 
   return ret;
 }
@@ -2049,7 +1917,7 @@ static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
     else { _dump_expr (stdout, _inport_name, _outport_name, p->dn[i], p); }
     printf ("\n");
   }
-  for (int i=0; i < A_LEN (p->attrib); i++) {
+  for (int i=0; i < p->numvars(); i++) {
     printf (" var %d: ", i);
     printf ("nup %d, ndn %d; ", p->attrib[i].nup, p->attrib[i].ndn);
     printf (" depths: ");
@@ -2059,7 +1927,7 @@ static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
     printf ("\n");
   }
   printf ("perm: ");
-  for (int i=0; i < A_LEN (p->attrib); i++) {
+  for (int i=0; i < p->numvars(); i++) {
     printf (" %d", p->attr_map[i]);
   }
   printf ("\n");
@@ -2289,10 +2157,10 @@ void ActCellPass::dump_celldb (FILE *fp)
 Expr *ActCellPass::_idexpr (int idx, struct act_prsinfo *pi)
 {
   if (pi->match_perm) {
-    return _id_to_expr (current_idmap.ids[pi->match_perm[idx]]);
+    return _id_to_expr (current_idmap.getId (pi->match_perm[idx]));
   }
   else {
-    return _id_to_expr (current_idmap.ids[idx]);
+    return _id_to_expr (current_idmap.getId (idx));
   }
 }
 
@@ -2301,7 +2169,7 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 {
   int i;
   ActId *instname;
-  
+
   /*--- variable order:  outputs at-vars inputs ---*/
 
   /*-- inputs --*/
@@ -3234,7 +3102,6 @@ void ActCellPass::Print (FILE *fp)
   dump_celldb (fp);
 }
 
-
 ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
 {
   cell_table = NULL;
@@ -3243,7 +3110,8 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   cell_count = 0;
   _new_cells = list_new ();
   _used_cells = list_new ();
-  
+
+  /*-- disables propagation of updates --*/
   disableUpdate ();
 
   if (!a->pass_find ("sizing")) {
@@ -3251,6 +3119,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   }
   AddDependency ("sizing");
 
+  /*-- create hash table for cell matching --*/
   cell_table = chash_new (32);
   cell_table->hash = cell_hashfn;
   cell_table->match = cell_matchfn;
@@ -3258,9 +3127,8 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   cell_table->free = cell_freefn;
   cell_table->print = NULL;
 
-  A_INIT (current_idmap.ids);
-  current_idmap.nout = 0;
-  current_idmap.nat = 0;
+  /*-- initialize map table for ids --*/
+  current_idmap.clear ();
 
   config_set_default_string ("net.cell_namespace", "cell");
   config_set_default_string ("net.cell_inport", "in");
@@ -3271,15 +3139,18 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   _outport_name = config_get_string ("net.cell_outport");
   
   if (!cell_ns) {
+    /*-- create empty namespace --*/
     cell_ns = new ActNamespace (ActNamespace::Global(),
 				config_get_string ("net.cell_namespace"));
     cell_ns->Expand ();
     cell_count = 0;
   }
   else {
+    /*-- put existing cells into the hash table for matching --*/
     cell_count =  _collect_cells (cell_ns);
   }
-  
+
+  /*-- add the pass gates and cap templated values into the cell space --*/
   add_passgates_cap ();
 }
 
@@ -3290,4 +3161,167 @@ ActCellPass::~ActCellPass ()
   }
   list_free (_new_cells);
   list_free (_used_cells);
+}
+
+
+/*
+ * Add a number of standard default cells into the cell space
+ *   t0 = transmission gate with template w,l parameters
+ *   t1 = transmission gate
+ *   p0 = pass p-fet with w,l parms
+ *   p1 = pass p-fet
+ *   n0 = pass n-fet with w,l parms
+ *   n1 = pass n-fet
+ *   c0 = cap with template w,l parameters
+ *   c1 = cap
+ *   ... if there are more devices, they would be numbered c2, c3, etc.
+ *
+ */
+void ActCellPass::add_passgates_cap ()
+{
+  int i;
+  int max;
+  const char *g[] = { "t0", "t1", "n0", "n1", "p0", "p1" };
+
+  Assert (cell_ns, "What?");
+
+  if (cell_ns->findType (g[0])) {
+    return;
+  }
+
+  max = 6 + config_get_table_size ("act.prs_device")*2;
+
+  char gendev[12];
+
+  for (i=0; i < max; i++) {
+    /* add the unexpanded process to the cell namespace, and then
+       expand it! */
+    Process *proc;
+
+    /*-- create a new process in the namespace --*/
+    UserDef *u = new UserDef (cell_ns);
+
+    // the even ones have parameters
+    if ((i % 2) == 0) {
+      InstType *xit;
+      xit = TypeFactory::Factory()->NewPInt();
+      u->AddMetaParam (xit, "w", NULL);
+      u->AddMetaParam (xit, "l", NULL);
+    }
+    
+    proc = new Process (u);
+    delete u;
+    proc->MkCell ();
+    proc->MkExported ();
+
+    if (i < 6) {
+      snprintf (gendev, 12, "%s", g[i]);
+    }
+    else {
+      snprintf (gendev, 12, "c%d", i - 6);
+    }
+
+    Assert (cell_ns->findName (gendev) == 0, "Name conflict?");
+    cell_ns->CreateType (gendev, proc);
+
+    /*-- add ports --*/
+    InstType *it = TypeFactory::Factory()->NewBool ((i >= 6) ? 
+						    Type::NONE : Type::IN);
+
+    Expr *arr;
+    if (gendev[0] == 't') {
+      arr = const_expr (3);
+    }
+    else if (gendev[0] == 'p' || gendev[0] == 'n') {
+      arr = const_expr (2);
+    }
+    else {
+      arr = NULL;
+    }
+    if (arr) {
+      Array *ta;
+      it = new InstType (it);
+      ta = new Array (arr);
+      ta->mkArray ();
+      it->MkArray (ta);
+    }
+
+    Assert (proc->AddPort (it, _inport_name) == 1, "Error adding in port?");
+
+    it = TypeFactory::Factory()->NewBool (gendev[0] == 'c' ? Type::NONE :
+					  Type::OUT);
+    Assert (proc->AddPort (it, _outport_name) == 1, "Error adding out port?");
+
+    /*-- prs body --*/
+    act_prs *prs_body;
+    NEW (prs_body, act_prs);
+    prs_body->vdd = NULL;
+    prs_body->gnd = NULL;
+    prs_body->psc = NULL;
+    prs_body->nsc = NULL;
+    prs_body->next = NULL;
+    prs_body->leak_adjust = 0;
+
+    act_prs_lang_t *rules = NULL;
+
+    NEW (rules, act_prs_lang_t);
+    rules->next = NULL;
+    if (gendev[0] != 'c') {
+      rules->type = ACT_PRS_GATE;
+    }
+    else {
+      rules->type = ACT_PRS_DEVICE + (i - 6)/2;
+    }
+
+    rules->u.p.sz = NULL;
+    rules->u.p.g = NULL;
+    rules->u.p._g = NULL;
+    rules->u.p.s = NULL;
+    rules->u.p.d = NULL;
+    rules->u.p.attr = NULL;
+
+    int j = 0;
+
+    if (gendev[0] != 'c') {
+      if (gendev[0] != 'p') {
+	rules->u.p.g = new ActId (_inport_name, new Array (const_expr (j)));
+	j++;
+      }
+      else {
+	rules->u.p.g = NULL;
+      }
+      if (gendev[0] != 'n') {
+	rules->u.p._g = new ActId (_inport_name, new Array (const_expr (j)));
+	j++;
+      }
+      else {
+	rules->u.p._g = NULL;
+      }
+    }
+    else {
+      rules->u.p._g = NULL;
+      rules->u.p.g = NULL;
+    }
+    if (gendev[0] != 'c') {
+      rules->u.p.s = new ActId (_inport_name, new Array (const_expr (j)));
+      j++;
+    }
+    else {
+      rules->u.p.s = new ActId (_inport_name);
+    }
+    rules->u.p.d = new ActId (_outport_name);
+
+    if ((i % 2) == 0) {
+      act_size_spec_t *sz;
+      NEW (sz, act_size_spec_t);
+      sz->flavor = 0;
+      sz->folds = NULL;
+      sz->w = _id_to_expr (new ActId ("w"));
+      sz->l = _id_to_expr (new ActId ("l"));
+      rules->u.p.sz = sz;
+    }
+    prs_body->p = rules;
+    proc->AppendBody (new ActBody_Lang  (-1, prs_body));
+    proc->MkDefined ();
+  }
 }
