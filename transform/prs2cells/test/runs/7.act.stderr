@@ -1,0 +1,3 @@
+In expanding bar<> (inst: b) (7.act:9)
+In expanding -toplevel-
+WARNING: subckt { } in prs bodies is ignored; use defcell instead

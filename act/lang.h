@@ -145,7 +145,7 @@ enum act_prs_lang_type {
  */
 typedef struct act_prs_lang {
   struct act_prs_lang *next;  ///< the linked list next pointer field
-  unsigned int type:3;        ///< an act_prs_lang_type that describes
+  unsigned int type:8;        ///< an act_prs_lang_type that describes
 			      ///what the prs entry is
   union {
     struct {
@@ -184,7 +184,8 @@ typedef struct act_prs_lang {
       Expr *hi;			///< high range
       struct act_prs_lang *p;	///< loop body
     } l;			///< used for ACT_PRS_LOOP. Also used
-				///by ACT_PRS_TREE and
+				///by ACT_PRS_TREE (lo is the optional
+				///depth) and
 				///ACT_PRS_SUBCKT. In this case,
 				///id/lo/hi are all unused.
   } u;

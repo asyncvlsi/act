@@ -169,6 +169,25 @@ private:
   const char *_inport_name;
   const char *_outport_name;
 
+  struct pending_group {
+    act_prs_lang_t *tree;
+    std::vector<act_prs_lang_t *> _pending;
+
+    pending_group() {
+      tree = NULL;
+      _pending.clear ();
+    }
+  };
+
+  /*-- cell extraction, temporary data structures --*/
+
+  // _pending_prs : production rules we have collected so far without
+  // a matching rule to complete the gate
+  std::vector<act_prs_lang_t *> _pending_prs;
+
+  // _pending_group: pending tree + other rules
+  std::vector<pending_group> _pending_group;
+
   /*-- private functions --*/
   void add_new_cell (struct act_prsinfo *pi);
   void add_passgates_cap ();
@@ -182,13 +201,22 @@ private:
   ActBody_Conn *_build_connections (const char *name,
 				    act_prs_lang_t *gate);
   
-  void _collect_one_prs (Scope *sc, act_prs_lang_t *prs);
+  bool _collect_one_prs (Scope *sc, act_prs_lang_t *prs);
   void _collect_one_passgate (Scope *sc, act_prs_lang_t *prs);
   void _collect_one_cap (Scope *sc, act_prs_lang_t *prs);
   void collect_gates (Scope *sc, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);
   void flush_pending (Scope *sc);
+
+  void _create_new_cell (Scope *sc, act_prs_lang_t *prslist);
+  
+
+  /* set the bit for all the @ variables used in "e" */
+  void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
+		      int *idx_array, int len);
+  void _mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
+		       act_prs_lang_t **rules, int len);
 };
 
 

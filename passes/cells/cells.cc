@@ -41,7 +41,13 @@ struct act_varinfo {
   unsigned char tree;		// 0 = not in tree, 1 in tree
 };
 
-struct act_prsinfo {
+
+class act_prsinfo {
+ private:
+  int leak_adjust;
+  int tval;			 /* for tree<>; 0 = none, otherwise tree  */
+
+ public:
   Process *cell;		/* the cell; NULL until it is
 				   created. */
 
@@ -65,11 +71,6 @@ struct act_prsinfo {
 
   
   struct act_varinfo *attrib;
-
-  int leak_adjust;
-
-  int tval;			 /* for tree<>; -1 = none, 0 = mgn,
-				    otherwise tree  */
 
   A_DECL (act_prs_expr_t *, up); /* pull-up */
   A_DECL (act_prs_expr_t *, dn); /* pull-down */
@@ -95,6 +96,14 @@ struct act_prsinfo {
     A_INIT (dn);
   }
 
+  /* leakage adjust flag for cell */
+  void set_leak_flag (int flag) { leak_adjust = flag; }
+  int get_leak_flag () { return leak_adjust; }
+
+  /* tree depth if set */
+  void set_tree_info (int flag) { tval = flag; }
+  int get_tree_info () { return tval; }
+  
   /*
     Each unique variable right hand side of a production rule in a
     prs block is assigned a slot. Slots are needed for both output
@@ -143,6 +152,33 @@ struct act_prsinfo {
   }
 
   int numvars() { return nvars; }
+
+
+  /*-- compute hash of this prsinfo block --*/
+  unsigned int hashfn (int sz) {
+    unsigned int h;
+    int i;
+
+    h = hash_function_continue (sz, (unsigned char *)&nvars,
+				sizeof (int), 0, 0);
+    h = hash_function_continue (sz, (unsigned char *)&nout,
+				sizeof (int), h, 1);
+    h = hash_function_continue (sz, (unsigned char *)&nat,
+				sizeof (int), h, 1);
+    h = hash_function_continue (sz, (unsigned char *)&tval,
+				sizeof (int), h, 1);
+
+    for (i=0; i < numvars(); i++) {
+      h = hash_function_continue (sz, (unsigned char *)&attrib[i].nup,
+				  sizeof (int), h, 1);
+      h = hash_function_continue (sz, (unsigned char *)&attrib[i].ndn,
+				  sizeof (int), h, 1);
+      h = hash_function_continue (sz, (unsigned char *)&attrib[i].tree,
+				  sizeof (char), h, 1);
+    }
+  
+    return h;
+  }
   
 };
 
@@ -243,29 +279,8 @@ static act_prs_expr_t *_convert_prsexpr_to_act (act_prs_expr_t *e,
 
 static int cell_hashfn (int sz, void *key)
 {
-  struct act_prsinfo *ckey = (struct act_prsinfo *)key;
-  unsigned int h;
-  int i;
-
-  h = hash_function_continue (sz, (unsigned char *)&ckey->nvars,
-			      sizeof (int), 0, 0);
-  h = hash_function_continue (sz, (unsigned char *)&ckey->nout,
-			      sizeof (int), h, 1);
-  h = hash_function_continue (sz, (unsigned char *)&ckey->nat,
-			      sizeof (int), h, 1);
-  h = hash_function_continue (sz, (unsigned char *)&ckey->tval,
-			      sizeof (int), h, 1);
-
-  for (i=0; i < ckey->numvars(); i++) {
-    h = hash_function_continue (sz, (unsigned char *)&ckey->attrib[i].nup,
-				sizeof (int), h, 1);
-    h = hash_function_continue (sz, (unsigned char *)&ckey->attrib[i].ndn,
-				sizeof (int), h, 1);
-    h = hash_function_continue (sz, (unsigned char *)&ckey->attrib[i].tree,
-				sizeof (char), h, 1);
-  }
-  
-  return h;
+  act_prsinfo *ckey = (act_prsinfo *)key;
+  return ckey->hashfn (sz);
 }
 
 static Expr *_id_to_expr (ActId *id)
@@ -506,7 +521,7 @@ static int basic_match (struct act_prsinfo *k1, struct act_prsinfo *k2)
 {
   if (k1->nvars != k2->nvars) return 0;
   if (k1->nout != k2->nout) return 0;
-  if (k1->tval != k2->tval) return 0;
+  if (k1->get_tree_info() != k2->get_tree_info()) return 0;
   if (k1->nat != k2->nat) return 0;
 
   if (A_LEN (k1->up) != A_LEN (k2->up)) return 0;
@@ -549,7 +564,7 @@ static int match_prsinfo (struct act_prsinfo *k1,
   static int *equal_choices = NULL;
   static int sz = 0;
 
-  if (k1->leak_adjust != k2->leak_adjust) {
+  if (k1->get_leak_flag() != k2->get_leak_flag()) {
     return 0;
   }
 
@@ -704,9 +719,6 @@ static void cell_freefn (void *key)
 }
 
 
-L_A_DECL (act_prs_lang_t *, pendingprs);
-
-
 static int _uses_a_label (act_prs_expr_t *e)
 {
   if (!e) return 0;
@@ -747,8 +759,8 @@ static int _uses_a_label (act_prs_expr_t *e)
   }
 }
 
-static void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
-			   int *idx_array, int idx_len)
+void ActCellPass::_mark_at_used (act_prs_expr_t *e, bitset_t *b,
+				 int *idx_array, int idx_len)
 {
   if (!e) return;
   switch (e->type) {
@@ -769,7 +781,7 @@ static void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
   case ACT_PRS_EXPR_LABEL:
     for (int i=0; i < idx_len; i++) {
       if (strcmp (e->u.l.label,
-		  (char *)pendingprs[idx_array[i]]->u.one.id) == 0) {
+		  (char *)_pending_prs[idx_array[i]]->u.one.id) == 0) {
 	bitset_set (b, i);
 	return;
       }
@@ -793,8 +805,8 @@ static void _mark_at_used (act_prs_expr_t *e, bitset_t *b,
   return;
 }
 
-static void _mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
-			    act_prs_lang_t **rules, int len)
+void ActCellPass::_mark_at_used2 (act_prs_expr_t *e, bitset_t *b,
+				  act_prs_lang_t **rules, int len)
 {
   if (!e) return;
   switch (e->type) {
@@ -851,21 +863,21 @@ static int _at_inv_lookup (int idx, int *at_idx, int len)
 void ActCellPass::flush_pending (Scope *sc)
 {
   int pending_count = 0;
+  int pending_sz;
 
-  if (A_LEN (pendingprs) == 0) {
-    /* nothing to do, no pending rules! */
-    A_FREE (pendingprs);
-    A_INIT (pendingprs);
+  if (_pending_prs.size() == 0) {
     return;
   }
 
+  pending_sz = _pending_prs.size();
+
   /* -- handle shared gates -- */
   int *at_idx;
-  MALLOC (at_idx, int, A_LEN (pendingprs));
+  MALLOC (at_idx, int, pending_sz);
   int at_len = 0;
 
-  for (int i=0; i < A_LEN (pendingprs); i++) {
-    if (pendingprs[i]->u.one.label) {
+  for (int i=0; i < pending_sz; i++) {
+    if (_pending_prs[i]->u.one.label) {
       at_idx[at_len] = i;
       at_len++;
     }
@@ -883,16 +895,16 @@ void ActCellPass::flush_pending (Scope *sc)
     /* there are some labels */
 
     /* figure out which pending rules use them */
-    MALLOC (at_use, bitset_t *, A_LEN (pendingprs));
-    MALLOC (grouped, int, A_LEN (pendingprs));
+    MALLOC (at_use, bitset_t *, pending_sz);
+    MALLOC (grouped, int, pending_sz);
 
 #if 0
     printf ("--\n");
 #endif    
-    for (int i=0; i < A_LEN (pendingprs); i++) {
+    for (int i=0; i < pending_sz; i++) {
       grouped[i] = 0;
       at_use[i] = bitset_new (at_len);
-      _mark_at_used (pendingprs[i]->u.one.e, at_use[i], at_idx, at_len);
+      _mark_at_used (_pending_prs[i]->u.one.e, at_use[i], at_idx, at_len);
 #if 0
       printf ("%d : ", i);
       bitset_print (at_use[i]);
@@ -929,7 +941,7 @@ void ActCellPass::flush_pending (Scope *sc)
     considered for the current group, 2 if it has been processed.
   */
   
-  for (int i=0; i < A_LEN (pendingprs); i++) {
+  for (int i=0; i < pending_sz; i++) {
     struct act_prsinfo *pi;
     chash_bucket_t *b;
 
@@ -939,12 +951,12 @@ void ActCellPass::flush_pending (Scope *sc)
     }
 
     A_NEWM (groupprs, act_prs_lang_t);
-    A_NEXT (groupprs) = *(pendingprs[i]);
+    A_NEXT (groupprs) = *(_pending_prs[i]);
     A_NEXT (groupprs).next = NULL;
     A_INC (groupprs);
 
     if (at_len == 0 ||
-	(bitset_isclear (at_use[i]) && !pendingprs[i]->u.one.label)) {
+	(bitset_isclear (at_use[i]) && !_pending_prs[i]->u.one.label)) {
       /* if there are no at-rules
 	 OR
 	   this rule is not an @-rule and
@@ -961,7 +973,7 @@ void ActCellPass::flush_pending (Scope *sc)
       bitset_or (at_group, at_use[i]);
 
       // if this is a label, the at-group includes this label
-      if (pendingprs[i]->u.one.label) {
+      if (_pending_prs[i]->u.one.label) {
 	/* find the index of the at-variable for this label */
 	int k = _at_inv_lookup (i, at_idx, at_len);
 	Assert (k != -1, "What?");
@@ -972,17 +984,17 @@ void ActCellPass::flush_pending (Scope *sc)
 	bitset_clear (at_tmp);
 	bitset_or (at_tmp, at_group);
 
-	for (int j=i+1; j < A_LEN (pendingprs); j++) {
+	for (int j=i+1; j < pending_sz; j++) {
 	  if (!bitset_andclear (at_group, at_use[j])) {
 	    /* there is an AT in common! */
 	    bitset_or (at_group, at_use[j]);
 	    grouped[j] = 1;
-	    if (pendingprs[j]->u.one.label) {
+	    if (_pending_prs[j]->u.one.label) {
 	      int k = _at_inv_lookup (j, at_idx, at_len);
 	      bitset_set (at_group, k);
 	    }
 	  }
-	  else if (pendingprs[j]->u.one.label) {
+	  else if (_pending_prs[j]->u.one.label) {
 	    /* check if this label is already in the at group */
 	    int k = _at_inv_lookup (j, at_idx, at_len);
 	    Assert (k != -1, "What?");
@@ -1002,16 +1014,16 @@ void ActCellPass::flush_pending (Scope *sc)
       printf ("Grouped: ");
 #endif
       
-      for (int j=i; j < A_LEN (pendingprs); j++) {
+      for (int j=i; j < pending_sz; j++) {
 #if 0
 	if (grouped[j] == 1) {
 	  printf (" %d", j);
 	}
 #endif	
-	if (grouped[j] == 1 && !pendingprs[j]->u.one.label) {
-	  for (int k=j+1; k < A_LEN (pendingprs); k++) {
-	    if ((pendingprs[j]->u.one.id == pendingprs[k]->u.one.id) ||
-		pendingprs[j]->u.one.id->isEqual (pendingprs[k]->u.one.id)) {
+	if (grouped[j] == 1 && !_pending_prs[j]->u.one.label) {
+	  for (int k=j+1; k < pending_sz; k++) {
+	    if ((_pending_prs[j]->u.one.id == _pending_prs[k]->u.one.id) ||
+		_pending_prs[j]->u.one.id->isEqual (_pending_prs[k]->u.one.id)) {
 	      grouped[k] = 1;
 	      break;
 	    }
@@ -1022,10 +1034,10 @@ void ActCellPass::flush_pending (Scope *sc)
       printf ("\n");
 #endif      
 
-      for (int j=i+1; j < A_LEN (pendingprs); j++) {
+      for (int j=i+1; j < pending_sz; j++) {
 	if (grouped[j] == 1) {
 	  A_NEWM (groupprs, act_prs_lang_t);
-	  A_NEXT (groupprs) = *(pendingprs[j]);
+	  A_NEXT (groupprs) = *(_pending_prs[j]);
 	  A_NEXT (groupprs).next = NULL;
 	  A_INC (groupprs);
 	  grouped[j] = 2;
@@ -1099,14 +1111,13 @@ void ActCellPass::flush_pending (Scope *sc)
     at_idx = NULL;
     bitset_free (at_group);
     bitset_free (at_tmp);
-    for (int i=0; i < A_LEN (pendingprs); i++) {
+    for (int i=0; i < pending_sz; i++) {
       bitset_free (at_use[i]);
     }
     FREE (at_use);
     FREE (grouped);
   }
-  A_FREE (pendingprs);
-  A_INIT (pendingprs);
+  _pending_prs.clear ();
 }
 
 
@@ -1278,7 +1289,7 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   prs_body->psc = NULL;
   prs_body->nsc = NULL;
   prs_body->next = NULL;
-  prs_body->leak_adjust = pi->leak_adjust;
+  prs_body->leak_adjust = pi->get_leak_flag();
 
   act_prs_lang_t *rules = NULL;
 
@@ -1714,7 +1725,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
       if (tree_count != 1) {
 	fatal_error ("More than one tree!");
       }
-      ret->tval = l->u.l.lo->u.ival.v;
+      ret->set_tree_info (l->u.l.lo->u.ival.v);
       lpush = l->next;
       l = l->u.l.p;
       in_tree = 1;
@@ -1906,7 +1917,7 @@ static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
     printf (" cell: -no-name-\n");
   }
   printf ("  nvars=%d, nout=%d, nat=%d, tval=%d\n",
-	  p->nvars, p->nout, p->nat, p->tval);
+	  p->nvars, p->nout, p->nat, p->get_tree_info());
 
   for (int i=0; i < A_LEN (p->up); i++) {
     printf (" %d: up = ", i);
@@ -1958,7 +1969,7 @@ static void _dump_prs_cell (FILE *fp,
   if (p->nout > 1) {
     fprintf (fp, "[%d]", p->nout);
   }
-  fprintf (fp, ")\n{\n   prs %s{\n", p->leak_adjust ? "* " : "");
+  fprintf (fp, ")\n{\n   prs %s{\n", p->get_leak_flag() ? "* " : "");
 
   int idx = p->nout-1;
   for (int ii=0; ii < A_LEN (p->up); ii++) {
@@ -2275,12 +2286,92 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 }
 
 
-void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
+/*
+ * Is the rule I have here in a member of the group?
+ */
+static int _in_subgroup (act_prs_lang_t *prs,
+			 act_prs_lang_t *prsgroup)
+{
+  Assert (prsgroup->type == ACT_PRS_TREE, "Need a group as 2nd arg");
+
+  act_prs_lang_t *p;
+
+  for (p = prsgroup->u.l.p; p; p = p->next) {
+    if (prs->u.one.id == p->u.one.id ||
+	prs->u.one.id->isEqual (p->u.one.id)) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void ActCellPass::_create_new_cell (Scope *sc, act_prs_lang_t *prslist)
+{
+  chash_bucket_t *b;
+  act_prsinfo *pi;
+  
+  /* see if we can match this production rule list against a cell */
+  pi = _gen_prs_attributes (prslist);
+
+  Assert (cell_table, "No cell table?!");
+
+  b = chash_lookup (cell_table, pi);
+  if (b) {
+    /* found match! */
+  }
+  else {
+#if 0
+    printf ("NEW CELL NEEDED!\n");
+    _dump_prsinfo (pi, "in", "out");
+#endif
+    add_new_cell (pi);
+    b = chash_add (cell_table, pi);
+    b->v = pi;
+  }
+  pi = (struct act_prsinfo *)b->key;
+    
+  char buf[100];
+  do {
+    snprintf (buf, 100, "cx%d", proc_inst_count++);
+  } while (sc->Lookup (buf));
+
+  Assert (sc->isExpanded(), "Hmm");
+
+  _add_used_cell (_used_cells, pi->cell);
+    
+  InstType *it = new InstType (sc, pi->cell, 0);
+  it = it->Expand (NULL, sc);
+
+  Assert (it->isExpanded(), "Hmm");
+    
+  Assert (sc->Add (buf, it), "What?");
+  /*--- now make connections --*/
+    
+  ActBody_Conn *ac;
+
+  //printf (" --- [%s] \n", p->getName());
+  ac = _build_connections (buf, pi);
+  //ac->Print (stdout);
+  //ac->Next()->Print (stdout);
+  //printf (" --- \n");
+
+  if (ac) {
+    int oval = Act::double_expand;
+    Act::double_expand = 0;
+    ac->Expandlist (NULL, sc);
+    Act::double_expand = oval;
+  }
+
+  if (pi->match_perm) {
+    FREE (pi->match_perm);
+    pi->match_perm = NULL;
+  }
+}
+
+bool ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
 {
   int i;
-  struct act_prsinfo *pi;
   act_prs_lang_t newprs, newprs2;
-  chash_bucket_t *b;
   
   // add this prs to the list, if it is paired then we can find a gate
   Assert (prs->type == ACT_PRS_RULE, "Hmm.");
@@ -2290,34 +2381,54 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     newprs = *prs;
     newprs.next = NULL;
 
+    /*-- newprs is used to generate attributes, so we're all set --*/
+
     if (_uses_a_label (prs->u.one.e)) {
       fatal_error ("@-expressions can only be used with -> production rules");
     }
+
+#if 0    
+    for (int i=0; i < A_LEN (pendinggroup); i++) {
+      Assert (pendinggroup[i]->type == ACT_PRS_TREE, "Hmm...");
+      if (_in_subgroup (prs, pendinggroup[i])) {
+	fprintf (stderr, "ERROR: A complete production rule is also part of a tree!\n");
+	fprintf (stderr, "  ID: ");
+	prs->u.one.id->Print (stderr);
+	fprintf (stderr, "\nAborting.\n");
+	act_error_ctxt (stderr);
+	exit (1);
+      }
+    }
+#endif    
   }
   else {
+    /* labels can only occur once, so we are done */
     if (prs->u.one.label) {
-      A_NEW (pendingprs, act_prs_lang_t *);
-      A_NEXT (pendingprs) = prs;
-      A_INC (pendingprs);
-      return;
+      _pending_prs.push_back (prs);
+      return true;
     }
-    for (i=0; i < A_LEN (pendingprs); i++) {
-      if (prs->u.one.id == pendingprs[i]->u.one.id ||
-	  prs->u.one.id->isEqual (pendingprs[i]->u.one.id)) {
+
+    /* check if this matches an existing pending production rule */
+    for (i=0; i < _pending_prs.size(); i++) {
+      if (prs->u.one.id == _pending_prs[i]->u.one.id ||
+	  prs->u.one.id->isEqual (_pending_prs[i]->u.one.id)) {
 	break;
       }
     }
-    if (i == A_LEN (pendingprs)) {
-      A_NEW (pendingprs, act_prs_lang_t *);
-      A_NEXT (pendingprs) = prs;
-      A_INC (pendingprs);
-      return;
+    if (i == _pending_prs.size()) {
+      /* this is a new RHS that is pending, so add it and return */
+      _pending_prs.push_back (prs);
+      return true;
     }
-    newprs = *(pendingprs[i]);
+
+    newprs = *(_pending_prs[i]);
+    
     if (prs->u.one.dir == newprs.u.one.dir) {
-      /* do something */
+      /* Multiple production rules with the same RHS; OR-combine it */
+      
       act_prs_expr_t *eor;  /* XXX: NEED TO FREE THESE ALLOCATIONS */
       act_prs_lang_t *tmp;
+      
       NEW (eor, act_prs_expr_t);
       eor->type = ACT_PRS_EXPR_OR;
       eor->u.e.l = prs->u.one.e;
@@ -2329,89 +2440,44 @@ void ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
       }
       NEW (tmp, act_prs_lang_t);
       *tmp = newprs;
-      pendingprs[i] = tmp;
-      return;
+      _pending_prs[i] = tmp;
+      return true;
     }
-
-    if (_uses_a_label (prs->u.one.e) || _uses_a_label (newprs.u.one.e)) {
-      A_NEW (pendingprs, act_prs_lang_t *);
-      A_NEXT (pendingprs) = prs;
-      A_INC (pendingprs);
-      return;
-    }
-    
-    newprs.next = &newprs2;
-    newprs2 = *prs;
-    newprs2.next = NULL;
-    i++;
 
     /* 
        We now have a pull-up and pull-down; check if it needs labels!
     */
-    
-    for (; i < A_LEN (pendingprs); i++) {
-      pendingprs[i-1] = pendingprs[i];
+    if (_uses_a_label (prs->u.one.e) || _uses_a_label (newprs.u.one.e)) {
+      /* if this rule uses a label, or the matching production rule uses a
+	 label, then we just add it to the pending list to be handled
+	 later.
+      */
+      _pending_prs.push_back (prs);
+      return true;
     }
-    A_LEN_RAW(pendingprs)--;
 
+    /* newprs/newprs2 are used to generate attributes */
+    newprs.next = &newprs2;
+    newprs2 = *prs;
+    newprs2.next = NULL;
     
+    /* compact pending prs array */
+    i++;
+    for (; i < _pending_prs.size(); i++) {
+      _pending_prs[i-1] = _pending_prs[i];
+    }
+    _pending_prs.pop_back();
   }
-  pi = _gen_prs_attributes (&newprs);
-  if (cell_table) {
-    b = chash_lookup (cell_table, pi);
-    if (b) {
-      /* found match! */
-    }
-    else {
-#if 0
-      printf ("NEW CELL NEEDED!\n");
-      _dump_prsinfo (pi, "in", "out");
-#endif
-      add_new_cell (pi);
-      b = chash_add (cell_table, pi);
-      b->v = pi;
-    }
-    pi = (struct act_prsinfo *)b->key;
-    
-    char buf[100];
-    do {
-      snprintf (buf, 100, "cx%d", proc_inst_count++);
-    } while (sc->Lookup (buf));
 
-    Assert (sc->isExpanded(), "Hmm");
+  _create_new_cell (sc, &newprs);
 
-    _add_used_cell (_used_cells, pi->cell);
-    
-    InstType *it = new InstType (sc, pi->cell, 0);
-    it = it->Expand (NULL, sc);
-
-    Assert (it->isExpanded(), "Hmm");
-    
-    Assert (sc->Add (buf, it), "What?");
-    /*--- now make connections --*/
-    
-    ActBody_Conn *ac;
-
-    //printf (" --- [%s] \n", p->getName());
-    ac = _build_connections (buf, pi);
-    //ac->Print (stdout);
-    //ac->Next()->Print (stdout);
-    //printf (" --- \n");
-
-    if (ac) {
-      int oval = Act::double_expand;
-      Act::double_expand = 0;
-      ac->Expandlist (NULL, sc);
-      Act::double_expand = oval;
-    }
-
-    if (pi->match_perm) {
-      FREE (pi->match_perm);
-      pi->match_perm = NULL;
-    }
-  }
+  return true;
 }
 
+/*
+ * Collect pass transistor or transmission gate, using the default
+ * templated/non-templated cells.
+ */
 void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
 {
   int i;
@@ -2513,6 +2579,10 @@ void ActCellPass::_collect_one_passgate (Scope *sc, act_prs_lang_t *prs)
   }
 }
 
+/*
+ * Replace a two-terminal device with a c# instance (like a cap) from
+ * the default templated/non-templated cells.
+ */
 void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
 {
   int i;
@@ -2608,8 +2678,16 @@ static void _collect_group_prs (Scope *sc, int tval, act_prs_lang_t *prs)
 {
   Assert (tval > 0, "tree<> directive with <= 0 value?");
   // mark these rules as part of a tree: needs to be fixed
+  // XXX: FIXME!
 }
-  
+
+
+/*
+ * For associative operations &, | in the production rule, we should
+ * make sure that the expression tree is in a canonical form when
+ * comparing the two. Otherwise (a & b) & c won't match a & (b & c).
+ *
+ */
 static  act_prs_expr_t *_left_canonicalize (act_prs_expr_t *p)
 {
   if (!p) {
@@ -2704,16 +2782,8 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       }
       break;
     case ACT_PRS_SUBCKT:
-      collect_gates (sc, &prs->u.l.p);
-#if 1
-      if (prs->u.l.p) {
-	/* there's something left */
-	if (!prev) {
-	  *pprs = prs;
-	}
-	prev = prs;
-      }
-#endif      
+      // collect all prs in this subcircuit as a single group
+      _create_new_cell (sc, prs->u.l.p);
       break;
     case ACT_PRS_LOOP:
       fatal_error ("Should have been expanded");
@@ -2748,7 +2818,8 @@ void ActCellPass::prs_to_cells (Process *p)
   }
 
   proc_inst_count = 0;
-  A_INIT (pendingprs);
+  _pending_prs.clear ();
+  _pending_group.clear ();
 
   lang = (p ? p->getlang() : ActNamespace::Global()->getlang());
   Assert (lang, "What?");
@@ -2989,7 +3060,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 				 in_t->arrayInfo()->size() : 1) : 0,
 				out_t->arrayInfo() ?
 				out_t->arrayInfo()->size() : 1);
-      pi->leak_adjust = prs->leak_adjust;
+      pi->set_leak_flag (prs->leak_adjust);
 
 #if 0
       printf ("CELL: %s\n", p->getName());
@@ -3023,12 +3094,12 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 
       if (treeval) {
 	Assert (treeval->type == E_INT, "Hmm");
-	pi->tval = treeval->u.ival.v;
-	Assert (pi->tval > 0, "tree<> parameter has to be > 0!");
+	pi->set_tree_info (treeval->u.ival.v);
+	Assert (pi->get_tree_info() > 0, "tree<> parameter has to be > 0!");
       }
       else if (mgn) {
 	/* shared gate network */
-	pi->tval = 0;
+	pi->set_tree_info (0);
       }
 
       if (A_LEN (pi->up) == 0 && A_LEN (pi->dn) == 0) {
@@ -3066,16 +3137,25 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 }
 
 
+/*------------------------------------------------------------------------
+ *
+ * Standard pass API functions
+ *
+ *------------------------------------------------------------------------
+ */
+
 void *ActCellPass::local_op (Process *p, int mode)
 {
   prs_to_cells (p);
   return NULL;
 }
 
+
 void ActCellPass::free_local (void *v)
 {
   return;
 }
+
 
 int ActCellPass::run (Process *p)
 {
@@ -3102,6 +3182,16 @@ void ActCellPass::Print (FILE *fp)
   dump_celldb (fp);
 }
 
+
+
+/*
+ * Create cell pass, hash tables for cell matching, and the cell
+ * namespace if it doesn't already exist.
+ *
+ * Sizing must be called before this pass, since cells should
+ * correspond to finalized sizes for layout purposes.
+ *
+ */
 ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
 {
   cell_table = NULL;
@@ -3153,6 +3243,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
   /*-- add the pass gates and cap templated values into the cell space --*/
   add_passgates_cap ();
 }
+
 
 ActCellPass::~ActCellPass ()
 {
