@@ -860,6 +860,22 @@ static int _at_inv_lookup (int idx, int *at_idx, int len)
   return -1;
 }
 
+void ActCellPass::flush_group (Scope *sc, pending_group *g)
+{
+  act_prs_lang_t *group;
+  int sz = 1 + g->_pending.size();
+  MALLOC (group, act_prs_lang_t, sz);
+  group[0] = *(g->tree);
+  for (int i=1; i < sz; i++) {
+    group[i-1].next = &group[i];
+    group[i] = *(g->_pending[i-1]);
+  }
+  group[sz-1].next = NULL;
+  _create_new_cell (sc, &group[0]);
+  FREE (group);
+  g->mark_processed ();
+}
+
 void ActCellPass::flush_pending (Scope *sc)
 {
   int pending_count = 0;
@@ -1050,7 +1066,6 @@ void ActCellPass::flush_pending (Scope *sc)
     }
 
     pi = _gen_prs_attributes (&groupprs[0]);
-
 #if 0
     _dump_prsinfo (pi);
 #endif
@@ -1725,7 +1740,12 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
       if (tree_count != 1) {
 	fatal_error ("More than one tree!");
       }
-      ret->set_tree_info (l->u.l.lo->u.ival.v);
+      if (l->u.l.lo) {
+	ret->set_tree_info (l->u.l.lo->u.ival.v);
+      }
+      else {
+	ret->set_tree_info (1);
+      }
       lpush = l->next;
       l = l->u.l.p;
       in_tree = 1;
@@ -1735,7 +1755,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
       act_error_ctxt (stderr);
       fatal_error ("prs attribute computation called on a subcircuit; nested subckt in design?");
     }
-    
+
     Assert (l->type == ACT_PRS_RULE, "gen_prs_attributes context error");
 
     /* look for this variable */
@@ -1746,9 +1766,6 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
 	i = imap.alloc_new_id (l->u.one.id);
 	ret->add_new_slot ();
       }
-    }
-    if (in_tree) {
-      ret->attrib[i].tree = 1;
     }
     l = l->next;
     if (!l) {
@@ -1786,7 +1803,15 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
 
   /*-- add any new inputs found in the prs, scrubbing rules as we go --*/
   l = prs;
+  lpush = NULL;
+  in_tree = 0;
   while (l) {
+    if (l->type == ACT_PRS_TREE) {
+      lpush = l->next;
+      l = l->u.l.p;
+      in_tree = 1;
+    }
+
     /* collect all the inputs, scrub rules */
     i = imap.find_or_alloc (l->u.one.id, l->u.one.label);
     
@@ -1825,12 +1850,38 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
       _add_rule (&ret->up[i], x);
     }
     l = l->next;
+    if (!l) {
+      l = lpush;
+      in_tree = 0;
+    }
   }
   
   /* scrubbed rules are now ready: now we can create the varinfo space */
   ret->set_tot_vars (imap.num_ids ());
   Assert (A_LEN (ret->up) == A_LEN (ret->dn), "hmm");
   Assert (A_LEN (ret->up) >= ret->nout, "what happened?");
+
+  /* mark tree flag */
+  l = prs;
+  lpush = NULL;
+  in_tree = 0;
+  while (l) {
+    if (l->type == ACT_PRS_TREE) {
+      lpush = l->next;
+      l = l->u.l.p;
+      in_tree = 1;
+    }
+    if (!l->u.one.label && in_tree) {
+      i = imap.find_idx (l->u.one.id);
+      Assert (i != -1, "What?");
+      ret->attrib[i].tree = 1;
+    }
+    l = l->next;
+    if (!l) {
+      l = lpush;
+      in_tree = 0;
+    }
+  }
 
   /* 1. Gather counts */
   for (i=0; i < A_LEN (ret->up); i++) {
@@ -1936,7 +1987,8 @@ static void _dump_prsinfo (struct act_prsinfo *p, const char *_inport_name,
   }
   for (int i=0; i < p->numvars(); i++) {
     printf (" var %d: ", i);
-    printf ("nup %d, ndn %d; ", p->attrib[i].nup, p->attrib[i].ndn);
+    printf ("nup %d, ndn %d, tree %d; ", p->attrib[i].nup, p->attrib[i].ndn,
+	    p->attrib[i].tree);
     printf (" depths: ");
     for (int k=0; k < p->attrib[i].nup + p->attrib[i].ndn; k++) {
       printf ("%d ", p->attrib[i].depths[k]);
@@ -1978,6 +2030,7 @@ static void _dump_prs_cell (FILE *fp,
   fprintf (fp, ")\n{\n   prs %s{\n", p->get_leak_flag() ? "* " : "");
 
   int idx = p->nout-1;
+  int in_tree = 0;
   for (int ii=0; ii < A_LEN (p->up); ii++) {
     int i;
     idx = (idx + 1) % A_LEN (p->up);
@@ -1987,6 +2040,16 @@ static void _dump_prs_cell (FILE *fp,
     else {
       i = idx;
     }
+    
+    if (in_tree && p->attrib[i].tree == 0) {
+      in_tree = 0;
+      fprintf (fp, "   }\n");
+    }
+    else if (!in_tree && p->attrib[i].tree == 1) {
+      in_tree = 1;
+      fprintf (fp, "   tree {\n");
+    }
+    
     if (p->dn[i]) {
       fprintf (fp, "   ");
 
@@ -2051,6 +2114,11 @@ static void _dump_prs_cell (FILE *fp,
       fprintf (fp, "\n");
     }
   }
+  if (in_tree) {
+    in_tree = 0;
+    fprintf (fp, "   }\n");
+  }
+  
 #if 0  
   for (int i=0; i < A_LEN (p->attrib); i++) {
     printf (" var %d: ", i);
@@ -2327,7 +2395,7 @@ void ActCellPass::_create_new_cell (Scope *sc, act_prs_lang_t *prslist)
   }
   else {
 #if 0
-    printf ("NEW CELL NEEDED!\n");
+    printf (">> NEW CELL NEEDED!\n");
     _dump_prsinfo (pi, "in", "out");
 #endif
     add_new_cell (pi);
@@ -2388,30 +2456,39 @@ bool ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
     newprs.next = NULL;
 
     /*-- newprs is used to generate attributes, so we're all set --*/
-
     if (_uses_a_label (prs->u.one.e)) {
       fatal_error ("@-expressions can only be used with -> production rules");
     }
-
-#if 0    
-    for (int i=0; i < A_LEN (pendinggroup); i++) {
-      Assert (pendinggroup[i]->type == ACT_PRS_TREE, "Hmm...");
-      if (_in_subgroup (prs, pendinggroup[i])) {
-	fprintf (stderr, "ERROR: A complete production rule is also part of a tree!\n");
-	fprintf (stderr, "  ID: ");
-	prs->u.one.id->Print (stderr);
-	fprintf (stderr, "\nAborting.\n");
-	act_error_ctxt (stderr);
-	exit (1);
-      }
-    }
-#endif    
   }
   else {
     /* labels can only occur once, so we are done */
     if (prs->u.one.label) {
       _pending_prs.push_back (prs);
       return true;
+    }
+
+    /* check if this matches a pending tree group; if so, fuse and quit */
+    for (int i=0; i < _pending_group.size(); i++) {
+      auto &g = _pending_group[i];
+      int pos = g.has_var (prs->u.one.id);
+      if (pos != -1) {
+	if ((g.get_dir (pos) & (prs->u.one.dir ? 2 : 1)) != 0) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "ERROR: Production rule is both within and outside tree {} block, or\nhas multiple rules outside tree block.\n");
+	  fprintf (stderr, "    ID: ");
+	  prs->u.one.id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  exit (1);
+	}
+	g.add_dir (pos, prs->u.one.dir ? 2 : 1);
+	g._pending.push_back (prs);
+
+	if (g.complete()) {
+	  flush_group (sc, &g);
+	}
+
+	return true;
+      }
     }
 
     /* check if this matches an existing pending production rule */
@@ -2676,15 +2753,126 @@ void ActCellPass::_collect_one_cap (Scope *sc, act_prs_lang_t *prs)
   }
 }
 
-
-
-
-
-static void _collect_group_prs (Scope *sc, int tval, act_prs_lang_t *prs)
+void ActCellPass::_collect_treegroup (Scope *sc, act_prs_lang_t *prs)
 {
+  int tval;
+
+  Assert (prs->type == ACT_PRS_TREE, "Why am I here?");
+
+  if (prs->u.l.lo) {
+    tval = prs->u.l.lo->u.ival.v;
+  }
+  else {
+    tval = 1;
+  }
   Assert (tval > 0, "tree<> directive with <= 0 value?");
-  // mark these rules as part of a tree: needs to be fixed
-  // XXX: FIXME!
+
+  /*
+   * This is a group.
+   *
+   * 1. There should be no @-labels either used or generated.
+   *
+   * 2. Make sure there isn't another pending group with an
+   * intersection.
+   *
+   * 3. Add it to the group list.
+   */
+
+  act_prs_lang_t *l;
+  l = prs->u.l.p;
+  while (l) {
+    if (l->type != ACT_PRS_RULE) {
+      act_error_ctxt (stderr);
+      fatal_error ("tree { } can only contain prs rules");
+    }
+    if (l->u.one.label || _uses_a_label (l->u.one.e)) {
+      act_error_ctxt (stderr);
+      fatal_error ("tree { } block cannot use @-labels");
+    }
+    if (l->u.one.arrow_type != 0) {
+      act_error_ctxt (stderr);
+      fatal_error ("tree { } block cannot use => or #> arrows");
+    }
+    l = l->next;
+  }
+
+  l = prs->u.l.p;
+  while (l) {
+    for (int i=0; i < _pending_group.size(); i++) {
+      auto &g = _pending_group[i];
+      // check if my variable appears in the pending group
+      if (g.has_var (l->u.one.id) != -1) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "ERROR: Multiple tree { } blocks have the same variable");
+	fprintf (stderr, "      ID: ");
+	l->u.one.id->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+    }
+    l = l->next;
+  }
+
+  pending_group g;
+  g.tree = prs;
+  l = prs->u.l.p;
+  while (l) {
+    int pos = g.has_var (l->u.one.id);
+    if (pos != -1) {
+      // dir = 0 (-), flag = 1
+      // dir = 1 (+), flag = 2
+      g.add_var (l->u.one.id, l->u.one.dir ? 2 : 1);
+    }
+    l = l->next;
+  }
+
+  /* now check the pending production rules to see if we have a match */
+  bool flag = false;
+  for (int i=0; i < _pending_prs.size(); i++) {
+    auto *x = _pending_prs[i];
+    Assert (x->type == ACT_PRS_RULE, "What?");
+    if (x->u.one.label) {
+      continue;
+    }
+    int pos = g.has_var (x->u.one.id);
+    if (pos != -1) {
+      if ((g.get_dir (pos) & (x->u.one.dir ? 2 : 1)) != 0) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "ERROR: Production rule is both within and outside tree { } block, or\nhas multiple rules outside tree block.\n");
+	fprintf (stderr,"     ID: ");
+	x->u.one.id->Print (stderr);
+	fprintf (stderr, "\n");
+	exit (1);
+      }
+      /* merge into the group! */
+      g.add_dir (pos, x->u.one.dir ? 2 : 1);
+      g._pending.push_back (x);
+      _pending_prs[i] = NULL;
+      flag = true;
+    }
+  }
+  if (flag) {
+    /* strip out the pending ones now! */
+    int i, j;
+    i = 0;
+    j = 0;
+    for (i = 0; i < _pending_prs.size(); i++) {
+      if (_pending_prs[i] && j < i) {
+	_pending_prs[j] = _pending_prs[i];
+	j++;
+      }
+    }
+    while (j != _pending_prs.size()) {
+      _pending_prs.pop_back ();
+    }
+  }
+
+  if (g.complete()) {
+    flush_group (sc, &g);
+  }
+  else {
+    _pending_group.push_back (g);
+  }
 }
 
 
@@ -2781,11 +2969,8 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       if (prs->u.l.lo) {
 	Assert (expr_is_a_const (prs->u.l.lo), "Hmm...");
 	Assert (prs->u.l.lo->type == E_INT, "Hmmmm");
-	_collect_group_prs (sc, prs->u.l.lo->u.ival.v, prs->u.l.p);
       }
-      else {
-	_collect_group_prs (sc, 1, prs->u.l.p);
-      }
+      _collect_treegroup (sc, prs);
       break;
     case ACT_PRS_SUBCKT:
       // collect all prs in this subcircuit as a single group
@@ -2870,6 +3055,11 @@ void ActCellPass::prs_to_cells (Process *p)
     prs = prs->next;
   }
   flush_pending (sc);
+  for (int i=0; i < _pending_group.size(); i++) {
+    if (_pending_group[i].pending()) {
+      flush_group (sc, &_pending_group[i]);
+    }
+  }
 
   prs = lang->getprs();
   act_prs *prevprs = NULL;
@@ -3028,6 +3218,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       act_prs_lang_t *l;
       Expr *treeval;
       int mgn;
+      int is_tree = 0;
       l = NULL;
       treeval = NULL;
       mgn = 0;
@@ -3055,9 +3246,11 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	l = prs->p;
 	if (l && l->type == ACT_PRS_TREE) {
 	  treeval = l->u.l.lo;
-	  l = l->u.l.p;
+	  is_tree = 1;
+	  //l = l->u.l.p;
 	}
       }
+      
       
       /* fine. now dump into celldb */
       pi = _gen_prs_attributes (l,
@@ -3103,6 +3296,9 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	pi->set_tree_info (treeval->u.ival.v);
 	Assert (pi->get_tree_info() > 0, "tree<> parameter has to be > 0!");
       }
+      else if (is_tree) {
+	pi->set_tree_info (1);
+      }
       else if (mgn) {
 	/* shared gate network */
 	pi->set_tree_info (0);
@@ -3118,13 +3314,14 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       if (b) {
 	act_error_ctxt (stderr);
 	warning("Cell `%s' is a duplicate?", p->getName());
-	//printf ("-- cur cell --\n");
-	//_dump_prsinfo (pi);
+	printf ("-- cur cell --\n");
+	_dump_prsinfo (pi, "in", "out");
 	
 	pi = (struct act_prsinfo *)b->v;
 	warning ("Previous cell: `%s'", pi->cell->getName());
-	//printf ("-- old cell --\n");
-	//_dump_prsinfo (pi);
+	
+	printf ("-- old cell --\n");
+	_dump_prsinfo (pi, "in", "out");
       }
       else {
 	b = chash_add (cell_table, pi);

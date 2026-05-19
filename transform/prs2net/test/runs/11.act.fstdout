@@ -15,18 +15,18 @@
 *
 * --- end node flags ---
 *
-M0_ #6 in_20_3 Vdd Vdd pch W=0.75U L=0.06U
-M1_ #fb7# out Vdd Vdd pch W=0.15U L=0.06U
-M2_ckeeper #8 in_20_3 Vdd Vdd pch W=0.15U L=0.06U
-M3_ckeeper #8 in_21_3 Vdd Vdd pch W=0.15U L=0.06U
-M4_ #3 in_20_3 GND GND nch W=0.3U L=0.06U
-M5_ #fb7# out GND GND nch W=0.15U L=0.06U
-M6_ckeeper #9 in_20_3 GND GND nch W=0.15U L=0.06U
-M7_ckeeper #9 in_21_3 GND GND nch W=0.15U L=0.06U
-M8_ out in_21_3 #3 GND nch W=0.3U L=0.06U
-M9_ out in_21_3 #6 Vdd pch W=0.75U L=0.06U
-M10_ckeeper out #fb7# #8 Vdd pch W=0.12U L=0.06U
-M11_ckeeper out #fb7# #9 GND nch W=0.12U L=0.06U
+M0_N #6 in_20_3 Vdd Vdd pch W=0.75U L=0.06U
+M1_N #fb7# out Vdd Vdd pch W=0.15U L=0.06U
+M2_Nckeeper #8 in_20_3 Vdd Vdd pch W=0.15U L=0.06U
+M3_Nckeeper #8 in_21_3 Vdd Vdd pch W=0.15U L=0.06U
+M4_N #3 in_20_3 GND GND nch W=0.3U L=0.06U
+M5_N #fb7# out GND GND nch W=0.15U L=0.06U
+M6_Nckeeper #9 in_20_3 GND GND nch W=0.15U L=0.06U
+M7_Nckeeper #9 in_21_3 GND GND nch W=0.15U L=0.06U
+M8_N out in_21_3 #3 GND nch W=0.3U L=0.06U
+M9_N out in_21_3 #6 Vdd pch W=0.75U L=0.06U
+M10_Nckeeper out #fb7# #8 Vdd pch W=0.12U L=0.06U
+M11_Nckeeper out #fb7# #9 GND nch W=0.12U L=0.06U
 .ends
 *---- end of process: g0n1na_01ax0<> -----
 *
@@ -46,12 +46,12 @@ M11_ckeeper out #fb7# #9 GND nch W=0.12U L=0.06U
 *
 * --- end node flags ---
 *
-M0_ #fb4# out Vdd Vdd pch W=0.15U L=0.06U
-M1_keeper #5 GND Vdd Vdd pch W=0.12U L=0.12U
-M2_ out in_20_3 GND GND nch W=0.15U L=0.06U
-M3_ #fb4# out GND GND nch W=0.15U L=0.06U
-M4_keeper out #fb4# GND GND nch W=0.12U L=0.06U
-M5_keeper out #fb4# #5 Vdd pch W=0.12U L=0.06U
+M0_N #fb4# out Vdd Vdd pch W=0.15U L=0.06U
+M1_Nkeeper #5 GND Vdd Vdd pch W=0.12U L=0.12U
+M2_N out in_20_3 GND GND nch W=0.15U L=0.06U
+M3_N #fb4# out GND GND nch W=0.15U L=0.06U
+M4_Nkeeper out #fb4# GND GND nch W=0.12U L=0.06U
+M5_Nkeeper out #fb4# #5 Vdd pch W=0.12U L=0.06U
 .ends
 *---- end of process: g_0x2<> -----
 .subckt foo p q r

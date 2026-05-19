@@ -170,13 +170,69 @@ private:
   const char *_outport_name;
 
   struct pending_group {
+    // when "tree" is NULL, it means that the tree block has already
+    // been processed. In this state, only the "_vars" vector has any content.
     act_prs_lang_t *tree;
+    std::vector<ActId *> _vars;
+    std::vector<int> _dir_avail;
     std::vector<act_prs_lang_t *> _pending;
 
     pending_group() {
       tree = NULL;
+      _vars.clear();
       _pending.clear ();
+      _dir_avail.clear ();
     }
+
+    ~pending_group() {
+      tree = NULL;
+      _vars.clear ();
+      _pending.clear ();
+      _dir_avail.clear ();
+    }
+
+    int has_var (ActId *id) {
+      for (int i=0; i < _vars.size(); i++) {
+	if (_vars[i] == id || id->isEqual (_vars[i])) {
+	  return i;
+	}
+      }
+      return -1;
+    }
+
+    void add_var (ActId *id, int dir) {
+      _vars.push_back (id);
+      _dir_avail.push_back (dir);
+    }
+
+    void add_dir (int idx, int dir) {
+      _dir_avail[idx] |= dir;
+    }
+
+    int get_dir (int idx) {
+      return _dir_avail[idx];
+    }
+
+    void mark_processed() {
+      tree = NULL;
+      _pending.clear ();
+      _dir_avail.clear ();
+    }
+
+    /* check if we have found +/- rules for all variables */
+    bool complete() {
+      if (!tree) return false;
+      for (int i=0; i < _dir_avail.size(); i++) {
+	if (_dir_avail[i] != 3) return false;
+      }
+      return true;
+    }
+
+    bool pending() {
+      if (tree) return true;
+      return false;
+    }
+    
   };
 
   /*-- cell extraction, temporary data structures --*/
@@ -204,9 +260,11 @@ private:
   bool _collect_one_prs (Scope *sc, act_prs_lang_t *prs);
   void _collect_one_passgate (Scope *sc, act_prs_lang_t *prs);
   void _collect_one_cap (Scope *sc, act_prs_lang_t *prs);
+  void _collect_treegroup (Scope *sc, act_prs_lang_t *prs);
   void collect_gates (Scope *sc, act_prs_lang_t **pprs);
   void prs_to_cells (Process *p);
   int _collect_cells (ActNamespace *cells);
+  void flush_group (Scope *sc, pending_group *g);
   void flush_pending (Scope *sc);
 
   void _create_new_cell (Scope *sc, act_prs_lang_t *prslist);

@@ -1,0 +1,15 @@
+defproc foo (bool p, q, r)
+{
+  bool u, v, w;
+   prs {
+    tree {
+      [keeper=0] u & p -> r- 
+      [keeper=0] u & q -> v-
+
+      ~u -> r+
+      ~u -> v+
+    }
+   }
+}
+
+foo c;

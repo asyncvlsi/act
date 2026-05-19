@@ -3,7 +3,7 @@ defproc  foo(bool a, b)
 
   prs {
 
-   [loadcap=3.0] a -> b-
+   [loadcap=3] a -> b-
   }
 }
 
