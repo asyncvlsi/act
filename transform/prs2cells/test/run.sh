@@ -88,7 +88,7 @@ do
             diff runs/$i.t.stderr runs/$i.stderr
         fi
 	fi
-	if ! cmp runs/$i.t.cellout runs/$i.cellout >/dev/null 2>/dev/null
+	if -f runs/$i.t.cellout -a -f runs/$i.cellout -a ! cmp runs/$i.t.cellout runs/$i.cellout >/dev/null 2>/dev/null
 	then
 		if [ $ok -eq 1 ]
 		then

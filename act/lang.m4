@@ -1934,7 +1934,7 @@ single_prs[act_prs_lang_t *]: EXTERN[prs_expr] arrow bool_expr_id dir
       }
     }
     else if (strcmp ($1, "subckt") == 0) {
-      if ($0->in_subckt) {
+      if ($0->in_subckt  || $0->in_tree) {
 	$E("subckt { } directive in prs cannot be nested");
       }
       $0->in_subckt++;

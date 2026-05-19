@@ -1,0 +1,2 @@
+ERROR: File `8.act', line 15, col 11
+	subckt { } directive in prs cannot be nested

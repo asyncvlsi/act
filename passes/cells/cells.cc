@@ -1730,6 +1730,12 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
       l = l->u.l.p;
       in_tree = 1;
     }
+
+    if (l->type == ACT_PRS_SUBCKT) {
+      act_error_ctxt (stderr);
+      fatal_error ("prs attribute computation called on a subcircuit; nested subckt in design?");
+    }
+    
     Assert (l->type == ACT_PRS_RULE, "gen_prs_attributes context error");
 
     /* look for this variable */
