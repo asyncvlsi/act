@@ -144,11 +144,11 @@ export defcell g0n_0x3 (bool? in[1]; bool! out)
 export defcell g1n_12ax0 (bool? in[3]; bool! out[2])
 {
    prs {
+   ~in[0] -> out[0]+
+   ~in[0] -> out[1]+
    tree {
    [keeper=0] in[0] & in[1] -> out[0]-
-   ~in[0] -> out[0]+
    [keeper=0] in[0] & in[2] -> out[1]-
-   ~in[0] -> out[1]+
    }
    }
 }
@@ -160,6 +160,18 @@ export defcell g1n_12ax1 (bool? in[3]; bool! out[2])
    ~in[0] -> out[0]+
    [keeper=0] in[0] & in[2] -> out[1]-
    ~in[0] -> out[1]+
+   }
+}
+
+export defcell g1n_12ax2 (bool? in[3]; bool! out[2])
+{
+   prs {
+   tree {
+   [keeper=0] in[0] & in[1] -> out[0]-
+   ~in[0] -> out[0]+
+   [keeper=0] in[0] & in[2] -> out[1]-
+   ~in[0] -> out[1]+
+   }
    }
 }
 

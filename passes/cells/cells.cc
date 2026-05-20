@@ -38,14 +38,16 @@ struct act_varinfo {
   int *depths;			// depth of each instance (nup + ndn)
   int cup, cdn;
 				// size), 0..nup-1 followed by ndn
-  unsigned char tree;		// 0 = not in tree, 1 in tree
+  
+  unsigned char tree;		// 0 = not in tree, 1 dn in tree, 2 up
+				// in tree, 3 both in tree
 };
 
 
 class act_prsinfo {
  private:
   int leak_adjust;
-  int tval;			 /* for tree<>; 0 = none, otherwise tree  */
+  int tval;			 /* for tree<>; -1 = none, otherwise tree  */
 
  public:
   Process *cell;		/* the cell; NULL until it is
@@ -85,7 +87,7 @@ class act_prsinfo {
     nvars = 0;
     nout = 0;
     nat = 0;
-    tval = 0;
+    tval = -1;
     match_perm = NULL;
     nattr = NULL;
     at_perm = NULL;
@@ -100,7 +102,7 @@ class act_prsinfo {
   void set_leak_flag (int flag) { leak_adjust = flag; }
   int get_leak_flag () { return leak_adjust; }
 
-  /* tree depth if set */
+  /* tree depth if set, 0 if not set */
   void set_tree_info (int flag) { tval = flag; }
   int get_tree_info () { return tval; }
   
@@ -1744,7 +1746,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
 	ret->set_tree_info (l->u.l.lo->u.ival.v);
       }
       else {
-	ret->set_tree_info (1);
+	ret->set_tree_info (0);
       }
       lpush = l->next;
       l = l->u.l.p;
@@ -1874,7 +1876,12 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
     if (!l->u.one.label && in_tree) {
       i = imap.find_idx (l->u.one.id);
       Assert (i != -1, "What?");
-      ret->attrib[i].tree = 1;
+      if (l->u.one.dir == 0) {
+	ret->attrib[i].tree |= 1;
+      }
+      else {
+	ret->attrib[i].tree |= 2;
+      }
     }
     l = l->next;
     if (!l) {
@@ -2029,94 +2036,106 @@ static void _dump_prs_cell (FILE *fp,
   }
   fprintf (fp, ")\n{\n   prs %s{\n", p->get_leak_flag() ? "* " : "");
 
-  int idx = p->nout-1;
-  int in_tree = 0;
-  for (int ii=0; ii < A_LEN (p->up); ii++) {
-    int i;
-    idx = (idx + 1) % A_LEN (p->up);
-    if ((idx >= p->nout) && (p->at_perm)) {
-      i = p->nout + p->at_perm[idx-p->nout];
-    }
-    else {
-      i = idx;
+  int has_tree = p->get_tree_info();
+  /*
+    Go through this once or twice depending on if this has a tree { }
+     directive or not
+  */
+  for (int k=0; k < 1 + (has_tree != -1 ? 1 : 0); k++) {
+    int idx = p->nout-1;
+
+    if (has_tree != -1 && k == 1) {
+      fprintf (fp, "   tree");
+      if (has_tree != 0) {
+	fprintf (fp, "<%d>", has_tree);
+      }
+      fprintf (fp, " {\n");
     }
     
-    if (in_tree && p->attrib[i].tree == 0) {
-      in_tree = 0;
+    for (int ii=0; ii < A_LEN (p->up); ii++) {
+      int i;
+      idx = (idx + 1) % A_LEN (p->up);
+      if ((idx >= p->nout) && (p->at_perm)) {
+	i = p->nout + p->at_perm[idx-p->nout];
+      }
+      else {
+	i = idx;
+      }
+
+      if (k == 0 && (p->attrib[i].tree & 1) == 0 ||
+	  k == 1 && (p->attrib[i].tree & 1) == 1) {
+	
+	if (p->dn[i]) {
+	  fprintf (fp, "   ");
+
+	  if ((i < p->nout) && p->nattr[2*i]) {
+	    act_attr_t *a;
+	    fprintf (fp, "[");
+	    for (a = p->nattr[2*i]; a; a = a->next) {
+	      fprintf (fp, "%s=", a->attr);
+	      print_expr (fp, a->e);
+	      if (a->next) {
+		fprintf (fp, "; ");
+	      }
+	    }
+	    fprintf (fp, "] ");
+	  }
+
+	  _dump_expr (fp, _inport_name, _outport_name, p->dn[i], p);
+	  fprintf (fp, " -> ");
+	  if (i < p->nout) {
+	    if (p->nout == 1) {
+	      fprintf (fp, "%s-", _outport_name);
+	    }
+	    else {
+	      fprintf (fp, "%s[%d]-", _outport_name, i);
+	    }
+	  }
+	  else {
+	    fprintf (fp, "@x%d-", i-p->nout);
+	  }
+	  fprintf (fp, "\n");
+	}
+      }
+
+      if (k == 0 && (p->attrib[i].tree & 2) == 0 ||
+	  k == 1 && (p->attrib[i].tree & 2) == 2) {
+	if (p->up[i]) {
+	  fprintf (fp, "   ");
+
+	  if ((i < p->nout) && p->nattr[2*i+1]) {
+	    act_attr_t *a;
+	    fprintf (fp, "[");
+	    for (a = p->nattr[2*i+1]; a; a = a->next) {
+	      fprintf (fp, "%s=", a->attr);
+	      print_expr (fp, a->e);
+	      if (a->next) {
+		fprintf (fp, "; ");
+	      }
+	    }
+	    fprintf (fp, "] ");
+	  }
+      
+	  _dump_expr (fp, _inport_name, _outport_name, p->up[i], p);
+	  fprintf (fp, " -> ");
+	  if (i < p->nout) {
+	    if (p->nout == 1) {
+	      fprintf (fp, "%s+", _outport_name);
+	    }
+	    else {
+	      fprintf (fp, "%s[%d]+", _outport_name, i);
+	    }
+	  }
+	  else {
+	    fprintf (fp, "@x%d+", i-p->nout);
+	  }
+	  fprintf (fp, "\n");
+	}
+      }
+    }
+    if (has_tree != -1 && k == 1) {
       fprintf (fp, "   }\n");
     }
-    else if (!in_tree && p->attrib[i].tree == 1) {
-      in_tree = 1;
-      fprintf (fp, "   tree {\n");
-    }
-    
-    if (p->dn[i]) {
-      fprintf (fp, "   ");
-
-      if ((i < p->nout) && p->nattr[2*i]) {
-	act_attr_t *a;
-	fprintf (fp, "[");
-	for (a = p->nattr[2*i]; a; a = a->next) {
-	  fprintf (fp, "%s=", a->attr);
-	  print_expr (fp, a->e);
-	  if (a->next) {
-	    fprintf (fp, "; ");
-	  }
-	}
-	fprintf (fp, "] ");
-      }
-
-      _dump_expr (fp, _inport_name, _outport_name, p->dn[i], p);
-      fprintf (fp, " -> ");
-      if (i < p->nout) {
-	if (p->nout == 1) {
-	  fprintf (fp, "%s-", _outport_name);
-	}
-	else {
-	  fprintf (fp, "%s[%d]-", _outport_name, i);
-	}
-      }
-      else {
-	fprintf (fp, "@x%d-", i-p->nout);
-      }
-      fprintf (fp, "\n");
-    }
-
-    if (p->up[i]) {
-      fprintf (fp, "   ");
-
-      if ((i < p->nout) && p->nattr[2*i+1]) {
-	act_attr_t *a;
-	fprintf (fp, "[");
-	for (a = p->nattr[2*i+1]; a; a = a->next) {
-	  fprintf (fp, "%s=", a->attr);
-	  print_expr (fp, a->e);
-	  if (a->next) {
-	    fprintf (fp, "; ");
-	  }
-	}
-	fprintf (fp, "] ");
-      }
-      
-      _dump_expr (fp, _inport_name, _outport_name, p->up[i], p);
-      fprintf (fp, " -> ");
-      if (i < p->nout) {
-	if (p->nout == 1) {
-	  fprintf (fp, "%s+", _outport_name);
-	}
-	else {
-	  fprintf (fp, "%s[%d]+", _outport_name, i);
-	}
-      }
-      else {
-	fprintf (fp, "@x%d+", i-p->nout);
-      }
-      fprintf (fp, "\n");
-    }
-  }
-  if (in_tree) {
-    in_tree = 0;
-    fprintf (fp, "   }\n");
   }
   
 #if 0  
@@ -2914,13 +2933,14 @@ static  act_prs_expr_t *_left_canonicalize (act_prs_expr_t *p)
 */
 void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
 {
+#define SNIP_RULE  
   act_prs_lang_t *prs = *pprs;
   act_prs_lang_t *prev = NULL;
   while (prs) {
     switch (ACT_PRS_LANG_TYPE (prs->type)) {
     case ACT_PRS_RULE:
       prs->u.one.e = _left_canonicalize (prs->u.one.e);
-#if 1
+#ifdef SNIP_RULE
       /* snip rule */
       if (prev) {
 	prev->next = prs->next;
@@ -2929,7 +2949,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       _collect_one_prs (sc, prs);
       break;
     case ACT_PRS_GATE:
-#if 1
+#ifdef SNIP_RULE
       if (prev) {
 	prev->next = prs->next;
       }
@@ -2944,7 +2964,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
       break;
 
     case ACT_PRS_DEVICE:
-#if 1
+#ifdef SNIP_RULE
       if (prev) {
 	prev->next = prs->next;
       }
@@ -2960,7 +2980,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
 
       
     case ACT_PRS_TREE:
-#if 1
+#ifdef SNIP_RULE
       if (prev) {
 	prev->next = prs->next;
       }
@@ -2982,7 +3002,7 @@ void ActCellPass::collect_gates (Scope *sc, act_prs_lang_t **pprs)
     }
     prs = prs->next;
   }
-#if 1
+#ifdef SNIP_RULE
   if (!prev) {
     *pprs = NULL;
   }
@@ -3216,39 +3236,34 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 		     cell_ns->getName(), p->getName());
       }
       act_prs_lang_t *l;
-      Expr *treeval;
-      int mgn;
-      int is_tree = 0;
       l = NULL;
-      treeval = NULL;
-      mgn = 0;
       if (prs) {
+	int is_tree = 0;
+	act_prs_lang_t *lpush = NULL;
 	l = prs->p;
-	if (l && l->type == ACT_PRS_TREE) {
-	  if (l->next) {
-	    fatal_error ("Cell `%s::%s': only one tree permitted",
-			 cell_ns->getName(), p->getName());
-	  }
-	  l = l->u.l.p;
-	}
 	while (l) {
 	  Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
 	  if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
-	      l->type == ACT_PRS_TREE || ACT_PRS_LANG_TYPE (l->type) == ACT_PRS_DEVICE) {
-	    fatal_error ("Cell `%s::%s': no fets/devs/subckts/dup trees allowed",
+	      ACT_PRS_LANG_TYPE (l->type) == ACT_PRS_DEVICE) {
+	    fatal_error ("Cell `%s::%s': no fets/devs/subckts allowed",
 			 cell_ns->getName(), p->getName());
 	  }
-	  else if ((l->type == ACT_PRS_RULE) && l->u.one.label) {
-	    mgn = 1;
+	  if (l->type == ACT_PRS_TREE && is_tree) {
+	    fatal_error ("Cell `%s::%s': only one tree allowed",
+			 cell_ns->getName(), p->getName());
+	  }
+	  if (l->type == ACT_PRS_TREE) {
+	    is_tree = 1;
+	    lpush = l->next;
+	    l = l->u.l.p;
 	  }
 	  l = l->next;
+	  if (!l) {
+	    l = lpush;
+	    lpush = NULL;
+	  }
 	}
 	l = prs->p;
-	if (l && l->type == ACT_PRS_TREE) {
-	  treeval = l->u.l.lo;
-	  is_tree = 1;
-	  //l = l->u.l.p;
-	}
       }
       
       
@@ -3290,19 +3305,18 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 			 cell_ns->getName(), p->getName());
          }
       }
-
-      if (treeval) {
-	Assert (treeval->type == E_INT, "Hmm");
-	pi->set_tree_info (treeval->u.ival.v);
-	Assert (pi->get_tree_info() > 0, "tree<> parameter has to be > 0!");
+#if 0
+      if (is_tree) {
+	if (treeval) {
+	  Assert (treeval->type == E_INT, "Hmm");
+	  pi->set_tree_info (treeval->u.ival.v);
+	  Assert (pi->get_tree_info() > 0, "tree<> parameter has to be > 0!");
+	}
+	else {
+	  pi->set_tree_info (0);
+	}
       }
-      else if (is_tree) {
-	pi->set_tree_info (1);
-      }
-      else if (mgn) {
-	/* shared gate network */
-	pi->set_tree_info (0);
-      }
+#endif      
 
       if (A_LEN (pi->up) == 0 && A_LEN (pi->dn) == 0) {
 	act_error_ctxt (stderr);
@@ -3314,6 +3328,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       if (b) {
 	act_error_ctxt (stderr);
 	warning("Cell `%s' is a duplicate?", p->getName());
+#if 0	
 	printf ("-- cur cell --\n");
 	_dump_prsinfo (pi, "in", "out");
 	
@@ -3322,6 +3337,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	
 	printf ("-- old cell --\n");
 	_dump_prsinfo (pi, "in", "out");
+#endif	
       }
       else {
 	b = chash_add (cell_table, pi);
