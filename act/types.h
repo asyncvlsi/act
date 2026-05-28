@@ -1114,6 +1114,12 @@ class Process : public UserDef {
   const char *addBuffer (char *name, ActId *port, Process *buf, bool assume_input = false);
 
   /**
+   * Same as the addBuffer() method above, except the id can be an
+   * array de-reference.
+   */
+  const char *addBuffer (ActId *id, ActId *port, Process *buf, bool assume_input = false);
+
+  /**
    * Similar to the single buffer addition, except that a list of
    * end-points are disconnected. Each of them must be connected to
    * the same primary name, must be disconnectable, and must all be

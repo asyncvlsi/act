@@ -315,8 +315,18 @@ bool Process::updateInst (char *name, Process *t)
   return true;
 }
 
-
 const char *Process::addBuffer (char *name, ActId *port, Process *buf,
+				bool assume_input)
+{
+  ActId *tmp = new ActId (string_cache (name));
+  
+  const char *ret = addBuffer (tmp, port, buf, assume_input);
+  
+  delete tmp;
+  return ret;
+}
+
+const char *Process::addBuffer (ActId *name, ActId *port, Process *buf,
 				bool assume_input)
 {
   if (!name || !port || !buf) {
@@ -383,17 +393,24 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
     return NULL;
   }
 
-  ValueIdx *vx = I->LookupVal (name);
+  if (name->Rest()) {
+    warning ("Process:addbuffer() failed: ID argument cannot have dots");
+    return NULL;
+  }
+
+  ValueIdx *vx = I->LookupVal (name->getName());
   if (!vx) {
     warning ("Process::addBuffer() failed: %s not found", name);
     return NULL;
   }
   if (vx->t->arrayInfo()) {
-    warning ("Process::addBuffer() failed: %s is an array", name);
-    return NULL;
+    if (!name->arrayInfo() || !name->arrayInfo()->isDeref()) {
+      warning ("Process::addBuffer() failed: %s is an array", name->getName());
+      return NULL;
+    }
   }
   if (!TypeFactory::isProcessType (vx->t)) {
-    warning ("Process::addBuffer() failed: %s is not a process", name);
+    warning ("Process::addBuffer() failed: %s is not a process", name->getName());
     return NULL;
   }
 
@@ -403,7 +420,7 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
   int pos = orig->FindPort (port->getName());
   if (pos <= 0) {
     warning ("Process::addBuffer() failed: %s is not a port for %s",
-	     port->getName(), name);
+	     port->getName(), name->getName());
     return NULL;
   }
   pos--;
@@ -411,7 +428,7 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
   InstType *it = orig->getPortType (pos);
   if (!TypeFactory::isBoolType (it)) {
     warning ("Process::addBuffer() failed: %s.%s is not a bool port",
-	     name, port->getName());
+	     name->getName(), port->getName());
     return NULL;
   }
 
@@ -430,7 +447,7 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
     }
     else {
       warning ("Process::addBuffer() failed: %s.%s has no direction flag",
-	       name, port->getName());
+	       name->getName(), port->getName());
       return NULL;
     }
   }
@@ -453,7 +470,7 @@ const char *Process::addBuffer (char *name, ActId *port, Process *buf,
   /*
      Step 1: Disconnect name.pos
   */
-  ActId *tmp = new ActId (name);
+  ActId *tmp = name->Clone ();
   tmp->Append (port);
   act_connection *orig_c = tmp->Canonical (CurScope());
   act_connection *c = tmp->myConnection (CurScope());

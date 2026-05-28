@@ -2535,6 +2535,7 @@ bool ActCellPass::_collect_one_prs (Scope *sc, act_prs_lang_t *prs)
       eor->type = ACT_PRS_EXPR_OR;
       eor->u.e.l = prs->u.one.e;
       eor->u.e.r = newprs.u.one.e;
+      eor->u.e.pchg_type = -1;
       eor->u.e.pchg = NULL;
       newprs.u.one.e = eor;
       if (prs->u.one.attr && !newprs.u.one.attr) {
