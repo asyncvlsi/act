@@ -471,7 +471,8 @@ const char *Process::addBuffer (ActId *name, ActId *port, Process *buf,
      Step 1: Disconnect name.pos
   */
   ActId *tmp = name->Clone ();
-  tmp->Append (port);
+  tmp->Append (port->Clone());
+
   act_connection *orig_c = tmp->Canonical (CurScope());
   act_connection *c = tmp->myConnection (CurScope());
   c->disconnect ();
@@ -595,9 +596,9 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
   li = list_first (inst_ports);
   while (li) {
     ActId *port;
-    char *name;
+    ActId *name;
 
-    name = (char *) list_value (li);
+    name = (ActId *) list_value (li);
 
     li = list_next (li);
     port = (ActId *) list_value (li);
@@ -605,12 +606,14 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
       return NULL;
     }
 
-    ValueIdx *vx = I->LookupVal (name);
+    ValueIdx *vx = I->LookupVal (name->getName());
     if (!vx) {
       return NULL;
     }
     if (vx->t->arrayInfo()) {
-      return NULL;
+      if (!name->arrayInfo() || !name->arrayInfo()->isDeref()) {
+	return NULL;
+      }
     }
     if (!TypeFactory::isProcessType (vx->t)) {
       return NULL;
@@ -657,9 +660,9 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
   act_connection *xp = NULL;
   while (li) {
     ActId *port;
-    char *name;
+    ActId *name;
 
-    name = (char *) list_value (li);
+    name = (ActId *) list_value (li);
     li = list_next (li);
     port = (ActId *) list_value (li);
     li  = list_next (li);
@@ -667,7 +670,7 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
     /*
       Step 1: Disconnect name.pos
     */
-    ActId *tmp = new ActId (name);
+    ActId *tmp = name->Clone ();
     tmp->Append (port);
     act_connection *orig_c = tmp->Canonical (CurScope());
     act_connection *c = tmp->myConnection (CurScope());
@@ -724,9 +727,9 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
   li = list_first (inst_ports);
   while (li) {
     ActId *port;
-    char *name;
+    ActId *name;
 
-    name = (char *) list_value (li);
+    name = (ActId *) list_value (li);
     li = list_next (li);
     port = (ActId *) list_value (li);
     li  = list_next (li);
@@ -734,7 +737,7 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
     /*
       Disconnect name.pos and connect it to the buffer output
     */
-    ActId *ltmp = new ActId (name);
+    ActId *ltmp = name->Clone ();
     ltmp->Append (port);
     act_connection *c = ltmp->myConnection (CurScope());
 

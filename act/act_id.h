@@ -240,7 +240,7 @@ class ActId {
    * id, NULL if something unexpected occurred.
    *
    * Note: we assume this connection pointer already exists, and this
-   * is only used for either foo or foo.bar
+   * is only used for either foo (opt arr) or foo (opt arr).bar (opt arr)
    *
    * TODO : generalize this if needed later
    *

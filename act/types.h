@@ -1123,7 +1123,7 @@ class Process : public UserDef {
    * Similar to the single buffer addition, except that a list of
    * end-points are disconnected. Each of them must be connected to
    * the same primary name, must be disconnectable, and must all be
-   * input pins
+   * input pins. The list is an (ActId *name, ActId *port) list.
    */
   const char *addBuffer (Process *buf, list_t *inst_ports);
 

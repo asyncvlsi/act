@@ -1209,10 +1209,12 @@ act_connection *ActId::myConnection (Scope *s)
   ValueIdx *vx = rawValueIdx (s);
   ActId *me;
 
+  // couldn't find vx!
   if (!vx) {
     return NULL;
   }
 
+  // advance namespace
   if (isNamespace()) {
     me = Rest();
   }
@@ -1220,12 +1222,31 @@ act_connection *ActId::myConnection (Scope *s)
     me = this;
   }
 
+  // if this is a.b.c then we don't do anything
   if (me->Rest() && me->Rest()->Rest()) {
     return NULL;
   }
+
   if (!me->Rest()) {
+    // this has no dots
     if (me->arrayInfo()) {
-      return NULL;
+      if (!vx->t->arrayInfo()) {
+	// not an array?!
+	return NULL;
+      }
+      if (!me->arrayInfo()->isDeref()) {
+	// not a deref?
+	return NULL;
+      }
+      if (!vx->u.obj.c->hasSubconnections()) {
+	return NULL;
+      }
+      int idx = vx->t->arrayInfo()->Offset (me->arrayInfo());
+      if (idx == -1) {
+	return NULL;
+      }
+      act_connection *tmp = vx->u.obj.c->getsubconn (idx, vx->t->arrayInfo()->size());
+      return tmp;
     }
     else {
       return vx->u.obj.c;
@@ -1234,6 +1255,23 @@ act_connection *ActId::myConnection (Scope *s)
 
   if (!vx->u.obj.c->hasSubconnections()) {
     return NULL;
+  }
+  act_connection *tmp;
+  if (me->arrayInfo()) {
+    if (!vx->t->arrayInfo()) {
+      return NULL;
+    }
+    if (!me->arrayInfo()->isDeref()) {
+      return NULL;
+    }
+    int idx = vx->t->arrayInfo()->Offset (me->arrayInfo());
+    if (idx == -1) {
+      return NULL;
+    }
+    tmp = vx->u.obj.c->getsubconn (idx, vx->t->arrayInfo()->size());
+  }
+  else {
+    tmp = vx->u.obj.c;
   }
 
   UserDef *u = dynamic_cast <UserDef *> (vx->t->BaseType());
@@ -1247,8 +1285,11 @@ act_connection *ActId::myConnection (Scope *s)
   }
   idx--;
 
-  act_connection *tmp;
-  tmp = vx->u.obj.c->getsubconn (idx, idx+1 /* should not need this param! */);
+  if (!tmp->hasSubconnections()) {
+    return NULL;
+  }
+
+  tmp = tmp->getsubconn (idx, idx+1 /* should not need this param! */);
 
   if (!me->Rest()->arrayInfo()) {
     return tmp;
