@@ -632,7 +632,8 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
       return NULL;
     }
 
-    if (it->getDir() == Type::IN) {
+    /* we assume inputs here */
+    if (it->getDir() == Type::IN || it->getDir() != Type::OUT) {
       /* okay! */
     }
     else {
@@ -653,6 +654,7 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
     else if (it->arrayInfo() || port->arrayInfo()) {
       return NULL;
     }
+
     li = list_next (li);
   }
 
@@ -671,10 +673,9 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
       Step 1: Disconnect name.pos
     */
     ActId *tmp = name->Clone ();
-    tmp->Append (port);
+    tmp->Append (port->Clone());
     act_connection *orig_c = tmp->Canonical (CurScope());
     act_connection *c = tmp->myConnection (CurScope());
-    tmp->prune();
     delete tmp;
     if (!c->disconnectable()) {
       return NULL;
@@ -738,7 +739,7 @@ const char *Process::addBuffer (Process *buf, list_t *inst_ports)
       Disconnect name.pos and connect it to the buffer output
     */
     ActId *ltmp = name->Clone ();
-    ltmp->Append (port);
+    ltmp->Append (port->Clone());
     act_connection *c = ltmp->myConnection (CurScope());
 
     c->disconnect ();
