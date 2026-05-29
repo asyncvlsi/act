@@ -957,6 +957,13 @@ Process *Act::findProcess (ActNamespace *n, const char *s, bool allow_expand)
 		  }
 		}
 		else {
+		  if (!isdigit (s[offset])) {
+		    for (int k=0; k < i; k++) {
+		      delete ip[i].u.tp;
+		    }
+		    FREE (ip);
+		    return NULL;
+		  }
 		  ip[i].u.tp = new AExpr (const_expr ((long)atoi (s+offset)));
 		  while (s[offset] && isdigit (s[offset])) {
 		    offset++;
