@@ -2101,7 +2101,6 @@ void ActBooleanizePass::append_base_port (act_boolean_netlist_t *n,
   }
 
   if (c->isglobal()) {
-    printf (" -->0 append-base-port "); c->Print (stdout); printf ("\n");
     /* globals do not need to be in the port list */
     if (mode != 2) {
       A_LAST (n->ports).omit = 1;
