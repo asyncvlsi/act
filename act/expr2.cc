@@ -2520,7 +2520,8 @@ static Expr *_expr_expand (int *width, Expr *e,
 	if (te->type == E_VAR) {
 	  act_chp_macro_check (s, (ActId *)te->u.e.l);
 	  InstType *it;
-	  act_type_var_gen (s, (ActId *)te->u.e.l, &it, true);
+	  act_type_var_gen (s, (ActId *)te->u.e.l, &it,
+			    (flags & ACT_EXPR_EXFLAG_HSEMODE) ? false : true);
 	  *width = TypeFactory::bitWidth (it);
 	}
 	else if (te->type == E_INT) {

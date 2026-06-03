@@ -34,6 +34,7 @@
 #include <string.h>
 
 static int _chp_freshvar_count = 0;
+static list_t *in_chp = NULL;
 
 static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s);
 
@@ -180,7 +181,12 @@ static list_t *chp_expr_unstruct (Scope *s, Expr *e)
  */
 static Expr *chp_expr_expand (Expr *e, ActNamespace *ns, Scope *s)
 {
-  return expr_expand (e, ns, s, ACT_EXPR_EXFLAG_CHPEX);
+  if (stack_ipeek (in_chp)) {
+    return expr_expand (e, ns, s, ACT_EXPR_EXFLAG_CHPEX);
+  }
+  else {
+    return expr_expand (e, ns, s, ACT_EXPR_EXFLAG_HSEEX);
+  }    
 }
 
 void act_chp_free (act_chp_lang_t *c)
@@ -881,7 +887,8 @@ static void _check_concurrent_conflicts (act_chp_lang_t *c,
   }
 }
 
-act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
+static act_chp *chp_or_hse_expand (act_chp *c, ActNamespace *ns, Scope *s,
+				   bool is_chp)
 {
   act_chp *ret;
   if (!c) return NULL;
@@ -895,7 +902,13 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   ret->psc = expand_var_read (c->psc, ns, s);
   ret->nsc = expand_var_read (c->nsc, ns, s);
   _act_chp_is_synth_flag = 1;
-  ret->c = chp_expand (c->c, ns, s);
+
+  if (is_chp) {
+    ret->c = chp_expand (c->c, ns, s);
+  }
+  else {
+    ret->c = hse_expand (c->c, ns, s);
+  }
   ret->is_synthesizable = _act_chp_is_synth_flag;
 
   struct Hashtable *H = NULL;
@@ -917,6 +930,12 @@ act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
   }
 
   return ret;
+}
+
+
+act_chp *chp_expand (act_chp *c, ActNamespace *ns, Scope *s)
+{
+  return chp_or_hse_expand (c, ns, s, true);
 }
 
 static int _has_probe (Expr *e)
@@ -3213,10 +3232,38 @@ static act_chp_lang_t *chp_update_bw (act_chp_lang_t *c, Scope *s)
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
+  if (!in_chp) {
+    in_chp = list_new ();
+  }
+  stack_ipush (in_chp, 1);
   act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
   if (!_chp_expanding_macro) {
     cnew = chp_update_bw (cnew, s);
   }
+  stack_ipop (in_chp);
+  
   return cnew;
 }
 
+act_chp_lang_t *hse_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
+{
+  if (!in_chp) {
+    in_chp = list_new ();
+  }
+  stack_ipush (in_chp, 0);
+  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
+#if 0  
+  if (!_chp_expanding_macro) {
+    cnew = chp_update_bw (cnew, s);
+  }
+#endif
+  stack_ipop (in_chp);
+  
+  return cnew;
+}
+
+
+act_chp *hse_expand (act_chp *c, ActNamespace *ns, Scope *s)
+{
+  return chp_or_hse_expand (c, ns, s, false);
+}

@@ -1362,7 +1362,7 @@ void ActBody_Lang::Expand (ActNamespace *ns, Scope *s)
     
   case ActBody_Lang::LANG_HSE:
     if (!in_refinement) {
-      c = chp_expand ((act_chp *)lang, ns, s);
+      c = hse_expand ((act_chp *)lang, ns, s);
       if (all_lang->gethse()) {
 	act_error_ctxt (stderr);
 	fatal_error ("Only one hse body permitted");

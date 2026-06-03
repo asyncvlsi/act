@@ -190,6 +190,11 @@ const char *expr_op_name (int);
 #define ACT_EXPR_EXFLAG_PREEXDUP 0x10 ///< flag is like DUP, only
                                       ///this is prior to expansion!
 
+#define ACT_EXPR_EXFLAG_HSEMODE    0x20 ///< HSE mode
+#define ACT_EXPR_EXFLAG_HSEEX (ACT_EXPR_EXFLAG_HSEMODE|ACT_EXPR_EXFLAG_CHPEX)
+
+
+
 extern int _act_chp_is_synth_flag;   ///< this flag is set as a
 				     ///side-effect of expression
 				     ///expansion. Set to 0 if the

@@ -91,6 +91,7 @@ int stack_ipop (list_t *l);
 double stack_dpop (list_t *l);
 #define stack_isempty(l) list_isempty(l)
 #define stack_peek(l)  list_value (list_first (l))
+#define stack_ipeek(l) list_ivalue (list_first (l))
 
 #define list_delete_head(l) stack_pop(l)
 #define list_delete_ihead(l) stack_ipop(l)

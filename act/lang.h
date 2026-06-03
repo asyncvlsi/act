@@ -901,6 +901,7 @@ void dflow_fixglobals (act_dataflow *, ActNamespace *, ActNamespace *);
  * Expand a chp { ... } block. Also used for hse { ... }
  */
 act_chp *chp_expand (act_chp *, ActNamespace *, Scope *);
+act_chp *hse_expand (act_chp *, ActNamespace *, Scope *);
 
 /**
  * Set the CHP expansion mode (1/2 if in macro, 0 otherwise)
@@ -917,6 +918,7 @@ int chp_processing_macro (void);
  * chp_expand helper for the items within the language block
  */
 act_chp_lang_t *chp_expand (act_chp_lang_t *, ActNamespace *, Scope *);
+act_chp_lang_t *hse_expand (act_chp_lang_t *, ActNamespace *, Scope *);
 
 /**
  * Duplicate and migrate
