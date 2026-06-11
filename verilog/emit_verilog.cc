@@ -31,6 +31,7 @@ static int fuse_signal_directives = 0;
 static int no_signal_decl = 0;
 static const char *global_signal_prefix = NULL;
 static int verilog_emit_cells;
+static struct pHashtable *STOP_AT = NULL;
 
 static void emit_verilog_id (FILE *fp, act_connection *c)
 {
@@ -105,6 +106,10 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
   }
 
   if (p->isCell() && verilog_emit_cells == 0) {
+    return;
+  }
+
+  if (STOP_AT && phash_lookup (STOP_AT, p)) {
     return;
   }
 
@@ -325,6 +330,32 @@ void act_emit_verilog (Act *a, FILE *fp, Process *p)
     BOOL->run (p);
   }
   global_signal_prefix = config_get_string ("act.global_signal_prefix");
+
+  if (config_exists ("act2v.stop_at_process")) {
+    int sz = config_get_table_size ("act2v.stop_at_process");
+    char **tab = config_get_table_string ("act2v.stop_at_process");
+
+    STOP_AT = phash_new (4);
+
+    for (int i=0; i < sz; i++) {
+      Process *p;
+      p = a->findProcess (tab[i]);
+      if (!p) {
+	warning ("act2v.stop_at_process: %s not found", tab[i]);
+      }
+      else {
+	phash_bucket_t *b;
+	if (!p->isExpanded()) {
+	  p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
+	}
+	b = phash_add (STOP_AT, p);
+      }
+    }
+  }
   emit_verilog (fp, a, p);
   clear_visited_flag (p);
+  if (STOP_AT) {
+    phash_free (STOP_AT);
+    STOP_AT = NULL;
+  }
 }
