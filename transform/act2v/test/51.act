@@ -1,0 +1,22 @@
+defproc gen_inv (bool? i; bool! o)
+{
+  prs {
+    i => o-
+  }
+}
+
+defproc end_at_inv (bool? i;  bool! o)
+{
+  bool p;
+  gen_inv x(i,p);
+  gen_inv x2(p,o);
+}
+
+
+defproc foo()
+{
+   end_at_inv x[3];
+   x[0]=x[1];
+}
+
+foo t;
