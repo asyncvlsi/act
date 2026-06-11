@@ -53,6 +53,7 @@ lim=10
 while [ -f ${count}.act ]
 do
 	i=${count}.act
+        cnf=${count}.conf
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
@@ -62,7 +63,12 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+        if [ -f $cnf ]
+        then
+   	   $ACTTOOL -cnf=$cnf -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+        else
+   	   $ACTTOOL -p 'foo<>' $i > runs/$i.t.stdout 2> runs/$i.t.stderr
+        fi
 	sort < runs/$i.t.stdout > runs/$i.x.t.stdout
 	sort < runs/$i.stdout > runs/$i.y.t.stdout
 	ok=1

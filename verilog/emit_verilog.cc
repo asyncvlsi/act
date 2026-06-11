@@ -78,6 +78,7 @@ static void emit_verilog_moduletype (FILE *fp, Act *a, Process *p)
 static void emit_verilog (FILE *fp, Act *a, Process *p)
 {
   Assert (p->isExpanded(), "What?");
+  bool stop_at = false;
 
   act_boolean_netlist_t *n = BOOL->getBNL (p);
   if (!n) {
@@ -110,18 +111,25 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
   }
 
   if (STOP_AT && phash_lookup (STOP_AT, p)) {
-    return;
+    stop_at = true;
   }
 
   ActUniqProcInstiter inst(p->CurScope());
-  for (inst = inst.begin(); inst != inst.end(); inst++) {
-    ValueIdx *vx = *inst;
-    emit_verilog (fp, a, dynamic_cast<Process *>(vx->t->BaseType()));
+
+  if (!stop_at) {
+    // walk through subcells
+    for (inst = inst.begin(); inst != inst.end(); inst++) {
+      ValueIdx *vx = *inst;
+      emit_verilog (fp, a, dynamic_cast<Process *>(vx->t->BaseType()));
+    }
   }
 
   /* now emit this module */
   fprintf (fp, "//\n");
   fprintf (fp, "// Verilog module for: %s\n", p->getName());
+  if (stop_at) {
+    fprintf( fp, "//   User-defined stopping point\n");
+  }
   fprintf (fp, "//\n");
   fprintf (fp, "module ");
   emit_verilog_moduletype (fp, a, p);
@@ -178,6 +186,10 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
 	}
       }
 
+      if (stop_at && !v->isport) {
+	continue;
+      }
+
       if (!no_signal_decl) {
 	if (v->input && !v->output) {
 	  fprintf (fp, "   wire ");
@@ -195,77 +207,78 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
     }
   }
 
-  int iport = 0;
+  if (!stop_at) {
+    /* now we print instances */
+    int iport = 0;
 
-  /* now we print instances */
-  fprintf (fp, "\n// --- instances\n");
-  for (inst = inst.begin(); inst != inst.end(); inst++) {
-    ValueIdx *vx = *inst;
-    act_boolean_netlist_t *sub;
-    Process *instproc = dynamic_cast<Process *>(vx->t->BaseType());
-    int ports_exist = 0;
+    fprintf (fp, "\n// --- instances\n");
+    for (inst = inst.begin(); inst != inst.end(); inst++) {
+      ValueIdx *vx = *inst;
+      act_boolean_netlist_t *sub;
+      Process *instproc = dynamic_cast<Process *>(vx->t->BaseType());
+      int ports_exist = 0;
 
-    sub = BOOL->getBNL (instproc);
-    for (i=0; i < A_LEN (sub->ports); i++) {
-      if (!sub->ports[i].omit) {
-	ports_exist = 1;
-	break;
+      sub = BOOL->getBNL (instproc);
+      for (i=0; i < A_LEN (sub->ports); i++) {
+	if (!sub->ports[i].omit) {
+	  ports_exist = 1;
+	  break;
+	}
       }
-    }
-    /* if there are no ports, we can skip the instance */
-    if (ports_exist || instproc->isBlackBox()) {
-      Arraystep *as;
-      if (vx->t->arrayInfo()) {
-	as = vx->t->arrayInfo()->stepper();
-      }
-      else {
-	as = NULL;
-      }
-      do {
-	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
-	  emit_verilog_moduletype (fp, a, instproc);
-          if (name_mangle) {
-	    ActNamespace::Act()->mfprintf (fp, " %s", vx->getName());
-	    if (as) {
-	      char *s = as->string();
-	      ActNamespace::Act()->mfprintf (fp, "%s", s);
-	      FREE (s);
+      /* if there are no ports, we can skip the instance */
+      if (ports_exist || instproc->isBlackBox()) {
+	Arraystep *as;
+	if (vx->t->arrayInfo()) {
+	  as = vx->t->arrayInfo()->stepper();
+	}
+	else {
+	  as = NULL;
+	}
+	do {
+	  if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
+	    emit_verilog_moduletype (fp, a, instproc);
+	    if (name_mangle) {
+	      ActNamespace::Act()->mfprintf (fp, " %s", vx->getName());
+	      if (as) {
+		char *s = as->string();
+		ActNamespace::Act()->mfprintf (fp, "%s", s);
+		FREE (s);
+	      }
 	    }
-          }
-          else {
-	    fprintf (fp, " \\%s", vx->getName());
-	    if (as) {
-	      as->Print (fp);
+	    else {
+	      fprintf (fp, " \\%s", vx->getName());
+	      if (as) {
+		as->Print (fp);
+	      }
 	    }
-          }
-	  fprintf (fp, "  (");
+	    fprintf (fp, "  (");
 
-	  int first = 1;
-	  for (i=0; i < A_LEN (sub->ports); i++) {
-	    if (sub->ports[i].omit) continue;
-	    if (!first) {
-	      fprintf (fp, ", ");
+	    int first = 1;
+	    for (i=0; i < A_LEN (sub->ports); i++) {
+	      if (sub->ports[i].omit) continue;
+	      if (!first) {
+		fprintf (fp, ", ");
+	      }
+	      first = 0;
+	      fprintf (fp, ".");
+	      emit_verilog_id (fp, sub->ports[i].c);
+	      fprintf (fp, "(");
+	      emit_verilog_id (fp, n->instports[iport]);
+	      fprintf (fp, ")");
+	      iport++;
 	    }
-	    first = 0;
-	    fprintf (fp, ".");
-	    emit_verilog_id (fp, sub->ports[i].c);
-	    fprintf (fp, "(");
-	    emit_verilog_id (fp, n->instports[iport]);
-	    fprintf (fp, ")");
-	    iport++;
+	    fprintf (fp, ");\n");
 	  }
-	  fprintf (fp, ");\n");
-	}
+	  if (as) {
+	    as->step ();
+	  }
+	} while (as && !as->isend());
 	if (as) {
-	  as->step ();
+	  delete as;
 	}
-      } while (as && !as->isend());
-      if (as) {
-	delete as;
       }
     }
   }
-  
 #if 0
   /*-- now we print out the production rules! --*/
   act_prs *prs = p->getprs();
@@ -279,7 +292,7 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
       prs = prs->next;
     }
   }
-#endif  
+#endif
 
   fprintf (fp, "endmodule\n\n");
   return;

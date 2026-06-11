@@ -25,5 +25,11 @@ fi
 
 for i in $list
 do
-	$ACTTOOL -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+    	name=`expr $i : '\(.*\).act'`
+	if [ -f ${name}.conf ]
+	then
+	  $ACTTOOL -cnf=${name}.conf -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	else
+	  $ACTTOOL -p 'foo<>' $i > runs/$i.stdout 2> runs/$i.stderr
+	fi
 done
