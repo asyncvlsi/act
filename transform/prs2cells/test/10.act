@@ -1,0 +1,17 @@
+defcell mycell (bool? A, B; bool! C)
+{
+  prs {
+   A<45> & B => C-
+  }
+}
+
+defproc bar (bool p)
+{
+  bool w, x, y;
+  prs {
+     x<45> & y -> w-
+     ~x | ~y -> w+
+  }
+}
+
+bar b;

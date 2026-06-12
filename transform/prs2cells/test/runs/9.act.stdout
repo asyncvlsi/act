@@ -1,0 +1,149 @@
+namespace cell {
+export defcell g0x1 (bool in[2]; bool out);
+export defcell g1n2n0naa_120aax0 (bool? in[2]; bool! out[2]);
+export defcell g0x0 (bool in[2]; bool out);
+export defcell g2x0 (bool in[2]; bool out);
+export defcell g4x0 (bool in[2]; bool out);
+export defcell ginvx0 (bool? in[1]; bool! out);
+export defcell g3x0 (bool in[3]; bool out);
+export defcell g1x0 (bool in[2]; bool out);
+
+export defcell g0x1 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]<10>&in[1] => out-
+}
+}
+
+export defcell g1n2n0naa_120aax0 (bool? in[2]; bool! out[2])
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]<5> -> out[1]-
+~in[0] -> out[1]+
+tree{
+in[0]&in[1]&out[1] -> out[0]-
+~in[0]&~in[1]&~out[1] -> out[0]+
+}
+}
+}
+
+export defcell g0x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] => out-
+}
+}
+
+export defcell g2x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] #> out-
+}
+}
+
+export defcell g4x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0]&~in[1] -> out+
+}
+}
+
+export defcell ginvx0 (bool? in[1]; bool! out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0] -> out+
+}
+}
+
+export defcell g3x0 (bool in[3]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2] #> out-
+}
+}
+
+export defcell g1x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]|in[1] => out-
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defproc foo (bool a; bool b);
+defproc bar (bool p);
+
+defproc foo (bool a; bool b)
+{
+
+/* instances */
+::cell::ginvx0 cx0;
+bool y;
+bool x;
+
+/* connections */
+b=cx0.out;
+a=cx0.in[0];
+}
+
+defproc bar (bool p)
+{
+
+/* instances */
+::cell::g1n2n0naa_120aax0 cx0;
+bool y;
+bool x;
+bool w;
+bool q;
+
+/* connections */
+y=cx0.in[1];
+x=cx0.in[0];
+w=cx0.out[1];
+q=cx0.out[0];
+}
+
+
+/* instances */
+foo f;
+bar b;
+
+/* connections */

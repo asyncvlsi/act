@@ -250,6 +250,13 @@ private:
   struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs,
 					   int ninp = -1,
 					   int noutp = -1);
+
+  struct act_prsinfo *_gen_prs_attributes (act_prs_lang_t *prs,
+					   int ninp,
+					   ActId **iname,
+					   int noutp,
+					   ActId **oname);
+
   void dump_celldb (FILE *);
   Expr *_idexpr (int idx, struct act_prsinfo *pi);
   ActBody_Conn *_build_connections (const char *name,
@@ -268,6 +275,8 @@ private:
   void flush_pending (Scope *sc);
 
   void _create_new_cell (Scope *sc, act_prs_lang_t *prslist);
+
+  act_prs_lang_t *_check_extract_cell_prs (Process *p);
   
 
   /* set the bit for all the @ variables used in "e" */

@@ -53,6 +53,9 @@ class act_prsinfo {
   Process *cell;		/* the cell; NULL until it is
 				   created. */
 
+  ActId **invars, **outvars;	/* input and output variables */
+  int ni, no;
+
   int nvars;			/* # of variables. includes @-labels */
 
   int nout;			/* # of outputs 
@@ -96,6 +99,9 @@ class act_prsinfo {
     attrib = NULL;
     A_INIT (up);
     A_INIT (dn);
+
+    invars = NULL;
+    outvars = NULL;
   }
 
   /* leakage adjust flag for cell */
@@ -119,6 +125,24 @@ class act_prsinfo {
     A_INC (up);
     A_INC (dn);
   }
+
+  /*
+    Set names of input and output variables
+  */
+  void set_io_vars (int numin, ActId **ivar, int numout, ActId **ovar) {
+    ni = numin;
+    invars = ivar;
+
+    no = numout;
+    outvars = ovar;
+  }
+
+  ActId **get_invars () { return invars; }
+  int get_numin () { return ni; }
+  ActId **get_outvars () { return outvars; }
+  int get_numout ()  { return no; }
+
+
 
   /*
     Set the number of outputs, and initialize the attribute lists for
@@ -1309,62 +1333,104 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   prs_body->leak_adjust = pi->get_leak_flag();
 
   act_prs_lang_t *rules = NULL;
+  act_prs_lang_t *tree = NULL;
 
   /*-- now do the rules: @-labels go first --*/
   for (int j = 0; j < A_LEN (pi->up); j++) {
     if (pi->up[j]) {
       act_prs_lang_t *tmp;
       NEW (tmp, act_prs_lang_t);
-      tmp->next = rules;
-      rules = tmp;
 
-      rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j+1] : NULL);
-      rules->u.one.arrow_type = 0;
-      rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.e =
+      if (j < pi->nout && (pi->attrib[j].tree & 2) != 0) {
+	tmp->next = tree;
+	tree = tmp;
+      }
+      else {
+	tmp->next = rules;
+	rules = tmp;
+      }
+
+      tmp->type = ACT_PRS_RULE;
+      tmp->u.one.attr = (j < pi->nout ? pi->nattr[2*j+1] : NULL);
+      tmp->u.one.arrow_type = 0;
+      tmp->u.one.label = (j < pi->nout ? 0 : 1);
+      tmp->u.one.e =
 	_convert_prsexpr_to_act (pi->up[j], _inport_name, _outport_name, pi);
-      if (rules->u.one.label) {
+      if (tmp->u.one.label) {
 	char buf[12];
 	snprintf (buf, 12, "x%d", j-pi->nout);
-	rules->u.one.id = (ActId *) Strdup (buf);
+	tmp->u.one.id = (ActId *) Strdup (buf);
       }
       else {
 	if (pi->nout == 1) {
-	  rules->u.one.id = new ActId (_outport_name);
+	  tmp->u.one.id = new ActId (_outport_name);
 	}
 	else {
-	  rules->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
+	  tmp->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
 	}
       }
-      rules->u.one.dir = 1; /* up */
+      tmp->u.one.dir = 1; /* up */
     }
     if (pi->dn[j]) {
       act_prs_lang_t *tmp;
       NEW (tmp, act_prs_lang_t);
-      tmp->next = rules;
-      rules = tmp;
 
-      rules->type = ACT_PRS_RULE;
-      rules->u.one.attr = (j < pi->nout ? pi->nattr[2*j] : NULL);
-      rules->u.one.arrow_type = 0;
-      rules->u.one.label = (j < pi->nout ? 0 : 1);
-      rules->u.one.e =
+      if (j < pi->nout && (pi->attrib[j].tree & 1) != 0) {
+	tmp->next = tree;
+	tree = tmp;
+      }
+      else {
+	tmp->next = rules;
+	rules = tmp;
+      }
+
+      tmp->type = ACT_PRS_RULE;
+      tmp->u.one.attr = (j < pi->nout ? pi->nattr[2*j] : NULL);
+      tmp->u.one.arrow_type = 0;
+      tmp->u.one.label = (j < pi->nout ? 0 : 1);
+      tmp->u.one.e =
 	_convert_prsexpr_to_act (pi->dn[j], _inport_name, _outport_name, pi);
-      if (rules->u.one.label) {
+      if (tmp->u.one.label) {
 	char buf[12];
 	snprintf (buf, 12, "x%d", j-pi->nout);
-	rules->u.one.id = (ActId *) Strdup (buf);
+	tmp->u.one.id = (ActId *) Strdup (buf);
       }
       else {
 	if (pi->nout == 1) {
-	  rules->u.one.id = new ActId (_outport_name);
+	  tmp->u.one.id = new ActId (_outport_name);
 	}
 	else {
-	  rules->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
+	  tmp->u.one.id = new ActId (_outport_name, new Array (const_expr (j)));
 	}
       }
-      rules->u.one.dir = 0; /* dn */
+      tmp->u.one.dir = 0; /* dn */
+    }
+  }
+
+  /* NOTE: if you have a tree, no at rules can be in the tree */
+  if (tree) {
+    act_prs_lang_t *tmp;
+    NEW (tmp, act_prs_lang_t);
+    tmp->type = ACT_PRS_TREE;
+    tmp->next = NULL;
+    tmp->u.l.p = tree;
+    tmp->u.l.id = NULL;
+    tmp->u.l.hi = NULL;
+    if (pi->get_tree_info() != 0) {
+      tmp->u.l.lo = const_expr (pi->get_tree_info());
+    }
+    else {
+      tmp->u.l.lo = NULL;
+    }
+    if (!rules) {
+      rules = tmp;
+    }
+    else {
+      tree = rules;
+      while (tree->next) {
+	tree = tree->next;
+      }
+      tree->next = tmp;
     }
   }
 
@@ -1705,9 +1771,52 @@ static void _add_rule (act_prs_expr_t **x, act_prs_expr_t *e)
   }
 }
 
-/*-- convert prs block into attriburtes used for isomorphism checking --*/
 struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
 						      int ninp, int noutp)
+{
+  ActId **iname, **oname;
+  if (noutp > 0) {
+    MALLOC (oname, ActId *, noutp);
+    for (int i=0; i < noutp; i++) {
+      ActId *tmp = new ActId (_outport_name);
+      if (noutp > 1) {
+	tmp->setArray (new Array (const_expr (i)));
+      }
+      tmp = tmp->Expand (NULL, NULL);
+      oname[i] = tmp;
+    }
+  }
+  else {
+    oname = NULL;
+  }
+  if (ninp > 0) {
+    MALLOC (iname, ActId *, ninp);
+    for (int i=0; i < ninp; i++) {
+      ActId *tmp = new ActId (_inport_name);
+      tmp->setArray (new Array (const_expr (i)));
+      tmp = tmp->Expand (NULL, NULL);
+      iname[i] = tmp;
+    }
+  }
+  else {
+    iname = NULL;
+  }
+  struct act_prsinfo *pi = _gen_prs_attributes (prs, ninp, iname, noutp, oname);
+  if (iname) {
+    FREE (iname);
+  }
+  if (oname) {
+    FREE (oname);
+  }
+  return pi;
+}
+
+/*-- convert prs block into attriburtes used for isomorphism checking --*/
+struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
+						      int ninp,
+						      ActId **iname,
+						      int noutp,
+						      ActId **oname)
 {
   struct act_prsinfo *ret;
   act_prs_lang_t *l, *lpush;
@@ -1722,12 +1831,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
   /* create a slot for each output from this prs, if the number of
      outputs is known. */
   for (int i=0; i < noutp; i++) {
-    ActId *tmp = new ActId (_outport_name);
-    if (noutp > 1) {
-      tmp->setArray (new Array (const_expr (i)));
-    }
-    tmp = tmp->Expand (NULL, NULL);
-    imap.alloc_new_id (tmp);
+    imap.alloc_new_id (oname[i]);
     ret->add_new_slot ();
   }
 
@@ -1797,9 +1901,7 @@ struct act_prsinfo *ActCellPass::_gen_prs_attributes (act_prs_lang_t *prs,
   /*-- collect specified inputs --*/
   if (ninp > 0) {
     for (int i=0; i < ninp; i++) {
-      ActId *tmp = new ActId (_inport_name, new Array (const_expr (i)));
-      tmp = tmp->Expand (NULL, NULL);
-      imap.find_or_alloc (tmp);
+      imap.find_or_alloc (iname[i]);
     }
   }
 
@@ -2205,7 +2307,9 @@ void ActCellPass::dump_celldb (FILE *fp)
   /* print */
   for (i=0; i < A_LEN (cells); i++) {
     pi = cells[i]->p;
-    _dump_prs_cell (fp, _inport_name, _outport_name, pi, cells[i]->name);
+    if (!pi->cell || pi->cell->getns() == cell_ns) {
+      _dump_prs_cell (fp, _inport_name, _outport_name, pi, cells[i]->name);
+    }
     if (!pi->cell) {
       FREE ((void*)cells[i]->name);
     }
@@ -2288,6 +2392,9 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
   }
   Assert (i < pi->nvars, "No inputs?");
 
+
+  /* create input expression */
+
   idexpr = _idexpr (i, pi);
   
   ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
@@ -2300,19 +2407,79 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
     a = a->GetRight ();
   }
 
-  instname = new ActId (name);
-  instname->Append (new ActId (_inport_name));
-  
-  ActBody_Conn *ac = new ActBody_Conn (-1, instname, ret);
+  ActBody_Conn *ac;
 
-  instname = new ActId (name);
-  instname->Append (new ActId (_outport_name));
+  /* input wiring */
+  AExpr *lret = NULL;
+  if (pi->get_invars()) {
+    /* {inst.in1, ... } = { ... } */
+    ActId **vars = pi->get_invars ();
+    AExpr *lhs;
+    int nvars = pi->get_numin ();
+
+    ActId *var = new ActId (name);
+    var->Append (vars[0]->Clone());
+
+    lhs = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr (var)), NULL);
+    lret = lhs;
+    int k;
+    for (k=1; k < nvars; k++) {
+      var = new ActId (name);
+      var->Append (vars[k]->Clone ());
+      lhs->SetRight (new AExpr (AExpr::COMMA,
+				new AExpr (_id_to_expr (var)), NULL));
+      lhs = lhs->GetRight ();
+    }
+  }
+
+  if (lret) {
+    ac = new ActBody_Conn (-1, lret, ret);
+  }
+  else {
+    /* inst.in = { ... } */
+    instname = new ActId (name);
+    instname->Append (new ActId (_inport_name));
+    ac = new ActBody_Conn (-1, instname, ret);
+  }
+
+  lret = NULL;
+  if (pi->get_outvars()) {
+    ActId **vars = pi->get_outvars ();
+    AExpr *lhs;
+    int nvars = pi->get_numout ();
+
+    ActId *var = new ActId (name);
+    var->Append (vars[0]->Clone());
+
+    lhs = new AExpr (AExpr::COMMA, new AExpr (_id_to_expr (var)), NULL);
+    lret = lhs;
+    int k;
+    for (k=1; k < nvars; k++) {
+      var = new ActId (name);
+      var->Append (vars[k]->Clone ());
+      lhs->SetRight (new AExpr (AExpr::COMMA,
+				new AExpr (_id_to_expr (var)), NULL));
+      lhs = lhs->GetRight ();
+    }
+  }
 
   idexpr = _idexpr (0, pi);
   if (pi->nout == 1) {
+    if (lret) {
+      instname = new ActId (name);
+      instname->Append (pi->get_outvars()[0]->Clone());
+    }
+    else {
+      instname = new ActId (name);
+      instname->Append (new ActId (_outport_name));
+    }
     ac->Append (new ActBody_Conn (-1, instname, new AExpr (idexpr)));
   }
   else {
+    if (!lret) {
+      instname = new ActId (name);
+      instname->Append (new ActId (_outport_name));
+    }
     ret = new AExpr (AExpr::COMMA, new AExpr (idexpr), NULL);
     a = ret;
     i = 1;
@@ -2322,7 +2489,12 @@ ActBody_Conn *ActCellPass::_build_connections (const char *name,
 			      new AExpr (idexpr), NULL));
       a = a->GetRight ();
     }
-    ac->Append (new ActBody_Conn (-1, instname, ret));
+    if (!lret) {
+      ac->Append (new ActBody_Conn (-1, instname, ret));
+    }
+    else {
+      ac->Append (new ActBody_Conn (-1, lret, ret));
+    }
   }
   return ac;
 }
@@ -3104,6 +3276,62 @@ void ActCellPass::prs_to_cells (Process *p)
 
 
 /*
+ * sanity check production rules within a process body
+ */
+act_prs_lang_t *ActCellPass::_check_extract_cell_prs (Process *p)
+{
+  if (!p) return NULL;
+  
+  /* sanity check prs */
+  act_prs *prs = p->getprs();
+
+  const char *nsname;
+
+  if (p->getns() != ActNamespace::Global()) {
+    nsname = p->getns()->getName();
+  }
+  else {
+    nsname = "";
+  }
+  
+  if (prs && prs->next) {
+    fatal_error ("Cell `%s::%s': More than one prs body", nsname, p->getName());
+  }
+  act_prs_lang_t *l;
+  l = NULL;
+  if (prs) {
+    int is_tree = 0;
+    act_prs_lang_t *lpush = NULL;
+    l = prs->p;
+    while (l) {
+      Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
+      if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
+	  ACT_PRS_LANG_TYPE (l->type) == ACT_PRS_DEVICE) {
+	fatal_error ("Cell `%s::%s': no fets/devs/subckts allowed", nsname,
+		     p->getName());
+      }
+      if (l->type == ACT_PRS_TREE && is_tree) {
+	fatal_error ("Cell `%s::%s': only one tree allowed", nsname,
+		     p->getName());
+      }
+      if (l->type == ACT_PRS_TREE) {
+	is_tree = 1;
+	lpush = l->next;
+	l = l->u.l.p;
+      }
+      l = l->next;
+      if (!l) {
+	l = lpush;
+	lpush = NULL;
+      }
+    }
+    l = prs->p;
+  }
+  return l;
+}
+
+
+/*
  * collect all cells into the cell table, and return the max cell number
  */
 int ActCellPass::_collect_cells (ActNamespace *cells)
@@ -3149,7 +3377,6 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
     }
   }
   A_FREE (xcell);
-
 
   /* 
      Collect production rules from expanded cells 
@@ -3230,52 +3457,20 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 		     cell_ns->getName(), p->getName());
       }
 
-      /* sanity check prs */
       act_prs *prs = p->getprs();
-      if (prs && prs->next) {
-	fatal_error ("Cell `%s::%s': More than one prs body",
-		     cell_ns->getName(), p->getName());
-      }
-      act_prs_lang_t *l;
-      l = NULL;
-      if (prs) {
-	int is_tree = 0;
-	act_prs_lang_t *lpush = NULL;
-	l = prs->p;
-	while (l) {
-	  Assert (l->type != ACT_PRS_LOOP, "Expanded?!");
-	  if (l->type == ACT_PRS_GATE || l->type == ACT_PRS_SUBCKT ||
-	      ACT_PRS_LANG_TYPE (l->type) == ACT_PRS_DEVICE) {
-	    fatal_error ("Cell `%s::%s': no fets/devs/subckts allowed",
-			 cell_ns->getName(), p->getName());
-	  }
-	  if (l->type == ACT_PRS_TREE && is_tree) {
-	    fatal_error ("Cell `%s::%s': only one tree allowed",
-			 cell_ns->getName(), p->getName());
-	  }
-	  if (l->type == ACT_PRS_TREE) {
-	    is_tree = 1;
-	    lpush = l->next;
-	    l = l->u.l.p;
-	  }
-	  l = l->next;
-	  if (!l) {
-	    l = lpush;
-	    lpush = NULL;
-	  }
-	}
-	l = prs->p;
-      }
+      act_prs_lang_t *l = _check_extract_cell_prs (p);
       
-      
-      /* fine. now dump into celldb */
+      /* now dump into celldb */
       pi = _gen_prs_attributes (l,
 				in_t ?
 				(in_t->arrayInfo() ?
 				 in_t->arrayInfo()->size() : 1) : 0,
 				out_t->arrayInfo() ?
 				out_t->arrayInfo()->size() : 1);
-      pi->set_leak_flag (prs->leak_adjust);
+
+      if (prs) {
+	pi->set_leak_flag (prs->leak_adjust);
+      }
 
 #if 0
       printf ("CELL: %s\n", p->getName());
@@ -3353,6 +3548,171 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
     }
   }
+
+#if 1
+  if (config_exists ("net.cell_mapper_extra")) {
+    int k = config_get_table_size ("net.cell_mapper_extra");
+    char **names = config_get_table_string ("net.cell_mapper_extra");
+    
+    for (int i=0; i < k; i++) {
+      Process *p = a->findProcess (names[i]);
+      if (!p) {
+	warning ("Cell `%s' in net.cell_mapper_extra table not found for mapping",
+		 names[i]);
+	continue;
+      }
+
+      if (p->getNumParams() > 0) {
+	fatal_error ("Cell `%s' in net.cell_mapper_extra table is templated.",
+		     names[i]);
+      }
+      
+      if (!p->isExpanded()) {
+	if (p->getns()) {
+	  p = p->Expand (p->getns(), p->CurScope(), 0, NULL);
+	}
+	else {
+	  p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
+	}
+      }
+
+      /* check that all the ports are bools with direction flags */
+
+      int ninp = 0;
+      int noutp = 0;
+      ActId **inames, **onames;
+
+      for (int j=0; j < p->getNumPorts(); j++) {
+	InstType *it = p->getPortType (j);
+	int sz;
+	if (!TypeFactory::isBoolType (it)) {
+	  ninp = -1;
+	  break;
+	}
+	if (it->arrayInfo()) {
+	  sz = it->arrayInfo()->size();
+	}
+	else {
+	  sz = 1;
+	}
+	if (it->getDir () == Type::direction::IN) {
+	  ninp += sz;
+	}
+	else if (it->getDir () == Type::direction::OUT) {
+	  noutp += sz;
+	}
+	else {
+	  ninp = -1;
+	  break;
+	}
+      }
+
+      if (ninp == -1) {
+	warning ("Cell `%s': all ports must be of type bool and include direction flags; skipped", names[i]);
+	continue;
+      }
+
+      if (ninp == 0) {
+	inames = NULL;
+      }
+      else {
+	MALLOC (inames, ActId *, ninp);
+      }
+      if (noutp == 0) {
+	onames = NULL;
+      }
+      else {
+	MALLOC (onames, ActId *, noutp);
+      }
+
+      ninp = 0;
+      noutp = 0;
+      for (int j=0; j < p->getNumPorts(); j++) {
+	InstType *it = p->getPortType (j);
+	int sz;
+	if (it->arrayInfo()) {
+	  sz = it->arrayInfo()->size();
+	}
+	else {
+	  sz = 1;
+	}
+	if (it->getDir () == Type::direction::IN) {
+	  if (it->arrayInfo()) {
+	    fatal_error ("Add support for array ports %s!", names[i]);
+	  }
+	  else {
+	    inames[ninp] = new ActId (p->getPortName (j));
+	    ninp++;
+	  }
+	}
+	else if (it->getDir () == Type::direction::OUT) {
+	  if (it->arrayInfo()) {
+	    fatal_error ("Add support for array ports %s!", names[i]);
+	  }
+	  else {
+	    onames[noutp] = new ActId (p->getPortName (j));
+	    noutp++;
+	  }
+	}
+	else {
+	  Assert (0, "What?");
+	}
+      }
+      
+      act_prs *prs = p->getprs ();
+      act_prs_lang_t *l = _check_extract_cell_prs (p);
+
+      if (!l) {
+	warning ("Cell `%s' has no production rules; skipping", names[i]);
+
+	if (inames) { FREE (inames); }
+	if (onames) { FREE (onames); }
+	
+	continue;
+      }
+
+      act_prsinfo *pi = _gen_prs_attributes (l, ninp, inames,
+					     noutp, onames);
+      if (prs) {
+	pi->set_leak_flag (prs->leak_adjust);
+      }
+
+      pi->set_io_vars (ninp, inames, noutp, onames);
+
+      {
+	char *buf;
+	int cut;
+        buf = Strdup (p->getName());
+	cut = strlen (buf) - 2;
+	buf[cut] = '\0';
+	UserDef *u = a->findProcess (buf);
+	Assert (u, "Hmm");
+	pi->cell = dynamic_cast<Process *>(u);
+	Assert (pi->cell, "Hmm...");
+        FREE (buf);
+      }
+      
+      if (A_LEN (pi->up) == 0 && A_LEN (pi->dn) == 0) {
+	act_error_ctxt (stderr);
+	warning("Cell `%s' has no production rules?", p->getName());
+      }
+      b = chash_lookup (cell_table, pi);
+      if (b) {
+	act_error_ctxt (stderr);
+	warning("Cell `%s' is a duplicate?", p->getName());
+      }
+      else {
+	b = chash_add (cell_table, pi);
+	b->v = pi;
+      }
+      if (pi->match_perm) {
+	FREE (pi->match_perm);
+	pi->match_perm = NULL;
+      }
+    }
+  }
+#endif  
+  
   return num_cells;
 }
 
@@ -3455,10 +3815,8 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
     cell_ns->Expand ();
     cell_count = 0;
   }
-  else {
-    /*-- put existing cells into the hash table for matching --*/
-    cell_count =  _collect_cells (cell_ns);
-  }
+  /*-- put existing cells into the hash table for matching --*/
+  cell_count =  _collect_cells (cell_ns);
 
   /*-- add the pass gates and cap templated values into the cell space --*/
   add_passgates_cap ();

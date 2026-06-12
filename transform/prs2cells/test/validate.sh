@@ -24,5 +24,11 @@ fi
 
 for i in $list
 do
-	$ACTTOOL $i cells.act runs/$i.cellout > runs/$i.stdout 2> runs/$i.stderr
+        name=`expr $i : '\(.*\).act'`
+	if [ -f ${name}.conf ]
+	then
+	  $ACTTOOL -cnf=${name}.conf $i cells.act runs/$i.cellout > runs/$i.stdout 2> runs/$i.stderr
+        else
+	  $ACTTOOL $i cells.act runs/$i.cellout > runs/$i.stdout 2> runs/$i.stderr
+        fi
 done

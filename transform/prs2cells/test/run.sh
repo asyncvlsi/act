@@ -52,6 +52,13 @@ lim=10
 while [ -f ${count}.act ]
 do
 	i=${count}.act
+	cnf=${count}.conf
+	if [ -f $cnf ]
+	then
+		cnf="-cnf=${cnf}"
+	else
+		cnf=""
+	fi
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).act'`
 	num=`expr $num + 1`
@@ -61,7 +68,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL $i cells.act runs/$i.t.cellout >runs/$i.t.stdout 2> runs/$i.t.stderr
+	$ACTTOOL $cnf $i cells.act runs/$i.t.cellout >runs/$i.t.stdout 2> runs/$i.t.stderr
 	ok=1
 	if ! cmp runs/$i.t.stdout runs/$i.stdout >/dev/null 2>/dev/null
 	then

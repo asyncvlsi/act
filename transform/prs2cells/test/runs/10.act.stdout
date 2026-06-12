@@ -1,0 +1,114 @@
+namespace cell {
+export defcell g0x1 (bool in[2]; bool out);
+export defcell g0x0 (bool in[2]; bool out);
+export defcell g2x0 (bool in[2]; bool out);
+export defcell g4x0 (bool in[2]; bool out);
+export defcell g3x0 (bool in[3]; bool out);
+export defcell g1x0 (bool in[2]; bool out);
+
+export defcell g0x1 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]<10>&in[1] => out-
+}
+}
+
+export defcell g0x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] => out-
+}
+}
+
+export defcell g2x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1] #> out-
+}
+}
+
+export defcell g4x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0] -> out-
+~in[0]&~in[1] -> out+
+}
+}
+
+export defcell g3x0 (bool in[3]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]&in[1]&in[2] #> out-
+}
+}
+
+export defcell g1x0 (bool in[2]; bool out)
+{
+
+/* instances */
+
+/* connections */
+prs {
+in[0]|in[1] => out-
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+defcell mycell (bool? A; bool? B; bool! C);
+defproc bar (bool p);
+
+defcell mycell (bool? A; bool? B; bool! C)
+{
+
+/* instances */
+
+/* connections */
+prs {
+A<45>&B => C-
+}
+}
+
+defproc bar (bool p)
+{
+
+/* instances */
+mycell cx0;
+bool y;
+bool x;
+bool w;
+
+/* connections */
+y=cx0.B;
+x=cx0.A;
+w=cx0.C;
+}
+
+
+/* instances */
+bar b;
+
+/* connections */
