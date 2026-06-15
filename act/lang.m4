@@ -744,6 +744,80 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
     c->u.gc->g = $3;
     return c;
 }}
+| ID "(" chan_expr_id "," w_expr ")"
+{{X:
+    if (strcmp ($1, "send") == 0) {
+      list_t *l = list_new ();
+      ActRet *r;
+      NEW (r, ActRet);
+      r->type = R_EXPR;
+      r->u.exp = $5;
+      list_append (l, r);
+      return apply_X_send_stmt_opt0 ($0, $3, 0, l, list_new ());
+    }
+    else if (strcmp ($1, "recv") == 0) {
+      if ($5->type == E_BUILTIN_INT) {
+	if ($5->u.e.l->type == E_VAR && !$5->u.e.r) {
+	  list_t *l = list_new ();
+	  ActRet *r;
+	  $0->is_assignable_override = 1;
+	  NEW (r, ActRet);
+	  r->type = R_ID;
+	  r->u.id = (ActId *) $5->u.e.l->u.e.l;
+	  list_append (l, r);
+	  return apply_X_recv_stmt_opt0 ($0, $3, 0, l, list_new ());
+	}
+	else {
+	  $E("recv() operation expects an identifier in int(.)");
+	}
+      }
+      else if ($5->type == E_BUILTIN_BOOL) {
+	// XXX: fixme
+	if ($5->u.e.l->type == E_VAR) {
+	  list_t *l = list_new ();
+	  ActRet *r;
+	  $0->is_assignable_override = 0;
+	  NEW (r, ActRet);
+	  r->type = R_ID;
+	  r->u.id = (ActId *) $5->u.e.l->u.e.l;
+	  list_append (l, r);
+	  return apply_X_recv_stmt_opt0 ($0, $3, 0, l, list_new ());
+	}
+	else {
+	  $E("recv() operation expects an identifier in bool(.)");
+	}
+      }
+      else if ($5->type == E_VAR) {
+	list_t *l = list_new ();
+	ActRet *r;
+	$0->is_assignable_override = -1;
+	NEW (r, ActRet);
+	r->type = R_ID;
+	r->u.id = (ActId *) $5->u.e.l;
+	list_append (l, r);
+	return apply_X_recv_stmt_opt0 ($0, $3, 0, l, list_new ());
+      }
+      else {
+	$E("recv() operation expects an identifier");
+      }
+      return NULL;
+    }
+    else {
+      list_t *l;
+      act_func_arguments_t *arg;
+      NEW (arg, struct act_func_arguments);
+      arg->isstring = 0;
+      arg->u.e = act_expr_var ($3);
+      l = list_new ();
+      list_append (l, arg);
+
+      NEW (arg, struct act_func_arguments);
+      arg->isstring = 0;
+      arg->u.e = $5;
+      list_append (l, arg);
+      return apply_X_base_stmt_opt5 ($0, $1, l);
+    }
+}}
 | ID "(" chan_expr_id "," gen_assignable_id ")"
 {{X:
     ActRet *r;
@@ -790,33 +864,6 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
       NEW (arg, struct act_func_arguments);
       arg->isstring = 0;
       arg->u.e = act_expr_var ($5);
-      list_append (l, arg);
-      return apply_X_base_stmt_opt5 ($0, $1, l);
-    }
-}}
-| ID "(" chan_expr_id "," w_expr ")"
-{{X:
-    if (strcmp ($1, "send") == 0) {
-      list_t *l = list_new ();
-      ActRet *r;
-      NEW (r, ActRet);
-      r->type = R_EXPR;
-      r->u.exp = $5;
-      list_append (l, r);
-      return apply_X_send_stmt_opt0 ($0, $3, 0, l, list_new ());
-    }
-    else {
-      list_t *l;
-      act_func_arguments_t *arg;
-      NEW (arg, struct act_func_arguments);
-      arg->isstring = 0;
-      arg->u.e = act_expr_var ($3);
-      l = list_new ();
-      list_append (l, arg);
-
-      NEW (arg, struct act_func_arguments);
-      arg->isstring = 0;
-      arg->u.e = $5;
       list_append (l, arg);
       return apply_X_base_stmt_opt5 ($0, $1, l);
     }

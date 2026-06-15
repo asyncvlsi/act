@@ -1,0 +1,11 @@
+defenum testme {
+   CMD1, CMD2 
+};
+
+
+defproc test(chan!(testme) X)
+{
+  chp-txt {
+    send (X, testme.CMD1)
+  }
+}
