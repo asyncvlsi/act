@@ -986,6 +986,8 @@ act_prs_expr_t *act_prs_celement_rule (act_prs_expr_t *e);
  */
 void act_print_one_prs (FILE *fp, act_prs_lang_t *p);
 
+void act_print_prs_expr (FILE *fp, act_prs_expr_t *e);
+
 /**
  * If Vdd/GND is used in the prs as a power supply, report it. Returns
  * a flag that has bit0 set for Vdd being used, bit1 set for GND being

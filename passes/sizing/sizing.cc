@@ -131,6 +131,7 @@ static int std_n_length, std_p_length;
 static int is_p_type;
 
 static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
+                              int left_depth,
 			      int flip = 0)
 {
   if (!e) return;
@@ -142,8 +143,8 @@ static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
 	(e->type == ACT_PRS_EXPR_OR && flip == 1)) {
       /* and */
       int d1, d2;
-      d1 = (*_depthmap)[e->u.e.l];
-      d2 = (*_depthmap)[e->u.e.r];
+      d1 = (*_depthmap)[e->u.e.l] - left_depth;
+      d2 = (*_depthmap)[e->u.e.r] - left_depth;
 #if 0
       if (d2 <= d1) {
 	printf ("depth d1=%d, d2=%d; flip=%d\n", d1, d2, flip);
@@ -152,20 +153,20 @@ static void _in_place_sizing (act_prs_expr_t *e, int flav, double sz, int nf,
 	act_print_prs_expr (stdout, e->u.e.r);
 	printf ("\n");
       }
-#endif      
+#endif
       Assert (d2 > d1, "What?");
-      _in_place_sizing (e->u.e.l, flav, sz*d2/d1, nf, flip);
-      _in_place_sizing (e->u.e.r, flav, sz*d2/(d2-d1), nf, flip);
+      _in_place_sizing (e->u.e.l, flav, sz*d2/d1, nf, left_depth, flip);
+      _in_place_sizing (e->u.e.r, flav, sz*d2/(d2-d1), nf, d1, flip);
     }
     else {
       /* or */
-      _in_place_sizing (e->u.e.l, flav, sz, nf, flip);
-      _in_place_sizing (e->u.e.r, flav, sz, nf, flip);
+      _in_place_sizing (e->u.e.l, flav, sz, nf, left_depth, flip);
+      _in_place_sizing (e->u.e.r, flav, sz, nf, left_depth, flip);
     }
     break;
     
   case ACT_PRS_EXPR_NOT:
-    _in_place_sizing (e->u.e.l, flav, sz, nf, 1 - flip);
+    _in_place_sizing (e->u.e.l, flav, sz, nf, left_depth, 1 - flip);
     break;
 
   case ACT_PRS_EXPR_VAR:
@@ -214,7 +215,7 @@ static  void _do_sizing (act_prs_expr_t *e, int flav, double sz, int nf)
 {
   _depthmap = new std::map<act_prs_expr_t *, int> ();
   _depth_map (e, 0);
-  _in_place_sizing (e, flav, sz, nf);
+  _in_place_sizing (e, flav, sz, nf, 0);
   delete _depthmap;
   _depthmap = NULL;
 }

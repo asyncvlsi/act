@@ -820,6 +820,12 @@ static void _print_prs_expr (FILE *fp, act_prs_expr_t *e, int prec)
   }
 }
 
+
+void act_print_prs_expr (FILE *fp, act_prs_expr_t *p)
+{
+  _print_prs_expr (fp, p, 0);
+}
+
 static void _print_one_prs (FILE *fp, act_prs_lang_t *prs)
 {
   if (!prs) return;
