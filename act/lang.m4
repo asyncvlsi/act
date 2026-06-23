@@ -1525,11 +1525,11 @@ txtguarded_commands_or_cmds[void *]: { txtgc_listitem ";" }*
 }}
 ;
 
-txtgc_listitem[act_chp_gc_t *]: ID wbool_allow_chan_expr ":" chptxt_body
+txtgc_listitem[act_chp_gc_t *]: "case" wbool_allow_chan_expr ":" chptxt_body
 {{X:
-    if (strcmp ($1, "case") != 0) {
-      $E("Expected case statement for guarded command");
-    }
+    //    if (strcmp ($1, "case") != 0) {
+    //      $E("Expected case statement for guarded command");
+    //    }
     return apply_X_guarded_cmd_opt0 ($0, $2, $4);
 }}
 | "else" ":" chptxt_body

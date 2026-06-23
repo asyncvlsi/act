@@ -1249,8 +1249,8 @@ list_t *Act::getDecomp (Process *p)
       if (p == (Process *)pb->v) {
 	if (!l) {
 	  l = list_new ();
-	  list_append (l, (ValueIdx *)(pb->key));
 	}
+	list_append (l, (ValueIdx *)(pb->key));
       }
     }
     if (l) {
@@ -1377,6 +1377,7 @@ void Act::addGeneratedVar (Scope *sc, ValueIdx *vx)
   if (!_genVars) {
     _genVars = phash_new (4);
   }
+
   phash_bucket_t *b;
   b = phash_add (_genVars, vx);
 
@@ -1403,12 +1404,14 @@ void Act::updateType (UserDef *from, UserDef *to)
   }
 }
 
-bool Act::isGeneratedVar (ValueIdx *vx)
+bool Act::isGeneratedVar (Process *p, ValueIdx *vx)
 {
+  phash_bucket_t *b;
   if (!_genVars) {
     return false;
   }
-  if (phash_lookup (_genVars, vx)) {
+  if ((b = phash_lookup (_genVars, vx))) {
+    Assert (p == (Process *)b->v, "vx and process misalignment?");
     return true;
   }
   return false;

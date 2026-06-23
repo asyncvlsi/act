@@ -705,9 +705,8 @@ class Act {
 
 
   void addGeneratedVar (Scope *sc, ValueIdx *vx); ///< add generated variable
-  void updateType (UserDef *from, UserDef *to); ///< update generated
-						///type
-  bool isGeneratedVar (ValueIdx *vx); ///< check if variable was generated
+  void updateType (UserDef *from, UserDef *to); ///< update generated type
+  bool isGeneratedVar (Process *p, ValueIdx *vx); ///< check if variable was generated
   
 private:
   TypeFactory *tf;		///< type factory for the Act instance
@@ -962,6 +961,18 @@ public:
    * decomposition pass. Decomposition passes must use their default
    * map to record the decomposition information as well. See the
    * passes/chpdecomp/chpmem.cc file for an example.
+   *
+   * The field is set to a list of Process pointers that were added to
+   * the design during the decomposition process, *but* are ones that
+   * should not be further synthesized since they already have builtin
+   * circuits.
+   *
+   * A decomposition pass should return a list_t * of ValueIdx
+   * pointers corresponding to freshly added instances within the
+   * process. If a decomposition pass restructures a circuit this way,
+   * _decomp_info should be set---at the very least to the empty
+   * list. The presence of _decomp_info is used to indicate if the
+   * pass is a decomposition-type pass.
    *
    * @return the decomposition info field for this pass
    */
