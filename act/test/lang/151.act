@@ -1,0 +1,14 @@
+defproc test()
+{
+   int<1> a;
+
+   chp-txt {
+     select {
+        case (a != 0): a := 1;
+        case (a  = 0): a := 0;
+        case ((a ^ a) = 1): a := 1
+     };
+     skip
+   }
+}
+

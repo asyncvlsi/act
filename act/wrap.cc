@@ -1137,3 +1137,43 @@ int _act_is_reserved_id (const char *s)
   }
   return 0;
 }
+
+act_chp_gc_t *_act_flatten_case_gc (act_chp_gc_t *s)
+{
+  act_chp_gc_t *tail;
+  listitem_t *li, *prev;
+  
+  if (!s) return s;
+  if (!s->s) return s;
+  if (s->s->type != ACT_CHP_SEMI) return s;
+
+  tail = s;
+  while (tail->next) {
+    tail = tail->next;
+  }
+
+  prev = NULL;
+  li = list_first (s->s->u.semi_comma.cmd);
+  while (li) {
+    act_chp_lang_t *b = (act_chp_lang_t *) list_value (li);
+    if (b->type == _ACT_CHP_PARSER_CASE) {
+      b->u.gc = _act_flatten_case_gc (b->u.gc);
+      b->type = ACT_CHP_SELECT;
+
+      tail->next = b->u.gc;
+      while (tail->next) {
+	tail = tail->next;
+      }
+      
+      FREE (b);
+      li = list_next (li);
+      list_delete_next (s->s->u.semi_comma.cmd, prev);
+    }
+    else {
+      prev = li;
+      li = list_next (li);
+    }
+  }
+  
+  return s;
+}

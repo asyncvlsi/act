@@ -247,7 +247,9 @@ enum act_chp_lang_type {
   ACT_CHP_MACRO = 15,	     ///< a macro call, gets removed when
 			     ///chp_expand() is called
 
-  ACT_HSE_FRAGMENTS = 16     ///< used to support fragmented hse
+  ACT_HSE_FRAGMENTS = 16,     ///< used to support fragmented hse
+
+  _ACT_CHP_PARSER_CASE = 17   ///< internal use only
 };
 
 #define ACT_CHP_STMT_END 17  ///< 1 more than the last enumeration of

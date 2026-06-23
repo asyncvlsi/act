@@ -868,6 +868,35 @@ txtbase_stmt[act_chp_lang_t *]: send_stmt
       return apply_X_base_stmt_opt5 ($0, $1, l);
     }
 }}
+| ID "(" wbool_allow_chan_expr ")" ":" chptxt_body
+{{X:
+    act_chp_lang_t *c;
+
+    /* case ( ) conflicts with log ( ), because neither case nor
+       log are keywords. So we may need to re-structure the guarded
+       commands if the parser groups the sequence of case statements
+       as a chptxt_body.
+       
+       Example:
+          case (e1): something; case (e2): something else
+
+       Here, "something; case (e2): something else" might get parsed
+       as a chptxt_body.
+    */
+    if (strcmp ($1, "case") != 0) {
+      $E("Expecting case clause, got `%s'", $1);
+    }
+    NEW (c, act_chp_lang_t);
+    c->type = _ACT_CHP_PARSER_CASE;
+    c->label = NULL;
+    c->space = NULL;
+    NEW (c->u.gc, act_chp_gc_t);
+    c->u.gc->id = NULL;
+    c->u.gc->next = NULL;
+    c->u.gc->s = $6;
+    c->u.gc->g = $3;
+    return c;
+}}
 | ID "(" { chp_log_item "," }* ")"
 {{X:
     return apply_X_base_stmt_opt5 ($0, $1, $3);
@@ -1505,6 +1534,9 @@ txtguarded_commands_or_cmds[void *]: { txtgc_listitem ";" }*
       if (!ret) {
 	ret = gc;
       }
+      while (gc->next) {
+	gc = gc->next;
+      }
       if (list_next (li)) {
 	gc->next = (act_chp_gc_t *)list_value (list_next (li));
       }
@@ -1525,12 +1557,14 @@ txtguarded_commands_or_cmds[void *]: { txtgc_listitem ";" }*
 }}
 ;
 
-txtgc_listitem[act_chp_gc_t *]: "case" wbool_allow_chan_expr ":" chptxt_body
+txtgc_listitem[act_chp_gc_t *]: ID wbool_allow_chan_expr ":" chptxt_body
 {{X:
-    //    if (strcmp ($1, "case") != 0) {
-    //      $E("Expected case statement for guarded command");
-    //    }
-    return apply_X_guarded_cmd_opt0 ($0, $2, $4);
+    if (strcmp ($1, "case") != 0) {
+      $E("Expected case statement for guarded command");
+    }
+    act_chp_gc_t *gc = apply_X_guarded_cmd_opt0 ($0, $2, $4);
+    _act_flatten_case_gc (gc);
+    return gc;
 }}
 | "else" ":" chptxt_body
 {{X:
