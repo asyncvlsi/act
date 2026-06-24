@@ -1,0 +1,10 @@
+defproc test()
+{
+   int x;
+
+   chp {
+     x :=  bitwidth(x)
+   }
+}
+
+test t;

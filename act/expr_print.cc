@@ -389,6 +389,21 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     return;
     break;
 
+  case E_BUILTIN_BITWIDTH:
+    snprintf (buf+k, sz, "bitwidth(");
+    PRINT_STEP;
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.l);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.l);
+    }
+    PRINT_STEP;
+    snprintf (buf+k, sz, ")");
+    PRINT_STEP;
+    return;
+    break;
+
   case E_BUILTIN_INT:
     snprintf (buf+k, sz, "int(");
     PRINT_STEP;
@@ -1382,6 +1397,7 @@ static char _expr_type_char (int type)
 
   case E_BUILTIN_BOOL: return 'B'; break;
   case E_BUILTIN_INT: return 'I'; break;
+  case E_BUILTIN_BITWIDTH: return 'X'; break;
     
   default: return '?'; break;
   }
@@ -1598,6 +1614,11 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     break;
     
+  case E_BUILTIN_BITWIDTH:
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
+    _expr_append_char (buf, len, sz, _expr_type_char (e->type));
+    break;
+
   case E_BUILTIN_INT:
     _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
     if (e->u.e.r) {
@@ -1827,13 +1848,14 @@ static void _collect_ids_from_expr (list_t *ids, Expr *e)
     break;
 
   case E_BUILTIN_BOOL:
+  case E_BUILTIN_BITWIDTH:
     _collect_ids_from_expr (ids, e->u.e.l);
     break;
     
   case E_BUILTIN_INT:
     _collect_ids_from_expr (ids, e->u.e.l);
     break;
-
+    
   case E_USERMACRO:
   case E_FUNCTION:
   case E_COMMA:
@@ -2618,6 +2640,15 @@ static int _print_dag_expr (struct pHashtable *H,
     }
     break;
 
+  case E_BUILTIN_BITWIDTH:
+    {
+      int n1 = REC_CALL(e->u.e.l);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "@%d <- bitwidth(@%d); ", b->i, n1);
+      PRINT_STEP;
+    }
+    break;
+    
   case E_BUILTIN_INT:
     {
       int n1 = REC_CALL (e->u.e.l);
@@ -2884,6 +2915,7 @@ static bool _expr_globalid_needsfix (Expr *e,
 
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
+  case E_BUILTIN_BITWIDTH:
     EXP_CHECK (e->u.e.l);
     EXP_CHECK (e->u.e.r);
     break;
@@ -3074,6 +3106,7 @@ static Expr *_expr_globalid_dofix (Expr *e,
 
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
+  case E_BUILTIN_BITWIDTH:
     EXP_CHECK (e->u.e.l);
     EXP_CHECK (e->u.e.r);
     break;
@@ -3296,6 +3329,7 @@ static void _expr_collect_ids (struct pHashtable *H, list_t *ids, Expr *e)
     break;
 
   case E_BUILTIN_BOOL:
+  case E_BUILTIN_BITWIDTH:
     _expr_collect_ids (H, ids, e->u.e.l);
     break;
     

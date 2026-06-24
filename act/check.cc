@@ -1541,6 +1541,10 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     }
     break;
 
+  case E_BUILTIN_BITWIDTH:
+    return T_PARAM|T_INT;
+    break;
+
   default:
     fatal_error ("Unknown type!");
     typecheck_err ("`%d' is an unknown type for an expression", e->type);

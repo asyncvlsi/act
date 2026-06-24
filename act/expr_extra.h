@@ -89,7 +89,6 @@
 #define E_MULTLOOP (E_END + 27)
 #define E_XORLOOP  (E_END + 28)
 
-
 /*
   This is used for a macro function within a user-defined type.
 
@@ -163,7 +162,11 @@
 #define E_STRUCT_REF (E_END+31)
 #define E_USERMACRO2 (E_END+32) /* temp during parsing */
 
-#define E_NEWEND  E_END + 33	     ///< new "end" of expression options
+#define E_BUILTIN_BITWIDTH (E_END + 33)  ///< for bitwidth(e)
+// This type is replaced by a constant during expansion, so will not be 
+// visible to any code that handles expanded ACT.
+
+#define E_NEWEND  (E_END + 34)	///< new "end" of expression options
 
 
 #ifdef __cplusplus

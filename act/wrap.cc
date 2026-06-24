@@ -636,6 +636,35 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
       int args = 0;
       int args2 = 0;
 
+      // look for bitwidth(.)
+      if (e->type == E_FUNCTION && strcmp (e->u.fn.s, "bitwidth") == 0) {
+	if (!e->u.fn.r) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "bitwidth(.) must have exactly one argument");
+	}
+	if (e->u.fn.r->type == E_GT) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "bitwidth(.) should not have template parameters");
+	}
+	if (e->u.fn.r->u.e.r) {
+	  struct act_position p;
+	  p.l = cookie->line;
+	  p.c = cookie->column;
+	  p.f = cookie->file;
+	  act_parse_err (&p, "Too many arguments to bitwidth(.)");
+	}
+	ret->type = E_BUILTIN_BITWIDTH;
+	ret->u.e.l = act_walk_X_expr (cookie, e->u.fn.r->u.e.l);
+	ret->u.e.r = NULL;
+	return ret;
+      }
+
       i = find_colon (e->u.fn.s);
       if (i == -1) {
 	ns = cookie->curns;

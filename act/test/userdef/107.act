@@ -1,0 +1,16 @@
+template<pint W>
+deftype me (int<W> x; int<2*W> y) { }
+
+defproc test()
+{
+   int x;
+   me<5> m; 
+
+   int<bitwidth(m)> y;
+
+   chp {
+     x :=  bitwidth(x) + bitwidth(m)
+   }
+}
+
+test t;

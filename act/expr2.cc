@@ -2224,6 +2224,38 @@ static Expr *_expr_expand (int *width, Expr *e,
     *width = 1;
     break;
 
+  case E_BUILTIN_BITWIDTH:
+    LVAL_ERROR;
+    if (flags & ACT_EXPR_EXFLAG_PREEXDUP) {
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      ret->u.e.r = _expr_expand (&rw, e->u.e.r, ns, s, flags);
+      *width = -1;
+    }
+    else {
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      InstType *it = act_expr_insttype (s, ret->u.e.l, NULL, 2);
+      Assert (it, "Should have been caught earlier!");
+      int w = TypeFactory::totBitWidth (it);
+      if (w == -1) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "bitwidth(.) applied to an illegal expression type\n");
+	exit (1);
+      }
+      ret->type = E_INT;
+      ret->u.ival.v = w;
+      ret->u.ival.v_extra = NULL;
+      *width = act_expr_intwidth (ret->u.ival.v);
+      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
+	BigInt *btmp = new BigInt (*width, 0, 1);
+	btmp->setVal (0, ret->u.ival.v);
+	ret->u.ival.v_extra = btmp;
+      }
+      else {
+	ret = _expr_const_canonical (ret, flags);
+      }
+    }
+    break;
+
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
     LVAL_ERROR;
