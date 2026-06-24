@@ -153,10 +153,19 @@ int Process::isBlackBox ()
     for (ActBody *tmp = p->getBody(); tmp; tmp = tmp->Next()) {
       ActBody_Inst *bi = dynamic_cast<ActBody_Inst *>(tmp);
       if (!bi) {
-	return 0;
+	/* it's not an instance */
+	ActBody_Lang *lbi = dynamic_cast<ActBody_Lang *>(tmp);
+        if (!(lbi && lbi->gettype() == ActBody_Lang::LANG_SPEC)) {
+	  /* it's not a spec body, so this is not a black box component */
+	  return 0;
+        }
       }
-      if (!TypeFactory::isBoolType (bi->getType())) {
-	return 0;
+      else {
+	/* it is an instance */
+	if (!TypeFactory::isBoolType (bi->getType())) {
+	  /* not a pure bool, so not a black box */
+	  return 0;
+	}
       }
     }
     return 1;
