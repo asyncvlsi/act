@@ -1542,7 +1542,15 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     break;
 
   case E_BUILTIN_BITWIDTH:
-    return T_PARAM|T_INT;
+    {
+      int dummy;
+      int rv = act_type_expr (s, e->u.e.l, &dummy, only_chan);
+      if (rv & T_PARAM) {
+	typecheck_err ("bitwidth(.) applied to a parameter expression");
+	return T_ERR;
+      }
+    }
+    return T_PARAM|T_INT|T_STRICT;
     break;
 
   default:
@@ -1851,6 +1859,74 @@ InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan)
   }
   return NULL;
 }
+
+InstType *act_expr_insttype_ex (Scope *s, Expr *e, int only_chan)
+{
+  int ret;
+  InstType *it;
+
+  if (!e) {
+    typecheck_err ("NULL expression??");
+    return NULL;
+  }
+  Assert (s->isExpanded(), "Expanded typechecking called on unexpanded scope");
+
+  /* 
+     The next four cases are the only valid expressions for
+      - structures
+      - pure enumerations
+  */
+  it = _act_special_expr_insttype (s, e, NULL, only_chan);
+  if (it) {
+    return it;
+  }
+
+  /* analyze the expression tree */
+  int width;
+  ret = act_type_expr (s, e, &width, only_chan);
+
+  if (ret == T_ERR) {
+    return NULL;
+  }
+  ret &= ~T_STRICT;
+  if (ret == (T_INT|T_PARAM)) {
+    return TypeFactory::Factory()->NewPInt();
+  }
+  else if (ret == T_INT || ret == T_DATA_INT) {
+    InstType *it = TypeFactory::Factory()->NewInt (s, Type::NONE, 0, const_expr (width));
+    it = it->Expand (NULL, s);
+    return it;
+  }
+  else if (ret == (T_BOOL|T_PARAM)) {
+    return TypeFactory::Factory()->NewPBool ();
+  }
+  else if (ret == T_BOOL || ret == T_DATA_BOOL) {
+    InstType *it = TypeFactory::Factory()->NewBool (Type::NONE);
+    it = it->Expand (NULL, s);
+    return it;
+  }
+  else if (ret == (T_REAL|T_PARAM)) {
+    return TypeFactory::Factory()->NewPReal ();
+  }
+  else if (ret == (T_PTYPE|T_PARAM)) {
+    Assert (e->type == E_TYPE, "What?");
+    return (InstType *)e->u.e.l;
+  }
+  else if (ret == (T_PSTRUCT|T_PARAM)) {
+    Assert (e->type == E_PSTRUCT || e->type == E_PSTRUCT_FN, "What?");
+    Assert (e->u.e.r, "What?");
+    return new InstType (NULL, (PStruct *)e->u.e.r);
+  }
+  else if (ret & T_ARRAYOF) {
+    // doesn't work for array expressions!
+    return NULL;
+  }
+  else {
+    fatal_error ("Unexpected return code in typechecking: %x", ret);
+  }
+  return NULL;
+}
+
 
 static int stype_line_no, stype_col_no;
 static char *stype_file_name;

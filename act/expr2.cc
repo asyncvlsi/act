@@ -2233,12 +2233,15 @@ static Expr *_expr_expand (int *width, Expr *e,
     }
     else {
       ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
-      InstType *it = act_expr_insttype (s, ret->u.e.l, NULL, 2);
+      InstType *it = act_expr_insttype_ex (s, ret->u.e.l, 2);
       Assert (it, "Should have been caught earlier!");
       int w = TypeFactory::totBitWidth (it);
       if (w == -1) {
 	act_error_ctxt (stderr);
 	fprintf (stderr, "bitwidth(.) applied to an illegal expression type\n");
+	fprintf (stderr, "  Type: ");
+	it->Print (stderr);
+	fprintf (stderr, "\n");
 	exit (1);
       }
       ret->type = E_INT;

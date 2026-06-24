@@ -1,0 +1,3 @@
+ERROR: File `110.act', line 6, col 21
+	Typechecking failed on expression!
+	bitwidth(.) applied to a parameter expression

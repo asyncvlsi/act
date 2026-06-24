@@ -230,6 +230,14 @@ int type_chp_check_assignable (InstType *lhs, InstType *rhs);
  */
 InstType *act_expr_insttype (Scope *s, Expr *e, int *islocal, int only_chan);
 
+
+/**
+ * Similar to act_expr_insttype(), except it returns an expanded type
+ * with the bitwidth filled in. It should also only be used in
+ * expanded contexts. Doesn't support array expressions.
+ */
+InstType *act_expr_insttype_ex (Scope *s, Expr *e, int only_chan);
+
 /**
  * Returns the actual type of the identifier.
  *
