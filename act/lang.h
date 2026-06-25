@@ -403,8 +403,8 @@ struct act_chp {
  */
 struct act_spec {
   int isrequires;	///< 1 if this is a requires clause;
-			///otherwise it is ensures or there's
-                        ///no flag
+                        ///  0 if it is an ensures clause;
+                        /// -1 otherwise
   
   /**
    *  The type field. For values 0..n, this is the index into the
@@ -416,6 +416,9 @@ struct act_spec {
    *  - count = 4
    *  - ids[0] = lhs, ids[1] = first, ids[2] = second
    *  - ids[3] = NULL or an Expr * for the timing margin
+   *
+   * type = -3 : "->" a ticked edge
+   * type = -4 : "#>" a cut edge
    */
   int type;
   
@@ -424,7 +427,7 @@ struct act_spec {
 
   /**
    * Flags for timing directives
-   *  - 0x03 : 0 = no dir, 1 = +, 2 = -
+   *  - 0x03 : 0 = no dir, 1 = +, 2 = -  (bottom two bits)
    *  - 0x04 : 1 = ?, 0 = nothing
    *  - 0x08 : 1 = +1, 0 = current iteration. Can only be
    *    set for ids[1] and ids[2].

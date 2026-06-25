@@ -1468,17 +1468,17 @@ one_method: ID "{" hse_body "}"
     }
     $0->scope = new Scope ($0->scope, 0);
 }}  
-"(" [ macro_formal_list ] ")" "{" [ chp_body ] "}"
+"(" [ macro_formal_list ] ")" chp_or_chptxt_body
 {{X:
     OPT_FREE ($4);
     /* function formal list must be data types; no parameters allowed */
-    if (!OPT_EMPTY ($7)) {
-      ActRet *r = OPT_VALUE ($7);
+    if (!OPT_EMPTY ($6)) {
+      ActRet *r = OPT_VALUE ($6);
       $A(r->type == R_CHP_LANG);
       $0->um->setBody (r->u.chp);
       FREE (r);
     }
-    OPT_FREE ($7);
+    OPT_FREE ($6);
     $0->um = NULL;
 
     Scope *tmp = $0->scope;
@@ -1542,7 +1542,7 @@ one_method: ID "{" hse_body "}"
     $0->um->setRetType ($7);
     $0->scope->Add ("self", $7);
 }}
-"{" [ alias_or_inst_list "chp" "{" chp_body "}" ] "}"
+"{" [ alias_or_inst_list prefix_chp_or_chptxt_body ] "}"
 {{X:
     /* function formal list must be data types; no parameters allowed */
     if (!OPT_EMPTY ($9)) {
@@ -1563,6 +1563,32 @@ one_method: ID "{" hse_body "}"
     delete tmp;
     
     return NULL;
+}}
+;
+
+chp_or_chptxt_body[list_t *]: "chp-txt" "{" chptxt_body "}"
+{{X:
+    list_t *l = list_new ();
+    ActRet *r;
+    NEW (r, ActRet);
+    r->type = R_CHP_LANG;
+    r->u.chp = $3;
+    list_append (l, r);
+    return l;
+}}   
+| "{" [ chp_body ] "}"
+{{X:
+    return $2;
+}}
+;
+
+prefix_chp_or_chptxt_body[act_chp_lang_t *]: "chp" "{" chp_body "}"
+{{X:
+    return $3;
+}}
+| "chp-txt" "{" chptxt_body "}"
+{{X:
+    return $3;
 }}
 ;
 
