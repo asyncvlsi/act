@@ -304,15 +304,22 @@ static void _apply_sizing (act_connection *c, int flav_up, int flav_dn,
     }
   }
 }
-	
 
 void *ActSizingPass::local_op (Process *p, int mode)
 {
+  Assert (mode == 0, "What?");
+  cellSize (p);
+  return NULL;
+}
+
+void ActSizingPass::cellSize (Process *p)
+{
   act_prs *prs;
   act_sizing *sz;
-  act_boolean_netlist_t *bn;
 
-  Assert (mode == 0, "What?");
+  if (p) {
+    Assert (p->isExpanded(), "What?!");
+  }
   
   if (p) {
     prs = p->getlang()->getprs();
@@ -323,12 +330,7 @@ void *ActSizingPass::local_op (Process *p, int mode)
     sz = ActNamespace::Global()->getlang()->getsizing();
   }
 
-  if (!prs || !sz) return NULL;
-
-  bn = bp->getBNL (p);
-  if (!bn) {
-    return NULL;
-  }
+  if (!prs || !sz) return;
 
   /* 
      we have a sizing body, plus production rules; now apply the
@@ -508,7 +510,6 @@ void *ActSizingPass::local_op (Process *p, int mode)
   if (leak_adj && prs) {
     prs->leak_adjust = 1;
   }
-  return NULL;
 }
 
 

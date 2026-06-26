@@ -392,9 +392,25 @@ struct act_chp {
  *------------------------------------------------------------------------
  */
 
-#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2 || (x)->type == -3 || (x)->type == -4)
+#define ACT_SPEC_ISTIMING(x)  ((x)->type == -1 || (x)->type == -2 || (x)->type == -3 || (x)->type == -4 || (x)->type == -5)
 #define ACT_SPEC_ISTIMINGFORK(x)  ((x)->type == -1 || (x)->type == -2)
 
+
+struct act_spec_timing {
+  // edges with optional ticks
+  ActId *src, *tgt;
+  unsigned char dir_ticks;	// bit 0,1: -/+ dir for src ; bit 2,3:
+				// -/+ dir for dst, bit 4: ticked
+  void clear() { src = NULL; tgt = NULL; dir_ticks = 0; }
+  bool isticked() { return (dir_ticks >> 4) & 0x1 ? true : false; }
+  void tickedge() { dir_ticks |= (1 << 4); }
+  void srcdn () { dir_ticks |= (1 << 0); }
+  void srcup () { dir_ticks |= (1 << 1); }
+  void dstdn () { dir_ticks |= (1 << 2); }
+  void dstup () { dir_ticks |= (1 << 3); }
+  int srcflags() { return (dir_ticks & 0x3); }
+  int dstflags() { return ((dir_ticks >> 2) & 0x3); }
+};
 
 /**
  * @class act_spec
@@ -419,11 +435,17 @@ struct act_spec {
    *
    * type = -3 : "->" a ticked edge
    * type = -4 : "#>" a cut edge
+   *
+   * type = -5 : timing graph spec
    */
   int type;
-  
+
   int count;   ///< the number of ids; -1 = all nodes in the process
-  ActId **ids; ///< the array of identifiers in the spec directive
+
+  union {
+    ActId **ids; ///< the array of identifiers in the spec directive
+    act_spec_timing *graph;
+  };
 
   /**
    * Flags for timing directives
@@ -432,7 +454,8 @@ struct act_spec {
    *  - 0x08 : 1 = +1, 0 = current iteration. Can only be
    *    set for ids[1] and ids[2].
    */  
-  int *extra;  
+  int *extra;
+
   struct act_spec *next;
 };
 

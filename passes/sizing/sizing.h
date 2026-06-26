@@ -55,6 +55,13 @@ public:
    */
   static int no_sizing (act_prs_expr_t *e);
 
+
+  /*
+   * Call this to explicitly size auxillary cells that may have been
+   * specified in a configuration file and have sizing bodies.
+   */
+  static void cellSize (Process *p);
+
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);

@@ -3553,6 +3553,12 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
   if (config_exists ("net.cell_mapper_extra")) {
     int k = config_get_table_size ("net.cell_mapper_extra");
     char **names = config_get_table_string ("net.cell_mapper_extra");
+    ActSizingPass *sp;
+    if (!a->pass_find ("sizing")) {
+      fatal_error ("Sizing pass not found?");
+    }
+    sp = dynamic_cast<ActSizingPass *>(a->pass_find ("sizing"));
+    Assert (sp, "Uh what happened?");
     
     for (int i=0; i < k; i++) {
       Process *p = a->findProcess (names[i]);
@@ -3563,10 +3569,14 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
 
       if (p->getNumParams() > 0) {
-	fatal_error ("Cell `%s' in net.cell_mapper_extra table is templated.",
-		     names[i]);
+	InstType *pp = p->getParent ();
+	UserDef *u = dynamic_cast<UserDef *> (pp->BaseType());
+	if (!u || u->getNumParams() != p->getNumParams()) {
+	  fatal_error ("Cell `%s' in net.cell_mapper_extra table is templated.",
+		       names[i]);
+	}
       }
-      
+
       if (!p->isExpanded()) {
 	if (p->getns()) {
 	  p = p->Expand (p->getns(), p->CurScope(), 0, NULL);
@@ -3574,6 +3584,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	else {
 	  p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
 	}
+	ActSizingPass::cellSize (p);
       }
 
       /* check that all the ports are bools with direction flags */
@@ -3658,7 +3669,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	  Assert (0, "What?");
 	}
       }
-      
+
       act_prs *prs = p->getprs ();
       act_prs_lang_t *l = _check_extract_cell_prs (p);
 
@@ -3678,19 +3689,7 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       }
 
       pi->set_io_vars (ninp, inames, noutp, onames);
-
-      {
-	char *buf;
-	int cut;
-        buf = Strdup (p->getName());
-	cut = strlen (buf) - 2;
-	buf[cut] = '\0';
-	UserDef *u = a->findProcess (buf);
-	Assert (u, "Hmm");
-	pi->cell = dynamic_cast<Process *>(u);
-	Assert (pi->cell, "Hmm...");
-        FREE (buf);
-      }
+      pi->cell = p;
       
       if (A_LEN (pi->up) == 0 && A_LEN (pi->dn) == 0) {
 	act_error_ctxt (stderr);
@@ -3699,7 +3698,9 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
       b = chash_lookup (cell_table, pi);
       if (b) {
 	act_error_ctxt (stderr);
-	warning("Cell `%s' is a duplicate?", p->getName());
+	char *tmpn = p->getFullName ();
+	warning("Cell `%s' is a duplicate?", tmpn);
+	FREE (tmpn);
       }
       else {
 	b = chash_add (cell_table, pi);
@@ -3709,6 +3710,9 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	FREE (pi->match_perm);
 	pi->match_perm = NULL;
       }
+#if 0
+      _dump_prsinfo (pi, "in", "out");
+#endif
     }
   }
 #endif  
