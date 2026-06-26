@@ -3584,7 +3584,13 @@ int ActCellPass::_collect_cells (ActNamespace *cells)
 	else {
 	  p = p->Expand (ActNamespace::Global(), p->CurScope(), 0, NULL);
 	}
-	ActSizingPass::cellSize (p);
+        if (p->isLeaf ()) {
+	  ActSizingPass::cellSize (p);
+        }
+      }
+      if (!p->isLeaf()) {
+        warning ("Cell `%s' in net.cell_mapper_extra table is not a leaf cell; skipped", names[i]);
+        continue;
       }
 
       /* check that all the ports are bools with direction flags */
