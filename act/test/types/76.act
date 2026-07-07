@@ -1,0 +1,32 @@
+defptype pstr (
+    pint Wa;
+    pint Wb
+);
+
+pstr pstr_1;
+pstr_1.Wa = 2;
+pstr_1.Wb = 3;
+
+pstr pstr_2;
+pstr_2.Wa = 3;
+pstr_2.Wb = 2;
+
+template <pstr params> deftype str (
+    int <params.Wa> a;
+    int <params.Wb> b
+) {}
+
+defproc tst () {
+    str<pstr_1> s1;
+    str<pstr_2> s2;
+    chan(str<pstr_1>) c1;
+
+    chp {
+       c1!s1;
+       c1!s2;
+       c1?s1;
+       c1?s2
+    }
+}
+
+tst t;

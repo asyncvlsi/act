@@ -2141,6 +2141,39 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     else {
       ret->u.comm.e = NULL;
     }
+    {
+      Chan *ch;
+      Channel *ch1;
+      InstType *it;
+      (void) (act_type_var (s, ret->u.comm.chan, &it));
+      ch1 = dynamic_cast <Channel *> (it->BaseType());
+      if (ch1) {
+	ch = dynamic_cast<Chan *> (ch1->root()->BaseType ());
+      }
+      else {
+	ch = dynamic_cast<Chan *> (it->BaseType ());
+      }
+      Assert (ch, "Hmm");
+      
+      if (ret->type == ACT_CHP_SEND) {
+	if (!act_type_chan (s, ch, 1, ret->u.comm.e,
+			    ret->u.comm.var, ret->u.comm.convert - 1)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "CHP send: type-checking failed.\n\t%s\n",
+		   act_type_errmsg());
+	  exit (1);
+	}
+      }
+      else {
+	if (!act_type_chan (s, ch, 0, ret->u.comm.e,
+			    ret->u.comm.var, ret->u.comm.convert - 1)) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, "CHP send: type-checking failed.\n\t%s\n",
+		   act_type_errmsg());
+	  exit (1);
+	}
+      }
+    }
     break;
     
   case ACT_CHP_FUNC:
