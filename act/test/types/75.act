@@ -1,0 +1,11 @@
+defenum foo {
+   A, B, C
+};
+
+foo x, y;
+bool p;
+
+chp {
+   x := y;
+   p := (x = foo.A)
+}

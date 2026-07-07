@@ -329,7 +329,7 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
   else if (e->type == E_ENUM_CONST) {
     /* special case */
     Data *d = (Data *) e->u.fn.s;
-    d = d->Expand (d->getns(), d->getns()->CurScope(), 0, NULL);
+    //d = d->Expand (d->getns(), d->getns()->CurScope(), 0, NULL);
     it = new InstType (d->getns()->CurScope(), d);
     return it;
   }

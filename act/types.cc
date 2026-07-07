@@ -1303,7 +1303,10 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   Assert (_ns->EditType (xd->name, xd) == 1, "What?");
   xd->is_enum = is_enum;
   xd->is_eint = is_eint;
-
+  if (xd->is_enum) {
+    xd->is_eint = 1;
+  }
+  
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
     xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
   }

@@ -1,0 +1,13 @@
+defenum blah {
+   A, B, C
+};
+
+defproc foo()
+{
+  blah f;
+  chp {
+    f := blah.A
+  }
+}
+
+foo t;
