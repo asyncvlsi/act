@@ -1,0 +1,3 @@
+In expanding test (60.act:20)
+In expanding ::<Global>
+FATAL: Expanding macro: `f' substituted by expression in a context where an identifier is needed.

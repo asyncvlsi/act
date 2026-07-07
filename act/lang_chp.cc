@@ -2262,7 +2262,15 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	  eval.u.val = chp_expr_expand ((Expr *)list_value (li), ns, s);
 
 	  /* -- typecheck -- */
+	  InstType *rhs;
 	  tr = act_type_expr (s, eval.u.val, NULL);
+	  if (tr == T_ERR) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n", um->getName(), i);
+	    fprintf (stderr, "  %s\n", act_type_errmsg());
+	    exit (1);
+	  }
+#if 0	  
 	  if (!T_BASETYPE_ISINTBOOL (tr)) {
 	    act_error_ctxt (stderr);
 	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n", um->getName(), i);
@@ -2272,14 +2280,27 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	    fprintf (stderr, "\tType must be int or bool\n");
 	    exit (1);
 	  }
-
-	  if ((T_BASETYPE_INT (tr) && !TypeFactory::isIntType (um->getPortType (i))) ||
+#endif
+	  if ((T_BASETYPE_INT (tr) && !(TypeFactory::isIntType (um->getPortType (i)) || TypeFactory::isEnum (um->getPortType (i)))) ||
 	      (T_BASETYPE_BOOL (tr) && !TypeFactory::isBoolType (um->getPortType (i)))) {
 	    act_error_ctxt (stderr);
 	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n\t", um->getName(), i);
 	    fprintf (stderr, "\tint/bool mismatch\n");
 	    exit (1);
-	  }	    
+	  }
+
+	  rhs = act_expr_insttype (s, eval.u.val, NULL, 0);
+	  Assert (rhs, "what?");
+
+	  if (!type_chp_check_assignable (um->getPortType (i), rhs)) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, "Typechecking failed in macro (%s) argument #%d\n\t", um->getName(), i);
+	    um->getPortType (i)->Print (stderr);
+	    fprintf (stderr, " v/s ");
+	    rhs->Print (stderr);
+	    fprintf (stderr, "\n");
+	    exit (1);
+	  }
 
 	  tsc->Add (um->getPortName (i), um->getPortType (i));
 	  ActId *tmp = new ActId (um->getPortName (i));

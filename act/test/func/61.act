@@ -1,0 +1,22 @@
+defenum foo { A, B };
+
+defproc mytest()
+{
+  methods {
+    macro mymacro (foo f) {
+       f := foo.A
+    }
+  }
+}
+
+defproc test()
+{
+   mytest m;
+   foo g;
+
+   chp {
+      m.mymacro(g)
+   }
+}
+
+test t;

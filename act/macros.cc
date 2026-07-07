@@ -541,7 +541,11 @@ static ActId *_chp_id_subst (ActId *id, act_inline_table *tab, ActId *inp)
     Assert (ve.isSimple(), "What?");
     Expr *tmp = ve.getVal();
     if (tmp->type == E_VAR) {
-      return ((ActId *)tmp->u.e.l)->Clone();
+      ActId *ret = ((ActId *)tmp->u.e.l)->Clone();
+      if (inp->Rest()) {
+	ret->Tail()->Append (inp->Rest()->Clone());
+      }
+      return ret;
     }
     else {
       act_error_ctxt (stderr);
@@ -581,13 +585,18 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
 	  e->u.ival.v_extra = (Expr *) new BigInt (*((BigInt *)e->u.ival.v_extra));
 	}
 	else if (e->type == E_VAR) {
-	  e->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
+	  ActId *tid = ((ActId *)e->u.e.l)->Clone ();
+	  if (tmp->Rest()) {
+	    tid->Tail()->Append (tmp->Rest()->Clone());
+	  }
+	  e->u.e.l = (Expr *) tid;
 	}
 	else if (!expr_ex_is_cached (e)) {
 	  Expr *f = expr_dup (e);
 	  *e = *f;
 	  FREE (f);
 	}
+	
       }
       else {
 	ActId *ret = id->Clone ();

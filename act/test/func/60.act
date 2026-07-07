@@ -1,0 +1,30 @@
+deftype foo(int a, b) { }
+
+defproc mytest()
+{
+  methods {
+    macro mymacro (foo f) {
+       f.a := f.b
+    }
+  }
+}
+
+function testme(int a) : foo
+{
+  chp {
+    self.a := a;
+    self.b := a + 1
+  }
+}
+
+defproc test()
+{
+   mytest m;
+   foo g;
+
+   chp {
+      m.mymacro(testme(4))
+   }
+}
+
+test t;
