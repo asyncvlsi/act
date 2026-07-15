@@ -191,7 +191,6 @@ static void _dollar_replace_ids (UserDef *ux,  Expr *e)
 
   case E_VAR:
   case E_PROBE:
-  case E_BITFIELD:
     if (e->u.e.l) {
       e->u.e.l = (Expr *) _adddollar_id_subst (ux, (ActId *)e->u.e.l);
     }
@@ -608,7 +607,6 @@ static void _replace_ids (ActId *id, act_inline_table *tab, Expr *e)
     break;
     
   case E_PROBE:
-  case E_BITFIELD:
     if (e->u.e.l) {
       ActId *tmp = (ActId *)e->u.e.l;
       e->u.e.l = (Expr *) _chp_id_subst (id, tab, tmp);
@@ -870,7 +868,10 @@ void UserMacro::populateCHP()
       
       NEW (e, Expr);
       e->type = E_BITFIELD;
-      e->u.e.l = (Expr *) new ActId (string_cache ("$internal"));
+      NEW (e->u.e.l, Expr);
+      e->u.e.l->type = E_VAR;
+      e->u.e.l->u.e.l = (Expr *) new ActId (string_cache ("$internal"));
+      e->u.e.l->u.e.r = NULL;
       NEW (e->u.e.r, Expr);
       e->u.e.r->type = E_BITFIELD;
       e->u.e.r->u.e.r = const_expr (pos-1);

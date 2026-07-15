@@ -689,128 +689,56 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 
   case E_BITFIELD:
     {
-      ActId *theid;
-      InstType *xit;
       long lo, hi;
-      theid = (ActId *)e->u.e.l;
-      lt = act_type_var_gen (s, theid, &xit, (only_chan == 0 ? false : true));
+      InstType *xit;
+
+      lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
       if (lt == T_ERR) return T_ERR;
-      if (only_chan == 1 || (only_chan == 2 && !(T_BASETYPE_INT (lt)))) {
-	if (TypeFactory::isChanType (xit)) {
-	  if (xit->isExpanded()) {
-	    if (xit->getDir() == Type::OUT) {
-	      InstType *xit2 = s->FullLookup (theid->getName());
-	      if (!(theid->Rest() && TypeFactory::isProcessType (xit2))) {
-		typecheck_err ("Channel expression requires an input port");
-		return T_ERR;
-	      }
-	    }
-	    if (!xit->arrayInfo() && ((ActId *)e->u.e.l)->Tail()->arrayInfo()) {
-	      typecheck_err ("Identifier is not an array type");
-	      return T_ERR;
-	    }
-	    if (xit->arrayInfo() && !((ActId *)e->u.e.l)->isDeref()) {
-	      typecheck_err ("Array specifier not permitted in channel expression");
-	      return T_ERR;
-	    }
-	    if (!TypeFactory::isBaseIntType (TypeFactory::getChanDataType (xit))) {
-	      typecheck_err ("Bitfields permitted only on integer data values");
-	      return T_ERR;
-	    }
-	    Assert (e->u.e.r, "What?");
-	    Assert (e->u.e.r->u.e.r, "What?");
-	    if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
-				    e->u.e.r->u.e.l->type != E_INT)) {
-	      typecheck_err ("Bitfield can only use const integer arguments");
-	      return T_ERR;
-	    }
-	    if (!expr_is_a_const (e->u.e.r->u.e.r) ||
-		e->u.e.r->u.e.r->type != E_INT) {
-	      typecheck_err ("Bitfield can only use const integer arguments");
-	      return T_ERR;
-	    }
-	    hi = e->u.e.r->u.e.r->u.ival.v;
-	    if (e->u.e.r->u.e.l) {
-	      lo = e->u.e.r->u.e.l->u.ival.v;
-	    }
-	    else {
-	      lo = hi;
-	    }
-	    if (hi < lo) {
-	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
-	      return T_ERR;
-	    }
-#if 0	    
-	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
-	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
-			     hi, lo, TypeFactory::bitWidth (xit));
-	      return T_ERR;
-	    }
-#endif	    
-	    if (width) {
-	      *width = hi - lo + 1;
-	    }
-	  }
-	  else {
-	    if (width) {
-	      *width = 32;
-	    }
-	  }
-	  return T_INT;
+      
+      if (!(T_BASETYPE_INT (lt))) {
+	typecheck_err ("Bitfield used with non-integer expression.");
+	return T_ERR;
+      }
+      if (lt & T_ARRAYOF) {
+	typecheck_err ("Bitfield applied to an array.");
+	return T_ERR;
+      }
+      xit = act_expr_insttype (s, e->u.e.l, NULL, only_chan);
+      if (xit->isExpanded()) {
+	Assert (e->u.e.r, "What?");
+	Assert (e->u.e.r->u.e.r, "What?");
+	if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
+				e->u.e.r->u.e.l->type != E_INT)) {
+	  typecheck_err ("Bitfield can only use const integer arguments");
+	  return T_ERR;
+	}
+	if (!expr_is_a_const (e->u.e.r->u.e.r) ||
+	    e->u.e.r->u.e.r->type != E_INT) {
+	  typecheck_err ("Bitfield can only use const integer arguments");
+	  return T_ERR;
+	}
+	hi = e->u.e.r->u.e.r->u.ival.v;
+	if (e->u.e.r->u.e.l) {
+	  lo = e->u.e.r->u.e.l->u.ival.v;
+	}
+	else {
+	  lo = hi;
+	}
+	if (hi < lo) {
+	  typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
+	  return T_ERR;
+	}
+	if (width) {
+	  *width = hi - lo + 1;
 	}
       }
       else {
-	if (T_BASETYPE_INT (lt)) {
-	  if (lt & T_ARRAYOF) {
-	    typecheck_err ("Bitfield applied to an array.");
-	    return T_ERR;
-	  }
-	  if (xit->isExpanded()) {
-	    Assert (e->u.e.r, "What?");
-	    Assert (e->u.e.r->u.e.r, "What?");
-	    if (e->u.e.r->u.e.l && (!expr_is_a_const (e->u.e.r->u.e.l) ||
-				    e->u.e.r->u.e.l->type != E_INT)) {
-	      typecheck_err ("Bitfield can only use const integer arguments");
-	      return T_ERR;
-	    }
-	    if (!expr_is_a_const (e->u.e.r->u.e.r) ||
-		e->u.e.r->u.e.r->type != E_INT) {
-	      typecheck_err ("Bitfield can only use const integer arguments");
-	      return T_ERR;
-	    }
-	    hi = e->u.e.r->u.e.r->u.ival.v;
-	    if (e->u.e.r->u.e.l) {
-	      lo = e->u.e.r->u.e.l->u.ival.v;
-	    }
-	    else {
-	      lo = hi;
-	    }
-	    if (hi < lo) {
-	      typecheck_err ("Bitfield range is empty {%d..%d}", hi, lo);
-	      return T_ERR;
-	    }
-#if 0	    
-	    if ((TypeFactory::bitWidth (xit) >= 0 && hi+1 > TypeFactory::bitWidth (xit)) || lo < 0) {
-	      typecheck_err ("Bitfield range {%d..%d} is wider than operand (%d)",
-			     hi, lo, TypeFactory::bitWidth (xit));
-	      return T_ERR;
-	    }
-#endif
-	    if (width) {
-	      *width = hi - lo + 1;
-	    }
-	  }
-	  else {
-	    if (width) {
-	      *width = 32;
-	    }
-	  }
-	  return lt;
+	if (width) {
+	  *width = 32;
 	}
       }
+      return lt;
     }
-    typecheck_err ("Bitfield used with non-integer variable.");
-    return T_ERR;
     break;
 
   case E_BUILTIN_BOOL:

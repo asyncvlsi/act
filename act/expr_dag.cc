@@ -88,17 +88,9 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
   case E_UMINUS:
   case E_QUERY:
   case E_COLON:
+  case E_BITFIELD:
     ret->u.e.l = REC_CALL (e->u.e.l);
     ret->u.e.r = REC_CALL (e->u.e.r);
-    break;
-    
-  case E_BITFIELD:
-    ret->u.e.l = (Expr *)((ActId *)e->u.e.l)->Clone ();
-    NEW (ret->u.e.r, Expr);
-    ret->u.e.r->type = E_BITFIELD;
-    // constants, so unique already and hashed
-    ret->u.e.r->u.e.l = e->u.e.r->u.e.l;
-    ret->u.e.r->u.e.r = e->u.e.r->u.e.r;
     break;
 
   case E_PROBE:
@@ -225,16 +217,6 @@ static int _exprhashfn (int sz,  void *key)
   case E_PROBE:
     res = ((ActId *)e->u.e.l)->getHash (res, sz);
     break;
-    
-  case E_BITFIELD:
-    res = ((ActId *)e->u.e.l)->getHash (res, sz);
-    res = hash_function_continue (sz, (const unsigned char *)
-				  &e->u.e.r->u.e.l,
-				  sizeof (Expr *), res, 1);
-    res = hash_function_continue (sz, (const unsigned char *)
-				  &e->u.e.r->u.e.r,
-				  sizeof (Expr *), res, 1);
-    break;
 
   case E_FUNCTION:
     res = hash_function_continue (sz, (const unsigned char *)
@@ -274,6 +256,7 @@ static int _exprhashfn (int sz,  void *key)
   case E_COLON:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
+  case E_BITFIELD:
     res = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
 				  sizeof (Expr *), res, 1);
     res = hash_function_continue (sz, (const unsigned char *) &e->u.e.r,
@@ -316,18 +299,9 @@ static int _exprmatchfn (void *key1, void *key2)
     return 1;
   }
   else {
-    if (e1->type == E_VAR || e1->type == E_PROBE || e1->type == E_BITFIELD) {
+    if (e1->type == E_VAR || e1->type == E_PROBE) {
       if (((ActId *)e1->u.e.l)->isEqual ((ActId *)e2->u.e.l)) {
-	if (e1->type == E_BITFIELD) {
-	  if (e1->u.e.r->u.e.l == e2->u.e.r->u.e.l &&
-	      e1->u.e.r->u.e.r == e2->u.e.r->u.e.r) {
-	    return 1;
-	  }
-	  return 0;
-	}
-	else {
-	  return 1;
-	}
+	return 1;
       }
       return 0;
     }
@@ -432,11 +406,11 @@ static void _collect_dag (struct cHashtable *H, Expr *e)
   case E_UMINUS:
   case E_QUERY:
   case E_COLON:
+  case E_BITFIELD:
     REC_CALL (e->u.e.l);
     REC_CALL (e->u.e.r);
     break;
     
-  case E_BITFIELD:
   case E_PROBE:
   case E_VAR:
     break;
@@ -515,11 +489,8 @@ void expr_dag_free (Expr *e)
       }
     }
     else {
-      if (e->type == E_VAR || e->type == E_PROBE || e->type == E_BITFIELD) {
+      if (e->type == E_VAR || e->type == E_PROBE) {
 	delete ((ActId *)e->u.e.l);
-	if (e->type == E_BITFIELD) {
-	  FREE (e->u.e.r);
-	}
       }
       FREE (e);
     }

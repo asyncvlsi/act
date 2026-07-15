@@ -531,7 +531,8 @@ Expr *act_walk_X_expr (ActTree *cookie, Expr *e)
     break;
 
   case E_BITFIELD:
-    ret->u.e.l = (Expr *) act_walk_X_expr_id (cookie, (pId *)e->u.e.l);
+    //ret->u.e.l = (Expr *) act_walk_X_expr_id (cookie, (pId *)e->u.e.l);
+    ret->u.e.l = act_walk_X_expr (cookie, e->u.e.l);
     NEW (ret->u.e.r, Expr);
     ret->u.e.r->type = E_BITFIELD;
     ret->u.e.r->u.e.l = act_walk_X_expr (cookie, e->u.e.r->u.e.l);

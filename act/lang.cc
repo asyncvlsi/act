@@ -1237,6 +1237,7 @@ static int act_hse_direction (Expr *e, ActId *id)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     return act_hse_direction (e->u.e.l, id);
     break;
 
@@ -1285,12 +1286,6 @@ static int act_hse_direction (Expr *e, ActId *id)
     }
     break;
     
-  case E_BITFIELD:
-    if (strcmp (((ActId *)e->u.e.l)->getName(), id->getName()) == 0) {
-      return 1;
-    }
-    break;
-
   default:
     fatal_error ("Unknown/unexpected type (%d)\n", e->type);
     break;

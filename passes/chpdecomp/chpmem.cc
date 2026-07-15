@@ -369,7 +369,10 @@ int ActCHPMemory::_elemwise_assign (list_t *l, int idx, ActId *field, Data *d,
 
 	NEW (c->u.assign.e, Expr);
 	c->u.assign.e->type = E_BITFIELD;
-	c->u.assign.e->u.e.l = (Expr *) rhs;
+	NEW (c->u.assign.e->u.e.l, Expr);
+	c->u.assign.e->u.e.l->type = E_VAR;
+	c->u.assign.e->u.e.l->u.e.l = (Expr *) rhs;
+	c->u.assign.e->u.e.l->u.e.r = NULL;
 	NEW (c->u.assign.e->u.e.r, Expr);
 	c->u.assign.e->u.e.r->type = E_BITFIELD;
 	c->u.assign.e->u.e.r->u.e.l = const_expr (off - sz + 1);
@@ -882,6 +885,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
   case E_LT:  case E_GT:
   case E_LE:  case E_GE:
   case E_EQ:  case E_NE:
+  case E_BITFIELD:
     _subst_dynamic_array (l, e->u.e.l);
     _subst_dynamic_array (l, e->u.e.r);
     break;
@@ -905,7 +909,6 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
     break;
     
   case E_VAR:
-  case E_BITFIELD:
     /* check e->u.e.l */
     {
       act_dynamic_var_t *v = _bp->isDynamicRef (_curbnl, (ActId *)e->u.e.l);

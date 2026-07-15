@@ -220,6 +220,7 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_UMINUS:
   case E_COMPLEMENT:
   case E_BUILTIN_BOOL:
+  case E_BITFIELD:
     lv = _inline_funcs (l, e->u.e.l);
     Assert (lv.isSimple(), "Hmm");
     e->u.e.l = lv.getVal();
@@ -234,9 +235,6 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
       Assert (rv.isSimple(), "Hmm");
       e->u.e.r = rv.getVal();
     }
-    break;
-
-  case E_BITFIELD:
     break;
 
   case E_QUERY:
@@ -500,7 +498,6 @@ static bool _expr_unstruct (Expr *e, ActId *id)
     break;
     
   case E_VAR:
-  case E_BITFIELD:
   case E_PROBE:
     if (id) {
       ActId *t = (ActId *)e->u.e.l;
@@ -547,6 +544,7 @@ static bool _expr_unstruct (Expr *e, ActId *id)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     ret |= _expr_unstruct (e->u.e.l, id);
     break;
 
@@ -1354,10 +1352,8 @@ void ActCHPFuncInline::_collect_complex_inlines (list_t *l, Expr *e)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    _collect_complex_inlines (l, e->u.e.l);
-    break;
-
   case E_BITFIELD:
+    _collect_complex_inlines (l, e->u.e.l);
     break;
 
   case E_QUERY:
@@ -1457,10 +1453,8 @@ void ActCHPFuncInline::_apply_complex_inlines (list_t *l, Expr *e)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    _apply_complex_inlines (l, e->u.e.l);
-    break;
-
   case E_BITFIELD:
+    _apply_complex_inlines (l, e->u.e.l);
     break;
 
   case E_QUERY:
@@ -1607,7 +1601,8 @@ static Expr *_expr_clone_subst (struct fn_inline_args *fn, Expr *e)
     break;
 
   case E_BITFIELD:
-    ret->u.e.l = (Expr *) _find_subst (fn, (ActId *)e->u.e.l);
+    //ret->u.e.l = (Expr *) _find_subst (fn, (ActId *)e->u.e.l);
+    ret->u.e.l  = _expr_clone_subst (fn, e->u.e.l);
     NEW (ret->u.e.r, Expr);
     ret->u.e.r->type = e->u.e.r->type;
     ret->u.e.r->u.e.l  = _expr_clone_subst (fn, e->u.e.r->u.e.l);

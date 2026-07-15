@@ -216,6 +216,64 @@ static Expr *expr_basecase (void)
       e = expr_parse ();
       if (file_have (Tl, T[E_RPAR])) {
 	POP (Tl);
+	if (file_sym (Tl) == T[E_CONCAT]) {
+	  Expr *bf, *f;
+	  int flg = file_flags (Tl);
+	  file_setflags (Tl, flg | FILE_FLAGS_NOREAL);
+	  PUSH (Tl);
+	  file_getsym (Tl);
+	  /* { constexpr .. constexpr } | { constexpr } */
+	  f = expr_parse ();
+	  if (!f) {
+	    SET (Tl);
+	    POP (Tl);
+	    file_setflags (Tl, flg);
+	    /* ignore the open brace */
+	  }
+	  else if (file_have (Tl, T[E_END])) {
+	    /* { constexpr } */
+	    bf = newexpr ();
+	    bf->type = E_BITFIELD;
+	    bf->u.e.l = e;
+	    bf->u.e.r = newexpr ();
+	    bf->u.e.r->type = E_BITFIELD;
+	    bf->u.e.r->u.e.l = f;
+	    bf->u.e.r->u.e.r = NULL;
+	    POP (Tl);
+	    file_setflags (Tl, flg);
+	    e = bf;
+	  }
+	  else if (file_have (Tl, T[E_BITFIELD])) {
+	    Expr *g = expr_parse ();
+	    if (g && file_have (Tl, T[E_END])) {
+	      /* we're good! */
+	      bf = newexpr ();
+	      bf->type = E_BITFIELD;
+	      bf->u.e.l = e;
+	      bf->u.e.r = newexpr ();
+	      bf->u.e.r->type = E_BITFIELD;
+	      bf->u.e.r->u.e.l = g;
+	      bf->u.e.r->u.e.r = f;
+	      e = bf;
+	      POP (Tl);
+	      file_setflags (Tl, flg);
+	    }
+	    else {
+	      /* skip this part */
+	      expr_free (f);
+	      SET (Tl);
+	      POP (Tl);
+	      file_setflags (Tl, flg);
+	    }
+	  }
+	  else {
+	    /* skip this part */
+	    expr_free (f);
+	    SET (Tl);
+	    POP (Tl);
+	    file_setflags (Tl, flg);
+	  }
+	}
       }
       else {
 	SET (Tl);
@@ -287,6 +345,11 @@ static Expr *expr_basecase (void)
 	  f = e->u.e.r->u.e.l;
 	  e->u.e.r->u.e.l = e->u.e.r->u.e.r;
 	  e->u.e.r->u.e.r = f;
+	  f = e->u.e.l;
+	  NEW (e->u.e.l, Expr);
+	  e->u.e.l->type = E_VAR;
+	  e->u.e.l->u.e.l = f;
+	  e->u.e.l->u.e.r = NULL;
 	}
 	else {
 	  file_setflags (Tl, flg);

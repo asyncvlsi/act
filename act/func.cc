@@ -329,7 +329,6 @@ void Function::_chk_inline (Expr *e)
 
   case E_VAR:
   case E_PROBE:
-  case E_BITFIELD:
     {
       ActId *id = (ActId *)e->u.e.l;
       if (id->isDynamicDeref ()) {

@@ -733,9 +733,9 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
     /* we can work with bitfield so long as it is a basic varaible
        only */
     {
-      lv = _lookup_binding (Hs, ((ActId *)e->u.e.l)->getName(),
-			    ((ActId *)e->u.e.l)->arrayInfo(),
-			    ((ActId *)e->u.e.l)->Rest());
+      lv = _expand_inline (Hs, e->u.e.l, recurse);
+
+      // XXX: FIXME BITFIELD!
       Assert (lv.isSimple(), "What?");
       Expr *r = lv.getVal();
       if (r->type != E_VAR) {

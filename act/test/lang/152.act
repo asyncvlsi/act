@@ -1,0 +1,11 @@
+defproc test()
+{
+   int<1> a;
+   int<8> b;
+
+   chp {
+     a := (a + 5){5..3} + b
+   }
+}
+
+test t;

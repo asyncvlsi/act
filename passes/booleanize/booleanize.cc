@@ -599,20 +599,8 @@ static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    update_chp_expr_vars (N, e->u.e.l);
-    break;
-
   case E_BITFIELD:
-    {
-      act_booleanized_var_t *v;
-
-      if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
-	v = var_lookup (N, (ActId *)e->u.e.l);
-	if (v->ischan) {
-	  _set_chan_passive_recv (v);
-	}
-      }
-    }
+    update_chp_expr_vars (N, e->u.e.l);
     break;
 
   case E_QUERY:
@@ -749,34 +737,8 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
-    break;
-
   case E_BITFIELD:
-    {
-      act_booleanized_var_t *v;
-
-      if (!((ActId *)e->u.e.l)->isDynamicDeref()) {
-	if (ischp) {
-	  visit_chp_var (N, (ActId *)e->u.e.l, 1, is_dataflow);
-	  v = var_lookup (N, (ActId *)e->u.e.l);
-	  v->isint = 1;
-	}
-	else {
-	  visit_var (N, (ActId *)e->u.e.l, 1);
-	}
-      }
-      else {
-	if (!ischp) {
-	  act_error_ctxt (stderr);
-	  fprintf (stderr, "ID: ");
-	  ((ActId *)e->u.e.l)->Print (stderr);
-	  fprintf (stderr, "\n");
-	  fatal_error ("Dynamic de-reference not permitted in a non-CHP description");
-	}
-      }
-    }
-    Assert (e->u.e.r, "What?");
+    generate_expr_vars (N, e->u.e.l, ischp, is_dataflow);
     break;
 
   case E_QUERY:
@@ -963,14 +925,8 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   case E_COMPLEMENT:
   case E_BUILTIN_INT:
   case E_BUILTIN_BOOL:
-    collect_chp_expr_vars (N, e->u.e.l);
-    break;
-
   case E_BITFIELD:
-    if (((ActId *)e->u.e.l)->isDynamicDeref()) {
-      _add_dynamic_id (N, ((ActId *)e->u.e.l));
-    }
-    Assert (e->u.e.r, "What?");
+    collect_chp_expr_vars (N, e->u.e.l);
     break;
 
   case E_QUERY:

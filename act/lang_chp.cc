@@ -76,7 +76,6 @@ static void _chp_expr_unstruct (list_t *l, Scope *s, Expr *e)
     break;
     
   case E_VAR:
-  case E_BITFIELD:
   case E_PROBE:
     break;
 
@@ -112,6 +111,7 @@ static void _chp_expr_unstruct (list_t *l, Scope *s, Expr *e)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     _chp_expr_unstruct (l, s, e->u.e.l);
     break;
 
@@ -521,6 +521,7 @@ static void _compute_dynamic_vars (struct Hashtable **H, Expr *e)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     _compute_dynamic_vars (H, e->u.e.l);
     break;
 
@@ -531,10 +532,6 @@ static void _compute_dynamic_vars (struct Hashtable **H, Expr *e)
     break;
 
   case E_COLON:
-    break;
-
-  case E_BITFIELD:
-    _add_dynamic_var (H, (ActId *)e->u.e.l);
     break;
 
   case E_PROBE:
@@ -695,6 +692,7 @@ static void _compute_rw_sets (rw_sets &rw,
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     _compute_rw_sets (rw, e->u.e.l, ns, s);
     break;
 
@@ -705,10 +703,6 @@ static void _compute_rw_sets (rw_sets &rw,
     break;
 
   case E_COLON:
-    break;
-
-  case E_BITFIELD:
-    _add_var (rw, (ActId *)e->u.e.l, ns, s, 0);
     break;
 
   case E_PROBE:
@@ -965,6 +959,7 @@ static int _has_probe (Expr *e)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     return _has_probe (e->u.e.l);
     break;
 
@@ -999,11 +994,6 @@ static int _has_probe (Expr *e)
     return 0;
     break;
 
-  case E_BITFIELD:
-    return _has_probe (e->u.e.r->u.e.l) ||
-      _has_probe (e->u.e.r->u.e.r);
-    break;
-    
   case E_CONCAT:
     while (e) {
       if (_has_probe (e->u.e.l)) {
@@ -1311,6 +1301,7 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
 
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     e->u.e.l = _chp_add_probes (e->u.e.l, ns, s, 0);
     break;
 
@@ -1346,7 +1337,6 @@ static Expr *_chp_add_probes (Expr *e, ActNamespace *ns, Scope *s, int isbool)
     /*-- nothing to do --*/
     break;
 
-  case E_BITFIELD:
   case E_VAR:
     /*--  check if this is an channel! --*/
     act_chp_macro_check (s, (ActId *)e->u.e.l);
@@ -1428,6 +1418,7 @@ static int _expr_has_any_probes (Expr *e)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     if (_expr_has_any_probes (e->u.e.l)) return 1;
     break;
 
@@ -1441,7 +1432,6 @@ static int _expr_has_any_probes (Expr *e)
     return 1;
     break;
     
-  case E_BITFIELD:
   case E_VAR:
     return 0;
     break;
@@ -1509,6 +1499,7 @@ int act_expr_has_neg_probes (Expr *e)
     
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     if (act_expr_has_neg_probes (e->u.e.l)) return 1;
     break;
 
@@ -1522,7 +1513,6 @@ int act_expr_has_neg_probes (Expr *e)
     return 0;
     break;
     
-  case E_BITFIELD:
   case E_VAR:
     return 0;
     break;
@@ -2683,6 +2673,7 @@ static void chp_check_expr (Expr *e, Scope *s)
   case E_NOT:
   case E_COMPLEMENT:
   case E_UMINUS:
+  case E_BITFIELD:
     chp_check_expr (e->u.e.l, s);
     break;
 
@@ -2730,10 +2721,6 @@ static void chp_check_expr (Expr *e, Scope *s)
     }
     break;
     
-  case E_BITFIELD:
-    chp_check_var ((ActId *)e->u.e.l, s);
-    break;
-
   default:
     fatal_error ("Unknown/unexpected type (%d)\n", e->type);
     break;

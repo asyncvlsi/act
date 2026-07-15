@@ -155,7 +155,7 @@ int expr_equal (const Expr *a, const Expr *b)
     break;
 
   case E_BITFIELD:
-    if (_id_equal (a->u.e.l, b->u.e.l) &&
+    if (expr_equal (a->u.e.l, b->u.e.l) &&
 	(a->u.e.r->u.e.l == b->u.e.r->u.e.l) &&
 	(a->u.e.r->u.e.r == b->u.e.r->u.e.r)) {
       return 1;
@@ -1065,7 +1065,11 @@ static Expr *_expr_expand (int *width, Expr *e,
       }
       NEW (a_field->u.e.l, Expr);
       a_field->u.e.l->type = E_BITFIELD;
-      a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      NEW (a_field->u.e.l->u.e.l, Expr);
+      a_field->u.e.l->u.e.l->type = E_VAR;
+      a_field->u.e.l->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      a_field->u.e.l->u.e.l->u.e.r = NULL;
+      //a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
       NEW (a_field->u.e.l->u.e.r, Expr);
       a_field->u.e.l->u.e.r->type = E_BITFIELD;
       a_field->u.e.l->u.e.r->u.e.l = const_expr (b_val+1);
@@ -1095,7 +1099,11 @@ static Expr *_expr_expand (int *width, Expr *e,
       a_field->u.e.r = NULL;
       NEW (a_field->u.e.l, Expr);
       a_field->u.e.l->type = E_BITFIELD;
-      a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      //a_field->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      NEW (a_field->u.e.l->u.e.l, Expr);
+      a_field->u.e.l->u.e.l->type = E_VAR;
+      a_field->u.e.l->u.e.l->u.e.l = (Expr *) ((ActId *)te->u.e.l)->Clone ();
+      a_field->u.e.l->u.e.l->u.e.r = NULL;
       NEW (a_field->u.e.l->u.e.r, Expr);
       a_field->u.e.l->u.e.r->type = E_BITFIELD;
       a_field->u.e.l->u.e.r->u.e.l = const_expr (0);
@@ -2033,7 +2041,8 @@ static Expr *_expr_expand (int *width, Expr *e,
   case E_BITFIELD:
     LVAL_ERROR;
     if (flags & ACT_EXPR_EXFLAG_DUPONLY) {
-      ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone();
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      //ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone();
       NEW (ret->u.e.r, Expr);
       ret->u.e.r->type = E_BITFIELD;
       ret->u.e.r->u.e.l = _expr_expand (&lw, e->u.e.r->u.e.l, ns, s, flags);
@@ -2041,26 +2050,7 @@ static Expr *_expr_expand (int *width, Expr *e,
       *width = -1;
     }
     else {
-      if (flags & ACT_EXPR_EXFLAG_CHPEX) {
-	ActId *xid = ((ActId *)e->u.e.l)->ExpandCHP (ns, s);
-	ret->u.e.l = (Expr *) xid;
-	te = xid->EvalCHP (ns, s, 0);
-	if (!expr_is_a_const (te)) {
-	  if (te->type != E_VAR) {
-	    expr_ex_free (te);
-	  }
-	  else {
-	    FREE (te);
-	  }
-	}
-	else {
-	  delete xid;
-	  ret->u.e.l = te;
-	}
-      }
-      else {
-	ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Expand (ns, s);
-      }
+      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
       if (!expr_is_a_const (ret->u.e.l)) {
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = E_BITFIELD;
@@ -2111,7 +2101,7 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  *width = 1;
 	}
-	InstType *it = s->FullLookup ((ActId *)ret->u.e.l, NULL);
+	InstType *it = act_expr_insttype (s, ret->u.e.l, NULL, 2);
 	if (ret->u.e.r->u.e.r->u.ival.v >= TypeFactory::bitWidth (it)) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "\texpanding expr: ");
@@ -2186,7 +2176,6 @@ static Expr *_expr_expand (int *width, Expr *e,
 
 	if (ltmp) {
 	  *ltmp >>= lov;
-	  FREE (ret->u.e.l);
 	  ltmp->setWidth (hiv-lov+1);
 	  ret->u.ival.v_extra = ltmp;
 	  ret->u.ival.v = ltmp->getVal (0);

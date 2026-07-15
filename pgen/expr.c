@@ -252,8 +252,9 @@ static void efree (Expr *e)
     break;
 
   case E_BITFIELD:
-    if (expr_free_id)
-      (*expr_free_id) (e->u.e.l);
+    efree (e->u.e.l);
+    efree (e->u.e.r->u.e.l);
+    efree (e->u.e.r->u.e.r);
     FREE (e->u.e.r);
     break;
 
@@ -625,6 +626,64 @@ static Expr *W (void)
       paren_count--;
       if (file_have (Tl, T[E_RPAR])) {
 	POP (Tl);
+	if (file_sym (Tl) == T[E_CONCAT]) {
+	  Expr *bf, *f;
+          int flg = file_flags (Tl);
+          file_setflags (Tl, flg | FILE_FLAGS_NOREAL);
+	  PUSH (Tl);
+	  file_getsym (Tl);
+	  /* { constexpr .. constexpr } | { constexpr } */
+	  f = I();
+	  if (!f) {
+	    SET (Tl);
+	    POP (Tl);
+            file_setflags (Tl, flg);
+	    /* ignore the open brace */
+	  }
+	  else if (file_have (Tl, T[E_END])) {
+	    /* { constexpr } */
+	    bf = newexpr ();
+	    bf->type = E_BITFIELD;
+	    bf->u.e.l = e;
+	    bf->u.e.r = newexpr ();
+	    bf->u.e.r->type = E_BITFIELD;
+	    bf->u.e.r->u.e.l = f;
+	    bf->u.e.r->u.e.r = NULL;
+	    POP (Tl);
+	    e = bf;
+            file_setflags (Tl, flg);
+	  }
+	  else if (file_have (Tl, T[E_BITFIELD])) {
+	    Expr *g = I();
+	    if (g && file_have (Tl, T[E_END])) {
+	      /* we'd good! */
+	      bf = newexpr ();
+	      bf->type = E_BITFIELD;
+	      bf->u.e.l = e;
+	      bf->u.e.r = newexpr ();
+	      bf->u.e.r->type = E_BITFIELD;
+	      bf->u.e.r->u.e.l = g;
+	      bf->u.e.r->u.e.r = f;
+	      e = bf;
+	      POP (Tl);
+              file_setflags (Tl, flg);
+	    }
+	    else {
+	      /* skip this part */
+	      efree (f);
+	      SET (Tl);
+	      POP (Tl);
+              file_setflags (Tl, flg);
+	    }
+	  }
+	  else {
+	    /* skip this part */
+	    efree (f);
+	    SET (Tl);
+	    POP (Tl);
+            file_setflags (Tl, flg);
+	  }
+	}
       }
       else {
 	SET (Tl);
@@ -724,6 +783,11 @@ static Expr *W (void)
 	}
 	file_setflags (Tl, flg);
 	e->type = E_BITFIELD;
+	f = newexpr ();
+	f->type = E_VAR;
+	f->u.e.l = e->u.e.l;
+	f->u.e.r = NULL;
+	e->u.e.l = f;
 	e->u.e.r = bf;
 	f = e->u.e.r->u.e.l;
 	e->u.e.r->u.e.l = e->u.e.r->u.e.r;
@@ -1110,6 +1174,7 @@ void expr_print (pp_t *pp, Expr *e)
     break;
 
   case E_BITFIELD:
+#if 0
     if (expr_print_id) {
       unsigned long mask;
 
@@ -1121,6 +1186,17 @@ void expr_print (pp_t *pp, Expr *e)
       mask = (1UL << ((unsigned long)(e->u.e.r->u.e.r)-(unsigned long)(e->u.e.r->u.e.l)+1))-1;
       pp_printf_raw (pp, "& %lu)", mask);
     }
+#endif
+    pp_puts (pp, "(((");
+    expr_print (pp, e->u.e.l);
+    pp_puts (pp, ")");
+    pp_puts (pp, ">> ");
+    expr_print (pp, e->u.e.r->u.e.l);
+    pp_puts (pp, ") & ((1UL << (1 + ");
+    expr_print (pp, e->u.e.r->u.e.r);
+    pp_puts (pp, " - ");
+    expr_print (pp, e->u.e.r->u.e.l);
+    pp_puts (pp, "))-1))");
     break;
   default:
     fatal_error ("Unhandled case!\n");

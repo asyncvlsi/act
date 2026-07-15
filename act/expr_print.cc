@@ -784,8 +784,21 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     
     
   case E_BITFIELD:
-    ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
+    if (e->u.e.l->type != E_VAR) {
+      snprintf (buf+k, sz, "(");
+      PRINT_STEP;
+    }
+    if (prec < 0) {
+      sprint_uexpr (buf+k, sz, e->u.e.l);
+    }
+    else {
+      sprint_expr (buf+k, sz, e->u.e.l);
+    }
     PRINT_STEP;
+    if (e->u.e.l->type != E_VAR) {
+      snprintf (buf+k, sz, ")");
+      PRINT_STEP;
+    }
     snprintf (buf+k, sz, "{");
     PRINT_STEP;
 
@@ -1246,13 +1259,6 @@ static void efree_ex (Expr *e)
     }
     break;
 
-  case E_BITFIELD:
-    if (e->u.e.l) {
-      delete (ActId *) (e->u.e.l);
-    }
-    FREE (e->u.e.r); // l, r fields are constants
-    break;
-
   case E_RAWFREE:
     if (e->u.e.l)  FREE (e->u.e.l);
     if (e->u.e.r) efree_ex (e->u.e.r);
@@ -1600,7 +1606,8 @@ static void _expr_to_string (char **buf, int *len, int *sz,
     
   case E_BITFIELD:
     /* var */
-    _expr_to_var (buf, len, sz, ids, (ActId *)e->u.e.l);
+    //_expr_to_var (buf, len, sz, ids, (ActId *)e->u.e.l);
+    _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.l, &iszero);
     _expr_append_char (buf, len, sz, _expr_type_char (e->type));
     if (e->u.e.r->u.e.l) {
       _expr_to_string (buf, len, sz, H, uid, ids, e->u.e.r->u.e.l, &iszero);
@@ -1806,6 +1813,7 @@ static void _collect_ids_from_expr (list_t *ids, Expr *e)
   case E_LT:  case E_GT:
   case E_LE:  case E_GE:
   case E_EQ:  case E_NE:
+  case E_BITFIELD:
     _collect_ids_from_expr (ids, e->u.e.l);
     _collect_ids_from_expr (ids, e->u.e.r);
     break;
@@ -1841,11 +1849,13 @@ static void _collect_ids_from_expr (list_t *ids, Expr *e)
       }
     }
     break;
-    
+
+#if 0
   case E_BITFIELD:
     /* var */
     _add_id (ids, (ActId *)e->u.e.l);
     break;
+#endif    
 
   case E_BUILTIN_BOOL:
   case E_BUILTIN_BITWIDTH:
@@ -2127,7 +2137,7 @@ Expr *expr_update (Expr *e, ActNamespace *orig, ActNamespace *newns)
     break;
 
   case E_BITFIELD:
-    ((ActId *)e->u.e.l)->moveNS (orig, newns);
+    EXP_UPDATE (e->u.e.l);
     EXP_UPDATE (e->u.e.r->u.e.l);
     EXP_UPDATE (e->u.e.r->u.e.r);
     break;
@@ -2667,25 +2677,27 @@ static int _print_dag_expr (struct pHashtable *H,
     break;
 
   case E_BITFIELD:
-    EMIT_BASE(
-	      ((ActId *)e->u.e.l)->sPrint (buf+k, sz);
-	      PRINT_STEP;
-	      snprintf (buf+k, sz, "{");
-	      PRINT_STEP;
-	      if (e->u.e.r->u.e.l) {
-		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
-		PRINT_STEP;
-		snprintf (buf+k, sz, "..");
-		PRINT_STEP;
-		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.l);
-	      }
-	      else {
-		sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
-	      }
-	      PRINT_STEP;
-	      snprintf (buf+k, sz, "}");
-	      PRINT_STEP;
-	      );
+    {
+      int n1 = REC_CALL (e->u.e.l);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "@%d <- @%d{", b->i, n1);
+      PRINT_STEP;
+      snprintf (buf+k, sz, "{");
+      PRINT_STEP;
+      if (e->u.e.r->u.e.l) {
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+	PRINT_STEP;
+	snprintf (buf+k, sz, "..");
+	PRINT_STEP;
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.l);
+      }
+      else {
+	sprint_uexpr (buf+k, sz, e->u.e.r->u.e.r);
+      }
+      PRINT_STEP;
+      snprintf (buf+k, sz, "}");
+      PRINT_STEP;
+    }
     break;
 
   case E_CONCAT:
@@ -2900,9 +2912,10 @@ static bool _expr_globalid_needsfix (Expr *e,
     break;
 
   case E_BITFIELD:
-    if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
-      return true;
-    }
+    //if (((ActId *)e->u.e.l)->isQualifyGlobals (cur, orig)) {
+    //return true;
+    //}
+    EXP_CHECK (e->u.e.l);
     EXP_CHECK (e->u.e.r->u.e.l);
     EXP_CHECK (e->u.e.r->u.e.r);
     break;
@@ -3095,7 +3108,8 @@ static Expr *_expr_globalid_dofix (Expr *e,
     break;
 
   case E_BITFIELD:
-    e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    //e->u.e.l = (Expr *) (((ActId *)e->u.e.l)->qualifyGlobals (cur, orig));
+    EXP_CHECK (e->u.e.l);
     EXP_CHECK (e->u.e.r->u.e.l);
     EXP_CHECK (e->u.e.r->u.e.r);
     break;
@@ -3324,8 +3338,8 @@ static void _expr_collect_ids (struct pHashtable *H, list_t *ids, Expr *e)
     break;
     
   case E_BITFIELD:
-    /* var */
-    _expr_add_var (ids, (ActId *)e->u.e.l);
+    _expr_collect_ids (H, ids, e->u.e.l);
+    //_expr_add_var (ids, (ActId *)e->u.e.l);
     break;
 
   case E_BUILTIN_BOOL:

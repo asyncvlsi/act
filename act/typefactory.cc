@@ -605,6 +605,7 @@ static int expr_hash (int sz, Expr *w, int prev)
   case E_GE:
   case E_EQ:
   case E_NE:
+  case E_BITFIELD:
     prev = expr_hash (sz, w->u.e.l, prev);
     prev = expr_hash (sz, w->u.e.r, prev);
     break;
@@ -629,18 +630,6 @@ static int expr_hash (int sz, Expr *w, int prev)
       prev = expr_hash (sz, w->u.e.l, prev);
       w = w->u.e.r;
     }
-    break;
-
-  case E_BITFIELD:
-    prev = hash_function_continue 
-      (sz, (const unsigned char *)&w->u.e.l, sizeof (Expr *), prev, 1);
-    if (w->u.e.r->u.e.l) {
-      prev = expr_hash (sz, w->u.e.r->u.e.l, prev);
-    }
-    else {
-      prev = expr_hash (sz, w->u.e.r->u.e.r, prev);
-    }
-    prev = expr_hash (sz, w->u.e.r->u.e.r, prev);
     break;
 
   case E_FUNCTION:
@@ -1467,17 +1456,6 @@ int expr_getHash (int prev, unsigned long sz, Expr *e)
     }
     break;
 
-  case E_BITFIELD:
-    if (e->u.e.l) {
-      hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
-				     sizeof (ActId *), hval, 1);
-    }
-    hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.r->u.e.l,
-				   sizeof (Expr *), hval, 1);
-    hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.r->u.e.r,
-				   sizeof (Expr *), hval, 1);
-    break;
-
   default:
     if (e->u.e.l) {
       hval = hash_function_continue (sz, (const unsigned char *) &e->u.e.l,
@@ -1547,18 +1525,6 @@ static int expr_matchfn (void *key1, void *key2)
     }
     break;
 
-  case E_BITFIELD:
-    if (e1->u.e.l && !e2->u.e.l) return 0;
-    if (!e1->u.e.l && e2->u.e.l) return 0;
-    if (e1->u.e.l && (e1->u.e.l != e2->u.e.l)) {
-      ActId *id1 = (ActId *)e1->u.e.l;
-      ActId *id2 = (ActId *)e2->u.e.l;
-      if (!id1->isEqual (id2)) return 0;
-    }
-    if (e1->u.e.r->u.e.l != e2->u.e.r->u.e.l) return 0;
-    if (e1->u.e.r->u.e.r != e2->u.e.r->u.e.r) return 0;
-    break;
-
   default:
     if (e1->u.e.l != e2->u.e.l) return 0;
     if (e1->u.e.r != e2->u.e.r) return 0;
@@ -1579,10 +1545,6 @@ static void *expr_dupfn (void *key)
     BigInt *bi = new BigInt;
     *bi = *((BigInt *)dup->u.ival.v_extra);
     dup->u.ival.v_extra = bi;
-  }
-  else if (dup->type == E_BITFIELD) {
-    NEW (dup->u.e.r, Expr);
-    *dup->u.e.r = *e->u.e.r;
   }
   return dup;
 }
@@ -1609,10 +1571,6 @@ static void expr_freefn (void *key)
 
   case E_VAR:
   case E_PROBE:
-    break;
-
-  case E_BITFIELD:
-    FREE (e->u.e.r); // l, r fields are constants
     break;
 
   default:

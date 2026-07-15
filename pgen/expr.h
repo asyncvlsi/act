@@ -136,7 +136,7 @@ typedef struct expr {
 
        E_BITFIELD
        /       |
-     var     E_BITFIELD
+     expr     E_BITFIELD
                /    |
               lo    hi
 */
