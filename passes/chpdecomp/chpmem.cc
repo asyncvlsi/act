@@ -108,6 +108,7 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
 						 0, const_expr (bw));
   it = it->Expand (ActNamespace::Global(), sc);
   sc->Add (buf, it);
+  _map.newvars.push_back (sc->LookupVal (buf));
 
   /* if structure, then we need both the integer variable as well as
      the structure variable */
@@ -116,6 +117,7 @@ int ActCHPMemory::_fresh_memdata (Scope *sc, int bw, Data *isstruct)
     it = new InstType (sc, isstruct, 0);
     it = it->Expand (ActNamespace::Global(), sc);
     sc->Add (buf, it);
+    _map.newvars.push_back (sc->LookupVal (buf));
   }
 
   // create new memvar_info and mark it used
@@ -147,6 +149,7 @@ void *ActCHPMemory::local_op (Process *p, int mode)
   }
 
   // initialize with singleton vector that is empty
+  _map.newvars.clear ();
   _map.v.push_back ({});
   
   const char *mem_procname = config_get_string ("act.decomp.mem");
@@ -254,10 +257,17 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     }
     list_append (ret, _curbnl->cur->LookupVal (newname));
   }
-
   A_FREE (_update);
 
+  /* add the variables introduced in the map! */
+  for (int i=0; i < _map.newvars.size(); i++) {
+    if (!ret) {
+      ret = list_new ();
+    }
+    list_append (ret, _map.newvars[i]);
+  }
   _map.v.clear ();
+  _map.newvars.clear ();
   _curbnl = NULL;
 
   return ret;
@@ -1306,6 +1316,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       it = it->Expand (NULL, _curbnl->cur);
       snprintf (buf, 100, "_tmpx%d", xtmp);
       _curbnl->cur->Add (buf, it);
+      _map.newvars.push_back (_curbnl->cur->LookupVal (buf));
       ActId *id = new ActId (string_cache (buf));
 
       /* tmpx := true .. this goes BEFORE the entire do loop */

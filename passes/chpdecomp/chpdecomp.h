@@ -179,6 +179,7 @@ private:
   };
 
   struct memvar_map {
+    std::vector<ValueIdx *> newvars;
     std::vector<std::vector<memvar_info>> v;
 
     /**
