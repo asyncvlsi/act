@@ -34,11 +34,13 @@ static int double_colon, comma;
 static int inttok, booltok;
 static int langle, rangle;
 static int dot, lbrack;
+static int probe;
 
 static void do_init (LFILE *l)
 {
   static int init = 0;
   if (!init) {
+    probe = expr_gettoken (E_PROBE);
     tokand = expr_gettoken (E_AND);
     tokor = expr_gettoken (E_OR);
     tokxor = expr_gettoken (E_XOR);
@@ -503,6 +505,7 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
 {
   Expr *e, *f;
   int etype;
+  pId *v;
   
   do_init(l);
 
@@ -611,6 +614,21 @@ Expr *act_parse_expr_syn_loop_bool (LFILE *l)
       file_set_position (l);
       file_pop_position (l);
       expr_free (e);
+      return NULL;
+    }
+  }
+  else if (file_sym (l) == probe) {
+    file_getsym (l);
+    v = (*expr_parse_id) (l);
+    if (v) {
+      NEW (e, Expr);
+      e->type = E_PROBE;
+      e->u.e.l = (Expr *) v;
+      e->u.e.r = NULL;
+    }
+    else {
+      file_set_position (l);
+      file_pop_position (l);
       return NULL;
     }
   }
@@ -891,6 +909,7 @@ static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
 {
   Expr *e, *f;
   int etype;
+  pId *v;
   
   do_init(l);
 
@@ -1008,6 +1027,21 @@ static Expr *f_parse_expr_syn_loop_bool (LFILE *l)
       file_set_position (l);
       file_pop_position (l);
       expr_free (e);
+      return NULL;
+    }
+  }
+  else if (file_sym (l) == probe) {
+    file_getsym (l);
+    v = (*expr_parse_id) (l);
+    if (v) {
+      NEW (e, Expr);
+      e->type = E_PROBE;
+      e->u.e.l = (Expr *) v;
+      e->u.e.r = NULL;
+    }
+    else {
+      file_set_position (l);
+      file_pop_position (l);
       return NULL;
     }
   }
