@@ -774,6 +774,13 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
 	  fprintf (stderr, "\n");
 	  fatal_error ("Dynamic de-reference not permitted in a non-CHP description");
 	}
+	else {
+	  Array *ta = ((ActId *)e->u.e.l)->arrayInfo ();
+	  Assert (ta, "Dynamic dereference without an array?!");
+	  for (int i=0; i < ta->nDims(); i++) {
+	    generate_expr_vars (N, ta->getDeref (i), ischp, is_dataflow);
+	  }
+	}
       }
     }
     Assert (e->u.e.r, "What?");
@@ -839,6 +846,13 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
 	  ((ActId *)e->u.e.l)->Print (stderr);
 	  fprintf (stderr, "\n");
 	  fatal_error ("Dynamic de-reference not permitted in a non-CHP description");
+	}
+	else {
+	  Array *ta = ((ActId *)e->u.e.l)->arrayInfo ();
+	  Assert (ta, "Dynamic dereference without an array?!");
+	  for (int i=0; i < ta->nDims(); i++) {
+	    generate_expr_vars (N, ta->getDeref (i), ischp, is_dataflow);
+	  }
 	}
       }
     }
