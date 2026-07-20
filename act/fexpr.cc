@@ -149,6 +149,7 @@ int act_is_a_fexpr (LFILE *l)
       file_sym (l) == T[E_NOT] ||
       file_sym (l) == T[E_COMPLEMENT] ||
       file_sym (l) == T[E_CONCAT] ||
+      file_sym (l) == T[E_PROBE] ||
       (expr_parse_newtokens && (*expr_parse_newtokens)(l))) {
     return 1;
   }

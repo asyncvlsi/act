@@ -348,7 +348,7 @@ static void _populate_widths (Data *d, int *widths, int *pos)
 	sz--;
       }
     }
-    else if (TypeFactory::isIntType (it)) {
+    else if (TypeFactory::isIntType (it) || TypeFactory::isEnum (it)) {
       while (sz > 0) {
 	widths[*pos] = TypeFactory::bitWidth (it);
 	*pos = *pos + 1;

@@ -1,0 +1,13 @@
+defproc test()
+{
+  chan(bool) x;
+  chan(int) y;
+  int w;
+  bool q;
+
+  chp {
+   y!(bool(int(#x)) ? 1 : 0)
+  }
+}
+
+test t;
