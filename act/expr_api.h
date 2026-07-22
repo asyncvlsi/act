@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <act/expr.h>
 #include <common/list.h>
+#include <common/hash.h>
 
 class ActNamespace;
 class Scope;
@@ -254,6 +255,13 @@ void expr_ex_free (Expr *);
  * @return the resulting bitwidth by ACT expression rules
  */
 int act_expr_bitwidth (int etype, int lw, int rw);
+
+
+/**
+ * Returns a hash table from expression pointers to bitwidths
+ */
+struct pHashtable *act_expr_bw_calc (Scope *s, Expr *e);
+
 
 /**
  * Helper function for bit-width determination

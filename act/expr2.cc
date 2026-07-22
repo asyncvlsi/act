@@ -3437,6 +3437,24 @@ Expr *expr_bw_adjust (int needed_width, Expr *e, Scope *s)
   return e;
 }
 
+
+/*
+ * Return a hash table populated with a map from expression pointers
+ * to bitwidths
+ */
+struct pHashtable *act_expr_bw_calc (Scope *s, Expr *e)
+{
+  struct pHashtable *pH;
+  int tmp;
+
+  if (!e) return NULL;
+
+  pH = phash_new (4);
+  tmp = _expr_bw_calc (pH, e, s);
+
+  return pH;
+}
+
 /*------------------------------------------------------------------------
  *
  * Array Expressions
