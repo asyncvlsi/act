@@ -2677,24 +2677,36 @@ static Expr *_expr_expand (int *width, Expr *e,
 
   case E_SELF:
     xid = new ActId ("self");
+    {
+      InstType *xit;
+      int rt = act_type_var (s, xid, &xit);
+      if (width) {
+	*width = TypeFactory::bitWidth (xit);
+      }
+    }
     te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
     if (te->type != E_VAR) {
       delete xid;
     }
     FREE (ret);
     ret = te;
-    *width = 0;
     break;
 
   case E_SELF_ACK:
     xid = new ActId ("selfack");
+    {
+      InstType *xit;
+      int rt = act_type_var (s, xid, &xit);
+      if (width) {
+	*width = TypeFactory::bitWidth (xit);
+      }
+    }
     te = xid->Eval (ns, s, (flags & ACT_EXPR_EXFLAG_ISLVAL) ? 1 : 0);
     if (te->type != E_VAR) {
       delete xid;
     }
     FREE (ret);
     ret = te;
-    *width = 0;
     break;
 
   case E_CONCAT:
