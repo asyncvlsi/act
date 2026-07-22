@@ -1,3 +1,4 @@
+/* test case provided by Ruiqi "Richard" Niu <rniu5@jh.edu> */
 deftype s (chan(int<8>) c) {}
 
 defproc p (chan!(s) r) {
