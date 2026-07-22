@@ -1,0 +1,11 @@
+deftype s (chan(int<8>) c) {}
+
+defproc p (chan!(s) r) {
+  s x;
+  chp { *[ r!x ] }
+}
+
+defproc testproc() {
+  chan(s) a;
+  p q(a);
+}

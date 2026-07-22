@@ -1,0 +1,3 @@
+ERROR: File `77.act', line 3, col 17
+	User-defined channel data type must be a structure with pure data or enumeration.
+	Type: s
