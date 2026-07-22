@@ -2050,7 +2050,8 @@ static Expr *_expr_expand (int *width, Expr *e,
       *width = -1;
     }
     else {
-      ret->u.e.l = _expr_expand (&lw, e->u.e.l, ns, s, flags);
+      int bw;
+      ret->u.e.l = _expr_expand (&bw, e->u.e.l, ns, s, flags);
       if (!expr_is_a_const (ret->u.e.l)) {
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = E_BITFIELD;
@@ -2101,14 +2102,13 @@ static Expr *_expr_expand (int *width, Expr *e,
 	else {
 	  *width = 1;
 	}
-	InstType *it = act_expr_insttype (s, ret->u.e.l, NULL, 2);
-	if (ret->u.e.r->u.e.r->u.ival.v >= TypeFactory::bitWidth (it)) {
+	if (ret->u.e.r->u.e.r->u.ival.v >= bw) {
 	  act_error_ctxt (stderr);
 	  fprintf (stderr, "\texpanding expr: ");
 	  print_expr (stderr, e);
 	  fprintf (stderr, "\n");
 	  warning ("Bit-width (%d) is less than the width specifier {%d..%d}",
-		   TypeFactory::bitWidth (it), ret->u.e.r->u.e.r->u.ival.v,
+		   bw, ret->u.e.r->u.e.r->u.ival.v,
 		   ret->u.e.r->u.e.l ? ret->u.e.r->u.e.l->u.ival.v :
 		   ret->u.e.r->u.e.r->u.ival.v);
 	}

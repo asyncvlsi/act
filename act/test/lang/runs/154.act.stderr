@@ -1,0 +1,5 @@
+In expanding mytest (154.act:3)
+In expanding ::<Global>
+Error on or near line number 5.
+	expanding expr: (x+1){3..0}
+WARNING: Bit-width (3) is less than the width specifier {3..0}

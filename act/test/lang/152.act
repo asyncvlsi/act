@@ -4,7 +4,7 @@ defproc test()
    int<8> b;
 
    chp {
-     a := (a + 5){5..3} + b
+     a := (a + 32){5..3} + b
    }
 }
 
