@@ -2889,6 +2889,7 @@ static int _expr_bw_calc(struct pHashtable *H, Expr *e, Scope *s)
     break;
 
   case E_BITFIELD:
+    lw = _expr_bw_calc (H, e->u.e.l, s); // not used
     if (e->u.e.r->u.e.l) {
       Assert (e->u.e.r->u.e.l->type == E_INT, "What?");
       Assert (e->u.e.r->u.e.r->type == E_INT, "What?");
