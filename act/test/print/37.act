@@ -1,0 +1,14 @@
+defproc test()
+{
+  int x[4];
+
+  int i;
+ 
+  chp {
+     i := 5;
+     i := x[i];
+    x[i+1] := i
+  }
+}
+
+test t;

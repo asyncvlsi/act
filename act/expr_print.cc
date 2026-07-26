@@ -2070,6 +2070,16 @@ Expr *act_expr_var (ActId *id)
   return e;
 }
 
+Expr *act_expr_probe (ActId *id)
+{
+  Expr *e;
+  NEW (e, Expr);
+  e->type = E_PROBE;
+  e->u.e.l = (Expr *) id;
+  e->u.e.r = NULL;
+  return e;
+}
+
 Function *_act_fn_replace (ActNamespace *orig, ActNamespace *newns, Function *f);
 UserDef *_act_userdef_replace (ActNamespace *orig, ActNamespace *newns,
 			       UserDef *u);

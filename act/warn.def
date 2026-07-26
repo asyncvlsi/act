@@ -16,5 +16,8 @@ WARNING_FLAG(lang_subst, 1)
 /* warn if an instance shadows another */
 WARNING_FLAG(shadow, 1)
 
+/* warn if dynamic channel access is being rewritten */
+WARNING_FLAG(dynamic_channel_access, 1)
+
 #undef WARNING_FLAG
 

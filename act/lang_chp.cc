@@ -37,7 +37,21 @@ static int _chp_freshvar_count = 0;
 static list_t *in_chp = NULL;
 
 static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s);
+static bool _dynamic_replace (ActId *id, Scope *s, Array **ret_a);
 
+
+/*
+ * Return a fresh ID of the specified type within the scope
+ */
+static ActId *_gen_chp_fresh_var (Scope *s, InstType *it)
+{
+  char buf[1024];
+  s->findFresh ("_fv", &_chp_freshvar_count);
+  snprintf (buf, 1024, "_fv%d", _chp_freshvar_count);
+  s->Add (buf, it);
+  ActNamespace::Act()->addGeneratedVar (s, s->LookupVal (buf));
+  return new ActId (string_cache (buf));
+}
 
 /*
  * Any structture references have to be changed to assignments
@@ -2023,16 +2037,31 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     ret->u.comm.chan = expand_var_chan (c->u.comm.chan, ns, s);
     act_chp_macro_check (s, ret->u.comm.chan);
     {
+      ActId *chid;
       if (ret->u.comm.chan->isDynamicDeref()) {
-	act_error_ctxt (stderr);
-	fprintf (stderr, "Dynamic channel arrays are unsupported.\n");
-	fprintf (stderr, "\tVariable: ");
-	ret->u.comm.chan->Print (stderr);
-	fprintf (stderr, "\n");
-	exit (1);
+        if (Act::dynamic_channel_access) {
+	  act_warn_ctxt (stderr);
+	  fprintf (stderr, "Dynamic channel arrays are automatically re-written.\n");
+	  fprintf (stderr, "\tVariable: ");
+	  ret->u.comm.chan->Print (stderr);
+	  fprintf (stderr, "\n");
+	  //exit (1);
+	}
+
+	// create dummy index for type-checking
+	chid = ret->u.comm.chan->Clone ();
+	Array *tmp_array;
+	Assert (_dynamic_replace (ret->u.comm.chan, s, &tmp_array), "What!?");
+	Arraystep *as = tmp_array->stepper ();
+	delete chid->arrayInfo();
+	chid->setArray (as->toArray ());
+	delete as;
       }
-      
-      act_connection *d = ret->u.comm.chan->Canonical (s);
+      else {
+	chid = ret->u.comm.chan->Clone ();
+      }
+
+      act_connection *d = chid->Canonical (s);
 
       if ((c->type == ACT_CHP_SEND && d->getDir() == Type::direction::IN &&
 	   _chp_expanding_macro != 2) ||
@@ -2054,6 +2083,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	fprintf (stderr, "\n");
 	exit (1);
       }
+      delete chid;
     }
     ret->u.comm.flavor = c->u.comm.flavor;
     ret->u.comm.convert = c->u.comm.convert;
@@ -3271,6 +3301,570 @@ static act_chp_lang_t *chp_update_bw (act_chp_lang_t *c, Scope *s)
 }
 
 
+static bool _is_boolean_basevar (ActId *id, Scope *s)
+{
+  int tv = act_type_var (s, id, NULL);
+  if (T_BASETYPE_BOOL (tv)) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+static bool _dynamic_replace (ActId *id, Scope *s, Array **ret_a)
+{
+  if (!id) return false;
+  
+  if (id->isDynamicDeref ()) {
+    ActId *rest = id->Rest ();
+    Array *a = id->arrayInfo();
+    id->setArray (NULL);
+    if (rest) {
+      id->prune ();
+    }
+    InstType *it = act_actual_insttype (s, id, NULL, 1);
+    id->setArray (a);
+    if (rest) {
+      id->Append (rest);
+    }
+    Assert (it->arrayInfo(), "What?!");
+    if (TypeFactory::isChanType (it) ||
+	(it->arrayInfo()->size() <=
+	 config_get_int ("act.decomp.mem_threshold"))) {
+      if (ret_a) {
+	*ret_a = it->arrayInfo();
+      }
+      return true;
+    }
+  }
+  if (ret_a) {
+    *ret_a = NULL;
+  }
+  return false;
+}
+
+
+static Expr *_create_match_expr (Array *orig, Array *const_idx)
+{
+  Expr *ret = NULL;
+  Expr *tmp;
+  Assert (orig && const_idx, "What?");
+  Assert (orig->nDims() == const_idx->nDims(), "Dimension mismatch?");
+  for (int i=0; i < orig->nDims(); i++) {
+    NEW (tmp, Expr);
+    tmp->type = E_EQ;
+    tmp->u.e.l = expr_dup (orig->getDeref (i));
+    tmp->u.e.r = expr_dup (const_idx->getDeref (i));
+
+    if (!ret) {
+      ret = tmp;
+    }
+    else {
+      Expr *cur = ret;
+      NEW (ret, Expr);
+      ret->type = E_AND;
+      ret->u.e.l = cur;
+      ret->u.e.r = tmp;
+    }
+  }
+  return ret;
+}
+
+/*
+ * In-place replacement of expressions with dynamic arrays
+ */
+static void chp_update_dynarray_expr (Expr *e, Scope *s)
+{
+  int orig_type;
+  
+  if (!e) return;
+  switch (e->type) {
+  case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+  case E_REAL:
+  case E_PSTRUCT:
+
+    break;
+
+  case E_FUNCTION:
+  case E_USERMACRO:
+    chp_update_dynarray_expr (e->u.fn.r, s);
+    break;
+
+  case E_VAR:
+  case E_PROBE:
+    if (e->u.e.l) {
+      Array *type_arr;
+      ActId *id = (ActId *)e->u.e.l;
+      if (id->arrayInfo()) {
+	for (int i=0; i < id->arrayInfo()->nDims(); i++) {
+	  chp_update_dynarray_expr (id->arrayInfo()->getDeref (i), s);
+	}
+      }
+
+      orig_type = e->type;
+      
+      if (_dynamic_replace (id, s, &type_arr)) {
+	bool conv_query = true;
+	Expr *pieces;
+
+	if (e->type == E_PROBE || _is_boolean_basevar (id, s)) {
+	  conv_query = false;
+	}
+	
+	Assert (type_arr, "What?");
+	//
+	// if E_VAR and boolean or eprobe, use
+	//    (i1=0&i2=0&x[0][0] & ... )
+	// else use query expression
+	//
+
+	if (type_arr->size() == 0) {
+	  act_warn_ctxt (stderr);
+	  warning ("Zero-size array?");
+	  fprintf (stderr, " ID: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  return;
+	}
+
+	if (type_arr->size() == 1) {
+	  Arraystep *as = type_arr->stepper();
+	  Array *xa = as->toArray ();
+	  Expr *cmp = _create_match_expr (id->arrayInfo(), xa);
+	  *e = *cmp;
+	  FREE (cmp);
+	  delete as;
+	  return;
+	}
+
+	if (conv_query) {
+	  e->type = E_QUERY;
+	  e->u.e.l = NULL;
+	  e->u.e.r = NULL;
+	}
+	else {
+	  e->type = E_OR;
+	  e->u.e.l = NULL;
+	  e->u.e.r = NULL;
+	}
+	pieces = e;
+	
+	Arraystep *as = type_arr->stepper();
+	while (!as->isend()) {
+	  Expr *cmp;
+	  Array *xa = as->toArray ();
+
+	  // generate expression (id = ref & id = ref & ...)
+	  cmp = _create_match_expr (id->arrayInfo(), xa);
+
+	  // we use xa!
+	  ActId *tmpid;
+	  tmpid = id->Clone ();
+	  Assert (tmpid->arrayInfo(), "What?");
+	  delete tmpid->arrayInfo();
+	  tmpid->setArray (xa);
+
+	  Expr *enew = (orig_type == E_VAR ?
+			act_expr_var (tmpid) : act_expr_probe (tmpid));
+	  
+	  if (conv_query) {
+
+	    if (pieces->type == E_QUERY) {
+	      // top
+	      //  cmp ? v[xa] : NULL
+	      e->u.e.l = cmp;
+	      NEW (e->u.e.r, Expr);
+	      pieces = e->u.e.r;
+	      pieces->type = E_COLON;
+	      pieces->u.e.l = enew;
+	      pieces->u.e.r = NULL;
+
+	      as->step ();
+	    }
+	    else {
+	      Assert (pieces->type == E_COLON, "Hmm");
+	      Assert (pieces->u.e.r == NULL, "What?");
+	      as->step ();
+	      // if I am the last, then we use pieces->u.e.r
+	      if (as->isend()) {
+		pieces->u.e.r = enew;
+		// unused cmp
+		expr_ex_free (cmp);
+	      }
+	      else {
+		NEW (pieces->u.e.r, Expr);
+		pieces = pieces->u.e.r;
+		pieces->type = E_QUERY;
+		pieces->u.e.l = cmp;
+		NEW (pieces->u.e.r, Expr);
+		pieces = pieces->u.e.r;
+		pieces->type = E_COLON;
+		pieces->u.e.l = enew;
+		pieces->u.e.r = NULL;
+	      }
+	    }
+	  }
+	  else {
+	    Expr *chunk;
+	    NEW (chunk, Expr);
+	    chunk->type = E_AND;
+	    chunk->u.e.l  = cmp;
+	    chunk->u.e.r = enew;
+	    if (!pieces->u.e.l) {
+	      pieces->u.e.l = chunk;
+	    }
+	    else if (!pieces->u.e.r) {
+	      pieces->u.e.r = chunk;
+	    }
+	    else {
+	      NEW (pieces, Expr);
+	      pieces->type = E_OR;
+	      pieces->u.e.l = e->u.e.r;
+	      pieces->u.e.r = chunk;
+	      e->u.e.r = pieces;
+	      pieces = e;
+	    }
+	    as->step ();
+	  }
+	}
+	delete as;
+      }
+    }
+    break;
+
+  case E_RAWFREE:
+    break;
+
+  default:
+    if (e->u.e.l) chp_update_dynarray_expr (e->u.e.l, s);
+    if (e->u.e.r) chp_update_dynarray_expr (e->u.e.r, s);
+    break;
+  }
+  return;
+}
+
+static bool _is_complex (Expr *e)
+{
+  if (!e) return false;
+  if (expr_is_a_const (e)) return false;
+  if (e->type == E_VAR) return false;
+  return true;
+}
+
+static void chp_update_dynarray (act_chp_lang_t *c, Scope *s);
+
+static void chp_update_dynarray_comm (act_chp_lang_t *c, Scope *s)
+{
+  act_chp_lang_t *orig = c;
+  InstType *xit;
+  Array *type_arr;
+  
+  Assert (c->type == ACT_CHP_SEND || c->type == ACT_CHP_RECV, "What?!");
+  
+  if (c->u.comm.e) {
+    xit = act_expr_insttype_ex (s, c->u.comm.e, 2);
+  }
+  else {
+    xit = NULL;
+  }
+  chp_update_dynarray_expr (c->u.comm.e, s);
+
+  // extract any dynamic variable
+  if (_dynamic_replace (c->u.comm.var, s, &type_arr)) {
+    InstType *eit;
+    act_type_var (s, c->u.comm.var, &eit);
+    Assert (eit, "Hmm");
+    if (eit->arrayInfo()) {
+      eit = new InstType (eit, 1);
+    }
+    eit->MkCached ();
+    ActId *tmp_id = _gen_chp_fresh_var (s, eit);
+    act_chp_lang_t *ctmp;
+    NEW (ctmp, act_chp_lang_t);
+    ctmp->type = ACT_CHP_ASSIGN;
+    ctmp->space = NULL;
+    ctmp->label = NULL;
+    ctmp->u.assign.id = c->u.comm.var;
+    ctmp->u.assign.e = act_expr_var (tmp_id);
+    chp_update_dynarray (ctmp, s);
+
+    list_t *l = list_new ();
+    list_append (l, ctmp);
+
+    NEW (ctmp, act_chp_lang_t);
+	  
+    *ctmp = *c;
+    ctmp->space = NULL;
+    ctmp->label = NULL;
+    ctmp->u.comm.var = tmp_id->Clone ();
+    list_append_head (l, ctmp);
+    c->type = ACT_CHP_SEMI;
+    c->u.semi_comma.cmd = l;
+    orig = ctmp;
+  }
+
+  // now see if the channel is a dynamic array
+  if (_dynamic_replace (orig->u.comm.chan, s, &type_arr)) {
+    if (type_arr->size() == 0) {
+      act_warn_ctxt (stderr);
+      warning ("Zero-size array?");
+      fprintf (stderr, " Channel ID: ");
+      orig->u.comm.chan->Print (stderr);
+      fprintf (stderr, "\n");
+      return;
+    }
+
+    if (type_arr->size() == 1) {
+      // index is fixed!
+      Arraystep *as = type_arr->stepper ();
+      Array *xa = as->toArray ();
+      orig->u.comm.chan->setArray (xa);
+      delete as;
+      return;
+    }
+
+    // ok we need a selection with a bunch of stuff!
+    Expr *tmp_expr_id;
+    if (_is_complex (orig->u.comm.e)) {
+      // create an assignment
+      act_chp_lang_t *tmp;
+      NEW (tmp, act_chp_lang_t);
+      tmp->space = NULL;
+      tmp->label = NULL;
+      tmp->type = ACT_CHP_ASSIGN;
+      tmp->u.assign.e = orig->u.comm.e;
+      xit->MkCached ();
+      tmp->u.assign.id = _gen_chp_fresh_var (s, xit);
+
+      tmp_expr_id = act_expr_var (tmp->u.assign.id);
+      
+      if (orig != c) {
+	list_append_head (c->u.semi_comma.cmd, tmp);
+      }
+      else {
+	act_chp_lang_t *ctmp;
+	NEW (ctmp, act_chp_lang_t);
+	*ctmp = *c;
+	ctmp->space = NULL;
+	ctmp->label = NULL;
+	c->type = ACT_CHP_SEMI;
+	c->u.semi_comma.cmd = list_new ();
+	list_append (c->u.semi_comma.cmd, tmp);
+	list_append (c->u.semi_comma.cmd, ctmp);
+	orig = ctmp;
+      }
+    }
+    else {
+      tmp_expr_id = orig->u.comm.e;
+    }
+    // now convert this into a selection!
+    act_chp_lang_t tmp = *orig;
+    orig->type = ACT_CHP_SELECT;
+    orig->u.gc = NULL;
+
+    Arraystep *as = type_arr->stepper ();
+    while (!as->isend()) {
+      Expr *cmp;
+      Array *xa = as->toArray ();
+      act_chp_gc *tgc;
+
+      cmp = _create_match_expr (tmp.u.comm.chan->arrayInfo(), xa);
+	
+      ActId *tmpid = tmp.u.comm.chan->Clone();
+      Assert (tmpid->arrayInfo(), "Hmm");
+      delete tmpid->arrayInfo();
+      tmpid->setArray (xa);
+
+      if (!orig->u.gc) {
+	NEW (orig->u.gc, act_chp_gc_t);
+	tgc = orig->u.gc;
+      }
+      else {
+	NEW (tgc->next, act_chp_gc_t);
+	tgc = tgc->next;
+      }
+      tgc->id = NULL;
+      tgc->next = NULL;
+      tgc->g = cmp;
+      NEW (tgc->s, act_chp_lang_t);
+      tgc->s->label = NULL;
+      tgc->s->space = NULL;
+      tgc->s->type = tmp.type;
+      tgc->s->u.comm = tmp.u.comm;
+      tgc->s->u.comm.chan = tmpid;
+      tgc->s->u.comm.e = expr_dup (tmp_expr_id);
+      if (tmp.u.comm.var) {
+	tgc->s->u.comm.var = tmp.u.comm.var->Clone ();
+      }
+      else {
+	tgc->s->u.comm.var = NULL;
+      }
+      as->step ();
+    }
+    delete as;
+  }
+}
+
+static void chp_update_dynarray (act_chp_lang_t *c, Scope *s)
+{
+  listitem_t *li;
+  Array *type_arr;
+  InstType *xit;
+  act_chp_lang_t *orig;
+  
+  if (!c) return;
+  switch (c->type) {
+  case ACT_CHP_COMMA:
+  case ACT_CHP_SEMI:
+    for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
+      chp_update_dynarray ((act_chp_lang_t *)list_value (li), s);
+    }
+    break;
+
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (act_chp_gc_t *gctmp = c->u.gc; gctmp; gctmp = gctmp->next) {
+      chp_update_dynarray_expr (gctmp->g, s);
+      chp_update_dynarray (gctmp->s, s);
+    }
+    break;
+
+  case ACT_CHP_SKIP:
+    break;
+
+  case ACT_CHP_ASSIGN:
+  case ACT_CHP_ASSIGNSELF:
+    xit = act_expr_insttype_ex (s, c->u.assign.e, 2);
+    chp_update_dynarray_expr (c->u.assign.e, s);
+    if (_dynamic_replace (c->u.assign.id, s, &type_arr)) {
+      act_chp_lang_t tmp;
+
+      Assert (type_arr, "What?");
+      
+      if (type_arr->size() == 0) {
+	act_warn_ctxt (stderr);
+	warning ("Zero-size array?");
+	fprintf (stderr, " ID: ");
+	c->u.assign.id->Print (stderr);
+	fprintf (stderr, "\n");
+	return;
+      }
+      if (type_arr->size() == 1) {
+	// index is fixed!
+	Arraystep *as = type_arr->stepper ();
+	Array *xa = as->toArray ();
+	c->u.assign.id->setArray (xa);
+	delete as;
+	return;
+      }
+
+      // we translate this as:
+      // 1. fv := e;
+      // 2. [ selection ]
+      //
+      // if e is complex; otherwise just as a selection
+
+      tmp = *c;
+
+      act_chp_lang_t *tl;
+      Expr *tmp_expr_id;
+
+      if (_is_complex (tmp.u.assign.e)) {
+	c->type = ACT_CHP_SEMI;
+	c->u.semi_comma.cmd = list_new ();
+
+	NEW (tl, act_chp_lang_t);
+	tl->label = NULL;
+	tl->space = NULL;
+	tl->type = ACT_CHP_ASSIGN;
+	xit->MkCached ();
+	tl->u.assign.id = _gen_chp_fresh_var (s, xit);
+	tl->u.assign.e = tmp.u.assign.e;
+
+	tmp_expr_id = act_expr_var (tl->u.assign.id);
+
+	list_append (c->u.semi_comma.cmd, tl);
+
+	NEW (tl, act_chp_lang_t);
+	list_append (c->u.semi_comma.cmd, tl);
+	tl->label = NULL;
+	tl->space = NULL;
+      }
+      else {
+	tl = c;
+	tmp_expr_id = tmp.u.assign.e;
+      }
+	
+      tl->type = ACT_CHP_SELECT;
+      tl->u.gc = NULL;
+
+      Arraystep *as = type_arr->stepper ();
+      while (!as->isend()) {
+	Expr *cmp;
+	Array *xa = as->toArray ();
+	act_chp_gc *tgc;
+
+	cmp = _create_match_expr (tmp.u.assign.id->arrayInfo(), xa);
+	
+	ActId *tmpid = tmp.u.assign.id->Clone();
+	Assert (tmpid->arrayInfo(), "Hmm");
+	delete tmpid->arrayInfo();
+	tmpid->setArray (xa);
+
+	if (!tl->u.gc) {
+	  NEW (tl->u.gc, act_chp_gc_t);
+	  tgc = tl->u.gc;
+	}
+	else {
+	  NEW (tgc->next, act_chp_gc_t);
+	  tgc = tgc->next;
+	}
+	tgc->id = NULL;
+	tgc->next = NULL;
+	tgc->g = cmp;
+	NEW (tgc->s, act_chp_lang_t);
+	tgc->s->label = NULL;
+	tgc->s->space = NULL;
+	tgc->s->type = tmp.type;
+	tgc->s->u.assign.id = tmpid;
+	tgc->s->u.assign.e = expr_dup (tmp_expr_id);
+	as->step ();
+      }
+      delete as;
+    }
+    break;
+    
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    chp_update_dynarray_comm (c, s);
+    break;
+    
+  case ACT_CHP_FUNC:
+    for (li = list_first (c->u.func.rhs); li; li = list_next (li)) {
+      act_func_arguments_t *ra;
+      ra = (act_func_arguments_t *) list_value (li);
+      if (!ra->isstring) {
+	chp_update_dynarray_expr (ra->u.e, s);
+      }
+    }
+    break;
+
+  case ACT_HSE_FRAGMENTS:
+    break;
+    
+  default:
+    fatal_error ("Unknown chp type %d", c->type);
+    break;
+  }
+  return;
+}
+
+
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
   if (!in_chp) {
@@ -3279,6 +3873,8 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
   stack_ipush (in_chp, 1);
   act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
   if (!_chp_expanding_macro) {
+    config_set_default_int ("act.decomp.mem_threshold", 16);
+    chp_update_dynarray (cnew, s);
     cnew = chp_update_bw (cnew, s);
   }
   stack_ipop (in_chp);

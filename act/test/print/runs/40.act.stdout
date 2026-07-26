@@ -1,0 +1,23 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<33> _fv1;
+int<32> _fv0;
+int<32> v[3];
+int<32> i;
+chan(int<32>,int<32>) x[2];
+
+/* connections */
+chp {
+_fv1:=0x4+i;[bool((i>>0x1)=0x0 ? int(int(i,1)=0) : 0x0) -> x[0]!_fv1?_fv0 [] bool((i>>0x1)=0x0 ? int(int(i,1)=1) : 0x0) -> x[1]!_fv1?_fv0];[bool((i>>0x1)=0x0 ? int(int(i,1)=0) : 0x0) -> v[0]:=_fv0 [] bool((i>>0x1)=0x0 ? int(int(i,1)=1) : 0x0) -> v[1]:=_fv0 [] bool((i>>0x2)=0x0 ? int(int(i,2)=2) : 0x0) -> v[2]:=_fv0]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

@@ -61,7 +61,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL -Wno_local_driver:on $i 'foo<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -cnf=decomp.conf -Wno_local_driver:on $i 'foo<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.t.stderr
 	rm runs/$i.tmp.stderr
         sort runs/$i.stderr > runs/$i.c.stderr
@@ -93,7 +93,7 @@ do
         if [ $ok -eq 1 ]
         then
 	rm runs/$i.c.stderr
-	$ACTTOOL -Wno_local_driver:on -v $i 'foo<>' > runs/$i.t.stdoutv 2> runs/$i.tmp.stderrv
+	$ACTTOOL -cnf=decomp.conf -Wno_local_driver:on -v $i 'foo<>' > runs/$i.t.stdoutv 2> runs/$i.tmp.stderrv
 	sort runs/$i.tmp.stderrv > runs/$i.t.stderrv
 	rm runs/$i.tmp.stderrv
         sort runs/$i.stderrv > runs/$i.c.stderrv

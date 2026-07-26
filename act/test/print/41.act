@@ -1,0 +1,12 @@
+defproc test()
+{
+  chan(int,int) x[2];
+  int i;
+  int v[32];
+ 
+  chp {
+     x[i]!(4+i)?v[i]
+  }
+}
+
+test t;

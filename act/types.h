@@ -2559,6 +2559,9 @@ void act_error_pop ();				    ///< pop the error
 void act_error_ctxt (FILE *);	///< print the error context to the
 				///output stream
 
+void act_warn_ctxt (FILE *);	///< print the warning context to the
+				///output stream
+
 const char *act_error_top ();	///< return the message for the
 				///top-level error
 

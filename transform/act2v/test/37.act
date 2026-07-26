@@ -2,7 +2,7 @@ deftype data <: int (bool w[32]) { }
 
 defproc foo(data q) {
 
-  data x[15];
+  data x[18];
   int y, z;
   data p;
 

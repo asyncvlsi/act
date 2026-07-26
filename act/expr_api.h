@@ -299,6 +299,11 @@ int act_expr_getconst_int (Expr *e, int *val);
 Expr *act_expr_var (ActId *id);
 
 /**
+ * Like act_expr_var, but for constructing probe expressions
+ */
+Expr *act_expr_probe (ActId *id);
+
+/**
  * Helper function: used to get a structure type from an
  * expression. This only works in the expanded scenarios.
  * @param s is the scope for evaluation

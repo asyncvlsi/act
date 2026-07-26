@@ -1,5 +1,5 @@
-In expanding test (132.act:1)
+In expanding test (40.act:1)
 In expanding ::<Global>
 Warning on or near line number 7.
 Dynamic channel arrays are automatically re-written.
-	Variable: x[y]
+	Variable: x[i]

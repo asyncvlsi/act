@@ -70,7 +70,7 @@ void act_error_pop ()
   FREE (ec);
 }
 
-void act_error_ctxt (FILE *fp)
+static void _act_error_ctxt (FILE *fp, bool warn)
 {
   struct err_ctxt *ec;
 #if 0  
@@ -91,8 +91,19 @@ void act_error_ctxt (FILE *fp)
     fprintf (fp, "\n");
   }
   if (_curline != -1) {
-    fprintf (fp, "Error on or near line number %d.\n", _curline);
+    fprintf (fp, "%s on or near line number %d.\n",
+	     warn ? "Warning" : "Error", _curline);
   }
+}
+
+void act_error_ctxt (FILE *fp)
+{
+  _act_error_ctxt (fp, false);
+}
+
+void act_warn_ctxt (FILE *fp)
+{
+  _act_error_ctxt (fp, true);
 }
 
 const char *act_error_top ()

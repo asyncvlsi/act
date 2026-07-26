@@ -25,7 +25,7 @@ fi
 
 for i in $list
 do
-	$ACTTOOL $i 'test<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
+	$ACTTOOL -cnf=decomp.conf $i 'test<>' > runs/$i.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.stderr
 	rm runs/$i.tmp.stderr
 done

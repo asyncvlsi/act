@@ -1,0 +1,20 @@
+defproc test ();
+
+defproc test ()
+{
+
+/* instances */
+int<32> i;
+int<32> x[4];
+
+/* connections */
+chp {
+i:=0x5;i:=bool((i>>0x1)=0x0 ? int(int(i,1)=0) : 0x0) ? x[0] : bool((i>>0x1)=0x0 ? int(int(i,1)=1) : 0x0) ? x[1] : bool((i>>0x2)=0x0 ? int(int(i,2)=2) : 0x0) ? x[2] : x[3];[bool((i+0x1>>0x1)=0x0 ? int(int(int(i,1)+0x1,1)=0) : 0x0) -> x[0]:=i [] bool((i+0x1>>0x1)=0x0 ? int(int(int(i,1)+0x1,1)=1) : 0x0) -> x[1]:=i [] bool((i+0x1>>0x2)=0x0 ? int(int(int(i,2)+0x1,2)=2) : 0x0) -> x[2]:=i [] bool((i+0x1>>0x2)=0x0 ? int(int(int(i,2)+0x1,2)=3) : 0x0) -> x[3]:=i]
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */
