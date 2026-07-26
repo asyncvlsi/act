@@ -1668,11 +1668,12 @@ static Expr *_chp_group_probes (list_t *pl, Expr *e)
   return e;
 }
 
-
+static void chp_update_dynarray_expr (Expr *e, Scope *s);
 
 static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
 {
   e = _chp_fix_nnf (e, 0);
+  chp_update_dynarray_expr (e, s);
 
   _expr_has_nonlocal_vars = 0;
   pmap = phash_new (4);
