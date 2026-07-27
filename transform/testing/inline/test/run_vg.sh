@@ -62,7 +62,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	valgrind -q $ACTTOOL $i 'test<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
+	valgrind -q $ACTTOOL -cnf=decomp.conf $i 'test<>' > runs/$i.t.stdout 2> runs/$i.tmp.stderr
 	sort runs/$i.tmp.stderr > runs/$i.t.stderr
 	rm runs/$i.tmp.stderr
 	ok=1
