@@ -193,6 +193,8 @@ void expr_clear (void);
   */
 
 void expr_endgtmode (int m);
+int expr_get_endgt_flag (void);
+int expr_zero_parens (void);
 
 extern pId *(*expr_parse_id)(LFILE *l);
   /* The function must do the following:

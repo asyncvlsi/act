@@ -62,6 +62,11 @@ void expr_dec_parens (void)
   paren_count--;
 }
 
+int expr_zero_parens (void)
+{
+  return (paren_count == 0 ? 1 : 0);
+}
+
 int expr_gettoken (int type)
 {
   return T[type];
@@ -70,6 +75,11 @@ int expr_gettoken (int type)
 void expr_endgtmode (int v)
 {
   end_gt_mode = v;
+}
+
+int expr_get_endgt_flag (void)
+{
+  return end_gt_mode;
 }
 
 /*------------------------------------------------------------------------
@@ -545,12 +555,12 @@ static Expr *FF (void)
   }
   for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)
     if (T[_intcomp[i]] != -1)				
-      break;						
+      break;
   if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
     POP (Tl);
     return e;
-  }							
-  for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)	
+  }
+  for (i=0; i < sizeof(_intcomp)/sizeof(_intcomp[0]); i++)
     if (T[_intcomp[i]] != -1 && T[_intcomp[i]] == file_sym (Tl))
       break;
   if (i == sizeof(_intcomp)/sizeof(_intcomp[0])) {
