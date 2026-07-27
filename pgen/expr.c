@@ -514,10 +514,24 @@ Expr *B (void)
      }							\
      f = newexpr ();					\
      f->type = array[i];				\
-     f->u.e.l = e;					\
-     file_getsym (Tl);					\
-     f->u.e.r = next ();				\
-     if (!f->u.e.r) {					\
+     f->u.e.l = e;							\
+     if (f->type == E_GT && (end_gt_mode == 1)) {			\
+       PUSH (Tl);							\
+       file_getsym (Tl);						\
+       if (file_sym (Tl) != T[E_GT] && !expr_be_next_tok (Tl) ||	\
+	   (paren_count == 0 && file_sym (Tl) == T[E_LPAR])) {		\
+         SET (Tl);							\
+	 POP (Tl);							\
+         POP (Tl);							\
+	 f->u.e.l = NULL;						\
+	 efree (f);							\
+	 return e;							\
+       }								\
+       POP (Tl);							\
+     }									\
+     else { file_getsym (Tl); }						\
+     f->u.e.r = next ();						\
+     if (!f->u.e.r) {							\
        SET (Tl);					\
        POP (Tl);					\
        efree (f);					\
@@ -537,7 +551,7 @@ static int _muldiv[] = { E_MULT, E_DIV, E_MOD };
 static Expr *F (void);
 
 static Expr *FF (void)				
-{							
+{
   Expr *e, *f;					
   int i;
   int tmp = int_real_only;
@@ -570,7 +584,25 @@ static Expr *FF (void)
   f = newexpr ();
   f->type = _intcomp[i];
   f->u.e.l = e;
-  file_getsym (Tl);
+
+  if (_intcomp[i] == E_GT && (end_gt_mode == 1)) {
+    PUSH (Tl);
+    file_getsym (Tl);
+    if (file_sym (Tl) != T[E_GT] && !expr_be_next_tok (Tl) ||
+	(paren_count == 0 && file_sym (Tl) == T[E_LPAR])) {
+      SET (Tl);
+      POP (Tl);
+      POP (Tl);
+      f->u.e.l = NULL;
+      efree (f);
+      return e;
+    }
+    POP (Tl);
+  }
+  else {
+    file_getsym (Tl);
+  }
+
   int_real_only = 1;
   f->u.e.r = F ();
   int_real_only = tmp;
@@ -586,7 +618,8 @@ static Expr *FF (void)
      left pointer! */
   if ((f->type == E_GT) && (end_gt_mode == 1)) {
     if ((file_sym (Tl) != T[E_GT] && !expr_be_next_tok (Tl)) ||
-	(file_sym (Tl) == T[E_RPAR] && paren_count == 0)) {
+	((file_sym (Tl) == T[E_RPAR] || file_sym (Tl) == T[E_LPAR])
+	 && paren_count == 0)) {
       /* unwind */
       SET (Tl);
       POP (Tl);
