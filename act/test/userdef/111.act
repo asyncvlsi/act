@@ -1,0 +1,24 @@
+template<pint W>
+function shift(int x): int
+{
+    chp {
+        self := x >> W
+    }
+}
+
+function combine(int x): int
+{
+    chp {
+        self := shift<2>(x) ^ 0 
+    }
+}
+
+defproc test()
+{
+  int x;
+  chp {
+   x := combine (x)
+  }
+}
+
+test t;
