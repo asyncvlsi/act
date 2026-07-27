@@ -1,0 +1,52 @@
+defproc test ();
+deftype element (int<8> f);
+function func_34_4 (super_34_4 input) : bool;
+deftype super_34_4 (element a[4]; element b[4]);
+
+defproc test ()
+{
+
+/* instances */
+bool flag;
+super_34_4 input;
+
+/* connections */
+chp {
+input.a[0].f:=int(int(0x1,8)>>0,8);input.a[1].f:=int(int(0x2,8)>>0,8);input.a[2].f:=int(int(0x3,8)>>0,8);input.a[3].f:=int(int(0x4,8)>>0,8);flag:=true
+}
+}
+
+deftype element (int<8> f)
+{
+
+/* instances */
+
+/* connections */
+}
+
+function func_34_4 (super_34_4 input) : bool
+{
+
+/* instances */
+int<32> idx;
+element in_a[4];
+
+/* connections */
+chp {
+log("0: ",input.a[0].f," ",input.a[1].f);log("1: ",int(input.a[0])," ",int(input.a[1]));in_a[0]:=input.a[0];in_a[1]:=input.a[1];log("2: ",in_a[0].f," ",in_a[1].f);log("3: ",int(in_a[0])," ",int(in_a[1]));self:=true
+}
+}
+
+deftype super_34_4 (element a[4]; element b[4])
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

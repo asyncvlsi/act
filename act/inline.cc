@@ -276,17 +276,36 @@ _lookup_binding (act_inline_table *Hs,
 	else {
 	  int array_off = it->arrayInfo()->Offset (deref);
 	  Assert (array_off != -1, "Out of bounds?");
-	  rv.u.val = bval.u.arr[array_off];
-	  if (err && (rv.u.val == NULL)) {
-	    act_error_ctxt (stderr);
-	    fprintf (stderr, "Access to `%s", name);
-	    deref->Print (stderr);
-	    fprintf (stderr, "' has NULL binding.\n");
-	    fatal_error ("Uninitialized fields for `%s'.", name);
+
+	  // this could be a structure
+	  if (sz != -1) {
+	    rv.is_struct = 1;
+	    rv.struct_count = sz;
+	    MALLOC (rv.u.arr, Expr *, sz);
+	    for (int i=0; i < sz; i++) {
+	      rv.u.arr[i] = bval.u.arr[array_off*sz + i];
+	      if (err && (rv.u.arr[i] == NULL)) {
+		act_error_ctxt (stderr);
+		fprintf (stderr, "Access to `%s", name);
+		deref->Print (stderr);
+		fprintf (stderr, "'; field %d has NULL binding.\n", i);
+		fatal_error ("Uninitialized fields for `%s'.", name);
+	      }
+	    }
 	  }
-	  else if (rv.u.val) {
-	    if (rv.u.val->type == E_VAR) {
-	      rv.is_just_id = 1;
+	  else {
+	    rv.u.val = bval.u.arr[array_off];
+	    if (err && (rv.u.val == NULL)) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "Access to `%s", name);
+	      deref->Print (stderr);
+	      fprintf (stderr, "' has NULL binding.\n");
+	      fatal_error ("Uninitialized fields for `%s'.", name);
+	    }
+	    else if (rv.u.val) {
+	      if (rv.u.val->type == E_VAR) {
+		rv.is_just_id = 1;
+	      }
 	    }
 	  }
 	}
@@ -497,7 +516,7 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
 	if (!Hs->macro_mode && bindv.u.arr[i]) {
 	  if (xd) {
 	    if (widths[i % sz] > 0) {
-	      bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[i]);
+	      bindv.u.arr[i] = _wrap_width (bindv.u.arr[i], widths[i % sz]);
 	    }
 	  }
 	  else {

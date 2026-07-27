@@ -1,0 +1,40 @@
+deftype element (int<8> f);
+
+template <pint SIZE>
+deftype super (element a[SIZE]; element b[SIZE]);
+
+template <pint SIZE>
+function func (
+    super<SIZE> input
+) : bool {
+    element in_a[SIZE];
+    int idx;
+
+    chp {
+        log ("0: ", input.a[0].f, " ", input.a[1].f);
+        log ("1: ", int(input.a[0]), " ", int(input.a[1]));
+        in_a[0] := input.a[0];
+        in_a[1] := input.a[1];
+        log ("2: ", in_a[0].f, " ", in_a[1].f);
+        log ("3: ", int(in_a[0]), " ", int(in_a[1]));
+
+        self := true
+    }
+}
+
+defproc test() {
+    pint SIZE = 4;
+
+    super<SIZE> input;
+    bool flag;
+
+    chp {
+        (; k : SIZE :
+            input.a[k] := element(k+1)
+        );
+
+        flag := func<SIZE>(input)
+    }
+}
+
+test t;
