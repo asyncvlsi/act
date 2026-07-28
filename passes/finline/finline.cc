@@ -868,7 +868,7 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 
 /*------------------------------------------------------------------------
  *  
- *  Complex inlines: functions with loops
+ *  Complex inlines: functions with loops, dynamic indices in arrays
  *
  *------------------------------------------------------------------------
  */

@@ -554,11 +554,20 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
   printf ("\n");
 #endif
 
-  if (id->Rest()) {
-    Assert (xd, "What?!");
-    int sz2;
+  if (id->Rest() || deref) {
+    Assert (!id->Rest() || xd, "What?!");
+    int sz2, off;
 
-    int off = xd->getStructOffset (id->Rest(), &sz2);
+    if (id->Rest()) {
+      // get the size of the Rest(), and its offset into the id
+      off = xd->getStructOffset (id->Rest(), &sz2);
+    }
+    else {
+      // offset = 0, size is the struct size, it is a deref
+      off = 0;
+      sz2 = sz;
+    }
+
     int array_off = 0;
     if (deref) {
       array_off = xit->arrayInfo()->Offset (deref);
@@ -567,6 +576,12 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
     Assert (off >= 0 && off < sz, "What?");
     Assert (off + sz2 <= sz, "What?");
     Assert (!update.isSimple() || sz2 == 1, "Hmm");
+
+    if (deref) {
+      // need original binding without the array!
+      resv = _lookup_binding (Hs, id->getName(), NULL, NULL, 0);
+    }
+
     if (resv.isSimple()) {
       resv.elaborateStructId (xd, xit->arrayInfo());
     }
@@ -585,32 +600,10 @@ static void _update_binding (act_inline_table *Hs, ActId *id,
       else {
 	resv.u.arr[array_off*sz + off+i] = updatev;
       }
-#if 0      
-      printf ("set offset %d to ", off+i);
-      if (update.u.arr[i]) {
-	print_expr (stdout, update.u.arr[i]);
-      }
-      else {
-	printf ("null");
-      }
-      printf ("\n");
-#endif      
     }
-#if 0
-    for (int i=0; i < sz; i++) {
-      printf ("cur %d = ", i);
-      if (res[i]) {
-	print_expr (stdout, resv.u.arr[i]);
-      }
-      else {
-	printf ("null");
-      }
-      printf ("\n");
-    }
-#endif	
   }
   else {
-    if (xd || deref) {
+    if (xd || deref) { // deref case can be removed
       if (update.isSimple() && !deref) {
 	resv = update;
       }
