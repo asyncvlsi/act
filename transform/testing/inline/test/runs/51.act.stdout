@@ -1,0 +1,30 @@
+defproc test ();
+deftype mys (int<32> x; int<32> y);
+
+defproc test ()
+{
+
+/* instances */
+mys as;
+int<32> a;
+mys x[2];
+
+/* connections */
+chp {
+x[0].x:=int(int(0x35,64)>>32,32);x[0].y:=int(int(0x35,64)>>0,32);a:=0x0;as.x:=bool((a>>0x1)=0x0 ? int(int(a,1)=0x0) : 0x0) ? x[0].x : x[1].x;as.y:=bool((a>>0x1)=0x0 ? int(int(a,1)=0x0) : 0x0) ? x[0].y : x[1].y;a:=as.x
+}
+}
+
+deftype mys (int<32> x; int<32> y)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test s;
+
+/* connections */

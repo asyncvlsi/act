@@ -1,0 +1,18 @@
+deftype mys(int x) { }
+
+
+defproc test()
+{
+   mys x[2];
+   int a;
+   mys as;
+
+   chp {
+      x[0] := mys(53);
+      a := 0;
+      as := (a = 0 ? x[0] : x[1]);
+      log ("Got ", as.x)
+   }
+}     
+
+test t;

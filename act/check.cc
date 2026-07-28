@@ -376,6 +376,11 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
     it = new InstType (s, (PStruct *)e->u.e.r, 0);
     return it;
   }
+  else if (e->type == E_QUERY) {
+    // could be a structure...
+    it = _act_special_expr_insttype (s, e->u.e.r->u.e.l, islocal, only_chan);
+    return it;
+  }
   return NULL;
 }
 
@@ -630,6 +635,28 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       char buf1[4000], buf2[4000];
       e = e->u.e.r;
       EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
+
+      /* one more possibility: they are both identical structures */
+      {
+	InstType *it1, *it2;
+	it1 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
+	if (it1 && TypeFactory::isPureStruct (it1) && !it1->arrayInfo()) {
+	  it2 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
+	  if (it2) {
+	    if (it1->isEqual (it2)) {
+	      if (width) {
+		if (it1->isExpanded()) {
+		  *width = TypeFactory::totBitWidth (it1);
+		}
+		else {
+		  *width = 32; // temp
+		}
+	      }
+	      return T_DATA;
+	    }
+	  }
+	}
+      }
 
       sprint_uexpr (buf1, 4000, e->u.e.l);
       sprint_uexpr (buf2, 4000, e->u.e.r);

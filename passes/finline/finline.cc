@@ -372,6 +372,10 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	if (e->u.func.lhs->type == E_VAR) {
 	  /* nothing to be done here */
 	}
+	else if (e->u.func.lhs->type == E_QUERY) {
+	  /* nothing to be done here? */
+	  //Assert (0, "Query struct");
+	}
 	else {
 	  act_inline_value vals = _inline_funcs_general (l, e->u.func.lhs);
 	  Data *d;
@@ -729,6 +733,10 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	if (c->u.assign.e->type == E_VAR) {
 	  /* nothing to be done here */
 	}
+	else if (c->u.assign.e->type == E_QUERY) {
+	  /* nothing to be done here? */
+	  //Assert (0, "Query struct");
+	}
 	else {
 	  /* unstructure this if needed */
 
@@ -1008,6 +1016,62 @@ void ActCHPFuncInline::_do_complex_inline (struct pHashtable *Hargs, list_t *l, 
 }
 
 
+static void _collect_query_var_leaves (list_t *l, Expr *e)
+{
+  if (!e) return;
+  Assert (e->type == E_QUERY || e->type == E_VAR, "What?");
+  if (e->type == E_QUERY) {
+    _collect_query_var_leaves (l, e->u.e.r->u.e.l);
+    _collect_query_var_leaves (l, e->u.e.r->u.e.r);
+  }
+  else {
+    // var
+    list_append (l, e->u.e.l);
+  }
+}
+
+static Expr *_clone_query_vars (listitem_t **li, ActId *field, Expr *e)
+{
+  Expr *ret;
+  if (!e) return NULL;
+  Assert (*li, "What?");
+  Assert (e->type == E_QUERY || e->type == E_VAR, "What?");
+  NEW (ret, Expr);
+  ret->type = e->type;
+  if (e->type == E_QUERY) {
+    ret->u.e.l = expr_dup (e->u.e.l);
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->type = E_COLON;
+    ret->u.e.r->u.e.l =
+      _clone_query_vars (li, field, e->u.e.r->u.e.l);
+    ret->u.e.r->u.e.r =
+      _clone_query_vars (li, field, e->u.e.r->u.e.r);
+  }
+  else {
+    ret->u.e.r = NULL;
+    ActId *id = (ActId *) list_value (*li);
+    *li = list_next (*li);
+    id = id->Clone ();
+    id->Tail()->Append (field->Clone());
+    ret->u.e.l = (Expr *) id;
+  }
+  return ret;
+}
+
+static Expr *_clone_query_vars (Expr *e, list_t *l, ActId *field)
+{
+  listitem_t *li = list_first (l);
+  return _clone_query_vars (&li, field, e);
+}
+
+static list_t *_collect_query_var_leaves (Expr *e)
+{
+  list_t *ret = list_new ();
+  _collect_query_var_leaves (ret, e);
+  return ret;
+}
+
+
 void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
 {
   if (!c) return;
@@ -1035,42 +1099,85 @@ void ActCHPFuncInline::_structure_assign (act_chp_lang_t *c)
     {
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
       if (TypeFactory::isStructure (it)) {
-	if (c->u.assign.e->type == E_VAR && !c->u.assign.id->isDynamicDeref()) {
-	  int *types;
-	  int nb, ni;
-	  ActId *e_rhs;
+	if (c->u.assign.e->type == E_VAR) {
+	  if (!c->u.assign.id->isDynamicDeref()) {
+	    int *types;
+	    int nb, ni;
+	    ActId *e_rhs;
 
-	  e_rhs = (ActId *) c->u.assign.e->u.e.l;
-	  InstType *rhs = _cursc->FullLookup (e_rhs, NULL);
-	  if (!TypeFactory::isChanType (rhs)) {
-	    /* element-wise assignment */
-	    Data *d = dynamic_cast<Data *> (it->BaseType());
-	    Assert (d, "Hmm");
-	    ActId **fields = d->getStructFields (&types);
-	    FREE (types);
-	    d->getStructCount (&nb, &ni);
-	    int sz = nb + ni;
-	    list_t *l = list_new ();
-	    for (int i=0; i < sz; i++) {
-	      act_chp_lang_t *tc;
-	      NEW (tc, act_chp_lang_t);
-	      tc->type = ACT_CHP_ASSIGN;
-	      tc->label = NULL;
-	      tc->space = NULL;
-	      tc->u.assign.id = c->u.assign.id->Clone();
-	      tc->u.assign.id->Tail()->Append (fields[i]);
-	      tc->u.assign.e = act_expr_var (e_rhs->Clone());
-	      ((ActId *)tc->u.assign.e->u.e.l)->Tail()->Append (fields[i]->Clone());
-	      list_append (l, tc);
+	    e_rhs = (ActId *) c->u.assign.e->u.e.l;
+	    InstType *rhs = _cursc->FullLookup (e_rhs, NULL);
+	    if (!TypeFactory::isChanType (rhs)) {
+	      /* element-wise assignment */
+	      Data *d = dynamic_cast<Data *> (it->BaseType());
+	      Assert (d, "Hmm");
+	      ActId **fields = d->getStructFields (&types);
+	      FREE (types);
+	      d->getStructCount (&nb, &ni);
+	      int sz = nb + ni;
+	      list_t *l = list_new ();
+	      for (int i=0; i < sz; i++) {
+		act_chp_lang_t *tc;
+		NEW (tc, act_chp_lang_t);
+		tc->type = ACT_CHP_ASSIGN;
+		tc->label = NULL;
+		tc->space = NULL;
+		tc->u.assign.id = c->u.assign.id->Clone();
+		tc->u.assign.id->Tail()->Append (fields[i]);
+		tc->u.assign.e = act_expr_var (e_rhs->Clone());
+		((ActId *)tc->u.assign.e->u.e.l)->Tail()->Append (fields[i]->Clone());
+		list_append (l, tc);
+	      }
+	      FREE (fields);
+	      c->type = ACT_CHP_SEMI;
+	      c->u.semi_comma.cmd = l;
 	    }
-	    FREE (fields);
-	    c->type = ACT_CHP_SEMI;
-	    c->u.semi_comma.cmd = l;
+	  }
+	  else {
+	    /* nothing! */
 	  }
 	}
-        else if (c->u.assign.e->type == E_VAR && c->u.assign.id->isDynamicDeref()) {
-          /* nothing */
-        }
+	else if (c->u.assign.e->type == E_QUERY) {
+	  list_t *leaves = _collect_query_var_leaves (c->u.assign.e);
+
+	  if (!list_isempty (leaves)) {
+	    int *types;
+	    int nb, ni;
+	    ActId *e_rhs;
+
+	    e_rhs = (ActId *) list_value (list_first (leaves));
+	    InstType *rhs = _cursc->FullLookup (e_rhs, NULL);
+
+	    if (!TypeFactory::isChanType (rhs)) {
+	      /* element-wise assignment */
+	      Data *d = dynamic_cast<Data *> (it->BaseType());
+	      Assert (d, "Hmm");
+	      ActId **fields = d->getStructFields (&types);
+	      FREE (types);
+	      d->getStructCount (&nb, &ni);
+	      int sz = nb + ni;
+	      list_t *l = list_new ();
+
+	      for (int i=0; i < sz; i++) {
+		act_chp_lang_t *tc;
+		NEW (tc, act_chp_lang_t);
+		tc->type = ACT_CHP_ASSIGN;
+		tc->label = NULL;
+		tc->space = NULL;
+		tc->u.assign.id = c->u.assign.id->Clone();
+		tc->u.assign.id->Tail()->Append (fields[i]);
+		tc->u.assign.e = _clone_query_vars (c->u.assign.e,
+						    leaves,
+						    fields[i]);
+		list_append (l, tc);
+	      }
+	      FREE (fields);
+	      c->type = ACT_CHP_SEMI;
+	      c->u.semi_comma.cmd = l;
+	    }
+	  }
+	  list_free (leaves);
+	}
 	else {
 	  Assert (c->u.assign.e->type == E_FUNCTION, "What?");
 	  Function *func = (Function *) c->u.assign.e->u.fn.s;
