@@ -1,0 +1,17 @@
+template<pint X>
+deftype mismatch(bool x[X]) { }
+
+
+defproc test()
+{ 
+  int a;
+  pint A = 8;
+  mismatch<8> x;
+  mismatch<A> y;
+  
+  chp {
+    x := (a > 0 ? x : y)
+  }
+}
+
+test t;

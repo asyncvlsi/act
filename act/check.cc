@@ -378,8 +378,13 @@ static InstType *_act_special_expr_insttype (Scope *s, Expr *e, int *islocal,
   }
   else if (e->type == E_QUERY) {
     // could be a structure...
-    it = _act_special_expr_insttype (s, e->u.e.r->u.e.l, islocal, only_chan);
-    return it;
+    InstType *it1 = _act_special_expr_insttype (s, e->u.e.r->u.e.l, islocal, only_chan);
+    InstType *it2 = _act_special_expr_insttype (s, e->u.e.r->u.e.r, islocal, only_chan);
+    if (it1 && it2) {
+      if (it1->BaseType()->isEqual (it2->BaseType())) {
+	return it1;
+      }
+    }
   }
   return NULL;
 }
@@ -639,21 +644,36 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       /* one more possibility: they are both identical structures */
       {
 	InstType *it1, *it2;
-	it1 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
-	if (it1 && TypeFactory::isPureStruct (it1) && !it1->arrayInfo()) {
-	  it2 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
-	  if (it2) {
-	    if (it1->isEqual (it2)) {
-	      if (width) {
-		if (it1->isExpanded()) {
-		  *width = TypeFactory::totBitWidth (it1);
-		}
-		else {
-		  *width = 32; // temp
-		}
+	if (s->isExpanded()) {
+	  it1 = act_expr_insttype_ex (s, e->u.e.l, only_chan);
+	  if (it1 && TypeFactory::isPureStruct (it1)) {
+	    it2 = act_expr_insttype_ex (s, e->u.e.r, only_chan);
+	  }
+	  else {
+	    it2 = NULL;
+	  }
+	}
+	else {
+	  it1 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
+	  if (it1 && TypeFactory::isPureStruct (it1)) {
+	    it2 = _act_special_expr_insttype (s, e->u.e.r, NULL, only_chan);
+	  }
+	  else {
+	    it2 = NULL;
+	  }
+	}
+	if (it1 && it2) {
+	  if (it1->isExpanded() && it1->isEqual (it2) ||
+	      (!it1->isExpanded() && it1->BaseType()->isEqual (it2->BaseType()))) {
+	    if (width) {
+	      if (it1->isExpanded()) {
+		*width = TypeFactory::totBitWidth (it1);
 	      }
-	      return T_DATA;
+	      else {
+		*width = 32; // temp
+	      }
 	    }
+	    return T_DATA;
 	  }
 	}
       }
@@ -1875,6 +1895,21 @@ InstType *act_expr_insttype_ex (Scope *s, Expr *e, int only_chan)
   else if (ret & T_ARRAYOF) {
     // doesn't work for array expressions!
     return NULL;
+  }
+  else if (e->type == E_QUERY) {
+    // could be a structure...
+    InstType *it1 = act_expr_insttype_ex (s, e->u.e.r->u.e.l, only_chan);
+    return it1;
+#if 0
+    /* We assume that this function is only called if the expression already
+       passes typechecking via act_type_expr(); otherwise we need the 
+       following lines as well.
+    */
+    InstType *it2 = act_expr_insttype_ex (s, e->u.e.r->u.e.r, only_chan);
+    if (it1->isEqual (it2)) {
+      return it1;
+    }
+#endif
   }
   else {
     fatal_error ("Unexpected return code in typechecking: %x", ret);

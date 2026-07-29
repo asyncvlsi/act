@@ -1,0 +1,5 @@
+Typechecking failed on CHP assignment
+  stmt: x := a>0 ? x : y
+	Query expression: two options must have compatible types
+	Opt1: x
+	Opt2: y
