@@ -162,6 +162,14 @@ class InstType {
   int isEqual (InstType *t, int weak = 0);
 
   /**
+   * The same set of parameters as isEqual() above.
+   * The difference is that if the two insttypes are user-defined
+   * types, then the template argument checking is restricted to 
+   * strict parameters.
+   */
+  int isMixedArray (InstType *t, int weak = 0);
+
+  /**
    * The same as isEqual(), except it also checks that the direction
    * flags for the type match.
    */
@@ -384,6 +392,17 @@ class InstType {
    * @return the interface type
    */
   InstType *getIfaceType() { return iface_type; }
+
+  /**
+   * @return the actual type for the specified array deref. This is
+   * needed for sparse array dereferences.
+   */
+  InstType *getActualType (Array *deref);
+
+  /**
+   * @return true if this instance is an array with mixed types.
+   */
+  bool isMixedArray ();
 
  private:
 

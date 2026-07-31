@@ -1,0 +1,20 @@
+template <pint D | pint A>
+defproc src_delay (chan!(int) S)
+{
+  int d, s;
+  int q[A];
+  chp {
+    d := 0;
+    s := 20;
+    q[d] := 0;
+    *[ S!s; *[ d < D -> d := d + 1]; d := 0 ]
+  }
+}
+  
+defproc foo()
+{
+  src_delay<100,5> x[1];
+  src_delay<100,6> x[2..2];
+}
+
+foo f;

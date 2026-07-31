@@ -256,15 +256,31 @@ void ActPass::recursive_op (UserDef *p, int mode)
     if (TypeFactory::isProcessType (vx->t)) {
       Process *x = dynamic_cast<Process *> (vx->t->BaseType());
       if (x->isExpanded()) {
-	char *tmp;
-	int len;
-	len = strlen (x->getName()) + strlen (vx->getName()) + 10;
-	MALLOC (tmp, char, len);
-	snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
-	act_error_push (tmp, x->getFile(), x->getLine());
-	recursive_op (x, mode);
-	act_error_pop ();
-	FREE (tmp);
+	Array *a = vx->t->arrayInfo();
+	do {
+	  char *tmp;
+	  int len;
+
+	  if (a) {
+	    /* if there is an array, there may be multiple processes
+	       that need to be visited! */
+	    Assert (a->getArrayType(), "What?");
+	    x = dynamic_cast <Process *> (a->getArrayType ()->BaseType());
+	  }
+	  Assert (x->isExpanded(), "What?");
+	  
+	  len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	  MALLOC (tmp, char, len);
+	  snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	  act_error_push (tmp, x->getFile(), x->getLine());
+	  recursive_op (x, mode);
+	  act_error_pop ();
+	  FREE (tmp);
+
+	  if (a) {
+	    a = a->Next ();
+	  }
+	} while (a);
       }
     }
     else if (TypeFactory::isUserType (vx->t)) {

@@ -485,6 +485,8 @@ class UserDef : public Type {
   void snprintActName (char *buf, int sz);
 
   int isEqual (const Type *t) const;
+  int isMixedArray (const Type *t) const;
+
 
   /**
    * Set the name of the type. Used to share the string pointer
@@ -507,6 +509,7 @@ class UserDef : public Type {
    * @return 1 if the types are equal, 0 otherwise
    */
   int isEqual (const UserDef *u) const;
+  int isMixedArray (const UserDef *u) const;
 
   /**
    * Setup parent relationship for the imlementation relation between

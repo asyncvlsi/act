@@ -211,7 +211,7 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
     tb = vx->t->arrayInfo();
     vx->t->clrArray();
 
-    if (!it->isEqual (vx->t)) {
+    if (!it->isEqual (vx->t) && !it->isMixedArray (vx->t)) {
       act_error_ctxt (stderr);
       fprintf (stderr, "Sparse array type error on %s\n", id);
       fprintf (stderr, "\tOrig type: ");
@@ -699,7 +699,6 @@ void ActBody_Conn::Expand (ActNamespace *ns, Scope *s)
     /* rhs */
     arhs = u.basic.rhs->Expand (ns, s);
     trhs = arhs->getInstType (s, NULL, 1);
-
 
 #if 0
     fprintf (stderr, "Conn-ex: ");

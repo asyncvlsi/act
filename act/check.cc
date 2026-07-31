@@ -170,6 +170,22 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
   }
   *retid = id;
 
+
+  if (id->isDeref() && id->arrayInfo()->isExpanded() &&
+      !id->isDynamicDeref() && TypeFactory::isProcessType (it)) {
+    InstType *tmp = it;
+    it = it->getActualType (id->arrayInfo());
+    if (!it) {
+      act_error_ctxt (stderr);
+      fprintf (stderr, " id: ");
+      id->Print (stderr);
+      fprintf (stderr, "\n type: ");
+      tmp->Print (stderr);
+      fprintf (stderr, "\n");
+      fatal_error ("Dereference out of range");
+    }
+  }
+
   if (subchan_conv) {
     it = new InstType (s, TypeFactory::Factory()->NewChan (it, NULL));
   }
@@ -1693,7 +1709,14 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan)
   */
   if (s->isExpanded()) {
     if (id->arrayInfo()->isDeref()) {
-      InstType *it2 = new InstType (it, 1);
+      InstType *it2;
+      if (TypeFactory::isProcessType (it) &&
+	  !id->arrayInfo()->isDynamicDeref()) {
+	it2 = new InstType (it->getActualType (id->arrayInfo()), 1);
+      }
+      else {
+	it2 = new InstType (it, 1);
+      }
       it = it2;
     }
     else {

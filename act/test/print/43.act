@@ -1,0 +1,17 @@
+template<pint X | pint Y>
+defproc conn_through (bool a, b)
+{
+  a = b;
+}
+
+
+defproc tst()
+{
+  bool x[5], y[5];
+
+  (i:5: conn_through<8,i> c[i..i];
+    c[i](x[i],y[i]);
+  )
+}
+
+tst t;

@@ -138,6 +138,9 @@ param_inst: param_type param_id_list
 	}
 	r->u.array->mkArray();
 	it->MkArray (r->u.array);
+	if (TypeFactory::isProcessType (it)) {
+	  r->u.array->mkArrayType (it);
+	}
 	it->MkCached();
 	FREE (r);
       }
@@ -674,6 +677,11 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
       }
       
       it->MkArray (tmpa);
+      if (tmpa){
+	if (TypeFactory::isProcessType (it)) {
+	  tmpa->mkArrayType (it);
+	}
+      }
       if (!chk) {
 	$e("Illegal override; the new type doesn't implement the original.\n");
 	fprintf ($f, "\tOriginal: ");
@@ -835,6 +843,9 @@ macro_param_inst: param_type id_list
 	}
 	r->u.array->mkArray();
 	it->MkArray (r->u.array);
+	if (TypeFactory::isProcessType (it)) {
+	  r->u.array->mkArrayType (it);
+	}
 	it->MkCached();
 	FREE (r);
       }
@@ -989,6 +1000,9 @@ single_port_item: physical_inst_type id_list
 	$A(r->type == R_ARRAY);
 	r->u.array->mkArray ();
 	it->MkArray (r->u.array);
+	if (TypeFactory::isProcessType (it)) {
+	  r->u.array->mkArrayType (it);
+	}
 	it->MkCached ();
 	FREE (r);
       }
@@ -1070,6 +1084,9 @@ single_macro_port_item: physical_inst_type id_list
 	$A(r->type == R_ARRAY);
 	r->u.array->mkArray ();
 	it->MkArray (r->u.array);
+	if (TypeFactory::isProcessType (it)) {
+	  r->u.array->mkArrayType (it);
+	}
 	it->MkCached ();
 	FREE (r);
       }
@@ -2462,6 +2479,10 @@ instance_id[ActBody *]: ID [ sparse_range ]
       it = new InstType ($0->t);
       r->u.array->mkArray ();
       it->MkArray (r->u.array);
+      if (TypeFactory::isProcessType (it)) {
+	r->u.array->mkArrayType (it);
+      }
+      it->MkCached ();
       FREE (r);
     }
     else {
@@ -2503,7 +2524,7 @@ instance_id[ActBody *]: ID [ sparse_range ]
       else {
 	/* check weak compatibility of instance types, since this
 	   could be a sparse array */
-	if (!prev_it->isEqual (it, 1)) {
+	if (!prev_it->isMixedArray (it, 1)) {
 	  $e("Array instance for ``%s'' is incompatible with previous instance of the same name", $1);
 	  fprintf ($f, "\n prev: ");
 	  prev_it->Print ($f);

@@ -519,7 +519,14 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     if (is_lval) {
       ret->type = E_VAR;
       ret->u.e.l = (Expr *)this;
-      ret->u.e.r = (Expr *)it;
+
+      if (id->arrayInfo() && !id->arrayInfo()->isDynamicDeref() &&
+	  id->arrayInfo()->isDeref() &&  TypeFactory::isProcessType (it)) {
+	ret->u.e.r = (Expr *)it->getActualType (id->arrayInfo());
+      }
+      else {
+	ret->u.e.r = (Expr *)it;
+      }
       return ret;
     }
 
@@ -724,7 +731,14 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
     /* all this for nothing! */
     ret->type = E_VAR;
     ret->u.e.l = (Expr *)this;
-    ret->u.e.r = (Expr *)it;
+
+    if (id->arrayInfo() && !id->arrayInfo()->isDynamicDeref() &&
+	id->arrayInfo()->isDeref() &&  TypeFactory::isProcessType (it)) {
+      ret->u.e.r = (Expr *)it->getActualType (id->arrayInfo());
+    }
+    else {
+      ret->u.e.r = (Expr *)it;
+    }
   }
   return ret;
 }

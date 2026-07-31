@@ -207,6 +207,15 @@ class Array {
    */
   Array (int idx);
 
+  /**
+   * An array that is used as part of a type definition must include
+   * the InstType *
+   */
+  void mkArrayType (InstType *t);
+
+  InstType *getArrayType () { return _ex_new_nonstrict; }
+  int getRangeSize () { if (range_sz == -1) { size (); } return range_sz; }
+
   ~Array ();
 
   /**
@@ -366,6 +375,11 @@ class Array {
   Expr *getDeref (int idx);
 
   /**
+   * Returns the actual inst type at the specified deref!
+   */
+  InstType *getDerefType (Array *d);
+
+  /**
    * Must be called on an expanded array that is in fact an array
    * dereference, and where the de-reference is non-const
    * @param idx is the dimension of the array of interest
@@ -388,10 +402,12 @@ class Array {
    * Same as the other Offset() function, except the de-reference
    * corresponds to a set of constant indices.
    * @param a is the de-reference index
+   * @param retval if this is not NULL, it returns the piece of the
+   * array where the offset was found.
    * @return -1 if not found, or the offset in the linear numbering of
    * the array
    */
-  int Offset (int *a);
+  int Offset (int *a, Array **retval = NULL);
 
   /**
    * Convert a linear offset into an array into the corresponding
@@ -470,7 +486,11 @@ private:
 
   Array *next;			/**< for sparse arrays, used to link
 				   together dense blocks for each
-				   component of the sparse array. */
+				   component of the sparse array.
+				   For sparse arrays, there may be
+				   different insttypes for each part of
+				   the Array.
+				*/
   
   unsigned int deref:1;		/**< 1 if this is a dereference, 0
 				   otherwise */
@@ -484,6 +504,7 @@ private:
 				     array pointers after expansion */
 
   friend class Arraystep;
+  friend class InstType;
 };
 
 /**
@@ -509,6 +530,9 @@ private:
  * }
  * delete as; // done with stepper
  * ```
+ *
+ * In the case of processes, you can query the array stepper at any
+ * time to find the current InstType.
  */
 class Arraystep {
 public:
@@ -550,6 +574,11 @@ public:
    * @param style is the array printing style
    */
   void Print (FILE *fp, int style = 0);
+
+  /**
+   * @return the current InstType
+   */
+  InstType *curInst();
   
 private:
   int idx;  ///< used to track the current index
@@ -557,6 +586,9 @@ private:
   Array *base; ///< the base array 
   Array *subrange;		///< the subrange, if any
   Array *insubrange;		///< part of subrange walker state
+
+  Array *_offset;		//< used to save away where the offset
+				//  was found, for subranges
 };
 
 

@@ -73,6 +73,16 @@ class Type {
   virtual int isEqual (const Type *t) const = 0;
 
   /**
+   * Check if two types can be in the same mixed type array. This
+   * should only be overridden by user-defined types.
+   * @param t is the type to compare against
+   * @return the result of comparing two types
+   */
+  virtual int isMixedArray (const Type *t) const {
+    return isEqual (t);
+  }
+
+  /**
    * Initialize static members. This also calls the static
    * initialization function for the TypeFactory
    */

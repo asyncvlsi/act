@@ -717,6 +717,167 @@ int UserDef::isEqual (const UserDef *u) const
   return 1;
 }
 
+/*------------------------------------------------------------------------
+ *  See if two user-defined types agree on port parameters
+ *------------------------------------------------------------------------*/
+int UserDef::isMixedArray (const UserDef *u) const
+{
+  int i;
+
+  if (parent != u->parent) {
+    if (!parent || !u->parent) return 0;
+    if (!parent->isMixedArray (u->parent)) {
+      return 0;
+    }
+  }
+
+  if (unexpanded != u->unexpanded) return 0;
+  // unexpanded type is the same!
+  
+  if (nt != u->nt) {
+    if (nt >= n_strict && u->nt >= n_strict) {
+      /* okay */
+    }
+    else {
+      return 0;
+    }
+  }
+
+  int num_check = nt;
+  if (nt < u->nt) {
+    num_check = u->nt;
+  }
+  if (num_check > n_strict) {
+    num_check = n_strict;
+  }
+  
+  /* check if the specified template parameters are actually equal */
+  for (int i=0; i < num_check; i++) {
+    int num;
+    ValueIdx *vx1, *vx2;
+    vx1 = I->LookupVal (pn[i]);
+    vx2 = u->I->LookupVal (pn[i]);
+
+    if (pt[i]->arrayInfo()) {
+      num = pt[i]->arrayInfo()->size();
+    }
+    else {
+      num = 1;
+    }
+
+    if (TypeFactory::isPIntType (pt[i])) {
+      for (int i=0; i < num; i++) {
+	if (I->issetPInt (vx1->u.idx + i) !=
+	    u->I->issetPInt (vx2->u.idx + i)) {
+	  return 0;
+	}
+	if (I->issetPInt (vx1->u.idx + i) &&
+	    (I->getPInt (vx1->u.idx + i) !=
+	     u->I->getPInt (vx2->u.idx + i))) {
+	  return 0;
+	}
+      }
+    }
+    else if (TypeFactory::isPBoolType (pt[i])) {
+      for (int i=0; i < num; i++) {
+	if (I->issetPBool (vx1->u.idx + i) !=
+	    u->I->issetPBool (vx2->u.idx + i)) {
+	  return 0;
+	}
+	if (I->issetPBool (vx1->u.idx + i) &&
+	    (I->getPBool (vx1->u.idx + i) !=
+	     u->I->getPBool (vx2->u.idx + i))) {
+	  return 0;
+	}
+      }
+    }
+    else if (TypeFactory::isPRealType (pt[i])) {
+      for (int i=0; i < num; i++) {
+	if (I->issetPReal (vx1->u.idx + i) !=
+	    u->I->issetPReal (vx2->u.idx + i)) {
+	  return 0;
+	}
+	if (I->issetPReal (vx1->u.idx + i) &&
+	    (I->getPReal (vx1->u.idx + i) !=
+	     u->I->getPReal (vx2->u.idx + i))) {
+	  return 0;
+	}
+      }
+    }
+    else if (TypeFactory::isPTypeType (pt[i])) {
+      for (int i=0; i < num; i++) {
+	if (I->issetPType (vx1->u.idx + i) !=
+	    u->I->issetPType (vx2->u.idx + i)) {
+	  return 0;
+	}
+	if (I->issetPType (vx1->u.idx + i) &&
+	    !(I->getPType (vx1->u.idx + i))->isEqual (u->I->getPType (vx2->u.idx + i))) {
+	  return 0;
+	}
+      }
+    }
+    else if (TypeFactory::isPStructType (pt[i])) {
+      if (!pt[i]->isEqual (u->pt[i])) return 0;
+      
+      Scope::pstruct s1, s2;
+      s1 = I->getPStruct (vx1->u.idx);
+      s2 = u->I->getPStruct (vx2->u.idx);
+
+      int pb, pi, pr, npt;
+
+      PStruct *ps = dynamic_cast<PStruct *> (pt[i]->BaseType ());
+      Assert (ps, "What?");
+      ps->getCounts (&pb, &pi, &pr, &npt);
+
+      for (int i=0; i < num; i++) {
+	for (int j=0; j < pi*num; j++) {
+	  if (I->issetPInt (s1.i_off + j) !=
+	      u->I->issetPInt (s2.i_off + j)) return 0;
+	  if (I->issetPInt (s1.i_off + j) &&
+	      (I->getPInt (s1.i_off + j) != 
+	       u->I->getPInt (s2.i_off + j))) return 0;
+	}
+	for (int j=0; j < pb*num; j++) {
+	  if (I->issetPBool (s1.b_off + j) !=
+	      u->I->issetPBool (s2.b_off + j)) return 0;
+	  if (I->issetPBool (s1.b_off + j) &&
+	      (I->getPBool (s1.b_off + j) != 
+	       u->I->getPBool (s2.b_off + j))) return 0;
+	}
+	for (int j=0; j < pr*num; j++) {
+	  if (I->issetPReal (s1.r_off + j) !=
+	      u->I->issetPReal (s2.r_off + j)) return 0;
+	  if (I->issetPReal (s1.r_off + j) &&
+	      (I->getPReal (s1.r_off + j) != 
+	       u->I->getPReal (s2.r_off + j))) return 0;
+	}
+	for (int j=0; j < npt*num; j++) {
+	  if (I->issetPType (s1.t_off + j) !=
+	      u->I->issetPType (s2.t_off + j)) return 0;
+	  if (I->issetPType (s1.t_off + j) &&
+	      !(I->getPType (s1.t_off + j))->isEqual (u->I->getPType (s2.t_off + j))) return 0;
+	}
+      }
+    }
+    else {
+      fatal_error ("Non-parameter type in template? This should have been caught earlier");
+    }
+  }
+
+  for (i=0; i < nports; i++) {
+    if (port_n[i] != u->port_n[i]) return 0;
+    if (!port_t[i]->isEqualDir (u->port_t[i])) return 0;
+  }
+  return 1;
+}
+
+int UserDef::isMixedArray (const Type *t) const
+{
+  const UserDef *u = dynamic_cast<const UserDef *>(t);
+  if (!u) return 0;
+  if (u == this) return 1;
+  return isMixedArray (u);
+}
 
 
   
@@ -1174,7 +1335,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       continue;
     }
 
-
     /*
      * XXX: This really needs to be "if this is a real type rather
      * than part of an interface". Examples of "part of an interface"
@@ -1197,6 +1357,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       x->setIfaceType (chk);
       if (chk->arrayInfo()) {
 	x->MkArray (chk->arrayInfo());
+	chk->arrayInfo()->mkArrayType (x);
       }
       Assert (ux->AddPort (x, getPortName (i)), "Should succeed!");
       chk = x;
@@ -1210,7 +1371,6 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       fatal_error ("Port `%s': zero-length array creation not permitted",
 		   getPortName (i));
     }
-    
     ActId *tmp = new ActId (getPortName (i));
     tmp->Canonical (ux->CurScope());
     delete tmp;

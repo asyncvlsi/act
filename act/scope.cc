@@ -1687,9 +1687,11 @@ void Scope::Print (FILE *fp, bool all_inst)
     // get the list of attributes for this element
     aa = vx->getAttr();
 
+    InstType *pr_it = vx->t;
+
     // if the element is in a namespace other than global, save that to ns_name
-    if (TypeFactory::isUserType (vx->t)) {
-      UserDef *u = dynamic_cast<UserDef *> (vx->t->BaseType());
+    if (TypeFactory::isUserType (pr_it)) {
+      UserDef *u = dynamic_cast<UserDef *> (pr_it->BaseType());
       ActNamespace *ns;
       Assert(u, "What?");
       ns = u->getns();
@@ -1708,15 +1710,15 @@ void Scope::Print (FILE *fp, bool all_inst)
       }
 
       // if the type of the element is fully expanded
-      if (vx->t->isExpanded()) {
+      if (pr_it->isExpanded()) {
         // if the type is primitive, print the info
-        if (!TypeFactory::isUserType (vx->t)) {
-          vx->t->sPrint (buf, 10240, 0);
+        if (!TypeFactory::isUserType (pr_it)) {
+          pr_it->sPrint (buf, 10240, 0);
           fprintf (fp, "%s", buf);
         }
         // otherwise print the user type name
         else {
-          UserDef *tmpu = dynamic_cast<UserDef *>(vx->t->BaseType());
+          UserDef *tmpu = dynamic_cast<UserDef *>(pr_it->BaseType());
           Assert (tmpu, "Hmm");
           ActNamespace::Act()->mfprintfproc (fp, tmpu, 1);
         }
@@ -1727,7 +1729,7 @@ void Scope::Print (FILE *fp, bool all_inst)
       // if the scope of the element is not expanded
       else {
         // print type and instance name
-        vx->t->Print (fp, 1);
+        pr_it->Print (fp, 1);
         fprintf (fp, " %s", vx->getName());
       }
 
@@ -1738,15 +1740,19 @@ void Scope::Print (FILE *fp, bool all_inst)
         ta = ta->Next();
       }
 
-      // if there is still data left in the array and there are attributes, print them now
+      // if there is still data left in the array and there are
+      // attributes, print them now
       if (ta) {
-        if (aa) {
+        if (aa && ta == a->Next()) {
           fprintf (fp, " @ ");
           act_print_attributes (fp, aa);
         }
         fprintf (fp, ";\n");
       }
 
+      if (ta && ta->getArrayType()) {
+	pr_it = ta->getArrayType();
+      }
     } while (ta);
 
     // finally, print the attributes (necessary for non-array elements)

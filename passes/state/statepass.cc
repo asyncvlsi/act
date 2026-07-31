@@ -632,18 +632,40 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
       /* map valueidx pointer to the current bool offset */
       if (vx->t->arrayInfo()) {
 	int count = 0;
-	sz = vx->t->arrayInfo()->size();
-	for (int k=0; k < sz; k++) {
-	  if (vx->isPrimary (k)) {
-	    count++;
+	if (vx->t->isMixedArray()) {
+	  Array *xa = vx->t->arrayInfo();
+	  int off = 0;
+	  while (xa) {
+	    x = dynamic_cast<Process *> (xa->getArrayType()->BaseType());
+	    Assert (x, "What happened?");
+	    ti = (stateinfo_t *) getMap (x);
+	    Assert (ti, "Missing state info!");
+	    sz = 0;
+	    for (int k=0; k < xa->getRangeSize(); k++) {
+	      if (vx->isPrimary (k + off)) {
+		sz++;
+	      }
+	    }
+	    off += xa->getRangeSize ();
+	    n_sub = ti->all;
+	    si->all.addVar (n_sub, sz);
+	    xa = xa->Next ();
 	  }
 	}
-	sz = count;
+	else {
+	  sz = vx->t->arrayInfo()->size();
+	  for (int k=0; k < sz; k++) {
+	    if (vx->isPrimary (k)) {
+	      count++;
+	    }
+	  }
+	  sz = count;
+	  si->all.addVar (n_sub, sz);
+	}
       }
       else {
-	sz = 1;
+	si->all.addVar (n_sub, 1);
       }
-      si->all.addVar (n_sub, sz);
     }
   }
 

@@ -280,6 +280,107 @@ int InstType::isEqual (InstType *it, int weak)
   return 1;
 }
 
+
+/*
+ * Similar to isEqual(); the only constraint is that we do
+ * typechecking only on strict parameters
+ */
+int InstType::isMixedArray (InstType *it, int weak)
+{
+  int valcheck;
+
+  valcheck = isExpanded();
+  if (weak == 0) valcheck = 1;
+
+#if 0
+  printf ("valcheck = %d\n", valcheck);
+#endif
+  
+  if (t != it->t && !t->isMixedArray (it->t)) return 0;   /* same base type */
+
+  UserDef *ud = dynamic_cast<UserDef *> (t);
+  
+  if (nt != it->nt) {
+    if (!ud) return 0;
+    if (ud->numStrict() <= nt && ud->numStrict() <= it->nt) {
+      /* we are okay! */
+    }
+    else {
+      return 0;
+    }
+  }
+
+  int num_check = nt;
+  if (nt > it->nt) {
+    num_check = it->nt;
+  }
+  if (ud && (num_check > ud->numStrict())) {
+    num_check = ud->numStrict ();
+  }
+
+  /* check that the template parameters of the type are the same */
+  for (int i=0; i < num_check; i++) {
+    if (u[i].isatype != it->u[i].isatype) return 0;
+    if (u[i].isatype) {
+      if ((u[i].u.tt && !it->u[i].u.tt) ||
+	  (!u[i].u.tt && it->u[i].u.tt)) return 0;
+      if (u[i].u.tt && it->u[i].u.tt) {
+	if (!u[i].u.tt->isEqual (it->u[i].u.tt, weak)) return 0;
+      }
+    }
+    else {
+      AExpr *xconstexpr;
+      if (!u[i].u.tp || !it->u[i].u.tp) {
+	xconstexpr = new AExpr (const_expr (32));
+      }
+      else {
+	xconstexpr = NULL;
+      }
+      /* being NULL is the same as const 32 */
+      if (u[i].u.tp && !it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (xconstexpr))) return 0;
+	delete xconstexpr;
+      }
+      else if (it->u[i].u.tp && !u[i].u.tp) {
+	if (valcheck && (!xconstexpr->isEqual (it->u[i].u.tp))) return 0;
+	delete xconstexpr;
+      }
+      else if (u[i].u.tp && it->u[i].u.tp) {
+	if (valcheck && (!u[i].u.tp->isEqual (it->u[i].u.tp))) return 0;
+      }
+      else {
+	delete xconstexpr;
+      }
+    }
+  }
+
+  if ((a && !it->a) || (!a && it->a)) return 0; /* both are either
+						   arrays or not
+						   arrays */
+
+
+  /* dimensions must be compatible no matter what */
+  if (a && !a->isDimCompatible (it->a)) return 0;
+
+  if (!a || (weak == 1)) return 1; /* we're done */
+
+#if 0
+  printf ("checking arrays [weak=%d]\n", weak);
+#endif
+
+  if (weak == 0) {
+    if (!a->isEqual (it->a, 1)) return 0;
+  }
+  else if (weak == 2) {
+    if (!a->isEqual (it->a, 0)) return 0;
+  }
+  else if (weak == 3) {
+    if (!a->isEqual (it->a, -1)) return 0;
+  }
+  return 1;
+}
+
+
 int InstType::isEqualDir (InstType *t, int weak)
 {
   if (dir != t->getDir()) return 0;
@@ -969,9 +1070,39 @@ InstType *InstType::Expand (ActNamespace *ns, Scope *s)
 
   /* array derefs */
   if (a) {
+    bool self_ref = false;
+    int count = 0;
+    Array *ta = NULL;
+    ta = a;
+    while (ta) {
+      // when it is a sparse array, the original insttype may be
+      // re-ordered by array splitting etc.
+      if (ta->_ex_new_nonstrict == this) {
+	// This array refers back to this insttype, so we need to
+	// unlink it temporarily and then put the expanded type back in
+	// after the fact
+	ta->_ex_new_nonstrict = NULL;
+	count++;
+	self_ref = true;
+      }
+      ta = ta->Next ();
+    }
     xit->MkArray (a->Expand (ns, s));
+    if (self_ref) {
+      ta = xit->a;
+      while (ta) {
+	if (ta->_ex_new_nonstrict == NULL) {
+	  ta->_ex_new_nonstrict = xit;
+	  count--;
+	}
+	ta = ta->Next ();
+      }
+      Assert (count == 0, "What?!");
+    }
+    if (TypeFactory::isProcessType (xit)) {
+      xit->a->mkArrayType (xit);
+    }
   }
-
 #if 0
   fprintf (stderr, "expand: ");
   this->Print (stderr);
@@ -1182,4 +1313,32 @@ InstType *InstType::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
     return ret;
   }
   return this;
+}
+
+
+InstType *InstType::getActualType (Array *deref)
+{
+  Assert (deref->isDeref (), "What?");
+  Assert (!deref->isDynamicDeref(), "What?");
+  Assert (isExpanded(), "What?");
+  Assert (a, "What?");
+
+  return a->getDerefType (deref);
+}
+
+bool InstType::isMixedArray ()
+{
+  if (!TypeFactory::isProcessType (this)) return false;
+  if (!arrayInfo()) return false;
+
+  Assert (isExpanded(), "Should only be called on expanded arrays!");
+
+  Array *ta = a->Next ();
+  while (ta) {
+    if (ta->getArrayType() != a->getArrayType()) {
+      return true;
+    }
+    ta = ta->Next ();
+  }
+  return false;
 }

@@ -1,0 +1,6 @@
+In expanding tst (42.act:8)
+In expanding ::<Global>
+Error on or near line number 12.
+Sparse array type error on c
+	Orig type: conn_through<0,8>
+	New type: conn_through<1,8>

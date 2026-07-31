@@ -1,0 +1,77 @@
+defproc conn__through_38_74_4 (bool a; bool b);
+defproc conn__through_38_73_4 (bool a; bool b);
+defproc tst ();
+defproc conn__through_38_72_4 (bool a; bool b);
+defproc conn__through_38_71_4 (bool a; bool b);
+defproc conn__through_38_70_4 (bool a; bool b);
+
+defproc conn__through_38_74_4 (bool a; bool b)
+{
+
+/* instances */
+
+/* connections */
+a=b;
+}
+
+defproc conn__through_38_73_4 (bool a; bool b)
+{
+
+/* instances */
+
+/* connections */
+a=b;
+}
+
+defproc tst ()
+{
+
+/* instances */
+bool y[5];
+bool x[5];
+conn__through_38_70_4 c[1];
+conn__through_38_71_4 c[1..1];
+conn__through_38_72_4 c[2..2];
+conn__through_38_73_4 c[3..3];
+conn__through_38_74_4 c[4..4];
+
+/* connections */
+x[0]=y[0];x[0]=c[0].b;x[0]=c[0].a;
+x[1]=y[1];x[1]=c[1].b;x[1]=c[1].a;
+x[2]=y[2];x[2]=c[2].b;x[2]=c[2].a;
+x[3]=y[3];x[3]=c[3].b;x[3]=c[3].a;
+x[4]=y[4];x[4]=c[4].b;x[4]=c[4].a;
+}
+
+defproc conn__through_38_72_4 (bool a; bool b)
+{
+
+/* instances */
+
+/* connections */
+a=b;
+}
+
+defproc conn__through_38_71_4 (bool a; bool b)
+{
+
+/* instances */
+
+/* connections */
+a=b;
+}
+
+defproc conn__through_38_70_4 (bool a; bool b)
+{
+
+/* instances */
+
+/* connections */
+a=b;
+}
+
+
+/* instances */
+tst t;
+
+/* connections */

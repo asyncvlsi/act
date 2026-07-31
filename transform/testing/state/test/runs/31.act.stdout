@@ -1,0 +1,22 @@
+--- Process: src_delay<100,5> ---
+   loc-nbools = 0, loc-nvars = 7
+   port-nbools = 0, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 7
+--- End Process: src_delay<100,5> ---
+--- Process: src_delay<100,6> ---
+   loc-nbools = 0, loc-nvars = 8
+   port-nbools = 0, port-chpvars = 1
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 8
+--- End Process: src_delay<100,6> ---
+--- Process: foo<> ---
+   loc-nbools = 0, loc-nvars = 2
+   port-nbools = 0, port-chpvars = 0
+  ismulti: 0
+  all booleans (incl. inst): 0
+  all chpvars (incl. inst): 17
+--- End Process: foo<> ---
+Globals: 0 bools

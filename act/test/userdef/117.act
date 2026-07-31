@@ -1,0 +1,18 @@
+template<pint A | pint B>
+defproc testme (bool x[A])
+{
+  { A > 1 };
+  prs {
+     x[0]<B> -> x[1]-
+  }
+}
+
+defproc test()
+{
+  testme<7,3> x[4];
+  testme<7,4> x[5..6];
+
+  x[6] = x[5];
+} 
+
+test t;

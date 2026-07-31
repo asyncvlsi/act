@@ -1,0 +1,6 @@
+In expanding test (115.act:10)
+In expanding ::<Global>
+Error on or near line number 13.
+Sparse array type error on x
+	Orig type: testme<7,3>
+	New type: testme<8,4>

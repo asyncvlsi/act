@@ -289,6 +289,7 @@ Array *Array::Reduce ()
 
   ret->deref = deref;
   ret->expanded = expanded;
+  ret->_ex_new_nonstrict = _ex_new_nonstrict;
   
   if (next) {
     ret->next = next->Reduce ();
@@ -332,6 +333,7 @@ Array *Array::CloneOne ()
   ret->expanded = expanded;
   ret->next = NULL;
   ret->dims = dims;
+  ret->_ex_new_nonstrict = _ex_new_nonstrict;
 
   if (dims > 0) {
     MALLOC (ret->r, struct range, dims);
@@ -372,6 +374,16 @@ int Array::isEqual (Array *a, int strict)
     }
   }
   else {
+    if (a->_ex_new_nonstrict != _ex_new_nonstrict) {
+      if (a->_ex_new_nonstrict && _ex_new_nonstrict) {
+	if (!a->_ex_new_nonstrict->BaseType()->isEqual (_ex_new_nonstrict->BaseType())) {
+	  return 0;
+	}
+      }
+      else {
+	return 0;
+      }
+    }
     for (i=(strict == -1 ? 1 : 0); i < dims; i++) {
       if (r1[i].u.ex.isrange != r2[i].u.ex.isrange) return 0;
       if (r1[i].u.ex.isrange != 2) {
@@ -573,7 +585,7 @@ int Array::in_range (int *a)
  *  This uses in_range as a helper function.
  *------------------------------------------------------------------------
  */
-int Array::Offset (int *a)
+int Array::Offset (int *a, Array **rval)
 {
   int offset;
   
@@ -584,11 +596,19 @@ int Array::Offset (int *a)
 
   offset = in_range (a);
   if (offset != -1) {
+    if (rval) {
+      *rval = this;
+    }
     return offset;
   }
   else {
-    if (!next) { return -1; }
-    offset = next->Offset (a);
+    if (!next) {
+      if (rval) {
+	*rval = NULL;
+      }
+      return -1;
+    }
+    offset = next->Offset (a, rval);
     if (offset == -1) {
       return -1;
     }
@@ -989,6 +1009,10 @@ Array *Array::Expand (ActNamespace *ns, Scope *s, int is_ref)
   Assert (dims > 0, "What on earth is going on...");
   MALLOC (ret->r, struct range, dims);
 
+  if (_ex_new_nonstrict) {
+    ret->_ex_new_nonstrict = _ex_new_nonstrict->Expand (ns, s);
+  }
+  
   int i;
 
   for (i=0; i < dims; i++) {
@@ -1076,6 +1100,7 @@ Array *Array::ExpandRefCHP (ActNamespace *ns, Scope *s)
   ret->expanded = 1;
   ret->deref = 1;
   ret->dims = dims;
+  Assert (_ex_new_nonstrict == NULL, "CHP array is a process?");
 
   Assert (dims > 0, "What on earth is going on...");
   MALLOC (ret->r, struct range, dims);
@@ -1189,10 +1214,11 @@ Arraystep::Arraystep (Array *a, Array *sub)
   }
   if (subrange) {
     /* compute base index */
-    idx = base->Offset (deref);
+    idx = base->Offset (deref, &_offset);
   }
   else {
     idx = 0;
+    _offset = base;
   }
 }
 
@@ -1222,7 +1248,7 @@ void Arraystep::step()
       deref[i]++;
       if (deref[i] <= insubrange->r[i].u.ex.idx.hi) {
 	/* we're done */
-	idx = base->Offset (deref);
+	idx = base->Offset (deref, &_offset);
 	return;
       }
       deref[i] = insubrange->r[i].u.ex.idx.lo;
@@ -1236,7 +1262,7 @@ void Arraystep::step()
       for (int i=0; i < base->dims; i++) {
 	deref[i] = insubrange->r[i].u.ex.idx.lo;
       }
-      idx = base->Offset (deref);
+      idx = base->Offset (deref, &_offset);
       return;
     }
   }
@@ -1258,10 +1284,12 @@ void Arraystep::step()
   if (!base) {
     /* we're done! */
     idx = -1;
+    _offset = NULL;
     return;
   }
   
   /* set the index to the lowest one in the next range */
+  _offset = base;
   for (int i = 0; i < base->dims; i++) {
     deref[i] = base->r[i].u.ex.idx.lo;
   }
@@ -1920,6 +1948,28 @@ void Array::Merge (Array *a)
       exit (1);
     }
   }
+
+  if (a->_ex_new_nonstrict || _ex_new_nonstrict) {
+    Assert (a->_ex_new_nonstrict, "Must have insttype!");
+    Assert (_ex_new_nonstrict, "Must have insttype!");
+  }
+  bool standard_merge;
+  
+  if (a->_ex_new_nonstrict == _ex_new_nonstrict) {
+    /* normal array merge, same type everywhere */
+    standard_merge = true;
+  }
+  else {
+    /* sparse array merge with different relaxed parameters */
+    standard_merge = false;
+
+    if (a->_ex_new_nonstrict && _ex_new_nonstrict) {
+      /* do a secondary check */
+      if (a->_ex_new_nonstrict->BaseType()->isEqual (_ex_new_nonstrict->BaseType())) {
+	standard_merge = true;
+      }
+    }
+  }
   
   prev = NULL;
   tmp = this;
@@ -1936,39 +1986,42 @@ void Array::Merge (Array *a)
     adjacent = 0;
     idx = -1;
 
-    /* check special case */
-    for (i=0; i < dims; i++) {
-      if (a->r[i].u.ex.idx.lo == tmp->r[i].u.ex.idx.lo &&
-	  a->r[i].u.ex.idx.hi == tmp->r[i].u.ex.idx.hi) continue;
-      if (adjacent == 0) {
-	if (a->r[i].u.ex.idx.lo == (tmp->r[i].u.ex.idx.hi + 1)) {
-	  adjacent = 1;
-	  idx = i;
-	}
-	else if (tmp->r[i].u.ex.idx.lo == (a->r[i].u.ex.idx.hi+1)) {
-	  adjacent = -1;
-	  idx = i;
+    /* check special case: this is only applicable for a standard
+       merge, because we are fusing the array ranges together */
+    if (standard_merge) {
+      for (i=0; i < dims; i++) {
+	if (a->r[i].u.ex.idx.lo == tmp->r[i].u.ex.idx.lo &&
+	    a->r[i].u.ex.idx.hi == tmp->r[i].u.ex.idx.hi) continue;
+	if (adjacent == 0) {
+	  if (a->r[i].u.ex.idx.lo == (tmp->r[i].u.ex.idx.hi + 1)) {
+	    adjacent = 1;
+	    idx = i;
+	  }
+	  else if (tmp->r[i].u.ex.idx.lo == (a->r[i].u.ex.idx.hi+1)) {
+	    adjacent = -1;
+	    idx = i;
+	  }
+	  else {
+	    break;
+	  }
 	}
 	else {
 	  break;
 	}
       }
-      else {
-	break;
+      if (i == dims) {
+	Assert (adjacent != 0, "Should have been caught earlier!");
+	/* simple concatenation */
+	if (adjacent == 1) {
+	  tmp->r[idx].u.ex.idx.hi = a->r[idx].u.ex.idx.hi;
+	}
+	else {
+	  Assert (adjacent == -1, "hmm");
+	  tmp->r[idx].u.ex.idx.lo = a->r[idx].u.ex.idx.lo;
+	}
+	tmp->range_sz = -1;
+	return;
       }
-    }
-    if (i == dims) {
-      Assert (adjacent != 0, "Should have been caught earlier!");
-      /* simple concatenation */
-      if (adjacent == 1) {
-	tmp->r[idx].u.ex.idx.hi = a->r[idx].u.ex.idx.hi;
-      }
-      else {
-	Assert (adjacent == -1, "hmm");
-	tmp->r[idx].u.ex.idx.lo = a->r[idx].u.ex.idx.lo;
-      }
-      tmp->range_sz = -1;
-      return;
     }
 
     /*
@@ -1986,6 +2039,7 @@ void Array::Merge (Array *a)
 	break;
     }
 
+    /* i is the earliest dimension where the ranges don't match */
     Assert (i != dims, "What?");
     
     if (a->r[i].u.ex.idx.hi < tmp->r[i].u.ex.idx.lo) {
@@ -2087,6 +2141,7 @@ Array *Array::unOffset (int idx)
   ret->deref = 1;
   ret->expanded = 1;
   ret->dims = dims;
+  ret->_ex_new_nonstrict = _ex_new_nonstrict;
   MALLOC (ret->r, struct range, dims);
 
   sz = 1;
@@ -2165,6 +2220,17 @@ Array *Arraystep::toArray ()
   return a;
 }
 
+
+InstType *Arraystep::curInst ()
+{
+  if (!_offset) {
+    return NULL;
+  }
+  else {
+    return _offset->getArrayType();
+  }
+}
+
 InstType *AExpr::isType ()
 {
   Expr *e;
@@ -2192,6 +2258,10 @@ unsigned int Array::getHash (unsigned int prev, unsigned long sz)
 {
   prev = hash_function_continue (sz, (const unsigned char *) &dims,
 				 sizeof (dims), prev, 1);
+
+  prev = hash_function_continue  (sz,
+				  (const unsigned char *) &_ex_new_nonstrict,
+				  sizeof (InstType *), prev, 1);
   
   for (int i=0; i < dims; i++) {
     if (expanded) {
@@ -2217,3 +2287,21 @@ unsigned int Array::getHash (unsigned int prev, unsigned long sz)
 }
 
 
+InstType *Array::getDerefType (Array *d)
+{
+  if (overlapping (r, d->r)) {
+    return _ex_new_nonstrict;
+  }
+  else if (Next()) {
+    return Next()->getDerefType (d);
+  }
+  else {
+    return NULL;
+  }
+}
+
+void Array::mkArrayType (InstType *t)
+{
+  Assert (TypeFactory::isUserType (t), "What?!"); 
+  _ex_new_nonstrict = t;
+}
