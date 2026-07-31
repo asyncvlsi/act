@@ -34,6 +34,7 @@ class ActId;
 class InstType;
 class ValueIdx;
 class expr_pstruct;
+class Process;
 
 /**
  *  @class Array
@@ -576,9 +577,10 @@ public:
   void Print (FILE *fp, int style = 0);
 
   /**
-   * @return the current InstType
+   * @return the current InstType / current process
    */
   InstType *curInst();
+  Process *curProc ();
   
 private:
   int idx;  ///< used to track the current index

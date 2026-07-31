@@ -210,6 +210,13 @@ static void visit_bool_rec (act_boolean_netlist_t *N,
     
     tl = tl->Rest();
 
+
+    /*
+      We don't need to worry about mixed arrays here, because those
+      are only supported for processes and processes cannot be in the
+      port list.
+    */
+
     if (TypeFactory::isBoolType (it)) {
       /* mark used */
       if (it->arrayInfo()) {
@@ -292,6 +299,12 @@ static void visit_channel_ports (act_boolean_netlist_t *N,
     
     tl = tl->Rest();
 
+    /*
+      We don't need to worry about mixed arrays here, because those
+      are only supported for processes and processes cannot be in the
+      port list.
+    */
+
     if (TypeFactory::isBoolType (it)) {
       /* mark used */
       if (it->arrayInfo()) {
@@ -360,6 +373,12 @@ static void visit_chp_var (act_boolean_netlist_t *N,
       ActId *piece;
       piece = new ActId (d->getPortName (i));
       tail->Append (piece);
+
+      /*
+	We don't need to worry about mixed arrays here, because those
+	are only supported for processes and processes cannot be in the
+	port list.
+      */
 
       if (xt->arrayInfo()) {
 	Arraystep *as = xt->arrayInfo()->stepper();
@@ -2708,6 +2727,11 @@ void ActBooleanizePass::_createNets (Process *p)
 
 	if (!as || vx->isPrimary (as->index())) {
 	  tmpa = as ? as->toArray() : NULL;
+
+	  if (as && as->curProc () != instproc) {
+	    instproc = as->curProc ();
+	    sub = (act_boolean_netlist_t *) getMap (instproc);
+	  }
 
 	  for (int j=0; j < A_LEN (sub->ports); j++) {
 	    if (sub->ports[j].omit) continue;

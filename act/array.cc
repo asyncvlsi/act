@@ -2231,6 +2231,17 @@ InstType *Arraystep::curInst ()
   }
 }
 
+Process *Arraystep::curProc ()
+{
+  InstType *it = curInst ();
+  if (it) {
+    return dynamic_cast<Process *> (it->BaseType());
+  }
+  else {
+    return NULL;
+  }
+}
+
 InstType *AExpr::isType ()
 {
   Expr *e;
