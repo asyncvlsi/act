@@ -1333,12 +1333,5 @@ bool InstType::isMixedArray ()
 
   Assert (isExpanded(), "Should only be called on expanded arrays!");
 
-  Array *ta = a->Next ();
-  while (ta) {
-    if (ta->getArrayType() != a->getArrayType()) {
-      return true;
-    }
-    ta = ta->Next ();
-  }
-  return false;
+  return arrayInfo()->isMixedArray ();
 }

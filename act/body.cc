@@ -401,7 +401,11 @@ void ActBody_Inst::Expand (ActNamespace *ns, Scope *s)
 
 	    /*-- now extend connection imports --*/
 	    if (TypeFactory::isUserType (vx->t)) {
-	      UserDef *ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	      /* we need to import the instance-specific type, since
+		 it may not be vx->t for sparse arrays with relaxed
+		 parameters */
+	      //UserDef *ux = dynamic_cast<UserDef *> (vx->t->BaseType());
+	      UserDef *ux = dynamic_cast<UserDef *> (it->BaseType());
 	      Arraystep *newelems = x->arrayInfo()->stepper (it->arrayInfo());
 	      while (!newelems->isend()) {
 		_act_int_import_connections (vx->connection(), ux, vx->t->arrayInfo(), newelems->index());

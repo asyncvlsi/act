@@ -1,0 +1,12 @@
+template<pint A | pint B>
+defproc testme (bool x[A])
+{
+   x[0] = x[B];
+}
+
+
+testme<4,1> u[2];
+testme<4,2> u[3..3];
+
+bool a = u[0].x[0];
+//bool b = u[3].x[0];

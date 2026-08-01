@@ -1096,7 +1096,7 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int 
       continue;
     }
 
-    /* port has a connection. but it is primary and 
+    /* port has a connection. but it is primary and
        without any subconnections */
     if (pcx->isPrimary () && !pcx->hasSubconnections())
       continue;
@@ -1147,9 +1147,84 @@ static void _import_connections (act_connection *cx, UserDef *ux, Array *a, int 
   }
 }
 
+
+/*
+ * This is a copy of _import_connections(), but only for mixed
+ * arrays. Since we know this is an array, we can eliminate all the
+ * non-array cases. Furthermore, the loop order is interchanged---the
+ * array iteration is the outer loop, since the new inner loop depends
+ * on the UserDef *, which might change based on the array element.
+ */
+static void _import_mixed_connections (act_connection *cx, UserDef *ux, Array *a, int elem_num = -1)
+{
+  int sz = a->size();
+
+  if (sz == 0) {
+    // this should not happen
+    return;
+  }
+
+  int loop_start, loop_end;
+  if (elem_num == -1) {
+    /* initialize the entire array */
+    loop_start = 0;
+    loop_end = sz;
+  }
+  else {
+    /* initialize just a single element */
+    loop_start = elem_num;
+    loop_end = elem_num + 1;
+  }
+
+  for (int arr = loop_start; arr < loop_end; arr++) {
+    Array *r = a->getRange (arr);
+    Assert (r, "What?");
+    UserDef *ux = dynamic_cast<UserDef *> (r->getArrayType()->BaseType());
+
+    for (int i=0; i < ux->getNumPorts(); i++) {
+      const char *port = ux->getPortName (i);
+      Scope *us = ux->CurScope ();
+
+      /* clone port connections, if any */
+      ValueIdx *pvx = us->LookupVal (port);
+      Assert (pvx, "Port missing from local scope?!");
+      act_connection *pcx = pvx->connection();
+
+      if (!pvx->hasConnection()) {
+	/* pristine port, don't have to worry about it! */
+	continue;
+      }
+
+      /* port has a connection. but it is primary and
+	 without any subconnections */
+      if (pcx->isPrimary () && !pcx->hasSubconnections())
+	continue;
+
+      /*
+	if we are here, then either this port is not a primary port, or
+	this port has sub-connections that need to be examined
+      */
+      act_connection *imp = cx->getsubconn (arr, sz);
+      act_connection *imp2;
+      imp2 = imp->getsubconn (i, ux->getNumPorts());
+      if (!imp2->vx) {
+	imp2->vx = pvx;
+      }
+      Assert (imp2->vx == pvx, "Hmm.");
+      _import_conn_rec (imp, imp2, pcx, ux);
+    }
+  }
+}
+
+
 void _act_int_import_connections (act_connection *cx, UserDef *ux, Array *a, int elem_num)
 {
-  _import_connections (cx, ux, a, elem_num);
+  if (a && a->getArrayType() && a->isMixedArray()) {
+    _import_mixed_connections (cx, ux, a, elem_num);
+  }
+  else {
+    _import_connections (cx, ux, a, elem_num);
+  }
 }
 
 ValueIdx *ActId::rootVx (Scope *s)
@@ -1206,8 +1281,8 @@ ValueIdx *ActId::rawValueIdx (Scope *s)
       Assert (ux, "Hmm");
 #ifdef DEBUG_CONNECTIONS
       printf ("== Import from: %s\n", ux->getName());
-#endif      
-      _import_connections (cx, ux, vx->t->arrayInfo());
+#endif
+      _act_int_import_connections (cx, ux, vx->t->arrayInfo(), -1);
 #ifdef DEBUG_CONNECTIONS
       dump_conn_rec (cx);
       printf ("== End import\n");

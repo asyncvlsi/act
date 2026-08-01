@@ -216,6 +216,7 @@ class Array {
 
   InstType *getArrayType () { return _ex_new_nonstrict; }
   int getRangeSize () { if (range_sz == -1) { size (); } return range_sz; }
+  bool isMixedArray ();
 
   ~Array ();
 
@@ -417,6 +418,14 @@ class Array {
    * @return the array de-reference corresponding to the offset
    */
   Array *unOffset (int offset);
+
+  /**
+   * Find the offset in the current array, and return that element of
+   * the array. Note that offsets are linearly increasing.
+   * @return Array * for the chunk of the array that corresponds to
+   * the offset.
+   */
+  Array *getRange (int offset);
 
   /**
    * Stepper/iterator functionality. This returns an array "stepper"

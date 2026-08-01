@@ -2120,6 +2120,23 @@ int AExprstep::isSimpleID ()
 }
 
 
+Array *Array::getRange (int idx)
+{
+  Array *tmp;
+  Assert (expanded, "Array::getRange() only works for expanded arrays");
+  unsigned int sz;
+
+  if (idx < 0) return NULL;
+  if (range_sz == -1) { size (); }
+
+  tmp = this;
+  while (tmp && (idx >= tmp->range_sz)) {
+    idx -= tmp->range_sz;
+    tmp = tmp->next;
+  }
+  return tmp;
+}
+
 Array *Array::unOffset (int idx)
 {
   Array *tmp;
@@ -2315,4 +2332,19 @@ void Array::mkArrayType (InstType *t)
 {
   Assert (TypeFactory::isUserType (t), "What?!"); 
   _ex_new_nonstrict = t;
+}
+
+
+bool Array::isMixedArray ()
+{
+  Assert (isExpanded(), "Should only be called on expanded arrays!");
+
+  Array *ta = Next ();
+  while (ta) {
+    if (ta->getArrayType() != getArrayType()) {
+      return true;
+    }
+    ta = ta->Next ();
+  }
+  return false;
 }

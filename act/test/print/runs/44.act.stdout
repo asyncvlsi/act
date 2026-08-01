@@ -1,0 +1,31 @@
+defproc testme_34_71_4 (bool x[4]);
+defproc testme_34_72_4 (bool x[4]);
+
+defproc testme_34_71_4 (bool x[4])
+{
+
+/* instances */
+
+/* connections */
+x[0]=x[1];
+}
+
+defproc testme_34_72_4 (bool x[4])
+{
+
+/* instances */
+
+/* connections */
+x[0]=x[2];
+}
+
+
+/* instances */
+bool a;
+testme_34_71_4 u[2];
+testme_34_72_4 u[3..3];
+
+/* connections */
+a=u[0].x[1];a=u[0].x[0];
+u[1].x[0]=u[1].x[1];
+u[3].x[0]=u[3].x[2];
