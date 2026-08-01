@@ -2386,3 +2386,12 @@ Array *Array::isSingleRange (Array *r)
   }
   return NULL;
 }
+
+int Array::getRangeSize()
+{
+  if (range_sz == -1) {
+    size ();
+  }
+  return range_sz;
+}
+

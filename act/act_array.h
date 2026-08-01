@@ -215,7 +215,7 @@ class Array {
   void mkArrayType (InstType *t);
 
   InstType *getArrayType () { return _ex_new_nonstrict; }
-  int getRangeSize () { if (range_sz == -1) { size (); } return range_sz; }
+  int getRangeSize ();
   bool isMixedArray ();
   Array *isSingleRange (Array *range);
 
@@ -492,7 +492,7 @@ private:
   int overlapping (struct range *a, struct range *b);
 
 
-  unsigned int range_sz;	/**< cache: size of the range; only
+  int range_sz;			/**< cache: size of the range; only
 				   for expanded arrays */
 
   Array *next;			/**< for sparse arrays, used to link
