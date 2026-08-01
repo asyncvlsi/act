@@ -2,4 +2,4 @@ In expanding ::<Global>
 Error on or near line number 11.
  id: N[9]
  type: pint[ [8]+[14..17] ]
-FATAL: Dereference out of range
+FATAL: Dereference out of range or crosses a sparse boundary

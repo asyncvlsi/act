@@ -217,6 +217,7 @@ class Array {
   InstType *getArrayType () { return _ex_new_nonstrict; }
   int getRangeSize () { if (range_sz == -1) { size (); } return range_sz; }
   bool isMixedArray ();
+  Array *isSingleRange (Array *range);
 
   ~Array ();
 

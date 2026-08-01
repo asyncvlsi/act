@@ -1739,8 +1739,23 @@ InstType *act_actual_insttype (Scope *s, ActId *id, int *islocal, bool subchan)
 	  }
 	}
       }
+      if (it->isMixedArray()) {
+	delete it2;
+	Array *r = it->arrayInfo()->isSingleRange (id->arrayInfo());
+	if (!r) {
+	  act_error_ctxt (stderr);
+	  fprintf (stderr, " id: ");
+	  id->Print (stderr);
+	  fprintf (stderr, "\n");
+	  fatal_error ("Array access is not a valid single dense range");
+	}
+	it2 = new InstType (r->getArrayType(), 1);
+      }
       Assert (aret, "Huh?");
       it2->MkArray (aret);
+      if (TypeFactory::isProcessType (it2)) {
+	aret->mkArrayType (it2);
+      }
       it = it2;
     }
   }

@@ -2348,3 +2348,30 @@ bool Array::isMixedArray ()
   }
   return false;
 }
+
+Array *Array::isSingleRange (Array *r)
+{
+  Assert (isExpanded() && r->isExpanded(), "What?");
+  if (r->Next()) return NULL;
+
+  Array *me = this;
+
+  while (me) {
+    bool found = true;
+    for (int i=0; i < dims; i++) {
+      int d;
+      Assert (r->r[i].u.ex.isrange != 2, "Dynamic arrays not supported");
+
+      if ((me->r[i].u.ex.idx.lo > r->r[i].u.ex.idx.lo)
+	  || (me->r[i].u.ex.idx.hi < r->r[i].u.ex.idx.hi)) {
+	found = false;
+	break;
+      }
+    }
+    if (found) {
+      return me;
+    }
+    me = me->Next();
+  }
+  return NULL;
+}

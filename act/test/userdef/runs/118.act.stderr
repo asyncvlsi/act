@@ -1,0 +1,8 @@
+In expanding test (118.act:10)
+In expanding ::<Global>
+Error on or near line number 15.
+Connection: x[2] = x[5..6]
+  LHS: testme<7,3>[2]
+  RHS: testme<7,4>[2]
+FATAL: Type-checking failed on connection
+	Types `testme<7,3>[2]' and `testme<7,4>[2]' are not compatible

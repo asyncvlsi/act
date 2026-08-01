@@ -340,7 +340,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	  fprintf (stderr, "\n type: ");
 	  it->Print (stderr);
 	  fprintf (stderr, "\n");
-	  fatal_error ("Dereference out of range");
+	  fatal_error ("Dereference out of range or crosses a sparse boundary");
 	}
       }
     }
@@ -570,6 +570,16 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	ret->u.e.r = (Expr *) s;
       }
       else {
+	if (vx->t->isMixedArray()) {
+	  Array *arr = vx->t->arrayInfo()->isSingleRange (id->arrayInfo());
+	  if (!arr) {
+	    act_error_ctxt (stderr);
+	    fprintf (stderr, " id: ");
+	    this->Print (stderr);
+	    fprintf (stderr, "\n");
+	    fatal_error ("Array access is not a valid single dense range");
+	  }
+	}
 	ret->type = E_SUBRANGE;
 	ret->u.e.l = (Expr *) vx;
 	NEW (ret->u.e.r, Expr);
