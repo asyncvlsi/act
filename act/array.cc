@@ -862,6 +862,7 @@ void Array::sPrint (char *buf, int sz, int style)
   Array *pr;
   int k = 0;
   int l;
+  bool sparse_mixed;
 
 #define PRINT_STEP				\
   do {						\
@@ -875,10 +876,20 @@ void Array::sPrint (char *buf, int sz, int style)
     snprintf (buf+k, sz, "[ ");
     PRINT_STEP;
   }
+  if (isExpanded() && isMixedArray()) {
+    sparse_mixed = true;
+  }
+  else {
+    sparse_mixed = false;
+  }
   pr = this;
   while (pr) {
     pr->sPrintOne (buf+k, sz, style);
     PRINT_STEP;
+    if (sparse_mixed) {
+      snprintf (buf+k, sz, "(%s)", pr->_ex_new_nonstrict->BaseType()->getName());
+      PRINT_STEP;
+    }
     if (pr->next) {
       snprintf (buf+k, sz, "+");
       PRINT_STEP;

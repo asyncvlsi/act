@@ -2,5 +2,5 @@ In expanding test (119.act:10)
 In expanding ::<Global>
 Error on or near line number 15.
  id: x[4..5]
- type: testme<7,3>[ [5]+[5..6] ]
+ type: testme<7,3>[ [5](testme<7,3>)+[5..6](testme<7,4>) ]
 FATAL: Dereference out of range or crosses a sparse boundary
