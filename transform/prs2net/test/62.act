@@ -1,0 +1,18 @@
+template<pint X | pint Y>
+defproc AND(bool a, b, c)
+{
+  prs {
+    a<X> & b<Y> -> c-
+  }
+}
+
+defproc foo(bool A, B, Z) {
+  bool C;
+          
+  (i:2: AND<10,10+10*i> arr[i..i];
+        arr[i](A,B,C); )
+  
+}
+
+
+foo x;

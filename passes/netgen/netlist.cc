@@ -2675,15 +2675,22 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
   for (i = i.begin(); i != i.end(); i++) {
     ValueIdx *vx = *i;
     int cnt = 1;
-    netlist_t *tn = (netlist_t *)
-      getMap (dynamic_cast<Process *>(vx->t->BaseType()));
+
+    Process *cur = dynamic_cast<Process *>(vx->t->BaseType());
+    netlist_t *tn = (netlist_t *) getMap (cur);
     Assert (tn, "What?");
 
     /* count the # of shared weak drivers so far, and track the
        weakness of the weak supply */
 
+    Arraystep *as;
+
     if (vx->t->arrayInfo()) {
       cnt = vx->t->arrayInfo()->size();
+      as = vx->t->arrayInfo()->stepper ();
+    }
+    else {
+      as = NULL;
     }
 
     while (cnt > 0) {
@@ -2692,6 +2699,13 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
       if (vx->t->arrayInfo()) {
 	if (!vx->isPrimary (cnt))
 	  continue;
+      }
+
+      if (as) {
+	if (cur != as->curProc()) {
+	  cur = as->curProc ();
+	  tn = (netlist_t *) getMap (cur);
+	}
       }
 
       /* compute the # of weak vdd/gnd gates in this instance */
@@ -2736,6 +2750,12 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	gnd_len = tn->gnd_len;
 	weak_gnd = NULL;
       }
+      if (as) {
+	as->step ();
+      }
+    }
+    if (as) {
+      delete as;
     }
   }
 

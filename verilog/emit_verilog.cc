@@ -121,6 +121,13 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
     for (inst = inst.begin(); inst != inst.end(); inst++) {
       ValueIdx *vx = *inst;
       emit_verilog (fp, a, dynamic_cast<Process *>(vx->t->BaseType()));
+      if (vx->t->arrayInfo() && vx->t->arrayInfo()->isMixedArray()) {
+	Array *r = vx->t->arrayInfo();
+	while (r) {
+	  emit_verilog (fp, a, dynamic_cast<Process *>(r->getArrayType()->BaseType()));
+	  r = r->Next ();
+	}
+      }
     }
   }
 
@@ -236,6 +243,10 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
 	}
 	do {
 	  if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
+	    if (as && as->curProc() != instproc) {
+	      instproc = as->curProc ();
+	      sub = BOOL->getBNL (instproc);
+	    }
 	    emit_verilog_moduletype (fp, a, instproc);
 	    if (name_mangle) {
 	      ActNamespace::Act()->mfprintf (fp, " %s", vx->getName());
@@ -314,6 +325,13 @@ static void clear_visited_flag (Process *p)
   for (inst = inst.begin(); inst != inst.end(); inst++) {
     ValueIdx *vx = *inst;
     clear_visited_flag (dynamic_cast<Process *>(vx->t->BaseType()));
+    if (vx->t->arrayInfo() && vx->t->arrayInfo()->isMixedArray()) {
+      Array *r = vx->t->arrayInfo();
+      while (r) {
+	clear_visited_flag (dynamic_cast<Process *>(r->getArrayType()->BaseType()));
+	r = r->Next ();
+      }
+    }
   }
   return;
 }

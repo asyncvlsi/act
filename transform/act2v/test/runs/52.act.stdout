@@ -1,0 +1,76 @@
+//
+// Verilog module for: gen_inv<>
+//
+module gen__inv(i, o);
+   input i;
+   output o;
+
+// -- signals ---
+   reg o;
+   wire i;
+
+// --- instances
+endmodule
+
+//
+// Verilog module for: end_at_inv<2,1>
+//
+module end__at__inv_32_71_4(i, o);
+   input i;
+   output o;
+
+// -- signals ---
+   reg p;
+   reg o;
+   reg \w[1].o ;
+   wire \w[1].i ;
+   wire i;
+
+// --- instances
+gen__inv \w[1]  (.i(\w[1].i ), .o(\w[1].o ));
+gen__inv \x  (.i(i), .o(p));
+gen__inv \x2  (.i(p), .o(o));
+endmodule
+
+//
+// Verilog module for: end_at_inv<2,2>
+//
+module end__at__inv_32_72_4(i, o);
+   input i;
+   output o;
+
+// -- signals ---
+   wire i;
+   reg p;
+   reg \w2[1].o ;
+   wire \w2[1].i ;
+   wire \w[1].i ;
+   reg o;
+   reg \w[1].o ;
+
+// --- instances
+gen__inv \w[1]  (.i(\w[1].i ), .o(\w[1].o ));
+gen__inv \x  (.i(i), .o(p));
+gen__inv \w2[1]  (.i(\w2[1].i ), .o(\w2[1].o ));
+gen__inv \x2  (.i(p), .o(o));
+endmodule
+
+//
+// Verilog module for: foo<>
+//
+module foo();
+
+// -- signals ---
+   wire \x[4].i ;
+   reg \x[4].o ;
+   reg \x[0].o ;
+   reg \x[2].o ;
+   wire \x[0].i ;
+   wire \x[2].i ;
+
+// --- instances
+end__at__inv_32_71_4 \x[0]  (.i(\x[0].i ), .o(\x[0].o ));
+end__at__inv_32_71_4 \x[2]  (.i(\x[2].i ), .o(\x[2].o ));
+end__at__inv_32_72_4 \x[4]  (.i(\x[4].i ), .o(\x[4].o ));
+endmodule
+

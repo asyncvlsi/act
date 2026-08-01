@@ -648,6 +648,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       }
       do {
 	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
+	  if (as && as->curProc() != instproc) {
+	    instproc = as->curProc ();
+	    sub = getNL (instproc);
+	  }
+	  
 	  char *str = NULL;
 	  if (as) {
 	    str = as->string();
@@ -1183,6 +1188,11 @@ void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
       Arraystep *as = vx->t->arrayInfo()->stepper();
       while (!as->isend()) {
 	if (vx->isPrimary (as->index())) {
+	  if (as->curProc () != iproc) {
+	    iproc = as->curProc ();
+	    bnl = bools->getBNL (iproc);
+	  }
+	  
 	  Array *x = as->toArray ();
 	  newid->setArray (x);
 	  if (iproc->isCell()) {
