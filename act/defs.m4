@@ -425,11 +425,6 @@ def_or_proc ID
       for (int i=0; i < ux->getNumMacros(); i++) {
 	ux->getMacroId (i)->fixGlobalParams ($0->curns, ux->getns());
       }
-      // now we have to save away the parent scope, just in case!
-      $0->multiscope = $0->scope->localClone ();
-    }
-    else {
-      $0->multiscope = NULL;
     }
 }}
 proc_body
@@ -454,6 +449,12 @@ proc_body:
 {{X:
     if ($0->u_p->isDefined()) {
       $E("Process ``%s'': duplicate definition with the same type signature", $0->u_p->getName());
+    }
+    if ($0->u_p->getParent()) {
+      $0->multiscope = $0->scope->localClone ();
+    }
+    else {
+      $0->multiscope = NULL;
     }
 }}
   "{" def_body  [ methods_body ] "}"
@@ -490,6 +491,7 @@ proc_body:
       delete $0->multiscope;
     }
     $0->multiscope = NULL;
+    $0->scope = $0->curns->CurScope();
     return NULL;
 }}
 ;
@@ -537,7 +539,7 @@ optional_one_variant: "|" physical_inst_type "=>" "{"
     $0->u_p->updateScope ($0->multiscope->localClone ());
     $0->scope = $0->u_p->CurScope ();
 }}
-def_body  [ methods_body ] "}"
+def_body "}"
 {{X:
     ActBody_Variants *vb;
     UserDef *ux;
