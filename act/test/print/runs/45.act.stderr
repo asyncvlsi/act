@@ -1,0 +1,4 @@
+ERROR: File `45.act', line 25, col 2
+	Variant body selection has a type error.
+	Parent type: mybase<4>
+	Variant type: base4

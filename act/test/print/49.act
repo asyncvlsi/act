@@ -1,0 +1,21 @@
+template<pint X| pint Y> 
+defproc mybase (bool x[X])
+{  
+  int w[X];
+  chp {
+    w[0] := Y
+  }
+}
+
+defproc test <: mybase<4> (bool a, b)
+{
+   bool c = x[0];
+}
+| mybase<4,4> => { 
+  bool c = x[1]; 
+} 
+| mybase<4,7> => { 
+  bool e = x[2]; 
+}
+
+test<7> q;

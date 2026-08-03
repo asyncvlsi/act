@@ -1,0 +1,2 @@
+ERROR: File `48.act', line 19, col 10
+	Duplicate instance for name `w' with incompatible types

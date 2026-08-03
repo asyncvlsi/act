@@ -1,0 +1,46 @@
+defproc mybase_34_77_4 (bool x[4]);
+defproc test_37_4 <: mybase_34_77_4 (bool a; bool b);
+defproc mybase_34_74_4 (bool x[4]);
+
+defproc mybase_34_77_4 (bool x[4])
+{
+
+/* instances */
+int<32> w[4];
+
+/* connections */
+chp {
+w[0]:=0x7
+}
+}
+
+defproc test_37_4 <: mybase_34_77_4 (bool a; bool b)
+{
+
+/* instances */
+bool e;
+
+/* connections */
+x[2]=e;
+chp {
+w[0]:=0x7
+}
+}
+
+defproc mybase_34_74_4 (bool x[4])
+{
+
+/* instances */
+int<32> w[4];
+
+/* connections */
+chp {
+w[0]:=0x4
+}
+}
+
+
+/* instances */
+test_37_4 q;
+
+/* connections */

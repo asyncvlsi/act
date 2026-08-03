@@ -425,6 +425,11 @@ def_or_proc ID
       for (int i=0; i < ux->getNumMacros(); i++) {
 	ux->getMacroId (i)->fixGlobalParams ($0->curns, ux->getns());
       }
+      // now we have to save away the parent scope, just in case!
+      $0->multiscope = $0->scope->localClone ();
+    }
+    else {
+      $0->multiscope = NULL;
     }
 }}
 proc_body
@@ -477,10 +482,97 @@ proc_body:
     if (r) {
       $E("%s: inconsistent/missing method", r);
     }
-    
+}}
+[ optional_variant_bodies ]
+{{X:
+    OPT_FREE ($7);
+    if ($0->multiscope) {
+      delete $0->multiscope;
+    }
+    $0->multiscope = NULL;
     return NULL;
 }}
 ;
+
+optional_variant_bodies: optional_one_variant optional_variant_bodies
+| optional_one_variant
+;
+
+optional_one_variant: "|" physical_inst_type "=>" "{" 
+{{X:
+    ActBody *b;
+    ActBody_Variants *vb;
+    Assert ($0->u_p, "What?");
+
+    if (!$0->multiscope) {
+      $E("Variant bodies must be used in conjunction with an implementation relation");
+    }
+    b = $0->u_p->getBody ();
+
+    /* check that this physical inst type is compatible with a mixed array */
+    if ($0->u_p->getParent()->BaseType() != $2->BaseType()) {
+      $e("Variant body selection has a type error.\n");
+      fprintf ($f, "\tParent type: ");
+      $0->u_p->getParent()->Print ($f);
+      fprintf ($f, "\n\tVariant type: ");
+      $2->Print ($f);
+      fprintf ($f, "\n");
+      exit (1);
+    }
+
+    /* Make sure we have a variant body */
+    if (b) {
+      vb = dynamic_cast<ActBody_Variants *> (b);
+    }
+    else {
+      vb = NULL;
+    }
+    if (!vb) {
+      vb = new ActBody_Variants ($l, $0->u_p->getParent());
+      Assert (vb, "Out of memory");
+      /* save away the default variant */
+      vb->setDefault ($0->u_p->CurScope(), b);
+      $0->u_p->setBody (vb);
+    }
+    $0->u_p->updateScope ($0->multiscope->localClone ());
+    $0->scope = $0->u_p->CurScope ();
+}}
+def_body  [ methods_body ] "}"
+{{X:
+    ActBody_Variants *vb;
+    UserDef *ux;
+    ux = dynamic_cast<UserDef *> ($0->u_p->getParent()->BaseType());
+    $A(ux);
+    ActBody *tmpb;
+    if (ux->getBody()) {
+      tmpb = ux->getBody()->Clone ();
+    }
+    else {
+      tmpb = NULL;
+    }
+
+    vb = dynamic_cast<ActBody_Variants *> ($0->u_p->getBody());
+    Assert (vb, "What is going on?");
+    if (vb->Next()) {
+      if (tmpb) {
+	tmpb->Append (vb->Next());
+      }
+      else {
+	tmpb = vb->Next();
+      }
+    }
+    vb->addVariant ($2, $0->u_p->CurScope(), tmpb);
+    if (vb->Next()) {
+      Assert (dynamic_cast<ActBody_Variants *> (vb->Next()) == NULL,
+	      "Can't nest variants?");
+    }
+    vb->clrNext ();
+    return NULL;
+}}
+;
+
+
+
 
 interface_spec: { interface_one_spec "," }*
 {{X:
@@ -595,12 +687,34 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
     OPT_FREE ($2);
 
     ActBody *port_override_asserts = NULL;
+
+    {
+      InstType *consistent = NULL;
+      for (li = list_first ($3); li; li = list_next (li)) {
+	const char *s = (char *) list_value (li);
+	InstType *it = $0->scope->Lookup (s);
+	if (!it) {
+	  $E("Override specified for ``%s'': not found in type", s);
+	}
+	if (!consistent) {
+	  consistent = it;
+	}
+	else {
+	  Array *tmpa, *tmpb;
+	  tmpa = it->arrayInfo();
+	  tmpb = consistent->arrayInfo();
+
+	  if (!it->isEqual (consistent, 1)) {
+	    $E("Override for `%s': inconsistent type with other identifiers in the list.", s);
+	  }
+	}
+      }
+    } 
+
+    bool mixed_override = false;
     for (li = list_first ($3); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
-      if (!it) {
-	$E("Override specified for ``%s'': not found in type", s);
-      }
 
       InstType *chk = $1;
       $A(chk->arrayInfo() == NULL);
@@ -620,6 +734,8 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
       int num_params = $1->getNumParams();
       int start_pos = 0;
 
+      int count = 0;
+
       if (append_params) {
 	if (TypeFactory::isUserType (it) && (it->getNumParams() > 0)) {
 	  if (list_length ($3) != 1) {
@@ -636,10 +752,16 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
 	//printf ("  v/s ");
 	//it->Print (stdout);
 	//printf ("\n");
-
+	
 	if (chk->isEqual (it, 1)) {
 	  break;
 	}
+	if (chk->isMixedArray (it, 1) && count == 1) {
+	  // mixed overrides only one level deep
+	  mixed_override = true;
+	  break;
+	}
+	count++;
 
 	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
 	if (!ux) {
@@ -736,7 +858,7 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
     }
     /* walk through the body, editing instances */
     if (b) {
-      b->updateInstType ($3, $1, false);
+      b->updateInstType ($3, $1, false, mixed_override);
       if (port_override_asserts) {
 	b->Tail()->Append (port_override_asserts);
       }

@@ -1175,6 +1175,11 @@ class Process : public UserDef {
    */
   bool isForceUsed (const char *s);
 
+  /**
+   * For multi-overrides, we need a way to change the scope
+   */
+  void updateScope (Scope *sc) { I = sc; }
+
 private:
   unsigned int is_cell:1;	///< 1 if this is a defcell, 0 otherwise 
   list_t *ifaces;		///< a mixed list of interface, map

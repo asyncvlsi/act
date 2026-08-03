@@ -1066,6 +1066,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
       }
     }
   }
+  ux->n_strict = n_strict;
 
   int parent_start;
   if (parent && TypeFactory::isUserType (parent)) {
@@ -1413,6 +1414,15 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   }
 
   /*-- expand body --*/
+
+  /* If the body has variants, select the one that matches the type! */
+  if (is_proc == 1 && b && dynamic_cast<ActBody_Variants*>(b) != NULL) {
+    // find the matching type!
+    
+
+
+
+  }
 
   /* handle any refinement overrides! */
   if (ux && (ux->getRefineList() != NULL) &&
@@ -3061,7 +3071,7 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
       refine_override *rl = ri->overrides;
 
       while (rl) {
-	b->updateInstType (rl->ids, rl->it, false);
+	b->updateInstType (rl->ids, rl->it, false, false);
 	rl = rl->next;
       }
 
@@ -3076,7 +3086,7 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 	  Assert (rp->nsteps <= ActNamespace::Act()->getRefSteps(), "What?");
 	  ActNamespace::Act()->decRefSteps (rp->nsteps);
 	  while (rl) {
-	    rp->b->updateInstType (rl->ids, rl->it, true);
+	    rp->b->updateInstType (rl->ids, rl->it, true, false);
 	    rl = rl->next;
 	  }
 	  ActNamespace::Act()->incRefSteps (rp->nsteps);

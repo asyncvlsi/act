@@ -100,6 +100,7 @@ typedef struct {
    */
   Scope *scope;
   list_t *tmpscope;		/* used for refinement overrides */
+  Scope *multiscope;		/* used for variant refinements */
 
   /**
    * Namespace search paths and permissions in the current context

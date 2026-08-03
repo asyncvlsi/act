@@ -124,8 +124,11 @@ class ActBody {
    * @param handle_subref is a flag. If it is true, then the update
    * method also handles a nested refine within the body; otherwise
    * those are ignored.
+   * @param mixed_override is a flag. If it is true, this is a  mixed
+   * override so we may have to adjust the insttype as we go.
    */
-  void updateInstType (list_t *namelist, InstType *it, bool handle_subref);
+  void updateInstType (list_t *namelist, InstType *it, bool handle_subref,
+		       bool mixed_override);
 
   /**
    * @return the saved away line number associated with a body
@@ -665,6 +668,45 @@ public:
   
 private:
   ActNamespace *ns;
+};
+
+
+
+/**
+ * @class ActBody_Variants
+ *
+ * @brief This is used for type-directed  variant bodies. The main use
+ * case is implementation relations where the type being implemented
+ * has relaxed parameters, and hence needs different implementations
+ * depending on the values of those relaxed parameters.
+ */
+class ActBody_Variants : public ActBody {
+public:
+  ActBody_Variants (int line, InstType *parent) : ActBody (line) {
+    _parent = parent;
+    _default = NULL;
+    _variants = list_new ();
+  }
+  ~ActBody_Variants ();
+  
+  void Expand (ActNamespace *, Scope *);
+  ActBody *Clone (ActNamespace *replace = NULL, ActNamespace *newns = NULL);
+  void fixGlobalParams (ActNamespace *cur, ActNamespace *orig);
+
+  void addVariant (InstType *it, Scope *sc, ActBody *b);
+  void setDefault (Scope *sc, ActBody *b) {
+    _defaultsc = sc;
+    _default = b;
+  }
+
+  void Print (FILE *fp);
+
+
+private:
+  InstType *_parent;
+  ActBody *_default;
+  Scope *_defaultsc;
+  list_t *_variants;
 };
 
 

@@ -1952,7 +1952,8 @@ ActBody *ActBody_Print::Clone(ActNamespace *replace, ActNamespace *newns)
 }
 
 
-void ActBody::updateInstType (list_t *namelist, InstType *it, bool handle_subref)
+void ActBody::updateInstType (list_t *namelist, InstType *it,
+			      bool handle_subref, bool mixed_override)
 {
   ActBody *b = this;
   listitem_t *li;
@@ -1966,20 +1967,78 @@ void ActBody::updateInstType (list_t *namelist, InstType *it, bool handle_subref
 	}
       }
       if (li) {
-	ActBody *override_asserts =
-	  new ActBody_OverrideAssertion (bi->getLine(),
-					 bi->getName(),
-					 bi->getType(),
-					 it);
+	ActBody *override_asserts;
 
-	bi->updateInstType (it);
+	if (!mixed_override) {
+	  override_asserts = new ActBody_OverrideAssertion (bi->getLine(),
+							    bi->getName(),
+							    bi->getType(),
+							    it);
+	  bi->updateInstType (it);
+	}
+	else {
+	  /* we have to customize this type by adding the non-strict
+	     template parameters that are missing. */
+	  InstType *tmpit = new InstType (it);
+	  tmpit->MkCached ();
+
+	  /*
+	    template<...>
+	    defproc  foo <: bar<...> ( )
+	    
+	    We have an override (it).
+
+	    foo<...> x;
+
+	    * foo has some # of remaining parameters
+	    * bar has another # of remaining parameters
+
+	    foo's remaining params = new template parms
+	                             + bar remaining params
+				     - specified bar params
+
+	    foo new templ = (foo total templ - bar total templ)
+	    
+	    foo's parents remaining parm =
+	        (bar remaining params - specified bar params)
+
+
+	    orig type was BAR<prqs>
+	    
+	    foo<xyz>
+
+	  */
+	    
+	  UserDef *ux = dynamic_cast<UserDef *> (it->BaseType());
+	  Assert (ux, "What?!");
+	  int np = ux->getParent()->getNumParams();
+	  // np of them have already been specified, so copy the rest over!
+
+	  Assert (ux->getParent()->BaseType() == bi->getType()->BaseType(),
+		  "This is the only circumstance where mixed array overrides"
+		  "work at the moment");
+
+	  if (bi->getType()->getNumParams() > np) {
+	    inst_param *oldu = bi->getType()->allParams ();
+	    tmpit->appendParams (bi->getType()->getNumParams() - np,
+				 oldu + np);
+	  }
+
+	  override_asserts =
+	    new ActBody_OverrideAssertion (bi->getLine(),
+					   bi->getName(),
+					   bi->getType(),
+					   tmpit);
+
+	  bi->updateInstType (tmpit);
+	}
 	bi->insertNext (override_asserts);
       }
     }
     else if (dynamic_cast<ActBody_Loop *> (b)) {
       ActBody_Loop *bl = dynamic_cast<ActBody_Loop *> (b);
       if (bl->getBody()) {
-	bl->getBody()->updateInstType (namelist, it, handle_subref);
+	bl->getBody()->updateInstType (namelist, it, handle_subref, mixed_override);
       }
     }
     else {
@@ -1996,7 +2055,7 @@ void ActBody::updateInstType (list_t *namelist, InstType *it, bool handle_subref
 	  act_refine *r = (act_refine *) l->getlang();
 	  if (r->b && r->nsteps <= ActNamespace::Act()->getRefSteps ()) {
 	    ActNamespace::Act()->decRefSteps (r->nsteps);
-	    r->b->updateInstType (namelist, it, true);
+	    r->b->updateInstType (namelist, it, true, mixed_override);
 	    ActNamespace::Act()->incRefSteps (r->nsteps);
 	  }
 	}
@@ -2007,7 +2066,7 @@ void ActBody::updateInstType (list_t *namelist, InstType *it, bool handle_subref
       }
       while (sel) {
 	if (sel->getBody()) {
-	  sel->getBody()->updateInstType (namelist, it, handle_subref);
+	  sel->getBody()->updateInstType (namelist, it, handle_subref, mixed_override);
 	}
 	sel = sel->getNext();
       }
@@ -2053,6 +2112,8 @@ void ActBody_OverrideAssertion::Expand (ActNamespace *ns, Scope *s)
     // this is conditionally created; if it is not created, skip the check!
     return;
   }
+
+  // XXX: do we need to update this?
   
   Array *tmpa = _orig_type->arrayInfo();
   _orig_type->clrArray();
@@ -2277,5 +2338,236 @@ void ActBody_Namespace::fixGlobalParams (ActNamespace *cur, ActNamespace *orig)
 {
   if (Next()) {
     Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Variants::Expand (ActNamespace *ns, Scope *sc)
+{
+  listitem_t *li;
+  InstType *defx;
+  li = list_first (_variants);
+
+  Assert (sc->isExpanded(), "What?");
+  defx = sc->getUserDef()->getParent();
+  Assert (defx, "what?!");
+
+  UserDef *base = dynamic_cast<UserDef *>(defx->BaseType());
+  if (!base || !base->hasNonStrict()) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Variant body selection has a type error.\n");
+    fprintf (stderr, "\tParent type: ");
+    defx->Print (stderr);
+    if (!base) {
+      fprintf (stderr, "\nNeeds to be user-defined.\n");
+    }
+    else {
+      fprintf (stderr, "\nNeeds to have relaxed parameters.\n");
+    }
+    exit (1);
+  }
+
+  ActBody *match = NULL;
+  bool match_exists = false;
+  
+  /* check that all the types in the variant are valid */
+  while (li) {
+    InstType *it = (InstType *) list_value (li);
+    it = it->Expand (ns, sc);
+    UserDef *xd = dynamic_cast<UserDef *> (it->BaseType());
+    Assert (xd && xd->hasNonStrict(), "What?");
+
+    bool found_match = true;
+    for (int i=0; i < base->getNumParams(); i++) {
+      bool is_one_match = false;
+
+      ValueIdx *vx = base->CurScope()->LookupVal (base->getPortName (-(i+1)));
+      Assert (vx, "What?");
+      if (vx->init) {
+	ValueIdx *vx2 = sc->LookupVal (base->getPortName (-(i+1)));
+	Assert (vx2, "What?");
+	if (vx2->init) {
+	  Expr *e;
+	  NEW (e, Expr);
+	  e->type = E_VAR;
+	  e->u.e.l = (Expr *) new ActId (base->getPortName (-(i+1)));
+	  e->u.e.r = NULL;
+	  Expr *ex1, *ex2;
+	  ex1 = expr_expand (e, ns, base->CurScope());
+	  ex2 = expr_expand (e, ns, xd->CurScope());
+
+	  if (expr_equal (ex1, ex2)) {
+	    is_one_match = true;
+	  }
+	  expr_ex_free (ex1);
+	  expr_ex_free (ex2);
+	  delete (ActId *)e->u.e.r;
+	  FREE (e);
+	}
+      }
+
+      if (i < base->numStrict() && !is_one_match) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Variant body selection has a type error.\n");
+	fprintf (stderr, "\tParent type: ");
+	defx->Print (stderr);
+	fprintf (stderr, "\n\tVariant type: ");
+	it->Print (stderr);
+	fprintf (stderr, "\nIncompatible variant for template parameter %s.\n",
+		 base->getPortName (-(i+1)));
+	exit (1);
+      }
+
+      if (!is_one_match) {
+	found_match = false;
+      }
+    }
+
+    if (found_match) {
+      if (match_exists) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "Variant body selection has a type error.\n");
+	fprintf (stderr, "\tParent type: ");
+	defx->Print (stderr);
+	fprintf (stderr, "\nDuplicate matches.\n");
+	exit (1);
+      }
+    }
+    
+    li = list_next (li); Assert (li, "sc missing");
+    li = list_next (li); Assert (li, "body missing");
+    if (found_match && !match_exists) {
+      match = (ActBody *) list_value (li);
+      match_exists = true;
+    }
+    li = list_next (li);
+  }
+
+  if (match) {
+    match->Expandlist (ns, sc);
+  }
+  else {
+    if (_default) {
+      _default->Expandlist (ns, sc);
+    }
+  }
+}
+
+ActBody *ActBody_Variants::Clone (ActNamespace *replace,
+				  ActNamespace *newns)
+{
+  Assert (_parent, "Variants without parent?");
+
+  ActBody_Variants *av =
+    new ActBody_Variants (_line, _act_clone_replace (replace, newns, _parent));
+
+  if (_default) {
+    av->_default = _default->Clone (replace, newns);
+  }
+
+  listitem_t *li = list_first (_variants);
+  while (li) {
+    InstType *it = (InstType *) list_value (li);
+    li = list_next (li);
+    Assert (it && li, "What?");
+    Scope *sc = (Scope *) list_value (li);
+    li = list_next (li);
+    ActBody *b = (ActBody *) list_value (li);
+    li = list_next (li);
+    
+    av->addVariant (_act_clone_replace (replace, newns, it),
+		    sc, // CHECK THIS!
+		    b->Clone (replace, newns));
+
+  }
+  
+  if (Next()) {
+    av->Append (Next()->Clone (replace, newns));
+  }
+  return av;
+}
+
+void ActBody_Variants::fixGlobalParams (ActNamespace *cur,
+					ActNamespace *orig)
+{
+  _parent = _parent->fixGlobalParams (cur, orig);
+  if (_default) {
+    _default->fixGlobalParams (cur, orig);
+  }
+  listitem_t *li = list_first (_variants);
+
+  list_t *newl;
+
+  newl = list_new ();
+
+  while (li) {
+    InstType *it = (InstType *) list_value (li);
+    li = list_next (li);
+    Assert (it && li, "What?");
+    
+    Scope *sc = (Scope *) list_value (li);
+    li = list_next (li);
+    Assert (li && sc, "What?");
+    
+    ActBody *b = (ActBody *) list_value (li);
+    li = list_next (li);
+
+    b->fixGlobalParams (cur, orig);
+    it = it->fixGlobalParams (cur, orig);
+
+    list_append (newl, it);
+    list_append (newl, sc);
+    list_append (newl, b);
+  }
+
+  list_free (_variants);
+  _variants = newl;
+  
+  if (Next()) {
+    Next()->fixGlobalParams (cur, orig);
+  }
+}
+
+void ActBody_Variants::addVariant (InstType *it, Scope *sc, ActBody *b)
+{
+  list_append (_variants, it);
+  list_append (_variants, sc);
+  list_append (_variants, b);
+}
+
+ActBody_Variants::~ActBody_Variants ()
+{
+  list_free (_variants);
+}
+
+void ActBody_Variants::Print (FILE *fp)
+{
+  listitem_t *li;
+
+  li = list_first (_variants);
+
+  if (_default) {
+    _default->Print (fp);
+  }
+
+  while (li) {
+    InstType *it = (InstType *) list_value (li);
+    li = list_next (li);
+    Assert (it && li, "Hmm");
+    Scope *sc = (Scope *) list_value (li);
+    li = list_next (li);
+    Assert (sc && li, "What?");
+    ActBody *b = (ActBody *) list_value (li);
+    Assert (b, "What?");
+    li = list_next (li);
+
+    fprintf (fp, "}\n");
+    fprintf (fp, "| ");
+    it->Print (fp);
+    fprintf (fp, " => {\n");
+
+    ActBody *bi;
+    for (bi = b; bi; bi = bi->Next()) {
+      bi->Print (fp);
+    }
   }
 }

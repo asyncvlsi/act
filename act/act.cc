@@ -528,6 +528,7 @@ static void _init_tr (ActTree *tr, TypeFactory *tf, ActNamespace *G)
   tr->tf = tf;
   tr->scope = tr->curns->CurScope ();
   tr->tmpscope = list_new ();
+  tr->multiscope = NULL;
 
   tr->u = NULL;
 

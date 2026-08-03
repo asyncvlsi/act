@@ -1,0 +1,6 @@
+In expanding test<8> (46.act:10)
+In expanding ::<Global>
+Variant body selection has a type error.
+	Parent type: mybase<4,8>
+	Variant type: mybase<8,7>
+Incompatible variant for template parameter X.
