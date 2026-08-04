@@ -3090,7 +3090,7 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
     OPT_FREE ($2);
 
     ro->it = $1;
-
+    bool mixed_override = false;
     for (li = list_first ($3); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
@@ -3116,6 +3116,8 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
       int num_params = $1->getNumParams();
       int start_pos = 0;
 
+      int count = 0;
+      
       if (append_params) {
 	if (TypeFactory::isUserType (it) && (it->getNumParams() > 0)) {
 	  if (list_length ($3) != 1) {
@@ -3136,6 +3138,11 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
 	if (chk->isEqual (it, 1)) {
 	  break;
 	}
+	if (chk->isMixedArray (it, 1) && count == 1) {
+	  mixed_override = true;
+	  break;
+	}
+	count++;
 
 	UserDef *ux = dynamic_cast <UserDef *> (chk->BaseType());
 	if (!ux) {
@@ -3171,7 +3178,13 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
 	  }
 	}
       }
+
       it->MkArray (tmpa);
+      if (tmpa) {
+	if (TypeFactory::isProcessType (it)) {
+	  tmpa->mkArrayType (it);
+	}
+      }
       if (!chk) {
 	$e("Illegal override; the new type doesn't implement the original.\n");
 	fprintf ($f, "\tOriginal: ");
