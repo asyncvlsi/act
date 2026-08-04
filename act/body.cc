@@ -1888,9 +1888,9 @@ ActBody *ActBody_Assertion::Clone(ActNamespace *replace, ActNamespace *newns)
 }
 
 
-void ActBody_Inst::updateInstType (InstType *u)
+void ActBody_Inst::updateInstType (InstType *u, bool mixed_override)
 {
-  t = t->refineBaseType (u);
+  t = t->refineBaseType (u, mixed_override);
 }
 
 
@@ -1974,7 +1974,6 @@ void ActBody::updateInstType (list_t *namelist, InstType *it,
 							    bi->getName(),
 							    bi->getType(),
 							    it);
-	  bi->updateInstType (it);
 	}
 	else {
 	  /* we have to customize this type by adding the non-strict
@@ -2029,9 +2028,8 @@ void ActBody::updateInstType (list_t *namelist, InstType *it,
 					   bi->getName(),
 					   bi->getType(),
 					   tmpit);
-
-	  bi->updateInstType (tmpit);
 	}
+	bi->updateInstType (it, mixed_override);
 	bi->insertNext (override_asserts);
       }
     }

@@ -482,10 +482,12 @@ struct refine_override {
     plus = false;
     ids = NULL;
     next = NULL;
+    mixed_override = false;
   }
   ~refine_override();
   refine_override *Clone (ActNamespace *orig, ActNamespace *newns);
   InstType *it;
+  bool mixed_override;
   bool plus;
   list_t *ids;
   refine_override *next;

@@ -446,7 +446,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 		    if (s->isExpanded()) {
 		      Assert (s->Lookup (id->getName()) == it, "What?");
 		      InstType *xtmp = new InstType (srch, u, 1);
-		      s->refineBaseType (id->getName(), xtmp);
+		      s->refineBaseType (id->getName(), xtmp, false);
 		      delete xtmp;
 		    }
 		    if (u->FindPort (id->Rest()->getName()) != 0) {

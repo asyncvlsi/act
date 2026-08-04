@@ -351,11 +351,12 @@ class InstType {
   /**
    * Used to change the type signature during overrides.
    * @param update is the updated type.
+   * @param mixed_array is set to true if this is a mixed override.
    * @return an in-place updated (for temp types) or a fresh InstType
    * where the base type and template parameters are updated from the
    * specified updated type
    */
-  InstType *refineBaseType (InstType *update);
+  InstType *refineBaseType (InstType *update, bool mixed_array);
   
   /**
    * Used to change the type signature during overrides.

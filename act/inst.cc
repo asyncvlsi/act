@@ -1226,21 +1226,95 @@ void InstType::appendParams (int na, inst_param *a)
 }
 
 
-InstType *InstType::refineBaseType (InstType *update)
+InstType *InstType::refineBaseType (InstType *update, bool mixed_override)
 {
   if (temp_type) {
-    t = update->t;		/* just replace the base type */
-    nt = update->nt;
-    u = update->u;
+    if (!mixed_override) {
+      t = update->t;		/* just replace the base type */
+      nt = update->nt;
+      u = update->u;
+    }
+    else {
+      Assert (TypeFactory::isProcessType (update), "What?");
+      if (a) {
+	UserDef *ux = dynamic_cast<UserDef *> (update->BaseType());
+	Assert (ux, "What?");
+	int np = ux->getParent()->getNumParams();
+	Array *r = a;
+	while (r) {
+	  InstType *ax = r->getArrayType();
+	  InstType *tmpit;
+	  if (ax->getNumParams() > np) {
+	    tmpit = new InstType (update);
+	    inst_param *oldu = ax->allParams ();
+	    tmpit->MkCached();
+	    tmpit->appendParams (ax->getNumParams() - np,
+				 oldu + np);
+	  }
+	  else {
+	    tmpit = update;
+	  }
+	  r->mkArrayType (tmpit);
+	  r = r->Next ();
+	}
+      }
+    }
     return this;
   }
   else {
-    InstType *x = new InstType (this,1);
-    x->t = update->t;
-    x->nt = update->nt;
-    x->u = update->u;
-    x->a = this->a;
-    x->MkCached ();
+    InstType *x;
+    if (!mixed_override) {
+      x = new InstType (this,1);
+      x->t = update->t;
+      x->nt = update->nt;
+      x->u = update->u;
+      x->a = this->a;
+      x->MkCached ();
+    }
+    else {
+      Assert (TypeFactory::isProcessType (update), "What?");
+      if (a) {
+	UserDef *ux = dynamic_cast<UserDef *> (update->BaseType());
+	Assert (ux, "What?");
+	int np = ux->getParent()->getNumParams();
+	Array *r = a->Clone();
+	Array *tmpa = r;
+	InstType *final_tmp = NULL;
+	while (r) {
+	  InstType *ax = r->getArrayType();
+	  InstType *tmpit;
+
+	  if (!ax) {
+	    // XXX: track this down
+	    ax = this;
+	  }
+	  if (ax->getNumParams() > np) {
+	    tmpit = new InstType (update,1);
+	    inst_param *oldu = ax->allParams ();
+	    tmpit->MkCached();
+	    tmpit->appendParams (ax->getNumParams() - np,
+				 oldu + np);
+	    if (!final_tmp) {
+	      final_tmp = tmpit;
+	    }
+	  }
+	  else {
+	    tmpit = update;
+	    if (!final_tmp) {
+	      final_tmp = update;
+	    }
+	  }
+	  r->mkArrayType (tmpit);
+	  r = r->Next ();
+	}
+	x = new InstType (this, 1);
+	x->t = final_tmp->t;
+	x->nt = final_tmp->nt;
+	x->u = final_tmp->u;
+	x->a = tmpa;
+	x->MkCached ();
+      }
+    }
     return x;
   }
 }

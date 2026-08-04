@@ -802,11 +802,11 @@ void UserMacro::updateFn (UserDef *u)
   it = new InstType (_exf->CurScope(), u, 0);
 
   if (isBuiltinStructMacro()) {
-    _exf->CurScope()->refineBaseType ("self", it);
+    _exf->CurScope()->refineBaseType ("self", it, false);
     _exf->setRetType (it);
   }
   else if (!TypeFactory::isParamType (_exf->getRetType())) {
-    _exf->CurScope()->refineBaseType ("$internal", it);
+    _exf->CurScope()->refineBaseType ("$internal", it, false);
     _exf->refinePortType (0, it);
   }
   _exf->CurScope()->updateParent (u->CurScope());

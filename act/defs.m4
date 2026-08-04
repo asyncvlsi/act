@@ -702,10 +702,6 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
 	  consistent = it;
 	}
 	else {
-	  Array *tmpa, *tmpb;
-	  tmpa = it->arrayInfo();
-	  tmpb = consistent->arrayInfo();
-
 	  if (!it->isEqual (consistent, 1)) {
 	    $E("Override for `%s': inconsistent type with other identifiers in the list.", s);
 	  }
@@ -801,7 +797,7 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
       }
       
       it->MkArray (tmpa);
-      if (tmpa){
+      if (tmpa) {
 	if (TypeFactory::isProcessType (it)) {
 	  tmpa->mkArrayType (it);
 	}
@@ -904,7 +900,7 @@ override_one_spec: user_type [ "+" ] bare_id_list ";"
       }
     }
     for (li = list_first ($3); li; li = list_next (li)) {
-      $0->scope->refineBaseType ((char *)list_value (li), $1);
+      $0->scope->refineBaseType ((char *)list_value (li), $1, mixed_override);
     }
     list_free ($3);
     return NULL;

@@ -198,8 +198,9 @@ class ActBody_Inst : public ActBody {
    * Update the instance type with a new type. This is used by
    * overrides.
    * @param u is the new instance type
+   * @param mixed_override is an override for a mixed array.
    */
-  void updateInstType (InstType *u);
+  void updateInstType (InstType *u, bool mixed_override);
 
   /**
    * Make a deep copy of this instance. 

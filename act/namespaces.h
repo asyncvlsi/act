@@ -129,8 +129,10 @@ class Scope {
    * update scope tables while processing overrides.
    * @param s is the name of the instance whose type is to be updated
    * @param u is the updated type for the instance
+   * @param mixed_array is true if this is a mixed array refinement,
+   * false otherwise.
    */
-  void refineBaseType (const char *s, InstType *u);
+  void refineBaseType (const char *s, InstType *u, bool mixed_array);
 
   /**
    * Similar to lookup, but instead of just looking in the local scope

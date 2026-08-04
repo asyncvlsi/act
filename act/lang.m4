@@ -3090,13 +3090,31 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
     OPT_FREE ($2);
 
     ro->it = $1;
+
+    {
+      InstType *consistent = NULL;
+      for (li = list_first ($3); li; li = list_next (li)) {
+	const char *s = (char *) list_value (li);
+	InstType *it = $0->scope->Lookup (s);
+	if (!it) {
+	  $E("Override specified for ``%s'': not found in type", s);
+	}
+	if (!consistent) {
+	  consistent = it;
+	}
+	else {
+	  if (!it->isEqual (consistent, 1)) {
+	    $E("Override for `%s': inconsistent type with other identifiers in the list.", s);
+	  }
+	}
+      }
+    } 
+    
+
     bool mixed_override = false;
     for (li = list_first ($3); li; li = list_next (li)) {
       const char *s = (char *)list_value (li);
       InstType *it = $0->scope->Lookup (s);
-      if (!it) {
-	$E("Override specified for ``%s'': not found in type", s);
-      }
 
       InstType *chk = $1;
       $A(chk->arrayInfo() == NULL);
@@ -3214,9 +3232,10 @@ one_ref_override_spec[refine_override *]: user_type [ "+" ] bare_id_list ";"
       }
     }
     for (li = list_first ($3); li; li = list_next (li)) {
-      $0->scope->refineBaseType ((char *)list_value (li), $1);
+      $0->scope->refineBaseType ((char *)list_value (li), $1, mixed_override);
     }
     ro->ids = $3;
+    ro->mixed_override = mixed_override;
     return ro;
 }}
 ;

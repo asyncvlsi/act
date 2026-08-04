@@ -238,7 +238,7 @@ void UserDef::refinePortType (int pos, InstType *u)
 {
   Assert (pos >= 0, "Can't refine parameter types");
   Assert (pos < getNumPorts(), "Invalid pos!");
-  port_t[pos] = port_t[pos]->refineBaseType (u);
+  port_t[pos] = port_t[pos]->refineBaseType (u, false);
 }
 
 int UserDef::AddPort (InstType *t, const char *id)
@@ -3071,7 +3071,7 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
       refine_override *rl = ri->overrides;
 
       while (rl) {
-	b->updateInstType (rl->ids, rl->it, false, false);
+	b->updateInstType (rl->ids, rl->it, false, rl->mixed_override);
 	rl = rl->next;
       }
 
@@ -3086,7 +3086,7 @@ void UserDef::_apply_ref_overrides (ActBody *b, ActBody *srch)
 	  Assert (rp->nsteps <= ActNamespace::Act()->getRefSteps(), "What?");
 	  ActNamespace::Act()->decRefSteps (rp->nsteps);
 	  while (rl) {
-	    rp->b->updateInstType (rl->ids, rl->it, true, false);
+	    rp->b->updateInstType (rl->ids, rl->it, true, rl->mixed_override);
 	    rl = rl->next;
 	  }
 	  ActNamespace::Act()->incRefSteps (rp->nsteps);
