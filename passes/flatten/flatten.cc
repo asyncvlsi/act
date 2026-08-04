@@ -634,6 +634,12 @@ void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	Arraystep *p = vx->t->arrayInfo()->stepper ();
 	while (!p->isend()) {
 	  push_name_suffix (vx->getName (), p->toArray());
+
+	  if (TypeFactory::isProcessType (rux)) {
+	    if (rux != p->curProc()) {
+	      rux = p->curProc();
+	    }
+	  }
 	  _flat_rec_bool_conns (one, two, rux, oa, ta, isoneglobal, istwoglobal);
 	  pop_name_suffix ();
 	  p->step();
@@ -772,6 +778,12 @@ void ActApplyPass::_flat_scope (Scope *s)
 	  }
 	  else {
 	    push_name (vx->getName());
+	  }
+
+	  if (TypeFactory::isProcessType (ux)) {
+	    if (step && step->curProc() != ux) {
+	      ux = step->curProc();
+	    }
 	  }
 
 	  /*-- process me --*/
