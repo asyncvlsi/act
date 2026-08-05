@@ -435,13 +435,8 @@ proc_body
 }}
 ;
 
-proc_body:
-[ ":>" interface_spec ]
-[ "+{" override_spec "}" ]
-";"
+proc_body: ";"
 {{X:
-    OPT_FREE ($1);
-    OPT_FREE ($2);
     return NULL;
 }}
 |  [ ":>" interface_spec ]
