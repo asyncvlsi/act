@@ -895,7 +895,6 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
   case E_LT:  case E_GT:
   case E_LE:  case E_GE:
   case E_EQ:  case E_NE:
-  case E_BITFIELD:
     _subst_dynamic_array (l, e->u.e.l);
     _subst_dynamic_array (l, e->u.e.r);
     break;
@@ -903,6 +902,7 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
   case E_NOT:
   case E_UMINUS:
   case E_COMPLEMENT:
+  case E_BITFIELD:
     _subst_dynamic_array (l, e->u.e.l);
     break;
 

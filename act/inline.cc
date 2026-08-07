@@ -778,7 +778,7 @@ static act_inline_value _expand_inline (act_inline_table *Hs, Expr *e, int recur
 #endif
       }
       else {
-	ret->u.e.l = r->u.e.l;
+	ret->u.e.l = r;
 	NEW (ret->u.e.r, Expr);
 	ret->u.e.r->type = e->u.e.r->type;
 	ret->u.e.r->u.e.l = e->u.e.r->u.e.l;

@@ -1,0 +1,39 @@
+defproc test ();
+deftype mytype (int<5> x);
+
+defproc test ()
+{
+
+/* instances */
+mytype x;
+bool test;
+
+/* connections */
+chp {
+test:=x.x{0x0}=0x0
+}
+}
+
+deftype mytype (int<5> x)
+{
+
+/* instances */
+
+/* connections */
+  methods {
+  function check () : bool {
+
+/* instances */
+
+/* connections */
+   chp { self:=x{0x0}=0x0 }
+  }
+
+ }
+}
+
+
+/* instances */
+test t;
+
+/* connections */

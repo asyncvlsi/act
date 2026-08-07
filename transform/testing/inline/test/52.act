@@ -1,0 +1,20 @@
+deftype mytype(int<5> x) {
+    methods {
+        function check() : bool {
+            chp {
+                self := x{0} = 0
+            }
+        }
+    }
+}
+
+defproc test() {
+    mytype x;
+    bool test;
+    chp {
+        test := x.check()
+    }
+}
+
+
+test t;
