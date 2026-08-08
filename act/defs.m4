@@ -1413,6 +1413,11 @@ data_chan_body
 {{X:
     /* body of data type: this gets updated in the actions for
        data_body */
+    if (TypeFactory::isPureStruct ($0->u_d)) {
+       if ($0->u_d->getNumPorts() == 0) {
+          $E("Definition of ``%s'': pure structure must have at least one port.", $0->u_d->getName());
+       }
+    }
     $0->u_d = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;

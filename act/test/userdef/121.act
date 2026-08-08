@@ -1,0 +1,18 @@
+deftype struct() { }
+
+function foo(int x) : struct
+{
+  chp {
+    self := struct(0)
+  }
+}
+
+defproc test()
+{
+  struct s;
+  chp {
+   s := foo(4)
+  }
+}
+
+test t;
