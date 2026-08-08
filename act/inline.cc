@@ -1031,7 +1031,7 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
 	  update->u.e.r = NULL;
 	}
 	else {
-	  /* 
+	  /*
 	     update && !guards[i] : else clause, nothing to do here,
 	     just update update->u.e.r 
 	  */
@@ -1047,6 +1047,11 @@ act_inline_table *act_inline_merge_tables (int nT, act_inline_table **T,
 	}
 	if (ival) {
 	  if (ival->isValid() && (d && !ival->isSimple())) {
+	    curval = ival->u.arr[idx];
+	  }
+	  else if (ival->isValid() && d) {
+	    /* structure variable */
+	    ival->elaborateStructId (d);
 	    curval = ival->u.arr[idx];
 	  }
 	  else if (ival->isValid() && (!d && idx == 0)) {

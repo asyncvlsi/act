@@ -1,0 +1,45 @@
+defproc test (chan(mytype)? x_in; chan(mytype)? y_in; chan(mytype)! out);
+deftype mytype (int<4> a; int<4> b);
+function maybe_swap (mytype x; mytype y) : mytype;
+
+defproc test (chan(mytype)? x_in; chan(mytype)? y_in; chan(mytype)! out)
+{
+
+/* instances */
+mytype _us_0;
+mytype y;
+mytype x;
+
+/* connections */
+chp {
+*[true -> x_in?x,y_in?y;_us_0.a:=int(int(int(x.a>y.a ? y.b : x.b,4),8)>>4,4);_us_0.b:=int(int(int(x.a>y.a ? y.b : x.b,4),8)>>0,4);out!_us_0]
+}
+}
+
+deftype mytype (int<4> a; int<4> b)
+{
+
+/* instances */
+
+/* connections */
+}
+
+function maybe_swap (mytype x; mytype y) : mytype
+{
+
+/* instances */
+mytype yswp;
+mytype xswp;
+mytype tmp;
+
+/* connections */
+chp {
+[x.a>y.a -> xswp:=y,yswp:=x [] else -> xswp:=x,yswp:=y];self:=mytype(xswp.b)
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

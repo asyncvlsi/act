@@ -1,0 +1,23 @@
+deftype mytype(int<4> a; int<4> b) {}
+
+function maybe_swap(mytype x, y) : mytype {
+mytype tmp;
+mytype xswp, yswp;
+chp {
+    [ x.a > y.a -> xswp := y, yswp := x
+   [] else -> xswp := x, yswp := y
+    ];
+    self := mytype(xswp.b)
+}
+}
+
+defproc test(chan?(mytype) x_in, y_in; chan!(mytype) out) {
+  mytype x, y;
+  chp {
+    *[ x_in?x, y_in?y;
+       out!maybe_swap(x, y)
+     ]
+    }
+}
+
+test t;
