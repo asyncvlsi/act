@@ -1966,7 +1966,8 @@ void Array::Merge (Array *a)
   }
   bool standard_merge;
   
-  if (a->_ex_new_nonstrict == _ex_new_nonstrict) {
+  if ((a->_ex_new_nonstrict == _ex_new_nonstrict) &&
+      (!isMixedArray() && !a->isMixedArray())) {
     /* normal array merge, same type everywhere */
     standard_merge = true;
   }
@@ -1974,7 +1975,7 @@ void Array::Merge (Array *a)
     /* sparse array merge with different relaxed parameters */
     standard_merge = false;
 
-    if (a->_ex_new_nonstrict && _ex_new_nonstrict) {
+    if (a->_ex_new_nonstrict && _ex_new_nonstrict && !isMixedArray()) {
       /* do a secondary check */
       if (a->_ex_new_nonstrict->BaseType()->isEqual (_ex_new_nonstrict->BaseType())) {
 	standard_merge = true;
