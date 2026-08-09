@@ -1965,20 +1965,25 @@ void Array::Merge (Array *a)
     Assert (_ex_new_nonstrict, "Must have insttype!");
   }
   bool standard_merge;
-  
-  if ((a->_ex_new_nonstrict == _ex_new_nonstrict) &&
-      (!isMixedArray() && !a->isMixedArray())) {
-    /* normal array merge, same type everywhere */
-    standard_merge = true;
+
+  if (isMixedArray() || a->isMixedArray()) {
+    /* the arrays are already mixed; we can't do a standard merge */
+    standard_merge = false;
   }
   else {
-    /* sparse array merge with different relaxed parameters */
-    standard_merge = false;
+    if (a->_ex_new_nonstrict == _ex_new_nonstrict) {
+      /* normal array merge, same type everywhere */
+      standard_merge = true;
+    }
+    else {
+      /* sparse array merge with different relaxed parameters */
+      standard_merge = false;
 
-    if (a->_ex_new_nonstrict && _ex_new_nonstrict && !isMixedArray()) {
-      /* do a secondary check */
-      if (a->_ex_new_nonstrict->BaseType()->isEqual (_ex_new_nonstrict->BaseType())) {
-	standard_merge = true;
+      if (a->_ex_new_nonstrict && _ex_new_nonstrict) {
+	/* do a secondary check */
+	if (a->_ex_new_nonstrict->BaseType()->isEqual (_ex_new_nonstrict->BaseType())) {
+	  standard_merge = true;
+	}
       }
     }
   }
