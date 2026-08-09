@@ -1997,15 +1997,15 @@ void Array::Merge (Array *a)
   */
 
   do {
-    int adjacent;
-    int idx;
-
-    adjacent = 0;
-    idx = -1;
-
     /* check special case: this is only applicable for a standard
        merge, because we are fusing the array ranges together */
     if (standard_merge) {
+      int adjacent;
+      int idx;
+
+      adjacent = 0;
+      idx = -1;
+      
       for (i=0; i < dims; i++) {
 	if (a->r[i].u.ex.idx.lo == tmp->r[i].u.ex.idx.lo &&
 	    a->r[i].u.ex.idx.hi == tmp->r[i].u.ex.idx.hi) continue;
@@ -2037,6 +2037,7 @@ void Array::Merge (Array *a)
 	  tmp->r[idx].u.ex.idx.lo = a->r[idx].u.ex.idx.lo;
 	}
 	tmp->range_sz = -1;
+	_compact ();
 	return;
       }
     }
@@ -2078,6 +2079,7 @@ void Array::Merge (Array *a)
 	prev->next = m;
 	range_sz = -1;
       }
+      _compact ();
       return;
     }
     else if (a->r[i].u.ex.idx.lo > tmp->r[i].u.ex.idx.hi) {
@@ -2096,7 +2098,8 @@ void Array::Merge (Array *a)
       fprintf (stderr, "After merge: ");
       Print (stderr);
       fprintf (stderr, "\n");
-#endif      
+#endif
+      _compact ();
       return;
     }
   } while (tmp);
@@ -2104,6 +2107,7 @@ void Array::Merge (Array *a)
   /* otherwise it goes on the end */
   /* insert to the right */
   prev->next = a->Clone();
+  _compact ();
 }
 
 
@@ -2401,3 +2405,61 @@ int Array::getRangeSize()
   return range_sz;
 }
 
+
+/* needs to be expanded */
+void Array::_compact (void)
+{
+  if (next) {
+    next->_compact();
+    if (_ex_new_nonstrict == next->_ex_new_nonstrict ||
+	(_ex_new_nonstrict && next->_ex_new_nonstrict &&
+	 _ex_new_nonstrict->BaseType()->isEqual (next->_ex_new_nonstrict->BaseType()))) {
+      int adjacent;
+      int idx;
+
+      adjacent = 0;
+      idx = -1;
+
+      Array *a = next;
+      int i;
+      for (i=0; i < dims; i++) {
+	if (a->r[i].u.ex.idx.lo == r[i].u.ex.idx.lo &&
+	    a->r[i].u.ex.idx.hi == r[i].u.ex.idx.hi) continue;
+	if (adjacent == 0) {
+	  if (a->r[i].u.ex.idx.lo == (r[i].u.ex.idx.hi + 1)) {
+	    adjacent = 1;
+	    idx = i;
+	  }
+	  else if (r[i].u.ex.idx.lo == (a->r[i].u.ex.idx.hi+1)) {
+	    adjacent = -1;
+	    idx = i;
+	  }
+	  else {
+	    break;
+	  }
+	}
+	else {
+	  break;
+	}
+      }
+      if (i == dims) {
+	Assert (adjacent != 0, "Should have been caught earlier!");
+	/* simple concatenation */
+	if (adjacent == 1) {
+	  r[idx].u.ex.idx.hi = a->r[idx].u.ex.idx.hi;
+	}
+	else {
+	  Assert (adjacent == -1, "hmm");
+	  r[idx].u.ex.idx.lo = a->r[idx].u.ex.idx.lo;
+	}
+	range_sz = -1;
+
+	Array *x = next->next;
+	next->next = NULL;
+	delete next;
+	next = x;
+	return;
+      }
+    }
+  }
+}

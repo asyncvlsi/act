@@ -1,0 +1,6 @@
+
+
+/* instances */
+int<32> x[10];
+
+/* connections */

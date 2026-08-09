@@ -1,0 +1,43 @@
+defproc testme_37_74_4 (bool x[7]);
+defproc test ();
+defproc testme_37_73_4 (bool x[7]);
+
+defproc testme_37_74_4 (bool x[7])
+{
+
+/* instances */
+
+/* connections */
+prs {
+x[0]<4> -> x[1]-
+}
+}
+
+defproc test ()
+{
+
+/* instances */
+testme_37_73_4 x[1];
+testme_37_74_4 x[1..2];
+testme_37_73_4 x[4..5];
+testme_37_74_4 x[6..6];
+
+/* connections */
+}
+
+defproc testme_37_73_4 (bool x[7])
+{
+
+/* instances */
+
+/* connections */
+prs {
+x[0]<3> -> x[1]-
+}
+}
+
+
+/* instances */
+test t;
+
+/* connections */

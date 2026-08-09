@@ -484,6 +484,12 @@ private:
   void _merge_range (int idx, Array *prev, struct range *m);
 
   /**
+   * Compact array after merging. Fuse adjacent ranges that can be
+   * fused. 
+   */
+  void _compact ();
+
+  /**
    * Checks if two ranges have a non-empty intersection
    * @param a is one of the two ranges
    * @param b is one of the two ranges
