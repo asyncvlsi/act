@@ -1,0 +1,10 @@
+defenum foo { A, B, C };
+
+defproc test(chan!(foo) X)
+{
+  chp {
+    X!foo.A
+  }
+}
+
+test t;

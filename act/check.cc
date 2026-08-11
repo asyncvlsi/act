@@ -2600,7 +2600,14 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
 	  }
 	}
 	else {
-	  typecheck_err ("Enum/non-enum types are incompatible.");
+	  if (sc->isExpanded() &&
+	      (TypeFactory::isIntType (it1) ||
+	       TypeFactory::isPIntType (it1))) {
+	    ret = 1;
+	  }
+	  else {
+	    typecheck_err ("Enum/non-enum types are incompatible.");
+	  }
 	}
       }
     }
@@ -2668,7 +2675,14 @@ int act_type_chan (Scope *sc, Chan *ch, int is_send, Expr *e, ActId *id,
 	  }
 	}
 	else {
-	  typecheck_err ("Enumeration/non-enumeration types are incompatible.");
+	  if (sc->isExpanded() &&
+	      (TypeFactory::isIntType (it2) ||
+	       TypeFactory::isPIntType (it2))) {
+	    ret = 1;
+	  }
+	  else {
+	    typecheck_err ("Enumeration/non-enumeration types are incompatible.");
+	  }
 	}
       }
     }

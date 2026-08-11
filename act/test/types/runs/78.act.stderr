@@ -1,0 +1,3 @@
+ERROR: File `78.act', line 6, col 6
+	CHP send: type-checking failed.
+	Enum/non-enum types are incompatible.
