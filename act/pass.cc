@@ -320,6 +320,36 @@ void ActPass::recursive_op (UserDef *p, int mode)
       }
       // could be a pstruct!
     }
+    else if (TypeFactory::isExactChanType (vx->t)) {
+      /* channels could have user-defined data types buried in them */
+      Chan *chx = dynamic_cast<Chan *> (vx->t->BaseType());
+      if (chx->datatype() && TypeFactory::isUserType (chx->datatype())) {
+	Data *x = dynamic_cast<Data *>(chx->datatype()->BaseType());
+	Assert (x, "Channel can only contain user-defined data types!");
+	char *tmp;
+	int len;
+	len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	MALLOC (tmp, char, len);
+	snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	act_error_push (tmp, x->getFile(), x->getLine());
+	recursive_op (x, mode);
+	act_error_pop ();
+	FREE (tmp);
+      }
+      if (chx->acktype() && TypeFactory::isUserType (chx->acktype())) {
+	Data *x = dynamic_cast<Data *>(chx->acktype()->BaseType());
+	Assert (x, "Channel can only contain user-defined data types!");
+	char *tmp;
+	int len;
+	len = strlen (x->getName()) + strlen (vx->getName()) + 10;
+	MALLOC (tmp, char, len);
+	snprintf (tmp, len, "%s (inst: %s)", x->getName(), vx->getName());
+	act_error_push (tmp, x->getFile(), x->getLine());
+	recursive_op (x, mode);
+	act_error_pop ();
+	FREE (tmp);
+      }
+    }
   }
 
   if (mode >= 0) {
