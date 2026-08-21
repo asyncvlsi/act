@@ -636,7 +636,7 @@ void ActApplyPass::_flat_rec_bool_conns (ActId *one, ActId *two, UserDef *ux,
 	  push_name_suffix (vx->getName (), p->toArray());
 
 	  if (TypeFactory::isProcessType (rux)) {
-	    if (rux != p->curProc()) {
+	    if (p->curProc() && (rux != p->curProc())) {
 	      rux = p->curProc();
 	    }
 	  }
@@ -781,7 +781,7 @@ void ActApplyPass::_flat_scope (Scope *s)
 	  }
 
 	  if (TypeFactory::isProcessType (ux)) {
-	    if (step && step->curProc() != ux) {
+	    if (step && step->curProc() && step->curProc() != ux) {
 	      ux = step->curProc();
 	    }
 	  }

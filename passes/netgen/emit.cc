@@ -648,7 +648,7 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       }
       do {
 	if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
-	  if (as && as->curProc() != instproc) {
+	  if (as && as->curProc() && as->curProc() != instproc) {
 	    instproc = as->curProc ();
 	    sub = getNL (instproc);
 	  }

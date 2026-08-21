@@ -261,7 +261,7 @@ void ActPass::recursive_op (UserDef *p, int mode)
 	  char *tmp;
 	  int len;
 
-	  if (a) {
+	  if (a && a->getArrayType()) {
 	    /* if there is an array, there may be multiple processes
 	       that need to be visited! */
 	    Assert (a->getArrayType(), "What?");

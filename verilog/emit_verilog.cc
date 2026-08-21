@@ -243,7 +243,7 @@ static void emit_verilog (FILE *fp, Act *a, Process *p)
 	}
 	do {
 	  if (!as || (!as->isend() && vx->isPrimary (as->index()))) {
-	    if (as && as->curProc() != instproc) {
+	    if (as && as->curProc() && as->curProc() != instproc) {
 	      instproc = as->curProc ();
 	      sub = BOOL->getBNL (instproc);
 	    }

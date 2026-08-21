@@ -337,7 +337,7 @@ def_or_proc ID
       */
       for (int i=0; i < pp->numStrict() && i < it->getNumParams(); i++) {
 	if (it->isParamAType (i)) {
-	  // InstType *tmp = it->getTypeParam (i);
+	  InstType *tmp = it->getTypeParam (i);
 	  // XXX: check if this has any non-strict paramters
 	}
 	else {

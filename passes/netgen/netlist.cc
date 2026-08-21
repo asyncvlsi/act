@@ -2702,7 +2702,7 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
       }
 
       if (as) {
-	if (cur != as->curProc()) {
+	if (as->curProc() && cur != as->curProc()) {
 	  cur = as->curProc ();
 	  tn = (netlist_t *) getMap (cur);
 	}
