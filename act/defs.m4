@@ -631,9 +631,17 @@ interface_one_spec: iface_inst_type
       }
     }
     if ($0->u_p) {
+      if ($0->u_p->hasIface ($1, 1)) {
+	$W("Process `%s': interface exists, replacing the parent interface",
+	   $0->u_p->getName());
+      }
       $0->u_p->addIface ($1, ret);
     }
     else {
+      if ($0->u_d->hasIface ($1, 1)) {
+	$W("Data type `%s': interface exists, replacing the parent interface",
+	   $0->u_d->getName());
+      }
       $0->u_d->addIface ($1, ret);
     }
     return NULL;

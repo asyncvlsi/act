@@ -228,8 +228,23 @@ void Process::addIface (InstType *iface, list_t *lmap)
   if (!ifaces) {
     ifaces = list_new ();
   }
-  list_append (ifaces, iface);
-  list_append (ifaces, lmap);
+  if (hasIface (iface, 1)) {
+    for (listitem_t *li = list_first (ifaces); li; li = list_next (li)) {
+      InstType *itmp = (InstType *) list_value (li);
+      if (itmp->isEqual (iface, 1)) {
+	list_value (li) = iface;
+	li = list_next (li);
+	Assert (li, "What?");
+	list_value (li) = lmap;
+	return;
+      }
+    }
+    Assert (0, "Should not be here!");
+  }
+  else {
+    list_append (ifaces, iface);
+    list_append (ifaces, lmap);
+  }
 }
 
 int Process::hasIface (InstType *x, int weak)
@@ -868,7 +883,13 @@ void Process::mergeParentAttribs (Process *p)
       list_append (used_globals, tmp->Clone ());
     }
   }
-  /* XXX: ifaces? */
+  if (p->ifaces) {
+    listitem_t *li;
+    ifaces = list_new ();
+    for (li = list_first (p->ifaces); li; li = list_next (li)) {
+      list_append (ifaces, list_value (li));
+    }
+  }
 }
 
 
