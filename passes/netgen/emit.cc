@@ -1188,7 +1188,7 @@ void ActNetlistPass::_printflat (ActId *prefix, ActId *tl,
       Arraystep *as = vx->t->arrayInfo()->stepper();
       while (!as->isend()) {
 	if (vx->isPrimary (as->index())) {
-	  if (as->curProc () != iproc) {
+	  if (as->curProc() && as->curProc () != iproc) {
 	    iproc = as->curProc ();
 	    bnl = bools->getBNL (iproc);
 	  }

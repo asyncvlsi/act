@@ -2728,7 +2728,7 @@ void ActBooleanizePass::_createNets (Process *p)
 	if (!as || vx->isPrimary (as->index())) {
 	  tmpa = as ? as->toArray() : NULL;
 
-	  if (as && as->curProc () != instproc) {
+	  if (as && as->curProc() && as->curProc () != instproc) {
 	    instproc = as->curProc ();
 	    sub = (act_boolean_netlist_t *) getMap (instproc);
 	  }
