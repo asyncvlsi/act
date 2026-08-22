@@ -636,7 +636,9 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	  Array *xa = vx->t->arrayInfo();
 	  int off = 0;
 	  while (xa) {
-	    x = dynamic_cast<Process *> (xa->getArrayType()->BaseType());
+	    if (xa->getArrayType()) {
+	      x = dynamic_cast<Process *> (xa->getArrayType()->BaseType());
+	    }
 	    Assert (x, "What happened?");
 	    ti = (stateinfo_t *) getMap (x);
 	    Assert (ti, "Missing state info!");
