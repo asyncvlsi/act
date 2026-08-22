@@ -1098,10 +1098,19 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
   */
   sz = strlen (getName()) + 3 + nt;
 
+  ii=0;
+
   for (int i=0; i < nt; i++) {
     InstType *x;
     Array *xa;
     ValueIdx *vx;
+
+    if (inherited_templ > 0 && inherited_param[i]) {
+      continue;
+    }
+    if (ii == spec_nt) {
+      break;
+    }
 
     x = ux->getPortType (-(i+1));
     vx = ux->I->LookupVal (pn[i]);
@@ -1112,16 +1121,17 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	fatal_error ("ptype array parameters not supported");
       }
 
-      if (i < spec_nt) {
-	if (u[i].isatype) {
-	  x = u[i].u.tt;
+      if (ii < spec_nt) {
+	if (u[ii].isatype) {
+	  x = u[ii].u.tt;
 	}
 	else {
-	  x = u[i].u.tp->isType();
+	  x = u[ii].u.tp->isType();
 	  if (!x) {
 	    act_error_ctxt (stderr);
 	    fprintf (stderr, "Typechecking failed for param #%d ", i);
-	    u[i].u.tp->Print (stderr);
+	    u[ii].u.tp->Print (stderr);
+	    fprintf (stderr, "\n");
 	    exit (1);
 	  }
 	}
@@ -1154,6 +1164,7 @@ UserDef *UserDef::Expand (ActNamespace *ns, Scope *s,
 	}
       }
     }
+    ii++;
   }
 
   char *buf;
