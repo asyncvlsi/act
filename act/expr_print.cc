@@ -1222,9 +1222,12 @@ int expr_ex_is_cached (Expr *e)
 }
 
 
+static ExprDagVisit *_E = NULL;
+
 static void efree_ex (Expr *e)
 {
   if (!e) return;
+  if (_E->visited (e)) return;
 
   switch (e->type) {
   case E_INT:
@@ -1280,7 +1283,12 @@ static void efree_ex (Expr *e)
 
 void expr_ex_free (Expr *e)
 {
+  _E = new ExprDagVisit;
+  _E->entry();
   efree_ex (e);
+  _E->exit ();
+  delete _E;
+  _E = NULL;
 }
 
 

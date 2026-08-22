@@ -366,5 +366,18 @@ class UserMacro;
 void act_expr_push_macro_context (UserMacro **um, int sz);
 void act_expr_pop_macro_context (void);
 
+class ExprDagVisit {
+private:
+  list_t *stack;
+  struct pHashtable *H;
+public:
+  ExprDagVisit();
+  ~ExprDagVisit();
+  bool visited (Expr *e);
+  void unvisit (Expr *e);
+  phash_bucket_t *getHash (Expr *e);
+  void entry();
+  void exit();
+};
 
 #endif /* __ACT_EXPR_API_H__ */

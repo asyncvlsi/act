@@ -84,6 +84,7 @@ private:
   int _fresh_memdata (Scope *sc, int bw, Data *isstruct);
 
   void _subst_dynamic_array (list_t *l, Expr *e);
+  void _subst_dynamic_array_top (list_t *l, Expr *e);
 
   /* Append to valid read list based on the memory access in id, and
      then return the cached variable.
@@ -100,6 +101,8 @@ private:
   int _inv_idx (int idx);
 
   ActBooleanizePass *_bp;
+
+  ExprDagVisit *_E;
 
   /*
    * Information about new variables used for memory references

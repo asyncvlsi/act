@@ -45,6 +45,7 @@ ActCHPMemory::ActCHPMemory (Act *a) : ActPass (a, "chpmem")
   disableUpdate ();
 
   _curbnl = NULL;
+  _E = new ExprDagVisit;
 
   config_set_default_string ("act.decomp.mem", "std::ram");
   config_set_default_string ("act.decomp.mem_suffix", "_m");
@@ -175,7 +176,6 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     return NULL;
   }
   FREE (tmpname);
-
 
   _extract_memory (p->getlang()->getchp()->c);
 
@@ -832,7 +832,7 @@ ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id)
       Array *tmpa = tmp->arrayInfo();
       Assert (tmpa, "Hmm?!");
       list_t *tmpl = list_new ();
-      _subst_dynamic_array (tmpl, tmpa->getDeref(0));
+      _subst_dynamic_array_top (tmpl, tmpa->getDeref(0));
       list_concat (l, tmpl);
       list_free (tmpl);
     }
@@ -887,6 +887,10 @@ ActId *ActCHPMemory::_gen_mem_read (list_t *l, ActId *id)
 void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
 {
   if (!e) return;
+  if (_E->visited (e)) {
+    return;
+  }
+
   switch (e->type) {
   case E_PLUS: case E_MULT: case E_MINUS:
   case E_DIV:  case E_MOD:
@@ -967,6 +971,14 @@ void ActCHPMemory::_subst_dynamic_array (list_t *l, Expr *e)
   }
 }
 
+void ActCHPMemory::_subst_dynamic_array_top (list_t *l, Expr *e)
+{
+  _E->entry();
+  _subst_dynamic_array (l, e);
+  _E->exit ();
+}
+
+
 /* XXX: keep track of currently valid memory accesses
    For example, mem[x] is in var PQR
 
@@ -999,7 +1011,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
     /* in-place substitution of expression */
     pre = list_new ();
     if (c->type == ACT_CHP_ASSIGN) {
-      _subst_dynamic_array (pre, c->u.assign.e);
+      _subst_dynamic_array_top (pre, c->u.assign.e);
       /* if it is a m[..].field assignment, we need to read the memory
 	 first! */
       mem_rmw = c->u.assign.id;
@@ -1016,7 +1028,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       }
     }
     else {
-      _subst_dynamic_array (pre, c->u.comm.e);
+      _subst_dynamic_array_top (pre, c->u.comm.e);
     }
     if (list_isempty (pre)) {
       list_free (pre);
@@ -1073,7 +1085,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	  Array *tmpa = tmp->arrayInfo();
 	  Assert (tmpa, "Hmm?!");
 	  list_t *tmpl = list_new ();
-	  _subst_dynamic_array (tmpl, tmpa->getDeref(0));
+	  _subst_dynamic_array_top (tmpl, tmpa->getDeref(0));
 	  if (list_isempty (tmpl)) {
 	    list_free (tmpl);
 	  }
@@ -1215,7 +1227,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	_subst_dynamic_array (pre, gc->g);
+	_subst_dynamic_array_top (pre, gc->g);
       }
     }
 
@@ -1281,7 +1293,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
-	_subst_dynamic_array (pre, gc->g);
+	_subst_dynamic_array_top (pre, gc->g);
       }
     }
 

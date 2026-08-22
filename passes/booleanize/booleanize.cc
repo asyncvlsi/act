@@ -587,10 +587,16 @@ static void _set_chan_dir (act_booleanized_var_t *v, int dir)
   v->chanflag = dir;
 }
 
+static ExprDagVisit *_E = NULL;
+
 static void update_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
   if (!e) return;
-  
+
+  if (_E->visited (e)) {
+    return;
+  }
+
   switch (e->type) {
   case E_AND:
   case E_OR:
@@ -728,6 +734,10 @@ static void generate_expr_vars (act_boolean_netlist_t *N, Expr *e, int ischp,
 				int is_dataflow)
 {
   if (!e) return;
+
+  if (_E->visited (e)) {
+    return;
+  }
   
   switch (e->type) {
   case E_AND:
@@ -923,6 +933,9 @@ static void _add_dynamic_id (act_boolean_netlist_t *N, ActId *id)
 static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
   if (!e) return;
+  if (_E->visited (e)) {
+    return;
+  }
   
   switch (e->type) {
   case E_AND:
@@ -1009,10 +1022,36 @@ static void collect_chp_expr_vars (act_boolean_netlist_t *N, Expr *e)
   return;
 }
 
+static void collect_chp_expr_vars_top (act_boolean_netlist_t *N, Expr *e)
+{
+  if (!_E) {
+    _E = new ExprDagVisit;
+  }
+  _E->entry();
+  collect_chp_expr_vars (N, e);
+  _E->exit ();
+}
+
 static void generate_chp_expr_vars (act_boolean_netlist_t *N, Expr *e, int is_dataflow)
 {
+  if (!_E) {
+    _E = new ExprDagVisit;
+  }
+  _E->entry ();
   generate_expr_vars (N, e, 1, is_dataflow);
+  _E->exit ();
 }
+
+static void update_chp_expr_vars_top (act_boolean_netlist_t *N, Expr *e)
+{
+  if (!_E) {
+    _E = new ExprDagVisit;
+  }
+  _E->entry ();
+  update_chp_expr_vars (N, e);
+  _E->exit ();
+}
+
 
 static void generate_hse_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
@@ -1122,7 +1161,7 @@ static void update_chp_probes (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	update_chp_expr_vars (N, gc->g);
+	update_chp_expr_vars_top (N, gc->g);
 	update_chp_probes (N, gc->s);
       }
     }
@@ -1151,14 +1190,14 @@ static void update_chp_probes (act_boolean_netlist_t *N,
 	  }
 	}
       }
-      update_chp_expr_vars (N, c->u.assign.e);
+      update_chp_expr_vars_top (N, c->u.assign.e);
     }
     break;
 
   case ACT_CHP_SEND:
   case ACT_CHP_RECV:
     if (c->u.comm.e) {
-      update_chp_expr_vars (N, c->u.comm.e);
+      update_chp_expr_vars_top (N, c->u.comm.e);
     }
     break;
     
@@ -1348,7 +1387,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
     {
       act_chp_gc_t *gc;
       for (gc = c->u.gc; gc; gc = gc->next) {
-	collect_chp_expr_vars (N, gc->g);
+	collect_chp_expr_vars_top (N, gc->g);
 	collect_chp_dynamic_vars (N, gc->s);
       }
     }
@@ -1366,7 +1405,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
       if (c->u.assign.id->isDynamicDeref()) {
 	_add_dynamic_id (N, c->u.assign.id);
       }
-      collect_chp_expr_vars (N, c->u.assign.e);
+      collect_chp_expr_vars_top (N, c->u.assign.e);
     }
     break;
 
@@ -1379,7 +1418,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	fatal_error ("Dynamic reference not permitted for channels");
       }
       if (c->u.comm.e) {
-	collect_chp_expr_vars (N, c->u.comm.e);
+	collect_chp_expr_vars_top (N, c->u.comm.e);
       }
       if (c->u.comm.var && c->u.comm.var->isDynamicDeref()) {
 	_add_dynamic_id (N, c->u.comm.var);
@@ -1396,7 +1435,7 @@ static void collect_chp_dynamic_vars (act_boolean_netlist_t *N,
 	fatal_error ("Dynamic reference not permitted for channels");
       }
       if (c->u.comm.e) {
-	collect_chp_expr_vars (N, c->u.comm.e);
+	collect_chp_expr_vars_top (N, c->u.comm.e);
       }
       if (c->u.comm.var && c->u.comm.var->isDynamicDeref()) {
 	_add_dynamic_id (N, c->u.comm.var);

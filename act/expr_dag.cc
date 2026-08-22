@@ -34,16 +34,28 @@
  *------------------------------------------------------------------------
  */
 
+static struct pHashtable *_RH;
+
 static Expr *_expr_todag (struct cHashtable *H, Expr *e)
 {
   Expr *ret = NULL;
   Expr *l, *r;
   chash_bucket_t *b;
+  phash_bucket_t *pb;
 
   if (!e) return NULL;
 
+  pb = phash_lookup (_RH, e);
+  if (pb) {
+    return (Expr *) pb->v;
+  }
+  pb = phash_add (_RH, e);
+  pb->v = NULL;
+  
+
   b = chash_lookup (H, e);
   if (b) {
+    pb->v = b->v;
     return (Expr *)b->v;
   }
 
@@ -200,6 +212,7 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
     b = chash_add (H, ret);
     b->v = ret;
   }
+  pb->v = ret;
   return ret;
 }
 
@@ -351,9 +364,11 @@ Expr *expr_dag (Expr *e)
   H->match = _exprmatchfn;
   H->dup = _exprdupfn;
   H->free = _exprfreefn;
-
+  _RH = phash_new (4);
   e = _expr_todag (H, e);
   chash_free (H);
+  phash_free (_RH);
+  _RH = NULL;
   return e;
 }
 
@@ -497,4 +512,68 @@ void expr_dag_free (Expr *e)
   }
   chash_free (H);
   return;
+}
+
+
+
+ExprDagVisit::ExprDagVisit()
+{
+  stack = list_new ();
+  H = NULL;
+}
+
+ExprDagVisit::~ExprDagVisit()
+{
+  for (listitem_t *li = list_first (stack); li; li = list_next (li)) {
+    H = (struct pHashtable *) list_value (li);
+    phash_free (H);
+  }
+  list_free (stack);
+  H = NULL;
+  stack = NULL;
+}
+
+bool ExprDagVisit::visited (Expr *e)
+{
+  if (!e) return true;
+  if (phash_lookup (H, e)) {
+    return true;
+  }
+  phash_add (H, e);
+  return false;
+}
+
+void ExprDagVisit::entry (void)
+{
+  if (H == NULL && list_isempty (stack) ||
+      (H == (struct pHashtable *) stack_peek (stack))) {
+    H = phash_new (4);
+    stack_push (stack, H);
+  }
+  else {
+    fatal_error ("Invariant failed!");
+  }
+}
+
+void ExprDagVisit::exit()
+{
+  H = (struct pHashtable *) stack_pop (stack);
+  phash_free (H);
+  if (list_isempty (stack)) {
+    H = NULL;
+  }
+  else {
+    H = (struct pHashtable *) stack_peek (stack);
+  }
+}
+
+phash_bucket_t *ExprDagVisit::getHash (Expr *e)
+{
+  return phash_lookup (H, e);
+}
+    
+void ExprDagVisit::unvisit (Expr *e)
+{
+  if (!e) return;
+  phash_delete (H, e);
 }
