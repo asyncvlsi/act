@@ -1055,7 +1055,12 @@ static void update_chp_expr_vars_top (act_boolean_netlist_t *N, Expr *e)
 
 static void generate_hse_expr_vars (act_boolean_netlist_t *N, Expr *e)
 {
+  if (!_E) {
+    _E = new ExprDagVisit;
+  }
+  _E->entry ();
   generate_expr_vars (N, e, 0, 0);
+  _E->exit ();
 }
   
 static void generate_hse_vars (act_boolean_netlist_t *N,
