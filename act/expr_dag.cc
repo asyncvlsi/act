@@ -539,7 +539,8 @@ bool ExprDagVisit::visited (Expr *e)
   if (phash_lookup (H, e)) {
     return true;
   }
-  phash_add (H, e);
+  phash_bucket_t *b = phash_add (H, e);
+  b->v = NULL;
   return false;
 }
 
