@@ -555,9 +555,17 @@ void ExprDagVisit::entry (void)
   }
 }
 
-void ExprDagVisit::exit()
+void ExprDagVisit::exit(void (*f)(phash_bucket_t *))
 {
   H = (struct pHashtable *) stack_pop (stack);
+  if (f) {
+    phash_iter_t it;
+    phash_bucket_t *b;
+    phash_iter_init (H, &it);
+    while ((b = phash_iter_next (H, &it))) {
+      (*f) (b);
+    }
+  }
   phash_free (H);
   if (list_isempty (stack)) {
     H = NULL;

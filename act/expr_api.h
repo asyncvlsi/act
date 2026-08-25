@@ -377,7 +377,7 @@ public:
   void unvisit (Expr *e);
   phash_bucket_t *getHash (Expr *e);
   void entry();
-  void exit();
+  void exit(void (*f) (phash_bucket_t *) = NULL);
 };
 
 #endif /* __ACT_EXPR_API_H__ */
