@@ -3868,13 +3868,13 @@ static void chp_update_dynarray (act_chp_lang_t *c, Scope *s)
 
 act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
 {
+  config_set_default_int ("act.decomp.mem_threshold", 16);
   if (!in_chp) {
     in_chp = list_new ();
   }
   stack_ipush (in_chp, 1);
   act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
   if (!_chp_expanding_macro) {
-    config_set_default_int ("act.decomp.mem_threshold", 16);
     chp_update_dynarray (cnew, s);
     cnew = chp_update_bw (cnew, s);
   }
