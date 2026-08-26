@@ -356,47 +356,78 @@ static void visit_chp_var (act_boolean_netlist_t *N,
 {
   act_booleanized_var_t *v;
   ActId *tmp_id = NULL;
+  bool is_array = false;
 
   if (!id) return;
 
   InstType *it = N->cur->FullLookup (id, NULL);
-  if (it && TypeFactory::isStructure (it)) {
+  if (it && it->arrayInfo() && !id->Tail()->arrayInfo()) {
+    is_array = true;
+  }
+  if (it && (TypeFactory::isStructure (it) || is_array)) {
     /* visit the pieces */
+    Array *arr = (is_array ? it->arrayInfo() : NULL);
     Data *d = dynamic_cast<Data *>(it->BaseType());
     ActId *tail;
     tail  = id;
     while (tail->Rest()) {
       tail = tail->Rest();
     }
-    for (int i=0; i < d->getNumPorts(); i++) {
-      InstType *xt = d->getPortType (i);
-      ActId *piece;
-      piece = new ActId (d->getPortName (i));
-      tail->Append (piece);
+    Array *orig_arr = tail->arrayInfo();
+    Arraystep *outer_as = NULL;
+    if (arr) {
+      outer_as = arr->stepper ();
+    }
 
-      /*
-	We don't need to worry about mixed arrays here, because those
-	are only supported for processes and processes cannot be in the
-	port list.
-      */
+    do {
+      Array *xa;
+      if (outer_as) {
+	xa = outer_as->toArray();
+	tail->setArray (xa);
+      }
+      if (d) {
+	for (int i=0; i < d->getNumPorts(); i++) {
+	  InstType *xt = d->getPortType (i);
+	  ActId *piece;
+	  piece = new ActId (d->getPortName (i));
+	  tail->Append (piece);
 
-      if (xt->arrayInfo()) {
-	Arraystep *as = xt->arrayInfo()->stepper();
-	while (!as->isend()) {
-	  Array *a = as->toArray ();
-	  piece->setArray (a);
-	  visit_chp_var (N, id, isinput, is_dataflow);
-	  piece->setArray (NULL);
-	  delete a;
-	  as->step();
+	  /*
+	    We don't need to worry about mixed arrays here, because those
+	    are only supported for processes and processes cannot be in the
+	    port list.
+	  */
+
+	  if (xt->arrayInfo()) {
+	    Arraystep *as = xt->arrayInfo()->stepper();
+	    while (!as->isend()) {
+	      Array *a = as->toArray ();
+	      piece->setArray (a);
+	      visit_chp_var (N, id, isinput, is_dataflow);
+	      piece->setArray (NULL);
+	      delete a;
+	      as->step();
+	    }
+	    delete as;
+	  }
+	  else {
+	    visit_chp_var (N, id, isinput, is_dataflow);
+	  }
+	  tail->prune();
+	  delete piece;
 	}
-	delete as;
       }
       else {
 	visit_chp_var (N, id, isinput, is_dataflow);
       }
-      tail->prune();
-      delete piece;
+      tail->setArray (orig_arr);
+      if (outer_as) {
+	delete xa;
+	outer_as->step ();
+      }
+    } while (outer_as && !outer_as->isend());
+    if (outer_as) {
+      delete outer_as;
     }
     return;
   }
@@ -1975,7 +2006,6 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   printf ("\n");
   printf ("-----\n");
 #endif  
-  
   return n;
 }
 
@@ -2937,7 +2967,14 @@ act_dynamic_var_t *ActBooleanizePass::isDynamicRef (act_boolean_netlist_t *n,
     cx = vx->connection();
   }
   else {
-    cx = id->Canonical (n->cur);
+    if (id->arrayInfo()) {
+      ValueIdx *vx = id->rootVx (n->cur);
+      Assert (vx->connection(), "What?");
+      cx = vx->connection();
+    }
+    else {
+      cx = id->Canonical (n->cur);
+    }
   }
   return ActBooleanizePass::isDynamicRef (n, cx);
 }
