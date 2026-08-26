@@ -1,0 +1,73 @@
+defproc test ();
+function t1 (s2 x[4]) : int<32>;
+function t0 (s2 x[4]) : int<32>;
+function t2 (s1 val[7]) : int<32>;
+deftype s1 (bool x; int<32> y);
+deftype s2 (bool p; bool q; s1 w[7]; int<32> a);
+
+defproc test ()
+{
+
+/* instances */
+int<32> y;
+s2 s[4];
+
+/* connections */
+chp {
+s[0].p:=int(int(0x0,265)>>264,1);s[0].q:=int(int(0x0,265)>>263,1);s[0].w[0].x:=int(int(0x0,265)>>262,1);s[0].w[0].y:=int(int(0x0,265)>>230,32);s[0].w[1].x:=int(int(0x0,265)>>229,1);s[0].w[1].y:=int(int(0x0,265)>>197,32);s[0].w[2].x:=int(int(0x0,265)>>196,1);s[0].w[2].y:=int(int(0x0,265)>>164,32);s[0].w[3].x:=int(int(0x0,265)>>163,1);s[0].w[3].y:=int(int(0x0,265)>>131,32);s[0].w[4].x:=int(int(0x0,265)>>130,1);s[0].w[4].y:=int(int(0x0,265)>>98,32);s[0].w[5].x:=int(int(0x0,265)>>97,1);s[0].w[5].y:=int(int(0x0,265)>>65,32);s[0].w[6].x:=int(int(0x0,265)>>64,1);s[0].w[6].y:=int(int(0x0,265)>>32,32);s[0].a:=int(int(0x0,265)>>0,32);s[1].p:=int(int(0x0,265)>>264,1);s[1].q:=int(int(0x0,265)>>263,1);s[1].w[0].x:=int(int(0x0,265)>>262,1);s[1].w[0].y:=int(int(0x0,265)>>230,32);s[1].w[1].x:=int(int(0x0,265)>>229,1);s[1].w[1].y:=int(int(0x0,265)>>197,32);s[1].w[2].x:=int(int(0x0,265)>>196,1);s[1].w[2].y:=int(int(0x0,265)>>164,32);s[1].w[3].x:=int(int(0x0,265)>>163,1);s[1].w[3].y:=int(int(0x0,265)>>131,32);s[1].w[4].x:=int(int(0x0,265)>>130,1);s[1].w[4].y:=int(int(0x0,265)>>98,32);s[1].w[5].x:=int(int(0x0,265)>>97,1);s[1].w[5].y:=int(int(0x0,265)>>65,32);s[1].w[6].x:=int(int(0x0,265)>>64,1);s[1].w[6].y:=int(int(0x0,265)>>32,32);s[1].a:=int(int(0x0,265)>>0,32);s[2].p:=int(int(0x0,265)>>264,1);s[2].q:=int(int(0x0,265)>>263,1);s[2].w[0].x:=int(int(0x0,265)>>262,1);s[2].w[0].y:=int(int(0x0,265)>>230,32);s[2].w[1].x:=int(int(0x0,265)>>229,1);s[2].w[1].y:=int(int(0x0,265)>>197,32);s[2].w[2].x:=int(int(0x0,265)>>196,1);s[2].w[2].y:=int(int(0x0,265)>>164,32);s[2].w[3].x:=int(int(0x0,265)>>163,1);s[2].w[3].y:=int(int(0x0,265)>>131,32);s[2].w[4].x:=int(int(0x0,265)>>130,1);s[2].w[4].y:=int(int(0x0,265)>>98,32);s[2].w[5].x:=int(int(0x0,265)>>97,1);s[2].w[5].y:=int(int(0x0,265)>>65,32);s[2].w[6].x:=int(int(0x0,265)>>64,1);s[2].w[6].y:=int(int(0x0,265)>>32,32);s[2].a:=int(int(0x0,265)>>0,32);s[3].p:=int(int(0x0,265)>>264,1);s[3].q:=int(int(0x0,265)>>263,1);s[3].w[0].x:=int(int(0x0,265)>>262,1);s[3].w[0].y:=int(int(0x0,265)>>230,32);s[3].w[1].x:=int(int(0x0,265)>>229,1);s[3].w[1].y:=int(int(0x0,265)>>197,32);s[3].w[2].x:=int(int(0x0,265)>>196,1);s[3].w[2].y:=int(int(0x0,265)>>164,32);s[3].w[3].x:=int(int(0x0,265)>>163,1);s[3].w[3].y:=int(int(0x0,265)>>131,32);s[3].w[4].x:=int(int(0x0,265)>>130,1);s[3].w[4].y:=int(int(0x0,265)>>98,32);s[3].w[5].x:=int(int(0x0,265)>>97,1);s[3].w[5].y:=int(int(0x0,265)>>65,32);s[3].w[6].x:=int(int(0x0,265)>>64,1);s[3].w[6].y:=int(int(0x0,265)>>32,32);s[3].a:=int(int(0x0,265)>>0,32);s[0].a:=0xd;s[3].a:=0x7;y:=int(s[3].a,32);log("got0 ",y);y:=int(0x1,32);log("got1 ",y)
+}
+}
+
+function t1 (s2 x[4]) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=t2(x[3].w)
+}
+}
+
+function t0 (s2 x[4]) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=x[3].a
+}
+}
+
+function t2 (s1 val[7]) : int<32>
+{
+
+/* instances */
+
+/* connections */
+chp {
+self:=0x1
+}
+}
+
+deftype s1 (bool x; int<32> y)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype s2 (bool p; bool q; s1 w[7]; int<32> a)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */

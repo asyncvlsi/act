@@ -1,0 +1,45 @@
+deftype s1 (bool x; int y) { }
+
+deftype s2 (bool p, q; s1 w[7]; int a) { }
+
+
+function t2 (s1 val[7]) : int
+{
+  chp {
+   self := 1
+  }
+}
+
+function t1 (s2 x[4]) : int
+{
+  chp {
+    self := t2 (x[3].w)
+  }
+}
+
+function t0 (s2 x[4]) : int
+{
+  chp {
+    self := x[3].a
+  }
+}
+
+defproc test()
+{
+   s2 s[4];
+   int y;
+   chp {
+     s[0] := s2(0);
+     s[1] := s2(0);
+     s[2] := s2(0);
+     s[3] := s2(0);
+     s[0].a := 13;
+     s[3].a := 7;
+
+     y := t0(s);
+     log ("got0 ", y);
+
+     y := t1(s);
+     log ("got1 ", y)
+   }
+}

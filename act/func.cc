@@ -165,15 +165,23 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
     if (TypeFactory::isStructure (getPortType (i))) {
       Data *d = dynamic_cast <Data *> (getPortType(i)->BaseType());
       int nb, ni;
+      int array_sz = 1;
       Assert (d, "What?");
+      if (getPortType(i)->arrayInfo()) {
+	array_sz = getPortType(i)->arrayInfo()->size();
+	if (!args[i].is_array) {
+	  act_error_ctxt (stderr);
+	  fatal_error ("toInline(): arg #%d is a non-array argument to array field?", i);
+	}
+      }
       d->getStructCount (&nb, &ni);
       if (!args[i].is_struct) {
 	act_error_ctxt (stderr);
 	fatal_error ("toInline(): arg #%d is a non-structure argument to structure field?", i);
       }
-      if (!args[i].is_just_id && (nb + ni != args[i].numStructElems())) {
+      if (!args[i].is_just_id && ((nb + ni)*array_sz != args[i].numStructElems())) {
 	act_error_ctxt (stderr);
-	fatal_error ("toInline(): arg #%d structure count mismatch (%d vs %d)", i, nb + ni, args[i].numStructElems());
+	fatal_error ("toInline(): arg #%d structure count mismatch (%d vs %d)", i, (nb + ni)*array_sz, args[i].numStructElems());
       }
     }
     else {
@@ -193,7 +201,7 @@ act_inline_value Function::toInline (int nargs, act_inline_value *args)
 	fatal_error ("toInline(): arg #%d array count mismatch (%d vs %d)", i, getPortType (i)->arrayInfo()->size(), args[i].numArrayElems());
       }
     }
-    
+
     Assert (i < getNumPorts(), "Hmm...");
     
     ActId *tmp = new ActId (getPortName (i));
