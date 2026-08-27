@@ -738,8 +738,9 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
     do {
       lt = act_type_expr (s, e->u.e.l, &lw, only_chan);
       if (lt == T_ERR) return T_ERR;
-      if (!T_BASETYPE_ISINTBOOL (lt)) {
+      if (!T_BASETYPE_ISINTBOOL (lt) || (lt & T_ARRAYOF)) {
 	typecheck_err ("{ } concat: all items must be int or bool");
+	return T_ERR;
       }
       e = e->u.e.r;
       rw += lw;

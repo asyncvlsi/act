@@ -1,0 +1,27 @@
+deftype mystruct (int a, b) { }
+
+function trigger(int x) : int<128>
+{
+  int a[4];
+  mystruct s;
+  chp {
+    a[0] := 4;
+    a[1] := 7;
+    a[2] := 7;
+    a[3] := 8;
+    s.a := 5;
+    s.b := 17;
+    self := {x,s}
+  }
+}
+
+defproc test()
+{ 
+  int<128> x;
+  chp {
+     x := 5;
+     x := trigger(x)
+  }
+}
+
+test t;

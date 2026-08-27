@@ -1,0 +1,3 @@
+ERROR: File `80.act', line 14, col 15
+	Typechecking failed on expression!
+	{ } concat: all items must be int or bool
