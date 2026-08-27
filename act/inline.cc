@@ -26,6 +26,7 @@
 #include <string.h>
 #include <common/misc.h>
 #include <common/hash.h>
+#include <functional>
 
 /*------------------------------------------------------------------------
  *
@@ -89,7 +90,6 @@ void act_inline_free (act_inline_table *T)
   hash_free (T->state);
   FREE (T);
 }
-		      
 
 int act_inline_isbound (act_inline_table *tab, const char *name)
 {
@@ -120,6 +120,32 @@ void act_dump_table (act_inline_table *tab)
     tab = tab->parent;
   }
 }
+
+static Expr *clone_query_expr (Expr *e, std::function<void(Expr *e)> fn)
+{
+  Expr *ret;
+  if (!e) return NULL;
+  Assert (e->type == E_QUERY || e->type == E_VAR, "What?");
+  NEW (ret, Expr);
+  ret->type = e->type;
+  if (e->type == E_QUERY) {
+    ret->u.e.l = expr_dup (e->u.e.l);
+    NEW (ret->u.e.r, Expr);
+    ret->u.e.r->type = E_COLON;
+    ret->u.e.r->u.e.l =
+      clone_query_expr (e->u.e.r->u.e.l, fn);
+    ret->u.e.r->u.e.r =
+      clone_query_expr (e->u.e.r->u.e.r, fn);
+  }
+  else {
+    ret->u.e.r = NULL;
+    ret->u.e.l = (Expr *) ((ActId *)e->u.e.l)->Clone ();
+    fn(ret);
+  }
+  return ret;
+}
+
+
 
 static act_inline_value
 _lookup_binding (act_inline_table *Hs,
@@ -224,22 +250,33 @@ _lookup_binding (act_inline_table *Hs,
 	for (int i=0; i < sz2; i++) {
 	  Expr *bind_val;
 	  if (bval.isSimple()) {
-	    ActId *xnew;
-	    if (bval.getVal()->type != E_VAR) {
-	      fprintf (stderr, " PTR is %p\n", bval.getVal());
-	      bval.Print (stderr);
-	      fprintf (stderr, "\n");
+	    if (bval.getVal()->type == E_VAR) {
+	      ActId *xnew;
+	      xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
+	      if (deref) {
+		xnew->Tail()->setArray (deref->Clone());
+	      }
+	      xnew->Tail()->Append (fields[i+off]->Clone());
+	      NEW (bind_val, Expr);
+	      bind_val->type = E_VAR;
+	      bind_val->u.e.r = NULL;
+	      bind_val->u.e.l = (Expr *)xnew;
 	    }
-	    Assert (bval.getVal()->type == E_VAR, "Hmm");
-	    xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
-	    if (deref) {
-	      xnew->Tail()->setArray (deref->Clone());
+	    else {
+	      Assert (bval.getVal()->type == E_QUERY && bval.is_struct,
+		      "What?");
+	      auto append_field_deref = [&] (Expr *e) {
+		Assert (e->type == E_VAR, "What?");
+		ActId *id = (ActId *) e->u.e.l;
+		id = id->Tail ();
+		if (deref) {
+		  id->setArray (deref->Clone());
+		}
+		id->Append (fields[i+off]->Clone());
+	      };
+	      
+	      bind_val = clone_query_expr (bval.getVal(), append_field_deref);
 	    }
-	    xnew->Tail()->Append (fields[i+off]->Clone());
-	    NEW (bind_val, Expr);
-	    bind_val->type = E_VAR;
-	    bind_val->u.e.r = NULL;
-	    bind_val->u.e.l = (Expr *)xnew;
 	  }
 	  else {
 	    bind_val = bval.u.arr[array_off*sz+i+off];
@@ -268,11 +305,6 @@ _lookup_binding (act_inline_table *Hs,
       else if (deref) {
 	if (bval.isSimple()) {
 	  ActId *xnew;
-	  if (bval.getVal()->type != E_VAR) {
-	    fprintf (stderr, " PTR is %p\n", bval.getVal());
-	    bval.Print (stderr);
-	    fprintf (stderr, "\n");
-	  }
 	  Assert (bval.getVal()->type == E_VAR, "Hmm");
 	  xnew = ((ActId *)bval.getVal()->u.e.l)->Clone ();
 	  xnew->Tail()->setArray (deref->Clone());

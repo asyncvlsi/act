@@ -62,7 +62,8 @@ struct act_inline_value {
       // the binding is stored in u.val
       if (u.val == NULL) return false;
       if (is_just_id) {
-	if (u.val->type != E_VAR) return false;
+	if (u.val->type != E_VAR && !(is_struct && u.val->type == E_QUERY))
+	  return false;
       }
       return true;
     }

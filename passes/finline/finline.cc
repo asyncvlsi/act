@@ -332,6 +332,12 @@ act_inline_value ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
       // this computes a pure inlined expression value
       // now we need to set various flags
       if (TypeFactory::isStructure (fx->getPortType (args-1))) {
+	if (arglist[args-1].isSimple()) {
+	  if (arglist[args-1].getVal()->type == E_QUERY) {
+	    // mark this as an ID + struct!
+	    arglist[args-1].is_just_id = 1;
+	  }
+	}
 	arglist[args-1].is_struct = 1;
       }
       if (fx->getPortType (args-1)->arrayInfo()) {
