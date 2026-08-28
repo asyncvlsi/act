@@ -311,6 +311,9 @@ int act_type_var_gen (Scope *s, ActId *id, InstType **xit, bool subchan)
       FREE (tmpbuf);
       return T_ERR;
     }
+    if (id->arrayInfo()->isDeref()) {
+      it = new InstType (it, 1);
+    }
   }
 
   if (xit) {

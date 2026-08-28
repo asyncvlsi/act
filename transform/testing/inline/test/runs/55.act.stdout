@@ -1,0 +1,29 @@
+defproc test ();
+deftype mystruct (int<32> a; int<32> b[4]);
+
+defproc test ()
+{
+
+/* instances */
+int<128> x;
+mystruct t;
+
+/* connections */
+chp {
+x:=0x5;x:=int( {t.a,t.b[0],t.b[1],t.b[2],t.b[3]},160)
+}
+}
+
+deftype mystruct (int<32> a; int<32> b[4])
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+test t;
+
+/* connections */

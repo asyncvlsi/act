@@ -196,8 +196,7 @@ _lookup_binding (act_inline_table *Hs,
 	  fatal_error ("Structure binding lookup without structure?");
 	}
 	int sz2;
-	InstType *rit;
-	int off = d->getStructOffset (rest, &sz2, &rit);
+	int off = d->getStructOffset (rest, &sz2);
 	Assert (off >= 0 && off <= sz, "What?");
 	Assert (off + sz2 <= sz, "What?");
 	Assert (sz2 > 0, "Hmm");
@@ -219,9 +218,9 @@ _lookup_binding (act_inline_table *Hs,
 	}
 
 	// get type of the "rest"
-	//InstType *rit;
-	//act_type_var (d->CurScope(), rest, &rit);
-	//Assert (rit, "Hmm");
+	InstType *rit;
+	act_type_var (d->CurScope(), rest, &rit);
+	Assert (rit, "Hmm");
 
 	if (sz2 == 1 && !TypeFactory::isStructure (rit)) {
 	  rv.is_struct = 0;

@@ -1,0 +1,13 @@
+deftype mystruct (int a, b[4]) { }
+
+defproc test()
+{ 
+  int<128> x;
+  mystruct t;
+  chp {
+     x := 5;
+     x := int(t)
+  }
+}
+
+test t;
