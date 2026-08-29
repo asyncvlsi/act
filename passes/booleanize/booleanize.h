@@ -299,6 +299,12 @@ class ActBooleanizePass : public ActPass {
   void createNets (Process *p = NULL);
 
   /**
+   * Mark cached port and instance-net connectivity stale after an in-process
+   * edit. The next createNets() call rebuilds it from the refreshed netlist.
+   */
+  void invalidateNets () { _create_nets_run = 0; }
+
+  /**
    * Print ports/flags computed.
    */
   void Print (FILE *fp, Process *p);

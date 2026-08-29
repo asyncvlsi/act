@@ -1086,9 +1086,10 @@ class Process : public UserDef {
   /*-- edit API --*/
 
   /**
-   *  Take "name" and replace its base type with "t"
-   *  For this to succeed, "t" must have exactly the same port list 
-   *  as the orginal type for "name"
+   *  Take "name" and replace its base type with expanded process "t".
+   *  For this to succeed, "t" must have exactly the same port list as the
+   *  original type for "name". This supports source-level re-elaboration of
+   *  compatible composite processes as well as mapped cell replacement.
    * 
    *  @return true on success, false on failure.
    */

@@ -1110,12 +1110,19 @@ void ActStatePass::free_local (void *v)
 int ActStatePass::run (Process *p)
 {
   int res = ActPass::run (p);
+  rebuildRootState (p);
+  return res;
+}
+
+void ActStatePass::rebuildRootState (Process *p)
+{
+  _globals = state_counts ();
 
   /*-- set root stateinfo for global variables --*/
   _root_si = getStateInfo (p);
 
   if (!_root_si) {
-    return res;
+    return;
   }
 
   /*-- compute global sizes and add mapping to top-level state table --*/
@@ -1195,8 +1202,12 @@ int ActStatePass::run (Process *p)
       }
     }
   }
-  
-  return res;
+
+}
+
+void ActStatePass::_post_update (Process *p)
+{
+  rebuildRootState (p);
 }
 
 void ActStatePass::Print (FILE *fp, Process *p)

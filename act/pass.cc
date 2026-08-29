@@ -752,6 +752,9 @@ void ActPass::_actual_update (Process *p)
   act_error_pop ();
   
   visited_flag = NULL;
+
+  _post_update (p);
+
 }
 
 struct pass_edges {

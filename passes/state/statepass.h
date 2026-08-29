@@ -220,6 +220,8 @@ public:
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *);
+  void _post_update (Process *p) override;
+  void rebuildRootState (Process *p);
 
   stateinfo_t *countLocalState (Process *p);
   void printLocal (FILE *fp, Process *p);

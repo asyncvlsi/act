@@ -19,16 +19,21 @@
 #
 #-------------------------------------------------------------------------
 BINARY=test_statepass.$(EXT)
+REFRESH_BINARY=test_statepass_refresh.$(EXT)
 
-TARGETS=$(BINARY)
+TARGETS=$(BINARY) $(REFRESH_BINARY)
 
 OBJS=main.o
+REFRESH_OBJS=refresh_main.o
 
-SRCS=$(OBJS:.o=.cc)
+SRCS=$(OBJS:.o=.cc) $(REFRESH_OBJS:.o=.cc)
 
 include $(VLSI_TOOLS_SRC)/scripts/Makefile.std
 
 $(BINARY): $(LIB) $(OBJS) $(ACTPASSDEPEND)
 	$(CXX) $(CFLAGS) $(OBJS) -o $(BINARY) $(LIBACTPASS)
+
+$(REFRESH_BINARY): $(LIB) $(REFRESH_OBJS) $(ACTPASSDEPEND)
+	$(CXX) $(CFLAGS) $(REFRESH_OBJS) -o $(REFRESH_BINARY) $(LIBACTPASS)
 
 -include Makefile.deps

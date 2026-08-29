@@ -1,0 +1,43 @@
+defproc leaf_a (bool in, out)
+{
+  bool q1[1];
+  prs {
+    in -> q1[0]-
+    q1[0] -> out-
+  }
+}
+
+defproc leaf_b (bool in, out)
+{
+  bool q1[2];
+  prs {
+    in -> q1[0]-
+    q1[0] -> q1[1]-
+    q1[1] -> out-
+  }
+}
+
+defproc top_a (bool in, out)
+{
+  bool q1[2];
+  leaf_a u (in, out);
+  prs {
+    in -> q1[0]-
+    q1[0] -> q1[1]-
+    q1[1] -> out-
+  }
+}
+
+defproc top_b (bool in, out)
+{
+  bool q1[2];
+  leaf_b u (in, out);
+  prs {
+    in -> q1[0]-
+    q1[0] -> q1[1]-
+    q1[1] -> out-
+  }
+}
+
+top_a a;
+top_b b;
