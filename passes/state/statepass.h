@@ -138,7 +138,7 @@ public:
   ActStatePass (Act *a, int inst_offset = 0);
   ~ActStatePass ();
 
-  int run (Process *p = NULL);
+  int run (Process *p = NULL) override;
 
   void Print (FILE *fp, Process *p = NULL);
 
@@ -218,8 +218,8 @@ public:
   static void getStructCount (Data *d, state_counts *sc);
 
 private:
-  void *local_op (Process *p, int mode = 0);
-  void free_local (void *);
+  void *local_op (Process *p, int mode = 0) override;
+  void free_local (void *) override;
   void _post_update (Process *p) override;
   void rebuildRootState (Process *p);
 
