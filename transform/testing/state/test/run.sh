@@ -143,6 +143,17 @@ then
 	echo
 fi
 
+if [ -x ../test_statepass_refresh.$EXT ]
+then
+   if ! ../test_statepass_refresh.$EXT refresh.act > /dev/null
+   then
+	echo "Refresh test failed"
+	fail=`expr $fail + 1`
+   else
+        echo "Refresh test passed"
+   fi
+fi
+
 
 if [ $fail -ne 0 ]
 then
