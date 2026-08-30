@@ -199,7 +199,7 @@ void *ActPass::pre_op (Process *p, int mode) { return NULL; }
 void *ActPass::pre_op (Channel *c, int mode) { return NULL; }
 void *ActPass::pre_op (Data *d, int mode) { return NULL; }
 void ActPass::free_local (void *v) { if (v) { FREE (v); } }
-
+void ActPass::_post_update (Process *p) { /* do nothing */ }
 
 void ActPass::init_map ()
 {

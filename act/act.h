@@ -869,7 +869,7 @@ protected:
   virtual void _actual_update (Process *p);
 
   /** Rebuild pass-specific root state after an incremental update. */
-  virtual void _post_update (Process *p) { }
+  virtual void _post_update (Process *p);
 
   /**
    * This function sould only be called in the constructor. It
