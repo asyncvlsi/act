@@ -160,7 +160,7 @@ private:
   ActNamespace *cell_ns;
   int proc_inst_count;
   int cell_count;
-  struct idmap current_idmap;
+  idmap current_idmap;
   int _leak_flag;
 
   list_t *_new_cells;
