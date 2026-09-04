@@ -1,0 +1,12 @@
+defenum foo { A, B, C };
+
+defproc test(chan!(foo) X)
+{
+  foo x;
+  bool b;
+  chp {
+     x := b ? foo.A : foo.B
+  }
+}
+
+test t;

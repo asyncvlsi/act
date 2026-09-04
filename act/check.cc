@@ -660,12 +660,13 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       e = e->u.e.r;
       EQUAL_LT_RT(T_BOOL|T_REAL, WIDTH_MAX);
 
-      /* one more possibility: they are both identical structures */
+      /* one more possibility: they are both identical structures or enums */
       {
 	InstType *it1, *it2;
 	if (s->isExpanded()) {
 	  it1 = act_expr_insttype_ex (s, e->u.e.l, only_chan);
-	  if (it1 && TypeFactory::isPureStruct (it1)) {
+	  if (it1 &&
+	      (TypeFactory::isPureStruct (it1) || TypeFactory::isEnum (it1))) {
 	    it2 = act_expr_insttype_ex (s, e->u.e.r, only_chan);
 	  }
 	  else {
@@ -674,7 +675,8 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
 	else {
 	  it1 = _act_special_expr_insttype (s, e->u.e.l, NULL, only_chan);
-	  if (it1 && TypeFactory::isPureStruct (it1)) {
+	  if (it1 &&
+	      (TypeFactory::isPureStruct (it1) || TypeFactory::isEnum (it1))) {
 	    it2 = _act_special_expr_insttype (s, e->u.e.r, NULL, only_chan);
 	  }
 	  else {
