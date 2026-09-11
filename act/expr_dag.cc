@@ -130,9 +130,9 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
       Expr *args = e->u.fn.r;
       Expr *tmp = NULL;
       while (args) {
-	if (!ret->u.e.r) {
-	  NEW (ret->u.e.r, Expr);
-	  tmp = ret;
+	if (!tmp) {
+	  NEW (ret->u.fn.r, Expr);
+	  tmp = ret->u.fn.r;
 	}
 	else {
 	  NEW (tmp->u.e.r, Expr);
@@ -194,10 +194,10 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
     if (ret->type == E_FUNCTION || ret->type == E_CONCAT) {
       Expr *tmp, *tmp2;
       if (ret->type == E_FUNCTION) {
-	tmp = e->u.fn.r;
+	tmp = ret->u.fn.r;
       }
       else {
-	tmp = e->u.e.r;
+	tmp = ret->u.e.r;
       }
       while (tmp) {
 	tmp2 = tmp->u.e.r;
