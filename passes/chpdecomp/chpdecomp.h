@@ -43,6 +43,7 @@ public:
 
     list_t *used;		/* the list of IDs involved in the
 				   array dereference */
+    bool cloned;
 
     void dump (FILE *fp) {
       fprintf (fp, "[mem=");
@@ -53,11 +54,22 @@ public:
     }
       
 
-    valid_read_ref() { ref = NULL; var = NULL; fresh_idx = -1; used = NULL; }
+    valid_read_ref() { cloned = false; ref = NULL; var = NULL; fresh_idx = -1; used = NULL; }
     ~valid_read_ref() {
+      if (cloned) return;
       if (ref) { delete ref; }
       if (var) { delete var; }
       if (used) { list_free (used); }
+    }
+
+    valid_read_ref  *clone () {
+      valid_read_ref *ret = new valid_read_ref;
+      ret->cloned = true;
+      ret->used = used;
+      ret->ref = ref;
+      ret->var = var;
+      ret->fresh_idx = fresh_idx;
+      return ret;
     }
 
     bool invalidated (ActId *wr) {
@@ -99,6 +111,8 @@ private:
   Expr *_elemwise_fieldlist (int idx, ActId *field, Data *d);
   
   int _inv_idx (int idx);
+
+  void _invalidate_stmt_refs (act_chp_lang_t *s);
 
   ActBooleanizePass *_bp;
 
@@ -179,6 +193,16 @@ private:
       used = 0;
       ref = NULL;
     }
+
+    memvar_info clone() {
+      memvar_info m;
+      m.isstruct = isstruct;
+      m.bw = bw;
+      m.idx = idx;
+      m.used = used;
+      m.ref = ref->clone ();
+      return m;
+    }
   };
 
   struct memvar_map {
@@ -242,7 +266,6 @@ private:
      */
     void invalidate_refs (ActId *wr) {
       auto &last = v.back();
-      
       for (int i=0; i < last.size(); i++) {
 	if (last[i].ref) {
 	  if (last[i].ref->invalidated (wr)) {
@@ -261,21 +284,20 @@ private:
       ref->prune ();
 
       listitem_t *li;
-      for (int j=v.size()-1; j >= 0; j--) {
-	auto &last = v[j];
-	for (int i=0; i < last.size(); i++) {
-	  if (last[i].ref && last[i].ref->ref->isEqual (ref)) {
-	    if (tail) {
-	      ref->Append (tail);
-	    }
-	    if (!last[i].used && (j == v.size()-1)) {
-	      last[i].used = 2; // cached value is used
-	    }
-	    if (retval) {
-	      *retval = i;
-	    }
-	    return last[i].ref->var;
+
+      auto &last = v.back();
+      for (int i=0; i < last.size(); i++) {
+	if (last[i].ref && last[i].ref->ref->isEqual (ref)) {
+	  if (tail) {
+	    ref->Append (tail);
 	  }
+	  if (!last[i].used) {
+	    last[i].used = 2; // cached value is used
+	  }
+	  if (retval) {
+	    *retval = i;
+	  }
+	  return last[i].ref->var;
 	}
       }
       if (tail) {
@@ -317,6 +339,32 @@ private:
 	  last[i].used = 0;
 	}
       }
+    }
+
+    void push () {
+      auto &last = v.back();
+      std::vector<memvar_info> copy;
+      for (auto i = 0; i < last.size(); i++) {
+	copy.push_back (last[i].clone());
+      }
+      v.push_back(copy);
+    }
+
+    void pop () {
+      v.pop_back();
+    }
+
+    void pop_parallel() {
+      auto pos = v.size() - 2;
+      auto &last = v.back();
+      auto &prev = v[pos];
+      for (auto i = 0; i < prev.size(); i++) {
+	if (last[i].used == 2) {
+	  // propagate recycled flag
+	  prev[i].used = 2;
+	}
+      }
+      pop ();
     }
     
   } _map;

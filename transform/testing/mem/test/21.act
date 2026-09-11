@@ -1,0 +1,13 @@
+import std;
+
+defproc test()
+{ 
+  int x[10];
+  int i;
+
+  chp {
+   *[ x[i] > 0 -> 
+      [ i > 0 -> *[ x[i] = 0 -> i := i + 1 ] ]
+    ]
+  }
+}

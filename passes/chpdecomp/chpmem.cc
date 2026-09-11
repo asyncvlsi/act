@@ -1211,10 +1211,10 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       listitem_t *li = list_first (c->u.semi_comma.cmd);
       while (li) {
 	act_chp_lang_t *x = (act_chp_lang_t *) list_value (li);
-	_map.v.push_back({});
+	_map.push ();
 	_extract_memory (x);
 	li = list_next (li);
-	_map.v.pop_back();
+	_map.pop_parallel ();
       }
     }
     break;
@@ -1278,9 +1278,9 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 
     while (gc) {
       if (gc->s) {
-	_map.v.push_back({});
+	_map.push ();
 	_extract_memory (gc->s);
-	_map.v.pop_back();
+	_map.pop ();
       }
       gc = gc->next;
     }
@@ -1290,6 +1290,14 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
   case ACT_CHP_DOLOOP:
 
     pre = list_new ();
+
+    if (c->type == ACT_CHP_LOOP) {
+      /* any writes in the body will invalidate any cached memory
+	 accesses */
+      for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
+	_invalidate_stmt_refs (gc->s);
+      }
+    }
 
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
@@ -1372,9 +1380,9 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	Assert (gc->g, "Waht?");
 	if (gc->s) {
 	  auto oldmap = _map;
-	  _map.v.push_back({});
+	  _map.push ();
 	  _extract_memory (gc->s);
-	  _map.v.pop_back();
+	  _map.pop ();
 	}
 	prev = gc;
 	gc = gc->next;
@@ -1405,6 +1413,57 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	  _extract_memory (gc->s);
 	}
       }
+    }
+    break;
+
+  case ACT_CHP_FUNC:
+  case ACT_CHP_SKIP:
+  case ACT_CHP_HOLE:
+    break;
+
+  case ACT_CHP_SEMILOOP:
+  case ACT_CHP_COMMALOOP:
+  default:
+    fatal_error ("Unknown CHP type %d", c->type);
+    break;
+  }
+}
+
+
+void ActCHPMemory::_invalidate_stmt_refs (act_chp_lang_t *c)
+{
+  if (!c) return;
+
+  switch (c->type) {
+  case ACT_CHP_SEND:
+  case ACT_CHP_RECV:
+    if (c->u.comm.var) {
+      _map.invalidate_refs (c->u.comm.var);
+    }
+    break;
+
+  case ACT_CHP_ASSIGN:
+    _map.invalidate_refs (c->u.assign.id);
+    break;
+
+  case ACT_CHP_SEMI:
+  case ACT_CHP_COMMA:
+    {
+      listitem_t *li = list_first (c->u.semi_comma.cmd);
+      while (li) {
+	act_chp_lang_t *x = (act_chp_lang_t *) list_value (li);
+	_invalidate_stmt_refs (x);
+	li = list_next (li);
+      }
+    }
+    break;
+    
+  case ACT_CHP_SELECT:
+  case ACT_CHP_SELECT_NONDET:
+  case ACT_CHP_LOOP:
+  case ACT_CHP_DOLOOP:
+    for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
+      _invalidate_stmt_refs (gc->s);
     }
     break;
 
