@@ -200,7 +200,12 @@ private:
       m.bw = bw;
       m.idx = idx;
       m.used = used;
-      m.ref = ref->clone ();
+      if (ref) {
+         m.ref = ref->clone ();
+      }
+      else {
+         m.ref = NULL;
+      }
       return m;
     }
   };
