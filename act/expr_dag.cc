@@ -166,15 +166,14 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
     break;
 
   case E_INT:
+  case E_TRUE:
+  case E_FALSE:
+    FREE (ret);
     ret = expr_dup (e);
     break;
 
   case E_REAL:
     Assert (0, "What?");
-    break;
-
-  case E_TRUE:
-  case E_FALSE:
     break;
 
   case E_SELF:
@@ -205,7 +204,9 @@ static Expr *_expr_todag (struct cHashtable *H, Expr *e)
 	tmp = tmp2;
       }
     }
-    FREE (ret);
+    if (!expr_ex_is_cached (ret)) {
+      FREE (ret);
+    }
     ret = (Expr *)b->v;
   }
   else {
