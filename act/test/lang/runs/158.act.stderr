@@ -1,0 +1,6 @@
+In expanding test (158.act:1)
+In expanding ::<Global>
+Warning on or near line number 5.
+WARNING: Subtraction operation needs bitwidth 8, but has bitwidth 5
+  Left argument: x
+  Right argument: 0x1
