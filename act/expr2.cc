@@ -3056,7 +3056,8 @@ static Expr *_wrapbool2int (Expr *e)
 
 
 static Expr *_expr_bw_adjust (struct pHashtable *H,
-			      int needed_width, Expr *e, Scope *s);
+			      int needed_width,
+			      Expr *e, Scope *s);
 
 static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
 			       int lw, int rw,
@@ -3114,7 +3115,8 @@ static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
 }
 
 static Expr *_expr_bw_adjust (struct pHashtable *H,
-			      int needed_width, Expr *e, Scope *s)
+			      int needed_width,
+			      Expr *e, Scope *s)
 {
   int lw, rw;
   Expr *ret = NULL;
@@ -3155,8 +3157,24 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
     r = _expr_bw_adjust (H, needed_width, e->u.e.r, s);
     ret->u.e.l = l;
     ret->u.e.r = r;
-    if (needed_width != -1 && _getbw (H, e) > needed_width) {
-      ret = _wrapint (ret, needed_width);
+    if (needed_width != -1) {
+      lw = _getbw (H, e);
+      if (lw > needed_width) {
+	ret = _wrapint (ret, needed_width);
+      }
+      if (Act::chp_bw_check) {
+	if (e->type == E_MINUS && lw < needed_width) {
+	  act_warn_ctxt (stderr);
+	  warning ("Subtraction operation needs bitwidth %d, "
+		   "but has bitwidth %d", needed_width, lw);
+	  fprintf (stderr, "  Left argument: ");
+	  print_uexpr (stderr, e->u.e.l);
+	  fprintf (stderr, "\n");
+	  fprintf (stderr, "  Right argument: ");
+	  print_uexpr (stderr, e->u.e.r);
+	  fprintf (stderr, "\n");
+	}
+      }
     }
     break;
     
@@ -3239,6 +3257,17 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
   case E_COMPLEMENT:
   case E_UMINUS:
     /* width matches, nothing left to do */
+    if (Act::chp_bw_check) {
+      lw = _getbw (H, e->u.e.l);
+      if (needed_width != -1 && lw < needed_width) {
+	act_warn_ctxt (stderr);
+	warning ("Complement operation needs bitwidth %d, "
+		 "but has bitwidth %d", needed_width, lw);
+	fprintf (stderr, " Sub-expression: ");
+	print_uexpr (stderr, e->u.e.l);
+	fprintf (stderr, "\n");
+      }
+    }
     ret->u.e.l = _expr_bw_adjust (H, needed_width, e->u.e.l, s);
     ret->u.e.r = NULL;
     break;
