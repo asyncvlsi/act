@@ -1891,7 +1891,7 @@ bool PStruct::getOffset (ActId *v, int *pb, int *pi, int *pr, int *ptn)
 	  *pb += a;
 	  *pi += b;
 	  *pr += c;
-	  *pt += d;
+	  *ptn += d;
 	}
 	return true;
       }
