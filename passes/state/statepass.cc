@@ -21,12 +21,29 @@
  *
  **************************************************************************
  */
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <map>
 #include <utility>
 #include <common/config.h>
 #include <act/passes/statepass.h>
+
+/*
+ * Identifier-resolution tracing, off unless ACT_RESOLVE_DEBUG is set.
+ *
+ * These fire once per identifier lookup, so leaving them unconditional floods
+ * any real run. They are kept rather than deleted because they are what
+ * localised the asymmetric_fork_join segfaults to the three null dereferences
+ * guarded below: the crash was several frames away from the bad pointer, and
+ * the trace is what narrowed it.
+ */
+static bool act_resolve_debug (void)
+{
+  static int v = -1;
+  if (v < 0) { v = getenv ("ACT_RESOLVE_DEBUG") ? 1 : 0; }
+  return v == 1;
+}
 
 static act_connection *_inv_hash (struct pHashtable *H, int idx)
 {
@@ -1690,7 +1707,15 @@ int ActStatePass::globalBoolOffset (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+    /*
+      Same guard as checkIdExists(). A global signal such as `Reset' is not an
+      instance in this scope, so Lookup() returns NULL and isProcessType()
+      dereferences it -- the segfault that stopped asymmetric_fork_join at net 4
+      of 239. Its name is also a single component, so rest->Rest() is NULL and
+      naming a sub-port through it would fault next. Descending one level only
+      makes sense when there is a level below to descend to.
+    */
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {
@@ -1824,11 +1849,14 @@ int ActStatePass::globalBoolOffset (ActId *id)
 
 int ActStatePass::checkIdExists (ActId *id)
 {
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] enter\n"); fflush (stderr); }
   Process *top_level = _root_si->bnl->p;
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] top_level ok\n"); fflush (stderr); }
 
   /* -- partition processes -- */
   Process *loc;
   ActId *rest = id->nonProcSuffix (top_level, &loc);
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] nonProcSuffix ok\n"); fflush (stderr); }
 
   if (!loc) return 0;
   
@@ -1840,7 +1868,16 @@ int ActStatePass::checkIdExists (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] Lookup ok\n"); fflush (stderr); }
+    /*
+      Two null cases reach here for a global signal such as `Reset'. The name is
+      a single component, so rest->Rest() is NULL and dereferencing it to name a
+      sub-port segfaults; and a name that is not an instance in this scope makes
+      Lookup() return NULL. Descending one level only makes sense when there is
+      a level below to descend to, so both cases simply skip the descent.
+      Measured on asymmetric_fork_join, which died here at net 4 of 239.
+    */
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {
@@ -1856,13 +1893,16 @@ int ActStatePass::checkIdExists (ActId *id)
   stateinfo_t *si;
 
 
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] before Canonical\n"); fflush (stderr); }
   act_connection *conn = rest->Canonical (loc->CurScope());
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] Canonical ok\n"); fflush (stderr); }
   phash_bucket_t *ib;
 
   if (!conn) return 0;
   
   Assert (conn, "Hmm");
 
+  if (act_resolve_debug()) { fprintf (stderr, "[cie] before isglobal\n"); fflush (stderr); }
   if (conn->isglobal()) {
     /* global ID: done! */
     si = _root_si;

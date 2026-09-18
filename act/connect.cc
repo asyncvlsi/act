@@ -66,19 +66,33 @@ bool act_connection::isglobal()
   c = this;
   vx = NULL;
   
+  /*
+    The walk is guarded on `c' but used to dereference c->parent and
+    c->parent->parent unconditionally. A connection with no ValueIdx and no
+    parent -- which is what a global signal such as `Reset' resolves to through
+    ActStatePass::checkIdExists() -- then read through a null pointer and
+    crashed the caller. Measured on the asymmetric_fork_join benchmark, which
+    died here on net 4 of 239 while building the PhyDB/ACT adaptor.
+
+    Stopping the walk instead leaves vx as whatever the last level supplied; if
+    that is nothing the Assert below reports it, which is diagnosable where the
+    segfault was not.
+  */
   while (c) {
     if (c->vx) {
       vx = c->vx;
       c = c->parent;
     }
-    else if (c->parent->vx) {
+    else if (c->parent && c->parent->vx) {
       vx = c->parent->vx;
       c = c->parent->parent;
     }
-    else {
-      Assert (c->parent->parent->vx, "What?");
+    else if (c->parent && c->parent->parent && c->parent->parent->vx) {
       vx = c->parent->parent->vx;
       c = c->parent->parent->parent;
+    }
+    else {
+      break;
     }
   }
   Assert (vx, "What?");
