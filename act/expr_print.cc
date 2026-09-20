@@ -148,6 +148,11 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     PRINT_STEP;							\
     PREC_END (myprec);						\
   } while (0)
+
+  while (e->type == E_CONCAT && !e->u.e.r) {
+    e = e->u.e.l;
+    Assert (e, "What?");
+  }
     
   switch (e->type) {
   case E_PROBE:
@@ -836,33 +841,23 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     break;
 
   case E_CONCAT:
-    if (e->u.e.r) {
-      snprintf (buf+k, sz, " {");
-      PRINT_STEP;
-      while (e) {
-	if (prec < 0) {
-	  sprint_uexpr (buf+k, sz, e->u.e.l);
-	}
-	else {
-	  sprint_expr (buf+k, sz, e->u.e.l);
-	}
-	PRINT_STEP;
-	if (e->u.e.r) {
-	  snprintf (buf+k, sz, ",");
-	  PRINT_STEP;
-	}
-	e = e->u.e.r;
-      }
-      snprintf (buf+k, sz, "}");
-    }
-    else {
+    snprintf (buf+k, sz, " {");
+    PRINT_STEP;
+    while (e) {
       if (prec < 0) {
 	sprint_uexpr (buf+k, sz, e->u.e.l);
       }
       else {
 	sprint_expr (buf+k, sz, e->u.e.l);
       }
+      PRINT_STEP;
+      if (e->u.e.r) {
+	snprintf (buf+k, sz, ",");
+	PRINT_STEP;
+      }
+      e = e->u.e.r;
     }
+    snprintf (buf+k, sz, "}");
     PRINT_STEP;
     break;
 
