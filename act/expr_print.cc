@@ -836,23 +836,33 @@ static void _print_expr (char *buf, int sz, const Expr *e, int prec, int parent)
     break;
 
   case E_CONCAT:
-    snprintf (buf+k, sz, " {");
-    PRINT_STEP;
-    while (e) {
+    if (e->u.e.r) {
+      snprintf (buf+k, sz, " {");
+      PRINT_STEP;
+      while (e) {
+	if (prec < 0) {
+	  sprint_uexpr (buf+k, sz, e->u.e.l);
+	}
+	else {
+	  sprint_expr (buf+k, sz, e->u.e.l);
+	}
+	PRINT_STEP;
+	if (e->u.e.r) {
+	  snprintf (buf+k, sz, ",");
+	  PRINT_STEP;
+	}
+	e = e->u.e.r;
+      }
+      snprintf (buf+k, sz, "}");
+    }
+    else {
       if (prec < 0) {
 	sprint_uexpr (buf+k, sz, e->u.e.l);
       }
       else {
 	sprint_expr (buf+k, sz, e->u.e.l);
       }
-      PRINT_STEP;
-      if (e->u.e.r) {
-	snprintf (buf+k, sz, ",");
-	PRINT_STEP;
-      }
-      e = e->u.e.r;
     }
-    snprintf (buf+k, sz, "}");
     PRINT_STEP;
     break;
 
