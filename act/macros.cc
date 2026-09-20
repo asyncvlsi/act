@@ -320,6 +320,7 @@ static act_chp_lang_t *_add_dollarinternal (UserDef *ux, act_chp_lang_t *c)
   case ACT_CHP_RECV:
     ret->u.comm.chan = _adddollar_id_subst (ux, c->u.comm.chan);
     ret->u.comm.flavor = c->u.comm.flavor;
+    ret->u.comm.convert = c->u.comm.convert;
     if (c->u.comm.var) {
       ret->u.comm.var = _adddollar_id_subst (ux, c->u.comm.var);
     }
@@ -741,6 +742,7 @@ static act_chp_lang_t *_chp_subst_helper (ActId *id, act_inline_table *tab,
   case ACT_CHP_RECV:
     ret->u.comm.chan = _chp_id_subst (id, tab, c->u.comm.chan);
     ret->u.comm.flavor = c->u.comm.flavor;
+    ret->u.comm.convert = c->u.comm.convert;
     if (c->u.comm.var) {
       ret->u.comm.var = _chp_id_subst (id, tab, c->u.comm.var);
     }

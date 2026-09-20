@@ -1,0 +1,20 @@
+defptype me(pint A, B, C);
+
+defptype two(me A; pint B);
+
+
+template<two T>
+defproc test()
+{
+  bool b[T.B];
+
+  b[0] = b[1];
+}
+
+two x;
+x.A.A = 1;
+x.A.B = 2;
+x.A.C = 3;
+x.B = 5;
+
+test<x> t;
