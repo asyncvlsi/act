@@ -1,5 +1,5 @@
 defproc mybase_34_77_4 (bool x[4]);
-defproc test_37_4 <: mybase_34_77_4 (bool a; bool b);
+defproc test_37_4 (bool x[4]; bool a; bool b);
 defproc mybase_34_74_4 (bool x[4]);
 
 defproc mybase_34_77_4 (bool x[4])
@@ -14,11 +14,12 @@ w[0]:=0x7
 }
 }
 
-defproc test_37_4 <: mybase_34_77_4 (bool a; bool b)
+defproc test_37_4 (bool x[4]; bool a; bool b)
 {
 
 /* instances */
 bool e;
+int<32> w[4];
 
 /* connections */
 x[2]=e;

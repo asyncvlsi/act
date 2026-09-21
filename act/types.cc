@@ -2112,23 +2112,18 @@ void UserDef::PrintHeader (FILE *fp, const char *type, bool unmangle)
   int skip_ports = 0;
 
   if (parent) {
-    fprintf (fp, "<: ");
-    if (!expanded || !TypeFactory::isUserType (parent)) {
+    if (!expanded) {
+      fprintf (fp, "<: ");
       parent->Print (fp);
+      fprintf (fp, " ");
     }
     else {
-      UserDef *u = dynamic_cast<UserDef *>(parent->BaseType());
-      Assert (u, "what?");
-      if (unmangle) {
-        u->snprintActName (buf, 10240);
-        fprintf (fp, "%s", buf);
+      if (!TypeFactory::isUserType (parent)) {
+	fprintf (fp, "<: ");
+	parent->Print (fp);
+	fprintf (fp, " ");
       }
-      else {
-        ActNamespace::Act()->mfprintfproc (fp, u);
-      }
-      skip_ports = u->getNumPorts();
     }
-    fprintf (fp, " ");
   }
 
   n = getNumPorts ();

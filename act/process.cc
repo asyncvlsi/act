@@ -205,7 +205,7 @@ void Process::Print (FILE *fp)
     }
   }
   else {
-    CurScope()->Print (fp);
+    CurScope()->Print (fp, true);
   }
 
   /* print language bodies */
