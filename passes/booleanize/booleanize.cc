@@ -2024,16 +2024,18 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 	    if (sub->chpports[j].omit) continue;
 
 	    c = n->instchpports[chpinstcnt];
-
-	    bi = phash_lookup (sub->cH, sub->chpports[j].c);
-	    Assert (bi, "Port has no variable?");
-	    subv = (act_booleanized_var_t *) bi->v;
-
 	    /* -- ignore globals -- */
 	    if (c->isglobal()) {
 	      chpinstcnt++;
 	      continue;
 	    }
+
+	    bi = phash_lookup (sub->cH, sub->chpports[j].c);
+            if (!bi) {
+	      chpinstcnt++;
+              continue;
+            }
+	    subv = (act_booleanized_var_t *) bi->v;
 
 	    phash_bucket_t *xb = phash_lookup (n->cH, c);
 	    if (xb) {
