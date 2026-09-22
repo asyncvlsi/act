@@ -1,0 +1,4 @@
+Channel: `p2.Y' should have passive send in `foo<>' (locally or via other instances)
+Connected to instance `p' (type `probe1<>') with opposite expectation.
+FATAL: Cannot probe both ends of a channel.
+In expanding foo<> (32.act:16)

@@ -1965,6 +1965,106 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   }
   list_free (final_filter);
 
+  /*-- now propagate probe flags from/to subprocesses and current level --*/
+
+  /*
+    We've already set the local flags.
+    
+    Now walk through instance channel ports, and if my flag is set
+       propagate it down; if the sub-proc flag is set, propagate it up.
+  */
+
+
+  /*
+    We have an issue: something might be flagged as a CHP port even
+    if it is not in the chp port list but in the bool port list.
+  */
+  int chpinstcnt = 0;
+  for (i = i.begin(); i != i.end(); i++) {
+    ValueIdx *vx = *i;
+    Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+
+    if (x->isExpanded()) {
+      int ports_exist;
+      act_boolean_netlist_t *sub;
+
+      sub = (act_boolean_netlist_t *) getMap (x);
+
+      ports_exist = 0;
+      for (int j=0; j < A_LEN (sub->chpports); j++) {
+	if (sub->chpports[j].omit == 0) {
+	  ports_exist = 1;
+	  break;
+	}
+      }
+
+      if (ports_exist) {
+	int sz;
+	if (vx->t->arrayInfo()) {
+	  int count = 0;
+	  sz = vx->t->arrayInfo()->size();
+	  for (int k=0; k < sz; k++) {
+	    if (vx->isPrimary (k)) {
+	      count++;
+	    }
+	  }
+	  sz = count;
+	}
+	else {
+	  sz = 1;
+	}
+	  
+	while (sz > 0) {
+	  sz--;
+	  for (int j=0; j < A_LEN (sub->chpports); j++) {
+	    act_connection *c;
+	    phash_bucket_t *bi;
+	    act_booleanized_var_t *subv;
+	    int ocount;
+	    if (sub->chpports[j].omit) continue;
+
+	    c = n->instchpports[chpinstcnt];
+
+	    bi = phash_lookup (sub->cH, sub->chpports[j].c);
+	    Assert (bi, "Port has no variable?");
+	    subv = (act_booleanized_var_t *) bi->v;
+
+	    /* -- ignore globals -- */
+	    if (c->isglobal()) continue;
+
+	    phash_bucket_t *xb = phash_lookup (n->cH, c);
+	    if (xb) {
+	      act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
+
+	      if (xv->ischan) {
+		Assert (subv->ischan, "Chan flag disagreement!");
+		if (subv->chanflag == 0 && xv->chanflag != 0) {
+		  subv->chanflag = xv->chanflag;
+		}
+		else if (xv->chanflag == 0 && subv->chanflag != 0) {
+		  xv->chanflag = subv->chanflag;
+		}
+		else if (xv->chanflag != subv->chanflag) {
+		  act_error_ctxt (stderr);
+		  fprintf (stderr, "Channel: `");
+		  xv->id->Print (stderr);
+		  fprintf (stderr, "' should have passive %s in `%s' (locally or via other instances)\n",
+			   xv->chanflag == 1 ? "receive" : "send",
+			   p->getFullName());
+		  fprintf (stderr, "Connected to instance `%s' (type `%s') with opposite expectation.\n",
+			   vx->getName(), x->getFullName());
+		  fatal_error ("Cannot probe both ends of a channel.");
+		}
+	      }
+	    }
+	    chpinstcnt++;
+	  }
+	}
+      }
+    }
+  }
+  Assert (chpinstcnt == A_LEN (n->instchpports), "What?");
+
 #if 0
   /* DEBUG */
   printf ("---- %s ---- [mode=%d]\n", p->getName(), black_box_mode);
@@ -2568,10 +2668,13 @@ void ActBooleanizePass::rec_update_used_flags (act_boolean_netlist_t *n,
 	    /* mark c as used */
 	    mark_c_used (n, subinst, c, count, 0);
 	  }
-	  if (count2 && !subinst->chpports[*count2].omit) {
-	    c = sub->Canonical (s);
-	    Assert (c == c->primary(), "What?");
-	    mark_c_used (n, subinst, c, count2, 1);
+	  if (count2) {
+	    Assert (*count2 < A_LEN (subinst->chpports), "What?");
+	    if (!subinst->chpports[*count2].omit) {
+	      c = sub->Canonical (s);
+	      Assert (c == c->primary(), "What?");
+	      mark_c_used (n, subinst, c, count2, 1);
+	    }
 	  }
 	  tail->setArray (NULL);
 	  *count = *count + 1;

@@ -1,0 +1,21 @@
+defproc probe1 (chan?(int) X)
+{ 
+ chp {
+  *[[#X -> X?]]
+ }
+}
+
+
+defproc probe2 (chan!(int) Y)
+{
+  chp {
+    *[[#Y -> Y!4]]
+  }
+}
+
+defproc foo()
+{
+  probe1 p;
+
+  probe2 p2(p.X);
+}
