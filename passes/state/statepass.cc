@@ -730,6 +730,7 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 
 	    if (c->isglobal()) {
 	      /* ignore globals here */
+              instcnt++;
 	      continue;
 	    }
 
@@ -808,7 +809,10 @@ stateinfo_t *ActStatePass::countLocalState (Process *p)
 	    c = b->instchpports[chpinstcnt];
 
 	    /* -- ignore globals -- */
-	    if (c->isglobal()) continue;
+	    if (c->isglobal()) {
+	      chpinstcnt++;
+	      continue;
+            }
 
 	    phash_bucket_t *xb = phash_lookup (b->cH, c);
 	    if (xb) {
