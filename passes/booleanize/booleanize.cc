@@ -2030,7 +2030,10 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
 	    subv = (act_booleanized_var_t *) bi->v;
 
 	    /* -- ignore globals -- */
-	    if (c->isglobal()) continue;
+	    if (c->isglobal()) {
+	      chpinstcnt++;
+	      continue;
+	    }
 
 	    phash_bucket_t *xb = phash_lookup (n->cH, c);
 	    if (xb) {
