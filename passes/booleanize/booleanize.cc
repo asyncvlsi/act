@@ -1975,100 +1975,108 @@ act_boolean_netlist_t *ActBooleanizePass::_create_local_bools (Process *p)
   */
 
 
-  /*
-    We have an issue: something might be flagged as a CHP port even
-    if it is not in the chp port list but in the bool port list.
-  */
-  int chpinstcnt = 0;
-  for (i = i.begin(); i != i.end(); i++) {
-    ValueIdx *vx = *i;
-    Process *x = dynamic_cast<Process *>(vx->t->BaseType());
+  if (p) {
 
-    if (x->isExpanded()) {
-      int ports_exist;
-      act_boolean_netlist_t *sub;
+    /*
+      We have an issue: something might be flagged as a CHP port even
+      if it is not in the chp port list but in the bool port list.
+    */
+    int chpinstcnt = 0;
+    for (i = i.begin(); i != i.end(); i++) {
+      ValueIdx *vx = *i;
+      Process *x = dynamic_cast<Process *>(vx->t->BaseType());
 
-      sub = (act_boolean_netlist_t *) getMap (x);
+      if (x->isExpanded()) {
+	int ports_exist;
+	act_boolean_netlist_t *sub;
 
-      ports_exist = 0;
-      for (int j=0; j < A_LEN (sub->chpports); j++) {
-	if (sub->chpports[j].omit == 0) {
-	  ports_exist = 1;
-	  break;
-	}
-      }
+	sub = (act_boolean_netlist_t *) getMap (x);
 
-      if (ports_exist) {
-	int sz;
-	if (vx->t->arrayInfo()) {
-	  int count = 0;
-	  sz = vx->t->arrayInfo()->size();
-	  for (int k=0; k < sz; k++) {
-	    if (vx->isPrimary (k)) {
-	      count++;
-	    }
+	ports_exist = 0;
+	for (int j=0; j < A_LEN (sub->chpports); j++) {
+	  if (sub->chpports[j].omit == 0) {
+	    ports_exist = 1;
+	    break;
 	  }
-	  sz = count;
 	}
-	else {
-	  sz = 1;
-	}
-	  
-	while (sz > 0) {
-	  sz--;
-	  for (int j=0; j < A_LEN (sub->chpports); j++) {
-	    act_connection *c;
-	    phash_bucket_t *bi;
-	    act_booleanized_var_t *subv;
-	    int ocount;
-	    if (sub->chpports[j].omit) continue;
 
-	    c = n->instchpports[chpinstcnt];
-	    /* -- ignore globals -- */
-	    if (c->isglobal()) {
-	      chpinstcnt++;
-	      continue;
-	    }
-
-	    bi = phash_lookup (sub->cH, sub->chpports[j].c);
-            if (!bi) {
-	      chpinstcnt++;
-              continue;
-            }
-	    subv = (act_booleanized_var_t *) bi->v;
-
-	    phash_bucket_t *xb = phash_lookup (n->cH, c);
-	    if (xb) {
-	      act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
-
-	      if (xv->ischan) {
-		Assert (subv->ischan, "Chan flag disagreement!");
-		if (subv->chanflag == 0 && xv->chanflag != 0) {
-		  subv->chanflag = xv->chanflag;
-		}
-		else if (xv->chanflag == 0 && subv->chanflag != 0) {
-		  xv->chanflag = subv->chanflag;
-		}
-		else if (xv->chanflag != subv->chanflag) {
-		  act_error_ctxt (stderr);
-		  fprintf (stderr, "Channel: `");
-		  xv->id->Print (stderr);
-		  fprintf (stderr, "' should have passive %s in `%s' (locally or via other instances)\n",
-			   xv->chanflag == 1 ? "receive" : "send",
-			   p->getFullName());
-		  fprintf (stderr, "Connected to instance `%s' (type `%s') with opposite expectation.\n",
-			   vx->getName(), x->getFullName());
-		  fatal_error ("Cannot probe both ends of a channel.");
-		}
+	if (ports_exist) {
+	  int sz;
+	  if (vx->t->arrayInfo()) {
+	    int count = 0;
+	    sz = vx->t->arrayInfo()->size();
+	    for (int k=0; k < sz; k++) {
+	      if (vx->isPrimary (k)) {
+		count++;
 	      }
 	    }
-	    chpinstcnt++;
+	    sz = count;
+	  }
+	  else {
+	    sz = 1;
+	  }
+	  
+	  while (sz > 0) {
+	    sz--;
+	    for (int j=0; j < A_LEN (sub->chpports); j++) {
+	      act_connection *c;
+	      phash_bucket_t *bi;
+	      act_booleanized_var_t *subv;
+	      int ocount;
+	      if (sub->chpports[j].omit) continue;
+
+	      if (!(chpinstcnt < A_LEN (n->instchpports))) {
+		fatal_error ("Internal inconsistency in %s instances",
+			     p->getFullName());
+	      }
+	      Assert (chpinstcnt < A_LEN (n->instchpports), "What?");
+	      c = n->instchpports[chpinstcnt];
+	      /* -- ignore globals -- */
+	      if (c->isglobal()) {
+		chpinstcnt++;
+		continue;
+	      }
+
+	      bi = phash_lookup (sub->cH, sub->chpports[j].c);
+	      if (!bi) {
+		chpinstcnt++;
+		continue;
+	      }
+	      subv = (act_booleanized_var_t *) bi->v;
+
+	      phash_bucket_t *xb = phash_lookup (n->cH, c);
+	      if (xb) {
+		act_booleanized_var_t *xv = (act_booleanized_var_t *) xb->v;
+
+		if (xv->ischan) {
+		  Assert (subv->ischan, "Chan flag disagreement!");
+		  if (subv->chanflag == 0 && xv->chanflag != 0) {
+		    subv->chanflag = xv->chanflag;
+		  }
+		  else if (xv->chanflag == 0 && subv->chanflag != 0) {
+		    xv->chanflag = subv->chanflag;
+		  }
+		  else if (xv->chanflag != subv->chanflag) {
+		    act_error_ctxt (stderr);
+		    fprintf (stderr, "Channel: `");
+		    xv->id->Print (stderr);
+		    fprintf (stderr, "' should have passive %s in `%s' (locally or via other instances)\n",
+			     xv->chanflag == 1 ? "receive" : "send",
+			     p->getFullName());
+		    fprintf (stderr, "Connected to instance `%s' (type `%s') with opposite expectation.\n",
+			     vx->getName(), x->getFullName());
+		    fatal_error ("Cannot probe both ends of a channel.");
+		  }
+		}
+	      }
+	      chpinstcnt++;
+	    }
 	  }
 	}
       }
     }
+    Assert (chpinstcnt == A_LEN (n->instchpports), "What?");
   }
-  Assert (chpinstcnt == A_LEN (n->instchpports), "What?");
 
 #if 0
   /* DEBUG */
