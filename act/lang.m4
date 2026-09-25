@@ -197,7 +197,7 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] [ "*" ] "{"
     b = NULL;
 
     NEW (p, act_prs);
-    p->leak_adjust = 0;
+    p->leak_adjust = 1;
     p->p = NULL;
     p->vdd = $0->supply.vdd;
     p->gnd = $0->supply.gnd;
@@ -206,7 +206,7 @@ lang_prs[ActBody *]: "prs" [ supply_spec ] [ "*" ] "{"
     p->next = NULL;
 
     if (!OPT_EMPTY ($3)) {
-      p->leak_adjust = 1;
+      p->leak_adjust = 0;
     }
     OPT_FREE ($3);
     

@@ -2,7 +2,7 @@ defproc foo ()
 {
   bool a, b;
 
-  prs* {
+  prs {
    a => b-
   }
 }

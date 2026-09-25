@@ -2136,7 +2136,7 @@ static void _dump_prs_cell (FILE *fp,
   if (p->nout > 1) {
     fprintf (fp, "[%d]", p->nout);
   }
-  fprintf (fp, ")\n{\n   prs %s{\n", p->get_leak_flag() ? "* " : "");
+  fprintf (fp, ")\n{\n   prs %s{\n", p->get_leak_flag() ? "" : "* ");
 
   int has_tree = p->get_tree_info();
   /*
@@ -3209,10 +3209,10 @@ void ActCellPass::prs_to_cells (Process *p)
   Assert (lang, "What?");
   act_prs *prs = lang->getprs();
 
-  _leak_flag = 0;
+  _leak_flag = 1;
   while (prs) {
-    if (prs->leak_adjust) {
-      _leak_flag = 1;
+    if (prs->leak_adjust == 0) {
+      _leak_flag = 0;
     }
     prs = prs->next;
   }
@@ -3939,7 +3939,7 @@ void ActCellPass::add_passgates_cap ()
     prs_body->psc = NULL;
     prs_body->nsc = NULL;
     prs_body->next = NULL;
-    prs_body->leak_adjust = 0;
+    prs_body->leak_adjust = 1;
 
     act_prs_lang_t *rules = NULL;
 

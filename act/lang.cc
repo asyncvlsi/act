@@ -979,7 +979,7 @@ void prs_print (FILE *fp, act_prs *prs)
       }
       fprintf (fp, "> ");
     }
-    if (prs->leak_adjust) {
+    if (!prs->leak_adjust) {
       fprintf (fp, " * ");
     }
     fprintf (fp, "{\n");

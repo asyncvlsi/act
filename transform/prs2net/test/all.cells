@@ -15,14 +15,6 @@ export defcell g0n1n2naa_012aax0 (bool? in[3]; bool! out)
    }
 }
 
-export defcell g0n1n2naa_012aax1 (bool? in[3]; bool! out)
-{
-   prs * {
-   in[0]<60> & in[1]<60> & in[2]<60> -> out-
-   ~in[0]<150> & ~in[1]<150> & ~in[2]<150> -> out+
-   }
-}
-
 export defcell g0n1n2naa_012aax2 (bool? in[3]; bool! out)
 {
    prs {
@@ -122,14 +114,6 @@ export defcell g0n_0x1 (bool? in[1]; bool! out)
    prs {
    in[0]<20> -> out-
    ~in[0]<50> -> out+
-   }
-}
-
-export defcell g0n_0x2 (bool? in[1]; bool! out)
-{
-   prs * {
-   in[0] -> out-
-   ~in[0] -> out+
    }
 }
 
