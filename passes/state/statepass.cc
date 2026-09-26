@@ -1690,7 +1690,8 @@ int ActStatePass::globalBoolOffset (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+    /* A global such as `Reset' has no instance here and no sub-port. */
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {
@@ -1840,7 +1841,8 @@ int ActStatePass::checkIdExists (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+    /* A global such as `Reset' has no instance here and no sub-port. */
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {

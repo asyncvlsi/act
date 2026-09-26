@@ -66,19 +66,22 @@ bool act_connection::isglobal()
   c = this;
   vx = NULL;
   
+  /* Stop at a missing link; the Assert below reports it. */
   while (c) {
     if (c->vx) {
       vx = c->vx;
       c = c->parent;
     }
-    else if (c->parent->vx) {
+    else if (c->parent && c->parent->vx) {
       vx = c->parent->vx;
       c = c->parent->parent;
     }
-    else {
-      Assert (c->parent->parent->vx, "What?");
+    else if (c->parent && c->parent->parent && c->parent->parent->vx) {
       vx = c->parent->parent->vx;
       c = c->parent->parent->parent;
+    }
+    else {
+      break;
     }
   }
   Assert (vx, "What?");
