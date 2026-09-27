@@ -956,7 +956,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	N->weak_supply_vdd = num_vdd_share;
 	if (num_vdd_share > 0) {
 	  N->vdd_len = vdd_len;
-	  N->nid_wvdd = weak_vdd->i;
+	  N->wvdd = weak_vdd;
 	}
       }
     }
@@ -977,7 +977,7 @@ void ActNetlistPass::generate_staticizers (netlist_t *N,
 	N->weak_supply_gnd = num_gnd_share;
 	if (num_gnd_share > 0) {
 	  N->gnd_len = gnd_len;
-	  N->nid_wgnd = weak_gnd->i;
+	  N->wgnd = weak_gnd;
 	}
       }
     }
@@ -2370,8 +2370,8 @@ static netlist_t *_initialize_empty_blank_netlist ()
   N->B = NULL;
   N->weak_supply_vdd = 0;
   N->weak_supply_gnd = 0;
-  N->nid_wvdd = -1;
-  N->nid_wgnd = -1;
+  N->wvdd = NULL;
+  N->wgnd = NULL;
   N->vdd_len = 0;
   N->gnd_len = 0;
   A_INIT (N->instport_weak);
@@ -2472,14 +2472,14 @@ void ActNetlistPass::generate_netgraph (netlist_t *N,
 	N->weak_supply_vdd = num_vdd_sharing;
 	if (num_vdd_sharing > 0) {
 	  N->vdd_len = vdd_len;
-	  N->nid_wvdd = weak_vdd->i;
+	  N->wvdd = weak_vdd;
 	}
       }
       if (weak_gnd) {
 	N->weak_supply_gnd = num_gnd_sharing;
 	if (num_gnd_sharing > 0) {
 	  N->gnd_len = gnd_len;
-	  N->nid_wgnd = weak_gnd->i;
+	  N->wgnd = weak_gnd;
 	}
       } 
     }

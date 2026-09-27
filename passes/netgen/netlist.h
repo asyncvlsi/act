@@ -174,7 +174,7 @@ typedef struct {
      # of gates that share the weak inv within the block */
   int vdd_len, gnd_len;		/* sizing info for the weak supply
 				   exported */
-  int nid_wvdd, nid_wgnd;	/* node ids! */
+  node_t *wvdd, *wgnd;		/* node ports for weak supply into cell */
 
   A_DECL (int, instport_weak);	/* node # for instance ports for weak
 				   supplies */
