@@ -235,6 +235,7 @@ static node_t *node_alloc_raw (int &num)
 
   x->contact = 0;
   x->supply = 0;
+  x->sharedsupply = 0;
   x->inv = 0;
   x->visited = 0;
 
@@ -592,7 +593,8 @@ static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
   edge_t *e;
 
   Assert (w, "What?");
-	  
+
+  w->sharedsupply = 1;
   e = edge_alloc (N->GND, N->Vdd, w, N->nsc);
   e->type = EDGE_PFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
@@ -610,6 +612,7 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
 
   Assert (w, "What?");
 	  
+  w->sharedsupply = 1;
   e = edge_alloc (N->Vdd, N->GND, w, N->psc);
   e->type = EDGE_NFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
@@ -2367,6 +2370,8 @@ static netlist_t *_initialize_empty_blank_netlist ()
   N->B = NULL;
   N->weak_supply_vdd = 0;
   N->weak_supply_gnd = 0;
+  N->nid_wvdd = -1;
+  N->nid_wgnd = -1;
   N->vdd_len = 0;
   N->gnd_len = 0;
   A_INIT (N->instport_weak);
@@ -3283,8 +3288,15 @@ bool ActNetlistPass::emptyNetlist (netlist_t *N)
 
   n = N->hd;
   while (n) {
-    if (!n->supply) return false;
-    if (!list_isempty (n->e)) return false;
+    // this could be a top-level weak supply used to wire up shared
+    // staticizers.
+    if (!n->supply && !n->sharedsupply) {
+      return false;
+    }
+    if (!list_isempty (n->e)) {
+      // if the remaining edges are weak staticizers... then okay!
+      return false;
+    }
     n = n->next;
   }
   return true;

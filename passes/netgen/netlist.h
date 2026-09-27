@@ -99,6 +99,7 @@ typedef struct node {
   /* flags */
   unsigned int contact:1;	/* 1 if it needs a contact */
   unsigned int supply:1;	/* is a power supply */
+  unsigned int sharedsupply:1;	/* shared staticizer supply node */
   unsigned int inv:1;		/* 1 if it is a generated inverter
 				   for staticizers */
   unsigned int visited:1;	/* visited flag for nodes */
@@ -203,6 +204,7 @@ class ActNetlistPass : public ActPass {
   netlist_t *getNL (Process *p);
 
   void enableSharedStat();
+  struct pHashtable *getSharedInsts() { return shared_inst; }
 
   void Print (FILE *fp, Process *p);
   void printFlat (FILE *fp);
