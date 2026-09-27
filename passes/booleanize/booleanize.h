@@ -151,19 +151,25 @@ typedef struct act_booleanized_var {
  * 
  * @brief This is used for flat netlist generation to represent an I/O
  * pin for a leaf cell.
+ *
+ * If the lsb of the pointers is set, they are just strings...
  */
 typedef struct {
   ActId *inst;			/**< path to instance */
   act_connection *pin;		/**< pin name */
   //Process *cell;		/**< leaf cell corresponding to the pin */
 } act_local_pin_t;
-  
+
+#define ACT_NET_STRING_FLAG(x) ((unsigned long)(x) & 0x1)
+#define ACT_NET_STRINGONLY(x)  ((char *)(((unsigned long)x & ~1UL)))
 
 /**
  * @class act_local_net_t
  *
  * @brief This is used for flat netlist generation to represent a net
  * that consists of a net name and a list of pins.
+ *
+ * If the lsb of the pointers is set, they are just strings...
  */
 typedef struct {
   act_connection *net; ///< the name of the net; note that this could
