@@ -29,6 +29,11 @@
 
 #define VINF(x) ((struct act_varinfo *)((x)->extra))
 
+/* static members */
+int ActNetlistPass::min_w_in_lambda;
+int ActNetlistPass::min_l_in_lambda;
+
+
 static void print_number (FILE *fp, double x)
 {
   if (x > 1e3) {
@@ -68,6 +73,10 @@ void ActNetlistPass::getSharedStatName (char *buf, int sz,
   }
 }
 
+
+/*
+  The "b" terminal is always the weak supply
+*/
 void ActNetlistPass::emitWeakSupplies ()
 {
   FILE *fp = _outfp;
@@ -86,21 +95,42 @@ void ActNetlistPass::emitWeakSupplies ()
     getSharedStatName (buf, 64, s->en ? s->en->w : s->ep->w,
 		       s->ep ? s->ep->l : 0, s->en ? s->en->l : 0);
     a->mfprintf (fp, "%s", buf);
+
     if (s->en && s->ep) {
       fprintf (fp, " #0 #1 #2 #3\n");
-      _emit_one_fet (fp, NULL, s->en, fet, repcount);
-      _emit_one_fet (fp, NULL, s->ep, fet, repcount);
-    }
-    else if (s->ep) {
-      fprintf (fp, " #0 #1 #2\n");
-      _emit_one_fet (fp, NULL, s->ep, fet, repcount);
     }
     else {
       fprintf (fp, " #0 #1 #2\n");
-      _emit_one_fet (fp, NULL, s->en, fet, repcount);
     }
-    fprintf (fp, ".ends\n");
+
+    node_t *x;
+    int ncaps = 0;
+    for (x = s->nl->hd; x; x = x->next) {
+      /* emit node cap, if any */
+      if ((x->cap > 0) && !ignore_loadcap) {
+	fprintf (fp, "C_per_node_%d ", ncaps++);
+	emit_node (NULL, fp, x, NULL, NULL, 1);
+	fprintf (fp, " ");
+	emit_node (NULL, fp, s->nl->GND, NULL, NULL, 1);
+	fprintf (fp, " %g\n", x->cap*1e-15);
+      }
+
+      for (listitem_t *mi = list_first (x->e); mi; mi = list_next (mi)) {
+	edge_t *e = (edge_t *)list_value (mi);
+	_emit_one_fet (fp, NULL, e, fet, repcount);
+      }
+    }
+
+    /* clear visited flag */
+    for (x = s->nl->hd; x; x = x->next) {
+      for (listitem_t *mi = list_first (x->e); mi; mi = list_next (mi)) {
+	edge_t *e = (edge_t *)list_value (mi);
+	e->visited = 0;
+      }
+    }
   }
+
+  fprintf (fp, ".ends\n");
   fprintf (fp, "*\n*--- end weak supply instances ---*\n*\n");
 }
 

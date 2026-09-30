@@ -50,7 +50,7 @@ const char *ActNetlistPass::local_gnd = NULL;
 Act *ActNetlistPass::current_act = NULL;
 ActDynamicPass *ActNetlistPass::current_annotate = NULL;
 int ActNetlistPass::grids_per_lambda = 0;
-
+int ActNetlistPass::tiecells_for_staticizer = 0;
 
 #define VINF(x) ((struct act_nl_varinfo *)((x)->extra))
 
@@ -263,6 +263,7 @@ static node_t *node_alloc (netlist_t *n, struct act_nl_varinfo *vi)
   if (n->B) {
     x->b = bool_false (n->B);
   }
+
   q_ins (n->hd, n->tl, x);
 
   return x;
@@ -587,6 +588,69 @@ void ActNetlistPass::fold_transistors (netlist_t *N)
 
 
 static list_t *_weak_edge_list = NULL;
+static bool _nl_tie_cells;
+static int _min_length;
+
+void ActNetlistPass::_netlist_set_tVdd (netlist_t *N)
+{
+  edge_t *e;
+
+  if (!N->tVdd) {
+    if (tiecells_for_staticizer) {
+      node_t *diode; // the diode-connected terminal
+
+      /* create tie cell for this process */
+      N->tVdd = node_alloc (N, NULL);
+      diode = node_alloc (N, NULL);
+
+      e = edge_alloc (diode, N->Vdd, N->tVdd, N->nsc);
+      e->type = EDGE_PFET;
+      e->w = min_w_in_lambda*getGridsPerLambda();
+      e->l = min_l_in_lambda*getGridsPerLambda();
+      e->keeper = 1;
+
+      e = edge_alloc (diode, N->GND, diode, N->psc);
+      e->type = EDGE_NFET;
+      e->w = min_w_in_lambda*getGridsPerLambda();
+      e->l = min_l_in_lambda*getGridsPerLambda();
+      e->keeper = 1;
+    }
+    else {
+      N->tVdd = N->Vdd;
+    }
+  }
+}
+
+void ActNetlistPass::_netlist_set_tGND (netlist_t *N)
+{
+  edge_t *e;
+
+  if (!N->tGND) {
+    if (tiecells_for_staticizer) {
+      node_t *diode; // the diode-connected terminal
+
+      /* create tie cell for this process */
+      N->tGND = node_alloc (N, NULL);
+      diode = node_alloc (N, NULL);
+
+      e = edge_alloc (diode, N->GND, N->tGND, N->psc);
+      e->type = EDGE_NFET;
+      e->w = min_w_in_lambda*getGridsPerLambda();
+      e->l = min_l_in_lambda*getGridsPerLambda();
+      e->keeper = 1;
+
+      e = edge_alloc (diode, N->Vdd, diode, N->nsc);
+      e->type = EDGE_PFET;
+      e->w = min_w_in_lambda*getGridsPerLambda();
+      e->l = min_l_in_lambda*getGridsPerLambda();
+      e->keeper = 1;
+    }
+    else {
+      N->tGND = N->GND;
+    }
+  }
+}
+
 
 static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
 {
@@ -595,7 +659,10 @@ static void _alloc_weak_vdd (netlist_t *N, node_t *w, int min_w, int len)
   Assert (w, "What?");
 
   w->sharedsupply = 1;
-  e = edge_alloc (N->GND, N->Vdd, w, N->nsc);
+
+  ActNetlistPass::_netlist_set_tGND (N);
+
+  e = edge_alloc (N->tGND, N->Vdd, w, N->nsc);
   e->type = EDGE_PFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
@@ -613,7 +680,10 @@ static void _alloc_weak_gnd (netlist_t *N, node_t *w, int min_w, int len)
   Assert (w, "What?");
 	  
   w->sharedsupply = 1;
-  e = edge_alloc (N->Vdd, N->GND, w, N->psc);
+
+  ActNetlistPass::_netlist_set_tVdd (N);
+
+  e = edge_alloc (N->tVdd, N->GND, w, N->psc);
   e->type = EDGE_NFET;
   e->w = min_w*ActNetlistPass::getGridsPerLambda();
   e->l = len*ActNetlistPass::getGridsPerLambda();
@@ -2390,6 +2460,8 @@ static netlist_t *_initialize_empty_blank_netlist ()
   N->nsc_list = list_new ();
 
   N->leak_correct = 0;
+  N->tVdd = NULL;
+  N->tGND = NULL;
 
   return N;
 }
@@ -2549,6 +2621,8 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
     }
   }
   NEW (s, ActNetlistPass::shared_stat);
+  s->extra1 = NULL;
+  s->extra2 = NULL;
 
   s->nl = _initialize_empty_blank_netlist ();
 
@@ -2585,16 +2659,23 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
   // #2 (wvdd)
   // #3 (wgnd)
 
+  if (ev) {
+    ActNetlistPass::_netlist_set_tGND (s->nl);
+  }
+  if (eg) {
+    ActNetlistPass::_netlist_set_tVdd (s->nl);
+  }
+
   if (eg) {
     //s->en = eg;
-    s->en = edge_alloc (vdd, gnd, wgnd, gnd);
+    s->en = edge_alloc (s->nl->tVdd, gnd, wgnd, gnd);
     edge_copyattr (s->en, eg);
   }
   else {
     s->en = NULL;
   }
   if (ev) {
-    s->ep = edge_alloc (gnd, vdd, wvdd, vdd);
+    s->ep = edge_alloc (s->nl->tGND, vdd, wvdd, vdd);
     edge_copyattr (s->ep, ev);
   }
   else {
@@ -2603,6 +2684,7 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
   if (eg && ev) {
     Assert (eg->w == ev->w, "What?");
   }
+
   list_append (l, s);
   return s;
 }
@@ -2827,6 +2909,42 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
     }
 
     // now filter these edges out of the Vdd/GND edgelist
+    if (n->tVdd && n->tVdd != n->Vdd) {
+      /* walk through the tiecell Vdd/high output, and delete them all */
+      while (!list_isempty (n->tVdd->e)) {
+	edge_t *x = (edge_t *) list_delete_head (n->tVdd->e);
+	/* the gate of this transistor is the diode node */
+
+	Assert (x->b == n->tVdd, "What?");
+	Assert (x->a == n->Vdd, "Blah!");
+
+	x->visited = 1;
+
+	Assert (list_length (x->g->e) == 1, "What?");
+	x = (edge_t *) list_delete_tail (x->g->e);
+	x->visited = 1;
+	Assert (x->b == x->g, "What?");
+	Assert (x->a == n->GND, "What?");
+      }
+    }
+    if (n->tGND && n->tGND != n->GND) {
+      while (!list_isempty (n->tGND->e)) {
+	edge_t *x = (edge_t *) list_delete_head (n->tGND->e);
+	/* the gate of this transistor is the diode node */
+
+	Assert (x->b == n->tGND, "What?");
+	Assert (x->a == n->GND, "Blah!");
+
+	x->visited = 1;
+
+	Assert (list_length (x->g->e) == 1, "What?");
+	x = (edge_t *) list_delete_head (x->g->e);
+	x->visited = 1;
+	Assert (x->b == x->g, "What?");
+	Assert (x->a == n->Vdd, "What?");
+      }
+    }
+    /* filter the visited edges */
     if (n->Vdd) {
       listitem_t *prev = NULL, *li;
       li = list_first (n->Vdd->e);
@@ -3000,6 +3118,7 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   weak_to_strong_ratio = config_get_real ("net.weak_to_strong_ratio");
   min_w_in_lambda = config_get_int ("net.min_width");
   min_l_in_lambda = config_get_int ("net.min_length");
+  _min_length = min_l_in_lambda;
 
   if (config_exists ("net.leakage_adjust")) {
     leak_adjust = config_get_real ("net.leakage_adjust");
@@ -3099,6 +3218,18 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   use_subckt_models = config_get_int ("net.use_subckt_models");
   swap_source_drain = config_get_int ("net.swap_source_drain");
   extra_fet_string = config_get_string ("net.extra_fet_string");
+  if (config_exists ("net.tiecells_for_staticizer")) {
+    tiecells_for_staticizer = config_get_int ("net.tiecells_for_staticizer");
+  }
+  else {
+    tiecells_for_staticizer = 0;
+  }
+  if (tiecells_for_staticizer) {
+    _nl_tie_cells = true;
+  }
+  else {
+    _nl_tie_cells = false;
+  }
 
   black_box_mode = config_get_int ("net.black_box_mode");
   if (config_exists ("net.top_level_only")) {
@@ -3291,11 +3422,17 @@ bool ActNetlistPass::emptyNetlist (netlist_t *N)
     // this could be a top-level weak supply used to wire up shared
     // staticizers.
     if (!n->supply && !n->sharedsupply) {
-      return false;
+      if (!list_isempty (n->e)) {
+	return false;
+      }
     }
     if (!list_isempty (n->e)) {
-      // if the remaining edges are weak staticizers... then okay!
-      return false;
+      for (listitem_t *li = list_first (n->e); li; li = list_next (li)) {
+	edge_t *x = (edge_t *) list_value (li);
+	if (!x->visited) return false;
+      }
+      //printf (" --> path2\n");
+      //return false;
     }
     n = n->next;
   }

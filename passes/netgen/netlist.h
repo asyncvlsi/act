@@ -169,6 +169,9 @@ typedef struct {
   node_t *Vdd, *GND;
   node_t *psc, *nsc;		/* substrate contacts */
 
+  node_t *tVdd, *tGND;		/* tie cell nodes for staticizers in
+				   this process */
+
   int weak_supply_vdd, weak_supply_gnd;
   /* if > 0, this block has weak supply ports. It includes the count of the
      # of gates that share the weak inv within the block */
@@ -216,6 +219,8 @@ class ActNetlistPass : public ActPass {
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
   static void sprint_conn (char *buf, int sz, act_connection *c);
   static bool emptyNetlist (netlist_t *n);
+  static void _netlist_set_tVdd (netlist_t *);
+  static void _netlist_set_tGND (netlist_t *);
 
 
   /*
@@ -241,6 +246,7 @@ class ActNetlistPass : public ActPass {
     netlist_t *nl;
     edge_t *en, *ep; // the "b" terminal of the edge is always the
 		     // weak power supply node
+    void *extra1, *extra2; // space for rent
   };
   struct shared_stat_inst {
     int w, pl, nl;
@@ -277,11 +283,14 @@ private:
   static int grids_per_lambda;
   
   /* minimum transistor size */
-  int min_w_in_lambda;
-  int min_l_in_lambda;
+  static int min_w_in_lambda;
+  static int min_l_in_lambda;
+
   double leak_adjust;
   int _fin_width;		// for FinFETs, snaps all widths to
 				// integer fin width
+
+  static int tiecells_for_staticizer;
 
   /* maximum transistor size */
   int max_n_w_in_lambda;
@@ -321,6 +330,7 @@ private:
   int use_subckt_models;
   int swap_source_drain;
   const char *extra_fet_string;
+
   
   int top_level_only;
 
@@ -355,7 +365,6 @@ private:
   // name will be cell:::weak_suply<%d,%d,%d> or cell:::weak_up<%d,%d> or
   // cell:::weak_dn<%d,%d>
   list_t *shared_stat_list;
-
 
   netlist_t *generate_netlist (Process *p);
   void generate_netgraph (netlist_t *N,
