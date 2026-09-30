@@ -53,7 +53,7 @@ typedef struct edge edge_t;
 
 struct act_nl_varinfo {
   act_booleanized_var_t *v;	/* var pointer */
-  
+
   act_prs_expr_t *e_up, *e_dn;	/* parsed expression: explicit
 				   keepers omitted */
 

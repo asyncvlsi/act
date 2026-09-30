@@ -1649,7 +1649,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
   }
   else {
     if (N && n == N->Vdd) {
-      if (N->bN->cur) {
+      if (N->bN && N->bN->cur) {
 	ValueIdx *vx;
 	act_connection *c;
 	vx = N->bN->cur->FullLookupVal (local_vdd);
@@ -1683,7 +1683,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
       }	
     }
     else if (N && n == N->GND) {
-      if (N->bN->cur) {
+      if (N->bN && N->bN->cur) {
 	ValueIdx *vx;
 	act_connection *c;
 	vx = N->bN->cur->FullLookupVal (local_gnd);
@@ -1712,7 +1712,12 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
 	snprintf (buf, sz, "#fb%d#", n->i);
       }
       else {
-	snprintf (buf, sz, "#%d", n->i);
+	if (N && ((n == N->wvdd) || (n == N->wgnd))) {
+	  snprintf (buf, sz, "_hash_%d", n->i);
+	}
+	else {
+	  snprintf (buf, sz, "#%d", n->i);
+	}
       }
     }
   }
@@ -2648,9 +2653,11 @@ _find_shared_stat_type (list_t *l, edge_t *ev, edge_t *eg)
   
   if (ev) {
     wvdd = node_alloc (s->nl, NULL);
+    s->nl->wvdd = wvdd;
   }
   if (eg) {
     wgnd = node_alloc (s->nl, NULL);
+    s->nl->wgnd = wgnd;
   }
 
   // port list order is

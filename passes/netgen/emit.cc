@@ -97,10 +97,10 @@ void ActNetlistPass::emitWeakSupplies ()
     a->mfprintf (fp, "%s", buf);
 
     if (s->en && s->ep) {
-      fprintf (fp, " #0 #1 #2 #3\n");
+      a->mfprintf (fp, " Vdd GND _hash_2 _hash_3\n");
     }
     else {
-      fprintf (fp, " #0 #1 #2\n");
+      a->mfprintf (fp, " Vdd GND _hash_2\n");
     }
 
     node_t *x;
@@ -111,13 +111,13 @@ void ActNetlistPass::emitWeakSupplies ()
 	fprintf (fp, "C_per_node_%d ", ncaps++);
 	emit_node (NULL, fp, x, NULL, NULL, 1);
 	fprintf (fp, " ");
-	emit_node (NULL, fp, s->nl->GND, NULL, NULL, 1);
+	emit_node (s->nl, fp, s->nl->GND, NULL, NULL, 1);
 	fprintf (fp, " %g\n", x->cap*1e-15);
       }
 
       for (listitem_t *mi = list_first (x->e); mi; mi = list_next (mi)) {
 	edge_t *e = (edge_t *)list_value (mi);
-	_emit_one_fet (fp, NULL, e, fet, repcount);
+	_emit_one_fet (fp, s->nl, e, fet, repcount);
       }
     }
 
@@ -484,11 +484,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       }
 
       if (n->weak_supply_vdd > 0) {
-	fprintf (fp, " #%d", n->wvdd->i);
+	fprintf (fp, " __hash_%d", n->wvdd->i);
       }
 
       if (n->weak_supply_gnd > 0) {
-	fprintf (fp, " #%d", n->wgnd->i);
+	fprintf (fp, " __hash_%d", n->wgnd->i);
       }
       fprintf (fp, "\n");
     }
@@ -507,10 +507,10 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       delete id;
     }
     if (n->weak_supply_vdd > 0) {
-      fprintf (fp, " #%d:I", n->wvdd->i);
+      fprintf (fp, " _hash_%d:I", n->wvdd->i);
     }
     if (n->weak_supply_gnd > 0) {
-      fprintf (fp, " #%d:I", n->wgnd->i);
+      fprintf (fp, " _hash_%d:I", n->wgnd->i);
     }
     fprintf (fp, "\n");
   }
@@ -719,12 +719,12 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  if (sub->weak_supply_vdd > 0) {
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
 	    /* XXX: what do I do here? */
-	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	    a->mfprintf (fp, " _hash_%d", n->instport_weak[iweak++]);
 	  }
 	  if (sub->weak_supply_gnd > 0) {
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
 	    /* XXX: what do I do here? */
-	    fprintf (fp, " #%d", n->instport_weak[iweak++]);
+	    a->mfprintf (fp, " _hash_%d", n->instport_weak[iweak++]);
 	  }
 	    
 	  a->mfprintf (fp, " ");
@@ -762,11 +762,17 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       emit_node (n, fp, n->GND,  NULL, NULL, 1);
       if (si->weak_vdd) {
 	fprintf (fp, " ");
+	node_t *tmp = n->wvdd;
+	n->wvdd = si->weak_vdd;
 	emit_node (n, fp, si->weak_vdd, NULL, NULL, 1);
+	n->wvdd = tmp;
       }
       if (si->weak_gnd) {
+	node_t *tmp = n->wgnd;
+	n->wgnd = si->weak_gnd;
 	fprintf (fp, " ");
 	emit_node (n, fp, si->weak_gnd, NULL, NULL, 1);
+	n->wgnd = tmp;
       }
       fprintf (fp, " ");
 
