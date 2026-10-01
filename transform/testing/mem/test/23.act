@@ -1,0 +1,16 @@
+import "mem.act";
+
+export defproc test(chan(int<5>)? in; chan(int<8>)! out)
+{
+  int<8> m[32];
+  int<8> x;
+  int<5> a;
+  int<1> b;
+  chp {
+   *[ in?a;
+      x := m[a];
+      [ b=1 -> m[a] := m[a] + 1 [] else -> x := m[a] + b ];
+      out!m[a]
+    ]
+  }
+}

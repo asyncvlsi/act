@@ -125,7 +125,9 @@ private:
     Data *isstruct;		// if non-NULL, this holds a
 				// structure; for structures we have a
 				// struct variable and packed int variable
+
     int bw;			// the bit-width of the integer variable
+
     int idx;			// the suffix of the variable name
     
     int used;			// 0 = the variable is available for
@@ -213,6 +215,7 @@ private:
   struct memvar_map {
     std::vector<ValueIdx *> newvars;
     std::vector<std::vector<memvar_info>> v;
+    std::vector<std::unordered_set<int>> invals;
 
     /**
      * Find an unused idx to recycle that matches the data type we
@@ -355,6 +358,10 @@ private:
       v.push_back(copy);
     }
 
+    void push_select() {
+      invals.push_back({});
+    }
+
     void pop () {
       v.pop_back();
     }
@@ -375,15 +382,30 @@ private:
       pop ();
     }
 
-    void pop_select() {
+    void pop_select_one() {
       auto pos = v.size() - 2;
       auto &last = v.back();
       auto &prev = v[pos];
       for (auto i = 0; i < prev.size(); i++) {
 	if (last[i].ref == NULL) {
-	  prev[i].ref = NULL;
+	  // a reference was invalidated, so we add it to the inval
+	  // flag for clearing at the end of processing all the
+	  // selection options
+	  if (invals.back().find(i) == invals.back().end()) {
+	    invals.back().insert(i);
+	  }
 	}
       }
+      pop();
+    }
+
+    // invalidate references at the end of the selection
+    void pop_select() {
+      auto &last = v.back();
+      for (int x : invals.back()) {
+	last[x].ref = NULL;
+      }
+      invals.pop_back();
     }
     
   } _map;

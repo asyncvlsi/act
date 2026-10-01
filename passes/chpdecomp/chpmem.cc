@@ -1276,6 +1276,7 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
       gc = c->u.gc;
     }
 
+    _map.push_select ();
     while (gc) {
       if (gc->s) {
 	_map.push ();
@@ -1289,10 +1290,12 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
 	_map.dump_memrefs (stdout);
 	printf ("--\n");
 #endif	  
-	_map.pop_select ();
+	_map.pop_select_one ();
       }
       gc = gc->next;
     }
+    _map.pop_select ();
+    
     break;
 
   case ACT_CHP_LOOP:
