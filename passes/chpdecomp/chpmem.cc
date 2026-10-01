@@ -1279,8 +1279,17 @@ void ActCHPMemory::_extract_memory (act_chp_lang_t *c)
     while (gc) {
       if (gc->s) {
 	_map.push ();
+#if 0	
+	printf ("on-entry:\n");
+	_map.dump_memrefs (stdout);
+#endif	
 	_extract_memory (gc->s);
-	_map.pop ();
+#if 0
+	printf ("--> at end:\n");
+	_map.dump_memrefs (stdout);
+	printf ("--\n");
+#endif	  
+	_map.pop_select ();
       }
       gc = gc->next;
     }

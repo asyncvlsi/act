@@ -368,8 +368,22 @@ private:
 	  // propagate recycled flag
 	  prev[i].used = 2;
 	}
+	if (last[i].ref == NULL) {
+	  prev[i].ref = NULL;
+	}
       }
       pop ();
+    }
+
+    void pop_select() {
+      auto pos = v.size() - 2;
+      auto &last = v.back();
+      auto &prev = v[pos];
+      for (auto i = 0; i < prev.size(); i++) {
+	if (last[i].ref == NULL) {
+	  prev[i].ref = NULL;
+	}
+      }
     }
     
   } _map;

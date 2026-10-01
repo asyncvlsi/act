@@ -1,0 +1,45 @@
+namespace std {
+export defproc ram_332_78_4 (chan(int<2>)? rd; chan(int<5>)? addr; chan(int<8>)? din; chan(int<8>)! dout);
+
+export defproc ram_332_78_4 (chan(int<2>)? rd; chan(int<5>)? addr; chan(int<8>)? din; chan(int<8>)! dout)
+{
+
+/* instances */
+int<5> a;
+int<2> b;
+int<8> m[32];
+
+/* connections */
+chp {
+*[true -> addr?a,rd?b;[bool((b>>0x1)=0x0 ? int(int(b,1)=0x0) : 0x0) -> din?m[a] [] bool((b>>0x1)=0x0 ? int(int(b,1)=0x1) : 0x0) -> dout!m[a] [] b=0x2 -> dout!m[a];din?m[a]]]
+}
+}
+
+
+/* instances */
+
+/* connections */
+}
+export defproc test (chan(int<5>)? in; chan(int<8>)! out);
+
+export defproc test (chan(int<5>)? in; chan(int<8>)! out)
+{
+
+/* instances */
+::std::ram_332_78_4 m_m;
+int<1> b;
+int<5> a;
+int<8> x;
+int<8> _memdatv2;
+int<8> _memdatv1;
+
+/* connections */
+chp {
+*[true -> in?a;m_m.addr!a,m_m.rd!1,m_m.dout?_memdatv1;x:=_memdatv1;[b=0x1 -> _memdatv2:=_memdatv1+0x1;m_m.addr!a,m_m.rd!0,m_m.din!_memdatv2 [] else -> skip];m_m.addr!a,m_m.rd!1,m_m.dout?_memdatv1;out!_memdatv1]
+}
+}
+
+
+/* instances */
+
+/* connections */
