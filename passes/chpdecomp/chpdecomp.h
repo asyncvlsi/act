@@ -119,7 +119,7 @@ private:
   ExprDagVisit *_E;
 
   /*
-   * Information about new variables used for memory references
+   * Information about an individual variable used to hold memory references
    */
   struct memvar_info {
     Data *isstruct;		// if non-NULL, this holds a
@@ -137,8 +137,27 @@ private:
 				// from the cache so should not be recycled.
     
     
-    valid_read_ref *ref;
+    valid_read_ref *ref;	// if this variable holds a valid
+				// reference, what is it a reference to?
 
+
+    // initialize blank entry
+    memvar_info() {
+      isstruct = NULL;
+      bw = -1;
+      idx = -1;
+      used = 0;
+      ref = NULL;
+    }
+
+    // standard constructor, and mark this as used
+    memvar_info(Data *_str, int _bw, int _idx) {
+      isstruct = _str;
+      bw = _bw;
+      idx = _idx;
+      used = 1;
+      ref = NULL;
+    }
 
     void dump (FILE *fp) {
       fprintf (fp, "{id%d - ", idx);
@@ -152,14 +171,7 @@ private:
       }
     }
 
-    memvar_info(Data *_str, int _bw, int _idx) {
-      isstruct = _str;
-      bw = _bw;
-      idx = _idx;
-      used = 1;
-      ref = NULL;
-    }
-
+    // check if this is available to hold the specified data
     bool match_and_unused (int inbw, Data *str) {
       if (used) return false;
       if (str) {
@@ -177,8 +189,9 @@ private:
     }
 
     /*
-      Marks the variable used in preparation for recycling;
-      this also clears the variable ref it held.
+      Marks the variable used in preparation for use; this is  called
+      when recycling an existing variable identified from
+      match_and_unused() above. This also clears the variable ref it held.
      */
     void mark_used() {
       used = 1;
@@ -188,14 +201,10 @@ private:
       ref = NULL;
     }
 
-    memvar_info() {
-      isstruct = NULL;
-      bw = -1;
-      idx = -1;
-      used = 0;
-      ref = NULL;
-    }
-
+    /*
+      Shallow copy, used because we need to keep track of old values
+      of this reference when processing selections and parallel composition.
+    */
     memvar_info clone() {
       memvar_info m;
       m.isstruct = isstruct;
@@ -212,9 +221,26 @@ private:
     }
   };
 
+
+
+  /*
+   * Used to track all the variables that hold memory references
+   * introduced during memory decomposition
+   */
+  
   struct memvar_map {
-    std::vector<ValueIdx *> newvars;
+    std::vector<ValueIdx *> newvars; // the variables introduced
+
+    // information about the current memory variables
+    //   - last vector is the current sequential/statement fragment
+    //   - one before it is the previous one encountered
+    // A new vector slot is created on selections and parallel
+    // composition
     std::vector<std::vector<memvar_info>> v;
+
+    // for selections, any invalidated reference within a branch must
+    // propagate outside after the end of the selection. This keeps
+    // track of those invalidations.
     std::vector<std::unordered_set<int>> invals;
 
     /**
@@ -246,6 +272,9 @@ private:
       return v.back().size()-1;
     }
 
+    /**
+     * Indexing routine: returns slot matching the index.
+     */
     int find_idx (int idx) {
       auto &last = v.back();
       for (int i=0; i < last.size(); i++) {
@@ -270,7 +299,7 @@ private:
 
     /**
      * Invalidate any valid references that might need the value of
-     * the variable wr. 
+     * the variable wr.
      */
     void invalidate_refs (ActId *wr) {
       auto &last = v.back();
@@ -282,11 +311,24 @@ private:
 	    if (last[i].used) {
 	      last[i].used = 0;
 	    }
+	    // if I am in some select scope, then this entry needs to
+	    // be invalidated after the selection
+	    if (invals.size() > 0) {
+	      if (invals.back().find(i) == invals.back().end()) {
+		invals.back().insert(i);
+	      }
+	    }
 	  }
 	}
       }
     }
 
+    /**
+     * If the actid reference matches something in the cached values,
+     * return it and mark the used flag for the slot as 2. This is
+     * used in the parallel case to make sure that this slot cannot be
+     * recycled.
+     */
     ActId *find_cached (ActId *ref, int *retval = NULL) {
       ActId *tail = ref->Rest();
       ref->prune ();
@@ -317,7 +359,7 @@ private:
       return NULL;
     }
 
-
+    /* debugging */
     void dump_memrefs (FILE *fp) {
       fprintf (fp, "-- mem refs: ");
       if (v.size() == 0 || (v.size() == 1 && v[0].size() == 0)) {
@@ -349,6 +391,9 @@ private:
       }
     }
 
+    /*
+     * Nesting of memory variable state
+     */
     void push () {
       auto &last = v.back();
       std::vector<memvar_info> copy;
@@ -358,31 +403,24 @@ private:
       v.push_back(copy);
     }
 
+    /* discard current scope */
+    void pop () {
+      v.pop_back();
+    }
+    
+    /*
+     * Adding flags to be updated at the end of selection
+     */
     void push_select() {
       invals.push_back({});
     }
 
-    void pop () {
-      v.pop_back();
-    }
-
-    void pop_parallel() {
-      auto pos = v.size() - 2;
-      auto &last = v.back();
-      auto &prev = v[pos];
-      for (auto i = 0; i < prev.size(); i++) {
-	if (last[i].used == 2) {
-	  // propagate recycled flag
-	  prev[i].used = 2;
-	}
-	if (last[i].ref == NULL) {
-	  prev[i].ref = NULL;
-	}
-      }
-      pop ();
-    }
-
-    void pop_select_one() {
+    /*
+     * Discard branch scope within a selection statement. If there are
+     * any invalidated references, we need to track them for
+     * invalidation after all the selection branches have been handled
+     */
+    void pop_select_branch() {
       auto pos = v.size() - 2;
       auto &last = v.back();
       auto &prev = v[pos];
@@ -408,6 +446,27 @@ private:
       invals.pop_back();
     }
     
+    /*
+     * Discard parallel scope. Before doing so, any recycled variable
+     * flag must propagate to the outer scope. In addition, any
+     * invalidated reference must also propagate to the outer scope.
+     */
+    void pop_parallel() {
+      auto pos = v.size() - 2;
+      auto &last = v.back();
+      auto &prev = v[pos];
+      for (auto i = 0; i < prev.size(); i++) {
+	if (last[i].used == 2) {
+	  // propagate recycled flag
+	  prev[i].used = 2;
+	}
+	if (last[i].ref == NULL) {
+	  prev[i].ref = NULL;
+	}
+      }
+      pop ();
+    }
+
   } _map;
 
   act_boolean_netlist_t *_curbnl;
