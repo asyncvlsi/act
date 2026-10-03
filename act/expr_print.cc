@@ -1815,6 +1815,9 @@ static void _add_id (list_t *ids, ActId *id)
 static void _collect_ids_from_expr (list_t *ids, Expr *e)
 {
   if (!e) return;
+  if (_E->visited (e)) {
+    return;
+  }
   
   switch (e->type) {
   case E_PLUS:
@@ -1895,7 +1898,13 @@ void act_expr_collect_ids (list_t *l, Expr *e)
     warning ("act_expr_collect_ids: list was NULL");
     return;
   }
-  return _collect_ids_from_expr (l, e);
+  _E = new ExprDagVisit;
+  _E->entry ();
+  _collect_ids_from_expr (l, e);
+  _E->exit ();
+  delete _E;
+  _E = NULL;
+  return;
 }
 
 
