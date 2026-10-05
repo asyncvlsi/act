@@ -441,7 +441,11 @@ private:
     void pop_select() {
       auto &last = v.back();
       for (int x : invals.back()) {
-	last[x].ref = NULL;
+	if (x < last.size()) {
+	  // There may be invalidations of new things, but we don't
+	  // care about those.
+	  last[x].ref = NULL;
+	}
       }
       invals.pop_back();
     }
