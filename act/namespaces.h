@@ -653,6 +653,14 @@ class ActNamespace {
    */
   char *Name (bool add_colon = false);
 
+
+  /**
+   * Returns a freshly allocated string containing the relative path
+   * compared to the provided namespace. Returns NULL if the
+   * namespaces are the same.
+   */
+  char *NameSuffix (ActNamespace *ns, bool add_colon = false);
+
   /**
    * Unlink the namespace from its parent. This function is required
    * for supporting namespace renaming

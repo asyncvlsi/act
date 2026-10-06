@@ -213,6 +213,83 @@ char *ActNamespace::Name (bool add_colon)
   return ret;
 }
 
+
+/**
+ * String name
+ */
+char *ActNamespace::NameSuffix (ActNamespace *ons, bool add_colon)
+{
+  int sz = 1, len;
+  ActNamespace *ns;
+  char *ret;
+  list_t *my_stk, *other_stk;
+
+  if (this == ons) return NULL;
+
+  ns = this;
+
+  if (ns == global) {
+    if (add_colon) {
+      return Strdup ("::");
+    }
+    else {
+      return Strdup ("");
+    }
+  }
+  
+  my_stk = list_new ();
+  other_stk = list_new ();
+
+  while (ns->parent) {
+    stack_push (my_stk, ns);
+    sz += strlen (ns->self_bucket->key);
+    sz += 2;
+    ns = ns->parent;
+  }
+
+  if (add_colon) {
+    sz += 2;
+  }
+
+  while (ons->parent) {
+    stack_push (other_stk, ons);
+    ons = ons->parent;
+  }
+
+  MALLOC (ret, char, sz);
+  ns = this;
+
+  int pos = 0;
+  ret[pos] = '\0';
+  
+  listitem_t *mi = list_first (other_stk);
+  for (listitem_t *li = list_first (my_stk); li; li = list_next (li)) {
+    if (mi) {
+      // still potential match
+      if (list_value (mi) == list_value (li)) {
+	mi = list_next (mi);
+	continue;
+      }
+      else {
+	mi = NULL;
+      }
+    }
+    ns = (ActNamespace *) list_value (li);
+    if (add_colon || list_next (li)) {
+      snprintf (ret + pos, sz - pos, "%s::", ns->self_bucket->key);
+    }
+    else {
+      snprintf (ret + pos, sz - pos, "%s", ns->self_bucket->key);
+    }
+    pos += strlen (ret + pos);
+  }
+
+  list_free (my_stk);
+  list_free (other_stk);
+  return ret;
+}
+
+
 /**
  * Functions for class ActOpen
  *
