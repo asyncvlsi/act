@@ -2061,7 +2061,27 @@ enum_body
     $0->u_d = NULL;
     $0->scope = $0->curns->CurScope ();
     return NULL;
-}};
+}}
+| "defenum" ID  ":" "int" ";"
+{{X:
+    /* used to promote existing enum to an int */
+    if ($0->curns->findName ($2) == 1) {
+      UserDef *u;
+      $A(u = $0->curns->findType ($2));
+      if (TypeFactory::isDataType (u)) {
+	Data *td = dynamic_cast<Data *>(u);
+	$A(td);
+	if (td->isEnum()) {
+	  td->MkEnum (1);
+	}
+	return NULL;
+      }
+    }
+    $E("Name ``%s'' is not an enumeration", $2);
+    return NULL;
+}}
+;
+
 
 enum_body[int]: "{" bare_id_list "}" ";"
 {{X:

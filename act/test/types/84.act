@@ -1,0 +1,13 @@
+defenum foo {
+   A, B, C
+};
+
+
+defenum foo : int;
+
+foo x, y;
+
+chp {
+   x := y;
+   x := 4
+}
