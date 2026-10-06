@@ -58,7 +58,7 @@ static void usage (char *name)
   fprintf (stderr, " -d	       Emit parasitic source/drain diffusion area/perimeters with fets\n");
   fprintf (stderr, " -B	       Turn off black-box mode. Assume empty act process is an externally specified file\n");
   fprintf (stderr, " -l	       LVS netlist; ignore all load capacitances\n");
-  fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
+  //fprintf (stderr, " -S        Enable shared long-channel devices in staticizers\n");
   fprintf (stderr, " -s <scale> Scale all transistor parameters by <scale>\n");
   fprintf (stderr, " -f        Produce flat output; requires -c\n");
   fprintf (stderr, " -a        Run SPEF back-annotation.\n");
@@ -66,7 +66,7 @@ static void usage (char *name)
 }
 
 
-static int enable_shared_stat = 0;
+//static int enable_shared_stat = 0;
 static char *cell_file;
 
 /*
@@ -98,7 +98,7 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
 
   Act::Init (argc, argv);
 
-  while ((ch = getopt (*argc, *argv, "fSBdtp:o:lc:s:a")) != -1) {
+  while ((ch = getopt (*argc, *argv, "fBdtp:o:lc:s:a")) != -1) {
     switch (ch) {
     case 'a':
       config_set_int ("net.spef_annotate", 1);
@@ -110,10 +110,12 @@ static char *initialize_parameters (int *argc, char ***argv, FILE **fpout)
       scale_factor = atof (optarg);
       config_set_real ("net.output_scale_factor", scale_factor);
       break;
-      
+
+#if 0
     case 'S':
       enable_shared_stat = 1;
       break;
+#endif
       
     case 'l':
       ignore_loadcap = 1;
@@ -246,9 +248,11 @@ int main (int argc, char **argv)
   }
 
   ActNetlistPass *np = new ActNetlistPass (a);
+#if 0  
   if (enable_shared_stat) {
     np->enableSharedStat();
   }
+#endif  
   np->run (p);
 
   if (config_get_int ("net.spef_annotate")) {

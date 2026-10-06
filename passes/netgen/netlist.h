@@ -206,7 +206,6 @@ class ActNetlistPass : public ActPass {
 
   netlist_t *getNL (Process *p);
 
-  void enableSharedStat();
   struct pHashtable *getSharedInsts() { return shared_inst; }
 
   void Print (FILE *fp, Process *p);
@@ -274,6 +273,9 @@ class ActNetlistPass : public ActPass {
 private:
   void *local_op (Process *p, int mode = 0);
   void free_local (void *v);
+
+  // turn on shared staticizers if config requires it
+  void enableSharedStat();
 
   ActBooleanizePass *bools;
 

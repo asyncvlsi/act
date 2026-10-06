@@ -1504,9 +1504,17 @@ void ActCellPass::add_new_cell (struct act_prsinfo *pi)
   char *base_name = _get_basename (pi);
   char *buf;
   int idx = 0;
+  const char *suffix = "x";
+  if (config_exists ("net.weak_sharing")) {
+    suffix = "xs";
+  }
+  else if (config_exists ("net.tiecells_for_staticizer")) {
+    suffix = "xt";
+  }
   MALLOC (buf, char, strlen (base_name) + 50);
+
   do {
-    snprintf (buf, strlen (base_name) + 50, "g%sx%d", base_name, idx++);
+    snprintf (buf, strlen (base_name) + 50, "g%s%s%d", base_name, suffix, idx++);
   } while (cell_ns->findName (buf) != 0);
   cell_ns->CreateType (buf, proc);
   FREE (base_name);
@@ -3826,7 +3834,7 @@ ActCellPass::ActCellPass (Act *a) : ActPass (a, "prs2cells")
     cell_count = 0;
   }
   /*-- put existing cells into the hash table for matching --*/
-  cell_count =  _collect_cells (cell_ns);
+  cell_count = _collect_cells (cell_ns);
 
   /*-- add the pass gates and cap templated values into the cell space --*/
   add_passgates_cap ();

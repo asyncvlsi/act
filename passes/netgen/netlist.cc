@@ -3286,6 +3286,9 @@ ActNetlistPass::ActNetlistPass (Act *a) : ActPass (a, "prs2net")
   param_names.pd = config_get_string ("net.fet_params.perim_drain");
   param_names.fin = config_get_string ("net.fet_params.fin");
 
+  /* this is now on by default, based on a config file */
+  enableSharedStat ();
+
   shared_stat_list = list_new ();
   shared_inst = phash_new (4);
 }
