@@ -1690,7 +1690,8 @@ int ActStatePass::globalBoolOffset (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+    /* if this is called with any signal, it could fail */
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {
@@ -1840,7 +1841,7 @@ int ActStatePass::checkIdExists (ActId *id)
    */
   {
     InstType *it = loc->Lookup (rest->getName());
-    if (TypeFactory::isProcessType (it)) {
+    if (it && rest->Rest() && TypeFactory::isProcessType (it)) {
       Process *tmp = dynamic_cast<Process *> (it->BaseType());
       Assert (tmp, "What?");
       if (!tmp->FindPort (rest->Rest()->getName())) {
