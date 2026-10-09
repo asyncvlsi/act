@@ -96,11 +96,23 @@ void ActNetlistPass::emitWeakSupplies ()
 		       s->ep ? s->ep->l : 0, s->en ? s->en->l : 0);
     a->mfprintf (fp, "%s", buf);
 
+    sprint_node (buf, 64, s->nl, s->nl->Vdd);
+    a->mfprintf (fp, " %s", buf);
+    sprint_node (buf, 64, s->nl, s->nl->GND);
+    a->mfprintf (fp, " %s", buf);
     if (s->en && s->ep) {
-      a->mfprintf (fp, " Vdd GND _hash_2 _hash_3\n");
+      sprint_node (buf, 64, s->nl, s->nl->wvdd);
+      a->mfprintf (fp, " %s", buf);
+      sprint_node (buf, 64, s->nl, s->nl->wgnd);
+      a->mfprintf (fp, " %s\n", buf);
+    }
+    else if (s->en) {
+      sprint_node (buf, 64, s->nl, s->nl->wgnd);
+      a->mfprintf (fp, " %s\n", buf);
     }
     else {
-      a->mfprintf (fp, " Vdd GND _hash_2\n");
+      sprint_node (buf, 64, s->nl, s->nl->wvdd);
+      a->mfprintf (fp, " %s\n", buf);
     }
 
     node_t *x;
@@ -484,11 +496,15 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       }
 
       if (n->weak_supply_vdd > 0) {
-	fprintf (fp, " __hash_%d", n->wvdd->i);
+	char buf[64];
+	sprint_node (buf, 64, n, n->wvdd);
+	a->mfprintf (fp, " %s", buf);
       }
 
       if (n->weak_supply_gnd > 0) {
-	fprintf (fp, " __hash_%d", n->wgnd->i);
+	char buf[64];
+	sprint_node (buf, 64, n, n->wgnd);
+	a->mfprintf (fp, " %s", buf);
       }
       fprintf (fp, "\n");
     }
@@ -507,10 +523,16 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       delete id;
     }
     if (n->weak_supply_vdd > 0) {
-      fprintf (fp, " _hash_%d:I", n->wvdd->i);
+      char buf[64];
+      sprint_node (buf, 64, n, n->wvdd);
+      a->mfprintf (fp, " %s", buf);
+      fprintf (fp, ":I");
     }
     if (n->weak_supply_gnd > 0) {
-      fprintf (fp, " _hash_%d:I", n->wgnd->i);
+      char buf[64];
+      sprint_node (buf, 64, n, n->wgnd);
+      a->mfprintf (fp, " %s", buf);
+      fprintf (fp, ":I");
     }
     fprintf (fp, "\n");
   }
@@ -717,16 +739,18 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
 	  }
 
 	  if (sub->weak_supply_vdd > 0) {
+	    char buf[64];
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
-	    /* XXX: what do I do here? */
-	    a->mfprintf (fp, " _hash_%d", n->instport_weak[iweak++]);
+	    sprint_wk_supply (buf, 64, n->instport_weak[iweak++]);
+	    a->mfprintf (fp, " %s", buf);
 	  }
 	  if (sub->weak_supply_gnd > 0) {
+	    char buf[64];
 	    Assert (iweak < A_LEN (n->instport_weak), "What?");
-	    /* XXX: what do I do here? */
-	    a->mfprintf (fp, " _hash_%d", n->instport_weak[iweak++]);
+	    sprint_wk_supply (buf, 64, n->instport_weak[iweak++]);
+	    a->mfprintf (fp, " %s", buf);
 	  }
-	    
+
 	  a->mfprintf (fp, " ");
 	  a->mfprintfproc (fp, instproc);
 	  a->mfprintf (fp, "\n");

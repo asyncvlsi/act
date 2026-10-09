@@ -1542,21 +1542,40 @@ node_t *ActNetlistPass::connection_to_node (netlist_t *N, act_connection *c)
   return NULL;
 }
 
+
+static const char *_wk_supply_prefix = "_hash_";
+
+static bool _wk_supply_node (const char *s, int *off)
+{
+  int i;
+  for (i=0; s[i] && _wk_supply_prefix[i]; i++) {
+    if (s[i] != _wk_supply_prefix[i]) {
+      return false;
+    }
+  }
+  if (!s[i]) {
+    return false;
+  }
+  *off = i;
+  return true;
+}
+
 node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
 {
   int k;
   node_t *n = NULL;
   if (!s) return NULL;
   if (!*s) return NULL;
+  int off = 1;
 
   Process *p = N->bN->p;
   
-  if (*s == '#') {
+  if (*s == '#' || _wk_supply_node (s, &off)) {
     if (*(s+1) == 'f') {
       k = atoi (s+3);
     }
     else {
-      k = atoi (s+1);
+      k = atoi (s+off);
     }
     /* k = node# */
     n = N->hd;
@@ -1713,7 +1732,7 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
       }
       else {
 	if (N && ((n == N->wvdd) || (n == N->wgnd))) {
-	  snprintf (buf, sz, "_hash_%d", n->i);
+	  sprint_wk_supply (buf, sz, n);
 	}
 	else {
 	  snprintf (buf, sz, "#%d", n->i);
@@ -1721,6 +1740,11 @@ void ActNetlistPass::sprint_node (char *buf, int sz, netlist_t *N, node_t *n)
       }
     }
   }
+}
+
+void ActNetlistPass::sprint_wk_supply (char *buf, int sz, node_t *n)
+{
+  snprintf (buf, sz, "%s%d", _wk_supply_prefix, n->i);
 }
 
 /*
@@ -2810,8 +2834,8 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	if (!weak_vdd) {
 	  weak_vdd = node_alloc (n, NULL);
 	}
-	A_NEW (n->instport_weak, int);
-	A_NEXT (n->instport_weak) = weak_vdd->i;
+	A_NEW (n->instport_weak, node_t *);
+	A_NEXT (n->instport_weak) = weak_vdd;
 	A_INC (n->instport_weak);
       }
 
@@ -2822,8 +2846,8 @@ netlist_t *ActNetlistPass::genNetlist (Process *p)
 	if (!weak_gnd) {
 	  weak_gnd = node_alloc (n, NULL);
 	}
-	A_NEW (n->instport_weak, int);
-	A_NEXT (n->instport_weak) = weak_gnd->i;
+	A_NEW (n->instport_weak, node_t *);
+	A_NEXT (n->instport_weak) = weak_gnd;
 	A_INC (n->instport_weak);
       }
 

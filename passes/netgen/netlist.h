@@ -179,7 +179,7 @@ typedef struct {
 				   exported */
   node_t *wvdd, *wgnd;		/* node ports for weak supply into cell */
 
-  A_DECL (int, instport_weak);	/* node # for instance ports for weak
+  A_DECL (node_t *, instport_weak); /* node # for instance ports for weak
 				   supplies */
 
   struct {
@@ -215,6 +215,7 @@ class ActNetlistPass : public ActPass {
 
   static node_t *connection_to_node (netlist_t *n, act_connection *c);
   static node_t *string_to_node (netlist_t *, char *s);
+  static void sprint_wk_supply (char *buf, int sz, node_t *n);
   static void sprint_node (char *buf, int sz, netlist_t *N, node_t *n);
   static void sprint_conn (char *buf, int sz, act_connection *c);
   static bool emptyNetlist (netlist_t *n);
