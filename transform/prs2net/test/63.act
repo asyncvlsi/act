@@ -1,0 +1,15 @@
+defproc keeper(bool a, b, q)
+{
+  prs {
+    a & b -> q-
+    ~a & ~b -> q+
+  }
+}
+
+defproc foo(bool a, b, q)
+{
+  keeper k(a, b, q);
+}
+
+foo f;
+

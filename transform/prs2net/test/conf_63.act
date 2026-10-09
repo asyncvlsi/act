@@ -1,0 +1,4 @@
+begin net
+  int_table weak_sharing 2 8
+end
+
