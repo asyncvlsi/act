@@ -484,11 +484,11 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       }
 
       if (n->weak_supply_vdd > 0) {
-	fprintf (fp, " __hash_%d", n->wvdd->i);
+    a->mfprintf (fp, " _hash_%d", n->wvdd->i);
       }
 
       if (n->weak_supply_gnd > 0) {
-	fprintf (fp, " __hash_%d", n->wgnd->i);
+    a->mfprintf (fp, " _hash_%d", n->wgnd->i);
       }
       fprintf (fp, "\n");
     }
@@ -507,10 +507,12 @@ netlist_t *ActNetlistPass::emitNetlist (Process *p)
       delete id;
     }
     if (n->weak_supply_vdd > 0) {
-      fprintf (fp, " _hash_%d:I", n->wvdd->i);
+      a->mfprintf (fp, " _hash_%d", n->wvdd->i);
+      fprintf (fp, ":I");
     }
     if (n->weak_supply_gnd > 0) {
-      fprintf (fp, " _hash_%d:I", n->wgnd->i);
+      a->mfprintf (fp, " _hash_%d", n->wgnd->i);
+      fprintf (fp, ":I");
     }
     fprintf (fp, "\n");
   }
