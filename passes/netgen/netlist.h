@@ -256,6 +256,8 @@ class ActNetlistPass : public ActPass {
   list_t *getSharedStatTypes() { return shared_stat_list; }
 
   void getSharedStatName (char *buf, int sz, int w, int pl, int nl);
+  void getSharedStatName (char *buf, int sz, shared_stat *ss);
+
 
   /* find the closest length to the one specified given length windows */
   int  find_length_fit (int len);

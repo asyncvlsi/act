@@ -73,6 +73,14 @@ void ActNetlistPass::getSharedStatName (char *buf, int sz,
   }
 }
 
+void ActNetlistPass::getSharedStatName (char *buf, int sz,
+					shared_stat *ss)
+{
+  getSharedStatName (buf, sz, ss->en ? ss->en->w : ss->ep->w,
+		     ss->ep ? ss->ep->l : 0, ss->en ? ss->en->l : 0);
+}
+
+
 
 /*
   The "b" terminal is always the weak supply
@@ -92,8 +100,7 @@ void ActNetlistPass::emitWeakSupplies ()
     shared_stat *s = (shared_stat *) list_value (li);
     fprintf (fp, ".subckt ");
     buf[0] = '\0';
-    getSharedStatName (buf, 64, s->en ? s->en->w : s->ep->w,
-		       s->ep ? s->ep->l : 0, s->en ? s->en->l : 0);
+    getSharedStatName (buf, 64, s);
     a->mfprintf (fp, "%s", buf);
 
     sprint_node (buf, 64, s->nl, s->nl->Vdd);
