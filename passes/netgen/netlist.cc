@@ -1560,6 +1560,10 @@ static bool _wk_supply_node (const char *s, int *off)
   return true;
 }
 
+/*
+ * Convert string name to a node_t name from the netlist
+ * If not found, return NULL
+ */
 node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
 {
   int k;
@@ -1568,8 +1572,6 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
   if (!*s) return NULL;
   int off = 1;
 
-  Process *p = N->bN->p;
-  
   if (*s == '#' || _wk_supply_node (s, &off)) {
     if (*(s+1) == 'f') {
       k = atoi (s+3);
@@ -1586,6 +1588,14 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
       n = n->next;
     }
   }
+  else if ((strcmp (s, local_vdd) == 0) ||
+	   (strcmp (s, global_vdd) == 0)) {
+    n = N->Vdd;
+  }
+  else if ((strcmp (s, local_gnd) == 0) ||
+	   (strcmp (s, global_gnd) == 0)) {
+    n = N->GND;
+  }
   else {
     /* not an internal node */
     char *t = s;
@@ -1593,41 +1603,37 @@ node_t *ActNetlistPass::string_to_node (netlist_t *N, char *s)
     while (*t && *t != '.' && *t != '[') {
       t++;
     }
-    Assert (N->bN->cur, "What?");
     dot = *t;
     *t = '\0';
-    if (!N->bN->cur->FullLookup (s)) {
-      *t = dot;
-      /* has to be localvdd, localgnd, globalvdd, globalgnd */
+    if (N->bN) {
+      if (!N->bN->cur->FullLookup (s)) {
+	*t = dot;
+	/* has to be localvdd, localgnd, globalvdd, globalgnd */
+      }
+      else {
+	*t = dot;
+	ActId *id = ActId::parseId (s); /* was: act_string_to_id (s);*/
+	if (!id) {
+	  fatal_error ("Could not convert string `%s' to an ActId", s);
+	}
+	if (!id->validateDeref (N->bN->cur)) {
+	  // could not validate/find signal
+	  return NULL;
+	}
+	act_connection *c = id->Canonical (N->bN->cur);
+	n = ActNetlistPass::connection_to_node (N, c);
+      }
+      if (!n) {
+	if ((strcmp (s, local_vdd) == 0) ||
+	    (strcmp (s, global_vdd) == 0)) {
+	  n = N->Vdd;
+	}
+	else if ((strcmp (s, local_gnd) == 0) ||
+		 (strcmp (s, global_gnd) == 0)) {
+	  n = N->GND;
+	}
+      }
     }
-    else {
-      *t = dot;
-      ActId *id = ActId::parseId (s); /* was: act_string_to_id (s);*/
-      if (!id) {
-	fatal_error ("Could not convert string `%s' to an ActId", s);
-      }
-      if (!id->validateDeref (N->bN->cur)) {
-	// could not validate/find signal
-	return NULL;
-      }
-      act_connection *c = id->Canonical (N->bN->cur);
-      n = ActNetlistPass::connection_to_node (N, c);
-    }
-    if (!n) {
-      if ((strcmp (s, local_vdd) == 0) ||
-	  (strcmp (s, global_vdd) == 0)) {
-	n = N->Vdd;
-      }
-      else if ((strcmp (s, local_gnd) == 0) ||
-	       (strcmp (s, global_gnd) == 0)) {
-	n = N->GND;
-      }
-    }
-  }
-  if (!n) {
-    Assert (p, "What?");
-    fatal_error ("Looking for signal `%s', not found in `%s'", s,
-		 p->getName());
   }
   return n;
 }
