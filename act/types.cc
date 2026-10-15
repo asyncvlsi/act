@@ -508,8 +508,9 @@ void UserDef::Clone (UserDef *u)
   inherited_templ = u->inherited_templ;
 
   if (inherited_templ > 0) {
-    MALLOC (inherited_param, inst_param *, inherited_templ);
-    for (int i=0; i < inherited_templ; i++) {
+    /*--- we have a slot for each template parameter --*/
+    MALLOC (inherited_param, inst_param *, nt);
+    for (int i=0; i < nt; i++) {
       inherited_param[i] = u->inherited_param[i];
     }
   }
@@ -579,7 +580,8 @@ void UserDef::SetParent (InstType *t)
 
       if (x->inherited_templ > 0) {
 	i = nt - x->getNumParams();
-	for (int j=0; j < x->inherited_templ; j++) {
+	for (int j=0; j < x->getNumParams(); j++) {
+	  // copy all inherited params set in parent
 	  inherited_param[i+j] = x->inherited_param[j];
 	  inherited_templ++;
 	}

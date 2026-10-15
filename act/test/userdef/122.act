@@ -1,0 +1,9 @@
+template<pint N>
+defproc t () { bool x[N]; }
+
+template<pint M>
+defproc u <: t<M> () { }
+
+defproc d <: u<2> () { }
+
+d z;
