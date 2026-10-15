@@ -1,0 +1,13 @@
+template<pint N>
+deftype s (int<N> x);
+
+deftype s1 <: s<1> () { }
+deftype s2 <: s<2> () { }
+
+defproc test (chan?(int<1>) a; chan?(int<2>) b; chan!(s<1>) x; chan!(s<2>) y)
+{
+  dataflow {
+    s1(a) -> x;
+    s2(b) -> y
+  }
+}

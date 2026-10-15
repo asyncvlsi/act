@@ -3008,10 +3008,19 @@ UserDef *UserDef::getUnexpanded()
 void Data::synthStructMacro ()
 {
   UserDef *orig = getUnexpanded();
-  UserMacro *tmp_um = orig->newMacro (orig->getName());
+  UserMacro *tmp_um;
+
+  /* If this is a templated type, the macro may have already been
+     created in the unexpanded type. Check if it exists. */
+  tmp_um = orig->getMacro (orig->getName());
+  if (!tmp_um) {
+    /* create it if it doesn't exist */
+    tmp_um = orig->newMacro (orig->getName());
+  }
   tmp_um->mkBuiltin ();
   tmp_um->setRetType (new InstType (orig->CurScope(), orig, 0));
 
+  /* create it in the expanded type */
   newMacro (orig->getName());
   
   Assert (um[A_LEN (um)-1]->getName() == tmp_um->getName(), "What?");

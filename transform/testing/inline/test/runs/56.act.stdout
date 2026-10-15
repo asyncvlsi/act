@@ -1,0 +1,54 @@
+defproc test (chan(int<1>)? a; chan(int<2>)? b; chan(s<1>)! x; chan(s<2>)! y);
+deftype s_32_4 (int<2> x);
+deftype s_31_4 (int<1> x);
+deftype s2 (int<2> x);
+deftype s1 (int<1> x);
+
+defproc test (chan(int<1>)? a; chan(int<2>)? b; chan(s<1>)! x; chan(s<2>)! y)
+{
+
+/* instances */
+
+/* connections */
+dataflow {
+s_31_4(int(int(a,1)>>0,1)) -> x;
+s_32_4(int(int(b,2)>>0,2)) -> y
+}
+}
+
+deftype s_32_4 (int<2> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype s_31_4 (int<1> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype s2 (int<2> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+deftype s1 (int<1> x)
+{
+
+/* instances */
+
+/* connections */
+}
+
+
+/* instances */
+
+/* connections */
