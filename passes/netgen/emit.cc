@@ -93,7 +93,7 @@ void ActNetlistPass::emitWeakSupplies ()
 
   if (top_level_only) return;
 
-  fprintf (fp, "*\n*--- weak supply instances ---*\n*\n");
+  fprintf (fp, "*\n*--- weak supply subcircuit definitions ---*\n*\n");
   for (li = list_first (shared_stat_list); li; li = list_next (li)) {
     int fet = 0;
     int repcount = 0;
@@ -150,7 +150,7 @@ void ActNetlistPass::emitWeakSupplies ()
     fprintf (fp, ".ends\n");
   }
 
-  fprintf (fp, "*\n*--- end weak supply instances ---*\n*\n");
+  fprintf (fp, "*\n*--- end weak supply subcircuit definitions ---*\n*\n");
 }
 
 
