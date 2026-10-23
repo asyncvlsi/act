@@ -147,9 +147,9 @@ void ActNetlistPass::emitWeakSupplies ()
 	e->visited = 0;
       }
     }
+    fprintf (fp, ".ends\n");
   }
 
-  fprintf (fp, ".ends\n");
   fprintf (fp, "*\n*--- end weak supply instances ---*\n*\n");
 }
 
