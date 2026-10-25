@@ -35,7 +35,7 @@ TARGETINCS=array.h bitset.h misc.h hash.h qops.h config.h atrace.h \
 	names.h mstring.h mytime.h \
 	channel.h hconfig.h contexts.h count.h \
 	machine.h mem.h mutex.h  thread.h sim.h \
-	log.h ext.h simthread.h simdes.h agraph.h int.h path.h
+	log.h ext.h simthread.h simdes.h agraph.h int.h path.h args.h
 
 # general library support
 OBJSC1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
@@ -43,7 +43,7 @@ OBJSC1=bitset.o misc.o hash.o config.o atrace.o avl.o lzw.o lex.o file.o \
 	path.o
 
 
-OBJSCC1=log.o sim.o agraph.o int.o
+OBJSCC1=log.o sim.o agraph.o int.o args.o
 
 OBJS1=$(OBJSC1) $(OBJSCC1)
 
