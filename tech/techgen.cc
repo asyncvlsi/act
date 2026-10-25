@@ -560,65 +560,67 @@ void emit_cif (pp_t *pp)
 {
   const char *gdsl = "layout.gds.layers";
   int s = scalefactor();
+
+  if (!config_exists (gdsl)) {
+    warning ("Empty cifinput/cifoutput section; missing GDS layers");
+    return;
+  }
+  
   pp_printf (pp, "cifoutput"); pp_TAB;
   pp_printf (pp, "style generic"); pp_nl;
   emit_scalefactor (pp);
   pp_printf (pp, "options calma-permissive-labels"); pp_nl;
   pp_nl;
 
-  if (!config_exists (gdsl)) {
-    warning ("Empty cifinput/cifoutput section; missing GDS layers");
-  }
-  else {
-    char **gds_all = config_get_table_string (gdsl);
-    for (int i=0; i < config_get_table_size (gdsl); i++) {
-      GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
-      if (!g || !g->matList()) {
-	warning ("GDS layer `%s' specified but unused?", gds_all[i]);
-	continue;
-      }
-      pp_printf (pp, "layer %s", gds_all[i]);
-      pp_nl;
-      pp_puts (pp, "   ");
-      pp_setb (pp);
-      listitem_t *li;
-      for (li = g->matList(); li; li = list_next (li)) {
-	struct GDSLayer::mat_info *mx = (GDSLayer::mat_info *) list_value (li);
-	pp_printf (pp, "bloat-or %s * %d", mx->m->getName(),
-		   mx->bloat*s);
-	pp_nl;
-      }
-      bool found = false;
-      for (li = g->matTextList(); li; li = list_next (li)) {
-	Material *mx = (Material *) list_value (li);
-	if (!found) {
-	  pp_printf (pp, "labels %s", mx->getName());
-	  found = true;
-	}
-	else {
-	  pp_printf (pp, ",%s", mx->getName());
-	}
-      }
-      for (li = g->matPinList(); li; li = list_next (li)) {
-	Material *mx = (Material *) list_value (li);
-	if (!found) {
-	  pp_printf (pp, "labels %s", mx->getName());
-	  found = true;
-	}
-	else {
-	  pp_printf (pp, ",%s", mx->getName());
-	}
-      }
-      if (found) {
-	pp_nl;
-      }
-      pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor());
-      pp_endb (pp);
-      pp_nl;
-
+  char **gds_all = config_get_table_string (gdsl);
+  for (int i=0; i < config_get_table_size (gdsl); i++) {
+    GDSLayer *g = Technology::T->GDSlookup (gds_all[i]);
+    if (!g || !g->matList()) {
+      warning ("GDS layer `%s' specified but unused?", gds_all[i]);
+      continue;
+    }
+    pp_printf (pp, "layer %s", gds_all[i]);
+    pp_nl;
+    pp_puts (pp, "   ");
+    pp_setb (pp);
+    listitem_t *li;
+    for (li = g->matList(); li; li = list_next (li)) {
+      struct GDSLayer::mat_info *mx = (GDSLayer::mat_info *) list_value (li);
+      pp_printf (pp, "bloat-or %s * %d", mx->m->getName(),
+		 mx->bloat*s);
       pp_nl;
     }
+    bool found = false;
+    for (li = g->matTextList(); li; li = list_next (li)) {
+      Material *mx = (Material *) list_value (li);
+      if (!found) {
+	pp_printf (pp, "labels %s", mx->getName());
+	found = true;
+      }
+      else {
+	pp_printf (pp, ",%s", mx->getName());
+      }
+    }
+    for (li = g->matPinList(); li; li = list_next (li)) {
+      Material *mx = (Material *) list_value (li);
+      if (!found) {
+	pp_printf (pp, "labels %s", mx->getName());
+	found = true;
+      }
+      else {
+	pp_printf (pp, ",%s", mx->getName());
+      }
+    }
+    if (found) {
+      pp_nl;
+    }
+    pp_printf (pp, "calma %d %d", g->getMajor(), g->getMinor());
+    pp_endb (pp);
+    pp_nl;
+
+    pp_nl;
   }
+
   pp_UNTAB;
   pp_printf (pp, "end");
   pp_SPACE;
