@@ -1,0 +1,20 @@
+/* -- declarations -- */
+export defproc testbuf (bool in; bool out);
+
+export defproc testbuf (bool in; bool out)
+{
+  spec { hazard(*) }
+
+   /*--- types ---*/
+   benchlib::inv1a1 i2;
+   benchlib::buf1a3 b2;
+   benchlib::inv1a1 i0;
+   bool p;
+   /*--- connections ---*/
+   i0(.A=in, .Y=p);
+   in=out;
+   b2(.A=in, .Y=p);
+   i2(.A=in, .Y=out);
+   in=out;
+}
+

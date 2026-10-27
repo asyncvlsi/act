@@ -53,6 +53,12 @@ lim=10
 while [ -f ${count}.v ]
 do
 	i=${count}.v
+        if [ -f ${count}.conf ]
+        then
+           cnf="-cnf=${count}.conf"
+        else
+           cnf=""
+        fi
 	count=`expr $count + 1`
 	bname=`expr $i : '\(.*\).v'`
 	num=`expr $num + 1`
@@ -62,7 +68,7 @@ do
         else
 	   myecho ".[$bname]"
         fi
-	$ACTTOOL -t -l lib.act -n benchlib $i > runs/t$i.t.stdout 2> runs/t$i.t.stderr
+	$ACTTOOL $cnf -t -l lib.act -n benchlib $i > runs/t$i.t.stdout 2> runs/t$i.t.stderr
 	ok=1
 	if ! cmp runs/t$i.t.stdout runs/t$i.stdout >/dev/null 2>/dev/null
 	then

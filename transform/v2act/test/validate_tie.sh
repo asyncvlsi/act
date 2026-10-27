@@ -25,5 +25,12 @@ fi
 
 for i in $list
 do
-	$ACTTOOL -t -l lib.act -n benchlib $i > runs/t$i.stdout 2> runs/t$i.stderr
+        bname=`expr $i : '\(.*\).v'`
+        if [ -f ${bname}.conf ]
+        then
+           cnf="-cnf=${bname}.conf"
+        else
+           cnf=""
+        fi
+	$ACTTOOL $cnf -t -l lib.act -n benchlib $i > runs/t$i.stdout 2> runs/t$i.stderr
 done

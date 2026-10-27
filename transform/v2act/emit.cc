@@ -25,6 +25,7 @@
 #include <string.h>
 #include "v2act.h"
 #include <unordered_set>
+#include <unordered_map>
 
 void emit_id_deref_fo (FILE *fp, id_deref_t *id);
 
@@ -266,6 +267,11 @@ void emit_module_header (FILE *fp, module_t *m)
   fprintf (fp, ")");
 }
 
+
+/*
+ * Flag components as passthrough components
+ */
+
 /*------------------------------------------------------------------------
  *
  *  emit_types --
@@ -292,13 +298,97 @@ void emit_types (VNet *v)
   //fprintf (v->out, "/* globals */\n");
   //fprintf (v->out, "bool Vdd, GND;\n\n");
 
+  int passthru_sz;
+  char **pass_tab;
+  std::unordered_map<std::string,int> passthru_map;
+  passthru_map.clear();
+  if (config_exists ("v2act.passthru")) {
+    passthru_sz = config_get_table_size ("v2act.passthru");
+    pass_tab = config_get_table_string ("v2act.passthru");
+    for (int i=0; i < passthru_sz; i++) {
+      passthru_map[pass_tab[i]] = i;
+    }
+  }
+  else {
+    passthru_sz = 0;
+  }
+
+  /*-- compute the pass through instances in each module --*/
+  std::unordered_map<module_t *, std::unordered_set<std::string>> passthru_tab;
+  
+  for (m = v->hd; m; m = m->next) {
+    passthru_tab[m] = { };
+    passthru_tab[m].clear();
+
+    if (passthru_sz > 0 && mode != V_ASYNC) {
+      // walk through instances and mark the ones that are pass
+      // throughs
+      hash_iter_t it;
+      hash_iter_init (m->H, &it);
+      while ((b = hash_iter_next (m->H, &it))) {
+	id = (struct idinfo *) b->v;
+	if (id->isclk) continue;
+	if (id->isinst) {
+	  if (id->m == NULL) {
+	    // library component
+	    std::string libcomp;
+	    libcomp = config_get_string ("s2a.lib_namespace");
+	    libcomp = libcomp + "::" + id->nm;
+	    if (passthru_map.find (libcomp) != passthru_map.end()) {
+	      int idx = passthru_map[libcomp];
+	      passthru_tab[m].insert(id->myname);
+	    }
+	  }
+	}
+      }
+
+      char *pending = NULL;
+      for (i=0; i < A_LEN (m->conn); i++) {
+	int f = 0;
+
+	/* check if this is an instance that should be skipped */
+	if (!pending && m->conn[i]->prefix) {
+	  bool found_passthru = false;
+	  bool found_match = false;
+	  
+	  char *name = m->conn[i]->prefix->myname;
+	  if (passthru_tab[m].find (name) != passthru_tab[m].end()) {
+	    /* the instance is of the right type */
+	    if (i < A_LEN (m->conn)-1 && m->conn[i+1]->prefix &&
+		m->conn[i+1]->prefix->myname == name) {
+	      /* we need two consecutive connections that are for this
+		 instance */
+
+	      /* now both need to be ports! */
+	      if (m->conn[i]->r && m->conn[i]->r->id.id->isport &&
+		  m->conn[i+1]->r && m->conn[i+1]->r->id.id->isport) {
+		found_passthru = true;
+		m->conn[i]->r->id.id->ispassthru = 1;
+		m->conn[i+1]->r->id.id->ispassthru = 1;
+	      }
+	      else {
+		passthru_tab[m].erase (name);
+	      }
+	    }
+	    else {
+	      passthru_tab[m].erase (name);
+	    }
+	  }
+	  if (found_passthru) {
+	    i++;
+	  }
+	}
+      }
+    }
+  }
+  
   fprintf (v->out, "/* -- declarations -- */\n");
   for (m = v->hd; m; m = m->next) {
     emit_module_header (v->out, m);
     fprintf (v->out, ";\n");
   }
   fprintf (v->out, "\n");
-  
+
   for (m = v->hd; m; m = m->next) {
     emit_module_header (v->out, m);
     fprintf (v->out, "\n{\n");
@@ -311,6 +401,7 @@ void emit_types (VNet *v)
     /* now print all the other types out */
     for (i=0; i < m->H->size; i++) 
       for (b = m->H->head[i]; b; b = b->next) {
+	bool skip_me = false;
 	id = (struct idinfo *)b->v;
 	if (strcmp (id->myname, "Vdd") == 0 ||
 	    strcmp (id->myname, "GND") == 0) {
@@ -329,7 +420,16 @@ void emit_types (VNet *v)
 	  goto copy_check;
 	}
 	if (id->ismodname) continue;
+
+	if (id->isinst && id->m == NULL &&
+	    (passthru_tab[m].find (id->myname) != passthru_tab[m].end())) {
+	  skip_me = true;
+	}
+
+	if (skip_me) continue;
+	
 	fprintf (v->out, "   ");
+	
 	if (id->isinst) {
 	  if (id->m == NULL) {
 	    const char *lib_namespace = config_get_string ("s2a.lib_namespace");
@@ -419,16 +519,14 @@ void emit_types (VNet *v)
     /* print out the connections */
     fprintf (v->out, "   /*--- connections ---*/\n");
 
-
     char *pending = NULL;
     
     for (i=0; i < A_LEN (m->conn); i++) {
       /* skip clock connections */
       if ((mode == V_ASYNC) && m->conn[i]->isclk) continue;
 
-      if (!pending) fprintf (v->out, "   ");
-
       if (mode == V_ASYNC) {
+	if (!pending) fprintf (v->out, "   ");
 	if (m->conn[i]->dir == 1) {
 	  /* RHS := LHS */
 	  if (m->conn[i]->prefix) {
@@ -688,6 +786,39 @@ void emit_types (VNet *v)
       }
       else {
 	int f = 0;
+
+	/* check if this is an instance that should be skipped */
+	if (m->conn[i]->prefix &&
+	    (!pending || pending != m->conn[i]->prefix->myname)) {
+	  char *name = m->conn[i]->prefix->myname;
+
+	  if (passthru_tab[m].find (name) != passthru_tab[m].end()) {
+
+	    Assert (i < A_LEN (m->conn)-1, "What?");
+	    Assert (m->conn[i+1]->prefix &&
+		    m->conn[i+1]->prefix->myname == name, "Wat?");
+
+	    if (pending) {
+	      fprintf (v->out, ");\n   ");
+	      pending = NULL;
+	    }
+
+	    // wire up the two ports!
+	    emit_conn_rhs (v->out, m->conn[i]->r, NULL);
+	    fprintf (v->out, "=");
+	    emit_conn_rhs (v->out, m->conn[i+1]->r, NULL);
+	    fprintf (v->out, ";\n");
+	    f = -1;
+	    i++;
+	  }
+	}
+
+	if (f == -1) {
+	  continue;
+	}
+
+	if (!pending) fprintf (v->out, "   ");
+
 	if (m->conn[i]->prefix) {
 	  if (!pending) {
 	    fprintf (v->out, "%s(", m->conn[i]->prefix->myname);
