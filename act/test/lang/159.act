@@ -1,0 +1,29 @@
+defproc seq (bool? start; bool! sample_done) {
+  chp {
+    sample_done := false;
+    *[
+      select { case (start): skip };
+      sample_done := true;
+      select { case (~start): skip };
+      sample_done := false
+    ]
+  }
+}
+bool rst_start;
+defproc t () {
+  bool sample_done;
+  seq s(rst_start, sample_done);
+  chp {
+    rst_start := false;
+    rst_start := true;
+    select { case (sample_done): skip };
+    log("C handshake ok");
+    rst_start := false;
+    select { case (~sample_done): skip };
+    log("C done")
+  }
+}
+Initialize {
+  actions { Reset+; rst_start- };
+  actions { Reset- }
+}

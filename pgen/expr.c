@@ -263,9 +263,11 @@ static void efree (Expr *e)
 
   case E_BITFIELD:
     efree (e->u.e.l);
-    efree (e->u.e.r->u.e.l);
-    efree (e->u.e.r->u.e.r);
-    FREE (e->u.e.r);
+    if (e->u.e.r) {
+      efree (e->u.e.r->u.e.l);
+      efree (e->u.e.r->u.e.r);
+      FREE (e->u.e.r);
+    }
     break;
 
   case E_RAWFREE:
