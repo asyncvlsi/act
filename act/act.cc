@@ -1139,15 +1139,19 @@ int Act::getLevel (Process *p)
   if (!p) {
     return -1;
   }
+
+  char *nm = p->getFullName ();
   
   for (lev = 0; lev < ACT_MODEL_TOTAL; lev++) {
     for (int i=0; i < num_type_levels[lev]; i++) {
-      if (strncmp (type_levels[lev][i],
-		   p->getName(), strlen (type_levels[lev][i])) == 0) {
+      if (strncmp (type_levels[lev][i], nm,
+		   strlen (type_levels[lev][i])) == 0) {
+	FREE (nm);
 	return lev;
       }
     }
   }
+  FREE (nm);
   return -1;
 }
 
