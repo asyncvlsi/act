@@ -852,12 +852,33 @@ void emit_free_functions (pp_t *pp)
     pp_printf_text (pp, "{  ");
     BEGIN_INDENT;
     pp_printf_text (pp, "if (!n) return;\n");
-    pp_printf_text (pp, "switch (n->type) {"); pp_nl;
 
+    /* if it is tail-recursive, then use a while loop */
+    if (BNF[i].tail_recursive == 1) {
+      pp_printf_text (pp, "while (n->type == 0) {");
+    }
+    else {
+      pp_printf_text (pp, "switch (n->type) {"); 
+    }
+    pp_nl;
     for (j=0; j < A_LEN (BNF[i].a); j++) {
-      pp_printf_text (pp, "case %d: ", j); 
+      if (BNF[i].tail_recursive != 1) {
+	pp_printf_text (pp, "case %d: ", j);
+      }
+      else if (j == 1) {
+	/* nothing to do */
+	break;
+      }
       BEGIN_INDENT;
       for (k=0; k < A_LEN (BNF[i].a[j].a); k++) {
+	if (BNF[i].tail_recursive == 1) {
+	  if (k == A_LEN (BNF[i].a[j].a) - 1) {
+	    pp_printf_text (pp, "{ Node_%s *tn = n; ", BNF[i].lhs);
+	    pp_printf_text (pp, "n = n->u.Option_%s%d.f%d;", BNF[i].lhs, 0, k);
+	    pp_printf_text (pp, " FREE (tn); }");
+	    break;
+	  }
+	}
 	/* needs a datatype if it is not a keyword */
 	if (HAS_DATA (BNF[i].a[j].a[k])) {
 	  switch (BNF[i].a[j].a[k].type) {
@@ -893,10 +914,13 @@ void emit_free_functions (pp_t *pp)
 	  }
 	}
       }
-      pp_printf_text (pp, "break;");
+      if (BNF[i].tail_recursive != 1) {
+	pp_printf_text (pp, "break;");
+      }
       END_INDENT;
     }
     pp_printf_text (pp, "}\n");
+    
     pp_printf_text (pp, "FREE (n);\n");
     pp_printf_text (pp, "return;");
     END_INDENT;
