@@ -267,6 +267,7 @@ class AGvertexBwdIter
 #endif  
   
   AGvertexBwdIter (AGraph *, int);
+  AGvertexBwdIter (AGraph *, AGvertex *);
   AGvertexBwdIter (const AGvertexBwdIter & c);
   AGvertexBwdIter& operator++();
   AGvertexBwdIter operator++(int);

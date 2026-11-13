@@ -400,6 +400,13 @@ AGvertexBwdIter::AGvertexBwdIter (AGraph *_g, int v)
   i = _g->getVertex (v)->bhd;
 }
 
+AGvertexBwdIter::AGvertexBwdIter (AGraph *_g, AGvertex *v)
+{
+  g = _g;
+  vid = _g->V2idx (v);
+  i = _g->getVertex (vid)->bhd;
+}
+
 AGvertexBwdIter::AGvertexBwdIter (const AGvertexBwdIter& gi)
 {
   g = gi.g;

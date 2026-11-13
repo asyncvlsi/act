@@ -135,6 +135,32 @@ static int dvarcmp (const void *a, const void *b)
   return strcmp (va->aid->getName(), vb->aid->getName());
 }
 
+/*
+ * Check if this is a decomposed memory process
+ */
+static bool _is_memproc (Process *p, const char *mem_procname)
+{
+  char *tmpname = p->getFullName();
+  int pos = 0, pos2;
+
+  // skip any "::"
+  while (tmpname[pos] && tmpname[pos] == ':')
+    pos++;
+
+  pos2 = pos;
+  while (tmpname[pos2] && tmpname[pos2] != '<') {
+    pos2++;
+  }
+  if (tmpname[pos2]) {
+    tmpname[pos2] = '\0';
+  }
+
+  bool ret = (strcmp (mem_procname, tmpname+pos) == 0);
+  FREE (tmpname);
+  return ret;
+}
+
+
 void *ActCHPMemory::local_op (Process *p, int mode)
 {
   Scope *sc;
@@ -154,6 +180,24 @@ void *ActCHPMemory::local_op (Process *p, int mode)
   _map.v.push_back ({});
   
   const char *mem_procname = config_get_string ("act.decomp.mem");
+
+  /*
+   * We need to check if anything in the derivation
+   * hierarchy is a memory process.
+   */
+  Process *chk = p;
+  while (chk) {
+    if (_is_memproc (chk, mem_procname)) {
+      return NULL;
+    }
+    InstType *pt = chk->getParent();
+    if (pt) {
+      chk = dynamic_cast<Process *> (pt->BaseType());
+    }
+    else {
+      chk = NULL;
+    }
+  }
 
   char *tmpname = p->getFullName();
   int pos = 0, pos2;
@@ -196,11 +240,20 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     A_INC (_update);
   }
 
+  Process *memp = NULL;
   /* sort dynamic arrays to canonicalize the order in which they are
      replaced */
   if (A_LEN (_update) > 1) {
     mymergesort ((const void **)_update, A_LEN (_update), dvarcmp);
   }
+
+  if (A_LEN (_update) > 0) {
+    /* get the process type */
+    memp = a->findProcess (mem_procname);
+    if (!memp) {
+      fatal_error ("Could not find process `%s'", mem_procname);
+    }
+  }    
 
   for (int i=0; i < A_LEN (_update); i++) {
     act_dynamic_var_t *v = _update[i];
@@ -209,13 +262,8 @@ void *ActCHPMemory::local_op (Process *p, int mode)
     _curbnl->cur->Del (v->aid->getName());
 
     /*-- replace with instance! --*/
-    const char *mem_procname = config_get_string ("act.decomp.mem");
-    Process *p = a->findProcess (mem_procname);
-    if (!p) {
-      fatal_error ("Could not find process `%s'", mem_procname);
-    }
-
-    InstType *it = new InstType (_curbnl->cur, p, 0);
+    Assert (memp, "What?");
+    InstType *it = new InstType (_curbnl->cur, memp, 0);
     it->setNumParams (2);
     it->setParam (0, const_expr (v->a->size()));
     if (v->isstruct) {
