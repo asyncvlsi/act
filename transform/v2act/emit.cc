@@ -23,6 +23,7 @@
  */
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include "v2act.h"
 #include <unordered_set>
 #include <unordered_map>
