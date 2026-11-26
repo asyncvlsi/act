@@ -1,0 +1,5 @@
+In expanding test (89.act:8)
+In expanding ::<Global>
+Error on or near line number 12.
+Typechecking failed on expanded expression!
+	Function `abc<3>/eq<>': arg #1 has an incompatible type

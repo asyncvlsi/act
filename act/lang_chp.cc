@@ -1770,6 +1770,15 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	    tmp->next = NULL;
 	    tmp->id = NULL;
 	    tmp->g = chp_expr_expand (gctmp->g, ns, s);
+	    if (tmp->g  && chp_processing_macro() == 0) {
+	      int tc = act_type_expr (s, tmp->g, NULL, 2);
+	      if (tc == T_ERR) {
+		act_error_ctxt (stderr);
+		fprintf (stderr, "Typechecking failed on expanded expression!");
+		fprintf (stderr, "\n\t%s\n", act_type_errmsg ());
+		exit (1);
+	      }
+	    }
 	    _expr_has_probes = 0;
 	    tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	    list_t *tmpl = chp_expr_unstruct (s, tmp->g);
@@ -1799,6 +1808,15 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	  tmp->id = NULL;
 	  tmp->next = NULL;
 	  tmp->g = chp_expr_expand (gctmp->g, ns, s);
+	  if (tmp->g && chp_processing_macro() == 0) {
+	    int tc = act_type_expr (s, tmp->g, NULL, 2);
+	    if (tc == T_ERR) {
+	      act_error_ctxt (stderr);
+	      fprintf (stderr, "Typechecking failed on expanded expression!");
+	      fprintf (stderr, "\n\t%s\n", act_type_errmsg ());
+	      exit (1);
+	    }
+	  }
 	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	  list_t *tmpl = chp_expr_unstruct (s, tmp->g);
