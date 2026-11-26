@@ -1670,6 +1670,22 @@ static Expr *_chp_group_probes (list_t *pl, Expr *e)
 
 static void chp_update_dynarray_expr (Expr *e, Scope *s);
 
+/* type-check an expanded guard, as is done for assignments */
+static void _chp_check_guard (Expr *g, Scope *s)
+{
+  if (!g || chp_processing_macro() != 0) {
+    return;
+  }
+  if (act_type_expr (s, g, NULL, 2) == T_ERR) {
+    act_error_ctxt (stderr);
+    fprintf (stderr, "Typechecking failed on CHP guard\n");
+    fprintf (stderr, "  guard: ");
+    print_uexpr (stderr, g);
+    fprintf (stderr, "\n\t%s\n", act_type_errmsg ());
+    exit (1);
+  }
+}
+
 static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
 {
   e = _chp_fix_nnf (e, 0);
@@ -1770,6 +1786,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	    tmp->next = NULL;
 	    tmp->id = NULL;
 	    tmp->g = chp_expr_expand (gctmp->g, ns, s);
+      _chp_check_guard (tmp->g, s);
 	    _expr_has_probes = 0;
 	    tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	    list_t *tmpl = chp_expr_unstruct (s, tmp->g);
@@ -1799,6 +1816,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	  tmp->id = NULL;
 	  tmp->next = NULL;
 	  tmp->g = chp_expr_expand (gctmp->g, ns, s);
+    _chp_check_guard (tmp->g, s);
 	  _expr_has_probes = 0;
 	  tmp->g = _chp_fix_guardexpr (tmp->g, ns, s);
 	  list_t *tmpl = chp_expr_unstruct (s, tmp->g);
