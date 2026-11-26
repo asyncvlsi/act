@@ -36,7 +36,7 @@
 static int _chp_freshvar_count = 0;
 static list_t *in_chp = NULL;
 
-static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s);
+static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s, bool hse_mode);
 static bool _dynamic_replace (ActId *id, Scope *s, Array **ret_a);
 
 
@@ -1695,7 +1695,7 @@ static Expr *_chp_fix_guardexpr (Expr *e, ActNamespace *ns, Scope *s)
   return e;
 }
 
-static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
+static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s, bool hse_mode)
 {
   act_chp_lang_t *ret;
   act_chp_gc_t *gchd, *gctl, *gctmp, *tmp;
@@ -1713,7 +1713,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
   case ACT_CHP_SEMI:
     ret->u.semi_comma.cmd = list_new ();
     for (li = list_first (c->u.semi_comma.cmd); li; li = list_next (li)) {
-      act_chp_lang_t *xl = chp_expand_1 ((act_chp_lang_t *)list_value (li), ns, s);
+      act_chp_lang_t *xl = chp_expand_1 ((act_chp_lang_t *)list_value (li), ns, s, hse_mode);
       list_append (ret->u.semi_comma.cmd, xl);
     }
     break;
@@ -1735,7 +1735,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
       for (int iter=ilo; iter <= ihi; iter++) {
 	s->setPInt (vx->u.idx, iter);
 	list_append (ret->u.semi_comma.cmd,
-		     chp_expand_1 (c->u.loop.body, ns, s));
+		     chp_expand_1 (c->u.loop.body, ns, s, hse_mode));
 	
       }
       act_syn_loop_teardown (ns, s, c->u.loop.id, vx);
@@ -1771,7 +1771,13 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	    tmp->id = NULL;
 	    tmp->g = chp_expr_expand (gctmp->g, ns, s);
 	    if (tmp->g  && chp_processing_macro() == 0) {
-	      int tc = act_type_expr (s, tmp->g, NULL, 2);
+	      int tc;
+	      if (hse_mode) {
+		tc = act_type_expr (s, tmp->g, NULL);
+	      }
+	      else {
+		tc = act_type_expr (s, tmp->g, NULL, 2);
+	      }
 	      if (tc == T_ERR) {
 		act_error_ctxt (stderr);
 		fprintf (stderr, "Typechecking failed on expanded expression!");
@@ -1797,7 +1803,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	      FREE (tmp);
 	    }
 	    else {
-	      tmp->s = chp_expand_1 (gctmp->s, ns, s);
+	      tmp->s = chp_expand_1 (gctmp->s, ns, s, hse_mode);
 	      q_ins (gchd, gctl, tmp);
 	    }
 	  }
@@ -1809,7 +1815,13 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	  tmp->next = NULL;
 	  tmp->g = chp_expr_expand (gctmp->g, ns, s);
 	  if (tmp->g && chp_processing_macro() == 0) {
-	    int tc = act_type_expr (s, tmp->g, NULL, 2);
+	    int tc;
+	    if (hse_mode) {
+	      tc = act_type_expr (s, tmp->g, NULL);
+	    }
+	    else {
+	      tc = act_type_expr (s, tmp->g, NULL, 2);
+	    }
 	    if (tc == T_ERR) {
 	      act_error_ctxt (stderr);
 	      fprintf (stderr, "Typechecking failed on expanded expression!");
@@ -1840,7 +1852,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	    FREE (tmp);
 	  }
 	  else {
-	    tmp->s = chp_expand_1 (gctmp->s, ns, s);
+	    tmp->s = chp_expand_1 (gctmp->s, ns, s, hse_mode);
 	    q_ins (gchd, gctl, tmp);
 	  }
 	}
@@ -2359,7 +2371,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 	int tmp = Act::double_expand;
 	act_chp_lang_t *oret = ret;
 	Act::double_expand = 0;
-	ret = chp_expand_1 (oret, ns, s);
+	ret = chp_expand_1 (oret, ns, s, hse_mode);
 	Act::double_expand = tmp;
 	act_chp_free (oret);
 	_chp_still_in_macro--;
@@ -2372,8 +2384,8 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 
   case ACT_HSE_FRAGMENTS:
     ret->u.frag.nextlabel = c->u.frag.nextlabel;
-    ret->u.frag.body = chp_expand_1 (c->u.frag.body, ns, s);
-    ret->u.frag.next = chp_expand_1 (c->u.frag.next, ns, s);
+    ret->u.frag.body = chp_expand_1 (c->u.frag.body, ns, s, hse_mode);
+    ret->u.frag.next = chp_expand_1 (c->u.frag.next, ns, s, hse_mode);
     if (c->u.frag.exit_conds) {
       listitem_t *li;
       ret->u.frag.exit_conds = list_new ();
@@ -3891,7 +3903,7 @@ act_chp_lang_t *chp_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     in_chp = list_new ();
   }
   stack_ipush (in_chp, 1);
-  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
+  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s, false);
   if (!_chp_expanding_macro) {
     chp_update_dynarray (cnew, s);
     cnew = chp_update_bw (cnew, s);
@@ -3907,7 +3919,7 @@ act_chp_lang_t *hse_expand (act_chp_lang_t *c, ActNamespace *ns, Scope *s)
     in_chp = list_new ();
   }
   stack_ipush (in_chp, 0);
-  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s);
+  act_chp_lang_t *cnew = chp_expand_1 (c, ns, s, true);
 #if 0  
   if (!_chp_expanding_macro) {
     cnew = chp_update_bw (cnew, s);
