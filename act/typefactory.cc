@@ -362,6 +362,16 @@ int TypeFactory::isIntType (const Type *t)
 }
 INSTMACRO(isIntType)
 
+int TypeFactory::isSIntType (const Type *t)
+{
+  const Int *tmp_i = dynamic_cast<const Int *>(t);
+  if (tmp_i && tmp_i->kind == 1) {
+    return 1;
+  }
+  return 0;
+}
+INSTMACRO(isSIntType)
+
 int TypeFactory::isPIntType (const Type *t)
 {
   if (t == TypeFactory::pint->BaseType ()) {

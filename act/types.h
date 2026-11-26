@@ -2162,6 +2162,15 @@ class TypeFactory {
   /** see the other isIntType() method */
   static int isIntType (const InstType *t);
 
+
+  /**
+   * @return 1 if the type is a signed integer data type (ints<W>)
+   */
+  static int isSIntType (const Type *t);
+
+  /** see the other isSIntType() method */
+  static int isSIntType (const InstType *t);
+
   /**
    * Determines if the specified type is a built-in pint type.
    *
