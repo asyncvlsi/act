@@ -3059,6 +3059,69 @@ static Expr *_expr_bw_adjust (struct pHashtable *H,
 			      int needed_width,
 			      Expr *e, Scope *s);
 
+/* 1 if the expression uses a signed (ints<W>) variable, in which case
+   the width-trimming rewrite in _expr_cmp_helper() must be skipped */
+static int _expr_has_signed (Expr *e, Scope *s)
+{
+  if (!e) return 0;
+
+  switch (e->type) {
+  case E_AND:
+  case E_OR:
+  case E_XOR:
+  case E_PLUS:
+  case E_MINUS:
+  case E_MULT:
+  case E_DIV:
+  case E_MOD:
+  case E_LSL:
+  case E_LSR:
+  case E_ASR:
+    if (_expr_has_signed (e->u.e.l, s) ||
+	_expr_has_signed (e->u.e.r, s)) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+    break;
+
+  case E_UMINUS:
+  case E_NOT:
+  case E_COMPLEMENT:
+    return _expr_has_signed (e->u.e.l, s);
+    break;
+
+  case E_QUERY:
+    if (_expr_has_signed (e->u.e.r->u.e.l, s) ||
+	_expr_has_signed (e->u.e.r->u.e.r, s)) {
+      return 1;
+    }
+    else {
+      return 0;
+    }
+    break;
+
+  case E_VAR:
+    {
+      InstType *xit = NULL;
+      act_type_var_gen (s, (ActId *)e->u.e.l, &xit, true);
+      if (xit && TypeFactory::isSIntType (xit)) {
+	return 1;
+      }
+      else {
+	return 0;
+      }
+    }
+    break;
+
+  default:
+    return 0;
+    break;
+  }
+  return 0;
+}
+            
 static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
 			       int lw, int rw,
 			       int boolone, int booltwo,
@@ -3067,7 +3130,9 @@ static void _expr_cmp_helper (Expr *ret, Expr *l, Expr *r,
 {
   int type = ret->type;
 
-  if (lw == rw) {
+  /* normal compare if widths match, or if either side is signed
+     (the width-trimming rewrite below assumes unsigned values) */
+  if (lw == rw || _expr_has_signed (l, s) || _expr_has_signed (r, s)) {
     ret->u.e.l = _expr_bw_adjust (H, -1, l, s);
     ret->u.e.r = _expr_bw_adjust (H, -1, r, s);
     return;
