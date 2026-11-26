@@ -67,8 +67,10 @@ param_type[InstType *]: "pint"
 
 T_INT[int]: "int"
 {{X: return 0; }}
+/*
 | "ints"
 {{X: return 1; }}
+*/
 ;
 
 data_type[InstType *]: T_INT [ chan_dir ] [ "<" !endgt wpint_expr ">" !noendgt ]

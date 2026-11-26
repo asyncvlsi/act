@@ -1982,6 +1982,7 @@ const char *Int::getName()
     k2v = "int";
   }
   else if (kind == 1) {
+    /*-- no longer used --*/
     k2v = "ints";
   }
   else {
