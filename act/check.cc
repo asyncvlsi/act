@@ -725,7 +725,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
       if (it1) {
 	it2 = _act_special_expr_insttype (s, e->u.e.r, NULL, only_chan);
 	if (it2) {
-	  if (it1->isEqual (it2)) {
+	  if (it1->isEqual (it2) && TypeFactory::isUserEnum (it1)) {
 	    if (width) {
 	      *width =1;
 	    }
@@ -734,7 +734,7 @@ int act_type_expr (Scope *s, Expr *e, int *width, int only_chan)
 	}
       }
     }
-    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, or bool/bool", expr_op_name (e->type));
+    typecheck_err ("`%s': inconsistent/invalid types for the two arguments; needs real/real, int/int, enum/enum, or bool/bool", expr_op_name (e->type));
     return T_ERR;
     break;
 

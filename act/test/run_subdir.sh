@@ -87,7 +87,7 @@ do
 	fi
 	if [ $ok -eq 1 ]
 	then
-		if [ $num -eq $lim ]
+		if [ $num -ge $lim ]
 		then
 			echo 
 			myecho " "

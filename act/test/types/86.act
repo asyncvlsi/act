@@ -1,0 +1,17 @@
+template<pint N>
+deftype abc (int x) { 
+  methods {
+    function eq(abc<N> w) : bool { chp { self := true } }
+  }
+}
+
+defproc test()
+{
+  abc<3> a;
+  abc<3> b;
+  chp {
+   [ a = b -> skip ]
+  }
+}
+
+test t;

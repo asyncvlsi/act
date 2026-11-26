@@ -1,0 +1,10 @@
+defproc test()
+{
+  enum<4> x;
+  enum<3> y;
+  chp {
+   [ x = y -> skip ]
+  }
+}
+
+test t;
