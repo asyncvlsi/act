@@ -1,0 +1,10 @@
+defchan dual <: chan(int<1>) (bool?! t, f; bool!? e) { }
+
+defproc test(dual? d)
+{ 
+  chp {
+   *[ [d.t -> skip ] ]
+  }
+}
+
+test t;

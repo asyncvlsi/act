@@ -360,7 +360,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
       Assert (it->isExpanded(), "This should be expanded");
       
       u = dynamic_cast<UserDef *>(it->BaseType ());
-      if (!u && is_chp) {
+      if (is_chp && (!u || TypeFactory::isChanType (it))) {
 	if (TypeFactory::isChanType (it)) {
 	  u = dynamic_cast<UserDef *> (TypeFactory::getChanDataType (it)->BaseType());
 	}
@@ -371,7 +371,7 @@ Expr *ActId::Eval (ActNamespace *ns, Scope *s, int is_lval, int is_chp)
 	// exit early if we hit a pstruct
 	break;
       }
-    
+
       /* WWW: here we would have to check the array index for relaxed
 	 parameters */
 
@@ -1833,7 +1833,7 @@ act_connection *ActId::rootCanonical (Scope *s)
 }
 
 
-UserDef *ActId::isFragmented (Scope *s)
+UserDef *ActId::isFragmented (Scope *s, bool chp_ctxt)
 {
   InstType *it;
   ActId *tmp;
@@ -1851,8 +1851,14 @@ UserDef *ActId::isFragmented (Scope *s)
   while (tmp->Rest()) {
     UserDef *u = dynamic_cast<UserDef *> (it->BaseType());
     if (TypeFactory::isChanType (it)) {
-      //Assert (u, "Hi");
-      return u;
+      if (chp_ctxt) {
+	it = TypeFactory::getChanDataType (it);
+	u = dynamic_cast<UserDef *> (it->BaseType());
+      }
+      else {
+	//Assert (u, "Hi");
+	return u;
+      }
     }
     if (TypeFactory::isDataType (it)) {
       Assert (u, "Hi");

@@ -38,7 +38,17 @@ ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
     _bp = NULL;
   }
   _useidx = 0;
+  _E = new ExprDagVisit;
 }
+
+
+/*
+ * Currently we are assuming that complex inline helpers and unstruct
+ * functions are called on user-typed expressions prior to inlining.
+ * Hence, those should not need dag traversals. If that changes, these
+ * should also be updated to support general dag expressions.
+ */
+
 
 // used for unique ids for structure self-assignment
 static int _inline_idx = 0;
@@ -189,8 +199,17 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
 {
   Expr *tmp;
   act_inline_value lv, rv, retv;
+  phash_bucket_t *b;
   
   if (!e) return retv;
+  if (_E->visited (e)) {
+    b = _E->getHash (e);
+    retv = *((act_inline_value *)b->v);
+    return retv;
+  }
+  b = _E->getHash (e);
+  b->v = NULL;
+
   switch (e->type) {
   case E_AND:
   case E_OR:
@@ -261,6 +280,9 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
   case E_FUNCTION:
     lv = _inline_funcs_general (l, e);
     if (lv.isValid()) {
+      act_inline_value *xv = new act_inline_value;
+      *xv = lv;
+      b->v = xv;
       return lv;
     }
     break;
@@ -284,7 +306,22 @@ act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
     break;
   }
   retv.u.val = e;
+
+  act_inline_value *xv = new act_inline_value;
+  *xv = retv;
+  b->v = xv;
+
   return retv;
+}
+
+
+static void _del_act_val (phash_bucket_t *b)
+{
+  if (b->v) {
+    act_inline_value *v = (act_inline_value *)b->v;
+    delete v;
+    b->v = NULL;
+  }
 }
 
 act_inline_value ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
@@ -328,7 +365,9 @@ act_inline_value ActCHPFuncInline::_inline_funcs_general (list_t *l, Expr *e)
       Expr *ex = expr_expand (tmp->u.e.l, NULL, NULL,
 			      ACT_EXPR_EXFLAG_DUPONLY|ACT_EXPR_EXFLAG_CHPEX);
 
+      _E->entry ();
       arglist[args++] = _inline_funcs (l, ex);
+      _E->exit (_del_act_val);
       // this computes a pure inlined expression value
       // now we need to set various flags
       if (TypeFactory::isStructure (fx->getPortType (args-1))) {
@@ -466,7 +505,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_dataflow_element *e)
 	}
       }
       else {
+	_E->entry ();
 	act_inline_value vr = _inline_funcs (l, e->u.func.lhs);
+	_E->exit (_del_act_val);
 	Assert (vr.isSimple(), "Hmm.");
 	e->u.func.lhs = vr.getVal();
       }
@@ -624,10 +665,14 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	is_struct = 1;
       }
 
+      _E->entry ();
       _inline_idcheck (l, c->u.comm.chan);
+      _E->exit (_del_act_val);
 
       if (!is_struct) {
+	_E->entry ();
 	act_inline_value val = _inline_funcs (l, c->u.comm.e);
+	_E->exit (_del_act_val);
 	Assert (val.isSimple(), "Hmm");
 	c->u.comm.e = val.getVal();
       }
@@ -733,7 +778,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
     {
       InstType *it = _cursc->FullLookup (c->u.assign.id, NULL);
 
+      _E->entry ();
       _inline_idcheck (l, c->u.assign.id);
+      _E->exit (_del_act_val);
       
       if (TypeFactory::isStructure (it)) {
 	if (c->u.assign.e->type == E_VAR) {
@@ -836,7 +883,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
 	}
       }
       else {
+	_E->entry ();
 	act_inline_value vx = _inline_funcs (l, c->u.assign.e);
+	_E->exit (_del_act_val);
 	Assert (vx.isSimple(), "Hmm");
 	c->u.assign.e = vx.getVal();
       }
@@ -857,7 +906,9 @@ void ActCHPFuncInline::_inline_funcs (list_t *l, act_chp_lang_t *c)
   case ACT_CHP_DOLOOP:
     for (act_chp_gc_t *gc = c->u.gc; gc; gc = gc->next) {
       if (gc->g) {
+	_E->entry ();
 	act_inline_value vx = _inline_funcs (l, gc->g);
+	_E->exit (_del_act_val);
 	Assert (vx.isSimple(), "Hmm");
 	gc->g = vx.getVal();
       }

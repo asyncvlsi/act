@@ -300,10 +300,13 @@ class ActId {
    * channel or integer data type via their port lists. This returns
    * the user-defined type that this identifier fragments, if any.
    *
+   * In the chp context, we permit X.a for a channel X of a structure
+   * type and "a" is a field of the structure.
+   *
    * @return NULL if this is not a fragmented integer/channel, or the
    * user-defined type corresponding to the fragmented type otherwise.
    */
-  UserDef *isFragmented (Scope *);
+  UserDef *isFragmented (Scope *, bool chp_ctxt = false);
 
   /** 
    * If an ID is fragmented, this returns the prefix of the identifier

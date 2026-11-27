@@ -1,0 +1,2 @@
+ERROR: File `93.act', line 8, col 14
+	Port name `c' does not exist for the identifier: d

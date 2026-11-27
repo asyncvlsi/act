@@ -2693,7 +2693,7 @@ void chp_print (FILE *fp, act_chp *chp)
 
 static void chp_check_var (ActId *id, Scope *s)
 {
-  if (id->isFragmented (s)) {
+  if (id->isFragmented (s, true)) {
     act_error_ctxt (stderr);
     fprintf (stderr, "In CHP, fragmented access `");
     id->Print (stderr);

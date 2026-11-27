@@ -149,9 +149,25 @@ static InstType *_act_get_var_type (Scope *s, ActId *id, ActId **retid,
 	FREE (tmpbuf);
 	return NULL;
       }
+      if (!u && subchan_conv) {
+	char *tmpbuf;
+	MALLOC (tmpbuf, char, 10240);
+	orig_id->sPrint (tmpbuf, 10240);
+	typecheck_err ("Identifier `%s': can't fracture a channel in CHP.", tmpbuf);
+	FREE (tmpbuf);
+	return NULL;
+      }
       Assert (u, "This should have been caught during parsing!");
       id = id->Rest();
       it = u->Lookup (id);
+      if (!it && subchan_conv) {
+	char *tmpbuf;
+	MALLOC (tmpbuf, char, 10240);
+	orig_id->sPrint (tmpbuf, 10240);
+	typecheck_err ("Identifier `%s': can't fracture a channel in CHP.", tmpbuf);
+	FREE (tmpbuf);
+	return NULL;
+      }
     }
   }
   else {

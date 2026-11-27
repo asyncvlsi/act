@@ -1,0 +1,3 @@
+ERROR: File `90.act', line 6, col 10
+	Typechecking failed on expression!
+	Identifier `d.t': can't fracture a channel in CHP.

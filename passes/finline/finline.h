@@ -27,6 +27,8 @@
 #include <act/act.h>
 #include <act/passes/booleanize.h>
 
+class ExprDagVisit;
+
 class ActCHPFuncInline : public ActPass {
 public:
   ActCHPFuncInline (Act *a);
@@ -57,6 +59,8 @@ private:
 
   int _useidx;
   ActBooleanizePass *_bp;
+
+  ExprDagVisit *_E;
 };
 
 #endif /* __ACT_PASS_FINLINE_H__ */

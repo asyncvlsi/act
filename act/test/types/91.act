@@ -1,0 +1,11 @@
+deftype foo(bool a, b) { }
+defchan dual <: chan(foo) (bool?! t, f; bool!? e) { }
+
+defproc test(dual? d)
+{ 
+  chp {
+   *[ [d.t -> skip ] ]
+  }
+}
+
+test t;

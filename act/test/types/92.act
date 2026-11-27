@@ -1,0 +1,12 @@
+deftype foo(bool a, b) { }
+defchan dual <: chan(foo) (bool?! t, f; bool!? e) { }
+
+defproc test(dual? d)
+{ 
+  bool x;
+  chp {
+   *[ x := d.a ]
+  }
+}
+
+test t;
