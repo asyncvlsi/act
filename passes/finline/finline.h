@@ -24,6 +24,7 @@
 #ifndef __ACT_PASS_FINLINE_H__
 #define __ACT_PASS_FINLINE_H__
 
+#include <act/expr_api.h>
 #include <act/act.h>
 #include <act/passes/booleanize.h>
 
@@ -37,7 +38,9 @@ private:
   void free_local (void *);
 
   Scope *_cursc;
+  ExprDagVisit *_inline_visit;
   act_inline_value _inline_funcs (list_t *, Expr *);
+  act_inline_value _inline_funcs_uncached (list_t *,Expr *);
   act_inline_value _inline_funcs_general (list_t *, Expr *);
   
   void _inline_funcs (list_t *, act_chp_lang_t *);
