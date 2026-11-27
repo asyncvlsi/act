@@ -38,6 +38,7 @@ ActCHPFuncInline::ActCHPFuncInline (Act *a) : ActPass (a, "finline")
     _bp = NULL;
   }
   _useidx = 0;
+  _inline_visit = NULL;
 }
 
 // used for unique ids for structure self-assignment
@@ -185,7 +186,46 @@ void ActCHPFuncInline::_inline_idcheck (list_t *l, ActId *id)
   }
 }
 
+static void _free_inline_result (phash_bucket_t *b)
+{
+  delete static_cast<act_inline_value *> (b->v);
+}
+
 act_inline_value ActCHPFuncInline::_inline_funcs (list_t *l, Expr *e)
+{
+  if (!e) {
+    return act_inline_value();
+  }
+
+  bool outermost = (_inline_visit == NULL);
+  if (outermost) {
+    _inline_visit = new ExprDagVisit;
+    _inline_visit->entry();
+  }
+
+  if (_inline_visit->visited(e)) {
+    phash_bucket_t *b = _inline_visit->getHash(e);
+    if (!b->v) {
+      act_error_ctxt(stderr);
+      fatal_error("Cycle in expression graph: inlining would recurse indefinitely");
+    }
+    return *static_cast<act_inline_value *> (b->v);
+  }
+
+  act_inline_value result = _inline_funcs_uncached(l, e);
+
+  phash_bucket_t *b = _inline_visit->getHash(e);
+  b->v = new act_inline_value(result);
+
+  if (outermost) {
+    _inline_visit->exit(_free_inline_result);
+    delete _inline_visit;
+    _inline_visit = NULL;
+  }
+  return result;
+}
+
+act_inline_value ActCHPFuncInline::_inline_funcs_uncached (list_t *l, Expr *e)
 {
   Expr *tmp;
   act_inline_value lv, rv, retv;
