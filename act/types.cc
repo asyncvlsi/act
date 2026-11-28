@@ -1491,7 +1491,7 @@ Data *Data::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
   
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
-    xd->methods[i] = chp_expand (methods[i], ns, xd->CurScope());
+    xd->methods[i] = hse_expand (methods[i], ns, xd->CurScope());
   }
   if (enum_vals) {
     xd->enum_vals = list_dup (enum_vals);
@@ -1586,7 +1586,7 @@ Channel *Channel::Expand (ActNamespace *ns, Scope *s, int nt, inst_param *u)
   }
 
   for (i=0; i < ACT_NUM_STD_METHODS; i++) {
-    xc->methods[i] = chp_expand (methods[i], ns, xc->CurScope());
+    xc->methods[i] = hse_expand (methods[i], ns, xc->CurScope());
   }
   for (i=0; i < ACT_NUM_EXPR_METHODS; i++) {
     xc->emethods[i] = expr_expand (emethods[i], ns, xc->CurScope(), 0);

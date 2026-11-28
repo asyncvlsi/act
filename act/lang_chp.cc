@@ -38,7 +38,7 @@ static list_t *in_chp = NULL;
 
 static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope *s, bool hse_mode);
 static bool _dynamic_replace (ActId *id, Scope *s, Array **ret_a);
-
+static void chp_check_var (ActId *id, Scope *s);
 
 /*
  * Return a fresh ID of the specified type within the scope
@@ -1930,7 +1930,10 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     {
     InstType *lhs, *rhs;
     Array *lhs_a, *rhs_a;
-      
+
+    if (!hse_mode) {
+      chp_check_var (c->u.assign.id, s);
+    }
     ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
     {
       ActId *tmp = ret->u.assign.id->stripArray ();

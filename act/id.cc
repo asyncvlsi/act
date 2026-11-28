@@ -1861,6 +1861,16 @@ UserDef *ActId::isFragmented (Scope *s, bool chp_ctxt)
       }
     }
     if (TypeFactory::isDataType (it)) {
+      if (chp_ctxt && !u) {
+	act_error_ctxt (stderr);
+	fprintf (stderr, "In CHP, fragmented access `");
+	this->Print (stderr);
+	fprintf (stderr, "' to base identifier `");
+	ActId *tmp = this->unFragment (s);
+	tmp->Print (stderr);
+	fprintf (stderr, "'\n");
+	fatal_error ("Cannot access channel/integer fragments in CHP!");
+      }
       Assert (u, "Hi");
       return u;
     }
