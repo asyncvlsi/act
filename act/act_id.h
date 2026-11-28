@@ -203,8 +203,8 @@ class ActId {
    * @param s is the evaluation scope
    * @param is_lval is 0 for identifiers that appear in an expression
    * context, and 1 otherwise (for "left values").
-   * @param is_chp is 1 for identifiers that are within a CHP
-   * body, 0 otherwise.
+   * @param is_chp is 1 for identifiers that are within a CHP body; is_chp
+   * is 2 for identifiers that are within an HSE body; otherwise 0.
    * @return The evaluated Expr data structure.
    */
   Expr *Eval (ActNamespace *ns, Scope *s, int is_lval = 0, int is_chp = 0);
@@ -219,6 +219,9 @@ class ActId {
    */
   Expr *EvalCHP (ActNamespace *ns, Scope *s, int is_lval = 0) {
     return Eval (ns, s, is_lval, 1);
+  }
+  Expr *EvalHSE (ActNamespace *ns, Scope *s, int is_lval = 0) {
+    return Eval (ns, s, is_lval, 2);
   }
 
   /**

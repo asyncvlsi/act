@@ -541,7 +541,7 @@ static void _run_chp (Scope *s, act_chp_lang_t *c)
   case ACT_CHP_ASSIGN:
     {
       Expr *e = expr_expand (c->u.assign.e, NULL, s);
-      ActId *id = expand_var_write (c->u.assign.id, NULL, s);
+      ActId *id = expand_var_write (c->u.assign.id, NULL, s, false);
       if (!expr_is_a_const (e)) {
 	act_error_ctxt (stderr);
 	fatal_error ("Assignment: expression is not a constant?");

@@ -1110,10 +1110,11 @@ void act_chp_macro_check (Scope *s, ActId *id);
  * @param id is the ActId to be expanded
  * @param ns is the namespace
  * @param s is the scope
+ * @param hse_mode is true in HSE mode only
  * @return the expanded variable, checking that it is actually
  * something that can be written.
  */
-ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s);
+ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s, bool hse_mode);
 
 /**
  * Returns 0 if the ID is not found, 1 if it is read, 2 if it is

@@ -341,7 +341,7 @@ static ActId *expand_var_read (ActId *id, ActNamespace *ns, Scope *s)
  * This is a chp variable to be written. So it can have array
  * dereferences
  */
-ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
+ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s, bool hse_mode)
 {
   ActId *idtmp;
   Expr *etmp;
@@ -352,8 +352,13 @@ ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
      full expand. It needs to be a non-array variable type.
   */
   idtmp = id->ExpandCHP (ns, s);
-  
-  etmp = idtmp->EvalCHP (ns, s, 1);
+
+  if (hse_mode) {
+    etmp = idtmp->EvalHSE (ns, s, 1);
+  }
+  else {
+    etmp = idtmp->EvalCHP (ns, s, 1);
+  }
   Assert (etmp->type == E_VAR, "Hmm");
   if ((ActId *)etmp->u.e.l != idtmp) {
     delete idtmp;
@@ -367,7 +372,7 @@ ActId *expand_var_write (ActId *id, ActNamespace *ns, Scope *s)
 
 static ActId *expand_var_chan (ActId *id, ActNamespace *ns, Scope *s)
 {
-  return expand_var_write (id, ns, s);
+  return expand_var_write (id, ns, s, false);
 }
 
 
@@ -1934,7 +1939,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     if (!hse_mode) {
       chp_check_var (c->u.assign.id, s);
     }
-    ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s);
+    ret->u.assign.id = expand_var_write (c->u.assign.id, ns, s, hse_mode);
     {
       ActId *tmp = ret->u.assign.id->stripArray ();
       /* 
@@ -2122,7 +2127,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
     ret->u.comm.flavor = c->u.comm.flavor;
     ret->u.comm.convert = c->u.comm.convert;
     if (c->u.comm.var) {
-      ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s);
+      ret->u.comm.var = expand_var_write (c->u.comm.var, ns, s, hse_mode);
       act_chp_macro_check (s, ret->u.comm.var);
       
       ActId *tmp = ret->u.comm.var->stripArray();
@@ -2272,7 +2277,7 @@ static act_chp_lang_t *chp_expand_1 (act_chp_lang_t *c, ActNamespace *ns, Scope 
 
   case ACT_CHP_MACRO:
     {
-      ActId *x = expand_var_write (c->u.macro.id, ns, s);
+      ActId *x = expand_var_write (c->u.macro.id, ns, s, hse_mode);
       if (x->isNamespace()) {
 	act_error_ctxt (stderr);
 	fatal_error ("CHP macro and namespace globals don't mix");
